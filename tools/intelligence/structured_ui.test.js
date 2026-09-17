@@ -110,6 +110,82 @@ vm.runInContext(src + '\nthis.DESK_SECTIONS=DESK_SECTIONS;this.structuredLabelHT
   has('a repriced follow-up is shown at the top', rep, 'AT YOUR NUMBER');
 }
 
+/* ---- Slice 8: the staking panel ------------------------------------------- */
+{
+  const sa = APP.indexOf('  function stakeUnits(u){');
+  const sb2 = APP.indexOf('  function boardAnswerHTML(d, answer){');
+  chk('the staking renderer is in app.html', sa > 0 && sb2 > sa, { sa, sb2 });
+  const ssrc = APP.slice(sa, sb2);
+  has('the staking vocabulary reaches the desk', APP, "if(/\\bhow many units\\b|\\bunit size\\b");
+  has('a single-game card is rendered when there is no board', APP, "if(d&&d.stake_card&&!d.board&&d.stake_card.schema==='edgedesk_stake_card_v1'){");
+  has('the card is rendered under the board answer', APP, 'boardAnswerHTML(d,ansB)+stakeAnswerHTML(d)');
+  has('the bankroll editor writes the reader’s own row', APP, "sbUpsert('bankroll_settings?on_conflict=user_id'");
+  has('and the upsert merges duplicates under the caller’s token', APP, 'resolution=merge-duplicates');
+  const sctx = { esc: ctx.esc, mdToHtml: ctx.mdToHtml, obsAt: (iso) => iso ? String(iso).slice(0, 16) : '—', console };
+  vm.createContext(sctx);
+  vm.runInContext(ssrc + '\nthis.stakeAnswerHTML=stakeAnswerHTML;', sctx);
+  const rec = {
+    event_id: '401858900', sport: 'americanfootball_ncaaf', sport_label: 'college football', matchup: 'North Texas @ Texas State',
+    market: 'spread', market_key: 'spreads', selection: 'North Texas', line: -2.5, american_odds: -105, decimal_odds: 1.9524, sportsbook: 'DraftKings',
+    price_captured_at: '2026-09-16T21:11:28.903Z', price_freshness: 'CURRENT', price_age_seconds: 840,
+    model_probability: null, calibrated_probability: 0.56, conservative_probability: 0.5374, conservative_method: 'SHRINK_TO_HALF_BY_RELIABILITY',
+    no_vig_market_probability: 0.56, model_edge: 0, conservative_edge: -0.0226, expected_value: 0.0494, fair_odds: -116, fair_line: -2.5,
+    reliability_score: 0.6679, reliability_components: [], raw_kelly_fraction: 0.0303, fractional_kelly_fraction: 0.0076, kelly_multiplier: 0.25,
+    recommended_units: 0.5, recommended_dollars: 12.5, recommendation_tier: 'STANDARD', recommendation_label: 'STANDARD — 0.50u',
+    primary_reason: 'At -105 at DraftKings the price requires 51.2%; the staking probability after uncertainty is 53.7%.',
+    strongest_counterargument: 'The de-vig fair assumes the book margin sits evenly on both sides.',
+    invalidation_conditions: ['A starter change on either side.'],
+    existing_team_exposure_units: 0, resulting_team_exposure_units: 0.5, existing_game_exposure_units: 0, resulting_game_exposure_units: 0.5,
+    existing_daily_exposure_units: 0, resulting_daily_exposure_units: 0.5, existing_weekly_exposure_units: 0, resulting_weekly_exposure_units: 0.5,
+    exposure_keys: { team: 'north texas', team_label: 'North Texas' }, correlated_exposure: [], warnings: [], gates_failed: [],
+    price_limit_american: -112, bet_to_line: null, status: 'BET',
+    policy: { max_team: 1.5, max_game: 1.25, max_daily: 4, max_weekly: 8 },
+  };
+  const card = {
+    schema: 'edgedesk_stake_card_v1', id: 'card_1', headline: '1 recommended position totalling 0.50u ($12.50) from 8 markets evaluated across 3 games.',
+    markets_evaluated: 8, games_evaluated: 3, recommendations: [rec], watchlist: [], passes: [], research_only: [], games: [], portfolio_actions: [],
+    caps: { single: 1, game: 1.25, team: 1.5, daily: 4, weekly: 8 }, total_recommended_units: 0.5, total_recommended_dollars: 12.5,
+    parlay: { built: false, requested: false, why: 'No parlay was requested and parlays are not enabled in your settings.' },
+    policy: { bankroll_known: true, base_unit_amount: 25, dollars_note: 'Dollar figures use your stored bankroll of $2500.', basis: 'EdgeDesk default risk policy: 0.25 Kelly.' },
+    conviction_note: 'A reader’s conviction is context, never an input.', note: 'The language model may explain this card; it may not change a number in it.',
+  };
+  const h = sctx.stakeAnswerHTML({ stake_card: card });
+  has('the sized position leads with the selection and the number', h, '<b>North Texas -2.5</b>');
+  has('the tier and the dollar figure are printed', h, '<b>STANDARD — 0.50u</b> · $12.50');
+  has('the best price, book and capture time', h, 'Best price -105 at DraftKings · captured 2026-09-16T21:11 (CURRENT)');
+  has('the calibrated, conservative and no-vig probabilities are all shown', h, 'Calibrated 56.0% · conservative 53.7% · no-vig market 56.0%');
+  has('the expected value and the fair price', h, 'EV +4.9% · fair -116');
+  has('the reliability score and the Kelly working', h, 'Reliability 0.6679 · Kelly 0.0303 × 0.25');
+  has('the exposure after the wager, against the caps', h, 'Exposure after: 0.50u on this team (cap 1.5u) · 0.50u on the game (cap 1.25u) · 0.50u today (cap 4u)');
+  has('the price it is playable through', h, 'Playable through -112');
+  has('the main risk', h, '<b>Main risk:</b> The de-vig fair assumes');
+  has('what would invalidate it', h, '<b>Invalidated by:</b> A starter change');
+  has('the card total against the daily and weekly caps', h, 'Card total 0.50u / $12.50 · daily cap 4u · weekly cap 8u');
+  has('the conviction note reaches the reader', h, 'conviction is context, never an input');
+  /* NO BET renders as a pass, with the count and the reason */
+  const none = sctx.stakeAnswerHTML({ stake_card: Object.assign({}, card, {
+    recommendations: [], total_recommended_units: 0, total_recommended_dollars: null,
+    headline: 'NO BET. EdgeDesk evaluated 8 current markets and none produced positive conservative expected value after uncertainty, price freshness and existing exposure.',
+    watchlist: [Object.assign({}, rec, { recommended_units: 0, recommended_dollars: null, status: 'WATCH', expected_value: 0.004, gates_failed: [{ code: 'BELOW_MINIMUM_UNIT', detail: '0.14u rounds DOWN to 0u, below the 0.25u minimum' }] })],
+    strongest_research_candidate: { selection: 'North Texas', why_not: 'the position it earns rounds below the minimum stake' },
+  }) });
+  has('a pass is rendered as NO BET', none, '<div class="h">No bet</div>');
+  has('with the number of markets evaluated', none, 'EdgeDesk evaluated 8 current markets');
+  has('and the strongest research candidate with its reason', none, 'Strongest research candidate: North Texas — the position it earns rounds below the minimum stake');
+  has('and the pass is said to be a successful result', none, 'A pass is a successful result. Nothing is forced.');
+  has('positive value with no stake is labelled as such, never as a bet', none, '<div class="h">Positive value, no stake</div>');
+  has('with the reason it was not sized', none, '0.14u rounds DOWN to 0u, below the 0.25u minimum');
+  /* no bankroll: units only, and the editor is offered */
+  const nb = sctx.stakeAnswerHTML({ stake_card: Object.assign({}, card, {
+    recommendations: [Object.assign({}, rec, { recommended_dollars: null })], total_recommended_dollars: null,
+    policy: { bankroll_known: false, base_unit_amount: 25, dollars_note: 'No bankroll amount is stored, so the recommendation is in UNITS.', basis: 'EdgeDesk default risk policy: 0.25 Kelly.' },
+  }) });
+  has('with no bankroll the sizes are in units', nb, '<b>STANDARD — 0.50u</b>');
+  lacks('and no dollar figure is printed at all', nb, '$12.50');
+  has('the reader is told why and offered the editor', nb, 'EDAI.openBankroll()');
+  has('the note explains what the setting adds', nb, 'EdgeDesk will state the exact dollar stake');
+}
+
 const S = {
   schema: 'edgedesk_structured_answer_v1', prose_status: 'MODEL', packet_id: '401858900:ca8396f3',
   bottom_line: { label: 'PRICE DEPENDENT', decision: 'BET CANDIDATE', sentence: 'PRICE DEPENDENT — the case rests on the price, and ends when the price does.', read: { text: 'x', author: 'model' } },

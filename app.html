@@ -3628,6 +3628,17 @@ async function sbPost(table,rows){
   if(!r.ok)throw new Error("db "+r.status);
   return true;
 }
+/* An UPSERT under the caller's own token. `prefer: resolution=merge-duplicates`
+   is what makes a settings row editable without a second read: the reader's
+   user id is the primary key and the server fills it from the JWT, so a caller
+   cannot write another reader's policy even by naming it. */
+async function sbUpsert(table,rows){
+  var t=await edToken();
+  var h={apikey:SB_KEY,authorization:"Bearer "+t,"content-type":"application/json",prefer:"return=minimal,resolution=merge-duplicates"};
+  var r=await fetch(SB_URL+"/rest/v1/"+table,{method:"POST",headers:h,body:JSON.stringify(rows)});
+  if(!r.ok){var er=new Error("db "+r.status);er.status=r.status;try{er.body=await r.text();}catch(_){}throw er;}
+  return true;
+}
 async function sbGetAll(q,page,maxPages){page=page||1000;maxPages=maxPages||10;var out=[],off=0;for(var i=0;i<maxPages;i++){var b=await sbGet(q+'&limit='+page+'&offset='+off);if(!b||!b.length)break;out=out.concat(b);if(b.length<page)break;off+=page;}return out;}
 /* reads the isolated `ufc` research schema (descriptive-only dataset). Requires the
    ufc schema to be exposed under Supabase > API settings > Exposed schemas. */
@@ -35894,6 +35905,68 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h+='<details class="dk-more"><summary>Evidence, counter-case, threshold</summary><div style="margin-top:6px">'+body+'</div></details></div>';
     return h;
   }
+  /* ── SLICE 8: THE SIZES ─────────────────────────────────────────────────
+     Every number here was computed by the server and is printed, never
+     recomputed: the browser does not own a unit size any more than the
+     writing model does. A card with no recommendations renders NO BET with
+     the count of markets evaluated and the reason the closest one failed,
+     because a pass the reader cannot see is a pass they will not believe. */
+  function stakeUnits(u){ return (u==null?'—':(+u).toFixed(2)+'u'); }
+  function stakeMoney(v){ return v==null?'':'$'+(Math.round(v*100)/100).toFixed(2).replace(/\.00$/,''); }
+  function stakePct(p,d){ return p==null?'—':(p*100).toFixed(d==null?1:d)+'%'; }
+  function stakePp(p,d){ return p==null?'—':((p>=0?'+':'')+(p*100).toFixed(d==null?1:d)+'%'); }
+  function stakeLine(r){ if(r.line==null) return r.market==='moneyline'?' ML':''; return ' '+(r.market==='total'?r.line:((r.line>0?'+':'')+r.line)); }
+  function stakeAm(a){ if(a==null||a==='') return '\u2014'; var n=Math.round(Number(a)); return isFinite(n)?((n>0?'+':'')+n):'\u2014'; }
+  function stakeRecHTML(r,i){
+    var h='<li><b>'+esc(r.selection)+esc(stakeLine(r))+'</b> — '+esc(r.matchup||'')+' ('+esc(r.sport_label||r.sport||'')+')';
+    h+='<div class="m"><b>'+esc(r.recommendation_label||r.recommendation_tier)+'</b>'+(r.recommended_dollars!=null?' · '+esc(stakeMoney(r.recommended_dollars)):'')+'</div>';
+    h+='<div class="m">Best price '+esc(stakeAm(r.american_odds))+(r.sportsbook?' at '+esc(r.sportsbook):'')+(r.price_captured_at?' · captured '+esc(obsAt(r.price_captured_at))+' ('+esc(r.price_freshness||'')+')':'')+'</div>';
+    h+='<div class="m">Calibrated '+esc(stakePct(r.calibrated_probability))+' · conservative '+esc(stakePct(r.conservative_probability))
+      +' · no-vig market '+(r.no_vig_market_probability==null?'not computable':esc(stakePct(r.no_vig_market_probability)))
+      +' · EV '+esc(stakePp(r.expected_value))+' · fair '+esc(stakeAm(r.fair_odds))+'</div>';
+    h+='<div class="m">Reliability '+esc(r.reliability_score)+' · Kelly '+esc(r.raw_kelly_fraction)+' × '+esc(r.kelly_multiplier)+'</div>';
+    h+='<div class="m">Exposure after: '+esc(stakeUnits(r.resulting_team_exposure_units))+' on this team (cap '+esc(r.policy&&r.policy.max_team)+'u) · '
+      +esc(stakeUnits(r.resulting_game_exposure_units))+' on the game (cap '+esc(r.policy&&r.policy.max_game)+'u) · '
+      +esc(stakeUnits(r.resulting_daily_exposure_units))+' today (cap '+esc(r.policy&&r.policy.max_daily)+'u)</div>';
+    if(r.price_limit_american!=null) h+='<div class="m">Playable through '+esc(stakeAm(r.price_limit_american))+'</div>';
+    else if(r.bet_to_line!=null) h+='<div class="m">Playable through '+esc(r.market==='total'?r.bet_to_line:((r.bet_to_line>0?'+':'')+r.bet_to_line))+'</div>';
+    if(r.cap_trimmed_note) h+='<div class="m">'+esc(r.cap_trimmed_note)+'</div>';
+    h+='<div class="m">'+esc(r.primary_reason||'')+'</div>';
+    if(r.strongest_counterargument) h+='<div class="m"><b>Main risk:</b> '+esc(r.strongest_counterargument)+'</div>';
+    if(r.invalidation_conditions&&r.invalidation_conditions.length) h+='<div class="m"><b>Invalidated by:</b> '+esc(r.invalidation_conditions.slice(0,2).join(' '))+'</div>';
+    if(r.correlated_exposure&&r.correlated_exposure.length) h+='<div class="m"><b>Correlated with:</b> '+esc(r.correlated_exposure.map(function(c){return c.kind+' — '+c.with;}).join('; '))+'</div>';
+    if(r.warnings&&r.warnings.length) h+='<div class="m">'+esc(r.warnings.join(' | '))+'</div>';
+    h+='<div class="m">Status '+esc(r.status)+'</div></li>';
+    return h;
+  }
+  function stakeAnswerHTML(d){
+    var C=d.stake_card; if(!C) return '';
+    var h='';
+    var pol=C.policy||{};
+    if(C.recommendations&&C.recommendations.length){
+      h+='<div class="dk-sec"><div class="h">'+(C.recommendations.length===1?'Best bet — EdgeDesk’s position size':'Your card — EdgeDesk’s position sizes')+'</div><ul>'
+        +C.recommendations.map(stakeRecHTML).join('')+'</ul>'
+        +'<div class="m">Card total '+esc(stakeUnits(C.total_recommended_units))+(C.total_recommended_dollars!=null?' / '+esc(stakeMoney(C.total_recommended_dollars)):'')
+        +' · daily cap '+esc(C.caps&&C.caps.daily)+'u · weekly cap '+esc(C.caps&&C.caps.weekly)+'u</div></div>';
+    } else {
+      h+='<div class="dk-sec"><div class="h">No bet</div><p>'+esc(C.headline||'')+'</p>';
+      if(C.strongest_research_candidate) h+='<div class="m">Strongest research candidate: '+esc(C.strongest_research_candidate.selection||'')+' — '+esc(C.strongest_research_candidate.why_not||'')+'</div>';
+      h+='<div class="m">A pass is a successful result. Nothing is forced.</div></div>';
+    }
+    if(C.watchlist&&C.watchlist.length) h+='<div class="dk-sec"><div class="h">Positive value, no stake</div><ul>'+C.watchlist.map(function(r){
+      return '<li><b>'+esc(r.selection)+esc(stakeLine(r))+'</b> '+esc(stakeAm(r.american_odds))+' — '+esc(r.matchup||'')+': '+esc(stakePp(r.expected_value))+' conservative EV, 0u — '+esc(((r.gates_failed||[])[0]||{}).detail||((r.gates_failed||[])[0]||{}).why||'')+'</li>'; }).join('')+'</ul></div>';
+    if(C.portfolio_actions&&C.portfolio_actions.length) h+='<div class="dk-sec"><div class="h">Portfolio</div><ul>'+C.portfolio_actions.map(function(a){ return '<li>'+esc(a.action)+' '+esc(a.selection)+' — '+esc(a.why)+'</li>'; }).join('')+'</ul></div>';
+    if(C.games&&C.games.length===1&&C.games[0].table&&C.games[0].table.length>1) h+='<div class="dk-sec"><div class="h">Which market, and why</div><ul>'+C.games[0].table.map(function(t){
+      return '<li>'+esc(t.selection)+' '+esc(t.market)+' — EV '+esc(stakePp(t.expected_value))+' → '+esc(stakeUnits(t.recommended_units))+'<div class="m">'+esc(t.why||'')+'</div></li>'; }).join('')+'</ul></div>';
+    if(C.parlay&&C.parlay.built) h+='<div class="dk-sec"><div class="h">Parlay — separate from the card</div><p>'+esc(C.parlay.legs)+' legs at a verified '+esc(stakeAm(C.parlay.combined_american))+', stake '+esc(stakeUnits(C.parlay.stake_units))+'.</p><div class="m">'+esc(C.parlay.no_combined_probability||'')+'</div></div>';
+    else if(C.parlay&&C.parlay.requested) h+='<div class="dk-sec limits"><div class="h">Parlay</div><div class="m">'+esc(C.parlay.why||'')+'</div></div>';
+    h+='<div class="edai-src">'+esc(pol.basis||'')+' '+esc(pol.dollars_note||'')+'</div>';
+    if(!pol.bankroll_known) h+='<div class="dk-sec limits"><div class="h">Bankroll</div><div class="m">No bankroll amount is on file, so the sizes above are in units. '
+      +'<a href="#" onclick="return EDAI.openBankroll()">Set your bankroll and base unit</a> and EdgeDesk will state the exact dollar stake.</div></div>';
+    h+='<div class="edai-src">'+esc(C.conviction_note||'')+' '+esc(C.note||'')+'</div>';
+    return h;
+  }
+
   function boardAnswerHTML(d, answer){
     var B=d.board; if(!B) return '';
     var h='';
@@ -37873,8 +37946,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         var ansB=(d.answer&&String(d.answer).trim())||d.deterministic_board_answer||'';
         if(ansB){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:ansB}); }
         LAST_ASK={mode:mode,question:question,x:x,extra:extra};
-        return {html:boardAnswerHTML(d,ansB)+ledgerNoticeHTML(d)+traceHTMLFor(d.research),
+        /* Slice 8: the SIZES come first under the prose. A reader who asked
+           what to bet is owed the number of units before the coverage table. */
+        return {html:boardAnswerHTML(d,ansB)+stakeAnswerHTML(d)+ledgerNoticeHTML(d)+traceHTMLFor(d.research),
           src:d.model?('The Desk \u00b7 reasoned by '+d.model+(d.narration&&d.narration.prose==='REJECTED_BY_CRITIC'?' \u00b7 written read rejected, EdgeDesk\u2019s own rendering shown':'')):'EdgeDesk board \u00b7 written analysis unavailable'};
+      }
+      /* Slice 8: a SINGLE-GAME staking question ("best bet in this game?",
+         "spread or moneyline?", "how many units?") comes back with a card and
+         no board. The card is the answer; the prose only explains it. */
+      if(d&&d.stake_card&&!d.board&&d.stake_card.schema==='edgedesk_stake_card_v1'){
+        var ansS=(d.answer&&String(d.answer).trim())||d.deterministic_stake_answer||'';
+        if(ansS){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:ansS}); }
+        LAST_ASK={mode:mode,question:question,x:x,extra:extra};
+        return {html:(ansS?'<div class="dk-read"><div class="lab">The Desk\u2019s read</div>'+mdToHtml(ansS)+'</div>':'')
+          +stakeAnswerHTML(d)+ledgerNoticeHTML(d)+traceHTMLFor(d.research),
+          src:d.model?('The Desk \u00b7 sized by EdgeDesk, written by '+d.model+(d.narration&&d.narration.prose==='REJECTED_BY_CRITIC'?' \u00b7 written read rejected, EdgeDesk\u2019s own rendering shown':'')):'EdgeDesk staking engine \u00b7 written analysis unavailable'};
       }
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
         /* A MATCHUP ANSWER IS SHAPED LIKE THE QUESTION, not like the board.
@@ -40363,12 +40449,98 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(/\bwhat(?:'?s| is)\s+worth\s+(?:betting|playing|a bet)\b/.test(q)) return true;
     if(/\bfind\b.*\b(?:bet|edge|play)\b/.test(q)) return true;
     if(/\b(another|different)\s+(single|bet|play|pick)\b|\bnot in my parlay\b|\btake (that|the|this) (game|one|pick) out\b|\bonly (college football|nfl|cfb|mlb|nba|nhl)\b/.test(q)) return true;
+    /* Slice 8: the STAKING vocabulary. "How many units?", "build my card",
+       "what's most mispriced?", "is the spread or the moneyline better?" and
+       "over or under?" are questions whose honest answer is a number of
+       units, and every one of them used to fall through to a generic reply
+       with nothing sized in it. The server owns the sizing; these phrasings
+       are what get the question to it. */
+    if(/\bhow many units\b|\bunit size\b|\bhow (much|many)\b.{0,24}\b(bet|risk|stake|put|play|wager)\b|\bwhat (size|stake)\b|\bsize (it|this|that)\b/.test(q)) return true;
+    if(/\bbuild (my|me|a) card\b|\bmy card\b|\bbuild the card\b/.test(q)) return true;
+    if(/\bmost mispriced\b|\bmispriced\b|\bbiggest edge\b/.test(q)) return true;
+    if(/\brank\b.{0,30}\b(bet|bets|opportunit|edge|play)\b/.test(q)) return true;
+    if(/\b(spread|moneyline|money line|ml|total)\b.{0,30}\bor\b.{0,30}\b(spread|moneyline|money line|ml|total)\b/.test(q)) return true;
+    if(/\b(over|under)\b.{0,12}\bor\b.{0,12}\b(over|under)\b|\bshould i (bet|take|play) the (over|under)\b/.test(q)) return true;
     return false;
   }
 
   /* ======================= PUBLIC API ======================= */
+  /* ── SLICE 8: THE BANKROLL SETTINGS EDITOR ──────────────────────────────
+     The engine answers in units without this and says so. What the row adds
+     is the exact dollar stake — and the reason it is a form rather than a
+     question in the chat is that a bankroll typed into a conversation is a
+     number the server would then have to trust. This writes the reader's own
+     row, under their own token, and the engine reads it back on the next
+     turn. Nothing here computes a size. */
+  var BANKROLL_FIELDS = [
+    ['bankroll_amount', 'Bankroll ($)', 'blank = EdgeDesk answers in units and never assumes one'],
+    ['base_unit_amount', 'Base unit ($)', 'blank = the $25 default'],
+    ['fractional_kelly_multiplier', 'Kelly fraction', '0.25 = quarter Kelly (the default)'],
+    ['maximum_single_wager_units', 'Max single (u)', '1.00'],
+    ['maximum_game_exposure_units', 'Max per game (u)', '1.25'],
+    ['maximum_team_exposure_units', 'Max per team (u)', '1.50'],
+    ['maximum_daily_exposure_units', 'Max per day (u)', '4.00'],
+    ['maximum_weekly_exposure_units', 'Max per week (u)', '8.00']
+  ];
+  async function bankrollRow(){
+    try{ var rows = await sbGet('bankroll_settings?select=*&limit=1'); return (rows && rows[0]) || null; }
+    catch(e){ return { __error: String((e && e.message) || e) }; }
+  }
+  function bankrollFormHTML(row){
+    var err = row && row.__error;
+    var h = '<div class="dk-sec"><div class="h">Your bankroll and risk policy</div>';
+    if(err) h += '<div class="m">Your settings could not be read (' + esc(err) + '). EdgeDesk will answer in units until they can be.</div>';
+    h += '<div class="m">EdgeDesk sizes every position from these numbers. Leave the bankroll blank and it answers in units only — it will not assume one.</div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0">';
+    BANKROLL_FIELDS.forEach(function(f){
+      var v = row && !err && row[f[0]] != null ? row[f[0]] : '';
+      h += '<label style="font-size:12px">' + esc(f[1])
+        + '<input id="bkr_' + f[0] + '" type="number" step="0.01" value="' + esc(String(v)) + '" placeholder="' + esc(f[2])
+        + '" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;background:transparent;color:inherit"></label>';
+    });
+    h += '</div>';
+    h += '<label style="font-size:12px;display:block;margin:4px 0"><input id="bkr_parlay_permission" type="checkbox"'
+      + (row && !err && row.parlay_permission ? ' checked' : '') + '> Allow parlays (EdgeDesk prefers singles and never builds one to make a payout bigger)</label>';
+    h += '<button onclick="EDAI.saveBankroll()" class="refreshbtn" style="width:100%;padding:10px;margin-top:8px">Save</button>';
+    h += '<div id="bkrResult" class="m"></div>';
+    h += '<div class="edai-src">The caps must stay coherent — a single inside a game, a game inside a team, a team inside a day, a day inside a week — and the database refuses a set that is not. Nothing you enter changes a probability, an edge or an expected value.</div>';
+    return h + '</div>';
+  }
+
   window.EDAI = {
     feedback: recordFeedback,
+    /* The bankroll editor, opened from the sizing panel's own prompt. */
+    openBankroll: function(){
+      (async function(){
+        var row = await bankrollRow();
+        push('a', bankrollFormHTML(row));
+      })();
+      return false;
+    },
+    saveBankroll: async function(){
+      var out = $id('bkrResult');
+      var patch = { }, bad = null;
+      BANKROLL_FIELDS.forEach(function(f){
+        var el = $id('bkr_' + f[0]); if(!el) return;
+        var raw = String(el.value || '').trim();
+        if(raw === ''){ if(f[0] === 'bankroll_amount' || f[0] === 'base_unit_amount') patch[f[0]] = null; return; }
+        var n = Number(raw);
+        if(!isFinite(n) || n <= 0){ bad = f[1]; return; }
+        patch[f[0]] = n;
+      });
+      var pc = $id('bkr_parlay_permission'); if(pc) patch.parlay_permission = !!pc.checked;
+      if(bad){ if(out) out.textContent = bad + ' must be a positive number.'; return; }
+      if(out) out.textContent = 'Saving…';
+      try{
+        /* an upsert on the reader's own row: the primary key is their user id,
+           which the server fills from the token, so a caller cannot write
+           somebody else's policy even by asking */
+        await sbUpsert('bankroll_settings?on_conflict=user_id', [patch]);
+        if(out) out.textContent = 'Saved. Ask again and EdgeDesk will size in units and dollars.';
+      }catch(e){
+        if(out) out.textContent = 'Could not save (' + String((e && e.message) || e) + '). The caps must stay coherent: a single inside a game, a game inside a team, a team inside a day, a day inside a week.';
+      }
+    },
     open:function(){ $id('edaiScrim').classList.add('open'); $id('edaiPanel').classList.add('open'); $id('edaiFab').classList.add('hide');
       renderActions(); if(!$id('edaiLog').children.length){ try{ scanSlate(true); }catch(_){ emptyState(); } } },
     close:function(){ $id('edaiScrim').classList.remove('open'); $id('edaiPanel').classList.remove('open'); $id('edaiFab').classList.remove('hide'); },

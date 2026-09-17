@@ -44,6 +44,26 @@ deploy that worked and changed nothing.
 
 ## The files
 
+### `bankroll_and_stakes.sql` — the risk policy and the stake audit trail
+`bankroll_settings` is one MUTABLE row per reader: the bankroll (deliberately
+nullable — EdgeDesk answers in units and refuses to assume one), the base unit,
+every exposure cap, the Kelly multiplier, parlay permission and the books they
+can reach. Check constraints keep the caps coherent, so a single cap above the
+game cap cannot be stored. `stake_recommendations` is the write-once trail: one
+row per position the sizing engine produced, BET and PASS alike, with the
+price, all three probabilities, the Kelly working, the units, the exposure
+before and after, the reason for a pass and the whole snapshot as JSON —
+frozen by a trigger, never deleted, and refused if it postdates kickoff. A BET
+cannot be recorded at zero units and a PASS cannot be recorded with a stake.
+`stake_recommendation_responses` is an append-only log of what the reader
+actually did, kept separate so recording behaviour can never rewrite what
+EdgeDesk said. Views: `stake_recommendation_grades` (the close by `sig_key`,
+CLV, result, profit at the recommended size **and** at a flat 0.5u and a flat
+1u on the same selections, Brier and log loss on the staking probability),
+`stake_engine_scorecard`, `stake_pass_reasons` and `stake_open_exposure`.
+Tested against a real PostgreSQL by `tools/intelligence/stake_sql.test.js`;
+the runbook is `docs/runbooks/staking.md`.
+
 ### `research_packets.sql` — the prediction ledger of EdgeDesk Intelligence
 One row per normalised research packet the desk built before kickoff: the
 projection and its version, the price it was compared against (and the

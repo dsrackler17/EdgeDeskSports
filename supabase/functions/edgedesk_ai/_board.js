@@ -508,6 +508,14 @@
       /* the trace, not the answer: every candidate with the rule that placed it */
       candidates: list.slice(0, 60).map(function (c) { return { id: c.id, sport: c.sport, matchup: c.matchup, market: c.market, selection: c.selection, line: c.line, method: c.fair.method, status: c.qualification.status, rule: c.qualification.rules[0] || null, decision: c.decision.decision, freshness: c.quote.freshness, executable: c.quote.executable, edge_pp: c.edge.probability_edge_pp, ev_per_unit: c.edge.ev_per_unit, rank_score: c.rank_score, outlier: c.outlier || null }; }),
       qualified_total: qualified.length,
+      /* EVERY candidate, in full, for the layers that size rather than rank.
+         The compact `candidates` above is the trace a reader can scan; the
+         staking engine needs the whole object — the fair estimate, the quote,
+         the threshold and the counter-case — for every market of every game,
+         because "evaluate every supported market" is its contract and a
+         qualification filter is not a substitute for it. Additive: nothing
+         that read this board before sees a different shape. */
+      all_candidates: list.slice(0, 200),
       focus: focus, repriced: repriced,
       rules: RULES,
       freshness: {

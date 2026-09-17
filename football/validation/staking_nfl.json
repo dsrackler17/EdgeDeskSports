@@ -1,0 +1,692 @@
+{
+ "schema": "edgedesk_staking_validation_v1",
+ "sport": "americanfootball_nfl",
+ "generated_at": "2026-09-17T02:40:00.314Z",
+ "frame": {
+  "archive": "football/pricing/lines_nfl.json",
+  "games": 7292,
+  "rows_used": 7292,
+  "rating": "an Elo computed by this script from the archive’s own results in kickoff order, with a between-season regression to the mean; a game is rated by the state BEFORE it, so no result prices its own game",
+  "blend": "margin ~ a + b*market + c*(model - market), the same form the shipped pricer uses, fitted on the seasons BEFORE each held-out season",
+  "holdout_window": "2019 onward, one season at a time",
+  "policy": {
+   "bankroll_amount": 2500,
+   "base_unit_amount": 25
+  },
+  "leakage": "no closing line enters a pregame feature; the close is the MARKET the position is taken at. Nothing is fitted on the season it is scored on, and no threshold is chosen on the evaluation window.",
+  "caveats": [
+   "the rating line is NOT the shipped football engine: the engine replay needs per-game team-week feeds that are not committed, so this validates the SIZING ENGINE over a reproducible model rather than over the production projection",
+   "the total arm uses the tune-window mean total as its model, which is deliberately weak — it is there to prove the engine PASSES on a market with no real edge, not to claim one",
+   "prices are the archive’s consensus close, or -110 where the archive carries no price; a real board would be line-shopped and slightly better",
+   "a backtest cannot reproduce quote freshness, book agreement or availability certainty, so those reliability components are held at their documented values and the run is a test of the SIZING RULES, not of the live data path"
+  ]
+ },
+ "rules": {
+  "first_eval": 2016,
+  "first_holdout": 2019,
+  "min_tune_seasons": 3,
+  "tier": {
+   "validated": {
+    "win_pct": 0.535,
+    "p_max": 0.01,
+    "min_n": 500
+   },
+   "lean": {
+    "win_pct": 0.5238,
+    "p_max": 0.05,
+    "min_n": 300
+   }
+  },
+  "thresholds": [
+   0.5,
+   1,
+   1.5,
+   2,
+   3,
+   4,
+   6
+  ],
+  "mode": {
+   "min_positions": 200,
+   "must_beat_flat_half": true,
+   "must_beat_flat_one": true
+  },
+  "policy": {
+   "bankroll_amount": 2500,
+   "base_unit_amount": 25
+  }
+ },
+ "markets": {
+  "spread": {
+   "market": "spread",
+   "positions": 438,
+   "units_staked": 191.75,
+   "record": {
+    "wins": 206,
+    "losses": 225,
+    "pushes": 7,
+    "win_pct": 0.478
+   },
+   "money": {
+    "engine_units": -10.986,
+    "engine_roi_on_staked": -0.0573,
+    "flat_half_units": -8.65,
+    "flat_half_roi": -0.0395,
+    "flat_one_units": -17.3,
+    "flat_one_roi": -0.0395,
+    "beats_flat_half": false,
+    "beats_flat_one": true,
+    "note": "ROI is profit over units actually staked. The two flat arms take the SAME selections at the SAME prices, so the only difference is the sizing."
+   },
+   "risk": {
+    "engine_max_drawdown_units": 13.235,
+    "flat_half_max_drawdown_units": 11.144,
+    "flat_one_max_drawdown_units": 22.288
+   },
+   "calibration": {
+    "brier_calibrated": 0.2508,
+    "brier_conservative": 0.2506,
+    "log_loss_calibrated": 0.6947,
+    "log_loss_conservative": 0.6943,
+    "graded": 431,
+    "note": "the conservative probability is deliberately pessimistic, so a WORSE Brier than the calibrated one is expected and is not a fault; what matters is whether it stakes better."
+   },
+   "shrinkage": {
+    "engine_units": -10.986,
+    "no_shrink_units": -5.867,
+    "no_shrink_positions": 463,
+    "helps": false,
+    "verdict": "shrinkage did NOT help out of sample on this market (-10.986u with, -5.867u without); it is kept because it is the conservative direction and the sample is thin, and this line says so"
+   },
+   "clv": {
+    "positions": 0,
+    "mean_points": null,
+    "note": "no opener on file for the sized positions"
+   },
+   "counterfactual_lean": {
+    "what_this_is": "NOT A RESULT AND NOT A RECOMMENDATION. The same held-out positions re-sized with the validation tier forced to LEAN, so the SIZING RULES can be compared against flat staking even where the real tier refuses to stake. It cannot change a MODE and no number in it describes a market EdgeDesk would bet.",
+    "positions": 433,
+    "units_staked": 182.25,
+    "engine_units": -11.424,
+    "engine_roi_on_staked": -0.0627,
+    "flat_half_units": -9.071,
+    "flat_one_units": -18.142,
+    "beats_flat_half": false,
+    "beats_flat_one": true,
+    "engine_max_drawdown_units": 13.185,
+    "flat_half_max_drawdown_units": 11.565,
+    "flat_one_max_drawdown_units": 23.13,
+    "brier_calibrated": 0.2508,
+    "brier_conservative": 0.2506,
+    "reading": "the sizing rules did not beat both flat arms on these positions (engine -11.424u, flat 0.5u -9.071u, flat 1u -18.142u)"
+   },
+   "per_season": [
+    {
+     "season": 2019,
+     "tier": "LEAN",
+     "positions": 91,
+     "engine_units": -2.572,
+     "flat_half_units": -2.568,
+     "flat_one_units": -5.135
+    },
+    {
+     "season": 2020,
+     "tier": "LEAN",
+     "positions": 92,
+     "engine_units": -3.484,
+     "flat_half_units": -3.769,
+     "flat_one_units": -7.539
+    },
+    {
+     "season": 2021,
+     "tier": "LEAN",
+     "positions": 98,
+     "engine_units": 0.468,
+     "flat_half_units": 1.783,
+     "flat_one_units": 3.567
+    },
+    {
+     "season": 2022,
+     "tier": "LEAN",
+     "positions": 96,
+     "engine_units": -4.149,
+     "flat_half_units": -4.163,
+     "flat_one_units": -8.325
+    },
+    {
+     "season": 2023,
+     "tier": "VALIDATED",
+     "positions": 15,
+     "engine_units": 1.18,
+     "flat_half_units": 1.389,
+     "flat_one_units": 2.779
+    },
+    {
+     "season": 2024,
+     "tier": "VALIDATED",
+     "positions": 14,
+     "engine_units": 1.611,
+     "flat_half_units": 1.769,
+     "flat_one_units": 3.538
+    },
+    {
+     "season": 2025,
+     "tier": "VALIDATED",
+     "positions": 32,
+     "engine_units": -4.04,
+     "flat_half_units": -3.092,
+     "flat_one_units": -6.184
+    },
+    {
+     "season": 2026,
+     "tier": "LEAN",
+     "positions": 0,
+     "engine_units": 0,
+     "flat_half_units": 0,
+     "flat_one_units": 0
+    }
+   ],
+   "holdouts": [
+    {
+     "season": 2019,
+     "tune_seasons": 6,
+     "n_tune": 1602,
+     "n_test": 267,
+     "rating": {
+      "points_per_rating_point": 0.0356,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -0.08,
+      "market": 1.0838,
+      "model_minus_market": 0.199,
+      "sigma": 13.01,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "LEAN",
+     "required_edge_points": 2
+    },
+    {
+     "season": 2020,
+     "tune_seasons": 7,
+     "n_tune": 1869,
+     "n_test": 269,
+     "rating": {
+      "points_per_rating_point": 0.0368,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -0.31,
+      "market": 1.0876,
+      "model_minus_market": 0.1888,
+      "sigma": 13.02,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "LEAN",
+     "required_edge_points": 1
+    },
+    {
+     "season": 2021,
+     "tune_seasons": 8,
+     "n_tune": 2138,
+     "n_test": 285,
+     "rating": {
+      "points_per_rating_point": 0.0371,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -0.37,
+      "market": 1.0825,
+      "model_minus_market": 0.2072,
+      "sigma": 12.97,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "LEAN",
+     "required_edge_points": 2
+    },
+    {
+     "season": 2022,
+     "tune_seasons": 9,
+     "n_tune": 2423,
+     "n_test": 284,
+     "rating": {
+      "points_per_rating_point": 0.0376,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -0.32,
+      "market": 1.0768,
+      "model_minus_market": 0.1895,
+      "sigma": 13.04,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "LEAN",
+     "required_edge_points": 2
+    },
+    {
+     "season": 2023,
+     "tune_seasons": 10,
+     "n_tune": 2707,
+     "n_test": 285,
+     "rating": {
+      "points_per_rating_point": 0.0366,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -0.23,
+      "market": 1.0534,
+      "model_minus_market": 0.1661,
+      "sigma": 12.89,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "VALIDATED",
+     "required_edge_points": 4
+    },
+    {
+     "season": 2024,
+     "tune_seasons": 11,
+     "n_tune": 2992,
+     "n_test": 285,
+     "rating": {
+      "points_per_rating_point": 0.0365,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -0.12,
+      "market": 1.0466,
+      "model_minus_market": 0.1367,
+      "sigma": 12.92,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "VALIDATED",
+     "required_edge_points": 4
+    },
+    {
+     "season": 2025,
+     "tune_seasons": 12,
+     "n_tune": 3277,
+     "n_test": 285,
+     "rating": {
+      "points_per_rating_point": 0.037,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -0.11,
+      "market": 1.0681,
+      "model_minus_market": 0.153,
+      "sigma": 12.9,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "VALIDATED",
+     "required_edge_points": 4
+    },
+    {
+     "season": 2026,
+     "tune_seasons": 13,
+     "n_tune": 3562,
+     "n_test": 16,
+     "rating": {
+      "points_per_rating_point": 0.0371,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -0.07,
+      "market": 1.0698,
+      "model_minus_market": 0.1225,
+      "sigma": 12.85,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "LEAN",
+     "required_edge_points": 3
+    }
+   ],
+   "refused_seasons": [],
+   "ats_on_last_tune_window": {
+    "season": 2026,
+    "tune_seasons": 13,
+    "n_tune": 3562,
+    "n_test": 16,
+    "rating": {
+     "points_per_rating_point": 0.0371,
+     "home_field": 0
+    },
+    "blend": {
+     "intercept": -0.07,
+     "market": 1.0698,
+     "model_minus_market": 0.1225,
+     "sigma": 12.85,
+     "dropped_regressors": 0
+    },
+    "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+    "tier": "LEAN",
+    "required_edge_points": 3
+   },
+   "mode": "SHADOW",
+   "mode_basis": "the engine sized 438 held-out positions and returned -10.986u on 191.75u staked (ROI -5.73%), against flat 0.5u -8.65u and flat 1u -17.3u. SHADOW: it runs and records, and it does not recommend."
+  },
+  "total": {
+   "market": "total",
+   "positions": 12,
+   "units_staked": 3.5,
+   "record": {
+    "wins": 5,
+    "losses": 7,
+    "pushes": 0,
+    "win_pct": 0.4167
+   },
+   "money": {
+    "engine_units": -0.505,
+    "engine_roi_on_staked": -0.1442,
+    "flat_half_units": -1.019,
+    "flat_half_roi": -0.1699,
+    "flat_one_units": -2.039,
+    "flat_one_roi": -0.1699,
+    "beats_flat_half": true,
+    "beats_flat_one": true,
+    "note": "ROI is profit over units actually staked. The two flat arms take the SAME selections at the SAME prices, so the only difference is the sizing."
+   },
+   "risk": {
+    "engine_max_drawdown_units": 1.01,
+    "flat_half_max_drawdown_units": 1.52,
+    "flat_one_max_drawdown_units": 3.039
+   },
+   "calibration": {
+    "brier_calibrated": 0.2538,
+    "brier_conservative": 0.2532,
+    "log_loss_calibrated": 0.7007,
+    "log_loss_conservative": 0.6995,
+    "graded": 12,
+    "note": "the conservative probability is deliberately pessimistic, so a WORSE Brier than the calibrated one is expected and is not a fault; what matters is whether it stakes better."
+   },
+   "shrinkage": {
+    "engine_units": -0.505,
+    "no_shrink_units": -0.541,
+    "no_shrink_positions": 19,
+    "helps": true,
+    "verdict": "shrinkage HELPED out of sample: the shrunk engine returned -0.505u against -0.541u without it"
+   },
+   "clv": {
+    "positions": 0,
+    "mean_points": null,
+    "note": "no opener on file for the sized positions"
+   },
+   "counterfactual_lean": {
+    "what_this_is": "NOT A RESULT AND NOT A RECOMMENDATION. The same held-out positions re-sized with the validation tier forced to LEAN, so the SIZING RULES can be compared against flat staking even where the real tier refuses to stake. It cannot change a MODE and no number in it describes a market EdgeDesk would bet.",
+    "positions": 195,
+    "units_staked": 66.25,
+    "engine_units": -6.297,
+    "engine_roi_on_staked": -0.0951,
+    "flat_half_units": -7.644,
+    "flat_one_units": -15.288,
+    "beats_flat_half": true,
+    "beats_flat_one": true,
+    "engine_max_drawdown_units": 9.89,
+    "flat_half_max_drawdown_units": 11.369,
+    "flat_one_max_drawdown_units": 22.739,
+    "brier_calibrated": 0.2511,
+    "brier_conservative": 0.251,
+    "reading": "the sizing rules beat both flat arms on these positions, mostly by staking less on the thin ones: engine -6.297u on 66.25u staked against flat 0.5u -7.644u and flat 1u -15.288u"
+   },
+   "per_season": [
+    {
+     "season": 2019,
+     "tier": "RESEARCH",
+     "positions": 0,
+     "engine_units": 0,
+     "flat_half_units": 0,
+     "flat_one_units": 0
+    },
+    {
+     "season": 2020,
+     "tier": "RESEARCH",
+     "positions": 0,
+     "engine_units": 0,
+     "flat_half_units": 0,
+     "flat_one_units": 0
+    },
+    {
+     "season": 2021,
+     "tier": "RESEARCH",
+     "positions": 0,
+     "engine_units": 0,
+     "flat_half_units": 0,
+     "flat_one_units": 0
+    },
+    {
+     "season": 2022,
+     "tier": "RESEARCH",
+     "positions": 0,
+     "engine_units": 0,
+     "flat_half_units": 0,
+     "flat_one_units": 0
+    },
+    {
+     "season": 2023,
+     "tier": "RESEARCH",
+     "positions": 0,
+     "engine_units": 0,
+     "flat_half_units": 0,
+     "flat_one_units": 0
+    },
+    {
+     "season": 2024,
+     "tier": "LEAN",
+     "positions": 1,
+     "engine_units": -0.25,
+     "flat_half_units": -0.5,
+     "flat_one_units": -1
+    },
+    {
+     "season": 2025,
+     "tier": "LEAN",
+     "positions": 10,
+     "engine_units": -0.5,
+     "flat_half_units": -1.01,
+     "flat_one_units": -2.019
+    },
+    {
+     "season": 2026,
+     "tier": "LEAN",
+     "positions": 1,
+     "engine_units": 0.245,
+     "flat_half_units": 0.49,
+     "flat_one_units": 0.98
+    }
+   ],
+   "holdouts": [
+    {
+     "season": 2019,
+     "tune_seasons": 6,
+     "n_tune": 1602,
+     "n_test": 267,
+     "rating": {
+      "points_per_rating_point": 0.0356,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": 19.8,
+      "market": 0.5668,
+      "model_minus_market": -0.4,
+      "sigma": 13.44,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "RESEARCH",
+     "required_edge_points": null
+    },
+    {
+     "season": 2020,
+     "tune_seasons": 7,
+     "n_tune": 1869,
+     "n_test": 269,
+     "rating": {
+      "points_per_rating_point": 0.0368,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -2.57,
+      "market": 1.0595,
+      "model_minus_market": 0.0962,
+      "sigma": 13.43,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "RESEARCH",
+     "required_edge_points": null
+    },
+    {
+     "season": 2021,
+     "tune_seasons": 8,
+     "n_tune": 2138,
+     "n_test": 285,
+     "rating": {
+      "points_per_rating_point": 0.0371,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -39.87,
+      "market": 1.8766,
+      "model_minus_market": 0.881,
+      "sigma": 13.39,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "RESEARCH",
+     "required_edge_points": null
+    },
+    {
+     "season": 2022,
+     "tune_seasons": 9,
+     "n_tune": 2423,
+     "n_test": 284,
+     "rating": {
+      "points_per_rating_point": 0.0376,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": 97.71,
+      "market": -1.1248,
+      "model_minus_market": -2.102,
+      "sigma": 13.38,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "RESEARCH",
+     "required_edge_points": null
+    },
+    {
+     "season": 2023,
+     "tune_seasons": 10,
+     "n_tune": 2707,
+     "n_test": 285,
+     "rating": {
+      "points_per_rating_point": 0.0366,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": 10.21,
+      "market": 0.78,
+      "model_minus_market": -0.1967,
+      "sigma": 13.36,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "RESEARCH",
+     "required_edge_points": null
+    },
+    {
+     "season": 2024,
+     "tune_seasons": 11,
+     "n_tune": 2992,
+     "n_test": 285,
+     "rating": {
+      "points_per_rating_point": 0.0365,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": -16.08,
+      "market": 1.3582,
+      "model_minus_market": 0.3913,
+      "sigma": 13.33,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "LEAN",
+     "required_edge_points": 4
+    },
+    {
+     "season": 2025,
+     "tune_seasons": 12,
+     "n_tune": 3277,
+     "n_test": 285,
+     "rating": {
+      "points_per_rating_point": 0.037,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": 9.14,
+      "market": 0.8058,
+      "model_minus_market": -0.1611,
+      "sigma": 13.27,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "LEAN",
+     "required_edge_points": 4
+    },
+    {
+     "season": 2026,
+     "tune_seasons": 13,
+     "n_tune": 3562,
+     "n_test": 16,
+     "rating": {
+      "points_per_rating_point": 0.0371,
+      "home_field": 0
+     },
+     "blend": {
+      "intercept": 20.13,
+      "market": 0.5645,
+      "model_minus_market": -0.4033,
+      "sigma": 13.26,
+      "dropped_regressors": 0
+     },
+     "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+     "tier": "LEAN",
+     "required_edge_points": 4
+    }
+   ],
+   "refused_seasons": [],
+   "ats_on_last_tune_window": {
+    "season": 2026,
+    "tune_seasons": 13,
+    "n_tune": 3562,
+    "n_test": 16,
+    "rating": {
+     "points_per_rating_point": 0.0371,
+     "home_field": 0
+    },
+    "blend": {
+     "intercept": 20.13,
+     "market": 0.5645,
+     "model_minus_market": -0.4033,
+     "sigma": 13.26,
+     "dropped_regressors": 0
+    },
+    "rating_note": "constant regressor(s) at index 1 were absorbed by the intercept",
+    "tier": "LEAN",
+    "required_edge_points": 4
+   },
+   "mode": "SHADOW",
+   "mode_basis": "the engine sized 12 held-out positions and returned -0.505u on 3.5u staked (ROI -14.42%), against flat 0.5u -1.019u and flat 1u -2.039u; and 12 positions is below the 200-position floor. SHADOW: it runs and records, and it does not recommend."
+  }
+ },
+ "note": "A market is BET only where the engine beat BOTH flat baselines on the held-out window with a positive ROI and a usable sample. Everything else is SHADOW or RESEARCH ONLY: it runs, it records, it does not recommend."
+}

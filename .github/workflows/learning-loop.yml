@@ -52,6 +52,15 @@ jobs:
         run: node tools/football/validate_movement.js --sport cfb && node tools/football/validate_movement.js --sport nfl
         continue-on-error: true
 
+      # The sizing engine is graded against flat staking on the same
+      # selections, walk-forward, and the MODE it writes decides which markets
+      # the desk may recommend at all. It runs AFTER the archives so it reads
+      # tonight's closes, and it cannot promote itself: a BET mode needs a
+      # positive ROI and both flat baselines beaten on the held-out window.
+      - name: Staking validation (the engine against flat 0.5u and flat 1u)
+        run: node tools/intelligence/validate_staking.js --write
+        continue-on-error: true
+
       - name: Grade the desk's quotes and publish the scorecard
         env:
           SUPABASE_URL: ${{ secrets.SB_URL }}

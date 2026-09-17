@@ -23,6 +23,7 @@ const JS = [
   'supabase/functions/edgedesk_ai/_analyst.js',
   'supabase/functions/edgedesk_ai/_pricing.js',
   'supabase/functions/edgedesk_ai/_board.js',
+  'supabase/functions/edgedesk_ai/_stake.js',
   'supabase/functions/edgedesk_ai/_intelligence.js',
   'supabase/functions/edgedesk_ai/_presentation.js',
   'tools/presentation/inline.js',
@@ -30,6 +31,8 @@ const JS = [
   'tools/intelligence/acceptance.test.js', 'tools/intelligence/conversation.test.js', 'tools/intelligence/matchup.test.js',
   'tools/intelligence/research_packets_sql.test.js', 'tools/intelligence/ledger_sql.test.js', 'tools/intelligence/lint.js',
   'tools/intelligence/board.test.js', 'tools/intelligence/board_probe_live.js',
+  'tools/intelligence/stake.test.js', 'tools/intelligence/stake_sql.test.js',
+  'tools/intelligence/validate_staking.js', 'tools/intelligence/staking_validation.test.js',
 ];
 let bad = 0;
 for (const f of JS) {

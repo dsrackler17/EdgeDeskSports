@@ -629,3 +629,110 @@ held-out evaluation the postmortem names.
 
 **Slice 6 — UFC and tennis adapters** over the existing `ufc.*` / `wta.*`
 schemas and `lib/ufc_research.js`, `lib/tennis_research.js`.
+
+## 14. Slice 8 — the staking engine (the best bet, and how much of a unit)
+
+**What was broken.** The board could rank an opportunity and could not say
+how much of one it was. Every phrasing a reader actually uses — "how many
+units?", "build my card", "what's most mispriced?", "is the spread or the
+moneyline better?", "should I bet the over or the under?" — reached either a
+generic answer or the board with `no_bankroll_assumption` printed under it,
+and the one number people were asking for was the one number nothing in the
+stack produced. Worse, the only place a unit size could have come from was the
+writing model, which is exactly where it must never come from.
+
+**The kernel (`supabase/functions/edgedesk_ai/_stake.js`, `EDSTAKE`, inlined
+like the others).** Deterministic, dependency-free, and it computes no
+probability of its own: every probability, fair price and line is read from
+EDINTEL or EDPRICE, which own them.
+
+| step | owns |
+|---|---|
+| `settings` | the reader's policy from `bankroll_settings`, every field with its SOURCE (stored / deployment / default). The base unit has a default ($25); **a bankroll does not**. An unknown bankroll costs the dollar figure and never the unit figure, and `dollars_note` says which. An incoherent stored policy (a single cap above the game cap) is reported, not silently obeyed. |
+| `noVig` | the no-vig probability from BOTH sides of the SAME market at the SAME number. One side is refused with the reason, because the break-even at a single offered price is vig-inflated and must never reach an edge calculation. |
+| `reliability` | a score in [0.05, 0.95] from eight named, weighted components — the calibration record for that sport and market, the effective sample behind it, data completeness, price freshness, book agreement (the decision layer's own confirmation verdict, never a count of quote objects), availability certainty, distribution stability, model-version validation. Every component, its weight, its value and its input are stored with the recommendation. The score is never 1: a reliability of 1 would be a claim of certainty. |
+| `conservativeProbability` | the number staking uses, and the only one. An empirical lower bound where one is handed in; otherwise the fair line's own standard error pushed through the same cover curve (a real lower confidence bound from the same held-out residuals); otherwise `0.50 + (calibrated − 0.50) × reliability`, with the method named in the output. |
+| `expectedValue` | `EV = (p × d) − 1` at the exact executable price with the conservative probability, pushes returning the stake, plus `model_edge`, `conservative_edge`, `expected_profit_per_unit` and the fair decimal and American odds. |
+| `kelly` → `roundUnits` → `tierFor` | `b = d − 1`, `full = ((b·p) − q)/b`, `fractional = max(0, full × multiplier)`; dollars from the bankroll when it is on file, units from the stated one-unit-is-1%-of-bankroll convention when it is not (a convention, not an assumed bankroll, and it is printed). Then every cap, then **rounded DOWN** to a permitted 0.25 unit. Below 0.25u is 0u. PASS / SMALL / STANDARD / STRONG / MAX MODEL POSITION. |
+| `capsFor` | max single, the validation tier's own ceiling, the reliability ceiling, and game / team / daily / weekly less what is already staked. A cap that TRIMS is not a gate that refuses: 0.75u already on a game leaves 0.50u of a 1.25u cap, and 0.50u is the answer. Only a cap that leaves nothing is a PASS, and the cap is named. |
+| `GATES` | sixteen named conditions, tested in the printed order, the first deciding the status: stale price, no executable quote, unverifiable odds, thin market, a market in SHADOW, no calibration, an unvalidated model version, completeness under the floor, an unresolved starter, an inferred input, reliability under the floor, non-positive conservative EV, a line past the playable price, an exposure cap, a size under the minimum. Every other gate that fired is still reported. |
+| `exposureLedger` / `correlations` | pending singles, pending parlay legs and already-submitted positions in one ledger, by game, team, sport, day and week in the reader's own zone. A total is exposure to BOTH teams, because one game script decides it. Duplicate selections, opposing positions, same-game pairs and shared teams are NAMED rather than given a made-up coefficient. |
+| `bestMarket` | the six markets of one game ranked by **conservative EV after uncertainty and the caps** — never by raw model disagreement — with the primary, a secondary only when it independently qualifies inside the game cap, and why each other market lost. |
+| `alternates` | a captured, executable quote at another number, with the price, probability and EV differences. A point on a cover curve that no book is offering is not an alternative and is not shown as one. |
+| `buildCard` | two passes: every candidate against the opening ledger so the ranking is not an artifact of commit order, then commit in ranked order against a live ledger so each accepted position is visible to the next one's caps. Portfolio rules remove the lower-EV duplicate, refuse an opposing position, and hold a second market on a game that already has one. |
+| `buildParlay` | off unless asked for or enabled. Every leg clears every single-wager gate on its own, no leg is already a single, no team is reused, one leg per game, at most three legs, stake 0.10u–0.25u. **The combined price must be the book's own**: EdgeDesk will not multiply the leg prices, states no combined probability and no parlay EV, and says so. |
+| `render` / `promptBlock` / `criticExtras` / `records` | the deterministic BEST BET / THE CARD / NO BET answer; the block the model writes from; eleven checks; and one write-once audit row per position, PASS included. |
+
+**The validation mode.** `football/validation/staking_<sport>.json` carries a
+MODE per market — BET, SHADOW or RESEARCH_ONLY — and `EDSTAKE` refuses to
+stake a MODEL_BLEND candidate in a market the walk-forward did not release.
+Absence of the artifact is not a block (the tier caps already govern); a
+registered SHADOW is a decision and is obeyed. It governs the model path
+only: a market-de-vig price is not what that file graded, and its record is
+the CLV ledger.
+
+**The database (`supabase/bankroll_and_stakes.sql`).** `bankroll_settings`
+(one mutable row per reader, RLS, coherence enforced by check constraints so
+a single cap cannot exceed the game cap), `stake_recommendations` (write-once,
+no-delete, no-lookahead by trigger; a BET cannot be recorded at zero units and
+a PASS cannot be recorded with a stake) and `stake_recommendation_responses`
+(append-only, separate, so recording what a reader did can never rewrite what
+EdgeDesk said). Views: `stake_recommendation_grades` joins the close by
+`sig_key` and carries profit at the recommended size **beside a flat 0.5u and
+a flat 1u on the same selections**; `stake_engine_scorecard` groups them with a
+sample floor; `stake_pass_reasons` counts a pass like a result;
+`stake_open_exposure` is what the engine reads back so the caps see more than
+this turn.
+
+**The handler.** `buildStakeCard` reads the policy and the open exposure under
+the caller's own token (a missing settings row is a NORMAL state), loads the
+staking validation as a budget-free artifact, and sizes every board turn — not
+only when the reader said "units", because a best-bets answer that cannot say
+how much is not an answer to the question people ask. A single-game staking
+question is sized from the pricing kernel's own sides. The prompt gains
+`STAKE_CONTRACT` and the staking block above every other block; `stakeCritic`
+runs on the prose the model actually wrote (not on another critic's
+replacement) and a FAIL swaps in EdgeDesk's own rendering;
+`publishStakeRecords` writes the trail with `on_conflict=recommendation_id`, so
+a retry cannot double-write. `EDGEDESK_STAKING=0` restores the r16 answer.
+`?probe=1 → staking_kernel` reports the caps, the gates, the reliability
+weights and the last write.
+
+**The panel.** `stakeAnswerHTML` renders the sized positions (selection,
+price, all three probabilities, EV, reliability, Kelly, the exposure after the
+wager against each cap, the playable-through price, the reason, the main risk,
+the invalidation conditions and any correlation), the NO BET block with the
+count of markets evaluated and the strongest research candidate's specific
+reason, the positive-value-no-stake list, the per-game market comparison, and
+the bankroll editor when no bankroll is on file. `wantsBoard` routes the
+staking vocabulary to the desk.
+
+**Walk-forward validation (`tools/intelligence/validate_staking.js`).** The
+real kernel is run over the closing-line archives, separately by sport and
+market, one held-out season at a time, with the rating line, the blend, the
+residual sigma and the tier all fitted on seasons BEFORE the scored one. It
+reports the record, profit at the engine's sizes against flat 0.5u and flat
+1u on the same selections at the same prices, maximum drawdown per arm, Brier
+and log loss on both the calibrated and the conservative probability, CLV in
+points at the opener, and a shrinkage ablation. At build time **no market
+earned BET**: the NFL spread and total are SHADOW and both college markets are
+RESEARCH_ONLY, with the numbers and the reason in the artifact. The caveats
+are in the file, not in a footnote: the rating line is not the shipped
+football engine (its replay needs feeds that are not committed), the total arm
+uses a deliberately weak model, prices are the consensus close, and a backtest
+cannot reproduce quote freshness or availability certainty.
+
+**Proof.** `tools/intelligence/stake.test.js` (275 assertions: the odds
+arithmetic, no-vig refusal, the reliability weights, the three conservative
+methods, Kelly including a negative one, rounding down, every cap, every gate,
+the bankroll states, the portfolio rules, best-market selection, the parlay
+policy, the ask router, the audit trail and its idempotency, the critic, the
+board adapter and the SHADOW mode),
+`tools/intelligence/staking_validation.test.js` (58 assertions: the regression,
+the sign conventions against a hand-worked game, the tier rules, drawdown, the
+walk-forward's separation and the shipped artifacts),
+`tools/intelligence/stake_sql.test.js` (63 assertions against a throwaway
+PostgreSQL: immutability, no-delete, no-lookahead, the two size constraints,
+the caps' coherence, the grades and the baselines, append-only responses, RLS),
+the `staking` family in `evals.test.js` (38 assertions through the real
+handler) and the staking panel in `structured_ui.test.js`.
