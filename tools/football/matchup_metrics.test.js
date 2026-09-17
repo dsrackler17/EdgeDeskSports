@@ -69,18 +69,7 @@ chk('every NFL club is present', art.counts.nfl_clubs === 32, art.counts.nfl_clu
 const nfl = Object.values(art.nfl.teams).find((x) => x.injuries && x.injuries.players.length);
 chk('the official injury report is carried per club', nfl && nfl.injuries.official === true && nfl.injuries.players.every((p) => p.name));
 /* A GAME STATUS IS NOT PUBLISHED EVERY DAY OF THE WEEK.
-   Out / Doubtful / Questionable is assigned on the FINAL injury report,
-   normally Friday; a Wednesday or Thursday report is practice participation
-   only, with status null on almost every row. Demanding a status from one
-   arbitrary club therefore failed mid-week on a feed that was behaving
-   correctly — 4 of 32 clubs carried any status when this was written, 199 of
-   207 rows were null, and the club the `find` lands on had none.
 
-   The claim the desk actually needs is league-wide and does not move with the
-   day of the week: every row is identified and carries a designation of some
-   kind, and any status that IS published is one of the three real ones —
-   never invented, and never a practice designation promoted into a game
-   status. Both of those still fail loudly on a builder that breaks. */
 const nflRows = Object.values(art.nfl.teams).flatMap((x) => (x.injuries ? x.injuries.players : []));
 chk('every injury row is identified and carries a designation', nflRows.length > 0 && nflRows.every((p) => p.name && (p.status || p.practice)), nflRows.filter((p) => !(p.name && (p.status || p.practice))).slice(0, 3));
 chk('a published game status is one of the three real ones, never a practice designation', nflRows.filter((p) => p.status).every((p) => /^(Out|Doubtful|Questionable)$/.test(String(p.status))), [...new Set(nflRows.filter((p) => p.status).map((p) => p.status))]);
