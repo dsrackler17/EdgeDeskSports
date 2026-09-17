@@ -1477,7 +1477,20 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk('the committed card reconciles with its own count',
       slate.games.length === slate.counts.slate, { games: slate.games.length, counts: slate.counts.slate });
     chk('the committed card still carries a full week of football',
-      slate.games.length >= 40 && slate.games.length <= 140, slate.games.length);
+      slate.games.length >= 40, slate.games.length);
+    /* THE CEILING WAS THE SAME TRAP AS THE FLOOR, AND IT SPRANG THE SAME WAY.
+       `<= 140` was a magic constant too — the slate grew to 146 games across a
+       normal mid-September window, reconciling with its own count, and got
+       reported as a regression. A count cap only ever approximated what it was
+       guarding against, which is an ingest that runs away or doubles up. Guard
+       those directly, against the artifact's OWN declared window, so nothing
+       here moves with the calendar. */
+    chk('and every game on it falls inside the window it declares',
+      slate.games.every((g) => { const t = Date.parse(g.kickoff); return t >= slate.window.from && t <= slate.window.to; }),
+      slate.games.filter((g) => { const t = Date.parse(g.kickoff); return !(t >= slate.window.from && t <= slate.window.to); }).slice(0, 3).map((g) => g.kickoff));
+    chk('and carries each game exactly once',
+      new Set(slate.games.map((g) => g.game_id)).size === slate.games.length,
+      slate.games.length - new Set(slate.games.map((g) => g.game_id)).size);
 
     /* cfb.lines.spread is a BETTING number, the convention the artifact
        publishes model_home_line in, so a correctly stored row IS that number.
