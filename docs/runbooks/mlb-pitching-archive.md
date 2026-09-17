@@ -108,6 +108,56 @@ If a refusal is wrong, fix the dataset and import again.
 
 ---
 
+## The games board and the game brief
+
+Research → **Baseball** opens on **Games**: every MLB game on EdgeDesk's
+three-day ET card, earliest first, each row opening a full research brief. The
+**Season board**, **Clubs** and **Compare** segments beside it are the archive
+surface and are unchanged.
+
+The board and the brief read the tables EdgeDesk already ingests — the archive
+is one source among several, and **not a required one**:
+
+| Section | Read from |
+|---|---|
+| Schedule, probables, park, weather, records | `mlb_game_cards` |
+| Per-game pitcher and offense profile | `pitcher_features`, `offense_features`, joined through `games.game_id` |
+| Season to date | `team_season`, `pitcher_season` |
+| Career line behind a named starter | `mlbhist.pitcher_overview` + `pitcher_seasons` |
+| Bullpen | `mlb_bullpen_taxed`, `mlb_bullpen_team` |
+| Market | the signals capture |
+
+**A database with no `mlbhist` installed still lists every game and still opens
+every brief.** Only the career row is absent then, and the brief says why.
+
+What the brief will not do, each enforced by a test:
+
+* **It publishes no projection.** Baseball has no validated EdgeDesk model —
+  there is no walk-forward record for it anywhere in this repository — so the
+  projection section is always unpriced. A `model_predictions` row for the game
+  appears as an *unvalidated* probability, labelled as one, and is never turned
+  into a fair line or an edge.
+* **It never promotes a probable starter.** `mlb_game_cards` has no confirmed
+  state, so neither does the page.
+* **It never blends the archive with this season.** The career line and the
+  season line are separate rows with separate labels. Where the two disagree
+  the brief says in words that they are two separately measured periods.
+* **It refuses an ambiguous name.** Two pitchers sharing a folded name leave
+  the career line off with the count printed, rather than one being picked.
+* **It names every gap.** A starter not posted, a club missing from
+  `team_season`, a bullpen with no flagged arms, a park with no wind and a game
+  that cannot be joined to `games` each appear under *What EdgeDesk could not
+  measure*. Park and weather are context beside the numbers, never an
+  adjustment inside them.
+
+A priced MLB card on the Edges board carries the same **Game brief** button,
+and `#research/baseball` deep links still open the archive surfaces.
+
+```bash
+npm run mlb:brief    # loader, builder and renderer against each other
+npm run mlb:ui       # the board and a brief in Chromium against a real database
+```
+
 ## Reading the panel's own diagnostics
 
 The Baseball panel publishes a build time — the moment an import was
@@ -185,6 +235,7 @@ npm run mlb:dataset   # the committed dataset, re-derived from its own numbers
 npm run mlb:sql       # the schema and the promote gate, on a real PostgreSQL
 npm run mlb:e2e       # the shipped importer over the real dataset, end to end
 npm run mlb:ai        # routing, retrieval, the eight tools, the critic
+npm run mlb:brief     # the games board and the game brief, end to end
 npm run mlb:ui        # the research surface in Chromium against a real database
 npm run mlb:refresh:test   # the refresh path: provisional flags, staging, publish
 npm run mlb:features:test  # the as-of property, proved by corrupting the future
