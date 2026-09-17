@@ -424,10 +424,33 @@ jobs:
           # NOTE, not fixed here because it is not this change's to widen:
           # cards.log, season.log and offline.log are produced by steps above
           # and are still absent from this list.
+          #
+          # AND IT SAYS WHAT IT REJECTED. `grep -q` exits 1 and prints nothing,
+          # so for a long time this step failed as a bare "exit code 1" with the
+          # runner's own service-container log — tens of thousands of lines of
+          # PostgreSQL statements — sitting between it and anyone reading back
+          # through the output. Which suite was missing its PASS line could not
+          # be read off the run at all. Now it names the file and shows the tail
+          # that failed to satisfy it.
+          bad=0
           for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
-            if grep -q '^SKIP' "$f"; then
-              echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
-              exit 1
+            if [ ! -f "$f" ]; then
+              echo "::error::REFUSING: $f was never written — the step that produces it did not run"
+              bad=1
+              continue
             fi
-            grep -q '^PASS' "$f"
+            if grep -q '^SKIP' "$f"; then
+              echo "::error::REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
+              grep -m3 '^SKIP' "$f" | sed 's/^/    /'
+              bad=1
+              continue
+            fi
+            if ! grep -q '^PASS' "$f"; then
+              echo "::error::REFUSING: $f carries no PASS line, so nothing proves its suite finished"
+              echo "  last lines of $f:"
+              tail -n 6 "$f" | sed 's/^/    /'
+              bad=1
+            fi
           done
+          if [ "$bad" != "0" ]; then exit 1; fi
+          echo "every listed suite reported PASS"
