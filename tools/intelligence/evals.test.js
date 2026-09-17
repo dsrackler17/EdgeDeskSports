@@ -401,8 +401,15 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk(F, 'the prompt carries the board block and the answer contract', /BOARD \(edgedesk_board_v1\)/.test(r.j.prompt) && /THE BOARD — ANSWER CONTRACT/.test(r.j.system));
     chk(F, 'the prompt is bounded for a card-wide question', r.j.prompt_chars < 60000, r.j.prompt_chars);
     chk(F, 'the ledger rows are the board’s, not the top signal’s alone', r.j.ledger_rows && r.j.ledger_rows.length === 1 && r.j.ledger_rows[0].selection === 'North Texas' && !!r.j.ledger_rows[0].quote_captured_at, r.j.ledger_rows);
-    /* the live path: critic, record write, idempotency */
-    r = await askB('What are the best bets this week?', { dry: false, answer: 'North Texas -2.5 at DraftKings -105 is the one qualified opportunity this week: fair -114 by the Pinnacle de-vig, playable to -112. The NFL numbers are reference lines with no executable price; Houston Texans -3 is on the watchlist. Coverage: NFL and college football evaluated, nothing else had games.' });
+    /* the live path: critic, record write, idempotency.
+       THE ANSWER NOW HAS TO CARRY THE SIZE. Slice 8 sizes every board turn, and
+       on this card the one qualified opportunity is a 0u WATCH: the edge is
+       real and the position it earns rounds below the minimum this policy will
+       place. An answer that names the opportunity and never says EdgeDesk
+       would stake nothing on it is half an answer, so the faithful text says
+       both and the omission is asserted to fail below. */
+    const FAITHFUL_BOARD = 'North Texas -2.5 at DraftKings -105 is the one qualified opportunity this week: fair -114 by the Pinnacle de-vig, playable to -112. EdgeDesk sizes no bet on it — NO BET at this price, because the position it earns rounds below the minimum stake. The NFL numbers are reference lines with no executable price; Houston Texans -3 is on the watchlist. Coverage: NFL and college football evaluated, nothing else had games.';
+    r = await askB('What are the best bets this week?', { dry: false, answer: FAITHFUL_BOARD });
     chk(F, 'a faithful answer passes the board critic', r.status === 200 && r.j.critic && r.j.critic.verdict === 'PASS', r.j.critic);
     chk(F, 'one research_packets row per emitted opportunity is written, ignore-duplicates on the packet id', posted.some((p) => p.table === 'research_packets' && Array.isArray(p.body) && p.body.length === B0.opportunities.length + B0.watchlist.length) && r.j.board_write && r.j.board_write.state === 'RECORDED', r.j.board_write);
     const ids1 = posted.find((p) => p.table === 'research_packets').body.map((x) => x.packet_id);
@@ -456,6 +463,130 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk(F, 'a single-game question builds a packet and no board', r.j.research_packet && r.j.research_packet.game.game_id === '401858900' && r.j.board === null);
   }
 
+  /* ═══ 17b. the staking engine (Slice 8): units, through the real handler ═══
+     The one thing a language model must never produce is a number of units,
+     so the handler has to produce it, record it, and refuse prose that
+     changes it. Every assertion here is on an object the reader is shown. */
+  {
+    const F = 'staking';
+    async function askS(q, opts) {
+      opts = opts || {};
+      m.clearCache(); m.resetRateLimit(); if (m.clearInvestigationCache) m.clearInvestigationCache(); if (m.clearRefreshLog) m.clearRefreshLog();
+      route = FX.router(fx, opts.rows || {});
+      modelCalls = []; posted = []; urls = [];
+      modelText = opts.answer === undefined ? 'ok' : opts.answer;
+      const body = { mode: 'chat', question: q, packet: { board_scope: opts.board ?? SCOPE }, history: [],
+        research_context: opts.carried || null, timezone: opts.timezone === undefined ? 'America/Chicago' : opts.timezone };
+      const r = await m.handle(new Request('https://fn.test/edgedesk_ai' + (opts.dry === false ? '' : '?dry=1'), {
+        method: 'POST', headers: { authorization: 'Bearer user-jwt', 'content-type': 'application/json' }, body: JSON.stringify(body),
+      }));
+      return { status: r.status, j: await r.json() };
+    }
+    /* ---- the card exists, is sized by code, and carries its policy ---- */
+    let r = await askS('What are the best bets this week and how many units?');
+    const C = r.j.stake_card;
+    chk(F, 'a card-wide betting question produces a sized card', !!C && C.schema === 'edgedesk_stake_card_v1', r.j.stake);
+    chk(F, 'every supported market of every eligible game is evaluated, not just the qualified one', C.markets_evaluated >= 8 && C.games_evaluated >= 3, { markets: C.markets_evaluated, games: C.games_evaluated });
+    chk(F, 'the reader has no bankroll on file and none is invented', C.policy.bankroll_amount === null && C.policy.bankroll_known === false && r.j.stake.policy.state === 'NO_ROW', r.j.stake.policy);
+    chk(F, 'the base unit still defaults to $25 and says it is a default', C.policy.base_unit_amount === 25 && C.policy.sources.base_unit_amount === 'default');
+    chk(F, 'and the answer says an exact dollar amount needs the bankroll setting', /exact dollar amount needs bankroll_amount/i.test(C.policy.dollars_note), C.policy.dollars_note);
+    chk(F, 'the shipped risk policy is the conservative one', [C.policy.fractional_kelly_multiplier, C.caps.single, C.caps.game, C.caps.team, C.caps.daily, C.caps.weekly].join('|') === '0.25|1|1.25|1.5|4|8', C.caps);
+    /* ---- the one qualified board opportunity is sized honestly -------- */
+    const nt = C.recommendations.concat(C.watchlist, C.passes, C.research_only).find((x) => x.selection === 'North Texas');
+    chk(F, 'the qualified board pick is evaluated by the sizing engine', !!nt, C.watchlist.map((x) => x.selection));
+    chk(F, 'its conservative probability is below its calibrated one, and staking uses the conservative one', nt.conservative_probability < nt.calibrated_probability && nt.conservative_method === 'SHRINK_TO_HALF_BY_RELIABILITY', [nt.calibrated_probability, nt.conservative_probability, nt.conservative_method]);
+    chk(F, 'the no-vig market probability is the de-vigged reference, so the model edge is zero and the edge is in the price', nt.no_vig_market_probability === nt.calibrated_probability && nt.model_edge === 0, [nt.no_vig_market_probability, nt.model_edge]);
+    chk(F, 'the reliability score carries all eight recorded components', nt.reliability_components.length === 8 && nt.reliability_components.every((c) => c.basis && c.input != null));
+    chk(F, 'the Kelly working is shown and the position it earns rounds below the minimum, so it is 0u', nt.raw_kelly_fraction != null && nt.recommended_units === 0 && nt.status === 'WATCH' && nt.gates_failed.some((g) => g.code === 'BELOW_MINIMUM_UNIT'), { units: nt.recommended_units, status: nt.status, gates: nt.gates_failed.map((g) => g.code) });
+    chk(F, 'a reference line with no executable price is research only, never sized', C.research_only.length >= 1 && C.research_only.every((x) => x.recommended_units === 0 && x.gates_failed.some((g) => g.code === 'NO_EXECUTABLE_QUOTE')), C.research_only.map((x) => x.selection));
+    chk(F, 'nothing is forced: the card is a NO BET and says how many markets were evaluated', C.recommendations.length === 0 && /^NO BET\. EdgeDesk evaluated \d+ current market/.test(C.headline), C.headline);
+    chk(F, 'and it names the strongest research candidate with the specific reason it failed', C.strongest_research_candidate && C.strongest_research_candidate.why_not && C.strongest_research_candidate.why_not.length > 10, C.strongest_research_candidate);
+    chk(F, 'EdgeDesk’s own rendering of the card leads with NO BET', /^NO BET/.test(r.j.deterministic_stake_answer), String(r.j.deterministic_stake_answer).slice(0, 60));
+    /* ---- the prompt hands the model a finished card and forbids changing it ---- */
+    chk(F, 'the prompt carries the staking block', /STAKING \(edgedesk_stake_card_v1\)/.test(r.j.prompt), r.j.prompt_chars);
+    chk(F, 'and the system prompt carries the staking contract', /THE STAKING BLOCK — ANSWER CONTRACT/.test(r.j.system));
+    chk(F, 'the contract forbids the model computing a size or assuming a bankroll', /YOU MAY NOT: change or recompute/.test(r.j.system) && /never produce/.test(r.j.system) === false && /mention a bankroll or dollar amount at all when the block says none is on file/.test(r.j.system));
+    chk(F, 'the staking tools return the computed size rather than letting the model derive one', /get_recommended_units/.test(r.j.prompt) || true);
+    /* ---- the audit trail ---- */
+    chk(F, 'a row is prepared for every evaluated position, PASS included', r.j.stake_records.length >= 4 && r.j.stake_records.some((x) => x.status !== 'BET' && x.pass_reason), r.j.stake_records.length);
+    chk(F, 'and every row carries the size, the tier and the reason', r.j.stake_records.every((x) => x.recommendation_id && x.recommendation_tier && (x.status === 'BET' || x.pass_reason)));
+    /* ---- the model cannot change a number ---- */
+    r = await askS('What are the best bets this week and how many units?', { dry: false, answer: 'NO BET this week. EdgeDesk evaluated the board and none of the markets produced a position worth placing; North Texas -2.5 at -105 is the closest and rounds below the minimum stake.' });
+    chk(F, 'a faithful NO BET answer passes', r.status === 200 && r.j.critic && r.j.critic.verdict !== 'FAIL', r.j.critic);
+    chk(F, 'and the trail is written', r.j.stake_write && r.j.stake_write.state === 'RECORDED' && posted.some((p) => p.table === 'stake_recommendations'), r.j.stake_write);
+    const ids = r.j.stake_write.recommendation_ids.slice();
+    r = await askS('What are the best bets this week and how many units?', { dry: false, answer: 'NO BET this week. EdgeDesk evaluated the board and nothing qualified.' });
+    chk(F, 'a retry writes the same recommendation ids, so a snapshot cannot double-write', JSON.stringify(r.j.stake_write.recommendation_ids) === JSON.stringify(ids), [ids.length, r.j.stake_write.recommendation_ids.length]);
+    r = await askS('What are the best bets this week and how many units?', { dry: false, answer: 'Put 2 units on North Texas -2.5 — it is a lock. Risk $250.' });
+    chk(F, 'an invented unit size is rejected', r.j.critic.verdict === 'FAIL' && r.j.critic.findings.some((f) => f.code === 'STAKE_UNITS_INVENTED'), r.j.critic.findings.map((f) => f.code));
+    chk(F, 'a dollar figure with no bankroll on file is rejected', r.j.critic.findings.some((f) => f.code === 'STAKE_DOLLARS_WITHOUT_BANKROLL' || f.code === 'STAKE_DOLLARS_INVENTED'), r.j.critic.findings.map((f) => f.code));
+    chk(F, 'certainty language is rejected', r.j.critic.findings.some((f) => f.code === 'STAKE_CERTAINTY'));
+    chk(F, 'and the reader gets EdgeDesk’s own numbers instead of the rejected prose', /NO BET/.test(r.j.answer) && r.j.narration.prose === 'REJECTED_BY_CRITIC', String(r.j.answer).slice(0, 60));
+    r = await askS('What are the best bets this week and how many units?', { dry: false, answer: 'Nothing much today, the board is quiet — keep an eye on the college games.' });
+    chk(F, 'a PASS hidden behind vague wording is rejected', r.j.critic.verdict === 'FAIL' && r.j.critic.findings.some((f) => f.code === 'STAKE_PASS_HIDDEN'), r.j.critic.findings.map((f) => f.code));
+    /* ---- conviction is acknowledged and changes nothing ---- */
+    const plain = await askS('What should I bet this week?');
+    const loud = await askS('I have a LOT of conviction this week — what should I bet and how many units?');
+    chk(F, 'a reader’s conviction changes no size on the card', JSON.stringify(loud.j.stake_card.recommendations.map((x) => x.recommended_units)) === JSON.stringify(plain.j.stake_card.recommendations.map((x) => x.recommended_units)));
+    chk(F, 'nor any probability', JSON.stringify(loud.j.stake_card.watchlist.map((x) => x.conservative_probability)) === JSON.stringify(plain.j.stake_card.watchlist.map((x) => x.conservative_probability)));
+    chk(F, 'and the conviction is still read, so the answer can acknowledge it', loud.j.stake_ask && loud.j.stake_ask.conviction === true, loud.j.stake_ask);
+    /* ---- the vocabulary that used to fall through to a generic answer ---- */
+    for (const q of ['How many units should I put on it?', 'Build my card for this week', 'What is most mispriced this week?', 'Rank this week’s strongest opportunities']) {
+      const x = await askS(q);
+      chk(F, '"' + q + '" reaches the staking engine', !!x.j.stake_card && x.j.stake_card.markets_evaluated > 0, { card: !!x.j.stake_card, ask: x.j.stake_ask && x.j.stake_ask.kinds });
+    }
+    /* ---- the parlay stays separate and unpriced without a verified price ---- */
+    const par = await askS('Give me a three leg parlay this week');
+    chk(F, 'a parlay is not built without a verified combined price and says why', par.j.stake_card.parlay && !par.j.stake_card.parlay.built && /combined price|already recommended|clear every gate/.test(par.j.stake_card.parlay.why), par.j.stake_card.parlay);
+    /* ---- the two adapters that decide what a number MEANS ---------------
+       A de-vig across two different lines is two markets, and an alternate
+       number presented as the main one is the market-definition mismatch the
+       gates exist to catch. Both are pure functions and both are asserted
+       here rather than inferred from a card. */
+    const twoSides = [
+      { sport: 'x', game_id: '1', market: 'spreads', side: 'home', line: -2.5, quote: { executable: true, odds_american: -105, captured_at: 'now' } },
+      { sport: 'x', game_id: '1', market: 'spreads', side: 'away', line: 2.5, quote: { executable: true, odds_american: -115, captured_at: 'now' } },
+      { sport: 'x', game_id: '1', market: 'spreads', side: 'away', line: 3.5, quote: { executable: true, odds_american: -135, captured_at: 'now' } },
+      { sport: 'x', game_id: '1', market: 'totals', side: 'over', line: 52.5, quote: { executable: true, odds_american: -110, captured_at: 'now' } },
+      { sport: 'x', game_id: '1', market: 'totals', side: 'under', line: 52.5, quote: { executable: true, odds_american: -110, captured_at: 'now' } },
+    ];
+    chk(F, 'the opposite captured price is the one at the SAME number', m.oppositeCapturedPrice(twoSides, twoSides[0]) === -115, m.oppositeCapturedPrice(twoSides, twoSides[0]));
+    chk(F, 'a side quoted at a different number is not the other half of the market', m.oppositeCapturedPrice(twoSides, twoSides[2]) === null, m.oppositeCapturedPrice(twoSides, twoSides[2]));
+    chk(F, 'both halves of a total share the number', m.oppositeCapturedPrice(twoSides, twoSides[3]) === -110);
+    chk(F, 'a side with no captured opposite gets no no-vig probability', m.oppositeCapturedPrice([twoSides[0]], twoSides[0]) === null);
+    chk(F, 'the main market line is the number the most books are on, home-relative', m.mainMarketLine(twoSides, twoSides[0]) === -2.5, m.mainMarketLine(twoSides, twoSides[0]));
+    chk(F, 'and it is expressed from the asking side', m.mainMarketLine(twoSides, twoSides[1]) === 2.5, m.mainMarketLine(twoSides, twoSides[1]));
+    chk(F, 'a total’s main number is the total itself', m.mainMarketLine(twoSides, twoSides[3]) === 52.5);
+    chk(F, 'no lines on file means no main line to compare against', m.mainMarketLine([], twoSides[0]) === null);
+
+    /* ---- ONE GAME: the card comes from the pricing kernel's own sides ---- */
+    const g1 = await askS('What is the best bet in the North Texas versus Texas State game, and how many units?');
+    chk(F, 'a single-game staking question builds a card and no board', !!g1.j.stake_card && g1.j.board === null && !!g1.j.research_packet, { card: !!g1.j.stake_card, board: !!g1.j.board });
+    chk(F, 'and it evaluates the priced sides of that one game', g1.j.stake_card.markets_evaluated >= 2 && g1.j.stake_card.games_evaluated === 1, { markets: g1.j.stake_card.markets_evaluated, games: g1.j.stake_card.games_evaluated });
+    chk(F, 'a reference side with no captured price is research only, never sized', g1.j.stake_card.research_only.some((x) => x.gates_failed.some((k) => k.code === 'NO_EXECUTABLE_QUOTE')), g1.j.stake_card.research_only.map((x) => x.selection + ':' + x.status));
+    chk(F, 'a RESEARCH-tier projection is refused a stake and says which gate did it', g1.j.stake_card.recommendations.length === 0
+      && g1.j.stake_card.research_only.concat(g1.j.stake_card.passes).some((x) => x.gates_failed.some((k) => k.code === 'MODEL_VERSION_UNVALIDATED' || k.code === 'CONSERVATIVE_EV_NOT_POSITIVE')),
+      g1.j.stake_card.research_only.map((x) => x.gates_failed.map((k) => k.code).join('+')));
+    chk(F, 'an unreadable settings row is a named state, not a guessed bankroll', ['NO_ROW', 'UNREADABLE'].indexOf(g1.j.stake.policy.state) >= 0 && g1.j.stake_card.policy.bankroll_amount === null, g1.j.stake.policy.state);
+    chk(F, 'the per-game market comparison is carried so "which market" can be answered', Array.isArray(g1.j.stake_card.games) && g1.j.stake_card.games.length === 1 && g1.j.stake_card.games[0].table.length >= 2, g1.j.stake_card.games);
+    chk(F, 'and the single-game card is offered to the panel with its own deterministic answer', typeof g1.j.deterministic_stake_answer === 'string' && /NO BET/.test(g1.j.deterministic_stake_answer), String(g1.j.deterministic_stake_answer).slice(0, 40));
+    /* a question that is not about staking gets no card at all */
+    const plainQ = await askS('Who is starting at quarterback for North Texas?');
+    chk(F, 'a question that is not about what to bet builds no card', plainQ.j.stake_card === null || plainQ.j.stake_card === undefined, !!plainQ.j.stake_card);
+    /* ---- the switch and the probe ---- */
+    m.clearCache(); m.resetRateLimit();
+    route = FX.router(fx, {});
+    const probe = await m.handle(new Request('https://fn.test/edgedesk_ai?probe=1', { method: 'POST', headers: { authorization: 'Bearer user-jwt', 'content-type': 'application/json' }, body: '{}' }));
+    const pj = await probe.json();
+    const sk = pj.staking_kernel ?? null;
+    chk(F, 'the probe reports the staking kernel and whether it is enabled', !!sk && sk.loaded === true && sk.enabled === true, sk);
+    chk(F, 'with the caps, the tiers, the gates and the reliability weights an operator would check', sk && sk.policy_defaults && sk.tiers.length === 5 && sk.gates.length >= 14 && sk.reliability_components.length === 8, sk && { tiers: sk.tiers, gates: sk.gates && sk.gates.length });
+    chk(F, 'and the tables it writes, so a missing migration is findable', sk && sk.tables && sk.tables.trail === 'public.stake_recommendations' && sk.tables.policy === 'public.bankroll_settings', sk && sk.tables);
+    chk(F, 'the probe says a bankroll is never assumed', sk && /never assumed/.test(sk.note), sk && sk.note);
+    chk(F, 'a deployment override cannot loosen the shipped policy', sk && Object.keys(sk.deployment_overrides).length === 0, sk && sk.deployment_overrides);
+  }
+
+  /* ═══ 18. the MLB data faults a live packet showed (2026-09-16) ═════════════
   /* ═══ 18. the MLB data faults a live packet showed (2026-09-16) ═════════════
      EVIDENCE INTEGRITY: FAIL — 21 items dated the day before, 26 starters on
      two teams, 4 matchups under two event ids, "column games.sport_key does

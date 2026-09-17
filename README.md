@@ -140,10 +140,33 @@ board, and every emitted opportunity is snapshotted write-once with a
 deterministic id. `npm run intel:board` proves the kernel;
 `npm run intel:board:live` asks a deployment for its board.
 
+Slice 8 (the staking engine) answers the question the board could rank but
+not size: **how many units**. For every eligible game it evaluates every
+supported market, takes the no-vig probability from both sides of the same
+number, scores its own reliability from eight recorded components, shrinks the
+calibrated probability toward a coin flip by exactly how much is known, works
+out the expected value at the exact executable price, and then sizes a
+quarter-Kelly position and **rounds it down** through every cap — max single,
+the validation tier's own ceiling, and game, team, daily and weekly exposure
+read from what is already on the card. PASS is a normal, successful answer and
+is printed as one: "NO BET. EdgeDesk evaluated 16 current markets and none
+produced positive conservative expected value", with the strongest research
+candidate and the specific reason it failed. A bankroll is never assumed — with
+no setting on file the answer is in units and says an exact dollar amount needs
+one. Conviction, rivalry and revenge change nothing. Every position, PASS
+included, is written once to `stake_recommendations` with the price, the
+probabilities, the Kelly working, the exposure before and after and the reason,
+and graded against the close beside a flat 0.5u and a flat 1u on the same
+selections — because a sizing engine that does not beat flat staking is a
+decoration. Today it does not: `npm run stake:validate` keeps the NFL spread
+and total in SHADOW and both college markets in RESEARCH ONLY, and the desk
+says so. See `docs/runbooks/staking.md`.
+
 - `docs/intelligence-audit.md` — what was found before the change
 - `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
 - `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`
 - `npm run intel:test` — the kernel, the evaluation harness, the migrations
+- `npm run intel:stake` · `npm run stake:validate` — the sizing rules, and whether they beat flat staking
 
 ## The weekly research email
 Twice a week the same research goes out as an email nobody sends: **College

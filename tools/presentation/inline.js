@@ -107,6 +107,16 @@ const LIBS = [
     start: '/*__EDBOARD_START__*/', end: '/*__EDBOARD_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The staking layer (Slice 8): the bankroll policy, the reliability score,
+     the conservative probability, expected value at the executable price,
+     Kelly under every exposure cap, the portfolio rules, the card and the
+     parlay policy. Server-side only, like EDBOARD. */
+  {
+    name: 'EDSTAKE',
+    src: path.join(FN, '_stake.js'),
+    start: '/*__EDSTAKE_START__*/', end: '/*__EDSTAKE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The MLB historical query layer. ORDER MATTERS, for the same reason the
      FBS resolver above does: its host is _mlbhist.js, which is itself the
      source EDMLBHIST is copied FROM, so this must land before EDMLBHIST is

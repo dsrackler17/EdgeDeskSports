@@ -59,6 +59,10 @@ on:
         description: 'Apply supabase/research_packets.sql — the prediction ledger the desk snapshots every packet into (idempotent)'
         type: boolean
         default: false
+      apply_bankroll_and_stakes:
+        description: 'Apply supabase/bankroll_and_stakes.sql — the reader''s risk policy and the write-once trail of every position the sizing engine produced (idempotent)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -163,6 +167,16 @@ jobs:
           # Idempotent; research_packets_sql.test.js applies it twice against a
           # throwaway server and attacks it. Its last statement is a report.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/research_packets.sql
+
+      - name: Apply the bankroll and stake-trail migration
+        if: ${{ inputs.apply_bankroll_and_stakes && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent; stake_sql.test.js applies it twice against a throwaway
+          # server and attacks it. Its last statement is a report, and a row
+          # reading CHECK THIS is the thing to read before deploying anything.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/bankroll_and_stakes.sql
 
       - name: Say what is skipped, rather than leaving it unsaid
         if: always()

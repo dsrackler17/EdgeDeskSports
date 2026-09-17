@@ -128,6 +128,10 @@ jobs:
         run: node tools/intelligence/pricing.test.js
       - name: The board kernel (time zone, eligible slate, qualification, follow-ups, records, critic)
         run: node tools/intelligence/board.test.js
+      - name: The staking kernel (the conservative probability, Kelly under every cap, the portfolio rules, the critic)
+        run: node tools/intelligence/stake.test.js
+      - name: The staking validation's own arithmetic, and the sign conventions a backtest cannot get wrong quietly
+        run: node tools/intelligence/staking_validation.test.js
       - name: The closing-line-value scorecard grades in points and never claims a profit
         run: node tools/intelligence/clv.test.js
       - name: The deployment doctor never mistakes refused for absent
@@ -170,3 +174,5 @@ jobs:
         run: node tools/intelligence/ledger_sql.test.js
       - name: A recorded research packet cannot be edited, deleted or postdate kickoff
         run: node tools/intelligence/research_packets_sql.test.js
+      - name: A recorded stake cannot be edited or deleted, a BET cannot be zero units and a PASS cannot carry one
+        run: node tools/intelligence/stake_sql.test.js
