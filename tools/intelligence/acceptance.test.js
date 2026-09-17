@@ -625,12 +625,24 @@ const MLB_PACKET = {
     const nt = R('What do you think about North Texas vs Texas State this week?');
     chk('the browser resolves a named matchup off the published card',
       nt && nt.home_id === 'texasstate' && nt.away_id === 'northtexas', nt && [nt.away_team, nt.home_team]);
+    /* A PROGRAM'S GAME COUNT IN THE WINDOW IS NOT A CONSTANT, AND THIS
+       ASSERTED ONE. The ten-day lookahead spans one game week or two
+       depending on the day it is built. When it spans two, Texas State has
+       two games on the card and the resolver declines rather than guess which
+       one — deliberately, per `hits.length === 1`. The old assertion demanded
+       a resolution either way, so it failed the moment the window widened,
+       and it took the trap below with it: `!solo || ...` is vacuously true on
+       a null, which disarmed the check this whole incident turns on. Assert
+       the contract the resolver actually keeps, off the card's own count. */
+    const tsGames = games.filter((g) => g.home_id === 'texasstate' || g.away_id === 'texasstate');
     const solo = R('How does Texas State look this week?');
-    chk('and resolves a single named program to its one game',
-      solo && solo.home_id === 'texasstate', solo && [solo.away_team, solo.home_team]);
-    /* THE TRAP THE WHOLE INCIDENT TURNS ON. */
+    chk('and a single named program resolves to its game, or declines when the card shows two',
+      tsGames.length === 1 ? (solo && solo.home_id === 'texasstate') : solo === null,
+      { on_card: tsGames.length, resolved: solo && [solo.away_team, solo.home_team] });
+    /* THE TRAP THE WHOLE INCIDENT TURNS ON. Asserted on the name resolution
+       itself, which does not move with the window, so it cannot go vacuous. */
     chk('"Texas State" is never read as "Texas"',
-      !solo || !/rangers/i.test(JSON.stringify(solo)), solo);
+      EI.resolveTeam('Texas State', ix).key === 'texasstate', EI.resolveTeam('Texas State', ix));
     const oh = R('What about Miami (OH) vs Cincinnati?');
     chk('Miami (OH) reaches Cincinnati, not Miami Florida',
       oh && oh.away_id === 'miamioh', oh && [oh.away_team, oh.home_team]);
