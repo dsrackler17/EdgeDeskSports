@@ -358,6 +358,43 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/intelligence/mlb_history.test.js | tee mlb_ai.log
 
+      # THE OFFENSIVE ARCHIVE: the contract, the import and the as-of features,
+      # each against this same real PostgreSQL. The import suite runs BOTH
+      # importers over BOTH committed datasets so the two-way join — one MLB
+      # person id in two archives — is exercised against real rows.
+      - name: Run the MLB offensive SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/mlb_offense_sql.test.js | tee mlb_off_sql.log
+
+      - name: Run the MLB offensive dataset check
+        run: node tools/mlb/offense_dataset.js | tee mlb_off_dataset.log
+
+      - name: Run the MLB offensive import suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/offense_import.test.js | tee mlb_off_import.log
+
+      - name: Run the MLB offensive as-of feature suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/offense_features.test.js | tee mlb_off_features.log
+
+      - name: Run the MLB offensive refresh suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/offense_refresh.test.js | tee mlb_off_refresh.log
+
+      - name: Run the MLB offensive intelligence suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/intelligence/mlb_offense.test.js | tee mlb_off_ai.log
+
       # THE MLB GAMES BOARD AND THE GAME BRIEF. The shipped loader in app.html,
       # the shipped builder, and the shipped renderer in _presentation.js, run
       # against each other — so a payload that no longer fits the renderer's
@@ -387,7 +424,7 @@ jobs:
           # NOTE, not fixed here because it is not this change's to widen:
           # cards.log, season.log and offline.log are produced by steps above
           # and are still absent from this list.
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1
