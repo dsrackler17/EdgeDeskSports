@@ -1,18 +1,41 @@
 {
  "schema": "edgedesk_staking_validation_v1",
  "sport": "americanfootball_nfl",
- "generated_at": "2026-09-17T13:51:42.420Z",
+ "generated_at": "2026-09-17T14:24:52.104Z",
  "frame": {
   "archive": "football/pricing/lines_nfl.json",
   "games": 7292,
   "rows_used": 7292,
   "rating": "an Elo computed by this script from the archive’s own results in kickoff order, with a between-season regression to the mean; a game is rated by the state BEFORE it, so no result prices its own game",
   "engine": {
-   "available": false,
-   "why": "the engine replay produced 0 rows: no nflverse team-week season is cached, so the engine had no state to project from (run tools/football/fetch_nfl_feeds.js)",
-   "seasons_loaded": []
+   "available": true,
+   "rows": 2658,
+   "seasons_loaded": [
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "joined": 2658,
+   "source": "football/engine.js replayed cold by tools/football/validate_pricing.js"
   },
-  "model_graded": "the Elo stand-in, because the engine replay was unavailable here (the engine replay produced 0 rows: no nflverse team-week season is cached, so the engine had no state to project from (run tools/football/fetch_nfl_feeds.js)). A validation on the stand-in proves the SIZING RULES and says nothing about the number the desk quotes.",
+  "model_graded": "the SHIPPED engine (football/engine.js), replayed cold and joined to 2658 of 7292 archive games; per-market use is all-or-nothing and each holdout says which it got in model_source",
   "blend": "margin ~ a + b*market + c*(model - market), the same form the shipped pricer uses, fitted on the seasons BEFORE each held-out season",
   "holdout_window": "2019 onward, one season at a time",
   "policy": {
@@ -21,7 +44,7 @@
   },
   "leakage": "no closing line enters a pregame feature; the close is the MARKET the position is taken at. Nothing is fitted on the season it is scored on, and no threshold is chosen on the evaluation window.",
   "caveats": [
-   "the rating line is NOT the shipped football engine: the engine replay needs per-game team-week feeds that are not committed, so this validates the SIZING ENGINE over a reproducible model rather than over the production projection",
+   "the model graded here is the shipped engine replayed cold, but the REPLAY is not the live data path: it reconstructs each week from committed feeds rather than from the board the desk saw, so a small gap between this and production is expected",
    "the total arm uses the tune-window mean total as its model, which is deliberately weak — it is there to prove the engine PASSES on a market with no real edge, not to claim one",
    "prices are the archive’s consensus close, or -110 where the archive carries no price; a real board would be line-shopped and slightly better",
    "a backtest cannot reproduce quote freshness, book agreement or availability certainty, so those reliability components are held at their documented values and the run is a test of the SIZING RULES, not of the live data path"
