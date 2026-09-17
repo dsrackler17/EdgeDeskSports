@@ -139,6 +139,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    # EVERY SUITE HERE IS PIPED THROUGH `tee` so the step below can read its
+    # log back. Without pipefail the pipeline's status is tee's, which is
+    # always zero — so a suite could fail, its own step stay green, and the
+    # failure surface twenty steps later as the refusal's bare exit 1, with
+    # the node output that explained it long since scrolled past. A failing
+    # suite now fails its own step, next to what it printed.
+    defaults:
+      run:
+        shell: bash -eo pipefail {0}
+
     services:
       postgres:
         image: postgres:16
