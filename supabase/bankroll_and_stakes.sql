@@ -21,6 +21,11 @@
 --                                  a separate table on purpose, so recording
 --                                  what someone did cannot rewrite what
 --                                  EdgeDesk said.
+--   external_positions             MUTABLE: wagers the reader placed that
+--                                  EdgeDesk did not recommend, so the exposure
+--                                  caps count the whole book rather than the
+--                                  part of it this system happens to know
+--                                  about. Never graded, never scored.
 --
 -- WHY THE SPLIT
 --   Every claim about whether this sizing engine works is a claim about what
@@ -282,6 +287,26 @@ drop trigger if exists stake_responses_append_only_trg on public.stake_recommend
 create trigger stake_responses_append_only_trg before update or delete on public.stake_recommendation_responses
   for each row execute function public.stake_responses_append_only();
 
+-- A RESPONSE MUST ANSWER SOMETHING. Without this a reader could record an
+-- acceptance for a recommendation_id that was never issued, and the
+-- acceptance rate would be computed over a denominator that does not exist.
+-- It is added only when nothing already violates it, and the report at the
+-- end of this file says whether it is in place.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'stake_responses_recommendation_fk'
+  ) and not exists (
+    select 1 from public.stake_recommendation_responses resp
+     where not exists (select 1 from public.stake_recommendations r where r.recommendation_id = resp.recommendation_id)
+  ) then
+    alter table public.stake_recommendation_responses
+      add constraint stake_responses_recommendation_fk
+      foreign key (recommendation_id) references public.stake_recommendations (recommendation_id)
+      on delete restrict;
+  end if;
+end $$;
+
 alter table public.stake_recommendation_responses enable row level security;
 drop policy if exists stake_responses_select_own on public.stake_recommendation_responses;
 create policy stake_responses_select_own on public.stake_recommendation_responses for select
@@ -291,14 +316,92 @@ create policy stake_responses_insert_own on public.stake_recommendation_response
   with check (user_id = auth.uid());
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- 3b. THE EXPOSURE EDGEDESK DID NOT PUT ON (mutable, the reader's own book)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- THE BLIND SPOT THIS CLOSES. Every exposure cap in this system is computed
+-- from positions EdgeDesk itself recommended and recorded. A reader who has
+-- 3u on Sunday from somewhere else — their own read, a friend's tip, a bet
+-- placed last Tuesday — has exposure the engine cannot see, so a 4u daily cap
+-- is not a 4u daily cap. It is a 4u cap on the part of the book EdgeDesk
+-- happens to know about, which is a different and much weaker promise.
+--
+-- So a reader can declare a wager here and the caps count it. Unlike the
+-- recommendation trail this table is MUTABLE and DELETABLE: it is the
+-- reader's own record of their own bets, not EdgeDesk's record of its own
+-- claims, and there is nothing to freeze. Correcting a typo in your own
+-- ticket is not rewriting history.
+--
+-- It is never graded and never scored. Nothing here enters the engine's
+-- record, the CLV ledger or the flat-staking comparison: EdgeDesk did not
+-- price these and takes no credit or blame for them. They exist to make the
+-- caps true.
+create table if not exists public.external_positions (
+  id             bigint generated always as identity primary key,
+  user_id        uuid        not null default auth.uid(),
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  sport          text        null,
+  game_id        text        null,
+  matchup        text        null,
+  team           text        null,     -- what the team cap should count it against
+  market         text        null,
+  selection      text        not null,
+  side           text        null,
+  handicap       numeric     null,
+  odds_american  numeric     null,
+  book           text        null,
+  units          numeric     not null check (units > 0 and units <= 100),
+  placed_at      timestamptz not null default now(),
+  kickoff        timestamptz null,
+  settled        boolean     not null default false,
+  note           text        null
+);
+comment on table public.external_positions is
+  'Wagers the reader placed that EdgeDesk did not recommend, declared so the exposure caps can count them. Mutable and deletable by their owner; never graded, never part of the engine''s record.';
+create index if not exists external_positions_user_idx on public.external_positions (user_id, kickoff desc);
+create index if not exists external_positions_open_idx on public.external_positions (user_id, settled, kickoff) where settled = false;
+
+create or replace function public.external_positions_touch() returns trigger
+language plpgsql as $$
+begin new.updated_at := now(); return new; end $$;
+drop trigger if exists external_positions_touch_trg on public.external_positions;
+create trigger external_positions_touch_trg before update on public.external_positions
+  for each row execute function public.external_positions_touch();
+
+alter table public.external_positions enable row level security;
+drop policy if exists external_positions_select_own on public.external_positions;
+create policy external_positions_select_own on public.external_positions for select
+  using (user_id = auth.uid());
+drop policy if exists external_positions_insert_own on public.external_positions;
+create policy external_positions_insert_own on public.external_positions for insert
+  with check (user_id = auth.uid());
+drop policy if exists external_positions_update_own on public.external_positions;
+create policy external_positions_update_own on public.external_positions for update
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists external_positions_delete_own on public.external_positions;
+create policy external_positions_delete_own on public.external_positions for delete
+  using (user_id = auth.uid());
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- 4. THE GRADES — closing line, CLV, result, profit, and the flat baselines
 -- ─────────────────────────────────────────────────────────────────────────────
+-- EVERY VIEW BELOW IS security_invoker = true, AND THAT IS NOT A DETAIL.
+-- A PostgreSQL view runs as its OWNER unless told otherwise, and the owner
+-- here is the migration's superuser — so a view over an RLS-protected table
+-- reads every row in it regardless of who is asking. Row level security on
+-- stake_recommendations would then be decoration: one reader could select
+-- another reader's whole book through stake_open_exposure while being
+-- correctly refused the table itself. security_invoker makes the policies
+-- apply to whoever ran the query, which is the only reading of "their own
+-- rows" that means anything. (The service role still grades everything; it
+-- bypasses RLS by role attribute, not by view ownership.)
+-- Requires PostgreSQL 15 or later, which every Supabase project is on.
 -- Joined to `signals` by sig_key, exactly as research_packet_grades is, so
 -- the close and the result arrive without a second identity map. Profit is
 -- computed at the RECOMMENDED units and, beside it, at a flat 0.5u and a flat
 -- 1u on the same selections — the two baselines the sizing engine has to beat
 -- before anyone may claim it adds anything.
-create or replace view public.stake_recommendation_grades as
+create or replace view public.stake_recommendation_grades with (security_invoker = true) as
 select
   r.id, r.recommendation_id, r.card_id, r.built_at, r.user_id,
   r.sport, r.game_id, r.matchup, r.kickoff, r.market, r.selection, r.side, r.handicap,
@@ -355,7 +458,7 @@ comment on view public.stake_recommendation_grades is
 
 -- THE SCORECARD. Grouped by sport, market and tier, with the sample floor
 -- beside every figure and the baselines in the same row.
-create or replace view public.stake_engine_scorecard as
+create or replace view public.stake_engine_scorecard with (security_invoker = true) as
 select
   sport, market, recommendation_tier,
   count(*)                                                as positions,
@@ -385,7 +488,7 @@ comment on view public.stake_engine_scorecard is
   'The sizing engine against itself and against flat staking, by sport, market and tier. sufficient_sample is a floor, not a verdict: below it no reading is claimed.';
 
 -- WHY EDGEDESK PASSED. A pass is a result, so it is counted like one.
-create or replace view public.stake_pass_reasons as
+create or replace view public.stake_pass_reasons with (security_invoker = true) as
 select
   sport, market, status,
   split_part(coalesce(pass_reason, 'UNRECORDED'), ':', 1) as gate,
@@ -400,13 +503,29 @@ group by sport, market, status, split_part(coalesce(pass_reason, 'UNRECORDED'), 
 
 -- THE LIVE EXPOSURE THE ENGINE READS BACK. Pending positions by day and week,
 -- so the caps see yesterday's card as well as this turn's.
-create or replace view public.stake_open_exposure as
+-- It unions the reader's DECLARED positions, because a cap that counts only
+-- the bets EdgeDesk happened to recommend is not the cap it says it is. The
+-- `kind` column keeps them distinguishable: the engine's record is graded on
+-- SUBMITTED rows alone, and DECLARED rows only ever make the caps tighter.
+create or replace view public.stake_open_exposure with (security_invoker = true) as
 select
-  user_id, sport, game_id, matchup, market, selection, side, handicap,
-  recommended_units, kickoff, built_at, recommendation_id,
+  user_id, sport, game_id, matchup, null::text as team, market, selection, side, handicap,
+  recommended_units as units, kickoff, built_at, recommendation_id as ticket_id,
+  'SUBMITTED'::text as kind,
   (kickoff at time zone 'UTC')::date as kickoff_date_utc
 from public.stake_recommendations
-where status = 'BET' and recommended_units > 0 and kickoff > now();
+where status = 'BET' and recommended_units > 0 and kickoff > now()
+union all
+select
+  user_id, sport, game_id, matchup, team, market, selection, side, handicap,
+  units, kickoff, placed_at as built_at, 'external:' || id::text as ticket_id,
+  'DECLARED'::text as kind,
+  (kickoff at time zone 'UTC')::date as kickoff_date_utc
+from public.external_positions
+where settled = false and (kickoff is null or kickoff > now());
+
+comment on view public.stake_open_exposure is
+  'Open exposure the caps read: positions EdgeDesk recommended (SUBMITTED) and positions the reader declared (DECLARED). A DECLARED row can only reduce what the engine is willing to size; it is never graded.';
 
 -- The table grants the RLS policies above then narrow to the caller's own
 -- rows. Without them a reader is refused before RLS is ever consulted, and
@@ -417,6 +536,10 @@ grant select, insert on public.stake_recommendations to authenticated;
 grant usage, select on sequence public.stake_recommendations_id_seq to authenticated;
 grant select, insert on public.stake_recommendation_responses to authenticated;
 grant usage, select on sequence public.stake_recommendation_responses_id_seq to authenticated;
+-- the reader's own book is theirs to correct and delete: it is their record
+-- of their own bets, not EdgeDesk's record of its own claims
+grant select, insert, update, delete on public.external_positions to authenticated;
+grant usage, select on sequence public.external_positions_id_seq to authenticated;
 
 grant select on public.stake_recommendation_grades to authenticated;
 grant select on public.stake_engine_scorecard to authenticated;
@@ -497,4 +620,29 @@ union all
 select 'the scorecard and the pass-reason view exist',
   case when exists (select 1 from information_schema.views where table_schema='public' and table_name='stake_engine_scorecard')
    and exists (select 1 from information_schema.views where table_schema='public' and table_name='stake_pass_reasons')
-       then 'ok' else 'CHECK THIS — a view is missing' end;
+       then 'ok' else 'CHECK THIS — a view is missing' end
+union all
+select 'external_positions exists, so the caps can see the whole book',
+  case when exists (select 1 from information_schema.tables where table_schema='public' and table_name='external_positions')
+       then 'ok' else 'CHECK THIS — table missing' end
+union all
+select 'the reader can correct and delete their own declared positions',
+  case when has_table_privilege('authenticated','public.external_positions','insert')
+   and has_table_privilege('authenticated','public.external_positions','update')
+   and has_table_privilege('authenticated','public.external_positions','delete')
+       then 'ok' else 'CHECK THIS — a reader''s own book must be theirs to correct' end
+union all
+select 'open exposure counts DECLARED positions as well as SUBMITTED ones',
+  case when exists (select 1 from information_schema.columns where table_schema='public' and table_name='stake_open_exposure' and column_name='kind')
+       then 'ok' else 'CHECK THIS — the exposure view still sees only EdgeDesk''s own positions' end
+union all
+select 'the views respect row level security instead of bypassing it',
+  case when (select bool_and(coalesce((select option_value from pg_options_to_table(c.reloptions) where option_name='security_invoker'), 'false') = 'true')
+              from pg_class c join pg_namespace n on n.oid = c.relnamespace
+             where n.nspname='public' and c.relkind='v'
+               and c.relname in ('stake_recommendation_grades','stake_engine_scorecard','stake_pass_reasons','stake_open_exposure'))
+       then 'ok' else 'CHECK THIS — a staking view runs as its owner and would read every reader''s rows' end
+union all
+select 'a response cannot answer a recommendation that was never issued',
+  case when exists (select 1 from pg_constraint where conname='stake_responses_recommendation_fk')
+       then 'ok' else 'CHECK THIS — the foreign key was not added; orphan response rows may already exist' end;

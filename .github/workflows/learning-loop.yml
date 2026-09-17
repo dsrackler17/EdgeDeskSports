@@ -61,6 +61,13 @@ jobs:
         run: node tools/intelligence/validate_staking.js --write
         continue-on-error: true
 
+      # The door the kernel refuses team totals and player props through. It
+      # opens nothing today and writes the reason per market, so the refusal
+      # is a committed, reviewable result rather than an omission.
+      - name: Extra-market registration (what would open a team total or a prop)
+        run: node tools/intelligence/validate_extra_markets.js --write
+        continue-on-error: true
+
       - name: Grade the desk's quotes and publish the scorecard
         env:
           SUPABASE_URL: ${{ secrets.SB_URL }}

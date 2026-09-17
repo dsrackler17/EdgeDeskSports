@@ -33,6 +33,8 @@ const JS = [
   'tools/intelligence/board.test.js', 'tools/intelligence/board_probe_live.js',
   'tools/intelligence/stake.test.js', 'tools/intelligence/stake_sql.test.js',
   'tools/intelligence/validate_staking.js', 'tools/intelligence/staking_validation.test.js',
+  'tools/intelligence/stake_grades.js', 'tools/intelligence/stake_grades.test.js', 'tools/intelligence/learning_loop.js',
+  'tools/intelligence/stake_host.test.js', 'tools/intelligence/validate_extra_markets.js',
 ];
 let bad = 0;
 for (const f of JS) {

@@ -37702,18 +37702,53 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(r.invalidation_conditions&&r.invalidation_conditions.length) h+='<div class="m"><b>Invalidated by:</b> '+esc(r.invalidation_conditions.slice(0,2).join(' '))+'</div>';
     if(r.correlated_exposure&&r.correlated_exposure.length) h+='<div class="m"><b>Correlated with:</b> '+esc(r.correlated_exposure.map(function(c){return c.kind+' — '+c.with;}).join('; '))+'</div>';
     if(r.warnings&&r.warnings.length) h+='<div class="m">'+esc(r.warnings.join(' | '))+'</div>';
-    h+='<div class="m">Status '+esc(r.status)+'</div></li>';
+    h+='<div class="m">Status '+esc(r.status)+'</div>';
+    h+=stakeResponseHTML(r);
+    h+='</li>';
     return h;
+  }
+  /* ── THE ACCEPTANCE LOOP ────────────────────────────────────────────────
+     Whether the reader took a recommendation is the one piece of the record
+     the desk cannot compute. Without it the engine's record and the reader's
+     record are the same number, which is wrong in both directions: a bet the
+     reader declined is not a bet the engine lost, and a bet the reader
+     resized is not the bet the engine sized.
+
+     The write is an INSERT into an append-only log, never an edit of the
+     recommendation: nothing the reader does here can change what EdgeDesk
+     said. The size box is the reader's own number and is sent as MODIFIED, so
+     a 0.25u stake on a 0.75u recommendation is recorded as a departure from
+     the size rather than as agreement with it. */
+  function stakeResponseHTML(r){
+    var id=r.recommendation_id; if(!id) return '';
+    var u=r.recommended_units==null?'':(+r.recommended_units).toFixed(2);
+    var k=esc(String(id).replace(/[^A-Za-z0-9_]/g,''));
+    return '<div class="m" id="sr_'+k+'" style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+      +'<span>Did you take it?</span>'
+      +'<button class="refreshbtn" style="padding:3px 8px" onclick="EDAI.respondStake('+esc(JSON.stringify(id))+',\'ACCEPTED\')">Took it at '+esc(stakeUnits(r.recommended_units))+'</button>'
+      +'<button class="refreshbtn" style="padding:3px 8px" onclick="EDAI.respondStake('+esc(JSON.stringify(id))+',\'DECLINED\')">Passed</button>'
+      +'<span>or at <input id="sru_'+k+'" type="number" step="0.05" min="0" placeholder="'+esc(u)+'" style="width:64px;padding:2px 4px"> units '
+      +'<button class="refreshbtn" style="padding:3px 8px" onclick="EDAI.respondStake('+esc(JSON.stringify(id))+',\'MODIFIED\')">Record</button></span>'
+      +'<span class="edai-src" id="srm_'+k+'"></span></div>';
   }
   function stakeAnswerHTML(d){
     var C=d.stake_card; if(!C) return '';
+    /* the card the acceptance buttons answer: kept so a response carries the
+       size and price EdgeDesk actually recommended rather than re-reading
+       them out of the DOM */
+    try{ window.__EDAI_LAST_CARD = C; }catch(_){ /* the renderer is pure; the handoff is not its job */ }
     var h='';
     var pol=C.policy||{};
     if(C.recommendations&&C.recommendations.length){
       h+='<div class="dk-sec"><div class="h">'+(C.recommendations.length===1?'Best bet — EdgeDesk’s position size':'Your card — EdgeDesk’s position sizes')+'</div><ul>'
         +C.recommendations.map(stakeRecHTML).join('')+'</ul>'
         +'<div class="m">Card total '+esc(stakeUnits(C.total_recommended_units))+(C.total_recommended_dollars!=null?' / '+esc(stakeMoney(C.total_recommended_dollars)):'')
-        +' · daily cap '+esc(C.caps&&C.caps.daily)+'u · weekly cap '+esc(C.caps&&C.caps.weekly)+'u</div></div>';
+        +' · daily cap '+esc(C.caps&&C.caps.daily)+'u · weekly cap '+esc(C.caps&&C.caps.weekly)+'u</div>'
+        /* the caps above count what EdgeDesk recommended. If the reader has
+           bets on from elsewhere, they are not in that arithmetic, and saying
+           so is the difference between a cap and the appearance of one. */
+        +'<div class="m">These caps count the positions EdgeDesk recommended'+(C.exposure&&C.exposure.declared_units>0?' and the '+esc(stakeUnits(C.exposure.declared_units))+' you declared':'')
+        +'. <a href="#" onclick="return EDAI.openExternal()">Declare bets EdgeDesk did not recommend</a> and they will count too.</div></div>';
     } else {
       h+='<div class="dk-sec"><div class="h">No bet</div><p>'+esc(C.headline||'')+'</p>';
       if(C.strongest_research_candidate) h+='<div class="m">Strongest research candidate: '+esc(C.strongest_research_candidate.selection||'')+' — '+esc(C.strongest_research_candidate.why_not||'')+'</div>';
@@ -37721,6 +37756,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }
     if(C.watchlist&&C.watchlist.length) h+='<div class="dk-sec"><div class="h">Positive value, no stake</div><ul>'+C.watchlist.map(function(r){
       return '<li><b>'+esc(r.selection)+esc(stakeLine(r))+'</b> '+esc(stakeAm(r.american_odds))+' — '+esc(r.matchup||'')+': '+esc(stakePp(r.expected_value))+' conservative EV, 0u — '+esc(((r.gates_failed||[])[0]||{}).detail||((r.gates_failed||[])[0]||{}).why||'')+'</li>'; }).join('')+'</ul></div>';
+    /* the one refusal a fresh capture can fix, named so a reader knows the
+       difference between "EdgeDesk disagrees" and "EdgeDesk has not looked
+       recently enough" */
+    if(C.one_price_away&&C.one_price_away.count) h+='<div class="dk-sec limits"><div class="h">One fresh price away</div><ul>'+C.one_price_away.positions.map(function(r){
+      return '<li><b>'+esc(r.selection)+esc(stakeLine(r))+'</b> '+esc(stakeAm(r.american_odds))+(r.sportsbook?' at '+esc(r.sportsbook):'')+' — '+esc(r.matchup||'')
+        +'<div class="m">'+esc(stakePp(r.expected_value))+' conservative EV, 0u — '+esc(r.why||'the captured price is outside its freshness limit')+'</div></li>'; }).join('')
+      +'</ul><div class="m">'+esc(C.one_price_away.note)+'</div></div>';
     if(C.portfolio_actions&&C.portfolio_actions.length) h+='<div class="dk-sec"><div class="h">Portfolio</div><ul>'+C.portfolio_actions.map(function(a){ return '<li>'+esc(a.action)+' '+esc(a.selection)+' — '+esc(a.why)+'</li>'; }).join('')+'</ul></div>';
     if(C.games&&C.games.length===1&&C.games[0].table&&C.games[0].table.length>1) h+='<div class="dk-sec"><div class="h">Which market, and why</div><ul>'+C.games[0].table.map(function(t){
       return '<li>'+esc(t.selection)+' '+esc(t.market)+' — EV '+esc(stakePp(t.expected_value))+' → '+esc(stakeUnits(t.recommended_units))+'<div class="m">'+esc(t.why||'')+'</div></li>'; }).join('')+'</ul></div>';
@@ -42273,14 +42315,164 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return h + '</div>';
   }
 
+  /* ── THE EXPOSURE EDGEDESK DID NOT PUT ON ───────────────────────────────
+     Every cap in this system is computed from positions EdgeDesk itself
+     recommended. A reader with 3u on Sunday from their own reads has a "4u
+     daily cap" that will happily add four more, which is not a cap. So a
+     reader can declare a wager here and the caps count it.
+
+     It is never graded. Nothing declared here enters EdgeDesk's record, its
+     CLV ledger or its comparison against flat staking: the desk did not price
+     these and takes neither credit nor blame for them. They exist to make the
+     caps true. */
+  var EXTERNAL_FIELDS = [
+    ['selection', 'Selection', 'e.g. Army -2.5', 'text'],
+    ['units', 'Units', 'e.g. 1', 'number'],
+    ['team', 'Counts against team', 'blank = read from the selection', 'text'],
+    ['market', 'Market', 'spreads / totals / h2h', 'text'],
+    ['odds_american', 'Price', 'e.g. -110', 'number'],
+    ['book', 'Book', 'e.g. FanDuel', 'text'],
+    ['matchup', 'Game', 'e.g. North Texas at Army', 'text'],
+    ['kickoff', 'Kickoff', 'blank = counts until you settle it', 'datetime-local'],
+  ];
+  /* PATCH and DELETE under the reader's own token. The declared book is
+     theirs: correcting a typo in your own ticket is not rewriting history,
+     which is exactly why these two verbs exist here and nowhere near the
+     recommendation trail. */
+  async function extPatch(id, patch, okMsg){
+    var out = $id('extResult');
+    try{
+      var t = await edToken();
+      var r = await fetch(SB_URL + '/rest/v1/external_positions?id=eq.' + encodeURIComponent(id), { method: 'PATCH',
+        headers: { apikey: SB_KEY, authorization: 'Bearer ' + t, 'content-type': 'application/json', prefer: 'return=minimal' },
+        body: JSON.stringify(patch) });
+      if(!r.ok) throw new Error('db ' + r.status);
+      if(out) out.textContent = okMsg;
+      push('a', externalFormHTML(await externalRows()));
+    }catch(e){ if(out) out.textContent = 'Could not update (' + String((e && e.message) || e) + ').'; }
+    return false;
+  }
+  async function extDelete(id){
+    var out = $id('extResult');
+    try{
+      var t = await edToken();
+      var r = await fetch(SB_URL + '/rest/v1/external_positions?id=eq.' + encodeURIComponent(id), { method: 'DELETE',
+        headers: { apikey: SB_KEY, authorization: 'Bearer ' + t, prefer: 'return=minimal' } });
+      if(!r.ok) throw new Error('db ' + r.status);
+      if(out) out.textContent = 'Removed. The caps no longer count it.';
+      push('a', externalFormHTML(await externalRows()));
+    }catch(e){ if(out) out.textContent = 'Could not remove (' + String((e && e.message) || e) + ').'; }
+    return false;
+  }
+  function extUnits(u){ return (u == null ? '\u2014' : (+u).toFixed(2) + 'u'); }
+  async function externalRows(){
+    try{ return await sbGet('external_positions?select=*&settled=is.false&order=kickoff.asc&limit=50') || []; }
+    catch(e){ return { __error: String((e && e.message) || e) }; }
+  }
+  function externalFormHTML(rows){
+    var err = rows && rows.__error;
+    var h = '<div class="dk-sec"><div class="h">Bets EdgeDesk did not recommend</div>';
+    h += '<div class="m">Every exposure cap is computed from positions EdgeDesk recommended. If you have bets on from somewhere else, declare them here and the caps will count them — otherwise a 4u daily cap is only a cap on the part of your book this system can see.</div>';
+    if(err) h += '<div class="m">Your declared positions could not be read (' + esc(err) + '). The caps below count only what EdgeDesk recommended.</div>';
+    else if(!rows.length) h += '<div class="m">Nothing declared. The caps currently see only what EdgeDesk recommended.</div>';
+    else {
+      h += '<ul>' + rows.map(function(r){
+        return '<li>' + esc(r.selection) + ' — ' + esc(extUnits(r.units))
+          + (r.book ? ' at ' + esc(r.book) : '') + (r.matchup ? ' · ' + esc(r.matchup) : '')
+          + ' <button class="refreshbtn" style="padding:2px 6px" onclick="EDAI.settleExternal(' + esc(String(r.id)) + ')">Settled</button>'
+          + ' <button class="refreshbtn" style="padding:2px 6px" onclick="EDAI.removeExternal(' + esc(String(r.id)) + ')">Remove</button></li>';
+      }).join('') + '</ul>';
+    }
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0">';
+    EXTERNAL_FIELDS.forEach(function(f){
+      h += '<label style="font-size:12px">' + esc(f[1])
+        + '<input id="ext_' + f[0] + '" type="' + esc(f[3]) + '"' + (f[3] === 'number' ? ' step="0.01"' : '')
+        + ' placeholder="' + esc(f[2])
+        + '" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;background:transparent;color:inherit"></label>';
+    });
+    h += '</div>';
+    h += '<button onclick="EDAI.addExternal()" class="refreshbtn" style="width:100%;padding:10px;margin-top:4px">Declare this position</button>';
+    h += '<div id="extResult" class="m"></div>';
+    h += '<div class="edai-src">Declared positions only ever make EdgeDesk size LESS. They are never graded, never scored, and never part of EdgeDesk’s record — it did not price them. Correct or delete them freely; this is your book, not the desk’s claim.</div>';
+    return h + '</div>';
+  }
+
   window.EDAI = {
     feedback: recordFeedback,
+    /* The reader's own book, so the caps see all of it. */
+    openExternal: function(){
+      (async function(){ push('a', externalFormHTML(await externalRows())); })();
+      return false;
+    },
+    addExternal: async function(){
+      var out = $id('extResult');
+      var row = {}, bad = null;
+      EXTERNAL_FIELDS.forEach(function(f){
+        var el = $id('ext_' + f[0]); if(!el) return;
+        var raw = String(el.value || '').trim();
+        if(raw === '') return;
+        if(f[3] === 'number'){ var n = Number(raw); if(!isFinite(n)){ bad = f[1]; return; } row[f[0]] = n; }
+        else if(f[3] === 'datetime-local'){ var t = Date.parse(raw); if(!isFinite(t)){ bad = f[1]; return; } row[f[0]] = new Date(t).toISOString(); }
+        else row[f[0]] = raw;
+      });
+      if(bad){ if(out) out.textContent = bad + ' is not a number EdgeDesk can read.'; return false; }
+      if(!row.selection){ if(out) out.textContent = 'Name the selection, so the caps know what they are counting.'; return false; }
+      if(!(row.units > 0)){ if(out) out.textContent = 'Enter the size in units. A position with no size is not a position.'; return false; }
+      if(out) out.textContent = 'Saving…';
+      try{
+        await sbPost('external_positions', [row]);
+        if(out) out.textContent = 'Declared. The caps will count it from your next question.';
+        push('a', externalFormHTML(await externalRows()));
+      }catch(e){ if(out) out.textContent = 'Could not save (' + String((e && e.message) || e) + ').'; }
+      return false;
+    },
+    settleExternal: async function(id){ return extPatch(id, { settled: true }, 'Settled. It no longer counts against your caps.'); },
+    removeExternal: async function(id){ return extDelete(id); },
     /* The bankroll editor, opened from the sizing panel's own prompt. */
     openBankroll: function(){
       (async function(){
         var row = await bankrollRow();
         push('a', bankrollFormHTML(row));
       })();
+      return false;
+    },
+    /* THE ACCEPTANCE WRITE. An INSERT into an append-only log under the
+       reader's own token: the row carries their user id from the JWT, and
+       nothing here can touch the recommendation it answers. A second answer
+       is a second row, not an edit, so changing your mind is recorded as
+       changing your mind. */
+    respondStake: async function(id, response){
+      var k = String(id).replace(/[^A-Za-z0-9_]/g, '');
+      var msg = $id('srm_' + k);
+      var rec = ((window.__EDAI_LAST_CARD || {}).recommendations || []).filter(function(x){ return x.recommendation_id === id; })[0] || null;
+      var row = { recommendation_id: id, response: response };
+      if(response === 'ACCEPTED'){
+        row.accepted_units = rec ? rec.recommended_units : null;
+        row.accepted_dollars = rec ? rec.recommended_dollars : null;
+        row.accepted_odds = rec ? rec.american_odds : null;
+        row.accepted_book = rec ? rec.sportsbook : null;
+      } else if(response === 'MODIFIED'){
+        var el = $id('sru_' + k);
+        var n = Number(String(el && el.value || '').trim());
+        if(!isFinite(n) || n < 0){ if(msg) msg.textContent = 'Enter the number of units you actually staked.'; return false; }
+        row.accepted_units = n;
+        row.accepted_odds = rec ? rec.american_odds : null;
+        row.accepted_book = rec ? rec.sportsbook : null;
+        /* the dollar figure is the reader's units at EdgeDesk's own unit
+           size, and only when a unit size is on file: the browser does not
+           invent one */
+        var unit = rec && rec.recommended_units ? (rec.recommended_dollars / rec.recommended_units) : null;
+        row.accepted_dollars = (unit != null && isFinite(unit)) ? Math.round(n * unit * 100) / 100 : null;
+      }
+      if(msg) msg.textContent = 'Recording…';
+      try{
+        await sbPost('stake_recommendation_responses', [row]);
+        if(msg) msg.textContent = response === 'DECLINED'
+          ? 'Recorded as passed. It stays on EdgeDesk’s record and off yours.'
+          : 'Recorded at ' + stakeUnits(row.accepted_units) + '. Your record and EdgeDesk’s are graded separately.';
+      }catch(e){
+        if(msg) msg.textContent = 'Could not record (' + String((e && e.message) || e) + ').';
+      }
       return false;
     },
     saveBankroll: async function(){

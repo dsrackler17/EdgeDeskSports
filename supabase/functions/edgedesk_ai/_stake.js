@@ -165,6 +165,10 @@
     { code: 'MODEL_VERSION_UNVALIDATED', status: 'RESEARCH_ONLY', why: 'the model version behind this probability is not validated for betting' },
     { code: 'DATA_COMPLETENESS_BELOW_FLOOR', status: 'RESEARCH_ONLY', why: 'the inputs are too incomplete to size a position' },
     { code: 'CRITICAL_AVAILABILITY_UNRESOLVED', status: 'RESEARCH_ONLY', why: 'a starter, quarterback, pitcher or lineup question that moves this number is unresolved' },
+    /* WATCH, not PASS: the forecast source was read and had nothing for an
+       outdoor game in the one market weather moves most. A forecast arriving
+       makes this a bet, so it is carried rather than discarded. */
+    { code: 'WEATHER_UNOBSERVED', status: 'WATCH', why: 'the forecast source was read and carries nothing for this outdoor game, and this is the market weather moves most' },
     { code: 'FABRICATED_OR_INFERRED_DATA', status: 'RESEARCH_ONLY', why: 'a required input was inferred rather than observed' },
     /* WATCH, not PASS: the value is real and the refusal is about EdgeDesk's
        own confidence, so better data makes this a bet and it is worth
@@ -208,6 +212,57 @@
   function validatedExtraMarket(sport, market) { return VALIDATED_EXTRA_MARKETS[sport + '|' + normMarket(market)] || null; }
   function clearValidatedMarkets() { VALIDATED_EXTRA_MARKETS = {}; }
 
+  /**
+   * THE REGISTRATION PATH, FROM AN ARTIFACT.
+   *
+   * `registerValidatedMarket` was reachable only from code, which meant the
+   * rule it enforces was real and the door it guards had nothing behind it.
+   * This reads the door's key from a file the nightly validation writes, so
+   * opening a team total or a prop is a committed artifact with a held-out
+   * record in it — reviewable in a diff — rather than a line someone adds to
+   * a kernel.
+   *
+   * It is deliberately strict and deliberately loud. Every entry it refuses
+   * is returned with the reason, because a market that silently failed to
+   * register looks exactly like a market nobody tried to register, and those
+   * are not the same thing to anyone reading the output.
+   *
+   * An artifact whose `markets` list is EMPTY is the normal, expected state:
+   * it says the validation ran and found nothing that earned a stake. That is
+   * a result, and it is recorded as one.
+   */
+  function loadExtraMarkets(json) {
+    var out = { ok: false, registered: [], refused: [], generated_at: null, why: null };
+    if (!json || typeof json !== 'object') { out.why = 'no extra-market artifact was supplied'; return out; }
+    if (!Array.isArray(json.markets)) { out.why = 'the extra-market artifact carries no `markets` list; nothing is registered from a file that does not have one'; return out; }
+    out.ok = true;
+    out.generated_at = json.generated_at || null;
+    (json.markets).forEach(function (m) {
+      if (!m || !m.sport || !m.market) { out.refused.push({ entry: m || null, why: 'an entry without a sport and a market cannot name what it validated' }); return; }
+      var key = m.sport + '|' + normMarket(m.market);
+      /* the entry must carry its own held-out evidence, not just a word */
+      if (num(m.sample_n) == null || num(m.sample_n) <= 0) { out.refused.push({ entry: key, why: 'no held-out sample size is recorded, so the tier is a claim with nothing behind it' }); return; }
+      var r = registerValidatedMarket(m.sport, m.market, {
+        tier: m.tier, basis: m.basis, sample_n: num(m.sample_n),
+        generated_at: json.generated_at || null, source: json.source || null,
+        model_version: m.model_version || null, sigma: num(m.sigma), mode: str(m.mode || 'SHADOW')
+      });
+      if (r.ok) out.registered.push({ key: r.key, tier: m.tier, sample_n: num(m.sample_n) });
+      else out.refused.push({ entry: key, why: r.why });
+    });
+    out.why = out.registered.length
+      ? out.registered.length + ' extra market(s) registered for staking from the artifact'
+      : 'the artifact registered no extra market: ' + (json.markets.length ? 'every entry was refused' : str(json.note || 'it carries no entries, which is the validation saying nothing has earned a stake'));
+    return out;
+  }
+  /** What is open right now, for a probe or a reader who asks. */
+  function extraMarkets() {
+    return Object.keys(VALIDATED_EXTRA_MARKETS).map(function (k) {
+      var r = VALIDATED_EXTRA_MARKETS[k];
+      return { key: k, tier: r.tier, basis: r.basis, sample_n: r.sample_n != null ? r.sample_n : null, generated_at: r.generated_at || null };
+    });
+  }
+
   /* ==================================================================== */
   /* THE STAKING VALIDATION REGISTRY                                      */
   /*                                                                      */
@@ -233,7 +288,10 @@
     var key = normMarket(market) === 'totals' ? 'total' : normMarket(market) === 'h2h' ? 'moneyline' : 'spread';
     var m = v && v.markets ? v.markets[key] : null;
     if (!m) return { mode: 'UNREGISTERED', basis: 'no staking validation is loaded for ' + (sport || 'this sport') + ' ' + key + '; the validation tier and the unit caps govern on their own', loaded: false, generated_at: null };
-    return { mode: str(m.mode || 'SHADOW'), basis: str(m.mode_basis || ''), positions: num(m.positions), loaded: true, generated_at: v.generated_at || null, market: key };
+    return { mode: str(m.mode || 'SHADOW'), basis: str(m.mode_basis || ''), positions: num(m.positions), loaded: true, generated_at: v.generated_at || null, market: key,
+      /* the pooled bootstrap shift the walk-forward measured for this market,
+         so a live candidate gets a measured bound rather than a shrink */
+      bootstrap_shift_points: num(m.bootstrap_shift_points), bootstrap_basis: str(m.bootstrap_basis || '') || null };
   }
   function clearStakingValidation() { STAKING_VALIDATION = {}; }
 
@@ -253,16 +311,41 @@
   var AVAIL_CERTAINTY = { OFFICIAL_REPORT: 1, CONFIRMED: 1, REPORTED: 0.8, PROJECTED: 0.6, PARTIAL: 0.5, UNKNOWN: 0.3, UNRESOLVED: 0, STALE: 0.25 };
 
   /* The reliability weights. They sum to 1 and the kernel asserts it. */
+  /* WEATHER IS ITS OWN COMPONENT, NOT A SHARE OF COMPLETENESS.
+     It used to be folded into data_completeness, where a 28 mph crosswind and
+     a missing rest-day column counted the same. They are not the same: one is
+     a gap in the record and the other is a condition the residual distribution
+     was mostly not fitted on. So weather carries its own weight, taken out of
+     completeness rather than added on top — the weights still sum to 1. */
   var RELIABILITY_WEIGHTS = [
     { name: 'calibration_record', weight: 0.22, basis: 'the validation tier recorded for this sport and market' },
     { name: 'effective_sample', weight: 0.15, basis: 'n / (n + 500): the graded sample behind that tier against EdgeDesk’s own validation floor' },
-    { name: 'data_completeness', weight: 0.15, basis: 'the share of the inputs the projection wanted that were on file' },
     { name: 'price_freshness', weight: 0.15, basis: 'the captured quote’s state on the kickoff freshness ladder' },
     { name: 'book_agreement', weight: 0.12, basis: 'independent book families behind the number, against the minimum this policy wants' },
     { name: 'availability_certainty', weight: 0.11, basis: 'how far the starter, lineup and injury picture is observed rather than projected' },
+    { name: 'data_completeness', weight: 0.10, basis: 'the share of the inputs the projection wanted that were on file, weather aside' },
+    { name: 'weather_certainty', weight: 0.05, basis: 'the forecast on file at kickoff, read against how far this market moves in weather: indoors is certain, a benign forecast is close to it, and wind is the condition that costs the most' },
     { name: 'distribution_stability', weight: 0.05, basis: 'whether the residual distribution used for the probability is the validated one or a default' },
     { name: 'model_validation_status', weight: 0.05, basis: 'whether the model version behind the probability carries a validation record' }
   ];
+
+  /* HOW FAR EACH MARKET MOVES IN THE WEATHER.
+     A 25 mph wind is a large fact about a total, a smaller one about a spread
+     and a smaller one still about a moneyline: the wind suppresses scoring on
+     both sides at once, so it moves the sum far more than the difference.
+     These are sensitivities, not effects — nothing here changes a projection.
+     They only decide how much of the weather's uncertainty reaches the
+     reliability score for this market. */
+  var WEATHER_SENSITIVITY = { totals: 1, team_totals: 1, spreads: 0.6, h2h: 0.45, player_props: 0.8 };
+  /* Wind, precipitation and temperature thresholds, written once. A condition
+     below its floor costs nothing; at its ceiling it costs its full share. */
+  var WEATHER_BANDS = {
+    wind_free_mph: 10, wind_full_mph: 30, gust_weight: 0.65,
+    precip_full_in: 0.25,
+    cold_from_f: 25, cold_full_f: 0, heat_from_f: 95, heat_full_f: 110,
+    lead_free_hours: 36, lead_full_hours: 156, lead_cost: 0.3,
+    share: { wind: 0.6, precip: 0.3, temp: 0.2 }
+  };
 
   /* ------------------------------------------------------------- helpers */
   function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return Number.isFinite(n) ? n : null; }
@@ -443,6 +526,77 @@
    * owns, every weight is printed, and every contribution is stored with the
    * recommendation so a reader can see which part carried it.
    */
+  /**
+   * WEATHER, AS A CERTAINTY IN [0.1, 1] — never as a prediction.
+   *
+   * This function does not say the total will go under. It says how much of
+   * this market's probability EdgeDesk is willing to stand behind given what
+   * the forecast says and how far out it was made. A closed roof is certain.
+   * A calm, warm forecast made four hours out is close to certain. A 28 mph
+   * wind is not, because the residual distribution behind the cover curve was
+   * fitted mostly on games that were not played in one.
+   *
+   *   `o.weather` is the forecast: { dome, wind_mph, gust_mph, temp_f,
+   *   precip_in, observed_at, kickoff, checked, on_file }
+   *
+   * The distinction that matters most is between "we looked and there is no
+   * forecast" (`checked: true, on_file: false`) and "nobody wired a forecast
+   * source for this sport" (`checked` absent). The first is a data hole this
+   * kernel is allowed to act on; the second is a gap in the host, and
+   * punishing a candidate for it would be punishing the wrong thing.
+   */
+  function weatherCertainty(o) {
+    o = o || {};
+    var w = o.weather || null;
+    var B = WEATHER_BANDS;
+    var sens = WEATHER_SENSITIVITY[o.market] != null ? WEATHER_SENSITIVITY[o.market] : 0.6;
+    if (!w) return { value: 0.6, state: 'NOT_WIRED', basis: 'no forecast was passed with this candidate, so weather is neither confirmed nor ruled out; the score is held at its neutral value rather than assumed good' };
+    if (w.dome === true || str(w.roof).toUpperCase() === 'DOME' || str(w.roof).toUpperCase() === 'CLOSED') {
+      return { value: 1, state: 'INDOORS', basis: 'the roof is closed, so there is no weather to be uncertain about' };
+    }
+    if (w.exposed === false) return { value: 1, state: 'NOT_EXPOSED', basis: 'this sport is not played in the weather' };
+    var wind = num(w.wind_mph), gust = num(w.gust_mph), temp = num(w.temp_f), precip = num(w.precip_in);
+    var anyReading = wind != null || gust != null || temp != null || precip != null;
+    if (!anyReading) {
+      if (w.checked === true || w.on_file === false) {
+        return { value: 0.25, state: 'UNKNOWN', basis: 'the forecast source was read and carries nothing for this game, so an outdoor number is being sized without knowing the conditions' };
+      }
+      return { value: 0.6, state: 'NOT_WIRED', basis: 'no forecast reading is on file and none was looked for, so weather is held at its neutral value' };
+    }
+    /* wind, including gusts: a 12 mph average with 30 mph gusts is not calm */
+    var effWind = Math.max(wind == null ? 0 : wind, gust == null ? 0 : gust * B.gust_weight);
+    var windPen = clamp((effWind - B.wind_free_mph) / (B.wind_full_mph - B.wind_free_mph), 0, 1);
+    var precipPen = precip == null ? 0 : clamp(precip / B.precip_full_in, 0, 1);
+    var tempPen = temp == null ? 0 : Math.max(
+      clamp((B.cold_from_f - temp) / (B.cold_from_f - B.cold_full_f), 0, 1),
+      clamp((temp - B.heat_from_f) / (B.heat_full_f - B.heat_from_f), 0, 1));
+    var severity = clamp(B.share.wind * windPen + B.share.precip * precipPen + B.share.temp * tempPen, 0, 1);
+    /* FORECAST LEAD. A forecast made six days out is a different object from
+       one made four hours out, even when both say the same thing. */
+    var obs = toMs(w.observed_at), kick = toMs(w.kickoff);
+    var leadH = obs != null && kick != null && kick > obs ? (kick - obs) / 3600000 : null;
+    var leadPen = leadH == null ? 0 : clamp((leadH - B.lead_free_hours) / (B.lead_full_hours - B.lead_free_hours), 0, 1) * B.lead_cost;
+    var value = clamp(1 - sens * (severity + leadPen), 0.1, 1);
+    var parts = [];
+    if (wind != null || gust != null) parts.push(Math.round(effWind) + ' mph of effective wind' + (gust != null && gust * B.gust_weight > (wind || 0) ? ' (gusting ' + Math.round(gust) + ')' : ''));
+    if (precip != null && precip > 0) parts.push(r2(precip) + '" of precipitation');
+    if (temp != null) parts.push(Math.round(temp) + '°F');
+    if (leadH != null) parts.push('forecast made ' + Math.round(leadH) + 'h before kickoff');
+    /* The conditions word and the lead are different axes, and a calm
+       forecast made six days out is not the same claim as a calm forecast
+       made this morning — so the state says both rather than only the first. */
+    var state = severity >= 0.5 ? 'SEVERE' : severity >= 0.2 ? 'NOTABLE' : (leadPen > 0.1 ? 'BENIGN_BUT_EARLY' : 'BENIGN');
+    return {
+      value: r4(value), state: state, severity: r4(severity), effective_wind_mph: r2(effWind),
+      market_sensitivity: sens, lead_hours: leadH == null ? null : Math.round(leadH),
+      basis: parts.join(', ') + ' — ' + (state === 'BENIGN' ? 'conditions the model was fitted on'
+        : state === 'BENIGN_BUT_EARLY' ? 'conditions the model was fitted on, but the forecast is early enough that it can still change'
+        : state === 'NOTABLE' ? 'outside the ordinary, which costs some of this market’s certainty'
+        : 'conditions the residual distribution was mostly not fitted on')
+        + ' (' + marketWord(o.market) + ' sensitivity ' + sens + ')'
+    };
+  }
+
   function reliability(o) {
     o = o || {};
     var tier = str(o.tier || 'UNVALIDATED').toUpperCase();
@@ -464,6 +618,8 @@
       : fam == null ? 0.4 : clamp(fam / Math.max(1, wantFam), 0, 1);
     var av = str(o.availability_state || 'UNKNOWN').toUpperCase();
     v.availability_certainty = o.availability_unresolved === true ? 0 : (AVAIL_CERTAINTY[av] != null ? AVAIL_CERTAINTY[av] : 0.3);
+    var wx = weatherCertainty({ weather: o.weather, market: o.market });
+    v.weather_certainty = wx.value;
     v.distribution_stability = o.distribution_validated === true ? 1 : o.distribution_validated === false ? 0.4 : 0.5;
     v.model_validation_status = o.model_version_validated === true ? 1 : o.model_version_validated === false ? 0.2 : 0.3;
     var comps = [], total = 0, wsum = 0;
@@ -475,8 +631,8 @@
     });
     var score = clamp(wsum > 0 ? total / wsum : 0, 0.05, 0.95);
     return {
-      score: r4(score), components: comps, weights_sum: r4(wsum),
-      basis: 'a weighted mean of eight recorded components, clamped to [0.05, 0.95]: the score is never 1, because a reliability of 1 would be a claim of certainty',
+      score: r4(score), components: comps, weights_sum: r4(wsum), weather: wx,
+      basis: 'a weighted mean of ' + RELIABILITY_WEIGHTS.length + ' recorded components, clamped to [0.05, 0.95]: the score is never 1, because a reliability of 1 would be a claim of certainty',
       weakest: comps.slice().sort(function (a, b) { return a.value - b.value; })[0] || null
     };
   }
@@ -484,6 +640,7 @@
     if (name === 'calibration_record') return str(o.tier || 'UNVALIDATED') + (o.calibration_available === false ? ' (no calibration on file)' : '');
     if (name === 'effective_sample') return num(o.sample_n) == null ? 'no graded sample on file' : num(o.sample_n) + ' graded outcomes';
     if (name === 'data_completeness') return num(o.data_completeness) == null ? 'completeness not reported' : String(r2(num(o.data_completeness)));
+    if (name === 'weather_certainty') { var wq = weatherCertainty({ weather: o.weather, market: o.market }); return wq.state + ': ' + wq.basis; }
     if (name === 'price_freshness') return str(o.quote_freshness || 'UNKNOWN');
     if (name === 'book_agreement') return o.book_confirmed === true ? 'the decision layer’s confirmation test passed (independent families or a sharp anchor)' : o.book_confirmed === false ? 'the decision layer’s confirmation test did not pass' : num(o.book_families) == null ? 'families not counted' : num(o.book_families) + ' independent families';
     if (name === 'availability_certainty') return o.availability_unresolved === true ? 'a decisive availability question is unresolved' : str(o.availability_state || 'UNKNOWN');
@@ -516,14 +673,51 @@
       return { ok: true, probability: r4(Math.min(lb, cal)), method: 'LOWER_BOUND_EMPIRICAL', shrunk_pp: r2((cal - Math.min(lb, cal)) * 100), basis: str(o.lower_bound_basis || 'an empirical lower confidence bound supplied with the probability'), why: 'the staking probability is the measured lower bound, not the point estimate' };
     }
     var Pk = P();
-    if (Pk && num(o.fair_line_se) != null && num(o.fair_selection_line) != null && num(o.market_selection_line) != null && num(o.sigma) != null && typeof Pk.coverAt === 'function') {
-      /* Move the fair line AGAINST the selection by one standard error: the
-         selection needs more points, so the cover probability falls. */
+    /* A MEASURED SHIFT BEATS A DERIVED ONE.
+       `bootstrap_shift_points` is the 10th percentile of how far the fair
+       value actually moved across refits of the blend on resampled tune data
+       (tools/intelligence/validate_staking.js). It is the same quantity the
+       standard-error branch below approximates with sigma/sqrt(n), but
+       measured rather than assumed normal — so where it exists it is used
+       first, and the recommendation says which one it got. */
+    /* WHICH WAY IS "AGAINST THE SELECTION"?
+       Not a fixed sign. The cover curve is Phi((market line - fair line)/sigma),
+       so subtracting a shift from the fair line RAISES the cover when the model
+       already favours the selection — which is the opposite of conservative,
+       and it is what the first version of this did. The clamp to the calibrated
+       probability then hid it: the "bound" came back equal to the point
+       estimate and the adjustment silently did nothing.
+       The unambiguous rule is to read the curve BOTH WAYS and take the lower
+       one. It cannot pick the wrong direction, it does not depend on which side
+       the model favours, and it degrades to the point estimate only when the
+       shift is genuinely zero. */
+    function boundAt(shift) {
+      if (!Pk || typeof Pk.coverAt !== 'function') return null;
+      var f = num(o.fair_selection_line), L = num(o.market_selection_line), sg = num(o.sigma);
+      if (f == null || L == null || sg == null || !(Math.abs(shift) > 0)) return null;
+      var lo = Pk.coverAt(f - Math.abs(shift), L, sg), hi = Pk.coverAt(f + Math.abs(shift), L, sg);
+      var a = lo && num(lo.cover) != null ? num(lo.cover) : null;
+      var b = hi && num(hi.cover) != null ? num(hi.cover) : null;
+      if (a == null && b == null) return null;
+      return Math.min(a == null ? b : a, b == null ? a : b);
+    }
+    if (num(o.bootstrap_shift_points) != null) {
+      var bs = Math.abs(num(o.bootstrap_shift_points));
+      var coverB = boundAt(bs);
+      if (coverB != null) {
+        var boundB = clamp(Math.min(coverB, cal), 0.0001, 0.9999);
+        return { ok: true, probability: r4(boundB), method: 'LOWER_BOUND_BOOTSTRAP', shrunk_pp: r2((cal - boundB) * 100),
+          basis: 'the fair line moved ' + r2(bs) + ' points against the selection — the 10th percentile of where the blend’s own bootstrap refits put it — and the cover probability read off the same curve there',
+          measured_basis: str(o.bootstrap_basis || ''),
+          why: 'the staking probability is the cover probability at a MEASURED lower bound of the fair line, not a shrink' };
+      }
+    }
+    if (num(o.fair_line_se) != null) {
       var se = Math.abs(num(o.fair_line_se)) * (num(o.z) != null ? num(o.z) : 1);
-      var at = Pk.coverAt(num(o.fair_selection_line) - se, num(o.market_selection_line), num(o.sigma));
-      if (at && num(at.cover) != null) {
-        var bound = clamp(Math.min(num(at.cover), cal), 0.0001, 0.9999);
-        return { ok: true, probability: r4(bound), method: 'LOWER_BOUND_FAIR_LINE_SE', shrunk_pp: r2((cal - bound) * 100), basis: 'the fair line moved ' + r2(se) + ' points against the selection (one standard error of the validated blend, from its held-out residuals) and read off the same cover curve', why: 'the staking probability is the cover probability at the unfavourable end of the fair line’s own error' };
+      var coverS = boundAt(se);
+      if (coverS != null) {
+        var boundS = clamp(Math.min(coverS, cal), 0.0001, 0.9999);
+        return { ok: true, probability: r4(boundS), method: 'LOWER_BOUND_FAIR_LINE_SE', shrunk_pp: r2((cal - boundS) * 100), basis: 'the fair line moved ' + r2(se) + ' points against the selection (one standard error of the validated blend, from its held-out residuals) and read off the same cover curve', why: 'the staking probability is the cover probability at the unfavourable end of the fair line’s own error' };
       }
     }
     if (rel == null) return { ok: false, probability: null, method: null, why: 'no reliability score, so the calibrated probability cannot be shrunk and no lower bound was supplied' };
@@ -639,6 +833,26 @@
     }
     return uniq(out.map(normName).filter(Boolean));
   }
+  /** Candidates refused for the age of the price and for nothing else. */
+  function oneFreshPriceAway(evaluated) {
+    var rows = (evaluated || []).filter(function (r) {
+      var g = r.gates_failed || [];
+      return g.length === 1 && g[0].code === 'STALE_PRICE';
+    });
+    return {
+      count: rows.length,
+      positions: rows.slice(0, 8).map(function (r) {
+        return { selection: r.selection, market: r.market, line: r.line, matchup: r.matchup,
+          sportsbook: r.sportsbook, american_odds: r.american_odds,
+          price_captured_at: r.price_captured_at, price_freshness: r.price_freshness,
+          expected_value: r.expected_value, why: (r.gates_failed[0] || {}).detail || null };
+      }),
+      note: rows.length
+        ? rows.length + ' position(s) failed only because the captured price is outside its freshness limit. A fresh capture is the one thing that would change that answer; nothing else about them is in question.'
+        : 'no position was refused for the age of its price alone, so refreshing the quotes could not change this card'
+    };
+  }
+
   function exposureLedger(o) {
     o = o || {};
     var tz = o.timezone || null;
@@ -667,7 +881,8 @@
       schema: 'edgedesk_exposure_ledger_v1', timezone: tz, positions: rows,
       by_game: byGame, by_team: byTeam, by_sport: bySport, by_day: byDay, by_week: byWeek, by_selection: bySelection, positions_per_team: teamCount,
       total_units: r2(rows.reduce(function (s, r) { return s + r.units; }, 0)),
-      note: 'Pending singles, pending parlay legs and submitted positions all count against the caps. A total is exposure to both teams, because one game script decides it.'
+      declared_units: r2(rows.filter(function (r) { return r.kind === 'DECLARED'; }).reduce(function (s, r) { return s + r.units; }, 0)),
+      note: 'Pending singles, pending parlay legs, submitted positions and wagers the reader declared placing elsewhere all count against the caps. A total is exposure to both teams, because one game script decides it. A DECLARED position is never graded: EdgeDesk did not price it.'
     };
   }
   function ledgerFor(c, ledger, tz) {
@@ -755,6 +970,13 @@
     if (c.model_version_validated === false && c.probability_source !== 'MARKET_DEVIG') gate('MODEL_VERSION_UNVALIDATED', 'model version ' + str(c.model_version || 'unknown') + ' has no validation record permitting a betting probability');
     if (num(c.data_completeness) != null && num(c.data_completeness) < num(S.minimum_data_completeness)) gate('DATA_COMPLETENESS_BELOW_FLOOR', 'completeness ' + r2(num(c.data_completeness)) + ' is under the ' + S.minimum_data_completeness + ' floor');
     if (c.availability_unresolved === true) gate('CRITICAL_AVAILABILITY_UNRESOLVED', c.availability_note || 'a decisive starter or lineup question is open');
+    /* The gate fires only where the host SAID it looked. A sport with no
+       forecast source wired is a gap in the host, not a fact about the game,
+       and refusing a candidate for it would refuse the wrong thing. */
+    var wxGate = weatherCertainty({ weather: c.weather, market: c.market });
+    if (wxGate.state === 'UNKNOWN' && (WEATHER_SENSITIVITY[c.market] || 0) >= 1) {
+      gate('WEATHER_UNOBSERVED', wxGate.basis);
+    }
     if (c.inferred_inputs === true) gate('FABRICATED_OR_INFERRED_DATA', c.inferred_note || 'an input behind this number was inferred rather than observed');
 
     /* ---- the probabilities -------------------------------------------- */
@@ -763,11 +985,13 @@
       tier: c.tier, calibration_available: c.calibration_available, sample_n: c.sample_n, data_completeness: c.data_completeness,
       quote_freshness: qc.freshness, book_families: c.book_families, book_confirmed: c.book_confirmed, min_book_families: S.minimum_book_families,
       availability_state: c.availability_state, availability_unresolved: c.availability_unresolved,
+      weather: c.weather, market: c.market,
       distribution_validated: c.distribution_validated, model_version_validated: c.model_version_validated
     });
     var cons = conservativeProbability({
       calibrated_probability: c.calibrated_probability, reliability_score: rel.score,
       lower_bound: c.lower_bound, lower_bound_basis: c.lower_bound_basis,
+      bootstrap_shift_points: c.bootstrap_shift_points, bootstrap_basis: c.bootstrap_basis,
       fair_line_se: c.fair_line_se, fair_selection_line: c.fair_selection_line, market_selection_line: c.line, sigma: c.sigma
     });
     if (rel.score < num(S.minimum_reliability)) gate('RELIABILITY_BELOW_FLOOR', 'reliability ' + r4(rel.score) + ' is under the ' + S.minimum_reliability + ' floor (weakest component: ' + (rel.weakest ? rel.weakest.name + ' at ' + rel.weakest.value : 'n/a') + ')');
@@ -843,6 +1067,7 @@
       fair_odds: EV.fair_american_odds, fair_decimal_odds: EV.fair_decimal_odds,
       fair_line: num(c.fair_selection_line) != null ? r2(num(c.fair_selection_line)) : null,
       reliability_score: rel.score, reliability_components: rel.components, reliability_basis: rel.basis,
+      weather: rel.weather || null,
       raw_kelly_fraction: K.full_kelly_fraction, fractional_kelly_fraction: K.fractional_kelly_fraction,
       kelly_multiplier: S.fractional_kelly_multiplier, kelly_stake_dollars: K.stake_dollars, kelly_raw_units: K.raw_units, kelly_basis: K.units_basis || K.why,
       recommended_units: units, recommended_dollars: dollars,
@@ -958,6 +1183,7 @@
       no_vig_source: isDevig ? 'the de-vigged sharp reference market, both sides of the same line' : (o.no_vig_source || null),
       push_probability: num(c.fair.push_probability) || 0,
       fair_selection_line: num(c.fair.fair_line), sigma: num(c.fair.sigma), fair_line_se: num(o.fair_line_se),
+      bootstrap_shift_points: num(o.bootstrap_shift_points), bootstrap_basis: o.bootstrap_basis || null,
       lower_bound: num(o.lower_bound), lower_bound_basis: o.lower_bound_basis || null,
       tier: tier, tier_basis: (c.fair.validation && c.fair.validation.basis) || (c.fair.validation && c.fair.validation.note) || null,
       calibration_available: o.calibration_available !== undefined ? o.calibration_available : (isDevig ? true : tier !== 'UNVALIDATED'),
@@ -972,6 +1198,10 @@
       book_confirmed: c.decision && c.decision.gates && typeof c.decision.gates.confirmation === 'boolean' ? c.decision.gates.confirmation : null,
       book_disagreement: o.book_disagreement || null,
       availability_state: o.availability_state || null, availability_unresolved: o.availability_unresolved === true, availability_note: o.availability_note || null,
+      /* the forecast for THIS game, as the host read it; `checked` says the
+         source was consulted, which is what separates a data hole from an
+         unwired sport */
+      weather: o.weather || null,
       inferred_inputs: o.inferred_inputs === true, inferred_note: o.inferred_note || null,
       market_definition_mismatch: mismatch,
       price_limit_american: c.threshold && c.threshold.kind === 'price' ? num(c.threshold.price_limit_american) : null,
@@ -1171,10 +1401,26 @@
       passes: passed.slice().sort(function (a, b) { return (num(b.expected_value) == null ? -99 : num(b.expected_value)) - (num(a.expected_value) == null ? -99 : num(a.expected_value)); }).slice(0, PASS_LIMIT),
       research_only: research.slice().sort(function (a, b) { return (num(b.expected_value) == null ? -99 : num(b.expected_value)) - (num(a.expected_value) == null ? -99 : num(a.expected_value)); }).slice(0, PASS_LIMIT),
       passes_total: passed.length, research_only_total: research.length,
+      /* ONE FRESH PRICE AWAY.
+         A candidate whose ONLY failed gate is the age of the captured quote
+         is not a candidate EdgeDesk disagrees with: it is one it has not
+         looked at recently enough. That is the only refusal a capture pass
+         can fix, so it is counted and named — which is what turns "refresh
+         the quotes" from a reflex into a decision with a measurable target.
+         Nothing here relaxes the gate; a stale price is still a refusal. */
+      one_price_away: oneFreshPriceAway(evaluated),
       games: games, portfolio_actions: portfolio,
       exposure_before: { by_game: opening.by_game, by_team: opening.by_team, by_day: opening.by_day, by_week: opening.by_week, total_units: opening.total_units },
       exposure_after: { by_game: closing.by_game, by_team: closing.by_team, by_day: closing.by_day, by_week: closing.by_week, total_units: closing.total_units },
       exposure_ledger: closing,
+      /* what the caps were already counting before this card, split by where
+         it came from: a reader cannot tell whether a cap is true unless they
+         can see whether it counted their whole book */
+      exposure: { carried_units: opening.total_units, declared_units: opening.declared_units || 0,
+        declared_positions: (opening.positions || []).filter(function (p) { return p.kind === 'DECLARED'; }).length,
+        note: (opening.declared_units || 0) > 0
+          ? 'the caps counted ' + (opening.declared_units || 0) + 'u the reader declared placing elsewhere as well as what EdgeDesk recommended'
+          : 'the caps counted only positions EdgeDesk recommended; a wager placed elsewhere is invisible to them until it is declared' },
       caps: { single: S.maximum_single_wager_units, game: S.maximum_game_exposure_units, team: S.maximum_team_exposure_units, daily: S.maximum_daily_exposure_units, weekly: S.maximum_weekly_exposure_units },
       total_recommended_units: r2(emitted.reduce(function (s, r) { return s + (num(r.recommended_units) || 0); }, 0)),
       total_recommended_dollars: emitted.every(function (r) { return r.recommended_dollars != null; }) && emitted.length ? r2(emitted.reduce(function (s, r) { return s + num(r.recommended_dollars); }, 0)) : null,
@@ -1290,6 +1536,10 @@
     L.push('No-vig market probability: ' + (r.no_vig_market_probability == null ? 'not computable — ' + str(r.no_vig_source) : pct(r.no_vig_market_probability)));
     L.push('Conservative EV: ' + pp(r.expected_value, 1) + ' per unit (fair odds ' + fmtAm(r.fair_odds) + ', break-even ' + pct(r.break_even_probability) + ')');
     L.push('Reliability: ' + r.reliability_score + (r.reliability_components && r.reliability_components.length ? ' (weakest: ' + r.reliability_components.slice().sort(function (a, b) { return a.value - b.value; })[0].name + ')' : ''));
+    /* Weather is printed only where it is a fact about the wager: a benign
+       forecast and a closed roof are not news, and printing them on every
+       line would train a reader to skip the line that matters. */
+    if (r.weather && (r.weather.state === 'SEVERE' || r.weather.state === 'NOTABLE' || r.weather.state === 'UNKNOWN')) L.push('Weather: ' + r.weather.state + ' — ' + r.weather.basis);
     L.push('Recommended position: ' + r.recommendation_label + (r.recommended_dollars != null ? ' / ' + fmtMoney(r.recommended_dollars) : '') + ' [' + (r.kelly_basis || 'Kelly') + '; ' + (r.rounding ? r.rounding.why : 'rounded down') + ']');
     L.push('Exposure after this wager: ' + fmtUnits(r.resulting_team_exposure_units) + ' on ' + (r.exposure_keys && (r.exposure_keys.team_label || r.exposure_keys.team) ? (r.exposure_keys.team_label || r.exposure_keys.team) : 'this team') + ' (cap ' + r.policy.max_team + 'u), ' + fmtUnits(r.resulting_game_exposure_units) + ' on the game (cap ' + r.policy.max_game + 'u), ' + fmtUnits(r.resulting_daily_exposure_units) + ' for the day (cap ' + r.policy.max_daily + 'u), ' + fmtUnits(r.resulting_weekly_exposure_units) + ' for the week (cap ' + r.policy.max_weekly + 'u)');
     if (r.price_limit_american != null) L.push('Playable through: ' + fmtAm(r.price_limit_american) + ' at ' + (r.market === 'total' ? r.line : fmtLine(r.line)));
@@ -1315,6 +1565,7 @@
       L.push(str(card.headline).replace(/^NO BET\.\s*/, ''));
       if (card.watchlist.length) { L.push(''); L.push('Watchlist — positive expected value the size rules refused, with what would change it:'); card.watchlist.forEach(function (r) { L.push('• ' + r.selection + (r.line == null ? '' : ' ' + (r.market === 'total' ? r.line : fmtLine(r.line))) + ' ' + fmtAm(r.american_odds) + ' — ' + r.matchup + ': ' + pp(r.expected_value, 1) + ' conservative EV, 0u because ' + ((r.gates_failed || []).map(function (g) { return g.detail || g.why; })[0] || 'the size rounded below the minimum')); }); }
       if (card.research_only.length) { L.push(''); L.push('Research only (EdgeDesk cannot price these to a stake): ' + card.research_only.slice(0, 5).map(function (r) { return r.selection + ' (' + ((r.gates_failed || [])[0] || {}).code + ')'; }).join(', ')); }
+      if (card.one_price_away && card.one_price_away.count) { L.push(''); L.push('One fresh price away: ' + card.one_price_away.note); }
       L.push('');
       L.push('PASS is a successful result. ' + card.policy.basis);
       return L.join('\n');
@@ -1325,6 +1576,7 @@
     L.push('Card total: ' + fmtUnits(card.total_recommended_units) + (card.total_recommended_dollars != null ? ' / ' + fmtMoney(card.total_recommended_dollars) : '') + ' across ' + card.recommendations.length + ' position' + (card.recommendations.length === 1 ? '' : 's') + '. Daily cap ' + card.caps.daily + 'u, weekly cap ' + card.caps.weekly + 'u.');
     if (card.portfolio_actions.length) L.push('Portfolio: ' + card.portfolio_actions.map(function (a) { return a.action + ' ' + a.selection + ' — ' + a.why; }).join(' | '));
     if (card.watchlist.length) L.push('Watchlist: ' + card.watchlist.map(function (r) { return r.selection + ' ' + fmtAm(r.american_odds) + ' (' + pp(r.expected_value, 1) + ', 0u)'; }).join('; '));
+    if (card.one_price_away && card.one_price_away.count) L.push('One fresh price away: ' + card.one_price_away.note);
     if (card.parlay && card.parlay.built) L.push('Parlay (separate from the card): ' + card.parlay.legs + ' legs at a verified ' + fmtAm(card.parlay.combined_american) + ', stake ' + fmtUnits(card.parlay.stake_units) + '. ' + card.parlay.no_combined_probability);
     else if (card.parlay && card.parlay.requested) L.push('Parlay: not constructed — ' + card.parlay.why);
     if (!card.policy.bankroll_known) L.push('Bankroll: ' + card.policy.dollars_note);
@@ -1342,6 +1594,7 @@
     L.push('HEADLINE: ' + card.headline);
     L.push('POLICY: ' + card.policy.basis + ' Bankroll on file: ' + (card.policy.bankroll_known ? 'yes' : 'NO — ' + card.policy.dollars_note) + ' Base unit: ' + fmtMoney(card.policy.base_unit_amount) + ' (' + card.policy.sources.base_unit_amount + ').');
     L.push('EVALUATED: ' + card.markets_evaluated + ' market(s) across ' + card.games_evaluated + ' game(s); ' + card.recommendations.length + ' recommended, ' + card.watchlist.length + ' watched, ' + card.passes.length + ' passed, ' + card.research_only.length + ' research only.');
+    if (card.one_price_away && card.one_price_away.count) L.push('ONE FRESH PRICE AWAY: ' + card.one_price_away.note + ' Say this plainly if the reader asks why a name they expected is missing. Do NOT present any of them as a bet.');
     if (card.recommendations.length) {
       L.push('RECOMMENDED POSITIONS (print every field; the units and dollars are final):');
       card.recommendations.forEach(function (r, i) { L.push(recLines(r, { index: i }).map(function (x) { return '  ' + x; }).join('\n')); });
@@ -1460,7 +1713,7 @@
         exposure_before: { team: r.existing_team_exposure_units, game: r.existing_game_exposure_units, day: r.existing_daily_exposure_units, week: r.existing_weekly_exposure_units, keys: r.exposure_keys },
         exposure_after: { team: r.resulting_team_exposure_units, game: r.resulting_game_exposure_units, day: r.resulting_daily_exposure_units, week: r.resulting_weekly_exposure_units },
         caps: card.caps, caps_applied: r.caps_applied, binding_cap: r.binding_cap,
-        reliability: { score: r.reliability_score, components: r.reliability_components, basis: r.reliability_basis },
+        reliability: { score: r.reliability_score, components: r.reliability_components, basis: r.reliability_basis, weather: r.weather || null },
         kelly: { raw: r.raw_kelly_fraction, fractional: r.fractional_kelly_fraction, multiplier: r.kelly_multiplier, stake_dollars: r.kelly_stake_dollars, raw_units: r.kelly_raw_units, basis: r.kelly_basis, rounding: r.rounding },
         gates_failed: r.gates_failed, pass_reason: r.status === 'BET' ? null : ((r.gates_failed || []).map(function (g) { return g.code + ': ' + (g.detail || g.why); })[0] || r.portfolio_reason || 'no gate fired and no size resulted'),
         correlated_exposure: r.correlated_exposure, portfolio_reason: r.portfolio_reason || null,
@@ -1523,8 +1776,9 @@
     SIZEABLE_MARKETS: SIZEABLE_MARKETS, CONDITIONAL_MARKETS: CONDITIONAL_MARKETS, RELIABILITY_WEIGHTS: RELIABILITY_WEIGHTS, TOOL_NAMES: TOOL_NAMES,
     settings: settings, quoteCheck: quoteCheck, noVig: noVig, bookDisagreement: bookDisagreement,
     loadStakingValidation: loadStakingValidation, stakingModeFor: stakingModeFor, clearStakingValidation: clearStakingValidation,
-    registerValidatedMarket: registerValidatedMarket, validatedExtraMarket: validatedExtraMarket, clearValidatedMarkets: clearValidatedMarkets,
-    reliability: reliability, conservativeProbability: conservativeProbability, expectedValue: expectedValue,
+    registerValidatedMarket: registerValidatedMarket, loadExtraMarkets: loadExtraMarkets, extraMarkets: extraMarkets, validatedExtraMarket: validatedExtraMarket, clearValidatedMarkets: clearValidatedMarkets,
+    reliability: reliability,
+    weatherCertainty: weatherCertainty, conservativeProbability: conservativeProbability, expectedValue: expectedValue,
     kelly: kelly, roundUnits: roundUnits, tierFor: tierFor, capsFor: capsFor, priceAtLeast: priceAtLeast,
     exposureLedger: exposureLedger, ledgerFor: ledgerFor, addToLedger: addToLedger, correlations: correlations, teamsOf: teamsOf,
     evaluate: evaluate, candidateFromBoard: candidateFromBoard, bestMarket: bestMarket, alternates: alternates,

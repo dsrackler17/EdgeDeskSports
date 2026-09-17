@@ -109,12 +109,12 @@ function cardOf(cands, over) {
 /* ═══ 2. RELIABILITY ════════════════════════════════════════════════════ */
 {
   const w = S.RELIABILITY_WEIGHTS.reduce((s, x) => s + x.weight, 0);
-  near('the eight weights sum to one', w, 1, 1e-9);
+  near('the nine weights sum to one', w, 1, 1e-9);
   const best = S.reliability({ tier: 'VALIDATED', sample_n: 5000, data_completeness: 1, quote_freshness: 'CURRENT', book_families: 6, min_book_families: 3, availability_state: 'OFFICIAL_REPORT', distribution_validated: true, model_version_validated: true });
   chk('a perfect input set is still not certainty (capped at 0.95)', best.score <= 0.95, best.score);
   const worst = S.reliability({ tier: 'RESEARCH', sample_n: null, data_completeness: 0, quote_freshness: 'UNKNOWN', book_families: 0, availability_state: 'UNRESOLVED', availability_unresolved: true, distribution_validated: false, model_version_validated: false });
   chk('a hollow input set floors at 0.05, never zero', worst.score >= 0.05 && worst.score < 0.25, worst.score);
-  eq('every component is stored with its weight, value and input', best.components.length, 8);
+  eq('every component is stored with its weight, value and input', best.components.length, S.RELIABILITY_WEIGHTS.length);
   chk('and each one names what produced it', best.components.every((c) => c.basis && c.input != null), best.components.map((c) => c.name + '=' + c.input));
   /* the score MOVES with each named part and with nothing else */
   const base = S.reliability({ tier: 'LEAN', sample_n: 1000, data_completeness: 0.8, quote_freshness: 'CURRENT', book_families: 3, availability_state: 'PROJECTED', distribution_validated: true, model_version_validated: true });
@@ -138,9 +138,28 @@ function cardOf(cands, over) {
   const lbHigh = S.conservativeProbability({ calibrated_probability: 0.6, reliability_score: 0.9, lower_bound: 0.8 });
   near('a lower bound above the point estimate is never used to raise it', lbHigh.probability, 0.6, 1e-9);
   /* the fair-line standard error through the cover curve */
-  const se = S.conservativeProbability({ calibrated_probability: 0.58, reliability_score: 0.9, fair_line_se: 0.4, fair_selection_line: -4.5, market_selection_line: -2.5, sigma: 13 });
-  chk('a fair-line standard error becomes a real lower bound through the cover curve', se.method === 'LOWER_BOUND_FAIR_LINE_SE' && se.probability < 0.58, se);
-  chk('staking never uses the calibrated number when a conservative one exists', se.probability < 0.58);
+  const point = P.coverAt(-4.5, -2.5, 13).cover;
+  const se = S.conservativeProbability({ calibrated_probability: point, reliability_score: 0.9, fair_line_se: 0.4, fair_selection_line: -4.5, market_selection_line: -2.5, sigma: 13 });
+  chk('a fair-line standard error becomes a real lower bound through the cover curve', se.method === 'LOWER_BOUND_FAIR_LINE_SE' && se.probability < point, [se.probability, point]);
+  chk('staking never uses the calibrated number when a conservative one exists', se.probability < point);
+  /* THE DIRECTION BUG THIS LOCKS DOWN.
+     The cover curve is Phi((market line - fair line)/sigma), so SUBTRACTING a
+     shift from the fair line RAISES the cover when the model already favours
+     the selection. The first version did exactly that, and the clamp to the
+     calibrated probability hid it: the "bound" came back equal to the point
+     estimate and the whole adjustment silently did nothing. Both shifts are
+     now read in BOTH directions and the lower one wins, so neither can pick
+     the wrong way whichever side the model likes. */
+  const boot = S.conservativeProbability({ calibrated_probability: point, reliability_score: 0.9, bootstrap_shift_points: 0.9, bootstrap_basis: '120 refits', fair_selection_line: -4.5, market_selection_line: -2.5, sigma: 13 });
+  eq('a measured bootstrap shift is preferred over the derived standard error', boot.method, 'LOWER_BOUND_BOOTSTRAP');
+  chk('and it lowers the probability when the model FAVOURS the selection', boot.probability < point, [boot.probability, point]);
+  chk('and it names the measurement behind it', /bootstrap refits/.test(boot.basis) && boot.measured_basis === '120 refits', boot);
+  /* the mirror: the model DISfavours the selection, so the naive sign flips */
+  const mirrorPoint = P.coverAt(-1.0, -2.5, 13).cover;
+  const mirror = S.conservativeProbability({ calibrated_probability: mirrorPoint, reliability_score: 0.9, bootstrap_shift_points: 0.9, fair_selection_line: -1.0, market_selection_line: -2.5, sigma: 13 });
+  chk('and it still lowers the probability when the model DISfavours the selection', mirror.probability < mirrorPoint, [mirror.probability, mirrorPoint]);
+  chk('a zero shift falls through rather than pretending to be a bound',
+    S.conservativeProbability({ calibrated_probability: point, reliability_score: 0.5, bootstrap_shift_points: 0, fair_selection_line: -4.5, market_selection_line: -2.5, sigma: 13 }).method === 'SHRINK_TO_HALF_BY_RELIABILITY');
   const nope = S.conservativeProbability({ calibrated_probability: null, reliability_score: 0.8 });
   chk('no calibrated probability means no conservative probability', !nope.ok && nope.probability === null, nope);
 }
@@ -194,7 +213,7 @@ function cardOf(cands, over) {
   chk('warnings are a list', Array.isArray(r.warnings));
   chk('the exposure after the wager is the exposure before plus the size', Math.abs(r.resulting_team_exposure_units - (r.existing_team_exposure_units + r.recommended_units)) < 1e-9, [r.existing_team_exposure_units, r.recommended_units, r.resulting_team_exposure_units]);
   chk('every cap that was applied is recorded with its basis', r.caps_applied.length >= 7 && r.caps_applied.every((c) => c.code && c.why), r.caps_applied.map((c) => c.code));
-  chk('the reliability components ride with the recommendation', r.reliability_components.length === 8);
+  chk('the reliability components ride with the recommendation', r.reliability_components.length === S.RELIABILITY_WEIGHTS.length);
   chk('the counterargument is carried, not invented', r.strongest_counterargument === candidate().counter, r.strongest_counterargument);
   chk('a line-shop edge says the model edge is zero by construction', r.model_edge === 0 && r.warnings.some((w) => /entirely in the price/.test(w)), [r.model_edge, r.warnings]);
   chk('the recommendation id is deterministic', S.evaluate(candidate(), { settings: SET, timezone: CHI, now: NOW }).recommendation_id === r.recommendation_id);
@@ -514,7 +533,7 @@ function num2(v) { return v == null ? -99 : Number(v); }
    'raw_kelly_fraction', 'fractional_kelly_fraction', 'recommended_units', 'exposure_before_units', 'exposure_after_units',
    'model_version', 'calibration_version', 'status', 'pass_reason', 'snapshot']
     .forEach((k) => chk('the trail persists ' + k, k in bet, Object.keys(bet)));
-  chk('the snapshot carries the reliability components, the Kelly working and the caps', bet.snapshot.reliability.components.length === 8 && bet.snapshot.kelly.raw != null && bet.snapshot.caps_applied.length >= 7);
+  chk('the snapshot carries the reliability components, the Kelly working and the caps', bet.snapshot.reliability.components.length === S.RELIABILITY_WEIGHTS.length && bet.snapshot.kelly.raw != null && bet.snapshot.caps_applied.length >= 7);
   chk('and says it is never rewritten after the market moves', /never rewritten after the market moves/.test(bet.snapshot.immutable));
   const passRow = rows.find((r) => r.status !== 'BET');
   chk('a PASS row records WHY it passed', passRow.pass_reason && passRow.pass_reason.length > 10, passRow.pass_reason);
@@ -659,6 +678,218 @@ function num2(v) { return v == null ? -99 : Number(v); }
   const dis = S.bookDisagreement([{ odds_american: -105 }, { odds_american: -115 }, { odds_american: -110 }]);
   chk('disagreement across books is reported in probability points', dis.books === 3 && dis.spread_pp > 0, dis);
   chk('one book is not a disagreement and says so', /only one book/.test(S.bookDisagreement([{ odds_american: -110 }]).why));
+}
+
+/* ═══ 17b. WEATHER IS A CERTAINTY, NEVER A PREDICTION ═══════════════════ */
+{
+  const W = (weather, market) => S.weatherCertainty({ weather, market: market || 'totals' });
+  const KICKOFF = '2026-09-19T17:00:00Z';
+  const calm = { dome: false, wind_mph: 4, gust_mph: 6, temp_f: 68, precip_in: 0, observed_at: '2026-09-19T12:00:00Z', kickoff: KICKOFF };
+  const gale = { dome: false, wind_mph: 26, gust_mph: 36, temp_f: 31, precip_in: 0.1, observed_at: '2026-09-19T12:00:00Z', kickoff: KICKOFF };
+
+  /* the three states that are not a forecast at all, and the distinction
+     between them is the whole point of the `checked` flag */
+  eq('a closed roof is certainty, and says why', W({ dome: true }).state, 'INDOORS');
+  eq('and scores a full one', W({ dome: true }).value, 1);
+  eq('a sport that is not played in the weather is certain too', W({ exposed: false }).state, 'NOT_EXPOSED');
+  eq('a source that was READ and had nothing is a data hole', W({ checked: true }).state, 'UNKNOWN');
+  eq('a sport nobody wired a forecast for is NOT a data hole', W(null).state, 'NOT_WIRED');
+  chk('and the unwired case is held neutral rather than punished', W(null).value > W({ checked: true }).value, [W(null).value, W({ checked: true }).value]);
+  chk('the data hole says the source was read', /read and carries nothing/.test(W({ checked: true }).basis), W({ checked: true }).basis);
+  chk('and the unwired case says nobody looked', /none was looked for|no forecast was passed/.test(W(null).basis), W(null).basis);
+
+  /* the conditions */
+  eq('a calm, mild forecast made this morning is benign', W(calm).state, 'BENIGN');
+  eq('and costs nothing', W(calm).value, 1);
+  eq('a cold gale with rain is severe', W(gale).state, 'SEVERE');
+  chk('and costs real certainty', W(gale).value < 0.5, W(gale).value);
+  chk('gusts count even when the average wind does not', W({ dome: false, wind_mph: 8, gust_mph: 34, temp_f: 60 }).value < W({ dome: false, wind_mph: 8, gust_mph: 9, temp_f: 60 }).value);
+  chk('a missing reading is not read as a zero', W({ dome: false, wind_mph: 26 }).value < 1 && W({ dome: false, temp_f: 68 }).value === 1);
+
+  /* MARKET SENSITIVITY. The same gale is a bigger fact about a total than
+     about a side, because wind suppresses both offences at once. */
+  const t = W(gale, 'totals').value, sp = W(gale, 'spreads').value, ml = W(gale, 'h2h').value;
+  chk('the same weather costs the total most, the side less and the moneyline least', t < sp && sp < ml, { t, sp, ml });
+  eq('and the severity itself is the same number in all three', [W(gale, 'totals').severity, W(gale, 'spreads').severity, W(gale, 'h2h').severity], [W(gale).severity, W(gale).severity, W(gale).severity]);
+  chk('the basis names the market it was read for', /total sensitivity/.test(W(gale, 'totals').basis) && /spread sensitivity/.test(W(gale, 'spreads').basis));
+
+  /* FORECAST LEAD. A calm forecast six days out is a different claim. */
+  const early = Object.assign({}, calm, { observed_at: '2026-09-13T12:00:00Z' });
+  chk('a forecast made six days out costs certainty even when it says calm', W(early).value < W(calm).value, [W(calm).value, W(early).value]);
+  eq('and the state says so rather than reading as plain benign', W(early).state, 'BENIGN_BUT_EARLY');
+  chk('the basis prints the lead', /forecast made \d+h before kickoff/.test(W(early).basis), W(early).basis);
+  chk('a value is never below the floor, whatever the conditions', W({ dome: false, wind_mph: 90, gust_mph: 120, temp_f: -40, precip_in: 5, observed_at: '2026-09-01T00:00:00Z', kickoff: KICKOFF }).value >= 0.1);
+
+  /* IT IS A RELIABILITY COMPONENT, NOT A PROJECTION.
+     The failure this guards is a kernel that starts nudging the probability
+     because it is windy. Nothing here may touch the fair line, the cover
+     curve or the calibrated probability. */
+  const base = { tier: 'LEAN', sample_n: 1000, data_completeness: 0.8, quote_freshness: 'CURRENT', book_families: 3, availability_state: 'PROJECTED', distribution_validated: true, model_version_validated: true, market: 'totals' };
+  const relCalm = S.reliability(Object.assign({}, base, { weather: calm }));
+  const relGale = S.reliability(Object.assign({}, base, { weather: gale }));
+  chk('weather moves the reliability score', relGale.score < relCalm.score, [relCalm.score, relGale.score]);
+  chk('and it is one named component among the rest', relGale.components.some((c) => c.name === 'weather_certainty'), relGale.components.map((c) => c.name));
+  const wxComp = relGale.components.find((c) => c.name === 'weather_certainty');
+  chk('carrying its own weight and its own input sentence', wxComp.weight > 0 && /SEVERE/.test(wxComp.input), wxComp);
+  chk('the reliability report carries the whole weather reading', relGale.weather && relGale.weather.state === 'SEVERE', relGale.weather);
+  /* completeness and weather are now SEPARATE: moving one must not move the
+     other, which is the whole reason weather was split out of it */
+  const dropComp = S.reliability(Object.assign({}, base, { weather: calm, data_completeness: 0.3 }));
+  chk('dropping completeness leaves the weather component alone',
+    dropComp.components.find((c) => c.name === 'weather_certainty').value === relCalm.components.find((c) => c.name === 'weather_certainty').value);
+  chk('and a gale leaves the completeness component alone',
+    relGale.components.find((c) => c.name === 'data_completeness').value === relCalm.components.find((c) => c.name === 'data_completeness').value);
+
+  /* THE GATE. It fires only where the host said it looked, only outdoors,
+     and only in the market weather moves most. */
+  const tot = (weather) => candidate({ id: 'w|1|totals|over', market: 'totals', side: 'over', selection: 'Over 44.5', line: 44.5, weather: weather });
+  const codes = (c) => S.evaluate(c, { settings: SET, timezone: CHI, now: NOW }).gates_failed.map((g) => g.code);
+  chk('a total in an outdoor game the forecast file has nothing for is gated', codes(tot({ checked: true })).indexOf('WEATHER_UNOBSERVED') >= 0, codes(tot({ checked: true })));
+  chk('and the gate is a WATCH, because a forecast arriving makes it a bet',
+    S.evaluate(tot({ checked: true }), { settings: SET, timezone: CHI, now: NOW }).gates_failed.find((g) => g.code === 'WEATHER_UNOBSERVED').status === 'WATCH');
+  chk('the same game with a forecast on file is not gated', codes(tot(calm)).indexOf('WEATHER_UNOBSERVED') < 0, codes(tot(calm)));
+  chk('a gale is not a gate either: it is a cost to reliability, not a refusal', codes(tot(gale)).indexOf('WEATHER_UNOBSERVED') < 0, codes(tot(gale)));
+  chk('an indoor game is never gated on weather', codes(tot({ checked: true, dome: true })).indexOf('WEATHER_UNOBSERVED') < 0);
+  chk('a sport with no forecast source wired is never gated for the host’s gap', codes(tot(null)).indexOf('WEATHER_UNOBSERVED') < 0, codes(tot(null)));
+  const spreadHole = candidate({ weather: { checked: true } });
+  chk('and the gate does not reach the side market, where weather moves less',
+    S.evaluate(spreadHole, { settings: SET, timezone: CHI, now: NOW }).gates_failed.map((g) => g.code).indexOf('WEATHER_UNOBSERVED') < 0);
+  /* the decision carries the reading, so a record can be graded on it later */
+  const d = S.evaluate(tot(gale), { settings: SET, timezone: CHI, now: NOW });
+  chk('the decision carries the weather reading it sized under', d.weather && d.weather.state === 'SEVERE', d.weather);
+}
+
+
+/* ═══ 17e. THE REFRESH AS A DECISION, NOT A REFLEX ══════════════════════ */
+{
+  /* A candidate refused ONLY for the age of its price is the one refusal a
+     capture pass can fix. Counting those is what turns "refresh the quotes"
+     into a decision with a target, and it never relaxes the gate itself. */
+  const stale = candidate({ quote: { book: 'DraftKings', odds_american: -105, odds_decimal: 1.9524,
+    captured_at: '2026-09-17T13:00:00Z', freshness: 'STALE', executable: true, actionable: false, age_seconds: 21600,
+    source: 'signals (EdgeDesk capture)' } });
+  const codesOf = (c) => S.evaluate(c, { settings: SET, timezone: CHI, now: NOW }).gates_failed.map((g) => g.code);
+  eq('a stale price is refused, and for exactly that reason', codesOf(stale), ['STALE_PRICE']);
+  const card = cardOf([stale]);
+  eq('the card counts it as one fresh price away', card.one_price_away.count, 1);
+  chk('and names it, with the price that went stale', card.one_price_away.positions[0].selection === stale.selection
+    && card.one_price_away.positions[0].price_freshness === 'STALE', card.one_price_away.positions[0]);
+  chk('the note says a capture is the one thing that would change it', /A fresh capture is the one thing that would change that answer/.test(card.one_price_away.note), card.one_price_away.note);
+  eq('and it is still not a recommendation', card.recommendations.length, 0);
+
+  /* a candidate refused for a SECOND reason is not one fresh price away:
+     refreshing it would change nothing, and saying otherwise would send a
+     reader back to the book for a bet that still would not clear */
+  const alsoThin = candidate({ book_confirmed: false, quote: stale.quote });
+  chk('a stale price plus a thin market fails two gates', codesOf(alsoThin).length >= 2, codesOf(alsoThin));
+  eq('so it is NOT counted as one fresh price away', cardOf([alsoThin]).one_price_away.count, 0);
+  const clean = cardOf([candidate()]);
+  eq('and a card with no stale refusal says a refresh could not change it', clean.one_price_away.count, 0);
+  chk('in words', /could not change this card/.test(clean.one_price_away.note), clean.one_price_away.note);
+}
+
+/* ═══ 17d. THE EXPOSURE EDGEDESK DID NOT PUT ON ═════════════════════════ */
+{
+  /* The cap is the promise. A cap computed only from what EdgeDesk itself
+     recommended is a cap on the part of the reader's book this system can
+     see, which is a weaker promise than the number implies. */
+  const declared = (units, over) => Object.assign({ kind: 'DECLARED', sport: 'americanfootball_ncaaf', game_id: '401',
+    market: 'spreads', side: 'home', selection: 'Army', units: units, kickoff: KICK, teams: ['army'],
+    ticket_id: 'external:1', source: 'a wager the reader declared placing elsewhere' }, over || {});
+
+  const clean = cardOf([candidate()]);
+  chk('with nothing declared the engine sizes a position', clean.recommendations.length === 1, clean.recommendations.length);
+  eq('and says the caps saw only its own positions', clean.exposure.declared_units, 0);
+  chk('in words a reader can act on', /invisible to them until it is declared/.test(clean.exposure.note), clean.exposure.note);
+
+  /* the same candidate, with the reader already 1.5u deep on that team */
+  const loaded = cardOf([candidate()], { positions: [declared(1.5)] });
+  eq('a declared position is counted as carried exposure', loaded.exposure.declared_units, 1.5);
+  eq('and is counted as a position', loaded.exposure.declared_positions, 1);
+  chk('the note says so', /as well as what EdgeDesk recommended/.test(loaded.exposure.note), loaded.exposure.note);
+  chk('and the team cap now binds, so the engine sizes less or nothing',
+    loaded.recommendations.reduce((s, r) => s + r.recommended_units, 0) < clean.recommendations.reduce((s, r) => s + r.recommended_units, 0),
+    [clean.recommendations.map((r) => r.recommended_units), loaded.recommendations.map((r) => r.recommended_units)]);
+
+  /* IT CAN ONLY EVER TIGHTEN. A declared position must never open room. */
+  const many = [];
+  for (let i = 0; i < 8; i++) many.push(declared(0.5, { game_id: 'g' + i, selection: 'T' + i, teams: ['t' + i], ticket_id: 'external:' + i }));
+  const capped = cardOf([candidate()], { positions: many });
+  eq('four units already on the day leaves no daily room', capped.recommendations.length, 0);
+  chk('and the refusal names the cap rather than a model reason',
+    (capped.passes || []).concat(capped.watchlist || []).some((r) => (r.gates_failed || []).some((g) => g.code === 'EXPOSURE_CAP')) || capped.recommendations.length === 0);
+
+  /* IT IS NEVER GRADED. A declared wager has no place in the engine's trail. */
+  const rows = S.records(loaded, { question: 'best bet today' });
+  chk('no declared position appears in the audit trail', rows.every((r) => String(r.recommendation_id || '').indexOf('external:') < 0), rows.map((r) => r.recommendation_id));
+  chk('and the trail only ever carries what EdgeDesk itself sized', rows.every((r) => r.sport === 'americanfootball_ncaaf' && r.game_id === '401'));
+  /* the ledger keeps the two kinds distinguishable, which is what lets the
+     grading read one and the caps read both */
+  const led = S.exposureLedger({ positions: [declared(1.5), { kind: 'SUBMITTED', sport: 'americanfootball_ncaaf', game_id: '999', market: 'spreads', side: 'home', selection: 'X', units: 0.5, kickoff: KICK }], timezone: CHI });
+  eq('the ledger totals both kinds', led.total_units, 2);
+  eq('and reports the declared share separately', led.declared_units, 1.5);
+  chk('every position says where it came from', led.positions.every((p) => p.kind && p.source), led.positions.map((p) => p.kind));
+}
+
+/* ═══ 17c. THE EXTRA-MARKET DOOR ════════════════════════════════════════ */
+{
+  const fs2 = require('fs'), path2 = require('path');
+  const ART = path2.join(__dirname, '..', '..', 'football', 'validation', 'markets_extra.json');
+  S.clearValidatedMarkets();
+  const prop = () => candidate({ id: 'x|401|team_totals|over', market: 'team_totals', side: 'over', selection: 'Army team total Over 24.5', line: 24.5 });
+  const codesOf = (c) => S.evaluate(c, { settings: SET, timezone: CHI, now: NOW }).gates_failed.map((g) => g.code);
+  chk('a team total is out of scope with nothing registered', codesOf(prop()).indexOf('MARKET_OUT_OF_SCOPE') >= 0, codesOf(prop()));
+  chk('and the refusal says there is no separately validated model',
+    /no separately validated team total model/.test(S.evaluate(prop(), { settings: SET, timezone: CHI, now: NOW }).gates_failed.find((g) => g.code === 'MARKET_OUT_OF_SCOPE').detail));
+
+  /* WHAT THE ARTIFACT MAY AND MAY NOT OPEN */
+  eq('an artifact with no markets list registers nothing', S.loadExtraMarkets({}).ok, false);
+  eq('and says why rather than failing silently', /carries no `markets` list/.test(S.loadExtraMarkets({}).why), true);
+  const empty = S.loadExtraMarkets({ generated_at: 'T', markets: [], note: 'the archives carry no such line' });
+  eq('an EMPTY list is a valid artifact, because "nothing qualified" is a result', empty.ok, true);
+  eq('and it registers nothing', empty.registered, []);
+  chk('while repeating the validation’s own reason', /no such line/.test(empty.why), empty.why);
+
+  const bad = S.loadExtraMarkets({ markets: [
+    { sport: 'americanfootball_ncaaf', market: 'team_totals', tier: 'VALIDATED', sample_n: 900 },
+    { sport: 'americanfootball_ncaaf', market: 'team_totals', tier: 'RESEARCH', basis: 'a held-out run', sample_n: 900 },
+    { sport: 'americanfootball_ncaaf', market: 'team_totals', tier: 'VALIDATED', basis: 'a held-out run' },
+    { market: 'team_totals', tier: 'VALIDATED', basis: 'a held-out run', sample_n: 900 },
+  ] });
+  eq('every malformed entry is refused', bad.registered, []);
+  eq('and each refusal is named', bad.refused.length, 4);
+  chk('a tier with no basis is refused for that reason', /tier and a basis/.test(bad.refused[0].why), bad.refused[0]);
+  chk('a RESEARCH tier cannot open a market', /only a VALIDATED, LEAN or PROBABILITY tier/.test(bad.refused[1].why), bad.refused[1]);
+  chk('a tier with no held-out sample is refused', /no held-out sample size/.test(bad.refused[2].why), bad.refused[2]);
+  chk('an entry with no sport cannot name what it validated', /cannot name what it validated/.test(bad.refused[3].why), bad.refused[3]);
+  chk('nothing opened while all four were refused', S.extraMarkets().length === 0, S.extraMarkets());
+
+  /* AND WHAT IT MAY. The door has to actually open, or the rule above is
+     untested scaffolding. */
+  const good = S.loadExtraMarkets({ generated_at: '2026-09-17T00:00:00Z', source: 'a walk-forward', markets: [
+    { sport: 'americanfootball_ncaaf', market: 'team_totals', tier: 'LEAN', basis: 'held out 2019-2025 at the close, 54.1% at 2+ points of disagreement', sample_n: 1400, sigma: 9.5 },
+  ] });
+  eq('a complete entry registers', good.registered.length, 1);
+  eq('and the kernel now reports it open', S.extraMarkets().map((x) => x.key), ['americanfootball_ncaaf|team_totals']);
+  chk('the market is no longer out of scope', codesOf(prop()).indexOf('MARKET_OUT_OF_SCOPE') < 0, codesOf(prop()));
+  chk('but every other gate still applies to it', codesOf(candidate({ market: 'team_totals', quote: { book: null, odds_american: null, executable: false } })).length > 0);
+  S.clearValidatedMarkets();
+  chk('clearing shuts the door again', codesOf(prop()).indexOf('MARKET_OUT_OF_SCOPE') >= 0);
+
+  /* THE SHIPPED ARTIFACT, which today opens nothing and must say so. */
+  chk('the extra-market artifact is committed', fs2.existsSync(ART), ART);
+  if (fs2.existsSync(ART)) {
+    const j = JSON.parse(fs2.readFileSync(ART, 'utf8'));
+    eq('it carries the schema', j.schema, 'edgedesk_extra_markets_v1');
+    eq('it opens nothing today', j.markets, []);
+    chk('and names every market it refused, with the reason', j.refused.length >= 3 && j.refused.every((r) => r.why && r.what_would_change_it), j.refused);
+    chk('the reason is the archive, not an opinion', j.refused.every((r) => /archive carries no|no walk-forward has been run/.test(r.why)), j.refused.map((r) => r.why));
+    chk('the note says an empty list is a measured refusal', /measured refusal rather than an omission/.test(j.note), j.note);
+    const loaded = S.loadExtraMarkets(j);
+    eq('loading the shipped artifact opens nothing', loaded.registered, []);
+    eq('and refuses nothing either, because it claims nothing', loaded.refused, []);
+    S.clearValidatedMarkets();
+  }
 }
 
 /* ═══ 18. THE INVARIANTS, OVER FOUR THOUSAND CASES ══════════════════════

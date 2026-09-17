@@ -66,6 +66,12 @@ chk('Brier and log loss are computed on the number the engine staked on', /brier
 chk('the reader’s acceptance is read through, never written back into the snapshot', /reader_response/.test(SQL) && /order by resp\.responded_at desc limit 1/.test(SQL));
 chk('the trail grants readers insert and select and nothing else', /grant select, insert on public\.stake_recommendations to authenticated;/.test(SQL) && !/grant[^;]*update[^;]*on public\.stake_recommendations/.test(SQL));
 chk('the pass reasons are counted like results', /create or replace view public\.stake_pass_reasons/.test(SQL));
+chk('the reader’s own book is a table the caps can read', /create table if not exists public\.external_positions/.test(SQL));
+chk('and it is theirs to correct and delete, unlike the trail', /grant select, insert, update, delete on public\.external_positions to authenticated;/.test(SQL));
+chk('open exposure unions the declared positions with the recommended ones', /'DECLARED'::text as kind/.test(SQL) && /'SUBMITTED'::text as kind/.test(SQL));
+chk('a response must answer a recommendation that exists', /stake_responses_recommendation_fk/.test(SQL));
+chk('every view runs as the caller, so row level security is not decoration',
+  (SQL.match(/create or replace view public\.stake_\w+ with \(security_invoker = true\)/g) || []).length === 4);
 
 /* ═══ LIVE ═══════════════════════════════════════════════════════════════ */
 function findPgBin() {
@@ -216,19 +222,50 @@ try {
   chk('the latest response wins without rewriting the first', psql("select reader_response from public.stake_recommendation_grades where recommendation_id='stake_abc'") === 'MODIFIED'
     && psql("select count(*) from public.stake_recommendation_responses where recommendation_id='stake_abc'") === '2');
 
+  /* ---- a response must answer something that was issued -------------- */
+  err = mustFail("insert into public.stake_recommendation_responses (recommendation_id, response) values ('stake_never_issued','ACCEPTED')");
+  chk('a response to a recommendation that was never issued is refused', !!err && /stake_responses_recommendation_fk|foreign key/i.test(err), err && err.slice(0, 200));
+
   /* ---- the open-exposure view the engine reads back ------------------- */
   const openRows = psql("select count(*) from public.stake_open_exposure");
   chk('a bet on a game that has not started is open exposure', openRows === '1', openRows);
+  chk('and it is labelled as one EdgeDesk put on', psql("select kind from public.stake_open_exposure") === 'SUBMITTED');
+
+  /* ---- THE BLIND SPOT: exposure EdgeDesk did not put on --------------- */
+  psql("insert into public.external_positions (sport, game_id, matchup, team, market, selection, side, handicap, odds_american, book, units, kickoff) "
+    + "values ('americanfootball_nfl','9001','A at B','b','spreads','B','home',-3,-110,'FanDuel',2.0, now() + interval '2 days')");
+  chk('a declared wager becomes open exposure the caps can see', psql("select count(*) from public.stake_open_exposure") === '2');
+  chk('and it is labelled as the reader’s own, not as EdgeDesk’s', psql("select kind from public.stake_open_exposure where ticket_id like 'external:%'") === 'DECLARED');
+  chk('the units it carries are the reader’s own', psql("select units from public.stake_open_exposure where kind='DECLARED'") === '2.0');
+  chk('the team it should be counted against rides with it', psql("select team from public.stake_open_exposure where kind='DECLARED'") === 'b');
+  /* it must NEVER reach the engine's record */
+  chk('a declared wager is not in the trail', psql("select count(*) from public.stake_recommendations where game_id='9001'") === '0');
+  chk('nor in the grades, so it can never be scored as EdgeDesk’s', psql("select count(*) from public.stake_recommendation_grades where game_id='9001'") === '0');
+  chk('nor in the scorecard', psql("select coalesce(sum(positions),0) from public.stake_engine_scorecard where sport='americanfootball_nfl' and market='spreads'") === '0');
+  /* settling it takes it out of the caps without deleting the record */
+  psql("update public.external_positions set settled = true where game_id='9001'");
+  chk('settling a declared wager takes it out of open exposure', psql("select count(*) from public.stake_open_exposure") === '1');
+  chk('and updated_at moved, because this table is the reader’s to correct', psql("select updated_at > created_at - interval '1 second' from public.external_positions") === 't');
+  psql("update public.external_positions set settled = false where game_id='9001'");
+  err = mustFail("insert into public.external_positions (selection, units) values ('X', 0)");
+  chk('a zero-unit declared wager is refused: it is not a position', !!err, err && err.slice(0, 160));
+  err = mustFail("insert into public.external_positions (selection, units) values ('X', -1)");
+  chk('and a negative one is refused too', !!err, err && err.slice(0, 160));
+  chk('a declared wager can be deleted by its owner, unlike the trail', (() => {
+    psql("insert into public.external_positions (selection, units) values ('typo', 1)");
+    psql("delete from public.external_positions where selection='typo'");
+    return psql("select count(*) from public.external_positions where selection='typo'") === '0';
+  })());
 
   /* ---- RLS: another reader sees none of this -------------------------- */
   const other_uid = path.join(HOME, 'uid2.sql');
   fs.writeFileSync(other_uid, "create or replace function auth.uid() returns uuid language sql stable as $fn$ select '00000000-0000-0000-0000-000000000002'::uuid $fn$;");
   if (asPostgres) cp.execSync(`chown postgres ${other_uid} && chmod 644 ${other_uid}`);
   psqlFile(other_uid);
-  const other = run(`${BIN}/psql -h ${HOME} -p ${PORT} -U postgres -d postgres -v ON_ERROR_STOP=1 -t -A -c "set role authenticated; select count(*) from public.stake_recommendations; select count(*) from public.bankroll_settings;"`).trim();
-  chk('a different reader sees neither the trail nor the policy',
-    other.split('\n').map((x) => x.trim()).filter((x) => /^\d+$/.test(x)).length === 2
-    && other.split('\n').map((x) => x.trim()).filter((x) => /^\d+$/.test(x)).every((x) => x === '0'), other);
+  const other = run(`${BIN}/psql -h ${HOME} -p ${PORT} -U postgres -d postgres -v ON_ERROR_STOP=1 -t -A -c "set role authenticated; select count(*) from public.stake_recommendations; select count(*) from public.bankroll_settings; select count(*) from public.external_positions; select count(*) from public.stake_open_exposure;"`).trim();
+  const nums = other.split('\n').map((x) => x.trim()).filter((x) => /^\d+$/.test(x));
+  chk('a different reader sees neither the trail, the policy, another reader’s book, nor their exposure',
+    nums.length === 4 && nums.every((x) => x === '0'), other);
 } catch (e) {
   chk('the live layer ran without an unexpected error', false, String(e.stderr || e.message).slice(0, 400));
 } finally {

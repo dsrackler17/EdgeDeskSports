@@ -1,0 +1,87 @@
+{
+ "schema": "edgedesk_extra_markets_v1",
+ "generated_at": "2026-09-17T13:34:03.669Z",
+ "source": "tools/intelligence/validate_extra_markets.js",
+ "markets": [],
+ "refused": [
+  {
+   "sport": "americanfootball_nfl",
+   "market": "team_totals",
+   "archive": "football/pricing/lines_nfl.json",
+   "needs": [
+    "close.home_team_total",
+    "close.away_team_total",
+    "close.home_team_total_over_odds"
+   ],
+   "outcome_available": "home_points and away_points, which the archive already carries",
+   "games_in_archive": 7324,
+   "games_with_the_line": 0,
+   "fields_the_archive_has": [
+    "away_moneyline",
+    "away_spread_odds",
+    "home_line",
+    "home_moneyline",
+    "home_spread_odds",
+    "over_odds",
+    "total",
+    "under_odds"
+   ],
+   "why": "the archive carries no home_team_total / away_team_total / home_team_total_over_odds on any of its 7324 games, so there is no history to hold out, no record to grade and no tier to award",
+   "what_would_change_it": "collect and commit the closing team totals line per game into football/pricing/lines_nfl.json; this script then holds it out season by season and awards a tier only if it clears the same floors the game markets clear"
+  },
+  {
+   "sport": "americanfootball_ncaaf",
+   "market": "team_totals",
+   "archive": "football/pricing/lines_cfb.json",
+   "needs": [
+    "close.home_team_total",
+    "close.away_team_total"
+   ],
+   "outcome_available": "home_points and away_points, which the archive already carries",
+   "games_in_archive": 11502,
+   "games_with_the_line": 0,
+   "fields_the_archive_has": [
+    "books",
+    "home_line",
+    "total"
+   ],
+   "why": "the archive carries no home_team_total / away_team_total on any of its 11502 games, so there is no history to hold out, no record to grade and no tier to award",
+   "what_would_change_it": "collect and commit the closing team totals line per game into football/pricing/lines_cfb.json; this script then holds it out season by season and awards a tier only if it clears the same floors the game markets clear"
+  },
+  {
+   "sport": "americanfootball_nfl",
+   "market": "player_props",
+   "archive": "football/pricing/lines_nfl.json",
+   "needs": [
+    "close.player_props[]"
+   ],
+   "outcome_available": "a per-player box-score line, which no archive in this repository stores per game and per market",
+   "games_in_archive": 7324,
+   "games_with_the_line": 0,
+   "fields_the_archive_has": [
+    "away_moneyline",
+    "away_spread_odds",
+    "home_line",
+    "home_moneyline",
+    "home_spread_odds",
+    "over_odds",
+    "total",
+    "under_odds"
+   ],
+   "why": "the archive carries no player_props on any of its 7324 games, so there is no history to hold out, no record to grade and no tier to award",
+   "what_would_change_it": "collect and commit the closing player props line per game into football/pricing/lines_nfl.json; this script then holds it out season by season and awards a tier only if it clears the same floors the game markets clear"
+  }
+ ],
+ "rules": {
+  "min_sample": 500,
+  "tiers": [
+   "VALIDATED",
+   "LEAN",
+   "PROBABILITY"
+  ],
+  "holdout": "a walk-forward on seasons the model never saw, scored at the closing price, the same shape tools/intelligence/validate_staking.js runs for the game markets",
+  "note": "A tier here opens a market the kernel otherwise declares out of scope. It is never awarded from a fitted record, from a partial season, or from a market priced off the game line."
+ },
+ "note": "NO extra market is open for staking. The kernel declares team totals and player props out of scope, and this file is the record of that being a measured refusal rather than an omission: the archives carry no such closing line, so nothing could be held out.",
+ "reading": "An empty `markets` list is the expected state and is a result. The staking kernel reads this file and registers what is in it; an entry has to carry a tier, a basis and a held-out sample, and anything short of that is refused here with the reason rather than registered quietly."
+}
