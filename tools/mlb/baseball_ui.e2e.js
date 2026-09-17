@@ -103,6 +103,48 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
      translating the page's own PostgREST string. Nothing is stubbed: if the
      query layer builds a filter the database rejects, this test sees it. */
   let reads = 0, readErrors = [];
+  /* One ET day, two games: one with both starters posted and one with neither,
+     so the board is checked against both the full and the empty case. */
+  const ET = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+    year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const CARD_TABLES = {
+    mlb_game_cards: [
+      { game_date: ET, start_time: ET + 'T23:05:00Z', start_time_local: '7:05 PM',
+        away_team_id: 147, home_team_id: 143, venue: 'Citizens Bank Park', status: 'Scheduled',
+        doubleheader: 'N', game_number: 1, series_game_number: 1, games_in_series: 3,
+        away_team_name: 'New York Yankees', away_record: '90-60', away_division: 'AL East',
+        away_division_rank: 1, away_games_back: '-', away_road_record: '44-31', away_streak: 'W3',
+        away_pitcher_name: 'Gerrit Cole', away_pitcher_throws: 'R',
+        home_team_name: 'Philadelphia Phillies', home_record: '88-62', home_division: 'NL East',
+        home_division_rank: 1, home_games_back: '-', home_home_record: '47-28', home_streak: 'W1',
+        home_pitcher_name: 'Zack Wheeler', home_pitcher_throws: 'R',
+        park_factor: 1.03, hr_factor: 1.09, run_factor: 1.02, roof_type: 'Open', is_dome: false,
+        temp_f: 74, humidity: 61, precip_prob: 10, wind_mph: 8, wind_dir: 'SW', wind_rel: 'out to right' },
+      { game_date: ET, start_time: ET + 'T20:10:00Z', start_time_local: '4:10 PM',
+        away_team_id: 111, home_team_id: 110, venue: 'Oriole Park at Camden Yards', status: 'Scheduled',
+        doubleheader: 'N', game_number: 1,
+        away_team_name: 'Boston Red Sox', away_record: '78-72', away_division: 'AL East',
+        away_division_rank: 3, away_games_back: '12.0', away_road_record: '36-39', away_streak: 'L1',
+        away_pitcher_name: null, away_pitcher_throws: null,
+        home_team_name: 'Baltimore Orioles', home_record: '80-70', home_division: 'AL East',
+        home_division_rank: 2, home_games_back: '10.0', home_home_record: '43-32', home_streak: 'W2',
+        home_pitcher_name: null, home_pitcher_throws: null,
+        park_factor: 1.07, hr_factor: 1.12, run_factor: 1.06, roof_type: 'Open', is_dome: false,
+        temp_f: 79, humidity: 66, precip_prob: 20, wind_mph: null, wind_dir: null, wind_rel: null }
+    ],
+    team_season: [
+      { team: 'New York Yankees', runs_per_game: 4.82, ops: 0.773, k_pct: 0.221, hr_per_game: 1.41,
+        woba: 0.327, barrel_pct: 0.091, hardhit_pct: 0.421, ra_per_game: 3.98, as_of: ET },
+      { team: 'Philadelphia Phillies', runs_per_game: 4.55, ops: 0.748, k_pct: 0.209, hr_per_game: 1.27,
+        woba: 0.319, barrel_pct: 0.084, hardhit_pct: 0.405, ra_per_game: 3.81, as_of: ET }
+    ],
+    pitcher_season: [
+      { name: 'Gerrit Cole', team: 'NYY', games_started: 28, ip: 172.1, era: 4.35, fip: 3.55,
+        whip: 1.28, k_bb_pct: 0.198, hr_per9: 1.41, as_of: ET },
+      { name: 'Zack Wheeler', team: 'PHI', games_started: 30, ip: 189.2, era: 2.88, fip: 2.91,
+        whip: 0.98, k_bb_pct: 0.232, hr_per9: 0.84, as_of: ET }
+    ]
+  };
   async function answerSupabase(route) {
     const req = route.request();
     const url = req.url();
@@ -118,6 +160,15 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
           body: JSON.stringify([{ status: 'active', price_id: 'price_e2e',
             current_period_end: new Date(Date.now() + 30 * 864e5).toISOString(),
             cancel_at_period_end: false, stripe_customer_id: 'cus_e2e' }]) });
+      }
+      /* THE MLB CARD. The games board reads the public schema, not mlbhist, so
+         those tables are served here. The two starters are real pitchers whose
+         records are in the LOCAL ARCHIVE this test imported — which is the
+         point: the brief's career line has to come back out of PostgreSQL,
+         not out of a fixture. */
+      if (CARD_TABLES[rel]) {
+        return route.fulfill({ status: 200, contentType: 'application/json',
+          body: JSON.stringify(CARD_TABLES[rel]) });
       }
       return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     }
@@ -152,16 +203,35 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
     });
     const page = await ctx.newPage();
     const errors = [];
-    page.on('pageerror', (e) => errors.push(String(e && e.message).slice(0, 200)));
+    page.on('pageerror', (e) => errors.push(String(e && e.message).slice(0, 200)
+      + (process.env.DESK_E2E_STACKS ? ' @@ ' + String(e && e.stack).slice(0, 700) : '')));
     await page.goto(`http://127.0.0.1:${site.port}/app.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => typeof window.researchGo === 'function' && !!window.EDMlbPitchers, null, { timeout: 30000 });
     return { page, ctx, errors };
   }
+  /* THE PANEL NOW OPENS ON THE GAMES BOARD, because that is what a reader came
+     for. Every assertion below this point is about the ARCHIVE, so it switches
+     to the season board first — the same click a reader makes. */
   async function gotoBaseball(page) {
     await page.evaluate(() => window.researchGo('baseball'));
+    await page.waitForFunction(() => typeof window.mlbhSetSeg === 'function', null, { timeout: 25000 });
+    await page.evaluate(() => window.mlbhSetSeg('board'));
     await page.waitForFunction(() => {
       const b = document.getElementById('mlbhBody');
       return b && /MLB regular seasons/.test(b.textContent);
+    }, null, { timeout: 25000 });
+  }
+  async function gotoGames(page) {
+    await page.evaluate(() => window.researchGo('baseball'));
+    await page.waitForFunction(() => typeof window.mlbhSetSeg === 'function', null, { timeout: 25000 });
+    await page.evaluate(() => window.mlbhSetSeg('games'));
+    /* WAIT FOR THE LOAD TO ANSWER, not for the first paint. The board renders
+       its loading state before the read returns, and asserting on that paint
+       would test an empty screen. */
+    await page.waitForFunction(() => window.MLBB && window.MLBB.at, null, { timeout: 25000 });
+    await page.waitForFunction(() => {
+      const b = document.getElementById('mlbhBody');
+      return b && (b.querySelector('.mlbb-row') || /No MLB games on the card/.test(b.textContent));
     }, null, { timeout: 25000 });
   }
   const text = (page, sel) => page.evaluate((s) => {
@@ -519,6 +589,153 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
       chk('…which refuses to speak about tonight',
         /say nothing about tonight/.test(html));
       chk('no page error rendering the card block', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+
+    /* ══ 6d. THE GAMES BOARD AND THE GAME BRIEF ════════════════════════
+       What the reader actually asked for: every game on the card, and a full
+       brief behind each one. The board is read from the public schema and the
+       brief's career line is read from the LOCAL ARCHIVE — so the number the
+       browser prints is checked back against SQL, exactly like the board. */
+    {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      await gotoGames(page);
+
+      const rows = await page.evaluate(() => Array.from(document.querySelectorAll('.mlbb-row'))
+        .map((r) => r.textContent.replace(/\s+/g, ' ').trim()));
+      eq('the board lists every game on the card', rows.length, 2);
+      /* THE BOARD ORDERS BY FIRST PITCH, so the row is found by its clubs
+         rather than by position — and that ordering is asserted separately. */
+      const coleRow = rows.filter((r) => /New York Yankees/.test(r))[0] || '';
+      const tbdRow = rows.filter((r) => /Baltimore Orioles/.test(r))[0] || '';
+      chk('the earliest game is listed first',
+        /Baltimore Orioles/.test(rows[0] || ''), rows.map((r) => r.slice(0, 40)));
+      chk('…with both clubs on the row', /New York Yankees/.test(coleRow) && /Philadelphia Phillies/.test(coleRow), coleRow);
+      chk('…the probable starters', /Gerrit Cole/.test(coleRow) && /Zack Wheeler/.test(coleRow), coleRow);
+      chk('…records carried from the card', /90-60/.test(coleRow), coleRow);
+      chk('…the venue', /Citizens Bank Park/.test(coleRow), coleRow);
+      chk('…and a way into the brief on every row', rows.every((r) => /Game brief/.test(r)), rows);
+      chk('a game with no probable starter shows TBD rather than a guess',
+        /TBD/.test(tbdRow) && !/TBD/.test(coleRow), tbdRow);
+
+      const note = await text(page, '.mlbb-note');
+      chk('the board says baseball carries no validated model',
+        /no validated EdgeDesk model/.test(note || ''), note);
+      const boardTxt = await page.evaluate(() => document.getElementById('mlbhBody').textContent);
+      chk('the board never prints a win probability', !/% to win/.test(boardTxt));
+      chk('…and never calls anything an edge', !/\bedge\b/i.test(boardTxt), boardTxt.slice(0, 200));
+
+      /* OPEN THE BRIEF. The same click a reader makes. */
+      await page.evaluate(() => {
+        const r = Array.from(document.querySelectorAll('.mlbb-row'))
+          .filter((x) => /New York Yankees/.test(x.textContent))[0];
+        r.click();
+      });
+      await page.waitForFunction(() => {
+        const s = document.querySelector('.edb-res');
+        return s && /Starting pitching/.test(s.textContent);
+      }, null, { timeout: 25000 });
+      const brief = await page.evaluate(() => document.querySelector('.edb-res').textContent.replace(/\s+/g, ' ').trim());
+
+      chk('the brief names the matchup', /New York Yankees at Philadelphia Phillies/.test(brief), brief.slice(0, 160));
+      chk('…is never priced', /has not priced this matchup yet/.test(brief), brief.slice(0, 600));
+      chk('…and says why', /no VALIDATED model for baseball|publishes no validated baseball model/.test(brief));
+      chk('…keeps both starters PROBABLE', /Both are PROBABLE, not confirmed/.test(brief));
+      chk('…never claims a confirmed starter', !/confirmed starter/i.test(brief));
+      chk('…draws the starting-pitching panel', /Starting pitching/.test(brief));
+      chk('…the ballpark panel', /Ballpark and weather/.test(brief));
+      chk('…the standings panel', /Where the clubs are/.test(brief));
+      chk('…the head-to-head', /Runs per game/.test(brief) && /Runs allowed per game/.test(brief));
+      chk('…the matchups', /vs the Philadelphia Phillies offense/.test(brief), brief.slice(0, 400));
+      chk('…a case for each club', /The case for New York Yankees/.test(brief) && /The case for Philadelphia Phillies/.test(brief));
+      chk('…why the number could be wrong', /Why the number could be wrong/.test(brief));
+      chk('…and what was not measured at all',
+        /Not measured at all/.test(brief) && /Batter-versus-pitcher history/.test(brief));
+      chk('…with the research state named', /RESEARCH ONLY/.test(brief));
+      chk('…and no park adjustment claimed', /applies NO park or weather adjustment/.test(brief));
+
+      /* THE ARCHIVE LINE, CHECKED BACK AGAINST SQL. This is the join the whole
+         change exists for: a name on tonight's card, resolved to a player id,
+         read out of the 2016-2025 archive, and printed beside — never inside —
+         the season line. */
+      chk('the career line is drawn from the archive', /Career in the archive/.test(brief), brief.slice(0, 900));
+      chk('…labelled as a completed record', /a completed record, not this season/.test(brief));
+      chk('…and the season line kept separate', /This season/.test(brief));
+      const cole = db.rows(`select player_id, era, first_observed_season, last_observed_season,
+                                   weighted_performance_index
+                              from mlbhist.pitcher_overview where name_key = 'gerrit cole'`);
+      if (chk('the archive holds exactly one Gerrit Cole', cole.length === 1, cole.length)) {
+        const era = Number(cole[0].era).toFixed(2);
+        chk('…and the brief prints HIS archive ERA, not a recomputed one',
+          brief.indexOf('ERA ' + era) >= 0, { era, sample: brief.slice(brief.indexOf('Career in the archive'), brief.indexOf('Career in the archive') + 220) });
+        chk('…across the window the archive actually covers',
+          brief.indexOf(cole[0].first_observed_season + '\u2013' + cole[0].last_observed_season) >= 0,
+          cole[0].first_observed_season + '-' + cole[0].last_observed_season);
+        /* He is at 4.35 this season against that archive ERA. The brief must
+           print both and refuse to average them. */
+        chk('…and says in words that the two periods are measured separately',
+          /Two different periods measured separately/.test(brief), brief.slice(0, 1200));
+        chk('…and that the archive is not a forecast',
+          /the archive is not a forecast of the current season/.test(brief));
+        const idx = Number(cole[0].weighted_performance_index).toFixed(1);
+        chk('…the index is his, and explained as a scale',
+          brief.indexOf(idx) >= 0 && /where 100 is league average/.test(brief), idx);
+      }
+      chk('the index is never turned into a price',
+        !/index[^.]{0,40}(fair|implied|probability|edge)/i.test(brief));
+
+      /* THE GAME WITH NO STARTERS AT ALL. Half the brief's largest input is
+         missing and the page has to say so rather than thin out quietly. */
+      await page.evaluate(() => window.EDBRIEF.close());
+      await gotoGames(page);
+      await page.evaluate(() => {
+        const r = Array.from(document.querySelectorAll('.mlbb-row'))
+          .filter((x) => /Baltimore Orioles/.test(x.textContent))[0];
+        r.click();
+      });
+      await page.waitForFunction(() => {
+        const s = document.querySelector('.edb-res');
+        return s && /Baltimore Orioles/.test(s.textContent);
+      }, null, { timeout: 25000 });
+      const bare = await page.evaluate(() => document.querySelector('.edb-res').textContent.replace(/\s+/g, ' ').trim());
+      chk('a game with no posted starters still opens a brief', bare.length > 800, bare.length);
+      chk('…which says the pitching half is unknown',
+        /Neither club has posted a probable starter/.test(bare), bare.slice(0, 200));
+      chk('…and does not fill it in', /EdgeDesk does not fill it in/.test(bare));
+      chk('…names both missing starters as HIGH uncertainty',
+        (bare.match(/starter not posted/g) || []).length === 2, (bare.match(/starter not posted/g) || []).length);
+      chk('…and still carries the park and the standings',
+        /Ballpark and weather/.test(bare) && /Where the clubs are/.test(bare));
+      /* NEITHER club has a team_season row here, so the builder says that once
+         rather than twice — and the comparison is absent, not estimated. */
+      chk('…with no team rows, the comparison is absent rather than estimated',
+        /No season team rows on file for either club/.test(bare)
+        && /no offensive or run-prevention comparison is shown/.test(bare), bare.slice(-500));
+      chk('…and that absence is a HIGH uncertainty, not a silent gap',
+        /No season team rows/.test(bare) && /absent rather than thin/.test(bare));
+      chk('…so no runs-per-game row is drawn at all', !/Runs per game/.test(bare));
+      chk('…and no career line is invented for a starter who does not exist',
+        !/Career in the archive/.test(bare));
+
+      chk('no page error on the games board or either brief', errors.length === 0, errors.slice(0, 3));
+      if (SHOTS) { try { fs.mkdirSync(SHOT_DIR, { recursive: true }); await page.screenshot({ path: path.join(SHOT_DIR, 'mlb-game-brief.png'), fullPage: true }); } catch (e) { /* shots are optional */ } }
+      await ctx.close();
+    }
+
+    /* ══ 6e. THE GAMES BOARD ON A PHONE ══════════════════════════════════ */
+    {
+      const { page, ctx, errors } = await openApp({ width: 390, height: 844 });
+      await gotoGames(page);
+      const wide = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      chk('the games board does not scroll sideways on a phone', wide === false);
+      const clipped = await page.evaluate(() => {
+        const r = document.querySelector('.mlbb-row');
+        if (!r) return 'no row';
+        const b = r.getBoundingClientRect();
+        return b.right > window.innerWidth + 1 ? 'clipped' : 'ok';
+      });
+      eq('…and a row fits the screen', clipped, 'ok');
+      chk('no page error on a phone board', errors.length === 0, errors.slice(0, 3));
       await ctx.close();
     }
 

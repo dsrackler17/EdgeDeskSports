@@ -358,10 +358,17 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/intelligence/mlb_history.test.js | tee mlb_ai.log
 
+      # THE MLB GAMES BOARD AND THE GAME BRIEF. The shipped loader in app.html,
+      # the shipped builder, and the shipped renderer in _presentation.js, run
+      # against each other — so a payload that no longer fits the renderer's
+      # contract fails here rather than as a blank section in a browser.
+      - name: Run the MLB game brief suite
+        run: node tools/mlb/game_brief.test.js | tee mlb_brief.log
+
       # THE BASEBALL RESEARCH SURFACE, IN A REAL BROWSER, against this same
       # database — no stubbed rows. Every number read off the screen is checked
-      # back against SQL. Skips loudly if Chromium is absent, which the step
-      # below refuses.
+      # back against SQL, the games board included. Skips loudly if Chromium is
+      # absent, which the step below refuses.
       - name: Run the baseball research surface e2e
         env:
           PGPASSWORD: postgres
@@ -380,7 +387,7 @@ jobs:
           # NOTE, not fixed here because it is not this change's to widen:
           # cards.log, season.log and offline.log are produced by steps above
           # and are still absent from this list.
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_ui.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1
