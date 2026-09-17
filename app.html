@@ -4702,6 +4702,23 @@ function researchActivate(sub,force){
   m._.loading=p;
   p.catch(function(){}).then(function(){if(m._.loading===p){m._.loading=null;}});
 }
+/* A DELIBERATE CANCELLATION IS NOT AN ERROR. The shell aborts a module's reads
+   in flight when the reader leaves it, taps refresh, or changes a control —
+   that is the whole point of the controller above. A module that started one of
+   those reads without holding its promise lets the cancellation reach
+   window.onunhandledrejection, where the browser reports an ordinary tab switch
+   as a page error: "signal is aborted without reason", from researchDeactivate,
+   with no module named. Under load it happens on every panel, because that is
+   simply when a read is still out when the reader moves.
+
+   Only AbortError is taken here, by name. Every other unhandled rejection is
+   left exactly as it was, so a module that really fails still says so. */
+if (typeof window !== 'undefined' && window.addEventListener) {
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason;
+    if (r && r.name === 'AbortError') e.preventDefault();
+  });
+}
 function researchDeactivate(sub){
   var m=RESEARCH_MODULES[sub];if(!m)return;
   if(m._.ctrl){try{m._.ctrl.abort();}catch(_){}m._.ctrl=null;}

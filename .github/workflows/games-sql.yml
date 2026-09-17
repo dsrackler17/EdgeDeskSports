@@ -169,6 +169,29 @@ jobs:
       - name: Install the psql client
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
 
+      # THE SUITES BELOW DENY THOUSANDS OF STATEMENTS ON PURPOSE. That is what
+      # an RLS suite is: it asks anon to write a table it must not write, and
+      # passes when the database refuses. PostgreSQL logs every one of those
+      # refusals as ERROR plus the statement, and the runner prints the whole
+      # service-container log at the end of the job — tens of thousands of
+      # lines of expected denials, after everything the job actually said.
+      #
+      # It made failures unreadable. A red run ended in the dump, and the test
+      # output explaining it was thousands of lines further back than the log
+      # API would return. Four failures in this job were diagnosed by guessing
+      # because of it.
+      #
+      # Nothing diagnostic is lost: every one of those errors is an assertion
+      # PASSING, and a suite that genuinely fails says so in its own output.
+      - name: Quiet the expected permission denials in the server log
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -p 5432 -U postgres -v ON_ERROR_STOP=1 \
+            -c "alter system set log_min_messages = 'fatal'" \
+            -c "alter system set log_min_error_statement = 'panic'" \
+            -c "select pg_reload_conf()"
+
       - name: Run the social SQL suite
         env:
           PGPASSWORD: postgres

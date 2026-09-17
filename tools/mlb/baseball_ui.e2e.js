@@ -1115,41 +1115,71 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
        anyone holding their promise, so for a while the cancellation reached
        window.onunhandledrejection and a normal navigation was reported as a
        page error; the seg loaders also painted "signal is aborted without
-       reason" at the reader as though the archive had failed. Both are held
-       here, with the reads slowed so the abort always lands on one in flight. */
-    {
+       reason" at the reader as though the archive had failed.
+
+       THE READS ARE SLOWED so the abort always lands on one in flight, and
+       each scenario WAITS FOR ITS OWN REQUESTS TO SETTLE rather than for a
+       fixed number of milliseconds: a runner under load finishes them later
+       than a quiet one, and a straggler that arrived after a fixed sleep
+       would be blamed on whichever scenario happened to be running. Each
+       scenario also gets its own context, so nothing can cross between. */
+    for (const leave of ['tab', 'refresh', 'segment']) {
       const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
-      /* registered after openApp's, so it is matched first; fallback hands the
-         request on to the handler that actually answers it */
+      let inflight = 0;
+      page.on('request', (r) => { if (/supabase\.co\/rest\/v1\//.test(r.url())) inflight++; });
+      const done = (r) => { if (/supabase\.co\/rest\/v1\//.test(r.url())) inflight--; };
+      page.on('requestfinished', done);
+      page.on('requestfailed', done);
+      /* registered after openApp's route, so it is matched first; fallback
+         hands the request on to the handler that actually answers it */
       await ctx.route('**/*', async (route) => {
         if (/supabase\.co\/rest\/v1\//.test(route.request().url())) await new Promise((r) => setTimeout(r, 700));
         return route.fallback();
       });
-      for (const leave of ['tab', 'refresh']) {
-        await page.evaluate(() => window.researchGo('baseball'));
-        await page.waitForTimeout(120);
-        if (leave === 'tab') await page.evaluate(() => window.researchGo('football'));
-        else await page.evaluate(() => window.researchRefresh('baseball'));
-        await page.waitForTimeout(2200);
-        chk('leaving baseball mid-load raises no page error (' + leave + ')',
-          errors.length === 0, errors.slice(0, 3));
-        const shown = await page.evaluate(() => (window.MLBH && window.MLBH.err) || '');
-        chk('…and the reader is never shown the abort as a failure (' + leave + ')',
-          !/abort/i.test(String(shown)), shown);
-        errors.length = 0;
-      }
-      /* the same on the offensive segments, which load over their own archive */
+      /* every read this panel starts has answered or been cancelled, plus a
+         grace for the rejection to reach the page if it is going to */
+      const settle = async () => {
+        const until = Date.now() + 30000;
+        while (inflight > 0 && Date.now() < until) await page.waitForTimeout(100);
+        await page.waitForTimeout(600);
+      };
+
       await page.evaluate(() => window.researchGo('baseball'));
-      await page.waitForTimeout(120);
-      await page.evaluate(() => { if (window.mlbhSetSeg) window.mlbhSetSeg('hitters'); });
-      await page.waitForTimeout(80);
-      await page.evaluate(() => window.researchGo('football'));
-      await page.waitForTimeout(2500);
-      chk('leaving the hitting segment mid-load raises no page error',
+      await page.waitForFunction(() => typeof window.mlbhSetSeg === 'function', null, { timeout: 25000 });
+      if (leave === 'segment') {
+        await page.evaluate(() => window.mlbhSetSeg('hitters'));
+        await page.waitForTimeout(80);
+      }
+      /* leave while the reads are still out */
+      if (leave === 'refresh') await page.evaluate(() => window.researchRefresh('baseball'));
+      else await page.evaluate(() => window.researchGo('football'));
+      await settle();
+
+      chk('leaving baseball mid-load raises no page error (' + leave + ')',
         errors.length === 0, errors.slice(0, 3));
-      const oshown = await page.evaluate(() => (window.MLBO && window.MLBO.err) || '');
-      chk('…and the offensive panel does not show the abort either',
-        !/abort/i.test(String(oshown)), oshown);
+      const shown = await page.evaluate(() => ({
+        pitching: (window.MLBH && window.MLBH.err) || '',
+        offense: (window.MLBO && window.MLBO.err) || '' }));
+      chk('\u2026and the reader is never shown the abort as a failure (' + leave + ')',
+        !/abort/i.test(String(shown.pitching)) && !/abort/i.test(String(shown.offense)), shown);
+      await ctx.close();
+    }
+
+    /* ══ 6l. AND THE CANCELLATION RULE IS NARROW ═════════════════════
+       The shell ignores an unhandled AbortError because a deliberate
+       cancellation is not a failure. The danger in a rule like that is that it
+       grows: widen it once and every unhandled rejection in the app goes
+       quiet, and the assertions above start passing for the wrong reason. So
+       the narrowness is the test. */
+    {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      await page.evaluate(() => { Promise.reject(new DOMException('signal is aborted without reason', 'AbortError')); });
+      await page.waitForTimeout(500);
+      chk('an unhandled cancellation is not reported as a page error', errors.length === 0, errors.slice(0, 2));
+      await page.evaluate(() => { Promise.reject(new Error('a genuine failure nobody handled')); });
+      await page.waitForTimeout(500);
+      chk('\u2026but a genuine unhandled rejection still is',
+        errors.length === 1 && /a genuine failure nobody handled/.test(errors[0]), errors.slice(0, 2));
       await ctx.close();
     }
 
