@@ -271,9 +271,14 @@ function createDatabase(conn, name) {
 function dropDatabase(conn, name) {
   cp.spawnSync('psql', conn.concat(['-d', 'postgres', '-q', '-c', `drop database if exists ${ident(name)} (force)`]), { encoding: 'utf8' });
 }
+/* stdout is returned as well as stderr. Every schema file in supabase/ ends in
+   a REPORT — a select whose rows read `ok` or `CHECK THIS` — and that report is
+   the file's own statement about whether it finished. A caller that could not
+   read it could only check that psql exited zero, which it does whether the
+   report says ok or not. */
 function applyFile(conn, database, file) {
   const r = cp.spawnSync('psql', conn.concat(['-d', database, '-v', 'ON_ERROR_STOP=1', '-q', '-f', file]), { encoding: 'utf8' });
-  return { ok: r.status === 0, stderr: (r.stderr || '').trim() };
+  return { ok: r.status === 0, stderr: (r.stderr || '').trim(), stdout: (r.stdout || '') };
 }
 
 module.exports = { pgClient, parseQuery, filterSql, findServer, createDatabase, dropDatabase, applyFile };
