@@ -54,7 +54,7 @@ function near(name, got, want, tol) {
   return chk(name, Number.isFinite(d) && d <= (tol == null ? 0.005 : tol), { got, want });
 }
 function done(code) {
-  failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 300) : '')));
+  failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 900) : '')));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
   if (fail === 0) console.log('PASS | baseball research surface | ' + pass + ' assertions in a real browser');
   process.exit(code !== undefined ? code : (fail === 0 ? 0 : 1));
@@ -212,8 +212,12 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
     });
     const page = await ctx.newPage();
     const errors = [];
+    /* the stack rides along ALWAYS. A page error that only appears on a loaded
+       CI runner cannot be reproduced locally to ask where it came from, so the
+       one run that catches it has to say so by itself. */
     page.on('pageerror', (e) => errors.push(String(e && e.message).slice(0, 200)
-      + (process.env.DESK_E2E_STACKS ? ' @@ ' + String(e && e.stack).slice(0, 700) : '')));
+      + ' @@ ' + String((e && e.stack) || '').replace(/\s+/g, ' ')
+        .slice(0, process.env.DESK_E2E_STACKS ? 700 : 240)));
     await page.goto(`http://127.0.0.1:${site.port}/app.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => typeof window.researchGo === 'function'
       && !!window.EDMlbPitchers && !!window.EDMlbBatters, null, { timeout: 30000 });
@@ -1102,6 +1106,50 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
         boardIds.indexOf(571912) < 0 && boardIds.indexOf(518586) < 0, boardIds.slice(0, 5));
 
       chk('no page error on the edge cases', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+
+    /* ══ 6k. LEAVING THE PANEL MID-LOAD IS NOT AN ERROR ═══════════════
+       The panel aborts its reads when the reader navigates away, taps refresh
+       or changes a control — deliberately. Those loaders are started without
+       anyone holding their promise, so for a while the cancellation reached
+       window.onunhandledrejection and a normal navigation was reported as a
+       page error; the seg loaders also painted "signal is aborted without
+       reason" at the reader as though the archive had failed. Both are held
+       here, with the reads slowed so the abort always lands on one in flight. */
+    {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      /* registered after openApp's, so it is matched first; fallback hands the
+         request on to the handler that actually answers it */
+      await ctx.route('**/*', async (route) => {
+        if (/supabase\.co\/rest\/v1\//.test(route.request().url())) await new Promise((r) => setTimeout(r, 700));
+        return route.fallback();
+      });
+      for (const leave of ['tab', 'refresh']) {
+        await page.evaluate(() => window.researchGo('baseball'));
+        await page.waitForTimeout(120);
+        if (leave === 'tab') await page.evaluate(() => window.researchGo('football'));
+        else await page.evaluate(() => window.researchRefresh('baseball'));
+        await page.waitForTimeout(2200);
+        chk('leaving baseball mid-load raises no page error (' + leave + ')',
+          errors.length === 0, errors.slice(0, 3));
+        const shown = await page.evaluate(() => (window.MLBH && window.MLBH.err) || '');
+        chk('…and the reader is never shown the abort as a failure (' + leave + ')',
+          !/abort/i.test(String(shown)), shown);
+        errors.length = 0;
+      }
+      /* the same on the offensive segments, which load over their own archive */
+      await page.evaluate(() => window.researchGo('baseball'));
+      await page.waitForTimeout(120);
+      await page.evaluate(() => { if (window.mlbhSetSeg) window.mlbhSetSeg('hitters'); });
+      await page.waitForTimeout(80);
+      await page.evaluate(() => window.researchGo('football'));
+      await page.waitForTimeout(2500);
+      chk('leaving the hitting segment mid-load raises no page error',
+        errors.length === 0, errors.slice(0, 3));
+      const oshown = await page.evaluate(() => (window.MLBO && window.MLBO.err) || '');
+      chk('…and the offensive panel does not show the abort either',
+        !/abort/i.test(String(oshown)), oshown);
       await ctx.close();
     }
 

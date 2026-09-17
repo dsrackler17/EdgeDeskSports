@@ -556,4 +556,5 @@ function report() {
     process.exit(1);
   }
   console.log('MLB games board and game brief: ' + pass + ' passed, 0 failed');
+  console.log('PASS | mlb games board and game brief | ' + pass + ' assertions');
 }
