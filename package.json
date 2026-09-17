@@ -179,6 +179,21 @@
     "mlb:features": "node tools/mlb/evaluate_features.js",
     "mlb:features:era": "node tools/mlb/evaluate_features.js --target era",
     "mlb:features:write": "node tools/mlb/evaluate_features.js --write && node tools/mlb/evaluate_features.js --target era --write",
-    "mlb:features:test": "node tools/mlb/features.test.js"
+    "mlb:features:test": "node tools/mlb/features.test.js",
+    "mlb:off:dataset": "node tools/mlb/offense_dataset.js",
+    "mlb:off:import": "node tools/mlb/import_offense.js",
+    "mlb:off:import:check": "node tools/mlb/import_offense.js --check",
+    "mlb:off:import:commit": "node tools/mlb/import_offense.js --commit",
+    "mlb:off:sql": "node tools/mlb/mlb_offense_sql.test.js",
+    "mlb:off:e2e": "node tools/mlb/offense_import.test.js",
+    "mlb:off:ai": "node tools/intelligence/mlb_offense.test.js",
+    "mlb:off:features": "node tools/mlb/evaluate_offense_features.js",
+    "mlb:off:features:write": "node tools/mlb/evaluate_offense_features.js --write",
+    "mlb:off:features:test": "node tools/mlb/offense_features.test.js",
+    "mlb:off:refresh": "node tools/mlb/refresh_offense.js",
+    "mlb:off:refresh:check": "node tools/mlb/refresh_offense.js --check",
+    "mlb:off:refresh:commit": "node tools/mlb/refresh_offense.js --commit",
+    "mlb:off:refresh:test": "node tools/mlb/offense_refresh.test.js",
+    "mlb:off:test": "node tools/mlb/offense_dataset.js && node tools/mlb/offense_features.test.js && node tools/mlb/offense_refresh.test.js && node tools/mlb/offense_import.test.js && node tools/intelligence/mlb_offense.test.js"
   }
 }

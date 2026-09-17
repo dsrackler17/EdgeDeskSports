@@ -35,10 +35,14 @@ const ROOT = path.join(__dirname, '..', '..');
 const PG = require('./pg_client.js');
 const D = require('./dataset.js');
 const IMPORT = require('./import_pitcher_history.js');
+const OD = require('./offense_dataset.js');
+const OIMPORT = require('./import_offense.js');
+const OM = require('../../lib/mlb_offense_history.js');
 
 const DB = 'edgedesk_mlbhist_ui';
 const SHIM = path.join(ROOT, 'tools', 'games', 'sql', 'supabase_shim.sql');
 const SCHEMA_SQL = path.join(ROOT, 'supabase', 'mlb_pitcher_history.sql');
+const OFFENSE_SQL = path.join(ROOT, 'supabase', 'mlb_offense_history.sql');
 const SHOTS = process.argv.includes('--shots');
 const SHOT_DIR = process.env.DESK_SHOT_DIR || path.join(ROOT, '.desk-shots');
 
@@ -83,12 +87,17 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
 
   if (!PG.createDatabase(conn, DB)) { console.log('SKIP | baseball research surface | could not create the test database'); process.exit(0); }
   const db = PG.pgClient(conn, { database: DB });
-  for (const f of [SHIM, SCHEMA_SQL]) {
+  for (const f of [SHIM, SCHEMA_SQL, OFFENSE_SQL]) {
     const a = PG.applyFile(conn, DB, f);
     if (!a.ok) { console.log('FAIL | ' + path.basename(f) + ' did not apply'); console.error(a.stderr.slice(0, 500)); PG.dropDatabase(conn, DB); process.exit(1); }
   }
   const ds = D.loadDataset(D.DEFAULT_DIR);
   await IMPORT.runImport(db, ds, D.validateDataset(ds), { log: () => {}, chunk: 1000 });
+  /* BOTH archives, so the surfaces that join them — a two-way player, the
+     club offensive baseline on a game brief — are exercised against the real
+     rows rather than against an absence. */
+  const ods = OD.loadDataset(OD.DEFAULT_DIR);
+  await OIMPORT.runImport(db, ods, OD.validateDataset(ods), { log: () => {}, chunk: 1000 });
 
   const site = await serve(siteHandler);
   let browser = null;
@@ -206,7 +215,8 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
     page.on('pageerror', (e) => errors.push(String(e && e.message).slice(0, 200)
       + (process.env.DESK_E2E_STACKS ? ' @@ ' + String(e && e.stack).slice(0, 700) : '')));
     await page.goto(`http://127.0.0.1:${site.port}/app.html`, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => typeof window.researchGo === 'function' && !!window.EDMlbPitchers, null, { timeout: 30000 });
+    await page.waitForFunction(() => typeof window.researchGo === 'function'
+      && !!window.EDMlbPitchers && !!window.EDMlbBatters, null, { timeout: 30000 });
     return { page, ctx, errors };
   }
   /* THE PANEL NOW OPENS ON THE GAMES BOARD, because that is what a reader came
@@ -219,6 +229,24 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
     await page.waitForFunction(() => {
       const b = document.getElementById('mlbhBody');
       return b && /MLB regular seasons/.test(b.textContent);
+    }, null, { timeout: 25000 });
+  }
+  async function gotoOffense(page, seg) {
+    await page.evaluate(() => window.researchGo('baseball'));
+    await page.waitForFunction(() => typeof window.mlbhSetSeg === 'function', null, { timeout: 25000 });
+    /* The offensive archive loads beside the pitching one; wait for ITS status
+       rather than for a paint, so the assertions below are about rows and not
+       about a loading state. */
+    await page.waitForFunction(() => window.MLBO && (window.MLBO.status || window.MLBO.err),
+      null, { timeout: 25000 });
+    await page.evaluate((x) => window.mlbhSetSeg(x), seg);
+    await page.waitForFunction(() => {
+      const b = document.getElementById('mlbhBody');
+      if (!b) return false;
+      /* rows, or a stated empty/error state — anything but the loading text,
+         so a genuine "no rows" answer is not indistinguishable from a hang. */
+      if (b.querySelector('.mlbh-tbl tbody tr')) return true;
+      return /No hitter in|No club rows|did not answer|did not load/.test(b.textContent);
     }, null, { timeout: 25000 });
   }
   async function gotoGames(page) {
@@ -713,12 +741,287 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
         && /no offensive or run-prevention comparison is shown/.test(bare), bare.slice(-500));
       chk('…and that absence is a HIGH uncertainty, not a silent gap',
         /No season team rows/.test(bare) && /absent rather than thin/.test(bare));
-      chk('…so no runs-per-game row is drawn at all', !/Runs per game/.test(bare));
+      /* The head-to-head COMPARISON is absent; the club-offense panel below it
+         legitimately mentions runs per game in its own note, so this is scoped
+         to the comparison rather than to the whole page. */
+      chk('…so no offensive comparison table is drawn at all',
+        !/Team research head-to-head/.test(bare) && !/Offense \(season to date\)/.test(bare),
+        bare.slice(0, 200));
       chk('…and no career line is invented for a starter who does not exist',
         !/Career in the archive/.test(bare));
 
       chk('no page error on the games board or either brief', errors.length === 0, errors.slice(0, 3));
       if (SHOTS) { try { fs.mkdirSync(SHOT_DIR, { recursive: true }); await page.screenshot({ path: path.join(SHOT_DIR, 'mlb-game-brief.png'), fullPage: true }); } catch (e) { /* shots are optional */ } }
+      await ctx.close();
+    }
+
+    /* ══ 6f. THE OFFENSIVE SURFACES — THE COMPLETE USER PATH ═══════════
+       Search a hitter, open his profile, change seasons, open a club's
+       offense, and check every number on screen back against SQL. */
+    {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      await gotoOffense(page, 'hitters');
+
+      /* the coverage sentence, before any number */
+      const cov = await text(page, '.mlbo-cov');
+      chk('the offensive panel states its coverage window', /2016–2025 MLB regular seasons/.test(cov || ''), cov);
+      chk('…and that it is not current-season data', /not current-season data/.test(cov || ''), cov);
+      chk('…and that it is never a lineup', /never a lineup/.test(cov || ''), cov);
+      chk('…and the row counts it actually holds', /3097 hitters \(2513 with a plate appearance\)/.test(cov || ''), cov);
+
+      /* THE LEADERBOARD, checked against SQL */
+      const head = await text(page, '#mlbhBody .fb-sechd');
+      chk('the board heading names the season and the metric',
+        /2025 · Offensive index · 200\+ PA/.test(head || ''), head);
+      const qual = await text(page, '.mlbo-qual');
+      chk('…and MLB’s own qualification for that season', /qualification for 2025 is 503 PA/.test(qual || ''), qual);
+
+      const first = await page.evaluate(() => {
+        const tr = document.querySelector('#mlbhBody .mlbh-tbl tbody tr');
+        const c = tr.children;
+        return { name: c[1].textContent.trim(), pa: c[3].textContent.trim(),
+          ops: c[7].textContent.trim(), hr: c[8].textContent.trim(), idx: c[11].textContent.trim() };
+      });
+      const sqlTop = db.rows(`select player_name, plate_appearances, ops, home_runs, offensive_index
+                                from mlbhist.batter_seasons
+                               where season = 2025 and plate_appearances >= 200
+                                 and offensive_index is not null
+                               order by offensive_index desc limit 1`)[0];
+      eq('the board leader is the leader the database has', first.name, sqlTop.player_name);
+      eq('…with his plate appearances', first.pa, String(sqlTop.plate_appearances));
+      eq('…his home runs', first.hr, String(sqlTop.home_runs));
+      near('…his index', Number(first.idx), Number(sqlTop.offensive_index), 0.05);
+      near('…and his OPS', Number(first.ops.replace(/^\./, '0.')), Number(sqlTop.ops), 0.0005);
+
+      /* CHANGE THE SEASON — 2020, the short one */
+      await page.evaluate(() => window.mlboSetCtl('season', '2020'));
+      /* The heading paints from state the moment the control changes; the
+         qualification note comes from the BOARD, so waiting on the heading
+         races the reload and reads the previous season's screen. */
+      await page.waitForFunction(() => {
+        const q = document.querySelector('.mlbo-qual');
+        return q && /for 2020/.test(q.textContent);
+      }, null, { timeout: 25000 });
+      const qual2020 = await text(page, '.mlbo-qual');
+      chk('2020 states its OWN qualification, not a full season’s',
+        /qualification for 2020 is 186 PA/.test(qual2020 || ''), qual2020);
+      chk('…and says why', /60-game season/.test(qual2020 || ''), qual2020);
+      const rows2020 = await page.evaluate(() => document.querySelectorAll('#mlbhBody .mlbh-tbl tbody tr').length);
+      chk('…and the board is not empty at that screen', rows2020 > 0, String(rows2020));
+      await page.evaluate(() => window.mlboSetCtl('season', '2025'));
+      await page.waitForFunction(() => {
+        const q = document.querySelector('.mlbo-qual');
+        return q && /for 2025/.test(q.textContent);
+      }, null, { timeout: 25000 });
+
+      /* SEARCH A HITTER and open his profile */
+      await page.evaluate(() => window.mlboSearchInput('Aaron Judge'));
+      await page.waitForSelector('.mlbh-hit', { timeout: 20000 });
+      const hits = await page.evaluate(() => Array.from(document.querySelectorAll('.mlbh-hit .nm')).map((n) => n.textContent.trim()));
+      chk('searching a hitter finds him', hits.indexOf('Aaron Judge') >= 0, hits.slice(0, 4));
+      await page.evaluate(() => {
+        const b = Array.from(document.querySelectorAll('.mlbh-hit'))
+          .filter((x) => /Aaron Judge/.test(x.textContent))[0];
+        b.click();
+      });
+      await page.waitForSelector('#mlbhModal .mlbh-ph h3', { timeout: 20000 });
+      eq('his profile opens', await text(page, '#mlbhModal .mlbh-ph h3'), 'Aaron Judge');
+
+      const JUDGE = Number(db.rows(`select player_id from mlbhist.batter_overview
+                                     where player_name = 'Aaron Judge'`)[0].player_id);
+      const sqlOv = db.rows(`select plate_appearances, games, home_runs, avg, obp, slg, ops, iso,
+                                    k_pct, bb_pct, stolen_bases, weighted_offensive_index,
+                                    rated_plate_appearances, teams
+                               from mlbhist.batter_overview where player_id = ${JUDGE}`)[0];
+      const kpis = await page.evaluate(() => Array.from(document.querySelectorAll('#mlbhModal .mlbh-kpi'))
+        .map((k) => ({ k: k.querySelector('.k').textContent.trim(),
+          v: k.querySelector('.v').textContent.trim(),
+          s: k.querySelector('.s') ? k.querySelector('.s').textContent.trim() : '' })));
+      const kpi = (name) => (kpis.filter((x) => x.k === name)[0] || {});
+      eq('…his plate appearances match the database', kpi('Plate appearances').v, String(sqlOv.plate_appearances));
+      eq('…his games', kpi('Plate appearances').s, sqlOv.games + ' games');
+      eq('…his home runs', kpi('Home runs').v, String(sqlOv.home_runs));
+      chk('…his career index, with the sample that produced it',
+        kpi('Offensive index').s.indexOf(sqlOv.rated_plate_appearances + ' rated PA') >= 0,
+        kpi('Offensive index').s);
+      chk('…and the club list the package ships blank was rebuilt',
+        /Yankees/.test(await text(page, '#mlbhModal .mlbh-ph .sub') || ''),
+        await text(page, '#mlbhModal .mlbh-ph .sub'));
+
+      /* THE RATING IS NEVER SHOWN WITHOUT ITS TERMS */
+      const rating = await text(page, '.mlbo-rating');
+      chk('the rating explains itself on the page', /ED_BAT_PERF_V1/.test(rating || ''), rating);
+      chk('…says 100 is that season’s average', /100 is the MLB average for that season/.test(rating || ''));
+      chk('…and says what it is not', /not.*OPS\+.*wRC\+.*WAR/.test(rating || ''), (rating || '').slice(0, 200));
+
+      /* THE OPS SHAPE */
+      const shape = await text(page, '.mlbo-shape');
+      chk('the profile says what the OPS is made of', /What the OPS is made of/.test(shape || ''), shape);
+      chk('…naming which half leads it', /led by (on-base|slugging)|not driven by one half/.test(shape || ''), shape);
+      chk('…against the league baseline, not against the other half',
+        /measured against the same season’s league rate/.test(shape || ''), shape);
+
+      /* SEASON BY SEASON, every row against SQL */
+      const seasons = await page.evaluate(() => Array.from(document.querySelectorAll('#mlbhModal .mlbh-tbl'))[0]
+        ? Array.from(Array.from(document.querySelectorAll('#mlbhModal .mlbh-tbl'))[0].querySelectorAll('tbody tr'))
+          .map((tr) => Array.from(tr.children).map((td) => td.textContent.trim())) : []);
+      const sqlSeasons = db.rows(`select season, games, plate_appearances, home_runs, offensive_index
+                                    from mlbhist.batter_seasons
+                                   where player_id = ${JUDGE} and plate_appearances > 0 order by season`);
+      eq('every season with a plate appearance is on the profile', seasons.length, sqlSeasons.length);
+      let seasonBad = 0;
+      sqlSeasons.forEach((r, i) => {
+        const row = seasons[i];
+        if (!row) { seasonBad++; return; }
+        if (row[0].indexOf(String(r.season)) !== 0) seasonBad++;
+        if (row[2] !== String(r.games)) seasonBad++;
+        if (row[3] !== String(r.plate_appearances)) seasonBad++;
+        if (row[10] !== String(r.home_runs)) seasonBad++;
+      });
+      eq('…and every one matches the database', seasonBad, 0);
+
+      /* CLUBS, and the rule that keeps the grains apart */
+      const profile = await page.evaluate(() => document.getElementById('mlbhModalCard').textContent);
+      chk('the profile lists his clubs', /Clubs/.test(profile), '');
+      chk('…and says they are the same performance, split',
+        /never add the two together/.test(profile));
+      chk('…and that club duration is not a contract date',
+        /not verified contract, trade or roster/.test(profile));
+      chk('…and names what this archive does not hold',
+        /no daily lineups/.test(profile) && /no batter-versus-pitcher history/.test(profile));
+      chk('no page error on the offensive profile', errors.length === 0, errors.slice(0, 3));
+      if (SHOTS) { try { fs.mkdirSync(SHOT_DIR, { recursive: true }); await page.screenshot({ path: path.join(SHOT_DIR, 'mlb-hitter-profile.png'), fullPage: true }); } catch (e) { /* optional */ } }
+      await ctx.close();
+    }
+
+    /* ══ 6g. A TWO-WAY PLAYER IS ONE PERSON, TWO ARCHIVES ══════════════ */
+    {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      await gotoOffense(page, 'hitters');
+      const OHTANI = Number(db.rows(`select player_id from mlbhist.batter_overview
+                                      where player_name like '%Ohtani%'`)[0].player_id);
+      await page.evaluate((id) => window.mlboOpenHitter(id), OHTANI);
+      await page.waitForSelector('#mlbhModal .mlbh-ph h3', { timeout: 20000 });
+      const body = await page.evaluate(() => document.getElementById('mlbhModalCard').textContent);
+      chk('a two-way player shows his pitching side too', /He pitched too/.test(body), body.slice(0, 120));
+      chk('…with the hitting rating named', /ED_BAT_PERF_V1/.test(body));
+      chk('…and the pitching rating named separately', /ED_PITCH_PERF_V1/.test(body));
+      chk('…and the two never combined', /never combined into one number/.test(body));
+      const sqlP = db.rows(`select innings_display, era from mlbhist.pitcher_overview
+                             where player_id = ${OHTANI}`)[0];
+      chk('…the pitching innings come from the pitching archive',
+        body.indexOf(sqlP.innings_display + ' IP') >= 0, sqlP.innings_display);
+      /* AND IT IS ONE IDENTITY: the same id opens the pitching record. */
+      await page.evaluate(() => {
+        const b = Array.from(document.querySelectorAll('#mlbhModalCard button'))
+          .filter((x) => /Open his pitching record/.test(x.textContent))[0];
+        b.click();
+      });
+      await page.waitForFunction(() => {
+        const h = document.querySelector('#mlbhModal .mlbh-ph h3');
+        return h && /Ohtani/.test(h.textContent);
+      }, null, { timeout: 20000 });
+      chk('…and the same id opens his pitching record',
+        /IP|ERA|innings/i.test(await page.evaluate(() => document.getElementById('mlbhModalCard').textContent)));
+      chk('no page error crossing the two archives', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+
+    /* ══ 6h. CLUB OFFENSE, AND THE THREE GAME COUNTS ═══════════════════ */
+    {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      await gotoOffense(page, 'offense');
+      const head = await text(page, '#mlbhBody .fb-sechd');
+      chk('the club board names the season and what it ranks by',
+        /2025 · club offense, ranked by the offensive index/.test(head || ''), head);
+      const note = await text(page, '.mlbo-note');
+      chk('…and says runs per game uses the club’s actual games',
+        /actual games/.test(note || ''), note);
+      chk('…and that a club rate is not a mean of player rates',
+        /never by averaging its players/.test(note || ''), note);
+
+      const top = await page.evaluate(() => {
+        const tr = document.querySelector('#mlbhBody .mlbh-tbl tbody tr');
+        const c = tr.children;
+        return { club: c[1].textContent.trim(), g: c[2].textContent.trim(),
+          r: c[3].textContent.trim(), rpg: c[4].textContent.trim() };
+      });
+      const sqlClub = db.rows(`select team_name, team_games, runs, runs_per_game, player_games_sum
+                                 from mlbhist.team_offense_seasons where season = 2025
+                                order by offensive_index desc limit 1`)[0];
+      eq('the top club matches the database', top.club, sqlClub.team_name);
+      eq('…with the club’s ACTUAL games, not the sum of player games', top.g, String(sqlClub.team_games));
+      chk('…which is a different number from the sum of player games',
+        Number(sqlClub.team_games) !== Number(sqlClub.player_games_sum),
+        `${sqlClub.team_games} vs ${sqlClub.player_games_sum}`);
+      near('…and runs per game is runs over those games',
+        Number(top.rpg), Number(sqlClub.runs) / Number(sqlClub.team_games), 0.005);
+
+      /* DRILL INTO A CLUB and check the roster */
+      const TEAM = Number(db.rows(`select team_id from mlbhist.team_offense_seasons
+                                    where season = 2025 order by offensive_index desc limit 1`)[0].team_id);
+      await page.evaluate((id) => window.mlboSetTeam(String(id)), TEAM);
+      await page.waitForFunction(() => document.querySelectorAll('#mlbhBody .mlbh-tbl').length > 1,
+        null, { timeout: 20000 });
+      const rosterCount = await page.evaluate(() => Array.from(document.querySelectorAll('#mlbhBody .mlbh-tbl'))[1]
+        .querySelectorAll('tbody tr').length);
+      const sqlRoster = Number(db.rows(`select count(*)::int as n from mlbhist.batter_team_seasons
+                                         where season = 2025 and team_id = ${TEAM}`)[0].n);
+      eq('the roster behind that club-season is the roster the database has',
+        rosterCount, Math.min(sqlRoster, 40));
+      const rosterNote = await page.evaluate(() => Array.from(document.querySelectorAll('.mlbo-note'))
+        .map((n) => n.textContent).join(' '));
+      chk('…and says these rows are parts of each hitter’s season',
+        /never add them to his season line/.test(rosterNote), rosterNote.slice(0, 200));
+      chk('no page error on the club board', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+
+    /* ══ 6i. THE OFFENSIVE BASELINE ON A GAME BRIEF ════════════════════ */
+    {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      await gotoGames(page);
+      await page.evaluate(() => {
+        const r = Array.from(document.querySelectorAll('.mlbb-row'))
+          .filter((x) => /New York Yankees/.test(x.textContent))[0];
+        r.click();
+      });
+      await page.waitForFunction(() => {
+        const s = document.querySelector('.edb-res');
+        return s && /Starting pitching/.test(s.textContent);
+      }, null, { timeout: 25000 });
+      const brief = await page.evaluate(() => document.querySelector('.edb-res').textContent.replace(/\s+/g, ' ').trim());
+      chk('the brief carries a completed-season club offense panel',
+        /Club offense — this season and the archive/.test(brief), brief.slice(0, 200));
+      chk('…labelled as different measurements never averaged',
+        /never averaged together/.test(brief));
+      chk('…and says the archive is a club record, not a roster',
+        /not necessarily the hitters playing tonight/.test(brief));
+      chk('…with the ten-season window named',
+        /Ten-season baseline \(2016–2025\)/.test(brief), brief.slice(0, 300));
+      /* the number on the page is the number in the database */
+      const sqlBase = db.rows(`select runs_per_game from mlbhist.team_offense_overview
+                                where team_id = 147`)[0];
+      chk('…and the baseline runs per game match the archive',
+        brief.indexOf('R/G ' + Number(sqlBase.runs_per_game).toFixed(2)) >= 0,
+        Number(sqlBase.runs_per_game).toFixed(2));
+      chk('no page error on the brief with both archives', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+
+    /* ══ 6j. THE OFFENSIVE SURFACES ON A PHONE ═════════════════════════ */
+    {
+      const { page, ctx, errors } = await openApp({ width: 390, height: 844 });
+      await gotoOffense(page, 'hitters');
+      const wide = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      chk('the hitter board does not scroll the page sideways on a phone', wide === false);
+      const JUDGE2 = Number(db.rows(`select player_id from mlbhist.batter_overview
+                                      where player_name = 'Aaron Judge'`)[0].player_id);
+      await page.evaluate((id) => window.mlboOpenHitter(id), JUDGE2);
+      await page.waitForSelector('#mlbhModal .mlbh-ph h3', { timeout: 20000 });
+      const wide2 = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      chk('…and neither does the profile', wide2 === false);
+      chk('no page error on a phone', errors.length === 0, errors.slice(0, 3));
       await ctx.close();
     }
 

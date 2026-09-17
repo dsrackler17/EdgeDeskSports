@@ -25924,12 +25924,874 @@ try { if (EDSTAKE && EDRESEARCH) EDSTAKE.registerTools(); } catch { /* additive 
   };
 });
 /*__EDMLBHIST_END__*/
+/* The MLB OFFENSIVE layer, inlined from _mlboff.js (which itself carries the
+   shared query layer from lib/mlb_offense_history.js). Do not edit it here. */
+/*__EDMLBOFF_AI_START__*/
+(function (root, factory) {
+  var api = factory(root);
+  root.EDMLBOFF = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 1;
+  var SCHEMA = 'edgedesk_mlb_offense_v1';
+
+  function Q() {
+    return (root && root.EDMlbBatters) || (typeof module === 'object' && module && module.exports
+      ? tryRequire() : null);
+  }
+  function tryRequire() {
+    try { return require('../../../lib/mlb_offense_history.js'); } catch (_) { return null; }
+  }
+  function R() { return root && root.EDRESEARCH ? root.EDRESEARCH : null; }
+
+  function str(v) { return v == null ? '' : String(v); }
+  function num(v) { if (v == null || v === '') return null; var n = Number(v); return Number.isFinite(n) ? n : null; }
+  function int(v) { var n = num(v); return n == null ? null : Math.round(n); }
+  function uniq(a) { var s = {}, o = []; (a || []).forEach(function (x) { var k = String(x); if (!s[k]) { s[k] = 1; o.push(x); } }); return o; }
+
+  /* ====================================================================== */
+  /* 1. THE ROUTER                                                          */
+  /* ====================================================================== */
+
+  var HISTORY_WORDS = /\b(hist(ory|orical(ly)?)|career|over the (last|past)|past (three|four|five|six|seven|eight|nine|ten|\d+) (season|year)s?|last (three|four|five|six|seven|eight|nine|ten|\d+) (season|year)s?|since \d{4}|in \d{4}|back in|used to|previously|track record|year[- ]over[- ]year|season by season|each season|every season|trend(s|ed|ing)?|develop(ed|ment)|progress(ed|ion)?|changed?|improv(ed|ement|ing)|declin(ed|e|ing)|regress(ed|ion)|baseline|completed seasons?)\b/i;
+
+  /* Words that make a question about HITTING rather than pitching. The two
+     archives sit side by side and a question routed to the wrong one comes
+     back confidently wrong. */
+  var BAT_WORDS = /\b(hit(s|ter|ters|ting)?|bat(s|ter|ters|ting)?|offen[cs]e|offensive|lineup|line[- ]?up|slugg(er|ing)|power|on[- ]base|obp|slg|ops|avg|batting average|iso\b|babip|home ?runs?|hr\b|rbi|runs? (scored|batted)|walk(s|ed)? rate|bb%|strikeout rate|k%|plate appearance|pa\b|at[- ]bats?|ab\b|extra[- ]base|doubles?|triples?|stolen bases?|sb\b|caught stealing|baserunning|plate discipline|contact|swing)\b/i;
+
+  /* Words about right now. These VETO the history route unless a history word
+     is also present, in which case both are answered and kept apart. */
+  var CURRENT_WORDS = /\b(tonight|today|tomorrow|this (evening|afternoon)|right now|currently|current (season|form|year)|so far this (season|year)|latest game|last game|next game|who('s| is) (batting|playing|starting)|in the lineup|today'?s lineup|tonight'?s lineup)\b/i;
+
+  /* A question that is explicitly about WHO IS PLAYING is never answerable
+     from here, and saying so is more useful than a career line. */
+  var LINEUP_CLAIM = /\b(who('s| is| are)? (batting|hitting|playing|in the lineup)|today'?s lineup|tonight'?s lineup|starting lineup|lineup card|batting order|who bats)\b/i;
+
+  var INTENTS = {
+    hitter_history: /\b(how (has|have).*(chang|develop|progress|improv|declin|look|hit|perform)|career|track record|season by season|year[- ]over[- ]year|over the (last|past)|history|performed)\b/i,
+    hitter_team_history: /\b(which (teams?|clubs?)|what (teams?|clubs?)|(each|every|all|both) (of (his|their) )?(teams?|clubs?)|(teams?|clubs?) (he|they) (play|played|hit|batted)|(play|played|hit|batted) for|team history|club history|with each (team|club)|traded|moved to)\b/i,
+    compare_hitters: /\b(compar(e|ing|ison)|versus|vs\.?|against each other|better (than|of the two)|head to head|side by side|both hitters|two hitters)\b/i,
+    ops_decomposition: /\b((driven|led) (more )?by|reaching base or power|on[- ]base or (slugging|power)|power or (on[- ]base|contact)|where (does|did) (the|his) (ops|production) come from|what('s| is) behind (his|the) ops)\b/i,
+    leaderboard: /\b(who (had|has|led|leads|were|was) the (best|worst|highest|lowest|top|most|fewest)|led the|leader(s|board)?|best|worst|top \d+|rank(ed|ing)?|league leaders?|most|fewest)\b/i,
+    improvement: /\b(improv(ed|ement)|declin(ed|e)|better|worse|gain(ed)?|lost|from \d{4} to \d{4}|between \d{4} and \d{4})\b/i,
+    team_offense: /\b(team offen[cs]e|teams? (had|have) the (strongest|best|worst|weakest)|club offen[cs]e|offensive team|runs per game|team (ops|obp|slg)|which teams?)\b/i,
+    lineup_context: /\b(this lineup|the lineup|lineup'?s (historical|power|strikeout|profile)|these hitters|the hitters (in|on)|opposing lineup|their lineup)\b/i,
+    two_way: /\b(two[- ]way|both (hitting and pitching|sides)|hitting and pitching|pitching and hitting|as a (hitter and|pitcher and))\b/i,
+    current_vs_baseline: /\b((current|this) season.{0,40}(compare[sd]?|compare with|versus|vs\.?|against|stack(s|ed)? up).{0,40}(baseline|career|history|prior|archive)|(baseline|career|history|archive).{0,40}(compare[sd]?|versus|vs\.?|against).{0,40}(current|this) season|compare[sd]? .{0,40}(current|this) season .{0,30}(baseline|history|career|prior|archive))\b/i
+  };
+
+  /**
+   * Decide whether this turn is about the historical offensive record.
+   * Returns null when it is not — the caller then does nothing at all.
+   */
+  function route(o) {
+    o = o || {};
+    var text = str(o.question);
+    if (!text.trim()) return null;
+    var sport = str(o.sport);
+    if (sport && sport.indexOf('baseball') !== 0) return null;
+
+    var hist = HISTORY_WORDS.test(text);
+    var bat = BAT_WORDS.test(text);
+    var current = CURRENT_WORDS.test(text);
+    var names = hitterNamesIn(text);
+    var carried = (o.carried && o.carried.player_ids) || [];
+
+    /* A pure "who is in the lineup" question routes here ONLY so the answer
+       can say this archive cannot answer it. That is worth a turn: the
+       alternative is a career line presented as a lineup. */
+    var lineupOnly = LINEUP_CLAIM.test(text) && !hist;
+    if (lineupOnly) {
+      return { sport: 'baseball_mlb', intents: ['lineup_refusal'], primary: 'lineup_refusal',
+        names: names, player_ids: carried, seasons: seasonsIn(text), text: text,
+        current_also: true, reason: 'asks who is playing, which this archive cannot answer' };
+    }
+
+    /* Otherwise: it has to be about hitting AND about the past (or carry ids
+       from a previous historical turn). */
+    var population = /\b(hitters?|batters?|players?|teams?|clubs?|everyone|anybody|who)\b/i.test(text);
+    var intents = [];
+    Object.keys(INTENTS).forEach(function (k) { if (INTENTS[k].test(text)) intents.push(k); });
+
+    /* A LINEUP IS ITS OWN SUBJECT, and so is a league-wide board. "Compare this
+       lineup's power profile" names no player and asks about a specific set of
+       them; requiring a name would drop the question entirely. */
+    var hasSubject = names.length > 0 || carried.length > 0 || population
+      || INTENTS.leaderboard.test(text) || INTENTS.team_offense.test(text)
+      || INTENTS.lineup_context.test(text) || INTENTS.two_way.test(text);
+    if (!hasSubject) return null;
+    /* A HITTING WORD, A NAME, OR A CARRIED IDENTITY. A question that names a
+       player and asks about the past carries no hitting noun of its own —
+       "how has he performed over the last five seasons" — and both archives
+       should look, because only the data knows which one he is in. */
+    if (!bat && !carried.length && !names.length) return null;
+    /* A follow-up inherits the historical frame the previous turn established;
+       that is what carrying the ids is for. Requiring the word "career" again
+       would break "and his walk rate?" one turn after it was set up. */
+    if (!hist && !intents.length && !carried.length) return null;
+    if (current && !hist && !intents.length && !carried.length) return null;
+
+    var primary = pickPrimary(intents, text, names, carried);
+    if (!primary) return null;
+
+    return {
+      sport: 'baseball_mlb',
+      intents: uniq(intents),
+      primary: primary,
+      names: names,
+      player_ids: carried,
+      seasons: seasonsIn(text),
+      teams: teamWordsIn(text),
+      min_pa: minPaIn(text),
+      metric: metricFor(text),
+      text: text,
+      /* Both halves are answered and KEPT APART when a turn asks about now and
+         about history in the same breath. */
+      current_also: current,
+      reason: 'historical offensive question'
+    };
+  }
+
+  function pickPrimary(intents, text, names, carried) {
+    if (!intents.length) return names.length || carried.length ? 'hitter_history' : null;
+    var subject = names.length > 0 || carried.length > 0;
+    /* "WHICH TEAMS" IS TWO QUESTIONS. "Which teams did this hitter play for"
+       is a club history; "which teams had the strongest offense" is a club
+       leaderboard. The words are the same and the SUBJECT decides: with a
+       hitter in hand it is his clubs, without one it is the league's. */
+    if (intents.indexOf('team_offense') >= 0 && intents.indexOf('hitter_team_history') >= 0) {
+      intents = intents.filter(function (x) {
+        return x !== (subject ? 'team_offense' : 'hitter_team_history');
+      });
+    }
+    /* Order matters: the most specific reading wins. */
+    var order = ['two_way', 'current_vs_baseline', 'lineup_context', 'ops_decomposition',
+      'compare_hitters', 'hitter_team_history', 'team_offense', 'improvement', 'leaderboard',
+      'hitter_history'];
+    for (var i = 0; i < order.length; i++) {
+      if (intents.indexOf(order[i]) >= 0) {
+        /* A leaderboard or an improvement question about ONE named hitter is
+           really a question about that hitter. */
+        if ((order[i] === 'leaderboard' || order[i] === 'improvement')
+          && (names.length === 1 || carried.length === 1)
+          && !/\b(who|which|leader|top \d+|best|worst|most|fewest)\b/i.test(text)) {
+          continue;
+        }
+        return order[i];
+      }
+    }
+    return intents[0];
+  }
+
+  function seasonsIn(text) {
+    var out = [];
+    var re = /\b(20(1[6-9]|2[0-5]))\b/g, m;
+    while ((m = re.exec(str(text)))) out.push(Number(m[1]));
+    return uniq(out).sort();
+  }
+  function minPaIn(text) {
+    var m = /\b(?:at least|minimum(?: of)?|min\.?|with)\s+(\d{2,4})\s*(?:\+\s*)?(?:pa|plate appearances)\b/i.exec(str(text));
+    if (m) return Number(m[1]);
+    var m2 = /\b(\d{3,4})\s*\+?\s*(?:pa|plate appearances)\b/i.exec(str(text));
+    return m2 ? Number(m2[1]) : null;
+  }
+  function teamWordsIn(text) {
+    var out = [];
+    var re = /\b(Yankees|Mets|Dodgers|Giants|Red Sox|Orioles|Blue Jays|Rays|Guardians|Indians|Tigers|Twins|White Sox|Royals|Astros|Angels|Athletics|Mariners|Rangers|Braves|Marlins|Phillies|Nationals|Cubs|Reds|Brewers|Pirates|Cardinals|Diamondbacks|Rockies|Padres)\b/gi, m;
+    while ((m = re.exec(str(text)))) out.push(m[1]);
+    return uniq(out);
+  }
+
+  /* Which metric a leaderboard or change question is ABOUT. The filter phrase
+     is stripped first: "hitters with at least 500 PA" names a screen, not the
+     thing being ranked, and ranking by it silently answers a different
+     question. */
+  var MIN_CLAUSE = /\b(?:at least|minimum(?: of)?|min\.?|with|over|above|more than)\s+\d{2,4}\s*\+?\s*(?:pa|plate appearances|ab|at[- ]bats)\b/ig;
+  function metricFor(text) {
+    var t = str(text).replace(MIN_CLAUSE, ' ');
+    if (/\bwalk(s|ed)? ?rate|bb%|base on balls rate\b/i.test(t)) return 'bb_pct';
+    if (/\bstrikeout ?rate|k%\b/i.test(t)) return 'k_pct';
+    if (/\bhome ?run ?rate|hr%\b/i.test(t)) return 'hr_pct';
+    if (/\b(home ?runs?|hr\b|power|slug)\b/i.test(t) && !/\brate\b/i.test(t)) {
+      return /\bslug|slg\b/i.test(t) ? 'slg' : 'home_runs';
+    }
+    if (/\bops\b/i.test(t)) return 'ops';
+    if (/\bon[- ]base|obp\b/i.test(t)) return 'obp';
+    if (/\bslugging|slg\b/i.test(t)) return 'slg';
+    if (/\biso|isolated power\b/i.test(t)) return 'iso';
+    if (/\bbabip\b/i.test(t)) return 'babip';
+    if (/\bbatting average|avg\b/i.test(t)) return 'avg';
+    if (/\bstolen bases?|sb\b|steal/i.test(t)) return 'stolen_bases';
+    if (/\brbi\b/i.test(t)) return 'rbi';
+    if (/\bruns? scored\b/i.test(t)) return 'runs';
+    if (/\bdoubles?\b/i.test(t)) return 'doubles';
+    if (/\bextra[- ]base\b/i.test(t)) return 'extra_base_hits';
+    if (/\bruns per game\b/i.test(t)) return 'runs_per_game';
+    if (/\bplate appearances?\b/i.test(t)) return 'plate_appearances';
+    return 'offensive_index';
+  }
+
+  /* Names in free text. A token scan where a stop word ENDS a run rather than
+     discarding it, so "Compare Judge and Ohtani" keeps both. */
+  var NOT_A_NAME = {
+    compare: 1, versus: 1, vs: 1, and: 1, or: 1, with: 1, against: 1, between: 1, the: 1, a: 1, an: 1,
+    how: 1, has: 1, have: 1, his: 1, her: 1, their: 1, who: 1, which: 1, what: 1, when: 1, did: 1, does: 1,
+    is: 1, was: 1, were: 1, are: 1, in: 1, on: 1, for: 1, of: 1, to: 1, from: 1, over: 1, last: 1, past: 1,
+    season: 1, seasons: 1, year: 1, years: 1, career: 1, history: 1, historical: 1, hitting: 1, hitter: 1,
+    hitters: 1, batting: 1, batter: 1, power: 1, discipline: 1, plate: 1, walk: 1, walks: 1, rate: 1,
+    strikeout: 1, strikeouts: 1, ops: 1, obp: 1, slg: 1, avg: 1, iso: 1, babip: 1, hr: 1, rbi: 1, pa: 1,
+    show: 1, tell: 1, me: 1, about: 1, five: 1, completed: 1, baseline: 1, lineup: 1, team: 1, teams: 1,
+    club: 1, clubs: 1, offense: 1, offence: 1, offensive: 1, index: 1, rating: 1, best: 1, worst: 1,
+    most: 1, least: 1, top: 1, led: 1, leads: 1, leader: 1, leaders: 1, improved: 1, declined: 1,
+    strongest: 1, weakest: 1, at: 1, by: 1, more: 1, than: 1, this: 1, that: 1, both: 1, each: 1, all: 1,
+    played: 1, play: 1, did_he: 1, he: 1, she: 1, they: 1, it: 1, do: 1, please: 1, compared: 1,
+    january: 1, new: 1, york: 1, los: 1, angeles: 1, san: 1, francisco: 1, kansas: 1, city: 1, st: 1,
+    louis: 1, tampa: 1, bay: 1, chicago: 1, boston: 1, houston: 1, seattle: 1, texas: 1, atlanta: 1,
+    miami: 1, philadelphia: 1, washington: 1, cincinnati: 1, milwaukee: 1, pittsburgh: 1, arizona: 1,
+    colorado: 1, diego: 1, detroit: 1, minnesota: 1, cleveland: 1, baltimore: 1, toronto: 1, oakland: 1,
+    /* Club nicknames. Now that a single capitalised token counts as a name,
+       "Which Yankees hitters led in 2025" would otherwise try to resolve a
+       hitter called Yankees. */
+    yankees: 1, mets: 1, dodgers: 1, giants: 1, sox: 1, orioles: 1, jays: 1, rays: 1, guardians: 1,
+    indians: 1, tigers: 1, twins: 1, royals: 1, astros: 1, angels: 1, athletics: 1, mariners: 1,
+    rangers: 1, braves: 1, marlins: 1, phillies: 1, nationals: 1, cubs: 1, reds: 1, brewers: 1,
+    pirates: 1, cardinals: 1, diamondbacks: 1, rockies: 1, padres: 1, mlb: 1, al: 1, nl: 1,
+    east: 1, west: 1, central: 1, league: 1, american: 1, national: 1, edgedesk: 1
+  };
+  function hitterNamesIn(text) {
+    var words = str(text).replace(/[?!.,;:]/g, ' ').split(/\s+/).filter(Boolean);
+    var out = [], run = [];
+    function flush() {
+      /* One token is enough: "Judge", "Ohtani", "Trout" are how people write
+         these names. A token that matches nobody resolves to UNRESOLVED and
+         costs one bounded read; a name silently dropped costs the answer. */
+      if (run.length) out.push(run.join(' '));
+      run = [];
+    }
+    words.forEach(function (w) {
+      var bare = w.replace(/['’]s$/, '');
+      var low = bare.toLowerCase();
+      var capital = /^[A-ZÁÉÍÓÚÑÜ]/.test(bare) && bare.length > 1;
+      if (capital && !NOT_A_NAME[low]) { run.push(bare); return; }
+      flush();
+    });
+    flush();
+    return uniq(out).slice(0, 6);
+  }
+
+  /* ====================================================================== */
+  /* 2. RETRIEVAL                                                           */
+  /* ====================================================================== */
+
+  async function retrieve(o) {
+    o = o || {};
+    var svc = o.service;
+    var plan = o.plan;
+    if (!svc || !plan) return null;
+    var QL = Q();
+    var out = {
+      plan: plan, coverage: null, rating_version: QL ? QL.RATING_VERSION : 'ED_BAT_PERF_V1',
+      resolved: [], ambiguous: [], unresolved: [],
+      overviews: [], seasons: {}, teams: {}, compare: null, leaderboard: null,
+      changes: null, team_offense: null, lineup: null, two_way: null, baseline: null,
+      decomposition: null, notes: [], errors: []
+    };
+
+    try {
+      var st = await svc.status();
+      if (!st.ok) { out.errors.push({ code: st.code, error: st.error }); return out; }
+      out.coverage = st.coverage;
+      out.notes.push(QL ? QL.coverageNote(st.coverage) : '');
+    } catch (e) { out.errors.push({ code: 'QUERY_UNAVAILABLE', error: String(e && e.message || e) }); return out; }
+
+    if (plan.primary === 'lineup_refusal') {
+      out.notes.push('This archive cannot say who is playing. It holds completed seasons, not lineups.');
+      return out;
+    }
+
+    /* ---- resolve the subjects, refusing ambiguity ---- */
+    var ids = (plan.player_ids || []).slice(0, 6);
+    for (var i = 0; i < (plan.names || []).length && ids.length < 6; i++) {
+      try {
+        var r = await svc.resolveHitter({ name: plan.names[i] });
+        if (r.ok && r.data.resolved) { ids.push(r.data.resolved.player_id); out.resolved.push(r.data.resolved); }
+        else if (r.code === 'AMBIGUOUS_PLAYER') {
+          out.ambiguous.push({ name: plan.names[i], candidates: (r.data && r.data.candidates) || [] });
+        } else out.unresolved.push({ name: plan.names[i], reason: r.error });
+      } catch (e) { out.errors.push({ code: 'QUERY_UNAVAILABLE', error: String(e && e.message || e) }); }
+    }
+    ids = uniq(ids);
+    out.player_ids = ids;
+
+    /* An ambiguous name is a question for the reader, not a coin flip. When
+       nothing else resolved there is nothing more to retrieve. */
+    if (!ids.length && out.ambiguous.length) return out;
+
+    var season = (plan.seasons || []).length === 1 ? plan.seasons[0] : null;
+    var from = (plan.seasons || []).length >= 2 ? plan.seasons[0] : null;
+    var to = (plan.seasons || []).length >= 2 ? plan.seasons[plan.seasons.length - 1] : null;
+
+    try {
+      switch (plan.primary) {
+        case 'compare_hitters':
+          if (ids.length >= 2) {
+            out.compare = await svc.compare({ player_ids: ids, season: season, season_from: from, season_to: to });
+          }
+          break;
+        case 'hitter_team_history':
+          for (var t = 0; t < ids.length; t++) out.teams[ids[t]] = await svc.teamHistory({ player_id: ids[t] });
+          break;
+        case 'leaderboard':
+          out.leaderboard = await svc.leaderboard({
+            season: season || (out.coverage ? out.coverage.end : null),
+            metric: plan.metric, min_pa: plan.min_pa, limit: 15 });
+          break;
+        case 'improvement':
+          out.changes = await svc.changes({
+            from_season: from || (out.coverage ? out.coverage.end - 1 : null),
+            to_season: to || (out.coverage ? out.coverage.end : null),
+            metric: plan.metric, min_pa: plan.min_pa || 300, limit: 15 });
+          break;
+        case 'team_offense':
+          out.team_offense = await svc.teamOffense({
+            season: season || (out.coverage ? out.coverage.end : null),
+            with_roster: false, limit: 30 });
+          break;
+        case 'lineup_context':
+          out.lineup = await svc.lineupContext({ names: plan.names, player_ids: plan.player_ids });
+          break;
+        case 'two_way':
+          for (var w = 0; w < ids.length; w++) {
+            var tw = await svc.twoWay({ player_id: ids[w] });
+            if (tw.ok && tw.data.length) out.two_way = tw;
+          }
+          if (!out.two_way && !ids.length) out.two_way = await svc.twoWay({ min_pa: 200, min_outs: 150, limit: 15 });
+          break;
+        case 'current_vs_baseline':
+          if (ids.length) out.baseline = await svc.currentVsBaseline({ player_id: ids[0], baseline_seasons: 5 });
+          break;
+        default:
+          break;
+      }
+
+      /* The per-hitter record every intent benefits from. Bounded to the
+         hitters actually asked about. */
+      for (var k = 0; k < ids.length && k < 4; k++) {
+        var ov = await svc.hitterOverview({ player_id: ids[k] });
+        if (ov.ok) {
+          out.overviews.push(ov.data.overview);
+          out.seasons[ids[k]] = ov.data.seasons;
+          if (!out.decomposition && ov.data.latest_ops_decomposition) {
+            out.decomposition = { player_id: ids[k], player_name: ov.data.overview.player_name,
+              result: ov.data.latest_ops_decomposition };
+          }
+          if (plan.primary === 'hitter_history' || plan.primary === 'ops_decomposition') {
+            out.teams[ids[k]] = out.teams[ids[k]] || await svc.teamHistory({ player_id: ids[k] });
+          }
+        }
+      }
+    } catch (e) {
+      out.errors.push({ code: 'QUERY_UNAVAILABLE', error: String(e && e.message || e) });
+    }
+    return out;
+  }
+
+  /* ====================================================================== */
+  /* 3. THE PROMPT BLOCK                                                    */
+  /* ====================================================================== */
+
+  var COV_LINE = 'HISTORICAL MLB OFFENSIVE RECORD. Completed regular seasons only. It is NOT current-season data, '
+    + 'and it is NEVER A LINEUP: it cannot say who is batting tonight or in what order.';
+
+  function fmt(v, metric) { var QL = Q(); return QL ? QL.fmt(v, metric) : (v == null ? '—' : String(v)); }
+
+  function promptBlock(res) {
+    if (!res) return '';
+    var QL = Q();
+    var L = [];
+    L.push('MLB OFFENSIVE ARCHIVE' + (res.coverage ? ' (' + res.coverage.start + '–' + res.coverage.end + ')' : ''));
+    L.push(COV_LINE);
+    if (res.coverage && res.coverage.provisional_seasons && res.coverage.provisional_seasons.length) {
+      L.push('PROVISIONAL: ' + res.coverage.provisional_seasons.join(', ')
+        + ' were imported before the season finished; the league baseline and every rating against it will change.');
+    }
+    L.push('RATING: ' + (res.rating_version || 'ED_BAT_PERF_V1')
+      + ' — 100 is that season’s MLB average, shrunk by PA/(PA+200). NOT OPS+, NOT wRC+, NOT WAR, not a percentile, '
+      + 'not park-adjusted, not a probability. Always quote it with plate appearances.');
+
+    if (res.errors && res.errors.length) {
+      L.push('READ FAILED: ' + res.errors.map(function (e) { return e.code + ' ' + (e.error || ''); }).join('; ')
+        + '. Say what could not be read rather than answering from memory.');
+      return L.join('\n');
+    }
+
+    if (res.plan && res.plan.primary === 'lineup_refusal') {
+      L.push('THE QUESTION ASKS WHO IS PLAYING. This archive cannot answer that at any sample size. Say so plainly, '
+        + 'name the live lineup source as the only place that answer comes from, and offer the historical record of '
+        + 'any hitter named instead.');
+      return L.join('\n');
+    }
+
+    if (res.ambiguous && res.ambiguous.length) {
+      res.ambiguous.forEach(function (a) {
+        L.push('AMBIGUOUS NAME "' + a.name + '": ' + a.candidates.length + ' hitters match. '
+          + a.candidates.slice(0, 6).map(function (c) {
+            return c.player_name + ' (id ' + c.player_id + ', ' + c.first_observed_season + '–'
+              + c.last_observed_season + ', ' + c.plate_appearances + ' PA'
+              + (c.teams ? ', ' + c.teams : '') + ')';
+          }).join('; ')
+          + '. ASK WHICH ONE. Do not pick.');
+      });
+    }
+    (res.unresolved || []).forEach(function (u) {
+      L.push('NOT IN THE ARCHIVE: "' + u.name + '" — ' + (u.reason || 'no record in this window') + '.');
+    });
+
+    (res.overviews || []).forEach(function (p) {
+      var line = 'HITTER ' + p.player_name + ' (id ' + p.player_id + '): '
+        + p.first_observed_season + '–' + p.last_observed_season + ', '
+        + p.seasons_with_pa + ' season' + (p.seasons_with_pa === 1 ? '' : 's') + ' with a PA, '
+        + p.plate_appearances + ' PA, ' + p.games + ' G, '
+        + p.hits + ' H, ' + p.home_runs + ' HR, ' + (p.extra_base_hits != null ? p.extra_base_hits + ' XBH, ' : '')
+        + 'AVG ' + fmt(p.avg, 'avg') + ', OBP ' + fmt(p.obp, 'obp') + ', SLG ' + fmt(p.slg, 'slg')
+        + ', OPS ' + fmt(p.ops, 'ops') + ', ISO ' + fmt(p.iso, 'iso') + ', BABIP ' + fmt(p.babip, 'babip')
+        + ', K% ' + fmt(p.k_pct, 'k_pct') + ', BB% ' + fmt(p.bb_pct, 'bb_pct')
+        + ', SB ' + p.stolen_bases + (p.sb_success_pct != null ? ' (' + fmt(p.sb_success_pct, 'sb_success_pct') + ')' : '')
+        + ', index ' + fmt(p.weighted_offensive_index, 'offensive_index')
+        + ' over ' + p.rated_plate_appearances + ' rated PA'
+        + (p.teams ? ' · clubs: ' + p.teams : '')
+        + ' · sample ' + p.sample_flag;
+      if (p.missed_seasons && p.missed_seasons.length) {
+        line += ' · NO RECORD in ' + p.missed_seasons.join(', ');
+      }
+      L.push(line);
+      L.push('  profile link: ' + (QL ? QL.profileLink(p.player_id) : '#research/baseball/b' + p.player_id));
+
+      var ss = (res.seasons && res.seasons[p.player_id]) || [];
+      ss.filter(function (s) { return s.plate_appearances > 0; }).forEach(function (s) {
+        L.push('  ' + s.season + ': ' + s.plate_appearances + ' PA, ' + s.games + ' G, '
+          + s.hits + ' H, ' + s.home_runs + ' HR, AVG ' + fmt(s.avg, 'avg')
+          + ', OBP ' + fmt(s.obp, 'obp') + ', SLG ' + fmt(s.slg, 'slg') + ', OPS ' + fmt(s.ops, 'ops')
+          + ', ISO ' + fmt(s.iso, 'iso') + ', K% ' + fmt(s.k_pct, 'k_pct') + ', BB% ' + fmt(s.bb_pct, 'bb_pct')
+          + ', SB ' + s.stolen_bases + '/' + (s.stolen_bases + s.caught_stealing)
+          + ', index ' + fmt(s.offensive_index, 'offensive_index')
+          + (s.teams ? ' [' + s.teams + ']' : '')
+          + ' · ' + s.sample_flag + (s.provisional ? ' · PROVISIONAL' : ''));
+      });
+    });
+
+    Object.keys(res.teams || {}).forEach(function (pid) {
+      var th = res.teams[pid];
+      if (!th || !th.ok) return;
+      var by = th.data.by_team || [];
+      if (!by.length) return;
+      L.push('CLUBS for id ' + pid + ' (seasons with a recorded appearance, NOT contract or trade dates):');
+      by.forEach(function (c) {
+        L.push('  ' + c.team_names_observed + ': ' + c.first_observed_season + '–' + c.last_observed_season
+          + ', ' + c.plate_appearances + ' PA, ' + c.home_runs + ' HR, OPS ' + fmt(c.ops, 'ops')
+          + ', index ' + fmt(c.weighted_offensive_index, 'offensive_index'));
+      });
+      L.push('  The per-club lines are the SAME performance as the season lines, split. Never add the two together.');
+    });
+
+    if (res.decomposition && res.decomposition.result) {
+      var d = res.decomposition.result;
+      if (d.available) {
+        L.push('OPS SHAPE for ' + res.decomposition.player_name + ': OBP ' + fmt(d.obp, 'obp')
+          + ' is ' + d.obp_pct_above_league + '% off the league baseline; SLG ' + fmt(d.slg, 'slg')
+          + ' is ' + d.slg_pct_above_league + '% off it. ' + d.text);
+      } else {
+        L.push('OPS SHAPE unavailable: ' + d.reason + '.');
+      }
+    }
+
+    if (res.compare && res.compare.ok) {
+      var c = res.compare.data;
+      L.push('COMPARISON (' + c.players.map(function (p) {
+        return p.player_name + ' ' + (p.plate_appearances != null ? p.plate_appearances + ' PA' : 'PA unknown');
+      }).join(' vs ') + '), spans ' + c.spans.join(' vs ') + ':');
+      c.rows.forEach(function (r) {
+        L.push('  ' + r.label + ': ' + r.values.map(function (v) { return fmt(v, r.metric); }).join(' vs ')
+          + (r.incomparable ? '  [' + r.incomparable + ']'
+            : (r.lead != null ? '  → ' + c.players[r.lead].player_name : '  → even')));
+      });
+      L.push('  ' + c.note);
+    }
+
+    if (res.leaderboard && res.leaderboard.ok) {
+      var lb = res.leaderboard;
+      L.push('LEADERBOARD ' + (lb.scope.season || '') + ' by ' + lb.scope.metric
+        + (lb.scope.min_pa ? ' (min ' + lb.scope.min_pa + ' PA)' : ' (no workload screen)')
+        + ' — ordered by the database:');
+      lb.data.slice(0, 15).forEach(function (r, i) {
+        L.push('  ' + (i + 1) + '. ' + r.player_name + ' (id ' + r.player_id + ') '
+          + fmt(r[lb.scope.metric], lb.scope.metric) + ' · ' + r.plate_appearances + ' PA · ' + r.sample_flag);
+      });
+      (lb.notes || []).forEach(function (n) { if (!/Historical MLB/.test(n)) L.push('  ' + n); });
+    }
+
+    if (res.changes && res.changes.ok) {
+      var ch = res.changes;
+      L.push('CHANGE ' + ch.scope.from_season + ' → ' + ch.scope.to_season + ' in ' + ch.scope.metric
+        + ' (min ' + ch.scope.min_pa + ' PA in BOTH seasons; ' + ch.scope.qualifying_both_seasons
+        + ' hitters qualify) — most improved first:');
+      ch.data.slice(0, 15).forEach(function (r, i) {
+        L.push('  ' + (i + 1) + '. ' + r.player_name + ' (id ' + r.player_id + ') '
+          + fmt(r.from, ch.scope.metric) + ' → ' + fmt(r.to, ch.scope.metric)
+          + ' (' + (QL ? QL.fmtDelta(r.delta, ch.scope.metric) : r.delta) + ') · '
+          + r.from_plate_appearances + ' → ' + r.to_plate_appearances + ' PA');
+      });
+      (ch.notes || []).forEach(function (n) { if (!/Historical MLB/.test(n)) L.push('  ' + n); });
+    }
+
+    if (res.team_offense && res.team_offense.ok) {
+      var ts = res.team_offense.data.seasons || [];
+      L.push('TEAM OFFENSE ' + (res.team_offense.scope.season || '') + ':');
+      ts.slice(0, 30).forEach(function (t, i) {
+        L.push('  ' + (i + 1) + '. ' + t.team_name + ' (id ' + t.team_id + ') '
+          + t.runs + ' R in ' + t.team_games + ' G = ' + fmt(t.runs_per_game, 'runs_per_game') + ' R/G, '
+          + 'OPS ' + fmt(t.ops, 'ops') + ', HR ' + t.home_runs + ', K% ' + fmt(t.k_pct, 'k_pct')
+          + ', BB% ' + fmt(t.bb_pct, 'bb_pct') + ', index ' + fmt(t.offensive_index, 'offensive_index'));
+      });
+      L.push('  Runs per game uses the club’s ACTUAL games. player_games_sum is the sum of player games and is NOT a club’s games.');
+    }
+
+    if (res.lineup && res.lineup.ok) {
+      var lu = res.lineup.data;
+      L.push('LINEUP HISTORY (' + lu.hitters.length + ' hitters a CURRENT source named; this archive did not produce the lineup):');
+      lu.hitters.forEach(function (h) {
+        L.push('  ' + h.player_name + ' (id ' + h.player_id + ') ' + h.plate_appearances + ' PA, '
+          + 'OPS ' + fmt(h.ops, 'ops') + ', ISO ' + fmt(h.iso, 'iso') + ', K% ' + fmt(h.k_pct, 'k_pct')
+          + ', BB% ' + fmt(h.bb_pct, 'bb_pct') + ', HR ' + h.home_runs
+          + ', index ' + fmt(h.weighted_offensive_index, 'offensive_index') + ' · ' + h.sample_flag);
+      });
+      if (lu.combined) {
+        L.push('  COMBINED (counting totals summed, every rate recomputed from those sums — never a mean of means): '
+          + lu.combined.plate_appearances + ' PA, AVG ' + fmt(lu.combined.avg, 'avg')
+          + ', OBP ' + fmt(lu.combined.obp, 'obp') + ', SLG ' + fmt(lu.combined.slg, 'slg')
+          + ', K% ' + fmt(lu.combined.k_pct, 'k_pct') + ', BB% ' + fmt(lu.combined.bb_pct, 'bb_pct')
+          + ', HR ' + lu.combined.home_runs);
+      }
+      (lu.unresolved || []).forEach(function (u) {
+        L.push('  NOT IN THE ARCHIVE: ' + (u.name || u.player_id) + ' — ' + u.reason);
+      });
+      (lu.ambiguous || []).forEach(function (a) {
+        L.push('  AMBIGUOUS: ' + a.name + ' matches ' + a.candidates.length + ' hitters; ask which.');
+      });
+      L.push('  THIS IS NOT TONIGHT’S LINEUP. It is the completed-season record of hitters a live source named.');
+    }
+
+    if (res.two_way && res.two_way.ok) {
+      L.push('TWO-WAY RECORD (one MLB person id, both archives):');
+      res.two_way.data.slice(0, 10).forEach(function (p) {
+        L.push('  ' + p.player_name + ' (id ' + p.player_id + ')');
+        L.push('    hitting: ' + p.batting.plate_appearances + ' PA, ' + p.batting.home_runs + ' HR, OPS '
+          + fmt(p.batting.ops, 'ops') + ', index ' + fmt(p.batting.offensive_index, 'offensive_index')
+          + ' (' + p.batting.rating_version + '), ' + p.batting.first_observed_season + '–' + p.batting.last_observed_season);
+        L.push('    pitching: ' + p.pitching.innings + ' IP, ERA ' + (p.pitching.era == null ? '—' : p.pitching.era.toFixed(2))
+          + ', index ' + (p.pitching.performance_index == null ? '—' : p.pitching.performance_index.toFixed(1))
+          + ' (' + p.pitching.rating_version + '), ' + p.pitching.first_observed_season + '–' + p.pitching.last_observed_season);
+        L.push('    ' + p.note);
+      });
+    }
+
+    if (res.baseline && res.baseline.ok) {
+      var b = res.baseline.data;
+      if (b.historical_baseline) {
+        L.push('COMPLETED-SEASON BASELINE (' + (res.baseline.scope.baseline_seasons || []).join(', ') + '): '
+          + b.historical_baseline.plate_appearances + ' PA, AVG ' + fmt(b.historical_baseline.avg, 'avg')
+          + ', OBP ' + fmt(b.historical_baseline.obp, 'obp') + ', SLG ' + fmt(b.historical_baseline.slg, 'slg')
+          + ', OPS ' + fmt(b.historical_baseline.ops, 'ops')
+          + ', K% ' + fmt(b.historical_baseline.k_pct, 'k_pct') + ', BB% ' + fmt(b.historical_baseline.bb_pct, 'bb_pct')
+          + ', index ' + fmt(b.historical_baseline.weighted_offensive_index, 'offensive_index'));
+      }
+      L.push('  ' + b.note);
+    }
+
+    L.push('HOW TO ANSWER: give the number, name the seasons it covers, show the plate appearances behind it, and keep '
+      + 'anything historical visibly separate from anything current. Link the player or team page. If a name was '
+      + 'ambiguous, resolve it before answering. If something was missing, say exactly what and still answer the rest.');
+    L.push('NOT IN THIS ARCHIVE AT ALL, so never claim them: daily lineups, lineup slots, batting order, '
+      + 'handedness splits, batter-versus-pitcher history, pitch-type data, Statcast expected statistics, exit '
+      + 'velocity, injuries, defensive value, baserunning value beyond stolen-base outcomes, and contract, trade or '
+      + 'roster dates.');
+    return L.join('\n');
+  }
+
+  /* ====================================================================== */
+  /* 4. THE CRITIC                                                          */
+  /* ====================================================================== */
+
+  function criticExtras(o) {
+    o = o || {};
+    var res = o.result, answer = str(o.answer);
+    if (!res || !answer) return [];
+    var out = [];
+
+    /* THE ONE THAT MATTERS MOST: a completed-season record presented as
+       tonight's lineup or tonight's form. */
+    if (/\b(tonight|today'?s lineup|is batting|will bat|starting lineup|batting (first|second|third|cleanup|\d))\b/i.test(answer)
+      && !/\b(not|cannot|can’t|does not|doesn’t|no )\b/i.test(answer.slice(0, 400))) {
+      out.push({ severity: 'high', code: 'HISTORY_AS_LINEUP',
+        detail: 'The answer appears to state who is playing or batting. The offensive archive is completed seasons '
+          + 'and holds no lineup at all; that claim cannot come from it.' });
+    }
+    if (/\b(current(ly)?|this season|so far this year)\b/i.test(answer)
+      && res.coverage && !new RegExp('\\b' + res.coverage.end + '\\b').test(answer)
+      && !/\barchive|historical|completed season/i.test(answer)) {
+      out.push({ severity: 'medium', code: 'CURRENT_FROM_HISTORY',
+        detail: 'The answer speaks about the current season. This block ends in ' + res.coverage.end
+          + '; anything about a season in progress must come from the live tables and be labelled.' });
+    }
+    /* An ambiguous name answered anyway. */
+    (res.ambiguous || []).forEach(function (a) {
+      var picked = (a.candidates || []).filter(function (c) {
+        return answer.indexOf(String(c.player_id)) >= 0;
+      });
+      if (picked.length === 1 && !/which|ambiguous|more than one|two (players|hitters)|clarif/i.test(answer)) {
+        out.push({ severity: 'high', code: 'AMBIGUITY_RESOLVED_SILENTLY',
+          detail: '"' + a.name + '" matches ' + a.candidates.length + ' hitters and the answer picked one without saying so.' });
+      }
+    });
+    /* The rating explained as something it is not. */
+    if (/(\bOPS\+|\bwRC\+|\bWAR\b|\bpercentile\b|\bwin probability\b)/i.test(answer)
+      && /\b(index|rating)\b/i.test(answer)) {
+      out.push({ severity: 'high', code: 'RATING_MISDESCRIBED',
+        detail: 'ED_BAT_PERF_V1 is a custom descriptive index. It is not OPS+, wRC+, WAR, a percentile or a probability.' });
+    }
+    /* A rating quoted without its sample. */
+    if (/\bindex\b/i.test(answer) && !/\b(PA|plate appearance)/i.test(answer)) {
+      out.push({ severity: 'medium', code: 'RATING_WITHOUT_SAMPLE',
+        detail: 'The offensive index is quoted without the plate appearances behind it. A rating near 100 over a '
+          + 'handful of plate appearances does not establish average ability.' });
+    }
+    /* Claims this archive cannot support. */
+    if (/\b(versus (left|right)-hand|vs\.? (lhp|rhp)|platoon split|against (lefties|righties)|batter[- ]versus[- ]pitcher|career (numbers )?against (him|this pitcher)|exit velocity|barrel rate|expected (woba|slugging))\b/i.test(answer)) {
+      out.push({ severity: 'high', code: 'UNAVAILABLE_CLAIM',
+        detail: 'The answer claims handedness splits, batter-versus-pitcher history or Statcast results. This archive '
+          + 'holds none of those.' });
+    }
+    /* The grains added together. */
+    if (/\b(combined|total).{0,40}(team splits|club rows|per-club)/i.test(answer)) {
+      out.push({ severity: 'medium', code: 'GRAIN_ADDED',
+        detail: 'The season line and the per-club lines are the same performance at two levels of detail. Adding them '
+          + 'double-counts.' });
+    }
+    return out;
+  }
+
+  /* ====================================================================== */
+  /* 5. CONVERSATION STATE                                                  */
+  /* ====================================================================== */
+
+  /* Player ids carried across turns so "and his walk rate?" does not have to
+     re-resolve a name — and so a follow-up cannot silently drift to a
+     different hitter. */
+  function conversationState(o) {
+    o = o || {};
+    var prev = o.previous || {};
+    var res = o.result;
+    var plan = o.plan;
+    if (!res) return prev && prev.player_ids ? prev : null;
+    var ids = uniq(((res.player_ids || [])).concat(prev.player_ids || [])).slice(0, 6);
+    var names = {};
+    (res.overviews || []).forEach(function (p) { names[p.player_id] = p.player_name; });
+    Object.keys(prev.names || {}).forEach(function (k) { if (!names[k]) names[k] = prev.names[k]; });
+    return {
+      player_ids: ids,
+      names: names,
+      seasons: (plan && plan.seasons && plan.seasons.length) ? plan.seasons : (prev.seasons || []),
+      metric: (plan && plan.metric) || prev.metric || null,
+      coverage: res.coverage || prev.coverage || null,
+      at: new Date().toISOString()
+    };
+  }
+  function sanitizeState(v) {
+    if (!v || typeof v !== 'object') return null;
+    var ids = (v.player_ids || []).map(int).filter(function (x) { return x != null && x > 0; }).slice(0, 6);
+    if (!ids.length) return null;
+    var names = {};
+    Object.keys(v.names || {}).slice(0, 6).forEach(function (k) {
+      var id = int(k); if (id != null) names[id] = str(v.names[k]).slice(0, 80);
+    });
+    return {
+      player_ids: ids, names: names,
+      seasons: (v.seasons || []).map(int).filter(function (x) { return x != null && x > 1900 && x < 2100; }).slice(0, 12),
+      metric: v.metric ? str(v.metric).slice(0, 40) : null,
+      coverage: v.coverage && typeof v.coverage === 'object'
+        ? { start: int(v.coverage.start), end: int(v.coverage.end) } : null
+    };
+  }
+
+  /* ====================================================================== */
+  /* 6. THE TOOLS                                                           */
+  /* ====================================================================== */
+
+  var TOOL_NAMES = ['resolve_mlb_hitter', 'get_hitter_overview', 'get_hitter_season_history',
+    'get_hitter_team_history', 'compare_hitters', 'search_offensive_leaderboard',
+    'search_offensive_changes', 'get_team_offense_history', 'get_game_lineup_context',
+    'get_two_way_player_history', 'get_hitter_current_vs_baseline'];
+
+  function registerTools() {
+    var Rk = R();
+    if (!Rk || !Rk.TOOLS || !Rk.T) return false;
+    var T = Rk.T;
+    var COV = 'EdgeDesk’s own MLB historical OFFENSIVE archive (completed regular seasons only). It is NOT '
+      + 'current-season data and it is NEVER a lineup: it cannot say who is batting tonight, in what order, a '
+      + 'hitter’s present club, health, handedness splits, batter-versus-pitcher history or any Statcast result.';
+
+    function tool(name, description, input, run) {
+      Rk.TOOLS[name] = { name: name, llm: true, category: 'data', description: description, input: input, output: T.any(), run: run };
+    }
+    function svcOf(ctx) {
+      var s = ctx && ctx.mlb_offense;
+      return s && typeof s.resolveHitter === 'function' ? s : null;
+    }
+    function envOut(env) {
+      if (!env) return { ok: false, error: 'the archive returned nothing', missing: ['mlb_offense'] };
+      if (env.ok === false) {
+        return { ok: false, code: env.code, error: env.error || env.code,
+          missing: [env.code === 'AMBIGUOUS_PLAYER' ? 'player_choice' : 'records'],
+          candidates: (env.data && env.data.candidates) || undefined };
+      }
+      return {
+        ok: true, code: env.code, coverage: env.coverage, rating_version: env.rating_version,
+        rating: env.rating, scope: env.scope, sample: env.sample, sources: env.sources,
+        historical: true, notes: env.notes, data: env.data, freshness: 'STALE',
+        quality_flags: env.coverage && env.coverage.provisional_seasons && env.coverage.provisional_seasons.length
+          ? ['provisional_seasons:' + env.coverage.provisional_seasons.join(',')] : []
+      };
+    }
+    function noService() {
+      return { ok: false, error: 'the MLB offensive archive is not attached to this turn', missing: ['mlb_offense'] };
+    }
+
+    tool('resolve_mlb_hitter',
+      'Resolve a hitter name to one MLB player id inside ' + COV + ' Supply name, or player_id to confirm one. A name '
+      + 'matching more than one hitter comes back AMBIGUOUS_PLAYER with the candidates — ask which is meant, never pick. '
+      + 'Call this FIRST for any question about a named hitter, and reuse the id for every follow-up in the turn.',
+      T.obj({ name: T.opt(T.str({ max: 80 })), player_id: T.opt(T.int()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.resolveHitter(i).then(envOut) : noService(); });
+
+    tool('get_hitter_overview',
+      'The career window for one hitter inside ' + COV + ' Totals across the window, every rate, the seasons he '
+      + 'appeared in, the seasons he did NOT, his clubs, his best season by index, and a breakdown of whether his OPS '
+      + 'is led by reaching base or by power. Plate appearances and the sample flag come with it and must be quoted '
+      + 'alongside any rating.',
+      T.obj({ player_id: T.int() }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.hitterOverview(i).then(envOut) : noService(); });
+
+    tool('get_hitter_season_history',
+      'Season by season for one hitter inside ' + COV + ' Each season carries PA, games, the full slash line, ISO, '
+      + 'BABIP, K%, BB%, HR%, stolen-base outcomes, the ED_BAT_PERF_V1 index and the workload band. A season with no '
+      + 'plate appearances keeps its counting fields and has NO rates and NO rating — that is undefined, not zero. '
+      + 'Optional from/to bound the window.',
+      T.obj({ player_id: T.int(), from: T.opt(T.int()), to: T.opt(T.int()) }),
+      function (i, ctx) {
+        var s = svcOf(ctx);
+        return s ? s.seasonHistory({ player_id: i.player_id, season_from: i.from, season_to: i.to }).then(envOut) : noService();
+      });
+
+    tool('get_hitter_team_history',
+      'Performance for each club one hitter played for inside ' + COV + ' Includes the season splits for a traded year. '
+      + 'THE CLUB ROWS ARE PARTS OF THAT SEASON and must never be added to the season line — they are the same '
+      + 'performance at two levels of detail. Club duration means seasons with a recorded hitting appearance, not '
+      + 'contract, trade or roster dates.',
+      T.obj({ player_id: T.int() }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.teamHistory(i).then(envOut) : noService(); });
+
+    tool('compare_hitters',
+      'Compare two to six hitters inside ' + COV + ' on ONE explicitly named scope: pass season for a single year, '
+      + 'season_from/season_to for a range, or neither for each hitter’s whole career window. The result says whether '
+      + 'the spans are the same; when they are not, each rating was computed against a different league baseline and '
+      + 'the comparison says so. Plate appearances travel with every line.',
+      T.obj({ player_ids: T.arr(T.int(), { max: 6 }), season: T.opt(T.int()),
+        season_from: T.opt(T.int()), season_to: T.opt(T.int()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.compare(i).then(envOut) : noService(); });
+
+    tool('search_offensive_leaderboard',
+      'Rank hitters inside ' + COV + ' THE DATABASE ORDERS AND FILTERS THIS — never rank from text yourself. metric is '
+      + 'one of offensive_index, avg, obp, slg, ops, iso, babip, k_pct, bb_pct, hr_pct, home_runs, extra_base_hits, '
+      + 'stolen_bases, rbi, runs, doubles, plate_appearances. Filters: season or season_from/season_to, min_pa, '
+      + 'min_ab, position, team_id, regulars_only. The result names MLB’s own qualification for that season, computed '
+      + 'from that season’s actual club games — which for 2020 is 186 PA, not 502.',
+      T.obj({ metric: T.opt(T.str({ max: 32 })), season: T.opt(T.int()), season_from: T.opt(T.int()),
+        season_to: T.opt(T.int()), min_pa: T.opt(T.int()), min_ab: T.opt(T.int()),
+        position: T.opt(T.str({ max: 4 })), team_id: T.opt(T.int()),
+        regulars_only: T.opt(T.bool()), limit: T.opt(T.int()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.leaderboard(i).then(envOut) : noService(); });
+
+    tool('search_offensive_changes',
+      'Who moved between two COMPLETED seasons inside ' + COV + ' Both seasons are read from the database and the '
+      + 'delta is arithmetic; the ordering is the delta’s, most improved first. Only hitters who cleared min_pa in '
+      + 'BOTH seasons are included — a hitter who missed one of the two cannot have a change measured and is absent '
+      + 'rather than shown at zero. Use this for "who improved their walk rate from 2024 to 2025".',
+      T.obj({ from_season: T.int(), to_season: T.int(), metric: T.opt(T.str({ max: 32 })),
+        min_pa: T.opt(T.int()), limit: T.opt(T.int()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.changes(i).then(envOut) : noService(); });
+
+    tool('get_team_offense_history',
+      'Club offense inside ' + COV + ' Pass season for one year across all 30 clubs (ranked), team_id for one club '
+      + 'across the window, or both for one club-season with its roster. Runs per game uses the club’s ACTUAL games '
+      + 'from MLB’s own team endpoint; player_games_sum is the sum of player games and is NOT a club’s games. A club '
+      + 'rate is computed from summed numerators and denominators, never by averaging player rates.',
+      T.obj({ team_id: T.opt(T.int()), season: T.opt(T.int()), season_from: T.opt(T.int()),
+        season_to: T.opt(T.int()), with_roster: T.opt(T.bool()), roster_min_pa: T.opt(T.int()),
+        limit: T.opt(T.int()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.teamOffense(i).then(envOut) : noService(); });
+
+    tool('get_game_lineup_context',
+      'The COMPLETED-SEASON record of hitters a CURRENT source has already named. ' + COV + ' THIS TOOL DOES NOT '
+      + 'PRODUCE A LINEUP AND CANNOT: pass the names or ids the live lineup feed gave you, and it returns each '
+      + 'hitter’s history plus a combined line whose counting totals are summed and whose rates are recomputed from '
+      + 'those sums. If you have no current lineup, say so — do not use a historical roster in its place.',
+      T.obj({ names: T.opt(T.arr(T.str({ max: 80 }), { max: 12 })),
+        player_ids: T.opt(T.arr(T.int(), { max: 12 })) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.lineupContext(i).then(envOut) : noService(); });
+
+    tool('get_two_way_player_history',
+      'Hitters who also pitched inside the archive window, joined on the single MLB person id the two archives share. '
+      + COV + ' Pass player_id for one player, or min_pa/min_outs to list them. EVERY PITCHER WHO BATTED is in the '
+      + 'hitting archive, so a hitting record alone does not make someone two-way — both workloads are returned so '
+      + 'you can say which is meaningful. The two ratings are different indexes on different scales and are never '
+      + 'combined into one number.',
+      T.obj({ player_id: T.opt(T.int()), min_pa: T.opt(T.int()), min_outs: T.opt(T.int()),
+        limit: T.opt(T.int()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.twoWay(i).then(envOut) : noService(); });
+
+    tool('get_hitter_current_vs_baseline',
+      'One hitter’s COMPLETED-SEASON baseline inside ' + COV + ' returned so it can be set beside a current-season '
+      + 'line from the live tables. Pass baseline_seasons to use only the most recent N completed seasons. The two '
+      + 'are returned separately and labelled; they are never averaged together, because one is a season in progress '
+      + 'and the other is a finished record.',
+      T.obj({ player_id: T.int(), baseline_seasons: T.opt(T.int()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.currentVsBaseline(i).then(envOut) : noService(); });
+
+    return true;
+  }
+
+  return {
+    VERSION: VERSION, SCHEMA: SCHEMA, TOOL_NAMES: TOOL_NAMES,
+    route: route, retrieve: retrieve, promptBlock: promptBlock, criticExtras: criticExtras,
+    registerTools: registerTools, conversationState: conversationState, sanitizeState: sanitizeState,
+    /* exported for the tests that hold the routing honest */
+    hitterNamesIn: hitterNamesIn, metricFor: metricFor, seasonsIn: seasonsIn, minPaIn: minPaIn,
+    pickPrimary: pickPrimary, INTENTS: INTENTS
+  };
+});
+/*__EDMLBOFF_AI_END__*/
 /* The block above registers globalThis.EDMLBHIST (UMD) and, inside it,
    globalThis.EDMlbPitchers — the query layer the browser and the pipeline
    load from lib/mlb_pitcher_history.js. */
 const EDMLBHIST: any = (globalThis as any).EDMLBHIST;
 const EDMLBQ: any = (globalThis as any).EDMlbPitchers;
+const EDMLBOFF: any = (globalThis as any).EDMLBOFF;
+const EDMLBOFFQ: any = (globalThis as any).EDMlbBatters;
 try { if (EDMLBHIST && EDRESEARCH) EDMLBHIST.registerTools(); } catch { /* additive */ }
+try { if (EDMLBOFF && EDRESEARCH) EDMLBOFF.registerTools(); } catch { /* additive */ }
 /** The historical layer as a whole. Off, the function answers exactly as it did before it existed. */
 const MLB_HISTORY_ENABLED = (Deno.env.get("EDGEDESK_MLB_HISTORY") ?? "1") !== "0";
 
@@ -25941,6 +26803,21 @@ const MLB_HISTORY_ENABLED = (Deno.env.get("EDGEDESK_MLB_HISTORY") ?? "1") !== "0
 function mlbHistoryService(dal: Dal): any | null {
   if (!EDMLBQ) return null;
   return EDMLBQ.createService({
+    read: async (rel: string, query: string) => {
+      const r = await dal.read(`${rel}?${query}`, "historical", "mlbhist");
+      if (r.error) { const e: any = new Error(r.error); e.body = r.error; throw e; }
+      return r.rows;
+    },
+  });
+}
+
+/* The offensive archive, read exactly like the pitching one: through the
+   CALLER'S token, so row-level security decides what comes back the same way
+   it does in the browser. Same non-public `mlbhist` profile, same `historical`
+   cache category — these rows change only when an import promotes. */
+function mlbOffenseService(dal: Dal): any | null {
+  if (!EDMLBOFFQ) return null;
+  return EDMLBOFFQ.createService({
     read: async (rel: string, query: string) => {
       const r = await dal.read(`${rel}?${query}`, "historical", "mlbhist");
       if (r.error) { const e: any = new Error(r.error); e.body = r.error; throw e; }
@@ -26055,7 +26932,15 @@ const TOOL_ALLOWLIST = ["calculate_implied_probability", "remove_vig", "calculat
      caller's own token, so they are the one group here that costs a round
      trip — and the one group that can answer a question about 2016-2025. */
   "resolve_mlb_player", "get_pitcher_overview", "get_pitcher_season_history", "get_pitcher_team_history",
-  "compare_pitchers", "search_pitcher_leaderboard", "get_game_pitcher_context", "get_team_pitching_history"];
+  "compare_pitchers", "search_pitcher_leaderboard", "get_game_pitcher_context", "get_team_pitching_history",
+  /* The MLB historical OFFENSIVE record, the other half of the same game. Same
+     database, same caller token, same cost. get_game_lineup_context is the one
+     to watch: it adds history to a lineup a LIVE source has already
+     established and can never produce one. */
+  "resolve_mlb_hitter", "get_hitter_overview", "get_hitter_season_history", "get_hitter_team_history",
+  "compare_hitters", "search_offensive_leaderboard", "search_offensive_changes",
+  "get_team_offense_history", "get_game_lineup_context", "get_two_way_player_history",
+  "get_hitter_current_vs_baseline"];
 // Minimum samples before a stored pattern may be quoted as a pattern.
 const MIN_PATTERN_N = parseInt(Deno.env.get("EDGEDESK_MIN_PATTERN_N") ?? "30", 10);
 // When the owned MLB feature tables are empty, fall back to the official MLB
@@ -30714,12 +31599,12 @@ export function boardCritic(answer: string, board: any, knownGames: any[] | null
 
 interface ModelCall { ok: boolean; status: number; data: any; detail: string | null; tool_trace: any[]; rounds: number }
 
-async function callModel(o: { system: string; messages: any[]; max_tokens: number; packet?: any | null; mlbHistory?: any | null }): Promise<ModelCall> {
+async function callModel(o: { system: string; messages: any[]; max_tokens: number; packet?: any | null; mlbHistory?: any | null; mlbOffense?: any | null }): Promise<ModelCall> {
   const headers = { "content-type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" };
   /* The MLB historical tools need no packet — they read a database keyed on a
      pitcher, not on a game — so a turn that carries the archive service can
      run the loop even when there is no matchup to build a packet from. */
-  const useTools = TOOL_LOOP && !!EDRESEARCH && (!!o.packet || !!o.mlbHistory);
+  const useTools = TOOL_LOOP && !!EDRESEARCH && (!!o.packet || !!o.mlbHistory || !!o.mlbOffense);
   const tools = useTools ? EDRESEARCH.toolDefinitions(TOOL_ALLOWLIST) : null;
   const budget = { max: TOOL_BUDGET, used: 0 };
   const trace: any[] = [];
@@ -30745,7 +31630,8 @@ async function callModel(o: { system: string; messages: any[]; max_tokens: numbe
        packet-backed tools that were here before are unaffected. */
     const results = await Promise.all(uses.map(async (u: any) => {
       const env = await EDRESEARCH.runTool(String(u.name ?? ""), u.input ?? {},
-        { packet: o.packet, mlb_history: o.mlbHistory ?? null, budget, allow: TOOL_ALLOWLIST });
+        { packet: o.packet, mlb_history: o.mlbHistory ?? null, mlb_offense: o.mlbOffense ?? null,
+          budget, allow: TOOL_ALLOWLIST });
       trace.push({ tool: u.name, ok: env.ok, ms: env.ms, error: env.error ? env.error.code : null });
       return { type: "tool_result", tool_use_id: u.id, content: JSON.stringify(env).slice(0, 12000), is_error: !env.ok };
     }));
@@ -30831,6 +31717,18 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
     if (mlbHist && EDMLBHIST) {
       try { parts.push(EDMLBHIST.promptBlock(mlbHist)); }
       catch (e) { parts.push("MLB HISTORY: the block could not be rendered — " + String((e as Error)?.message ?? e).slice(0, 120)); }
+    }
+
+    /* ── THE MLB HISTORICAL OFFENSIVE RECORD ─────────────────────────────
+       Beside the pitching block for the same reason, and kept separate from it
+       because they are different archives with different ratings on different
+       scales. Its first two lines state the coverage window AND that it is
+       never a lineup — the one claim a completed-season hitting record could
+       be mistaken for. */
+    const mlbOff: any = (research as any).mlb_offense;
+    if (mlbOff && EDMLBOFF) {
+      try { parts.push(EDMLBOFF.promptBlock(mlbOff)); }
+      catch (e) { parts.push("MLB OFFENSE: the block could not be rendered — " + String((e as Error)?.message ?? e).slice(0, 120)); }
     }
 
     /* ── THE SLATE, BEFORE ANYTHING ELSE ─────────────────────────────────
@@ -32499,6 +33397,57 @@ export async function handle(req: Request): Promise<Response> {
     }
   }
 
+  /* THE OFFENSIVE HALF OF THE SAME GAME. It runs beside the pitching layer and
+     independently of it: a question about a hitter attaches hitting, a question
+     about a starter attaches pitching, and a question about both attaches both.
+     Resolved MLB ids travel back in conversation_state.mlb_batters so "and his
+     walk rate?" resolves against ids this conversation already established. No
+     statistic is carried — every number is re-read from the archive each turn. */
+  let mlbOffense: any = null, mlbOffenseState: any = null, mlbOffensePlan: any = null;
+  const mlbOffenseSvc: any = (EDMLBOFFQ && dal && MLB_HISTORY_ENABLED) ? mlbOffenseService(dal) : null;
+  const carriedBat = EDMLBOFF ? EDMLBOFF.sanitizeState((body as any)?.research_context?.mlb_batters) : null;
+  if (EDMLBOFF && mlbOffenseSvc) {
+    try {
+      mlbOffensePlan = EDMLBOFF.route({
+        question: String(body?.question ?? ""),
+        sport: research?.focus?.sport_key ?? research?.state?.sport ?? "",
+        carried: carriedBat,
+      });
+      if (mlbOffensePlan) {
+        const res = await EDMLBOFF.retrieve({ plan: mlbOffensePlan, service: mlbOffenseSvc });
+        /* A turn that resolved nobody and read nothing is not an answer; it is
+           a wrong guess about what was asked. Attached only when it holds
+           something — except the lineup refusal, which IS the answer. */
+        const empty = !res || (!res.overviews.length && !res.leaderboard && !res.changes
+          && !res.team_offense && !res.lineup && !res.two_way && !res.baseline
+          && !res.ambiguous.length && mlbOffensePlan.primary !== "lineup_refusal");
+        if (!empty) {
+          mlbOffense = res;
+          (research as any).mlb_offense = res;
+          mlbOffenseState = EDMLBOFF.conversationState({ previous: carriedBat, result: res, plan: mlbOffensePlan });
+          if (research) (research.data_path as any).mlb_offense = {
+            intent: mlbOffensePlan.primary,
+            hitters: (res.overviews || []).length,
+            ambiguous: (res.ambiguous || []).length,
+            unresolved: (res.unresolved || []).length,
+            sections: {
+              leaderboard: !!res.leaderboard, changes: !!res.changes, team_offense: !!res.team_offense,
+              lineup: !!res.lineup, two_way: !!res.two_way, baseline: !!res.baseline,
+            },
+            coverage: res.coverage ?? null, errors: res.errors ?? null,
+          };
+        } else if (research) {
+          (research.data_path as any).mlb_offense = {
+            intent: mlbOffensePlan.primary, attached: false,
+            reason: "nothing in this question resolves to a hitter in the archive, so nothing was attached",
+          };
+        }
+      }
+    } catch (e) {
+      if (research) (research.data_path as any).mlb_offense = { error: `the MLB offensive layer threw and was skipped — ${String((e as Error)?.message ?? e).slice(0, 160)}` };
+    }
+  }
+
   /* Slice 7: the board and the state the client carries back for the next turn */
   const board: any = (research as any)?.board ?? null;
   let boardState: any = null;
@@ -32555,6 +33504,31 @@ export async function handle(req: Request): Promise<Response> {
      from the client would mean the panel could not show a source for a figure
      in the prose. Bounded: a leaderboard is already capped at fifteen rows and
      a career at twenty seasons. */
+  /* What the panel renders for the offensive half: what was retrieved and over
+     which seasons, every unresolved or ambiguous name with its candidates, and
+     the links into the pages carrying the same rows. Bounded by the query
+     layer's own caps — a leaderboard is fifteen rows and a career twenty
+     seasons — so this cannot become the whole archive. */
+  const mlbOffenseSummary = (O: any) => O ? {
+    schema: EDMLBOFF ? EDMLBOFF.SCHEMA : null,
+    intent: O.plan ? O.plan.primary : null,
+    coverage: O.coverage, rating_version: O.rating_version,
+    hitters: O.overviews ?? [],
+    seasons: O.seasons ?? {},
+    teams: O.teams ?? {},
+    compare: O.compare ?? null,
+    leaderboard: O.leaderboard ?? null,
+    changes: O.changes ?? null,
+    team_offense: O.team_offense ?? null,
+    lineup: O.lineup ?? null,
+    two_way: O.two_way ?? null,
+    baseline: O.baseline ?? null,
+    ops_shape: O.decomposition ?? null,
+    ambiguous: O.ambiguous ?? [],
+    unresolved: O.unresolved ?? [],
+    notes: O.notes ?? [], errors: O.errors ?? [],
+  } : null;
+
   const mlbHistorySummary = (H: any) => H ? {
     schema: H.schema, intent: H.intent, coverage: H.coverage, rating_version: H.rating_version,
     rating: H.rating, unavailable: H.unavailable ?? null, code: H.code ?? null,
@@ -32579,7 +33553,7 @@ export async function handle(req: Request): Promise<Response> {
   } : null;
   const structuredFor = (answerText: string | null, crit: any | null) => {
     if (!rpacket || !EDRESEARCH) return null;
-    try { const s = EDRESEARCH.structuredResponse({ packet: rpacket, answer: answerText, critic: crit }); if (s) { s.analysis = analysisSummary(analysis); s.conversation_state = convoState; s.mlb_pitcher_state = mlbHistoryState; s.pricing = pricingSummary(pricing); s.slate_pricing = slateSummary(slatePricing); } return s; } catch { return null; }
+    try { const s = EDRESEARCH.structuredResponse({ packet: rpacket, answer: answerText, critic: crit }); if (s) { s.analysis = analysisSummary(analysis); s.conversation_state = convoState; s.mlb_pitcher_state = mlbHistoryState; s.mlb_batter_state = mlbOffenseState; s.pricing = pricingSummary(pricing); s.slate_pricing = slateSummary(slatePricing); } return s; } catch { return null; }
   };
 
   /* ?dry=1 — everything except the model call. Returns the packet the analyst
@@ -32618,6 +33592,7 @@ export async function handle(req: Request): Promise<Response> {
          starter" resolves without a name. Numbers are never carried in the
          state; they are re-read from the archive every turn. */
       mlb_history: mlbHistorySummary(mlbHistory), mlb_pitcher_state: mlbHistoryState,
+      mlb_offense: mlbOffenseSummary(mlbOffense), mlb_batter_state: mlbOffenseState,
       /* Slice 4 */
       pricing: pricingSummary(pricing), slate_pricing: slateSummary(slatePricing),
       /* Slice 7 */
@@ -32765,7 +33740,7 @@ export async function handle(req: Request): Promise<Response> {
   const maxTokens = Math.max(baseTokens + (presentation ? 400 : 0), board ? 1800 : 0);
 
   try {
-    const r = await callModel({ system, messages, max_tokens: maxTokens, packet: rpacket, mlbHistory: mlbHistorySvc });
+    const r = await callModel({ system, messages, max_tokens: maxTokens, packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc });
 
     if (!r.ok) {
       const detail = r.detail ?? "";
@@ -32832,7 +33807,7 @@ export async function handle(req: Request): Promise<Response> {
       RETRY_NOTE = { attempted: true, reason: stop === "max_tokens" ? "the first answer ran out of room"
         : "the first call returned no text", evidence_budget: retryBudget,
         first_input_tokens: usage?.input_tokens ?? null, first_max_tokens: maxTokens };
-      const r2 = await callModel({ system, messages: trimmed, max_tokens: Math.max(2000, maxTokens * 2), packet: rpacket, mlbHistory: mlbHistorySvc });
+      const r2 = await callModel({ system, messages: trimmed, max_tokens: Math.max(2000, maxTokens * 2), packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc });
       if (r2.ok) { answer = textOf(r2.data); TOOL_TRACE = TOOL_TRACE.concat(r2.tool_trace ?? []); }
       /* Still nothing. Say WHY, with the numbers, instead of two words — and do
          it as a 200 carrying the research, so the caller keeps the deterministic
@@ -32907,6 +33882,23 @@ export async function handle(req: Request): Promise<Response> {
             critic = critic || { verdict: "PASS", findings: [] };
             critic.findings = (critic.findings || []).concat(extra);
             if (extra.some((x: any) => x.severity === "FAIL")) critic.verdict = "FAIL";
+            else if (critic.verdict === "PASS") critic.verdict = "WARN";
+          }
+        } catch (e) { /* an additive check must never lose the answer */ }
+      }
+      /* The offensive archive's own failure modes: prose that states who is
+         batting tonight, that invents a handedness split or a
+         batter-versus-pitcher history this data does not hold, that calls the
+         descriptive index wRC+, that quotes a rating with no plate appearances
+         behind it, or that silently picks one of two hitters the retrieval
+         refused to choose between. */
+      if (mlbOffense && EDMLBOFF) {
+        try {
+          const extraO = EDMLBOFF.criticExtras({ result: mlbOffense, answer });
+          if (extraO && extraO.length) {
+            critic = critic || { verdict: "PASS", findings: [] };
+            critic.findings = (critic.findings || []).concat(extraO);
+            if (extraO.some((x: any) => x.severity === "high")) critic.verdict = "FAIL";
             else if (critic.verdict === "PASS") critic.verdict = "WARN";
           }
         } catch (e) { /* an additive check must never lose the answer */ }

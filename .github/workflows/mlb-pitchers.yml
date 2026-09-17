@@ -30,7 +30,7 @@
 # archive does not change often, and a provisional current season does. The
 # season window is decided in the job rather than by two cron lines, so there
 # is one place to read it.
-name: MLB pitching archive
+name: MLB historical archives (pitching and offense)
 
 on:
   schedule:
@@ -48,10 +48,14 @@ on:
   pull_request:
     paths:
       - 'lib/mlb_pitcher_history.js'
+      - 'lib/mlb_offense_history.js'
       - 'mlb/pitchers/build_dataset.py'
+      - 'mlb/batters/build_dataset.py'
       - 'tools/mlb/**'
       - 'tools/lib/**'
       - 'supabase/mlb_pitcher_history.sql'
+      - 'supabase/mlb_offense_history.sql'
+      - 'supabase/mlb_offense_features.sql'
       - '.github/workflows/mlb-pitchers.yml'
   workflow_dispatch:
     inputs:
@@ -70,7 +74,7 @@ on:
         required: false
         default: false
       publish_dataset:
-        description: 'Also refresh the committed copy under mlb/pitchers/dataset and commit it.'
+        description: 'Also refresh the committed copies under mlb/pitchers/dataset and mlb/batters/dataset and commit them.'
         type: boolean
         required: false
         default: false
@@ -105,14 +109,18 @@ jobs:
 
       # The arithmetic, the identity rules and the import gate must pass before
       # anything is downloaded, let alone written.
-      - name: The query layer and the import rules must pass first
-        run: node tools/mlb/dataset.js
+      - name: The query layers and the import rules must pass first
+        run: |
+          node tools/mlb/dataset.js
+          node tools/mlb/offense_dataset.js
 
       # THE COMMITTED ARCHIVE, CHECKED EVERY RUN. If the copy in the repository
       # ever stopped validating, every test that uses it as a fixture would be
       # asserting against a broken dataset. Cheap, and it fails loudly.
-      - name: The committed dataset still validates
-        run: node tools/mlb/import_pitcher_history.js --check
+      - name: The committed datasets still validate
+        run: |
+          node tools/mlb/import_pitcher_history.js --check
+          node tools/mlb/import_offense.js --check
 
       # Does MLB's Stats API still answer a keyless request from a GitHub
       # runner, in the shape the builder expects? One request, no build.
@@ -175,7 +183,7 @@ jobs:
       # validated and discarded. The staging directory is inside the workspace
       # and is discarded with the runner, so a failed build leaves nothing
       # behind and the committed copy is untouched.
-      - name: Rebuild the dataset and import it
+      - name: Rebuild the PITCHING dataset and import it
         if: ${{ github.event_name != 'pull_request' && inputs.verify_only != true && steps.plan.outputs.run == 'true' && steps.probe.outputs.ok == 'true' }}
         env:
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
@@ -190,6 +198,35 @@ jobs:
           if [ "${{ inputs.final }}" = "true" ]; then ARGS="$ARGS --final"; fi
           if [ "${{ inputs.publish_dataset }}" = "true" ]; then ARGS="$ARGS --publish-dataset"; fi
           node tools/mlb/refresh_dataset.js $ARGS
+
+      # THE OFFENSIVE ARCHIVE, in the same job and after the pitching one.
+      #
+      # ONE JOB ON PURPOSE. The source probe, the season decision, the secrets
+      # and the commit-back are identical for the two packages; two workflows
+      # would mean two places to look when a refresh fails and two chances to
+      # rebuild the shared team identity table twice in one night. The pitching
+      # refresh owns mlbhist.teams, so it runs first and this one never writes
+      # it.
+      #
+      # `always()` combined with the same conditions: if the pitching refresh
+      # failed, the offensive one should still run. They are separate datasets
+      # behind separate gates, and a bad night for one is not a reason to leave
+      # the other stale. The job is still red either way.
+      - name: Rebuild the OFFENSIVE dataset and import it
+        if: ${{ always() && github.event_name != 'pull_request' && inputs.verify_only != true && steps.plan.outputs.run == 'true' && steps.probe.outputs.ok == 'true' }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be imported."
+            exit 1
+          fi
+          ARGS="--from 2016 --through ${{ steps.plan.outputs.through }}"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
+          if [ "${{ inputs.final }}" = "true" ]; then ARGS="$ARGS --final"; fi
+          if [ "${{ inputs.publish_dataset }}" = "true" ]; then ARGS="$ARGS --publish-dataset"; fi
+          node tools/mlb/refresh_offense.js $ARGS
 
       # A source that would not answer is a fact about the day, not a reason to
       # pretend the run succeeded. It is a warning on the summary and the job
@@ -211,12 +248,13 @@ jobs:
         run: |
           git config user.name "edgedesk-bot"
           git config user.email "bot@edgedesk.local"
-          git add mlb/pitchers/snapshots mlb/pitchers/dataset 2>/dev/null || true
+          git add mlb/pitchers/snapshots mlb/pitchers/dataset \
+                  mlb/batters/snapshots mlb/batters/dataset 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "nothing to commit"
             exit 0
           fi
-          git commit -m "mlb: pitching archive refresh $(date -u +%Y-%m-%d)"
+          git commit -m "mlb: historical archive refresh $(date -u +%Y-%m-%d)"
           for i in 1 2 3 4; do
             git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
             sleep $((2 ** i))
@@ -230,6 +268,7 @@ jobs:
       - name: Say what broke
         if: failure()
         run: |
-          echo "::error::The MLB pitching refresh failed. The previously promoted archive is UNCHANGED and is still being served."
-          echo "::error::mlbhist.meta carries refresh_last_status=error with the reason; mlbhist.import_runs carries the refused import and its code."
+          echo "::error::An MLB historical refresh failed. The previously promoted archive is UNCHANGED and is still being served."
+          echo "::error::mlbhist.meta carries refresh_last_status / refresh_offense_last_status with the reason;"
+          echo "::error::mlbhist.import_runs carries the refused import, its dataset and its refusal code."
           echo "::error::Runbook: docs/runbooks/mlb-pitching-archive.md"

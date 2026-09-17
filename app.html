@@ -444,6 +444,41 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .mlbh-gc-f b{color:var(--dim)}
 .mlbh-lnk{margin-left:7px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);text-decoration:none;border-bottom:1px dotted rgba(47,167,154,.5)}
 .mlbh-lnk:hover{color:var(--text)}
+/* baseball: the offensive surfaces. They reuse the pitching panel's table and
+   modal furniture, and add only what the hitting record needs. */
+.mlbo-nd{color:var(--faint);cursor:help}
+.mlbo-row{cursor:pointer}
+.mlbo-row:hover{background:rgba(255,255,255,.03)}
+.mlbo-note{font-size:11px;color:var(--faint);line-height:1.6;margin:6px 0 10px}
+.mlbo-note b{color:var(--dim)}
+.mlbo-qual{font-size:11px;color:var(--faint);line-height:1.6;margin:-2px 0 10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.015)}
+.mlbo-cov{font-size:11.5px;color:var(--dim);line-height:1.6;margin:8px 0 12px;padding:9px 11px;border:1px solid rgba(217,154,43,.3);border-radius:9px;background:rgba(217,154,43,.06)}
+.mlbo-cov b{color:var(--warn)}
+.mlbo-rating{font-size:11px;color:var(--faint);line-height:1.6;margin:10px 0;padding:9px 11px;border:1px solid var(--border);border-radius:9px}
+.mlbo-rating b{color:var(--dim)}
+.mlbo-prov{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid rgba(217,154,43,.4);border-radius:999px;padding:1px 6px;margin-left:5px}
+.mlbo-split{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(47,167,154,.4);border-radius:999px;padding:1px 6px;margin-left:5px}
+/* what the OPS is made of: a shape beside the exact figure, never instead of it */
+.mlbo-shape{margin:12px 0;padding:11px 12px;border:1px solid var(--border);border-radius:11px}
+.mlbo-shape .k{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+.mlbo-shape .b{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;margin:6px 0}
+.mlbo-shape .b .l{font-size:11px;color:var(--faint)}
+.mlbo-shape .b .v{font-size:11px;color:var(--dim);white-space:nowrap}
+.mlbo-shape .n{font-size:10.5px;color:var(--faint);line-height:1.6;margin:9px 0 0}
+.mlbo-bar{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.mlbo-bar i{display:block;height:100%;background:var(--accent)}
+/* the two-way block: one person id, two archives, two scales */
+.mlbo-two{margin:8px 0;padding:11px 12px;border:1px solid rgba(47,167,154,.35);border-radius:11px;background:rgba(47,167,154,.04)}
+.mlbo-two .r{display:grid;grid-template-columns:70px 1fr;gap:10px;margin:5px 0;align-items:baseline}
+.mlbo-two .r .l{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.mlbo-two .r .v{font-size:11.5px;color:var(--dim)}
+.mlbo-two .r .v i{font-style:normal;font-size:10px;color:var(--faint)}
+.mlbo-two .n{font-size:10.5px;color:var(--faint);line-height:1.6;margin:9px 0}
+@media(max-width:620px){
+  .mlbo-shape .b{grid-template-columns:56px 1fr;gap:6px}
+  .mlbo-shape .b .v{grid-column:1/-1}
+  .mlbo-two .r{grid-template-columns:1fr}
+}
 /* baseball: the games board. One row per game on the card, every row a way
    into the full brief. */
 .mlbb-note{font-size:11.5px;color:var(--faint);line-height:1.6;margin:10px 0 14px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:rgba(255,255,255,.015)}
@@ -3049,10 +3084,10 @@ body.focus .dk-focusnote{display:block}
     <div class="row-between fb-panelhd"><h2 style="margin:0">Baseball</h2><span class="spacer"></span><span class="freshness" id="mlbhFresh">&mdash;</span><button class="refreshbtn" id="mlbhRefreshBtn" title="Refresh" aria-label="Refresh the pitching archive" onclick="researchRefresh('baseball')">&#8635;</button></div>
     <div id="rsMeta-baseball" class="rs-panelwrap"></div>
     <p class="rs-lede">Ten completed MLB regular seasons of pitching &mdash; how a pitcher has changed, which clubs he threw for and how he did with each, and whether an ERA was supported by the FIP underneath it. <b style="color:var(--warn)">A record, not a forecast, and never tonight&rsquo;s data.</b></p>
-    <div class="stseg" id="mlbhSeg" style="margin-bottom:12px"><button data-seg="games" class="on" onclick="mlbhSetSeg('games')">Games</button><button data-seg="board" onclick="mlbhSetSeg('board')">Season board</button><button data-seg="teams" onclick="mlbhSetSeg('teams')">Clubs</button><button data-seg="compare" onclick="mlbhSetSeg('compare')">Compare</button></div>
+    <div class="stseg" id="mlbhSeg" style="margin-bottom:12px"><button data-seg="games" class="on" onclick="mlbhSetSeg('games')">Games</button><button data-seg="hitters" onclick="mlbhSetSeg('hitters')">Hitters</button><button data-seg="offense" onclick="mlbhSetSeg('offense')">Club offense</button><button data-seg="board" onclick="mlbhSetSeg('board')">Pitching board</button><button data-seg="teams" onclick="mlbhSetSeg('teams')">Pitching clubs</button><button data-seg="compare" onclick="mlbhSetSeg('compare')">Compare pitchers</button></div>
     <div id="mlbhBody"><div class="empty">Loading&hellip;</div></div>
     <div id="rsSys-baseball" class="fb-ov" style="margin-top:var(--sp5)"></div>
-    <div id="mlbhModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)mlbhClosePitcher()">
+    <div id="mlbhModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this){if(window.MLBO&&MLBO.profileId)mlboCloseHitter();else mlbhClosePitcher();}">
       <div id="mlbhModalCard" style="max-width:720px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
     </div>
     </div>
@@ -3590,6 +3625,7 @@ window.mcRefresh=function(){
      pipeline validates with and the AI function carries inlined, so a
      pitcher's K-BB% is one number rather than three that agree. -->
 <script src="/lib/mlb_pitcher_history.js?v=20260917a"></script>
+<script src="/lib/mlb_offense_history.js?v=20260917a"></script>
 <script>
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
@@ -12893,6 +12929,10 @@ window.loadBaseball=async function(force,signal){
       MLBH.meta={};(meta||[]).forEach(function(r){MLBH.meta[r.key]=r.value;});
     }catch(_){MLBH.meta=null;}
     renderBaseball();
+    /* The OFFENSIVE archive, loaded beside the pitching one. Best effort and
+       never awaited into the pitching path: a database with only one of the
+       two installed still shows the half it has. */
+    try{ window.loadBaseballOffense(force,signal).then(function(){ try{renderBaseball();}catch(_){} }); }catch(_){}
     /* The meta block is painted by the shell at activation, BEFORE this load
        has answered — so the freshness line said "no build time published"
        about a pipeline that publishes one. Repainted now that the promoted
@@ -12923,6 +12963,13 @@ async function mlbhLoadSeg(force){
     try{ await window.mlbBriefEnsure(force); }catch(_){}
     if(gtok!==MLBH_LOAD)return;
     renderBaseball();
+    return;
+  }
+  /* The offensive segments have their own loader over their own archive. */
+  if(MLBH.seg==='hitters'||MLBH.seg==='offense'){
+    if(!MLBO.status&&!MLBO.err){ try{ await window.loadBaseballOffense(force,MLBH.signal); }catch(_){} }
+    renderBaseball();
+    await mlboLoadSeg(force);
     return;
   }
   var svc=mlbhSvc();if(!svc||MLBH.err)return;
@@ -12995,6 +13042,8 @@ async function mlbhRunSearch(){
 /* ---- baseball: the pitcher profile ------------------------------------- */
 window.mlbhOpenPitcher=async function(id){
   var svc=mlbhSvc();if(!svc)return;
+  /* One modal element, two records — see mlboOpenHitter. */
+  if(window.MLBO){MLBO.profileId=null;MLBO.profile=null;MLBO.profileErr=null;}
   MLBH.profileId=String(id);MLBH.profile=null;MLBH.profileErr=null;
   var m=document.getElementById('mlbhModal');
   if(m){m.style.display='block';document.body.style.overflow='hidden';}
@@ -13083,6 +13132,29 @@ function renderBaseball(){
      every game on the card and still opens a brief for each one. Only the
      career line inside a brief is missing then, and the brief says so. */
   if(MLBH.seg==='games'){ host.innerHTML=mlbhGamesHTML(); return; }
+  /* THE OFFENSIVE SEGMENTS READ A DIFFERENT ARCHIVE. They are drawn before the
+     pitching gates below so a database carrying only one of the two still
+     shows the half it has, with the other saying why it is absent. */
+  if(MLBH.seg==='hitters'||MLBH.seg==='offense'){
+    if(!mlboM()){
+      host.innerHTML='<div class="empty">The MLB offensive engine (<span class="mono">lib/mlb_offense_history.js</span>) did not load, so this segment cannot render. Reload the page.</div>';
+      return;
+    }
+    if(MLBO.err){
+      var ofix=MLBO.errCode==='NOT_INSTALLED'
+        ? 'Run <span class="mono">supabase/mlb_offense_history.sql</span> once in the SQL editor, then import with <span class="mono">npm run mlb:off:import:commit</span>.'
+        : (MLBO.errCode==='NO_RECORDS_IN_WINDOW'
+          ? 'The schema is installed but no offensive import has been promoted yet. Run <span class="mono">npm run mlb:off:import:commit</span>.'
+          : 'Nothing is shown in its place.');
+      host.innerHTML='<div class="empty"><b>The historical offensive archive did not answer.</b><br>'
+        +mlboEsc(MLBO.err)+'<div style="margin-top:9px">'+ofix+'</div></div>';
+      return;
+    }
+    if(!MLBO.status){host.innerHTML='<div class="empty">Loading the offensive archive&hellip;</div>';return;}
+    host.innerHTML=mlboCoverageHTML()
+      +(MLBH.seg==='hitters'?mlboHittersHTML():mlboOffenseHTML());
+    return;
+  }
   if(!M){host.innerHTML='<div class="empty">The MLB history engine (<span class="mono">lib/mlb_pitcher_history.js</span>) did not load, so this panel cannot render. Reload the page.</div>';return;}
   if(MLBH.err){
     var fix=MLBH.errCode==='NOT_INSTALLED'
@@ -13520,7 +13592,7 @@ function mlbhSpark(seasons,metric,label){
    ═════════════════════════════════════════════════════════════════════════ */
 window.MLBB={at:null,loading:null,err:null,days:[],cards:[],games:[],byGame:{},
   pitchers:{},offense:{},teamSeason:{},pitcherSeason:{},hist:{},histSeasons:{},
-  season:null,coverage:null,read:{}};
+  season:null,coverage:null,offense:{},offenseCoverage:null,read:{}};
 
 function mlbbDay(off){
   var d=new Date(Date.now()+(off||0)*86400000);
@@ -13678,6 +13750,24 @@ async function mlbbLoad(force){
     }catch(e){ read.mlbhist='UNAVAILABLE'; }
   } else if(names.length) read.mlbhist='NOT_INSTALLED';
 
+  /* 7. THE OFFENSIVE ARCHIVE'S club rows for the clubs on the card. A
+        completed-season baseline to set beside the season-to-date offense —
+        two different measurements of two different periods, never averaged. */
+  MLBB.offense={}; MLBB.offenseCoverage=null;
+  if(MLBB.cards.length && window.EDMlbBatters){
+    try{
+      var OB=window.EDMlbBatters;
+      var osvc=OB.createService({read:function(rel,q){return sbGetMlbHist(rel+'?'+q);}});
+      var ost=await osvc.status();
+      if(ost&&ost.ok){
+        MLBB.offenseCoverage=ost.coverage;
+        var ovr=await sbGetMlbHist('team_offense_overview?select='+OB.COLS.teamOffenseOverview+'&limit=40');
+        (ovr||[]).forEach(function(r){ MLBB.offense[r.team_id]=OB.shapeTeamOffenseOverview(r); });
+        read.mlbhist_offense=(ovr||[]).length?'VERIFIED':'EMPTY';
+      } else read.mlbhist_offense=(ost&&ost.code)||'UNAVAILABLE';
+    }catch(e){ read.mlbhist_offense='UNAVAILABLE'; }
+  } else if(MLBB.cards.length) read.mlbhist_offense='NOT_INSTALLED';
+
   MLBB.read=read; MLBB.at=Date.now();
   MLBB.byGame={};
   MLBB.cards.forEach(function(g){ MLBB.byGame[g.__key]=g; });
@@ -13830,7 +13920,8 @@ function fbMlbBriefGame(q){
     if(cmp.headline)lede.push(cmp.headline);
     if(parkPanel&&parkPanel.lede)lede.push(parkPanel.lede);
 
-    var panels=[pitchPanel,penPanel,parkPanel,sitPanel].filter(Boolean);
+    var offPanel=mlbbOffenseBaselinePanel(g,aN,hN,aTS,hTS,missing);
+    var panels=[pitchPanel,penPanel,offPanel,parkPanel,sitPanel].filter(Boolean);
 
     return {
       kind:'MLB_GAME',
@@ -13861,6 +13952,8 @@ function fbMlbBriefGame(q){
         +'offense_features, joined through games.game_id. Season to date: team_season and pitcher_season'
         +(MLBB.coverage?('. Career: the mlbhist archive, '+MLBB.coverage.start+'–'+MLBB.coverage.end
           +', a completed record and not this season'):'')
+        +(MLBB.offenseCoverage?('. Club offensive baseline: the mlbhist offensive archive, '
+          +MLBB.offenseCoverage.start+'–'+MLBB.offenseCoverage.end+', likewise completed seasons'):'')
         +'. Bullpen: mlb_bullpen_taxed and mlb_bullpen_team, flagged arms only. Market: the signals capture. '
         +'Every number was read from a table; nothing on this page was estimated.'
     };
@@ -14026,6 +14119,82 @@ function mlbbBullpenPanel(g,aN,hN,missing){
     note:'mlb_bullpen_taxed carries FLAGGED arms — pitchers whose recent workload crossed a threshold. It is not '
       +'a full rest state for the staff, and an unflagged reliever is not known to be fresh.',
     cols:[aN,hN],rows:rows,reads:[]};
+}
+
+/* ---- the completed-season offensive baseline ----------------------------
+   The 2016–2025 archive's club offense, set BESIDE the season-to-date rates
+   rather than mixed into them. Two different periods measured two different
+   ways: one is a season in progress read from team_season, the other a
+   finished ten-year record. The panel prints both and says which is which,
+   because the only wrong thing to do here is average them. */
+function mlbbOffenseBaselinePanel(g,aN,hN,aTS,hTS,missing){
+  var A=MLBB.offense[g.away_team_id]||null, H=MLBB.offense[g.home_team_id]||null;
+  if(!A&&!H){
+    if(MLBB.read&&MLBB.read.mlbhist_offense&&MLBB.read.mlbhist_offense!=='VERIFIED'){
+      missing.push('No completed-season offensive baseline: the historical offensive archive is '
+        +String(MLBB.read.mlbhist_offense).toLowerCase().replace(/_/g,' ')+'.');
+    }
+    return null;
+  }
+  var cov=MLBB.offenseCoverage;
+  var rows=[];
+  function pair(k,a,h,note){ rows.push({k:k,a:a,h:h,note:note||null}); }
+  function cur(ts,fields){
+    if(!ts)return null;
+    var p=[];
+    fields.forEach(function(f){
+      var v=mlbbNum(ts[f[0]]);
+      if(v!=null)p.push(f[1]+' '+(f[2]==='pct'?mlbbPct(v):(f[2]==='f3'?v.toFixed(3):v.toFixed(2))));
+    });
+    return p.length?p.join(' · '):null;
+  }
+  pair('This season',
+    cur(aTS,[['runs_per_game','R/G','f2'],['ops','OPS','f3'],['k_pct','K%','pct'],['hr_per_game','HR/G','f2']]),
+    cur(hTS,[['runs_per_game','R/G','f2'],['ops','OPS','f3'],['k_pct','K%','pct'],['hr_per_game','HR/G','f2']]),
+    'team_season, season to date');
+  function hist(o){
+    if(!o)return null;
+    var p=[];
+    if(o.runs_per_game!=null)p.push('R/G '+o.runs_per_game.toFixed(2));
+    if(o.ops!=null)p.push('OPS '+o.ops.toFixed(3));
+    if(o.k_pct!=null)p.push('K% '+mlbbPct(o.k_pct));
+    if(o.bb_pct!=null)p.push('BB% '+mlbbPct(o.bb_pct));
+    if(o.home_runs!=null)p.push(o.home_runs+' HR');
+    return p.join(' · ');
+  }
+  pair(cov?('Ten-season baseline ('+cov.start+'–'+cov.end+')'):'Completed-season baseline',
+    hist(A),hist(H),
+    cov?('mlbhist, '+cov.start+'–'+cov.end+' — a finished record, not this season'):'historical archive');
+  if((A&&A.team_games)||(H&&H.team_games)){
+    pair('Games behind the baseline',
+      A&&A.team_games!=null?(A.team_games+' club games'):null,
+      H&&H.team_games!=null?(H.team_games+' club games'):null,
+      'Runs per game uses these, never the sum of player games');
+  }
+  var reads=[];
+  [[A,aN,aTS],[H,hN,hTS]].forEach(function(x){
+    var o=x[0], nm=x[1], ts=x[2];
+    if(!o){ missing.push('No completed-season offensive baseline on file for '+nm+'.'); return; }
+    if(ts&&mlbbNum(ts.runs_per_game)!=null&&o.runs_per_game!=null){
+      var d=mlbbNum(ts.runs_per_game)-o.runs_per_game;
+      if(Math.abs(d)>=0.35){
+        reads.push(nm+' are scoring '+Math.abs(d).toFixed(2)+' '+(d>0?'more':'fewer')
+          +' runs a game this season than across '+(cov?cov.start+'–'+cov.end:'the archive')
+          +'. Those are two separately measured periods — a ten-year club baseline is not a forecast of '
+          +'this season, and the roster behind it is not the roster playing tonight.');
+      }
+    }
+  });
+  if(!A||!H){
+    reads.push('Only one club has a completed-season baseline on file, so this row is one-sided. Nothing is '
+      +'estimated for the other.');
+  }
+  return {title:'Club offense — this season and the archive',
+    note:'The season-to-date line and the ten-season line are DIFFERENT MEASUREMENTS of different periods, from '
+      +'different tables, and they are never averaged together. The archive is a club record, not a roster: the '
+      +'hitters who produced it are not necessarily the hitters playing tonight, and this archive holds no lineup '
+      +'at all.',
+    cols:[aN,hN],rows:rows,reads:reads};
 }
 
 /* ---- the ballpark and weather panel ------------------------------------ */
@@ -14402,6 +14571,562 @@ function mlbbMarketChip(g){
   }catch(_){ return ''; }
 }
 
+/* ═══ baseball: THE OFFENSIVE ARCHIVE ON THE RESEARCH SURFACE ══════════════
+   The hitting half of the Baseball panel: a hitter search, a season
+   leaderboard, a club-offense board, and a full hitter profile behind each
+   name — career window, annual slash line, plate discipline, power,
+   baserunning, club history, year-over-year change, and the pitching side for
+   a two-way player.
+
+   IT READS THE SAME LAYER EVERYTHING ELSE READS. lib/mlb_offense_history.js is
+   loaded by this page with a script tag, required by the importer under Node
+   and inlined into the edge function, so a hitter's K% is computed once and
+   reads the same here, in a chat answer and in a feature build.
+
+   WHAT THIS SURFACE WILL NOT DO:
+     - It will not show a rating without the plate appearances behind it. Every
+       index on this page carries its sample, because a 110 over 30 PA and a
+       110 over 600 PA are not the same claim.
+     - It will not show a rate that is undefined as a zero. A hitter with no
+       at-bats has no average; the cell says so.
+     - It will not add the two grains. The club rows under a hitter are the
+       same performance as his season rows, split.
+     - It will not say who is playing. This archive ends in 2025 and holds no
+       lineup at all.
+   ═════════════════════════════════════════════════════════════════════════ */
+var MLBO={
+  /* NO `seg` HERE ON PURPOSE. The Baseball panel has exactly one segment
+     state, MLBH.seg, and it is what renderBaseball() dispatches on. A second
+     copy here drifted from it the moment a reader pressed Club offense: the
+     renderer drew the club board while this loader was still fetching
+     hitters, so the segment stayed empty for as long as anyone watched it. */
+  season:null, metric:'offensive_index', minPa:'200', position:'', board:null, boardKey:null,
+  q:'', search:null, searching:false,
+  profile:null, profileId:null, profileErr:null,
+  teamSeason:null, teamBoard:null, teamBoardKey:null, teamId:'', teamRoster:null,
+  league:null, signal:null
+};
+function mlboM(){ return window.EDMlbBatters||null; }
+function mlboSvc(){
+  var M=mlboM();
+  if(!M)return null;
+  return M.createService({read:function(rel,q){return sbGetMlbHist(rel+'?'+q,MLBO.signal);}});
+}
+function mlboFmt(v,m){ var M=mlboM(); return M?M.fmt(v,m):(v==null?'—':String(v)); }
+function mlboDelta(v,m){ var M=mlboM(); return M?M.fmtDelta(v,m):(v==null?'—':String(v)); }
+function mlboEsc(s){ return stEsc(s==null?'':String(s)); }
+/* A cell that is undefined says so, and says it differently from a zero. */
+function mlboCell(v,m){ return v==null?'<span class="mlbo-nd" title="undefined for this line, not zero">—</span>':mlboEsc(mlboFmt(v,m)); }
+
+/* THE COVERAGE SENTENCE the offensive segments open with. It is the first
+   thing on the screen for the same reason the pitching panel's is: a table of
+   rates with no window around it can be read as this season. */
+function mlboCoverageHTML(){
+  var st=MLBO.status; if(!st||!st.ok)return '';
+  var c=st.coverage, r=c.rows||{};
+  var prov=(c.provisional_seasons||[]).length
+    ? ' <b>'+c.provisional_seasons.join(', ')+' provisional</b> — imported before the season finished, so the league '
+      +'baseline and every rating against it will change.' : '';
+  return '<div class="mlbo-cov"><b>'+c.start+'\u2013'+c.end+' MLB regular seasons</b> \u00b7 '
+    +(r.batters!=null?(r.batters+' hitters ('+(r.batters_with_pa||0)+' with a plate appearance), '):'')
+    +(r.batter_seasons!=null?(r.batter_seasons+' player-seasons, '):'')
+    +(r.team_offense_seasons!=null?(r.team_offense_seasons+' club-seasons'):'')
+    +' \u00b7 rating '+mlboEsc(c.rating_version||'ED_BAT_PERF_V1')
+    +'. This is <b>not current-season data</b> and it is <b>never a lineup</b>: it cannot say who is batting today.'
+    +prov+'</div>';
+}
+
+/* ---- baseball offense: load ---------------------------------------------
+   Coverage first, like the pitching panel: a screen that showed rows before it
+   knew its own window is a screen that can be read as current. */
+window.loadBaseballOffense=async function(force,signal){
+  MLBO.signal=signal||null;
+  var svc=mlboSvc();
+  if(!svc){MLBO.err='The MLB offensive query layer (lib/mlb_offense_history.js) did not load.';return;}
+  try{
+    var st=await svc.status(!!force);
+    MLBO.status=st;
+    if(!st.ok){MLBO.err=st.detail||st.error||'The historical offensive archive is not available.';MLBO.errCode=st.code;return;}
+    MLBO.err=null;MLBO.errCode=null;
+    if(MLBO.season==null)MLBO.season=st.coverage.end;
+    try{ var lg=await svc.leagueBaselines(); MLBO.league=lg.ok?lg.data:null; }catch(_){ MLBO.league=null; }
+  }catch(e){ MLBO.err=String(e&&e.message||e); MLBO.errCode='QUERY_UNAVAILABLE'; }
+};
+
+var MLBO_LOAD=0;
+async function mlboLoadSeg(force){
+  var svc=mlboSvc(); if(!svc||MLBO.err)return;
+  var token=++MLBO_LOAD;
+  try{
+    if(MLBH.seg==='hitters'){
+      var key=[MLBO.season,MLBO.metric,MLBO.minPa,MLBO.position].join('|');
+      if(force||MLBO.boardKey!==key||!MLBO.board){
+        var lb=await svc.leaderboard({season:Number(MLBO.season),metric:MLBO.metric,
+          min_pa:MLBO.minPa===''?null:Number(MLBO.minPa),
+          position:MLBO.position||null, limit:50});
+        if(token!==MLBO_LOAD)return;
+        MLBO.board=lb;MLBO.boardKey=key;
+      }
+    }else if(MLBH.seg==='offense'){
+      var tkey=[MLBO.season,MLBO.teamId].join('|');
+      if(force||MLBO.teamBoardKey!==tkey||!MLBO.teamBoard){
+        var tb=await svc.teamOffense({season:Number(MLBO.season),with_roster:false,limit:30});
+        if(token!==MLBO_LOAD)return;
+        MLBO.teamBoard=tb;MLBO.teamBoardKey=tkey;
+      }
+      if(MLBO.teamId){
+        var tr=await svc.teamOffense({team_id:Number(MLBO.teamId),season:Number(MLBO.season),
+          with_roster:true, roster_min_pa:null, roster_metric:'plate_appearances', roster_limit:40});
+        if(token!==MLBO_LOAD)return;
+        MLBO.teamRoster=tr;
+      } else MLBO.teamRoster=null;
+    }
+  }catch(e){ if(token===MLBO_LOAD)MLBO.err=String(e&&e.message||e); }
+  if(token!==MLBO_LOAD)return;
+  renderBaseball();
+}
+
+window.mlboSetCtl=function(k,v){
+  MLBO[k]=v;
+  if(k==='season'){MLBO.boardKey=null;MLBO.teamBoardKey=null;}
+  renderBaseball(); mlboLoadSeg(false);
+};
+window.mlboSetTeam=function(v){ MLBO.teamId=v; MLBO.teamRoster=null; renderBaseball(); mlboLoadSeg(false); };
+
+/* ---- baseball offense: search ------------------------------------------ */
+var MLBO_SEARCH=0;
+window.mlboSearchInput=function(v){
+  MLBO.q=v;
+  var mine=++MLBO_SEARCH;
+  if(!String(v||'').trim()){MLBO.search=null;MLBO.searching=false;renderBaseball();return;}
+  MLBO.searching=true;renderBaseball();
+  setTimeout(function(){ if(mine===MLBO_SEARCH)mlboRunSearch(v,mine); },220);
+};
+async function mlboRunSearch(v,mine){
+  var svc=mlboSvc(); if(!svc)return;
+  try{
+    var r=await svc.search({q:v,limit:20});
+    if(mine!==MLBO_SEARCH)return;
+    MLBO.search=r;
+  }catch(e){ if(mine===MLBO_SEARCH)MLBO.search={ok:false,code:'QUERY_UNAVAILABLE',error:String(e&&e.message||e),data:[]}; }
+  if(mine!==MLBO_SEARCH)return;
+  MLBO.searching=false;renderBaseball();
+}
+
+/* ---- baseball offense: the hitter profile ------------------------------- */
+window.mlboOpenHitter=async function(id){
+  var svc=mlboSvc(); if(!svc)return;
+  /* ONE MODAL ELEMENT SERVES BOTH RECORDS. Opening a hitter clears whatever
+     pitcher was in it, so the close button and the deep link cannot end up
+     describing a record that is no longer on screen. */
+  MLBH.profileId=null;MLBH.profile=null;MLBH.profileErr=null;
+  MLBO.profileId=String(id);MLBO.profile=null;MLBO.profileErr=null;
+  var m=document.getElementById('mlbhModal');
+  if(m){m.style.display='block';document.body.style.overflow='hidden';}
+  mlboRenderProfile();
+  researchSetHash('baseball','b'+id,true);
+  try{
+    var ov=await svc.hitterOverview({player_id:Number(id)});
+    if(!ov.ok){MLBO.profileErr=ov;mlboRenderProfile();return;}
+    var clubs=await svc.teamHistory({player_id:Number(id)});
+    /* The pitching side, if there is one. A two-way player is ONE person id in
+       two archives and this is the join that shows it. */
+    var tw=null;
+    try{ var t=await svc.twoWay({player_id:Number(id)}); tw=(t.ok&&t.data.length)?t.data[0]:null; }catch(_){ tw=null; }
+    MLBO.profile={overview:ov,clubs:clubs,two_way:tw};
+  }catch(e){ MLBO.profileErr={code:'QUERY_UNAVAILABLE',error:String(e&&e.message||e)}; }
+  mlboRenderProfile();
+};
+window.mlboCloseHitter=function(){
+  var m=document.getElementById('mlbhModal');
+  if(m)m.style.display='none';
+  document.body.style.overflow='';
+  MLBO.profileId=null;MLBO.profile=null;MLBO.profileErr=null;
+  researchSetHash('baseball',null,false);
+};
+/* Resolve a name from a game card or a link before opening anything. An
+   ambiguous name is NOT collapsed onto the busier hitter. */
+window.mlboOpenByName=async function(nm){
+  try{
+    researchGo('baseball');
+    var svc=mlboSvc(); if(!svc)return false;
+    var r=await svc.resolveHitter({name:nm});
+    if(r.ok&&r.data&&r.data.resolved){ window.mlboOpenHitter(r.data.resolved.player_id); return false; }
+    MLBH.seg='hitters'; MLBO.q=nm;
+    MLBO.search={ok:r.ok,code:r.code,error:r.error,
+      data:(r.data&&r.data.candidates)?r.data.candidates:[]};
+    var sb=document.querySelectorAll('#mlbhSeg button');
+    for(var i=0;i<sb.length;i++)sb[i].classList.toggle('on',sb[i].dataset.seg==='hitters');
+    renderBaseball();
+  }catch(_){/* a link that cannot resolve leaves the page as it was */}
+  return false;
+};
+
+function mlboRenderProfile(){
+  var card=document.getElementById('mlbhModalCard'); if(!card)return;
+  card.innerHTML=mlboProfileHTML();
+}
+
+/* ---- baseball offense: rendering --------------------------------------- */
+function mlboCtlHTML(withPosition){
+  var st=MLBO.status; if(!st||!st.ok)return '';
+  var M=mlboM();
+  var years=[]; for(var y=st.coverage.end;y>=st.coverage.start;y--)years.push(y);
+  var metrics=['offensive_index','ops','obp','slg','avg','iso','babip','k_pct','bb_pct','hr_pct',
+    'home_runs','extra_base_hits','hits','doubles','rbi','runs','stolen_bases','sb_success_pct',
+    'plate_appearances'];
+  function sel(label,k,opts,cur,fn){
+    return '<label class="mlbh-ctl"><span>'+mlboEsc(label)+'</span><select onchange="'+(fn||'mlboSetCtl')+'(\''+k+'\',this.value)">'
+      +opts.map(function(o){return '<option value="'+mlboEsc(o[0])+'"'+(String(o[0])===String(cur)?' selected':'')+'>'+mlboEsc(o[1])+'</option>';}).join('')
+      +'</select></label>';
+  }
+  var h='<div class="mlbh-ctls">'
+    +sel('Season','season',years.map(function(y){return [y,String(y)];}),MLBO.season);
+  if(withPosition){
+    h+=sel('Ranked by','metric',metrics.map(function(m){
+        return [m,M.METRICS[m].label+' ('+(M.METRICS[m].better==='lower'?'lower better':'higher better')+')'];}),MLBO.metric)
+      +sel('Minimum workload','minPa',[['','No minimum'],['1','1+ PA'],['50','50+ PA'],['200','200+ PA'],
+        ['350','350+ PA'],['502','502+ PA (full-season qualifier)']],MLBO.minPa)
+      +sel('Position','position',[['','Any position'],['C','Catcher'],['1B','First base'],['2B','Second base'],
+        ['3B','Third base'],['SS','Shortstop'],['LF','Left field'],['CF','Centre field'],['RF','Right field'],
+        ['DH','Designated hitter'],['OF','Outfield'],['P','Pitcher']],MLBO.position);
+  }
+  h+='</div>';
+  return h;
+}
+
+/* THE QUALIFICATION LINE. MLB's own screen is 3.1 PA per club game, so it is
+   186 in 2020 and 503 in a full year. Stating it beside the board is what stops
+   a 2020 leaderboard being read as a thin one. */
+function mlboQualNote(){
+  var M=mlboM(), b=MLBO.board;
+  if(!M||!b||!b.ok)return '';
+  var note=(b.notes||[]).filter(function(n){return /qualification for/.test(n);})[0];
+  if(!note)return '';
+  var extra=(b.notes||[]).filter(function(n){return /60-game season/.test(n);})[0];
+  return '<div class="mlbo-qual">'+mlboEsc(note)+(extra?' '+mlboEsc(extra):'')+'</div>';
+}
+
+function mlboSearchHTML(){
+  var s=MLBO.search;
+  var box='<input class="stsearch" id="mlboQ" placeholder="Search a hitter… (accents optional)" value="'+mlboEsc(MLBO.q)+'" '
+    +'oninput="mlboSearchInput(this.value)" autocomplete="off" style="margin:10px 0">';
+  if(MLBO.searching)return box+'<div class="mlbh-srch"><div class="empty" style="padding:14px">Searching…</div></div>';
+  if(!s)return box;
+  /* AN AMBIGUOUS NAME IS A CHOICE, NOT A FAILURE — the same rule the pitching
+     panel follows, for the same reason: MLB ids are the join key, not names. */
+  var amb=(s.code==='AMBIGUOUS_PLAYER'&&s.data&&s.data.length)
+    ? '<div class="mlbh-amb"><b>'+s.data.length+' hitters share that name in this archive.</b> '
+      +'EdgeDesk will not pick one for you. Choose below.</div>' : '';
+  if(!s.ok&&!amb&&s.code!=='EMPTY_RESULT')return box+'<div class="mlbh-srch"><div class="empty" style="padding:14px">'+mlboEsc(s.error||s.code)+'</div></div>';
+  if(!s.data||!s.data.length)return box+'<div class="mlbh-srch"><div class="empty" style="padding:14px">No hitter in the '
+    +MLBO.status.coverage.start+'–'+MLBO.status.coverage.end+' archive matches “'+mlboEsc(MLBO.q)+'”. '
+    +'A player with no MLB plate appearance in this window is absent by design.</div></div>';
+  var rows=s.data.map(function(r){
+    return '<button class="mlbh-hit" onclick="mlboOpenHitter('+r.player_id+')">'
+      +'<span class="nm">'+mlboEsc(r.player_name)+'</span>'
+      +'<span class="sub">'+mlboEsc(r.teams||'—')+'</span>'
+      +'<span class="meta">'+r.first_observed_season+'–'+r.last_observed_season+' · '
+      +r.seasons_with_pa+' season'+(r.seasons_with_pa===1?'':'s')+' with a PA · '+mlboEsc(String(r.plate_appearances))+' PA'
+      +(r.home_runs!=null?(' · '+r.home_runs+' HR'):'')
+      +(r.weighted_offensive_index!=null?(' · index '+mlboFmt(r.weighted_offensive_index,'offensive_index')):'')+'</span>'
+      +'</button>';
+  }).join('');
+  return box+amb+'<div class="mlbh-srch">'+rows+'</div>';
+}
+
+function mlboHittersHTML(){
+  var h=mlboSearchHTML()+mlboCtlHTML(true);
+  var b=MLBO.board;
+  if(!b)return h+'<div class="empty">Loading the board&hellip;</div>';
+  if(!b.ok)return h+'<div class="empty">'+mlboEsc(b.error||b.code)+'</div>';
+  if(!b.data.length)return h+'<div class="empty">No hitter in '+MLBO.season+' clears this screen. '
+    +'Nothing is shown in place of rows that do not exist.</div>';
+  var M=mlboM();
+  var m=MLBO.metric;
+  h+='<div class="fb-sechd">'+MLBO.season+' · '+mlboEsc(M.METRICS[m].label)
+    +(MLBO.position?(' · '+mlboEsc(MLBO.position)):'')
+    +(MLBO.minPa?(' · '+MLBO.minPa+'+ PA'):' · no workload screen')+'</div>';
+  h+=mlboQualNote();
+  h+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead><tr>'
+    +'<th>#</th><th>Hitter</th><th>Club</th><th class="n">PA</th><th class="n">AVG</th><th class="n">OBP</th>'
+    +'<th class="n">SLG</th><th class="n">OPS</th><th class="n">HR</th><th class="n">K%</th><th class="n">BB%</th>'
+    +'<th class="n">Index</th><th>Sample</th></tr></thead><tbody>';
+  b.data.forEach(function(r,i){
+    h+='<tr class="mlbo-row" onclick="mlboOpenHitter('+r.player_id+')">'
+      +'<td class="n">'+(i+1)+'</td>'
+      +'<td class="nm">'+mlboEsc(r.player_name)+'</td>'
+      +'<td class="sub">'+mlboEsc(r.teams||'—')+'</td>'
+      +'<td class="n">'+r.plate_appearances+'</td>'
+      +'<td class="n">'+mlboCell(r.avg,'avg')+'</td>'
+      +'<td class="n">'+mlboCell(r.obp,'obp')+'</td>'
+      +'<td class="n">'+mlboCell(r.slg,'slg')+'</td>'
+      +'<td class="n">'+mlboCell(r.ops,'ops')+'</td>'
+      +'<td class="n">'+r.home_runs+'</td>'
+      +'<td class="n">'+mlboCell(r.k_pct,'k_pct')+'</td>'
+      +'<td class="n">'+mlboCell(r.bb_pct,'bb_pct')+'</td>'
+      +'<td class="n"><b>'+mlboCell(r.offensive_index,'offensive_index')+'</b></td>'
+      +'<td class="sub">'+mlboEsc(String(r.sample_flag||'').replace(/_/g,' '))+'</td>'
+      +'</tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+function mlboOffenseHTML(){
+  var h=mlboCtlHTML(false);
+  var b=MLBO.teamBoard;
+  if(!b)return h+'<div class="empty">Loading club offense&hellip;</div>';
+  if(!b.ok)return h+'<div class="empty">'+mlboEsc(b.error||b.code)+'</div>';
+  var rows=(b.data.seasons||[]).slice().sort(function(x,y){
+    return (y.offensive_index==null?-1e9:y.offensive_index)-(x.offensive_index==null?-1e9:x.offensive_index);
+  });
+  if(!rows.length)return h+'<div class="empty">No club rows on file for '+MLBO.season+'.</div>';
+  h+='<div class="fb-sechd">'+MLBO.season+' · club offense, ranked by the offensive index</div>';
+  h+='<div class="mlbo-note">Runs per game uses each club’s <b>actual games</b> from MLB’s own team endpoint. '
+    +'A club rate here is computed from summed numerators and denominators — never by averaging its players’ rates.</div>';
+  h+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead><tr>'
+    +'<th>#</th><th>Club</th><th class="n">G</th><th class="n">R</th><th class="n">R/G</th><th class="n">AVG</th>'
+    +'<th class="n">OBP</th><th class="n">SLG</th><th class="n">OPS</th><th class="n">HR</th><th class="n">SB</th>'
+    +'<th class="n">K%</th><th class="n">BB%</th><th class="n">Index</th></tr></thead><tbody>';
+  rows.forEach(function(r,i){
+    h+='<tr class="mlbo-row" onclick="mlboSetTeam(\''+r.team_id+'\')">'
+      +'<td class="n">'+(i+1)+'</td>'
+      +'<td class="nm">'+mlboEsc(r.team_name)+'</td>'
+      +'<td class="n">'+r.team_games+'</td>'
+      +'<td class="n">'+r.runs+'</td>'
+      +'<td class="n"><b>'+mlboCell(r.runs_per_game,'runs_per_game')+'</b></td>'
+      +'<td class="n">'+mlboCell(r.avg,'avg')+'</td>'
+      +'<td class="n">'+mlboCell(r.obp,'obp')+'</td>'
+      +'<td class="n">'+mlboCell(r.slg,'slg')+'</td>'
+      +'<td class="n">'+mlboCell(r.ops,'ops')+'</td>'
+      +'<td class="n">'+r.home_runs+'</td>'
+      +'<td class="n">'+r.stolen_bases+'</td>'
+      +'<td class="n">'+mlboCell(r.k_pct,'k_pct')+'</td>'
+      +'<td class="n">'+mlboCell(r.bb_pct,'bb_pct')+'</td>'
+      +'<td class="n"><b>'+mlboCell(r.offensive_index,'offensive_index')+'</b></td>'
+      +'</tr>';
+  });
+  h+='</tbody></table></div>';
+
+  /* The roster behind a club-season, when one is selected. */
+  var tr=MLBO.teamRoster;
+  if(MLBO.teamId&&tr&&tr.ok&&tr.data.roster){
+    var club=(tr.data.seasons||[])[0];
+    h+='<div class="fb-sechd" style="margin-top:18px">'+mlboEsc(club?club.team_name:'Club')+' '+MLBO.season
+      +' · who produced it</div>';
+    h+='<div class="mlbo-note">Every hitter with a recorded appearance for this club that season, including '
+      +'pitchers who batted. These club rows are PARTS of each hitter’s season — never add them to his season line.'
+      +(club&&club.qualified_pa?(' MLB’s qualification for this season is '+club.qualified_pa+' PA.'):'')+'</div>';
+    h+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead><tr>'
+      +'<th>Hitter</th><th>Pos</th><th class="n">G</th><th class="n">PA</th><th class="n">AVG</th><th class="n">OBP</th>'
+      +'<th class="n">SLG</th><th class="n">OPS</th><th class="n">HR</th><th class="n">K%</th><th class="n">BB%</th>'
+      +'<th class="n">Index</th></tr></thead><tbody>';
+    tr.data.roster.forEach(function(r){
+      h+='<tr class="mlbo-row" onclick="mlboOpenHitter('+r.player_id+')">'
+        +'<td class="nm">'+mlboEsc(r.player_name)+'</td>'
+        +'<td class="sub">'+mlboEsc(r.position_reported||'—')+'</td>'
+        +'<td class="n">'+r.games+'</td>'
+        +'<td class="n">'+r.plate_appearances+'</td>'
+        +'<td class="n">'+mlboCell(r.avg,'avg')+'</td>'
+        +'<td class="n">'+mlboCell(r.obp,'obp')+'</td>'
+        +'<td class="n">'+mlboCell(r.slg,'slg')+'</td>'
+        +'<td class="n">'+mlboCell(r.ops,'ops')+'</td>'
+        +'<td class="n">'+r.home_runs+'</td>'
+        +'<td class="n">'+mlboCell(r.k_pct,'k_pct')+'</td>'
+        +'<td class="n">'+mlboCell(r.bb_pct,'bb_pct')+'</td>'
+        +'<td class="n">'+mlboCell(r.offensive_index,'offensive_index')+'</td>'
+        +'</tr>';
+    });
+    h+='</tbody></table></div>';
+    h+='<button class="dcard-btn" style="margin-top:10px" onclick="mlboSetTeam(\'\')">Back to every club</button>';
+  }
+  return h;
+}
+
+/* ---- the hitter profile ------------------------------------------------- */
+function mlboProfileHTML(){
+  var close='<button class="mlbh-x" onclick="mlboCloseHitter()" aria-label="Close">×</button>';
+  if(MLBO.profileErr){
+    var e=MLBO.profileErr;
+    return close+'<div class="empty"><b>That hitter could not be opened.</b><br>'
+      +mlboEsc(e.error||e.code)+'</div>';
+  }
+  if(!MLBO.profile)return close+'<div class="empty">Loading the record&hellip;</div>';
+  var M=mlboM();
+  var ov=MLBO.profile.overview.data.overview;
+  var seasons=MLBO.profile.overview.data.seasons.filter(function(s){return s.plate_appearances>0;});
+  var yoy=MLBO.profile.overview.data.year_over_year||[];
+  var dec=MLBO.profile.overview.data.latest_ops_decomposition;
+  var clubs=(MLBO.profile.clubs&&MLBO.profile.clubs.ok)?MLBO.profile.clubs.data.by_team:[];
+  var tw=MLBO.profile.two_way;
+  var cov=MLBO.status.coverage;
+
+  var h=close;
+  h+='<div class="mlbh-ph"><h3>'+mlboEsc(ov.player_name)+'</h3>'
+    +'<div class="sub">'+ov.first_observed_season+'–'+ov.last_observed_season+' · '
+    +ov.seasons_with_pa+' season'+(ov.seasons_with_pa===1?'':'s')+' with a plate appearance'
+    +(ov.teams?(' · '+mlboEsc(ov.teams)):'')+'</div></div>';
+
+  /* THE COVERAGE SENTENCE, before any number. */
+  h+='<div class="mlbo-cov">Historical record, '+cov.start+'–'+cov.end+'. '
+    +'This is <b>not current-season data</b> and it says nothing about who is playing today.'
+    +(ov.missed_seasons&&ov.missed_seasons.length
+      ? ' No record at all in '+ov.missed_seasons.join(', ')+' — a gap, not a zero.' : '')+'</div>';
+
+  /* The career window. */
+  function kpi(label,val,sub){
+    return '<div class="mlbh-kpi"><div class="k">'+mlboEsc(label)+'</div><div class="v">'+val+'</div>'
+      +(sub?'<div class="s">'+mlboEsc(sub)+'</div>':'')+'</div>';
+  }
+  h+='<div class="mlbh-kpis">'
+    +kpi('Plate appearances',String(ov.plate_appearances),ov.games+' games')
+    +kpi('Slash',mlboCell(ov.avg,'avg')+' / '+mlboCell(ov.obp,'obp')+' / '+mlboCell(ov.slg,'slg'),
+      'OPS '+mlboFmt(ov.ops,'ops'))
+    +kpi('Home runs',String(ov.home_runs),(ov.extra_base_hits!=null?ov.extra_base_hits+' extra-base hits':''))
+    +kpi('ISO',mlboCell(ov.iso,'iso'),'BABIP '+mlboFmt(ov.babip,'babip'))
+    +kpi('K% / BB%',mlboCell(ov.k_pct,'k_pct')+' / '+mlboCell(ov.bb_pct,'bb_pct'),'plate discipline')
+    +kpi('Stolen bases',String(ov.stolen_bases),
+      (ov.sb_success_pct!=null?mlboFmt(ov.sb_success_pct,'sb_success_pct')+' success':'no attempts'))
+    +kpi('Offensive index',mlboCell(ov.weighted_offensive_index,'offensive_index'),
+      ov.rated_plate_appearances+' rated PA · '+String(ov.sample_flag||'').replace(/_/g,' '))
+    +'</div>';
+
+  /* THE RATING, ALWAYS WITH ITS TERMS. */
+  h+='<div class="mlbo-rating"><b>'+mlboEsc(M.RATING_VERSION)+'</b> — 100 is the MLB average for that season, '
+    +'shrunk toward it by PA/(PA+200). It is <b>not</b> OPS+, wRC+, WAR, a percentile or a probability, it is not '
+    +'park- or opponent-adjusted, and it measures neither defence nor baserunning value. '
+    +mlboEsc(M.RATING.caveat)+'</div>';
+
+  /* Was the OPS on-base or power? */
+  if(dec&&dec.available){
+    h+='<div class="mlbo-shape"><div class="k">What the OPS is made of · '
+      +(seasons.length?seasons[seasons.length-1].season:'')+'</div>'
+      +'<div class="b"><span class="l">On base</span>'+mlboBar(dec.obp_vs_league)
+      +'<span class="v">'+mlboFmt(dec.obp,'obp')+' · '+(dec.obp_pct_above_league>=0?'+':'')
+      +dec.obp_pct_above_league+'% vs league</span></div>'
+      +'<div class="b"><span class="l">Power</span>'+mlboBar(dec.slg_vs_league)
+      +'<span class="v">'+mlboFmt(dec.slg,'slg')+' · '+(dec.slg_pct_above_league>=0?'+':'')
+      +dec.slg_pct_above_league+'% vs league</span></div>'
+      +'<p class="n">'+mlboEsc(dec.text)+' '+mlboEsc(dec.note)+'</p></div>';
+  } else if(dec){
+    h+='<div class="mlbo-shape"><div class="k">What the OPS is made of</div>'
+      +'<p class="n">Not available — '+mlboEsc(dec.reason)+'.</p></div>';
+  }
+
+  /* Season by season. Exact values in the table; the trend is the shape. */
+  if(seasons.length){
+    h+='<div class="mlbh-sh">Season by season</div>';
+    h+=mlboSpark(seasons,'ops','OPS')+mlboSpark(seasons,'offensive_index','Offensive index');
+    h+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead><tr>'
+      +'<th>Season</th><th>Club</th><th class="n">G</th><th class="n">PA</th><th class="n">AVG</th><th class="n">OBP</th>'
+      +'<th class="n">SLG</th><th class="n">OPS</th><th class="n">ISO</th><th class="n">BABIP</th><th class="n">HR</th>'
+      +'<th class="n">XBH</th><th class="n">SB</th><th class="n">K%</th><th class="n">BB%</th><th class="n">Index</th>'
+      +'</tr></thead><tbody>';
+    seasons.forEach(function(s){
+      h+='<tr><td>'+s.season+(s.provisional?' <span class="mlbo-prov">provisional</span>':'')+'</td>'
+        +'<td class="sub">'+mlboEsc(s.teams||'—')+(s.team_count>1?' <span class="mlbo-split">'+s.team_count+' clubs</span>':'')+'</td>'
+        +'<td class="n">'+s.games+'</td><td class="n">'+s.plate_appearances+'</td>'
+        +'<td class="n">'+mlboCell(s.avg,'avg')+'</td><td class="n">'+mlboCell(s.obp,'obp')+'</td>'
+        +'<td class="n">'+mlboCell(s.slg,'slg')+'</td><td class="n">'+mlboCell(s.ops,'ops')+'</td>'
+        +'<td class="n">'+mlboCell(s.iso,'iso')+'</td><td class="n">'+mlboCell(s.babip,'babip')+'</td>'
+        +'<td class="n">'+s.home_runs+'</td><td class="n">'+(s.extra_base_hits==null?'—':s.extra_base_hits)+'</td>'
+        +'<td class="n">'+s.stolen_bases+'/'+(s.stolen_bases+s.caught_stealing)+'</td>'
+        +'<td class="n">'+mlboCell(s.k_pct,'k_pct')+'</td><td class="n">'+mlboCell(s.bb_pct,'bb_pct')+'</td>'
+        +'<td class="n"><b>'+mlboCell(s.offensive_index,'offensive_index')+'</b></td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+
+  /* Year over year, with a gap season stated rather than smoothed over. */
+  if(yoy.length){
+    h+='<div class="mlbh-sh">What changed, season to season</div>';
+    h+='<div class="mlbh-yoy">';
+    yoy.slice(-6).forEach(function(step){
+      h+='<div class="mlbh-yoyr"><div class="hd">'+step.from+' → '+step.to
+        +(step.note?' <span class="n">'+mlboEsc(step.note)+'</span>':'')+'</div>';
+      ['ops','obp','slg','iso','k_pct','bb_pct','home_runs','offensive_index'].forEach(function(m){
+        var x=step.metrics[m]; if(!x||x.delta==null)return;
+        h+='<span class="mlbh-d '+(x.improved===true?'up':(x.improved===false?'dn':''))+'">'
+          +mlboEsc(M.METRICS[m].label)+' '+mlboEsc(mlboDelta(x.delta,m))+'</span>';
+      });
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+
+  /* Clubs. The per-club rows are the same performance, split. */
+  if(clubs.length){
+    h+='<div class="mlbh-sh">Clubs</div>';
+    h+='<div class="mlbo-note">Seasons with a recorded hitting appearance, not verified contract, trade or roster '
+      +'dates. These rows are the SAME performance as the seasons above, split by club — never add the two together.</div>';
+    h+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead><tr>'
+      +'<th>Club</th><th>Seasons</th><th class="n">G</th><th class="n">PA</th><th class="n">AVG</th><th class="n">OBP</th>'
+      +'<th class="n">SLG</th><th class="n">OPS</th><th class="n">HR</th><th class="n">Index</th></tr></thead><tbody>';
+    clubs.forEach(function(c){
+      h+='<tr><td class="nm">'+mlboEsc(c.team_names_observed)+'</td>'
+        +'<td class="sub">'+c.first_observed_season+'–'+c.last_observed_season
+        +(c.missed_seasons&&c.missed_seasons.length?(' <span class="n">gap '+c.missed_seasons.join(', ')+'</span>'):'')+'</td>'
+        +'<td class="n">'+c.games+'</td><td class="n">'+c.plate_appearances+'</td>'
+        +'<td class="n">'+mlboCell(c.avg,'avg')+'</td><td class="n">'+mlboCell(c.obp,'obp')+'</td>'
+        +'<td class="n">'+mlboCell(c.slg,'slg')+'</td><td class="n">'+mlboCell(c.ops,'ops')+'</td>'
+        +'<td class="n">'+c.home_runs+'</td>'
+        +'<td class="n">'+mlboCell(c.weighted_offensive_index,'offensive_index')+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+
+  /* THE PITCHING SIDE. One MLB id, two archives, two scales. */
+  if(tw){
+    h+='<div class="mlbh-sh">He pitched too</div>';
+    h+='<div class="mlbo-two"><div class="r"><span class="l">Hitting</span><span class="v">'
+      +tw.batting.plate_appearances+' PA · '+tw.batting.home_runs+' HR · OPS '+mlboFmt(tw.batting.ops,'ops')
+      +' · index '+mlboFmt(tw.batting.offensive_index,'offensive_index')
+      +' <i>'+mlboEsc(tw.batting.rating_version)+'</i> · '+tw.batting.first_observed_season+'–'+tw.batting.last_observed_season+'</span></div>'
+      +'<div class="r"><span class="l">Pitching</span><span class="v">'
+      +mlboEsc(tw.pitching.innings)+' IP · ERA '+(tw.pitching.era==null?'—':tw.pitching.era.toFixed(2))
+      +' · index '+(tw.pitching.performance_index==null?'—':tw.pitching.performance_index.toFixed(1))
+      +' <i>'+mlboEsc(tw.pitching.rating_version)+'</i> · '+tw.pitching.first_observed_season+'–'+tw.pitching.last_observed_season+'</span></div>'
+      +'<p class="n">'+mlboEsc(tw.note)+'</p>'
+      +'<button class="dcard-btn" onclick="mlbhOpenPitcher('+ov.player_id+')">Open his pitching record</button>'
+      +'</div>';
+  }
+
+  h+='<div class="mlbh-foot">Read from the '+cov.start+'–'+cov.end+' MLB offensive archive '
+    +'(<span class="mono">mlbhist.batter_seasons</span> and its summaries), which reconciles to MLB’s own team '
+    +'totals across 19 counting fields. It holds no daily lineups, no lineup slots, no handedness splits, no '
+    +'batter-versus-pitcher history and no Statcast results, so none of those appear here.</div>';
+  return h;
+}
+
+function mlboBar(rel){
+  /* rel is a ratio against the league baseline; 1.0 is average. The bar is a
+     shape, and the exact figure is printed beside it. */
+  var pct=Math.max(0,Math.min(100,((rel==null?1:rel)-0.6)/0.8*100));
+  return '<span class="mlbo-bar"><i style="width:'+pct.toFixed(1)+'%"></i></span>';
+}
+
+function mlboSpark(seasons,metric,label){
+  var vals=seasons.map(function(s){return s[metric];});
+  var have=vals.filter(function(v){return v!=null;});
+  if(have.length<2)return '';
+  var lo=Math.min.apply(null,have), hi=Math.max.apply(null,have);
+  var span=(hi-lo)||1;
+  var w=Math.max(120,(seasons.length-1)*44), hgt=44;
+  var pts=[],i;
+  for(i=0;i<seasons.length;i++){
+    var v=vals[i]; if(v==null)continue;
+    var x=(seasons.length===1?0:(i/(seasons.length-1))*w);
+    var y=hgt-((v-lo)/span)*hgt;
+    pts.push(x.toFixed(1)+','+y.toFixed(1));
+  }
+  if(pts.length<2)return '';
+  return '<div class="mlbh-spark"><span class="lb">'+mlboEsc(label)+'</span>'
+    +'<svg viewBox="0 0 '+w+' '+hgt+'" preserveAspectRatio="none" role="img" aria-label="'+mlboEsc(label)+' by season">'
+    +'<polyline points="'+pts.join(' ')+'" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
+    +'<span class="ep">'+mlboEsc(mlboFmt(vals[0],metric))+' → '+mlboEsc(mlboFmt(vals[vals.length-1],metric))+'</span></div>';
+}
+
 researchRegister({id:'baseball',label:'Baseball',schema:'mlbhist',cadenceMs:null,
   load:function(force,signal){return window.loadBaseball(force,signal);},
   render:function(){renderBaseball();},
@@ -14427,12 +15152,23 @@ researchRegister({id:'baseball',label:'Baseball',schema:'mlbhist',cadenceMs:null
   openEntity:function(id){
     var m=/^p(\d+)$/.exec(String(id));
     if(m){window.mlbhOpenPitcher(Number(m[1]));return;}
+    /* b<id> is a HITTER and p<id> is a PITCHER. The same MLB person id can be
+       both, and the prefix is which record the link meant to open. */
+    var b=/^b(\d+)$/.exec(String(id));
+    if(b){window.mlboOpenHitter(Number(b[1]));return;}
+    var t=/^t(\d+)$/.exec(String(id));
+    if(t){MLBO.teamId=String(Number(t[1]));mlbhSetSeg('offense');return;}
     var c=/^vs-(\d+)-(\d+)$/.exec(String(id));
     if(c){MLBH.cmp.ids=[Number(c[1]),Number(c[2])];mlbhSetSeg('compare');}
   },
-  closeEntity:function(){window.mlbhClosePitcher();},
+  closeEntity:function(){
+    if(MLBO.profileId)window.mlboCloseHitter(); else window.mlbhClosePitcher();
+  },
   entityOpen:function(){var m=document.getElementById('mlbhModal');return !!(m&&m.style.display==='block');},
-  entityKey:function(){return MLBH.profileId?('p'+MLBH.profileId):null;},
+  entityKey:function(){
+    if(MLBO.profileId)return 'b'+MLBO.profileId;
+    return MLBH.profileId?('p'+MLBH.profileId):null;
+  },
   freshness:function(){
     /* The only build time this module can honestly publish is the moment an
        import was PROMOTED. It is not computed from the clock, and a schema

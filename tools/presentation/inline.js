@@ -143,6 +143,26 @@ const LIBS = [
     start: '/*__EDMLBHIST_START__*/', end: '/*__EDMLBHIST_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The MLB OFFENSIVE query layer. Same ordering rule as EDMLBQ above: its
+     host is _mlboff.js, which is itself the source EDMLBOFFAI is copied from,
+     so this must land before that is read. One pass then carries a
+     lib/mlb_offense_history.js edit all the way to index.ts. */
+  {
+    name: 'EDMLBOFF',
+    src: path.join(ROOT, 'lib', 'mlb_offense_history.js'),
+    start: '/*__EDMLBOFF_START__*/', end: '/*__EDMLBOFF_END__*/',
+    hosts: [path.join(FN, '_mlboff.js')],
+  },
+  /* The MLB offensive layer: the router that decides a question is about the
+     2016-2025 hitting record, the deterministic retrieval, the prompt block,
+     the eleven tools, and the critic checks that keep a completed-season
+     archive from being read as tonight's lineup. Server-side only. */
+  {
+    name: 'EDMLBOFFAI',
+    src: path.join(FN, '_mlboff.js'),
+    start: '/*__EDMLBOFF_AI_START__*/', end: '/*__EDMLBOFF_AI_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
 ];
 
 function block(src, START, END) {

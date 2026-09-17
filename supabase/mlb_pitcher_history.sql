@@ -100,6 +100,13 @@ create table if not exists mlbhist.import_runs (
   import_id            text primary key,
   status               text not null default 'staging'
                        check (status in ('staging','validated','promoted','failed','superseded')),
+  -- WHICH ARCHIVE THIS RUN BELONGS TO. One ledger serves the pitching record
+  -- and the offensive record (supabase/mlb_offense_history.sql) so an operator
+  -- has one place to look when a refresh fails, but the two have independent
+  -- gates: each supersedes only its own dataset, and each status view reads
+  -- only its own rows. Defaulting to 'pitching' keeps rows written before this
+  -- column existed correct.
+  dataset              text not null default 'pitching',
   -- what this dataset covers
   coverage_start       int,
   coverage_end         int,
@@ -128,8 +135,13 @@ drop trigger if exists mlbhist_import_runs_touch on mlbhist.import_runs;
 create trigger mlbhist_import_runs_touch before update on mlbhist.import_runs
   for each row execute function mlbhist.touch_updated_at();
 
+alter table mlbhist.import_runs
+  add column if not exists dataset text not null default 'pitching';
+
 create index if not exists mlbhist_import_runs_status_idx
   on mlbhist.import_runs (status, started_at desc);
+create index if not exists mlbhist_import_runs_dataset_idx
+  on mlbhist.import_runs (dataset, status, started_at desc);
 
 -- The run ledger every EdgeDesk job writes, in the shape tools/lib/pgrest.js
 -- runLedger() already speaks.
@@ -598,8 +610,13 @@ begin
   insert into mlbhist.validation           select * from mlbhist.stg_validation           where import_id = p_import_id;
   insert into mlbhist.source_repairs       select * from mlbhist.stg_source_repairs       where import_id = p_import_id;
 
+  -- Only PITCHING runs are superseded. The offensive archive shares this
+  -- ledger (discriminated by import_runs.dataset) and its promoted import is
+  -- none of this gate's business; superseding it here would empty
+  -- mlbhist.offense_status without touching a single offensive row.
   update mlbhist.import_runs set status = 'superseded'
-    where status = 'promoted' and import_id <> p_import_id;
+    where status = 'promoted' and import_id <> p_import_id
+      and coalesce(dataset, 'pitching') = 'pitching';
   update mlbhist.import_runs
     set status = 'promoted', staged_counts = staged, promoted_counts = staged,
         promoted_at = now(), finished_at = now(), message = null
@@ -670,7 +687,7 @@ select r.import_id, r.status, r.coverage_start, r.coverage_end, r.provisional_se
        (select count(*) from mlbhist.pitcher_team_seasons) as live_pitcher_team_seasons,
        (select count(*) from mlbhist.pitcher_overview)     as live_pitchers
 from mlbhist.import_runs r
-where r.status = 'promoted'
+where r.status = 'promoted' and coalesce(r.dataset, 'pitching') = 'pitching'
 order by r.promoted_at desc nulls last
 limit 1;
 
@@ -724,7 +741,10 @@ union all select 3, 'the two grains are uniquely keyed (player-season, player-te
             then 'ok' else 'CHECK THIS' end
 union all select 4, 'staging exists for every record table',
        case when (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
-                   where n.nspname = 'mlbhist' and c.relkind = 'r' and c.relname like 'stg\_%') = 9
+                   where n.nspname = 'mlbhist' and c.relkind = 'r'
+                     and c.relname in ('stg_pitcher_seasons','stg_pitcher_team_seasons','stg_pitcher_overview',
+                                       'stg_pitcher_team_history','stg_observed_team_runs','stg_league_seasons',
+                                       'stg_teams','stg_validation','stg_source_repairs')) = 9
             then 'ok' else 'CHECK THIS' end
 union all select 5, 'the import ledger and run ledger exist',
        case when to_regclass('mlbhist.import_runs') is not null
@@ -739,7 +759,13 @@ union all select 7, 'no client may execute the promote gate',
             then 'ok' else 'CHECK THIS' end
 union all select 8, 'RLS is enabled on every table this file created',
        case when (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
-                   where n.nspname = 'mlbhist' and c.relkind = 'r' and c.relrowsecurity) = 20
+                   where n.nspname = 'mlbhist' and c.relkind = 'r' and c.relrowsecurity
+                     and c.relname in ('pitcher_seasons','pitcher_team_seasons','pitcher_overview',
+                                       'pitcher_team_history','observed_team_runs','league_seasons',
+                                       'teams','validation','source_repairs','import_runs','pipeline_runs',
+                                       'stg_pitcher_seasons','stg_pitcher_team_seasons','stg_pitcher_overview',
+                                       'stg_pitcher_team_history','stg_observed_team_runs','stg_league_seasons',
+                                       'stg_teams','stg_validation','stg_source_repairs')) = 20
             then 'ok' else 'CHECK THIS' end
 union all select 9, 'anon and authenticated may read the record',
        case when (select count(*) from pg_policies where schemaname = 'mlbhist' and cmd = 'SELECT'
