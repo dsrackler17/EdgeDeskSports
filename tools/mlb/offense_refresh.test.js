@@ -108,6 +108,28 @@ ok('the packaged updater is committed', fs.existsSync(R.BUILDER), R.BUILDER);
   fs.rmSync(tmp, { recursive: true, force: true });
 }
 
+/* ── 4b. THE SCHEDULER HAS TO NAME A MODE ─────────────────────────
+   This CLI does nothing when given neither --check nor --commit, and exits 0
+   saying so. That is fine at a prompt and dangerous in a job: the first
+   dispatched run of the workflow rebuilt the pitching archive, reported
+   success for the offensive step, and had in fact rebuilt nothing and imported
+   nothing, because the step passed a season range and no mode. A green job
+   that did no work is the exact failure the refresh exists to make impossible,
+   so the workflow's own text is checked here. */
+{
+  const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'mlb-pitchers.yml'), 'utf8');
+  const at = wf.indexOf('Rebuild the OFFENSIVE dataset');
+  ok('the workflow has an offensive rebuild step', at > 0);
+  const step = wf.slice(at, wf.indexOf('- name:', wf.indexOf('refresh_offense.js', at)));
+  ok('\u2026which runs the offensive refresh', /node tools\/mlb\/refresh_offense\.js/.test(step));
+  ok('\u2026and commits on a scheduled run', /ARGS="\$ARGS --commit"/.test(step));
+  ok('\u2026and asks for a rebuild-and-validate when it is not committing',
+    /ARGS="\$ARGS --check"/.test(step));
+  const cli = fs.readFileSync(path.join(ROOT, 'tools', 'mlb', 'refresh_offense.js'), 'utf8');
+  ok('the CLI still refuses to guess a mode',
+    /Nothing to do\. Pass --check .* or --commit/.test(cli));
+}
+
 /* ── 5. THE DATABASE HALF ─────────────────────────────────────────────────── */
 const conn = PG.findServer();
 if (!conn) {

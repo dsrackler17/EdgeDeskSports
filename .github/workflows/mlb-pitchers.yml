@@ -223,7 +223,17 @@ jobs:
             exit 1
           fi
           ARGS="--from 2016 --through ${{ steps.plan.outputs.through }}"
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
+          # refresh_offense.js takes its mode explicitly and does NOTHING when
+          # given neither, exiting 0 — so a step that forgot to name one passed
+          # while rebuilding no dataset and importing nothing. It names one here
+          # every time: --commit on a scheduled run or when asked, --check
+          # otherwise, which rebuilds and validates and writes nothing. That is
+          # the same work the pitching step does without a --commit.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          else
+            ARGS="$ARGS --check"
+          fi
           if [ "${{ inputs.final }}" = "true" ]; then ARGS="$ARGS --final"; fi
           if [ "${{ inputs.publish_dataset }}" = "true" ]; then ARGS="$ARGS --publish-dataset"; fi
           node tools/mlb/refresh_offense.js $ARGS

@@ -4702,6 +4702,23 @@ function researchActivate(sub,force){
   m._.loading=p;
   p.catch(function(){}).then(function(){if(m._.loading===p){m._.loading=null;}});
 }
+/* A DELIBERATE CANCELLATION IS NOT AN ERROR. The shell aborts a module's reads
+   in flight when the reader leaves it, taps refresh, or changes a control —
+   that is the whole point of the controller above. A module that started one of
+   those reads without holding its promise lets the cancellation reach
+   window.onunhandledrejection, where the browser reports an ordinary tab switch
+   as a page error: "signal is aborted without reason", from researchDeactivate,
+   with no module named. Under load it happens on every panel, because that is
+   simply when a read is still out when the reader moves.
+
+   Only AbortError is taken here, by name. Every other unhandled rejection is
+   left exactly as it was, so a module that really fails still says so. */
+if (typeof window !== 'undefined' && window.addEventListener) {
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason;
+    if (r && r.name === 'AbortError') e.preventDefault();
+  });
+}
 function researchDeactivate(sub){
   var m=RESEARCH_MODULES[sub];if(!m)return;
   if(m._.ctrl){try{m._.ctrl.abort();}catch(_){}m._.ctrl=null;}
@@ -12893,6 +12910,26 @@ var MLBH={
   clubs:null, signal:null
 };
 
+/* A LOAD THE READER SUPERSEDED. Leaving the panel, tapping refresh, or
+   changing a control aborts the reads still in flight — on purpose, and the
+   loaders below already record anything a reader could act on in MLBH.err /
+   MLBO.err. What was left over was the abort itself: these loaders are started
+   without anyone holding their promise, so the cancellation reached
+   window.onunhandledrejection and a normal navigation was reported as a page
+   error. The abort is swallowed here and nothing else is: a real failure is
+   rethrown so it still surfaces. */
+function mlbhAborted(e){
+  if(!e)return false;
+  if(e.name==='AbortError')return true;
+  /* the query layer catches its own read and hands back {ok:false,detail}, so
+     the cancellation arrives as a sentence rather than as an exception */
+  return /\baborted\b/i.test(String(e.message||e.detail||e.error||e||''));
+}
+function mlbhQuiet(p){
+  if(!p||!p.then)return p;
+  return p.then(null,function(e){ if(mlbhAborted(e))return; throw e; });
+}
+
 /* The service, built over this panel's own fetch so an abort while the reader
    navigates away cancels the reads in flight. */
 function mlbhSvc(){
@@ -12917,7 +12954,8 @@ window.loadBaseball=async function(force,signal){
   try{
     var st=await svc.status(!!force);
     MLBH.status=st;MLBH.at=Date.now();
-    if(!st.ok){MLBH.err=st.detail||'The historical pitching archive is not available.';MLBH.errCode=st.code;renderBaseball();return;}
+    if(!st.ok){if(mlbhAborted(st))return;      /* the reader left mid-read, not an archive that failed */
+      MLBH.err=st.detail||'The historical pitching archive is not available.';MLBH.errCode=st.code;renderBaseball();return;}
     MLBH.err=null;MLBH.errCode=null;
     if(MLBH.season==null)MLBH.season=st.coverage.end;
     /* The pipeline ledger the shell reads. It is written by the importer, so a
@@ -12932,7 +12970,7 @@ window.loadBaseball=async function(force,signal){
     /* The OFFENSIVE archive, loaded beside the pitching one. Best effort and
        never awaited into the pitching path: a database with only one of the
        two installed still shows the half it has. */
-    try{ window.loadBaseballOffense(force,signal).then(function(){ try{renderBaseball();}catch(_){} }); }catch(_){}
+    try{ mlbhQuiet(window.loadBaseballOffense(force,signal)).then(function(){ try{renderBaseball();}catch(_){} },function(){}); }catch(_){}
     /* The meta block is painted by the shell at activation, BEFORE this load
        has answered — so the freshness line said "no build time published"
        about a pipeline that publishes one. Repainted now that the promoted
@@ -12940,6 +12978,7 @@ window.loadBaseball=async function(force,signal){
     try{rsMetaRender('baseball');}catch(_){}
     await mlbhLoadSeg(force);
   }catch(e){
+    if(mlbhAborted(e))return;                 /* the reader left; not a failure to report */
     MLBH.err=String(e&&e.message||e);MLBH.errCode='QUERY_UNAVAILABLE';renderBaseball();
   }
 };
@@ -12947,7 +12986,7 @@ window.mlbhSetSeg=function(seg){
   MLBH.seg=seg;
   var b=document.querySelectorAll('#mlbhSeg button');
   for(var i=0;i<b.length;i++)b[i].classList.toggle('on',b[i].dataset.seg===seg);
-  renderBaseball();mlbhLoadSeg(false);
+  renderBaseball();mlbhQuiet(mlbhLoadSeg(false));
 };
 /* Every segment load carries a token. Two controls changed in quick
    succession start two reads, and the first can answer LAST — which put a
@@ -12969,7 +13008,7 @@ async function mlbhLoadSeg(force){
   if(MLBH.seg==='hitters'||MLBH.seg==='offense'){
     if(!MLBO.status&&!MLBO.err){ try{ await window.loadBaseballOffense(force,MLBH.signal); }catch(_){} }
     renderBaseball();
-    await mlboLoadSeg(force);
+    await mlbhQuiet(mlboLoadSeg(force));
     return;
   }
   var svc=mlbhSvc();if(!svc||MLBH.err)return;
@@ -12999,7 +13038,7 @@ async function mlbhLoadSeg(force){
         MLBH.cmp.res=cr;MLBH.cmp.err=cr.ok?null:(cr.error||cr.code);
       }
     }
-  }catch(e){if(token===MLBH_LOAD)MLBH.err=String(e&&e.message||e);}
+  }catch(e){if(mlbhAborted(e))return;if(token===MLBH_LOAD)MLBH.err=String(e&&e.message||e);}
   if(token!==MLBH_LOAD)return;
   renderBaseball();
 }
@@ -13074,7 +13113,7 @@ window.mlbhCompareFromProfile=function(){
 };
 window.mlbhCmpRemove=function(id){
   MLBH.cmp.ids=MLBH.cmp.ids.filter(function(x){return x!==Number(id);});
-  MLBH.cmp.res=null;renderBaseball();mlbhLoadSeg(false);
+  MLBH.cmp.res=null;renderBaseball();mlbhQuiet(mlbhLoadSeg(false));
 };
 window.mlbhCmpAdd=function(id){
   id=Number(id);
@@ -13090,7 +13129,7 @@ window.mlbhSetCtl=function(k,v){
   else if(k==='teamSeason')MLBH.teamSeason=v;
   else if(k==='teamRole')MLBH.teamRole=v;
   else if(k==='cmpSeason')MLBH.cmp.season=v;
-  renderBaseball();mlbhLoadSeg(false);
+  renderBaseball();mlbhQuiet(mlbhLoadSeg(false));
 };
 
 /* ---- baseball: rendering ------------------------------------------------ */
@@ -14646,11 +14685,12 @@ window.loadBaseballOffense=async function(force,signal){
   try{
     var st=await svc.status(!!force);
     MLBO.status=st;
-    if(!st.ok){MLBO.err=st.detail||st.error||'The historical offensive archive is not available.';MLBO.errCode=st.code;return;}
+    if(!st.ok){if(mlbhAborted(st))return;      /* the reader left mid-read, not an archive that failed */
+      MLBO.err=st.detail||st.error||'The historical offensive archive is not available.';MLBO.errCode=st.code;return;}
     MLBO.err=null;MLBO.errCode=null;
     if(MLBO.season==null)MLBO.season=st.coverage.end;
     try{ var lg=await svc.leagueBaselines(); MLBO.league=lg.ok?lg.data:null; }catch(_){ MLBO.league=null; }
-  }catch(e){ MLBO.err=String(e&&e.message||e); MLBO.errCode='QUERY_UNAVAILABLE'; }
+  }catch(e){ if(mlbhAborted(e))return; MLBO.err=String(e&&e.message||e); MLBO.errCode='QUERY_UNAVAILABLE'; }
 };
 
 var MLBO_LOAD=0;
@@ -14681,7 +14721,7 @@ async function mlboLoadSeg(force){
         MLBO.teamRoster=tr;
       } else MLBO.teamRoster=null;
     }
-  }catch(e){ if(token===MLBO_LOAD)MLBO.err=String(e&&e.message||e); }
+  }catch(e){ if(mlbhAborted(e))return; if(token===MLBO_LOAD)MLBO.err=String(e&&e.message||e); }
   if(token!==MLBO_LOAD)return;
   renderBaseball();
 }
@@ -14689,9 +14729,9 @@ async function mlboLoadSeg(force){
 window.mlboSetCtl=function(k,v){
   MLBO[k]=v;
   if(k==='season'){MLBO.boardKey=null;MLBO.teamBoardKey=null;}
-  renderBaseball(); mlboLoadSeg(false);
+  renderBaseball(); mlbhQuiet(mlboLoadSeg(false));
 };
-window.mlboSetTeam=function(v){ MLBO.teamId=v; MLBO.teamRoster=null; renderBaseball(); mlboLoadSeg(false); };
+window.mlboSetTeam=function(v){ MLBO.teamId=v; MLBO.teamRoster=null; renderBaseball(); mlbhQuiet(mlboLoadSeg(false)); };
 
 /* ---- baseball offense: search ------------------------------------------ */
 var MLBO_SEARCH=0;

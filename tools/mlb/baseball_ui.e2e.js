@@ -54,7 +54,7 @@ function near(name, got, want, tol) {
   return chk(name, Number.isFinite(d) && d <= (tol == null ? 0.005 : tol), { got, want });
 }
 function done(code) {
-  failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 300) : '')));
+  failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 900) : '')));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
   if (fail === 0) console.log('PASS | baseball research surface | ' + pass + ' assertions in a real browser');
   process.exit(code !== undefined ? code : (fail === 0 ? 0 : 1));
@@ -212,8 +212,12 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
     });
     const page = await ctx.newPage();
     const errors = [];
+    /* the stack rides along ALWAYS. A page error that only appears on a loaded
+       CI runner cannot be reproduced locally to ask where it came from, so the
+       one run that catches it has to say so by itself. */
     page.on('pageerror', (e) => errors.push(String(e && e.message).slice(0, 200)
-      + (process.env.DESK_E2E_STACKS ? ' @@ ' + String(e && e.stack).slice(0, 700) : '')));
+      + ' @@ ' + String((e && e.stack) || '').replace(/\s+/g, ' ')
+        .slice(0, process.env.DESK_E2E_STACKS ? 700 : 240)));
     await page.goto(`http://127.0.0.1:${site.port}/app.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => typeof window.researchGo === 'function'
       && !!window.EDMlbPitchers && !!window.EDMlbBatters, null, { timeout: 30000 });
@@ -1102,6 +1106,80 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
         boardIds.indexOf(571912) < 0 && boardIds.indexOf(518586) < 0, boardIds.slice(0, 5));
 
       chk('no page error on the edge cases', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+
+    /* ══ 6k. LEAVING THE PANEL MID-LOAD IS NOT AN ERROR ═══════════════
+       The panel aborts its reads when the reader navigates away, taps refresh
+       or changes a control — deliberately. Those loaders are started without
+       anyone holding their promise, so for a while the cancellation reached
+       window.onunhandledrejection and a normal navigation was reported as a
+       page error; the seg loaders also painted "signal is aborted without
+       reason" at the reader as though the archive had failed.
+
+       THE READS ARE SLOWED so the abort always lands on one in flight, and
+       each scenario WAITS FOR ITS OWN REQUESTS TO SETTLE rather than for a
+       fixed number of milliseconds: a runner under load finishes them later
+       than a quiet one, and a straggler that arrived after a fixed sleep
+       would be blamed on whichever scenario happened to be running. Each
+       scenario also gets its own context, so nothing can cross between. */
+    for (const leave of ['tab', 'refresh', 'segment']) {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      let inflight = 0;
+      page.on('request', (r) => { if (/supabase\.co\/rest\/v1\//.test(r.url())) inflight++; });
+      const done = (r) => { if (/supabase\.co\/rest\/v1\//.test(r.url())) inflight--; };
+      page.on('requestfinished', done);
+      page.on('requestfailed', done);
+      /* registered after openApp's route, so it is matched first; fallback
+         hands the request on to the handler that actually answers it */
+      await ctx.route('**/*', async (route) => {
+        if (/supabase\.co\/rest\/v1\//.test(route.request().url())) await new Promise((r) => setTimeout(r, 700));
+        return route.fallback();
+      });
+      /* every read this panel starts has answered or been cancelled, plus a
+         grace for the rejection to reach the page if it is going to */
+      const settle = async () => {
+        const until = Date.now() + 30000;
+        while (inflight > 0 && Date.now() < until) await page.waitForTimeout(100);
+        await page.waitForTimeout(600);
+      };
+
+      await page.evaluate(() => window.researchGo('baseball'));
+      await page.waitForFunction(() => typeof window.mlbhSetSeg === 'function', null, { timeout: 25000 });
+      if (leave === 'segment') {
+        await page.evaluate(() => window.mlbhSetSeg('hitters'));
+        await page.waitForTimeout(80);
+      }
+      /* leave while the reads are still out */
+      if (leave === 'refresh') await page.evaluate(() => window.researchRefresh('baseball'));
+      else await page.evaluate(() => window.researchGo('football'));
+      await settle();
+
+      chk('leaving baseball mid-load raises no page error (' + leave + ')',
+        errors.length === 0, errors.slice(0, 3));
+      const shown = await page.evaluate(() => ({
+        pitching: (window.MLBH && window.MLBH.err) || '',
+        offense: (window.MLBO && window.MLBO.err) || '' }));
+      chk('\u2026and the reader is never shown the abort as a failure (' + leave + ')',
+        !/abort/i.test(String(shown.pitching)) && !/abort/i.test(String(shown.offense)), shown);
+      await ctx.close();
+    }
+
+    /* ══ 6l. AND THE CANCELLATION RULE IS NARROW ═════════════════════
+       The shell ignores an unhandled AbortError because a deliberate
+       cancellation is not a failure. The danger in a rule like that is that it
+       grows: widen it once and every unhandled rejection in the app goes
+       quiet, and the assertions above start passing for the wrong reason. So
+       the narrowness is the test. */
+    {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      await page.evaluate(() => { Promise.reject(new DOMException('signal is aborted without reason', 'AbortError')); });
+      await page.waitForTimeout(500);
+      chk('an unhandled cancellation is not reported as a page error', errors.length === 0, errors.slice(0, 2));
+      await page.evaluate(() => { Promise.reject(new Error('a genuine failure nobody handled')); });
+      await page.waitForTimeout(500);
+      chk('\u2026but a genuine unhandled rejection still is',
+        errors.length === 1 && /a genuine failure nobody handled/.test(errors[0]), errors.slice(0, 2));
       await ctx.close();
     }
 
