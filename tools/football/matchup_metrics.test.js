@@ -69,13 +69,7 @@ chk('every NFL club is present', art.counts.nfl_clubs === 32, art.counts.nfl_clu
 const nfl = Object.values(art.nfl.teams).find((x) => x.injuries && x.injuries.players.length);
 chk('the official injury report is carried per club', nfl && nfl.injuries.official === true && nfl.injuries.players.every((p) => p.name));
 /* A GAME STATUS IS NOT PUBLISHED EVERY DAY OF THE WEEK.
-   Out / Doubtful / Questionable is assigned on the FINAL report, normally
-   Friday; a Wednesday or Thursday report is practice participation only. So
-   demanding a status from one arbitrary club fails mid-week on a feed that is
-   behaving correctly. The claim the desk actually needs is league-wide: every
-   row is identified and carries a designation of some kind, and any status
-   that IS published is one of the three real ones — never invented, never a
-   practice designation promoted into a game status. */
+
 const nflRows = Object.values(art.nfl.teams).flatMap((x) => (x.injuries ? x.injuries.players : []));
 chk('every injury row is identified and carries a designation', nflRows.length > 0 && nflRows.every((p) => p.name && (p.status || p.practice)), nflRows.filter((p) => !(p.name && (p.status || p.practice))).slice(0, 3));
 chk('a published game status is one of the three real ones, never a practice designation', nflRows.filter((p) => p.status).every((p) => /^(Out|Doubtful|Questionable)$/.test(String(p.status))), [...new Set(nflRows.filter((p) => p.status).map((p) => p.status))]);

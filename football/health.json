@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-16T14:18:11.998Z",
+  "generated_at": "2026-09-17T14:24:35.055Z",
   "ok": true,
-  "last_ok_at": "2026-09-16T14:18:11.998Z",
+  "last_ok_at": "2026-09-17T14:24:35.055Z",
   "run": {
     "trigger": "schedule",
     "runner": "github-actions",
@@ -36,10 +36,17 @@
   },
   "lines": {
     "nfl": {
-      "compared": 17,
-      "median_gap": 2.28,
-      "max_gap": 6.96,
-      "outliers": [],
+      "compared": 26,
+      "median_gap": 3.13,
+      "max_gap": 7.61,
+      "outliers": [
+        {
+          "game": "KC @ MIA",
+          "gap": 7.61,
+          "model": -0.89,
+          "market": -8.5
+        }
+      ],
       "orientation_faults": []
     },
     "p4": {
@@ -85,25 +92,25 @@
       "id": "nfl_projections",
       "label": "NFL: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "17/17 upcoming games PREDICTED, all inside bounds"
+      "detail": "26/26 upcoming games PREDICTED, all inside bounds"
     },
     {
       "id": "nfl_lines_market",
       "label": "NFL: market lines plausible",
       "status": "pass",
-      "detail": "17 lines inside plausible bounds"
+      "detail": "26 lines inside plausible bounds"
     },
     {
       "id": "nfl_lines_orientation",
       "label": "NFL: market lines point the right way",
       "status": "pass",
-      "detail": "17 joined line(s), none reconciled by negation"
+      "detail": "26 joined line(s), none reconciled by negation"
     },
     {
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
-      "status": "pass",
-      "detail": "median gap 2.28 pts over 17 games, max 6.96"
+      "status": "warn",
+      "detail": "median gap 3.13 pts over 26 games; 1 game(s) beyond 7 pts"
     },
     {
       "id": "p4_season_window",
@@ -145,7 +152,7 @@
       "id": "p4_universe",
       "label": "CFB: the FBS universe resolves from this season’s own feed",
       "status": "pass",
-      "detail": "138 active FBS programs across 11 conferences · 122 game(s) on the slate, 60 sampled"
+      "detail": "138 active FBS programs across 11 conferences · 146 game(s) on the slate, 60 sampled"
     },
     {
       "id": "p4_lines_src",
@@ -157,7 +164,7 @@
       "id": "p4_projections",
       "label": "CFB: upcoming FBS slate projects to sane numbers",
       "status": "pass",
-      "detail": "60/60 sampled FBS games PREDICTED, all inside bounds · roster bundles joined on 54/60 · {\"conference\":23,\"non_conference\":31,\"fbs_fcs\":6}"
+      "detail": "60/60 sampled FBS games PREDICTED, all inside bounds · roster bundles joined on 47/60 · {\"conference\":16,\"non_conference\":31,\"fbs_fcs\":13}"
     },
     {
       "id": "p4_lines_market",
@@ -181,66 +188,66 @@
       "id": "p4_confidence_ledger",
       "label": "CFB P4: every published confidence ledger adds to 100",
       "status": "pass",
-      "detail": "122 games"
+      "detail": "126 games"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-16T14:18:11.998Z",
+    "daily_check_last_run": "2026-09-17T14:24:35.055Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-16T14:18:11.998Z",
+    "engine_tests_last_run": "2026-09-17T14:24:35.055Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-16T14:18:11.998Z",
+    "nfl_ingest_last_run": "2026-09-17T14:24:35.055Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 16,
-    "p4_ingest_last_run": "2026-09-16T14:18:11.998Z",
+    "p4_ingest_last_run": "2026-09-17T14:24:35.055Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 185,
-    "projection_guard_last_run": "2026-09-16T14:18:11.998Z",
+    "projection_guard_last_run": "2026-09-17T14:24:35.055Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-16T14:18:11.998Z",
+    "line_guard_last_run": "2026-09-17T14:24:35.055Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 17
+    "row_count_line_guard": 26
   },
   "scope": {
     "what_ok_means": "the pipeline ran: the engine suites pass, every feed answered, completed games absorbed into the ratings, every upcoming game projects inside bounds and no joined market line points the wrong way.",
     "what_ok_does_not_mean": "it is NOT a statement about data coverage. A week where the conference availability reports are not due yet, no forecast provider was called and half the slate is non-conference is a perfectly healthy pipeline over thin inputs, and `coverage` below is where that shows."
   },
   "coverage": {
-    "games": 122,
+    "games": 126,
     "information_confidence": {
-      "mean": 76.4,
-      "median": 83.6,
-      "lower_decile": 48.6,
+      "mean": 76.1,
+      "median": 83.7,
+      "lower_decile": 48.2,
       "at_90": 1,
       "at_95": 0
     },
     "biggest_gaps": [
       {
         "field": "qb_availability",
-        "mean_points_lost": 8.34
+        "mean_points_lost": 8.2
       },
       {
         "field": "team_rating",
-        "mean_points_lost": 3.49
+        "mean_points_lost": 3.71
       },
       {
         "field": "off_field",
-        "mean_points_lost": 2.2
+        "mean_points_lost": 2.17
       },
       {
         "field": "roster",
-        "mean_points_lost": 2.02
+        "mean_points_lost": 2.04
       },
       {
         "field": "roster_talent",
-        "mean_points_lost": 1.93
+        "mean_points_lost": 1.95
       },
       {
         "field": "matchup_profile",
-        "mean_points_lost": 1.77
+        "mean_points_lost": 1.87
       }
     ],
-    "ledgers_reconciling": 122,
+    "ledgers_reconciling": 126,
     "source": "football/fbs/slate.json — read, not recomputed, so this cannot disagree with the board"
   }
 }
