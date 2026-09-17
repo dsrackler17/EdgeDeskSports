@@ -1,12 +1,17 @@
 {
  "schema": "edgedesk_staking_validation_v1",
  "sport": "americanfootball_ncaaf",
- "generated_at": "2026-09-17T02:40:02.006Z",
+ "generated_at": "2026-09-17T13:51:49.455Z",
  "frame": {
   "archive": "football/pricing/lines_cfb.json",
   "games": 10351,
   "rows_used": 10351,
   "rating": "the pregame Elo the sportsdataverse schedules carry, which is independent of the market",
+  "engine": {
+   "available": false,
+   "why": "not attempted for this sport"
+  },
+  "model_graded": "the Elo stand-in, because the engine replay was unavailable here (not attempted). A validation on the stand-in proves the SIZING RULES and says nothing about the number the desk quotes.",
   "blend": "margin ~ a + b*market + c*(model - market), the same form the shipped pricer uses, fitted on the seasons BEFORE each held-out season",
   "holdout_window": "2019 onward, one season at a time",
   "policy": {
@@ -37,6 +42,7 @@
     "min_n": 300
    }
   },
+  "multiple_comparisons": "holm-bonferroni across the testable disagreement thresholds; the best of m must clear p_max / m",
   "thresholds": [
    0.5,
    1,
@@ -46,6 +52,26 @@
    4,
    6
   ],
+  "moneyline_thresholds": [
+   0.01,
+   0.02,
+   0.03,
+   0.05,
+   0.07,
+   0.1
+  ],
+  "tier_moneyline": {
+   "validated": {
+    "roi": 0.03,
+    "p_max": 0.01,
+    "min_n": 500
+   },
+   "lean": {
+    "roi": 0,
+    "p_max": 0.05,
+    "min_n": 300
+   }
+  },
   "mode": {
    "min_positions": 200,
    "must_beat_flat_half": true,
@@ -61,6 +87,8 @@
    "market": "spread",
    "positions": 0,
    "units_staked": 0,
+   "bootstrap_shift_points": 0.425,
+   "bootstrap_basis": "the median of 7 per-season bootstrap measurements of the blend's own uncertainty (range 0.131 to 0.816 points)",
    "record": {
     "wins": 0,
     "losses": 0,
@@ -105,20 +133,20 @@
    },
    "counterfactual_lean": {
     "what_this_is": "NOT A RESULT AND NOT A RECOMMENDATION. The same held-out positions re-sized with the validation tier forced to LEAN, so the SIZING RULES can be compared against flat staking even where the real tier refuses to stake. It cannot change a MODE and no number in it describes a market EdgeDesk would bet.",
-    "positions": 57,
-    "units_staked": 20.25,
-    "engine_units": -1.636,
-    "engine_roi_on_staked": -0.0808,
-    "flat_half_units": -2.727,
-    "flat_one_units": -5.455,
-    "beats_flat_half": true,
-    "beats_flat_one": true,
-    "engine_max_drawdown_units": 5.114,
-    "flat_half_max_drawdown_units": 6.682,
-    "flat_one_max_drawdown_units": 13.364,
-    "brier_calibrated": 0.254,
-    "brier_conservative": 0.2527,
-    "reading": "the sizing rules beat both flat arms on these positions, mostly by staking less on the thin ones: engine -1.636u on 20.25u staked against flat 0.5u -2.727u and flat 1u -5.455u"
+    "positions": 13,
+    "units_staked": 4.5,
+    "engine_units": -0.205,
+    "engine_roi_on_staked": -0.0455,
+    "flat_half_units": 0.182,
+    "flat_one_units": 0.364,
+    "beats_flat_half": false,
+    "beats_flat_one": false,
+    "engine_max_drawdown_units": 2,
+    "flat_half_max_drawdown_units": 2.5,
+    "flat_one_max_drawdown_units": 5,
+    "brier_calibrated": 0.2505,
+    "brier_conservative": 0.2507,
+    "reading": "the sizing rules did not beat both flat arms on these positions (engine -0.205u, flat 0.5u 0.182u, flat 1u 0.364u)"
    },
    "per_season": [
     {
@@ -184,6 +212,7 @@
      "tune_seasons": 6,
      "n_tune": 2898,
      "n_test": 504,
+     "model_source": "elo_rating_line",
      "rating": {
       "points_per_rating_point": 0.0436,
       "home_field": 0.35
@@ -195,15 +224,24 @@
       "sigma": 15.76,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.816,
+      "shift_points_p05": 1.076,
+      "replicates": 120
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2020,
      "tune_seasons": 7,
      "n_tune": 3402,
      "n_test": 508,
+     "model_source": "elo_rating_line",
      "rating": {
       "points_per_rating_point": 0.044,
       "home_field": 0.04
@@ -215,15 +253,24 @@
       "sigma": 15.75,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.746,
+      "shift_points_p05": 0.991,
+      "replicates": 120
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2021,
      "tune_seasons": 8,
      "n_tune": 3910,
      "n_test": 732,
+     "model_source": "elo_rating_line",
      "rating": {
       "points_per_rating_point": 0.0439,
       "home_field": 0.2
@@ -235,15 +282,24 @@
       "sigma": 15.78,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.577,
+      "shift_points_p05": 0.679,
+      "replicates": 120
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2022,
      "tune_seasons": 9,
      "n_tune": 4642,
      "n_test": 734,
+     "model_source": "elo_rating_line",
      "rating": {
       "points_per_rating_point": 0.0438,
       "home_field": 0.54
@@ -255,15 +311,24 @@
       "sigma": 15.75,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.425,
+      "shift_points_p05": 0.581,
+      "replicates": 120
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2023,
      "tune_seasons": 10,
      "n_tune": 5376,
      "n_test": 791,
+     "model_source": "elo_rating_line",
      "rating": {
       "points_per_rating_point": 0.0431,
       "home_field": 1.25
@@ -275,15 +340,24 @@
       "sigma": 15.69,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.383,
+      "shift_points_p05": 0.497,
+      "replicates": 120
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2024,
      "tune_seasons": 11,
      "n_tune": 6167,
      "n_test": 795,
+     "model_source": "elo_rating_line",
      "rating": {
       "points_per_rating_point": 0.043,
       "home_field": 1.5
@@ -295,15 +369,24 @@
       "sigma": 15.64,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.131,
+      "shift_points_p05": 0.205,
+      "replicates": 120
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2025,
      "tune_seasons": 12,
      "n_tune": 6962,
      "n_test": 801,
+     "model_source": "elo_rating_line",
      "rating": {
       "points_per_rating_point": 0.0427,
       "home_field": 2.24
@@ -315,9 +398,17 @@
       "sigma": 15.62,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.296,
+      "shift_points_p05": 0.404,
+      "replicates": 120
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     }
    ],
    "refused_seasons": [],
@@ -326,6 +417,7 @@
     "tune_seasons": 12,
     "n_tune": 6962,
     "n_test": 801,
+    "model_source": "elo_rating_line",
     "rating": {
      "points_per_rating_point": 0.0427,
      "home_field": 2.24
@@ -337,9 +429,17 @@
      "sigma": 15.62,
      "dropped_regressors": 0
     },
+    "bootstrap": {
+     "shift_points_p10": 0.296,
+     "shift_points_p05": 0.404,
+     "replicates": 120
+    },
     "rating_note": null,
     "tier": "RESEARCH",
-    "required_edge_points": null
+    "required_edge_points": null,
+    "family_size": 7,
+    "holm_bar": null,
+    "thresholds_that_cleared_raw_p_only": []
    },
    "mode": "RESEARCH_ONLY",
    "mode_basis": "the engine sized no position in this market on the held-out window: every candidate failed a gate, so there is nothing to grade and the market is research only"
@@ -348,6 +448,8 @@
    "market": "total",
    "positions": 0,
    "units_staked": 0,
+   "bootstrap_shift_points": 0.301,
+   "bootstrap_basis": "the median of 7 per-season bootstrap measurements of the blend's own uncertainty (range 0.021 to 0.561 points)",
    "record": {
     "wins": 0,
     "losses": 0,
@@ -392,20 +494,20 @@
    },
    "counterfactual_lean": {
     "what_this_is": "NOT A RESULT AND NOT A RECOMMENDATION. The same held-out positions re-sized with the validation tier forced to LEAN, so the SIZING RULES can be compared against flat staking even where the real tier refuses to stake. It cannot change a MODE and no number in it describes a market EdgeDesk would bet.",
-    "positions": 19,
-    "units_staked": 5,
-    "engine_units": 0.25,
-    "engine_roi_on_staked": 0.05,
-    "flat_half_units": 1,
-    "flat_one_units": 2,
+    "positions": 0,
+    "units_staked": 0,
+    "engine_units": 0,
+    "engine_roi_on_staked": null,
+    "flat_half_units": 0,
+    "flat_one_units": 0,
     "beats_flat_half": false,
     "beats_flat_one": false,
-    "engine_max_drawdown_units": 0.591,
-    "flat_half_max_drawdown_units": 1,
-    "flat_one_max_drawdown_units": 2,
-    "brier_calibrated": 0.2458,
-    "brier_conservative": 0.2465,
-    "reading": "the sizing rules did not beat both flat arms on these positions (engine 0.25u, flat 0.5u 1u, flat 1u 2u)"
+    "engine_max_drawdown_units": 0,
+    "flat_half_max_drawdown_units": 0,
+    "flat_one_max_drawdown_units": 0,
+    "brier_calibrated": null,
+    "brier_conservative": null,
+    "reading": "nothing was sized even with the tier forced, so the rules cannot be compared here"
    },
    "per_season": [
     {
@@ -471,6 +573,7 @@
      "tune_seasons": 6,
      "n_tune": 2896,
      "n_test": 504,
+     "model_source": "tune_window_mean_total",
      "rating": {
       "points_per_rating_point": 0.0436,
       "home_field": 0.34
@@ -482,15 +585,24 @@
       "sigma": 16.9,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.301,
+      "shift_points_p05": 0.496,
+      "replicates": 119
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2020,
      "tune_seasons": 7,
      "n_tune": 3400,
      "n_test": 508,
+     "model_source": "tune_window_mean_total",
      "rating": {
       "points_per_rating_point": 0.044,
       "home_field": 0.03
@@ -502,15 +614,24 @@
       "sigma": 16.84,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.238,
+      "shift_points_p05": 0.359,
+      "replicates": 118
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2021,
      "tune_seasons": 8,
      "n_tune": 3908,
      "n_test": 732,
+     "model_source": "tune_window_mean_total",
      "rating": {
       "points_per_rating_point": 0.0439,
       "home_field": 0.19
@@ -522,15 +643,24 @@
       "sigma": 16.89,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.45,
+      "shift_points_p05": 0.633,
+      "replicates": 120
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2022,
      "tune_seasons": 9,
      "n_tune": 4640,
      "n_test": 734,
+     "model_source": "tune_window_mean_total",
      "rating": {
       "points_per_rating_point": 0.0438,
       "home_field": 0.53
@@ -542,15 +672,24 @@
       "sigma": 16.74,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.561,
+      "shift_points_p05": 0.747,
+      "replicates": 113
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2023,
      "tune_seasons": 10,
      "n_tune": 5374,
      "n_test": 791,
+     "model_source": "tune_window_mean_total",
      "rating": {
       "points_per_rating_point": 0.0431,
       "home_field": 1.25
@@ -562,15 +701,24 @@
       "sigma": 16.54,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.525,
+      "shift_points_p05": 0.697,
+      "replicates": 119
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2024,
      "tune_seasons": 11,
      "n_tune": 6165,
      "n_test": 795,
+     "model_source": "tune_window_mean_total",
      "rating": {
       "points_per_rating_point": 0.043,
       "home_field": 1.5
@@ -582,15 +730,24 @@
       "sigma": 16.45,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.021,
+      "shift_points_p05": 0.105,
+      "replicates": 119
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     },
     {
      "season": 2025,
      "tune_seasons": 12,
      "n_tune": 6960,
      "n_test": 801,
+     "model_source": "tune_window_mean_total",
      "rating": {
       "points_per_rating_point": 0.0427,
       "home_field": 2.24
@@ -602,9 +759,17 @@
       "sigma": 16.41,
       "dropped_regressors": 0
      },
+     "bootstrap": {
+      "shift_points_p10": 0.035,
+      "shift_points_p05": 0.08,
+      "replicates": 120
+     },
      "rating_note": null,
      "tier": "RESEARCH",
-     "required_edge_points": null
+     "required_edge_points": null,
+     "family_size": 7,
+     "holm_bar": null,
+     "thresholds_that_cleared_raw_p_only": []
     }
    ],
    "refused_seasons": [],
@@ -613,6 +778,7 @@
     "tune_seasons": 12,
     "n_tune": 6960,
     "n_test": 801,
+    "model_source": "tune_window_mean_total",
     "rating": {
      "points_per_rating_point": 0.0427,
      "home_field": 2.24
@@ -624,12 +790,46 @@
      "sigma": 16.41,
      "dropped_regressors": 0
     },
+    "bootstrap": {
+     "shift_points_p10": 0.035,
+     "shift_points_p05": 0.08,
+     "replicates": 120
+    },
     "rating_note": null,
     "tier": "RESEARCH",
-    "required_edge_points": null
+    "required_edge_points": null,
+    "family_size": 7,
+    "holm_bar": null,
+    "thresholds_that_cleared_raw_p_only": []
    },
    "mode": "RESEARCH_ONLY",
    "mode_basis": "the engine sized no position in this market on the held-out window: every candidate failed a gate, so there is nothing to grade and the market is research only"
+  },
+  "moneyline": {
+   "market": "moneyline",
+   "positions": 0,
+   "units_staked": 0,
+   "mode": "RESEARCH_ONLY",
+   "mode_basis": "this archive carries no moneyline prices at all, so there is nothing to grade and the market is research only",
+   "record": {
+    "wins": 0,
+    "losses": 0,
+    "pushes": 0,
+    "win_pct": null
+   },
+   "money": null,
+   "risk": null,
+   "calibration": null,
+   "shrinkage": null,
+   "clv": {
+    "positions": 0,
+    "mean_points": null,
+    "note": "not applicable to a moneyline"
+   },
+   "per_season": [],
+   "holdouts": [],
+   "refused_seasons": [],
+   "counterfactual_lean": null
   }
  },
  "note": "A market is BET only where the engine beat BOTH flat baselines on the held-out window with a positive ROI and a usable sample. Everything else is SHADOW or RESEARCH ONLY: it runs, it records, it does not recommend."

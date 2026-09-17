@@ -18,6 +18,7 @@ const path = require('path');
 const vm = require('vm');
 const ROOT = path.join(__dirname, '..', '..');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
+const IDX = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'), 'utf8');
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -184,6 +185,72 @@ vm.runInContext(src + '\nthis.DESK_SECTIONS=DESK_SECTIONS;this.structuredLabelHT
   lacks('and no dollar figure is printed at all', nb, '$12.50');
   has('the reader is told why and offered the editor', nb, 'EDAI.openBankroll()');
   has('the note explains what the setting adds', nb, 'EdgeDesk will state the exact dollar stake');
+
+  /* ── THE ACCEPTANCE LOOP ─────────────────────────────────────────────
+     Whether the reader took it is the one thing the desk cannot compute,
+     and without it the engine's record and the reader's record collapse
+     into the same number. */
+  const withId = sctx.stakeAnswerHTML({ stake_card: Object.assign({}, card, { recommendations: [Object.assign({}, rec, { recommendation_id: 'stake_abc123' })] }) });
+  has('the reader is asked whether they took it', withId, 'Did you take it?');
+  has('taking it at the recommended size is one click, with the size on the button', withId, 'Took it at 0.50u');
+  has('passing is the same', withId, '>Passed<');
+  has('and a different size is recordable, in units', withId, 'id="sru_stake_abc123"');
+  has('every button carries the recommendation id it answers', withId, 'EDAI.respondStake(&quot;stake_abc123&quot;,\'ACCEPTED\')');
+  has('a resize is recorded as MODIFIED, not as agreement', withId, "respondStake(&quot;stake_abc123&quot;,'MODIFIED')".replace(/'/g, "\'"));
+  has('the declined path is recorded as DECLINED', withId, "respondStake(&quot;stake_abc123&quot;,'DECLINED')".replace(/'/g, "\'"));
+  lacks('a recommendation with no id shows no buttons rather than a broken one', h, 'Did you take it?');
+  /* the write itself: an append-only INSERT, never an edit of the snapshot */
+  has('the response is inserted, not upserted', APP, "sbPost('stake_recommendation_responses'");
+  has('and the reader’s own units are what is recorded on a resize', APP, 'row.accepted_units = n;');
+  has('the reader is told the two records stay separate', APP, 'graded separately');
+  lacks('nothing in the acceptance path writes back to the recommendation', APP, "sbUpsert('stake_recommendations");
+
+  /* ── ONE FRESH PRICE AWAY ────────────────────────────────────────────
+     The difference between "EdgeDesk disagrees with this" and "EdgeDesk has
+     not looked at the price recently enough" is the whole reason a reader
+     would go back to the book, and the panel has to say which it is. */
+  const opa = sctx.stakeAnswerHTML({ stake_card: Object.assign({}, card, {
+    recommendations: [], total_recommended_units: 0, total_recommended_dollars: null,
+    one_price_away: { count: 1, note: '1 position(s) failed only because the captured price is outside its freshness limit.',
+      positions: [{ selection: 'North Texas', market: 'spread', line: -2.5, matchup: 'North Texas @ Texas State', sportsbook: 'DraftKings', american_odds: -105, expected_value: 0.0494, price_freshness: 'STALE', why: 'the captured price is STALE (360 minutes old)' }] },
+  }) });
+  has('the stale-only refusals are named as their own section', opa, '<div class="h">One fresh price away</div>');
+  has('with the selection, the price and the book', opa, '<b>North Texas -2.5</b> -105 at DraftKings');
+  has('and the exact reason, in minutes', opa, 'the captured price is STALE (360 minutes old)');
+  has('and the expected value it would have had, at zero units', opa, '+4.9% conservative EV, 0u');
+  lacks('a card with no stale-only refusal shows no such section', h, 'One fresh price away');
+  /* the trigger itself: a capture pass is spent on targets, not on staleness */
+  has('the refresh is targeted at prices that could still change an answer', IDX, 'export function refreshTargets');
+  has('and every refresh records what it bought', IDX, 'export function refreshOutcome');
+  has('a game that already started is never a refresh target', IDX, 'if (kick != null && kick <= now) continue;');
+  has('and a refresh that changed nothing says so', IDX, 'is still outside its freshness limit, so the refusals stand');
+
+  /* ── THE EXPOSURE BLIND SPOT ─────────────────────────────────────────
+     A cap computed only from what EdgeDesk recommended is a cap on the
+     part of the reader's book this system can see, which is a different
+     and much weaker promise than the one the number implies. */
+  const ea = APP.indexOf('  var EXTERNAL_FIELDS = [');
+  const eb = APP.indexOf('  window.EDAI = {');
+  chk('the declared-position editor is in app.html', ea > 0 && eb > ea, { ea, eb });
+  const esrc = APP.slice(ea, eb);
+  const ectx = { esc: ctx.esc, $id: () => null, console, push: () => {}, sbGet: async () => [], sbPost: async () => true, edToken: async () => 't', fetch: async () => ({ ok: true }), SB_URL: '', SB_KEY: '' };
+  vm.createContext(ectx);
+  vm.runInContext(esrc + '\nthis.externalFormHTML=externalFormHTML;this.EXTERNAL_FIELDS=EXTERNAL_FIELDS;', ectx);
+  const emptyForm = ectx.externalFormHTML([]);
+  has('the reader is told why declaring matters', emptyForm, 'Every exposure cap is computed from positions EdgeDesk recommended');
+  has('and what the caps see today when nothing is declared', emptyForm, 'the caps currently see only what EdgeDesk recommended'.replace('the c', 'The c'));
+  has('the size is asked for in units', emptyForm, 'id="ext_units"');
+  has('and the team the cap should count it against', emptyForm, 'id="ext_team"');
+  has('a declared position is never graded, and the form says so', emptyForm, 'never graded, never scored, and never part of EdgeDesk’s record');
+  has('and that it can only make EdgeDesk size less', emptyForm, 'only ever make EdgeDesk size LESS');
+  const listed = ectx.externalFormHTML([{ id: 7, selection: 'Army -2.5', units: 1.5, book: 'FanDuel', matchup: 'North Texas at Army' }]);
+  has('a declared position is listed with its size', listed, 'Army -2.5 — 1.50u at FanDuel');
+  has('and can be settled', listed, 'EDAI.settleExternal(7)');
+  has('or removed, because this is the reader’s own book', listed, 'EDAI.removeExternal(7)');
+  /* the wiring: the engine must read the union, not just its own trail */
+  has('the desk reads open exposure from the view that unions both kinds', IDX, 'stake_open_exposure?select=ticket_id,kind');
+  has('and a declared position is labelled as one EdgeDesk did not price', IDX, 'EdgeDesk did not price it and does not grade it');
+  lacks('the caps no longer read the recommendation trail directly for exposure', IDX, 'stake_recommendations?select=recommendation_id,sport,game_id,matchup,market,selection,side,handicap,recommended_units');
 }
 
 const S = {

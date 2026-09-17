@@ -386,7 +386,13 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk(F, 'the reader’s time zone resolves "today" (midnight Chicago is 05:00Z)', r.j.board.scope.timezone.zone === 'America/Chicago' && /T05:00:00/.test(r.j.board.scope.window.to), r.j.board.scope.window);
     chk(F, 'games six days out are outside "today" and none is forced', r.j.board.eligibility.counts.outside_window >= 10 && r.j.board.opportunities.length === 0, r.j.board.eligibility.counts);
     chk(F, 'coverage says which sports had games, which had none, which are out of season', r.j.board.coverage.some((c) => c.status === 'NO_ELIGIBLE_GAMES') && r.j.board.coverage.some((c) => c.status === 'NO_GAMES') && r.j.board.coverage.some((c) => c.status === 'OUT_OF_SEASON'), r.j.board.coverage.map((c) => c.sport + ':' + c.status));
-    chk(F, 'the deterministic answer leads with the finding', /^No eligible games for today/.test(r.j.deterministic_board_answer), r.j.deterministic_board_answer);
+    /* The board has two findings for an empty card and both are the finding:
+       "no eligible games" when the window is empty, "nothing qualifies" when
+       it is not and nothing cleared the rules. Which one appears depends on
+       the committed slate artifact, which the nightly job moves with the
+       calendar — so the assertion is that the answer LEADS WITH ONE OF THEM
+       and never with a bet, rather than which of the two today happens to be. */
+    chk(F, 'the deterministic answer leads with the finding', /^(No eligible games for today|Nothing qualifies for today)/.test(r.j.deterministic_board_answer), r.j.deterministic_board_answer);
     chk(F, 'no time zone from the browser falls back to the documented default', (await askB('best bets today', { timezone: null })).j.board.scope.timezone.source === 'fallback');
     /* the week: the whole stack — slate, decisions, pricing, records */
     r = await askB('What are the best bets this week?');
@@ -496,7 +502,7 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk(F, 'the qualified board pick is evaluated by the sizing engine', !!nt, C.watchlist.map((x) => x.selection));
     chk(F, 'its conservative probability is below its calibrated one, and staking uses the conservative one', nt.conservative_probability < nt.calibrated_probability && nt.conservative_method === 'SHRINK_TO_HALF_BY_RELIABILITY', [nt.calibrated_probability, nt.conservative_probability, nt.conservative_method]);
     chk(F, 'the no-vig market probability is the de-vigged reference, so the model edge is zero and the edge is in the price', nt.no_vig_market_probability === nt.calibrated_probability && nt.model_edge === 0, [nt.no_vig_market_probability, nt.model_edge]);
-    chk(F, 'the reliability score carries all eight recorded components', nt.reliability_components.length === 8 && nt.reliability_components.every((c) => c.basis && c.input != null));
+    chk(F, 'the reliability score carries every recorded component, each with its basis and its input', nt.reliability_components.length >= 8 && nt.reliability_components.some((c) => c.name === 'weather_certainty') && nt.reliability_components.every((c) => c.basis && c.input != null), nt.reliability_components.map((c) => c.name));
     chk(F, 'the Kelly working is shown and the position it earns rounds below the minimum, so it is 0u', nt.raw_kelly_fraction != null && nt.recommended_units === 0 && nt.status === 'WATCH' && nt.gates_failed.some((g) => g.code === 'BELOW_MINIMUM_UNIT'), { units: nt.recommended_units, status: nt.status, gates: nt.gates_failed.map((g) => g.code) });
     chk(F, 'a reference line with no executable price is research only, never sized', C.research_only.length >= 1 && C.research_only.every((x) => x.recommended_units === 0 && x.gates_failed.some((g) => g.code === 'NO_EXECUTABLE_QUOTE')), C.research_only.map((x) => x.selection));
     chk(F, 'nothing is forced: the card is a NO BET and says how many markets were evaluated', C.recommendations.length === 0 && /^NO BET\. EdgeDesk evaluated \d+ current market/.test(C.headline), C.headline);
@@ -580,10 +586,16 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     const pj = await probe.json();
     const sk = pj.staking_kernel ?? null;
     chk(F, 'the probe reports the staking kernel and whether it is enabled', !!sk && sk.loaded === true && sk.enabled === true, sk);
-    chk(F, 'with the caps, the tiers, the gates and the reliability weights an operator would check', sk && sk.policy_defaults && sk.tiers.length === 5 && sk.gates.length >= 14 && sk.reliability_components.length === 8, sk && { tiers: sk.tiers, gates: sk.gates && sk.gates.length });
+    chk(F, 'with the caps, the tiers, the gates and the reliability weights an operator would check', sk && sk.policy_defaults && sk.tiers.length === 5 && sk.gates.length >= 14 && sk.reliability_components.length >= 8, sk && { tiers: sk.tiers, gates: sk.gates && sk.gates.length });
     chk(F, 'and the tables it writes, so a missing migration is findable', sk && sk.tables && sk.tables.trail === 'public.stake_recommendations' && sk.tables.policy === 'public.bankroll_settings', sk && sk.tables);
     chk(F, 'the probe says a bankroll is never assumed', sk && /never assumed/.test(sk.note), sk && sk.note);
     chk(F, 'a deployment override cannot loosen the shipped policy', sk && Object.keys(sk.deployment_overrides).length === 0, sk && sk.deployment_overrides);
+    chk(F, 'the probe names the table the caps read, so a blind cap is findable', sk && sk.tables.exposure === 'public.stake_open_exposure' && sk.tables.declared === 'public.external_positions', sk && sk.tables);
+    chk(F, 'and says a declared position tightens the caps and is never graded', sk && /only ever makes the engine size less and is never graded/.test(sk.note), sk && sk.note);
+    chk(F, 'the extra-market door is reported, open or shut', sk && sk.extra_markets && Array.isArray(sk.extra_markets.open), sk && sk.extra_markets);
+    chk(F, 'and it is shut, because no archive carries a team total or a prop line', sk && sk.extra_markets.open.length === 0, sk && sk.extra_markets.open);
+    chk(F, 'weather is one of the reliability components an operator can check', sk && sk.reliability_components.some((c) => /^weather_certainty/.test(c)), sk && sk.reliability_components);
+    chk(F, 'and the weights still sum to one', sk && Math.abs(sk.reliability_components.reduce((t, c) => t + Number(String(c).split(' x')[1]), 0) - 1) < 1e-9, sk && sk.reliability_components);
   }
 
   /* ═══ 18. the MLB data faults a live packet showed (2026-09-16) ═════════════

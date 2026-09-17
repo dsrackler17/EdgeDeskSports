@@ -1,10 +1,13 @@
 {
  "schema": "edgedesk_scorecard_v1",
- "generated_at": "2026-09-16T17:00:53.624Z",
+ "generated_at": "2026-09-17T13:51:49.798Z",
  "inputs": {
   "rows": 0,
-  "rows_status": "DATABASE_ERROR",
-  "rows_detail": "HTTP 404",
+  "rows_status": "NO_DATABASE_ACCESS",
+  "rows_detail": "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set; pass --rows <file> for an export",
+  "stake_rows": 0,
+  "stake_rows_status": "NO_DATABASE_ACCESS",
+  "stake_rows_detail": "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set; pass --stakes <file> for an export",
   "nfl_archive": {
    "games": 7324,
    "with_opener": 32
@@ -18,6 +21,35 @@
   "groups": {},
   "sample_floor": 50,
   "note": "Closing-line value measures whether the number the desk quoted was better than the number the market closed at. It is the honest scorecard for a pricer. A win-loss record at this sample size is variance, and neither figure is a claim of profit."
+ },
+ "staking": {
+  "schema": "edgedesk_stake_scorecard_v1",
+  "generated_at": "2026-09-17T13:51:49.774Z",
+  "rows": 0,
+  "sized": 0,
+  "status": "NO_DATABASE_ACCESS",
+  "detail": "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set; pass --stakes <file> for an export",
+  "sample_floor": 50,
+  "grade_states": {},
+  "groups": {},
+  "passes": {},
+  "acceptance": {
+   "recommendations": 0,
+   "answered": 0,
+   "unanswered": 0,
+   "responses": {},
+   "taken": 0,
+   "declined": 0,
+   "expired": 0,
+   "acceptance_rate": null,
+   "graded_taken": 0,
+   "size_followed": 0,
+   "units_staked_by_reader": 0,
+   "profit_units_by_reader": 0,
+   "profit_units_if_sized_as_recommended": 0,
+   "note": "The reader’s record and the engine’s record are reported separately and never added together: a bet the reader declined is not a bet the engine lost, and a bet the reader resized is not the bet the engine sized."
+  },
+  "note": "Every figure here is measured against the SAME selections at the SAME prices, so the only question it can answer is whether the sizing rules beat flat staking on the card the engine chose. It cannot answer whether the card was worth betting; that is what the closing-line-value scorecard and the walk-forward validation are for. Below the sample floor no reading is claimed in either direction."
  },
  "postmortem": {
   "counts": {
@@ -57,6 +89,24 @@
     "required_gap_points": 2,
     "basis": "the number moved toward a disagreeing rating more often than not at 2+ points (0.5299, n 4369, p 0): a tendency, not a record"
    }
+  },
+  "extra_markets": {
+   "open": [],
+   "refused": [
+    {
+     "market": "americanfootball_nfl|team_totals",
+     "why": "the archive carries no home_team_total / away_team_total / home_team_total_over_odds on any of its 7324 games, so there is no history to hold out, no record to grade and no tier to award"
+    },
+    {
+     "market": "americanfootball_ncaaf|team_totals",
+     "why": "the archive carries no home_team_total / away_team_total on any of its 11502 games, so there is no history to hold out, no record to grade and no tier to award"
+    },
+    {
+     "market": "americanfootball_nfl|player_props",
+     "why": "the archive carries no player_props on any of its 7324 games, so there is no history to hold out, no record to grade and no tier to award"
+    }
+   ],
+   "generated_at": "2026-09-17T13:34:03.669Z"
   },
   "features": {
    "validated": 0,
