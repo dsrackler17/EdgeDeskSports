@@ -36,14 +36,16 @@ const T = require('./team_aliases.js');
   }
   const archiveClubs = Array.from(clubs, ([code, name]) => ({ code, name }));
 
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), 30000);
-  const r = await fetch(`${ESPN}/teams?limit=1000`, { signal: ctl.signal, headers: { accept: 'application/json', 'user-agent': UA } });
-  clearTimeout(t);
-  const j = JSON.parse(await r.text());
-  const raw = ((((j || {}).sports || [])[0] || {}).leagues || [])[0];
-  const espn = (((raw || {}).teams) || []).map((x) => x.team).filter(Boolean);
-  if (!espn.length) { console.log('FAIL | cbb resolve clubs | ESPN team list came back empty'); process.exit(1); }
+  const got = await require('./espn_clubs.js').fetchClubs({ log: (m) => console.log('  ' + m) });
+  const espn = got.clubs;
+  if (!got.ok) {
+    /* THIS ONE IS A GATE, so an inconclusive read must not read as a pass — but
+       it must not read as a broken alias table either. Those are different
+       things and conflating them is how a throttle gets recorded as a mapping
+       fault. Non-zero, with the reason named. */
+    console.log(`FAIL | cbb resolve clubs | ${got.why}`);
+    process.exit(1);
+  }
 
   const res = T.resolveClubs(archiveClubs, espn);
   console.log(`archive clubs: ${archiveClubs.length}`);

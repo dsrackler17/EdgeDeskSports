@@ -69,6 +69,10 @@ on:
         description: 'Import the NCAA season archive (2021-2026 player seasons). Off by default: completed seasons do not change nightly.'
         type: boolean
         required: false
+      deep_probe:
+        description: 'Re-run the exploratory source probes. Their questions are answered; they are kept for re-checking a source, not for every dispatch.'
+        type: boolean
+        required: false
         default: false
 
 permissions:
@@ -94,7 +98,7 @@ jobs:
           node-version: '22'
 
       - name: Ask the candidates whether a runner can see the games
-        if: ${{ github.event_name != 'schedule' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
         run: |
           ARGS=""
           if [ -n "${{ inputs.date }}" ]; then ARGS="--date ${{ inputs.date }}"; fi
@@ -107,7 +111,7 @@ jobs:
       # season" at all. A board that shows part of the card while looking
       # complete is worse than no board.
       - name: Is it all the games, or a selection?
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
         run: node tools/cbb/probe_coverage.js
 
       # THREE THINGS THE COVERAGE PROBE TURNED UP, each of which decides part
@@ -118,7 +122,7 @@ jobs:
       # day would delete a full card — so the rate at which the source lies is
       # measured here rather than assumed.
       - name: Can we get all the games, and is the source steady?
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
         run: node tools/cbb/probe_completeness.js
 
       # THE SCOREBOARD IS NOT ALL THE GAMES — forty sampled teams already found
@@ -131,7 +135,7 @@ jobs:
       # captured at all. Nothing in this repository references one, and a brief
       # must not promise a market that is never written.
       - name: Price the union walk, and check the market really exists
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
         env:
           CBB_SB_URL: ${{ vars.SB_URL }}
           CBB_SB_KEY: ${{ vars.SB_ANON_KEY }}
@@ -146,14 +150,14 @@ jobs:
       # candidates all sit behind this author's egress policy, so a runner asks
       # them. Dispatch only: it is a design question, not a daily job.
       - name: Which college stats source actually answers?
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
         run: node tools/cbb/probe_stats_sources.js
 
       # The first stats probe ruled almost everything out and its most useful
       # result was an embarrassment: I had never asked the host that already
       # serves this project 5,500 games a season whether it also serves stats.
       - name: Does the host that serves the games also serve the stats?
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
         run: node tools/cbb/probe_espn_stats.js
 
       # One result from the probe above is not trustworthy as written: three
@@ -162,7 +166,7 @@ jobs:
       # endpoint, and this project has already been burned once by reading a
       # throttle as a source defect. This asks again, slowly, with a control.
       - name: Was that 403 the endpoint or my own pacing?
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
         run: node tools/cbb/probe_boxscore.js
 
       # It was neither the path nor the pacing: it was the user agent. And the
@@ -170,7 +174,7 @@ jobs:
       # opened before nearly concluding there are no player stats. This one
       # prints the shape instead of testing another guess about it.
       - name: Print the shape instead of guessing at it
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
         run: node tools/cbb/probe_outline.js
 
       # ── IS THE SPORT IN THE MARKET FEED? ─────────────────────────────────
@@ -207,8 +211,13 @@ jobs:
       # game therefore needs a NAME match, which is exactly the kind of thing
       # that looks fine and is quietly wrong for thirty clubs. This measures the
       # rate and lists every miss; it builds no mapping and writes nothing.
+      # continue-on-error BECAUSE THIS IS A MEASUREMENT, NOT A GATE. It exists to
+      # report a match rate, and its failing killed the job before the alias
+      # verification below — which IS a gate — ever ran. A diagnostic that can
+      # block another diagnostic is a badly wired diagnostic.
       - name: Can the archive be joined to the games board?
         if: ${{ github.event_name == 'workflow_dispatch' }}
+        continue-on-error: true
         run: node tools/cbb/probe_team_join.js
 
       # The alias table was written by hand from 35 measured misses, which means
