@@ -2270,6 +2270,41 @@ function serverGrade(mr){
     implied:false,
     source:GRADE_SERVER};
 }
+/* ---- an ATS result on a game with NO captured close ---------------------
+   A game finished last night, the score landed, the Collective had captured
+   no closing line for it — the board said so, "no captured close", which is
+   the honest answer — and the same game went into the record as a LOSS
+   while the settlement run caught up.
+
+   Both statements cannot be true. Every ATS grade on this site is measured
+   against the Collective's own captured closing line, and a missing close
+   is null, never invented; the published rule (see #rules, and the note the
+   wall prints beside its "no close" count) is that such a game has no
+   against-the-spread result FOR ANYBODY and is counted by nobody. The page
+   has always applied that to its own grading — atsResult() returns null
+   without a close — and then accepted a win or a loss on the same game from
+   the settlement run without asking what number it could possibly have been
+   graded against.
+
+   So the rule is applied to every grader, here, once. A settled pick_result
+   on a game this page can see carries no captured close is set aside: the
+   margin error and the Brier score survive, because neither needs a close,
+   and the row is an ungraded-ATS row with its reason named (no_close) on
+   every surface. If the close is only missing from the wire, it is filled
+   first — fillCapturedCloses runs before any of this — so the grades that
+   are set aside here are the ones with no number behind them anywhere. */
+function noCapturedClose(g){
+  var r=finalResult(g);
+  return !!r&&r.closing_spread==null;
+}
+/* The same grade with its against-the-spread result removed, or null when
+   nothing gradeable is left in it. */
+function withoutATS(gr){
+  if(!gr)return null;
+  if(gr.margin_error==null&&gr.brier==null)return null;
+  return {pick_result:null,margin_error:gr.margin_error,brier:gr.brier,
+    implied:false,source:gr.source};
+}
 /* The one entry point. Server first, always: when the Collective has
    settled a game its grade is the record, and this page never second
    guesses its numbers.
@@ -2287,7 +2322,11 @@ function rowGrade(g,mr){
      from zero. It is set aside with the placeholder, and the row is graded
      here from the real final once the ESPN pass has found one. */
   if(placeholderSettled(g))return localGrade(g,mr);
-  return serverGrade(mr)||localGrade(g,mr);
+  var sg=serverGrade(mr);
+  /* and a settled ATS result on a game with no captured close is graded
+     against nothing too — see noCapturedClose above */
+  if(sg&&sg.pick_result!=null&&noCapturedClose(g))sg=withoutATS(sg);
+  return sg||localGrade(g,mr);
 }
 /* A grade this page computed says so, everywhere it is shown. The claim on
    the rest of the site is that the Collective grades every pick itself
@@ -2352,10 +2391,44 @@ function placeholderNote(n,whose){
     'Nothing graded against it is shown. '+(n===1?'That game is':'Those games are')+' graded here from the actual final score against the Collective&rsquo;s captured closing line, by the '+
     '<a href="#rules">published rule</a>, until the settlement is corrected.</p>';
 }
+/* And why a record was set aside for the other reason: a settled win or
+   loss on a game the Collective captured no closing line for. Said in the
+   same place, in the same words a reader has already met on the wall. */
+function closelessNote(n,whose){
+  if(!n)return '';
+  whose=whose||'this model&rsquo;s';
+  return '<p class="note" style="margin-top:8px"><b class="pgrade">no close</b> The Collective&rsquo;s settlement recorded an against-the-spread result on '+
+    n+' of '+whose+' game'+(n===1?'':'s')+' that carry no captured closing line &mdash; there is no number '+
+    (n===1?'that game':'those games')+' could have been graded against. '+
+    (n===1?'It is':'They are')+' shown here as ungraded against the spread, counted in nobody&rsquo;s win percentage, by the '+
+    '<a href="#rules">published rule</a>; the margin error and Brier score stand, because neither needs a closing line.</p>';
+}
+/* A server log row that carries a win, a loss or a push and no closing line
+   to have graded it against. The row's own close is on the wire, so this
+   needs no game beside it: the contradiction is inside the row. */
+function closelessLogRow(r){
+  if(!r)return false;
+  var res=r.pick_result;
+  if(res!=='win'&&res!=='loss'&&res!=='push')return false;
+  return r.closing_spread==null;
+}
+/* The same row with its ATS verdict removed and the reason named. The game
+   stays on the log — it was played, it has a final, it carries a margin
+   error — it simply has no against-the-spread result. */
+function logRowWithoutATS(r){
+  var out={},k;
+  for(k in r)if(Object.prototype.hasOwnProperty.call(r,k))out[k]=r[k];
+  out.pick_result=null;
+  out.ats_reason='no_close';
+  return out;
+}
 /* The server's record and log for one model, set aside together the moment
    either shows the settlement was a placeholder: a record is only as good
    as the finals under it. Counted two ways because the season sweep can
-   fail — from the games in hand, and from the server's own log rows. */
+   fail — from the games in hand, and from the server's own log rows. The
+   same two readings answer the other question this returns: how many of
+   those grades are against-the-spread results on games with no captured
+   close (see noCapturedClose). */
 function serverRecordFor(d,games,cs,ms){
   var phGames=(games||[]).filter(function(g){
     return placeholderSettled(g)&&(g.models||[]).some(function(mr){
@@ -2364,7 +2437,28 @@ function serverRecordFor(d,games,cs,ms){
   var srvRows=(d&&d.recent_graded)||[];
   var srvLog=srvRows.filter(function(r){return !placeholderLogRow(r);});
   var n=Math.max(phGames,srvRows.length-srvLog.length);
-  return {rec:n?null:((d&&d.record)||null),log:n?[]:srvLog,placeholders:n};
+  /* THE SAME RULE ON THE SERVER'S OWN NUMBERS. A settled win or loss on a
+     game with no captured close is set aside row by row (see
+     noCapturedClose), and a record that still counts it would disagree with
+     the very log printed under it — "3-1" over a table whose fourth row
+     reads "no captured close". So the record goes with the grades it was
+     built from, exactly as it does for a placeholder settlement, and the
+     page's own record — the published rule, on the same games — stands in
+     its place and is marked. */
+  var closeless=(games||[]).filter(function(g){
+    if(!noCapturedClose(g))return false;
+    return (g.models||[]).some(function(mr){
+      if(!mr||mr.creator_slug!==cs||mr.model_slug!==ms)return false;
+      var sg=serverGrade(mr);
+      return !!(sg&&sg.pick_result!=null);
+    });
+  }).length;
+  var rowsCloseless=srvLog.filter(closelessLogRow).length;
+  if(rowsCloseless)srvLog=srvLog.map(function(r){
+    return closelessLogRow(r)?logRowWithoutATS(r):r;});
+  var nc=Math.max(closeless,rowsCloseless);
+  return {rec:(n||nc)?null:((d&&d.record)||null),log:n?[]:srvLog,
+    placeholders:n,closeless:nc};
 }
 function gradeNote(n){
   if(!n)return '';
@@ -2479,11 +2573,16 @@ function atsReason(g,mr){
   if(mr.data_origin!=null&&mr.data_origin!=='live')return 'excluded_origin';
   var r=finalResult(g);
   if(!r)return 'not_final';
+  /* NO CLOSE FIRST, ahead of any grade. A settled win or loss on a game
+     with no captured close is set aside by rowGrade (see noCapturedClose),
+     so the reason this row carries no ATS result is the missing close —
+     reading the settlement run's answer first would report "nothing to
+     explain" about the one row that most needs explaining. */
+  if(r.closing_spread==null)return 'no_close';
   /* A settled grade is the record; when the settlement run scored this row
      against the spread there is nothing to explain. */
   var sg=placeholderSettled(g)?null:serverGrade(mr);
   if(sg&&sg.pick_result!=null)return null;
-  if(r.closing_spread==null)return 'no_close';
   var side=pickSideNorm(mr)||impliedSide(mr,r.closing_spread);
   if(!side)return 'no_side';
   /* a close and a side is an ATS result by the published rule; if the run
@@ -3310,6 +3409,7 @@ async function localRecords(sport,season){
     map[m.creator_slug+'/'+m.model_slug]=modelRecord(settled,m.creator_slug,m.model_slug);
   });
   markPlaceholderSettled(map,all);
+  markCloselessGraded(map,all);
   LOCALREC[key]=map;
   return map;
 }
@@ -3328,6 +3428,26 @@ function markPlaceholderSettled(map,games){
   try{Object.defineProperty(map,'placeholderSettled',{value:tainted,enumerable:false});}catch(e){}
   return map;
 }
+/* Which models a set of games shows the settlement run graded AGAINST THE
+   SPREAD on a game with no captured closing line (see noCapturedClose),
+   keyed the same way and attached the same way, so shownRecord sets the
+   server's record aside for exactly them. The row itself is already an
+   ungraded-ATS row everywhere on the page; this is the record above it,
+   which would otherwise still be counting the win or the loss the row no
+   longer shows. */
+function markCloselessGraded(map,games){
+  var tainted={};
+  (games||[]).forEach(function(g){
+    if(!noCapturedClose(g))return;
+    (g.models||[]).forEach(function(mr){
+      if(!mr||!mr.creator_slug||!mr.model_slug)return;
+      var sg=serverGrade(mr);
+      if(sg&&sg.pick_result!=null)tainted[mr.creator_slug+'/'+mr.model_slug]=1;
+    });
+  });
+  try{Object.defineProperty(map,'closelessGraded',{value:tainted,enumerable:false});}catch(e){}
+  return map;
+}
 /* A record exists when ANY of its three samples does. Gating on the ATS
    count alone hid the margin and Brier numbers of a model that posts
    spreads and probabilities but no pick side — and hid them on the model
@@ -3344,7 +3464,11 @@ function shownRecord(serverRec,localMap,cs,ms){
      isPlaceholderResult); the page's own, graded from the real final,
      stands in its place and is marked. Nothing built on the placeholder is
      shown, not even as a fallback. */
-  var tainted=!!(localMap&&localMap.placeholderSettled&&localMap.placeholderSettled[cs+'/'+ms]);
+  /* and when it counted an against-the-spread result on a game with no
+     captured close, which is the same fault in the other direction: a grade
+     with no number behind it. Both are set aside the same way. */
+  var tainted=!!(localMap&&localMap.placeholderSettled&&localMap.placeholderSettled[cs+'/'+ms])
+    ||!!(localMap&&localMap.closelessGraded&&localMap.closelessGraded[cs+'/'+ms]);
   if(hasRecord(serverRec)&&!tainted)return {rec:serverRec,live:false};
   if(hasRecord(lr))return {rec:lr,live:true};
   if(tainted)return {rec:null,live:false};
@@ -3924,12 +4048,24 @@ async function renderWall(view){
         var dot=(grW&&grW.pick_result)
           ?({win:'var(--pos)',loss:'var(--neg)',push:'var(--warn)'}[grW.pick_result]||'var(--dim)')
           :(memDot[wr.membership]||'var(--dim)');
+        /* A FINISHED game whose row has no against-the-spread result says
+           which of the four reasons it is, here too. The dot on a played
+           game used to fall back to the member's status \u2014 "ACTIVE
+           CONTRIBUTOR" under the cursor of a reader asking why the game
+           they just watched has no grade \u2014 and the most common answer, by
+           some distance, is that the Collective captured no closing line
+           for it. The log table names it; so does the wall. */
+        var whyW=((!grW||!grW.pick_result)&&finalResult(g))?atsReason(g,mr):null;
         var dotT=(grW&&grW.pick_result)
           ?(grW.pick_result.toUpperCase()+' \u2014 graded against the Collective\u2019s captured close'+
             (grW.source===GRADE_PAGE?', on this page from the final score while settlement catches up':'')+
             (grW.margin_error!=null?'; margin error '+fmtNum(grW.margin_error):'')+
             (grW.brier!=null?'; brier '+fmtNum(grW.brier,3):''))
-          :(mr.late?'late, never graded':(wr.membership||'member'));
+          :(mr.late?'late, never graded'
+            :(whyW&&ATS_REASON[whyW]
+              ?('no against-the-spread result \u2014 '+ATS_REASON[whyW]+
+                '. It is not graded either way, and it is not a loss.')
+              :(wr.membership||'member')));
         var lead=pickLeadText(mr,g.kickoff_at);
         /* WHO the model picked, stated for the team it picked, at the line
            it posted against. This is what a reader opens the board for and
@@ -4152,9 +4288,11 @@ async function renderWall(view){
       modelsInGames(wg,null).forEach(function(mm){
         dirLocal[mm.creator_slug+'/'+mm.model_slug]=modelRecord(wg,mm.creator_slug,mm.model_slug);
       });
-      /* the week in hand can already show a placeholder settlement, and a
-         server record built on one must not win the first paint either */
+      /* the week in hand can already show a placeholder settlement, or an
+         ATS grade on a game with no captured close, and a server record
+         built on either must not win the first paint either */
       markPlaceholderSettled(dirLocal,wg);
+      markCloselessGraded(dirLocal,wg);
     })();
     var body=dirBody();
     if(!paint(view,tok,hd+
@@ -4536,7 +4674,7 @@ async function renderModel(view,cs,ms){
       :'<div class="emptybox"><b style="color:var(--text)">Building sample.</b><br>'+
         (lastSub?'This model has submitted projections but no eligible game has been graded yet. ':'This model has not posted a projection yet. ')+
         'Every pick is graded on the actual final score against the Collective&#39;s captured closing line the moment its game is final.</div>';
-    stats='<h2>How it has performed</h2>'+stats+placeholderNote(placeholders);
+    stats='<h2>How it has performed</h2>'+stats+placeholderNote(placeholders)+closelessNote(srv.closeless);
     /* Model against market, on the games this model has actually posted. A
        difference is only shown where the model published a spread: a pick
        side on its own is not comparable to a market number. */
@@ -4833,7 +4971,9 @@ async function renderBoard(view){
         if(gr){
           grade=(gr.pick_result
               ?'<span class="mono grade-'+esc(gr.pick_result)+'">'+esc(gr.pick_result)+'</span>'
-              :'<span class="note mono" title="no against-the-spread result: this row named no pick side and its own line sits exactly on the close, or the game carries no captured closing line to grade it against">no ATS</span>')+
+              :'<span class="note mono" title="'+esc('no against-the-spread result — '+
+                 (ATS_REASON[atsReason(g,mr)]||'this row named no pick side and its own line sits exactly on the close, or the game carries no captured closing line to grade it against')+
+                 '. It is not graded either way, and it is not a loss.')+'">no ATS</span>')+
             gradeMark(gr)+impliedMark(gr)+
             ' <span class="note mono"'+
               (gr.source===GRADE_PAGE&&gr.margin_error!=null&&(mr.proj_home_score==null||mr.proj_away_score==null)
@@ -5490,13 +5630,15 @@ async function renderPerformance(view){
           return seasonGames(dd.model.sport,sn).catch(function(){return [];});
         }));
         var liveSeen=[];
-        var placeholdersSeen=0;
+        var placeholdersSeen=0,closelessSeen=0;
         var cols=ds.map(function(d,di){
           var lg=locals[di]||[];
           /* the server's record and log, set aside together when the page
-             can see they were built on a 0-0 placeholder settlement */
+             can see they were built on a 0-0 placeholder settlement — or on
+             an against-the-spread result the game carries no close for */
           var srvP=serverRecordFor(d,lg,d.creator.slug,d.model.model_slug);
           placeholdersSeen+=srvP.placeholders;
+          closelessSeen+=srvP.closeless;
           var rec=srvP.rec,recLive=false;
           if(!hasRecord(rec)&&lg.length){
             var lr=modelRecord(lg,d.creator.slug,d.model.model_slug);
@@ -5576,6 +5718,7 @@ async function renderPerformance(view){
         }
         out.innerHTML='<div class="duo">'+cols+'</div>'+head2+
           placeholderNote(placeholdersSeen,'these models&rsquo;')+
+          closelessNote(closelessSeen,'these models&rsquo;')+
           (liveCols?'<p class="note" style="margin-top:10px"><b class="pgrade">live</b> One of these records was graded on this page from the final scores while the Collective&rsquo;s settlement run catches up, and the other was not. Same rule and the same closing lines either way, but a settled record and a page-graded one are not the same sample, so read a close comparison with that in mind.</p>':'')+
           '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Margin MAE is the average error of the projected margin against the final score, lower is better. Brier scores the win probability, lower is better. Minimums for the ranked boards still apply on <a href="#rankings">Rankings</a>.</p>';
       }catch(e){out.innerHTML='<div class="errbox">'+esc(e.message||String(e))+'</div>';}
@@ -5636,7 +5779,7 @@ async function renderRules(view){
       '</tbody></table></div>'+
       '<p class="note" style="margin-top:8px">Posting a slate is a different question \u2014 see the <a href="#format">slate format</a>.</p>'+
       '<h2>When a game is graded</h2>'+
-      '<p class="lede" style="max-width:760px">The moment it is final. The Collective settles games on its own schedule, and while that run is behind, this page grades the finished games itself \u2014 the same rule, the same captured closing line, and every exclusion it can see \u2014 so a record never sits empty next to a printed final score. Anything graded that way is marked <span class="pgrade">live</span> wherever it appears, and a settled grade always replaces it rather than being averaged with it. The one place the two can differ: margin accuracy is graded from a creator\u2019s projected scores when they supplied them, and the games feed does not carry those, so a <span class="pgrade">live</span> margin error is computed from that model\u2019s own spread instead. Win, loss and push never differ \u2014 they are the final score against the closing line, and there is only one of each. A finished game the Collective captured no closing line for has no against-the-spread result for anybody, and is counted by nobody rather than being graded against a number a creator supplied themselves.</p>'+
+      '<p class="lede" style="max-width:760px">The moment it is final. The Collective settles games on its own schedule, and while that run is behind, this page grades the finished games itself \u2014 the same rule, the same captured closing line, and every exclusion it can see \u2014 so a record never sits empty next to a printed final score. Anything graded that way is marked <span class="pgrade">live</span> wherever it appears, and a settled grade always replaces it rather than being averaged with it. The one place the two can differ: margin accuracy is graded from a creator\u2019s projected scores when they supplied them, and the games feed does not carry those, so a <span class="pgrade">live</span> margin error is computed from that model\u2019s own spread instead. Win, loss and push never differ \u2014 they are the final score against the closing line, and there is only one of each. A finished game the Collective captured no closing line for has no against-the-spread result for anybody, and is counted by nobody rather than being graded against a number a creator supplied themselves. That holds whoever did the grading: where the settlement run has published a win or a loss on a game with no captured close, it is set aside here and the game is shown as ungraded against the spread, in nobody’s record and nobody’s win percentage, until a closing line exists to grade it against. The margin error and the Brier score stand either way — neither needs a closing line.</p>'+
       '<h2 id="active">Staying in the Collective</h2>'+
       '<p class="lede" style="max-width:760px">The record is a shared asset. A model that goes quiet mid-season stops '+
       'building its own sample, thins the consensus every other member is measured against, and leaves gaps in the '+

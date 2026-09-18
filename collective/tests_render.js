@@ -1918,6 +1918,144 @@ var S=sandbox;
   S.fetch=realFetchPH;
   S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.location.hash='';
 
+  /* ---- A SETTLED WIN OR LOSS ON A GAME WITH NO CAPTURED CLOSE -----------
+     A Thursday night game finished, the score landed, and the Collective
+     had captured no closing line for it. The board said so — "no captured
+     close", which is the honest answer and the reason the wall counts them
+     — and the same game moved every model's record by a loss, because the
+     settlement run had published an against-the-spread result on it and
+     this page took the server's grade without asking what number it could
+     have been graded against.
+
+     There is none. The published rule is that a finished game with no
+     captured close has no against-the-spread result FOR ANYBODY and is
+     counted by nobody, which the page already applied to its own grading
+     and not to anyone else's. Here the wire carries exactly that state:
+     game 3 final, close null, a server grade of `loss` on every row, and a
+     server record that counts it. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.WEEK_BOARDS={};S.SETTLED_REC={};
+  function noCloseGraded(){
+    return GAMES.map(function(g){
+      var c=JSON.parse(JSON.stringify(g));
+      if(c.game_id===3){
+        c.result.closing_spread=null;c.result.closing_total=null;
+        c.models.forEach(function(mr){
+          mr.grade={pick_result:'loss',margin_error:1,brier:null};
+        });
+      }
+      return c;
+    });
+  }
+  /* what the settlement run says: three graded games, one of them the game
+     it had no close for */
+  var NC_REC={graded:3,wins:1,losses:2,pushes:0,win_pct:1/3,margin_mae:9.2,margin_n:3,brier:null,brier_n:0};
+  var NC_LOG=[
+    {label:'NCSTATE @ VIRGINIA',week:1,kickoff_at:'2026-08-29T23:00:00Z',pick_side:'VIRGINIA',
+     closing_spread:null,final:'24 - 21',pick_result:'loss',margin_error:1,brier:null,movement_n:1}];
+  var NC_SERVERLOG=false;
+  var realFetchNCG=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(/settled\/[A-Z]+_\d{4}\.json/.test(q))
+      return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    if(q.indexOf('site.api.espn.com')>=0)return reply({events:[]});
+    /* the route that would fill the missing close answers honestly: there
+       is no captured price on this game, which is the whole premise */
+    if(q.indexOf('/closing/')>=0)return reply({available:false,reason:'no_pregame_capture'});
+    if(q.indexOf('/v1/wall')>=0)
+      return reply({rows:WALL.map(function(r){var c=JSON.parse(JSON.stringify(r));c.record=NC_REC;return c;})});
+    if(q.indexOf('/v1/models/')>=0){
+      var parts=q.split('/v1/models/')[1].split('?')[0].split('/');
+      var wr=WALL.filter(function(x){return x.creator_slug===parts[0];})[0]||WALL[0];
+      return reply({creator:{slug:wr.creator_slug,display_name:wr.creator_name,founding:!!wr.founding},
+        model:{model_slug:wr.model_slug,model_name:wr.model_name,sport:'CFB',description:null},
+        record:NC_REC,recent_graded:NC_SERVERLOG?NC_LOG:[],coverage:[],coverage_pct:100});
+    }
+    if(q.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(q);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(q))return reply({games:NFLGAMES,week:1,entitled:true});
+      return reply({games:noCloseGraded(),week:1,entitled:true});
+    }
+    return realFetchNCG(u);
+  };
+  S.location.hash='#/model/mustbemoose/edgedesk-cfb-p4';
+  var vNC=node();
+  await S.renderModel(vNC,'mustbemoose','edgedesk-cfb-p4');
+  var nc=vNC.innerHTML;
+  /* TCU -7.5, home, TCU by 34: WIN. USC -38.5, home, USC by 31: LOSS.
+     Virginia: no close, so no result — and no loss. */
+  chk('the game with no captured close is not counted as a loss',
+    /Record \(ATS\)<\/div><div class="v"><span class="mono">1-1-0<\/span> <span class="pgrade"/.test(nc)
+      && !/1-2-0/.test(nc),
+    {rec:(/Record \(ATS\)[\s\S]{0,240}/.exec(nc)||[])[0]});
+  chk('its row says which of the four reasons it is, rather than a verdict',
+    (nc.match(/data-res="(win|loss|push)"/g)||[]).length===2
+      && (nc.match(/no captured close/g)||[]).length>=1,
+    {rows:(nc.match(/data-res="[a-z]*"/g)||[])});
+  chk('it is counted as ungraded ATS, on the same page, from the same games',
+    /Ungraded ATS<\/div><div class="v">1/.test(nc),
+    {ung:(/Ungraded ATS[\s\S]{0,140}/.exec(nc)||[])[0]});
+  chk('and the page says why the Collective\'s own record is not the one shown',
+    /no close<\/b> The Collective/.test(nc)&&/1 of this model/.test(nc),
+    {note:(/no close<\/b>[\s\S]{0,200}/.exec(nc)||[])[0]});
+  chk('the margin error the run published still stands: it needs no close',
+    /Margin MAE<\/div><div class="v">/.test(nc)&&/Margin graded<\/div><div class="v">3/.test(nc),
+    {mae:(/Margin graded[\s\S]{0,80}/.exec(nc)||[])[0]});
+
+  /* the same state arriving as the SERVER'S OWN LOG ROWS, which carry their
+     closing line beside the verdict: the contradiction is inside one row */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  NC_SERVERLOG=true;
+  var vNCL=node();
+  await S.renderModel(vNCL,'mustbemoose','edgedesk-cfb-p4');
+  var ncl=vNCL.innerHTML;
+  chk('a server log row with a verdict and no close is shown ungraded, not lost',
+    /24 - 21/.test(ncl)&&(ncl.match(/data-res="(win|loss|push)"/g)||[]).length===0
+      &&/no captured close/.test(ncl),
+    {rows:(ncl.match(/data-res="[a-z]*"/g)||[])});
+  chk('and the tally over those rows counts no loss either',
+    !/1-2-0/.test(ncl)&&/Ungraded ATS<\/div><div class="v">1/.test(ncl),
+    {ats:(/Against the spread[\s\S]{0,220}/.exec(ncl)||[])[0]});
+  NC_SERVERLOG=false;
+
+  /* the wall, whose rows carry the same server record */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  S.location.hash='';
+  var vWNC=node();
+  await S.renderWall(vWNC);
+  await new Promise(function(r){setTimeout(r,50);});   /* let the season sweep land */
+  var wallNC=vWNC.innerHTML;
+  chk('the wall does not print the server record that counts the ungradeable game',
+    !/1-2-0/.test(wallNC),
+    {sample:(wallNC.match(/[^>]{0,40}1-2-0[^<]{0,40}/g)||[]).slice(0,3)});
+  chk('and it still says, out loud, that the game carries no close',
+    /id="bdNoClose"/.test(wallNC)&&/<b>1<\/b> no close/.test(wallNC)&&/<b>3<\/b> settled/.test(wallNC),
+    {stats:(/bd-stats[\s\S]{0,700}/.exec(wallNC)||[])[0]});
+  /* the dot beside the row used to fall back to the member's status, so a
+     reader asking why a game they had just watched carried no grade got
+     "ACTIVE CONTRIBUTOR" under the cursor */
+  chk('the dot on the ungraded row says which of the four reasons it is',
+    /no against-the-spread result — the Collective captured no closing line for this game/.test(wallNC)
+      &&/it is not a loss/.test(wallNC),
+    {dots:(wallNC.match(/gb-dot[^>]{0,120}/g)||[]).slice(0,4)});
+
+  /* the board, the receipt layer, on the same slate */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  S.location.hash='#board';
+  var vBNC=node();
+  await S.renderBoard(vBNC);
+  var bnc=vBNC.innerHTML;
+  chk('the board prints no verdict on it either, and names the reason',
+    /no ATS/.test(bnc)
+      &&/no against-the-spread result — the Collective captured no closing line for this game/.test(bnc),
+    {cell:(/no ATS[\s\S]{0,80}/.exec(bnc)||[])[0]});
+  chk('and the games that DO carry a close are still graded on the board',
+    (bnc.match(/class="mono grade-(win|loss|push)"/g)||[]).length>=6,
+    {n:(bnc.match(/class="mono grade-/g)||[]).length});
+  S.fetch=realFetchNCG;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};S.location.hash='';
+
   /* ---- THE COMMITTED SETTLEMENT RECORD -----------------------------------
      The hourly settle job now writes collective/settled/<SPORT>_<season>.json
      and commits it, and the page reads that file from its own origin
