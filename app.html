@@ -14940,7 +14940,44 @@ async function cbbBuildBrief(gameId){
       +'confidence than a game seen by both.');
   }
 
-  return {ok:true,game:g,season:season,away:aTS,home:hTS,h2h:h2h,away_form:aF,home_form:hF,missing:missing};
+  /* ── THE STATS HALF ──────────────────────────────────────────────────────
+     Asked for separately and allowed to fail separately. The records, runs and
+     form above are folded out of the game log and do not depend on a box score
+     existing; if the stats archive is absent or thin, this brief still says
+     everything it said before. That is why none of these go in the Promise.all
+     with the pieces the brief cannot do without. */
+  var stats=await Promise.all([
+    svc.box?svc.box(gameId):Promise.resolve({ok:false}),
+    (svc.teamStats&&g.away.team_id)?svc.teamStats(g.away.team_id,season):Promise.resolve({ok:false}),
+    (svc.teamStats&&g.home.team_id)?svc.teamStats(g.home.team_id,season):Promise.resolve({ok:false}),
+    (svc.leaders&&g.away.team_id)?svc.leaders(g.away.team_id,season):Promise.resolve({ok:false}),
+    (svc.leaders&&g.home.team_id)?svc.leaders(g.home.team_id,season):Promise.resolve({ok:false})
+  ]);
+  var box=stats[0]&&stats[0].ok?stats[0]:null;
+  var aST=stats[1]&&stats[1].ok?stats[1].team:null;
+  var hST=stats[2]&&stats[2].ok?stats[2].team:null;
+  var aLd=stats[3]&&stats[3].ok?stats[3]:null;
+  var hLd=stats[4]&&stats[4].ok?stats[4]:null;
+
+  /* A COMPLETED GAME WITH NO BOX SCORE IS A GAP IN THE FEED. Saying nothing
+     would let a reader assume the game simply had no notable performances. */
+  if(g.completed&&!g.abandoned&&(!box||!box.has_box)){
+    missing.push('No box score is available for this game. The source carries a line score for '
+      +'every game but per-player batting and pitching for only some of them, so there are no '
+      +'individual performances to show here. That is a gap in the feed, not a quiet game.');
+  }
+  /* AND A CLUB'S HITTING LINE DRAWN FROM PART OF ITS SEASON HAS TO SAY SO. */
+  [[aST,g.away.name],[hST,g.home.name]].forEach(function(pair){
+    if(pair[0]&&pair[0].coverage_note)missing.push(pair[1]+': '+pair[0].coverage_note);
+  });
+  if((g.away.team_id&&!aST)||(g.home.team_id&&!hST)){
+    missing.push('At least one of these clubs has no box-score lines in the '+season+' archive at '
+      +'all, so no batting average or team ERA is shown for it. Its record above is unaffected — '
+      +'that comes from the game log.');
+  }
+
+  return {ok:true,game:g,season:season,away:aTS,home:hTS,h2h:h2h,away_form:aF,home_form:hF,
+    box:box,away_stats:aST,home_stats:hST,away_leaders:aLd,home_leaders:hLd,missing:missing};
 }
 
 function cbbBriefHTML(b){
@@ -15008,6 +15045,135 @@ function cbbBriefHTML(b){
                          b.home&&b.home.pythag_win_pct!=null?(b.home.pythag_win_pct*100).toFixed(0)+'%':'—',
            'what the runs imply, never a price')
       +'</tbody></table></div></div>';
+  }
+
+  /* ── the clubs' batting and pitching, out of the box scores ─────────────
+     A SEPARATE TABLE FROM THE ONE ABOVE, deliberately. That one folds every
+     game a club played; this one folds only the games whose box score carried
+     players, and those are not the same set. Putting them in one table would
+     invite a reader to compare a 55-game record against a 30-game batting
+     average as though both covered the season. */
+  if(b.away_stats||b.home_stats){
+    var sv=function(st,path,dp){
+      if(!st)return '—';
+      var v=path(st);
+      if(v==null)return '—';
+      return dp===undefined?String(v):Number(v).toFixed(dp);
+    };
+    var srow=function(label,fn,dp,note){
+      return '<tr><td>'+cbbEsc(label)+'</td><td>'+cbbEsc(sv(b.away_stats,fn,dp))+'</td>'
+        +'<td>'+cbbEsc(sv(b.home_stats,fn,dp))+'</td>'
+        +'<td class="mlbh-cov-m">'+cbbEsc(note||'')+'</td></tr>';
+    };
+    h+='<div class="mlbb-sec"><b>Batting and pitching, from the box scores</b>'
+      +'<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead><tr><th></th>'
+      +'<th>'+cbbEsc(g.away.name)+'</th><th>'+cbbEsc(g.home.name)+'</th><th></th></tr></thead><tbody>'
+      +'<tr><td>Batting average</td>'
+        +'<td>'+cbbEsc((b.away_stats&&b.away_stats.batting.avg_text)||'—')+'</td>'
+        +'<td>'+cbbEsc((b.home_stats&&b.home_stats.batting.avg_text)||'—')+'</td>'
+        +'<td class="mlbh-cov-m">hits over at-bats</td></tr>'
+      +srow('Home runs',function(x){return x.batting.hr;})
+      +srow('Walks',function(x){return x.batting.bb;})
+      +srow('Strikeouts',function(x){return x.batting.so;},undefined,'at the plate')
+      +srow('Stolen bases',function(x){return x.batting.sb;})
+      +srow('Team ERA',function(x){return x.pitching.era;},2,'lower is better')
+      +srow('Team WHIP',function(x){return x.pitching.whip;},2,'walks and hits per inning')
+      +'<tr><td>Innings pitched</td>'
+        +'<td>'+cbbEsc((b.away_stats&&b.away_stats.pitching.ip)||'—')+'</td>'
+        +'<td>'+cbbEsc((b.home_stats&&b.home_stats.pitching.ip)||'—')+'</td>'
+        +'<td class="mlbh-cov-m">thirds, not decimals</td></tr>'
+      +srow('Pitchers used',function(x){return x.pitching.pitchers_used;})
+      +'<tr><td>Games these cover</td>'
+        +'<td>'+cbbEsc(b.away_stats?b.away_stats.games_with_lines+' of '+b.away_stats.games_played:'—')+'</td>'
+        +'<td>'+cbbEsc(b.home_stats?b.home_stats.games_with_lines+' of '+b.home_stats.games_played:'—')+'</td>'
+        +'<td class="mlbh-cov-m">not every game has a box score</td></tr>'
+      +'</tbody></table></div>'
+      /* OBP AND SLG ARE THE SOURCE'S OWN AND THE CARD SAYS SO. Deriving them
+         would need hit-by-pitch and sacrifice flies, which this feed does not
+         carry, so the alternative to saying this is inventing them. */
+      +'<div class="mlbh-cov-m" style="margin-top:6px">On-base and slugging are not shown for a '
+      +'club: they need hit-by-pitch and sacrifice flies, which this feed does not carry, and '
+      +'(hits + walks) over (at-bats + walks) is a different statistic. Where a player has an '
+      +'on-base figure below, it is the source’s own, not EdgeDesk’s arithmetic.</div></div>';
+  }
+
+  /* ── who has actually hit and pitched, for each club ────────────────────
+     Both clubs' leaders, with the qualifying threshold printed. A brief that
+     showed a 2-for-2 hitter at 1.000 would be accurate and worthless. */
+  var ldBlock=function(name,ld){
+    if(!ld)return '';
+    var any=(ld.avg.length||ld.hr.length||ld.era.length||ld.so.length);
+    if(!any){
+      return '<div style="margin-top:6px"><b>'+cbbEsc(name)+'</b> <span class="mlbh-cov-m">'
+        +'no player clears the qualifying threshold in the archive for this club, so no leader '
+        +'is shown. With a shorter sample the leader would be whoever had the luckiest few '
+        +'at-bats.</span></div>';
+    }
+    var list=function(label,arr,fmt){
+      if(!arr||!arr.length)return '';
+      return '<li>'+cbbEsc(label)+': '+arr.slice(0,3).map(function(p){
+        return cbbEsc(p.name)+(p.position?' ('+cbbEsc(p.position)+')':'')+' '+fmt(p);
+      }).join(', ')+'</li>';
+    };
+    return '<div style="margin-top:6px"><b>'+cbbEsc(name)+'</b><ul class="mlbh-list">'
+      +list('Average',ld.avg,function(p){return cbbEsc(p.batting.avg_text)+' on '+p.batting.ab+' AB';})
+      +list('Home runs',ld.hr,function(p){return cbbEsc(p.batting.hr);})
+      +list('ERA',ld.era,function(p){return cbbEsc(p.pitching.era==null?'—':p.pitching.era.toFixed(2))
+        +' over '+cbbEsc(p.pitching.ip)+' IP';})
+      +list('Strikeouts',ld.so,function(p){return cbbEsc(p.pitching.so);})
+      +'</ul></div>';
+  };
+  if(b.away_leaders||b.home_leaders){
+    var thr=(b.away_leaders&&b.away_leaders.thresholds)||(b.home_leaders&&b.home_leaders.thresholds);
+    h+='<div class="mlbb-sec"><b>Who has hit and pitched</b>'
+      +(thr?'<div class="mlbh-cov-m">'+cbbEsc(thr.note)+'</div>':'')
+      +ldBlock(g.away.name,b.away_leaders)+ldBlock(g.home.name,b.home_leaders)+'</div>';
+  }
+
+  /* ── this game's box score, if the source carried one ───────────────────── */
+  if(b.box&&b.box.has_box){
+    var sideBlock=function(side){
+      var bt=(side.batting||[]),pt=(side.pitching||[]);
+      var out='<div style="margin-top:8px"><b>'+cbbEsc(side.team_name)+'</b>';
+      if(bt.length){
+        out+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead><tr>'
+          +'<th>Batter</th><th>AB</th><th>H</th><th>R</th><th>RBI</th><th>HR</th><th>BB</th><th>K</th>'
+          +'<th>Avg to date</th></tr></thead><tbody>'
+          +bt.map(function(l){
+            return '<tr><td>'+cbbEsc(l.name)+(l.position?' <span class="mlbh-cov-m">'+cbbEsc(l.position)+'</span>':'')
+              +'</td><td>'+cbbEsc(l.ab==null?'—':l.ab)+'</td><td>'+cbbEsc(l.hits==null?'—':l.hits)
+              +'</td><td>'+cbbEsc(l.runs==null?'—':l.runs)+'</td><td>'+cbbEsc(l.rbi==null?'—':l.rbi)
+              +'</td><td>'+cbbEsc(l.hr==null?'—':l.hr)+'</td><td>'+cbbEsc(l.bb==null?'—':l.bb)
+              +'</td><td>'+cbbEsc(l.so==null?'—':l.so)+'</td>'
+              /* LABELLED "to date" BECAUSE THAT IS WHAT IT IS: his season
+                 average after this game, not what he did in it. */
+              +'<td class="mlbh-cov-m">'+cbbEsc(M.rateText?(M.rateText(l.season_to_date.avg)||'—')
+                :(l.season_to_date.avg==null?'—':l.season_to_date.avg))+'</td></tr>';
+          }).join('')
+          +'</tbody></table></div>';
+      }
+      if(pt.length){
+        out+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead><tr>'
+          +'<th>Pitcher</th><th>IP</th><th>H</th><th>R</th><th>ER</th><th>BB</th><th>K</th>'
+          +'<th>Pitches</th><th>ERA to date</th></tr></thead><tbody>'
+          +pt.map(function(l){
+            return '<tr><td>'+cbbEsc(l.name)+'</td><td>'+cbbEsc(l.ip||'—')
+              +'</td><td>'+cbbEsc(l.hits_allowed==null?'—':l.hits_allowed)
+              +'</td><td>'+cbbEsc(l.runs_allowed==null?'—':l.runs_allowed)
+              +'</td><td>'+cbbEsc(l.earned_runs==null?'—':l.earned_runs)
+              +'</td><td>'+cbbEsc(l.bb==null?'—':l.bb)+'</td><td>'+cbbEsc(l.so==null?'—':l.so)
+              +'</td><td>'+cbbEsc(l.pitch_count==null?'—':l.pitch_count)
+              +'</td><td class="mlbh-cov-m">'+cbbEsc(l.season_to_date.era==null?'—'
+                :Number(l.season_to_date.era).toFixed(2))+'</td></tr>';
+          }).join('')
+          +'</tbody></table></div>';
+      }
+      return out+'</div>';
+    };
+    h+='<div class="mlbb-sec"><b>This game’s box score</b>'
+      +'<div class="mlbh-cov-m">The two right-hand columns are each player’s season figures '
+      +'<i>as of this game</i>, which is how the source reports them — not what he did in it.</div>'
+      +b.box.sides.map(sideBlock).join('')+'</div>';
   }
 
   /* prior meetings */

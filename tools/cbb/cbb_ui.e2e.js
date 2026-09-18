@@ -85,6 +85,48 @@ const game = (o) => Object.assign({
     const v = await S.stageAndPromote(db, 'ui-1', { season: 2026, from: '2026-04-01', through: '2026-04-30', games, teams, log: () => {} });
     if (!v || v.ok !== true) throw new Error('fixture did not promote');
 
+    /* ── BOX SCORES FOR ONE COMPLETED GAME ONLY ───────────────────────────
+       p1 gets lines; p2 does not. That asymmetry is the realistic case and it
+       is what makes the coverage assertions below mean something: Alpha played
+       two completed games and has lines for one, so every hitting number on
+       its card covers half its season and the card has to say so. */
+    const SS = require('./stage_stats.js');
+    const line = (o) => Object.assign({
+      game_id: 'p1', athlete_id: 'x', line_type: 'batting', season: 2026,
+      game_date: '2026-04-01', team_id: '1', team_name: 'Alpha Aces',
+      opponent_team_id: '2', athlete_name: 'A Player', position: null, jersey: null,
+      starter: true, ab: null, runs: null, hits: null, rbi: null, hr: null, bb: null,
+      so: null, pitches_seen: null, stolen_bases: null, outs: null, p_hits: null,
+      p_runs: null, earned_runs: null, p_bb: null, p_so: null, p_hr: null,
+      pitch_count: null, strikes: null, season_avg_at_game: null,
+      season_obp_at_game: null, season_slg_at_game: null, season_era_at_game: null,
+      source: 'espn_summary',
+    }, o);
+    const sv = await SS.stageAndPromoteStats(db, 'ui-stats', { season: 2026, log: () => {}, lines: [
+      /* Alpha: a qualifying hitter (40 AB is past the 30 threshold), a 2-for-2,
+         a qualifying pitcher, and a one-out reliever with a 0.00 ERA. */
+      line({ athlete_id: 'h1', athlete_name: 'Real Regular', position: 'CF', ab: 40, hits: 14,
+             runs: 9, rbi: 11, hr: 4, bb: 6, so: 8, stolen_bases: 3, pitches_seen: 150,
+             season_avg_at_game: 0.350, season_obp_at_game: 0.430, season_slg_at_game: 0.600 }),
+      line({ athlete_id: 'h2', athlete_name: 'Two For Two', position: 'PH', ab: 2, hits: 2,
+             starter: false, season_avg_at_game: 1.0 }),
+      line({ athlete_id: 'p1a', athlete_name: 'Alpha Ace', position: 'P', line_type: 'pitching',
+             outs: 60, p_hits: 15, p_runs: 6, earned_runs: 5, p_bb: 4, p_so: 25,
+             pitch_count: 280, strikes: 190, season_era_at_game: 2.25 }),
+      line({ athlete_id: 'p1b', athlete_name: 'One Out Wonder', position: 'P', line_type: 'pitching',
+             outs: 1, p_hits: 0, p_runs: 0, earned_runs: 0, p_bb: 0, p_so: 1,
+             pitch_count: 4, strikes: 3, season_era_at_game: 0.0 }),
+      /* Beta, so the box score has two sides */
+      line({ athlete_id: 'b1', team_id: '2', team_name: 'Beta Bears', opponent_team_id: '1',
+             athlete_name: 'Beta Bat', position: 'SS', ab: 35, hits: 9, hr: 1, bb: 3, so: 12,
+             season_avg_at_game: 0.257 }),
+      line({ athlete_id: 'b2', team_id: '2', team_name: 'Beta Bears', opponent_team_id: '1',
+             athlete_name: 'Beta Arm', position: 'P', line_type: 'pitching', outs: 45,
+             p_hits: 20, p_runs: 12, earned_runs: 10, p_bb: 8, p_so: 12, pitch_count: 240,
+             strikes: 150, season_era_at_game: 6.00 }),
+    ] });
+    if (!sv || sv.ok !== true) throw new Error('stats fixture did not promote');
+
     /* serve the app, and answer its reads out of the database */
     const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json' };
     site = http.createServer((req, res) => {
@@ -207,6 +249,71 @@ const game = (o) => Object.assign({
         /What EdgeDesk could not measure/.test(brief), brief.slice(0, 600));
       chk('…including the absent starter', /largest single input/i.test(brief), brief.slice(0, 900));
       chk('no page error on the brief', errors.length === 0, errors.slice(0, 3));
+
+      /* ══ 3b. THE STATS THE BOX SCORES BOUGHT ════════════════════════════ */
+      chk('the brief carries a batting and pitching table',
+        /Batting and pitching, from the box scores/.test(brief), brief.slice(0, 300));
+      /* Alpha's club average: (40 + 2) AB, (14 + 2) H = 16/42 = .380… */
+      const alphaStats = db.rows("select ab, hits, batting_avg, era from cbb.team_stat_seasons where team_id='1'")[0];
+      chk('…and the club average is the one the database folded',
+        new RegExp('\\' + String(Number(alphaStats.batting_avg).toFixed(3)).slice(1)).test(brief),
+        { brief: brief.slice(0, 2000), alphaStats });
+      chk('…with a team ERA', /Team ERA/.test(brief), brief.slice(0, 300));
+      chk('…and innings shown in thirds rather than decimals',
+        /thirds, not decimals/.test(brief), brief.slice(0, 300));
+      /* THE HONESTY THAT MATTERS MOST: these numbers cover 1 of Alpha's 2
+         completed games, and the card must not let that pass unmentioned. */
+      chk('…and says how many games the hitting numbers cover',
+        /1 of 2/.test(brief), brief.slice(0, 3000));
+      chk('…and warns the numbers are a sample, not the season',
+        /not the season/.test(brief), brief.slice(0, 4000));
+      /* OBP IS NOT DERIVED, AND THE CARD SAYS WHY. */
+      chk('…and refuses to derive on-base percentage for a club',
+        /hit-by-pitch and sacrifice flies/.test(brief), brief.slice(0, 4000));
+
+      chk('the brief names who has hit and pitched', /Who has hit and pitched/.test(brief), brief.slice(0, 300));
+      chk('…the qualifying hitter appears', /Real Regular/.test(brief), brief.slice(0, 4000));
+      /* THE 2-FOR-2 MUST NOT BE THE CLUB'S LEADING HITTER. */
+      chk('…the 2-for-2 is not presented as a leader', !/Two For Two/.test(brief), brief.slice(0, 4000));
+      chk('…the qualifying pitcher appears', /Alpha Ace/.test(brief), brief.slice(0, 4000));
+      /* NOR IS A 0.00 ERA OVER ONE OUT. */
+      chk('…the one-out 0.00 ERA is not presented as a leader',
+        !/One Out Wonder/.test(brief), brief.slice(0, 4000));
+      chk('…and the threshold is stated rather than hidden',
+        /at least 30 at-bats/.test(brief), brief.slice(0, 4000));
+
+      /* a live game has no box score of its own; the completed one does */
+      await page.evaluate(() => window.cbbCloseBrief());
+      await page.evaluate(() => window.cbbOpenBrief('p1'));
+      await page.waitForFunction(() => {
+        const el = document.getElementById('mlbhModalCard');
+        return el && /Projection|could not be built/.test(el.textContent);
+      }, null, { timeout: 25000 });
+      const boxBrief = await page.evaluate(() => document.getElementById('mlbhModalCard').textContent);
+      chk('a game with a box score shows it', /This game’s box score/.test(boxBrief), boxBrief.slice(0, 300));
+      chk('…with both clubs', /Alpha Aces/.test(boxBrief) && /Beta Bears/.test(boxBrief));
+      chk('…and its batters', /Real Regular/.test(boxBrief), boxBrief.slice(0, 4000));
+      chk('…and its pitchers', /Alpha Ace/.test(boxBrief), boxBrief.slice(0, 4000));
+      /* THE COLUMN LABEL IS THE WHOLE POINT. A reader seeing .350 next to a
+         2-for-4 line must be told it is his season figure, not that game's. */
+      chk('…and labels the rate columns as season-to-date',
+        /as of this game/.test(boxBrief), boxBrief.slice(0, 4000));
+      chk('…and says so again in the column heading', /Avg to date/.test(boxBrief), boxBrief.slice(0, 4000));
+      chk('no page error on the box score', errors.length === 0, errors.slice(0, 3));
+
+      /* p2 is completed and has NO lines: the gap must be named. */
+      await page.evaluate(() => window.cbbCloseBrief());
+      await page.evaluate(() => window.cbbOpenBrief('p2'));
+      await page.waitForFunction(() => {
+        const el = document.getElementById('mlbhModalCard');
+        return el && /Projection|could not be built/.test(el.textContent);
+      }, null, { timeout: 25000 });
+      const noBox = await page.evaluate(() => document.getElementById('mlbhModalCard').textContent);
+      chk('a completed game with no box score says so', /No box score is available/.test(noBox), noBox.slice(0, 4000));
+      chk('…and calls it a gap in the feed rather than a quiet game',
+        /gap in the feed, not a quiet game/.test(noBox), noBox.slice(0, 4000));
+      chk('…and shows no box-score table at all', !/This game’s box score/.test(noBox), noBox.slice(0, 300));
+      chk('no page error with no box score', errors.length === 0, errors.slice(0, 3));
 
       /* an abandoned game's brief must say there is no result */
       await page.evaluate(() => window.cbbCloseBrief());

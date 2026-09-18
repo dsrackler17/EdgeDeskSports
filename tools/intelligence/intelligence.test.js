@@ -1039,9 +1039,35 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       byStatus('LINE ONLY').length > 0
       && byStatus('LINE ONLY').every((x) => x.eligible === false && x.researchable === true),
       byStatus('LINE ONLY')[0]);
+    /* A LINE-ONLY GAME CAN BE INELIGIBLE FOR A MORE FUNDAMENTAL REASON THAN
+       ITS MARKET, and this assertion used to deny that.
+
+       market_status and ineligible_reason answer different questions. The
+       status says what the market holds; the reason says why nothing can be
+       recommended. For a game that is LINE ONLY *and already being played*, the
+       code reports the game state — "EdgeDesk holds no in-game price" — because
+       that is the more decisive fact: even a full executable price from before
+       kickoff would not make it recommendable now. The fixture contains exactly
+       such a game, so `every` was asserting something false about a payload
+       that was right.
+
+       The three-state distinction this test defends is still defended: what
+       must never happen is a line-only game reading as "no market". So the
+       market reason is required of every line-only game that is NOT already
+       under way, and the in-progress one is checked for the reason it actually
+       has. Narrowing the filter keeps the guarantee and drops the false claim. */
+    const lineOnly = byStatus('LINE ONLY');
+    const lineOnlyPregame = lineOnly.filter((x) => !/already being played|already final/.test(x.ineligible_reason || ''));
+    chk('a line-only game is not the only kind of line-only game', lineOnly.length > lineOnlyPregame.length,
+      { lineOnly: lineOnly.length, pregame: lineOnlyPregame.length });
     chk('and its reason names the missing half rather than the whole market',
-      byStatus('LINE ONLY').every((x) => /consensus market LINE but no executable price/.test(x.ineligible_reason || '')),
-      (byStatus('LINE ONLY')[0] || {}).ineligible_reason);
+      lineOnlyPregame.length > 0
+      && lineOnlyPregame.every((x) => /consensus market LINE but no executable price/.test(x.ineligible_reason || '')),
+      (lineOnlyPregame[0] || {}).ineligible_reason);
+    /* …and the one that IS under way says so, rather than being excused. */
+    chk('a line-only game already under way is refused on the game, not the market',
+      lineOnly.some((x) => /holds no in-game price/.test(x.ineligible_reason || '')),
+      lineOnly.map((x) => x.ineligible_reason));
     chk('a game with no number from either source is neither eligible nor researchable',
       byStatus('NO MARKET').length > 0
       && byStatus('NO MARKET').every((x) => !x.eligible && !x.researchable

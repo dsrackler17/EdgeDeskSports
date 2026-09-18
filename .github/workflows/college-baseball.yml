@@ -54,6 +54,18 @@ on:
         type: boolean
         required: false
         default: false
+      probe_only:
+        description: 'Ask the source questions and stop. Skips the 437-team walk entirely.'
+        type: boolean
+        required: false
+      skip_stats:
+        description: 'Refresh the games board only. Leaves the box-score archive as it is.'
+        type: boolean
+        required: false
+      stats_limit:
+        description: 'Read only the first N completed games. For a first run, where reading 5,500 box scores is not what you want to find out.'
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -125,8 +137,60 @@ jobs:
       # The shaping, the union, the gate and the query layer all have to pass
       # before a refresh is allowed to touch a live table. A broken union is
       # how a card loses games quietly.
+      # WHICH STATS SOURCE ANSWERS. The board carries team records folded out
+      # of the game log — real, but no batting lines, no ERAs, no players. The
+      # candidates all sit behind this author's egress policy, so a runner asks
+      # them. Dispatch only: it is a design question, not a daily job.
+      - name: Which college stats source actually answers?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_stats_sources.js
+
+      # The first stats probe ruled almost everything out and its most useful
+      # result was an embarrassment: I had never asked the host that already
+      # serves this project 5,500 games a season whether it also serves stats.
+      - name: Does the host that serves the games also serve the stats?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_espn_stats.js
+
+      # One result from the probe above is not trustworthy as written: three
+      # paths on a host answered 403 while two paths on the SAME host answered
+      # 200 minutes earlier. That smells like my own pacing, not a closed
+      # endpoint, and this project has already been burned once by reading a
+      # throttle as a source defect. This asks again, slowly, with a control.
+      - name: Was that 403 the endpoint or my own pacing?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_boxscore.js
+
+      # It was neither the path nor the pacing: it was the user agent. And the
+      # 200 it unlocked carries rosters, plays and odds branches that I had not
+      # opened before nearly concluding there are no player stats. This one
+      # prints the shape instead of testing another guess about it.
+      - name: Print the shape instead of guessing at it
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_outline.js
+
       - name: The shaping and the union must pass first
         run: node tools/cbb/ingest.test.js
+
+      # A box score is a bare list of numbers whose meaning comes from a
+      # parallel list of labels, so the shaping is where this breaks silently.
+      # It runs on every event, including a pull request, because the point is
+      # to fail here rather than in a scheduled run at ten to eleven.
+      - name: The box-score shaping must pass too
+        run: node tools/cbb/stats.test.js
+
+      # THE FIXTURES ABOVE ARE ONES I WROTE. This runs the same shaping over a
+      # REAL payload, on a day inside a completed season, with no credentials —
+      # which is the only way a pull request can catch the source changing a
+      # label or reordering a column. It prints one batting and one pitching
+      # line so a human can see that 2-for-4 did not land in the home-run
+      # column and that 6.2 innings became 20 outs.
+      #
+      # It cannot write: --sample-day takes its game ids from the scoreboard
+      # rather than the game log, and stats.js refuses to combine it with
+      # --commit for exactly that reason.
+      - name: Shape a real box score, with no credentials
+        run: node tools/cbb/stats.js --check --sample-day 20260509 --limit 6 --pace 400
 
       # ── IS TODAY EVEN IN SEASON? ─────────────────────────────────────────
       # February to June. Out of season the honest thing is to say so and stop,
@@ -155,8 +219,12 @@ jobs:
       # is always named explicitly, because an importer given no mode at all is
       # a job that reports success having done nothing — a lesson this
       # repository has already paid for once.
+      # A PROBE DISPATCH IS A PROBE DISPATCH. The walk takes two minutes and a
+      # runner publishes no logs until the whole job ends, so dragging it along
+      # behind a question meant the answer arrived four minutes late. It does
+      # not any more.
       - name: Rebuild the card and import it
-        if: ${{ github.event_name != 'pull_request' && (github.event_name != 'schedule' || steps.plan.outputs.in_season == 'true') }}
+        if: ${{ github.event_name != 'pull_request' && inputs.probe_only != true && (github.event_name != 'schedule' || steps.plan.outputs.in_season == 'true') }}
         env:
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
           EDGD_SB_URL: ${{ secrets.SB_URL }}
@@ -174,3 +242,35 @@ jobs:
           fi
           if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
           node tools/cbb/ingest.js $ARGS
+
+      # ── THE STATS REFRESH ────────────────────────────────────────────────
+      # SECOND, AND DEPENDENT ON THE FIRST. The stats importer reads box scores
+      # for games that are already in cbb.games, so the game log has to be
+      # current before this runs — and the ORPHAN_GAME refusal enforces the same
+      # ordering in SQL, so a wrong order here fails loudly rather than writing
+      # lines for games nobody can look up.
+      #
+      # It is its own step rather than part of the one above so that a stats
+      # failure cannot take the games board down with it. The board and club
+      # records do not depend on box scores; if this step fails, yesterday's
+      # archive stays live and the card is still correct.
+      - name: Import the box scores
+        if: ${{ github.event_name != 'pull_request' && inputs.probe_only != true && inputs.skip_stats != true && (github.event_name != 'schedule' || steps.plan.outputs.in_season == 'true') }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — no box score can be imported."
+            exit 1
+          fi
+          SEASON="${{ steps.plan.outputs.season }}"
+          ARGS="--season $SEASON"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          else
+            ARGS="$ARGS --check"
+          fi
+          if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
+          if [ -n "${{ inputs.stats_limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.stats_limit }}"; fi
+          node tools/cbb/stats.js $ARGS
