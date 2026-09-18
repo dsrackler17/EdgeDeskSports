@@ -216,8 +216,13 @@ const game = (o) => Object.assign({
       const body = await page.evaluate(() => document.getElementById('mlbhBody').textContent);
 
       chk('the college board renders the day\'s games', /Alpha Aces/.test(body) && /Beta Bears/.test(body), body.slice(0, 200));
-      chk('…and says no model is published for this sport',
-        /no validated EdgeDesk model/i.test(body), body.slice(0, 260));
+      /* The board now carries a club-level projection, so what it must state
+         is the projection's standing — never that it is validated, and never
+         without the starter it does not have. */
+      chk('…and says the projection is experimental and ungraded',
+        /never been graded against a closing line/i.test(body), body.slice(0, 400));
+      chk('…and that nothing on it is priced or recommended',
+        /priced, graded or recommended/i.test(body), body.slice(0, 400));
       chk('…and says no starting pitcher is named', /no starting pitcher/i.test(body), body.slice(0, 300));
       /* A LIVE GAME AND AN ABANDONED ONE MUST NOT READ ALIKE. */
       chk('a game in progress shows its state', /Top 7th/.test(body), body.slice(0, 400));

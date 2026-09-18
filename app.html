@@ -14053,9 +14053,15 @@ function fbMlbBriefGame(q){
           +'in it was fitted to one. mlb/tests.js checks self-consistency — that the distribution is a '
           +'distribution, that league-average inputs return the league average, that every guard bound fires and '
           +'that no input is silently filled in — which is not evidence it beats a close.'+mpNote+' Engine:'};
-      (pj.data_quality&&pj.data_quality.warnings||[]).forEach(function(w){
-        if(missing.indexOf(w)<0)missing.push(w);
-      });
+      /* THE ENGINE'S OWN WARNINGS ARE DELIBERATELY NOT APPENDED HERE.
+         Every one of them — an unposted starter, a club with no season rate,
+         a starter with no line on file — is already named by this brief in
+         its own words, further up and in better English. Appending them
+         duplicated the page AND cost it real content: "What EdgeDesk could
+         not measure" is capped at ten entries by the renderer, and four
+         restatements pushed "No season team rows on file for either club"
+         off the end of a brief whose whole point was to say it. The
+         projection carries its own disclosure; this list carries the page's. */
     } else {
       projection={priced:false,
         absent_reason:(window.EDBaseball
@@ -15007,17 +15013,25 @@ function cbbBoardHTML(){
   if(!b)return '<div class="empty">Loading the college card&hellip;</div>';
 
   var E=mlbxE(),tbl=CBB.seasonTable;
+  /* THE PROJECTION'S STATUS IS ONLY REPORTED WHEN THERE IS SOMETHING TO
+     PROJECT. Out of season there are no games, so no season table is fetched
+     and none was meant to be; saying it "did not load" turned the correct
+     empty answer into what read as an outage — the exact confusion the empty
+     states below exist to prevent. */
+  var anyGames=!!(b.games&&b.games.length);
   var head='<div class="mlbb-note">Every college baseball game on the three-day card, from a union of the day '
     +'scoreboard and every club’s own schedule — neither is complete alone. Open one for the research behind it. '
-    +(E&&tbl
-      ? 'Each game to come carries a <b>club-level projection</b>: the two clubs’ run rates, regressed by games '
-        +'played and adjusted for the strength of the conference each plays in. <b>It is experimental, it has never '
-        +'been graded against a closing line, and no starting pitcher is in it</b> — the source carries none, and '
-        +'the starter is the largest single input in a baseball number.'
-      : (E
-        ? '<b>No projection is shown</b>: the season table this model measures a club against did not load'
-          +(CBB.seasonTableErr?(' ('+cbbEsc(CBB.seasonTableErr)+')'):'')+', and nothing is estimated in its place.'
-        : '<b>The run model did not load</b>, so no projection is shown and the rows carry the card alone.'))
+    +(!anyGames ? ''
+      : (E&&tbl
+        ? 'Each game to come carries a <b>club-level projection</b>: the two clubs’ run rates, regressed by games '
+          +'played and adjusted for the strength of the conference each plays in. <b>It is experimental, it has never '
+          +'been graded against a closing line, and no starting pitcher is in it</b> — the source carries none, and '
+          +'the starter is the largest single input in a baseball number. Nothing here is priced, graded or '
+          +'recommended.'
+        : (E
+          ? '<b>No projection is shown</b>: the season table this model measures a club against is not on hand'
+            +(CBB.seasonTableErr?(' ('+cbbEsc(CBB.seasonTableErr)+')'):'')+', and nothing is estimated in its place.'
+          : '<b>The run model did not load</b>, so no projection is shown and the rows carry the card alone.')))
     +'</div>';
 
   if(!b.games.length){
