@@ -636,26 +636,77 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
       const rows = await page.evaluate(() => Array.from(document.querySelectorAll('.mlbb-row'))
         .map((r) => r.textContent.replace(/\s+/g, ' ').trim()));
       eq('the board lists every game on the card', rows.length, 2);
-      /* THE BOARD ORDERS BY FIRST PITCH, so the row is found by its clubs
-         rather than by position — and that ordering is asserted separately. */
+      /* The row is found by its clubs rather than by position, because the
+         board's ordering is a control the reader sets and is asserted on its
+         own terms below. */
       const coleRow = rows.filter((r) => /New York Yankees/.test(r))[0] || '';
       const tbdRow = rows.filter((r) => /Baltimore Orioles/.test(r))[0] || '';
-      chk('the earliest game is listed first',
-        /Baltimore Orioles/.test(rows[0] || ''), rows.map((r) => r.slice(0, 40)));
       chk('…with both clubs on the row', /New York Yankees/.test(coleRow) && /Philadelphia Phillies/.test(coleRow), coleRow);
       chk('…the probable starters', /Gerrit Cole/.test(coleRow) && /Zack Wheeler/.test(coleRow), coleRow);
       chk('…records carried from the card', /90-60/.test(coleRow), coleRow);
       chk('…the venue', /Citizens Bank Park/.test(coleRow), coleRow);
       chk('…and a way into the brief on every row', rows.every((r) => /Game brief/.test(r)), rows);
-      chk('a game with no probable starter shows TBD rather than a guess',
-        /TBD/.test(tbdRow) && !/TBD/.test(coleRow), tbdRow);
+      chk('a game with no probable starter says so rather than guessing one',
+        /starter not posted/.test(tbdRow) && !/starter not posted/.test(coleRow), tbdRow);
+
+      /* ---- THE PROJECTION, which is why this board stopped being a listing.
+         Neither game has a captured price in these fixtures, so the model
+         number has to stand on its own and the market half has to read as
+         missing rather than as zero. ---- */
+      const projected = await page.evaluate(() => Array.from(document.querySelectorAll('.mlbb-row'))
+        .map((r) => {
+          const cells = Array.from(r.querySelectorAll('.nm .c'))
+            .map((c) => [c.querySelector('.l').textContent.trim(), c.querySelector('.v').textContent.trim()]);
+          return Object.fromEntries(cells);
+        }));
+      chk('every row carries the model total, the market total and the gap',
+        projected.every((p) => p.Model && p.Market && p.Gap), projected);
+      chk('…and the model total is a real number on every game',
+        projected.every((p) => Number.isFinite(Number(p.Model)) && Number(p.Model) > 2 && Number(p.Model) < 25),
+        projected);
+      chk('…with an uncaptured price saying none rather than nothing',
+        projected.every((p) => p.Market === 'none'), projected);
+      chk('…and no difference claimed against a price that does not exist',
+        projected.every((p) => p.Gap === '\u2014'), projected);
+      chk('a projected run line is shown beside each club',
+        await page.evaluate(() => document.querySelectorAll('.mlbb-row .tm .t .rn').length) === 4);
+
+      /* ---- the controls a reader actually uses ---- */
+      chk('the board can be filtered and reordered',
+        /Every game/.test(await text(page, '.mlbb-ctl') || ''), await text(page, '.mlbb-ctl'));
+      await page.evaluate(() => window.mlbxSetSort('time'));
+      await page.waitForFunction(() => /Today/.test(document.getElementById('mlbhBody').textContent),
+        null, { timeout: 15000 });
+      const byTime = await page.evaluate(() => Array.from(document.querySelectorAll('.mlbb-row'))
+        .map((r) => r.textContent.replace(/\s+/g, ' ').trim()));
+      chk('ordering by first pitch lists the earliest game first',
+        /Baltimore Orioles/.test(byTime[0] || ''), byTime.map((r) => r.slice(0, 40)));
+      await page.evaluate(() => window.mlbxSetFilter('unknown'));
+      await page.waitForFunction(() => document.querySelectorAll('.mlbb-row').length === 1,
+        null, { timeout: 15000 }).catch(() => {});
+      const filteredRows = await page.evaluate(() => Array.from(document.querySelectorAll('.mlbb-row'))
+        .map((r) => r.textContent.replace(/\s+/g, ' ').trim()));
+      eq('the unposted-starter filter reduces the board to that game', filteredRows.length, 1);
+      chk('…and it is the game with no starters', /Baltimore Orioles/.test(filteredRows[0] || ''), filteredRows);
+      await page.evaluate(() => { window.mlbxSetFilter('all'); window.mlbxSetSort('gap'); });
+      await page.waitForFunction(() => document.querySelectorAll('.mlbb-row').length === 2,
+        null, { timeout: 15000 });
 
       const note = await text(page, '.mlbb-note');
-      chk('the board says baseball carries no validated model',
-        /no validated EdgeDesk model/.test(note || ''), note);
+      chk('the board says its projection has never been graded',
+        /never been graded against a closing line/.test(note || ''), note);
       const boardTxt = await page.evaluate(() => document.getElementById('mlbhBody').textContent);
       chk('the board never prints a win probability', !/% to win/.test(boardTxt));
-      chk('…and never calls anything an edge', !/\bedge\b/i.test(boardTxt), boardTxt.slice(0, 200));
+      /* THE INVARIANT HAS NOT MOVED, ONLY THE WORDING AROUND IT. The board now
+         carries a projection, which it did not before; what it still must never
+         do is call any of it an edge. The only \bedge\b allowed on this board
+         is the sentence denying one. ("EdgeDesk" and the engine's own
+         "edgedesk_baseball_v…" have no word boundary after "edge".) */
+      chk('…and never calls anything an edge',
+        (boardTxt.match(/\bedge\b/gi) || []).length === (boardTxt.match(/never an edge/g) || []).length,
+        (boardTxt.match(/.{0,40}\bedge\b.{0,20}/gi) || []).slice(0, 3));
+      chk('…and names the model it is running, unvalidated',
+        /EdgeDesk baseball run model/.test(boardTxt) && /unvalidated/.test(boardTxt));
 
       /* OPEN THE BRIEF. The same click a reader makes. */
       await page.evaluate(() => {
@@ -670,8 +721,25 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
       const brief = await page.evaluate(() => document.querySelector('.edb-res').textContent.replace(/\s+/g, ' ').trim());
 
       chk('the brief names the matchup', /New York Yankees at Philadelphia Phillies/.test(brief), brief.slice(0, 160));
-      chk('…is never priced', /has not priced this matchup yet/.test(brief), brief.slice(0, 600));
-      chk('…and says why', /no VALIDATED model for baseball|publishes no validated baseball model/.test(brief));
+      /* THE BRIEF CARRIES THE PROJECTION THE ROW SHOWED — the same engine
+         object, found by card key — and carries its disclosure with it. */
+      chk('…publishes the projection', /Projected score/.test(brief) && /EdgeDesk fair total/.test(brief),
+        brief.slice(0, 700));
+      chk('…badged experimental', /EXPERIMENTAL/.test(brief), brief.slice(0, 700));
+      chk('…and says it has never been graded against a closing line',
+        /never graded against a closing line/.test(brief));
+      chk('…and that it is counted nowhere', /counted nowhere/.test(brief));
+      chk('…with expected runs not passed off as a predicted score',
+        /no game has ever ended/.test(brief));
+      chk('…and no confidence score invented for a model that publishes none',
+        /This model publishes no confidence score/.test(brief));
+      chk('…the board row and the brief agree on the total, to the digit', await page.evaluate(() => {
+        const row = (window.mlbxRows() || []).filter((r) => /New York Yankees/.test(r.away))[0];
+        return row && row.ok ? row.p.model.fair_total.toFixed(2) : null;
+      }) !== null && brief.indexOf(await page.evaluate(() => {
+        const row = (window.mlbxRows() || []).filter((r) => /New York Yankees/.test(r.away))[0];
+        return row && row.ok ? row.p.model.fair_total.toFixed(2) : 'x';
+      })) >= 0);
       chk('…keeps both starters PROBABLE', /Both are PROBABLE, not confirmed/.test(brief));
       chk('…never claims a confirmed starter', !/confirmed starter/i.test(brief));
       chk('…draws the starting-pitching panel', /Starting pitching/.test(brief));
