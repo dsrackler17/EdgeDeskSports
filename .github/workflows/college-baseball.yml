@@ -58,6 +58,13 @@ on:
         description: 'Ask the source questions and stop. Skips the 437-team walk entirely.'
         type: boolean
         required: false
+      skip_stats:
+        description: 'Refresh the games board only. Leaves the box-score archive as it is.'
+        type: boolean
+        required: false
+      stats_limit:
+        description: 'Read only the first N completed games. For a first run, where reading 5,500 box scores is not what you want to find out.'
+        required: false
         default: false
 
 permissions:
@@ -165,6 +172,13 @@ jobs:
       - name: The shaping and the union must pass first
         run: node tools/cbb/ingest.test.js
 
+      # A box score is a bare list of numbers whose meaning comes from a
+      # parallel list of labels, so the shaping is where this breaks silently.
+      # It runs on every event, including a pull request, because the point is
+      # to fail here rather than in a scheduled run at ten to eleven.
+      - name: The box-score shaping must pass too
+        run: node tools/cbb/stats.test.js
+
       # ── IS TODAY EVEN IN SEASON? ─────────────────────────────────────────
       # February to June. Out of season the honest thing is to say so and stop,
       # not to import an empty card — and certainly not to let the gate's
@@ -215,3 +229,35 @@ jobs:
           fi
           if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
           node tools/cbb/ingest.js $ARGS
+
+      # ── THE STATS REFRESH ────────────────────────────────────────────────
+      # SECOND, AND DEPENDENT ON THE FIRST. The stats importer reads box scores
+      # for games that are already in cbb.games, so the game log has to be
+      # current before this runs — and the ORPHAN_GAME refusal enforces the same
+      # ordering in SQL, so a wrong order here fails loudly rather than writing
+      # lines for games nobody can look up.
+      #
+      # It is its own step rather than part of the one above so that a stats
+      # failure cannot take the games board down with it. The board and club
+      # records do not depend on box scores; if this step fails, yesterday's
+      # archive stays live and the card is still correct.
+      - name: Import the box scores
+        if: ${{ github.event_name != 'pull_request' && inputs.probe_only != true && inputs.skip_stats != true && (github.event_name != 'schedule' || steps.plan.outputs.in_season == 'true') }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — no box score can be imported."
+            exit 1
+          fi
+          SEASON="${{ steps.plan.outputs.season }}"
+          ARGS="--season $SEASON"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          else
+            ARGS="$ARGS --check"
+          fi
+          if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
+          if [ -n "${{ inputs.stats_limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.stats_limit }}"; fi
+          node tools/cbb/stats.js $ARGS
