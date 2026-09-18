@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_movement_validation_v1",
  "sport": "americanfootball_nfl",
- "generated_at": "2026-09-16T16:30:29.142Z",
+ "generated_at": "2026-09-18T11:29:01.168Z",
  "frame": {
   "ledger": "football/pricing/openers_nfl.json",
   "games_captured": 32,
-  "games_closed": 0,
+  "games_closed": 1,
   "started_at": "2026-09-16T15:45:17.839Z",
   "basis": "EdgeDesk’s own opener captures from the nflverse consensus feed; no historical NFL opener archive is on file, so the test accumulates from the ledger’s first capture"
  },
@@ -33,11 +33,14 @@
   7
  ],
  "result": {
-  "n": 0,
+  "n": 1,
   "tier": "RESEARCH",
   "required_gap_points": null,
-  "tier_basis": "NOT_ESTABLISHED: 0 closed games in the ledger; 300 are the floor for a reading",
-  "moves_so_far": null
+  "tier_basis": "NOT_ESTABLISHED: 1 closed games in the ledger; 300 are the floor for a reading",
+  "moves_so_far": {
+   "mean_abs_move": 1,
+   "moved": 1
+  }
  },
  "note": "Accumulates with the ledger. Until the floor is reached the kernel says NO READ for NFL movement."
 }
