@@ -118,10 +118,21 @@ async function get(url, tries = 3) {
   /* ── is college baseball actually in the odds feed? ───────────────────
      Read-only, publishable key, the same read the browser makes. */
   console.log('market: is a college baseball sport key captured at all?');
-  const SB_URL = process.env.CBB_SB_URL || '';
-  const SB_KEY = process.env.CBB_SB_KEY || '';
+  /* The url and the publishable key are already public in app.html — it is
+     what every visitor's browser sends. Reading them from there means this
+     question gets an ANSWER rather than a skip, without a secret going near
+     a pull request. */
+  let SB_URL = process.env.CBB_SB_URL || '';
+  let SB_KEY = process.env.CBB_SB_KEY || '';
   if (!SB_URL || !SB_KEY) {
-    console.log('  (no url/key supplied to this step — skipped, not answered)');
+    try {
+      const app = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'app.html'), 'utf8');
+      SB_URL = SB_URL || (app.match(/https:\/\/[a-z0-9]+\.supabase\.co/) || [])[0] || '';
+      SB_KEY = SB_KEY || (app.match(/SB_KEY\s*=\s*"([^"]+)"/) || [])[1] || '';
+    } catch (_) { /* answered as a skip below */ }
+  }
+  if (!SB_URL || !SB_KEY) {
+    console.log('  (no url/key available — skipped, not answered)');
   } else {
     for (const key of ['baseball_ncaa', 'baseball_mlb', 'americanfootball_ncaaf']) {
       const r = await fetch(`${SB_URL}/rest/v1/signals?select=sport_key&sport_key=eq.${key}&limit=1`,
