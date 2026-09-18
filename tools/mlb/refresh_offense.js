@@ -172,9 +172,26 @@ async function main() {
 
   let db = null, ledger = null;
   if (commit) {
-    try { db = P.client(); } catch (e) {
+    /* P.client TAKES A CONFIG, AND FAILS LAZILY WITHOUT ONE. Calling it bare
+       returns a client whose every method later throws "Cannot read properties
+       of undefined (reading 'url')" on the first request — so the try/catch
+       below, written to catch a missing credential, never fired. The scheduled
+       run of 2026-09-17 rebuilt 10,841 batter-seasons, passed every validation,
+       and then reported that opaque message three times while importing
+       nothing.
+
+       The sibling tools/mlb/refresh_dataset.js has always done this correctly:
+       read the config, check it, then construct. This now matches it, and the
+       check is an explicit null test rather than a catch around a call that
+       does not throw. */
+    const cfg = P.config();
+    if (!cfg) {
+      console.log('FAIL | offense refresh | EDGD_SB_SERVICE and EDGD_SB_URL are not both set, '
+        + 'so nothing can be imported. This is a missing credential, not an empty dataset.');
+      process.exit(1);
+    }
+    try { db = P.client(cfg); } catch (e) {
       console.log('FAIL | offense refresh | ' + e.message);
-      console.log('Set EDGD_SB_URL and EDGD_SB_SERVICE to the project url and its service role key.');
       process.exit(1);
     }
     ledger = P.runLedger ? P.runLedger(db, SCHEMA, 'refresh_offense') : null;

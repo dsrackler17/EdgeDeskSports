@@ -69,12 +69,17 @@ async function get(url) {
   }
   console.log(`archive: ${archive.size} club codes across all seasons\n`);
 
-  /* ── the ESPN side ─────────────────────────────────────────────────────── */
-  const tj = await get(`${ESPN}/teams?limit=1000`);
-  const raw = ((((tj || {}).sports || [])[0] || {}).leagues || [])[0];
-  const espn = (((raw || {}).teams) || []).map((x) => x.team).filter(Boolean);
-  if (!espn.length) { console.log('FAIL | cbb team join | ESPN team list came back empty'); process.exit(1); }
-  console.log(`ESPN: ${espn.length} clubs\n`);
+  /* ── the ESPN side, fetched with the pacing this host requires ───────────
+     An empty list here used to be a hard failure, which read a throttle as a
+     finding and — worse — killed the job before the alias verification ran. */
+  const got = await require('./espn_clubs.js').fetchClubs({ log: (m) => console.log('  ' + m) });
+  const espn = got.clubs;
+  if (!got.ok) {
+    console.log(`INCONCLUSIVE | cbb team join | ${got.why}`);
+    console.log('PASS | cbb team join probe | nothing measured, and saying so');
+    process.exit(0);
+  }
+  console.log(`ESPN: ${espn.length} clubs (attempt ${got.attempts})\n`);
 
   /* Index ESPN by every name it offers. `location` is the school on its own
      ("Akron"), which is the field most likely to match NCAA's spelling;

@@ -57,12 +57,58 @@ console.log('the season gate');
     wf.slice(at, at + 300));
 }
 
-console.log('the probes stay on pull requests, where they cost nothing');
+console.log('no expensive probe can run on the nightly schedule');
 {
-  ok('the union walk does not run on every scheduled morning',
-    /Price the union walk[\s\S]{0,120}if: \$\{\{ github\.event_name == 'pull_request' \}\}/.test(wf), 'walk guard');
-  ok('…nor does the coverage probe',
-    /Is it all the games[\s\S]{0,120}if: \$\{\{ github\.event_name == 'pull_request' \}\}/.test(wf), 'coverage guard');
+  /* THE GUARANTEE, NOT ITS OLD SPELLING. This used to pin these two steps to
+     `event_name == 'pull_request'` exactly. They have since moved behind an
+     opt-in dispatch input, which is STRICTER — they now run only when somebody
+     asks — and the literal assertion failed while the thing it protects got
+     safer. So it is rewritten to assert what actually matters: an expensive
+     probe must never be reachable from the schedule.
+
+     This is the guard worth keeping. The nightly job exists to refresh a card;
+     a probe answering a question nobody asked has no business spending the
+     source's patience on it every morning, and the throttling that caused is
+     not hypothetical — it emptied a club list mid-run and took a job down. */
+  const stepCond = (name) => {
+    const at = wf.indexOf('- name: ' + name);
+    if (at < 0) return null;
+    const end = wf.indexOf('- name:', at + 10);
+    const block = wf.slice(at, end < 0 ? wf.length : end);
+    const m = /if:\s*(.+)/.exec(block);
+    return m ? m[1] : '';
+  };
+  const PROBES = [
+    'Price the union walk, and check the market really exists',
+    'Is it all the games, or a selection?',
+    'Can we get all the games, and is the source steady?',
+    'Which college stats source actually answers?',
+    'Does the host that serves the games also serve the stats?',
+    'Was that 403 the endpoint or my own pacing?',
+    'Print the shape instead of guessing at it',
+    'Is college baseball in the market feed at all?',
+    'Can the archive be joined to the games board?',
+    'Does every club alias still resolve?',
+  ];
+  for (const name of PROBES) {
+    const cond = stepCond(name);
+    ok('"' + name.slice(0, 44) + '" is guarded at all', cond !== null && cond !== '', cond);
+    /* A condition naming only pull_request or workflow_dispatch cannot fire on a
+       schedule. Anything that does not name an event at all could. */
+    ok('…and cannot run on a schedule',
+      !!cond && /event_name == '(pull_request|workflow_dispatch)'/.test(cond)
+        && !/schedule/.test(cond), cond);
+  }
+  /* And the eight whose questions are answered are opt-in, not merely gated. */
+  const answered = [
+    'Which college stats source actually answers?',
+    'Was that 403 the endpoint or my own pacing?',
+    'Print the shape instead of guessing at it',
+  ];
+  for (const name of answered) {
+    ok('"' + name.slice(0, 40) + '" is opt-in, because its question is answered',
+      /deep_probe/.test(stepCond(name) || ''), stepCond(name));
+  }
 }
 
 console.log('the CLI still refuses to guess a mode');

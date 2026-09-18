@@ -36,14 +36,16 @@ const T = require('./team_aliases.js');
   }
   const archiveClubs = Array.from(clubs, ([code, name]) => ({ code, name }));
 
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), 30000);
-  const r = await fetch(`${ESPN}/teams?limit=1000`, { signal: ctl.signal, headers: { accept: 'application/json', 'user-agent': UA } });
-  clearTimeout(t);
-  const j = JSON.parse(await r.text());
-  const raw = ((((j || {}).sports || [])[0] || {}).leagues || [])[0];
-  const espn = (((raw || {}).teams) || []).map((x) => x.team).filter(Boolean);
-  if (!espn.length) { console.log('FAIL | cbb resolve clubs | ESPN team list came back empty'); process.exit(1); }
+  const got = await require('./espn_clubs.js').fetchClubs({ log: (m) => console.log('  ' + m) });
+  const espn = got.clubs;
+  if (!got.ok) {
+    /* THIS ONE IS A GATE, so an inconclusive read must not read as a pass — but
+       it must not read as a broken alias table either. Those are different
+       things and conflating them is how a throttle gets recorded as a mapping
+       fault. Non-zero, with the reason named. */
+    console.log(`FAIL | cbb resolve clubs | ${got.why}`);
+    process.exit(1);
+  }
 
   const res = T.resolveClubs(archiveClubs, espn);
   console.log(`archive clubs: ${archiveClubs.length}`);
@@ -98,7 +100,11 @@ const T = require('./team_aliases.js');
   if (res.unresolved.length) {
     console.log('── candidate ESPN clubs for each unresolved archive club ─────\n');
     console.log('   (suggestions only — nothing here is applied automatically)\n');
-    const tokens = (x) => new Set(T.norm(x).split(' ').filter((w) => w.length > 2));
+    /* TWO CHARACTERS, NOT THREE. "SE Louisiana" is a plausible ESPN spelling of
+       Southeastern Louisiana and its distinguishing token is "se", which a
+       three-character floor throws away — leaving the search to match on
+       "louisiana" alone and rank four unrelated Louisiana clubs above it. */
+    const tokens = (x) => new Set(T.norm(x).split(' ').filter((w) => w.length >= 2));
     for (const u of res.unresolved) {
       const want = tokens(u.name);
       const scored = espn.map((t) => {
@@ -106,7 +112,13 @@ const T = require('./team_aliases.js');
         let shared = 0;
         for (const w of want) if (have.has(w)) shared++;
         return { t, shared };
-      }).filter((x) => x.shared > 0).sort((a, b) => b.shared - a.shared).slice(0, 4);
+      /* EVERY club that shares a word, not the top four. Truncating to four
+         ranked by a crude token count is how the right answer gets cut off:
+         SELA's real club sat below four unrelated Louisiana programmes and was
+         never shown, so I concluded from its absence that it had resolved by
+         name. It had not. A dozen lines a person can read beats four lines
+         chosen by a scorer nobody trusts. */
+      }).filter((x) => x.shared > 0).sort((a, b) => b.shared - a.shared).slice(0, 14);
       console.log(`  ${u.code}  "${u.name}"  (${u.why})`);
       if (!scored.length) console.log('      no ESPN club shares a word with it');
       for (const x of scored) {
@@ -115,6 +127,23 @@ const T = require('./team_aliases.js');
       }
       console.log('');
     }
+  }
+
+  /* ── AND IF ANYTHING IS STILL UNRESOLVED, THE WHOLE LIST ────────────────
+     The token-overlap suggestions above find a club only when its ESPN name
+     shares a word with its NCAA name. For SELA ("Southeastern La.") and ULM
+     they found nothing useful, which means no amount of scoring will — so the
+     list itself is printed. 437 lines is a lot of log and still cheaper than
+     one more alias written from memory. */
+  if (res.unresolved.length) {
+    console.log('── every ESPN club, so the remaining aliases are read and not recalled ──\n');
+    const sorted = espn.slice().sort((a, b) =>
+      String(a.location || a.displayName).localeCompare(String(b.location || b.displayName)));
+    for (const t of sorted) {
+      console.log(`  ${String(t.id).padStart(7)}  ${String(t.location || '').padEnd(30)}`
+        + `${String(t.displayName || '')}`);
+    }
+    console.log('');
   }
 
   if (res.aliasFailed.length) {
