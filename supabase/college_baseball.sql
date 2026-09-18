@@ -197,9 +197,18 @@ select r.import_id, r.status, r.first_season, r.last_season, r.seasons,
    it exists so that the one refusal a human might legitimately need to
    overrule cannot be overruled by accident.
    ═══════════════════════════════════════════════════════════════════════════ */
+drop function if exists cbb.promote_cbb_import(text, boolean);
 create or replace function cbb.promote_cbb_import(
   p_import_id text,
-  p_allow_shrink boolean default false
+  p_allow_shrink boolean default false,
+  /* THE WINDOW THE IMPORT MEANT TO COVER, not the span it happened to return.
+     Those are the same thing only when the import worked. An import throttled
+     down to a single day has a one-day span, so comparing it against the live
+     table over ITS OWN span compares one day with one day and always passes —
+     which is precisely the failure this refusal exists to catch. The importer
+     knows the window it asked for, so it says so. */
+  p_from date default null,
+  p_through date default null
 ) returns jsonb
 language plpgsql
 security definer
@@ -216,14 +225,14 @@ declare
   staged_span    int;
   span_lo        date;
   span_hi        date;
-  refusals       jsonb := '[]'::jsonb;
+  v_refusals     jsonb := '[]'::jsonb;
   counts         jsonb;
 begin
   select count(*) into staged_games from cbb.stg_games where import_id = p_import_id;
   select count(*) into staged_teams from cbb.stg_teams where import_id = p_import_id;
 
   if staged_games = 0 then
-    refusals := refusals || jsonb_build_object('code','EMPTY_IMPORT',
+    v_refusals := v_refusals || jsonb_build_object('code','EMPTY_IMPORT',
       'detail','No staged games. An empty answer from the source is not an empty season, and it is never promoted.');
   end if;
 
@@ -232,7 +241,7 @@ begin
     select game_id from cbb.stg_games where import_id = p_import_id
      group by game_id having count(*) > 1) d;
   if dupes > 0 then
-    refusals := refusals || jsonb_build_object('code','DUPLICATE_GAME_IDS',
+    v_refusals := v_refusals || jsonb_build_object('code','DUPLICATE_GAME_IDS',
       'detail', dupes || ' game id(s) staged more than once. The team walk is a union keyed on game id; '
         || 'duplicates mean it stopped being one.');
   end if;
@@ -245,7 +254,7 @@ begin
    where import_id = p_import_id
      and season <> extract(year from game_date)::int;
   if season_breaks > 0 then
-    refusals := refusals || jsonb_build_object('code','SEASON_DATE_MISMATCH',
+    v_refusals := v_refusals || jsonb_build_object('code','SEASON_DATE_MISMATCH',
       'detail', season_breaks || ' game(s) carry a season that is not the year of their own date.');
   end if;
 
@@ -259,7 +268,7 @@ begin
      and (away_score is null or home_score is null)
      and coalesce(status_detail,'') !~* 'postpon|cancel|suspend|forfeit';
   if score_breaks > 0 then
-    refusals := refusals || jsonb_build_object('code','COMPLETED_WITHOUT_SCORE',
+    v_refusals := v_refusals || jsonb_build_object('code','COMPLETED_WITHOUT_SCORE',
       'detail', score_breaks || ' game(s) are marked complete with a missing score and are not postponed, '
         || 'cancelled, suspended or forfeited.');
   end if;
@@ -269,7 +278,7 @@ begin
    where import_id = p_import_id
      and (coalesce(away_name,'') = '' or coalesce(home_name,'') = '');
   if nameless > 0 then
-    refusals := refusals || jsonb_build_object('code','UNNAMED_SIDE',
+    v_refusals := v_refusals || jsonb_build_object('code','UNNAMED_SIDE',
       'detail', nameless || ' game(s) are missing a side. A board row that cannot say who is playing is not a row.');
   end if;
 
@@ -280,14 +289,15 @@ begin
      import that covers the same span with materially fewer games has to say
      so out loud. Ten per cent is the tolerance — schedules do lose games to
      weather, and a handful of cancellations is not a broken import. */
-  select min(game_date), max(game_date) into span_lo, span_hi
+  select coalesce(p_from, min(game_date)), coalesce(p_through, max(game_date))
+    into span_lo, span_hi
     from cbb.stg_games where import_id = p_import_id;
   if span_lo is not null then
     select count(*) into live_span   from cbb.games where game_date between span_lo and span_hi;
     select count(*) into staged_span from cbb.stg_games
       where import_id = p_import_id and game_date between span_lo and span_hi;
     if live_span > 0 and staged_span < (live_span * 0.9) and not p_allow_shrink then
-      refusals := refusals || jsonb_build_object('code','IMPORT_SHRANK',
+      v_refusals := v_refusals || jsonb_build_object('code','IMPORT_SHRANK',
         'detail','This import carries ' || staged_span || ' games for ' || span_lo || '..' || span_hi
           || ' where the live table already holds ' || live_span
           || '. The source returns an empty or partial slate when it is asked too fast, and promoting that '
@@ -296,23 +306,44 @@ begin
     end if;
   end if;
 
-  if jsonb_array_length(refusals) > 0 then
+  if jsonb_array_length(v_refusals) > 0 then
     update cbb.import_runs
-       set status = 'failed', failed_at = now(), refusals = refusals, updated_at = now(),
-           failure_reason = (refusals -> 0 ->> 'code')
+       set status = 'failed', failed_at = now(), refusals = v_refusals, updated_at = now(),
+           failure_reason = (v_refusals -> 0 ->> 'code')
      where import_id = p_import_id;
-    return jsonb_build_object('ok', false, 'refusals', refusals);
+    return jsonb_build_object('ok', false, 'refusals', v_refusals);
   end if;
 
   /* ── the promote itself: one transaction, live tables replaced wholesale ── */
+  /* The columns are named rather than splatted. Staging carries an import_id
+     that the live table does not, so a (row).* here would be one column too
+     wide — and a schema change later would break it silently rather than
+     loudly. */
   delete from cbb.games;
-  insert into cbb.games select (g).* from (
-    select g from cbb.stg_games g where g.import_id = p_import_id) s(g);
+  insert into cbb.games (
+    game_id, season, game_date, start_time, start_time_tbd,
+    away_team_id, home_team_id, away_name, home_name, away_abbr, home_abbr,
+    venue, venue_city, venue_state, neutral_site, conference_game,
+    status_state, status_detail, completed, away_score, home_score, innings,
+    away_rank, home_rank, notes, seen_by, first_seen_at, last_seen_at)
+  select game_id, season, game_date, start_time, start_time_tbd,
+         away_team_id, home_team_id, away_name, home_name, away_abbr, home_abbr,
+         venue, venue_city, venue_state, neutral_site, conference_game,
+         status_state, status_detail, completed, away_score, home_score, innings,
+         away_rank, home_rank, notes, seen_by,
+         coalesce(first_seen_at, now()), now()
+    from cbb.stg_games where import_id = p_import_id;
 
   if staged_teams > 0 then
     delete from cbb.teams;
-    insert into cbb.teams select (t).* from (
-      select t from cbb.stg_teams t where t.import_id = p_import_id) s(t);
+    insert into cbb.teams (
+      team_id, name, short_name, abbreviation, slug,
+      conference_id, conference_name, logo, color,
+      first_seen_season, last_seen_season, updated_at)
+    select team_id, name, short_name, abbreviation, slug,
+           conference_id, conference_name, logo, color,
+           first_seen_season, last_seen_season, now()
+      from cbb.stg_teams where import_id = p_import_id;
   end if;
 
   perform cbb.rebuild_team_seasons();
@@ -458,3 +489,102 @@ begin
    where import_id = p_import_id;
   return jsonb_build_object('ok', true, 'abandoned', p_import_id);
 end $$;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACCESS
+
+   The same shape the historical MLB archive uses, and for the same reason: a
+   reader's browser holds a publishable key, so anything it can reach is
+   effectively public. The live tables are readable, staging is not, and the
+   gates are not callable by anyone but the importer's service role.
+   ═══════════════════════════════════════════════════════════════════════════ */
+grant usage on schema cbb to anon, authenticated;
+
+alter table cbb.games        enable row level security;
+alter table cbb.teams        enable row level security;
+alter table cbb.team_seasons enable row level security;
+alter table cbb.import_runs  enable row level security;
+alter table cbb.stg_games    enable row level security;
+alter table cbb.stg_teams    enable row level security;
+
+do $$
+declare t text;
+begin
+  /* the record is public to read and nobody's to write */
+  foreach t in array array['games','teams','team_seasons','import_runs'] loop
+    execute format('drop policy if exists %I on cbb.%I', t || '_read', t);
+    execute format('create policy %I on cbb.%I for select to anon, authenticated using (true)',
+                   t || '_read', t);
+    execute format('grant select on cbb.%I to anon, authenticated', t);
+  end loop;
+  /* staging has no policy at all, so RLS denies everything by default */
+  foreach t in array array['stg_games','stg_teams'] loop
+    execute format('revoke all on cbb.%I from anon, authenticated', t);
+  end loop;
+end $$;
+
+revoke all on function cbb.promote_cbb_import(text, boolean, date, date) from public, anon, authenticated;
+revoke all on function cbb.abandon_cbb_import(text, text)     from public, anon, authenticated;
+revoke all on function cbb.rebuild_team_seasons()             from public, anon, authenticated;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE REPORT
+
+   Every SQL file here ends by saying what it just guaranteed, so applying it
+   is not an act of faith. A row reading anything but ok is a thing to chase.
+   ═══════════════════════════════════════════════════════════════════════════ */
+with checks as (
+  select 1 as n, 'cbb.games is the union spine and is keyed on the source game id' as guarantee,
+    case when exists (select 1 from information_schema.table_constraints
+                       where table_schema='cbb' and table_name='games' and constraint_type='PRIMARY KEY')
+         then 'ok' else 'CHECK THIS — no primary key on cbb.games' end as result
+  union all select 2, 'a game can render even when a side is not a known team',
+    case when (select is_nullable from information_schema.columns
+                where table_schema='cbb' and table_name='games' and column_name='away_team_id') = 'YES'
+          and (select is_nullable from information_schema.columns
+                where table_schema='cbb' and table_name='games' and column_name='away_name') = 'NO'
+         then 'ok (ids may be absent, names never are — a non-D1 visitor still appears)'
+         else 'CHECK THIS — a game with an unknown opponent would be dropped' end
+  union all select 3, 'team_seasons is derived from the game log, not fetched',
+    case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                       where n.nspname='cbb' and p.proname='rebuild_team_seasons')
+         then 'ok (rebuild_team_seasons folds cbb.games; there is no second source to disagree with)'
+         else 'CHECK THIS — no derivation function' end
+  union all select 4, 'the promote refuses an import that shrank',
+    case when (select prosrc from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                where n.nspname='cbb' and p.proname='promote_cbb_import') like '%IMPORT_SHRANK%'
+         then 'ok (the source answers 200 with an empty slate when hurried; that is never written)'
+         else 'CHECK THIS — a partial answer could delete a day of games' end
+  union all select 5, 'an empty import is refused outright',
+    case when (select prosrc from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                where n.nspname='cbb' and p.proname='promote_cbb_import') like '%EMPTY_IMPORT%'
+         then 'ok' else 'CHECK THIS' end
+  union all select 6, 'a finished game cannot carry no score unless it was abandoned',
+    case when (select prosrc from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                where n.nspname='cbb' and p.proname='promote_cbb_import') like '%COMPLETED_WITHOUT_SCORE%'
+         then 'ok (postponed, cancelled, suspended and forfeited are excluded by name)'
+         else 'CHECK THIS' end
+  union all select 7, 'the union is actually a union',
+    case when (select prosrc from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                where n.nspname='cbb' and p.proname='promote_cbb_import') like '%DUPLICATE_GAME_IDS%'
+         then 'ok (a duplicated game id means the walk stopped being a union)'
+         else 'CHECK THIS' end
+  union all select 8, 'anon and authenticated may read the record',
+    case when (select count(*) from pg_policies
+                where schemaname='cbb' and tablename in ('games','teams','team_seasons','import_runs')) >= 4
+         then 'ok' else 'CHECK THIS — a reader cannot see the board' end
+  union all select 9, 'staging is readable by nobody',
+    case when (select count(*) from pg_policies
+                where schemaname='cbb' and tablename in ('stg_games','stg_teams')) = 0
+         then 'ok (RLS with no policy denies by default)' else 'CHECK THIS — staging is exposed' end
+  union all select 10, 'the gates are not callable by a reader',
+    case when has_function_privilege('anon','cbb.promote_cbb_import(text, boolean, date, date)','EXECUTE') = false
+         then 'ok' else 'CHECK THIS — anon can promote an import' end
+  union all select 11, 'the season is the calendar year of the date',
+    case when (select prosrc from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+                where n.nspname='cbb' and p.proname='promote_cbb_import') like '%SEASON_DATE_MISMATCH%'
+         then 'ok (February to June, so the year is the season)' else 'CHECK THIS' end
+  union all select 12, 'cbb is exposed to the API (a project setting, not checkable here)',
+    'ok (confirm Supabase > API > Exposed schemas lists cbb)'
+)
+select n, guarantee, result from checks order by n;
