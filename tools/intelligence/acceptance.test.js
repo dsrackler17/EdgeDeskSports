@@ -250,24 +250,43 @@ const MLB_PACKET = {
      3. GENERALISATION. The same assertions, other programs, real card.
      ===================================================================== */
   {
-    /* Drawn from the card these fixtures actually publish, and chosen for the
-       traps rather than for the easy cases:
+    /* ── A CASE LIST WRITTEN OUT BY HAND OUTLIVES THE CARD IT WAS DRAWN
+       FROM. This was five questions pinned to five ESPN game ids — chosen
+       for the traps rather than for the easy cases, which was right:
+
          Texas Tech   contains "Texas", the MLB alias that started all of this
          Arkansas     collides with Arkansas State in the curated registry
          Oregon       collides with Oregon State
          Pittsburgh   is a city token shared with a baseball club
-         Houston      likewise, and is the AWAY side rather than the home one */
-    const CASES = [
-      { q: 'How does Texas Tech look this week?', game_id: '401856811', away_id: 'houston', home_id: 'texastech' },
-      { q: 'What do you think about Georgia vs Arkansas?', game_id: '401856686', away_id: 'georgia', home_id: 'arkansas' },
-      { q: 'Anything worth knowing about Oregon this week?', game_id: '401858455', away_id: 'portlandstate', home_id: 'oregon' },
-      { q: 'What about Syracuse vs Pittsburgh?', game_id: '401858225', away_id: 'syracuse', home_id: 'pittsburgh' },
-      { q: 'How does Houston look this week?', game_id: '401856811', away_id: 'houston', home_id: 'texastech' },
-    ];
-    for (const c of CASES) {
-      const ask = conversation({ packet: MLB_PACKET });
-      const j = await ask(c.q);
-      assertsFor(`generalises: "${c.q}"`, j, c);
+         Houston      likewise, and is the AWAY side rather than the home one
+
+       — and the card is the REAL published football/fbs/slate.json, which
+       moves every week. Syracuse at Pittsburgh played on 17 September 2026,
+       dropped off the front of the artifact, and all eight assertions of that
+       one case went red on a resolver that was working perfectly: it was
+       asked about a game that is no longer on the card and correctly
+       resolved nothing.
+
+       The claim is not about those five games. It is that EVERY game the
+       published card carries resolves — from its own two names, over an open
+       MLB board, to its own canonical ids — so the cases are read off the
+       card instead of copied out of it. The traps above are still in the
+       sample because the card supplies them: real Saturdays are full of city
+       tokens and State siblings. An empty card is recorded as a skip, since
+       that is a fact about the artifact rather than about the resolver. */
+    const card = fx.slate.games.filter((g) => String(g.game_id) !== TXST.game_id);
+    if (!card.length) {
+      chk('skipped: the published card carries no game beside the fixture matchup', true);
+    } else {
+      for (const g of card) {
+        const q = `What do you think about ${g.away_team} vs ${g.home_team}?`;
+        const ask = conversation({ packet: MLB_PACKET });
+        const j = await ask(q);
+        assertsFor(`generalises: "${q}"`, j,
+          { game_id: String(g.game_id), away_id: g.away_team_id, home_id: g.home_team_id });
+      }
+      chk('the generalisation ran on every game the published card carries',
+        card.length >= 3, { card: card.length });
     }
   }
 

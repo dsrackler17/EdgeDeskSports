@@ -1055,19 +1055,53 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
        must never happen is a line-only game reading as "no market". So the
        market reason is required of every line-only game that is NOT already
        under way, and the in-progress one is checked for the reason it actually
-       has. Narrowing the filter keeps the guarantee and drops the false claim. */
-    const lineOnly = byStatus('LINE ONLY');
-    const lineOnlyPregame = lineOnly.filter((x) => !/already being played|already final/.test(x.ineligible_reason || ''));
-    chk('a line-only game is not the only kind of line-only game', lineOnly.length > lineOnlyPregame.length,
-      { lineOnly: lineOnly.length, pregame: lineOnlyPregame.length });
+       has. Narrowing the filter keeps the guarantee and drops the false claim.
+
+       ── AND THE CALENDAR DOES NOT OWE THIS TEST AN IN-PROGRESS GAME ──
+       "The fixture contains exactly such a game" was true when it was
+       written and false by 18 September 2026: fx.slate is built on the REAL
+       committed football/fbs/slate.json, so which of its games are under way
+       at the moment the suite runs is whatever the clock says. With every
+       line-only game pregame, `lineOnly.length > lineOnlyPregame.length` was
+       3 > 3 and the in-progress assertion under it had nothing to assert
+       against — both red on a payload that was right, both green again by
+       themselves the next time the suite happened to run during a game.
+
+       So the clock is moved instead of waited on, exactly as the board's own
+       STARTED case does it (tools/intelligence/evals.test.js): the same real
+       card is re-asked twice, once with every line-only game safely pregame
+       and once with one of them kicked off an hour ago. Both halves of the
+       claim are then asserted on a payload this test built, and neither can
+       rot. */
+    const pair = (g) => g.away_team + ' @ ' + g.home_team;
+    const lineOnlyNames = new Set(byStatus('LINE ONLY').map((x) => x.game));
+    const lineOnlyGames = fx.slate.games.filter((g) => lineOnlyNames.has(pair(g)));
+    const shift = (g, ms) => Object.assign({}, g, { kickoff: new Date(Date.now() + ms).toISOString() });
+    async function rankCard(games) {
+      clearCache(); route = FX.router(fx, { slate: Object.assign({}, fx.slate, { games }) });
+      const rr = await m.handle(req({ mode: 'chat', question: 'Separate smaller-profile and big-attention CFB games.',
+        packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
+      return ((await rr.json()).slate_ranking || []).filter((x) => x.market_status === 'LINE ONLY');
+    }
+    const pregameOf = (rows) => rows.filter((x) => !/already being played|already final/.test(x.ineligible_reason || ''));
+    /* every line-only game three days out: the market reason, with no game
+       state able to speak over it */
+    const loPre = await rankCard(fx.slate.games.map((g) => (lineOnlyNames.has(pair(g)) ? shift(g, 3 * 86400000) : g)));
     chk('and its reason names the missing half rather than the whole market',
-      lineOnlyPregame.length > 0
-      && lineOnlyPregame.every((x) => /consensus market LINE but no executable price/.test(x.ineligible_reason || '')),
-      (lineOnlyPregame[0] || {}).ineligible_reason);
-    /* …and the one that IS under way says so, rather than being excused. */
+      loPre.length > 0 && pregameOf(loPre).length === loPre.length
+      && loPre.every((x) => /consensus market LINE but no executable price/.test(x.ineligible_reason || '')),
+      (loPre[0] || {}).ineligible_reason);
+    /* …and the same card with one of them under way: the game state wins,
+       and the pregame filter is no longer the whole set */
+    const underWay = lineOnlyGames[0];
+    const loStarted = underWay ? await rankCard(fx.slate.games.map((g) => (
+      pair(g) === pair(underWay) ? shift(g, -3600000) : (lineOnlyNames.has(pair(g)) ? shift(g, 3 * 86400000) : g)))) : [];
+    chk('a line-only game is not the only kind of line-only game',
+      !!underWay && loStarted.length > pregameOf(loStarted).length,
+      { lineOnly: loStarted.length, pregame: pregameOf(loStarted).length, underWay: underWay && pair(underWay) });
     chk('a line-only game already under way is refused on the game, not the market',
-      lineOnly.some((x) => /holds no in-game price/.test(x.ineligible_reason || '')),
-      lineOnly.map((x) => x.ineligible_reason));
+      !!underWay && loStarted.some((x) => x.game === pair(underWay) && /holds no in-game price/.test(x.ineligible_reason || '')),
+      loStarted.map((x) => x.game + ' :: ' + x.ineligible_reason));
     chk('a game with no number from either source is neither eligible nor researchable',
       byStatus('NO MARKET').length > 0
       && byStatus('NO MARKET').every((x) => !x.eligible && !x.researchable

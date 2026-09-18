@@ -71,6 +71,30 @@ function r1(v) { const n = num(v); return n == null ? null : Math.round(n * 10) 
 function r2(v) { const n = num(v); return n == null ? null : Math.round(n * 100) / 100; }
 function r3(v) { const n = num(v); return n == null ? null : Math.round(n * 1000) / 1000; }
 function r4(v) { const n = num(v); return n == null ? null : Math.round(n * 10000) / 10000; }
+/* HOW MUCH THE SAMPLE WILL CARRY, said at every sample size.
+
+   This sentence used to be written only while the season was young — under
+   four weekly snapshots — and to vanish entirely once there were four,
+   leaving the summary ending in a dangling ". " and making no claim at all
+   about the sample it had just measured. Week 3 landed, history.json grew
+   its fourth row, and a summary that had always characterised itself
+   stopped: the reader lost the one clause telling them whether to believe
+   the delta, and the assertion that guards it (tools/football/
+   team_identity.test.js, "the trend is within-season with a sample count")
+   went red on a build that was otherwise perfectly correct.
+
+   Four snapshots is the builder's own line between a guess and a direction,
+   so say the other half of the sentence at four and above rather than
+   nothing. The count is in the sentence either way, which is what makes the
+   claim auditable: a reader never has to know the threshold to see how much
+   is standing under it. */
+const SAMPLE_MIN_TREND = 4;
+function SAMPLE_READ(n) {
+  const s = ' snapshot' + (n === 1 ? '' : 's');
+  return n < SAMPLE_MIN_TREND
+    ? 'Over ' + n + s + ' this is a hypothesis, not a trend.'
+    : 'Over ' + n + s + ' this reads as a trend.';
+}
 function slug(s) { return String(s == null ? '' : s).toLowerCase().replace(/[’']/g, '').replace(/&/g, ' and ').replace(/\bst\.?\b/g, 'state').replace(/[^a-z0-9]+/g, ''); }
 function mean(a) { const v = a.filter((x) => num(x) != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; }
 function sd(a) { const v = a.filter((x) => num(x) != null); if (v.length < 3) return null; const m = mean(v); return Math.sqrt(v.reduce((s, x) => s + (x - m) * (x - m), 0) / (v.length - 1)); }
@@ -195,7 +219,7 @@ function fbsTeams(inputs, season) {
     const first = hrows[0], last = hrows[hrows.length - 1];
     const trend = { basis: 'weekly rating snapshots (football/rankings/history.json) and the per-game team EPA log (football/fbs_epa, partial coverage)', weeks: hrows, games: gameRows,
       early_vs_recent: first && last && hrows.length >= 2 ? { from_week: first.label, to_week: last.label, etsr_delta: r2(last.etsr - first.etsr), rank_delta: last.rank != null && first.rank != null ? last.rank - first.rank : null, offense_delta: last.offense != null && first.offense != null ? r2(last.offense - first.offense) : null, defense_delta: last.defense != null && first.defense != null ? r2(last.defense - first.defense) : null,
-        summary: 'rating ' + (last.etsr - first.etsr >= 0 ? 'up ' : 'down ') + Math.abs(r2(last.etsr - first.etsr)) + ' points from ' + first.label + ' to ' + last.label + ' (rank ' + first.rank + ' \u2192 ' + last.rank + ')' + (last.offense != null && first.offense != null ? '; offence ' + (last.offense - first.offense >= 0 ? '+' : '') + r1(last.offense - first.offense) : '') + (last.defense != null && first.defense != null ? ', defence ' + (last.defense - first.defense >= 0 ? '+' : '') + r1(last.defense - first.defense) : '') + '. ' + (hrows.length < 4 ? 'Over ' + hrows.length + ' snapshots this is a hypothesis, not a trend.' : ''), sample_snapshots: hrows.length } : null,
+        summary: 'rating ' + (last.etsr - first.etsr >= 0 ? 'up ' : 'down ') + Math.abs(r2(last.etsr - first.etsr)) + ' points from ' + first.label + ' to ' + last.label + ' (rank ' + first.rank + ' \u2192 ' + last.rank + ')' + (last.offense != null && first.offense != null ? '; offence ' + (last.offense - first.offense >= 0 ? '+' : '') + r1(last.offense - first.offense) : '') + (last.defense != null && first.defense != null ? ', defence ' + (last.defense - first.defense >= 0 ? '+' : '') + r1(last.defense - first.defense) : '') + '. ' + SAMPLE_READ(hrows.length), sample_snapshots: hrows.length } : null,
       source: 'football/rankings/history.json', as_of: H.data ? H.data.generated_at || null : null };
     const qual = [];
     if (coach && coach.new_hc) qual.push({ claim: 'new head coach ' + coach.hc + ' (previous: ' + (coach.previous_hc || 'unknown') + ')', kind: 'sourced', source: 'football/coaching/continuity.json (cfbfastR coach feed)', published_at: C.data.generated_at || null });
@@ -413,5 +437,5 @@ function main() {
   console.log('wrote football/identity/index.json and football/identity/teams/*.json');
 }
 
-module.exports = { build, split, inferencesFor, SCHEMA, OUT, OUT_DIR, NFL_UNITS };
+module.exports = { build, split, inferencesFor, SCHEMA, OUT, OUT_DIR, NFL_UNITS, SAMPLE_READ, SAMPLE_MIN_TREND };
 if (require.main === module) main();
