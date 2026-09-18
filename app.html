@@ -484,6 +484,18 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .mlbb-note{font-size:11.5px;color:var(--faint);line-height:1.6;margin:10px 0 14px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:rgba(255,255,255,.015)}
 .mlbb-note b{color:var(--dim)}
 .mlbb-day{display:flex;align-items:baseline;gap:9px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:16px 0 7px}
+/* college baseball: a rank, a live game and an abandoned one have to be
+   distinguishable at a glance, and an abandoned game must never look like a
+   result. The form pips read W/L without relying on colour alone. */
+.cbb-rk{color:var(--acc);font-weight:700;font-size:.92em}
+.cbb-live{color:var(--warn);font-weight:600}
+.cbb-ab{color:var(--dim);font-style:italic}
+.cbb-tbd{color:var(--dim)}
+.cbb-f{display:inline-block;min-width:1.35em;text-align:center;margin-right:3px;padding:1px 0;
+  border-radius:4px;font-size:11px;font-weight:700;line-height:1.5}
+.cbb-f-w{background:rgba(64,192,120,.18);color:#5fd598}
+.cbb-f-l{background:rgba(226,88,88,.16);color:#f08a8a}
+.cbb-f-t{background:rgba(255,255,255,.10);color:var(--dim)}
 .mlbb-day .n{font-size:10.5px;letter-spacing:0;text-transform:none;color:var(--faint)}
 .mlbb-list{border:1px solid var(--border);border-radius:11px;overflow:hidden}
 .mlbb-row{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1.2fr) minmax(0,.85fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:11px 13px;background:transparent;border:0;border-top:1px solid var(--border);color:inherit;font:inherit;cursor:pointer}
@@ -3084,7 +3096,7 @@ body.focus .dk-focusnote{display:block}
     <div class="row-between fb-panelhd"><h2 style="margin:0">Baseball</h2><span class="spacer"></span><span class="freshness" id="mlbhFresh">&mdash;</span><button class="refreshbtn" id="mlbhRefreshBtn" title="Refresh" aria-label="Refresh the pitching archive" onclick="researchRefresh('baseball')">&#8635;</button></div>
     <div id="rsMeta-baseball" class="rs-panelwrap"></div>
     <p class="rs-lede">Ten completed MLB regular seasons of pitching &mdash; how a pitcher has changed, which clubs he threw for and how he did with each, and whether an ERA was supported by the FIP underneath it. <b style="color:var(--warn)">A record, not a forecast, and never tonight&rsquo;s data.</b></p>
-    <div class="stseg" id="mlbhSeg" style="margin-bottom:12px"><button data-seg="games" class="on" onclick="mlbhSetSeg('games')">Games</button><button data-seg="hitters" onclick="mlbhSetSeg('hitters')">Hitters</button><button data-seg="offense" onclick="mlbhSetSeg('offense')">Club offense</button><button data-seg="board" onclick="mlbhSetSeg('board')">Pitching board</button><button data-seg="teams" onclick="mlbhSetSeg('teams')">Pitching clubs</button><button data-seg="compare" onclick="mlbhSetSeg('compare')">Compare pitchers</button></div>
+    <div class="stseg" id="mlbhSeg" style="margin-bottom:12px"><button data-seg="games" class="on" onclick="mlbhSetSeg('games')">Games</button><button data-seg="hitters" onclick="mlbhSetSeg('hitters')">Hitters</button><button data-seg="offense" onclick="mlbhSetSeg('offense')">Club offense</button><button data-seg="board" onclick="mlbhSetSeg('board')">Pitching board</button><button data-seg="teams" onclick="mlbhSetSeg('teams')">Pitching clubs</button><button data-seg="compare" onclick="mlbhSetSeg('compare')">Compare pitchers</button><button data-seg="cbb" onclick="mlbhSetSeg('cbb')">College</button></div>
     <div id="mlbhBody"><div class="empty">Loading&hellip;</div></div>
     <div id="rsSys-baseball" class="fb-ov" style="margin-top:var(--sp5)"></div>
     <div id="mlbhModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this){if(window.MLBO&&MLBO.profileId)mlboCloseHitter();else mlbhClosePitcher();}">
@@ -3626,6 +3638,7 @@ window.mcRefresh=function(){
      pitcher's K-BB% is one number rather than three that agree. -->
 <script src="/lib/mlb_pitcher_history.js?v=20260917a"></script>
 <script src="/lib/mlb_offense_history.js?v=20260917a"></script>
+<script src="/lib/college_baseball.js?v=20260918a"></script>
 <script>
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
@@ -13004,6 +13017,17 @@ async function mlbhLoadSeg(force){
     renderBaseball();
     return;
   }
+  /* COLLEGE BASEBALL has its own archive, its own schema and its own season.
+     It loads here rather than beside the MLB card because a reader who never
+     opens the segment should never pay for the reads. */
+  if(MLBH.seg==='cbb'){
+    var ctok=++MLBH_LOAD;
+    if(!CBB.at&&!CBB.err){ try{ await window.loadCollegeBaseball(force,MLBH.signal); }catch(_){ } }
+    else if(force){ try{ await window.loadCollegeBaseball(true,MLBH.signal); }catch(_){ } }
+    if(ctok!==MLBH_LOAD)return;
+    renderBaseball();
+    return;
+  }
   /* The offensive segments have their own loader over their own archive. */
   if(MLBH.seg==='hitters'||MLBH.seg==='offense'){
     if(!MLBO.status&&!MLBO.err){ try{ await window.loadBaseballOffense(force,MLBH.signal); }catch(_){} }
@@ -13171,6 +13195,7 @@ function renderBaseball(){
      every game on the card and still opens a brief for each one. Only the
      career line inside a brief is missing then, and the brief says so. */
   if(MLBH.seg==='games'){ host.innerHTML=mlbhGamesHTML(); return; }
+  if(MLBH.seg==='cbb'){ host.innerHTML=cbbBoardHTML(); return; }
   /* THE OFFENSIVE SEGMENTS READ A DIFFERENT ARCHIVE. They are drawn before the
      pitching gates below so a database carrying only one of the two still
      shows the half it has, with the other saying why it is absent. */
@@ -14725,6 +14750,323 @@ async function mlboLoadSeg(force){
   if(token!==MLBO_LOAD)return;
   renderBaseball();
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COLLEGE BASEBALL — the card, and the brief behind each game.
+
+   It sits inside Baseball as a segment for the same reason college football
+   sits inside Football: a reader thinking about baseball tonight should not
+   have to know which panel the college game was filed under.
+
+   WHAT THIS PANEL WILL NOT DO. There is no validated EdgeDesk model for
+   college baseball, and no walk-forward record for one anywhere in this
+   repository, so nothing here is priced, graded or recommended. It will not
+   name a starting pitcher: college programmes rarely post one and the source
+   does not carry it, and the starter is the largest single input in a
+   baseball number — a brief that guessed would be guessing the main thing.
+
+   AND IT SAYS WHEN THERE IS NOTHING TO SAY. The season runs February to June.
+   For most of the year the honest answer is that nobody is playing, which is
+   different from a pipeline that broke, and the two must not look alike.
+   ═══════════════════════════════════════════════════════════════════════════ */
+var CBB={ status:null, err:null, errCode:null, at:null, board:null, boardKey:null,
+  day:null, brief:null, briefId:null, briefErr:null, signal:null };
+
+async function sbGetCbb(q,signal){return sbFetch(q,{'accept-profile':'cbb'},signal);}
+function cbbM(){ return window.EDCollegeBaseball||null; }
+function cbbSvc(){
+  var M=cbbM(); if(!M)return null;
+  return M.createService({read:function(rel,q){return sbGetCbb(rel+'?'+q,CBB.signal);}});
+}
+function cbbEsc(x){ return stEsc(x==null?'':String(x)); }
+
+/* The three-day window the rest of EdgeDesk uses, in Eastern time, so the
+   college card and the MLB card mean the same thing by "today". */
+function cbbDay(offset){
+  var t=new Date(Date.now()+(offset||0)*864e5);
+  return new Date(t.toLocaleString('en-US',{timeZone:'America/New_York'})).toISOString().slice(0,10);
+}
+function cbbDayLabel(d){
+  try{
+    var dt=new Date(d+'T12:00:00Z');
+    return dt.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'});
+  }catch(_){ return d; }
+}
+
+window.loadCollegeBaseball=async function(force,signal){
+  CBB.signal=signal||null;
+  var M=cbbM();
+  if(!M){CBB.err='The college baseball query layer (lib/college_baseball.js) did not load. Reload the page.';return;}
+  var svc=cbbSvc();
+  try{
+    var st=await svc.status(!!force);
+    CBB.status=st;
+    if(!st.ok){
+      CBB.err=st.error||'The college baseball archive is not available.';
+      CBB.errCode=st.code; return;
+    }
+    CBB.err=null; CBB.errCode=null;
+    var from=cbbDay(0), through=cbbDay(2);
+    var b=await svc.board({from:from,through:through});
+    CBB.board=b.ok?b:null;
+    CBB.boardKey=from+'|'+through;
+    CBB.day={from:from,through:through};
+    if(!b.ok){CBB.err=b.error||'The college card did not load.';CBB.errCode=b.code;}
+    CBB.at=Date.now();
+  }catch(e){
+    if(typeof mlbhAborted==='function'&&mlbhAborted(e))return;
+    CBB.err=String(e&&e.message||e); CBB.errCode='QUERY_UNAVAILABLE';
+  }
+};
+
+/* ---- college baseball: the board ---------------------------------------- */
+function cbbBoardHTML(){
+  if(!CBB.at&&!CBB.err)return '<div class="empty">Loading the college card&hellip;</div>';
+  var M=cbbM();
+  if(CBB.err&&!CBB.board){
+    /* NOT INSTALLED IS NOT THE SAME AS BROKEN, and a reader deserves the
+       difference: one is a thing to wait for, the other a thing to report. */
+    if(CBB.errCode==='NOT_INSTALLED'||CBB.errCode==='NOT_PROMOTED'){
+      return '<div class="empty"><b>The college baseball archive is not installed yet.</b><br>'
+        +'Its schema has been applied but no import has been promoted, so there is nothing to show. '
+        +'Nothing is invented in its place.</div>';
+    }
+    return '<div class="empty"><b>The college card did not load.</b><br>'+cbbEsc(CBB.err)
+      +'<div style="margin-top:9px">Nothing is shown in its place.</div></div>';
+  }
+  var b=CBB.board;
+  if(!b)return '<div class="empty">Loading the college card&hellip;</div>';
+
+  var head='<div class="mlbb-note">Every college baseball game on the three-day card, from a union of the day '
+    +'scoreboard and every club’s own schedule — neither is complete alone. Open one for the research behind it. '
+    +'<b>College baseball carries no validated EdgeDesk model</b>, so no game here is priced, graded or '
+    +'recommended, and no starting pitcher is named because the source does not carry one.</div>';
+
+  if(!b.games.length){
+    /* OUT OF SEASON IS THE CORRECT ANSWER, NOT AN ERROR. */
+    if(!b.in_season){
+      return head+'<div class="empty"><b>College baseball is out of season.</b><br>'
+        +'The season runs from the middle of February to the end of June. There are no games between '
+        +cbbEsc(cbbDayLabel(b.from))+' and '+cbbEsc(cbbDayLabel(b.through))+', and that is the right answer '
+        +'rather than an empty board.'
+        +(CBB.status&&CBB.status.ok?'<div style="margin-top:9px" class="mlbh-cov-m">The archive holds '
+          +cbbEsc(CBB.status.counts.games)+' games across seasons '
+          +cbbEsc(CBB.status.coverage.first_season)+'–'+cbbEsc(CBB.status.coverage.last_season)
+          +'. Season records and prior meetings are still there to read.</div>':'')
+        +'</div>';
+    }
+    return head+'<div class="empty"><b>No college games on the card.</b><br>'
+      +'The archive is installed and in season, and it holds no games between '+cbbEsc(cbbDayLabel(b.from))
+      +' and '+cbbEsc(cbbDayLabel(b.through))+'.</div>';
+  }
+
+  var byDay={};
+  b.games.forEach(function(g){ (byDay[g.date]=byDay[g.date]||[]).push(g); });
+  var h=head;
+  Object.keys(byDay).sort().forEach(function(d){
+    var rows=byDay[d];
+    h+='<div class="mlbb-day">'+cbbEsc(cbbDayLabel(d))+'<span class="n">'+rows.length+' game'
+      +(rows.length===1?'':'s')+'</span></div><div class="mlbb-list">';
+    rows.forEach(function(g){
+      var side=function(t,score){
+        return '<span class="t">'+(t.rank?'<b class="cbb-rk">#'+cbbEsc(t.rank)+'</b> ':'')
+          +cbbEsc(t.name)+(score!=null?'<i>'+cbbEsc(score)+'</i>':'')+'</span>';
+      };
+      var when;
+      if(g.abandoned) when='<span class="cbb-ab">'+cbbEsc(g.status||'abandoned')+'</span>';
+      else if(g.state==='in') when='<span class="cbb-live">'+cbbEsc(g.status||'in progress')+'</span>';
+      else if(g.completed) when=cbbEsc(g.status||'Final');
+      else if(g.start_time_tbd) when='<span class="cbb-tbd">time to be confirmed</span>';
+      else when=cbbEsc(new Date(g.start_time).toLocaleTimeString('en-US',
+        {hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET');
+      h+='<button class="mlbb-row" onclick="return cbbOpenBrief('+JSON.stringify(g.game_id).replace(/"/g,'&quot;')+')">'
+        +'<span class="tm">'+side(g.away,g.away.score)+'<span class="at">@</span>'+side(g.home,g.home.score)+'</span>'
+        +'<span class="sp"><span class="p">'+when+'</span>'
+        +'<span class="p">'+cbbEsc(g.venue||'')+(g.neutral_site?' (neutral)':'')
+        +(g.conference_game?' · conference':'')+'</span></span></button>';
+    });
+    h+='</div>';
+  });
+  h+='<div class="mlbh-cov-m" style="margin-top:10px">'+cbbEsc(b.counts.total)+' games · '
+    +cbbEsc(b.counts.final)+' final · '+cbbEsc(b.counts.live)+' in progress · '
+    +cbbEsc(b.counts.scheduled)+' to come'
+    +(b.counts.abandoned?' · '+cbbEsc(b.counts.abandoned)+' abandoned':'')+'</div>';
+  return h;
+}
+
+/* ---- college baseball: the brief behind one game -------------------------
+   Built from the same game log the board is drawn from, plus the season
+   records folded out of it. Every section that cannot be filled says so by
+   name rather than being quietly dropped, because a brief with a section
+   missing reads as a brief with nothing to say about it. */
+async function cbbBuildBrief(gameId){
+  var svc=cbbSvc(); if(!svc)return {ok:false,error:'The college baseball query layer did not load.'};
+  var missing=[];
+  var gr=await svc.game(gameId);
+  if(!gr.ok)return {ok:false,error:gr.error||'That game is not in the archive.',code:gr.code};
+  var g=gr.game;
+  var season=g.season;
+
+  /* the two clubs' seasons, each folded out of the game log */
+  var pair=await Promise.all([
+    g.away.team_id?svc.teamSeason(g.away.team_id,season):Promise.resolve({ok:false,code:'NO_TEAM_ID'}),
+    g.home.team_id?svc.teamSeason(g.home.team_id,season):Promise.resolve({ok:false,code:'NO_TEAM_ID'})
+  ]);
+  var aTS=pair[0].ok?pair[0].team:null, hTS=pair[1].ok?pair[1].team:null;
+  if(!aTS)missing.push(g.away.name+' has no completed games in the '+season+' archive, so no record, run rate or '
+    +'form is shown for them. A club with no games has no rate — it is not zero.');
+  if(!hTS)missing.push(g.home.name+' has no completed games in the '+season+' archive, so no record, run rate or '
+    +'form is shown for them.');
+
+  /* prior meetings and recent form, both out of the same log */
+  var extra=await Promise.all([
+    (g.away.team_id&&g.home.team_id)?svc.headToHead(g.away.team_id,g.home.team_id):Promise.resolve({ok:false}),
+    g.away.team_id?svc.form(g.away.team_id,season,10):Promise.resolve({ok:false}),
+    g.home.team_id?svc.form(g.home.team_id,season,10):Promise.resolve({ok:false})
+  ]);
+  var h2h=extra[0].ok?extra[0]:null, aF=extra[1].ok?extra[1]:null, hF=extra[2].ok?extra[2]:null;
+  if(!h2h||!h2h.meetings)missing.push('These clubs have no completed meeting in the archive, so there is no '
+    +'head-to-head to read.');
+
+  /* THE STARTER IS THE LARGEST SINGLE INPUT IN A BASEBALL NUMBER, and this
+     source does not carry one for college baseball. Saying so is the honest
+     move; guessing would be guessing the main thing. */
+  missing.push('No probable starting pitcher is shown. College programmes rarely post one and the source behind '
+    +'this card does not carry it. The starter is the largest single input in a baseball number, so the pitching '
+    +'half of this matchup is unknown and EdgeDesk does not fill it in.');
+  if(g.seen_by.length===1){
+    missing.push('Only the '+(g.seen_by[0]==='scoreboard'?'day scoreboard':'clubs’ own schedules')
+      +' carried this game. Neither source is complete on its own, so a game seen by one is worth slightly less '
+      +'confidence than a game seen by both.');
+  }
+
+  return {ok:true,game:g,season:season,away:aTS,home:hTS,h2h:h2h,away_form:aF,home_form:hF,missing:missing};
+}
+
+function cbbBriefHTML(b){
+  if(!b||!b.ok)return '<div class="empty"><b>That brief could not be built.</b><br>'
+    +cbbEsc((b&&b.error)||'Unknown')+'</div>';
+  var g=b.game, M=cbbM();
+  var rec=function(ts){ return ts?M.recordOf(ts):null; };
+  var f2=function(v){ return v==null?'—':Number(v).toFixed(2); };
+
+  var when=[];
+  if(g.completed&&!g.abandoned)when.push(g.status||'Final');
+  else if(g.abandoned)when.push(g.status||'abandoned');
+  else if(g.start_time_tbd)when.push('first pitch to be confirmed');
+  else if(g.start_time)when.push(new Date(g.start_time).toLocaleString('en-US',
+    {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET');
+  if(g.venue)when.push(g.venue+(g.venue_city?', '+g.venue_city:''));
+  if(g.neutral_site)when.push('neutral site');
+  if(g.conference_game)when.push('conference game');
+  if(g.notes)when.push(g.notes);
+
+  var h='<div class="mlbh-ph"><h3>'+(g.away.rank?'#'+cbbEsc(g.away.rank)+' ':'')+cbbEsc(g.away.name)
+    +' at '+(g.home.rank?'#'+cbbEsc(g.home.rank)+' ':'')+cbbEsc(g.home.name)+'</h3>'
+    +'<div class="mlbh-cov-m">'+cbbEsc(when.join(' · '))+'</div></div>';
+
+  /* the score, when there is one — and never a 0-0 for an abandoned game */
+  if(g.completed&&!g.abandoned&&g.away.score!=null){
+    h+='<div class="mlbb-sec"><b>Final</b><div>'+cbbEsc(g.away.name)+' '+cbbEsc(g.away.score)
+      +' — '+cbbEsc(g.home.score)+' '+cbbEsc(g.home.name)
+      +(g.innings&&g.innings!==9?' ('+cbbEsc(g.innings)+' innings)':'')+'</div></div>';
+  } else if(g.abandoned){
+    h+='<div class="mlbb-sec"><b>No result</b><div>This game is recorded as '+cbbEsc(g.status||'abandoned')
+      +' with no score. It is not a nil-nil draw, and it is excluded from both clubs’ records.</div></div>';
+  }
+
+  /* NO PROJECTION, AND THE SECTION SAYS WHY RATHER THAN BEING ABSENT. */
+  h+='<div class="mlbb-sec"><b>Projection</b><div>EdgeDesk publishes no validated model for college baseball and '
+    +'holds no walk-forward record for one, so there is no fair line, total or win probability for this game. '
+    +'Everything below is measured: the records, the runs, the form and the prior meetings, each out of the same '
+    +'game log this card is drawn from.</div></div>';
+
+  /* the season axis */
+  if(b.away||b.home){
+    var row=function(label,av,hv,note){
+      return '<tr><td>'+cbbEsc(label)+'</td><td>'+cbbEsc(av)+'</td><td>'+cbbEsc(hv)+'</td>'
+        +'<td class="mlbh-cov-m">'+cbbEsc(note||'')+'</td></tr>';
+    };
+    h+='<div class="mlbb-sec"><b>The season, both clubs</b>'
+      +'<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead><tr><th></th>'
+      +'<th>'+cbbEsc(g.away.name)+'</th><th>'+cbbEsc(g.home.name)+'</th><th></th></tr></thead><tbody>'
+      +row('Record',rec(b.away)||'—',rec(b.home)||'—')
+      +row('Conference',b.away?b.away.conference.wins+'-'+b.away.conference.losses:'—',
+                        b.home?b.home.conference.wins+'-'+b.home.conference.losses:'—')
+      +row('Runs per game',f2(b.away&&b.away.runs_per_game),f2(b.home&&b.home.runs_per_game))
+      +row('Runs allowed per game',f2(b.away&&b.away.runs_allowed_per_game),
+                                   f2(b.home&&b.home.runs_allowed_per_game),'lower is better')
+      +row('Run difference per game',f2(b.away&&b.away.run_diff_per_game),f2(b.home&&b.home.run_diff_per_game))
+      +row('Away record',b.away?b.away.away.wins+'-'+b.away.away.losses:'—',
+                         b.home?b.home.away.wins+'-'+b.home.away.losses:'—')
+      +row('Home record',b.away?b.away.home.wins+'-'+b.away.home.losses:'—',
+                         b.home?b.home.home.wins+'-'+b.home.home.losses:'—')
+      +row('Last ten',b.away?b.away.last10.wins+'-'+b.away.last10.losses:'—',
+                      b.home?b.home.last10.wins+'-'+b.home.last10.losses:'—')
+      +row('Streak',(b.away&&M.streakText(b.away))||'—',(b.home&&M.streakText(b.home))||'—')
+      +row('Pythagorean',b.away&&b.away.pythag_win_pct!=null?(b.away.pythag_win_pct*100).toFixed(0)+'%':'—',
+                         b.home&&b.home.pythag_win_pct!=null?(b.home.pythag_win_pct*100).toFixed(0)+'%':'—',
+           'what the runs imply, never a price')
+      +'</tbody></table></div></div>';
+  }
+
+  /* prior meetings */
+  if(b.h2h&&b.h2h.meetings){
+    h+='<div class="mlbb-sec"><b>Prior meetings</b><div>'+cbbEsc(b.h2h.meetings)+' completed meeting'
+      +(b.h2h.meetings===1?'':'s')+' in the archive: '+cbbEsc(g.away.name)+' '+cbbEsc(b.h2h.a_wins)
+      +', '+cbbEsc(g.home.name)+' '+cbbEsc(b.h2h.b_wins)+'.</div><ul class="mlbh-list">';
+    b.h2h.games.slice(0,6).forEach(function(m){
+      h+='<li>'+cbbEsc(m.date)+' — '+cbbEsc(m.away.name)+' '+cbbEsc(m.away.score)+' at '
+        +cbbEsc(m.home.name)+' '+cbbEsc(m.home.score)+'</li>';
+    });
+    h+='</ul></div>';
+  }
+
+  /* recent form, each club's own last ten */
+  var formBlock=function(name,f){
+    if(!f||!f.results.length)return '';
+    return '<div><b>'+cbbEsc(name)+'</b> '+cbbEsc(f.wins)+'-'+cbbEsc(f.losses)+' in its last '
+      +cbbEsc(f.results.length)+': '
+      +f.results.map(function(r){return '<span class="cbb-f cbb-f-'+r.result.toLowerCase()+'">'+r.result+'</span>';}).join('')
+      +'</div>';
+  };
+  if((b.away_form&&b.away_form.results.length)||(b.home_form&&b.home_form.results.length)){
+    h+='<div class="mlbb-sec"><b>Recent form</b>'
+      +formBlock(g.away.name,b.away_form)+formBlock(g.home.name,b.home_form)+'</div>';
+  }
+
+  /* WHAT COULD NOT BE MEASURED — always present, never trimmed. */
+  h+='<div class="mlbb-sec"><b>What EdgeDesk could not measure</b><ul class="mlbh-list">'
+    +b.missing.map(function(m){return '<li>'+cbbEsc(m)+'</li>';}).join('')+'</ul></div>';
+  h+='<div class="mlbh-cov-m" style="margin-top:8px">Source: '+cbbEsc(cbbM().SOURCE)+'. '
+    +'Seen by: '+cbbEsc(g.seen_by.join(' and ')||'—')+'.</div>';
+  return h;
+}
+
+window.cbbOpenBrief=function(gameId){
+  CBB.briefId=gameId; CBB.brief=null; CBB.briefErr=null;
+  var host=document.getElementById('mlbhModalCard');
+  var modal=document.getElementById('mlbhModal');
+  if(host&&modal){
+    host.innerHTML='<div class="empty">Building the brief&hellip;</div>';
+    modal.style.display='block';
+  }
+  cbbBuildBrief(gameId).then(function(b){
+    CBB.brief=b;
+    if(CBB.briefId!==gameId)return;      /* the reader moved on */
+    var el=document.getElementById('mlbhModalCard');
+    if(el)el.innerHTML='<button class="mlbh-x" onclick="cbbCloseBrief()">×</button>'+cbbBriefHTML(b);
+  }).catch(function(e){
+    var el=document.getElementById('mlbhModalCard');
+    if(el)el.innerHTML='<button class="mlbh-x" onclick="cbbCloseBrief()">×</button>'
+      +'<div class="empty"><b>That brief could not be built.</b><br>'+cbbEsc(e&&e.message||e)+'</div>';
+  });
+  return false;
+};
+window.cbbCloseBrief=function(){
+  CBB.briefId=null; CBB.brief=null;
+  var m=document.getElementById('mlbhModal'); if(m)m.style.display='none';
+};
 
 window.mlboSetCtl=function(k,v){
   MLBO[k]=v;
