@@ -73,6 +73,10 @@ on:
         description: 'Re-run the exploratory source probes. Their questions are answered; they are kept for re-checking a source, not for every dispatch.'
         type: boolean
         required: false
+      club_map:
+        description: 'Resolve NCAA club codes to ESPN ids and write cbb.club_map. Needs commit=true to write; otherwise it resolves and reports.'
+        type: boolean
+        required: false
         default: false
 
 permissions:
@@ -228,6 +232,31 @@ jobs:
       - name: Does every club alias still resolve?
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: node tools/cbb/probe_resolve_clubs.js
+
+      # ── WRITE THE CLUB MAPPING ───────────────────────────────────────────
+      # Resolves NCAA club codes to ESPN team ids and promotes cbb.club_map. It
+      # refuses before staging on a stale alias, on two codes claiming one club,
+      # and on a match rate that has collapsed since it was measured — each of
+      # those having actually happened while this was built.
+      #
+      # Separate from the archive import because a club mapping is cheap and the
+      # archive is 61,000 rows: re-resolving the mapping after ESPN renames a
+      # club should not mean re-importing six seasons of statistics.
+      - name: Write the club mapping
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.club_map == true }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          ARGS="--check"
+          if [ "${{ inputs.commit }}" = "true" ]; then
+            if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+              echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be written."
+              exit 1
+            fi
+            ARGS="--commit"
+          fi
+          node tools/cbb/map_clubs.js $ARGS
 
       # THE FIXTURES ABOVE ARE ONES I WROTE. This runs the same shaping over a
       # REAL payload, on a day inside a completed season, with no credentials —
