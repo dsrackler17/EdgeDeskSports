@@ -23,8 +23,8 @@
   "game_time": "2026-09-20T13:00:00.000Z",
   "game_when_label": "2026-09-20 13:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T20:29:10.802Z",
-  "generated_at": "2026-09-18T04:33:17.259Z",
+  "updated_at": "2026-09-18T11:05:29.363Z",
+  "generated_at": "2026-09-18T11:05:29.363Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk differs from the market by 3.0 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -43,7 +43,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 16 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 17 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings and BetRivers on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
@@ -117,8 +117,8 @@
         "note": "Quoted from the perspective of Tampa Bay Buccaneers, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 16 absorbed 2026 games.",
-      "sample_games": 16,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 17 absorbed 2026 games.",
+      "sample_games": 17,
       "seeded": true,
       "status": "INVESTIGATE",
       "status_note": "EdgeDesk differs from the market by 3.0 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -289,14 +289,14 @@
               "h": {
                 "v": "+0.97",
                 "n": 0.9746420378567893,
-                "rank": "#22 of 32",
-                "rank_n": 22,
+                "rank": "#21 of 32",
+                "rank_n": 21,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 1.1389720956884983,
-                "rank_gap": 8
+                "rank_gap": 7
               }
             }
           ]
@@ -359,8 +359,8 @@
               "a": {
                 "v": "−0.023",
                 "n": -0.022810246581651872,
-                "rank": "#26 of 32",
-                "rank_n": 26,
+                "rank": "#25 of 32",
+                "rank_n": 25,
                 "note": null
               },
               "h": {
@@ -373,7 +373,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.031667435472693004,
-                "rank_gap": 13
+                "rank_gap": 12
               }
             },
             {
@@ -697,13 +697,13 @@
         },
         {
           "k": "Points allowed",
-          "rank_gap": 8,
+          "rank_gap": 7,
           "gap": 1.1389720956884983,
           "lead": "Cleveland Browns",
           "trail": "Tampa Bay Buccaneers",
           "lead_cell": "−0.16 · #14 of 32",
-          "trail_cell": "+0.97 · #22 of 32",
-          "text": "Cleveland Browns −0.16 (#14 of 32) vs Tampa Bay Buccaneers +0.97 (#22 of 32) — 8 places on the league board."
+          "trail_cell": "+0.97 · #21 of 32",
+          "text": "Cleveland Browns −0.16 (#14 of 32) vs Tampa Bay Buccaneers +0.97 (#21 of 32) — 7 places on the league board."
         }
       ],
       "home": [
@@ -719,13 +719,13 @@
         },
         {
           "k": "Run offence · EPA per carry",
-          "rank_gap": 13,
+          "rank_gap": 12,
           "gap": 0.031667435472693004,
           "lead": "Tampa Bay Buccaneers",
           "trail": "Cleveland Browns",
           "lead_cell": "+0.009 · #13 of 32",
-          "trail_cell": "−0.023 · #26 of 32",
-          "text": "Tampa Bay Buccaneers +0.009 (#13 of 32) vs Cleveland Browns −0.023 (#26 of 32) — 13 places on the league board."
+          "trail_cell": "−0.023 · #25 of 32",
+          "text": "Tampa Bay Buccaneers +0.009 (#13 of 32) vs Cleveland Browns −0.023 (#25 of 32) — 12 places on the league board."
         },
         {
           "k": "Explosive pass rate",
@@ -810,7 +810,7 @@
           "team": "Cleveland Browns",
           "label": "run offence",
           "v": "−0.023",
-          "rank": "#26 of 32",
+          "rank": "#25 of 32",
           "note": null
         },
         "def": {
@@ -822,7 +822,7 @@
         },
         "complete": true,
         "net": -0.07502624658165187,
-        "read": "Cleveland Browns’ run offence rates −0.023 (#26 of 32) and Tampa Bay Buccaneers’ run defence rates −0.052 (#8 of 32). Added the way the model adds them, this pairing sits −0.075 from the league mean, which favours Tampa Bay Buccaneers."
+        "read": "Cleveland Browns’ run offence rates −0.023 (#25 of 32) and Tampa Bay Buccaneers’ run defence rates −0.052 (#8 of 32). Added the way the model adds them, this pairing sits −0.075 from the league mean, which favours Tampa Bay Buccaneers."
       },
       {
         "title": "Tampa Bay Buccaneers run offence vs Cleveland Browns run defence",
@@ -1086,7 +1086,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 16 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 17 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1099,7 +1099,7 @@
           "Net rushing EPA — Tampa Bay Buccaneers by 0.6 points (+0.6 pts).",
           "Quarterback adjustment — Tampa Bay Buccaneers by 0.4 points (+0.4 pts).",
           "Points scored: Tampa Bay Buccaneers −0.14 (#16 of 32) vs Cleveland Browns −5.24 (#32 of 32) — 16 places on the league board.",
-          "Run offence · EPA per carry: Tampa Bay Buccaneers +0.009 (#13 of 32) vs Cleveland Browns −0.023 (#26 of 32) — 13 places on the league board."
+          "Run offence · EPA per carry: Tampa Bay Buccaneers +0.009 (#13 of 32) vs Cleveland Browns −0.023 (#25 of 32) — 12 places on the league board."
         ]
       },
       "underdog": {
@@ -1132,7 +1132,7 @@
         {
           "sev": "MEDIUM",
           "label": "early-season sample",
-          "text": "Only 16 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
+          "text": "Only 17 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
           "widening": null
         },
         {
@@ -1179,7 +1179,7 @@
       "total_market": "41.5",
       "total_difference": "0.9 points",
       "book": "DraftKings",
-      "capture_age": "60 hours old",
+      "capture_age": "123 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk differs from the market by 3.0 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -1224,7 +1224,7 @@
         {
           "k": "Points allowed",
           "a": "−0.16  #14 of 32",
-          "h": "+0.97  #22 of 32",
+          "h": "+0.97  #21 of 32",
           "note": null
         },
         {
@@ -1241,7 +1241,7 @@
         },
         {
           "k": "Run offence · EPA per carry",
-          "a": "−0.023  #26 of 32",
+          "a": "−0.023  #25 of 32",
           "h": "+0.009  #13 of 32",
           "note": null
         },
@@ -1320,11 +1320,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 16 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 17 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-18T04:33:17.259Z"
+    "at": "2026-09-18T11:05:29.363Z"
   }
 }
