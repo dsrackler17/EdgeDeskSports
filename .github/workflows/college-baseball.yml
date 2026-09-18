@@ -125,6 +125,14 @@ jobs:
       # The shaping, the union, the gate and the query layer all have to pass
       # before a refresh is allowed to touch a live table. A broken union is
       # how a card loses games quietly.
+      # WHICH STATS SOURCE ANSWERS. The board carries team records folded out
+      # of the game log — real, but no batting lines, no ERAs, no players. The
+      # candidates all sit behind this author's egress policy, so a runner asks
+      # them. Dispatch only: it is a design question, not a daily job.
+      - name: Which college stats source actually answers?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_stats_sources.js
+
       - name: The shaping and the union must pass first
         run: node tools/cbb/ingest.test.js
 
