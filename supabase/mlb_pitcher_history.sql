@@ -596,9 +596,9 @@ begin
   delete from mlbhist.teams                where season between cov_lo and cov_hi;
   delete from mlbhist.validation           where season between cov_lo and cov_hi;
   delete from mlbhist.source_repairs       where season between cov_lo and cov_hi;
-  delete from mlbhist.pitcher_overview;
-  delete from mlbhist.pitcher_team_history;
-  delete from mlbhist.observed_team_runs;
+  delete from mlbhist.pitcher_overview where true;
+  delete from mlbhist.pitcher_team_history where true;
+  delete from mlbhist.observed_team_runs where true;
 
   insert into mlbhist.pitcher_seasons      select * from mlbhist.stg_pitcher_seasons      where import_id = p_import_id;
   insert into mlbhist.pitcher_team_seasons select * from mlbhist.stg_pitcher_team_seasons where import_id = p_import_id;

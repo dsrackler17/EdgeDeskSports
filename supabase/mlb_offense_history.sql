@@ -650,10 +650,10 @@ begin
   delete from mlbhist.offense_validation           where season between cov_lo and cov_hi;
   delete from mlbhist.offense_source_repairs       where season between cov_lo and cov_hi;
   delete from mlbhist.offense_games_reconciliation where season between cov_lo and cov_hi;
-  delete from mlbhist.batter_overview;
-  delete from mlbhist.batter_team_history;
-  delete from mlbhist.observed_batter_team_runs;
-  delete from mlbhist.team_offense_overview;
+  delete from mlbhist.batter_overview where true;
+  delete from mlbhist.batter_team_history where true;
+  delete from mlbhist.observed_batter_team_runs where true;
+  delete from mlbhist.team_offense_overview where true;
 
   insert into mlbhist.batter_seasons               select * from mlbhist.stg_batter_seasons            where import_id = p_import_id;
   insert into mlbhist.batter_team_seasons          select * from mlbhist.stg_batter_team_seasons       where import_id = p_import_id;

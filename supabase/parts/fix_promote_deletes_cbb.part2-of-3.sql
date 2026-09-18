@@ -1,6 +1,172 @@
--- college_baseball -- part 4 of 6.
+-- fix_promote_deletes_cbb -- part 2 of 3.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE STATS PROMOTE GATE
+
+   Same contract as the games promote: it either takes the whole import or it
+   refuses and leaves the previous one untouched. Each refusal is named,
+   because "the stats import failed" is not an operational message.
+
+   p_season is THE SEASON THE IMPORT MEANT TO COVER, not the one it happened
+   to return — the same distinction the games promote needed. An import
+   throttled down to a handful of games has a narrow span, and judging it
+   against the live table over its own span compares a handful with a handful
+   and always passes, which is exactly the failure the shrink refusal exists
+   to catch.
+   ═══════════════════════════════════════════════════════════════════════════ */
+create or replace function cbb.promote_cbb_stats(
+  p_import_id    text,
+  p_allow_shrink boolean default false,
+  p_season       int     default null
+) returns jsonb
+language plpgsql
+as $$
+declare
+  v_refusals  jsonb := '[]'::jsonb;
+  v_staged    bigint;
+  v_live      bigint;
+  v_dupes     bigint;
+  v_orphans   bigint;
+  v_badhits   bigint;
+  v_badseason bigint;
+  v_season    int := p_season;
+  v_players   bigint;
+  v_teams     bigint;
+begin
+  select count(*) into v_staged from cbb.stg_player_games where import_id = p_import_id;
+
+  /* EMPTY_IMPORT — the source answers 200 with an empty slate when hurried,
+     and an empty import must never be allowed to erase a real one. */
+  if v_staged = 0 then
+    v_refusals := v_refusals || jsonb_build_object(
+      'refusal','EMPTY_IMPORT',
+      'detail','no staged player lines for this import id');
+  end if;
+
+  /* DUPLICATE_LINES — one player, one game, one role. A duplicate means the
+     same box score was read twice, and folding it would double a season. */
+  select count(*) into v_dupes from (
+    select game_id, athlete_id, line_type
+      from cbb.stg_player_games where import_id = p_import_id
+     group by 1,2,3 having count(*) > 1) d;
+  if v_dupes > 0 then
+    v_refusals := v_refusals || jsonb_build_object(
+      'refusal','DUPLICATE_LINES',
+      'detail', v_dupes || ' (game, athlete, role) combinations appear more than once');
+  end if;
+
+  /* ORPHAN_GAME — a line for a game the log has never heard of. Either the
+     game log is stale or the ids do not match; both mean the fold would
+     attribute numbers to a game nobody can look up. */
+  select count(*) into v_orphans
+    from cbb.stg_player_games s
+   where s.import_id = p_import_id
+     and not exists (select 1 from cbb.games g where g.game_id = s.game_id);
+  if v_orphans > 0 then
+    v_refusals := v_refusals || jsonb_build_object(
+      'refusal','ORPHAN_GAME',
+      'detail', v_orphans || ' lines reference a game that is not in cbb.games');
+  end if;
+
+  /* HITS_EXCEED_AB — the labelled-array failure mode. A box score arrives as
+     a bare list of numbers whose meaning comes from a parallel list of
+     labels, so an off-by-one in the column mapping produces numbers that are
+     individually plausible and collectively impossible. A hitter with more
+     hits than at-bats is the cheapest way to catch that, and it is checked
+     here as well as in the table constraint because a refusal that names the
+     problem is worth more than a constraint violation that does not. */
+  select count(*) into v_badhits
+    from cbb.stg_player_games
+   where import_id = p_import_id and line_type = 'batting'
+     and ab is not null and hits is not null and hits > ab;
+  if v_badhits > 0 then
+    v_refusals := v_refusals || jsonb_build_object(
+      'refusal','HITS_EXCEED_AB',
+      'detail', v_badhits || ' batting lines have more hits than at-bats — the '
+        || 'column mapping is off, not the source');
+  end if;
+
+  /* SEASON_MISMATCH — a line whose season does not match the year of its own
+     date. College baseball runs February to June, so season and calendar year
+     are the same thing, and a disagreement means one of the two was invented. */
+  select count(*) into v_badseason
+    from cbb.stg_player_games
+   where import_id = p_import_id
+     and season <> extract(year from game_date)::int;
+  if v_badseason > 0 then
+    v_refusals := v_refusals || jsonb_build_object(
+      'refusal','SEASON_MISMATCH',
+      'detail', v_badseason || ' lines carry a season that is not the year of their date');
+  end if;
+
+  /* IMPORT_SHRANK — judged against the season the import MEANT to cover. */
+  if v_season is not null then
+    select count(*) into v_live from cbb.player_games where season = v_season;
+    if v_live > 0 and v_staged < v_live * 0.9 and not p_allow_shrink then
+      v_refusals := v_refusals || jsonb_build_object(
+        'refusal','IMPORT_SHRANK',
+        'detail','staged ' || v_staged || ' lines for season ' || v_season
+          || ' against ' || v_live || ' live; pass p_allow_shrink to override');
+    end if;
+  end if;
+
+  if jsonb_array_length(v_refusals) > 0 then
+    update cbb.import_runs
+       set status='failed', failed_at=now(), refusals=v_refusals, updated_at=now(),
+           failure_reason = (v_refusals->0->>'refusal')
+     where import_id = p_import_id;
+    return jsonb_build_object('ok', false, 'refusals', v_refusals);
+  end if;
+
+  /* One transaction. A reader never lands on a half-imported season. */
+  if v_season is not null then
+    delete from cbb.player_games where season = v_season;
+  else
+    delete from cbb.player_games where true;
+  end if;
+
+  insert into cbb.player_games (
+    game_id, athlete_id, line_type, season, game_date, team_id, team_name,
+    opponent_team_id, athlete_name, position, jersey, starter,
+    ab, runs, hits, rbi, hr, bb, so, pitches_seen, stolen_bases,
+    outs, p_hits, p_runs, earned_runs, p_bb, p_so, p_hr, pitch_count, strikes,
+    season_avg_at_game, season_obp_at_game, season_slg_at_game, season_era_at_game,
+    source, updated_at)
+  select
+    game_id, athlete_id, line_type, season, game_date, team_id, team_name,
+    opponent_team_id, athlete_name, position, jersey, starter,
+    ab, runs, hits, rbi, hr, bb, so, pitches_seen, stolen_bases,
+    outs, p_hits, p_runs, earned_runs, p_bb, p_so, p_hr, pitch_count, strikes,
+    season_avg_at_game, season_obp_at_game, season_slg_at_game, season_era_at_game,
+    source, now()
+    from cbb.stg_player_games where import_id = p_import_id;
+
+  perform cbb.rebuild_player_seasons(v_season);
+
+  select count(*) into v_players from cbb.player_seasons
+   where v_season is null or season = v_season;
+  select count(*) into v_teams from cbb.team_stat_seasons
+   where v_season is null or season = v_season;
+
+  update cbb.import_runs
+     set status='promoted', promoted_at=now(), refusals='[]'::jsonb, updated_at=now(),
+         row_counts = jsonb_build_object(
+           'player_games', v_staged, 'player_seasons', v_players,
+           'team_stat_seasons', v_teams)
+   where import_id = p_import_id;
+
+  update cbb.import_runs
+     set status='superseded', updated_at=now()
+   where dataset='stats' and status='promoted' and import_id <> p_import_id;
+
+  delete from cbb.stg_player_games where import_id = p_import_id;
+
+  return jsonb_build_object('ok', true, 'player_games', v_staged,
+    'player_seasons', v_players, 'team_stat_seasons', v_teams);
+end;
+$$;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    THE FOLD
@@ -16,8 +182,8 @@ language plpgsql
 as $$
 begin
   if p_season is null then
-    delete from cbb.player_seasons;
-    delete from cbb.team_stat_seasons;
+    delete from cbb.player_seasons where true;
+    delete from cbb.team_stat_seasons where true;
   else
     delete from cbb.player_seasons    where season = p_season;
     delete from cbb.team_stat_seasons where season = p_season;
@@ -202,118 +368,3 @@ begin
     left join cbb.team_seasons ts on ts.season=a.season and ts.team_id=a.team_id;
 end;
 $$;
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   THE SAME ACCESS RULES, APPLIED TO THE STATS HALF
-
-   A separate block only because these tables are declared below the first one.
-   The rules are identical and deliberately so: a reader's browser holds a
-   publishable key, so anything it can reach is effectively public.
-
-   cbb.player_games is readable, which is a decision rather than an oversight.
-   A brief showing a game's box score has to read that game's lines, and the
-   same is already true of cbb.games. What keeps that from being "ship the
-   whole dataset to the browser" is the query layer, which asks for one game or
-   one player at a time under an explicit row cap — not this grant. The grant
-   makes the archive readable; the limits in lib/college_baseball.js make it
-   bounded, and neither is a substitute for the other.
-
-   Staging stays unreadable by anyone, and the gates stay uncallable by
-   anyone but the importer's service role.
-   ═══════════════════════════════════════════════════════════════════════════ */
-alter table cbb.player_games      enable row level security;
-alter table cbb.player_seasons    enable row level security;
-alter table cbb.team_stat_seasons enable row level security;
-alter table cbb.stg_player_games  enable row level security;
-
-do $$
-declare t text;
-begin
-  foreach t in array array['player_games','player_seasons','team_stat_seasons'] loop
-    execute format('drop policy if exists %I on cbb.%I', t || '_read', t);
-    execute format('create policy %I on cbb.%I for select to anon, authenticated using (true)',
-                   t || '_read', t);
-    execute format('grant select on cbb.%I to anon, authenticated', t);
-  end loop;
-  /* no policy at all, so RLS denies everything by default */
-  execute 'revoke all on cbb.stg_player_games from anon, authenticated';
-end $$;
-
-revoke all on function cbb.promote_cbb_stats(text, boolean, int) from public, anon, authenticated;
-revoke all on function cbb.rebuild_player_seasons(int)           from public, anon, authenticated;
-
-/* ── how complete is the stats archive for a season? ──────────────────────
-   A reader should be able to see the gap rather than infer it from a club
-   whose hitting line looks oddly light. */
-create or replace view cbb.stats_coverage as
-select g.season,
-       count(distinct g.game_id)                                  as completed_games,
-       count(distinct pg.game_id)                                 as games_with_lines,
-       case when count(distinct g.game_id) > 0
-            then count(distinct pg.game_id)::double precision
-                 / count(distinct g.game_id) end                  as coverage,
-       (select count(*) from cbb.player_seasons ps where ps.season = g.season) as players
-  from cbb.games g
-  left join cbb.player_games pg on pg.game_id = g.game_id
- where g.completed
- group by g.season
- order by g.season desc;
-
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   THE SEASON ARCHIVE — NCAA'S OWN PUBLISHED SEASON STATISTICS
-
-   A SECOND SOURCE, AND A CORRECTION. Everything above folds season numbers out
-   of ESPN box scores, which was the best available when it was written and is
-   still the only way to get PER-GAME lines. But I reported that both open-source
-   college baseball packages were dead ends from CI because the NCAA site they
-   wrap answers 403 to a datacenter address. For ncaa_bbStats that was wrong, and
-   wrong in a way worth recording: it does not scrape at read time. It SHIPS the
-   parsed data in its repository, so the 403 never enters the picture. My 404 on
-   it was a guessed repository owner, and I generalised a real finding about a
-   different package onto this one.
-
-   What that mistake cost is visible in the columns below. The box-score labels
-   carry no doubles, triples, hit-by-pitch or sacrifice flies, so this project
-   documented — correctly, for that source — that on-base and slugging could not
-   be computed and had to be carried from the source's own figure. THIS source
-   publishes all four. So OBP and SLG here are computed, from the definitions,
-   and they are the real ones:
-
-     OBP = (H + BB + HBP) / (AB + BB + HBP + SF)
-     SLG = (H + 2B + 2*3B + 3*HR) / AB
-
-   HOW THE TWO SOURCES RELATE, because a reader must never have to guess:
-     cbb.player_seasons       per-game box scores, folded. Current season, live,
-                              partial coverage, no 2B/3B/HBP/SF.
-     cbb.ncaa_player_seasons  NCAA's published season totals. 2021-2026,
-                              complete seasons, every counting column.
-   They are separate tables carrying a source column, and nothing merges them.
-   Two sources that disagree must be able to be seen disagreeing.
-
-   PROVENANCE, since this is somebody else's work:
-     package   ncaa_bbStats 1.4.2, MIT, Copyright (c) 2025 Mateo Biggs
-               https://github.com/CodeMateo15/ncaa_bbStats
-     dataset   src/data/player_stats_cache_ncaa/batting/batting.csv and
-               src/data/player_stats_cache_ncaa/pitching/pitching.csv
-     upstream  NCAA's own published season statistics. The package is explicit
-               that this cache passed through no third-party export at any
-               point, which is why it is the one used here and the FanGraphs-
-               sourced cache beside it is not.
-
-   VERIFIED BEFORE TRUSTING, not assumed:
-     32,161 batting and 31,368 pitching player-seasons, 311 teams, 2021-2026.
-     2026 is a COMPLETE season, not the truncated mirror the package warns
-     about: mean at-bats 106.5 against 105.2 in 2025, mean games 34.7 against
-     34.4. A mid-season cut would have shown roughly half.
-     Innings are written as thirds-in-tenths — only .0, .1 and .2 appear across
-     4,000 sampled rows — so they are stored as OUTS here for the same reason
-     they are everywhere else in this schema.
-     One row is corrupt: Roberto Pena, USF, 2021, 450 at-bats with no games
-     recorded, where the highest total among all 32,161 rows that do record
-     games is 296. IMPOSSIBLE_AB below exists because of that row.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-alter table cbb.import_runs drop constraint if exists cbb_import_runs_dataset_ck;
-alter table cbb.import_runs add constraint cbb_import_runs_dataset_ck
-  check (dataset in ('games','stats','ncaa_seasons'));

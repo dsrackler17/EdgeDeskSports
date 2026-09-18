@@ -16,7 +16,16 @@ Run the parts IN ORDER within a file, and the files in this order:
 1. `mlb_pitcher_history.part1-of-3.sql` … `part3-of-3.sql`
 2. `mlb_offense_history.part1-of-4.sql` … `part4-of-4.sql`  (refuses to run
    until the pitching archive exists)
-3. `college_baseball.part1-of-6.sql` … `part6-of-6.sql`
+3. `college_baseball.part1-of-*.sql` … the last part
+
+Then, on a database that already has the three above, the amendments:
+
+4. `cbb_service_role_grants.sql` — unsplit; `college_baseball.sql` granted the
+   readers everything and `service_role` nothing, so no import could write
+5. `fix_promote_deletes_mlb.part1-of-*.sql` … and then
+   `fix_promote_deletes_cbb.part1-of-*.sql` — Supabase loads the `safeupdate`
+   guard for the roles PostgREST connects as, which refuses a `DELETE` with no
+   `WHERE`; every promote cleared its live table with a bare one
 
 The last part of each file prints that file's report. Every row of the
 `guarantee` column must read `ok`.
@@ -36,9 +45,11 @@ Take the connection string from Supabase → Connect → Session pooler:
 
 These are generated. After editing any of the three source files, rebuild with:
 
-    npm run sql:split -- supabase/mlb_pitcher_history.sql supabase/parts 20000
-    npm run sql:split -- supabase/mlb_offense_history.sql supabase/parts 20000
-    npm run sql:split -- supabase/college_baseball.sql   supabase/parts 20000
+    npm run sql:split -- supabase/mlb_pitcher_history.sql supabase/parts 18000
+    npm run sql:split -- supabase/mlb_offense_history.sql supabase/parts 18000
+    npm run sql:split -- supabase/college_baseball.sql   supabase/parts 18000
+    npm run sql:split -- supabase/fix_promote_deletes_mlb.sql supabase/parts 18000
+    npm run sql:split -- supabase/fix_promote_deletes_cbb.sql supabase/parts 18000
 
 The part count changes as a file grows, so delete the old
 `<name>.part*-of-*.sql` for that file first.

@@ -13306,10 +13306,12 @@ function renderBaseball(){
     }
     if(MLBO.err){
       var ofix=MLBO.errCode==='NOT_INSTALLED'
-        ? 'Run <span class="mono">supabase/mlb_offense_history.sql</span> once in the SQL editor, then import with <span class="mono">npm run mlb:off:import:commit</span>.'
-        : (MLBO.errCode==='NO_RECORDS_IN_WINDOW'
-          ? 'The schema is installed but no offensive import has been promoted yet. Run <span class="mono">npm run mlb:off:import:commit</span>.'
-          : 'Nothing is shown in its place.');
+        ? 'Run <span class="mono">supabase/mlb_offense_history.sql</span> once in the SQL editor, then Import from <b>Actions &rarr; MLB historical archives &rarr; Run workflow</b> with <span class="mono">commit</span> ticked (it also runs daily on its own).'
+        : (MLBO.errCode==='NOT_EXPOSED'
+          ? 'The tables are there but the API is not serving them. Add <span class="mono">mlbhist</span> under <b>Supabase &rarr; Settings &rarr; API &rarr; Exposed schemas</b>. Running the SQL again will not change this.'
+          : (MLBO.errCode==='NO_RECORDS_IN_WINDOW'
+            ? 'The schema is installed and served; no offensive import has been promoted yet. Import from <b>Actions &rarr; MLB historical archives &rarr; Run workflow</b> with <span class="mono">commit</span> ticked (it also runs daily on its own).'
+            : 'Nothing is shown in its place.'));
       host.innerHTML='<div class="empty"><b>The historical offensive archive did not answer.</b><br>'
         +mlboEsc(MLBO.err)+'<div style="margin-top:9px">'+ofix+'</div></div>';
       return;
@@ -13322,10 +13324,12 @@ function renderBaseball(){
   if(!M){host.innerHTML='<div class="empty">The MLB history engine (<span class="mono">lib/mlb_pitcher_history.js</span>) did not load, so this panel cannot render. Reload the page.</div>';return;}
   if(MLBH.err){
     var fix=MLBH.errCode==='NOT_INSTALLED'
-      ? 'Run <span class="mono">supabase/mlb_pitcher_history.sql</span> once in the SQL editor, then import with <span class="mono">npm run mlb:import:commit</span>.'
-      : (MLBH.errCode==='NO_RECORDS_IN_WINDOW'
-        ? 'The schema is installed but no import has been promoted yet. Run <span class="mono">npm run mlb:import:commit</span>.'
-        : 'Nothing is shown in its place.');
+      ? 'Run <span class="mono">supabase/mlb_pitcher_history.sql</span> once in the SQL editor, then Import from <b>Actions &rarr; MLB historical archives &rarr; Run workflow</b> with <span class="mono">commit</span> ticked (it also runs daily on its own).'
+      : (MLBH.errCode==='NOT_EXPOSED'
+        ? 'The tables are there but the API is not serving them. Add <span class="mono">mlbhist</span> under <b>Supabase &rarr; Settings &rarr; API &rarr; Exposed schemas</b>. Running the SQL again will not change this.'
+        : (MLBH.errCode==='NO_RECORDS_IN_WINDOW'
+          ? 'The schema is installed and served; no import has been promoted yet. Import from <b>Actions &rarr; MLB historical archives &rarr; Run workflow</b> with <span class="mono">commit</span> ticked (it also runs daily on its own).'
+          : 'Nothing is shown in its place.'));
     host.innerHTML='<div class="empty"><b>The historical pitching archive did not answer.</b><br>'
       +mlbhEsc(MLBH.err)+'<div style="margin-top:9px">'+fix+'</div></div>';
     return;

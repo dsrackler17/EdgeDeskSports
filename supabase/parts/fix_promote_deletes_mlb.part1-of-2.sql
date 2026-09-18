@@ -1,72 +1,43 @@
--- mlb_pitcher_history -- part 2 of 3.
+-- fix_promote_deletes_mlb -- part 1 of 2.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
--- The player-seasons whose team splits were REPLACED with MLB's individual
--- year-by-year history because the per-team query omitted an earlier club.
--- Kept so a traded pitcher's record can be shown to have been repaired rather
--- than silently corrected.
-create table if not exists mlbhist.source_repairs (
-  season                 int not null,
-  player_id              int not null,
-  previous_team_rows     int,
-  replacement_team_rows  int,
-  source_url             text,
-  import_id              text,
-  imported_at            timestamptz not null default now(),
-  constraint mlbhist_source_repairs_key primary key (season, player_id)
-);
+/* ===========================================================================
+   THE PROMOTE GATES, RE-CREATED WITH EVERY DELETE QUALIFIED.
 
--- ---------------------------------------------------------------------------
--- Indexes. Player, team, season and the comparison/leaderboard reads named in
--- the query layer (lib/mlb_pitcher_history.js). Everything the UI and the AI
--- ask for lands on one of these.
--- ---------------------------------------------------------------------------
-create index if not exists mlbhist_seasons_player_idx        on mlbhist.pitcher_seasons (player_id, season);
-create index if not exists mlbhist_seasons_season_idx        on mlbhist.pitcher_seasons (season);
-create index if not exists mlbhist_seasons_name_idx          on mlbhist.pitcher_seasons (name_key);
-create index if not exists mlbhist_seasons_board_idx         on mlbhist.pitcher_seasons (season, role, outs desc);
-create index if not exists mlbhist_seasons_rating_idx        on mlbhist.pitcher_seasons (season, performance_index desc nulls last);
-create index if not exists mlbhist_team_seasons_player_idx   on mlbhist.pitcher_team_seasons (player_id, season);
-create index if not exists mlbhist_team_seasons_team_idx     on mlbhist.pitcher_team_seasons (team_id, season, outs desc);
-create index if not exists mlbhist_team_seasons_season_idx   on mlbhist.pitcher_team_seasons (season, team_id);
-create index if not exists mlbhist_team_seasons_name_idx     on mlbhist.pitcher_team_seasons (name_key);
-create index if not exists mlbhist_overview_name_idx         on mlbhist.pitcher_overview (name_key);
-create index if not exists mlbhist_overview_last_idx         on mlbhist.pitcher_overview (last_observed_season desc, outs desc);
-create index if not exists mlbhist_overview_workload_idx     on mlbhist.pitcher_overview (outs desc);
-create index if not exists mlbhist_team_history_team_idx     on mlbhist.pitcher_team_history (team_id, outs desc);
-create index if not exists mlbhist_team_history_player_idx   on mlbhist.pitcher_team_history (player_id);
-create index if not exists mlbhist_runs_player_idx           on mlbhist.observed_team_runs (player_id, first_observed_season);
-create index if not exists mlbhist_runs_team_idx             on mlbhist.observed_team_runs (team_id, first_observed_season);
-create index if not exists mlbhist_teams_team_idx            on mlbhist.teams (team_id, season desc);
+   WHY. Supabase loads the safeupdate guard for the roles PostgREST connects
+   as, and it refuses a DELETE with no WHERE clause. Every promote in these
+   schemas clears its live table before writing the new one, and every one of
+   those clears was written bare:
 
--- ===========================================================================
--- STAGING. A structural copy of every record table. The importer writes here
--- first; promote_import() is the only thing that moves rows across.
--- `create table ... (like ...)` copies columns, types, defaults and not-null
--- but deliberately NOT the primary keys — staging is a landing strip, and a
--- duplicate arriving there is a fact the promote gate should report rather
--- than a write that fails halfway through an import.
--- ===========================================================================
-create table if not exists mlbhist.stg_pitcher_seasons      (like mlbhist.pitcher_seasons      including defaults);
-create table if not exists mlbhist.stg_pitcher_team_seasons (like mlbhist.pitcher_team_seasons including defaults);
-create table if not exists mlbhist.stg_pitcher_overview     (like mlbhist.pitcher_overview     including defaults);
-create table if not exists mlbhist.stg_pitcher_team_history (like mlbhist.pitcher_team_history including defaults);
-create table if not exists mlbhist.stg_observed_team_runs   (like mlbhist.observed_team_runs   including defaults);
-create table if not exists mlbhist.stg_league_seasons       (like mlbhist.league_seasons       including defaults);
-create table if not exists mlbhist.stg_teams                (like mlbhist.teams                including defaults);
-create table if not exists mlbhist.stg_validation           (like mlbhist.validation           including defaults);
-create table if not exists mlbhist.stg_source_repairs       (like mlbhist.source_repairs       including defaults);
+       delete from mlbhist.pitcher_overview;
 
-create index if not exists mlbhist_stg_seasons_import_idx      on mlbhist.stg_pitcher_seasons (import_id);
-create index if not exists mlbhist_stg_team_seasons_import_idx on mlbhist.stg_pitcher_team_seasons (import_id);
-create index if not exists mlbhist_stg_overview_import_idx     on mlbhist.stg_pitcher_overview (import_id);
-create index if not exists mlbhist_stg_team_history_import_idx on mlbhist.stg_pitcher_team_history (import_id);
-create index if not exists mlbhist_stg_runs_import_idx         on mlbhist.stg_observed_team_runs (import_id);
-create index if not exists mlbhist_stg_league_import_idx       on mlbhist.stg_league_seasons (import_id);
-create index if not exists mlbhist_stg_teams_import_idx        on mlbhist.stg_teams (import_id);
-create index if not exists mlbhist_stg_validation_import_idx   on mlbhist.stg_validation (import_id);
-create index if not exists mlbhist_stg_repairs_import_idx      on mlbhist.stg_source_repairs (import_id);
+   Through psql that is a full-table delete and does exactly what it says.
+   Called as service_role through PostgREST it is refused outright:
+
+       RPC mlbhist.promote_import -> 400: {"code":"21000",
+         "message":"DELETE requires a WHERE clause"}
+
+   which is where the MLB import died after building all ten seasons.
+
+   MY LOCAL VERIFICATION COULD NOT HAVE CAUGHT THIS. A stock PostgreSQL does
+   not load safeupdate, so all fifteen of these ran clean against a throwaway
+   database and clean through psql, and only failed on the one path that
+   matters: the API. Applying a contract locally is not the same as exercising
+   it the way production calls it.
+
+   WHAT CHANGED. Fifteen deletes across three files gained "where true". That
+   is semantically identical — it still clears the table — and it satisfies the
+   guard, which only requires that a WHERE be present.
+
+   Nothing else in these functions changed. They are re-created here in full
+   because a function body cannot be patched in place; "create or replace"
+   swaps each one atomically, so a reader mid-query is never served a half
+   function. Safe to run more than once.
+   =========================================================================== */
+
+
+/* ---- mlbhist.promote_import — the pitching gate ---- */
 
 -- ===========================================================================
 -- THE PROMOTE GATE.
@@ -188,9 +159,9 @@ begin
   delete from mlbhist.teams                where season between cov_lo and cov_hi;
   delete from mlbhist.validation           where season between cov_lo and cov_hi;
   delete from mlbhist.source_repairs       where season between cov_lo and cov_hi;
-  delete from mlbhist.pitcher_overview;
-  delete from mlbhist.pitcher_team_history;
-  delete from mlbhist.observed_team_runs;
+  delete from mlbhist.pitcher_overview where true;
+  delete from mlbhist.pitcher_team_history where true;
+  delete from mlbhist.observed_team_runs where true;
 
   insert into mlbhist.pitcher_seasons      select * from mlbhist.stg_pitcher_seasons      where import_id = p_import_id;
   insert into mlbhist.pitcher_team_seasons select * from mlbhist.stg_pitcher_team_seasons where import_id = p_import_id;
@@ -237,48 +208,3 @@ begin
   return jsonb_build_object('ok', true, 'import_id', p_import_id,
     'coverage', jsonb_build_object('start', cov_lo, 'end', cov_hi), 'rows', staged);
 end $$;
-
-revoke all on function mlbhist.promote_import(text) from public, anon, authenticated;
-grant execute on function mlbhist.promote_import(text) to service_role;
-
--- Abandon a staged import without touching anything live. Used by the importer
--- when it decides, before promotion, that what it read is not fit to publish.
-create or replace function mlbhist.abandon_import(p_import_id text, p_reason text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = mlbhist, public
-as $$
-begin
-  delete from mlbhist.stg_pitcher_seasons      where import_id = p_import_id;
-  delete from mlbhist.stg_pitcher_team_seasons where import_id = p_import_id;
-  delete from mlbhist.stg_pitcher_overview     where import_id = p_import_id;
-  delete from mlbhist.stg_pitcher_team_history where import_id = p_import_id;
-  delete from mlbhist.stg_observed_team_runs   where import_id = p_import_id;
-  delete from mlbhist.stg_league_seasons       where import_id = p_import_id;
-  delete from mlbhist.stg_teams                where import_id = p_import_id;
-  delete from mlbhist.stg_validation           where import_id = p_import_id;
-  delete from mlbhist.stg_source_repairs       where import_id = p_import_id;
-  update mlbhist.import_runs
-    set status = 'failed', message = coalesce(p_reason, 'abandoned before promotion'), finished_at = now()
-    where import_id = p_import_id and status <> 'promoted';
-  return jsonb_build_object('ok', true, 'import_id', p_import_id, 'abandoned', true);
-end $$;
-revoke all on function mlbhist.abandon_import(text, text) from public, anon, authenticated;
-grant execute on function mlbhist.abandon_import(text, text) to service_role;
-
--- ---------------------------------------------------------------------------
--- What the shell shows about this pipeline. A view rather than a table so it
--- cannot drift from the ledger it describes.
--- ---------------------------------------------------------------------------
-create or replace view mlbhist.dataset_status as
-select r.import_id, r.status, r.coverage_start, r.coverage_end, r.provisional_seasons,
-       r.rating_version, r.dataset_built_at, r.source, r.promoted_at,
-       r.promoted_counts, r.validation, r.source_repairs, r.transformations,
-       (select count(*) from mlbhist.pitcher_seasons)      as live_pitcher_seasons,
-       (select count(*) from mlbhist.pitcher_team_seasons) as live_pitcher_team_seasons,
-       (select count(*) from mlbhist.pitcher_overview)     as live_pitchers
-from mlbhist.import_runs r
-where r.status = 'promoted' and coalesce(r.dataset, 'pitching') = 'pitching'
-order by r.promoted_at desc nulls last
-limit 1;

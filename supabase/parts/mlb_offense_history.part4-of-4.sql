@@ -4,6 +4,24 @@
 -- This last part prints the report: every row should read ok.
 
 -- ---------------------------------------------------------------------------
+-- What the shell shows about this pipeline. A view rather than a table so it
+-- cannot drift from the ledger it describes.
+-- ---------------------------------------------------------------------------
+create or replace view mlbhist.offense_status as
+select r.import_id, r.status, r.coverage_start, r.coverage_end, r.provisional_seasons,
+       r.rating_version, r.dataset_built_at, r.source, r.promoted_at,
+       r.promoted_counts, r.validation, r.source_repairs, r.transformations,
+       (select count(*) from mlbhist.batter_seasons)        as live_batter_seasons,
+       (select count(*) from mlbhist.batter_team_seasons)   as live_batter_team_seasons,
+       (select count(*) from mlbhist.batter_overview)       as live_batters,
+       (select count(*) from mlbhist.batter_overview where plate_appearances > 0) as live_batters_with_pa,
+       (select count(*) from mlbhist.team_offense_seasons)  as live_team_offense_seasons
+from mlbhist.import_runs r
+where r.status = 'promoted' and r.dataset = 'offense'
+order by r.promoted_at desc nulls last
+limit 1;
+
+-- ---------------------------------------------------------------------------
 -- THE TWO-WAY VIEW. One row per player who has BOTH a hitting record with
 -- plate appearances and a pitching record with outs inside this window, joined
 -- on the MLB person id the two packages share. It is a view, not a table, so

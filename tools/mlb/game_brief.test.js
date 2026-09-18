@@ -244,6 +244,9 @@ function build(opts) {
     sbGetMlbHist: async rel => {
       reads.push('mlbhist:' + rel);
       if (opts.noArchive) { const e = new Error('PGRST106'); throw e; }
+      /* A genuinely absent contract, which is a DIFFERENT refusal from the one
+         above and must not collapse into it. */
+      if (opts.noTables) { const e = new Error('PGRST205 Could not find the table'); throw e; }
       const t = rel.split('?')[0];
       /* The promoted-import row the query layer reads its coverage from. It is
          the real view's shape, not a convenient subset: the layer refuses a
@@ -508,10 +511,14 @@ function build(opts) {
     await b.ctx.window.mlbBriefEnsure();
     const M = b.ctx.window.MLBB;
     eq('with no archive the card still loaded', M.cards.length, 3);
-    /* PGRST106 is PostgREST's "schema not exposed" refusal, and the query layer
-       names it NOT_INSTALLED rather than flattening it to a generic failure —
-       the two send a reader to different fixes. */
-    eq('the archive read is reported as not installed', M.read.mlbhist, 'NOT_INSTALLED');
+    /* PGRST106 IS "SCHEMA NOT EXPOSED", NOT "CONTRACT MISSING", AND THIS
+       ASSERTION USED TO CONFLATE THEM. Its own comment already said the two
+       send a reader to different fixes, and then pinned both to
+       NOT_INSTALLED — so the app told an operator whose tables were all
+       present to go and run the SQL again, which they did, three times.
+       PostgREST distinguishes them at the wire (406 PGRST106 against 404
+       PGRST205), so the query layer does too. */
+    eq('a schema PostgREST will not serve is reported as not exposed', M.read.mlbhist, 'NOT_EXPOSED');
     const r = b.ctx.window.fbMlbBriefGame({ away: 'New York Yankees', home: 'New York Mets' });
     chk('with no archive the brief is still built', !!r);
     const h = P.researchHTML(r);
@@ -521,6 +528,15 @@ function build(opts) {
     const board = b.ctx.window.mlbhGamesHTML();
     has(board, 'New York Yankees', 'the board lists a game with no archive installed');
     has(board, 'Game brief', 'the board still offers the brief');
+  }
+  {
+    /* The other half of the split: the schema IS served, the tables are not
+       there. This one really does want "run the SQL". */
+    const b = build({ noTables: true });
+    await b.ctx.window.mlbBriefEnsure();
+    eq('a missing contract is still reported as not installed',
+       b.ctx.window.MLBB.read.mlbhist, 'NOT_INSTALLED');
+    chk('with no tables the card still loaded', b.ctx.window.MLBB.cards.length === 3);
   }
   {
     const b = build({ noEngine: true });

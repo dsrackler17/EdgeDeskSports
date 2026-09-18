@@ -319,7 +319,7 @@ begin
      that the live table does not, so a (row).* here would be one column too
      wide — and a schema change later would break it silently rather than
      loudly. */
-  delete from cbb.games;
+  delete from cbb.games where true;
   insert into cbb.games (
     game_id, season, game_date, start_time, start_time_tbd,
     away_team_id, home_team_id, away_name, home_name, away_abbr, home_abbr,
@@ -335,7 +335,7 @@ begin
     from cbb.stg_games where import_id = p_import_id;
 
   if staged_teams > 0 then
-    delete from cbb.teams;
+    delete from cbb.teams where true;
     insert into cbb.teams (
       team_id, name, short_name, abbreviation, slug,
       conference_id, conference_name, logo, color,
@@ -385,7 +385,7 @@ security definer
 set search_path = cbb, public
 as $$
 begin
-  delete from cbb.team_seasons;
+  delete from cbb.team_seasons where true;
 
   /* one row per team per game, from both sides of the fixture */
   with sides as (
@@ -889,7 +889,7 @@ begin
   if v_season is not null then
     delete from cbb.player_games where season = v_season;
   else
-    delete from cbb.player_games;
+    delete from cbb.player_games where true;
   end if;
 
   insert into cbb.player_games (
@@ -947,8 +947,8 @@ language plpgsql
 as $$
 begin
   if p_season is null then
-    delete from cbb.player_seasons;
-    delete from cbb.team_stat_seasons;
+    delete from cbb.player_seasons where true;
+    delete from cbb.team_stat_seasons where true;
   else
     delete from cbb.player_seasons    where season = p_season;
     delete from cbb.team_stat_seasons where season = p_season;
@@ -1407,7 +1407,7 @@ begin
   if p_season is not null then
     delete from cbb.ncaa_player_seasons where season = p_season;
   else
-    delete from cbb.ncaa_player_seasons;
+    delete from cbb.ncaa_player_seasons where true;
   end if;
 
   insert into cbb.ncaa_player_seasons (
@@ -1631,7 +1631,7 @@ begin
     return jsonb_build_object('ok', false, 'refusals', v_refusals);
   end if;
 
-  delete from cbb.club_map;
+  delete from cbb.club_map where true;
   insert into cbb.club_map (ncaa_code, ncaa_name, espn_team_id, espn_name, via, resolved_at)
   select ncaa_code, ncaa_name, espn_team_id, espn_name, via, now()
     from cbb.stg_club_map where import_id = p_import_id;

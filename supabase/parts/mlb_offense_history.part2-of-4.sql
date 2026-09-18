@@ -2,6 +2,69 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- One club-season. runs_per_game uses team_games — the club's ACTUAL games.
+create table if not exists mlbhist.team_offense_seasons (
+  season                    int  not null,
+  team_id                   int  not null,
+  team_name                 text,
+  plate_appearances         int, at_bats int, runs int, hits int, singles int,
+  doubles int, triples int, home_runs int, rbi int,
+  walks int, intentional_walks int, strikeouts int, hit_by_pitch int,
+  stolen_bases int, caught_stealing int, total_bases int,
+  sacrifice_bunts int, sacrifice_flies int, grounded_into_double_play int,
+  catcher_interference int, pitches_seen int,
+  avg double precision, obp double precision, slg double precision, ops double precision,
+  iso double precision, babip double precision,
+  k_pct double precision, bb_pct double precision, hr_pct double precision,
+  sb_success_pct double precision,
+  sample_flag               text,
+  league_obp                double precision,
+  league_slg                double precision,
+  rating_sample_weight      double precision,
+  rating_version            text,
+  offensive_index           double precision,
+  player_games_sum          int,                    -- NOT club games
+  players_with_records      int,
+  team_games                int,                    -- club games, official
+  runs_per_game             double precision,
+  team_totals_source_url    text,
+  provisional               boolean not null default false,
+  import_id                 text,
+  imported_at               timestamptz not null default now(),
+  constraint mlbhist_team_offense_seasons_key primary key (season, team_id)
+);
+
+create table if not exists mlbhist.team_offense_overview (
+  team_id                   int primary key,
+  plate_appearances         int, at_bats int, runs int, hits int, singles int,
+  doubles int, triples int, home_runs int, rbi int,
+  walks int, intentional_walks int, strikeouts int, hit_by_pitch int,
+  stolen_bases int, caught_stealing int, total_bases int,
+  sacrifice_bunts int, sacrifice_flies int, grounded_into_double_play int,
+  catcher_interference int, pitches_seen int,
+  avg double precision, obp double precision, slg double precision, ops double precision,
+  iso double precision, babip double precision,
+  k_pct double precision, bb_pct double precision, hr_pct double precision,
+  sb_success_pct double precision,
+  sample_flag               text,
+  first_observed_season     int,
+  last_observed_season      int,
+  seasons_with_records      int,
+  seasons_with_pa           int,
+  observed_seasons          text,
+  boundary_start            boolean,
+  boundary_end              boolean,
+  rated_plate_appearances   int,
+  weighted_offensive_index  double precision,
+  team_names_observed       text,
+  player_games_sum          int,
+  team_games                int,
+  runs_per_game             double precision,
+  rating_version            text,
+  import_id                 text,
+  imported_at               timestamptz not null default now()
+);
+
 -- The annual MLB baseline the ratings are computed against. Includes every
 -- hitter MLB returned, pitchers included — that is what makes 100 mean what
 -- the rating says it means.
