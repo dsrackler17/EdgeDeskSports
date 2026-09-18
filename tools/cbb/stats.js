@@ -294,27 +294,87 @@ if (require.main === module) {
     return null;
   }
 
+  /* ── a day's completed games, straight from the scoreboard ──────────────
+     For --sample-day, which needs no database. Everything else reads the game
+     log, because the archive must never hold a game the log does not. */
+  async function gamesFromScoreboard(day) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 25000);
+    let j = null;
+    try {
+      const r = await fetch(`${ESPN}/scoreboard?dates=${day}&limit=500`, {
+        signal: ctl.signal, headers: { accept: 'application/json', 'user-agent': BROWSER_UA },
+      });
+      if (r.status === 200) j = JSON.parse(await r.text());
+    } catch (_) { /* reported by the caller as an empty day */ }
+    clearTimeout(t);
+    const out = [];
+    for (const ev of (((j || {}).events) || [])) {
+      const c = (ev.competitions || [])[0] || {};
+      if (!(c.status && c.status.type && c.status.type.completed)) continue;
+      const cs = c.competitors || [];
+      const home = cs.find((x) => x.homeAway === 'home') || cs[0] || {};
+      const away = cs.find((x) => x.homeAway === 'away') || cs[1] || {};
+      const date = String(ev.date || c.date || '').slice(0, 10);
+      out.push({
+        game_id: String(ev.id), season: Number(date.slice(0, 4)), game_date: date,
+        home_team_id: home.team && home.team.id ? String(home.team.id) : null,
+        away_team_id: away.team && away.team.id ? String(away.team.id) : null,
+        home_name: (home.team && home.team.displayName) || 'Home',
+        away_name: (away.team && away.team.displayName) || 'Away',
+      });
+    }
+    return out;
+  }
+
   (async function main() {
     const season = Number(arg('--season', new Date().getFullYear()));
     const pace = Number(arg('--pace', 150));
     const limit = Number(arg('--limit', 0));       /* 0 = every completed game */
+    const sampleDay = arg('--sample-day', null);
     const log = (...a) => console.log('[cbb-stats]', ...a);
 
     if (!has('--check') && !has('--commit')) {
       console.log('Nothing to do. Pass --check (fetch and validate, write nothing) or --commit.');
       process.exit(0);
     }
-
-    /* The games this reads are the ones the game log already has. That is the
-       point: the stats archive can never contain a game the log does not, and
-       the ORPHAN_GAME refusal in the promote enforces the same thing in SQL. */
-    const { createDb } = require('./db');
-    const db = createDb();
-    const games = await db.completedGames(season, limit);
-    log(`${games.length} completed games in the ${season} log`);
-    if (!games.length) {
-      console.log(`FAIL | cbb stats | the ${season} game log has no completed games to read`);
+    if (sampleDay && has('--commit')) {
+      console.log('FAIL | cbb stats | --sample-day reads the scoreboard rather than the game log, '
+        + 'so it must never write. Drop --commit or drop --sample-day.');
       process.exit(1);
+    }
+
+    /* ── WHERE THE GAME IDS COME FROM ──────────────────────────────────────
+       Normally the game log, which is the point: the stats archive can never
+       contain a game the log does not, and ORPHAN_GAME enforces it in SQL.
+
+       --sample-day is the exception, and it exists for one reason. A --check
+       that needs database credentials cannot run on a pull request, which means
+       the shaping was only ever exercised against fixtures I wrote myself. A
+       box score is a bare array of numbers whose meaning comes from a parallel
+       array of labels — the single most likely thing to drift without anyone
+       noticing — so there has to be a way to run the REAL shaping over a REAL
+       payload with no secrets. This is it, and it is refused with --commit
+       above, because a source of game ids that is not the log has no business
+       writing to the archive. */
+    let games;
+    if (sampleDay) {
+      games = await gamesFromScoreboard(sampleDay);
+      log(`${games.length} completed games on ${sampleDay}, from the scoreboard (no database)`);
+      if (!games.length) {
+        console.log(`FAIL | cbb stats | no completed game on ${sampleDay} — pick a day inside a season`);
+        process.exit(1);
+      }
+      if (limit > 0) games = games.slice(0, limit);
+    } else {
+      const { createDb } = require('./db');
+      const db = createDb();
+      games = await db.completedGames(season, limit);
+      log(`${games.length} completed games in the ${season} log`);
+      if (!games.length) {
+        console.log(`FAIL | cbb stats | the ${season} game log has no completed games to read`);
+        process.exit(1);
+      }
     }
 
     const lines = [];
@@ -353,6 +413,28 @@ if (require.main === module) {
 
     if (!has('--commit')) {
       const players = new Set(lines.map((r) => r.athlete_id)).size;
+      /* PRINT ONE OF EACH, because a count proves the code ran and says nothing
+         about whether the columns landed in the right places. A human reading
+         these two lines can tell at a glance that 2-for-4 is not in the home-run
+         column and that 6.2 innings became 20 outs. */
+      const b = lines.find((r) => r.line_type === 'batting' && r.ab > 0);
+      const p = lines.find((r) => r.line_type === 'pitching' && r.outs > 0);
+      if (b) {
+        log(`a batting line as shaped: ${b.athlete_name} (${b.team_name}) `
+          + `${b.hits}-for-${b.ab}, ${b.runs} R, ${b.rbi} RBI, ${b.hr} HR, ${b.bb} BB, `
+          + `${b.so} K, ${b.sb === undefined ? b.stolen_bases : b.sb} SB; `
+          + `season-to-date avg ${b.season_avg_at_game}`);
+      }
+      if (p) {
+        log(`a pitching line as shaped: ${p.athlete_name} (${p.team_name}) `
+          + `${Math.floor(p.outs / 3)}.${p.outs % 3} IP (${p.outs} outs), ${p.p_hits} H, `
+          + `${p.earned_runs} ER, ${p.p_bb} BB, ${p.p_so} K, ${p.pitch_count} pitches; `
+          + `season-to-date ERA ${p.season_era_at_game}`);
+      }
+      if (!b || !p) {
+        log('NOTE: no complete batting or pitching line in this sample, so the column '
+          + 'mapping above is unproven for the missing half.');
+      }
       console.log(`PASS | cbb stats | --check only, nothing written `
         + `(${lines.length} lines, ${players} players, ${withPlayers} games)`);
       process.exit(0);

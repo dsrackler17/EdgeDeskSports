@@ -179,6 +179,19 @@ jobs:
       - name: The box-score shaping must pass too
         run: node tools/cbb/stats.test.js
 
+      # THE FIXTURES ABOVE ARE ONES I WROTE. This runs the same shaping over a
+      # REAL payload, on a day inside a completed season, with no credentials —
+      # which is the only way a pull request can catch the source changing a
+      # label or reordering a column. It prints one batting and one pitching
+      # line so a human can see that 2-for-4 did not land in the home-run
+      # column and that 6.2 innings became 20 outs.
+      #
+      # It cannot write: --sample-day takes its game ids from the scoreboard
+      # rather than the game log, and stats.js refuses to combine it with
+      # --commit for exactly that reason.
+      - name: Shape a real box score, with no credentials
+        run: node tools/cbb/stats.js --check --sample-day 20260509 --limit 6 --pace 400
+
       # ── IS TODAY EVEN IN SEASON? ─────────────────────────────────────────
       # February to June. Out of season the honest thing is to say so and stop,
       # not to import an empty card — and certainly not to let the gate's
