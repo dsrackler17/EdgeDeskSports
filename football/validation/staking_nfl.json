@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_staking_validation_v1",
  "sport": "americanfootball_nfl",
- "generated_at": "2026-09-17T14:24:52.104Z",
+ "generated_at": "2026-09-18T13:45:19.132Z",
  "frame": {
   "archive": "football/pricing/lines_nfl.json",
-  "games": 7292,
-  "rows_used": 7292,
+  "games": 7293,
+  "rows_used": 7293,
   "rating": "an Elo computed by this script from the archive’s own results in kickoff order, with a between-season regression to the mean; a game is rated by the state BEFORE it, so no result prices its own game",
   "engine": {
    "available": true,
@@ -35,7 +35,7 @@
    "joined": 2658,
    "source": "football/engine.js replayed cold by tools/football/validate_pricing.js"
   },
-  "model_graded": "the SHIPPED engine (football/engine.js), replayed cold and joined to 2658 of 7292 archive games; per-market use is all-or-nothing and each holdout says which it got in model_source",
+  "model_graded": "the SHIPPED engine (football/engine.js), replayed cold and joined to 2658 of 7293 archive games; per-market use is all-or-nothing and each holdout says which it got in model_source",
   "blend": "margin ~ a + b*market + c*(model - market), the same form the shipped pricer uses, fitted on the seasons BEFORE each held-out season",
   "holdout_window": "2019 onward, one season at a time",
   "policy": {
@@ -465,7 +465,7 @@
      "season": 2026,
      "tune_seasons": 13,
      "n_tune": 3562,
-     "n_test": 16,
+     "n_test": 17,
      "model_source": "elo_rating_line",
      "rating": {
       "points_per_rating_point": 0.0371,
@@ -499,7 +499,7 @@
     "season": 2026,
     "tune_seasons": 13,
     "n_tune": 3562,
-    "n_test": 16,
+    "n_test": 17,
     "model_source": "elo_rating_line",
     "rating": {
      "points_per_rating_point": 0.0371,
@@ -873,7 +873,7 @@
      "season": 2026,
      "tune_seasons": 13,
      "n_tune": 3562,
-     "n_test": 16,
+     "n_test": 17,
      "model_source": "tune_window_mean_total",
      "rating": {
       "points_per_rating_point": 0.0371,
@@ -906,7 +906,7 @@
     "season": 2026,
     "tune_seasons": 13,
     "n_tune": 3562,
-    "n_test": 16,
+    "n_test": 17,
     "model_source": "tune_window_mean_total",
     "rating": {
      "points_per_rating_point": 0.0371,
@@ -1164,7 +1164,7 @@
     {
      "season": 2026,
      "n_tune": 3549,
-     "n_test": 16,
+     "n_test": 17,
      "model_source": "elo_rating_line",
      "blend": {
       "market": 1.0984,
@@ -1181,7 +1181,7 @@
    "ats_on_last_tune_window": {
     "season": 2026,
     "n_tune": 3549,
-    "n_test": 16,
+    "n_test": 17,
     "model_source": "elo_rating_line",
     "blend": {
      "market": 1.0984,
