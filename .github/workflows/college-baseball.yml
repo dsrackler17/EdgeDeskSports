@@ -54,6 +54,11 @@ on:
         type: boolean
         required: false
         default: false
+      probe_only:
+        description: 'Ask the source questions and stop. Skips the 437-team walk entirely.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -163,8 +168,12 @@ jobs:
       # is always named explicitly, because an importer given no mode at all is
       # a job that reports success having done nothing — a lesson this
       # repository has already paid for once.
+      # A PROBE DISPATCH IS A PROBE DISPATCH. The walk takes two minutes and a
+      # runner publishes no logs until the whole job ends, so dragging it along
+      # behind a question meant the answer arrived four minutes late. It does
+      # not any more.
       - name: Rebuild the card and import it
-        if: ${{ github.event_name != 'pull_request' && (github.event_name != 'schedule' || steps.plan.outputs.in_season == 'true') }}
+        if: ${{ github.event_name != 'pull_request' && inputs.probe_only != true && (github.event_name != 'schedule' || steps.plan.outputs.in_season == 'true') }}
         env:
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
           EDGD_SB_URL: ${{ secrets.SB_URL }}
