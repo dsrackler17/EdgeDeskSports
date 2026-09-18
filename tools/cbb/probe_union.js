@@ -134,14 +134,34 @@ async function get(url, tries = 3) {
   if (!SB_URL || !SB_KEY) {
     console.log('  (no url/key available — skipped, not answered)');
   } else {
+    /* THE CONTROLS ARE THE POINT. baseball_mlb and americanfootball_ncaaf are
+       captured — the repository is built around them. If those come back
+       empty too, this key cannot read the table at all and the college
+       baseball zero means nothing. Reading a zero as "not captured" without
+       a control would have retired a feature on the strength of an RLS
+       policy. */
+    const seen = {};
     for (const key of ['baseball_ncaa', 'baseball_mlb', 'americanfootball_ncaaf']) {
       const r = await fetch(`${SB_URL}/rest/v1/signals?select=sport_key&sport_key=eq.${key}&limit=1`,
         { headers: { apikey: SB_KEY, authorization: `Bearer ${SB_KEY}` } })
         .then(async (x) => ({ s: x.status, b: await x.text() })).catch((e) => ({ s: 0, b: String(e.message) }));
       let n = '?'; try { n = JSON.parse(r.b).length; } catch (_) {}
+      seen[key] = n;
       console.log(`  ${key.padEnd(24)} HTTP ${r.s}  rows returned: ${n}`);
     }
-    console.log('  a zero here means the brief must NOT promise a market for this sport.');
+    const controlsEmpty = seen.baseball_mlb === 0 && seen.americanfootball_ncaaf === 0;
+    if (controlsEmpty) {
+      console.log('  INCONCLUSIVE: the two controls are empty as well, and those sports are');
+      console.log('  certainly captured — so this key cannot read signals (row-level security),');
+      console.log('  and the college baseball zero says nothing either way. Do not read it as');
+      console.log('  an absent market. The brief should carry the market panel and let it say');
+      console.log('  plainly when no price is joined, exactly as the MLB brief already does.');
+    } else if (seen.baseball_ncaa === 0) {
+      console.log('  ANSWERED: the controls returned rows and baseball_ncaa did not, so no');
+      console.log('  college baseball market is captured. The brief must not promise one.');
+    } else {
+      console.log('  ANSWERED: a college baseball market is captured and can be joined.');
+    }
   }
   console.log('\nPASS | college baseball union walk | measured');
 })().catch((e) => { console.log('FAIL | college baseball union walk | ' + (e && e.stack || e)); process.exit(1); });
