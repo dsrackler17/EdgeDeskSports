@@ -1,0 +1,49 @@
+# COLLEGE BASEBALL — THE SOURCE PROBE, BEFORE ANYTHING IS BUILT ON IT.
+#
+# This is deliberately the first thing in the college baseball pipeline and,
+# for now, the only thing. mlb-pitchers.yml proves its source on a runner
+# before it rebuilds, because the tennis adapter once shipped correct-looking
+# code against a provider whose edge answered 403 to GitHub's runners, and only
+# a runner could show it.
+#
+# Here that rule is not a precaution, it is the whole reason this file exists
+# first: the session writing this code cannot reach ANY live sports host.
+# site.api.espn.com, data.ncaa.com, stats.ncaa.org and statsapi.mlb.com are all
+# refused by its egress policy with a 403 on CONNECT. Every line of a college
+# baseball ingest written from there would be a guess until a runner answers.
+#
+# It writes nothing: no database, no commit, no artifact. It asks each
+# candidate for one day of the completed 2026 season and reports what came
+# back, so the shape of the data decides the design instead of the other way
+# round.
+name: College baseball source probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'A date inside a college baseball season (YYYY-MM-DD). Default 2026-04-15.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Ask the candidates whether a runner can see the games
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.date }}" ]; then ARGS="--date ${{ inputs.date }}"; fi
+          node tools/cbb/probe_sources.js $ARGS
