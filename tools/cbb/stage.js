@@ -22,66 +22,44 @@ const GAME_COLS = ['game_id', 'season', 'game_date', 'start_time', 'start_time_t
 const TEAM_COLS = ['team_id', 'name', 'short_name', 'abbreviation', 'slug',
   'conference_id', 'conference_name', 'logo', 'color', 'first_seen_season', 'last_seen_season'];
 
-/* the client speaks sql(text) and rows(text); literals are ours to quote */
-function lit(v) {
-  if (v === null || v === undefined) return 'null';
-  if (typeof v === 'number') return Number.isFinite(v) ? String(v) : 'null';
-  if (typeof v === 'boolean') return v ? 'true' : 'false';
-  return "'" + String(v).replace(/'/g, "''") + "'";
-}
+/* Both backends behind one interface. THIS USED TO EMIT SQL TEXT DIRECTLY,
+   which meant it worked against the psql test harness and could never have
+   worked against Supabase, where there is nothing to execute SQL text. See
+   the note at the top of tools/cbb/db.js. */
+const DB = require('./db.js');
+const { lit, chunk } = DB;
 
-function chunk(rows, n) {
-  const out = [];
-  for (let i = 0; i < rows.length; i += n) out.push(rows.slice(i, i + n));
-  return out;
-}
-
-async function stageAndPromote(db, importId, opts) {
+async function stageAndPromote(rawDb, importId, opts) {
+  const db = DB.wrap(rawDb);
   const { season, from, through, games, teams } = opts;
   const log = opts.log || (() => {});
   const allowShrink = opts.allowShrink === true;
 
-  db.sql(`insert into cbb.import_runs (import_id, dataset, status, first_season, last_season,
-             seasons, source, source_note)
-           values (${lit(importId)}, 'games', 'staging', ${season}, ${season},
-                   array[${season}]::int[],
-                   'ESPN college baseball scoreboard and team schedules',
-                   ${lit(`union of the day scoreboard and the ${teams.length}-team schedule walk, `
-                     + `${from}..${through}`)})`);
+  await db.startRun({
+    import_id: importId, dataset: 'games', status: 'staging',
+    first_season: season, last_season: season, seasons: [season],
+    source: 'ESPN college baseball scoreboard and team schedules',
+    source_note: `union of the day scoreboard and the ${teams.length}-team schedule walk, `
+      + `${from}..${through}`,
+  });
 
   try {
-    /* staged in chunks: one statement per game would be thousands of round
-       trips, and one statement for all of them would be a megabyte of SQL */
-    let n = 0;
-    for (const part of chunk(games, 400)) {
-      db.sql(`insert into cbb.stg_games (import_id, ${GAME_COLS.join(', ')}) values `
-        + part.map((g) => '(' + lit(importId) + ', ' + GAME_COLS.map((c) => {
-          const v = g[c];
-          if (c === 'seen_by') return 'array[' + (v || []).map((s) => lit(s)).join(',') + ']::text[]';
-          return lit(v === undefined ? null : v);
-        }).join(', ') + ')').join(', '));
-      n += part.length;
-    }
+    /* staged in chunks: one round trip per game would be thousands of them,
+       and one for all of them would be a megabyte of request body */
+    const n = await db.stageRows('stg_games', GAME_COLS, games, importId);
     log(`staged ${n} games`);
-
-    let t = 0;
-    for (const part of chunk(teams, 400)) {
-      db.sql(`insert into cbb.stg_teams (import_id, ${TEAM_COLS.join(', ')}) values `
-        + part.map((x) => '(' + lit(importId) + ', '
-          + TEAM_COLS.map((c) => lit(x[c] === undefined ? null : x[c])).join(', ') + ')').join(', '));
-      t += part.length;
-    }
+    const t = await db.stageRows('stg_teams', TEAM_COLS, teams, importId);
     log(`staged ${t} teams`);
   } catch (e) {
-    db.sql(`select cbb.abandon_cbb_import(${lit(importId)}, ${lit('staging failed: ' + e.message)})`);
+    await db.abandon(importId, 'staging failed: ' + e.message);
     throw e;
   }
 
   /* the window is handed over explicitly: the gate must judge the import
      against what it set out to fetch, not against what it managed to */
-  const res = db.rows(`select cbb.promote_cbb_import(${lit(importId)}, ${allowShrink}, `
-    + `${lit(from)}::date, ${lit(through)}::date) as v`)[0];
-  const verdict = typeof res.v === 'string' ? JSON.parse(res.v) : res.v;
+  const verdict = await db.gate('promote_cbb_import',
+    ['p_import_id', 'p_allow_shrink', 'p_from', 'p_through'],
+    { p_import_id: importId, p_allow_shrink: allowShrink, p_from: from, p_through: through });
 
   if (!verdict || verdict.ok !== true) {
     console.log('REFUSED | cbb import | the gate declined this import and kept the previous card:');

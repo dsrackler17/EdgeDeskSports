@@ -249,8 +249,11 @@ if (require.main === module) {
       process.exit(0);
     }
 
-    const P = require('../mlb/pg_client.js');
-    const db = P.client();
+    /* tools/mlb/pg_client.js is a harness over local psql and has no client()
+       at all, so this line was a TypeError on the first step of every commit.
+       It never fired because every run so far has been --check, on a pull
+       request or out of season. See the note at the top of tools/cbb/db.js. */
+    const db = require('./db.js').createDb();
     const importId = `cbb-${season}-${new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
     await require('./stage.js').stageAndPromote(db, importId, { season, from, through, games,
       teams: teams.map((t) => shapeTeam(t, season)).filter(Boolean), log,

@@ -1095,6 +1095,16 @@ begin
     select coalesce(tb.season, tp.season) as season,
            coalesce(tb.team_id, tp.team_id) as team_id
       from tb full outer join tp on tb.season=tp.season and tb.team_id=tp.team_id
+  ), gamecount as (
+    /* THE UNION OF THE TWO SETS, NOT THE LARGER OF THEM. A club that batted in
+       games 1 and 2 and pitched in games 1 and 3 has lines in THREE games; the
+       greater of the two counts says two. Counting distinct game ids across
+       both line types is the only thing that gets this right, and it matters
+       because this figure is the denominator of the coverage a reader is shown. */
+    select season, team_id, count(distinct game_id) as games_with_lines
+      from cbb.player_games
+     where team_id is not null and (p_season is null or season=p_season)
+     group by 1,2
   )
   insert into cbb.team_stat_seasons (
     season, team_id, team_name, games_with_lines, games_played, line_coverage,
@@ -1103,11 +1113,10 @@ begin
     batters_used, pitchers_used, first_game, last_game, updated_at)
   select a.season, a.team_id,
     coalesce(tb.team_name, ts.team_name, a.team_id),
-    greatest(coalesce(tb.games_with_lines,0), coalesce(tp.pgames,0)),
+    coalesce(gc.games_with_lines, 0),
     coalesce(ts.games, 0),
     case when coalesce(ts.games,0) > 0
-         then greatest(coalesce(tb.games_with_lines,0), coalesce(tp.pgames,0))::double precision
-              / ts.games end,
+         then coalesce(gc.games_with_lines,0)::double precision / ts.games end,
     coalesce(tb.ab,0), coalesce(tb.runs,0), coalesce(tb.hits,0), coalesce(tb.rbi,0),
     coalesce(tb.hr,0), coalesce(tb.bb,0), coalesce(tb.so,0), coalesce(tb.stolen_bases,0),
     case when coalesce(tb.ab,0) > 0 then tb.hits::double precision / tb.ab end,
@@ -1120,6 +1129,7 @@ begin
     from allteams a
     left join tb on tb.season=a.season and tb.team_id=a.team_id
     left join tp on tp.season=a.season and tp.team_id=a.team_id
+    left join gamecount gc on gc.season=a.season and gc.team_id=a.team_id
     left join cbb.team_seasons ts on ts.season=a.season and ts.team_id=a.team_id;
 end;
 $$;
