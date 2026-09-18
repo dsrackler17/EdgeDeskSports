@@ -199,6 +199,9 @@ jobs:
       - name: The NCAA season archive must pass too
         run: node tools/cbb/ncaa_archive.test.js
 
+      - name: The club alias table must pass too
+        run: node tools/cbb/team_aliases.test.js
+
       # The archive keys clubs on NCAA codes, the games board on ESPN ids, and
       # there is no shared identifier. Attaching a club's season archive to a
       # game therefore needs a NAME match, which is exactly the kind of thing
@@ -207,6 +210,15 @@ jobs:
       - name: Can the archive be joined to the games board?
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: node tools/cbb/probe_team_join.js
+
+      # The alias table was written by hand from 35 measured misses, which means
+      # it can be wrong now and can rot when ESPN renames a club. This verifies
+      # every entry against the live list, and FAILS on the one thing that would
+      # do real damage: two archive clubs resolving to a single ESPN club, which
+      # would put one club's players on another club's game.
+      - name: Does every club alias still resolve?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_resolve_clubs.js
 
       # THE FIXTURES ABOVE ARE ONES I WROTE. This runs the same shaping over a
       # REAL payload, on a day inside a completed season, with no credentials —
