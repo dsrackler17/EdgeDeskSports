@@ -70,12 +70,37 @@ const FOLD = [
   [/[óòô]/g, 'o'], [/[úùû]/g, 'u'], [/[ñ]/g, 'n'],
 ];
 
+/* ── ONE EXPANSION LIST, AND THE REASON IT IS HERE AND NOWHERE ELSE ───────
+   This started as two lists: one in probe_team_join.js and a shorter copy here.
+   The copy silently dropped six expansions — ark, mich, ky, ill, ind, colo — and
+   twelve clubs that had matched perfectly well in the measurement stopped
+   matching in the mapping. A duplicated normaliser is a normaliser that will
+   diverge, and the divergence showed up as "no match" on Central Michigan,
+   which reads like a data problem and was a refactoring problem.
+
+   probe_team_join.js now imports this function. There is one list. */
 const EXPAND = [
   /* Two abbreviations in one name is why "Central Conn. St." missed: a single
-     pass that only knew "St." left "conn" behind. Both are expanded now. */
+     pass that only knew "St." left "conn" behind. */
   [/\bconn\.?\b/gi, 'connecticut'], [/\bmo\.?\b/gi, 'missouri'],
   [/\bala\.?\b/gi, 'alabama'], [/\bval\.?\b/gi, 'valley'],
+  [/\bark\.?\b/gi, 'arkansas'], [/\bmich\.?\b/gi, 'michigan'],
+  [/\bky\.?\b/gi, 'kentucky'], [/\bill\.?\b/gi, 'illinois'],
+  [/\bind\.?\b/gi, 'indiana'], [/\bcolo\.?\b/gi, 'colorado'],
+  [/\bariz\.?\b/gi, 'arizona'], [/\bokla\.?\b/gi, 'oklahoma'],
+  [/\bore\.?\b/gi, 'oregon'], [/\bwash\.?\b/gi, 'washington'],
+  [/\bwis\.?\b/gi, 'wisconsin'], [/\bneb\.?\b/gi, 'nebraska'],
+  [/\bmass\.?\b/gi, 'massachusetts'], [/\bmd\.?\b/gi, 'maryland'],
+  [/\bpa\.?\b/gi, 'pennsylvania'], [/\bnev\.?\b/gi, 'nevada'],
   [/\bcol\.? of\b/gi, 'college of'], [/\buniv\.?\b/gi, 'university'],
+  [/\bso\.?\b/gi, 'southern'], [/\bno\.?\b/gi, 'northern'],
+  [/\bmiss\.?\b/gi, 'mississippi'], [/\bla\.?\b/gi, 'louisiana'],
+  [/\bcaro\.?\b/gi, 'carolina'], [/\bn\.?c\.?\b/gi, 'north carolina'],
+  [/\bs\.?c\.?\b/gi, 'south carolina'], [/\bfla\.?\b/gi, 'florida'],
+  [/\bcalif\.?\b/gi, 'california'], [/\btenn\.?\b/gi, 'tennessee'],
+  [/\btex\.?\b/gi, 'texas'], [/\bga\.?\b/gi, 'georgia'],
+  [/\bva\.?\b/gi, 'virginia'], [/\bcent\.?\b/gi, 'central'],
+  [/\bintl\.?\b/gi, 'international'], [/\bdet\.?\b/gi, 'detroit'],
   /* "St." IS TWO DIFFERENT WORDS AND POSITION IS THE ONLY TELL. Trailing, it
      is State: "Alabama St.", "Southeast Mo. St.". Leading, it is Saint:
      "St. John's", "St. Thomas". The first version of this expanded both and
@@ -85,12 +110,6 @@ const EXPAND = [
      a club actually called "State" something. Leading St. is left alone. */
   [/\bst\.?$/i, 'state'],
   [/(?!^)\bst\.? /gi, function (m, off) { return off === 0 ? m : 'state '; }],
-  [/\bso\.?\b/gi, 'southern'], [/\bno\.?\b/gi, 'northern'],
-  [/\bmiss\.?\b/gi, 'mississippi'], [/\bla\.?\b/gi, 'louisiana'],
-  [/\bcaro\.?\b/gi, 'carolina'], [/\bn\.?c\.?\b/gi, 'north carolina'],
-  [/\bs\.?c\.?\b/gi, 'south carolina'], [/\bfla\.?\b/gi, 'florida'],
-  [/\bcalif\.?\b/gi, 'california'], [/\btenn\.?\b/gi, 'tennessee'],
-  [/\btex\.?\b/gi, 'texas'], [/\bga\.?\b/gi, 'georgia'],
 ];
 
 function norm(s) {

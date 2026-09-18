@@ -85,9 +85,42 @@ const T = require('./team_aliases.js');
   }
   console.log('');
 
+  /* ── WHAT ESPN ACTUALLY CALLS THEM ─────────────────────────────────────
+     The first version of the alias table was written from memory, and six of
+     the thirty-five entries named clubs ESPN does not call that. Guessing at a
+     spelling is the whole mistake the alias table exists to avoid, so the probe
+     now hands over the candidates instead of leaving me to guess again.
+
+     These are SUGGESTIONS FOR A PERSON TO READ. Nothing is applied: the ranking
+     is a crude shared-token count, which is exactly the sort of similarity
+     score that would map USC onto USC Upstate if it were trusted. It is printed
+     so a human can pick, and for no other purpose. */
+  if (res.unresolved.length) {
+    console.log('── candidate ESPN clubs for each unresolved archive club ─────\n');
+    console.log('   (suggestions only — nothing here is applied automatically)\n');
+    const tokens = (x) => new Set(T.norm(x).split(' ').filter((w) => w.length > 2));
+    for (const u of res.unresolved) {
+      const want = tokens(u.name);
+      const scored = espn.map((t) => {
+        const have = tokens(t.displayName);
+        let shared = 0;
+        for (const w of want) if (have.has(w)) shared++;
+        return { t, shared };
+      }).filter((x) => x.shared > 0).sort((a, b) => b.shared - a.shared).slice(0, 4);
+      console.log(`  ${u.code}  "${u.name}"  (${u.why})`);
+      if (!scored.length) console.log('      no ESPN club shares a word with it');
+      for (const x of scored) {
+        console.log(`      id=${x.t.id}  location="${x.t.location}"  display="${x.t.displayName}"`
+          + `  short="${x.t.shortDisplayName}"`);
+      }
+      console.log('');
+    }
+  }
+
   if (res.aliasFailed.length) {
     console.log('FAIL | cbb resolve clubs | an alias written by hand no longer resolves. '
-      + 'Update tools/cbb/team_aliases.js before the mapping is used.');
+      + 'Update tools/cbb/team_aliases.js before the mapping is used. The candidates '
+      + 'above are what ESPN actually publishes.');
     process.exit(1);
   }
   if (res.collisions.length) {

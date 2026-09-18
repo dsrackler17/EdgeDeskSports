@@ -29,35 +29,11 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball';
 const A = require('./ncaa_archive.js');
 
-/* NCAA writes abbreviated school names the way a scoreboard does: "Alabama St."
-   for Alabama State, "N.C. State", "Southern Miss.". ESPN writes them out. So
-   normalising has to expand the abbreviations, not just strip punctuation —
-   otherwise every "St." club misses and the rate looks like a data problem
-   rather than a spelling one. */
-const EXPAND = [
-  [/\bst\.?$/i, 'state'], [/\bst\.? /gi, 'state '],
-  [/\buniv\.?\b/gi, 'university'], [/\bu\.?$/i, 'university'],
-  [/\bso\.?\b/gi, 'southern'], [/\bno\.?\b/gi, 'northern'],
-  [/\bmiss\.?\b/gi, 'mississippi'], [/\bmich\.?\b/gi, 'michigan'],
-  [/\bfla\.?\b/gi, 'florida'], [/\bcalif\.?\b/gi, 'california'],
-  [/\bcaro\.?\b/gi, 'carolina'], [/\bcolo\.?\b/gi, 'colorado'],
-  [/\bconn\.?\b/gi, 'connecticut'], [/\bky\.?\b/gi, 'kentucky'],
-  [/\bla\.?\b/gi, 'louisiana'], [/\btenn\.?\b/gi, 'tennessee'],
-  [/\btex\.?\b/gi, 'texas'], [/\bwash\.?\b/gi, 'washington'],
-  [/\bga\.?\b/gi, 'georgia'], [/\bill\.?\b/gi, 'illinois'],
-  [/\bind\.?\b/gi, 'indiana'], [/\bark\.?\b/gi, 'arkansas'],
-  [/\bariz\.?\b/gi, 'arizona'], [/\bokla\.?\b/gi, 'oklahoma'],
-  [/\bore\.?\b/gi, 'oregon'], [/\bva\.?\b/gi, 'virginia'],
-  [/\bw\.? /gi, 'west '], [/\be\.? /gi, 'east '],
-  [/\bn\.? /gi, 'north '], [/\bs\.? /gi, 'south '],
-  [/\bcent\.?\b/gi, 'central'], [/\bintl\.?\b/gi, 'international'],
-];
-
-function norm(s) {
-  let t = String(s || '').toLowerCase().trim();
-  for (const [re, to] of EXPAND) t = t.replace(re, to);
-  return t.replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
-}
+/* ONE NORMALISER, IMPORTED. This file used to carry its own copy, and the copy
+   in team_aliases.js then lost six expansions — twelve clubs that matched here
+   stopped matching there, which read like a data problem and was a duplication
+   problem. There is one list now and it lives with the aliases. */
+const { norm } = require('./team_aliases.js');
 
 async function get(url) {
   const ctl = new AbortController();
