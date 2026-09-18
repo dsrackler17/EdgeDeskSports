@@ -100,7 +100,11 @@ const T = require('./team_aliases.js');
   if (res.unresolved.length) {
     console.log('── candidate ESPN clubs for each unresolved archive club ─────\n');
     console.log('   (suggestions only — nothing here is applied automatically)\n');
-    const tokens = (x) => new Set(T.norm(x).split(' ').filter((w) => w.length > 2));
+    /* TWO CHARACTERS, NOT THREE. "SE Louisiana" is a plausible ESPN spelling of
+       Southeastern Louisiana and its distinguishing token is "se", which a
+       three-character floor throws away — leaving the search to match on
+       "louisiana" alone and rank four unrelated Louisiana clubs above it. */
+    const tokens = (x) => new Set(T.norm(x).split(' ').filter((w) => w.length >= 2));
     for (const u of res.unresolved) {
       const want = tokens(u.name);
       const scored = espn.map((t) => {
@@ -108,7 +112,13 @@ const T = require('./team_aliases.js');
         let shared = 0;
         for (const w of want) if (have.has(w)) shared++;
         return { t, shared };
-      }).filter((x) => x.shared > 0).sort((a, b) => b.shared - a.shared).slice(0, 4);
+      /* EVERY club that shares a word, not the top four. Truncating to four
+         ranked by a crude token count is how the right answer gets cut off:
+         SELA's real club sat below four unrelated Louisiana programmes and was
+         never shown, so I concluded from its absence that it had resolved by
+         name. It had not. A dozen lines a person can read beats four lines
+         chosen by a scorer nobody trusts. */
+      }).filter((x) => x.shared > 0).sort((a, b) => b.shared - a.shared).slice(0, 14);
       console.log(`  ${u.code}  "${u.name}"  (${u.why})`);
       if (!scored.length) console.log('      no ESPN club shares a word with it');
       for (const x of scored) {

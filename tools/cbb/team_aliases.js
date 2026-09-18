@@ -106,10 +106,18 @@ const ALIASES = {
                                               token suggestions found nothing and
                                               the 437-line dump was needed. */
 
-  /* SELA (Southeastern La.) needs no alias: removing the WRONG one let the
-     normaliser match it by name, once "La." expanded to Louisiana. The bad alias
-     had been shadowing a working match — an alias is tried first, so a wrong one
-     is worse than none. */
+  /* SELA (Southeastern La.) IS STILL UNRESOLVED, and I said otherwise. When the
+     wrong alias was removed the club stopped being reported as "alias did not
+     resolve" and started being reported as "no match", and I read the changed
+     wording as a fix. It was not: 310 of 311 clubs resolve and SELA is the one
+     that does not. ESPN's name for it is not "Southeastern La." and not
+     "Southeastern Louisiana", and the candidate search never showed the real one
+     because it was truncated to four entries ranked below four unrelated
+     Louisiana programmes. That truncation is now lifted.
+
+     The club is left out until somebody reads the name off the list. Its brief
+     shows no season archive and says so, which is the correct behaviour for a
+     hole and the reason a hole is acceptable. */
 };
 
 /* Spellings ESPN and NCAA disagree about in ways punctuation hides. Applied to

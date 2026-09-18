@@ -66,11 +66,13 @@ console.log('the alias table itself');
 ok('the table is populated', Object.keys(T.ALIASES).length >= 20, Object.keys(T.ALIASES).length);
 /* The two known-unknown clubs must stay OUT until somebody reads ESPN's list.
    An alias guessed for them is the exact failure this table already suffered. */
-/* SELA needs NO alias, and that is a finding rather than an omission: removing
-   the wrong one let the normaliser match it by name once "La." expanded. An
-   alias is tried first, so a wrong alias SHADOWS a working match — which makes a
-   wrong alias worse than none at all. */
-ok('SELA needs no alias, because the normaliser matches it', !('SELA' in T.ALIASES));
+/* SELA IS UNRESOLVED, not resolved. I claimed the normaliser matched it once the
+   wrong alias was removed; in fact the report merely changed from "alias did not
+   resolve" to "no match" and I read the new wording as a fix. 310 of 311 clubs
+   resolve, and this is the one that does not. It stays out of the table until
+   somebody reads ESPN's real name for it off the club list — an alias guessed
+   for it is the exact failure this table has already suffered twice. */
+ok('SELA is absent, and absent is not the same as resolved', !('SELA' in T.ALIASES));
 /* ULM was read off the full club dump: ESPN writes neither "ULM" nor "Louisiana
    Monroe" but "UL Monroe". */
 eq('ULM points at UL Monroe', T.ALIASES.ULM, 'UL Monroe');
