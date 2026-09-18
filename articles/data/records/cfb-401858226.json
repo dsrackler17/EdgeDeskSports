@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Miami vs. Wake Forest: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Miami vs. Wake Forest 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Miami at Wake Forest at Wake Forest +13.2 with a 56.2 fair total. Miami wins 81% of simulations. Data confidence 74%. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices Miami at Wake Forest at Wake Forest +13.2 with a 56.2 fair total. Miami wins 81% of simulations. Data confidence 67%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Miami carries the stronger underlying team rating — +6.3 against +4.6, a 1.7-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Wake Forest +13.2 before any sportsbook number is consulted, with Miami winning 81% of…",
   "home_team": "Wake Forest",
   "away_team": "Miami",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-18T23:30:00.000Z",
   "game_when_label": "2026-09-18 23:30 UTC",
   "published_at": "2026-09-18T13:30:18.954Z",
-  "updated_at": "2026-09-18T19:50:20.403Z",
-  "generated_at": "2026-09-18T19:50:20.403Z",
+  "updated_at": "2026-09-18T20:51:19.058Z",
+  "generated_at": "2026-09-18T20:51:19.058Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 74,
+  "confidence": 67,
   "priced": true,
   "fair_spread_text": "Wake Forest +13.2",
   "fair_total": "56.2",
@@ -65,7 +65,7 @@
     "lede": [
       "Miami carries the stronger underlying team rating — +6.3 against +4.6, a 1.7-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Wake Forest +13.2 before any sportsbook number is consulted, with Miami winning 81% of simulations.",
-      "Data confidence on this matchup is 74% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 67% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
@@ -110,22 +110,22 @@
         "volatility_discriminates": false,
         "note": "Quoted from Wake Forest’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 74,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 67,
+      "inputs_reached_pct": 35,
       "input_contract": {
         "fields": 17,
         "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "known": 6,
+        "priced": 4,
+        "priced_coverage_pct": 24,
         "by_state": {
-          "USABLE": 8,
+          "USABLE": 4,
           "RESEARCH_ONLY": 2,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "UNAVAILABLE": 10
         },
         "absent": [
           {
@@ -133,6 +133,30 @@
             "side": null,
             "state": "FETCH_FAILED",
             "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "roster",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no roster bundle resolved for Wake Forest"
+          },
+          {
+            "field": "roster_talent",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no rated roster resolved for Wake Forest; the player layer did not load"
+          },
+          {
+            "field": "roster",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no roster bundle resolved for Miami"
+          },
+          {
+            "field": "roster_talent",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no rated roster resolved for Miami; the player layer did not load"
           },
           {
             "field": "availability",
@@ -1335,13 +1359,19 @@
           "Playing at Wake Forest is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "The outcome range is 15.3 points wide at one sigma — p10 -36.2 to p90 +7.8 for Wake Forest, so a projection of -13.2 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "The market disagrees by 9.3 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong."
+          "80% of the model’s own input contract was empty for this game — no roster, starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
+        {
+          "sev": "HIGH",
+          "label": "information missing",
+          "text": "The projection could be wrong because 80% of the model’s own input contract was empty for this game — no roster, starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
+          "widening": null
+        },
         {
           "sev": "HIGH",
           "label": "Miami — low sample size",
@@ -1368,14 +1398,8 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "sample",
-          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 130h old",
+          "text": "odds is 131h old",
           "widening": null
         },
         {
@@ -1487,9 +1511,9 @@
       "difference_n": 9.287631253275002,
       "total_model": "56.2",
       "total_market": "53.5",
-      "book": "captured (stale 130h) · DraftKings",
+      "book": "captured (stale 131h) · DraftKings",
       "captured": "2026-09-13T10:00:02.682+00:00",
-      "capture_age": "130 hours old",
+      "capture_age": "131 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1650,7 +1674,7 @@
       "EdgeDesk’s line is Wake Forest +13.2 on a neutral read of the two teams, before any book is consulted. Projected total 56.2.",
       "Wake Forest wins 19% of the time in EdgeDesk’s simulation, Miami 81%.",
       "Eight games in ten land between -36.2 and +7.8 for Wake Forest. A single result inside that band tells you nothing new about either team.",
-      "The market has Wake Forest +22.5 at captured (stale 130h) · DraftKings, 9.3 points from EdgeDesk’s number.",
+      "The market has Wake Forest +22.5 at captured (stale 131h) · DraftKings, 9.3 points from EdgeDesk’s number.",
       "Miami quarterback: Darian Mensah — started the last game; no announcement for this one.",
       "Wake Forest quarterback: Gio Lopez — started the last game; no announcement for this one."
     ],
@@ -1681,15 +1705,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-18. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_ff94587c59ea4a70",
+  "snapshot_id": "snap_b1a5fd108de0c3ad",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-09-18T23:30:00.000Z",
-    "minutes_before_kickoff": 220,
+    "minutes_before_kickoff": 159,
     "published_at": "2026-09-18T13:30:18.954Z",
     "refreshed": false,
-    "at": "2026-09-18T19:50:20.403Z"
+    "at": "2026-09-18T20:51:19.058Z"
   },
   "featured": {
     "editorial_priority": 41.6,
@@ -1739,7 +1763,7 @@
         "label": "EdgeDesk differs from the market by 9.3 points",
         "points": 9.6,
         "tier": "EDGEDESK_MODEL",
-        "detail": "Wake Forest +13.2 against Wake Forest +22.5 at captured (stale 130h) · DraftKings — INVESTIGATE · the gap earns 9.6 of a possible 24 because the price is current. A gap alone orders no research and implies no expected value."
+        "detail": "Wake Forest +13.2 against Wake Forest +22.5 at captured (stale 131h) · DraftKings — INVESTIGATE · the gap earns 9.6 of a possible 24 because the price is current. A gap alone orders no research and implies no expected value."
       }
     ]
   },
@@ -1775,7 +1799,7 @@
       "schema": "edgedesk_thesis_v1",
       "thesis_id": "market_gap",
       "kind": "market",
-      "claim": "EdgeDesk makes it Wake Forest +13.2 where the market has Wake Forest +22.5 at captured (stale 130h) · DraftKings — a 9.3 points disagreement.",
+      "claim": "EdgeDesk makes it Wake Forest +13.2 where the market has Wake Forest +22.5 at captured (stale 131h) · DraftKings — a 9.3 points disagreement.",
       "basis": "EdgeDesk’s own number against a captured sportsbook quote",
       "source_path": "market.difference",
       "category": "market",
@@ -1923,7 +1947,7 @@
       "schema": "edgedesk_thesis_v1",
       "thesis_id": "uncertainty.primary",
       "kind": "uncertainty",
-      "claim": "The largest stated risk to this read: 1.45 FBS-equivalent games played.",
+      "claim": "The largest stated risk to this read: The projection could be wrong because 80% of the model’s own input contract was empty for this game — no roster, starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
       "basis": "the model’s own highest-severity published uncertainty",
       "source_path": "uncertainty.items[0]",
       "category": "data_quality",
@@ -1932,7 +1956,7 @@
       "favours_team": null,
       "expected_signal": null,
       "falsifier": "the game passing off without the stated gap mattering.",
-      "watch": "Anything that turns on Miami — low sample size.",
+      "watch": "Anything that turns on information missing.",
       "observable": false,
       "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
     }
@@ -1944,11 +1968,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-09-18T19:50:20.403Z"
+    "at": "2026-09-18T20:51:19.058Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-09-18T19:50:20.403Z",
+    "at": "2026-09-18T20:51:19.058Z",
     "blocking": [],
     "warnings": [],
     "hold_reason": null
@@ -1956,6 +1980,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-18T19:50:20.403Z"
+    "at": "2026-09-18T20:51:19.058Z"
   }
 }
