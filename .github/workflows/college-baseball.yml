@@ -65,6 +65,10 @@ on:
       stats_limit:
         description: 'Read only the first N completed games. For a first run, where reading 5,500 box scores is not what you want to find out.'
         required: false
+      ncaa_archive:
+        description: 'Import the NCAA season archive (2021-2026 player seasons). Off by default: completed seasons do not change nightly.'
+        type: boolean
+        required: false
         default: false
 
 permissions:
@@ -192,6 +196,9 @@ jobs:
       - name: The box-score shaping must pass too
         run: node tools/cbb/stats.test.js
 
+      - name: The NCAA season archive must pass too
+        run: node tools/cbb/ncaa_archive.test.js
+
       # THE FIXTURES ABOVE ARE ONES I WROTE. This runs the same shaping over a
       # REAL payload, on a day inside a completed season, with no credentials —
       # which is the only way a pull request can catch the source changing a
@@ -287,3 +294,29 @@ jobs:
           if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
           if [ -n "${{ inputs.stats_limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.stats_limit }}"; fi
           node tools/cbb/stats.js $ARGS
+
+      # ── THE NCAA SEASON ARCHIVE ──────────────────────────────────────────
+      # Independent of everything above it. This reads NCAA's own published
+      # season totals from the ncaa_bbStats package, which SHIPS its data rather
+      # than scraping at read time — so unlike the NCAA site itself, it answers
+      # a datacenter address. It needs no game log and shares no failure mode
+      # with the box-score walk, which is why it is its own step.
+      #
+      # It runs on a dispatch only. The archive covers completed seasons and
+      # does not change daily, so putting it on the nightly schedule would
+      # re-import 61,000 unchanged rows every night to no purpose.
+      - name: Import the NCAA season archive
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.ncaa_archive == true }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be imported."
+            exit 1
+          fi
+          ARGS=""
+          if [ "${{ inputs.commit }}" = "true" ]; then ARGS="--commit"; else ARGS="--check"; fi
+          if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
+          if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
+          node tools/cbb/ncaa_archive.js $ARGS
