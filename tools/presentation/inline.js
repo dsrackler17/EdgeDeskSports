@@ -57,6 +57,20 @@ const LIBS = [
     start: '/*__EDFBSRESOLVE_START__*/', end: '/*__EDFBSRESOLVE_END__*/',
     hosts: [path.join(FN, '_intelligence.js')],
   },
+  /* The research library (PART 1 of index.ts): retrieval, evidence and its
+     provenance, freshness windows, conflict detection, completeness,
+     snapshots, findings, the scout and the thesis attack. index.ts named
+     _lib.ts as its source of truth for a long time while no such file
+     existed, so those 8,885 lines were the one layer of the desk with no
+     canonical copy — and the only place they lived, the 2.2 MB single-file
+     build, is past the size above which GitHub will not render a file at
+     all. Extracted byte-for-byte; the deployed artifact did not change. */
+  {
+    name: 'EDLIB',
+    src: path.join(FN, '_lib.ts'),
+    start: '/*__EDLIB_START__*/', end: '/*__EDLIB_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   {
     name: 'EDPRES',
     src: path.join(FN, '_presentation.js'),
