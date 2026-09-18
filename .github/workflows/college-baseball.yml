@@ -154,6 +154,14 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: node tools/cbb/probe_boxscore.js
 
+      # It was neither the path nor the pacing: it was the user agent. And the
+      # 200 it unlocked carries rosters, plays and odds branches that I had not
+      # opened before nearly concluding there are no player stats. This one
+      # prints the shape instead of testing another guess about it.
+      - name: Print the shape instead of guessing at it
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_outline.js
+
       - name: The shaping and the union must pass first
         run: node tools/cbb/ingest.test.js
 
