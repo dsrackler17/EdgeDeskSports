@@ -454,9 +454,30 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     /* freshness and started games */
     r = await askB('What are the best bets this week?', { rows: { signals: [fx.signal({ last_seen_at: new Date(NOW - 6 * 3600000).toISOString() })] } });
     chk(F, 'a six-hour-old quote cannot qualify; it is a watch with a re-check', r.j.board.opportunities.length === 0 && r.j.board.watchlist.some((c) => c.selection === 'North Texas' && c.quote.freshness === 'STALE'), r.j.board.watchlist.map((c) => c.selection + ':' + c.quote.freshness));
+    /* ── A COUNT THIS TEST DOES NOT CONTROL CANNOT BE ASSERTED ABSOLUTELY ──
+       This asserted counts.started === 1 and rotted, as it was always going to.
+       NOW is Date.now() and fx.slate is built on football/fbs/slate.json, the
+       REAL committed artifact, so as the wall clock crosses each real kickoff
+       another game legitimately counts as started. On 18 September 2026 the
+       fixture's second game (Syracuse at Pittsburgh, 17 September 23:30Z) had
+       already kicked off, so the count was 2 and the assertion failed — with the
+       board behaving perfectly correctly. Tomorrow it would have been 3.
+
+       The guarantee being tested is a DELTA, not a total: making one more game
+       started must drop that game and recommend nothing. So the baseline is
+       measured on the unmodified slate and the assertion is baseline + 1. The
+       claim is now exactly as strong as it was, and it no longer depends on
+       what day the suite happens to run. */
+    const baseline = await askB('What are the best bets this week?');
+    const startedBefore = baseline.j.board.eligibility.counts.started;
     const started = Object.assign({}, fx.slate, { games: [Object.assign({}, fx.slate.games[0], { kickoff: new Date(NOW - 3600000).toISOString() })].concat(fx.slate.games.slice(1)) });
     r = await askB('What are the best bets this week?', { rows: { slate: started, signals: [fx.signal({ commence_time: new Date(NOW - 3600000).toISOString() })] } });
-    chk(F, 'a game that has started is dropped and never recommended', r.j.board.eligibility.counts.started === 1 && r.j.board.opportunities.length === 0 && r.j.board.eligibility.dropped.some((d) => d.why === 'STARTED' && /North Texas/.test(d.matchup)), r.j.board.eligibility.counts);
+    chk(F, 'a game that has started is dropped and never recommended',
+      r.j.board.eligibility.counts.started === startedBefore + 1
+      && r.j.board.opportunities.length === 0
+      && r.j.board.eligibility.dropped.some((d) => d.why === 'STARTED' && /North Texas/.test(d.matchup)),
+      { started: r.j.board.eligibility.counts.started, baseline: startedBefore,
+        dropped: r.j.board.eligibility.dropped.map((d) => d.why + ':' + d.matchup) });
     /* a provider that cannot be read */
     r = await askB('What are the best bets this week?', { rows: { nfl: null } });
     chk(F, 'an unreadable NFL artifact is coverage, not silence: the college card is still evaluated', r.j.board.coverage.some((c) => c.sport === 'americanfootball_nfl' && c.status === 'RETRIEVAL_FAILED') && r.j.board.coverage.some((c) => c.sport === 'americanfootball_ncaaf' && c.status === 'EVALUATED'), r.j.board.coverage.map((c) => c.sport + ':' + c.status));
