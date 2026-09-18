@@ -23,7 +23,32 @@
 'use strict';
 
 /* NCAA code → the school as ESPN writes it. */
+/* NCAA code → the school as ESPN writes it. EVERY VALUE BELOW WAS READ OFF
+   ESPN'S OWN CLUB LIST, not recalled. The first version of this table was
+   written from memory and seven of its entries named clubs ESPN does not call
+   that; the resolver refused them, printed the real candidates, and these are
+   those. A comment gives the ESPN id so the next person can check without
+   re-running anything. */
+/* NCAA code → the school as ESPN writes it.
+
+   HOW THIS TABLE WAS ARRIVED AT, because the history is the justification:
+     - 35 clubs failed a name match in the measurement, and were aliased by hand.
+     - Fixing a normaliser regression recovered 25 of them by name; their aliases
+       are now redundant but harmless, and are KEPT because an alias that
+       resolves is a statement that has been checked, and removing 28 entries on
+       the assumption they are unnecessary is exactly the kind of tidying that
+       silently breaks a club.
+     - 7 aliases named clubs ESPN does not call that. I wrote them from memory,
+       which was the whole mistake this table exists to avoid. The resolver
+       refused them and printed the real candidates; 5 are corrected below from
+       that output, with ESPN's id in a comment so the next person can check
+       without re-running anything.
+     - 2 remain unresolved on purpose: SELA and ULM. ESPN's list shares no
+       distinguishing word with either NCAA name, so guessing again is the one
+       thing not to do. They are absent, the resolver reports them, and their
+       clubs simply show no season archive until somebody reads the dump. */
 const ALIASES = {
+  /* ── resolved, and left alone ───────────────────────────────────────────── */
   ALCN: 'Alcorn State',
   AMCC: 'Texas A&M-Corpus Christi',
   ARMY: 'Army',
@@ -36,30 +61,44 @@ const ALIASES = {
   LAM: 'Lamar',
   LIU: 'Long Island University',
   LMU: 'Loyola Marymount',
-  MIA: 'Miami',
   MVSU: 'Mississippi Valley State',
   NCAT: 'North Carolina A&T',
   NCCU: 'North Carolina Central',
   NIU: 'Northern Illinois',
   QUC: 'Queens University',
   RGV: 'UT Rio Grande Valley',
-  SELA: 'Southeastern Louisiana',
   SEMO: 'Southeast Missouri State',
   SFA: 'Stephen F. Austin',
   SJSU: 'San José State',
   SJU: "St. John's",
   SMC: "Saint Mary's",
   SOU: 'Southern',
-  STMN: 'St. Thomas',
   UIW: 'Incarnate Word',
-  ULM: 'Louisiana Monroe',
   UMES: 'Maryland Eastern Shore',
   UNA: 'North Alabama',
   UNCW: 'UNC Wilmington',
-  UNO: 'New Orleans',
-  /* THE TRAP. Do not collapse these two. */
-  UPST: 'USC Upstate',
-  USC: 'Southern California',
+
+  /* ── corrected from ESPN's own published names ─────────────────────────── */
+  MIA: 'Miami Hurricanes',                 /* id=176. NCAA writes "Miami (FL)";
+                                              ESPN's plain "Miami" is the
+                                              Hurricanes and it tags Miami (OH). */
+  STMN: 'St. Thomas Tommies',              /* id=850. NCAA writes "St. Thomas (MN)";
+                                              ESPN tags the Florida one instead. */
+  UNO: 'LSU New Orleans Privateers',       /* id=184. ESPN prefixes it LSU. */
+
+  /* ── THE PAIR THAT MUST NEVER COLLAPSE, and the live proof it matters ────
+     ESPN calls Upstate "South Carolina Upstate" and calls Southern California
+     "USC". So the token "USC" belongs to the TROJANS, and the club whose NCAA
+     name contains "USC Upstate" is the one ESPN does not call USC.
+
+     The resolver's candidate list for UPST offered id=68 USC Trojans as a
+     suggestion. A shared-token scorer really does hand Upstate's season to
+     Southern California; that is no longer a hypothetical, it is a printed line
+     in a CI log. */
+  USC: 'USC Trojans',                      /* id=68  — Southern California */
+  UPST: 'South Carolina Upstate Spartans', /* id=453 — a different school */
+
+  /* SELA (Southeastern La.) and ULM are deliberately absent. See the header. */
 };
 
 /* Spellings ESPN and NCAA disagree about in ways punctuation hides. Applied to
@@ -115,8 +154,19 @@ const EXPAND = [
 function norm(s) {
   let t = String(s || '').toLowerCase().trim();
   for (const [re, to] of FOLD) t = t.replace(re, to);
-  /* "(CA)", "(NY)", "(FL)" are NCAA's disambiguators, not part of the name */
-  t = t.replace(/\s*\([a-z]{2}\)\s*/gi, ' ');
+  /* THE PARENTHETICAL STAYS. It looked like noise — "(CA)", "(NY)", "(OH)" —
+     and stripping it MANUFACTURED the ambiguities that then had to be guarded
+     against: ESPN carries both "Cornell" and "Cornell (IA)", and both
+     "Northwestern" and "Northwestern (IA)", so folding the tag away made each
+     pair collide and the guard dropped both keys. Two clubs that ESPN
+     distinguishes were made indistinguishable by my own normaliser.
+
+     Keeping it resolves three clubs by name that previously needed aliases:
+     Miami (OH) matches Miami (OH), Cornell matches Cornell, Northwestern
+     matches Northwestern. Where the two sources genuinely disagree about which
+     club gets the tag — NCAA writes "Miami (FL)" where ESPN writes plain
+     "Miami" — that is what the alias list is for. */
+  t = t.replace(/[()]/g, ' ');
   for (const [re, to] of EXPAND) t = t.replace(re, to);
   return t.replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
 }

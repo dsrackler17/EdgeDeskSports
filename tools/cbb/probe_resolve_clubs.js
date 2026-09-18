@@ -119,6 +119,23 @@ const T = require('./team_aliases.js');
     }
   }
 
+  /* ── AND IF ANYTHING IS STILL UNRESOLVED, THE WHOLE LIST ────────────────
+     The token-overlap suggestions above find a club only when its ESPN name
+     shares a word with its NCAA name. For SELA ("Southeastern La.") and ULM
+     they found nothing useful, which means no amount of scoring will — so the
+     list itself is printed. 437 lines is a lot of log and still cheaper than
+     one more alias written from memory. */
+  if (res.unresolved.length) {
+    console.log('── every ESPN club, so the remaining aliases are read and not recalled ──\n');
+    const sorted = espn.slice().sort((a, b) =>
+      String(a.location || a.displayName).localeCompare(String(b.location || b.displayName)));
+    for (const t of sorted) {
+      console.log(`  ${String(t.id).padStart(7)}  ${String(t.location || '').padEnd(30)}`
+        + `${String(t.displayName || '')}`);
+    }
+    console.log('');
+  }
+
   if (res.aliasFailed.length) {
     console.log('FAIL | cbb resolve clubs | an alias written by hand no longer resolves. '
       + 'Update tools/cbb/team_aliases.js before the mapping is used. The candidates '
