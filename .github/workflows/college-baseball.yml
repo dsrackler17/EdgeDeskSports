@@ -145,6 +145,15 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: node tools/cbb/probe_espn_stats.js
 
+      # One result from the probe above is not trustworthy as written: three
+      # paths on a host answered 403 while two paths on the SAME host answered
+      # 200 minutes earlier. That smells like my own pacing, not a closed
+      # endpoint, and this project has already been burned once by reading a
+      # throttle as a source defect. This asks again, slowly, with a control.
+      - name: Was that 403 the endpoint or my own pacing?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_boxscore.js
+
       - name: The shaping and the union must pass first
         run: node tools/cbb/ingest.test.js
 
