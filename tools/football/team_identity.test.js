@@ -50,10 +50,49 @@ if (T) {
   chk('every inference states its rule and inputs', T.inferences.every((i) => i.rule && i.inputs && i.confidence != null));
   chk('a small sample is an inference, never hidden', T.measured.sample.games >= 4 || T.inferences.some((i) => i.id === 'small_sample'));
   chk('what is not measured is listed', Array.isArray(T.not_measured) && T.not_measured.some((x) => /coordinator/.test(x)) && T.not_measured.some((x) => /coverage/.test(x)));
-  chk('the trend is within-season with a sample count', !T.trend.early_vs_recent || (T.trend.early_vs_recent.sample_snapshots >= 2 && /hypothesis|trend/.test(T.trend.early_vs_recent.summary)));
+  chk('the trend is within-season with a sample count', !T.trend.early_vs_recent || (T.trend.early_vs_recent.sample_snapshots >= 2 && /hypothesis|trend/.test(T.trend.early_vs_recent.summary)), T.trend.early_vs_recent);
   chk('the quarterback block separates starter, backup and competition', T.measured.quarterback && 'starter' in T.measured.quarterback && 'backup' in T.measured.quarterback && 'competition' in T.measured.quarterback);
   chk('a backup is a research read, never a start announcement', !T.measured.quarterback.backup || /never a start announcement/.test(T.measured.quarterback.backup.basis));
 }
+
+/* ---- THE SAMPLE SENTENCE, AT EVERY SAMPLE SIZE ------------------------
+   The assertion above grades whichever team the rankings build happens to
+   put first, on whatever history.json holds today — so it could only ever
+   see ONE sample size, and it saw the small one for three weeks. When the
+   fourth weekly snapshot landed the builder stopped characterising the
+   sample entirely (it wrote the clause only while hrows.length < 4) and the
+   summary ended in a dangling ". ": the assertion went red on a build that
+   was otherwise correct, and it would have gone green again by itself in a
+   season with fewer snapshots.
+
+   The guarantee is not "today's team says hypothesis". It is that the
+   sentence names its count and says how much that count will carry, at
+   EVERY size — so it is asserted on the function that writes it, over the
+   sizes either side of the threshold, and no longer depends on which week
+   the suite runs in. */
+chk('the sample sentence is written at every size, and always names its count',
+  [1, 2, 3, B.SAMPLE_MIN_TREND, B.SAMPLE_MIN_TREND + 1, 12]
+    .every((n) => /hypothesis|trend/.test(B.SAMPLE_READ(n)) && new RegExp('\\b' + n + ' snapshot').test(B.SAMPLE_READ(n))),
+  [1, B.SAMPLE_MIN_TREND].map((n) => B.SAMPLE_READ(n)));
+chk('a thin sample is a hypothesis and a full one is a trend, never the reverse',
+  /hypothesis, not a trend/.test(B.SAMPLE_READ(B.SAMPLE_MIN_TREND - 1))
+    && /reads as a trend/.test(B.SAMPLE_READ(B.SAMPLE_MIN_TREND))
+    && !/hypothesis/.test(B.SAMPLE_READ(B.SAMPLE_MIN_TREND)),
+  { thin: B.SAMPLE_READ(B.SAMPLE_MIN_TREND - 1), full: B.SAMPLE_READ(B.SAMPLE_MIN_TREND) });
+chk('one snapshot is one snapshot, not one snapshots', /\b1 snapshot\b/.test(B.SAMPLE_READ(1)), B.SAMPLE_READ(1));
+chk('the sentence ends cleanly, so a summary never trails a dangling space',
+  [1, B.SAMPLE_MIN_TREND].every((n) => /\.$/.test(B.SAMPLE_READ(n)) && B.SAMPLE_READ(n) === B.SAMPLE_READ(n).trim()),
+  [1, B.SAMPLE_MIN_TREND].map((n) => JSON.stringify(B.SAMPLE_READ(n))));
+/* and the built artifact carries it, whatever size today's history is */
+chk('every team trend on the real artifact carries the sentence and the count',
+  Object.values(art.teams).every((t) => {
+    const e = t.trend && t.trend.early_vs_recent;
+    return !e || (/hypothesis|trend/.test(e.summary) && new RegExp('\\b' + e.sample_snapshots + ' snapshot').test(e.summary));
+  }),
+  Object.values(art.teams).filter((t) => {
+    const e = t.trend && t.trend.early_vs_recent;
+    return e && !/hypothesis|trend/.test(e.summary);
+  }).slice(0, 3).map((t) => t.trend.early_vs_recent.summary));
 
 /* ---- inference rules are deterministic over stated inputs -------------- */
 const fake = { measured: { units: { explosive_pass_rate: { z: 1.4, reliability: 0.7 }, success_rate: { z: -0.3, reliability: 0.8 }, sack_rate_allowed: { z: -1.1, reliability: 0.6, adjusted: 0.09, league: 0.06 } }, profile: { pass_rate: 0.66, plays_per_game: 80 }, ol_continuity: { continuity: 0.3, experience: 0.5 }, continuity: { rating: 20 }, quarterback: { competition: { contested: true, players: [{ player_name: 'A', share: 0.55 }, { player_name: 'B', share: 0.45 }] } }, sample: { games: 2, garbage_share: 0.2 } } };

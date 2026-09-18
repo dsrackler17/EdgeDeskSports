@@ -169,10 +169,58 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk(F, 'and the investigation records that the forecast provider was tried and answered nothing', r.j.investigation && r.j.investigation.log.some((l) => l.gap === 'weather' && l.provider === 'open_meteo_forecast' && l.outcome === 'UNAVAILABLE'), r.j.investigation && r.j.investigation.log.filter((l) => l.gap === 'weather'));
     chk(F, 'data confidence names what is missing', p.confidence.data.missing.length > 0);
     chk(F, 'the answer is still produced (no generic refusal)', r.j.structured && r.j.structured.bottom_line.label);
-    const noMkt = await ask('Analyze Syracuse at Pittsburgh');
-    const pn = noMkt.j.research_packet;
-    chk(F, 'a game with no captured price is INSUFFICIENT DATA or RESEARCH LEAD, never a bet', pn && ['INSUFFICIENT DATA', 'RESEARCH LEAD'].indexOf(pn.label.label) >= 0, pn && pn.label);
-    chk(F, 'and its market state says no executable price', pn && (pn.market.state === 'LINE_ONLY' || pn.market.state === 'NO_MARKET'), pn && pn.market.state);
+    /* ── A GAME NAMED BY HAND KICKS OFF, AND THE CASE STOPS EXISTING ──
+       This asked about "Syracuse at Pittsburgh" and rotted, as it was always
+       going to. fx.slate is the REAL committed football/fbs/slate.json, so
+       that game was on the card when the case was written and final by the
+       morning of 18 September 2026 — a finished game builds no single-game
+       packet at all, so `research_packet` came back null and BOTH assertions
+       failed with the stack behaving perfectly correctly.
+
+       What is being tested is not that one Thursday nighter. It is that a
+       game EdgeDesk holds no executable price for can never be answered with
+       a bet. So the game is taken from the card rather than named: the first
+       one that resolves, with its kickoff pushed a week out so the case never
+       depends on whether it has already been played, and with no captured
+       signal behind it (only the North Texas fixture game carries one) so it
+       is the no-price case by construction.
+
+       It also has to carry no CONSENSUS LINE, which is the other half of the
+       original case: a game that is lined but unpriced is a different claim
+       and gets a diagnostic label of its own (a wide model-to-market gap
+       labels MODEL DISAGREEMENT, which is also never a bet, but it is not
+       this assertion). The fixture's line table names the games it prices, so
+       the unlined ones are read off it rather than counted by hand.
+
+       Candidates are tried in order because the card is real: a name that is
+       ambiguous by itself ("Miami") legitimately resolves to no game, which
+       is another family's assertion and not a failure here. An empty card is
+       recorded as a skip — a fact about the artifact, not about the code —
+       but a card with games where NONE resolves is a resolver regression and
+       is allowed to fail. */
+    const week = new Date(NOW + 7 * 86400000).toISOString();
+    const lined = new Set(fx.lines.map((l) => l.game_id));
+    const unlined = fx.upcoming.filter((u) => !lined.has(u.game_id));
+    const candidates = fx.slate.games.filter((g) =>
+      unlined.some((u) => u.home_team === g.home_team && u.away_team === g.away_team));
+    let pn = null, pnGame = null;
+    for (const g of candidates) {
+      const card = Object.assign({}, fx.slate, {
+        games: fx.slate.games.map((x) => (x === g ? Object.assign({}, x, { kickoff: week }) : x)),
+      });
+      const noMkt = await ask('Analyze ' + g.away_team + ' at ' + g.home_team, { rows: { slate: card } });
+      if (noMkt.j.research_packet) { pn = noMkt.j.research_packet; pnGame = g.away_team + ' at ' + g.home_team; break; }
+    }
+    if (!candidates.length) {
+      chk(F, 'skipped: the published card carries no game beside the priced fixture', true);
+    } else {
+      chk(F, 'an unpriced game on the card resolves and is answered', !!pn,
+        { tried: candidates.map((g) => g.away_team + ' at ' + g.home_team) });
+      chk(F, 'a game with no captured price is INSUFFICIENT DATA or RESEARCH LEAD, never a bet',
+        pn && ['INSUFFICIENT DATA', 'RESEARCH LEAD'].indexOf(pn.label.label) >= 0, { game: pnGame, label: pn && pn.label });
+      chk(F, 'and its market state says no executable price',
+        pn && (pn.market.state === 'LINE_ONLY' || pn.market.state === 'NO_MARKET'), { game: pnGame, state: pn && pn.market.state });
+    }
   }
 
   /* ═══ 6. hallucination traps ═══════════════════════════════════════════ */
