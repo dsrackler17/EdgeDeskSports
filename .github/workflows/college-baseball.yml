@@ -56,3 +56,12 @@ jobs:
           ARGS=""
           if [ -n "${{ inputs.date }}" ]; then ARGS="--date ${{ inputs.date }}"; fi
           node tools/cbb/probe_sources.js $ARGS
+
+      # EIGHTEEN EVENTS FOR A WEDNESDAY IN APRIL is what the first probe found,
+      # against a Division I field of about three hundred teams. That may be a
+      # normal midweek card or it may be a curated one, and the difference
+      # decides whether this source can honour "all the games during the
+      # season" at all. A board that shows part of the card while looking
+      # complete is worse than no board.
+      - name: Is it all the games, or a selection?
+        run: node tools/cbb/probe_coverage.js
