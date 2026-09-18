@@ -65,3 +65,13 @@ jobs:
       # complete is worse than no board.
       - name: Is it all the games, or a selection?
         run: node tools/cbb/probe_coverage.js
+
+      # THREE THINGS THE COVERAGE PROBE TURNED UP, each of which decides part
+      # of the ingest's shape: half the field missing from a week of
+      # scoreboards, the SAME URL answering 81 then 0 seconds apart, and a
+      # league calling itself Preseason 2026 in September 2026. The second is
+      # the dangerous one — a refresh that reads an empty answer as an empty
+      # day would delete a full card — so the rate at which the source lies is
+      # measured here rather than assumed.
+      - name: Can we get all the games, and is the source steady?
+        run: node tools/cbb/probe_completeness.js
