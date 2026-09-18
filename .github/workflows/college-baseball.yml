@@ -138,6 +138,13 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: node tools/cbb/probe_stats_sources.js
 
+      # The first stats probe ruled almost everything out and its most useful
+      # result was an embarrassment: I had never asked the host that already
+      # serves this project 5,500 games a season whether it also serves stats.
+      - name: Does the host that serves the games also serve the stats?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_espn_stats.js
+
       - name: The shaping and the union must pass first
         run: node tools/cbb/ingest.test.js
 
