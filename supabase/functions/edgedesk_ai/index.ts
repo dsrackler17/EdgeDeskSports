@@ -23773,7 +23773,8 @@ try { if (EDSTAKE && EDRESEARCH) EDSTAKE.registerTools(); } catch { /* additive 
     NO_RECORDS_IN_WINDOW: 'NO_RECORDS_IN_WINDOW', // resolved, but no appearances inside coverage
     EMPTY_RESULT: 'EMPTY_RESULT',                 // the filter excluded everything
     QUERY_UNAVAILABLE: 'QUERY_UNAVAILABLE',       // the read failed or the contract is not installed
-    NOT_INSTALLED: 'NOT_INSTALLED'                // supabase/mlb_pitcher_history.sql has not been run
+    NOT_INSTALLED: 'NOT_INSTALLED',               // supabase/mlb_pitcher_history.sql has not been run
+    NOT_EXPOSED: 'NOT_EXPOSED'                    // it HAS been run; PostgREST is not serving the schema
   };
 
   /* Hard caps. A question can never ask for the database: the archive is
@@ -24467,14 +24468,30 @@ try { if (EDSTAKE && EDRESEARCH) EDSTAKE.registerTools(); } catch { /* additive 
     function classify(err) {
       var s = String((err && err.message) || err || '');
       var body = String((err && err.body) || '');
-      if (/PGRST205|PGRST106|PGRST202|42P01|3F000|schema cache|does not exist|unknown schema/i.test(s + ' ' + body)) {
+      /* PGRST106 IS NOT A MISSING CONTRACT, AND SAYING SO SENDS THE OPERATOR
+         ROUND IN CIRCLES. PostgREST answers 406 PGRST106 when the schema is
+         absent from its db-schemas setting: the tables are there, it simply
+         will not serve them. Reporting that as "not installed" asks for SQL
+         that has already been run and cannot help, which is exactly what
+         happened here — three passes of the contract files against a database
+         that already held every one of their objects. The two states are
+         distinguishable at the wire, so they are distinguished. */
+      if (/PGRST106|Invalid schema|unknown schema|3F000/i.test(s + ' ' + body)) {
+        return OUTCOMES.NOT_EXPOSED;
+      }
+      if (/PGRST205|PGRST202|42P01|schema cache|does not exist/i.test(s + ' ' + body)) {
         return OUTCOMES.NOT_INSTALLED;
       }
       return OUTCOMES.QUERY_UNAVAILABLE;
     }
     function reason(err) {
       var s = String((err && err.message) || err || 'the read failed');
-      if (classify(err) === OUTCOMES.NOT_INSTALLED) {
+      var c = classify(err);
+      if (c === OUTCOMES.NOT_EXPOSED) {
+        return 'the mlbhist tables exist but the API is not serving them — add mlbhist to '
+          + 'Supabase > Settings > API > Exposed schemas. Running the SQL again will not change this';
+      }
+      if (c === OUTCOMES.NOT_INSTALLED) {
         return 'the mlb_pitcher_history contract is not installed in this database — run supabase/mlb_pitcher_history.sql '
           + 'once in the Supabase SQL editor and check that every row of its report reads ok';
       }
@@ -24546,7 +24563,7 @@ try { if (EDSTAKE && EDRESEARCH) EDSTAKE.registerTools(); } catch { /* additive 
     async function resolvePlayer(input) {
       input = input || {};
       var st = await status();
-      if (st.code === OUTCOMES.NOT_INSTALLED || st.code === OUTCOMES.QUERY_UNAVAILABLE) {
+      if (st.code === OUTCOMES.NOT_INSTALLED || st.code === OUTCOMES.NOT_EXPOSED || st.code === OUTCOMES.QUERY_UNAVAILABLE) {
         return failure(st.code, st.detail, { scope: 'resolve' });
       }
       try {
