@@ -113,6 +113,39 @@ const game = (o) => Object.assign({
     eq('…with no games', off.games.length, 0);
     eq('…and says it is out of season', off.in_season, false);
 
+    /* THE OFFSEASON FALLBACK. Accurate and useless were the same answer here:
+       the season runs February to June, so for seven months the card was empty
+       and the panel said so while a finished season sat underneath it. */
+    const fb = await svc.board({ from: off.from, through: off.through, fallback: true });
+    ok('with fallback an out-of-season window still answers', fb.ok === true, fb);
+    ok('…and now carries games', fb.games.length > 0, fb.games.length);
+    /* The day it fell back to is the real maximum in the table, read from SQL
+       rather than written down here — an expected date typed by hand is a
+       second source that can disagree with the first. */
+    const newest = String(db.rows('select max(game_date) as d from cbb.games')[0].d).slice(0, 10);
+    eq('…from the last day actually played', fb.fell_back_to, newest);
+    eq('…naming the season those games belong to', fb.season_shown, 2026);
+    /* IT NEVER PRETENDS THAT DAY IS TODAY. */
+    eq('…while still reporting the window that was asked for', fb.requested_from, off.from);
+    eq('…and the end of it', fb.requested_through, off.through);
+    /* Every row belongs to that one day. It is NOT asserted that they are all
+       finished: the fallback shows the day as the archive holds it, and this
+       fixture's last day carries a scheduled game alongside two played ones.
+       Filtering those out would be the layer editing the record. */
+    ok('…and every game it returns is from that day',
+       fb.games.every((g) => String(g.date).slice(0, 10) === newest),
+       fb.games.map((g) => g.date));
+    ok('…including the day\'s unplayed game rather than quietly dropping it',
+       fb.games.some((g) => g.state === 'pre'), fb.games.map((g) => g.state));
+
+    /* A CALLER THAT DOES NOT ASK FOR IT GETS THE OLD ANSWER. */
+    eq('without fallback the same window is still empty', off.games.length, 0);
+    eq('…and reports no fallback', off.fell_back_to || null, null);
+
+    /* IN SEASON, A DAY WITH GAMES IS NEVER REPLACED BY AN EARLIER ONE. */
+    const inSeasonDay = await svc.board({ from: '2026-04-18', through: '2026-04-18', fallback: true });
+    eq('a window that has games does not fall back', inSeasonDay.fell_back_to, null);
+
     console.log('the derived record, read back through the layer');
     const a = await svc.teamSeason('1', 2026);
     ok('a club season comes back', a.ok === true, a);

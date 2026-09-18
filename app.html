@@ -14970,7 +14970,11 @@ window.loadCollegeBaseball=async function(force,signal){
     }
     CBB.err=null; CBB.errCode=null;
     var from=cbbDay(0), through=cbbDay(2);
-    var b=await svc.board({from:from,through:through});
+    /* fallback:true — out of season the three-day card is empty for seven
+       months of the year, so the board answers with the last day actually
+       played instead. It reports which day that is; it never presents it
+       as today. */
+    var b=await svc.board({from:from,through:through,fallback:true});
     CBB.board=b.ok?b:null;
     CBB.boardKey=from+'|'+through;
     CBB.day={from:from,through:through};
@@ -15038,8 +15042,23 @@ function cbbBoardHTML(){
           : '<b>The run model did not load</b>, so no projection is shown and the rows carry the card alone.')))
     +'</div>';
 
+  /* WHEN THE CARD IS NOT TODAY'S, SAY SO FIRST AND IN ITS OWN WORDS. The rows
+     below are real games that were really played; the only thing that would be
+     false here is letting them read as tonight's slate. */
+  if(b.fell_back_to){
+    head='<div class="mlbb-note"><b>The '+cbbEsc(b.season_shown||'')+' season is complete.</b> '
+      +'There are no college games between '+cbbEsc(cbbDayLabel(b.requested_from))+' and '
+      +cbbEsc(cbbDayLabel(b.requested_through))+' — the season runs from the middle of February to the end '
+      +'of June. Showing the last day played, <b>'+cbbEsc(cbbDayLabel(b.fell_back_to))+'</b>, so the card and '
+      +'the research behind each game stay open out of season. These are finished games, not tonight’s.'
+      +'</div>'+head;
+  }
+
   if(!b.games.length){
-    /* OUT OF SEASON IS THE CORRECT ANSWER, NOT AN ERROR. */
+    /* OUT OF SEASON IS THE CORRECT ANSWER, NOT AN ERROR — but it is only this
+       answer when the archive has nothing earlier to show either. When it does,
+       the fallback above put the last day played on the card and we never reach
+       here. */
     if(!b.in_season){
       return head+'<div class="empty"><b>College baseball is out of season.</b><br>'
         +'The season runs from the middle of February to the end of June. There are no games between '
