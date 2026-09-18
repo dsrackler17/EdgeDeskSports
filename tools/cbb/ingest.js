@@ -253,6 +253,10 @@ if (require.main === module) {
     const db = P.client();
     const importId = `cbb-${season}-${new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
     await require('./stage.js').stageAndPromote(db, importId, { season, from, through, games,
-      teams: teams.map((t) => shapeTeam(t, season)).filter(Boolean), log });
+      teams: teams.map((t) => shapeTeam(t, season)).filter(Boolean), log,
+      /* only ever true because a human said so on the run: the gate's
+         shrinkage refusal is the one thing standing between a throttled
+         answer and a deleted card */
+      allowShrink: has('--allow-shrink') });
   })().catch((e) => { console.log('FAIL | cbb ingest | ' + (e && e.stack || e)); process.exit(1); });
 }

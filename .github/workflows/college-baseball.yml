@@ -16,7 +16,7 @@
 # candidate for one day of the completed 2026 season and reports what came
 # back, so the shape of the data decides the design instead of the other way
 # round.
-name: College baseball source probe
+name: College baseball
 
 on:
   # A pull request touching the probe runs it on a real runner, writing
@@ -28,18 +28,44 @@ on:
     paths:
       - 'tools/cbb/**'
       - '.github/workflows/college-baseball.yml'
+  # THE SEASON IS FEBRUARY TO JUNE, so a daily job that runs all year would
+  # spend seven months importing nothing. It still runs: the job decides for
+  # itself whether the date is in season and exits early saying so, which is a
+  # fact worth recording rather than a schedule that silently stops.
+  schedule:
+    - cron: '40 10 * * *'
   workflow_dispatch:
     inputs:
       date:
-        description: 'A date inside a college baseball season (YYYY-MM-DD). Default 2026-04-15.'
+        description: 'A date inside a college baseball season (YYYY-MM-DD). Probe only. Default 2026-04-15.'
         required: false
         default: ''
+      season:
+        description: 'Season to refresh (blank = the current one).'
+        required: false
+        default: ''
+      commit:
+        description: 'Import into the database. Unchecked fetches and validates, writing nothing.'
+        type: boolean
+        required: false
+        default: false
+      allow_shrink:
+        description: 'Promote even if the card shrank. Only when the loss is known to be real.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
 
+concurrency:
+  # Two refreshes staging into the same ledger race each other into one
+  # promote. A pull request probe writes nothing, so it gets its own group.
+  group: cbb-${{ github.event_name == 'pull_request' && github.ref || 'write' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  probe:
+  refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -52,6 +78,7 @@ jobs:
           node-version: '22'
 
       - name: Ask the candidates whether a runner can see the games
+        if: ${{ github.event_name != 'schedule' }}
         run: |
           ARGS=""
           if [ -n "${{ inputs.date }}" ]; then ARGS="--date ${{ inputs.date }}"; fi
@@ -64,6 +91,7 @@ jobs:
       # season" at all. A board that shows part of the card while looking
       # complete is worse than no board.
       - name: Is it all the games, or a selection?
+        if: ${{ github.event_name == 'pull_request' }}
         run: node tools/cbb/probe_coverage.js
 
       # THREE THINGS THE COVERAGE PROBE TURNED UP, each of which decides part
@@ -74,6 +102,7 @@ jobs:
       # day would delete a full card — so the rate at which the source lies is
       # measured here rather than assumed.
       - name: Can we get all the games, and is the source steady?
+        if: ${{ github.event_name == 'pull_request' }}
         run: node tools/cbb/probe_completeness.js
 
       # THE SCOREBOARD IS NOT ALL THE GAMES — forty sampled teams already found
@@ -86,7 +115,62 @@ jobs:
       # captured at all. Nothing in this repository references one, and a brief
       # must not promise a market that is never written.
       - name: Price the union walk, and check the market really exists
+        if: ${{ github.event_name == 'pull_request' }}
         env:
           CBB_SB_URL: ${{ vars.SB_URL }}
           CBB_SB_KEY: ${{ vars.SB_ANON_KEY }}
         run: node tools/cbb/probe_union.js
+
+      # ── THE SUITES, BEFORE ANYTHING IS WRITTEN ───────────────────────────
+      # The shaping, the union, the gate and the query layer all have to pass
+      # before a refresh is allowed to touch a live table. A broken union is
+      # how a card loses games quietly.
+      - name: The shaping and the union must pass first
+        run: node tools/cbb/ingest.test.js
+
+      # ── IS TODAY EVEN IN SEASON? ─────────────────────────────────────────
+      # February to June. Out of season the honest thing is to say so and stop,
+      # not to import an empty card — and certainly not to let the gate's
+      # shrinkage refusal fire every morning for seven months.
+      - name: Decide whether there is a season to refresh
+        id: plan
+        run: |
+          SEASON="${{ inputs.season }}"
+          if [ -z "$SEASON" ]; then SEASON=$(TZ=America/New_York date +%Y); fi
+          MONTH=$(TZ=America/New_York date +%m)
+          IN_SEASON=false
+          if [ "$MONTH" -ge 2 ] && [ "$MONTH" -le 6 ]; then IN_SEASON=true; fi
+          echo "season=$SEASON"        >> "$GITHUB_OUTPUT"
+          echo "in_season=$IN_SEASON"  >> "$GITHUB_OUTPUT"
+          echo "season=$SEASON in_season=$IN_SEASON"
+
+      - name: Out of season, there is nothing to import
+        if: ${{ github.event_name == 'schedule' && steps.plan.outputs.in_season != 'true' }}
+        run: |
+          echo "::notice::College baseball is out of season (February to June). Nothing was fetched or written."
+          echo "The promoted card is unchanged and the panel says out of season rather than showing an empty board."
+
+      # ── THE REFRESH ──────────────────────────────────────────────────────
+      # A scheduled run commits; a dispatch commits only when asked. The mode
+      # is always named explicitly, because an importer given no mode at all is
+      # a job that reports success having done nothing — a lesson this
+      # repository has already paid for once.
+      - name: Rebuild the card and import it
+        if: ${{ github.event_name != 'pull_request' && (github.event_name != 'schedule' || steps.plan.outputs.in_season == 'true') }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be imported."
+            exit 1
+          fi
+          SEASON="${{ steps.plan.outputs.season }}"
+          ARGS="--season $SEASON"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          else
+            ARGS="$ARGS --check"
+          fi
+          if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
+          node tools/cbb/ingest.js $ARGS
