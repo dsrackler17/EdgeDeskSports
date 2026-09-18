@@ -1,6 +1,9 @@
--- mlb_offense_history -- part 3 of 4.
+-- fix_promote_deletes_mlb -- part 2 of 2.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
+-- This last part prints the report: every row should read ok.
+
+/* ---- mlbhist.promote_offense_import — the hitting gate ---- */
 
 -- ===========================================================================
 -- THE PROMOTE GATE.
@@ -217,31 +220,28 @@ begin
     'coverage', jsonb_build_object('start', cov_lo, 'end', cov_hi), 'rows', staged);
 end $$;
 
-revoke all on function mlbhist.promote_offense_import(text) from public, anon, authenticated;
-grant execute on function mlbhist.promote_offense_import(text) to service_role;
+/* ---------------------------------------------------------------------------
+   THE REPORT. Every row must read ok.
+   --------------------------------------------------------------------------- */
+with checks as (
+  select 1 as n, 'both promote gates still exist after being replaced' as guarantee,
+    case when to_regprocedure('mlbhist.promote_import(text)') is not null
+          and to_regprocedure('mlbhist.promote_offense_import(text)') is not null
+         then 'ok' else 'CHECK THIS' end as result
+  union all select 2, 'no gate body still carries a DELETE without a WHERE',
+    case when not exists (
+           select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'mlbhist'
+             and p.prosrc ~* 'delete[[:space:]]+from[[:space:]]+[a-z_.]+[[:space:]]*;')
+         then 'ok' else 'CHECK THIS — safeupdate will refuse this gate' end
+  union all select 3, 'the importer may still call both gates',
+    case when has_function_privilege('service_role', 'mlbhist.promote_import(text)', 'execute')
+          and has_function_privilege('service_role', 'mlbhist.promote_offense_import(text)', 'execute')
+         then 'ok' else 'CHECK THIS' end
+  union all select 4, 'a reader still cannot call either gate',
+    case when not has_function_privilege('anon', 'mlbhist.promote_import(text)', 'execute')
+          and not has_function_privilege('authenticated', 'mlbhist.promote_import(text)', 'execute')
+         then 'ok' else 'CHECK THIS — a reader could replace the archive' end
+)
+select n, guarantee, result from checks order by n;
 
-create or replace function mlbhist.abandon_offense_import(p_import_id text, p_reason text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = mlbhist, public
-as $$
-begin
-  delete from mlbhist.stg_batter_seasons               where import_id = p_import_id;
-  delete from mlbhist.stg_batter_team_seasons          where import_id = p_import_id;
-  delete from mlbhist.stg_batter_overview              where import_id = p_import_id;
-  delete from mlbhist.stg_batter_team_history          where import_id = p_import_id;
-  delete from mlbhist.stg_observed_batter_team_runs    where import_id = p_import_id;
-  delete from mlbhist.stg_team_offense_seasons         where import_id = p_import_id;
-  delete from mlbhist.stg_team_offense_overview        where import_id = p_import_id;
-  delete from mlbhist.stg_league_offense_seasons       where import_id = p_import_id;
-  delete from mlbhist.stg_offense_validation           where import_id = p_import_id;
-  delete from mlbhist.stg_offense_source_repairs       where import_id = p_import_id;
-  delete from mlbhist.stg_offense_games_reconciliation where import_id = p_import_id;
-  update mlbhist.import_runs
-    set status = 'failed', message = coalesce(p_reason, 'abandoned before promotion'), finished_at = now()
-    where import_id = p_import_id and status <> 'promoted';
-  return jsonb_build_object('ok', true, 'import_id', p_import_id, 'abandoned', true);
-end $$;
-revoke all on function mlbhist.abandon_offense_import(text, text) from public, anon, authenticated;
-grant execute on function mlbhist.abandon_offense_import(text, text) to service_role;

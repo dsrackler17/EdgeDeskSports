@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// The parts under supabase/parts are generated from the three contract files.
+// The parts under supabase/parts are generated from the contract files and the
+// patches that amend them.
 // A stale part is worse than no part: it would be pasted into the production SQL
 // editor and build a schema that no longer matches the repository. This test
 // re-runs the splitter over the current sources and fails if what is checked in
@@ -14,8 +15,9 @@ const { execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..', '..');
 const SPLITTER = path.join(ROOT, 'tools', 'sql', 'split_sql.js');
 const PARTS = path.join(ROOT, 'supabase', 'parts');
-const LIMIT = 20000;
-const SOURCES = ['mlb_pitcher_history', 'mlb_offense_history', 'college_baseball'];
+const LIMIT = 18000;
+const SOURCES = ['mlb_pitcher_history', 'mlb_offense_history', 'college_baseball',
+                 'fix_promote_deletes_mlb', 'fix_promote_deletes_cbb'];
 
 let pass = 0;
 const failures = [];

@@ -1,84 +1,6 @@
--- college_baseball -- part 5 of 6.
+-- college_baseball -- part 6 of 7.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
-
-create table if not exists cbb.ncaa_player_seasons (
-  season             int  not null,
-  player_id          text not null,          -- the package's own stable id
-  person_id          text,                   -- anchored to the MLB Stats API where known
-  name               text not null,
-  team_code          text,
-  team_name          text,
-  division           int,
-  class_year         text,                   -- Fr / So / Jr / Sr, as published
-  /* FALSE where the upstream identity resolution failed and the key was made
-     from season, club and name instead. 269 rows of 60,983 — real players with
-     real statistics whose id was lost upstream, most of them to a comma in the
-     name. They are kept because a leaderboard quietly missing them is worse
-     than one that includes them and says which they are. Such a player cannot
-     be followed across a transfer, because his key contains his club. */
-  identity_resolved  boolean not null default true,
-
-  /* ── batting, counting ─────────────────────────────────────────────────── */
-  bats               boolean not null default false,
-  b_games            int,                    -- NULLABLE ON PURPOSE: 145 rows in
-                                             -- the source record real at-bats
-                                             -- with no games figure. Unknown is
-                                             -- not zero, and a rate over a zero
-                                             -- denominator is not a rate.
-  pa                 int, ab int, h int, doubles int, triples int, hr int,
-  r                  int, rbi int, bb int, so int, hbp int, sf int, sh int,
-  gdp                int, sb int, cs int,
-  qualified_batting  boolean,
-
-  /* ── batting, computed in the promote from the columns above ───────────── */
-  total_bases        int,
-  batting_avg        double precision,
-  obp                double precision,       -- the real one; see the header
-  slg                double precision,
-  ops                double precision,
-  iso                double precision,
-
-  /* ── pitching, counting ────────────────────────────────────────────────── */
-  pitches            boolean not null default false,
-  p_games            int, gs int, w int, l int, cg int, sho int, sv int,
-  outs               int,                    -- NOT innings. "83.2" is 251 outs.
-  tbf                int, p_h int, p_r int, er int, p_hr int, p_bb int,
-  p_hbp              int, wp int, bk int, p_so int,
-  qualified_pitching boolean,
-
-  /* ── pitching, computed ────────────────────────────────────────────────── */
-  era                double precision,
-  whip               double precision,
-  k_per_9            double precision,
-  bb_per_9           double precision,
-  k_pct              double precision,       -- of batters faced, which this source has
-
-  source             text not null default 'ncaa_bbStats',
-  source_sha256      text,                   -- the exact file this row came from
-  updated_at         timestamptz not null default now(),
-  primary key (season, player_id),
-  constraint cbb_nps_hits_ck check (ab is null or h is null or h <= ab),
-  constraint cbb_nps_outs_ck check (outs is null or outs >= 0),
-  /* THE ROBERTO PENA CONSTRAINT. 296 is the highest at-bat total among every
-     row in the source that also records games played; 450 is the one that does
-     not. A cap at 400 admits any real season and refuses that row. */
-  constraint cbb_nps_ab_ck   check (ab is null or ab <= 400)
-);
-create index if not exists cbb_nps_season_idx on cbb.ncaa_player_seasons (season);
-create index if not exists cbb_nps_team_idx   on cbb.ncaa_player_seasons (team_code, season);
-create index if not exists cbb_nps_name_idx   on cbb.ncaa_player_seasons (lower(name));
-create index if not exists cbb_nps_person_idx on cbb.ncaa_player_seasons (person_id);
-
-create table if not exists cbb.stg_ncaa_player_seasons
-  (like cbb.ncaa_player_seasons including defaults);
-alter table cbb.stg_ncaa_player_seasons add column if not exists import_id text;
-/* The staging table deliberately does NOT inherit the check constraints: a row
-   that violates one has to be able to land here so the gate can COUNT it and
-   name it, rather than the insert dying on the first bad row with a message
-   about a constraint instead of a message about the import. */
-alter table cbb.stg_ncaa_player_seasons drop constraint if exists stg_ncaa_player_seasons_ab_check;
-create index if not exists cbb_stg_nps_import_idx on cbb.stg_ncaa_player_seasons (import_id);
 
 /* ═══════════════════════════════════════════════════════════════════════════
    THE GATE
@@ -160,7 +82,7 @@ begin
   if p_season is not null then
     delete from cbb.ncaa_player_seasons where season = p_season;
   else
-    delete from cbb.ncaa_player_seasons;
+    delete from cbb.ncaa_player_seasons where true;
   end if;
 
   insert into cbb.ncaa_player_seasons (
@@ -327,3 +249,94 @@ create index if not exists cbb_club_map_espn_idx on cbb.club_map (espn_team_id);
 
 create table if not exists cbb.stg_club_map (like cbb.club_map including defaults);
 alter table cbb.stg_club_map add column if not exists import_id text;
+
+create or replace function cbb.promote_club_map(p_import_id text)
+returns jsonb
+language plpgsql
+as $$
+declare
+  v_refusals jsonb := '[]'::jsonb;
+  v_staged bigint;
+  v_dupe_espn bigint;
+  v_dupe_code bigint;
+  v_orphan bigint;
+begin
+  select count(*) into v_staged from cbb.stg_club_map where import_id = p_import_id;
+  if v_staged = 0 then
+    v_refusals := v_refusals || jsonb_build_object('refusal','EMPTY_IMPORT',
+      'detail','no staged club mappings');
+  end if;
+
+  /* THE COLLISION THAT WOULD MIS-ATTRIBUTE A SEASON. */
+  select count(*) into v_dupe_espn from (
+    select espn_team_id from cbb.stg_club_map where import_id = p_import_id
+     group by 1 having count(*) > 1) d;
+  if v_dupe_espn > 0 then
+    v_refusals := v_refusals || jsonb_build_object('refusal','ESPN_CLUB_CLAIMED_TWICE',
+      'detail', v_dupe_espn || ' ESPN club(s) are claimed by more than one NCAA code; '
+        || 'that would put one programme''s players on another programme''s game');
+  end if;
+
+  select count(*) into v_dupe_code from (
+    select ncaa_code from cbb.stg_club_map where import_id = p_import_id
+     group by 1 having count(*) > 1) d;
+  if v_dupe_code > 0 then
+    v_refusals := v_refusals || jsonb_build_object('refusal','NCAA_CODE_TWICE',
+      'detail', v_dupe_code || ' NCAA code(s) appear more than once');
+  end if;
+
+  /* A MAPPING TO A CLUB THE BOARD HAS NEVER HEARD OF is not useful and is
+     probably a stale ESPN id. Checked only when the teams table is populated,
+     so a fresh database can still be seeded in either order. */
+  if (select count(*) from cbb.teams) > 0 then
+    select count(*) into v_orphan
+      from cbb.stg_club_map s
+     where s.import_id = p_import_id
+       and not exists (select 1 from cbb.teams t where t.team_id = s.espn_team_id);
+    if v_orphan > 0 then
+      v_refusals := v_refusals || jsonb_build_object('refusal','UNKNOWN_ESPN_CLUB',
+        'detail', v_orphan || ' mapping(s) point at an ESPN club that is not in cbb.teams');
+    end if;
+  end if;
+
+  if jsonb_array_length(v_refusals) > 0 then
+    update cbb.import_runs set status='failed', failed_at=now(), refusals=v_refusals,
+           updated_at=now(), failure_reason=(v_refusals->0->>'refusal')
+     where import_id = p_import_id;
+    return jsonb_build_object('ok', false, 'refusals', v_refusals);
+  end if;
+
+  delete from cbb.club_map where true;
+  insert into cbb.club_map (ncaa_code, ncaa_name, espn_team_id, espn_name, via, resolved_at)
+  select ncaa_code, ncaa_name, espn_team_id, espn_name, via, now()
+    from cbb.stg_club_map where import_id = p_import_id;
+
+  update cbb.import_runs set status='promoted', promoted_at=now(), refusals='[]'::jsonb,
+         updated_at=now(), row_counts = jsonb_build_object('club_map', v_staged)
+   where import_id = p_import_id;
+  update cbb.import_runs set status='superseded', updated_at=now()
+   where dataset='club_map' and status='promoted' and import_id <> p_import_id;
+  delete from cbb.stg_club_map where import_id = p_import_id;
+
+  return jsonb_build_object('ok', true, 'rows', v_staged);
+end;
+$$;
+
+/* A club's season archive, reachable by the id the games board uses. The join
+   is the whole point of the table above, and it is an INNER join: a club with
+   no mapping produces no rows rather than somebody else's. */
+create or replace view cbb.archive_by_espn_club as
+select m.espn_team_id, m.ncaa_code, m.via as mapped_via, p.*
+  from cbb.club_map m
+  join cbb.ncaa_player_seasons p on p.team_code = m.ncaa_code;
+
+alter table cbb.club_map     enable row level security;
+alter table cbb.stg_club_map enable row level security;
+do $$
+begin
+  drop policy if exists club_map_read on cbb.club_map;
+  create policy club_map_read on cbb.club_map for select to anon, authenticated using (true);
+  execute 'grant select on cbb.club_map to anon, authenticated';
+  execute 'revoke all on cbb.stg_club_map from anon, authenticated';
+end $$;
+revoke all on function cbb.promote_club_map(text) from public, anon, authenticated;
