@@ -407,19 +407,43 @@ begin
     select *, row_number() over (partition by season, team_id order by game_date desc) as recency
       from played
   ),
-  /* the streak is the run of like results ending at the most recent game */
+  /* THE STREAK IS THE RUN OF LIKE RESULTS ENDING AT THE MOST RECENT GAME.
+
+     This was written as a correlated subquery inside an aggregate filter: for
+     every row of `ranked` it re-scanned `ranked` to find the first differing
+     result, and inside THAT it re-scanned `ranked` again for the most recent
+     one. Quadratic on both sides of every fixture — 11,000 rows for a 5,500
+     game season — which took 35 seconds for a single season and was killed by
+     PostgREST's statement timeout before it could ever promote:
+
+       RPC cbb.promote_cbb_import -> 500 {"code":"57014",
+         "message":"canceling statement due to statement timeout"}
+
+     Same answer in one ordered pass. `latest` carries each club's most recent
+     result down its own rows; `diffs` counts how many rows so far differ from
+     it, so it is 0 for exactly the leading run and >= 1 from the first change
+     onward. Summing under `diffs = 0` is the same set the old filter selected,
+     including its two edge cases: a club whose results never change keeps all
+     its rows (the old form's coalesce to 1e9), and a tie is not distinct from
+     a loss for run-breaking purposes while still contributing 0 to the total,
+     because both carry won = false. */
+  with_latest as (
+    select r.*,
+           first_value(r.won) over (partition by r.season, r.team_id order by r.recency) as latest_won
+      from ranked r
+  ),
+  marked as (
+    select w.*,
+           sum(case when w.won is distinct from w.latest_won then 1 else 0 end)
+             over (partition by w.season, w.team_id order by w.recency
+                   rows between unbounded preceding and current row) as diffs
+      from with_latest w
+  ),
   streaks as (
     select season, team_id,
-           sum(case when won then 1 when lost then -1 else 0 end) filter (
-             where recency <= (
-               select coalesce(min(r2.recency), 1e9)
-                 from ranked r2
-                where r2.season = r.season and r2.team_id = r.team_id
-                  and r2.won is distinct from (select r3.won from ranked r3
-                        where r3.season = r.season and r3.team_id = r.team_id and r3.recency = 1)
-             ) - 1
-           ) as streak
-      from ranked r group by season, team_id
+           coalesce(sum(case when won then 1 when lost then -1 else 0 end)
+                    filter (where diffs = 0), 0) as streak
+      from marked group by season, team_id
   ),
   agg as (
     select p.season, p.team_id,
