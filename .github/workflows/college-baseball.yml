@@ -169,6 +169,19 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: node tools/cbb/probe_outline.js
 
+      # ── IS THE SPORT IN THE MARKET FEED? ─────────────────────────────────
+      # My earlier attempt at this read the signals table as anon, got zero for
+      # every sport key INCLUDING two known-captured controls, and was therefore
+      # inconclusive — zero everywhere means RLS refused the read, not that the
+      # feed is empty. A runner holds the service role, which settles it. The
+      # probe refuses to draw a conclusion if its controls come back empty.
+      - name: Is college baseball in the market feed at all?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: node tools/cbb/probe_market.js
+
       - name: The shaping and the union must pass first
         run: node tools/cbb/ingest.test.js
 
