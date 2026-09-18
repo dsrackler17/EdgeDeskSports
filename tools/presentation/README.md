@@ -22,6 +22,36 @@ The library never computes a probability, edge, price limit or verdict. It
 translates the engine's fields (`EDAI.evidence` → `EDAI.packetOf`) and it
 validates AI copy before a word of it reaches a card.
 
+## Which file to open
+
+`supabase/functions/edgedesk_ai/index.ts` is a **build artifact**, not a file to
+read. It is 2.2 MB, and GitHub renders no blob over 1 MB — no view, no search
+inside it, no web editor. Opening it on github.com is not possible and never
+will be at that size. It is the thing you paste into the dashboard, nothing
+else.
+
+Everything in it has a canonical file beside it, each one small enough for the
+web UI. Edit there, then run `node tools/presentation/inline.js`:
+
+| Block in `index.ts` | Canonical file | What it owns |
+|---|---|---|
+| `EDLIB` | `_lib.ts` | retrieval, evidence and its provenance, freshness, conflicts, completeness, snapshots, findings, the scout, the thesis attack |
+| `EDPRES` | `_presentation.js` | the deep engine / simple answer translation and the copy validator |
+| `EDINTEL` | `_intelligence.js` | the decision: slate state, fair-price provenance, quote freshness, push-aware EV, the model-validation gate, the ledger |
+| `EDRESEARCH` | `_research.js` | typed tools, the normalised research packet, the label rules, the answer contract, the critic |
+| `EDANALYST` | `_analyst.js` | interactions, recent form, line sensitivity, scenarios, follow-ups, the investigation planner |
+| `EDPRICE` | `_pricing.js` | the fair line, cover probability, bet-to lines, the ranked slate, the sizing rule |
+| `EDBOARD` | `_board.js` | the board sweep: scope, eligibility, qualification, ranking, the record |
+| `EDSTAKE` | `_stake.js` | bankroll policy, reliability, EV at the executable price, Kelly under every cap, the card |
+| `EDMLBHIST` / `EDMLBOFF_AI` | `_mlbhist.js` / `_mlboff.js` | the 2016–2025 pitching and hitting archives and their critics |
+
+Only PART 2 — the orchestrator, the system prompt and the HTTP handler — has no
+canonical file, because it is what `index.ts` actually is. `tools/intelligence/lint.js`
+measures it with the marker blocks removed and fails if it ever reaches 1 MB on
+its own, so this table cannot quietly stop being true.
+
+`app.html` has the same problem at 3.8 MB and is not covered by that check.
+
 ## The public language layer
 
 Layer 1 and Layer 2 are written for a football fan who has never placed a bet.
