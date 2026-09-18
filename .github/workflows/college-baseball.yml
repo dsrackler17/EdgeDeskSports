@@ -199,6 +199,15 @@ jobs:
       - name: The NCAA season archive must pass too
         run: node tools/cbb/ncaa_archive.test.js
 
+      # The archive keys clubs on NCAA codes, the games board on ESPN ids, and
+      # there is no shared identifier. Attaching a club's season archive to a
+      # game therefore needs a NAME match, which is exactly the kind of thing
+      # that looks fine and is quietly wrong for thirty clubs. This measures the
+      # rate and lists every miss; it builds no mapping and writes nothing.
+      - name: Can the archive be joined to the games board?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_team_join.js
+
       # THE FIXTURES ABOVE ARE ONES I WROTE. This runs the same shaping over a
       # REAL payload, on a day inside a completed season, with no credentials —
       # which is the only way a pull request can catch the source changing a
