@@ -98,7 +98,18 @@ const ALIASES = {
   USC: 'USC Trojans',                      /* id=68  — Southern California */
   UPST: 'South Carolina Upstate Spartans', /* id=453 — a different school */
 
-  /* SELA (Southeastern La.) and ULM are deliberately absent. See the header. */
+  /* ── read off the full club dump, which is why the dump exists ─────────── */
+  ULM: 'UL Monroe',                        /* id=272. Neither "ULM" nor "Louisiana
+                                              Monroe" is an ESPN name; it writes
+                                              "UL Monroe". The NCAA code shares no
+                                              word with that, which is why the
+                                              token suggestions found nothing and
+                                              the 437-line dump was needed. */
+
+  /* SELA (Southeastern La.) needs no alias: removing the WRONG one let the
+     normaliser match it by name, once "La." expanded to Louisiana. The bad alias
+     had been shadowing a working match — an alias is tried first, so a wrong one
+     is worse than none. */
 };
 
 /* Spellings ESPN and NCAA disagree about in ways punctuation hides. Applied to
@@ -174,12 +185,21 @@ function norm(s) {
 /* Build a lookup over ESPN clubs keyed on every name they publish. A key that
    two different clubs both claim is DROPPED rather than given to whichever came
    first, because an ambiguous key is how the wrong club's numbers get attached. */
+/* ESPN's club list contains two entries literally named "TBD" — placeholders for
+   an unannounced opponent. They both normalise to the same key and are therefore
+   dropped by the ambiguity guard below, which is the right outcome reached for
+   the right reason. Noted because if there were ever ONE of them, it would be a
+   perfectly unambiguous club called TBD, and a club whose NCAA name failed to
+   parse could land on it. */
+const PLACEHOLDER = /^(tbd|tba|unknown)$/;
+
 function indexEspn(teams) {
   const byName = new Map();
   const ambiguous = new Set();
   const add = (raw, t) => {
     const k = norm(raw);
     if (!k) return;
+    if (PLACEHOLDER.test(k)) return;   /* never a club anything should resolve to */
     const prev = byName.get(k);
     if (prev && String(prev.id) !== String(t.id)) { ambiguous.add(k); return; }
     byName.set(k, t);

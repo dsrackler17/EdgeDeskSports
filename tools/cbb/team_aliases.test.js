@@ -66,8 +66,30 @@ console.log('the alias table itself');
 ok('the table is populated', Object.keys(T.ALIASES).length >= 20, Object.keys(T.ALIASES).length);
 /* The two known-unknown clubs must stay OUT until somebody reads ESPN's list.
    An alias guessed for them is the exact failure this table already suffered. */
-ok('SELA is absent rather than guessed', !('SELA' in T.ALIASES));
-ok('ULM is absent rather than guessed', !('ULM' in T.ALIASES));
+/* SELA needs NO alias, and that is a finding rather than an omission: removing
+   the wrong one let the normaliser match it by name once "La." expanded. An
+   alias is tried first, so a wrong alias SHADOWS a working match — which makes a
+   wrong alias worse than none at all. */
+ok('SELA needs no alias, because the normaliser matches it', !('SELA' in T.ALIASES));
+/* ULM was read off the full club dump: ESPN writes neither "ULM" nor "Louisiana
+   Monroe" but "UL Monroe". */
+eq('ULM points at UL Monroe', T.ALIASES.ULM, 'UL Monroe');
+
+console.log('a placeholder club is never resolvable');
+{
+  /* ESPN's list carries entries literally named "TBD". With two of them the
+     ambiguity guard drops the key anyway; with one, it would be a perfectly
+     unambiguous club called TBD that an unparseable name could land on. */
+  const idx = T.indexEspn([
+    { id: '1', location: 'TBD', displayName: 'TBD' },
+    { id: '9', location: 'Akron', displayName: 'Akron Zips' },
+  ]);
+  ok('a lone TBD is still not reachable', !idx.byName.has('tbd'), Array.from(idx.byName.keys()));
+  ok('…while a real club beside it is', idx.byName.has('akron'));
+  const res = T.resolveClubs([{ code: 'XX', name: 'TBD' }],
+    [{ id: '1', location: 'TBD', displayName: 'TBD' }]);
+  ok('…and a club named TBD resolves to nothing', res.unresolved.length === 1, res);
+}
 ok('every alias is a non-empty string',
   Object.values(T.ALIASES).every((v) => typeof v === 'string' && v.trim().length > 1));
 /* Two codes pointing at one school would double a roster. */
