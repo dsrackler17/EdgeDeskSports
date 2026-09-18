@@ -75,3 +75,18 @@ jobs:
       # measured here rather than assumed.
       - name: Can we get all the games, and is the source steady?
         run: node tools/cbb/probe_completeness.js
+
+      # THE SCOREBOARD IS NOT ALL THE GAMES — forty sampled teams already found
+      # one it missed. So the union walk is the design, and this prices it and
+      # proves it: every team's own schedule, unioned, against the scoreboard's
+      # answer for the same day, with the cost in seconds.
+      #
+      # It also asks the signals table, read-only and with the publishable key
+      # the browser already uses, whether a college baseball sport key is
+      # captured at all. Nothing in this repository references one, and a brief
+      # must not promise a market that is never written.
+      - name: Price the union walk, and check the market really exists
+        env:
+          CBB_SB_URL: ${{ vars.SB_URL }}
+          CBB_SB_KEY: ${{ vars.SB_ANON_KEY }}
+        run: node tools/cbb/probe_union.js
