@@ -15012,6 +15012,38 @@ function cbbBriefHTML(b){
       +' with no score. It is not a nil-nil draw, and it is excluded from both clubs’ records.</div></div>';
   }
 
+  /* ── THE MARKET, AND WHY THERE IS NOTHING IN IT ────────────────────────
+     This section exists because the answer was checked, not assumed.
+
+     EdgeDesk's signals feed was read with the service role from a runner — the
+     only way to get past the row-level policies that made an earlier attempt
+     inconclusive — and asked what sport keys it actually carries. The complete
+     list, with both controls answering in the thousands so a zero is a real
+     zero:
+
+       tennis_wta_us_open, tennis_atp_us_open, americanfootball_ncaaf,
+       baseball_mlb, americanfootball_ncaaf_fcs, americanfootball_nfl,
+       mma_mixed_martial_arts, tennis_wta_guadalajara_open,
+       tennis_atp_cincinnati_open
+
+     There is no college baseball key under any spelling. ESPN's own game
+     summaries carry no odds either: empty on all six games sampled across the
+     season, with a single pickcenter entry on the three largest.
+
+     So the section says that, rather than rendering an empty panel that reads
+     as a loading failure. What it must never do is fill the gap: a club's runs
+     per game is not a price, and turning one into a line, a total or a win
+     probability would be inventing the market this card has just finished
+     establishing does not exist. */
+  h+='<div class="mlbb-sec"><b>Market</b><div>There is no market on this game in EdgeDesk. The odds feed '
+    +'behind this site covers MLB, the NFL, college football and a few other sports, and carries no '
+    +'college baseball under any key — this was read directly from the feed rather than assumed. '
+    +'ESPN’s own game data for college baseball carries no prices either. '
+    +'<b>EdgeDesk does not fill that gap.</b> The run rates and batting lines on this card describe how '
+    +'these clubs have played; none of them is converted into a line, a total, a moneyline or a player '
+    +'prop, because a measurement of past scoring is not a price and presenting one as the other would '
+    +'be the most damaging thing this page could do.</div></div>';
+
   /* NO PROJECTION, AND THE SECTION SAYS WHY RATHER THAN BEING ABSENT. */
   h+='<div class="mlbb-sec"><b>Projection</b><div>EdgeDesk publishes no validated model for college baseball and '
     +'holds no walk-forward record for one, so there is no fair line, total or win probability for this game. '

@@ -250,6 +250,19 @@ const game = (o) => Object.assign({
       chk('…including the absent starter', /largest single input/i.test(brief), brief.slice(0, 900));
       chk('no page error on the brief', errors.length === 0, errors.slice(0, 3));
 
+      /* ══ 3a. THE MARKET SECTION SAYS THE FEED DOES NOT COVER THE SPORT ══
+         Not a blank panel, which reads as a loading failure, and above all not
+         a price derived from run rates. */
+      chk('the brief has a market section', /Market/.test(brief), brief.slice(0, 300));
+      chk('…and says there is no market on the game',
+        /no market on this game/.test(brief), brief.slice(0, 2000));
+      chk('…and says the feed carries no college baseball',
+        /carries no college baseball/.test(brief), brief.slice(0, 2000));
+      chk('…and that this was read from the feed rather than assumed',
+        /read directly from the feed rather than assumed/.test(brief), brief.slice(0, 2000));
+      chk('…and refuses to convert run rates into a price',
+        /not a price/.test(brief) && /does not fill that gap/i.test(brief), brief.slice(0, 2500));
+
       /* ══ 3b. THE STATS THE BOX SCORES BOUGHT ════════════════════════════ */
       chk('the brief carries a batting and pitching table',
         /Batting and pitching, from the box scores/.test(brief), brief.slice(0, 300));
