@@ -106,7 +106,25 @@ const ALIASES = {
                                               token suggestions found nothing and
                                               the 437-line dump was needed. */
 
-  /* SELA (Southeastern La.) IS STILL UNRESOLVED, and I said otherwise. When the
+  SELA: 'SE Louisiana',                    /* id=309. ESPN abbreviates where NCAA
+                                              spells out — "SE Louisiana" against
+                                              "Southeastern La." — which is the
+                                              reverse of every other case here and
+                                              why no expansion rule found it.
+
+     AN ALIAS AND NOT A RULE, DELIBERATELY. The tempting fix is to teach the
+     normaliser that "se" means "southeastern". That rule is inferred from one
+     club and would be wrong on the next: ESPN writes "Southeast Missouri State"
+     in full, and NCAA writes "Southeast Mo. St.". One club's spelling is not a
+     pattern, and generalising from it is how the USC/Upstate class of error gets
+     made. One club, one line.
+
+     The history of this entry, since it took three attempts: it was guessed as
+     "Southeastern Louisiana" and refused; the guess was removed and I wrongly
+     reported that the normaliser had matched it; and it was finally read off the
+     full club dump, which is what the dump is for. */
+
+  /* WHAT THE OLD COMMENT SAID, KEPT BECAUSE THE MISTAKE IS THE USEFUL PART: When the
      wrong alias was removed the club stopped being reported as "alias did not
      resolve" and started being reported as "no match", and I read the changed
      wording as a fix. It was not: 310 of 311 clubs resolve and SELA is the one

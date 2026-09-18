@@ -66,13 +66,17 @@ console.log('the alias table itself');
 ok('the table is populated', Object.keys(T.ALIASES).length >= 20, Object.keys(T.ALIASES).length);
 /* The two known-unknown clubs must stay OUT until somebody reads ESPN's list.
    An alias guessed for them is the exact failure this table already suffered. */
-/* SELA IS UNRESOLVED, not resolved. I claimed the normaliser matched it once the
-   wrong alias was removed; in fact the report merely changed from "alias did not
-   resolve" to "no match" and I read the new wording as a fix. 310 of 311 clubs
-   resolve, and this is the one that does not. It stays out of the table until
-   somebody reads ESPN's real name for it off the club list — an alias guessed
-   for it is the exact failure this table has already suffered twice. */
-ok('SELA is absent, and absent is not the same as resolved', !('SELA' in T.ALIASES));
+/* SELA took three attempts: guessed as "Southeastern Louisiana" and refused;
+   the guess removed, whereupon I wrongly reported the normaliser had matched it;
+   and finally read off the full club dump as "SE Louisiana". ESPN abbreviates
+   where NCAA spells out, which is the reverse of every other case here. */
+eq('SELA points at SE Louisiana', T.ALIASES.SELA, 'SE Louisiana');
+/* AND IT IS AN ALIAS, NOT A RULE. Teaching the normaliser that "se" means
+   "southeastern" would be inferred from this one club and wrong on the next:
+   ESPN writes "Southeast Missouri State" in full. */
+ok('…without an "se" rule that would mis-expand Southeast Missouri',
+  T.norm('Southeast Missouri State') === 'southeast missouri state',
+  T.norm('Southeast Missouri State'));
 /* ULM was read off the full club dump: ESPN writes neither "ULM" nor "Louisiana
    Monroe" but "UL Monroe". */
 eq('ULM points at UL Monroe', T.ALIASES.ULM, 'UL Monroe');
