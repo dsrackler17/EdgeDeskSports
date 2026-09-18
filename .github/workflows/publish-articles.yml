@@ -97,17 +97,24 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add articles sitemap.xml sitemap-articles.xml
-          if git diff --cached --quiet; then
-            echo 'no article changed — nothing to publish'
-            exit 0
-          fi
-          git commit -m 'articles: refresh research articles from the model'
-          # a concurrent push to main loses the race politely, not the work
-          for i in 1 2 3 4; do
-            git push origin main && exit 0
-            git pull --rebase origin main || true
-            sleep $((2 ** i))
-          done
-          echo 'could not push the articles after 4 attempts'
-          exit 1
+          # A concurrent push to main loses the race politely, not the work.
+          #
+          # This used to be `git push` with `git pull --rebase` as the retry,
+          # and on 2026-09-18 20:50 that cost a whole run. The editorial job
+          # pushed to main between our checkout and our push; the rebase
+          # conflicted on articles/data/index.json and sitemap.xml — generated
+          # files both jobs rewrite — and stopped with unmerged paths. `|| true`
+          # swallowed that, so the three remaining attempts each died on
+          # "Pulling is not possible because you have unmerged files". Every
+          # test had passed and 13 published articles were built and thrown
+          # away.
+          #
+          # Nothing this step commits needs merging. Every path here is a
+          # generated artifact, rebuilt from the research on each run, so two
+          # runs that both regenerated them do not disagree about intent and
+          # the newer generation is the current truth. The shared helper puts
+          # this run's artifacts on top of the remote tip instead of replaying
+          # a commit through it, and never attempts a rebase.
+          bash tools/ci/push_generated.sh main \
+            'articles: refresh research articles from the model' \
+            -- articles sitemap.xml sitemap-articles.xml
