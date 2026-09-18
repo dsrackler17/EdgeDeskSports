@@ -49,6 +49,32 @@ function eq(name, got, want) { ok(name, got === want, `got ${JSON.stringify(got)
 
 console.log('mlb offense refresh path');
 
+/* ── THE CREDENTIAL CHECK THAT 60 PASSING ASSERTIONS DID NOT MAKE ─────────
+   The scheduled run of 2026-09-17 rebuilt 10,841 batter-seasons, passed every
+   validation in this file, and then imported nothing — reporting only "Cannot
+   read properties of undefined (reading 'url')" three times.
+
+   The cause: the source called P.client() with no config. pgrest's client()
+   FAILS LAZILY — it returns a usable-looking object and throws on the first
+   request — so the try/catch written around it to catch a missing credential
+   never fired, and a configuration problem surfaced as an opaque TypeError
+   after nine seconds of successful work.
+
+   Every assertion below this point exercised the dataset and the import against
+   a local database, which is why none of them noticed. These two read the
+   source, because the defect is in how the client is CONSTRUCTED and no
+   fixture-driven test will ever reach it. */
+{
+  const src = fs.readFileSync(path.join(__dirname, 'refresh_offense.js'), 'utf8');
+  ok('the config is read and checked before a client is built',
+    /P\.config\(\)/.test(src) && /if \(!cfg\)/.test(src), 'no null check on P.config()');
+  /* P.client() with no argument is the bug itself, spelled exactly. */
+  ok('P.client is never called without a config',
+    !/P\.client\(\s*\)/.test(src),
+    'P.client() called bare — it fails lazily and the guard around it cannot fire');
+}
+
+
 /* ── 1. PROVISIONAL IS A CALENDAR RULE, not a guess ───────────────────────── */
 eq('a completed season is not provisional', JSON.stringify(R.provisionalSeasons(2025, { year: 2026 })), '[]');
 eq('the current year IS provisional', JSON.stringify(R.provisionalSeasons(2026, { year: 2026 })), '[2026]');
