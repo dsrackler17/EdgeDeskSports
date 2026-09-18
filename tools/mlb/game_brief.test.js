@@ -12,9 +12,12 @@
    What these tests hold, and each one is a rule that would quietly turn a
    research page back into a tip sheet:
 
-     1  NO PROJECTION IS INVENTED. Baseball has no validated EdgeDesk model.
-        The projection section is always unpriced, and a model_predictions row
-        appears as an unvalidated probability with that said in words.
+     1  THE PROJECTION IS PUBLISHED AND LABELLED, NEVER SOLD. The brief now
+        carries the run model's own numbers — the same object the board row
+        rendered, found by key rather than recomputed — and every one of them
+        travels with EXPERIMENTAL, "never graded against a closing line" and
+        "counted nowhere". A separate server-side model_predictions row is
+        named as a DIFFERENT estimate and never as this one.
      2  A PROBABLE STARTER IS NEVER PROMOTED. The card has no confirmed state,
         so neither does the brief.
      3  THE ARCHIVE IS NEVER BLENDED WITH THIS SEASON. The 2016–2025 career
@@ -43,6 +46,11 @@ const ROOT = path.join(__dirname, '..', '..');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 const P = require(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', '_presentation.js'));
 const EDMlbPitchers = require(path.join(ROOT, 'lib', 'mlb_pitcher_history.js'));
+/* The run model the board now draws a projection from. Required, not stubbed:
+   a stub would let the board pass this suite while shipping a different
+   number than the engine actually produces. */
+require(path.join(ROOT, 'mlb', 'params.js'));
+const EDBaseball = require(path.join(ROOT, 'mlb', 'engine.js'));
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -275,6 +283,8 @@ function build(opts) {
      can run the SHIPPED source rather than a rewritten copy of it. */
   ctx.window = ctx;
   ctx.window.EDMlbPitchers = opts.noEngine ? null : EDMlbPitchers;
+  ctx.window.EDBaseballParams = opts.noModel ? null : global.EDBaseballParams;
+  ctx.window.EDBaseball = opts.noModel ? null : EDBaseball;
   ctx.window.EDGES = opts.noMarket ? [] : [
     { sport_key: 'baseball_mlb', event_id: 'ev1', away_team: 'New York Yankees', home_team: 'New York Mets',
       market: 'h2h', selection: 'New York Yankees', point: null, best_dec: 1.87, best_book: 'Pinnacle',
@@ -332,14 +342,37 @@ function build(opts) {
   let html = '';
   chk('the shipped renderer draws it without throwing', () => { html = P.researchHTML(res); return html.length > 2000; });
 
-  /* --- RULE 1: no projection is invented --- */
-  eq('the projection is never priced', res.projection.priced, false);
-  has(html, 'EdgeDesk has not priced this matchup yet', 'the unpriced projection is printed as unpriced');
-  has(html, 'NO walk-forward record', 'a model row on file is named as unvalidated');
-  has(html, 'mlb_v0_research', 'the model version is attributed');
-  lacks(html, 'fair spread', 'no fair spread is printed for baseball');
+  /* --- RULE 1: the projection is published and labelled, never sold --- */
+  eq('the projection is published', res.projection.priced, true);
+  chk('and it is the same object the board row rendered', () => {
+    const row = ctx.window.mlbxRows().filter((r) => r.away === 'New York Yankees')[0];
+    return row && row.ok
+      && row.p.model.fair_total.toFixed(2) === res.projection.total
+      && row.p.model.home_runs.toFixed(2) === res.projection.score.home.points;
+  });
+  has(html, 'EXPERIMENTAL', 'the projection is badged experimental');
+  has(html, 'never graded against a closing line', 'and says it has never been graded');
+  has(html, 'counted nowhere', 'and that it is counted nowhere');
+  has(html, 'Projected score', 'the projected runs are shown');
+  has(html, 'EdgeDesk fair total', 'the fair total is shown');
+  has(html, 'Fair moneyline', 'the fair price is shown');
+  has(html, 'Outcome range', 'and the distribution behind it');
+  has(html, 'no game has ever ended', 'expected runs are not passed off as a predicted score');
+  has(html, 'This model publishes no confidence score',
+    'a confidence tile is never filled with a number nobody computed');
+  has(html, 'mlb_v0_research', 'a separate server-side model row is still attributed');
+  has(html, 'NOT the number shown above', 'and it is distinguished from the projection above it');
   chk('the model probability is never turned into an edge',
     html.indexOf('model_edge') < 0 && html.indexOf('+2.1%') < 0);
+  {
+    /* The same rule the board is held to. "Where each team has the edge" is a
+       descriptive section about the two clubs and has always been there; what
+       may never appear is a claim that THIS PROJECTION is an edge, so every
+       "an edge" in the brief has to be a denial. */
+    const denials = (html.match(/never an edge|rather than an edge|not an edge/g) || []).length;
+    chk('the brief never claims an edge', (html.match(/\ban edge\b/g) || []).length === denials,
+      JSON.stringify((html.match(/.{0,36}an edge.{0,16}/g) || []).slice(0, 4)));
+  }
 
   /* --- RULE 2: a probable starter is never promoted --- */
   has(html, 'Probable, never confirmed', 'the starter row says probable');
@@ -383,11 +416,13 @@ function build(opts) {
   has(html, 'Batter-versus-pitcher history', 'BvP is named as unmeasured');
   has(html, 'Pitch mix, velocity', 'pitch mix is named as unmeasured');
   has(html, 'RESEARCH ONLY', 'the research state says research only');
-  has(html, 'no validated EdgeDesk model', 'the state says there is no validated model');
+  has(html, 'has never been graded against a closing line', 'the state says the model is ungraded');
 
-  /* --- the market is last, and it is the market's number --- */
+  /* --- the market is last, and the comparison is the engine's own --- */
   has(html, 'Pinnacle', 'the captured book is named');
-  has(html, 'no model-versus-market comparison', 'no comparison is drawn against a model EdgeDesk lacks');
+  chk('the market section classifies the comparison rather than declining it',
+    /Research lean|Inside the review threshold|Data fault|Nothing joined to compare/.test(html),
+    html.slice(html.indexOf('Pinnacle'), html.indexOf('Pinnacle') + 600));
 
   /* --- the sources are named --- */
   has(html, 'mlb_game_cards', 'the schedule source is named');
@@ -452,8 +487,14 @@ function build(opts) {
     eq('with no capture the market is unavailable', r.market.available, false);
     has(h, 'No sportsbook price is joined', 'an unpriced game says so');
     has(h, 'does not depend on a price', 'the research is not gated on a book');
-    has(h, 'EdgeDesk has not produced a projection', 'with no model row the projection says so');
-    chk('a model row is never claimed without a joined event id', r.projection.note.indexOf('model probability is on file') < 0);
+    /* THE PROJECTION IS NOT GATED ON A BOOK EITHER. It is the research; the
+       price is what it would be compared against if one existed. */
+    eq('an unpriced game still gets its projection', r.projection.priced, true);
+    has(h, 'the projection stands without one', 'and the market section says the projection stands without a price');
+    chk('but no comparison is claimed',
+      r.market.difference == null || r.market.difference === '\u2014');
+    chk('a model row is never claimed without a joined event id',
+      (r.projection.status_note || '').indexOf('model probability is also on file') < 0);
     /* THE RESEARCH IS STILL THERE. This is the whole point of the change. */
     has(h, 'Starting pitching', 'an unpriced game still gets the pitching panel');
     has(h, 'Runs per game', 'an unpriced game still gets the offense comparison');
@@ -513,13 +554,44 @@ function build(opts) {
     has(board, 'Los Angeles Dodgers', 'the board lists the third game');
     chk('every game on the card gets a row', (board.match(/class="mlbb-row"/g) || []).length === 3);
     has(board, 'Gerrit Cole', 'a probable starter is shown on the row');
-    has(board, 'TBD', 'an unposted starter shows as TBD, not as a guess');
-    has(board, 'no validated EdgeDesk model', 'the board says baseball is unpriced');
+    has(board, 'starter not posted', 'an unposted starter says so rather than being guessed');
+    has(board, 'never been graded against a closing line',
+      'the board says its projection is unvalidated');
     has(board, 'priced', 'a game with a capture is chipped as priced');
     has(board, 'no price', 'a game with no capture is chipped as unpriced');
     chk('every row opens a brief', (board.match(/mlbbOpenBrief\(/g) || []).length === 3);
-    chk('the board never prints a probability or an edge',
-      !/\d+(\.\d+)?%\s*to win/i.test(board) && board.indexOf('edge') < 0);
+    /* THE INVARIANT HAS NOT MOVED, ONLY THE WORDING AROUND IT. The board now
+       carries a projection and a fair price, which it did not before; what it
+       still must never do is call any of it an edge. The only lowercase
+       "edge" allowed on this board is the sentence denying one. */
+    chk('the board never prints a win probability as a claim',
+      !/\d+(\.\d+)?%\s*to win/i.test(board));
+    {
+      /* the engine's own version identifier is lowercase and is not a claim */
+      const words = board.replace(/edgedesk_baseball_v[\d.]+/g, '');
+      chk('the board never claims an edge',
+        (words.match(/edge/g) || []).length === (words.match(/never an edge/g) || []).length,
+        'lowercase "edge" occurrences: ' + JSON.stringify((words.match(/.{0,40}edge.{0,20}/g) || []).slice(0, 4)));
+    }
+
+    /* ---- the projection the board exists to carry ---- */
+    has(board, 'class="nm"', 'every row carries the numbers column');
+    has(board, '>Model<', 'the row labels the model total');
+    has(board, '>Market<', 'the row labels the market total');
+    has(board, '>Gap<', 'the row labels the difference between them');
+    has(board, 'mlbxSetFilter', 'the board can be filtered');
+    has(board, 'mlbxSetSort', 'the board can be reordered');
+    chk('a projection was produced for every game on the card',
+      (board.match(/class="v mdl"/g) || []).length >= 3);
+    has(board, 'fallback baseline',
+      'a projection running on the published fallback baseline says so');
+
+    const noModel = build({ noModel: true });
+    await noModel.ctx.window.mlbBriefEnsure();
+    const nb = noModel.ctx.window.mlbhGamesHTML();
+    has(nb, 'The run model did not load', 'a page without the engine says so');
+    has(nb, 'New York Yankees', 'and still lists every game');
+    chk('and invents no projection in its place', (nb.match(/class="v mdl"/g) || []).length === 0);
     has(board, '90-60', 'records are carried on the row');
     has(board, 'Citi Field', 'the venue is carried on the row');
 
@@ -540,7 +612,8 @@ function build(opts) {
   has(APP, "if(MLBH.seg==='games'){ host.innerHTML=mlbhGamesHTML(); return; }",
     'the games board is drawn before the archive gates');
   has(APP, "seg:'games'", 'the games board is the default segment');
-  has(APP, 'onclick="mlbhSetSeg(\'games\')">Games<', 'the panel offers a Games segment');
+  has(APP, 'onclick="mlbhSetSeg(\'games\')"><b>MLB card</b>', 'the panel offers the MLB card as a segment');
+  has(APP, 'onclick="mlbhSetSeg(\'cbb\')"><b>College</b>', 'and the college card beside it');
   has(APP, 'mlbBriefBtn(e)', 'a priced MLB card carries a Game brief button');
   has(APP, 'key:(q&&q.key)||null', 'the board key travels with the brief request');
   chk('the brief builder is exported for the dispatch',

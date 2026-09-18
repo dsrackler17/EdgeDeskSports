@@ -498,7 +498,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .cbb-f-t{background:rgba(255,255,255,.10);color:var(--dim)}
 .mlbb-day .n{font-size:10.5px;letter-spacing:0;text-transform:none;color:var(--faint)}
 .mlbb-list{border:1px solid var(--border);border-radius:11px;overflow:hidden}
-.mlbb-row{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1.2fr) minmax(0,.85fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:11px 13px;background:transparent;border:0;border-top:1px solid var(--border);color:inherit;font:inherit;cursor:pointer}
+.mlbb-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.95fr) minmax(0,1fr) minmax(0,.72fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:11px 13px;background:transparent;border:0;border-top:1px solid var(--border);color:inherit;font:inherit;cursor:pointer}
+/* the college card has no starters column and no market column, so its rows
+   are one narrower rather than carrying an empty one */
+.mlbb-row.cbb{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1.05fr) auto}
 .mlbb-row:first-child{border-top:0}
 .mlbb-row:hover{background:rgba(255,255,255,.028)}
 .mlbb-row .tm{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -509,6 +512,31 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .mlbb-row .sp .p{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mlbb-row .mt{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--faint);min-width:0}
 .mlbb-row .mt i{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* THE NUMBERS COLUMN — the whole reason this board stopped being a listing.
+   The model's total, the posted total and the difference between them, in one
+   place on every row, so "which of these is worth an hour" is answered by the
+   board rather than by opening fifteen briefs. A half that is missing reads as
+   missing: "none" for an uncaptured price, an em dash for an absent
+   projection, and neither can be mistaken for a zero. */
+.mlbb-row .nm{display:flex;gap:13px;min-width:0}
+.mlbb-row .nm .c{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mlbb-row .nm .c .l{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+.mlbb-row .nm .c .v{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text);white-space:nowrap}
+.mlbb-row .nm .c .v.mdl{color:var(--mdl)}
+.mlbb-row .nm .c .v.gap{font-weight:700}
+.mlbb-row .nm .c .v.warn{color:var(--warn)}
+.mlbb-row .nm .c .v.neg{color:var(--neg)}
+.mlbb-row .nm .c .v.mut{color:var(--faint)}
+/* the projected runs beside each club, kept visually subordinate to the club
+   name: it is a model output sitting next to a fact, and it must not read like
+   a score that has happened */
+.mlbb-row .tm .t i.rn{font-family:'JetBrains Mono',monospace;color:var(--mdl);opacity:.85}
+.mlbb-row .go .mk.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.mlbb-row .go .mk.neg{color:var(--neg);border-color:rgba(226,96,68,.45)}
+/* the filter and ordering rows above the board */
+.mlbb-ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+.mlbb-ctl .lb{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-right:2px}
+.mlbb-ctl .fbs-chip b{font-weight:700;color:inherit;opacity:.75}
 .mlbb-row .go{display:flex;align-items:center;gap:9px;white-space:nowrap}
 .mlbb-row .go b{font-size:11px;font-weight:600;color:var(--accent)}
 .mlbb-row .go .mk{font-style:normal;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border:1px solid var(--border);border-radius:999px;padding:2px 7px}
@@ -517,10 +545,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 /* a phone: the four columns become two rows, and the brief link keeps its own
    line rather than crushing the club names */
 @media(max-width:620px){
-  .mlbb-row{grid-template-columns:minmax(0,1fr) auto;gap:7px 10px}
+  /* ONE COLUMN, AND THE CLUB NAME GETS ALL OF IT. Sharing row one with the
+     chips clipped "Los Angeles Dodgers" to "Los Angeles…" on a phone, which
+     is the one thing on the row a reader cannot do without. Every part of the
+     row now takes the full width and stacks in reading order: who is playing,
+     who is pitching, the numbers, when and where, then the state chips. */
+  .mlbb-row,.mlbb-row.cbb{grid-template-columns:minmax(0,1fr);gap:7px 10px}
   .mlbb-row .sp{grid-column:1;font-size:11px}
-  .mlbb-row .mt{grid-column:1/-1;flex-direction:row;gap:9px;flex-wrap:wrap}
-  .mlbb-row .go{grid-column:2;grid-row:1;align-self:start}
+  .mlbb-row .nm{grid-column:1;gap:16px}
+  .mlbb-row .mt{grid-column:1;flex-direction:row;gap:9px;flex-wrap:wrap}
+  .mlbb-row .go{grid-column:1;flex-wrap:wrap;justify-content:flex-start;max-width:none}
+  .mlbb-row .go b{margin-left:auto}
 }
 /* a phone: the control row stacks, the tables keep their own scroll, and the
    sparkline label and endpoints drop under the line rather than squeezing it */
@@ -3092,13 +3127,22 @@ body.focus .dk-focusnote{display:block}
          same anon/RLS door every other research table uses. Every number is
          computed by lib/mlb_pitcher_history.js, the one query layer the import
          pipeline and EdgeDesk Intelligence also read through. -->
+    <!-- Research-terminal layout, the same frame Football and UFC use: the
+         overview (snapshot, tonight's signals, the finder, tools, model vs
+         market, model status) sits above the boards; the boards keep every id
+         and every renderer they had; the provenance block (rsMeta-baseball)
+         and the pipeline ledger collapse into System Health at the bottom.
+         The segment order is the reader's order — tonight's MLB card, then
+         tonight's college card, then the ten-season archive behind them. -->
     <div id="v-baseball" class="rpanel hide">
-    <div class="row-between fb-panelhd"><h2 style="margin:0">Baseball</h2><span class="spacer"></span><span class="freshness" id="mlbhFresh">&mdash;</span><button class="refreshbtn" id="mlbhRefreshBtn" title="Refresh" aria-label="Refresh the pitching archive" onclick="researchRefresh('baseball')">&#8635;</button></div>
-    <div id="rsMeta-baseball" class="rs-panelwrap"></div>
-    <p class="rs-lede">Ten completed MLB regular seasons of pitching &mdash; how a pitcher has changed, which clubs he threw for and how he did with each, and whether an ERA was supported by the FIP underneath it. <b style="color:var(--warn)">A record, not a forecast, and never tonight&rsquo;s data.</b></p>
-    <div class="stseg" id="mlbhSeg" style="margin-bottom:12px"><button data-seg="games" class="on" onclick="mlbhSetSeg('games')">Games</button><button data-seg="hitters" onclick="mlbhSetSeg('hitters')">Hitters</button><button data-seg="offense" onclick="mlbhSetSeg('offense')">Club offense</button><button data-seg="board" onclick="mlbhSetSeg('board')">Pitching board</button><button data-seg="teams" onclick="mlbhSetSeg('teams')">Pitching clubs</button><button data-seg="compare" onclick="mlbhSetSeg('compare')">Compare pitchers</button><button data-seg="cbb" onclick="mlbhSetSeg('cbb')">College</button></div>
+    <div class="row-between fb-panelhd"><h2 style="margin:0">Baseball</h2><span class="spacer"></span><span class="freshness" id="mlbhFresh">&mdash;</span><button class="refreshbtn" id="mlbhRefreshBtn" title="Refresh" aria-label="Refresh baseball research" onclick="mlbxRefreshClick()">&#8635;</button></div>
+    <div id="mlbOverview" class="fb-ov"></div>
+    <div id="mlbModules">
+    <div class="fb-sechd"><span>Research modules</span><span class="r">MLB &middot; college &middot; archive</span></div>
+    <div class="stseg fb-seg" id="mlbhSeg" style="margin-bottom:12px"><button data-seg="games" class="on" onclick="mlbhSetSeg('games')"><b>MLB card</b><small>Tonight&rsquo;s games</small></button><button data-seg="cbb" onclick="mlbhSetSeg('cbb')"><b>College</b><small>Division I card</small></button><button data-seg="board" onclick="mlbhSetSeg('board')"><b>Pitching board</b><small>2016&ndash;2025</small></button><button data-seg="hitters" onclick="mlbhSetSeg('hitters')"><b>Hitters</b><small>Archive</small></button><button data-seg="offense" onclick="mlbhSetSeg('offense')"><b>Club offense</b><small>Archive</small></button><button data-seg="teams" onclick="mlbhSetSeg('teams')"><b>Pitching clubs</b><small>Archive</small></button><button data-seg="compare" onclick="mlbhSetSeg('compare')"><b>Compare</b><small>Two pitchers</small></button></div>
     <div id="mlbhBody"><div class="empty">Loading&hellip;</div></div>
-    <div id="rsSys-baseball" class="fb-ov" style="margin-top:var(--sp5)"></div>
+    </div>
+    <div id="mlbSystem"></div>
     <div id="mlbhModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this){if(window.MLBO&&MLBO.profileId)mlboCloseHitter();else mlbhClosePitcher();}">
       <div id="mlbhModalCard" style="max-width:720px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
     </div>
@@ -3638,7 +3682,16 @@ window.mcRefresh=function(){
      pitcher's K-BB% is one number rather than three that agree. -->
 <script src="/lib/mlb_pitcher_history.js?v=20260917a"></script>
 <script src="/lib/mlb_offense_history.js?v=20260917a"></script>
-<script src="/lib/college_baseball.js?v=20260918a"></script>
+<script src="/lib/college_baseball.js?v=20260918b"></script>
+<!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
+     and the same dual-target shape football/params.js + football/engine.js
+     use. Both are plain scripts with no dependency on the page: the engine
+     reads window.EDBaseballParams and nothing else, so mlb/tests.js runs the
+     identical code under Node. A page that fails to load either one shows the
+     boards without projections and says so — it never shows a number from a
+     half-loaded engine. -->
+<script src="/mlb/params.js?v=20260918a"></script>
+<script src="/mlb/engine.js?v=20260918a"></script>
 <script>
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
@@ -4907,7 +4960,15 @@ var RS_PROV={
     {nm:'FIP',tier:'T2',src:'MLB glossary construction with the annual league constant derived from the same pull. All walks, intentional included. Not identical to another publisher\u2019s FIP variant.'},
     {nm:'performance_index',tier:'T2',model:'ED_PITCH_PERF_V1',src:'A custom DESCRIPTIVE index: 100 = league average, shrunk toward 100 by IP/(IP+40). Weights (0.70 FIP / 0.30 ERA) are explicit design choices, not fitted. Not a percentile, not WAR, not ERA+, not a probability, and never converted into a price or an edge.'},
     {nm:'Year-over-year change, club splits, comparisons, leaderboards',tier:'T2',src:'Deterministic arithmetic over the rows above, computed in lib/mlb_pitcher_history.js \u2014 the same code the tests assert on and the AI retrieves through'},
-    {nm:'Seasons with a club',tier:'T0',src:'Distinct seasons with a recorded MLB pitching appearance for that club. NOT a contract, signing, trade or roster date; the data establishes none of those.'}
+    {nm:'Seasons with a club',tier:'T0',src:'Distinct seasons with a recorded MLB pitching appearance for that club. NOT a contract, signing, trade or roster date; the data establishes none of those.'},
+    {nm:'Tonight\u2019s card: schedule, probable starters, ballpark indices, forecast',tier:'T0',src:'mlb_game_cards (MLB Stats API). Probables are PROBABLE \u2014 the table carries no confirmed state, so neither does any screen reading it.'},
+    {nm:'Per-game pitching and offensive features, season-to-date club and pitcher rates',tier:'T0',src:'pitcher_features, offense_features, team_season and pitcher_season, joined through games.game_id'},
+    {nm:'Bullpen state',tier:'T0',src:'mlb_bullpen_taxed and mlb_bullpen_team \u2014 FLAGGED ARMS ONLY. There is no full rest state anywhere in this data, so a club with no flagged arm is a club with no flag, not a rested bullpen.'},
+    {nm:'College card, club records, run rates, conference splits',tier:'T0',src:'cbb.games (a union of the ESPN day scoreboard and every club\u2019s own schedule) folded into cbb.team_seasons inside the promote \u2014 one source, so a record cannot disagree with the games under it'},
+    {nm:'Projected runs, total, win probability, fair moneyline and run line',tier:'T3',model:'baseball.run_model_v1',src:'EdgeDesk baseball run model (mlb/engine.js) with published constants (mlb/params.js). EXPERIMENTAL: no coefficient was fitted to a betting line, there is no walk-forward training, and there is NO graded closing-line record anywhere in this repository. Self-consistency checks only, in mlb/tests.js.'},
+    {nm:'Conference strength used by the college projection',tier:'T2',src:'Folded from cbb.team_seasons: games inside a conference cancel, so a conference\u2019s aggregate run differential was earned outside it and is divided by its non-conference games. A conference with under 20 non-conference games on file earns no adjustment.'},
+    {nm:'Model-versus-market difference',tier:'T2',src:'Arithmetic between the projection above and the odds capture\u2019s own de-vigged fair number (sharp_fair, else consensus_fair). Classified by published guard bounds, and NOT by any backtest \u2014 because none exists for baseball.'},
+    {nm:'Market prices shown beside the projection',tier:'T0',src:'public.signals, read exactly as the odds capture wrote it. A one-sided quote is never turned into a fair number, and a capture older than 45 minutes is labelled stale rather than shown as live.'}
   ],
   cfb:[
     {nm:'Scores, records, season totals, recruiting, AP poll, roster',tier:'T0',src:'CollegeFootballData ingest (cfb.games / records / team_season_stats / recruiting / rankings / roster)'},
@@ -4981,7 +5042,14 @@ var RS_PROV={
 };
 /* First-class known limitations, from module metadata — not buried in prose. */
 var RS_LIMITS={
-  baseball:['The archive ends with the 2025 regular season. It is never current-season data, it cannot say who is pitching tonight, and the last club a pitcher appears for is a fact about the window \u2014 not about today.',
+  baseball:['The projection is EXPERIMENTAL and has never been graded against a closing line. EdgeDesk holds no MLB or college baseball line archive, so nothing was fitted and nothing has been validated. A disagreement with the market is a question to open, never an edge, and it is counted nowhere in EdgeDesk\u2019s own record.',
+    'The model does not know the lineup. It has no batting order, no rest day, no platoon card and no late scratch \u2014 it is built from club season rates, the probable starters and the conditions. A confirmed lineup can move a real total by more than this model\u2019s review threshold.',
+    'A probable starter is probable. mlb_game_cards carries no confirmed state at all, so neither does any number built on it; where no starter is posted, the club\u2019s whole-staff rate carries the whole game and the row says so.',
+    'The relief rate is the club\u2019s whole-staff runs allowed, because EdgeDesk publishes no separate bullpen rate. Bullpens are usually a little better than that per nine. The tax on top counts FLAGGED arms only \u2014 there is no rest state in this data.',
+    'Weather is a forecast for the venue, not a reading at first pitch, and a retractable roof halves its effect because the roof state is never published. Rain is surfaced as a postponement risk and is never turned into runs.',
+    'College baseball has no probable starter in this source and never will, so every college projection is a club-level number. Its schedule adjustment measures a CONFERENCE, not a club, and a conference with little non-conference play on file earns none at all.',
+    'No price is captured for college baseball, so no college game on this screen is compared with a market.',
+    'The archive ends with the 2025 regular season. It is never current-season data, it cannot say who is pitching tonight, and the last club a pitcher appears for is a fact about the window \u2014 not about today.',
        'Postseason, minor leagues, spring training and rostered players with no MLB pitching appearance are excluded.',
        'performance_index is a custom descriptive index (ED_PITCH_PERF_V1), not a percentile, a 0\u2013100 grade, WAR, ERA+ or a win probability. It is not park- or opponent-adjusted, and starters and relievers are rated against one common league baseline rather than separate ones.',
        'Small samples are shrunk toward 100 by IP/(IP+40), which suppresses but does not remove them: a one-inning score near 100 is shrinkage, not evidence of league-average ability. Every rating is shown with its innings.',
@@ -12967,8 +13035,20 @@ window.loadBaseball=async function(force,signal){
   try{
     var st=await svc.status(!!force);
     MLBH.status=st;MLBH.at=Date.now();
-    if(!st.ok){if(mlbhAborted(st))return;      /* the reader left mid-read, not an archive that failed */
-      MLBH.err=st.detail||'The historical pitching archive is not available.';MLBH.errCode=st.code;renderBaseball();return;}
+    if(!st.ok){
+      if(mlbhAborted(st))return;                 /* the reader left mid-read, not an archive that failed */
+      MLBH.err=st.detail||'The historical pitching archive is not available.';MLBH.errCode=st.code;
+      /* THE ARCHIVE IS NOT THE PANEL, and this return used to behave as
+         though it were. The MLB card, the college card and every projection
+         drawn from them read tables that have nothing to do with mlbhist, so
+         an archive that is absent or down stranded a fully loadable board at
+         "Loading the MLB card..." forever. The segment load runs either way;
+         only the archive segments report the failure. */
+      renderBaseball();
+      try{ await mlbhLoadSeg(force); }catch(_){}
+      try{ rsMetaRender('baseball'); }catch(_){}
+      renderBaseball();
+      return;}
     MLBH.err=null;MLBH.errCode=null;
     if(MLBH.season==null)MLBH.season=st.coverage.end;
     /* The pipeline ledger the shell reads. It is written by the importer, so a
@@ -12992,7 +13072,12 @@ window.loadBaseball=async function(force,signal){
     await mlbhLoadSeg(force);
   }catch(e){
     if(mlbhAborted(e))return;                 /* the reader left; not a failure to report */
-    MLBH.err=String(e&&e.message||e);MLBH.errCode='QUERY_UNAVAILABLE';renderBaseball();
+    MLBH.err=String(e&&e.message||e);MLBH.errCode='QUERY_UNAVAILABLE';
+    renderBaseball();
+    /* same rule as above: a thrown archive read is not a reason for the cards
+       to stay blank, because the cards are not read from the archive */
+    try{ await mlbhLoadSeg(force); }catch(_){}
+    renderBaseball();
   }
 };
 window.mlbhSetSeg=function(seg){
@@ -13016,6 +13101,13 @@ async function mlbhLoadSeg(force){
     if(gtok!==MLBH_LOAD)return;
     renderBaseball();
     return;
+  }
+  /* THE MLB CARD IS LOADED FOR EVERY SEGMENT, not just its own. The research
+     terminal above the boards is drawn from it, so a reader who lands on the
+     pitching board would otherwise see an overview with nothing in it while a
+     full card sat one tap away. It is one cached read either way. */
+  if(MLBH.seg!=='games'&&!MLBB.at&&!MLBB.loading){
+    try{ window.mlbBriefEnsure(false).then(function(){ try{renderBaseball();}catch(_){} },function(){}); }catch(_){}
   }
   /* COLLEGE BASEBALL has its own archive, its own schema and its own season.
      It loads here rather than beside the MLB card because a reader who never
@@ -13187,6 +13279,14 @@ function mlbhSampleChip(flag,ip){
 }
 
 function renderBaseball(){
+  /* THE OVERVIEW AND THE SYSTEM CARD ARE PAINTED FIRST, AND UNCONDITIONALLY.
+     They read the MLB card and the college card, neither of which lives in
+     the pitching archive, so a database with no archive installed still gets
+     the whole research terminal. Previously everything above the board was
+     gated behind the archive answering, which is how a full card ended up
+     underneath a panel that said it was waiting for data. */
+  try{ mlbxRenderOverview(); }catch(_){}
+  try{ mlbxRenderSystem(); }catch(_){}
   var host=document.getElementById('mlbhBody');if(!host)return;
   var M=mlbhM();
   /* THE GAMES BOARD IS DRAWN BEFORE THE ARCHIVE GATES, and deliberately.
@@ -13895,26 +13995,76 @@ function fbMlbBriefGame(q){
     /* ---- 1. THE PROJECTION. EdgeDesk has no validated MLB model, and this
          section says so rather than producing a number that reads like one. */
     var mp=mlbbModelFor(g);
-    var projection;
-    if(mp&&mp.rows.length){
-      projection={priced:false,
-        absent_reason:'EdgeDesk publishes no VALIDATED model for baseball',
-        note:'A model probability is on file for this game ('+(mp.version||'unversioned')+'): '
-          +mp.rows.slice(0,3).map(function(r){
+    /* THE PROJECTION IS THE SAME OBJECT THE BOARD ROW RENDERED, found by the
+       card key rather than recomputed. A brief that recalculated would be a
+       second engine call with a second chance to disagree with the row the
+       reader just tapped, and the two numbers would eventually diverge. */
+    var pRow=mlbbProjRow(g), pj=pRow&&pRow.ok?pRow.p:null;
+    var mpNote=mp&&mp.rows.length
+      ? ' A separate model probability is also on file for this game from the server-side store ('
+        +(mp.version||'unversioned')+'): '
+        +mp.rows.slice(0,3).map(function(r){
             return (r.selection||'')+(r.point!=null?' '+r.point:'')+' '
               +(r.model_prob!=null?Math.round(r.model_prob*100)+'%':'—');
           }).join(', ')
-          +'. It carries NO walk-forward record — there is no chronological out-of-sample validation for baseball '
-          +'anywhere in this repository — so it is research context and it is never a bet. The pitching, offense, '
-          +'bullpen and park research below does not depend on it.'};
+        +'. It is a different, unversioned estimate, it carries no walk-forward record either, and it is NOT the '
+        +'number shown above.'
+      : '';
+    var projection;
+    if(pj){
+      var pm=pj.model, favHome=pm.home_win_prob>=0.5;
+      var margin=Math.abs(pm.home_runs-pm.away_runs);
+      projection={priced:true,
+        fair_spread_text:(favHome?hN:aN)+' by '+margin.toFixed(2)+' runs',
+        favourite:favHome?hN:aN, underdog:favHome?aN:hN,
+        margin:margin.toFixed(2)+' runs',
+        total:pm.fair_total.toFixed(2),
+        score:{away:{team:aN,points:pm.away_runs.toFixed(2)},home:{team:hN,points:pm.home_runs.toFixed(2)},
+          /* THE EXAMPLE IS THE GAME'S OWN NUMBERS, not a stock pair. A note that
+             illustrated the point with some other game's score read as though
+             the brief were quoting a different matchup. */
+          note:'Expected runs, not a predicted score. A fraction of a run is a real expectation; no game has ever '
+            +'ended '+pm.away_runs.toFixed(2)+' to '+pm.home_runs.toFixed(2)+'.'},
+        win_prob:{home:hN,away:aN,
+          home_pct:Math.round(pm.home_win_prob*1000)/10,away_pct:Math.round((1-pm.home_win_prob)*1000)/10,
+          home_text:(pm.home_win_prob*100).toFixed(1)+'%',away_text:((1-pm.home_win_prob)*100).toFixed(1)+'%',
+          favourite:favHome?hN:aN,favourite_pct:Math.round(Math.max(pm.home_win_prob,1-pm.home_win_prob)*1000)/10,
+          favourite_text:(Math.max(pm.home_win_prob,1-pm.home_win_prob)*100).toFixed(1)+'%'},
+        moneyline:{home:hN,away:aN,
+          home_odds:pm.fair_home_ml!=null?((pm.fair_home_ml>0?'+':'')+pm.fair_home_ml):null,
+          away_odds:pm.fair_away_ml!=null?((pm.fair_away_ml>0?'+':'')+pm.fair_away_ml):null,
+          note:'The model’s own fair price, before any book is consulted and with no vig in it.'},
+        outcome_range:(pm.total_p10!=null&&pm.total_p90!=null)?{
+          basis_team:'the total-runs distribution',
+          p10:String(pm.total_p10)+' runs',median:String(pm.total_p50)+' runs',p90:String(pm.total_p90)+' runs',
+          note:'One game in five lands outside this band. Baseball run scoring is wide, and a total is a '
+            +'distribution before it is a number.'}:null,
+        confidence_absent_reason:'This model publishes no confidence score. What it publishes instead is every '
+          +'input it could not reach, listed under “What EdgeDesk could not measure”.',
+        status:'EXPERIMENTAL — never graded against a closing line',
+        status_note:'No coefficient in this model was fitted to a betting line, because EdgeDesk holds no baseball '
+          +'line archive to fit one to. A disagreement with the market is a question to open, never an edge, and '
+          +'nothing here is counted in EdgeDesk’s record.',
+        engine:(window.EDBaseball?window.EDBaseball.version():'edgedesk baseball run model'),
+        /* `validation` is the field the renderer actually prints under the
+           tiles; `status_note` is carried for other consumers and drawn by
+           none of them, so the disclosure that must not be missed lives here. */
+        validation:'No track record: this model has never been graded against a closing line, and no coefficient '
+          +'in it was fitted to one. mlb/tests.js checks self-consistency — that the distribution is a '
+          +'distribution, that league-average inputs return the league average, that every guard bound fires and '
+          +'that no input is silently filled in — which is not evidence it beats a close.'+mpNote+' Engine:'};
+      (pj.data_quality&&pj.data_quality.warnings||[]).forEach(function(w){
+        if(missing.indexOf(w)<0)missing.push(w);
+      });
     } else {
       projection={priced:false,
-        absent_reason:'EdgeDesk has not produced a projection for this game',
-        note:'EdgeDesk publishes no validated baseball model, and no model row is on file for this matchup. '
-          +'Everything below is measured research: the starters, the offenses, the bullpens, the ballpark and the '
-          +'market, each from the table that owns it.'};
-      missing.push('No EdgeDesk projection: baseball has no validated model in this repository, so no fair line, '
-        +'total or win probability is published for this game.');
+        absent_reason:(window.EDBaseball
+          ? 'the run model could not project this game'
+          : 'the run model (mlb/engine.js) is not loaded on this page'),
+        note:'Everything below is measured research: the starters, the offenses, the bullpens, the ballpark and the '
+          +'market, each from the table that owns it. Nothing is estimated in the projection’s place.'+mpNote};
+      missing.push('No EdgeDesk projection for this game'
+        +(pRow&&pRow.p&&pRow.p.reason?(' — '+pRow.p.reason):'')+'.');
     }
 
     /* ---- 2. STARTING PITCHING. The section a baseball brief exists for. ---- */
@@ -13965,7 +14115,7 @@ function fbMlbBriefGame(q){
     var uncertainty=mlbbUncertainty(g,starters,cmp);
 
     /* ---- 8. THE MARKET. Last, optional, and nothing above depends on it. -- */
-    var market=mlbbMarket(g,aN,hN);
+    var market=mlbbMarket(g,aN,hN,pj);
 
     /* ---- the lede ---- */
     var lede=[];
@@ -14004,15 +14154,19 @@ function fbMlbBriefGame(q){
       notes:[],
       missing:missing,
       state:{label:'RESEARCH ONLY',
-        note:'Baseball carries no validated EdgeDesk model. Nothing on this page is graded as a bet, and no number '
-          +'here is a fair price or an edge.',
+        note:'The projection on this page is EXPERIMENTAL: no coefficient in it was fitted to a betting line and it '
+          +'has never been graded against a closing line. Nothing here is graded as a bet, a difference from the '
+          +'market is a question rather than an edge, and none of it is counted in EdgeDesk’s record.',
         scope:'Measured from EdgeDesk’s own MLB tables for '+MLBB.season
           +(MLBB.coverage?(', plus the '+MLBB.coverage.start+'–'+MLBB.coverage.end
             +' historical archive, labelled separately.'):'.')},
-      context_label:'RESEARCH CONTEXT — every figure below is a measurement from an EdgeDesk table. None of it is '
-        +'a priced number, because baseball has no validated model here.',
-      priced_label:'NOT PRICED — baseball has no validated EdgeDesk model.',
-      source:'Schedule, probables, park and weather: mlb_game_cards. Per-game matchup: pitcher_features and '
+      context_label:'RESEARCH CONTEXT — every figure below is a measurement read from an EdgeDesk table. The '
+        +'projection above it is a model output, labelled as one, and validated nowhere.',
+      priced_label:'EXPERIMENTAL PROJECTION — unvalidated, and counted nowhere.',
+      source:(pj?('Projection: the EdgeDesk baseball run model ('
+          +(window.EDBaseball?window.EDBaseball.version():'unversioned')
+          +'), unvalidated, over the tables below. '):'')
+        +'Schedule, probables, park and weather: mlb_game_cards. Per-game matchup: pitcher_features and '
         +'offense_features, joined through games.game_id. Season to date: team_season and pitcher_season'
         +(MLBB.coverage?('. Career: the mlbhist archive, '+MLBB.coverage.start+'–'+MLBB.coverage.end
           +', a completed record and not this season'):'')
@@ -14485,8 +14639,21 @@ function mlbbUncertainty(g,starters,cmp){
       +'filling in.'};
 }
 
+/* The board's own row for this card, found by key. The brief and the board
+   therefore render the SAME engine output rather than two calls that can
+   drift apart. A page where the run model never loaded returns null, and the
+   brief says so instead of estimating. */
+function mlbbProjRow(g){
+  try{
+    if(!g||!g.__key||typeof mlbxRows!=='function')return null;
+    var rows=mlbxRows();
+    for(var i=0;i<rows.length;i++)if(rows[i].key===g.__key)return rows[i];
+  }catch(_){}
+  return null;
+}
+
 /* ---- the market, from the signals the board already holds --------------- */
-function mlbbMarket(g,aN,hN){
+function mlbbMarket(g,aN,hN,pj){
   try{
     var a=mlbNorm(aN), h=mlbNorm(hN);
     var mine=mlbbPool().filter(function(e){
@@ -14497,25 +14664,73 @@ function mlbbMarket(g,aN,hN){
     });
     if(!mine.length){
       return {available:false,
+        model:pj?(pj.model.fair_total.toFixed(2)+' total · '+aN+' '+pj.model.away_runs.toFixed(2)
+          +', '+hN+' '+pj.model.home_runs.toFixed(2)):null,
+        total_model:pj?pj.model.fair_total.toFixed(2):null,
         headline:'No sportsbook price is joined to this game in EdgeDesk’s capture.',
-        note:'The research above does not depend on a price. When a quote is captured it appears here; until then '
-          +'there is nothing to compare, and EdgeDesk does not estimate one.'};
+        note:'The research above does not depend on a price'+(pj?', and the projection stands without one':'')
+          +'. When a quote is captured it appears here; until then there is nothing to compare, and EdgeDesk does '
+          +'not estimate one.'};
     }
     mine.sort(function(x,y){ return (y.n_books||0)-(x.n_books||0); });
     var best=mine[0];
     var age=best.last_seen_at?Math.round((Date.now()-Date.parse(best.last_seen_at))/60000):null;
     var stale=age!=null&&age>=45;
     var price=mlbbAm(best.best_dec);
+    /* THE COMPARISON, once there is something on both sides of it. The model
+       number is the same one the board row and the projection above render;
+       the market number is the capture's, unchanged. The classification is
+       the engine's own, which means it can say DATA FAULT and it can never
+       say edge. */
+    var cls='No EdgeDesk number to compare',clsNote='The run model did not load, so there is no '
+      +'model-versus-market comparison to draw. The price is shown as captured, and it is the market’s number '
+      +'rather than EdgeDesk’s.';
+    var modelTxt=null,totModel=null,totMarket=null,totDiff=null,mlTxt=null;
+    if(pj){
+      totModel=pj.model.fair_total.toFixed(2);
+      modelTxt=aN+' '+pj.model.away_runs.toFixed(2)+', '+hN+' '+pj.model.home_runs.toFixed(2)
+        +' · fair '+(pj.model.fair_home_ml!=null?((pj.model.fair_home_ml>0?'+':'')+pj.model.fair_home_ml):'—')
+        +' '+hN;
+      if(pj.market.total_line!=null){
+        totMarket=String(pj.market.total_line);
+        totDiff=(pj.market.total_gap>0?'+':'')+pj.market.total_gap.toFixed(2)+' runs, model '
+          +(pj.market.total_gap>0?'higher':'lower');
+      }
+      if(pj.market.consensus_fair_home!=null){
+        mlTxt=hN+' — model '+(pj.model.home_win_prob*100).toFixed(1)+'%, market '
+          +(pj.market.consensus_fair_home*100).toFixed(1)+'% ('+(pj.market.consensus_fair_source||'de-vigged')+')'
+          +', a difference of '+Math.abs(pj.market.win_prob_gap_pts).toFixed(1)+' points';
+      }
+      var recT=pj.edge.total.recommendation,recM=pj.edge.moneyline.recommendation;
+      if(recT==='DATA_FAULT'||recM==='DATA_FAULT'){
+        cls='Data fault — not a disagreement';
+        clsNote=(recT==='DATA_FAULT'?pj.edge.total.note:pj.edge.moneyline.note);
+      }else if(recT==='RESEARCH_LEAN'||recM==='RESEARCH_LEAN'){
+        cls='Research lean — unproven';
+        clsNote='The model and the market disagree past the review threshold. That is a reason to open the game, '
+          +'not evidence of an edge: this model has never been graded against a closing line and is counted '
+          +'nowhere in EdgeDesk’s record.';
+      }else if(recT==='NO_MARKET'&&recM==='NO_MARKET'){
+        cls='Nothing joined to compare';
+        clsNote='A price is captured for this game but not one this projection can be set against — no posted '
+          +'total, and no pair of prices the capture had already de-vigged. A one-sided quote is never turned into '
+          +'a fair number.';
+      }else{
+        cls='Inside the review threshold';
+        clsNote='The model and the market agree closely enough that the difference is context rather than a '
+          +'signal. That is the ordinary state of a baseball market.';
+      }
+    }
     return {available:true,
-      model:'—',
+      model:modelTxt||'—',
       market:(best.selection||'')+(best.point!=null?' '+best.point:'')+(price?(' at '+price):''),
+      total_model:totModel,total_market:totMarket,total_difference:totDiff,
       book:best.best_book||null,
       capture_age:age==null?null:(age+'m ago'),
       stale:stale,
-      difference:'—',
-      classification:'No EdgeDesk number to compare',
-      classification_note:'Baseball has no validated EdgeDesk model, so there is no model-versus-market comparison '
-        +'to draw. The price is shown as captured, and it is the market’s number rather than EdgeDesk’s.',
+      difference:mlTxt||totDiff||'—',
+      classification:cls,
+      classification_note:clsNote,
       reference:mine.length+' priced selection'+(mine.length===1?'':'s')+' captured for this game'
         +(best.n_books?(' across up to '+best.n_books+' books'):'')+'.',
       note:stale?('The last capture is '+age+' minutes old. A stale quote is the last price EdgeDesk observed, not '
@@ -14569,72 +14784,6 @@ window.mlbbOpenBrief=function(key){
   }catch(_){}
   return false;
 };
-function mlbhGamesHTML(){
-  /* NEVER LOADED IS NOT THE SAME AS LOADED AND EMPTY, and the difference is
-     the whole message. The segment renders before its loader starts, so this
-     tests for a load that has not ANSWERED yet rather than one in flight. */
-  if(!MLBB.at&&!MLBB.err)return '<div class="empty">Loading the MLB card&hellip;</div>';
-  if(MLBB.err&&!MLBB.cards.length){
-    return '<div class="empty"><b>The MLB card did not load.</b><br>'+mlbhEsc(MLBB.err)
-      +'<div style="margin-top:9px">Nothing is shown in its place.</div></div>';
-  }
-  if(!MLBB.cards.length){
-    return '<div class="empty"><b>No MLB games on the card for '
-      +mlbhEsc(MLBB.days.map(mlbbDayLabel).join(', ').toLowerCase())+'.</b><br>'
-      +'mlb_game_cards holds a three-day ET window and it has no rows for it. Out of season, or between slates, that '
-      +'is the correct answer rather than an error.</div>';
-  }
-  var byDay={};
-  MLBB.cards.forEach(function(g){ (byDay[g.game_date]=byDay[g.game_date]||[]).push(g); });
-  var h='<div class="mlbb-note">Every game on EdgeDesk’s three-day card. Open one for the full research brief: '
-    +'the probable starters with their season line and their record in the archive, the offenses, the bullpen flags, '
-    +'the ballpark and the market. <b>Baseball carries no validated EdgeDesk model</b>, so no game here is priced, '
-    +'graded or recommended.</div>';
-  Object.keys(byDay).sort().forEach(function(d){
-    var rows=byDay[d].slice().sort(function(x,y){
-      return (Date.parse(x.start_time||0)||0)-(Date.parse(y.start_time||0)||0);
-    });
-    h+='<div class="mlbb-day">'+mlbhEsc(mlbbDayLabel(d))+'<span class="n">'+rows.length+' game'
-      +(rows.length===1?'':'s')+'</span></div><div class="mlbb-list">';
-    rows.forEach(function(g){
-      var mk=mlbbMarketChip(g);
-      h+='<button class="mlbb-row" onclick="return mlbbOpenBrief('+JSON.stringify(g.__key).replace(/"/g,'&quot;')+')">'
-        +'<span class="tm">'
-          +'<span class="t">'+mlbhEsc(g.away_team_name)+(g.away_record?'<i>'+mlbhEsc(g.away_record)+'</i>':'')+'</span>'
-          +'<span class="at">@</span>'
-          +'<span class="t">'+mlbhEsc(g.home_team_name)+(g.home_record?'<i>'+mlbhEsc(g.home_record)+'</i>':'')+'</span>'
-        +'</span>'
-        +'<span class="sp">'
-          +'<span class="p">'+mlbhEsc(g.away_pitcher_name||'TBD')
-            +(g.away_pitcher_throws?' ('+mlbhEsc(g.away_pitcher_throws)+')':'')+'</span>'
-          +'<span class="p">'+mlbhEsc(g.home_pitcher_name||'TBD')
-            +(g.home_pitcher_throws?' ('+mlbhEsc(g.home_pitcher_throws)+')':'')+'</span>'
-        +'</span>'
-        +'<span class="mt">'+mlbhEsc(mlbbGameTime(g))
-          +(g.venue?'<i>'+mlbhEsc(g.venue)+'</i>':'')
-          +(g.status&&g.status!=='Scheduled'?'<i>'+mlbhEsc(g.status)+'</i>':'')+'</span>'
-        +'<span class="go">'+mk+'<b>Game brief ›</b></span>'
-        +'</button>';
-    });
-    h+='</div>';
-  });
-  var r=MLBB.read||{};
-  var st=[];
-  Object.keys(r).forEach(function(k){ if(r[k]!=='VERIFIED')st.push(k+': '+r[k].toLowerCase()); });
-  h+='<div class="mlbb-src">Read from mlb_game_cards, games, pitcher_features, offense_features, team_season, '
-    +'pitcher_season'+(MLBB.coverage?', and the '+MLBB.coverage.start+'–'+MLBB.coverage.end+' pitching archive':'')
-    +'.'+(st.length?(' Not fully available on this load — '+mlbhEsc(st.join(', '))+'. A brief opened now shows '
-    +'what is on file and names what is not.'):'')+'</div>';
-  return h;
-}
-/* The market chip: whether a price is CAPTURED, never what it implies. */
-function mlbbMarketChip(g){
-  try{
-    var n=mlbbEventIds(g).length;
-    return n?'<i class="mk on">priced</i>':'<i class="mk">no price</i>';
-  }catch(_){ return ''; }
-}
-
 /* ═══ baseball: THE OFFENSIVE ARCHIVE ON THE RESEARCH SURFACE ══════════════
    The hitting half of the Baseball panel: a hitter search, a season
    leaderboard, a club-offense board, and a full hitter profile behind each
@@ -14770,7 +14919,11 @@ async function mlboLoadSeg(force){
    different from a pipeline that broke, and the two must not look alike.
    ═══════════════════════════════════════════════════════════════════════════ */
 var CBB={ status:null, err:null, errCode:null, at:null, board:null, boardKey:null,
-  day:null, brief:null, briefId:null, briefErr:null, signal:null };
+  day:null, brief:null, briefId:null, briefErr:null, signal:null,
+  /* the folded season table the projection layer measures a club against, and
+     the projections themselves, cached against the load stamp so the board and
+     the overview cannot disagree about a number */
+  seasonTable:null, seasonTableErr:null, projRows:null, projRowsAt:null };
 
 async function sbGetCbb(q,signal){return sbFetch(q,{'accept-profile':'cbb'},signal);}
 function cbbM(){ return window.EDCollegeBaseball||null; }
@@ -14812,6 +14965,22 @@ window.loadCollegeBaseball=async function(force,signal){
     CBB.boardKey=from+'|'+through;
     CBB.day={from:from,through:through};
     if(!b.ok){CBB.err=b.error||'The college card did not load.';CBB.errCode=b.code;}
+    /* THE SEASON TABLE, ONCE, FOR THE WHOLE LEAGUE. A projection needs the
+       league it is measured against and the conference strength folded out of
+       the same table, and both have to come from every club rather than from
+       the handful on tonight's card. Best effort and never awaited into the
+       board's path: a table that does not answer costs the projections, not
+       the card. */
+    CBB.seasonTable=null; CBB.seasonTableErr=null;
+    if(svc.seasonTable&&b.ok&&b.games&&b.games.length){
+      var seas=b.games[0].season||Number(String(from).slice(0,4));
+      try{
+        var tbl=await svc.seasonTable(seas,!!force);
+        if(tbl&&tbl.ok)CBB.seasonTable=tbl;
+        else CBB.seasonTableErr=(tbl&&(tbl.error||tbl.code))||'the season table did not answer';
+      }catch(e2){ CBB.seasonTableErr=String(e2&&e2.message||e2); }
+    }
+    CBB.projRows=null; CBB.projRowsAt=null;
     CBB.at=Date.now();
   }catch(e){
     if(typeof mlbhAborted==='function'&&mlbhAborted(e))return;
@@ -14837,10 +15006,19 @@ function cbbBoardHTML(){
   var b=CBB.board;
   if(!b)return '<div class="empty">Loading the college card&hellip;</div>';
 
+  var E=mlbxE(),tbl=CBB.seasonTable;
   var head='<div class="mlbb-note">Every college baseball game on the three-day card, from a union of the day '
     +'scoreboard and every club’s own schedule — neither is complete alone. Open one for the research behind it. '
-    +'<b>College baseball carries no validated EdgeDesk model</b>, so no game here is priced, graded or '
-    +'recommended, and no starting pitcher is named because the source does not carry one.</div>';
+    +(E&&tbl
+      ? 'Each game to come carries a <b>club-level projection</b>: the two clubs’ run rates, regressed by games '
+        +'played and adjusted for the strength of the conference each plays in. <b>It is experimental, it has never '
+        +'been graded against a closing line, and no starting pitcher is in it</b> — the source carries none, and '
+        +'the starter is the largest single input in a baseball number.'
+      : (E
+        ? '<b>No projection is shown</b>: the season table this model measures a club against did not load'
+          +(CBB.seasonTableErr?(' ('+cbbEsc(CBB.seasonTableErr)+')'):'')+', and nothing is estimated in its place.'
+        : '<b>The run model did not load</b>, so no projection is shown and the rows carry the card alone.'))
+    +'</div>';
 
   if(!b.games.length){
     /* OUT OF SEASON IS THE CORRECT ANSWER, NOT AN ERROR. */
@@ -14860,7 +15038,8 @@ function cbbBoardHTML(){
       +' and '+cbbEsc(cbbDayLabel(b.through))+'.</div>';
   }
 
-  var byDay={};
+  var byDay={},proj={};
+  cbbxRows().forEach(function(r){ proj[r.key]=r; });
   b.games.forEach(function(g){ (byDay[g.date]=byDay[g.date]||[]).push(g); });
   var h=head;
   Object.keys(byDay).sort().forEach(function(d){
@@ -14879,11 +15058,18 @@ function cbbBoardHTML(){
       else if(g.start_time_tbd) when='<span class="cbb-tbd">time to be confirmed</span>';
       else when=cbbEsc(new Date(g.start_time).toLocaleTimeString('en-US',
         {hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET');
-      h+='<button class="mlbb-row" onclick="return cbbOpenBrief('+JSON.stringify(g.game_id).replace(/"/g,'&quot;')+')">'
+      /* THE PROJECTION RIDES THE ROW IT BELONGS TO, and only on a game still
+         to be played. A completed game is a result; forecasting it would be
+         theatre. */
+      var pr=proj[String(g.game_id)]||null;
+      h+='<button class="mlbb-row cbb" onclick="return cbbOpenBrief('+JSON.stringify(g.game_id).replace(/"/g,'&quot;')+')">'
         +'<span class="tm">'+side(g.away,g.away.score)+'<span class="at">@</span>'+side(g.home,g.home.score)+'</span>'
         +'<span class="sp"><span class="p">'+when+'</span>'
         +'<span class="p">'+cbbEsc(g.venue||'')+(g.neutral_site?' (neutral)':'')
-        +(g.conference_game?' · conference':'')+'</span></span></button>';
+        +(g.conference_game?' · conference':'')+'</span></span>'
+        +(pr&&pr.ok?cbbxNumHTML(pr):'<span class="nm"></span>')
+        +'<span class="go">'+(pr&&pr.ok?'<i class="mk">projection</i>':(g.completed?'':'<i class="mk">no projection</i>'))
+        +'<b>Research ›</b></span></button>';
     });
     h+='</div>';
   });
@@ -14891,6 +15077,17 @@ function cbbBoardHTML(){
     +cbbEsc(b.counts.final)+' final · '+cbbEsc(b.counts.live)+' in progress · '
     +cbbEsc(b.counts.scheduled)+' to come'
     +(b.counts.abandoned?' · '+cbbEsc(b.counts.abandoned)+' abandoned':'')+'</div>';
+  if(tbl&&tbl.ok){
+    var nconf=Object.keys(tbl.conferences||{}).length;
+    var enough=Object.keys(tbl.conferences||{}).filter(function(k){return tbl.conferences[k].sufficient;}).length;
+    h+='<div class="mlbb-src">Projection: the EdgeDesk baseball run model ('
+      +(E?cbbEsc(E.version()):'not loaded')+'), unvalidated and club-level only. League baseline '
+      +(tbl.league.runs_per_game!=null?tbl.league.runs_per_game.toFixed(2):'—')
+      +' runs per club per game, games-weighted across '+cbbEsc(tbl.league.clubs)+' clubs with a completed game. '
+      +'Schedule strength folded from the same table for '+cbbEsc(enough)+' of '+cbbEsc(nconf)+' conferences — '
+      +'the rest have too little non-conference play on file to measure, and earn no adjustment rather than a '
+      +'guessed one. No price is captured for college baseball, so nothing here is compared with a market.</div>';
+  }
   return h;
 }
 
@@ -15707,6 +15904,909 @@ function mlboSpark(seasons,metric,label){
     +'<span class="ep">'+mlboEsc(mlboFmt(vals[0],metric))+' → '+mlboEsc(mlboFmt(vals[vals.length-1],metric))+'</span></div>';
 }
 
+/* ═══ BASEBALL RESEARCH TERMINAL ══════════════════════════════════════════
+   The layer above the boards, and the reason the Baseball panel stopped
+   being a reference work.
+
+   WHAT CHANGED AND WHY. Everything under this panel used to be a lookup: a
+   ten-season archive, a card, and a brief with no number on it. A reader
+   arriving with a baseball question — what should this total be, is this
+   price defensible, which game on tonight's card is worth an hour — left
+   with the same facts they arrived with. Football answered exactly those
+   questions through one component: a projection, the market beside it, and
+   the difference named. This is that component for baseball, over both the
+   MLB card and the Division I college card.
+
+   THE RULES IT INHERITS, NONE OF THEM RELAXED:
+     - Every number on screen comes from the SAME engine call the board row
+       beneath it renders, so an overview figure can never disagree with the
+       card under it.
+     - The projection is EXPERIMENTAL and says so everywhere. It has no
+       walk-forward training and no graded closing-line record, so the
+       strongest word available to it is "disagreement", never "edge".
+     - Past the guard bound is a DATA FAULT, not an opportunity.
+     - Nothing is invented. A missing starter, an unpriced game, a blind
+       weather layer and a club with no rate are each shown as themselves.
+   ═══════════════════════════════════════════════════════════════════════ */
+var MLBX={ ui:{focus:null,filter:'all',sort:'gap',q:'',_landSeen:false},
+  rows:null, rowsAt:null, cbb:null, cbbAt:null, league:null };
+
+function mlbxE(){ return window.EDBaseball||null; }
+function mlbxEsc(s){ return stEsc(s==null?'':String(s)); }
+function mlbxNum(v){ return mlbbNum(v); }
+function mlbxPct(p,dp){ return p==null?'—':((p*100).toFixed(dp==null?1:dp)+'%'); }
+function mlbxAm(v){ return v==null?'—':((v>0?'+':'')+v); }
+function mlbxRuns(v,dp){ return v==null?'—':(+v).toFixed(dp==null?2:dp); }
+function mlbxSigned(v,dp){ return v==null?'—':((v>0?'+':'')+(+v).toFixed(dp==null?1:dp)); }
+/* A LOAD TIME IS NOT THE CLOCK. Defaulting a missing stamp to the current
+   time renders "0s ago" for a load that never happened, which is the exact
+   failure every freshness stamp in this file is written to avoid: a screen
+   that looks fresh because nothing was recorded. A missing stamp says so. */
+function mlbxAgo(t){ return t?ago(t):'load time not recorded'; }
+
+/* ---- the league baseline, folded from the club rates actually on hand ----
+   Games-weighted where a game count exists, so a club two weeks into a
+   season does not carry the same weight as one in September. When no club
+   rate has loaded the engine falls back to its published constant AND SAYS
+   SO on screen; it is never silently substituted. */
+function mlbxLeague(){
+  var ts=MLBB.teamSeason||{},n=0,sum=0,k;
+  for(k in ts){
+    var v=mlbxNum(ts[k]&&ts[k].runs_per_game);
+    if(v!=null&&v>0){sum+=v;n++;}
+  }
+  return n>=8?{runs_per_game:sum/n,clubs:n}:null;
+}
+
+/* ---- the market, per game, from the capture EdgeDesk already holds -------
+   READ ONLY, and it decides nothing. It reports which prices were captured
+   for this game and what the capture's own de-vigged fair number was; it
+   never invents a counterpart for a one-sided quote, and it never treats a
+   stale capture as a live price. */
+function mlbxMarket(g){
+  var out={n:0,total_line:null,total_book:null,over_dec:null,under_dec:null,over_fair:null,
+    home_ml_dec:null,away_ml_dec:null,home_fair:null,home_fair_src:null,
+    run_line:null,run_line_dec:null,book:null,at:null,stale:false,move:null,selections:0};
+  try{
+    var a=mlbNorm(g.away_team_name),h=mlbNorm(g.home_team_name);
+    var mine=mlbbPool().filter(function(e){
+      if(!e||String(e.sport_key||'')!=='baseball_mlb')return false;
+      var ea=mlbNorm(e.away_team),eh=mlbNorm(e.home_team);
+      if(!ea||!eh)return false;
+      return (ea===a||ea.indexOf(a)>=0||a.indexOf(ea)>=0)&&(eh===h||eh.indexOf(h)>=0||h.indexOf(eh)>=0);
+    });
+    if(!mine.length)return out;
+    out.n=mine.length; out.selections=mine.length;
+    var newest=null;
+    mine.forEach(function(r){
+      var t=r.last_seen_at?Date.parse(r.last_seen_at):NaN;
+      if(isFinite(t)&&(newest==null||t>newest))newest=t;
+      if(!out.book&&r.best_book)out.book=r.best_book;
+    });
+    out.at=newest; out.stale=newest!=null&&(Date.now()-newest)>45*60000;
+
+    /* TOTALS. A capture can hold several posted numbers for one game; the one
+       shown is the number the most books agree on, because that is the one a
+       reader would actually be quoted. */
+    var tot=mine.filter(function(r){return r.market==='totals'&&r.point!=null;});
+    if(tot.length){
+      var byPt={};
+      tot.forEach(function(r){var k=String(r.point);(byPt[k]=byPt[k]||[]).push(r);});
+      var bestK=null,bestN=-1;
+      Object.keys(byPt).forEach(function(k){
+        var n=byPt[k].reduce(function(s,r){return s+(+r.n_books||1);},0);
+        if(n>bestN){bestN=n;bestK=k;}
+      });
+      var rows=byPt[bestK];
+      out.total_line=+bestK;
+      rows.forEach(function(r){
+        var sel=String(r.selection||'').toLowerCase();
+        if(sel.indexOf('over')>=0){ out.over_dec=mlbxNum(r.best_dec); out.total_book=r.best_book||out.total_book;
+          var f=mlbxNum(r.sharp_fair); if(f==null)f=mlbxNum(r.consensus_fair); if(f!=null)out.over_fair=f; }
+        else if(sel.indexOf('under')>=0){ out.under_dec=mlbxNum(r.best_dec);
+          var fu=mlbxNum(r.sharp_fair); if(fu==null)fu=mlbxNum(r.consensus_fair);
+          if(fu!=null&&out.over_fair==null)out.over_fair=1-fu; }
+      });
+    }
+
+    /* MONEYLINE. The fair number is the capture's, not this engine's: it
+       de-vigs every quote it stores, and its answer survives a capture that
+       retained only one side of the game. */
+    var h2h=mine.filter(function(r){return r.market==='h2h';});
+    h2h.forEach(function(r){
+      var s=mlbNorm(r.selection),isH=(s===h||s.indexOf(h)>=0||h.indexOf(s)>=0),isA=(s===a||s.indexOf(a)>=0||a.indexOf(s)>=0);
+      var f=mlbxNum(r.sharp_fair); if(f==null)f=mlbxNum(r.consensus_fair);
+      var src=mlbxNum(r.sharp_fair)!=null?'sharp fair, from the capture':'consensus fair, from the capture';
+      if(isH&&!isA){
+        out.home_ml_dec=mlbxNum(r.best_dec);
+        if(f!=null&&out.home_fair==null){out.home_fair=f;out.home_fair_src=src;}
+        var o=mlbxNum(r.first_best_dec),c=mlbxNum(r.best_dec);
+        if(o!=null&&c!=null&&o>1&&c>1)out.move=(1/c-1/o)*100;
+      }else if(isA&&!isH){
+        out.away_ml_dec=mlbxNum(r.best_dec);
+        if(f!=null&&out.home_fair==null){out.home_fair=1-f;out.home_fair_src=src;}
+      }
+    });
+
+    var sp=mine.filter(function(r){return r.market==='spreads'&&r.point!=null;});
+    sp.forEach(function(r){
+      var s=mlbNorm(r.selection);
+      if(s===h||s.indexOf(h)>=0||h.indexOf(s)>=0){ out.run_line=+r.point; out.run_line_dec=mlbxNum(r.best_dec); }
+    });
+  }catch(_){}
+  return out;
+}
+
+/* ---- the engine request for one game on the card ------------------------
+   Every field is read from a table EdgeDesk already ingests. Where a table
+   has nothing the field is left ABSENT rather than defaulted, because the
+   engine reports an absent input and cannot report a defaulted one. */
+function mlbxSideReq(g,side){
+  var name=side==='home'?g.home_team_name:g.away_team_name;
+  var tid=side==='home'?g.home_team_id:g.away_team_id;
+  var ts=(MLBB.teamSeason||{})[mlbNorm(name)]||null;
+  var gid=g.__game_id;
+  var pf=(gid!=null&&MLBB.pitchers[gid])?MLBB.pitchers[gid][side]:null;
+  var pname=side==='home'?g.home_pitcher_name:g.away_pitcher_name;
+  var pthrow=side==='home'?g.home_pitcher_throws:g.away_pitcher_throws;
+  var psn=pname?((MLBB.pitcherSeason||{})[mlbNorm(pname)]||null):null;
+  var off=(gid!=null&&MLBB.offense[gid])?MLBB.offense[gid][side]:null;
+  var starter=null;
+  if(pname||pf){
+    var gs=mlbxNum(psn&&psn.games_started),ip=mlbxNum(psn&&psn.ip);
+    starter={ name:pname||(pf&&pf.name)||null, throws:pthrow||null,
+      era:mlbxNum(pf&&pf.era)!=null?mlbxNum(pf.era):mlbxNum(psn&&psn.era),
+      fip:mlbxNum(pf&&pf.fip)!=null?mlbxNum(pf.fip):mlbxNum(psn&&psn.fip),
+      xera:mlbxNum(pf&&pf.xera),
+      ip:ip,
+      ip_per_start:(gs!=null&&gs>0&&ip!=null)?(ip/gs):null };
+  }
+  var pen=null;
+  if(tid!=null){
+    var taxed=(window.MLBPEN||{})[tid]||[];
+    var cl=(window.MLBCL||{})[tid]||null;
+    pen={ taxed:taxed, closer_flag:!!(cl&&cl.closer_flag) };
+  }
+  /* THE RUN RATE IS THE SEASON'S, NOT THE GAME'S. offense_features carries a
+     per-game runs_per_game where it exists and team_season carries the
+     season-to-date one; the season row is preferred because the per-game row
+     is itself derived from it and a mixture of the two would be neither. */
+  return { name:name,
+    offense:{ runs_per_game:mlbxNum(ts&&ts.runs_per_game)!=null?mlbxNum(ts.runs_per_game):mlbxNum(off&&off.runs_per_game),
+      games:mlbxNum(ts&&ts.games)!=null?mlbxNum(ts.games):null,
+      ops:mlbxNum(ts&&ts.ops), woba:mlbxNum(ts&&ts.woba) },
+    defense:{ runs_allowed_per_game:mlbxNum(ts&&ts.ra_per_game),
+      games:mlbxNum(ts&&ts.games)!=null?mlbxNum(ts.games):null },
+    starter:starter, bullpen:pen, team_id:tid };
+}
+
+/* team_season carries no game count in the columns this page reads, so the
+   regression sample is taken from the club's own record where the card
+   publishes one ("81-62"), and left absent when it does not. An absent sample
+   regresses all the way to the league, which is the safe direction to be
+   wrong in. */
+function mlbxRecordGames(rec){
+  var m=/^(\d+)\s*-\s*(\d+)/.exec(String(rec||''));
+  return m?(+m[1]+ +m[2]):null;
+}
+
+function mlbxRequest(g,league){
+  var home=mlbxSideReq(g,'home'),away=mlbxSideReq(g,'away');
+  if(home.offense.games==null)home.offense.games=mlbxRecordGames(g.home_record);
+  if(away.offense.games==null)away.offense.games=mlbxRecordGames(g.away_record);
+  if(home.defense.games==null)home.defense.games=home.offense.games;
+  if(away.defense.games==null)away.defense.games=away.offense.games;
+  var mkt=mlbxMarket(g);
+  return { req:{ season:MLBB.season, league:league?{runs_per_game:league.runs_per_game}:null,
+      home:home, away:away,
+      park:{ run_factor:g.run_factor!=null?g.run_factor:g.park_factor, hr_factor:g.hr_factor,
+        is_dome:g.is_dome, roof_type:g.roof_type },
+      weather:{ temp_f:g.temp_f, humidity:g.humidity, wind_mph:g.wind_mph,
+        wind_rel:g.wind_rel!=null?g.wind_rel:g.wind_dir, precip_prob:g.precip_prob },
+      market:{ total_line:mkt.total_line, home_ml_dec:mkt.home_ml_dec, away_ml_dec:mkt.away_ml_dec,
+        home_fair_prob:mkt.home_fair, home_fair_source:mkt.home_fair_src,
+        run_line:mkt.run_line, book:mkt.book, as_of:mkt.at, stale:mkt.stale } }, mkt:mkt };
+}
+
+/* ---- the rows the whole surface is drawn from ---------------------------
+   ONE engine call per game per load, cached against the load stamp. The
+   overview, the board, the signals and the comparison all read this list, so
+   two numbers on this screen cannot disagree. */
+function mlbxRows(){
+  if(MLBX.rows&&MLBX.rowsAt===MLBB.at)return MLBX.rows;
+  var E=mlbxE(),rows=[];
+  var league=mlbxLeague(); MLBX.league=league;
+  (MLBB.cards||[]).forEach(function(g){
+    var built=E?mlbxRequest(g,league):{req:null,mkt:mlbxMarket(g)};
+    var p=null;
+    if(E){
+      try{ p=E.projectGame(built.req); }
+      catch(err){ p={status:'BLOCKED',reason:(err&&err.message)||'engine threw'}; }
+    }
+    var mkt=built.mkt;
+    var ok=!!(p&&p.status==='PREDICTED');
+    var r={ sport:'mlb', key:g.__key, g:g, home:g.home_team_name, away:g.away_team_name,
+      t:g.start_time?Date.parse(g.start_time):null, date:g.game_date,
+      p:p, mkt:mkt, ok:ok, priced:mkt.n>0, stale:mkt.stale,
+      totalGap:null, mlGapPts:null, fault:false, lean:false, warn:[], move:mkt.move,
+      noStarter:!(g.home_pitcher_name&&g.away_pitcher_name) };
+    if(ok){
+      r.totalGap=p.market.total_gap;
+      r.mlGapPts=p.market.win_prob_gap_pts;
+      r.warn=(p.data_quality&&p.data_quality.warnings)||[];
+      var eT=p.edge.total.recommendation,eM=p.edge.moneyline.recommendation;
+      r.fault=(eT==='DATA_FAULT'||eM==='DATA_FAULT');
+      r.lean=!r.fault&&(eT==='RESEARCH_LEAN'||eM==='RESEARCH_LEAN');
+    }
+    rows.push(r);
+  });
+  MLBX.rows=rows; MLBX.rowsAt=MLBB.at;
+  return rows;
+}
+/* both cards in one list — the desk is one desk */
+function mlbxAllRows(){ return mlbxRows().concat(cbbxRows()); }
+
+function mlbxSnapshot(rows){
+  var s={games:0,priced:0,dis:0,faults:0,unknown:0,mlb:0,cbb:0};
+  rows.forEach(function(r){
+    s.games++; if(r.sport==='mlb')s.mlb++; else s.cbb++;
+    if(r.priced)s.priced++;
+    if(r.lean)s.dis++;
+    if(r.fault)s.faults++;
+    if(r.noStarter)s.unknown++;
+  });
+  return s;
+}
+
+function mlbxTag(r){ return r.sport==='cbb'?'NCAA':'MLB'; }
+function mlbxMktAge(r){
+  if(r.mkt&&r.mkt.at)return 'market '+ago(r.mkt.at);
+  if(r.sport==='cbb')return 'no market captured for college baseball';
+  return r.priced?'market on file':'no price captured';
+}
+function mlbxSide(r,gap){ return gap>0?r.home:r.away; }
+
+/* ---- the findings worth surfacing — computed, never curated ------------- */
+function mlbxTodayItems(rows){
+  var items=[],r;
+  var ok=rows.filter(function(x){return x.ok;});
+
+  var tt=ok.filter(function(x){return x.totalGap!=null&&!x.fault&&!x.stale;})
+    .sort(function(a,b){return Math.abs(b.totalGap)-Math.abs(a.totalGap);});
+  if(tt.length&&Math.abs(tt[0].totalGap)>=0.5){
+    r=tt[0];
+    items.push({k:'Largest total disagreement',pri:Math.abs(r.totalGap)>=1.25?'major':'notable',r:r,
+      cells:[{l:'Model total',v:mlbxRuns(r.p.model.fair_total,2),c:'mdl'},
+        {l:'Market total',v:String(r.mkt.total_line)},
+        {l:'Difference',v:Math.abs(r.totalGap).toFixed(2)+' runs',p:true}],
+      note:'Model projects '+(r.totalGap>0?'more':'fewer')+' runs than the posted number — '
+        +mlbxEsc(mlbxRuns(r.p.model.away_runs,2))+' to '+mlbxEsc(mlbxRuns(r.p.model.home_runs,2))+'.',
+      why:'A baseball total is mostly two starting pitchers and a ballpark, and this model can see all three. '
+        +'What it cannot see is a lineup card, a bullpen game or a late scratch — so open it and check which of '
+        +'those explains the gap before believing the gap.'});
+  }
+
+  var ml=ok.filter(function(x){return x.mlGapPts!=null&&!x.fault&&!x.stale;})
+    .sort(function(a,b){return Math.abs(b.mlGapPts)-Math.abs(a.mlGapPts);});
+  if(ml.length&&Math.abs(ml[0].mlGapPts)>=3){
+    r=ml[0];
+    var lean=r.mlGapPts>0?r.home:r.away;
+    items.push({k:'Largest price disagreement',pri:Math.abs(r.mlGapPts)>=7?'major':'notable',r:r,
+      cells:[{l:'Model · home',v:mlbxPct(r.p.model.home_win_prob),c:'mdl'},
+        {l:'Market · fair',v:mlbxPct(r.p.market.consensus_fair_home)},
+        {l:'Difference',v:Math.abs(r.mlGapPts).toFixed(1)+' pts',p:true}],
+      note:'Model leans '+mlbxEsc(lean)+' relative to the market’s own de-vigged number. Fair price '
+        +mlbxEsc(mlbxAm(r.p.model.fair_home_ml))+' home, '+mlbxEsc(mlbxAm(r.p.model.fair_away_ml))+' away.',
+      why:'A baseball moneyline is the tightest market EdgeDesk carries, so a several-point disagreement is far '
+        +'more likely to be the model missing a lineup than the market missing a price. It is here to be '
+        +'questioned, not taken.'});
+  }
+
+  var ft=rows.filter(function(x){return x.fault;});
+  if(ft.length){
+    r=ft[0];
+    var which=(r.p.edge.total.recommendation==='DATA_FAULT')?'total':'price';
+    items.push({k:'Data-quality warning',pri:'neg',cls:'neg',r:r,
+      cells:which==='total'
+        ?[{l:'Model total',v:mlbxRuns(r.p.model.fair_total,2),c:'mdl'},{l:'Market total',v:String(r.mkt.total_line)},
+          {l:'Gap',v:Math.abs(r.totalGap).toFixed(2)+' runs',c:'neg',p:true}]
+        :[{l:'Model · home',v:mlbxPct(r.p.model.home_win_prob),c:'mdl'},{l:'Market · fair',v:mlbxPct(r.p.market.consensus_fair_home)},
+          {l:'Gap',v:Math.abs(r.mlGapPts).toFixed(1)+' pts',c:'neg',p:true}],
+      note:'Beyond the guard bound on the '+which+': treat as a data fault, not a disagreement'
+        +(ft.length>1?(' · '+(ft.length-1)+' more game'+(ft.length===2?'':'s')+' flagged'):'')+'.',
+      why:'A gap this far past the bound is EdgeDesk telling you its own number is unsafe here — a club rate that '
+        +'has not loaded, a starter matched to the wrong line, or a price captured for a different game. Inspect '
+        +'the inputs; do not price it.'});
+  }
+
+  var noSp=rows.filter(function(x){return x.sport==='mlb'&&x.noStarter;});
+  if(noSp.length){
+    r=noSp[0];
+    items.push({k:'Probable starter not posted',pri:'warn',cls:'warn',r:r,
+      cells:[{l:'Games affected',v:String(noSp.length),c:'warn',p:true},
+        {l:'Away',v:r.g.away_pitcher_name||'not posted',c:r.g.away_pitcher_name?'':'mut'},
+        {l:'Home',v:r.g.home_pitcher_name||'not posted',c:r.g.home_pitcher_name?'':'mut'}],
+      note:'The starter is the largest single input in a baseball number, and for these games at least one half of '
+        +'it is missing. Where a starter is absent the club’s whole-staff rate carries his innings.',
+      why:'Read any projection on these games as provisional. A number built without a starter is a number about '
+        +'the clubs, not about the game — and probables are never confirmed anyway.'});
+  }
+
+  var wx=rows.filter(function(x){return x.ok&&x.sport==='mlb'&&x.p.components.weather_factor!=null
+    &&Math.abs(x.p.components.weather_factor-1)>=0.025;})
+    .sort(function(a,b){return Math.abs(b.p.components.weather_factor-1)-Math.abs(a.p.components.weather_factor-1);});
+  if(wx.length){
+    r=wx[0];var wf=r.p.components.weather_factor;
+    items.push({k:'Weather moves the run environment',pri:'info',r:r,
+      cells:[{l:'Effect on runs',v:((wf-1)*100>0?'+':'')+((wf-1)*100).toFixed(1)+'%',c:wf>1?'':'mut',p:true},
+        {l:'Model total',v:mlbxRuns(r.p.model.fair_total,2),c:'mdl'},
+        {l:'Market total',v:r.mkt.total_line!=null?String(r.mkt.total_line):'—',c:r.mkt.total_line==null?'mut':''}],
+      note:mlbxEsc((r.p.components.weather_notes||[]).join(' · '))||'Conditions move the run environment at this park.',
+      why:'Wind along the field axis and temperature are the two conditions that reliably move a baseball total, '
+        +'and both are in this number. The forecast is a forecast: it is for the venue, not for first pitch, and '
+        +'a retractable roof halves it because the roof state is never published.'});
+  }
+
+  var st=rows.filter(function(x){return x.stale;});
+  if(st.length&&!ft.length){
+    r=st[0];
+    items.push({k:'Stale market quote',pri:'warn',cls:'warn',r:r,
+      cells:[{l:'Games affected',v:String(st.length),c:'warn',p:true},
+        {l:'Last capture',v:r.mkt.at?ago(r.mkt.at):'—',c:'mut'},
+        {l:'Model total',v:r.ok?mlbxRuns(r.p.model.fair_total,2):'—',c:'mdl'}],
+      note:'The only price on file for these games is an old capture. Any difference shown is measured against a '
+        +'number that may no longer exist.',
+      why:'Missing is not zero and stale is not current. Nothing is compared against a live market until a fresh '
+        +'quote lands.'});
+  }
+
+  var mv=rows.filter(function(x){return x.move!=null&&Math.abs(x.move)>=1.5;})
+    .sort(function(a,b){return Math.abs(b.move)-Math.abs(a.move);});
+  if(mv.length){
+    r=mv[0];
+    items.push({k:'Largest market movement',pri:'info',r:r,
+      cells:[{l:'Home price moved',v:mlbxSigned(r.move,1)+' pp',p:true},
+        {l:'Model · home',v:r.ok?mlbxPct(r.p.model.home_win_prob):'—',c:'mdl'},
+        {l:'Market · fair',v:r.ok?mlbxPct(r.p.market.consensus_fair_home):'—'}],
+      note:'Implied probability of the home side since the capture first saw this game. A market fact, not a model '
+        +'output.',
+      why:'The market changed its mind on this game more than any other on the card. A model cannot see news, a '
+        +'lineup or a scratch — the market can, and this is where it did.'});
+  }
+
+  var unp=rows.filter(function(x){return x.sport==='mlb'&&!x.priced;});
+  if(unp.length&&!items.length){
+    items.push({k:'No prices captured',pri:'info',r:rows[0],
+      cells:[{l:'Games on the card',v:String(rows.length),p:true},{l:'With a price',v:String(rows.length-unp.length)},
+        {l:'Without',v:String(unp.length),c:'mut'}],
+      note:'The odds capture has retained no quote for these games, so there is nothing to set the projection '
+        +'against.',
+      why:'The research stands without a price — starters, offenses, bullpen and park are all measured. What is '
+        +'missing is the only thing that could turn a projection into a question about value.'});
+  }
+  return items;
+}
+
+function mlbxSigItem(it){
+  var r=it.r,when='';
+  try{ when=r.t?whenLabel(new Date(r.t).toISOString()):(r.date||''); }catch(_){ when=r.date||''; }
+  return {k:it.k,cls:it.cls||'',pri:it.pri,tag:mlbxTag(r),title:r.away+' @ '+r.home,
+    cells:it.cells,note:it.note,why:it.why,
+    foot:when+' · model '+mlbxAgo(MLBB.at)+' · '+mlbxMktAge(r),
+    onclick:"mlbxFocusGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.key)+"')",
+    action:{label:'Open research',onclick:"mlbxSigOpen('"+edAttrJs(r.sport)+"','"+edAttrJs(r.key)+"')"}};
+}
+
+/* ---- model vs market, for one game ------------------------------------- */
+function mlbxFocusRow(rows){
+  var f=MLBX.ui.focus,i;
+  if(f)for(i=0;i<rows.length;i++)if(rows[i].sport===f.sport&&rows[i].key===f.key&&rows[i].ok)return rows[i];
+  var ok=rows.filter(function(x){return x.ok;});
+  var withM=ok.filter(function(x){return x.totalGap!=null&&!x.fault&&!x.stale;})
+    .sort(function(a,b){return Math.abs(b.totalGap)-Math.abs(a.totalGap);});
+  return withM[0]||ok[0]||null;
+}
+function mlbxMvmForRow(r){
+  var p=r.p,m=p.model,mk=r.mkt,rows=[],band=null,when='';
+  try{ when=r.t?whenLabel(new Date(r.t).toISOString()):(r.date||''); }catch(_){ when=r.date||''; }
+  rows.push({l:'EdgeDesk projected runs',sub:'model · away at home · '+mlbxTag(r),
+    v:mlbxRuns(m.away_runs,2)+' – '+mlbxRuns(m.home_runs,2),c:'mdl'});
+  rows.push({l:'Model total',sub:'the two above, added',v:mlbxRuns(m.fair_total,2),c:'mdl'});
+  if(mk.total_line!=null){
+    rows.push({l:'Market total',sub:(mk.total_book||r.mkt.book||'market')+(mk.at?(' · '+ago(mk.at)):'')});
+    rows[rows.length-1].v=String(mk.total_line);
+    rows.push({l:'Difference',sub:p.market.total_gap>0?'model is higher':'model is lower',
+      v:Math.abs(p.market.total_gap).toFixed(2)+' runs',c:'diff',p:true});
+  }else rows.push({l:'Market total',sub:'no number captured for this game',v:'—',c:'mut'});
+  rows.push({l:'Win probability',sub:'model · fair moneyline',
+    v:mlbxEsc(r.home)+' '+mlbxPct(m.home_win_prob,0)+' · '+mlbxAm(m.fair_home_ml)});
+  if(p.market.consensus_fair_home!=null){
+    rows.push({l:'Market fair',sub:p.market.consensus_fair_source||'de-vigged',
+      v:mlbxEsc(r.home)+' '+mlbxPct(p.market.consensus_fair_home,0)});
+    rows.push({l:'Difference',sub:p.market.win_prob_gap_pts>0?('toward '+r.home):('toward '+r.away),
+      v:Math.abs(p.market.win_prob_gap_pts).toFixed(1)+' pts',c:'diff',p:true});
+  }
+  if(m.run_line_cover_prob!=null){
+    rows.push({l:'Run line',sub:mlbxEsc(r.home)+' '+mlbxSigned(m.run_line,1)+' · model fair price',
+      v:mlbxPct(m.run_line_cover_prob,0)+' · '+mlbxAm(m.fair_run_line_ml)});
+  }
+  if(m.total_p10!=null&&m.total_p90!=null){
+    band={lo:m.total_p10,med:m.fair_total,hi:m.total_p90,mkt:mk.total_line,
+      loLabel:'p10 '+m.total_p10,hiLabel:'p90 '+m.total_p90,
+      centre:'total runs · negative binomial',
+      medLabel:'model '+mlbxRuns(m.fair_total,2),
+      bandLabel:'p10–p90 · the run distribution itself'};
+  }
+  var split=null;
+  if(p.market.consensus_fair_home!=null){
+    split={a:{name:r.home,p:m.home_win_prob,c:'var(--mdl)'},b:{name:r.away,p:1-m.home_win_prob,c:'var(--accent)'},
+      label:'model win probability'};
+  }
+  var foot=(r.fault)
+    ? '<b>Data fault, not a disagreement.</b> '+mlbxEsc(r.p.edge.total.recommendation==='DATA_FAULT'?r.p.edge.total.note:r.p.edge.moneyline.note)
+    : (r.lean
+      ? '<b>Research lean, unproven.</b> The engine flags this as worth opening. It is not evidence of an edge: '
+        +'this model has never been graded against a closing line.'
+      : (mk.total_line==null&&p.market.consensus_fair_home==null
+        ? 'The model number stands alone. No difference, and no edge of any kind, is claimed without a market number.'
+        : 'Inside the review threshold. Context, not a signal.'));
+  return rsTkMvm({title:'Model runs vs the market',game:r.away+' @ '+r.home,
+    when:when+(r.sport==='cbb'?' · college':''),rows:rows,band:band,split:split,foot:foot});
+}
+
+/* ---- model status ------------------------------------------------------- */
+function mlbxModelStatusHTML(){
+  var E=mlbxE(),M=E?E.meta():null;
+  var badges=[];
+  badges.push(['amber','Experimental']);
+  badges.push(['mut','Not walk-forward trained']);
+  badges.push(['mut','No closing-line record']);
+  badges.push(E?['green','Engine loaded']:['red','Engine not loaded']);
+  var desc='A transparent run-expectancy calculation: league scoring environment, each club’s offense, the '
+    +'arms it faces split between the starter and the relief corps, the ballpark and the weather. Two run '
+    +'expectations become a run distribution, and the distribution produces the total, the win probability and '
+    +'the run line.';
+  var ver=M?(mlbxEsc(M.model_version)+' · calibrated through '+mlbxEsc(String(M.calibrated_through_season))
+    +' · built '+mlbxEsc(String(M.built_at))):'engine metadata not loaded';
+  if(MLBX.league)ver+='<br>league baseline '+MLBX.league.runs_per_game.toFixed(2)
+    +' runs per club per game, folded from '+MLBX.league.clubs+' club rates on file';
+  else ver+='<br>no live club rates on file — the published fallback baseline is in use and every projection says so';
+  return '<div class="fb-card"><div class="fb-ms-h"><span class="t">Model status</span>'
+    +'<span class="n">EdgeDesk Baseball Run Model</span></div>'
+    +'<div class="fb-badges">'+badges.map(function(b){return '<span class="fb-badge '+b[0]+'"><i></i>'+mlbxEsc(b[1])+'</span>';}).join('')+'</div>'
+    +'<p class="fb-ms-d">'+mlbxEsc(desc)+'</p><div class="fb-ms-v">'+ver+'</div>'
+    +'<div class="fb-ms-p"><b>Research context, not edges.</b> No coefficient in this model was fitted to a '
+    +'betting line, because EdgeDesk holds no baseball line archive to fit one to. Nothing here is counted as '
+    +'validated, and a disagreement with the market is a question to open, never a play.</div>'
+    +'<div class="fb-btns"><button class="fb-btn" onclick="mlbxDrawerOpen(\'method\')">View methodology</button>'
+    +'<button class="fb-btn pri" onclick="mlbxDrawerOpen(\'record\')">What has been checked</button></div></div>';
+}
+
+window.mlbxDrawerOpen=function(kind){ rsTkDrawerOpen(mlbxDrawerHTML(kind)); };
+function mlbxDrawerHTML(kind){
+  var E=mlbxE(),M=E?E.meta():null,P=window.EDBaseballParams||null,h='';
+  if(kind==='method'){
+    h+='<h3>Methodology</h3><div class="sub">'+(M?(mlbxEsc(M.model_version)+' · built '+mlbxEsc(String(M.built_at))):'engine metadata not loaded')+'</div>';
+    h+='<h4>How a run expectation is built</h4><p>Each club’s runs are built multiplicatively from the league '
+      +'scoring environment: the club’s own runs per game regressed toward the league by games played, then '
+      +'the arms it is facing, then the ballpark, then the weather, then home or away. The arms are split — the '
+      +'probable starter carries his expected share of nine innings at a rate blended from xERA, FIP and ERA and '
+      +'converted from earned runs to runs allowed, and the relief corps carries the rest at the club’s '
+      +'whole-staff rate, taxed by the arms EdgeDesk has flagged.</p>';
+    h+='<h4>How a run expectation becomes a price</h4><p>Team runs in a game are count data with a long right '
+      +'tail. The engine uses a negative binomial whose variance-to-mean ratio matches real team-game scoring'
+      +(P?(' ('+P.mlb.run_dispersion.toFixed(2)+' for MLB, '+P.cbb.run_dispersion.toFixed(2)+' for college)'):'')
+      +'. Convolving the two sides gives the win probability, the total distribution and the run line exactly, '
+      +'without a simulation and with the same answer every time it is asked. One correction is applied on top: '
+      +'the home club bats last, which converts ties and one-run games at a rate a symmetric run distribution '
+      +'cannot express, so a published constant is added to the home win probability and to nothing else — it '
+      +'must not move a total.</p>';
+    h+='<h4>College baseball, and the one piece of inference in it</h4><p>No college game has a published starter, '
+      +'so the college projection is a club-level number and says so on every game. Its schedule adjustment is '
+      +'folded from the same season table the records come from: games inside a conference cancel, so a '
+      +'conference’s aggregate run differential was earned entirely outside it, and dividing by its '
+      +'non-conference games gives runs per non-conference game. A conference with too little non-conference play '
+      +'earns no adjustment rather than a loud one.</p>';
+    h+='<h4>What it will not do</h4><ul style="margin:0;padding-left:18px;font-size:12px;color:var(--dim);line-height:1.55">'
+      +'<li>It will not fill a missing input. An absent starter, club rate, park factor or forecast is reported '
+      +'and widens what the engine says it does not know.</li>'
+      +'<li>It will not blend itself with the market to look closer than it is.</li>'
+      +'<li>It will not call anything an edge. Past the guard bound is a data fault; short of it, the strongest '
+      +'word available is disagreement.</li></ul>';
+    h+='<h4>Provenance</h4>'+rsTkProvRows(window.RS_PROV&&RS_PROV.baseball);
+    return h;
+  }
+  h+='<h3>What has been checked</h3><div class="sub">and what has not — the difference is the point</div>';
+  h+='<div class="fb-ms-p" style="margin:0 0 12px"><b>There is no track record.</b> This model has never been '
+    +'graded against a closing line, because EdgeDesk holds no MLB or college baseball line archive to grade it '
+    +'against. Football can quote its own out-of-sample record here; baseball cannot, and an empty section is the '
+    +'honest way to say that.</div>';
+  h+='<h4>What the test suite does assert</h4><p>mlb/tests.js runs the identical engine under Node and checks '
+    +'self-consistency: that the run distribution reproduces its stated mean and variance and sums to one, that '
+    +'league-average inputs return the league average and the published home-field figure, that every input moves '
+    +'the number in the direction the model card claims, that the odds conversions round-trip, that the guard '
+    +'bounds fire, that a missing input is reported rather than filled in, and that nothing in a payload is ever '
+    +'NaN.</p>';
+  h+='<p><b>None of that is validation.</b> A model can be perfectly self-consistent and still lose to the '
+    +'market. Until a graded closing-line record exists, every number this engine produces is research context '
+    +'and is counted nowhere in EdgeDesk’s own record.</p>';
+  if(P)h+='<h4>Guard bounds and review thresholds</h4><div class="fb-tbl-wrap"><table class="fb-tbl">'
+    +'<tr><th>Market</th><th>Review at</th><th>Data fault past</th></tr>'
+    +'<tr><td>MLB total</td><td>'+P.mlb.review.total_runs+' runs</td><td>'+P.mlb.guard.total_runs+' runs</td></tr>'
+    +'<tr><td>MLB moneyline</td><td>'+P.mlb.review.win_prob_pts+' pts</td><td>'+P.mlb.guard.win_prob_pts+' pts</td></tr>'
+    +'<tr><td>College total</td><td>'+P.cbb.review.total_runs+' runs</td><td>'+P.cbb.guard.total_runs+' runs</td></tr>'
+    +'<tr><td>College moneyline</td><td>'+P.cbb.review.win_prob_pts+' pts</td><td>'+P.cbb.guard.win_prob_pts+' pts</td></tr>'
+    +'</table></div>';
+  var lim=(window.RS_LIMITS&&RS_LIMITS.baseball)||[];
+  if(lim.length)h+='<h4>Known limitations</h4>'+rsTkLimits(lim);
+  return h;
+}
+
+/* ---- the finder: reach any game on either card by name ------------------
+   Same component the football overview uses, over both cards at once, and it
+   carries the projected total so the list itself answers "which of these is
+   worth opening" rather than only "which of these exists". */
+function mlbxFinderHTML(rows,q){
+  q=String(q||'').trim().toLowerCase();
+  var list=(rows||[]).slice().sort(function(a,b){return (a.t||0)-(b.t||0);});
+  if(q)list=list.filter(function(r){
+    return String(r.home||'').toLowerCase().indexOf(q)>=0
+        || String(r.away||'').toLowerCase().indexOf(q)>=0;
+  });
+  var shown=list.slice(0,q?12:6);
+  var h='<div class="rs-find"><input id="mlbxFindQ" type="search" autocomplete="off" spellcheck="false"'
+    +' placeholder="Search team or matchup\u2026" aria-label="Search for a game to research"'
+    +' value="'+mlbxEsc(q)+'" oninput="mlbxFindInput(this.value)"></div>';
+  if(!list.length){
+    h+='<div class="rs-find-n">'+(q
+      ? 'No game on either card matches \u201c'+mlbxEsc(q)+'\u201d. The board holds EdgeDesk\u2019s three-day MLB '
+        +'card, plus the college card once that board has been opened.'
+      : 'No games on the card in EdgeDesk\u2019s three-day window.')+'</div>';
+    return h;
+  }
+  h+='<div class="rs-find-l">'+shown.map(function(r){
+    var when='';try{ when=r.t?whenLabel(new Date(r.t).toISOString()):(r.date||''); }catch(_){ when=r.date||''; }
+    var num=r.ok
+      ? (mlbxRuns(r.p.model.fair_total,1)+' proj'+(r.mkt.total_line!=null?(' \u00b7 '+r.mkt.total_line+' mkt'):''))
+      : 'no projection';
+    return '<button onclick="mlbxSigOpen(\''+edAttrJs(r.sport)+'\',\''+edAttrJs(String(r.key))+'\')">'
+      +'<span class="g">'+mlbxEsc(mlbxTag(r))+'</span>'
+      +'<span>'+mlbxEsc(r.away+' @ '+r.home)+'</span>'
+      +'<span class="w">'+mlbxEsc(num+' \u00b7 '+when)+'</span></button>';
+  }).join('')+'</div>';
+  if(list.length>shown.length)h+='<div class="rs-find-n">'+(list.length-shown.length)+' further game'
+    +(list.length-shown.length===1?'':'s')+' on the board \u2014 search to reach one.</div>';
+  return h;
+}
+window.mlbxFindInput=function(v){
+  MLBX.ui.q=v;
+  var host=$('mlbxFindCard'); if(!host)return;
+  var pos=null,el=document.activeElement;
+  try{ pos=el&&el.id==='mlbxFindQ'?el.selectionStart:null; }catch(_){}
+  host.innerHTML=mlbxFinderHTML(mlbxAllRows(),v);
+  var q=$('mlbxFindQ');
+  if(q){ q.focus(); try{ q.setSelectionRange(pos==null?q.value.length:pos,pos==null?q.value.length:pos); }catch(_){} }
+};
+
+/* ---- the overview ------------------------------------------------------- */
+function mlbxOverviewHTML(){
+  if(!MLBB.at&&!MLBB.err&&!(CBB&&CBB.at))return rsTkSkel();
+  if(!mlbxE()){
+    return '<div class="rs-state"><h4>Baseball run model unavailable</h4><p>The engine (<span class="mono">'
+      +'mlb/engine.js</span>) did not load, so no projection is shown. The cards and the archive below are '
+      +'unaffected — nothing is estimated in its place.</p><button onclick="mlbxRefreshClick()">Try again</button></div>';
+  }
+  var rows=mlbxAllRows(),s=mlbxSnapshot(rows);
+  var items=mlbxTodayItems(rows).map(mlbxSigItem);
+  var P=window.EDBaseballParams;
+  var html=rsTkSnap({title:'',meta:'',key:'mlbSnap',
+    kpis:[{n:s.games,l:'Games'},{n:s.priced,l:'Priced',c:s.priced?'':'mut'},
+      {n:s.dis,l:'Disagree',c:s.dis?'warn':'mut'},{n:s.faults,l:'Faults',c:s.faults?'neg':'pos'}],
+    how:'<b>Games</b> are every game on EdgeDesk’s three-day MLB card plus every Division I college game in '
+      +'the same window once that board has been opened. <b>Priced</b> counts the games the odds capture has '
+      +'retained a quote for — college baseball is rarely captured, so those games are researched without a '
+      +'price. <b>Disagree</b> is the engine’s own review threshold: '
+      +(P?(P.mlb.review.total_runs+' runs on a total or '+P.mlb.review.win_prob_pts+' points on a price for MLB'):'its published thresholds')
+      +' — research attention, and unproven, because this model has no graded closing-line record. '
+      +'<b>Faults</b> are gaps past the guard bound, which are read as broken inputs rather than opportunities.'
+      +(s.unknown?(' '+s.unknown+' game'+(s.unknown===1?'':'s')+' on the card still ha'+(s.unknown===1?'s':'ve')+' a starter unposted.'):''),
+    cta:{label:'Open tonight’s MLB card',onclick:"mlbhSetSeg('games')"}});
+  html+='<div class="fb-sechd"><span>Today in baseball</span><span class="r">'
+    +(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+mlbxEsc(mlbxAgo(MLBB.at))+'</span></div>';
+  html+=rsTkToday(items,'mlbToday','<div class="fb-quiet">No major research changes since the last refresh.'
+    +(s.games?'':'<small>No games on the MLB card in the next three days. Out of season, that is the correct '
+      +'answer rather than an empty board.</small>')+'</div>');
+  html+='<div class="fb-sechd"><span>Research a game</span><span class="r">'+s.games+' on the board'
+    +(s.cbb?(' · '+s.mlb+' MLB, '+s.cbb+' college'):'')+'</span></div>'
+    +'<div class="fb-card" id="mlbxFindCard">'+mlbxFinderHTML(rows,MLBX.ui.q)+'</div>';
+  html+='<div class="fb-sechd"><span>Research tools</span></div><div class="fb-tools">'
+    +rsTkTool('game','Game research','Projected runs, the distribution behind them, both starters and what could '
+      +'break the number.',"mlbhSetSeg('games')")
+    +rsTkTool('team','College card','Every Division I game in the window, with a club-level projection and the '
+      +'schedule adjustment behind it.',"mlbhSetSeg('cbb')")
+    +rsTkTool('history','Pitching archive','Ten completed seasons behind any starter on tonight’s card.',"mlbhSetSeg('board')")
+    +rsTkTool('ratings','Club offense','Ten seasons of club run scoring, and the hitters inside it.',"mlbhSetSeg('offense')")
+    +'</div>';
+  var fr=mlbxFocusRow(rows);
+  if(fr)html+='<div class="fb-sechd"><span>Market vs research</span><span class="r">tap a signal above to compare it</span></div>'
+    +'<div class="fb-card">'+mlbxMvmForRow(fr)+'</div>';
+  html+=mlbxModelStatusHTML();
+  return html;
+}
+function mlbxRenderOverview(){
+  var el=$('mlbOverview'); if(!el)return;
+  el.innerHTML=mlbxOverviewHTML();
+  if(!MLBX.ui._landSeen&&MLBB.at){MLBX.ui._landSeen=true;try{edEvent('research_landing_view',{module:'baseball'});}catch(_){}}
+}
+
+/* ---- system health: the pipelines, the provenance, the freshness -------- */
+function mlbxSystemHTML(){
+  var bits=[],level='ok',tt;
+  var r=MLBB.read||{},bad=[];
+  Object.keys(r).forEach(function(k){ if(r[k]!=='VERIFIED')bad.push(k+': '+String(r[k]).toLowerCase()); });
+  if(MLBB.err)bad.push('mlb card: '+MLBB.err);
+  if(MLBH.err)bad.push('pitching archive: '+(MLBH.errCode||'unavailable').toLowerCase());
+  if(CBB&&CBB.err)bad.push('college archive: '+(CBB.errCode||'unavailable').toLowerCase());
+  if(!mlbxE())bad.push('run model: engine not loaded');
+  if(!MLBB.at&&!MLBB.err){level='mut';tt='Waiting for the data';}
+  else if(MLBB.err&&!(MLBB.cards||[]).length){level='neg';tt='The MLB card did not load';}
+  else if(bad.length){level='warn';tt='Attention needed — part of the surface is reading what it can';}
+  else tt='All baseball research systems operational';
+  var f=null;try{f=rsFreshness('baseball');}catch(_){}
+  var ts=(bad.length?(bad.slice(0,3).join(' · ')+' · '):'')
+    +'Last refresh '+(MLBB.at?ago(MLBB.at):'—')
+    +((f&&f.published)?(' · archive build '+ago(f.builtAt)):' · the archive publishes its build time only once an import is promoted');
+  var body='';
+  body+='<div class="fb-pipe"><div class="fb-pipe-t">Reads on this load</div>'
+    +Object.keys(r).map(function(k){
+      var st=String(r[k]||'').toUpperCase();
+      var lvl=st==='VERIFIED'?'':(st==='EMPTY'?'warn':'neg');
+      return '<div class="fb-pipe-row"><span class="d '+lvl+'"></span><span class="id">'+mlbxEsc(k)+'</span>'
+        +'<span class="st '+lvl+'">'+mlbxEsc(st.toLowerCase())+'</span><span class="rw"></span></div>';
+    }).join('')
+    +'<div class="fb-pipe-row"><span class="d '+(mlbxE()?'':'neg')+'"></span><span class="id">run model</span>'
+    +'<span class="st '+(mlbxE()?'':'neg')+'">'+(mlbxE()?('loaded · '+mlbxEsc(mlbxE().version())):'not loaded')
+    +'</span><span class="rw">'+(MLBX.rows?(MLBX.rows.length+' games projected'):'')+'</span></div>'
+    +'</div>';
+  body+=rsTkPipeRows(MLBH.meta,'Pitching archive pipeline');
+  body+='<div id="rsMeta-baseball" class="rs-panelwrap"></div>';
+  return rsTkSysCard({level:level,tt:tt,ts:ts,key:'mlbSys',body:body});
+}
+function mlbxRenderSystem(){
+  var el=$('mlbSystem'); if(!el)return;
+  el.innerHTML=(MLBB.at||MLBB.err||MLBH.status||MLBH.err)?mlbxSystemHTML():'';
+  try{ if($('rsMeta-baseball'))rsMetaRender('baseball'); }catch(_){}
+}
+
+/* ---- navigation --------------------------------------------------------- */
+window.mlbxFocusGame=function(sport,key){
+  MLBX.ui.focus={sport:sport,key:String(key)};
+  mlbxRenderOverview();
+  var els=document.querySelectorAll('#mlbOverview .fb-mvm-h');
+  if(els.length){try{els[0].parentNode.scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}}
+};
+window.mlbxSigOpen=function(sport,key){
+  MLBX.ui.focus={sport:sport,key:String(key)};
+  if(sport==='cbb'){ if(MLBH.seg!=='cbb')mlbhSetSeg('cbb'); try{ cbbOpenBrief(key); }catch(_){} return false; }
+  if(MLBH.seg!=='games')mlbhSetSeg('games');
+  try{ mlbbOpenBrief(key); }catch(_){}
+  return false;
+};
+window.mlbxRefreshClick=function(){ rsTkRefresh('mlbhRefreshBtn',['baseball']); };
+window.mlbxSetFilter=function(v){ MLBX.ui.filter=v; renderBaseball(); };
+window.mlbxSetSort=function(v){ MLBX.ui.sort=v; renderBaseball(); };
+
+/* ---- the MLB card, with the projection on every row ---------------------
+   The row is the answer to "which of these is worth an hour": the projected
+   total beside the posted one, the difference, and the fair price beside the
+   captured one. A row with no projection or no price shows the half it has
+   and names the half it does not. */
+function mlbxRowFilter(rows){
+  var f=MLBX.ui.filter;
+  if(f==='priced')return rows.filter(function(r){return r.priced;});
+  if(f==='lean')return rows.filter(function(r){return r.lean;});
+  if(f==='fault')return rows.filter(function(r){return r.fault;});
+  if(f==='unknown')return rows.filter(function(r){return r.noStarter;});
+  return rows;
+}
+function mlbxRowSort(rows){
+  var s=MLBX.ui.sort,out=rows.slice();
+  if(s==='total')out.sort(function(a,b){
+    var x=a.totalGap==null?-1:Math.abs(a.totalGap),y=b.totalGap==null?-1:Math.abs(b.totalGap);
+    return y-x;});
+  else if(s==='price')out.sort(function(a,b){
+    var x=a.mlGapPts==null?-1:Math.abs(a.mlGapPts),y=b.mlGapPts==null?-1:Math.abs(b.mlGapPts);
+    return y-x;});
+  else if(s==='gap')out.sort(function(a,b){
+    function sc(r){
+      if(r.fault)return 1000;
+      var t=r.totalGap==null?0:Math.abs(r.totalGap)/0.75,m=r.mlGapPts==null?0:Math.abs(r.mlGapPts)/4;
+      return Math.max(t,m);
+    }
+    return sc(b)-sc(a)||((a.t||0)-(b.t||0));});
+  else out.sort(function(a,b){return (a.t||0)-(b.t||0);});
+  return out;
+}
+function mlbxCtlHTML(rows,counts){
+  function chip(v,label,n){
+    return '<button class="fbs-chip'+(MLBX.ui.filter===v?' on':'')+'" onclick="mlbxSetFilter(\''+v+'\')">'
+      +mlbxEsc(label)+(n!=null?(' <b>'+n+'</b>'):'')+'</button>';
+  }
+  function sort(v,label){
+    return '<button class="fbs-chip'+(MLBX.ui.sort===v?' on':'')+'" onclick="mlbxSetSort(\''+v+'\')">'+mlbxEsc(label)+'</button>';
+  }
+  return '<div class="mlbb-ctl"><span class="lb">Show</span>'
+    +chip('all','Every game',counts.all)+chip('priced','With a price',counts.priced)
+    +chip('lean','Model disagrees',counts.lean)+chip('unknown','Starter unposted',counts.unknown)
+    +(counts.fault?chip('fault','Data faults',counts.fault):'')
+    +'</div><div class="mlbb-ctl"><span class="lb">Order</span>'
+    +sort('gap','Biggest disagreement')+sort('time','First pitch')+sort('total','Total gap')+sort('price','Price gap')
+    +'</div>';
+}
+function mlbxNumCell(l,v,cls){
+  return '<span class="c"><span class="l">'+mlbxEsc(l)+'</span><span class="v '+(cls||'')+'">'+mlbxEsc(v)+'</span></span>';
+}
+function mlbxBoardRowHTML(r){
+  var g=r.g,m=r.ok?r.p.model:null;
+  var gapCls='mut',gapTxt='—';
+  if(r.fault){gapCls='neg';gapTxt=(r.totalGap!=null?Math.abs(r.totalGap).toFixed(2):Math.abs(r.mlGapPts||0).toFixed(1))+(r.totalGap!=null?'':' pt');}
+  else if(r.totalGap!=null){gapCls=r.lean?'warn gap':'gap';gapTxt=mlbxSigned(r.totalGap,2);}
+  var nums=m
+    ? mlbxNumCell('Model',mlbxRuns(m.fair_total,2),'mdl')
+      +mlbxNumCell('Market',r.mkt.total_line!=null?String(r.mkt.total_line):'none',r.mkt.total_line==null?'mut':'')
+      +mlbxNumCell('Gap',gapTxt,gapCls)
+    : mlbxNumCell('Model','—','mut')+mlbxNumCell('Market',r.mkt.total_line!=null?String(r.mkt.total_line):'none','mut')
+      +mlbxNumCell('Gap','—','mut');
+  var ml=m?('fair '+mlbxAm(m.fair_home_ml)+' home'):'';
+  var chips='';
+  if(r.fault)chips+='<i class="mk neg">data fault</i>';
+  else if(r.lean)chips+='<i class="mk on">model disagrees</i>';
+  else if(r.priced)chips+='<i class="mk">priced</i>';
+  else chips+='<i class="mk">no price</i>';
+  if(r.stale)chips+='<i class="mk warn">stale</i>';
+  if(r.noStarter)chips+='<i class="mk warn">starter TBD</i>';
+  return '<button class="mlbb-row" onclick="return mlbbOpenBrief('+JSON.stringify(r.key).replace(/"/g,'&quot;')+')">'
+    +'<span class="tm">'
+      +'<span class="t">'+mlbxEsc(g.away_team_name)+(g.away_record?'<i>'+mlbxEsc(g.away_record)+'</i>':'')
+        +(m?'<i class="rn">'+mlbxRuns(m.away_runs,1)+'</i>':'')+'</span>'
+      +'<span class="at">@</span>'
+      +'<span class="t">'+mlbxEsc(g.home_team_name)+(g.home_record?'<i>'+mlbxEsc(g.home_record)+'</i>':'')
+        +(m?'<i class="rn">'+mlbxRuns(m.home_runs,1)+'</i>':'')+'</span>'
+    +'</span>'
+    +'<span class="sp">'
+      +'<span class="p">'+mlbxEsc(g.away_pitcher_name||'starter not posted')
+        +(g.away_pitcher_throws?' ('+mlbxEsc(g.away_pitcher_throws)+')':'')+'</span>'
+      +'<span class="p">'+mlbxEsc(g.home_pitcher_name||'starter not posted')
+        +(g.home_pitcher_throws?' ('+mlbxEsc(g.home_pitcher_throws)+')':'')+'</span>'
+    +'</span>'
+    +'<span class="nm">'+nums+'</span>'
+    /* WHEN THE BOARD IS ORDERED BY DISAGREEMENT IT IS NOT GROUPED BY DAY, so
+       the day rides the row instead. A board that loses "today" and "tomorrow"
+       the moment it is reordered is a board a reader cannot navigate. */
+    +'<span class="mt">'+mlbxEsc((MLBX.ui.sort==='time'?'':(mlbbDayLabel(g.game_date)+' · '))+mlbbGameTime(g))
+      +(ml?'<i>'+mlbxEsc(ml)+'</i>':'')
+      +(g.venue?'<i>'+mlbxEsc(g.venue)+'</i>':'')+'</span>'
+    +'<span class="go">'+chips+'<b>Game brief ›</b></span>'
+    +'</button>';
+}
+function mlbhGamesHTML(){
+  /* NEVER LOADED IS NOT THE SAME AS LOADED AND EMPTY, and the difference is
+     the whole message. The segment renders before its loader starts, so this
+     tests for a load that has not ANSWERED yet rather than one in flight. */
+  if(!MLBB.at&&!MLBB.err)return '<div class="empty">Loading the MLB card&hellip;</div>';
+  if(MLBB.err&&!MLBB.cards.length){
+    return '<div class="empty"><b>The MLB card did not load.</b><br>'+mlbhEsc(MLBB.err)
+      +'<div style="margin-top:9px">Nothing is shown in its place.</div></div>';
+  }
+  if(!MLBB.cards.length){
+    return '<div class="empty"><b>No MLB games on the card for '
+      +mlbhEsc(MLBB.days.map(mlbbDayLabel).join(', ').toLowerCase())+'.</b><br>'
+      +'mlb_game_cards holds a three-day ET window and it has no rows for it. Out of season, or between slates, that '
+      +'is the correct answer rather than an error.</div>';
+  }
+  var all=mlbxRows();
+  var counts={all:all.length,
+    priced:all.filter(function(r){return r.priced;}).length,
+    lean:all.filter(function(r){return r.lean;}).length,
+    fault:all.filter(function(r){return r.fault;}).length,
+    unknown:all.filter(function(r){return r.noStarter;}).length};
+  var rows=mlbxRowSort(mlbxRowFilter(all));
+  var E=mlbxE();
+  var h='<div class="mlbb-note">Every game on EdgeDesk’s three-day card, with a projected score beside the '
+    +'posted number on each row. Open one for the full brief: both probable starters with their season line and '
+    +'their record in the archive, the offenses, the bullpen flags, the ballpark and the market. '
+    +(E?'<b>The projection is experimental and has never been graded against a closing line</b> — a gap here '
+       +'is a question to open, never an edge.'
+      :'<b>The run model did not load</b>, so no projection is shown and the rows carry the card alone.')+'</div>';
+  h+=mlbxCtlHTML(all,counts);
+  if(!rows.length){
+    h+='<div class="empty">No game on the card matches this filter. '
+      +(MLBX.ui.filter==='lean'?'The model agrees with every posted number inside its review threshold, which is the '
+        +'ordinary state of a tight market.':'')
+      +' <button class="fbs-chip" onclick="mlbxSetFilter(\'all\')">Show every game</button></div>';
+    return h;
+  }
+  if(MLBX.ui.sort==='time'){
+    var byDay={};
+    rows.forEach(function(r){ (byDay[r.date]=byDay[r.date]||[]).push(r); });
+    Object.keys(byDay).sort().forEach(function(d){
+      var list=byDay[d];
+      h+='<div class="mlbb-day">'+mlbhEsc(mlbbDayLabel(d))+'<span class="n">'+list.length+' game'
+        +(list.length===1?'':'s')+'</span></div><div class="mlbb-list">'
+        +list.map(mlbxBoardRowHTML).join('')+'</div>';
+    });
+  }else{
+    var lbl={gap:'Ordered by how far the model sits from the market',total:'Ordered by the gap on the total',
+      price:'Ordered by the gap on the price'}[MLBX.ui.sort]||'';
+    h+='<div class="mlbb-day">'+mlbxEsc(lbl)+'<span class="n">'+rows.length+' game'+(rows.length===1?'':'s')+'</span></div>'
+      +'<div class="mlbb-list">'+rows.map(mlbxBoardRowHTML).join('')+'</div>';
+  }
+  var rd=MLBB.read||{},st=[];
+  Object.keys(rd).forEach(function(k){ if(rd[k]!=='VERIFIED')st.push(k+': '+String(rd[k]).toLowerCase()); });
+  h+='<div class="mlbb-src">Projection: the EdgeDesk baseball run model ('
+    +(E?mlbxEsc(E.version()):'not loaded')+'), unvalidated. Read from mlb_game_cards, games, pitcher_features, '
+    +'offense_features, team_season, pitcher_season'
+    +(MLBB.coverage?(', and the '+MLBB.coverage.start+'–'+MLBB.coverage.end+' pitching archive'):'')
+    +'. Prices from the odds capture, as captured.'
+    +(MLBX.league?(' League baseline '+MLBX.league.runs_per_game.toFixed(2)+' runs per club per game, folded from '
+      +MLBX.league.clubs+' club rates.'):' No club rates loaded, so every projection is running on the published '
+      +'fallback baseline and says so.')
+    +(st.length?(' Not fully available on this load — '+mlbhEsc(st.join(', '))+'.'):'')+'</div>';
+  return h;
+}
+
+/* ═══ COLLEGE BASEBALL: the projection layer ══════════════════════════════
+   The same engine over the college game log. There is no starter here and
+   there never will be from this source, so every college projection is a
+   club-level number and says so on its own card. The one inference it adds
+   is the conference adjustment, folded from the same season table the
+   records come from. */
+function cbbxRows(){
+  if(CBB.projRows&&CBB.projRowsAt===CBB.at)return CBB.projRows;
+  var E=mlbxE(),out=[];
+  var b=CBB.board,tbl=CBB.seasonTable;
+  if(!b||!b.games||!b.games.length){CBB.projRows=out;CBB.projRowsAt=CBB.at;return out;}
+  var league=(tbl&&tbl.ok&&tbl.league&&tbl.league.runs_per_game)?{runs_per_game:tbl.league.runs_per_game}:null;
+  b.games.forEach(function(g){
+    /* A completed game is a result, not a question. The board still lists it;
+       the projection layer does not pretend to forecast it. */
+    if(g.completed||g.abandoned)return;
+    var p=null;
+    if(E&&tbl&&tbl.ok){
+      function side(t){
+        var ts=t.team_id?tbl.by_id[String(t.team_id)]:null;
+        var conf=ts&&ts.conference_name?tbl.conferences[ts.conference_name]:null;
+        return {name:t.name,
+          runs_per_game:ts?ts.runs_per_game:null,
+          runs_allowed_per_game:ts?ts.runs_allowed_per_game:null,
+          games:ts?ts.games:null,
+          conference_strength:conf||null};
+      }
+      try{
+        p=E.projectCollegeGame({season:g.season,league:league,neutral_site:!!g.neutral_site,
+          home:side(g.home),away:side(g.away),market:{}});
+      }catch(err){ p={status:'BLOCKED',reason:(err&&err.message)||'engine threw'}; }
+    }
+    var ok=!!(p&&p.status==='PREDICTED');
+    out.push({sport:'cbb',key:String(g.game_id),g:g,home:g.home.name,away:g.away.name,
+      t:g.start_time?Date.parse(g.start_time):null,date:g.date,
+      p:p,mkt:{n:0,total_line:null,at:null,book:null},ok:ok,priced:false,stale:false,
+      totalGap:null,mlGapPts:null,fault:false,lean:false,warn:ok?(p.data_quality.warnings||[]):[],
+      move:null,noStarter:true});
+  });
+  CBB.projRows=out;CBB.projRowsAt=CBB.at;
+  return out;
+}
+function cbbxNumHTML(r){
+  if(!r||!r.ok)return '';
+  var m=r.p.model;
+  return '<span class="nm">'
+    +mlbxNumCell('Proj total',mlbxRuns(m.fair_total,1),'mdl')
+    +mlbxNumCell('Proj score',mlbxRuns(m.away_runs,1)+'–'+mlbxRuns(m.home_runs,1),'')
+    +mlbxNumCell('Home win',mlbxPct(m.home_win_prob,0),'')
+    +'</span>';
+}
+
 researchRegister({id:'baseball',label:'Baseball',schema:'mlbhist',cadenceMs:null,
   load:function(force,signal){return window.loadBaseball(force,signal);},
   render:function(){renderBaseball();},
@@ -15715,11 +16815,23 @@ researchRegister({id:'baseball',label:'Baseball',schema:'mlbhist',cadenceMs:null
      database with no archive installed still has a card to show, and the
      status badge should not read "waiting for the data" over a full board. */
   hasData:function(){return !!((MLBH.status&&MLBH.status.ok)
-    ||(window.MLBB&&MLBB.at&&MLBB.cards.length));},
+    ||(window.MLBB&&MLBB.at&&MLBB.cards.length)
+    ||(window.CBB&&CBB.board&&CBB.board.games&&CBB.board.games.length));},
   search:function(q){
     /* the shell's global search offers whatever this panel has already loaded;
        the panel's own box is the live one */
     var n=rsNorm(q),out=[];
+    /* GAMES FIRST. Someone typing a club name into the research search is far
+       more often asking about tonight than about a 2018 season line. */
+    try{
+      mlbxAllRows().forEach(function(r){
+        if(out.length>=5)return;
+        if(rsNorm(r.home).indexOf(n)<0&&rsNorm(r.away).indexOf(n)<0)return;
+        out.push({id:'g:'+r.sport+':'+r.key,label:r.away+' @ '+r.home,
+          sub:mlbxTag(r)+(r.ok?(' \u00b7 '+mlbxRuns(r.p.model.fair_total,1)+' projected'
+            +(r.mkt.total_line!=null?(' vs '+r.mkt.total_line+' posted'):'')):' \u00b7 no projection')});
+      });
+    }catch(_){}
     var pool=[];
     if(MLBH.search&&MLBH.search.data)pool=pool.concat(MLBH.search.data);
     if(MLBH.board&&MLBH.board.ok)pool=pool.concat(MLBH.board.data.rows);
@@ -15730,6 +16842,8 @@ researchRegister({id:'baseball',label:'Baseball',schema:'mlbhist',cadenceMs:null
     }
     return out;},
   openEntity:function(id){
+    var g=/^g:(mlb|cbb):(.+)$/.exec(String(id));
+    if(g){window.mlbxSigOpen(g[1],g[2]);return;}
     var m=/^p(\d+)$/.exec(String(id));
     if(m){window.mlbhOpenPitcher(Number(m[1]));return;}
     /* b<id> is a HITTER and p<id> is a PITCHER. The same MLB person id can be
@@ -15752,11 +16866,21 @@ researchRegister({id:'baseball',label:'Baseball',schema:'mlbhist',cadenceMs:null
   freshness:function(){
     /* The only build time this module can honestly publish is the moment an
        import was PROMOTED. It is not computed from the clock, and a schema
-       with no promoted import publishes nothing. */
+       with no promoted import publishes nothing.
+
+       loadedAt is the WHOLE PANEL'S last read, not the archive's. The card
+       and the college board are the surface a reader spends their time on and
+       neither of them lives in mlbhist; stamping the panel with the archive's
+       read alone said "last refresh never" over a card that had just landed. */
     var c=MLBH.status&&MLBH.status.ok?MLBH.status.coverage:null;
     var t=c&&c.promoted_at?new Date(c.promoted_at).getTime():NaN;
-    return {loadedAt:MLBH.at||null,builtAt:isNaN(t)?null:t};},
+    var loaded=Math.max(MLBH.at||0,(window.MLBB&&MLBB.at)||0,(window.CBB&&CBB.at)||0);
+    return {loadedAt:loaded||null,builtAt:isNaN(t)?null:t};},
   availability:function(){
+    /* The panel is reachable when EITHER half answered. An archive that is
+       not installed is a missing segment, not a dead module, and reporting it
+       as unreachable put a failure banner over a working card. */
+    if((window.MLBB&&MLBB.cards&&MLBB.cards.length)||(window.CBB&&CBB.board))return 'ok';
     if(!MLBH.status)return 'unread';
     return MLBH.status.ok?'ok':'unreachable';},
   pipeline:function(){return MLBH.meta||null;},
