@@ -72,6 +72,9 @@ globalThis.fetch = async function (url, init) {
     const r = await m.handle(new Request('https://fn.test/edgedesk_ai' + (opts.dry === false ? '' : '?dry=1'), { method: 'POST', headers: { authorization: 'Bearer user-jwt', 'content-type': 'application/json' }, body: JSON.stringify(body) }));
     const j = await r.json(); j.__ms = Date.now() - t0; return j;
   }
+  /* one spelling of a team name, for comparing a module's advantage side to
+     the model favourite without caring about case or punctuation */
+  const sideKey = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   /* ages ("27 min ago") are rendered from the clock, not carried as packet numbers */
   const numsIn = (s) => (String(s || '').replace(/\\b(19|20)\\d\\d\\b/g, ' ').replace(/\\b\\d+ (min|minutes?|h|hours?|d|days?) ago\\b/g, ' ').match(/-?\\d+(?:\\.\\d+)?/g) || []).map(Number).filter((n) => Number.isFinite(n) && Math.abs(n) > 10);
   function supported(text, packet) {
@@ -95,6 +98,14 @@ globalThis.fetch = async function (url, init) {
       investigation: j.investigation ? { questions: j.investigation.log.length, found: (j.investigation.outcomes || {}).FOUND || 0, blocked: (j.investigation.outcomes || {}).BLOCKED || 0, applied: (j.investigation.applied || []).length, requests: j.investigation.budget ? j.investigation.budget.requests_used : 0, search_calls: j.investigation.budget ? j.investigation.budget.search_calls : 0, ms: j.investigation.budget ? j.investigation.budget.ms_used : 0 } : { questions: 0, found: 0, blocked: 0, applied: 0, requests: 0, search_calls: 0, ms: 0 },
       interactions_measured: an && an.coverage ? an.coverage.measured : 0, interactions_not_measured: an && an.coverage ? an.coverage.not_measured : (an ? 0 : 10),
       decisive_factors: an ? an.decisive_factors.length : 0, counter_case: !!(an && an.counter_case),
+      /* What the counter-case is measured AGAINST, so the scorecard and the
+         assertion can both say why there is or is not one. _analyst.js can
+         rank a factor only if it is MEASURED, names a side and carries a
+         magnitude, so those three are what opposing_factors counts. */
+      model_favourite: an ? (an.model_favourite || null) : null,
+      counter_case_favours: an && an.counter_case ? an.counter_case.favours : null,
+      counter_case_opposes: !!(an && an.counter_case && an.model_favourite && sideKey(an.counter_case.favours) !== sideKey(an.model_favourite)),
+      opposing_factors: an && an.model_favourite ? (an.modules || []).filter((mo) => mo.status === 'MEASURED' && mo.advantage && mo.advantage.side && mo.advantage.magnitude != null && sideKey(mo.advantage.side) !== sideKey(an.model_favourite)).length : 0,
       scenarios: an ? an.scenarios.length : 0, conditional_estimates: an ? an.scenarios.filter((s) => s.kind === 'CONDITIONAL_ESTIMATE').length : 0,
       weather_on_file: !!(p && p.situation && p.situation.weather && !p.situation.weather.missing),
       injury_report_live: !!(p && p.injuries && p.injuries.home && p.injuries.home.live),
@@ -160,7 +171,7 @@ const rows = [
   row('  provider requests / paid', (q) => q.investigation.requests + ' / ' + q.investigation.search_calls),
   row('interactions measured / not', (q) => q.interactions_measured + ' / ' + q.interactions_not_measured),
   row('decisive factors', (q) => q.decisive_factors),
-  row('counter-case', (q) => q.counter_case ? 'yes' : 'no'),
+  row('counter-case (opposing)', (q) => (q.counter_case ? 'yes' : 'no') + ' (' + q.opposing_factors + ')'),
   row('scenarios (conditional)', (q) => q.scenarios + ' (' + q.conditional_estimates + ')'),
   row('weather on file', (q) => q.weather_on_file ? 'yes' : 'no'),
   row('injury report live', (q) => q.injury_report_live ? 'yes' : 'no'),
@@ -185,7 +196,32 @@ for (const id of ['cfb', 'nfl']) {
   const b = before.questions[id], a = after.questions[id];
   chk(id + ': the layer is off in the baseline', b.interactions_measured === 0 && b.investigation.questions === 0 && !b.conversation_state, b);
   chk(id + ': more matchup interactions are measured after', a.interactions_measured > b.interactions_measured, [b.interactions_measured, a.interactions_measured]);
-  chk(id + ': decisive factors and a counter-case exist after', a.decisive_factors >= 2 && a.counter_case, [a.decisive_factors, a.counter_case]);
+  chk(id + ': decisive factors exist after', a.decisive_factors >= 2, [b.decisive_factors, a.decisive_factors]);
+  /* A COUNTER-CASE IS A PROPERTY OF THE EVIDENCE, NOT OF THE LAYER.
+
+     This read `a.decisive_factors >= 2 && a.counter_case` for both sports and
+     went red on the NFL question: three decisive factors, no counter-case.
+     Nothing had broken. _analyst.js builds the counter-case as the strongest
+     MEASURED factor favouring the OTHER side from the model favourite, and in
+     the NFL fixture every measured factor that names a side names Buffalo —
+     the model's own favourite. There is no case against, so the layer reports
+     none, which is the answer the rest of this desk is built on: an empty
+     slot is left empty rather than filled.
+
+     Asserting that a counter-case EXISTS asks the fixture a question about its
+     own numbers. It passes or fails on which way three z-scores happen to
+     point, so it would go red again the first time a rating moved, with
+     nothing wrong. What the layer owes is the biconditional — produce one
+     whenever a rankable measured factor disagrees, never invent one when none
+     does — and that cannot rot, because both sides of it are read from the
+     same analysis object. CFB exercises the produced path (tempo_vs_depth,
+     against North Texas), NFL the refused one. */
+  chk(id + ': a counter-case exactly when a measured factor opposes the model',
+    !!a.counter_case === (a.opposing_factors > 0),
+    { opposing_factors: a.opposing_factors, counter_case: a.counter_case, model_favourite: a.model_favourite });
+  chk(id + ': and the counter-case it names does oppose the model favourite',
+    !a.counter_case || a.counter_case_opposes,
+    { counter_case_favours: a.counter_case_favours, model_favourite: a.model_favourite });
   chk(id + ': the investigation ran and every question has an outcome', a.investigation.questions > 0 && a.investigation.found + a.investigation.blocked <= a.investigation.questions, a.investigation);
   chk(id + ': at least one finding was applied to the packet', a.investigation.applied >= 1, a.investigation);
   chk(id + ': provider requests stayed inside the budget', a.investigation.requests <= 4 && a.investigation.search_calls === 0, a.investigation);
@@ -199,6 +235,11 @@ for (const id of ['cfb', 'nfl']) {
   chk(id + ': latency stays under two seconds on fixtures', a.latency_ms < 2000, a.latency_ms);
   chk(id + ': a conversation state is returned after', a.conversation_state);
 }
+/* The biconditional above is satisfied by a suite in which no counter-case is
+   ever produced, so something has to exercise the producing half. CFB does. */
+chk('the counter-case is produced somewhere, not only refused',
+  ['cfb', 'nfl'].some((id) => after.questions[id].counter_case),
+  ['cfb', 'nfl'].map((id) => ({ id: id, counter_case: after.questions[id].counter_case, opposing_factors: after.questions[id].opposing_factors })));
 chk('cfb: the live forecast was retrieved and applied', after.questions.cfb.weather_on_file && !before.questions.cfb.weather_on_file);
 chk('cfb: cover + push + lose reconcile to one', after.questions.cfb.sensitivity && Math.abs(after.questions.cfb.sensitivity.sum - 1) < 1e-3, after.questions.cfb.sensitivity);
 chk('cfb: the break-even the price requires is arithmetic on the price (-105 → 51.2%)', after.questions.cfb.sensitivity && Math.abs(after.questions.cfb.sensitivity.requires - 0.5122) < 0.002, after.questions.cfb.sensitivity);
