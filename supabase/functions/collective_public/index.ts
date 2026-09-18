@@ -559,6 +559,38 @@ function collapseModels(rows: BoardModelRow[]): (BoardModelRow & { movement_n: n
   return out;
 }
 
+/* ---8<--- THE CAPTURED CLOSE IS THE YARDSTICK — KEEP IN STEP WITH
+   collective/index.html (noCapturedClose, closelessLogRow) ---8<---
+
+   A game finished, the score landed, the Collective had captured no closing
+   line for it — and the settlement published a LOSS on it anyway, so every
+   surface reading this API showed "no captured close" on the row and a loss
+   in the record above it.
+
+   There is no number that game could have been graded against. The rule
+   this API states in its own documentation is that a pick is decided by the
+   final score against the Collective's OWN captured closing spread, that
+   the close is the yardstick so every model faces the same number, and that
+   a missing close is null, never invented. A win or a loss with no close
+   behind it is therefore not a result the Collective can stand behind, and
+   it is not served as one: the verdict is dropped and the row goes out
+   ungraded against the spread. The margin error and the Brier score are
+   untouched — neither needs a closing line — so nothing else about the
+   settlement is lost.
+
+   The durable fix is upstream of here: capture the close (the odds feed's
+   link and close steps), or have the grading routine write no pick_result
+   without one. This is the boundary refusing to hand a reader a verdict
+   with no number behind it in the meantime. */
+function atsServed(
+  pickResult: string | null | undefined, closingSpread: number | null | undefined,
+): string | null {
+  if (pickResult === null || pickResult === undefined) return null;
+  if (closingSpread === null || closingSpread === undefined) return null;
+  return pickResult;
+}
+/* ---8<--- END ---8<--- */
+
 // The paid gate lives here, in the response body: a locked row carries no
 // projection numbers at all (Section 5: the gate is in the API, not the DOM).
 async function buildGames(
@@ -619,8 +651,11 @@ async function buildGames(
                 projected_total: m.projected_total, home_win_probability: m.home_win_prob,
                 line_at_submission: m.line_at_submission, cover_probability: m.cover_prob,
                 received_at: m.received_at, movement_n: m.movement_n,
+                // the game's own captured close decides whether an ATS
+                // verdict on it can be served at all — see atsServed
                 grade: m.pick_result !== null || m.margin_error !== null || m.brier !== null
-                  ? { pick_result: m.pick_result, margin_error: m.margin_error, brier: m.brier }
+                  ? { pick_result: atsServed(m.pick_result, g.closing_spread),
+                      margin_error: m.margin_error, brier: m.brier }
                   : null }
             : { creator_slug: m.creator_slug, model_slug: m.model_slug, locked: true,
                 movement_n: m.movement_n }),
@@ -1306,7 +1341,10 @@ Deno.serve(async (req) => {
         recent_graded: log.map((g) => ({
           game_id: g.game_id, label: g.label, kickoff_at: g.kickoff_at, week: g.week,
           pick_side: g.pick_side, closing_spread: g.closing_spread, final: g.final,
-          pick_result: g.pick_result, margin_error: g.margin_error, brier: g.brier,
+          // the row carries its own close, so the contradiction — a verdict
+          // with no closing line under it — is resolved on the row itself
+          pick_result: atsServed(g.pick_result, g.closing_spread),
+          margin_error: g.margin_error, brier: g.brier,
           movement_n: g.movement_n,
         })),
       }, 200, FREE_CACHE);

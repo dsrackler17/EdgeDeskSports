@@ -1612,13 +1612,17 @@ chk('the page defines the grading functions this section tests',
    'serverGrade', 'rowGrade', 'modelRecord', 'modelCoverage', 'modelsInGames',
    'rankBoard', 'localRankings', 'localGameLog', 'shownRecord', 'hasRecord',
    'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
-   'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames'
+   'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames',
+   'noCapturedClose', 'closelessLogRow', 'markCloselessGraded', 'closelessNote',
+   'serverRecordFor', 'logTally', 'atsReason'
   ].every(function (n) { return typeof sandbox[n] === 'function'; }),
   { missing: ['atsResult', 'finalResult', 'projectedMargin', 'gradableRow', 'localGrade',
       'serverGrade', 'rowGrade', 'modelRecord', 'modelCoverage', 'modelsInGames',
       'rankBoard', 'localRankings', 'localGameLog', 'shownRecord', 'hasRecord',
       'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
-      'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames']
+      'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames',
+      'noCapturedClose', 'closelessLogRow', 'markCloselessGraded', 'closelessNote',
+      'serverRecordFor', 'logTally', 'atsReason']
       .filter(function (n) { return typeof sandbox[n] !== 'function'; }) });
 
 if (typeof sandbox.localGrade === 'function') try {
@@ -1772,6 +1776,114 @@ if (typeof sandbox.localGrade === 'function') try {
         && untouched.rec === srv && untouched.live === false
         && noLocal.rec === null && Object.keys(loc).length === 1;
     })(), 'nothing built on the placeholder is shown, not even as a fallback');
+
+  /* ---- a settled WIN or LOSS on a game with no captured close ----------
+     A Thursday night game finished, the score landed, the Collective had
+     captured no closing line for it — the board said "no captured close",
+     which is the honest answer — and the settlement run graded it anyway,
+     so the same game read "no captured close" on its row and moved the
+     model's record by a loss. There is no number it could have been graded
+     against: the published rule is that such a game has no against-the-
+     spread result for anybody and is counted by nobody. The page applied
+     that to its own grading and then took a win or a loss on the same game
+     from the server without asking. */
+  chk('a game with a final and no captured close is named as such',
+    G.noCapturedClose(gm({ hs: 27, as: 13, close: null })) === true
+      && G.noCapturedClose(gm({ hs: 27, as: 13, close: -7 })) === false
+      && G.noCapturedClose(gm({ result: null })) === false
+      && G.noCapturedClose(gm({ hs: 0, as: 0, close: null })) === false,
+    'a game with no final is not a game with no close, and 0-0 is not a final');
+  chk('a settled ATS result on a game with no captured close is set aside',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away', projected_spread: 2.5,
+          home_win_probability: 0.4,
+          grade: { pick_result: 'loss', margin_error: 1.5, brier: 0.36 } })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      return gr && gr.pick_result === null
+        && near(gr.margin_error, 1.5) && near(gr.brier, 0.36);
+    })(), 'the margin error and the brier need no close; the ATS result does');
+  chk('and it is counted by nobody, exactly as an ungraded game is',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away', projected_spread: 2.5,
+          home_win_probability: 0.4,
+          grade: { pick_result: 'loss', margin_error: 1.5, brier: 0.36 } })] });
+      var rec = G.modelRecord([g], 'a', 'b');
+      return rec.losses === 0 && rec.wins === 0 && rec.graded === 0
+        && rec.win_pct === null && rec.margin_n === 1 && rec.brier_n === 1
+        && rec.ats_missing.no_close === 1 && rec.games === 1;
+    })(), 'a record that counts it disagrees with the row printed under it');
+  chk('the row says WHY it has no result, over the settlement run’s answer',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away',
+          grade: { pick_result: 'loss', margin_error: null, brier: null } })] });
+      return G.atsReason(g, g.models[0]) === 'no_close';
+    })());
+  chk('a settled grade on a game that HAS a close is untouched',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: -7,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'home',
+          grade: { pick_result: 'win', margin_error: 1.5, brier: null } })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      var rec = G.modelRecord([g], 'a', 'b');
+      return gr && gr.pick_result === 'win' && gr.source === 'server'
+        && rec.wins === 1 && rec.graded === 1 && G.atsReason(g, g.models[0]) === null;
+    })(), 'the defence must not cost the settled grades that are sound');
+  chk('a server log row with a verdict and no close is shown ungraded, not lost',
+    (function () {
+      var row = { label: 'AWAY @ HOME', final: '13 - 27', closing_spread: null,
+        pick_result: 'loss', margin_error: 1.5, brier: 0.36 };
+      var out = G.serverRecordFor({ record: { graded: 3, wins: 2, losses: 1, pushes: 0 },
+        recent_graded: [row] }, [], 'a', 'b');
+      var t = G.logTally(out.log);
+      return out.closeless === 1 && out.rec === null && out.log.length === 1
+        && out.log[0].pick_result === null && out.log[0].ats_reason === 'no_close'
+        && near(out.log[0].margin_error, 1.5)
+        && t.losses === 0 && t.ungraded === 1 && t.ats_missing.no_close === 1
+        && t.margin_n === 1 && row.pick_result === 'loss';
+    })(), 'the game was played and belongs on the log; only its verdict goes');
+  chk('a clean server log and record are handed back as they are',
+    (function () {
+      var rec = { graded: 2, wins: 1, losses: 1, pushes: 0 };
+      var out = G.serverRecordFor({ record: rec,
+        recent_graded: [{ final: '13 - 27', closing_spread: -7, pick_result: 'loss' },
+                        { final: '30 - 20', closing_spread: null, pick_result: null }] },
+        [], 'a', 'b');
+      return out.closeless === 0 && out.rec === rec && out.log.length === 2
+        && out.log[0].pick_result === 'loss';
+    })(), 'a row with no verdict at all was never the problem');
+  chk('the model’s server record goes with the grades it was built from',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away',
+          grade: { pick_result: 'loss', margin_error: 1.5, brier: null } })] });
+      var out = G.serverRecordFor({ record: { graded: 3, wins: 2, losses: 1, pushes: 0 },
+        recent_graded: [] }, [g], 'a', 'b');
+      var other = G.serverRecordFor({ record: { graded: 3, wins: 2, losses: 1, pushes: 0 },
+        recent_graded: [] }, [g], 'a', 'c');
+      return out.closeless === 1 && out.rec === null && other.closeless === 0;
+    })());
+  chk('shownRecord sets a server record aside for a model graded with no close',
+    (function () {
+      var srv = { graded: 3, wins: 2, losses: 1, pushes: 0 };
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away',
+          grade: { pick_result: 'loss', margin_error: 1.5, brier: null } })] });
+      var loc = { 'a/b': { graded: 2, wins: 2, losses: 0, pushes: 0, margin_n: 3 },
+        'a/c': { graded: 2, wins: 1, losses: 1, pushes: 0, margin_n: 2 } };
+      G.markCloselessGraded(loc, [g]);
+      var tainted = G.shownRecord(srv, loc, 'a', 'b');
+      var untouched = G.shownRecord(srv, loc, 'a', 'c');
+      return tainted.rec === loc['a/b'] && tainted.live === true
+        && untouched.rec === srv && untouched.live === false
+        && Object.keys(loc).length === 2;
+    })(), 'the record above the log has to be counting the same games as the log');
+  chk('the note says which rule set the record aside, and for how many games',
+    /no close/.test(G.closelessNote(1)) && /captured closing line/.test(G.closelessNote(1))
+      && /2 of these models/.test(G.closelessNote(2, 'these models&rsquo;').replace(/&rsquo;/g, ''))
+      && G.closelessNote(0) === '');
 
   /* ---- the projected margin ------------------------------------------ */
   chk('a home-stated spread is the NEGATION of the projected home margin',

@@ -384,6 +384,13 @@ jobs:
       - name: A model's cumulative ATS record equals the sum of its games
         run: node tools/collective/reconcile_ats.test.js
 
+      # A finished game with no captured close has no against-the-spread
+      # result for anybody — and the page and the API have to agree about
+      # that, or a reader sees "no captured close" on a row and a loss in the
+      # record above it. Both implementations, one table of cases.
+      - name: A settled verdict with no closing line behind it is served by nobody
+        run: node tools/collective/closeless_grades.test.js
+
       # DEEP ENGINE, SIMPLE ANSWER. The presentation layer that turns the
       # deterministic verdict into the 5-second card and the publisher brief.
       # One canonical library is inlined into three hosts; drift fails here.
