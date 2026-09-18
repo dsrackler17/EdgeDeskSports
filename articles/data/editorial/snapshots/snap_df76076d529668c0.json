@@ -1,0 +1,3766 @@
+{
+  "schema": "edgedesk_pregame_snapshot_v1",
+  "snapshot_id": "snap_df76076d529668c0",
+  "article_id": "cfb-401856811",
+  "key": "CFB:401856811",
+  "game_id": "401856811",
+  "sport": "CFB",
+  "season": 2026,
+  "week": 3,
+  "captured_at": "2026-09-18T21:20:21.805Z",
+  "kickoff": "2026-09-19T00:00:00.000Z",
+  "generation_version": "editorial_v1",
+  "game": {
+    "sport": "CFB",
+    "game_id": "401856811",
+    "home": "Texas Tech",
+    "away": "Houston",
+    "home_short": null,
+    "away_short": null,
+    "kickoff": "2026-09-19T00:00:00.000Z",
+    "when_label": "2026-09-19 00:00 UTC",
+    "venue": "Jones AT&T Stadium",
+    "neutral_site": false,
+    "conference_line": "Big 12 conference game",
+    "week": 3,
+    "season": 2026,
+    "network": null
+  },
+  "featured": {
+    "editorial_priority": 50.1,
+    "status": "featured",
+    "window_label": "Friday night",
+    "window_key": "friday_night",
+    "national_window": true,
+    "stage": "regular",
+    "stage_label": null,
+    "rivalry_label": null,
+    "home_rank": 10,
+    "away_rank": 37,
+    "rank_pool": 136,
+    "model_disagreement": 4.8,
+    "manual_override": null,
+    "components": [
+      {
+        "key": "national_window",
+        "label": "Friday night kickoff",
+        "points": 22,
+        "tier": "VERIFIED_FACT",
+        "detail": "kickoff 20:00 ET on Fri — converted from the kickoff timestamp"
+      },
+      {
+        "key": "near_standalone",
+        "label": "One of 2 games in its window",
+        "points": 5,
+        "tier": "CALCULATED_METRIC",
+        "detail": null
+      },
+      {
+        "key": "ranking_weight",
+        "label": "One team inside EdgeDesk’s top 10",
+        "points": 12,
+        "tier": "EDGEDESK_MODEL",
+        "detail": "EdgeDesk rank — Houston #37, Texas Tech #10 of 136 (sport rule constant). EdgeDesk’s own rating, not a poll."
+      },
+      {
+        "key": "familiarity",
+        "label": "Conference game",
+        "points": 5,
+        "tier": "VERIFIED_FACT",
+        "detail": null
+      },
+      {
+        "key": "model_disagreement",
+        "label": "EdgeDesk differs from the market by 4.8 points",
+        "points": 6.1,
+        "tier": "EDGEDESK_MODEL",
+        "detail": "Texas Tech -14.3 against Texas Tech -9.5 at captured (stale 131h) · FanDuel — RESEARCH · the gap earns 6.1 of a possible 15.4 because the price is current. A gap alone orders no research and implies no expected value."
+      }
+    ]
+  },
+  "model": {
+    "priced": true,
+    "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+    "fair_spread": 14.30437790211803,
+    "fair_spread_text": "Texas Tech -14.3",
+    "favourite": "Texas Tech",
+    "underdog": "Houston",
+    "margin": "14.3",
+    "total": "54.8",
+    "total_n": 54.8,
+    "score": {
+      "away": {
+        "team": "Houston",
+        "points": "20"
+      },
+      "home": {
+        "team": "Texas Tech",
+        "points": "35"
+      },
+      "note": "Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
+    },
+    "win_prob": {
+      "home": "Texas Tech",
+      "away": "Houston",
+      "home_pct": 83,
+      "away_pct": 17,
+      "home_text": "83%",
+      "away_text": "17%",
+      "bounded": false,
+      "bounded_note": null,
+      "favourite": "Texas Tech",
+      "favourite_pct": 83,
+      "favourite_text": "83%"
+    },
+    "moneyline": null,
+    "outcome_range": {
+      "basis_team": "Texas Tech",
+      "p10": "-8.7",
+      "median": "+13.3",
+      "p90": "+35.3",
+      "sigma": "15.3",
+      "volatility": "60.06",
+      "volatility_discriminates": false,
+      "note": "Quoted from Texas Tech’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
+    },
+    "confidence_pct": 73,
+    "confidence_absent_reason": null,
+    "status": "RESEARCH",
+    "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+    "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet.",
+    "absent_reason": null
+  },
+  "market": {
+    "available": true,
+    "model": "Texas Tech -14.3",
+    "market": "Texas Tech -9.5",
+    "difference": "4.8 points",
+    "difference_n": 4.804377902118031,
+    "total_model": "54.8",
+    "total_market": "52.5",
+    "book": "captured (stale 131h) · FanDuel",
+    "captured": "2026-09-13T10:00:02.682+00:00",
+    "capture_age": "131 hours old",
+    "stale": false,
+    "classification": "RESEARCH",
+    "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+    "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+  },
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "drivers": {
+    "rows": [
+      {
+        "points": "+9.6",
+        "points_n": 9.606676310000001,
+        "text": "Texas Tech is the better football team by 9.6 points on opponent-adjusted results — but about 74% of that rating is still last season carried forward, and in a portal era last season is a different team",
+        "favours": "Texas Tech"
+      },
+      {
+        "points": "+4.1",
+        "points_n": 4.082,
+        "text": "Playing at Texas Tech is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality",
+        "favours": "Texas Tech"
+      },
+      {
+        "points": "+0.6",
+        "points_n": 0.615102348725,
+        "text": "Stylistically the matchup favours Texas Tech by 0.6 points: field position",
+        "favours": "Texas Tech"
+      }
+    ],
+    "basis": "Points are the engine’s own contributions to the projected spread, from Texas Tech’s perspective, and they sum toward it.",
+    "excluded": "Player quality, position-group ratings and scheme fit are NOT in this number. Neither has cleared walk-forward validation, so neither is allowed to move a priced figure — they appear below as research context and nowhere else.",
+    "empty": null
+  },
+  "matchups": [
+    {
+      "title": "Houston pass offense vs Texas Tech pass defense",
+      "att": {
+        "team": "Houston",
+        "label": "pass offense",
+        "v": "50.7",
+        "rank": "#26 of 67",
+        "note": null
+      },
+      "def": {
+        "team": "Texas Tech",
+        "label": "pass defense",
+        "v": "59.1",
+        "rank": "#8 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Houston’s pass offense rates 50.7 (#26 of 67) against Texas Tech’s pass defense at 59.1 (#8 of 68). Texas Tech’s unit stands higher among its own position group, by 18 places."
+    },
+    {
+      "title": "Houston run offense vs Texas Tech run defense",
+      "att": {
+        "team": "Houston",
+        "label": "run offense",
+        "v": "55.6",
+        "rank": "#17 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Texas Tech",
+        "label": "run defense",
+        "v": "59.2",
+        "rank": "#13 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Houston’s run offense rates 55.6 (#17 of 68) against Texas Tech’s run defense at 59.2 (#13 of 68). Texas Tech’s unit stands higher among its own position group, by 4 places."
+    },
+    {
+      "title": "Texas Tech pass offense vs Houston pass defense",
+      "att": {
+        "team": "Texas Tech",
+        "label": "pass offense",
+        "v": "49.3",
+        "rank": "#36 of 67",
+        "note": null
+      },
+      "def": {
+        "team": "Houston",
+        "label": "pass defense",
+        "v": "49.9",
+        "rank": "#38 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Texas Tech’s pass offense rates 49.3 (#36 of 67) against Houston’s pass defense at 49.9 (#38 of 68). Texas Tech’s unit stands higher among its own position group, by 2 places."
+    },
+    {
+      "title": "Texas Tech run offense vs Houston run defense",
+      "att": {
+        "team": "Texas Tech",
+        "label": "run offense",
+        "v": "45.8",
+        "rank": "#49 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Houston",
+        "label": "run defense",
+        "v": "60.2",
+        "rank": "#10 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Texas Tech’s run offense rates 45.8 (#49 of 68) against Houston’s run defense at 60.2 (#10 of 68). Houston’s unit stands higher among its own position group, by 39 places."
+    },
+    {
+      "title": "Houston QB room vs Texas Tech secondary",
+      "att": {
+        "team": "Houston",
+        "label": "QB room",
+        "v": "59.0",
+        "rank": "#20 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Texas Tech",
+        "label": "secondary",
+        "v": "62.5",
+        "rank": "#1 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Houston’s QB room rates 59.0 (#20 of 68) against Texas Tech’s secondary at 62.5 (#1 of 68). Texas Tech’s unit stands higher among its own position group, by 19 places."
+    },
+    {
+      "title": "Texas Tech QB room vs Houston secondary",
+      "att": {
+        "team": "Texas Tech",
+        "label": "QB room",
+        "v": "57.2",
+        "rank": "#39 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Houston",
+        "label": "secondary",
+        "v": "51.7",
+        "rank": "#41 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Texas Tech’s QB room rates 57.2 (#39 of 68) against Houston’s secondary at 51.7 (#41 of 68). Texas Tech’s unit stands higher among its own position group, by 2 places."
+    },
+    {
+      "title": "Houston offensive line vs Texas Tech defensive line",
+      "att": {
+        "team": "Houston",
+        "label": "offensive line",
+        "v": "52.3",
+        "rank": "#32 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Texas Tech",
+        "label": "defensive line",
+        "v": "62.2",
+        "rank": "#2 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Houston’s offensive line rates 52.3 (#32 of 68) against Texas Tech’s defensive line at 62.2 (#2 of 68). Texas Tech’s unit stands higher among its own position group, by 30 places."
+    },
+    {
+      "title": "Texas Tech offensive line vs Houston defensive line",
+      "att": {
+        "team": "Texas Tech",
+        "label": "offensive line",
+        "v": "54.1",
+        "rank": "#21 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Houston",
+        "label": "defensive line",
+        "v": "54.0",
+        "rank": "#21 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Texas Tech’s offensive line rates 54.1 (#21 of 68) against Houston’s defensive line at 54.0 (#21 of 68). The two stand level."
+    },
+    {
+      "title": "Houston running backs vs Texas Tech linebackers",
+      "att": {
+        "team": "Houston",
+        "label": "running backs",
+        "v": "54.7",
+        "rank": "#34 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Texas Tech",
+        "label": "linebackers",
+        "v": "65.0",
+        "rank": "#1 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Houston’s running backs rates 54.7 (#34 of 68) against Texas Tech’s linebackers at 65.0 (#1 of 68). Texas Tech’s unit stands higher among its own position group, by 33 places."
+    },
+    {
+      "title": "Texas Tech running backs vs Houston linebackers",
+      "att": {
+        "team": "Texas Tech",
+        "label": "running backs",
+        "v": "56.7",
+        "rank": "#6 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Houston",
+        "label": "linebackers",
+        "v": "53.1",
+        "rank": "#27 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Texas Tech’s running backs rates 56.7 (#6 of 68) against Houston’s linebackers at 53.1 (#27 of 68). Texas Tech’s unit stands higher among its own position group, by 21 places."
+    },
+    {
+      "title": "Houston receivers vs Texas Tech secondary",
+      "att": {
+        "team": "Houston",
+        "label": "receivers",
+        "v": "54.1",
+        "rank": "#34 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Texas Tech",
+        "label": "secondary",
+        "v": "62.5",
+        "rank": "#1 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Houston’s receivers rates 54.1 (#34 of 68) against Texas Tech’s secondary at 62.5 (#1 of 68). Texas Tech’s unit stands higher among its own position group, by 33 places."
+    },
+    {
+      "title": "Texas Tech receivers vs Houston secondary",
+      "att": {
+        "team": "Texas Tech",
+        "label": "receivers",
+        "v": "54.2",
+        "rank": "#32 of 68",
+        "note": null
+      },
+      "def": {
+        "team": "Houston",
+        "label": "secondary",
+        "v": "51.7",
+        "rank": "#41 of 68",
+        "note": null
+      },
+      "complete": true,
+      "read": "Texas Tech’s receivers rates 54.2 (#32 of 68) against Houston’s secondary at 51.7 (#41 of 68). Texas Tech’s unit stands higher among its own position group, by 9 places."
+    }
+  ],
+  "advantages": {
+    "away": [
+      {
+        "k": "Run offense",
+        "rank_gap": 32,
+        "gap": 9.8,
+        "lead": "Houston",
+        "trail": "Texas Tech",
+        "lead_cell": "55.6 · #17 of 68",
+        "trail_cell": "45.8 · #49 of 68",
+        "text": "Houston 55.6 (#17 of 68) vs Texas Tech 45.8 (#49 of 68) — 32 places on the national board."
+      },
+      {
+        "k": "Offense",
+        "rank_gap": 24,
+        "gap": 5,
+        "lead": "Houston",
+        "trail": "Texas Tech",
+        "lead_cell": "53.8 · #19 of 68",
+        "trail_cell": "48.8 · #43 of 68",
+        "text": "Houston 53.8 (#19 of 68) vs Texas Tech 48.8 (#43 of 68) — 24 places on the national board."
+      },
+      {
+        "k": "QB room",
+        "rank_gap": 19,
+        "gap": 1.8,
+        "lead": "Houston",
+        "trail": "Texas Tech",
+        "lead_cell": "59.0 · #20 of 68",
+        "trail_cell": "57.2 · #39 of 68",
+        "text": "Houston 59.0 (#20 of 68) vs Texas Tech 57.2 (#39 of 68) — 19 places on the national board."
+      },
+      {
+        "k": "Pass offense",
+        "rank_gap": 10,
+        "gap": 1.4,
+        "lead": "Houston",
+        "trail": "Texas Tech",
+        "lead_cell": "50.7 · #26 of 67",
+        "trail_cell": "49.3 · #36 of 67",
+        "text": "Houston 50.7 (#26 of 67) vs Texas Tech 49.3 (#36 of 67) — 10 places on the national board."
+      },
+      {
+        "k": "Run defense",
+        "rank_gap": 3,
+        "gap": 1,
+        "lead": "Houston",
+        "trail": "Texas Tech",
+        "lead_cell": "60.2 · #10 of 68",
+        "trail_cell": "59.2 · #13 of 68",
+        "text": "Houston 60.2 (#10 of 68) vs Texas Tech 59.2 (#13 of 68) — 3 places on the national board."
+      }
+    ],
+    "home": [
+      {
+        "k": "Scheme fit",
+        "rank_gap": 50,
+        "gap": 4.3,
+        "lead": "Texas Tech",
+        "trail": "Houston",
+        "lead_cell": "53.4 · #4 of 68",
+        "trail_cell": "49.1 · #54 of 68",
+        "text": "Texas Tech 53.4 (#4 of 68) vs Houston 49.1 (#54 of 68) — 50 places on the national board."
+      },
+      {
+        "k": "Secondary",
+        "rank_gap": 40,
+        "gap": 10.8,
+        "lead": "Texas Tech",
+        "trail": "Houston",
+        "lead_cell": "62.5 · #1 of 68",
+        "trail_cell": "51.7 · #41 of 68",
+        "text": "Texas Tech 62.5 (#1 of 68) vs Houston 51.7 (#41 of 68) — 40 places on the national board."
+      },
+      {
+        "k": "Depth",
+        "rank_gap": 34,
+        "gap": 0.8,
+        "lead": "Texas Tech",
+        "trail": "Houston",
+        "lead_cell": "53.2 · #8 of 68",
+        "trail_cell": "52.4 · #42 of 68",
+        "text": "Texas Tech 53.2 (#8 of 68) vs Houston 52.4 (#42 of 68) — 34 places on the national board."
+      },
+      {
+        "k": "Pass defense",
+        "rank_gap": 30,
+        "gap": 9.2,
+        "lead": "Texas Tech",
+        "trail": "Houston",
+        "lead_cell": "59.1 · #8 of 68",
+        "trail_cell": "49.9 · #38 of 68",
+        "text": "Texas Tech 59.1 (#8 of 68) vs Houston 49.9 (#38 of 68) — 30 places on the national board."
+      },
+      {
+        "k": "Running backs",
+        "rank_gap": 28,
+        "gap": 2,
+        "lead": "Texas Tech",
+        "trail": "Houston",
+        "lead_cell": "56.7 · #6 of 68",
+        "trail_cell": "54.7 · #34 of 68",
+        "text": "Texas Tech 56.7 (#6 of 68) vs Houston 54.7 (#34 of 68) — 28 places on the national board."
+      }
+    ],
+    "measured": [],
+    "measured_note": null,
+    "unproven": [],
+    "note": "An advantage is only claimed where BOTH teams carry a national rank in that category — the national rank is the one scale on which a QB room and a run defence are comparable. A category where one side is unrated appears here as a measurement and as uncertainty, never as an edge."
+  },
+  "compare": {
+    "cols": [
+      "Houston",
+      "Texas Tech"
+    ],
+    "groups": [
+      {
+        "title": "Team rating",
+        "rows": [
+          {
+            "cat": "overall",
+            "k": "ETSR (overall)",
+            "note": "points vs an average FBS team, neutral field",
+            "a": {
+              "v": "+1.4",
+              "n": 1.35,
+              "rank": "#37 of 68",
+              "rank_n": 37,
+              "note": null
+            },
+            "h": {
+              "v": "+7.2",
+              "n": 7.15,
+              "rank": "#10 of 68",
+              "rank_n": 10,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 5.8,
+              "rank_gap": 27
+            }
+          },
+          {
+            "cat": "talent",
+            "k": "Talent",
+            "note": null,
+            "a": {
+              "v": "56.1",
+              "n": 56.1,
+              "rank": "#24 of 68",
+              "rank_n": 24,
+              "note": null
+            },
+            "h": {
+              "v": "69.8",
+              "n": 69.8,
+              "rank": "#2 of 68",
+              "rank_n": 2,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 13.7,
+              "rank_gap": 22
+            }
+          },
+          {
+            "cat": "performance",
+            "k": "Performance",
+            "note": null,
+            "a": {
+              "v": "56.6",
+              "n": 56.6,
+              "rank": "#20 of 68",
+              "rank_n": 20,
+              "note": null
+            },
+            "h": {
+              "v": "56.9",
+              "n": 56.9,
+              "rank": "#19 of 68",
+              "rank_n": 19,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.3,
+              "rank_gap": 1
+            }
+          },
+          {
+            "cat": "scheme_fit",
+            "k": "Scheme fit",
+            "note": "personnel against this team’s own tendencies",
+            "a": {
+              "v": "49.1",
+              "n": 49.1,
+              "rank": "#54 of 68",
+              "rank_n": 54,
+              "note": null
+            },
+            "h": {
+              "v": "53.4",
+              "n": 53.4,
+              "rank": "#4 of 68",
+              "rank_n": 4,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 4.3,
+              "rank_gap": 50
+            }
+          }
+        ]
+      },
+      {
+        "title": "Units",
+        "rows": [
+          {
+            "cat": "offense",
+            "k": "Offense",
+            "note": null,
+            "a": {
+              "v": "53.8",
+              "n": 53.8,
+              "rank": "#19 of 68",
+              "rank_n": 19,
+              "note": null
+            },
+            "h": {
+              "v": "48.8",
+              "n": 48.8,
+              "rank": "#43 of 68",
+              "rank_n": 43,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 5,
+              "rank_gap": 24
+            }
+          },
+          {
+            "cat": "defense",
+            "k": "Defense",
+            "note": null,
+            "a": {
+              "v": "53.2",
+              "n": 53.2,
+              "rank": "#24 of 68",
+              "rank_n": 24,
+              "note": null
+            },
+            "h": {
+              "v": "57.6",
+              "n": 57.6,
+              "rank": "#6 of 68",
+              "rank_n": 6,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 4.4,
+              "rank_gap": 18
+            }
+          },
+          {
+            "cat": "special_teams",
+            "k": "Special teams",
+            "note": null,
+            "a": {
+              "v": "49.5",
+              "n": 49.5,
+              "rank": "#50 of 65",
+              "rank_n": 50,
+              "note": null
+            },
+            "h": {
+              "v": "49.5",
+              "n": 49.5,
+              "rank": "#51 of 65",
+              "rank_n": 51,
+              "note": null
+            },
+            "edge": {
+              "side": "even",
+              "gap": 0,
+              "rank_gap": 1
+            }
+          },
+          {
+            "cat": "run_offense",
+            "k": "Run offense",
+            "note": null,
+            "a": {
+              "v": "55.6",
+              "n": 55.6,
+              "rank": "#17 of 68",
+              "rank_n": 17,
+              "note": null
+            },
+            "h": {
+              "v": "45.8",
+              "n": 45.8,
+              "rank": "#49 of 68",
+              "rank_n": 49,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 9.8,
+              "rank_gap": 32
+            }
+          },
+          {
+            "cat": "pass_offense",
+            "k": "Pass offense",
+            "note": null,
+            "a": {
+              "v": "50.7",
+              "n": 50.7,
+              "rank": "#26 of 67",
+              "rank_n": 26,
+              "note": null
+            },
+            "h": {
+              "v": "49.3",
+              "n": 49.3,
+              "rank": "#36 of 67",
+              "rank_n": 36,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 1.4,
+              "rank_gap": 10
+            }
+          },
+          {
+            "cat": "run_defense",
+            "k": "Run defense",
+            "note": null,
+            "a": {
+              "v": "60.2",
+              "n": 60.2,
+              "rank": "#10 of 68",
+              "rank_n": 10,
+              "note": null
+            },
+            "h": {
+              "v": "59.2",
+              "n": 59.2,
+              "rank": "#13 of 68",
+              "rank_n": 13,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 1,
+              "rank_gap": 3
+            }
+          },
+          {
+            "cat": "pass_defense",
+            "k": "Pass defense",
+            "note": null,
+            "a": {
+              "v": "49.9",
+              "n": 49.9,
+              "rank": "#38 of 68",
+              "rank_n": 38,
+              "note": null
+            },
+            "h": {
+              "v": "59.1",
+              "n": 59.1,
+              "rank": "#8 of 68",
+              "rank_n": 8,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 9.2,
+              "rank_gap": 30
+            }
+          }
+        ]
+      },
+      {
+        "title": "Position groups",
+        "rows": [
+          {
+            "cat": "qb",
+            "k": "QB room",
+            "note": null,
+            "a": {
+              "v": "59.0",
+              "n": 59,
+              "rank": "#20 of 68",
+              "rank_n": 20,
+              "note": null
+            },
+            "h": {
+              "v": "57.2",
+              "n": 57.2,
+              "rank": "#39 of 68",
+              "rank_n": 39,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 1.8,
+              "rank_gap": 19
+            }
+          },
+          {
+            "cat": "ol",
+            "k": "Offensive line",
+            "note": null,
+            "a": {
+              "v": "52.3",
+              "n": 52.3,
+              "rank": "#32 of 68",
+              "rank_n": 32,
+              "note": null
+            },
+            "h": {
+              "v": "54.1",
+              "n": 54.1,
+              "rank": "#21 of 68",
+              "rank_n": 21,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 1.8,
+              "rank_gap": 11
+            }
+          },
+          {
+            "cat": "wr",
+            "k": "Receivers",
+            "note": null,
+            "a": {
+              "v": "54.1",
+              "n": 54.1,
+              "rank": "#34 of 68",
+              "rank_n": 34,
+              "note": null
+            },
+            "h": {
+              "v": "54.2",
+              "n": 54.2,
+              "rank": "#32 of 68",
+              "rank_n": 32,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.1,
+              "rank_gap": 2
+            }
+          },
+          {
+            "cat": "te",
+            "k": "Tight ends",
+            "note": "rated by the player layer; the board publishes no national TE rank",
+            "a": {
+              "v": "54.0",
+              "n": 54,
+              "rank": null,
+              "rank_n": null,
+              "note": "rated, held out of the national rank by the confidence gate"
+            },
+            "h": {
+              "v": "54.5",
+              "n": 54.5,
+              "rank": null,
+              "rank_n": null,
+              "note": "rated, held out of the national rank by the confidence gate"
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.5,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "rb",
+            "k": "Running backs",
+            "note": null,
+            "a": {
+              "v": "54.7",
+              "n": 54.7,
+              "rank": "#34 of 68",
+              "rank_n": 34,
+              "note": null
+            },
+            "h": {
+              "v": "56.7",
+              "n": 56.7,
+              "rank": "#6 of 68",
+              "rank_n": 6,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 2,
+              "rank_gap": 28
+            }
+          },
+          {
+            "cat": "dl",
+            "k": "Defensive line",
+            "note": null,
+            "a": {
+              "v": "54.0",
+              "n": 54,
+              "rank": "#21 of 68",
+              "rank_n": 21,
+              "note": null
+            },
+            "h": {
+              "v": "62.2",
+              "n": 62.2,
+              "rank": "#2 of 68",
+              "rank_n": 2,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 8.2,
+              "rank_gap": 19
+            }
+          },
+          {
+            "cat": "lb",
+            "k": "Linebackers",
+            "note": null,
+            "a": {
+              "v": "53.1",
+              "n": 53.1,
+              "rank": "#27 of 68",
+              "rank_n": 27,
+              "note": null
+            },
+            "h": {
+              "v": "65.0",
+              "n": 65,
+              "rank": "#1 of 68",
+              "rank_n": 1,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 11.9,
+              "rank_gap": 26
+            }
+          },
+          {
+            "cat": "secondary",
+            "k": "Secondary",
+            "note": null,
+            "a": {
+              "v": "51.7",
+              "n": 51.7,
+              "rank": "#41 of 68",
+              "rank_n": 41,
+              "note": null
+            },
+            "h": {
+              "v": "62.5",
+              "n": 62.5,
+              "rank": "#1 of 68",
+              "rank_n": 1,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 10.8,
+              "rank_gap": 40
+            }
+          },
+          {
+            "cat": "k_room",
+            "k": "Kicking",
+            "note": null,
+            "a": {
+              "v": "56.0",
+              "n": 56,
+              "rank": "#40 of 68",
+              "rank_n": 40,
+              "note": null
+            },
+            "h": {
+              "v": "56.2",
+              "n": 56.2,
+              "rank": "#36 of 68",
+              "rank_n": 36,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.2,
+              "rank_gap": 4
+            }
+          }
+        ]
+      },
+      {
+        "title": "Roster shape",
+        "rows": [
+          {
+            "cat": "depth",
+            "k": "Depth",
+            "note": "quality behind the projected starters",
+            "a": {
+              "v": "52.4",
+              "n": 52.4,
+              "rank": "#42 of 68",
+              "rank_n": 42,
+              "note": null
+            },
+            "h": {
+              "v": "53.2",
+              "n": 53.2,
+              "rank": "#8 of 68",
+              "rank_n": 8,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.8,
+              "rank_gap": 34
+            }
+          },
+          {
+            "cat": "continuity",
+            "k": "Continuity",
+            "note": "how much of last season is still here",
+            "a": {
+              "v": "48.9",
+              "n": 48.9,
+              "rank": "#33 of 68",
+              "rank_n": 33,
+              "note": null
+            },
+            "h": {
+              "v": "51.7",
+              "n": 51.7,
+              "rank": "#23 of 68",
+              "rank_n": 23,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 2.8,
+              "rank_gap": 10
+            }
+          }
+        ]
+      }
+    ],
+    "one_sided_team": null,
+    "one_sided_note": null
+  },
+  "uncertainty": {
+    "items": [
+      {
+        "sev": "HIGH",
+        "label": "Houston — low sample size",
+        "text": "1.45 FBS-equivalent games played.",
+        "widening": null
+      },
+      {
+        "sev": "HIGH",
+        "label": "Houston — fcs dominated sample",
+        "text": "50% of games were against a pooled non-FBS opponent. Most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests",
+        "widening": null
+      },
+      {
+        "sev": "HIGH",
+        "label": "Texas Tech — low sample size",
+        "text": "1.45 FBS-equivalent games played.",
+        "widening": null
+      },
+      {
+        "sev": "HIGH",
+        "label": "Texas Tech — fcs dominated sample",
+        "text": "50% of games were against a pooled non-FBS opponent. Most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "market disagreement",
+        "text": "The market disagrees by 4.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "sample",
+        "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "stale",
+        "text": "odds is 131h old",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Houston — injury uncertainty",
+        "text": "100% of projected starter value has no availability record.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Houston — thin offensive data",
+        "text": "113 offensive plays observed. Too few offensive snaps to score the offensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Houston — thin defensive data",
+        "text": "94 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Texas Tech — injury uncertainty",
+        "text": "100% of projected starter value has no availability record.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Texas Tech — thin offensive data",
+        "text": "130 offensive plays observed. Too few offensive snaps to score the offensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Texas Tech — thin defensive data",
+        "text": "123 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+        "widening": null
+      },
+      {
+        "sev": "LOW",
+        "label": "early season",
+        "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
+        "widening": "4%"
+      }
+    ],
+    "unmeasured": [
+      {
+        "item": "Home starting quarterback",
+        "why": "starting QB not supplied for home"
+      },
+      {
+        "item": "Away starting quarterback",
+        "why": "starting QB not supplied for away"
+      },
+      {
+        "item": "Home availability / injuries",
+        "why": "no injury report supplied for home"
+      },
+      {
+        "item": "Away availability / injuries",
+        "why": "no injury report supplied for away"
+      },
+      {
+        "item": "Blue-chip / per-player recruiting talent",
+        "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
+      },
+      {
+        "item": "Weather at kickoff",
+        "why": "no weather supplied"
+      },
+      {
+        "item": "Off-field, culture and NIL situation",
+        "why": "no public feed for NIL figures, locker-room reporting or discipline exists that this engine reads; nothing is inferred and the gap is carried as uncertainty"
+      },
+      {
+        "item": "Coaching and coordinator continuity",
+        "why": "no public coaching-tenure feed is wired; a new coordinator changes a team’s identity in ways the ratings only learn after the fact"
+      },
+      {
+        "item": "Motivation, lookahead and locker-room state",
+        "why": "not measurable from any public source; treated as variance, never as a point adjustment"
+      },
+      {
+        "item": "Houston — recruiting ratings",
+        "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+      },
+      {
+        "item": "Houston — availability and injuries",
+        "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+      },
+      {
+        "item": "Texas Tech — recruiting ratings",
+        "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+      }
+    ],
+    "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
+  },
+  "missing": [
+    "No availability report reached Conner Weigman — unknown is carried as unknown, never as healthy.",
+    "No availability report reached Will Hammond — unknown is carried as unknown, never as healthy."
+  ],
+  "panels": [],
+  "roster": {
+    "cols": [
+      "Houston",
+      "Texas Tech"
+    ],
+    "rows": [
+      {
+        "k": "Returning production value",
+        "note": "share of last season’s production value still on the roster",
+        "a": "63%",
+        "h": "49%",
+        "edge": {
+          "side": "a",
+          "gap": 0.137
+        }
+      },
+      {
+        "k": "Returning headcount",
+        "note": "share of the roster that was here last season",
+        "a": "47%",
+        "h": "45%",
+        "edge": {
+          "side": "a",
+          "gap": 0.018000000000000016
+        }
+      },
+      {
+        "k": "QB-room continuity",
+        "note": "is the projected starter last season’s player",
+        "a": "33%",
+        "h": "50%",
+        "edge": {
+          "side": "h",
+          "gap": 0.16699999999999998
+        }
+      },
+      {
+        "k": "Offensive-line continuity",
+        "note": null,
+        "a": "53%",
+        "h": "76%",
+        "edge": {
+          "side": "h",
+          "gap": 0.23299999999999998
+        }
+      },
+      {
+        "k": "Returning starters",
+        "note": null,
+        "a": "35%",
+        "h": "49%",
+        "edge": {
+          "side": "h",
+          "gap": 0.136
+        }
+      },
+      {
+        "k": "Transfers in / out",
+        "note": "portal movement counted from the roster feed",
+        "a": "19 in / 12 out",
+        "h": "20 in / 15 out",
+        "edge": null
+      },
+      {
+        "k": "Transfer starters in / out",
+        "note": null,
+        "a": "1 in / 1 out",
+        "h": "0 in / 0 out",
+        "edge": null
+      },
+      {
+        "k": "Starter quality",
+        "note": "projected starters, weighted by position value",
+        "a": "55.5",
+        "h": "57.3",
+        "edge": {
+          "side": "h",
+          "gap": 1.7999999999999972
+        }
+      },
+      {
+        "k": "Rotation quality",
+        "note": null,
+        "a": "54.8",
+        "h": "58.1",
+        "edge": {
+          "side": "h",
+          "gap": 3.3000000000000043
+        }
+      },
+      {
+        "k": "Depth quality",
+        "note": "behind the projected starters",
+        "a": "52.4",
+        "h": "53.2",
+        "edge": {
+          "side": "h",
+          "gap": 0.8000000000000043
+        }
+      },
+      {
+        "k": "Availability records",
+        "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
+        "a": "none on file — 100% unknown",
+        "h": "none on file — 100% unknown",
+        "edge": null
+      },
+      {
+        "k": "Data confidence",
+        "note": "how much EdgeDesk knows about this roster, not how good it is",
+        "a": "22%",
+        "h": "23%",
+        "edge": {
+          "side": "h",
+          "gap": 0.008000000000000007
+        }
+      }
+    ],
+    "highlights": [
+      {
+        "k": "Rotation quality",
+        "lead": "Texas Tech",
+        "text": "Texas Tech leads on rotation quality — Houston 54.8, Texas Tech 58.1."
+      },
+      {
+        "k": "Starter quality",
+        "lead": "Texas Tech",
+        "text": "Texas Tech leads on starter quality — Houston 55.5, Texas Tech 57.3."
+      },
+      {
+        "k": "Depth quality",
+        "lead": "Texas Tech",
+        "text": "Texas Tech leads on depth quality — Houston 52.4, Texas Tech 53.2."
+      },
+      {
+        "k": "Offensive-line continuity",
+        "lead": "Texas Tech",
+        "text": "Texas Tech leads on offensive-line continuity — Houston 53%, Texas Tech 76%."
+      },
+      {
+        "k": "QB-room continuity",
+        "lead": "Texas Tech",
+        "text": "Texas Tech leads on qb-room continuity — Houston 33%, Texas Tech 50%."
+      }
+    ],
+    "note": "Roster construction from the committed rankings build. No recruiting star and no NIL figure appears here: no public feed this repo reads carries either, and a number nobody published is not estimated in its place."
+  },
+  "lede": [
+    "Texas Tech carries the stronger underlying team rating — +7.2 against +1.4, a 5.8-point separation on a neutral field before home advantage, travel or rest.",
+    "EdgeDesk makes it Texas Tech -14.3 before any sportsbook number is consulted, with Texas Tech winning 83% of simulations.",
+    "The position-group comparison shows where the separation comes from: the widest measured gap is scheme fit, where Texas Tech leads Houston by 50 places nationally.",
+    "Data confidence on this matchup is 73% — high by this board’s standards, so the margin is the strongest part of the read."
+  ],
+  "headline": "EdgeDesk projects Texas Tech 35, Houston 20.",
+  "state": {
+    "label": "RESEARCH",
+    "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+    "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
+  },
+  "facts": [
+    {
+      "id": "game.away",
+      "claim": "the away team",
+      "value": "Houston",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.away"
+    },
+    {
+      "id": "game.home",
+      "claim": "the home team",
+      "value": "Texas Tech",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.home"
+    },
+    {
+      "id": "game.kickoff",
+      "claim": "the kickoff time",
+      "value": "2026-09-19T00:00:00.000Z",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.kickoff"
+    },
+    {
+      "id": "game.venue",
+      "claim": "the venue",
+      "value": "Jones AT&T Stadium",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.venue"
+    },
+    {
+      "id": "game.neutral_site",
+      "claim": "whether the game is at a neutral site",
+      "value": false,
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.neutral_site"
+    },
+    {
+      "id": "game.week",
+      "claim": "the week",
+      "value": 3,
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.week"
+    },
+    {
+      "id": "game.season",
+      "claim": "the season",
+      "value": 2026,
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.season"
+    },
+    {
+      "id": "game.network",
+      "claim": "the television network",
+      "value": null,
+      "tier": "UNKNOWN",
+      "source": "no broadcast-rights feed is held by this repository",
+      "path": null
+    },
+    {
+      "id": "model.fair_spread",
+      "claim": "the EdgeDesk fair spread",
+      "value": "Texas Tech -14.3",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.fair_spread_text"
+    },
+    {
+      "id": "model.fair_spread_n",
+      "claim": "the EdgeDesk fair spread, numerically",
+      "value": 14.30437790211803,
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.fair_spread"
+    },
+    {
+      "id": "model.favourite",
+      "claim": "the team EdgeDesk makes the favourite",
+      "value": "Texas Tech",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.favourite"
+    },
+    {
+      "id": "model.underdog",
+      "claim": "the team EdgeDesk makes the underdog",
+      "value": "Houston",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.underdog"
+    },
+    {
+      "id": "model.total",
+      "claim": "the EdgeDesk fair total",
+      "value": "54.8",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.total"
+    },
+    {
+      "id": "model.score",
+      "claim": "the EdgeDesk projected score",
+      "value": "20-35",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.score"
+    },
+    {
+      "id": "model.win_prob",
+      "claim": "the EdgeDesk win probability",
+      "value": "Texas Tech 83%",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.win_prob"
+    },
+    {
+      "id": "model.range",
+      "claim": "the EdgeDesk outcome range",
+      "value": "-8.7 to +35.3 from Texas Tech’s perspective",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.outcome_range"
+    },
+    {
+      "id": "model.confidence",
+      "claim": "EdgeDesk’s data confidence",
+      "value": "73%",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.confidence_pct"
+    },
+    {
+      "id": "model.status",
+      "claim": "EdgeDesk’s research state on this game",
+      "value": "RESEARCH",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.status"
+    },
+    {
+      "id": "model.validation",
+      "claim": "what EdgeDesk has proved about this model out of sample",
+      "value": "UNPROVEN — research only. Nothing on this page is graded as a bet.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.validation"
+    },
+    {
+      "id": "model.engine",
+      "claim": "the model version behind these numbers",
+      "value": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.engine"
+    },
+    {
+      "id": "market.spread",
+      "claim": "the sportsbook spread EdgeDesk compared against",
+      "value": "Texas Tech -9.5",
+      "tier": "VERIFIED_FACT",
+      "source": "a captured sportsbook quote at captured (stale 131h) · FanDuel",
+      "path": "market.market"
+    },
+    {
+      "id": "market.book",
+      "claim": "the book the quote came from",
+      "value": "captured (stale 131h) · FanDuel",
+      "tier": "VERIFIED_FACT",
+      "source": "the capture record",
+      "path": "market.book"
+    },
+    {
+      "id": "market.difference",
+      "claim": "the gap between EdgeDesk and the market",
+      "value": "4.8 points",
+      "tier": "CALCULATED_METRIC",
+      "source": "EdgeDesk’s own number minus the captured price",
+      "path": "market.difference"
+    },
+    {
+      "id": "market.total",
+      "claim": "the sportsbook total",
+      "value": "52.5",
+      "tier": "VERIFIED_FACT",
+      "source": "a captured sportsbook quote",
+      "path": "market.total_market"
+    },
+    {
+      "id": "market.capture_age",
+      "claim": "how old the captured quote was at capture",
+      "value": "131 hours old",
+      "tier": "CALCULATED_METRIC",
+      "source": "the capture record",
+      "path": "market.capture_age"
+    },
+    {
+      "id": "market.classification",
+      "claim": "how EdgeDesk classifies the gap",
+      "value": "RESEARCH",
+      "tier": "INTERPRETATION",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "market.classification"
+    },
+    {
+      "id": "driver.0",
+      "claim": "a published driver of the EdgeDesk number",
+      "value": "Texas Tech is the better football team by 9.6 points on opponent-adjusted results — but about 74% of that rating is still last season carried forward, and in a portal era last season is a different team (+9.6)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "drivers.rows[0]"
+    },
+    {
+      "id": "driver.1",
+      "claim": "a published driver of the EdgeDesk number",
+      "value": "Playing at Texas Tech is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "drivers.rows[1]"
+    },
+    {
+      "id": "driver.2",
+      "claim": "a published driver of the EdgeDesk number",
+      "value": "Stylistically the matchup favours Texas Tech by 0.6 points: field position (+0.6)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "drivers.rows[2]"
+    },
+    {
+      "id": "matchup.0",
+      "claim": "a published matchup read",
+      "value": "Houston’s pass offense rates 50.7 (#26 of 67) against Texas Tech’s pass defense at 59.1 (#8 of 68). Texas Tech’s unit stands higher among its own position group, by 18 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[0]"
+    },
+    {
+      "id": "matchup.1",
+      "claim": "a published matchup read",
+      "value": "Houston’s run offense rates 55.6 (#17 of 68) against Texas Tech’s run defense at 59.2 (#13 of 68). Texas Tech’s unit stands higher among its own position group, by 4 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[1]"
+    },
+    {
+      "id": "matchup.2",
+      "claim": "a published matchup read",
+      "value": "Texas Tech’s pass offense rates 49.3 (#36 of 67) against Houston’s pass defense at 49.9 (#38 of 68). Texas Tech’s unit stands higher among its own position group, by 2 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[2]"
+    },
+    {
+      "id": "matchup.3",
+      "claim": "a published matchup read",
+      "value": "Texas Tech’s run offense rates 45.8 (#49 of 68) against Houston’s run defense at 60.2 (#10 of 68). Houston’s unit stands higher among its own position group, by 39 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[3]"
+    },
+    {
+      "id": "matchup.4",
+      "claim": "a published matchup read",
+      "value": "Houston’s QB room rates 59.0 (#20 of 68) against Texas Tech’s secondary at 62.5 (#1 of 68). Texas Tech’s unit stands higher among its own position group, by 19 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[4]"
+    },
+    {
+      "id": "matchup.5",
+      "claim": "a published matchup read",
+      "value": "Texas Tech’s QB room rates 57.2 (#39 of 68) against Houston’s secondary at 51.7 (#41 of 68). Texas Tech’s unit stands higher among its own position group, by 2 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[5]"
+    },
+    {
+      "id": "matchup.6",
+      "claim": "a published matchup read",
+      "value": "Houston’s offensive line rates 52.3 (#32 of 68) against Texas Tech’s defensive line at 62.2 (#2 of 68). Texas Tech’s unit stands higher among its own position group, by 30 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[6]"
+    },
+    {
+      "id": "matchup.7",
+      "claim": "a published matchup read",
+      "value": "Texas Tech’s offensive line rates 54.1 (#21 of 68) against Houston’s defensive line at 54.0 (#21 of 68). The two stand level.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[7]"
+    },
+    {
+      "id": "matchup.8",
+      "claim": "a published matchup read",
+      "value": "Houston’s running backs rates 54.7 (#34 of 68) against Texas Tech’s linebackers at 65.0 (#1 of 68). Texas Tech’s unit stands higher among its own position group, by 33 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[8]"
+    },
+    {
+      "id": "matchup.9",
+      "claim": "a published matchup read",
+      "value": "Texas Tech’s running backs rates 56.7 (#6 of 68) against Houston’s linebackers at 53.1 (#27 of 68). Texas Tech’s unit stands higher among its own position group, by 21 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[9]"
+    },
+    {
+      "id": "matchup.10",
+      "claim": "a published matchup read",
+      "value": "Houston’s receivers rates 54.1 (#34 of 68) against Texas Tech’s secondary at 62.5 (#1 of 68). Texas Tech’s unit stands higher among its own position group, by 33 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[10]"
+    },
+    {
+      "id": "matchup.11",
+      "claim": "a published matchup read",
+      "value": "Texas Tech’s receivers rates 54.2 (#32 of 68) against Houston’s secondary at 51.7 (#41 of 68). Texas Tech’s unit stands higher among its own position group, by 9 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[11]"
+    },
+    {
+      "id": "advantage.away.0",
+      "claim": "a published measured advantage",
+      "value": "Houston 55.6 (#17 of 68) vs Texas Tech 45.8 (#49 of 68) — 32 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[0]"
+    },
+    {
+      "id": "advantage.away.1",
+      "claim": "a published measured advantage",
+      "value": "Houston 53.8 (#19 of 68) vs Texas Tech 48.8 (#43 of 68) — 24 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[1]"
+    },
+    {
+      "id": "advantage.away.2",
+      "claim": "a published measured advantage",
+      "value": "Houston 59.0 (#20 of 68) vs Texas Tech 57.2 (#39 of 68) — 19 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[2]"
+    },
+    {
+      "id": "advantage.away.3",
+      "claim": "a published measured advantage",
+      "value": "Houston 50.7 (#26 of 67) vs Texas Tech 49.3 (#36 of 67) — 10 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[3]"
+    },
+    {
+      "id": "advantage.away.4",
+      "claim": "a published measured advantage",
+      "value": "Houston 60.2 (#10 of 68) vs Texas Tech 59.2 (#13 of 68) — 3 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[4]"
+    },
+    {
+      "id": "advantage.home.0",
+      "claim": "a published measured advantage",
+      "value": "Texas Tech 53.4 (#4 of 68) vs Houston 49.1 (#54 of 68) — 50 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[0]"
+    },
+    {
+      "id": "advantage.home.1",
+      "claim": "a published measured advantage",
+      "value": "Texas Tech 62.5 (#1 of 68) vs Houston 51.7 (#41 of 68) — 40 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[1]"
+    },
+    {
+      "id": "advantage.home.2",
+      "claim": "a published measured advantage",
+      "value": "Texas Tech 53.2 (#8 of 68) vs Houston 52.4 (#42 of 68) — 34 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[2]"
+    },
+    {
+      "id": "advantage.home.3",
+      "claim": "a published measured advantage",
+      "value": "Texas Tech 59.1 (#8 of 68) vs Houston 49.9 (#38 of 68) — 30 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[3]"
+    },
+    {
+      "id": "advantage.home.4",
+      "claim": "a published measured advantage",
+      "value": "Texas Tech 56.7 (#6 of 68) vs Houston 54.7 (#34 of 68) — 28 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[4]"
+    },
+    {
+      "id": "uncertainty.0",
+      "claim": "a published reason the number could move",
+      "value": "1.45 FBS-equivalent games played.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[0]"
+    },
+    {
+      "id": "uncertainty.1",
+      "claim": "a published reason the number could move",
+      "value": "50% of games were against a pooled non-FBS opponent. Most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[1]"
+    },
+    {
+      "id": "uncertainty.2",
+      "claim": "a published reason the number could move",
+      "value": "1.45 FBS-equivalent games played.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[2]"
+    },
+    {
+      "id": "uncertainty.3",
+      "claim": "a published reason the number could move",
+      "value": "50% of games were against a pooled non-FBS opponent. Most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[3]"
+    },
+    {
+      "id": "uncertainty.4",
+      "claim": "a published reason the number could move",
+      "value": "The market disagrees by 4.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[4]"
+    },
+    {
+      "id": "uncertainty.5",
+      "claim": "a published reason the number could move",
+      "value": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[5]"
+    },
+    {
+      "id": "uncertainty.6",
+      "claim": "a published reason the number could move",
+      "value": "odds is 131h old",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[6]"
+    },
+    {
+      "id": "uncertainty.7",
+      "claim": "a published reason the number could move",
+      "value": "100% of projected starter value has no availability record.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[7]"
+    },
+    {
+      "id": "uncertainty.8",
+      "claim": "a published reason the number could move",
+      "value": "113 offensive plays observed. Too few offensive snaps to score the offensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[8]"
+    },
+    {
+      "id": "uncertainty.9",
+      "claim": "a published reason the number could move",
+      "value": "94 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[9]"
+    },
+    {
+      "id": "uncertainty.10",
+      "claim": "a published reason the number could move",
+      "value": "100% of projected starter value has no availability record.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[10]"
+    },
+    {
+      "id": "uncertainty.11",
+      "claim": "a published reason the number could move",
+      "value": "130 offensive plays observed. Too few offensive snaps to score the offensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[11]"
+    },
+    {
+      "id": "uncertainty.12",
+      "claim": "a published reason the number could move",
+      "value": "123 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[12]"
+    },
+    {
+      "id": "uncertainty.13",
+      "claim": "a published reason the number could move",
+      "value": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[13]"
+    },
+    {
+      "id": "unmeasured.0",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Home starting quarterback — starting QB not supplied for home",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[0]"
+    },
+    {
+      "id": "unmeasured.1",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Away starting quarterback — starting QB not supplied for away",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[1]"
+    },
+    {
+      "id": "unmeasured.2",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Home availability / injuries — no injury report supplied for home",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[2]"
+    },
+    {
+      "id": "unmeasured.3",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Away availability / injuries — no injury report supplied for away",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[3]"
+    },
+    {
+      "id": "unmeasured.4",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Blue-chip / per-player recruiting talent — per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[4]"
+    },
+    {
+      "id": "unmeasured.5",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Weather at kickoff — no weather supplied",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[5]"
+    },
+    {
+      "id": "unmeasured.6",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Off-field, culture and NIL situation — no public feed for NIL figures, locker-room reporting or discipline exists that this engine reads; nothing is inferred and the gap is carried as uncertainty",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[6]"
+    },
+    {
+      "id": "unmeasured.7",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Coaching and coordinator continuity — no public coaching-tenure feed is wired; a new coordinator changes a team’s identity in ways the ratings only learn after the fact",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[7]"
+    },
+    {
+      "id": "unmeasured.8",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Motivation, lookahead and locker-room state — not measurable from any public source; treated as variance, never as a point adjustment",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[8]"
+    },
+    {
+      "id": "unmeasured.9",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Houston — recruiting ratings — no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[9]"
+    },
+    {
+      "id": "unmeasured.10",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Houston — availability and injuries — no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[10]"
+    },
+    {
+      "id": "unmeasured.11",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Texas Tech — recruiting ratings — no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[11]"
+    },
+    {
+      "id": "missing.0",
+      "claim": "an input missing from this build",
+      "value": "No availability report reached Conner Weigman — unknown is carried as unknown, never as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[0]"
+    },
+    {
+      "id": "missing.1",
+      "claim": "an input missing from this build",
+      "value": "No availability report reached Will Hammond — unknown is carried as unknown, never as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[1]"
+    }
+  ],
+  "coverage": {
+    "wanted": 11,
+    "present": 11,
+    "present_ids": [
+      "model.fair_spread",
+      "model.total",
+      "model.score",
+      "model.win_prob",
+      "model.range",
+      "model.confidence",
+      "market.spread",
+      "market.total",
+      "driver.0",
+      "matchup.0",
+      "uncertainty.0"
+    ],
+    "absent": [],
+    "priced": true,
+    "market_available": true,
+    "model_confidence_pct": 73,
+    "model_inputs_reached_pct": 59,
+    "model_status": "RESEARCH"
+  },
+  "sources": [
+    "cfbfastR schedules (public, keyless)",
+    "EdgeDesk rankings build 2026 Week 3",
+    "a committed sportsbook-quote snapshot"
+  ],
+  "research": {
+    "kind": "CFB_GAME",
+    "game": {
+      "away": "Houston",
+      "home": "Texas Tech",
+      "title": "Houston at Texas Tech",
+      "when": "2026-09-19 00:00 UTC",
+      "kickoff": "2026-09-19T00:00:00.000Z",
+      "venue": "Jones AT&T Stadium",
+      "neutral": false,
+      "week": "Week 3",
+      "season": "2026",
+      "game_id": "401856811",
+      "week_no": 3,
+      "season_no": 2026,
+      "conference_line": "Big 12 conference game",
+      "away_conference": "Big 12",
+      "home_conference": "Big 12"
+    },
+    "lede": [
+      "Texas Tech carries the stronger underlying team rating — +7.2 against +1.4, a 5.8-point separation on a neutral field before home advantage, travel or rest.",
+      "EdgeDesk makes it Texas Tech -14.3 before any sportsbook number is consulted, with Texas Tech winning 83% of simulations.",
+      "The position-group comparison shows where the separation comes from: the widest measured gap is scheme fit, where Texas Tech leads Houston by 50 places nationally.",
+      "Data confidence on this matchup is 73% — high by this board’s standards, so the margin is the strongest part of the read."
+    ],
+    "projection": {
+      "priced": true,
+      "fair_spread": 14.30437790211803,
+      "fair_spread_text": "Texas Tech -14.3",
+      "favourite": "Texas Tech",
+      "underdog": "Houston",
+      "margin": "14.3",
+      "total": "54.8",
+      "score": {
+        "away": {
+          "team": "Houston",
+          "points": "20"
+        },
+        "home": {
+          "team": "Texas Tech",
+          "points": "35"
+        },
+        "note": "Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
+      },
+      "score_absent_reason": null,
+      "win_prob": {
+        "home": "Texas Tech",
+        "away": "Houston",
+        "home_pct": 83,
+        "away_pct": 17,
+        "home_text": "83%",
+        "away_text": "17%",
+        "bounded": false,
+        "bounded_note": null,
+        "favourite": "Texas Tech",
+        "favourite_pct": 83,
+        "favourite_text": "83%"
+      },
+      "outcome_range": {
+        "basis_team": "Texas Tech",
+        "p10": "-8.7",
+        "median": "+13.3",
+        "p90": "+35.3",
+        "sigma": "15.3",
+        "volatility": "60.06",
+        "volatility_discriminates": false,
+        "note": "Quoted from Texas Tech’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
+      },
+      "confidence_pct": 73,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Texas Tech is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Houston is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
+      "status": "RESEARCH",
+      "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Houston",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Conner Weigman",
+        "player_id": "4685574",
+        "label": "Conner Weigman — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 13,
+          "dropbacks": 393,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "4685574",
+              "player_name": "Conner Weigman",
+              "dropbacks": 43,
+              "share": 0.768
+            },
+            {
+              "player_id": "5159035",
+              "player_name": "Keisean Henderson",
+              "dropbacks": 8,
+              "share": 0.143
+            },
+            {
+              "player_id": "5212654",
+              "player_name": "Braden Atkinson",
+              "dropbacks": 4,
+              "share": 0.071
+            },
+            {
+              "player_id": "5308438",
+              "player_name": "Ashton Strother",
+              "dropbacks": 1,
+              "share": 0.018
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856778",
+            "opponent": "Oregon State",
+            "dropbacks": 36,
+            "starter": null,
+            "settled": false,
+            "why": "the player who took the first dropback threw 11% of the dropbacks; the usage leader was Conner Weigman"
+          },
+          {
+            "week": 2,
+            "game_id": "401856787",
+            "opponent": "Southern",
+            "dropbacks": 20,
+            "starter": {
+              "player_id": "4685574",
+              "player_name": "Conner Weigman",
+              "share": 0.6
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T23:00:00.000Z",
+        "retrieved_at": "2026-09-18T13:50:03.720Z"
+      },
+      "home": {
+        "team": "Texas Tech",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Will Hammond",
+        "player_id": "5126468",
+        "label": "Will Hammond — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 3,
+          "dropbacks": 170,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5126468",
+              "player_name": "Will Hammond",
+              "dropbacks": 59,
+              "share": 0.967
+            },
+            {
+              "player_id": "4773919",
+              "player_name": "Thomas Castellanos",
+              "dropbacks": 1,
+              "share": 0.016
+            },
+            {
+              "player_id": "5151618",
+              "player_name": "Kirk Francis",
+              "dropbacks": 1,
+              "share": 0.016
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856770",
+            "opponent": "Abilene Christian",
+            "dropbacks": 33,
+            "starter": {
+              "player_id": "5126468",
+              "player_name": "Will Hammond",
+              "share": 0.97
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401856783",
+            "opponent": "Oregon State",
+            "dropbacks": 28,
+            "starter": {
+              "player_id": "5126468",
+              "player_name": "Will Hammond",
+              "share": 0.964
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T23:30:00.000Z",
+        "retrieved_at": "2026-09-18T13:50:03.720Z"
+      },
+      "generated_at": "2026-09-18T13:50:02.981Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
+    },
+    "drivers": {
+      "rows": [
+        {
+          "points": "+9.6",
+          "points_n": 9.606676310000001,
+          "text": "Texas Tech is the better football team by 9.6 points on opponent-adjusted results — but about 74% of that rating is still last season carried forward, and in a portal era last season is a different team",
+          "favours": "Texas Tech"
+        },
+        {
+          "points": "+4.1",
+          "points_n": 4.082,
+          "text": "Playing at Texas Tech is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality",
+          "favours": "Texas Tech"
+        },
+        {
+          "points": "+0.6",
+          "points_n": 0.615102348725,
+          "text": "Stylistically the matchup favours Texas Tech by 0.6 points: field position",
+          "favours": "Texas Tech"
+        }
+      ],
+      "basis": "Points are the engine’s own contributions to the projected spread, from Texas Tech’s perspective, and they sum toward it.",
+      "excluded": "Player quality, position-group ratings and scheme fit are NOT in this number. Neither has cleared walk-forward validation, so neither is allowed to move a priced figure — they appear below as research context and nowhere else.",
+      "empty": null
+    },
+    "compare": {
+      "cols": [
+        "Houston",
+        "Texas Tech"
+      ],
+      "groups": [
+        {
+          "title": "Team rating",
+          "rows": [
+            {
+              "cat": "overall",
+              "k": "ETSR (overall)",
+              "note": "points vs an average FBS team, neutral field",
+              "a": {
+                "v": "+1.4",
+                "n": 1.35,
+                "rank": "#37 of 68",
+                "rank_n": 37,
+                "note": null
+              },
+              "h": {
+                "v": "+7.2",
+                "n": 7.15,
+                "rank": "#10 of 68",
+                "rank_n": 10,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 5.8,
+                "rank_gap": 27
+              }
+            },
+            {
+              "cat": "talent",
+              "k": "Talent",
+              "note": null,
+              "a": {
+                "v": "56.1",
+                "n": 56.1,
+                "rank": "#24 of 68",
+                "rank_n": 24,
+                "note": null
+              },
+              "h": {
+                "v": "69.8",
+                "n": 69.8,
+                "rank": "#2 of 68",
+                "rank_n": 2,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 13.7,
+                "rank_gap": 22
+              }
+            },
+            {
+              "cat": "performance",
+              "k": "Performance",
+              "note": null,
+              "a": {
+                "v": "56.6",
+                "n": 56.6,
+                "rank": "#20 of 68",
+                "rank_n": 20,
+                "note": null
+              },
+              "h": {
+                "v": "56.9",
+                "n": 56.9,
+                "rank": "#19 of 68",
+                "rank_n": 19,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.3,
+                "rank_gap": 1
+              }
+            },
+            {
+              "cat": "scheme_fit",
+              "k": "Scheme fit",
+              "note": "personnel against this team’s own tendencies",
+              "a": {
+                "v": "49.1",
+                "n": 49.1,
+                "rank": "#54 of 68",
+                "rank_n": 54,
+                "note": null
+              },
+              "h": {
+                "v": "53.4",
+                "n": 53.4,
+                "rank": "#4 of 68",
+                "rank_n": 4,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 4.3,
+                "rank_gap": 50
+              }
+            }
+          ]
+        },
+        {
+          "title": "Units",
+          "rows": [
+            {
+              "cat": "offense",
+              "k": "Offense",
+              "note": null,
+              "a": {
+                "v": "53.8",
+                "n": 53.8,
+                "rank": "#19 of 68",
+                "rank_n": 19,
+                "note": null
+              },
+              "h": {
+                "v": "48.8",
+                "n": 48.8,
+                "rank": "#43 of 68",
+                "rank_n": 43,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 5,
+                "rank_gap": 24
+              }
+            },
+            {
+              "cat": "defense",
+              "k": "Defense",
+              "note": null,
+              "a": {
+                "v": "53.2",
+                "n": 53.2,
+                "rank": "#24 of 68",
+                "rank_n": 24,
+                "note": null
+              },
+              "h": {
+                "v": "57.6",
+                "n": 57.6,
+                "rank": "#6 of 68",
+                "rank_n": 6,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 4.4,
+                "rank_gap": 18
+              }
+            },
+            {
+              "cat": "special_teams",
+              "k": "Special teams",
+              "note": null,
+              "a": {
+                "v": "49.5",
+                "n": 49.5,
+                "rank": "#50 of 65",
+                "rank_n": 50,
+                "note": null
+              },
+              "h": {
+                "v": "49.5",
+                "n": 49.5,
+                "rank": "#51 of 65",
+                "rank_n": 51,
+                "note": null
+              },
+              "edge": {
+                "side": "even",
+                "gap": 0,
+                "rank_gap": 1
+              }
+            },
+            {
+              "cat": "run_offense",
+              "k": "Run offense",
+              "note": null,
+              "a": {
+                "v": "55.6",
+                "n": 55.6,
+                "rank": "#17 of 68",
+                "rank_n": 17,
+                "note": null
+              },
+              "h": {
+                "v": "45.8",
+                "n": 45.8,
+                "rank": "#49 of 68",
+                "rank_n": 49,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 9.8,
+                "rank_gap": 32
+              }
+            },
+            {
+              "cat": "pass_offense",
+              "k": "Pass offense",
+              "note": null,
+              "a": {
+                "v": "50.7",
+                "n": 50.7,
+                "rank": "#26 of 67",
+                "rank_n": 26,
+                "note": null
+              },
+              "h": {
+                "v": "49.3",
+                "n": 49.3,
+                "rank": "#36 of 67",
+                "rank_n": 36,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 1.4,
+                "rank_gap": 10
+              }
+            },
+            {
+              "cat": "run_defense",
+              "k": "Run defense",
+              "note": null,
+              "a": {
+                "v": "60.2",
+                "n": 60.2,
+                "rank": "#10 of 68",
+                "rank_n": 10,
+                "note": null
+              },
+              "h": {
+                "v": "59.2",
+                "n": 59.2,
+                "rank": "#13 of 68",
+                "rank_n": 13,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 1,
+                "rank_gap": 3
+              }
+            },
+            {
+              "cat": "pass_defense",
+              "k": "Pass defense",
+              "note": null,
+              "a": {
+                "v": "49.9",
+                "n": 49.9,
+                "rank": "#38 of 68",
+                "rank_n": 38,
+                "note": null
+              },
+              "h": {
+                "v": "59.1",
+                "n": 59.1,
+                "rank": "#8 of 68",
+                "rank_n": 8,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 9.2,
+                "rank_gap": 30
+              }
+            }
+          ]
+        },
+        {
+          "title": "Position groups",
+          "rows": [
+            {
+              "cat": "qb",
+              "k": "QB room",
+              "note": null,
+              "a": {
+                "v": "59.0",
+                "n": 59,
+                "rank": "#20 of 68",
+                "rank_n": 20,
+                "note": null
+              },
+              "h": {
+                "v": "57.2",
+                "n": 57.2,
+                "rank": "#39 of 68",
+                "rank_n": 39,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 1.8,
+                "rank_gap": 19
+              }
+            },
+            {
+              "cat": "ol",
+              "k": "Offensive line",
+              "note": null,
+              "a": {
+                "v": "52.3",
+                "n": 52.3,
+                "rank": "#32 of 68",
+                "rank_n": 32,
+                "note": null
+              },
+              "h": {
+                "v": "54.1",
+                "n": 54.1,
+                "rank": "#21 of 68",
+                "rank_n": 21,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 1.8,
+                "rank_gap": 11
+              }
+            },
+            {
+              "cat": "wr",
+              "k": "Receivers",
+              "note": null,
+              "a": {
+                "v": "54.1",
+                "n": 54.1,
+                "rank": "#34 of 68",
+                "rank_n": 34,
+                "note": null
+              },
+              "h": {
+                "v": "54.2",
+                "n": 54.2,
+                "rank": "#32 of 68",
+                "rank_n": 32,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.1,
+                "rank_gap": 2
+              }
+            },
+            {
+              "cat": "te",
+              "k": "Tight ends",
+              "note": "rated by the player layer; the board publishes no national TE rank",
+              "a": {
+                "v": "54.0",
+                "n": 54,
+                "rank": null,
+                "rank_n": null,
+                "note": "rated, held out of the national rank by the confidence gate"
+              },
+              "h": {
+                "v": "54.5",
+                "n": 54.5,
+                "rank": null,
+                "rank_n": null,
+                "note": "rated, held out of the national rank by the confidence gate"
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.5,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "rb",
+              "k": "Running backs",
+              "note": null,
+              "a": {
+                "v": "54.7",
+                "n": 54.7,
+                "rank": "#34 of 68",
+                "rank_n": 34,
+                "note": null
+              },
+              "h": {
+                "v": "56.7",
+                "n": 56.7,
+                "rank": "#6 of 68",
+                "rank_n": 6,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 2,
+                "rank_gap": 28
+              }
+            },
+            {
+              "cat": "dl",
+              "k": "Defensive line",
+              "note": null,
+              "a": {
+                "v": "54.0",
+                "n": 54,
+                "rank": "#21 of 68",
+                "rank_n": 21,
+                "note": null
+              },
+              "h": {
+                "v": "62.2",
+                "n": 62.2,
+                "rank": "#2 of 68",
+                "rank_n": 2,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 8.2,
+                "rank_gap": 19
+              }
+            },
+            {
+              "cat": "lb",
+              "k": "Linebackers",
+              "note": null,
+              "a": {
+                "v": "53.1",
+                "n": 53.1,
+                "rank": "#27 of 68",
+                "rank_n": 27,
+                "note": null
+              },
+              "h": {
+                "v": "65.0",
+                "n": 65,
+                "rank": "#1 of 68",
+                "rank_n": 1,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 11.9,
+                "rank_gap": 26
+              }
+            },
+            {
+              "cat": "secondary",
+              "k": "Secondary",
+              "note": null,
+              "a": {
+                "v": "51.7",
+                "n": 51.7,
+                "rank": "#41 of 68",
+                "rank_n": 41,
+                "note": null
+              },
+              "h": {
+                "v": "62.5",
+                "n": 62.5,
+                "rank": "#1 of 68",
+                "rank_n": 1,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 10.8,
+                "rank_gap": 40
+              }
+            },
+            {
+              "cat": "k_room",
+              "k": "Kicking",
+              "note": null,
+              "a": {
+                "v": "56.0",
+                "n": 56,
+                "rank": "#40 of 68",
+                "rank_n": 40,
+                "note": null
+              },
+              "h": {
+                "v": "56.2",
+                "n": 56.2,
+                "rank": "#36 of 68",
+                "rank_n": 36,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.2,
+                "rank_gap": 4
+              }
+            }
+          ]
+        },
+        {
+          "title": "Roster shape",
+          "rows": [
+            {
+              "cat": "depth",
+              "k": "Depth",
+              "note": "quality behind the projected starters",
+              "a": {
+                "v": "52.4",
+                "n": 52.4,
+                "rank": "#42 of 68",
+                "rank_n": 42,
+                "note": null
+              },
+              "h": {
+                "v": "53.2",
+                "n": 53.2,
+                "rank": "#8 of 68",
+                "rank_n": 8,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.8,
+                "rank_gap": 34
+              }
+            },
+            {
+              "cat": "continuity",
+              "k": "Continuity",
+              "note": "how much of last season is still here",
+              "a": {
+                "v": "48.9",
+                "n": 48.9,
+                "rank": "#33 of 68",
+                "rank_n": 33,
+                "note": null
+              },
+              "h": {
+                "v": "51.7",
+                "n": 51.7,
+                "rank": "#23 of 68",
+                "rank_n": 23,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 2.8,
+                "rank_gap": 10
+              }
+            }
+          ]
+        }
+      ],
+      "one_sided_team": null,
+      "one_sided_note": null
+    },
+    "advantages": {
+      "away": [
+        {
+          "k": "Run offense",
+          "rank_gap": 32,
+          "gap": 9.8,
+          "lead": "Houston",
+          "trail": "Texas Tech",
+          "lead_cell": "55.6 · #17 of 68",
+          "trail_cell": "45.8 · #49 of 68",
+          "text": "Houston 55.6 (#17 of 68) vs Texas Tech 45.8 (#49 of 68) — 32 places on the national board."
+        },
+        {
+          "k": "Offense",
+          "rank_gap": 24,
+          "gap": 5,
+          "lead": "Houston",
+          "trail": "Texas Tech",
+          "lead_cell": "53.8 · #19 of 68",
+          "trail_cell": "48.8 · #43 of 68",
+          "text": "Houston 53.8 (#19 of 68) vs Texas Tech 48.8 (#43 of 68) — 24 places on the national board."
+        },
+        {
+          "k": "QB room",
+          "rank_gap": 19,
+          "gap": 1.8,
+          "lead": "Houston",
+          "trail": "Texas Tech",
+          "lead_cell": "59.0 · #20 of 68",
+          "trail_cell": "57.2 · #39 of 68",
+          "text": "Houston 59.0 (#20 of 68) vs Texas Tech 57.2 (#39 of 68) — 19 places on the national board."
+        },
+        {
+          "k": "Pass offense",
+          "rank_gap": 10,
+          "gap": 1.4,
+          "lead": "Houston",
+          "trail": "Texas Tech",
+          "lead_cell": "50.7 · #26 of 67",
+          "trail_cell": "49.3 · #36 of 67",
+          "text": "Houston 50.7 (#26 of 67) vs Texas Tech 49.3 (#36 of 67) — 10 places on the national board."
+        },
+        {
+          "k": "Run defense",
+          "rank_gap": 3,
+          "gap": 1,
+          "lead": "Houston",
+          "trail": "Texas Tech",
+          "lead_cell": "60.2 · #10 of 68",
+          "trail_cell": "59.2 · #13 of 68",
+          "text": "Houston 60.2 (#10 of 68) vs Texas Tech 59.2 (#13 of 68) — 3 places on the national board."
+        }
+      ],
+      "home": [
+        {
+          "k": "Scheme fit",
+          "rank_gap": 50,
+          "gap": 4.3,
+          "lead": "Texas Tech",
+          "trail": "Houston",
+          "lead_cell": "53.4 · #4 of 68",
+          "trail_cell": "49.1 · #54 of 68",
+          "text": "Texas Tech 53.4 (#4 of 68) vs Houston 49.1 (#54 of 68) — 50 places on the national board."
+        },
+        {
+          "k": "Secondary",
+          "rank_gap": 40,
+          "gap": 10.8,
+          "lead": "Texas Tech",
+          "trail": "Houston",
+          "lead_cell": "62.5 · #1 of 68",
+          "trail_cell": "51.7 · #41 of 68",
+          "text": "Texas Tech 62.5 (#1 of 68) vs Houston 51.7 (#41 of 68) — 40 places on the national board."
+        },
+        {
+          "k": "Depth",
+          "rank_gap": 34,
+          "gap": 0.8,
+          "lead": "Texas Tech",
+          "trail": "Houston",
+          "lead_cell": "53.2 · #8 of 68",
+          "trail_cell": "52.4 · #42 of 68",
+          "text": "Texas Tech 53.2 (#8 of 68) vs Houston 52.4 (#42 of 68) — 34 places on the national board."
+        },
+        {
+          "k": "Pass defense",
+          "rank_gap": 30,
+          "gap": 9.2,
+          "lead": "Texas Tech",
+          "trail": "Houston",
+          "lead_cell": "59.1 · #8 of 68",
+          "trail_cell": "49.9 · #38 of 68",
+          "text": "Texas Tech 59.1 (#8 of 68) vs Houston 49.9 (#38 of 68) — 30 places on the national board."
+        },
+        {
+          "k": "Running backs",
+          "rank_gap": 28,
+          "gap": 2,
+          "lead": "Texas Tech",
+          "trail": "Houston",
+          "lead_cell": "56.7 · #6 of 68",
+          "trail_cell": "54.7 · #34 of 68",
+          "text": "Texas Tech 56.7 (#6 of 68) vs Houston 54.7 (#34 of 68) — 28 places on the national board."
+        }
+      ],
+      "measured": [],
+      "measured_note": null,
+      "unproven": [],
+      "note": "An advantage is only claimed where BOTH teams carry a national rank in that category — the national rank is the one scale on which a QB room and a run defence are comparable. A category where one side is unrated appears here as a measurement and as uncertainty, never as an edge."
+    },
+    "matchups": [
+      {
+        "title": "Houston pass offense vs Texas Tech pass defense",
+        "att": {
+          "team": "Houston",
+          "label": "pass offense",
+          "v": "50.7",
+          "rank": "#26 of 67",
+          "note": null
+        },
+        "def": {
+          "team": "Texas Tech",
+          "label": "pass defense",
+          "v": "59.1",
+          "rank": "#8 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Houston’s pass offense rates 50.7 (#26 of 67) against Texas Tech’s pass defense at 59.1 (#8 of 68). Texas Tech’s unit stands higher among its own position group, by 18 places."
+      },
+      {
+        "title": "Houston run offense vs Texas Tech run defense",
+        "att": {
+          "team": "Houston",
+          "label": "run offense",
+          "v": "55.6",
+          "rank": "#17 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Texas Tech",
+          "label": "run defense",
+          "v": "59.2",
+          "rank": "#13 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Houston’s run offense rates 55.6 (#17 of 68) against Texas Tech’s run defense at 59.2 (#13 of 68). Texas Tech’s unit stands higher among its own position group, by 4 places."
+      },
+      {
+        "title": "Texas Tech pass offense vs Houston pass defense",
+        "att": {
+          "team": "Texas Tech",
+          "label": "pass offense",
+          "v": "49.3",
+          "rank": "#36 of 67",
+          "note": null
+        },
+        "def": {
+          "team": "Houston",
+          "label": "pass defense",
+          "v": "49.9",
+          "rank": "#38 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Texas Tech’s pass offense rates 49.3 (#36 of 67) against Houston’s pass defense at 49.9 (#38 of 68). Texas Tech’s unit stands higher among its own position group, by 2 places."
+      },
+      {
+        "title": "Texas Tech run offense vs Houston run defense",
+        "att": {
+          "team": "Texas Tech",
+          "label": "run offense",
+          "v": "45.8",
+          "rank": "#49 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Houston",
+          "label": "run defense",
+          "v": "60.2",
+          "rank": "#10 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Texas Tech’s run offense rates 45.8 (#49 of 68) against Houston’s run defense at 60.2 (#10 of 68). Houston’s unit stands higher among its own position group, by 39 places."
+      },
+      {
+        "title": "Houston QB room vs Texas Tech secondary",
+        "att": {
+          "team": "Houston",
+          "label": "QB room",
+          "v": "59.0",
+          "rank": "#20 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Texas Tech",
+          "label": "secondary",
+          "v": "62.5",
+          "rank": "#1 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Houston’s QB room rates 59.0 (#20 of 68) against Texas Tech’s secondary at 62.5 (#1 of 68). Texas Tech’s unit stands higher among its own position group, by 19 places."
+      },
+      {
+        "title": "Texas Tech QB room vs Houston secondary",
+        "att": {
+          "team": "Texas Tech",
+          "label": "QB room",
+          "v": "57.2",
+          "rank": "#39 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Houston",
+          "label": "secondary",
+          "v": "51.7",
+          "rank": "#41 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Texas Tech’s QB room rates 57.2 (#39 of 68) against Houston’s secondary at 51.7 (#41 of 68). Texas Tech’s unit stands higher among its own position group, by 2 places."
+      },
+      {
+        "title": "Houston offensive line vs Texas Tech defensive line",
+        "att": {
+          "team": "Houston",
+          "label": "offensive line",
+          "v": "52.3",
+          "rank": "#32 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Texas Tech",
+          "label": "defensive line",
+          "v": "62.2",
+          "rank": "#2 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Houston’s offensive line rates 52.3 (#32 of 68) against Texas Tech’s defensive line at 62.2 (#2 of 68). Texas Tech’s unit stands higher among its own position group, by 30 places."
+      },
+      {
+        "title": "Texas Tech offensive line vs Houston defensive line",
+        "att": {
+          "team": "Texas Tech",
+          "label": "offensive line",
+          "v": "54.1",
+          "rank": "#21 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Houston",
+          "label": "defensive line",
+          "v": "54.0",
+          "rank": "#21 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Texas Tech’s offensive line rates 54.1 (#21 of 68) against Houston’s defensive line at 54.0 (#21 of 68). The two stand level."
+      },
+      {
+        "title": "Houston running backs vs Texas Tech linebackers",
+        "att": {
+          "team": "Houston",
+          "label": "running backs",
+          "v": "54.7",
+          "rank": "#34 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Texas Tech",
+          "label": "linebackers",
+          "v": "65.0",
+          "rank": "#1 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Houston’s running backs rates 54.7 (#34 of 68) against Texas Tech’s linebackers at 65.0 (#1 of 68). Texas Tech’s unit stands higher among its own position group, by 33 places."
+      },
+      {
+        "title": "Texas Tech running backs vs Houston linebackers",
+        "att": {
+          "team": "Texas Tech",
+          "label": "running backs",
+          "v": "56.7",
+          "rank": "#6 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Houston",
+          "label": "linebackers",
+          "v": "53.1",
+          "rank": "#27 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Texas Tech’s running backs rates 56.7 (#6 of 68) against Houston’s linebackers at 53.1 (#27 of 68). Texas Tech’s unit stands higher among its own position group, by 21 places."
+      },
+      {
+        "title": "Houston receivers vs Texas Tech secondary",
+        "att": {
+          "team": "Houston",
+          "label": "receivers",
+          "v": "54.1",
+          "rank": "#34 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Texas Tech",
+          "label": "secondary",
+          "v": "62.5",
+          "rank": "#1 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Houston’s receivers rates 54.1 (#34 of 68) against Texas Tech’s secondary at 62.5 (#1 of 68). Texas Tech’s unit stands higher among its own position group, by 33 places."
+      },
+      {
+        "title": "Texas Tech receivers vs Houston secondary",
+        "att": {
+          "team": "Texas Tech",
+          "label": "receivers",
+          "v": "54.2",
+          "rank": "#32 of 68",
+          "note": null
+        },
+        "def": {
+          "team": "Houston",
+          "label": "secondary",
+          "v": "51.7",
+          "rank": "#41 of 68",
+          "note": null
+        },
+        "complete": true,
+        "read": "Texas Tech’s receivers rates 54.2 (#32 of 68) against Houston’s secondary at 51.7 (#41 of 68). Texas Tech’s unit stands higher among its own position group, by 9 places."
+      }
+    ],
+    "roster": {
+      "cols": [
+        "Houston",
+        "Texas Tech"
+      ],
+      "rows": [
+        {
+          "k": "Returning production value",
+          "note": "share of last season’s production value still on the roster",
+          "a": "63%",
+          "h": "49%",
+          "edge": {
+            "side": "a",
+            "gap": 0.137
+          }
+        },
+        {
+          "k": "Returning headcount",
+          "note": "share of the roster that was here last season",
+          "a": "47%",
+          "h": "45%",
+          "edge": {
+            "side": "a",
+            "gap": 0.018000000000000016
+          }
+        },
+        {
+          "k": "QB-room continuity",
+          "note": "is the projected starter last season’s player",
+          "a": "33%",
+          "h": "50%",
+          "edge": {
+            "side": "h",
+            "gap": 0.16699999999999998
+          }
+        },
+        {
+          "k": "Offensive-line continuity",
+          "note": null,
+          "a": "53%",
+          "h": "76%",
+          "edge": {
+            "side": "h",
+            "gap": 0.23299999999999998
+          }
+        },
+        {
+          "k": "Returning starters",
+          "note": null,
+          "a": "35%",
+          "h": "49%",
+          "edge": {
+            "side": "h",
+            "gap": 0.136
+          }
+        },
+        {
+          "k": "Transfers in / out",
+          "note": "portal movement counted from the roster feed",
+          "a": "19 in / 12 out",
+          "h": "20 in / 15 out",
+          "edge": null
+        },
+        {
+          "k": "Transfer starters in / out",
+          "note": null,
+          "a": "1 in / 1 out",
+          "h": "0 in / 0 out",
+          "edge": null
+        },
+        {
+          "k": "Starter quality",
+          "note": "projected starters, weighted by position value",
+          "a": "55.5",
+          "h": "57.3",
+          "edge": {
+            "side": "h",
+            "gap": 1.7999999999999972
+          }
+        },
+        {
+          "k": "Rotation quality",
+          "note": null,
+          "a": "54.8",
+          "h": "58.1",
+          "edge": {
+            "side": "h",
+            "gap": 3.3000000000000043
+          }
+        },
+        {
+          "k": "Depth quality",
+          "note": "behind the projected starters",
+          "a": "52.4",
+          "h": "53.2",
+          "edge": {
+            "side": "h",
+            "gap": 0.8000000000000043
+          }
+        },
+        {
+          "k": "Availability records",
+          "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
+          "a": "none on file — 100% unknown",
+          "h": "none on file — 100% unknown",
+          "edge": null
+        },
+        {
+          "k": "Data confidence",
+          "note": "how much EdgeDesk knows about this roster, not how good it is",
+          "a": "22%",
+          "h": "23%",
+          "edge": {
+            "side": "h",
+            "gap": 0.008000000000000007
+          }
+        }
+      ],
+      "highlights": [
+        {
+          "k": "Rotation quality",
+          "lead": "Texas Tech",
+          "text": "Texas Tech leads on rotation quality — Houston 54.8, Texas Tech 58.1."
+        },
+        {
+          "k": "Starter quality",
+          "lead": "Texas Tech",
+          "text": "Texas Tech leads on starter quality — Houston 55.5, Texas Tech 57.3."
+        },
+        {
+          "k": "Depth quality",
+          "lead": "Texas Tech",
+          "text": "Texas Tech leads on depth quality — Houston 52.4, Texas Tech 53.2."
+        },
+        {
+          "k": "Offensive-line continuity",
+          "lead": "Texas Tech",
+          "text": "Texas Tech leads on offensive-line continuity — Houston 53%, Texas Tech 76%."
+        },
+        {
+          "k": "QB-room continuity",
+          "lead": "Texas Tech",
+          "text": "Texas Tech leads on qb-room continuity — Houston 33%, Texas Tech 50%."
+        }
+      ],
+      "note": "Roster construction from the committed rankings build. No recruiting star and no NIL figure appears here: no public feed this repo reads carries either, and a number nobody published is not estimated in its place."
+    },
+    "cases": {
+      "favourite": {
+        "team": "Texas Tech",
+        "heading": "Why Texas Tech can pull away",
+        "bullets": [
+          "Texas Tech is the better football team by 9.6 points on opponent-adjusted results — but about 74% of that rating is still last season carried forward, and in a portal era last season is a different team (+9.6 pts).",
+          "Playing at Texas Tech is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
+          "Stylistically the matchup favours Texas Tech by 0.6 points: field position (+0.6 pts).",
+          "Scheme fit: Texas Tech 53.4 (#4 of 68) vs Houston 49.1 (#54 of 68) — 50 places on the national board.",
+          "Secondary: Texas Tech 62.5 (#1 of 68) vs Houston 51.7 (#41 of 68) — 40 places on the national board."
+        ]
+      },
+      "underdog": {
+        "team": "Houston",
+        "heading": "Why Houston can keep it close",
+        "bullets": [
+          "Run offense: Houston 55.6 (#17 of 68) vs Texas Tech 45.8 (#49 of 68) — 32 places on the national board.",
+          "Offense: Houston 53.8 (#19 of 68) vs Texas Tech 48.8 (#43 of 68) — 24 places on the national board.",
+          "QB room: Houston 59.0 (#20 of 68) vs Texas Tech 57.2 (#39 of 68) — 19 places on the national board.",
+          "The outcome range is 15.3 points wide at one sigma — p10 -8.7 to p90 +35.3 for Texas Tech, so a projection of +14.3 still produces results a long way either side of it.",
+          "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%."
+        ]
+      },
+      "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
+    },
+    "uncertainty": {
+      "items": [
+        {
+          "sev": "HIGH",
+          "label": "Houston — low sample size",
+          "text": "1.45 FBS-equivalent games played.",
+          "widening": null
+        },
+        {
+          "sev": "HIGH",
+          "label": "Houston — fcs dominated sample",
+          "text": "50% of games were against a pooled non-FBS opponent. Most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests",
+          "widening": null
+        },
+        {
+          "sev": "HIGH",
+          "label": "Texas Tech — low sample size",
+          "text": "1.45 FBS-equivalent games played.",
+          "widening": null
+        },
+        {
+          "sev": "HIGH",
+          "label": "Texas Tech — fcs dominated sample",
+          "text": "50% of games were against a pooled non-FBS opponent. Most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 4.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "sample",
+          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 131h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Houston — injury uncertainty",
+          "text": "100% of projected starter value has no availability record.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Houston — thin offensive data",
+          "text": "113 offensive plays observed. Too few offensive snaps to score the offensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Houston — thin defensive data",
+          "text": "94 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Texas Tech — injury uncertainty",
+          "text": "100% of projected starter value has no availability record.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Texas Tech — thin offensive data",
+          "text": "130 offensive plays observed. Too few offensive snaps to score the offensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Texas Tech — thin defensive data",
+          "text": "123 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "early season",
+          "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
+          "widening": "4%"
+        }
+      ],
+      "unmeasured": [
+        {
+          "item": "Home starting quarterback",
+          "why": "starting QB not supplied for home"
+        },
+        {
+          "item": "Away starting quarterback",
+          "why": "starting QB not supplied for away"
+        },
+        {
+          "item": "Home availability / injuries",
+          "why": "no injury report supplied for home"
+        },
+        {
+          "item": "Away availability / injuries",
+          "why": "no injury report supplied for away"
+        },
+        {
+          "item": "Blue-chip / per-player recruiting talent",
+          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
+        },
+        {
+          "item": "Weather at kickoff",
+          "why": "no weather supplied"
+        },
+        {
+          "item": "Off-field, culture and NIL situation",
+          "why": "no public feed for NIL figures, locker-room reporting or discipline exists that this engine reads; nothing is inferred and the gap is carried as uncertainty"
+        },
+        {
+          "item": "Coaching and coordinator continuity",
+          "why": "no public coaching-tenure feed is wired; a new coordinator changes a team’s identity in ways the ratings only learn after the fact"
+        },
+        {
+          "item": "Motivation, lookahead and locker-room state",
+          "why": "not measurable from any public source; treated as variance, never as a point adjustment"
+        },
+        {
+          "item": "Houston — recruiting ratings",
+          "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Houston — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+        },
+        {
+          "item": "Texas Tech — recruiting ratings",
+          "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        }
+      ],
+      "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
+    },
+    "market": {
+      "available": true,
+      "model": "Texas Tech -14.3",
+      "market": "Texas Tech -9.5",
+      "difference": "4.8 points",
+      "difference_n": 4.804377902118031,
+      "total_model": "54.8",
+      "total_market": "52.5",
+      "book": "captured (stale 131h) · FanDuel",
+      "captured": "2026-09-13T10:00:02.682+00:00",
+      "capture_age": "131 hours old",
+      "stale": false,
+      "classification": "RESEARCH",
+      "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "headline": "EdgeDesk projects Texas Tech 35, Houston 20.",
+    "state": {
+      "label": "RESEARCH",
+      "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
+    },
+    "score": {
+      "away": {
+        "team": "Houston",
+        "points": "20"
+      },
+      "home": {
+        "team": "Texas Tech",
+        "points": "35"
+      },
+      "note": "Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
+    },
+    "table": {
+      "cols": [
+        "Houston",
+        "Texas Tech"
+      ],
+      "rows": [
+        {
+          "k": "ETSR (overall)",
+          "a": "+1.4  #37",
+          "h": "+7.2  #10",
+          "note": "points vs an average FBS team, neutral field"
+        },
+        {
+          "k": "Talent",
+          "a": "56.1  #24",
+          "h": "69.8  #2",
+          "note": null
+        },
+        {
+          "k": "Performance",
+          "a": "56.6  #20",
+          "h": "56.9  #19",
+          "note": null
+        },
+        {
+          "k": "Offense",
+          "a": "53.8  #19",
+          "h": "48.8  #43",
+          "note": null
+        },
+        {
+          "k": "Defense",
+          "a": "53.2  #24",
+          "h": "57.6  #6",
+          "note": null
+        },
+        {
+          "k": "Special teams",
+          "a": "49.5  #50",
+          "h": "49.5  #51",
+          "note": null
+        },
+        {
+          "k": "Run offense",
+          "a": "55.6  #17",
+          "h": "45.8  #49",
+          "note": null
+        },
+        {
+          "k": "Pass offense",
+          "a": "50.7  #26",
+          "h": "49.3  #36",
+          "note": null
+        },
+        {
+          "k": "Run defense",
+          "a": "60.2  #10",
+          "h": "59.2  #13",
+          "note": null
+        },
+        {
+          "k": "Pass defense",
+          "a": "49.9  #38",
+          "h": "59.1  #8",
+          "note": null
+        },
+        {
+          "k": "QB room",
+          "a": "59.0  #20",
+          "h": "57.2  #39",
+          "note": null
+        },
+        {
+          "k": "Offensive line",
+          "a": "52.3  #32",
+          "h": "54.1  #21",
+          "note": null
+        },
+        {
+          "k": "Receivers",
+          "a": "54.1  #34",
+          "h": "54.2  #32",
+          "note": null
+        },
+        {
+          "k": "Running backs",
+          "a": "54.7  #34",
+          "h": "56.7  #6",
+          "note": null
+        },
+        {
+          "k": "Defensive line",
+          "a": "54.0  #21",
+          "h": "62.2  #2",
+          "note": null
+        },
+        {
+          "k": "Linebackers",
+          "a": "53.1  #27",
+          "h": "65.0  #1",
+          "note": null
+        },
+        {
+          "k": "Secondary",
+          "a": "51.7  #41",
+          "h": "62.5  #1",
+          "note": null
+        },
+        {
+          "k": "Depth",
+          "a": "52.4  #42",
+          "h": "53.2  #8",
+          "note": null
+        },
+        {
+          "k": "Continuity",
+          "a": "48.9  #33",
+          "h": "51.7  #23",
+          "note": null
+        },
+        {
+          "k": "Confidence",
+          "a": "22%",
+          "h": "23%",
+          "note": "how much EdgeDesk knows, not how good the team is"
+        },
+        {
+          "k": "Δ national rank, this week",
+          "a": "no change",
+          "h": "no change",
+          "note": "differenced from last week’s committed snapshot"
+        }
+      ]
+    },
+    "notes": [
+      "EdgeDesk’s line is Texas Tech -14.3 on a neutral read of the two teams, before any book is consulted. Projected total 54.8.",
+      "Texas Tech wins 83% of the time in EdgeDesk’s simulation, Houston 17%.",
+      "Eight games in ten land between -8.7 and +35.3 for Texas Tech. A single result inside that band tells you nothing new about either team.",
+      "The market has Texas Tech -9.5 at captured (stale 131h) · FanDuel, 4.8 points from EdgeDesk’s number.",
+      "Houston quarterback: Conner Weigman — started the last game; no announcement for this one.",
+      "Texas Tech quarterback: Will Hammond — started the last game; no announcement for this one."
+    ],
+    "missing": [
+      "No availability report reached Conner Weigman — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Will Hammond — unknown is carried as unknown, never as healthy."
+    ],
+    "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
+    "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
+    "source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-18. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+  }
+}
