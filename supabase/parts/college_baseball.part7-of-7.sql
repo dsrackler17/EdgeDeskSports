@@ -9,6 +9,83 @@
    Every SQL file here ends by saying what it just guaranteed, so applying it
    is not an act of faith. A row reading anything but ok is a thing to chase.
    ═══════════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE IMPORTER'S OWN GRANTS.
+
+   This file named service_role exactly zero times while mlb_pitcher_history.sql
+   named it ten, so the college importer could not write this schema under any
+   configuration. Once the schema was exposed to PostgREST the first insert came
+   straight back as
+
+     INSERT cbb.import_runs -> 403 {"code":"42501",
+       "message":"permission denied for schema cbb"}
+
+   after a clean walk of all 437 teams. The 23 guarantees above did not catch it
+   because every one of them checks that a READER cannot write, and none checked
+   that the WRITER can. Row 25 is that missing check.
+   ═══════════════════════════════════════════════════════════════════════════ */
+grant usage on schema cbb to service_role;
+grant usage, select on all sequences in schema cbb to service_role;
+
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'import_runs','teams','games','team_seasons',
+    'player_games','player_seasons','team_stat_seasons',
+    'ncaa_player_seasons','club_map',
+    'stg_teams','stg_games','stg_player_games',
+    'stg_ncaa_player_seasons','stg_club_map'
+  ] loop
+    if to_regclass('cbb.' || t) is not null then
+      execute format('grant all on cbb.%I to service_role', t);
+    end if;
+  end loop;
+end $$;
+
+do $$
+declare f record;
+begin
+  /* The gates, to the writer only. Iterating pg_proc rather than listing
+     signatures keeps this right when an argument list changes. */
+  for f in
+    select p.oid::regprocedure as sig
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'cbb'
+      and p.proname in ('promote_cbb_import','abandon_cbb_import','rebuild_team_seasons',
+                        'promote_cbb_stats','rebuild_player_seasons',
+                        'promote_ncaa_seasons','promote_club_map')
+  loop
+    execute format('grant execute on function %s to service_role', f.sig);
+  end loop;
+end $$;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE VIEWS, GRANTED AND MADE TO HONOUR RLS.
+
+   Every grant above is a loop over TABLE names, so all four views were left
+   ungranted and the college card answered db 403 while the MLB panels, whose
+   contract grants mlbhist.dataset_status by name, came up fine. Granted here
+   as one list rather than inside the loops, so adding a view cannot silently
+   skip its grant again.
+
+   security_invoker makes a view read as whoever called it. Without it a view
+   runs as its owner and reads straight past the policies on the tables under
+   it — which changes nothing while every one of those tables has a read-all
+   policy, and becomes an invisible hole the first time one is narrowed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+do $$
+declare v text;
+begin
+  foreach v in array array['season_status','stats_coverage',
+                           'ncaa_archive_status','archive_by_espn_club'] loop
+    if to_regclass('cbb.' || v) is not null then
+      execute format('alter view cbb.%I set (security_invoker = true)', v);
+      execute format('grant select on cbb.%I to anon, authenticated, service_role', v);
+    end if;
+  end loop;
+end $$;
+
 with checks as (
   select 1 as n, 'cbb.games is the union spine and is keyed on the source game id' as guarantee,
     case when exists (select 1 from information_schema.table_constraints
@@ -134,6 +211,18 @@ with checks as (
                        where schemaname='cbb' and tablename='stg_player_games')
          then 'ok (RLS with no policy denies by default)'
          else 'CHECK THIS' end
+  union all select 24, 'a reader may read the four views the panels actually ask for',
+    case when (select bool_and(has_table_privilege('anon','cbb.'||v,'SELECT'))
+               from unnest(array['season_status','stats_coverage',
+                                 'ncaa_archive_status','archive_by_espn_club']) v
+               where to_regclass('cbb.'||v) is not null)
+         then 'ok (an ungranted view is a db 403 on the card, not an empty one)'
+         else 'CHECK THIS — the college card will answer 403' end
+  union all select 25, 'the importer may write this schema',
+    case when has_schema_privilege('service_role','cbb','usage')
+          and has_table_privilege('service_role','cbb.import_runs','INSERT')
+         then 'ok (checking only that a READER cannot write leaves nobody holding a key)'
+         else 'CHECK THIS — no import can reach this schema' end
   union all select 23, 'the stats gates are not callable by a reader',
     case when (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                 where n.nspname='cbb' and p.proname in ('promote_cbb_stats','rebuild_player_seasons')
