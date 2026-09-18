@@ -19,6 +19,15 @@
 name: College baseball source probe
 
 on:
+  # A pull request touching the probe runs it on a real runner, writing
+  # nothing. This is how the answer gets back at all: the workflow is not on
+  # the default branch yet, so workflow_dispatch cannot reach it, and the
+  # author's own session cannot reach the sources. The pull request IS the
+  # experiment. mlb-pitchers.yml probes its source the same way.
+  pull_request:
+    paths:
+      - 'tools/cbb/**'
+      - '.github/workflows/college-baseball.yml'
   workflow_dispatch:
     inputs:
       date:
