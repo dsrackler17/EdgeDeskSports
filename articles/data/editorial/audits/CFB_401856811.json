@@ -1,0 +1,679 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "CFB:401856811",
+  "game_id": "401856811",
+  "sport": "CFB",
+  "snapshot_id": "snap_5da855034301f4e3",
+  "audited_at": "2026-09-19T03:30:28.662Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Texas Tech -14.3 with a fair total of 54.8, which makes Texas Tech the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 14.3,
+      "favours_side": "home",
+      "favours_team": "Texas Tech",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 14.30437790211803,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Houston winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Texas Tech is ahead on the scoreboard in a way that looks like Texas Tech -14.3 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Texas Tech -14.3 where the market has Texas Tech -9.5 at captured (stale 134h) · FanDuel — a 4.8 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 4.8,
+      "favours_side": "home",
+      "favours_team": "Texas Tech",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 4.8,
+        "unit": "points",
+        "market_margin": 9.5,
+        "market_text": "Texas Tech -9.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Texas Tech -9.5 and Texas Tech -14.3.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Texas Tech is the better football team by 9.6 points on opponent-adjusted results — but about 74% of that rating is still last season carried forward, and in a portal era last season is a different team — worth +9.6 of the EdgeDesk number, in Texas Tech’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model",
+      "weight": 9.6,
+      "favours_side": "home",
+      "favours_team": "Texas Tech",
+      "expected_signal": null,
+      "falsifier": "Houston winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Playing at Texas Tech is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Texas Tech’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 4.1,
+      "favours_side": "home",
+      "favours_team": "Texas Tech",
+      "expected_signal": null,
+      "falsifier": "Houston winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Stylistically the matchup favours Texas Tech by 0.6 points: field position — worth +0.6 of the EdgeDesk number, in Texas Tech’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "model",
+      "weight": 0.6,
+      "favours_side": "home",
+      "favours_team": "Texas Tech",
+      "expected_signal": null,
+      "falsifier": "Houston winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Houston’s pass offense rates 50.7 (#26 of 67) against Texas Tech’s pass defense at 59.1 (#8 of 68). Texas Tech’s unit stands higher among its own position group, by 18 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Houston pass offense handles Texas Tech pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Houston’s run offense rates 55.6 (#17 of 68) against Texas Tech’s run defense at 59.2 (#13 of 68). Texas Tech’s unit stands higher among its own position group, by 4 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Houston run offense handles Texas Tech run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Texas Tech’s pass offense rates 49.3 (#36 of 67) against Houston’s pass defense at 49.9 (#38 of 68). Texas Tech’s unit stands higher among its own position group, by 2 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Texas Tech pass offense handles Houston pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Texas Tech’s run offense rates 45.8 (#49 of 68) against Houston’s run defense at 60.2 (#10 of 68). Houston’s unit stands higher among its own position group, by 39 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Texas Tech run offense handles Houston run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Houston holds the largest measured edge in this matchup: Houston 55.6 (#17 of 68) vs Texas Tech 45.8 (#49 of 68) — 32 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "rushing",
+      "weight": 8,
+      "favours_side": "away",
+      "favours_team": "Houston",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Texas Tech winning that category on the day.",
+      "watch": "Whether Houston’s edge in Run offense shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Run offense"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Texas Tech holds the largest measured edge in this matchup: Texas Tech 53.4 (#4 of 68) vs Houston 49.1 (#54 of 68) — 50 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "matchup",
+      "weight": 12.5,
+      "favours_side": "home",
+      "favours_team": "Texas Tech",
+      "expected_signal": null,
+      "falsifier": "Houston winning that category on the day.",
+      "watch": "Whether Texas Tech’s edge in Scheme fit shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Scheme fit"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: 1.45 FBS-equivalent games played.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 3,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on Houston — low sample size.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Texas Tech -14.3 with a fair total of 54.8, which makes Texas Tech the better team here by that margin on this field.",
+      "weight": 14.3,
+      "favours_team": "Texas Tech",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 14.30437790211803,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 2,
+          "away": -2,
+          "diff": 2
+        }
+      ],
+      "observed_result": "Texas Tech Red Raiders won by 2 where EdgeDesk projected a 14.3-point edge.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk made better won, but by a margin the projection did not describe"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Texas Tech -14.3 where the market has Texas Tech -9.5 at captured (stale 134h) · FanDuel — a 4.8 points disagreement.",
+      "weight": 4.8,
+      "favours_team": "Texas Tech",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 4.8,
+        "unit": "points",
+        "market_margin": 9.5,
+        "market_text": "Texas Tech -9.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 2,
+          "away": -2,
+          "diff": 2
+        }
+      ],
+      "observed_result": "Texas Tech Red Raiders won by 2.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk preferred won, but did not clear the market number, so the market had the better estimate of the size"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Texas Tech is the better football team by 9.6 points on opponent-adjusted results — but about 74% of that rating is still last season carried forward, and in a portal era last season is a different team — worth +9.6 of the EdgeDesk number, in Texas Tech’s favour.",
+      "weight": 9.6,
+      "favours_team": "Texas Tech",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Playing at Texas Tech is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Texas Tech’s favour.",
+      "weight": 4.1,
+      "favours_team": "Texas Tech",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Stylistically the matchup favours Texas Tech by 0.6 points: field position — worth +0.6 of the EdgeDesk number, in Texas Tech’s favour.",
+      "weight": 0.6,
+      "favours_team": "Texas Tech",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Houston’s pass offense rates 50.7 (#26 of 67) against Texas Tech’s pass defense at 59.1 (#8 of 68). Texas Tech’s unit stands higher among its own position group, by 18 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Houston’s run offense rates 55.6 (#17 of 68) against Texas Tech’s run defense at 59.2 (#13 of 68). Texas Tech’s unit stands higher among its own position group, by 4 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Texas Tech’s pass offense rates 49.3 (#36 of 67) against Houston’s pass defense at 49.9 (#38 of 68). Texas Tech’s unit stands higher among its own position group, by 2 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Texas Tech’s run offense rates 45.8 (#49 of 68) against Houston’s run defense at 60.2 (#10 of 68). Houston’s unit stands higher among its own position group, by 39 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "rushing",
+      "claim": "Houston holds the largest measured edge in this matchup: Houston 55.6 (#17 of 68) vs Texas Tech 45.8 (#49 of 68) — 32 places on the national board.",
+      "weight": 8,
+      "favours_team": "Houston",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 5.25,
+          "away": 4.757,
+          "diff": 0.49,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.094,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 168,
+          "away": 176,
+          "diff": -8,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.045,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Houston Cougars 4.76 yards per carry against Texas Tech Red Raiders 5.25; Houston Cougars 176 rushing yards against Texas Tech Red Raiders 168.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "low",
+      "why": "1 of 2 expected signals went the way EdgeDesk expected",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "matchup",
+      "claim": "Texas Tech holds the largest measured edge in this matchup: Texas Tech 53.4 (#4 of 68) vs Houston 49.1 (#54 of 68) — 50 places on the national board.",
+      "weight": 12.5,
+      "favours_team": "Texas Tech",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Scheme fit"
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: 1.45 FBS-equivalent games played.",
+      "weight": 3,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 0,
+      "PARTIALLY CONFIRMED": 3,
+      "NOT CONFIRMED": 0,
+      "INCONCLUSIVE": 9
+    },
+    "graded": 3,
+    "total": 12,
+    "not_observable": 9,
+    "headline": "0 of 3 gradeable claims held up, 0 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "401856811",
+    "sport": "CFB",
+    "snapshot_id": "snap_5da855034301f4e3",
+    "graded_at": "2026-09-19T03:30:28.662Z",
+    "final": {
+      "home_team": "Texas Tech Red Raiders",
+      "away_team": "Houston Cougars",
+      "home_score": 28,
+      "away_score": 26,
+      "margin": 2,
+      "total_points": 54,
+      "winner": "Texas Tech Red Raiders"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "home",
+      "team": "Texas Tech",
+      "point": -9.5,
+      "line_text": "Texas Tech -9.5",
+      "book": "captured (stale 124h) · FanDuel",
+      "market_home_margin": -9.5,
+      "model_home_margin": -14.3,
+      "gap": 4.8,
+      "why": "EdgeDesk’s own number sat 4.8 points toward Texas Tech of the quote EdgeDesk captured at captured (stale 124h) · FanDuel. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "over",
+      "line": 52.5,
+      "model_total": 54.8,
+      "gap": 2.3,
+      "why": "EdgeDesk’s fair total of 54.8 sat 2.3 points above the captured total of 52.5."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "loss",
+        "cover_margin": -7.5,
+        "side": "home",
+        "point": -9.5,
+        "team": "Texas Tech",
+        "line_text": "Texas Tech -9.5"
+      },
+      "total": {
+        "outcome": "win",
+        "points": 54,
+        "line": 52.5,
+        "side": "over",
+        "by": 1.5,
+        "direction": "over"
+      },
+      "moneyline": {
+        "outcome": "win",
+        "side": "home",
+        "team": "Texas Tech"
+      }
+    },
+    "bet_headline": "LOSS",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": 14.3,
+      "actual_home_margin": 2,
+      "margin_error": 12.3,
+      "right_side": true,
+      "projected_total": 54.8,
+      "actual_total": 54,
+      "total_error": 0.8,
+      "projected_score": {
+        "away": 20,
+        "home": 35
+      },
+      "inside_published_range": true,
+      "range_text": "-8.7 → +35.3 (Texas Tech)"
+    },
+    "process": {
+      "grade": "MIXED",
+      "reasons": [
+        "0 claims held up, 1 held up in direction only and 0 did not. Parts of the read were right and parts were not.",
+        "EdgeDesk projected a home margin of 14.3 and the game finished 2 the home way — 12.3 points of margin error, inside the range the model published."
+      ],
+      "confirmed": 0,
+      "partial": 1,
+      "wrong": 0,
+      "graded": 1,
+      "high_variance": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "MIXED",
+    "variance_markers": [
+      {
+        "key": "one_score",
+        "severity": "medium",
+        "label": "A 2-point game",
+        "text": "A game this close is decided inside the noise of any projection. Whichever way it fell, it is weak evidence about either team."
+      }
+    ],
+    "verdict": {
+      "key": "wrong_partly_for_the_right_reason",
+      "line": "The number did not land and the reasoning half held. There is something here to investigate without concluding the model is broken."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401856811:unobservable",
+      "game_id": "401856811",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 3,
+      "article_id": "postgame-cfb-401856811",
+      "snapshot_id": "snap_5da855034301f4e3",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "8 of the claims in this article rested on model, passing, rushing, matchup.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; the read does not name a side, so there is no direction to test.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
+      "bet_result": "LOSS",
+      "process_grade": "MIXED",
+      "created_at": "2026-09-19T03:30:28.662Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401856811:market_better",
+      "game_id": "401856811",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 3,
+      "article_id": "postgame-cfb-401856811",
+      "snapshot_id": "snap_5da855034301f4e3",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Texas Tech -14.3 where the market has Texas Tech -9.5 at captured (stale 134h) · FanDuel — a 4.8 points disagreement.",
+      "actual_result": "Texas Tech Red Raiders won by 2. the side EdgeDesk preferred won, but did not clear the market number, so the market had the better estimate of the size",
+      "lesson": "EdgeDesk was directionally with the market’s eventual answer but wrong about the size. The market’s number was closer.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Track disagreements of this size across the season. The question is not whether one landed; it is whether the class of them has any edge at all.",
+      "bet_result": "LOSS",
+      "process_grade": "MIXED",
+      "created_at": "2026-09-19T03:30:28.662Z"
+    }
+  ]
+}
