@@ -193,10 +193,26 @@ const MATCH_ENTITLED = {
     chk('the tennis layer holds no credential: ' + k, SRC.indexOf(k) < 0));
   chk('and computes no probability of its own',
       SRC.indexOf('Math.exp') < 0 && SRC.indexOf('Math.pow') < 0);
-  chk('it names only the five approved database calls', () => {
-    const calls = [...new Set((SRC.match(/call\("(\w+)"/g) || []).map(x => x.replace(/call\("|"/g, '')))];
-    return calls.length === 5 && calls.every(c => /^ai_/.test(c));
+  /* The contract grew when the Tennis Lab landed: five market-aware calls plus
+     four ai_lab_* ones that answer from the record with no market at all. The
+     assertion that matters is unchanged — the layer may name ONLY approved
+     security-definer functions, and every one of them must exist in a committed
+     migration. A hardcoded count of five would have to be edited on every
+     legitimate change, so it checks the actual set instead. */
+  const APPROVED = ['ai_surface_leaders', 'ai_market_disagreement', 'ai_player_context',
+    'ai_match_context', 'ai_data_health',
+    'ai_lab_leaders', 'ai_lab_player', 'ai_lab_rank_gap', 'ai_lab_health'];
+  const calls = [...new Set((SRC.match(/call\("(\w+)"/g) || []).map(x => x.replace(/call\("|"/g, '')))];
+  chk('it names only approved database calls', () =>
+    calls.length > 0 && calls.every((c) => APPROVED.indexOf(c) >= 0),
+    'unapproved: ' + calls.filter((c) => APPROVED.indexOf(c) < 0).join(','));
+  chk('every call it names is an ai_ function', () => calls.every((c) => /^ai_/.test(c)));
+  chk('and every one is created by a committed migration', () => {
+    const sql = ['tennis_record.sql', 'tennis_lab.sql']
+      .map((f) => fs.readFileSync(path.join(__dirname, '..', '..', 'supabase', f), 'utf8')).join('\n');
+    return calls.every((c) => new RegExp('create or replace function\\s+tennis\\.' + c + '\\s*\\(').test(sql));
   });
+  chk('the Lab calls are wired', () => calls.filter((c) => /^ai_lab_/.test(c)).length >= 4);
 
   if (fail) {
     console.log('FAIL | tennis AI retrieval | ' + fail + ' of ' + (pass + fail) + ' assertions failed');

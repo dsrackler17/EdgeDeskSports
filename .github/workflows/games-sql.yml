@@ -61,8 +61,10 @@ on:
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
       - 'supabase/tennis_live_center.sql'
+      - 'supabase/tennis_lab.sql'
       - 'tools/tennis/sql/**'
       - 'tools/tennis/tennis_sql.test.js'
+      - 'tools/tennis/lab_sql.test.js'
       # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
       # function and its refusals are the whole safety property — a short,
       # duplicated or unreconciled dataset must not be able to replace a good
@@ -120,8 +122,10 @@ on:
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
       - 'supabase/tennis_live_center.sql'
+      - 'supabase/tennis_lab.sql'
       - 'tools/tennis/sql/**'
       - 'tools/tennis/tennis_sql.test.js'
+      - 'tools/tennis/lab_sql.test.js'
       # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
       # function and its refusals are the whole safety property — a short,
       # duplicated or unreconciled dataset must not be able to replace a good
@@ -329,6 +333,33 @@ jobs:
           PGPASSWORD: postgres
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/tennis/leakage.test.js | tee tennis_leakage.log
+
+      # THE TENNIS LAB. The research product over the record — surface
+      # translation, form and trajectory, workload, the matchup studio, the
+      # historical explorer.
+      #
+      # Three of its claims can only be demonstrated by a real database:
+      #
+      #   THE MATCHUP STUDIO IS READABLE BY A SIGNED-OUT VISITOR. It crosses
+      #   into the PRIVATE point-in-time feature table to answer a historical
+      #   cutoff, and PostgreSQL checks table permissions when it plans a
+      #   statement rather than when a branch returns rows — so an invoker
+      #   function failed for anon even with no cutoff set. That is not
+      #   visible to any amount of reading and it made the centrepiece of the
+      #   Lab dead for every logged-out reader.
+      #
+      #   THE MARKET MODULE STAYS SHUT. Three conditions must hold together —
+      #   the flag, a commercially cleared provider, and a fresh snapshot FROM
+      #   that provider — and the suite drives every combination short of all
+      #   three, including a fresh snapshot from an uncleared source.
+      #
+      #   THE CUTOFF IS STRICT. A match is planted after the cutoff date and
+      #   the suite proves it cannot reach the answer.
+      - name: Run the tennis lab SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/lab_sql.test.js | tee tennis_lab.log
 
       # The editorial system. Two rules in it are statements about VALUES
       # rather than about rows, so neither can be an RLS policy and both are

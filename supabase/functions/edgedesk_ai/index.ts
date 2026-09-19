@@ -19776,7 +19776,47 @@ const EDRESEARCH: any = (globalThis as any).EDRESEARCH;
     { id: "best_to_research",
       test: /\b(best|worth|which|what)\b[^?]{0,40}\b(matches|games|fixtures)\b[^?]{0,40}\b(research|look at|study|today|worth)\b|\bwhat should i (research|look at|study)\b|\bworth researching\b/i,
       needs: ["disagreement", "health"],
-      answers: "Which tennis matches are worth researching today." }
+      answers: "Which tennis matches are worth researching today." },
+
+    /* ── THE TENNIS LAB INTENTS ──────────────────────────────────────────
+       Everything above needs a CURRENT match, a market, or both. These do
+       not: they are answered from the historical record and the ratings
+       derived from it, so they work on a project with no odds provider, no
+       schedule feed and no match on court. That is the whole point of the
+       Lab, and it is why they exist as their own intents rather than being
+       folded into the market-aware ones above. */
+    { id: "lab_surface_leaders",
+      test: /\b(strongest|best|top)\b[^?]*\b(clay|grass|hard|indoor)\b|\bwho\b[^?]*\bbest\b[^?]*\bsurface\b/i,
+      needs: ["lab_leaders"],
+      answers: "Who is strongest on a surface, from the rating record rather than from a market." },
+    { id: "lab_compare",
+      test: /\bcompare\b[^?]*\b(these|two|and|players?)\b|\b(vs\.?|versus)\b[^?]*\b(on )?(hard|clay|grass|indoor)\b/i,
+      needs: ["lab_player", "lab_player_b"],
+      answers: "Two players side by side on a surface." },
+    { id: "lab_form_sustainable",
+      test: /\b(sustainable|for real|hot streak|keep (this|it) up|regress\w*)\b/i,
+      needs: ["lab_player"],
+      answers: "Whether a player's recent form is supported by the strength of who they played." },
+    { id: "lab_underrated",
+      test: /\b(underrated|overrated|undervalued)\b|\branking\b[^?]*\b(wrong|disagree\w*|does ?n.t)\b/i,
+      needs: ["lab_rank_gap"],
+      answers: "Where EdgeDesk's rating disagrees most with the official ranking." },
+    { id: "lab_improved",
+      test: /\b(improved|improving|risers?|fallers?|declin\w+)\b|\bwho\b[^?]*\bmoved\b/i,
+      needs: ["lab_leaders", "lab_rank_gap"],
+      answers: "Who has moved most in the rating over a recent window." },
+    { id: "lab_surface_effect",
+      test: /\bhow much\b[^?]*\bsurface\b|\bsurface\b[^?]*\b(change|affect|matter)\w*\b/i,
+      needs: ["lab_player"],
+      answers: "How much a surface changes a player's strength relative to their own baseline." },
+    { id: "lab_workload",
+      test: /\b(workload|fatigue|tired|rest days?|schedule)\b/i,
+      needs: ["lab_player"],
+      answers: "What the player's recent schedule looks like \u2014 a calendar observation, never a fitness claim." },
+    { id: "lab_health",
+      test: /\b(what|how much)\b[^?]*\b(missing|unknown|not (known|available))\b|\bdata (quality|coverage|health)\b/i,
+      needs: ["lab_health"],
+      answers: "What the Lab does and does not have on file." }
   ];
 
   function classifyTennis(question) {
@@ -19875,6 +19915,45 @@ const EDRESEARCH: any = (globalThis as any).EDRESEARCH;
          rather than implying EdgeDesk found nothing. */
       if (out.disagreement && out.disagreement.length === 0) out.maybe_unentitled = true;
     }
+    /* ── LAB RETRIEVALS. No market, no schedule, no odds. ────────────── */
+    if (needs.indexOf("lab_leaders") >= 0) {
+      out.lab_leaders = await call("ai_lab_leaders",
+        { p_tour: tour, p_mode: surface || "overall", p_limit: 10 },
+        "tennis_lab_leaders",
+        "EdgeDesk rating leaders for this mode, each with the SAMPLE behind it and "
+        + "its uncertainty. A leaderboard position built on ten matches is not the same "
+        + "claim as one built on four hundred, and the sample is why.");
+    }
+    if (needs.indexOf("lab_player") >= 0 && o.player_id) {
+      out.lab_player = await call("ai_lab_player", { p_player_id: o.player_id },
+        "tennis_lab_player",
+        "Rating, surface splits, three form horizons, workload, trajectory class and "
+        + "uncertainty, with the rating version and when it was computed. The trajectory "
+        + "class already accounts for the strength of the opponents played \u2014 "
+        + "'above_sustainable' means the wins are real but the schedule got easier.");
+    }
+    if (needs.indexOf("lab_player_b") >= 0 && o.player_b_id) {
+      out.lab_player_b = await call("ai_lab_player", { p_player_id: o.player_b_id },
+        "tennis_lab_player_b",
+        "The second player, on the same contract as the first.");
+    }
+    if (needs.indexOf("lab_rank_gap") >= 0) {
+      out.lab_rank_gap = await call("ai_lab_rank_gap",
+        { p_tour: tour, p_direction: /overrated/i.test(question || "") ? "overrated" : "underrated", p_limit: 8 },
+        "tennis_lab_rank_gap",
+        "Where the official ranking and the EdgeDesk rating disagree most, as a gap "
+        + "between two RANKS rather than between a rank and a rating. Ranking rewards a "
+        + "52-week points cycle; the rating reads the matches. Neither is wrong \u2014 they "
+        + "measure different things, and the gap is the interesting part.");
+    }
+    if (needs.indexOf("lab_health") >= 0) {
+      out.lab_health = await call("ai_lab_health", {},
+        "tennis_lab_health",
+        "What is on file: matches, rated players, the seasons covered, when the ratings "
+        + "were computed, and whether the market module is available (it is off unless a "
+        + "cleared provider has delivered a fresh snapshot).");
+    }
+
     if (needs.indexOf("player") >= 0 && o.player_id) {
       out.player = await call("ai_player_context", { p_player_id: o.player_id },
         "tennis_player_context",
@@ -19967,7 +20046,20 @@ const EDRESEARCH: any = (globalThis as any).EDRESEARCH;
     "A gap between EdgeDesk and the market is a reason to research, never a recommendation, a selection or a stake.",
     "If the retrieval came back empty because the reader is not entitled, say that plainly. Do not imply EdgeDesk found nothing.",
     "If a retrieval failed, say it failed. An error is not an empty result.",
-    "Say what is missing. Every answer about a current match states the data timestamp, the market timestamp, the model version, what EdgeDesk does not have, and whether the match passes the research-quality gates."
+    "Say what is missing. Every answer about a current match states the data timestamp, the market timestamp, the model version, what EdgeDesk does not have, and whether the match passes the research-quality gates.",
+
+    /* ── TENNIS LAB. Rules for the questions answered from the RECORD
+       rather than from a market. These are where a confident wrong answer is
+       easiest, because the historical data is rich enough to sound
+       authoritative about things it cannot actually support. */
+    "A Tennis Lab answer is HISTORICAL RESEARCH unless a current match was retrieved. Say which it is. Never let a rating built from completed matches sound like a preview of play today.",
+    "A trajectory class already accounts for the strength of schedule. 'above_sustainable' means the wins are real and the inference from them is not \u2014 report it that way rather than as a hot streak. Never present a winning run as improvement without saying who it came against.",
+    "A workload class is a CALENDAR observation. EdgeDesk holds no medical information about any player. Never say or imply a player is injured, unfit, carrying a knock, or at risk, however heavy the schedule.",
+    "A surface adjustment is shrunk by the surface sample and the raw figure is carried beside it. Quote both, or quote the adjustment with its sample. Never quote a surface specialism built on a handful of matches as though it were established.",
+    "The 0-100 power rating CLAMPS at both ends. If a player is at 0 or 100 the rating has stopped discriminating; say so and use the Elo instead of implying the clamp is a measurement.",
+    "A projection carries a band that never closes, because the model is wrong on its own test set regardless of how good the inputs are. Never state a projected probability as though it were exact, and when the band crosses even money say the matchup does not lean reliably.",
+    "The Market Comparison module is OFF unless the retrieval says a cleared provider delivered a fresh snapshot. Never quote, estimate or imply a market price, a fair price, an edge or an expected value while it is off.",
+    "The historical archive is licensed for NON-COMMERCIAL research. Never present it as a commercially cleared price feed or suggest it could be used as one."
   ];
 
   /* The block appended to the system prompt for a tennis question. Built from
@@ -20000,6 +20092,11 @@ const EDRESEARCH: any = (globalThis as any).EDRESEARCH;
       tennis_record: true, tennis_rating: true, tennis_surface: true,
       tennis_form: true, tennis_fatigue: true, tennis_h2h: true,
       tennis_model: true, tennis_weather: true,
+      /* the Lab: answered from the record, with no market of any kind */
+      tennis_lab: true, tennis_surface_translation: true, tennis_trajectory: true,
+      tennis_workload: true, tennis_rank_disagreement: true, tennis_historical_search: true,
+      /* off until a cleared provider delivers, and the database decides, not this file */
+      tennis_market_comparison: false,
       /* genuinely absent, and declared so an answer says it rather than guessing */
       tennis_injury: false, tennis_point_by_point: false, tennis_doubles: false,
       tennis_exact_start_time: false,
@@ -20009,7 +20106,12 @@ const EDRESEARCH: any = (globalThis as any).EDRESEARCH;
   };
   TENNIS_CAPABILITIES.tennis_wta = TENNIS_CAPABILITIES.tennis_atp;
 
-  var TENNIS_NEEDS = "Wired. The match record, point-in-time features, the rating layer, "
+  var TENNIS_NEEDS = "Wired, and the Tennis Lab needs no sportsbook: surface translation, "
+    + "form and trajectory, workload, ranking-versus-rating disagreement and the historical "
+    + "search all answer from the record through ai_lab_* functions. Market comparison is OFF "
+    + "and stays off until a commercially cleared odds provider delivers a fresh snapshot; the "
+    + "database decides that, not the assistant. "
+    + "The match record, point-in-time features, the rating layer, "
     + "the model registry, market snapshots and the published record are all in the tennis "
     + "schema and are read through five bounded security-definer functions. What is genuinely "
     + "NOT ingested: injuries and withdrawals (no source), point-by-point (no source), doubles "

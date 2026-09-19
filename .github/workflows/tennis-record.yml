@@ -53,7 +53,7 @@ on:
       job:
         description: 'Which job to run'
         type: choice
-        options: [features, ratings, board, settle, incremental, weather, model, monitor, all]
+        options: [features, ratings, lab, brief, board, settle, incremental, weather, model, monitor, all]
         required: true
         default: monitor
       commit:
@@ -96,6 +96,7 @@ jobs:
           node tools/tennis/model.test.js
           node tools/tennis/providers.test.js
           node tools/tennis/ai_tennis.test.js
+          node tools/tennis/lab.test.js
 
       - name: Decide which job this run is
         id: pick
@@ -149,6 +150,41 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/incremental.js rankings ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
           || echo "::warning::the ranking refresh did not complete — the cursor did not advance and the next run re-reads this window"
+
+      # ── THE TENNIS LAB ─────────────────────────────────────────────────────
+      # ORDER MATTERS AND IS NOT ARBITRARY. The history snapshot is what the
+      # 30- and 90-day rating deltas are measured AGAINST, so it is written
+      # before the signals that read it; run the other way round, every delta
+      # would be null on the first night and silently stale afterwards.
+      #
+      # Both are separate from the rating build above on purpose: that query is
+      # the one that once took nine minutes and now takes seventeen seconds, and
+      # bolting eight more aggregates onto it would put that back at risk. A
+      # failure here leaves the ratings intact and the Lab degraded, rather than
+      # the whole record broken.
+      - name: Snapshot the rating history
+        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'lab' || steps.pick.outputs.job == 'all' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/build_history.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
+          || echo "::warning::the rating history did not rebuild — trajectory deltas will be stale until it does"
+
+      - name: Rebuild the Lab's derived signals
+        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'lab' || steps.pick.outputs.job == 'all' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/build_lab.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
+
+      # The daily research brief. It needs NO sportsbook and NO schedule: with
+      # neither it falls back to a trends or record brief and says so in its own
+      # header rather than presenting one as a preview of today's play. So this
+      # step has no provider precondition and is expected to succeed on a
+      # project that has never had an odds feed.
+      - name: Generate the research brief
+        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'brief' || steps.pick.outputs.job == 'all' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/build_brief.js --all ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
 
       # ── THE BOARD ──────────────────────────────────────────────────────────
       # Results before prices: a match that finished should be settled before the
