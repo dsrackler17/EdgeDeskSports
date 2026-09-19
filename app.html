@@ -1087,6 +1087,103 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .tn-pts{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-top:5px}
 .tn-score-none{font-size:12px;color:var(--faint)}
 /* ---- tennis research board ---- */
+/* ══ TENNIS LAB ═══════════════════════════════════════════════════════════
+   Built from the same tokens as every other EdgeDesk module (--surface,
+   --border, --accent, --dim) rather than a tennis template, so the Lab reads
+   as part of the desk. The one borrowed flourish is the citron used for a
+   measured value, which the AI panel already uses for the same purpose: this
+   number came from the model, not from the page. */
+.tnl-hd{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.tnl-hd h3{margin:0 0 3px;font-size:17px;letter-spacing:-.01em}
+.tnl-hd p{margin:0;color:var(--dim);font-size:12.5px;line-height:1.5;max-width:52ch}
+.tnl-hdmeta{font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.65;color:var(--faint);text-align:right;min-width:170px}
+.tnl-hdmeta b{color:var(--dim);font-weight:600}
+.tnl-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;position:relative}
+.tnl-tour{flex:0 0 auto}
+.tnl-search{flex:1 1 220px;margin:0}
+.tnl-sr{position:absolute;top:100%;left:0;right:0;z-index:30;margin-top:4px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:10px;max-height:290px;overflow-y:auto;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.tnl-sr button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--border);
+  color:var(--text);font:inherit;font-size:12.5px;padding:9px 11px;cursor:pointer}
+.tnl-sr button:last-child{border-bottom:0}
+.tnl-sr button:hover{background:var(--surface)}
+.tnl-sr small{display:block;color:var(--faint);font-size:10.5px;margin-top:2px}
+.tnl-nav{margin-bottom:12px;flex-wrap:wrap}
+.tnl-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(265px,1fr))}
+.tnl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:12px 13px}
+.tnl-card>h4{margin:0 0 2px;font-size:12.5px;letter-spacing:.01em}
+.tnl-card>.sub{margin:0 0 9px;color:var(--faint);font-size:10.5px;line-height:1.5}
+.tnl-row{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.tnl-row:last-child{border-bottom:0}
+.tnl-row .rk{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);flex:0 0 20px}
+.tnl-row .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.tnl-row .nm:hover{color:var(--accent)}
+.tnl-row .vl{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--citron,#d8f24b);flex:0 0 auto}
+.tnl-row .mt{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint);flex:0 0 auto}
+.tnl-flag{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;
+  padding:1px 5px;border-radius:5px;border:1px solid var(--border);color:var(--dim);flex:0 0 auto}
+.tnl-flag.up{color:var(--pos);border-color:rgba(118,189,62,.4)}
+.tnl-flag.down{color:var(--neg);border-color:rgba(226,96,68,.4)}
+.tnl-flag.warn{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.tnl-flag.unk{color:var(--faint)}
+/* UNCERTAINTY IS NOT A FOOTNOTE. Every measured value on this surface carries
+   its sample and its band in the markup beside it, never in a tooltip — a
+   rating with no sample next to it is the false precision the product exists
+   to refuse, and a tooltip is not "next to it" on a phone. */
+.tnl-unc{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint);white-space:nowrap}
+.tnl-bar{height:4px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:3px}
+.tnl-bar i{display:block;height:100%;background:var(--accent)}
+.tnl-note{margin-top:10px;padding:9px 11px;border-radius:9px;background:var(--surface2);
+  border:1px solid var(--border);color:var(--dim);font-size:11.5px;line-height:1.55}
+.tnl-note b{color:var(--text)}
+.tnl-warn{background:rgba(217,154,43,.1);border-color:rgba(217,154,43,.38);color:#e8c98a}
+.tnl-warn b{color:var(--warn)}
+.tnl-miss{margin-top:8px;font-size:11px;color:var(--warn);line-height:1.5}
+.tnl-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tnl-tbl th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--faint);font-weight:600;padding:6px 7px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tnl-tbl td{padding:6px 7px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tnl-tbl tr:last-child td{border-bottom:0}
+.tnl-tbl td.n{font-family:'JetBrains Mono',monospace;text-align:right}
+.tnl-tbl td.nm{white-space:normal;cursor:pointer}
+.tnl-tbl td.nm:hover{color:var(--accent)}
+.tnl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tnl-mu{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+@media(max-width:620px){.tnl-mu{grid-template-columns:1fr}}
+.tnl-pick{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 11px}
+.tnl-pick h5{margin:0 0 6px;font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--faint);font-weight:600}
+.tnl-pick .who{font-size:14px;font-weight:700;margin-bottom:2px}
+.tnl-pick .meta{font-size:11px;color:var(--dim)}
+.tnl-prob{display:flex;align-items:center;gap:10px;margin:12px 0 4px}
+.tnl-prob .p{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.tnl-prob .p.a{color:var(--citron,#d8f24b)}
+.tnl-prob .p.b{color:var(--dim)}
+.tnl-prob .vs{flex:1 1 auto;height:8px;border-radius:5px;background:var(--surface2);overflow:hidden;display:flex}
+.tnl-prob .vs i{display:block;height:100%;background:var(--citron,#d8f24b)}
+.tnl-prob .vs u{display:block;height:100%;background:var(--surface2);border-left:1px solid var(--border)}
+.tnl-drv{margin-top:10px}
+.tnl-drv .d{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11.5px}
+.tnl-drv .d span{flex:0 0 132px;color:var(--dim)}
+.tnl-drv .d .t{flex:1 1 auto;height:6px;border-radius:4px;background:var(--surface2);position:relative}
+.tnl-drv .d .t i{position:absolute;top:0;bottom:0;border-radius:4px}
+.tnl-drv .d .t i.pos{background:var(--pos);left:50%}
+.tnl-drv .d .t i.neg{background:var(--neg);right:50%}
+.tnl-drv .d b{flex:0 0 46px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);font-weight:600}
+.tnl-form{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+.tnl-form label{display:flex;flex-direction:column;gap:3px;min-width:108px;flex:1 1 118px}
+.tnl-form label>span{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.tnl-form select,.tnl-form input{width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);
+  border-radius:8px;padding:6px 7px;font:inherit;font-size:12px}
+.tnl-btn{flex:0 0 auto;background:var(--accent);color:var(--on-accent);border:0;border-radius:8px;
+  padding:7px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.tnl-btn:disabled{opacity:.5;cursor:default}
+.tnl-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--border)}
+.tnl-btn.ghost:hover{color:var(--text);border-color:var(--accent)}
+.tnl-spark{display:block;width:100%;height:46px}
+.tnl-off{text-align:center;padding:26px 16px;color:var(--dim);font-size:12.5px;line-height:1.6}
+.tnl-off b{display:block;color:var(--text);font-size:13.5px;margin-bottom:6px}
+.tnl-pager{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap}
 .tnb-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:flex-end}
 .tnb-fl{display:flex;flex-direction:column;gap:3px;min-width:120px;flex:1 1 130px}
 .tnb-fl>span{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
@@ -3143,7 +3240,7 @@ body.focus .dk-focusnote{display:block}
     <div id="tddOverview" class="fb-ov"></div>
     <div id="tddModules">
     <div class="fb-sechd"><span>Research modules</span><span class="r">record &middot; engine</span></div>
-    <div class="stseg fb-seg" id="tddTour" style="margin-bottom:10px"><button class="on" onclick="tddSetTour('ATP')"><b>ATP</b><small>Tour record</small></button><button onclick="tddSetTour('WTA')"><b>WTA</b><small>Tour record</small></button><button onclick="tddSetTour('BOARD')"><b>Research board</b><small>ATP &amp; WTA, fair price</small></button><button onclick="tddSetTour('LIVE')"><b>Live Match Center</b><small>On court now</small></button><button onclick="tddSetTour('RESEARCH')"><b>WTA research</b><small>Daily engine</small></button></div>
+    <div class="stseg fb-seg" id="tddTour" style="margin-bottom:10px"><button onclick="tddSetTour('LAB')"><b>Tennis Lab</b><small>Player &amp; matchup research</small></button><button class="on" onclick="tddSetTour('ATP')"><b>ATP</b><small>Tour record</small></button><button onclick="tddSetTour('WTA')"><b>WTA</b><small>Tour record</small></button><button onclick="tddSetTour('BOARD')"><b>Research board</b><small>ATP &amp; WTA, fair price</small></button><button onclick="tddSetTour('LIVE')"><b>Live Match Center</b><small>On court now</small></button><button onclick="tddSetTour('RESEARCH')"><b>WTA research</b><small>Daily engine</small></button></div>
     <div id="tddRecord">
     <div class="flbanner demo" id="tddBanner">Loading tennis record&hellip;</div>
     <div class="stseg" id="tddSeg" style="margin-bottom:12px"><button class="on" onclick="tddSetSeg('rankings')">Rankings</button><button onclick="tddSetSeg('results')">Results</button><button onclick="tddSetSeg('players')">Players</button></div>
@@ -3156,6 +3253,35 @@ body.focus .dk-focusnote{display:block}
          Every priced column lives behind the entitlement the database itself
          enforces, so a signed-out visitor gets zero rows rather than a
          redacted one. Research, not picks: there is no stake and no verb. -->
+    <!-- ══ EDGEDESK TENNIS LAB ══════════════════════════════════════════════
+         Player strength, surface fit, form and matchup research across ATP and
+         WTA, over the historical record.
+
+         IT REQUIRES NO SPORTSBOOK. Every panel below answers its question from
+         tennis.lab_* — ratings, surface splits, form, workload and the
+         historical record. There is no odds read anywhere in this block, no
+         empty market card, and nothing degrades when no book has priced a
+         match. The Market Comparison tab is rendered from a DATABASE flag that
+         ships off and stays off until a cleared provider is registered and
+         passes a freshness check.
+
+         Research, not picks: nothing here publishes a selection or a stake. -->
+    <div id="tddLab" class="hide">
+      <div class="tnl-hd">
+        <div>
+          <h3>EdgeDesk Tennis Lab</h3>
+          <p>Player strength, surface fit, form and matchup research across ATP and WTA.</p>
+        </div>
+        <div class="tnl-hdmeta" id="tnlHealth"></div>
+      </div>
+      <div class="tnl-controls">
+        <div class="stseg tnl-tour" id="tnlTour"><button class="on" onclick="tnlSetTour('ATP')">ATP</button><button onclick="tnlSetTour('WTA')">WTA</button></div>
+        <input class="stsearch tnl-search" id="tnlSearch" placeholder="Search a player&hellip;" autocomplete="off" oninput="tnlSearchInput()">
+        <div id="tnlSearchResults" class="tnl-sr hide"></div>
+      </div>
+      <div class="stseg tnl-nav" id="tnlNav"></div>
+      <div id="tnlBody"><div class="empty">Loading the Tennis Lab&hellip;</div></div>
+    </div>
     <div id="tddBoard" class="hide">
     <div class="flbanner demo" id="tnbBanner">Loading the tennis research board&hellip;</div>
     <div id="tnbFilters"></div>
@@ -3736,6 +3862,17 @@ window.mcRefresh=function(){
 
 <script src="/lib/ufc_research.js?v=20260909a"></script>
 <script src="/lib/tennis_research.js?v=20260910a"></script>
+<!-- The Tennis Lab engine. tennis_model.js owns the record (keys, features,
+     the model, the rating scale); tennis_lab.js owns the research questions
+     asked of it (surface translation, trajectory, workload, the matchup
+     projection). Both are UMD and attach window.EDTennisModel /
+     window.EDTennisLab. They are loaded rather than inlined so the page, the
+     pipeline and the edgedesk_ai function run the SAME arithmetic — a fair
+     probability that differed between the studio and the model evaluation
+     would be a defect nobody could see. tennis_lab.js must come second: it
+     reads EDTennisModel at factory time. -->
+<script src="/lib/tennis_model.js?v=20260919a"></script>
+<script src="/lib/tennis_lab.js?v=20260919a"></script>
 <!-- The MLB historical pitching query layer. The SAME file the import
      pipeline validates with and the AI function carries inlined, so a
      pitcher's K-BB% is one number rather than three that agree. -->
@@ -12782,7 +12919,7 @@ var TDD_TOURS=['ATP','WTA'];
 /* segment row = the two tour records, the Live Match Center and the WTA
    research engine; view is the selected segment, tour is the last RECORD tour
    so neither the match center nor the engine becomes a tour of its own */
-var TDD_VIEWS=['ATP','WTA','BOARD','LIVE','RESEARCH'];
+var TDD_VIEWS=['LAB','ATP','WTA','BOARD','LIVE','RESEARCH'];
 var TDD={tour:'ATP',view:'ATP',
   ATP:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''},
   WTA:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''}};
@@ -12819,21 +12956,23 @@ async function loadTennis(force,signal){
 window.tddSetTour=function(view){
   if(view==null)view=TDD.view;                 /* researchGo: keep the current segment */
   if(TDD_VIEWS.indexOf(view)<0)return;
-  var research=(view==='RESEARCH'),live=(view==='LIVE'),board=(view==='BOARD');
-  TDD.view=view;if(!research&&!live&&!board)TDD.tour=view;
+  var research=(view==='RESEARCH'),live=(view==='LIVE'),board=(view==='BOARD'),lab=(view==='LAB');
+  TDD.view=view;if(!research&&!live&&!board&&!lab)TDD.tour=view;
   var b=$('tddTour').querySelectorAll('button');
   for(var i=0;i<b.length;i++)b[i].classList.toggle('on',TDD_VIEWS[i]===view);
-  var rec=$('tddRecord'),rs=$('tddResearch'),lv=$('tddLive'),bd=$('tddBoard');
-  if(rec)rec.classList.toggle('hide',research||live||board);
+  var rec=$('tddRecord'),rs=$('tddResearch'),lv=$('tddLive'),bd=$('tddBoard'),lb=$('tddLab');
+  if(rec)rec.classList.toggle('hide',research||live||board||lab);
   if(rs)rs.classList.toggle('hide',!research);
   if(lv)lv.classList.toggle('hide',!live);
   if(bd)bd.classList.toggle('hide',!board);
+  if(lb)lb.classList.toggle('hide',!lab);
   var f1=$('tddFresh'),f2=$('wtaFresh'),f3=$('tddLiveFresh');   /* rsFreshApply rewrites className, so toggle display */
-  if(f1)f1.style.display=(research||live||board)?'none':'';
+  if(f1)f1.style.display=(research||live||board||lab)?'none':'';
   if(f2)f2.style.display=research?'':'none';
   if(f3)f3.style.display=live?'':'none';
   /* the match center polls on its own clock; leaving the view stops it */
   if(TDD.live&&TDD.live.timer){clearInterval(TDD.live.timer);TDD.live.timer=null;}
+  if(lab){ tnlLoad(false); return; }
   if(live){
     loadTennisLive(false);
     TDD.live.timer=setInterval(function(){if(TDD.view==='LIVE'&&!document.hidden)loadTennisLive(false);},20000);
@@ -13043,6 +13182,1026 @@ function tddProfileBody(tour,pid,d){
 
   return tddRatingCard(d.rating)+career+surf+form+h2h+
     '<div class="fi-foot">Career, surface and head-to-head are counted from the matches held in this database, so they describe the ingested record and not necessarily a full career. Rankings and results are the source’s published facts; every split here is arithmetic over them. The EdgeDesk rating above is a model output and is labelled with the version and the sample that produced it. No closing-line claim is made anywhere on this card.</div>';
+}
+
+/* ═══ EDGEDESK TENNIS LAB ═══════════════════════════════════════════════════
+   Player strength, surface fit, form, workload and matchup research over the
+   ATP/WTA historical record.
+
+   THE ONE RULE THIS BLOCK IS BUILT AROUND: it must work with no sportsbook.
+   Not "degrade gracefully" — work. Nothing below reads an odds table, nothing
+   renders a market placeholder, and no panel has an empty state that says "no
+   price available". The Market Comparison tab exists, is rendered from a
+   database flag, and is OFF: tennis.lab_market_available() answers no until a
+   commercially cleared provider is registered AND a snapshot is fresh, and the
+   tab shows that answer rather than a mock.
+
+   WHY EVERY READ IS AN RPC. tennis.lab_* are security-definer or invoker
+   functions that cap their own limits. A PostgREST table read against
+   361,571 matches can be handed ?limit=100000 by anyone; a function cannot —
+   it clamps internally. So the browser never sees a row it did not ask for and
+   cannot ask for the table.
+
+   NOTHING IS LOADED INTO BROWSER MEMORY IN BULK. The explorer is keyset
+   paginated, every leaderboard is capped at tens of rows, and the player card
+   is one call. The heaviest thing this block ever holds is one page of fifty
+   matches.
+
+   Research, not picks. Every projection is published with its uncertainty, its
+   band, the features that were MISSING from it, and — when its own band
+   crosses even money — an explicit statement that it does not lean reliably.
+   ═════════════════════════════════════════════════════════════════════════ */
+var TNL_VIEWS=[
+  {k:'overview', label:'Overview'},
+  {k:'ratings',  label:'Power ratings'},
+  {k:'matchup',  label:'Matchup studio'},
+  {k:'surface',  label:'Surface translator'},
+  {k:'form',     label:'Form & trajectory'},
+  {k:'schedule', label:'Schedule & fatigue'},
+  {k:'explore',  label:'Historical explorer'},
+  {k:'compare',  label:'Compare'},
+  {k:'player',   label:'Player'},
+  {k:'market',   label:'Market comparison'}
+];
+var TNL={tour:'ATP',view:'overview',health:null,at:0,
+  data:{},busy:false,searchTimer:null,searchAt:0,
+  mu:{a:null,b:null,surface:'hard',env:'',best_of:3,level:'',as_of:'',result:null},
+  cmp:{a:null,b:null,surface:'hard',result:null},
+  ex:{filters:{},rows:[],cursor:null,stack:[],summary:null},
+  player:null,model:null};
+
+/* The tennis schema speaks through `content-profile`, the same way sbGetTennis
+   reads through `accept-profile`. */
+async function tnlRpc(name,body,signal){
+  var t=await edToken();
+  var r=await fetch(SB_URL+"/rest/v1/rpc/"+name,{method:"POST",
+    headers:{apikey:SB_KEY,authorization:"Bearer "+t,"content-type":"application/json",
+             "content-profile":"tennis","accept-profile":"tennis"},
+    body:JSON.stringify(body||{}),signal:signal});
+  if(!r.ok){var e=new Error("tennis lab "+r.status);e.status=r.status;throw e;}
+  var txt=await r.text();return txt?JSON.parse(txt):null;
+}
+function tnlEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function tnlNum(v,d){var n=Number(v);return (v==null||v===''||!isFinite(n))?'—':n.toFixed(d==null?1:d);}
+function tnlPct(v,d){var n=Number(v);return (v==null||v===''||!isFinite(n))?'—':(n*100).toFixed(d==null?0:d)+'%';}
+function tnlInt(v){var n=Number(v);return (v==null||v===''||!isFinite(n))?'—':String(Math.round(n));}
+/* SAMPLE AND BAND, ALWAYS TOGETHER. Used everywhere a rating is printed. */
+function tnlUnc(sample,unc){
+  var bits=[];
+  if(sample!=null&&sample!=='')bits.push('n='+tnlInt(sample));
+  if(unc!=null&&unc!=='')bits.push('±'+Math.round(Number(unc)*100)+'%');
+  return bits.length?'<span class="tnl-unc">'+bits.join(' · ')+'</span>':'';
+}
+function tnlLab(){return (window.EDTennisLab||null);}
+function tnlModel(){return (window.EDTennisModel||null);}
+
+window.tnlSetTour=function(t){
+  if(t!==TNL.tour){TNL.tour=t;TNL.data={};TNL.ex.rows=[];TNL.ex.cursor=null;TNL.ex.stack=[];}
+  var b=$('tnlTour')?$('tnlTour').querySelectorAll('button'):[];
+  for(var i=0;i<b.length;i++)b[i].classList.toggle('on',(i===0)===(t==='ATP'));
+  tnlLoad(true);
+};
+window.tnlGo=function(v){
+  if(!TNL_VIEWS.some(function(x){return x.k===v;}))return;
+  TNL.view=v;tnlNav();tnlRender();
+  if(!TNL.data[v]&&v!=='matchup'&&v!=='compare'&&v!=='player')tnlLoadView(v);
+};
+function tnlNav(){
+  var el=$('tnlNav');if(!el)return;
+  el.innerHTML=TNL_VIEWS.filter(function(v){
+    /* The player tab only appears once a player has been opened — an empty
+       "Player" tab is a dead end. */
+    return v.k!=='player'||TNL.player;
+  }).map(function(v){
+    return '<button class="'+(TNL.view===v.k?'on':'')+'" onclick="tnlGo(\''+v.k+'\')">'+tnlEsc(v.label)+'</button>';
+  }).join('');
+}
+
+/* ─── loading ─────────────────────────────────────────────────────────────
+   The header health line is loaded once per tour switch; each view loads its
+   own data the first time it is opened. Nothing is prefetched: opening the Lab
+   should not cost nine queries for the eight panels nobody looked at. */
+async function tnlLoad(force){
+  if(!force&&TNL.health&&(Date.now()-TNL.at)<300000){tnlNav();tnlRender();return;}
+  tnlNav();
+  try{
+    /* A VIEW, read over REST — not an RPC. PostgREST's /rpc/ path resolves
+       FUNCTIONS only, so posting to rpc/lab_health returned 404 and the header
+       silently rendered "could not be reached" on a perfectly healthy project.
+       tennis.lab_health is a security_invoker view granted to anon, so the
+       ordinary table read is both correct and the narrower permission. */
+    var h=await sbGetTennis('lab_health?select=*&limit=1');
+    TNL.health=(h&&h[0])||null;TNL.at=Date.now();
+  }catch(e){ TNL.health={__err:tnlErrText(e)}; }
+  tnlHealthLine();
+  /* AWAITED. tnlLoadView holds a busy guard, and leaving this call dangling
+     meant tnlLoad returned while the guard was still set — so a tab clicked
+     during the opening load hit `if(TNL.busy)return` and silently did nothing,
+     leaving the reader on a spinner that never resolved. */
+  await tnlLoadView(TNL.view);
+}
+function tnlErrText(e){
+  var st=e&&e.status;
+  if(st===404)return 'The Tennis Lab schema is not installed on this project yet.';
+  if(st===401||st===403)return 'This account cannot read the Tennis Lab.';
+  return 'The Tennis Lab could not be reached.';
+}
+function tnlHealthLine(){
+  var el=$('tnlHealth');if(!el)return;
+  var h=TNL.health;
+  if(!h||h.__err){el.innerHTML='<b>'+tnlEsc(h&&h.__err||'—')+'</b>';return;}
+  var L=tnlLab();
+  var fresh=L&&h.ratings_computed_at?L.freshness(h.ratings_computed_at):null;
+  el.innerHTML=
+     '<div><b>'+Number(h.matches_on_file||0).toLocaleString()+'</b> matches &middot; '
+    +'<b>'+Number(h.rated_players||0).toLocaleString()+'</b> rated</div>'
+    +'<div>'+tnlEsc(h.first_season||'?')+'–'+tnlEsc(h.last_season||'?')
+    +' &middot; through '+tnlEsc(h.data_through||'—')+'</div>'
+    +'<div>'+tnlEsc(h.rating_version||'—')+(fresh?' &middot; '+tnlEsc(fresh.label):'')+'</div>'
+    +(h.model_version?'<div>model '+tnlEsc(h.model_version)+'</div>':'<div>no active model</div>');
+}
+
+async function tnlLoadView(v){
+  var body=$('tnlBody');if(!body)return;
+  /* A second request while one is in flight REPLACES it rather than being
+     dropped: the reader clicked the later tab and that is the one they want.
+     Dropping it stranded them on whatever the earlier click was loading. */
+  if(TNL.busy){TNL.pending=v;return;}
+  TNL.busy=true;
+  try{
+    if(v==='overview')      TNL.data.overview=await tnlFetchOverview();
+    else if(v==='ratings')  TNL.data.ratings=await tnlRpc('lab_leaders',{p_tour:TNL.tour,p_mode:'overall',p_limit:60,p_min_sample:10});
+    else if(v==='surface')  TNL.data.surface=await tnlFetchSurface('clay');
+    else if(v==='form')     TNL.data.form=await tnlRpc('lab_trajectory_board',{p_tour:TNL.tour,p_class:'all',p_limit:40,p_min_sample:12});
+    else if(v==='schedule') TNL.data.schedule=await tnlRpc('lab_fatigue_board',{p_tour:TNL.tour,p_class:'all',p_limit:40});
+    else if(v==='explore')  await tnlExploreRun(true);
+    else if(v==='market')   TNL.data.market=await tnlRpc('lab_market_available',{});
+  }catch(e){
+    TNL.data[v]={__err:tnlErrText(e)};
+  }finally{TNL.busy=false;}
+  tnlRender();
+  if(TNL.pending&&TNL.pending!==v){var nx=TNL.pending;TNL.pending=null;return tnlLoadView(nx);}
+  TNL.pending=null;
+}
+
+/* The overview is the one screen that is worth several calls, because it is
+   the answer to "what should I look at today". Run together, not in series. */
+async function tnlFetchOverview(){
+  var t=TNL.tour;
+  var out=await Promise.all([
+    tnlRpc('lab_leaders',{p_tour:t,p_mode:'overall',p_limit:10,p_min_sample:20}),
+    tnlRpc('lab_movers',{p_tour:t,p_direction:'up',p_window_days:30,p_limit:8,p_min_sample:15}),
+    tnlRpc('lab_movers',{p_tour:t,p_direction:'down',p_window_days:30,p_limit:8,p_min_sample:15}),
+    tnlRpc('lab_surface_board',{p_tour:t,p_surface:'clay',p_order:'adjustment',p_limit:8,p_min_sample:15}),
+    tnlRpc('lab_leaders',{p_tour:t,p_mode:'form',p_limit:8,p_min_sample:12}),
+    tnlRpc('lab_fatigue_board',{p_tour:t,p_class:'all',p_limit:8}),
+    tnlRpc('lab_rank_gap',{p_tour:t,p_direction:'underrated',p_limit:8,p_min_sample:20}),
+    tnlRpc('lab_leaders',{p_tour:t,p_mode:'workload',p_limit:8,p_min_sample:5})
+  ]);
+  return {leaders:out[0],risers:out[1],fallers:out[2],specialists:out[3],
+          form:out[4],fatigue:out[5],gaps:out[6],active:out[7]};
+}
+async function tnlFetchSurface(surf){
+  var t=TNL.tour;
+  var out=await Promise.all([
+    tnlRpc('lab_surface_board',{p_tour:t,p_surface:surf,p_order:'adjustment',p_limit:20,p_min_sample:10}),
+    tnlRpc('lab_surface_board',{p_tour:t,p_surface:surf,p_order:'negative',p_limit:12,p_min_sample:10}),
+    tnlRpc('lab_surface_board',{p_tour:t,p_surface:surf,p_order:'strength',p_limit:20,p_min_sample:10})
+  ]);
+  return {surface:surf,positive:out[0],negative:out[1],strongest:out[2]};
+}
+
+/* ─── player search ───────────────────────────────────────────────────────
+   Debounced, server-side, capped at fifty by the function itself. A stale
+   response is discarded by sequence number rather than by cancelling, so a
+   fast typist cannot be shown the results of a prefix they have moved past. */
+window.tnlSearchInput=function(){
+  var q=($('tnlSearch')||{}).value||'';
+  clearTimeout(TNL.searchTimer);
+  if(q.trim().length<2){tnlSearchClose();return;}
+  TNL.searchTimer=setTimeout(function(){tnlSearchRun(q);},220);
+};
+async function tnlSearchRun(q){
+  var seq=++TNL.searchAt;
+  try{
+    var rows=await tnlRpc('lab_search',{p_q:q,p_tour:TNL.tour,p_limit:12});
+    if(seq!==TNL.searchAt)return;
+    var el=$('tnlSearchResults');if(!el)return;
+    if(!rows||!rows.length){el.innerHTML='<button disabled style="color:var(--faint)">No player matches “'+tnlEsc(q)+'”.</button>';}
+    else el.innerHTML=rows.map(function(p){
+      return '<button onclick="tnlOpenPlayer(\''+tnlEsc(p.player_id)+'\')">'+tnlEsc(p.full_name)
+        +'<small>'+tnlEsc(p.country||'—')+' &middot; '+(p.power_rating!=null?'rating '+tnlNum(p.power_rating,1):'unrated')
+        +' &middot; '+tnlInt(p.matches_on_file)+' matches'
+        +(p.official_rank?' &middot; #'+p.official_rank:'')+'</small></button>';
+    }).join('');
+    el.classList.remove('hide');
+  }catch(e){ tnlSearchClose(); }
+}
+function tnlSearchClose(){var el=$('tnlSearchResults');if(el){el.classList.add('hide');el.innerHTML='';}}
+window.tnlOpenPlayer=async function(pid){
+  tnlSearchClose();
+  var s=$('tnlSearch');if(s)s.value='';
+  TNL.view='player';TNL.player={player_id:pid,loading:true};tnlNav();tnlRender();
+  try{
+    var out=await Promise.all([
+      tnlRpc('lab_player_card',{p_player_id:pid}),
+      tnlRpc('lab_player_history',{p_player_id:pid,p_limit:60}),
+      tnlRpc('lab_player_matches',{p_player_id:pid,p_limit:20}),
+      tnlRpc('lab_player_splits',{p_player_id:pid})
+    ]);
+    TNL.player={player_id:pid,card:(out[0]&&out[0][0])||null,history:out[1]||[],
+                matches:out[2]||[],splits:out[3]||[],loading:false};
+  }catch(e){ TNL.player={player_id:pid,__err:tnlErrText(e),loading:false}; }
+  tnlRender();
+};
+
+/* ─── rendering ───────────────────────────────────────────────────────────── */
+function tnlRender(){
+  var el=$('tnlBody');if(!el)return;
+  var v=TNL.view;
+  var d=TNL.data[v];
+  if(v==='player')       {el.innerHTML=tnlViewPlayer();return;}
+  if(v==='matchup')      {el.innerHTML=tnlViewMatchup();return;}
+  if(v==='compare')      {el.innerHTML=tnlViewCompare();return;}
+  if(d&&d.__err)         {el.innerHTML='<div class="empty">'+tnlEsc(d.__err)+'</div>';return;}
+  if(!d&&v!=='explore')  {el.innerHTML='<div class="empty">Loading&hellip;</div>';return;}
+  if(v==='overview')  el.innerHTML=tnlViewOverview(d);
+  else if(v==='ratings')  el.innerHTML=tnlViewRatings(d);
+  else if(v==='surface')  el.innerHTML=tnlViewSurface(d);
+  else if(v==='form')     el.innerHTML=tnlViewForm(d);
+  else if(v==='schedule') el.innerHTML=tnlViewSchedule(d);
+  else if(v==='explore')  el.innerHTML=tnlViewExplore();
+  else if(v==='market')   el.innerHTML=tnlViewMarket(d);
+}
+function tnlEmpty(what){
+  return '<div class="empty">Nothing on file yet for '+tnlEsc(what)+'. '
+    +'The Lab fills once the historical archive is imported and the rating, history and signal builds have run.</div>';
+}
+/* A leaderboard row, with its sample. `fmt` decides how the metric prints, so
+   a win rate does not render as "0.7" and an Elo does not render as "70%". */
+function tnlRows(rows,fmt,extra){
+  if(!rows||!rows.length)return '<div class="empty" style="padding:14px">No player meets this threshold yet.</div>';
+  return rows.map(function(r,i){
+    var v=fmt==='pct'?tnlPct(r.metric_value!=null?r.metric_value:r.value)
+         :fmt==='int'?tnlInt(r.metric_value!=null?r.metric_value:r.value)
+         :fmt==='elo'?tnlNum(r.metric_value!=null?r.metric_value:r.value,0)
+         :tnlNum(r.metric_value!=null?r.metric_value:r.value,1);
+    return '<div class="tnl-row"><span class="rk">'+(i+1)+'</span>'
+      +'<span class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(r.player_id)+'\')">'+tnlEsc(r.full_name)
+      +(r.country?' <span class="mt">'+tnlEsc(r.country)+'</span>':'')+'</span>'
+      +(extra?extra(r):'')
+      +'<span class="vl">'+v+'</span>'
+      +tnlUnc(r.surface_sample!=null?r.surface_sample:r.sample,r.uncertainty)+'</div>';
+  }).join('');
+}
+function tnlCard(title,sub,inner){
+  return '<div class="tnl-card"><h4>'+tnlEsc(title)+'</h4>'
+    +(sub?'<p class="sub">'+tnlEsc(sub)+'</p>':'')+inner+'</div>';
+}
+
+function tnlViewOverview(d){
+  var L=tnlLab();
+  var hasAny=(d.leaders&&d.leaders.length);
+  if(!hasAny)return tnlEmpty('the '+TNL.tour+' tour');
+  var out='<div class="tnl-grid">';
+  out+=tnlCard('Rating leaders','EdgeDesk power rating, 0–100, shrunk toward the tour median by sample.',
+        tnlRows(d.leaders,'num'));
+  out+=tnlCard('Biggest risers','30-day movement in the power rating, from the rating history.',
+        tnlRows(d.risers,'num',function(r){return '<span class="tnl-flag up">+'+tnlNum(r.delta,1)+'</span>';}));
+  out+=tnlCard('Biggest fallers','30-day movement in the power rating, from the rating history.',
+        tnlRows(d.fallers,'num',function(r){return '<span class="tnl-flag down">'+tnlNum(r.delta,1)+'</span>';}));
+  out+=tnlCard('Clay specialists','How far a player’s clay rating sits above their own baseline, shrunk by clay sample.',
+        (d.specialists&&d.specialists.length)
+          ? d.specialists.map(function(r,i){
+              return '<div class="tnl-row"><span class="rk">'+(i+1)+'</span>'
+                +'<span class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(r.player_id)+'\')">'+tnlEsc(r.full_name)+'</span>'
+                +'<span class="vl">'+(r.adjustment>0?'+':'')+tnlNum(r.adjustment,0)+'</span>'
+                +tnlUnc(r.surface_sample,r.uncertainty)+'</div>';}).join('')
+          : '<div class="empty" style="padding:14px">No clay sample deep enough yet.</div>');
+  out+=tnlCard('Best recent form','90-day win rate. Read it beside the strength of schedule on the Form tab.',
+        tnlRows(d.form,'pct'));
+  out+=tnlCard('Most active','Matches in the last 14 days. A schedule signal, never a fitness claim.',
+        tnlRows(d.active,'int'));
+  out+=tnlCard('Fatigue watch','Documented workload rules. EdgeDesk holds no medical information and makes no injury claim.',
+        (d.fatigue&&d.fatigue.length)
+          ? d.fatigue.map(function(r){
+              var cls=r.workload_class==='heavy'?'warn':r.workload_class==='elevated'?'warn':r.workload_class==='unknown'?'unk':'';
+              return '<div class="tnl-row"><span class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(r.player_id)+'\')">'+tnlEsc(r.full_name)+'</span>'
+                +'<span class="tnl-flag '+cls+'">'+tnlEsc(r.workload_class||'unknown')+'</span>'
+                +'<span class="mt">'+tnlInt(r.matches_7d)+'/7d &middot; '+tnlInt(r.matches_14d)+'/14d</span></div>';}).join('')
+          : '<div class="empty" style="padding:14px">No recent schedule on file.</div>');
+  out+=tnlCard('Ranking vs EdgeDesk','Where the official list and the model disagree most. Ranking rewards a 52-week points cycle; the rating reads the matches.',
+        (d.gaps&&d.gaps.length)
+          ? d.gaps.map(function(r){
+              return '<div class="tnl-row"><span class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(r.player_id)+'\')">'+tnlEsc(r.full_name)+'</span>'
+                +'<span class="mt">#'+tnlInt(r.official_rank)+' → #'+tnlInt(r.edgedesk_rank)+'</span>'
+                +'<span class="vl">'+(r.gap>0?'+':'')+tnlInt(r.gap)+'</span>'
+                +tnlUnc(r.sample,r.uncertainty)+'</div>';}).join('')
+          : '<div class="empty" style="padding:14px">No ranking on file to compare against.</div>');
+  out+='</div>';
+  out+='<div class="tnl-note"><b>Research, not picks.</b> Every number here describes the record on file. '
+    +'Nothing on this screen is a selection, and no sportsbook price is involved in producing any of it. '
+    +(L?tnlEsc(L.POWER_SCALE.text):'')+'</div>';
+  return out;
+}
+
+function tnlViewRatings(rows){
+  if(!rows||!rows.length)return tnlEmpty('power ratings');
+  var L=tnlLab();
+  var head='<div class="tnl-form" style="margin-bottom:12px">'
+    +'<label><span>Rank by</span><select onchange="tnlRatingMode(this.value)">'
+    +(L?L.LAB_MODES.map(function(m){return '<option value="'+m.k+'"'+(TNL.ratingMode===m.k?' selected':'')+'>'+tnlEsc(m.label)+'</option>';}).join(''):'')
+    +'</select></label></div>';
+  var mode=(L?L.labMode(TNL.ratingMode||'overall'):{blurb:''});
+  var body='<div class="tnl-scroll"><table class="tnl-tbl"><thead><tr>'
+    +'<th>#</th><th>Player</th><th></th><th class="n">Value</th><th class="n">Rating</th>'
+    +'<th class="n">Rank</th><th class="n">Form 90d</th><th class="n">14d</th><th class="n">Rest</th>'
+    +'<th>Trend</th><th>Workload</th><th class="n">n</th><th class="n">±</th><th>Last match</th></tr></thead><tbody>'
+    +rows.map(function(r,i){
+      return '<tr><td class="n">'+(i+1)+'</td>'
+        +'<td class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(r.player_id)+'\')">'+tnlEsc(r.full_name)+'</td>'
+        +'<td>'+tnlEsc(r.country||'')+'</td>'
+        +'<td class="n">'+tnlNum(r.metric_value,1)+'</td>'
+        +'<td class="n">'+tnlNum(r.power_rating,1)+'</td>'
+        +'<td class="n">'+(r.official_rank?'#'+r.official_rank:'—')+'</td>'
+        +'<td class="n">'+tnlPct(r.form_90d)+'</td>'
+        +'<td class="n">'+tnlInt(r.matches_14d)+'</td>'
+        +'<td class="n">'+tnlInt(r.rest_days)+'</td>'
+        +'<td>'+tnlEsc(r.trajectory_class||'—')+'</td>'
+        +'<td>'+tnlEsc(r.workload_class||'—')+'</td>'
+        +'<td class="n">'+tnlInt(r.sample)+'</td>'
+        +'<td class="n">'+(r.uncertainty!=null?Math.round(r.uncertainty*100)+'%':'—')+'</td>'
+        +'<td>'+tnlEsc(r.last_match_date||'—')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  return head+'<p class="sub" style="color:var(--faint);font-size:11px;margin:0 0 8px">'+tnlEsc(mode.blurb||'')+'</p>'+body
+    +'<div class="tnl-note">'+(L?tnlEsc(L.POWER_SCALE.text):'')
+    +' <b>n</b> is the number of rated matches behind the figure and <b>±</b> is the uncertainty that follows from it. '
+    +'A rating without them is not a measurement.</div>';
+}
+window.tnlRatingMode=async function(m){
+  TNL.ratingMode=m;
+  var body=$('tnlBody');if(body)body.innerHTML='<div class="empty">Loading&hellip;</div>';
+  try{ TNL.data.ratings=await tnlRpc('lab_leaders',{p_tour:TNL.tour,p_mode:m,p_limit:60,p_min_sample:10}); }
+  catch(e){ TNL.data.ratings={__err:tnlErrText(e)}; }
+  tnlRender();
+};
+
+function tnlViewSurface(d){
+  if(!d||!d.positive)return tnlEmpty('surface translation');
+  var surfaces=['hard','clay','grass','carpet'];
+  var head='<div class="tnl-form"><label><span>Surface</span><select onchange="tnlSurfacePick(this.value)">'
+    +surfaces.map(function(s){return '<option value="'+s+'"'+(d.surface===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('')
+    +'</select></label></div>';
+  function board(rows,sign){
+    if(!rows||!rows.length)return '<div class="empty" style="padding:14px">Not enough sample on this surface.</div>';
+    return rows.map(function(r,i){
+      return '<div class="tnl-row"><span class="rk">'+(i+1)+'</span>'
+        +'<span class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(r.player_id)+'\')">'+tnlEsc(r.full_name)+'</span>'
+        +'<span class="mt">'+tnlNum(r.surface_elo,0)+' vs '+tnlNum(r.baseline_elo,0)+'</span>'
+        +'<span class="vl">'+(r.adjustment>0?'+':'')+tnlNum(r.adjustment,0)+'</span>'
+        +tnlUnc(r.surface_sample,r.uncertainty)+'</div>';}).join('');
+  }
+  var out=head+'<div class="tnl-grid">';
+  out+=tnlCard('Suits them most','Surface rating minus their own baseline. Shrunk toward zero by surface sample, so six matches cannot make a specialist.',board(d.positive));
+  out+=tnlCard('Suits them least','The same measure, the other way. A negative adjustment is a surface that costs this player.',board(d.negative));
+  out+=tnlCard('Strongest on this surface','Absolute surface rating — who is best here, rather than who it suits.',board(d.strongest));
+  out+='</div>';
+  out+='<div class="tnl-note"><b>Why this is not the ranking.</b> The official list is one number for every surface. '
+    +'A player whose clay rating sits eighty points above their baseline and another whose sits eighty below can hold the same ranking '
+    +'and be very different propositions on clay. <b>Raw</b> is what the record says; <b>adjustment</b> is what EdgeDesk is willing to claim from it, '
+    +'and the gap between them is the sample.</div>';
+  return out;
+}
+window.tnlSurfacePick=async function(s){
+  var body=$('tnlBody');if(body)body.innerHTML='<div class="empty">Loading&hellip;</div>';
+  try{ TNL.data.surface=await tnlFetchSurface(s); }catch(e){ TNL.data.surface={__err:tnlErrText(e)}; }
+  tnlRender();
+};
+
+function tnlViewForm(rows){
+  if(!rows||!rows.length)return tnlEmpty('form and trajectory');
+  var groups={};
+  rows.forEach(function(r){var k=r.trajectory_class||'unknown';(groups[k]=groups[k]||[]).push(r);});
+  var order=['improving','declining','above_sustainable','below_ability','stable','returning','unknown'];
+  var titles={improving:'Improving',declining:'Declining',
+    above_sustainable:'Winning, but against a softer draw',
+    below_ability:'Losing, but against a harder draw',
+    stable:'Stable',returning:'Returning from inactivity',unknown:'Not enough on file'};
+  var subs={improving:'Short-horizon form above the long horizon, on a comparable or harder schedule.',
+    declining:'Short-horizon form below the long horizon, on a comparable or easier schedule.',
+    above_sustainable:'The results are real. The improvement may not be — the average opponent got weaker.',
+    below_ability:'The losses are real. The decline may not be — the average opponent got stronger.',
+    stable:'Recent and long-horizon win rates agree within eight points.',
+    returning:'No match for four months or more. These numbers describe the record before the gap.',
+    unknown:'Fewer than twelve matches in the last year.'};
+  var out='<div class="tnl-grid">';
+  order.forEach(function(k){
+    if(!groups[k])return;
+    out+=tnlCard(titles[k],subs[k],groups[k].slice(0,12).map(function(r){
+      var shift=r.schedule_shift;
+      return '<div class="tnl-row">'
+        +'<span class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(r.player_id)+'\')">'+tnlEsc(r.full_name)+'</span>'
+        +'<span class="mt">'+tnlPct(r.form_90d)+' / '+tnlPct(r.form_365d)+'</span>'
+        +(shift!=null&&shift!==''?'<span class="tnl-flag '+(Number(shift)>25?'warn':Number(shift)<-25?'down':'')+'">sched '
+          +(Number(shift)>0?'+':'')+tnlNum(shift,0)+'</span>':'')
+        +'<span class="vl">'+(r.rating_delta_30d!=null?(r.rating_delta_30d>0?'+':'')+tnlNum(r.rating_delta_30d,1):'—')+'</span>'
+        +tnlUnc(r.form_sample_365d,null)+'</div>';}).join(''));
+  });
+  out+='</div>';
+  out+='<div class="tnl-note"><b>A streak is not evidence on its own.</b> Every classification here reads the 90-day win rate '
+    +'next to the average strength of the opponents who produced it. A run of wins over a field eighty Elo weaker than usual is '
+    +'classified as <b>winning against a softer draw</b>, not as improvement — the record is real, the inference from it is not. '
+    +'<b>sched</b> is how much stronger (+) or weaker (−) the recent field has been than this player’s career average.</div>';
+  return out;
+}
+
+function tnlViewSchedule(rows){
+  if(!rows||!rows.length)return tnlEmpty('schedule and workload');
+  var L=tnlLab();
+  var groups={};
+  rows.forEach(function(r){var k=r.workload_class||'unknown';(groups[k]=groups[k]||[]).push(r);});
+  var order=['heavy','elevated','normal','fresh','unknown'];
+  var subs={heavy:'Five or more matches in seven days, or nine in fourteen.',
+    elevated:'Four matches in seven days, or seven in fourteen.',
+    normal:'A routine tour schedule.',
+    fresh:'Seven or more days since the last match.',
+    unknown:'No recent schedule on file, or the dates are not precise enough to say.'};
+  var out='<div class="tnl-note tnl-warn"><b>This is a calendar, not a physio report.</b> '
+    +'EdgeDesk holds no medical information about any player and makes no injury or fitness claim. '
+    +'A heavy workload means this player has played a lot of tennis recently — which is a thing a researcher may want to weigh, and nothing more.</div>';
+  out+='<div class="tnl-grid">';
+  order.forEach(function(k){
+    if(!groups[k])return;
+    out+=tnlCard(k.charAt(0).toUpperCase()+k.slice(1),subs[k],groups[k].slice(0,12).map(function(r){
+      return '<div class="tnl-row">'
+        +'<span class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(r.player_id)+'\')">'+tnlEsc(r.full_name)+'</span>'
+        +'<span class="mt">'+tnlInt(r.matches_7d)+'/7 &middot; '+tnlInt(r.matches_14d)+'/14 &middot; rest '+tnlInt(r.rest_days)+'</span>'
+        +'<span class="vl">'+tnlEsc(r.last_match_date||'—')+'</span></div>';}).join(''));
+  });
+  out+='</div>';
+  if(L)out+='<div class="tnl-note"><b>The rules, in full.</b> '
+    +L.WORKLOAD_RULES.map(function(w){return w.label+': '+w.note;}).join('. ')+'. '
+    +'Where the archive dates a match to its tournament week rather than its day, the rest figure is reported as unknown rather than as a negative number.</div>';
+  return out;
+}
+
+/* ─── MATCHUP RESEARCH STUDIO ──────────────────────────────────────────────
+   The centrepiece, and the place where publishing false precision would be
+   easiest. Three rules it obeys without exception:
+
+     1. The probability NEVER appears without its uncertainty, its band, and
+        the list of model inputs that were missing from it.
+     2. When the band crosses even money the card says so in words — a lean
+        that its own uncertainty swallows is not a finding.
+     3. The vocabulary is "EdgeDesk projects", "the model estimates", "the
+        matchup leans". Never a pick, a lock or a winner.
+
+   The projection is computed by lib/tennis_lab.js — the same function the
+   pipeline and the AI call — over point-in-time inputs the database assembles.
+   With a historical cutoff set, those inputs come from feature rows STRICTLY
+   before that date, so the studio can answer "what would EdgeDesk have said in
+   2015" without any part of 2015 onward reaching the answer. */
+function tnlMuPicker(side){
+  var p=TNL.mu[side];
+  return '<div class="tnl-pick"><h5>Player '+side.toUpperCase()+'</h5>'
+    +(p?'<div class="who">'+tnlEsc(p.full_name)+'</div>'
+        +'<div class="meta">'+tnlEsc(p.country||'—')
+        +(p.official_rank?' &middot; #'+p.official_rank:' &middot; unranked')
+        +' &middot; rating '+tnlNum(p.power_rating,1)+' '+tnlUnc(p.rating_sample,p.uncertainty)+'</div>'
+        +'<button class="tnl-btn ghost" style="margin-top:8px" onclick="tnlMuClear(\''+side+'\')">Change</button>'
+      :'<input class="stsearch" style="margin:0" placeholder="Search a player&hellip;" '
+        +'oninput="tnlMuSearch(\''+side+'\',this.value)" autocomplete="off">'
+        +'<div id="tnlMu'+side+'R" class="tnl-sr hide" style="position:static;margin-top:6px;max-height:190px"></div>')
+    +'</div>';
+}
+window.tnlMuSearch=async function(side,q){
+  clearTimeout(TNL['muT'+side]);
+  if(!q||q.trim().length<2){var e0=$('tnlMu'+side+'R');if(e0){e0.classList.add('hide');e0.innerHTML='';}return;}
+  TNL['muT'+side]=setTimeout(async function(){
+    try{
+      var rows=await tnlRpc('lab_search',{p_q:q,p_tour:TNL.tour,p_limit:8});
+      var el=$('tnlMu'+side+'R');if(!el)return;
+      el.innerHTML=(rows||[]).map(function(p){
+        return '<button onclick="tnlMuPick(\''+side+'\',\''+tnlEsc(p.player_id)+'\')">'+tnlEsc(p.full_name)
+          +'<small>'+tnlEsc(p.country||'—')+(p.official_rank?' · #'+p.official_rank:'')
+          +' · '+tnlInt(p.matches_on_file)+' matches</small></button>';}).join('')
+        ||'<button disabled style="color:var(--faint)">No match.</button>';
+      el.classList.remove('hide');
+    }catch(e){}
+  },220);
+};
+window.tnlMuPick=async function(side,pid){
+  try{
+    var c=await tnlRpc('lab_player_card',{p_player_id:pid});
+    TNL.mu[side]=(c&&c[0])||null;
+  }catch(e){}
+  TNL.mu.result=null;tnlRender();
+};
+window.tnlMuClear=function(side){TNL.mu[side]=null;TNL.mu.result=null;tnlRender();};
+window.tnlMuSet=function(k,v){TNL.mu[k]=v;TNL.mu.result=null;tnlRender();};
+window.tnlMuSwap=function(){var a=TNL.mu.a;TNL.mu.a=TNL.mu.b;TNL.mu.b=a;TNL.mu.result=null;tnlRender();};
+
+window.tnlMuRun=async function(){
+  var m=TNL.mu;
+  if(!m.a||!m.b)return;
+  var btn=$('tnlMuBtn');if(btn){btn.disabled=true;btn.textContent='Projecting…';}
+  try{
+    /* The inputs come from the database — including, with a cutoff set, from
+       point-in-time feature rows strictly before it. */
+    var rows=await tnlRpc('lab_matchup_inputs',{
+      p_player_a:m.a.player_id,p_player_b:m.b.player_id,
+      p_surface:m.surface||null,p_as_of:m.as_of||null});
+    var A=(rows||[]).filter(function(r){return r.side==='a';})[0];
+    var B=(rows||[]).filter(function(r){return r.side==='b';})[0];
+    if(!A||!B){TNL.mu.result={__err:'EdgeDesk has no rated record for one of these players'
+      +(m.as_of?' before '+m.as_of:'')+'.'};tnlRender();return;}
+    var model=await tnlMuModel();
+    var L=tnlLab();
+    var proj=L?L.projectMatchup(A,B,{surface:m.surface||null,environment:m.env||null,
+      best_of:Number(m.best_of)||null,level:m.level||null,as_of:m.as_of||null,model:model}):null;
+    var h2h=await tnlRpc('lab_h2h',{p_player_a:m.a.player_id,p_player_b:m.b.player_id,
+      p_surface:m.surface||null,p_limit:12});
+    var comps=null;
+    if(proj&&A.elo!=null&&B.elo!=null){
+      comps=await tnlRpc('lab_comparables',{p_tour:m.a.tour,p_elo_gap:Math.abs(Number(A.elo)-Number(B.elo)),
+        p_surface:m.surface||null,p_best_of:Number(m.best_of)||null,p_level:m.level||null,p_limit:8});
+    }
+    TNL.mu.result={proj:proj,a:A,b:B,h2h:h2h||[],comparables:comps||[],snapshot:A.snapshot_date||null,mode:A.source_mode};
+  }catch(e){ TNL.mu.result={__err:tnlErrText(e)}; }
+  tnlRender();
+};
+/* The ACTIVE model version, read once. A null model means the seed
+   coefficients in lib/tennis_model.js are used, and the card says so rather
+   than implying a trained model produced the number. */
+async function tnlMuModel(){
+  if(TNL.model!==null&&TNL.model!==undefined)return TNL.model;
+  try{
+    var r=await sbGetTennis('model_registry?select=model_version,feature_version,intercept,coefficients&status=eq.active&limit=1');
+    TNL.model=(r&&r[0])||false;
+  }catch(e){ TNL.model=false; }
+  return TNL.model||null;
+}
+
+function tnlViewMatchup(){
+  var m=TNL.mu,L=tnlLab();
+  var out='<div class="tnl-mu">'+tnlMuPicker('a')+tnlMuPicker('b')+'</div>';
+  out+='<div class="tnl-form" style="margin-top:10px">'
+    +'<label><span>Surface</span><select onchange="tnlMuSet(\'surface\',this.value)">'
+      +['hard','clay','grass','carpet'].map(function(s){return '<option value="'+s+'"'+(m.surface===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('')
+    +'</select></label>'
+    +'<label><span>Environment</span><select onchange="tnlMuSet(\'env\',this.value)">'
+      +'<option value="">Not specified</option>'
+      +'<option value="outdoor"'+(m.env==='outdoor'?' selected':'')+'>Outdoor</option>'
+      +'<option value="indoor"'+(m.env==='indoor'?' selected':'')+'>Indoor</option></select></label>'
+    +'<label><span>Format</span><select onchange="tnlMuSet(\'best_of\',this.value)">'
+      +'<option value="3"'+(String(m.best_of)==='3'?' selected':'')+'>Best of three</option>'
+      +'<option value="5"'+(String(m.best_of)==='5'?' selected':'')+'>Best of five</option></select></label>'
+    +'<label><span>Level</span><select onchange="tnlMuSet(\'level\',this.value)">'
+      +'<option value="">Any</option>'
+      +(L?Object.keys(tnlModel()?tnlModel().LEVELS:{}).map(function(k){
+          return '<option value="'+k+'"'+(m.level===k?' selected':'')+'>'+tnlEsc(tnlModel().LEVELS[k].label)+'</option>';}).join(''):'')
+    +'</select></label>'
+    +'<label><span>Historical cutoff</span><input type="date" value="'+tnlEsc(m.as_of||'')+'" onchange="tnlMuSet(\'as_of\',this.value)"></label>'
+    +'<button class="tnl-btn ghost" onclick="tnlMuSwap()">Swap</button>'
+    +'<button class="tnl-btn" id="tnlMuBtn" onclick="tnlMuRun()"'+((!m.a||!m.b)?' disabled':'')+'>Project this matchup</button>'
+    +'</div>';
+  if(m.as_of)out+='<div class="tnl-note"><b>Historical cutoff '+tnlEsc(m.as_of)+'.</b> '
+    +'Both players’ inputs come from the last point-in-time record strictly before that date. '
+    +'Nothing on or after it can reach the projection — including the result of the match you may be checking.</div>';
+  if(!m.a||!m.b)out+='<div class="empty">Choose two players to project a matchup.</div>';
+  else if(!m.result)out+='<div class="empty">Set the conditions and project.</div>';
+  else if(m.result.__err)out+='<div class="empty">'+tnlEsc(m.result.__err)+'</div>';
+  else out+=tnlMuResult(m.result);
+  return out;
+}
+
+function tnlMuResult(R){
+  var p=R.proj;
+  if(!p)return '<div class="empty">The research engine did not load.</div>';
+  if(p.method==='declined'){
+    return '<div class="tnl-note tnl-warn"><b>EdgeDesk declines to project this matchup.</b> '
+      +tnlEsc(p.why.join(' '))+' A probability built on this little would be a guess wearing a decimal point.</div>';
+  }
+  var pa=Math.round(p.prob_a*100),pb=100-pa;
+  var out='<div class="tnl-card" style="margin-top:12px">';
+  out+='<div class="tnl-prob">'
+    +'<span class="p '+(p.favoured==='a'?'a':'b')+'">'+pa+'%</span>'
+    +'<span class="vs"><i style="width:'+pa+'%"></i><u style="width:'+pb+'%"></u></span>'
+    +'<span class="p '+(p.favoured==='b'?'a':'b')+'">'+pb+'%</span></div>';
+  out+='<div style="display:flex;justify-content:space-between;font-size:12px;gap:10px">'
+    +'<b>'+tnlEsc(R.a.full_name)+'</b><b style="text-align:right">'+tnlEsc(R.b.full_name)+'</b></div>';
+
+  /* The uncertainty line. Never optional, never a tooltip. */
+  out+='<div class="tnl-note"><b>How sure is this?</b> Uncertainty '+Math.round(p.uncertainty*100)+'%, '
+    +'band ±'+Math.round(p.band*100)+' points, '+Math.round((p.coverage||0)*100)+'% of the model’s weight has data behind it. '
+    +(p.crosses_even
+      ? '<b>The band crosses even money, so this matchup does not lean reliably either way.</b> '
+      : 'The band does not cross even money, so the lean survives its own uncertainty. ')
+    +'Model '+tnlEsc(p.model_version)+(TNL.model===false?' (untrained seed coefficients — no model version is active on this project)':'')+'.</div>';
+
+  if(p.drivers&&p.drivers.length){
+    var max=Math.max.apply(null,p.drivers.map(function(d){return Math.abs(d.contribution);}))||1;
+    out+='<div class="tnl-drv"><h5 style="margin:12px 0 4px;font-size:11px;font-family:\'JetBrains Mono\',monospace;'
+      +'letter-spacing:.07em;text-transform:uppercase;color:var(--faint)">Primary research factors</h5>';
+    p.drivers.forEach(function(d){
+      var w=Math.abs(d.contribution)/max*50;
+      out+='<div class="d"><span>'+tnlEsc(d.label)+'</span><span class="t">'
+        +'<i class="'+(d.contribution>0?'pos':'neg')+'" style="width:'+w.toFixed(1)+'%"></i></span>'
+        +'<b>'+(d.contribution>0?'+':'')+Number(d.contribution).toFixed(2)+'</b></div>';
+    });
+    out+='</div><p class="sub" style="margin:4px 0 0;color:var(--faint);font-size:10.5px">'
+      +'Bars right of centre favour '+tnlEsc(R.a.full_name)+', left favour '+tnlEsc(R.b.full_name)+'.</p>';
+  }
+
+  out+='<div class="tnl-note">'+p.why.map(tnlEsc).join(' ')+'</div>';
+  if(p.path)out+='<div class="tnl-note"><b>The other side of it.</b> '+tnlEsc(p.path)+'</div>';
+  if(p.missing&&p.missing.length){
+    var L=tnlLab();
+    out+='<div class="tnl-miss"><b>What the model did not have:</b> '
+      +p.missing.map(function(k){return tnlEsc(L?L.featureLabel(k):k);}).join(', ')
+      +'. These are absent from the record, not zero — a missing difference is no evidence either way, and the uncertainty above already carries it.</div>';
+  }
+  if(R.mode==='as_of'){
+    out+='<div class="tnl-note"><b>Point-in-time.</b> This projection used each player’s record as at '
+      +tnlEsc(R.snapshot||'the cutoff')+' — the state entering their last match before the cutoff. '
+      +'It is therefore very slightly stale rather than leaky, which is the only safe direction for a research tool to err.</div>';
+  }
+  out+='</div>';
+
+  /* Head to head and comparables — evidence, not a second opinion. */
+  out+='<div class="tnl-grid" style="margin-top:10px">';
+  out+=tnlCard('Head to head',(R.h2h.length?R.h2h.length+' meeting'+(R.h2h.length===1?'':'s')+' on file.':'These players have not met on file.'),
+    R.h2h.length?('<div class="tnl-scroll"><table class="tnl-tbl"><tbody>'
+      +R.h2h.map(function(h){
+        return '<tr><td>'+tnlEsc(h.match_date||'—')+'</td><td>'+tnlEsc(h.tourney_name||'')+'</td>'
+          +'<td>'+tnlEsc(h.surface||'')+'</td><td>'+tnlEsc(h.winner_name||'')+' def.</td>'
+          +'<td class="n">'+tnlEsc(h.score||'')+'</td></tr>';}).join('')
+      +'</tbody></table></div>'):'<div class="empty" style="padding:12px">No meetings on file.</div>');
+  out+=tnlCard('Historical comparables','Past matches with a similar rating gap under similar conditions. Matched on the SETUP, never on the result — that is what makes them evidence.',
+    (R.comparables&&R.comparables.length)?('<div class="tnl-scroll"><table class="tnl-tbl"><tbody>'
+      +R.comparables.map(function(c){
+        return '<tr><td>'+tnlEsc(c.match_date||'')+'</td><td>'+tnlEsc(c.winner_name||'')+' def. '+tnlEsc(c.loser_name||'')+'</td>'
+          +'<td class="n">gap '+tnlNum(c.elo_gap,0)+'</td>'
+          +'<td>'+(c.favourite_won?'favourite':'<b style="color:var(--warn)">underdog</b>')+'</td></tr>';}).join('')
+      +'</tbody></table></div>'
+      +'<p class="sub" style="margin-top:6px">In these '+R.comparables.length+' comparable matches the stronger-rated player won '
+      +R.comparables.filter(function(c){return c.favourite_won;}).length+' time(s).</p>')
+      :'<div class="empty" style="padding:12px">No comparable matches on file.</div>');
+  out+='</div>';
+  out+='<div class="tnl-note tnl-warn"><b>Research, not picks.</b> This is an estimate of a probability with an explicit '
+    +'uncertainty attached, produced from the historical record. It is not a selection, not advice, and no sportsbook price '
+    +'was involved in producing it.</div>';
+  return out;
+}
+
+/* ─── COMPARISON CARD ────────────────────────────────────────────────────── */
+window.tnlCmpSearch=async function(side,q){
+  clearTimeout(TNL['cmpT'+side]);
+  if(!q||q.trim().length<2){var e0=$('tnlCmp'+side+'R');if(e0){e0.classList.add('hide');e0.innerHTML='';}return;}
+  TNL['cmpT'+side]=setTimeout(async function(){
+    try{
+      var rows=await tnlRpc('lab_search',{p_q:q,p_tour:TNL.tour,p_limit:8});
+      var el=$('tnlCmp'+side+'R');if(!el)return;
+      el.innerHTML=(rows||[]).map(function(p){
+        return '<button onclick="tnlCmpPick(\''+side+'\',\''+tnlEsc(p.player_id)+'\')">'+tnlEsc(p.full_name)
+          +'<small>'+tnlEsc(p.country||'—')+' · '+tnlInt(p.matches_on_file)+' matches</small></button>';}).join('')
+        ||'<button disabled style="color:var(--faint)">No match.</button>';
+      el.classList.remove('hide');
+    }catch(e){}
+  },220);
+};
+window.tnlCmpPick=async function(side,pid){
+  try{var c=await tnlRpc('lab_player_card',{p_player_id:pid});TNL.cmp[side]=(c&&c[0])||null;}catch(e){}
+  tnlCmpBuild();tnlRender();
+};
+window.tnlCmpClear=function(side){TNL.cmp[side]=null;TNL.cmp.result=null;tnlRender();};
+window.tnlCmpSurface=function(s){TNL.cmp.surface=s;tnlCmpBuild();tnlRender();};
+function tnlCmpBuild(){
+  var L=tnlLab();
+  if(!L||!TNL.cmp.a||!TNL.cmp.b){TNL.cmp.result=null;return;}
+  TNL.cmp.result=L.compareCard(TNL.cmp.a,TNL.cmp.b,{surface:TNL.cmp.surface});
+}
+function tnlCmpPicker(side){
+  var p=TNL.cmp[side];
+  return '<div class="tnl-pick"><h5>Player '+side.toUpperCase()+'</h5>'
+    +(p?'<div class="who">'+tnlEsc(p.full_name)+'</div><div class="meta">'+tnlEsc(p.country||'—')+'</div>'
+        +'<button class="tnl-btn ghost" style="margin-top:8px" onclick="tnlCmpClear(\''+side+'\')">Change</button>'
+      :'<input class="stsearch" style="margin:0" placeholder="Search a player&hellip;" oninput="tnlCmpSearch(\''+side+'\',this.value)" autocomplete="off">'
+        +'<div id="tnlCmp'+side+'R" class="tnl-sr hide" style="position:static;margin-top:6px;max-height:190px"></div>')
+    +'</div>';
+}
+function tnlViewCompare(){
+  var out='<div class="tnl-mu">'+tnlCmpPicker('a')+tnlCmpPicker('b')+'</div>';
+  out+='<div class="tnl-form" style="margin-top:10px"><label><span>Surface</span><select onchange="tnlCmpSurface(this.value)">'
+    +['hard','clay','grass','carpet'].map(function(s){return '<option value="'+s+'"'+(TNL.cmp.surface===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('')
+    +'</select></label></div>';
+  var c=TNL.cmp.result;
+  if(!c){out+='<div class="empty">Choose two players to compare.</div>';return out;}
+  out+='<div class="tnl-card" style="margin-top:10px"><div class="tnl-scroll"><table class="tnl-tbl"><thead><tr>'
+    +'<th></th><th class="n">'+tnlEsc(c.player_a.name)+'</th><th class="n">'+tnlEsc(c.player_b.name)+'</th></tr></thead><tbody>';
+  c.rows.forEach(function(r){
+    function cell(v,side){
+      var txt=r.fmt==='pct'?tnlPct(v):r.fmt==='rank'?(v?'#'+tnlInt(v):'—')
+        :r.fmt==='int'?tnlInt(v):r.fmt==='num0'?tnlNum(v,0):tnlNum(v,1);
+      var win=(r.edge===side);
+      return '<td class="n"'+(win?' style="color:var(--citron,#d8f24b);font-weight:700"':'')+'>'+txt+'</td>';
+    }
+    out+='<tr><td>'+tnlEsc(r.label)+'</td>'+cell(r.a,'a')+cell(r.b,'b')+'</tr>';
+  });
+  out+='</tbody></table></div>';
+  out+='<div class="tnl-note"><b>'+tnlEsc(c.player_a.name)+'</b> leads '+c.edges_a+' categor'+(c.edges_a===1?'y':'ies')
+    +', <b>'+tnlEsc(c.player_b.name)+'</b> leads '+c.edges_b+'. '+tnlEsc(c.note)+'</div>';
+  if(c.rows_missing&&c.rows_missing.length)
+    out+='<div class="tnl-miss"><b>Not on file for one or both players:</b> '+tnlEsc(c.rows_missing.join(', '))+'.</div>';
+  out+='<div class="tnl-form" style="margin-top:10px">'
+    +'<button class="tnl-btn ghost" onclick="tnlCmpToMatchup()">Project this as a matchup</button></div>';
+  out+='</div>';
+  return out;
+}
+window.tnlCmpToMatchup=function(){
+  TNL.mu.a=TNL.cmp.a;TNL.mu.b=TNL.cmp.b;TNL.mu.surface=TNL.cmp.surface;TNL.mu.result=null;
+  tnlGo('matchup');
+};
+
+/* ─── HISTORICAL EXPLORER ──────────────────────────────────────────────────
+   Every filter is applied in the database and the result is keyset paginated.
+   The browser never holds more than one page, and the "next" cursor comes back
+   with the page rather than being an offset — so paging cost is flat and a row
+   cannot be skipped or repeated when the table grows underneath a reader. */
+window.tnlExSet=function(k,v){TNL.ex.filters[k]=v||null;};
+window.tnlExGo=function(){TNL.ex.cursor=null;TNL.ex.stack=[];tnlExploreRun(true).then(tnlRender);};
+window.tnlExNext=function(){
+  var r=TNL.ex.rows;
+  if(!r||!r.length)return;
+  TNL.ex.stack.push(TNL.ex.cursor);
+  TNL.ex.cursor={d:r[0].next_cursor_date,i:r[0].next_cursor_id};
+  tnlExploreRun(false).then(tnlRender);
+};
+window.tnlExPrev=function(){
+  if(!TNL.ex.stack.length)return;
+  TNL.ex.cursor=TNL.ex.stack.pop()||null;
+  tnlExploreRun(false).then(tnlRender);
+};
+async function tnlExploreRun(withSummary){
+  var f=TNL.ex.filters,c=TNL.ex.cursor;
+  var body={p_tour:TNL.tour,p_limit:50,
+    p_player_id:f.player_id||null,p_opponent_id:f.opponent_id||null,
+    p_season_from:f.season_from?Number(f.season_from):null,
+    p_season_to:f.season_to?Number(f.season_to):null,
+    p_surface:f.surface||null,p_level:f.level||null,p_round:f.round||null,
+    p_best_of:f.best_of?Number(f.best_of):null,p_environment:f.environment||null,
+    p_rank_max:f.rank_max?Number(f.rank_max):null,
+    p_opp_rank_max:f.opp_rank_max?Number(f.opp_rank_max):null,
+    p_country:f.country||null,p_plays:f.plays||null,
+    p_age_min:f.age_min?Number(f.age_min):null,p_age_max:f.age_max?Number(f.age_max):null,
+    p_cursor_date:c?c.d:null,p_cursor_id:c?c.i:null};
+  try{
+    TNL.ex.rows=await tnlRpc('lab_explore',body)||[];
+    if(withSummary){
+      TNL.ex.summary=await tnlRpc('lab_explore_summary',{p_tour:TNL.tour,
+        p_player_id:f.player_id||null,p_season_from:body.p_season_from,p_season_to:body.p_season_to,
+        p_surface:f.surface||null,p_level:f.level||null,p_best_of:body.p_best_of,
+        p_environment:f.environment||null,p_opp_rank_max:body.p_opp_rank_max});
+    }
+    TNL.data.explore=true;
+  }catch(e){ TNL.data.explore={__err:tnlErrText(e)}; }
+}
+function tnlViewExplore(){
+  var f=TNL.ex.filters,rows=TNL.ex.rows||[],s=(TNL.ex.summary&&TNL.ex.summary[0])||null;
+  var M=tnlModel();
+  function sel(k,label,opts,blank){
+    return '<label><span>'+tnlEsc(label)+'</span><select onchange="tnlExSet(\''+k+'\',this.value)">'
+      +'<option value="">'+tnlEsc(blank||'Any')+'</option>'
+      +opts.map(function(o){var v=o.v==null?o:o.v,t=o.t==null?o:o.t;
+        return '<option value="'+tnlEsc(v)+'"'+(f[k]===String(v)?' selected':'')+'>'+tnlEsc(t)+'</option>';}).join('')
+      +'</select></label>';
+  }
+  function num(k,label,ph){
+    return '<label><span>'+tnlEsc(label)+'</span><input type="number" placeholder="'+tnlEsc(ph||'')+'" '
+      +'value="'+tnlEsc(f[k]||'')+'" oninput="tnlExSet(\''+k+'\',this.value)"></label>';
+  }
+  var out='<div class="tnl-form">'
+    +num('season_from','Season from','1968')+num('season_to','Season to','2026')
+    +sel('surface','Surface',['hard','clay','grass','carpet'])
+    +sel('level','Level',M?Object.keys(M.LEVELS).map(function(k){return {v:k,t:M.LEVELS[k].label};}):[])
+    +sel('round','Round',['F','SF','QF','R16','R32','R64','R128'])
+    +sel('best_of','Format',[{v:3,t:'Best of three'},{v:5,t:'Best of five'}])
+    +sel('environment','Environment',['indoor','outdoor'])
+    +sel('plays','Handedness',[{v:'R',t:'Right'},{v:'L',t:'Left'}])
+    +num('opp_rank_max','Both ranked within','e.g. 20')
+    +'<label><span>Country</span><input placeholder="e.g. ESP" maxlength="3" value="'+tnlEsc(f.country||'')+'" oninput="tnlExSet(\'country\',this.value.toUpperCase())"></label>'
+    +'<button class="tnl-btn" onclick="tnlExGo()">Search the record</button>'
+    +'</div>';
+  if(TNL.player)out+='<div class="tnl-form" style="margin-top:-4px"><button class="tnl-btn ghost" '
+    +'onclick="tnlExSet(\'player_id\',\''+tnlEsc(TNL.player.player_id)+'\');tnlExGo()">Limit to '
+    +tnlEsc((TNL.player.card&&TNL.player.card.full_name)||'the open player')+'</button>'
+    +(f.player_id?'<button class="tnl-btn ghost" onclick="tnlExSet(\'player_id\',\'\');tnlExGo()">Clear player filter</button>':'')+'</div>';
+  if(s&&s.matches!=null){
+    out+='<div class="tnl-note"><b>'+Number(s.matches||0).toLocaleString()+'</b> matches match these filters'
+      +(s.first_season?', '+s.first_season+'–'+s.last_season:'')
+      +(s.player_wins!=null&&f.player_id?'. That player is <b>'+s.player_wins+'–'+s.player_losses+'</b> ('+tnlPct(s.win_pct)+')':'')
+      +(s.avg_minutes?'. Average '+tnlNum(s.avg_minutes,0)+' minutes':'')
+      +(s.retirements?'. '+s.retirements+' retirement(s)':'')
+      +(s.walkovers?', '+s.walkovers+' walkover(s)':'')+'.</div>';
+  }
+  if(!rows.length){out+='<div class="empty">No match in the record for these filters.</div>';return out;}
+  out+='<div class="tnl-scroll"><table class="tnl-tbl"><thead><tr>'
+    +'<th>Date</th><th>Tournament</th><th>Rd</th><th>Surface</th><th>Winner</th><th>Loser</th>'
+    +'<th class="n">Score</th><th class="n">Min</th></tr></thead><tbody>'
+    +rows.map(function(m){
+      return '<tr><td>'+tnlEsc(m.match_date||'—')+'</td><td>'+tnlEsc(m.tourney_name||'')+'</td>'
+        +'<td>'+tnlEsc(m.round||'')+'</td><td>'+tnlEsc(m.surface||'')+'</td>'
+        +'<td class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(m.winner_id)+'\')">'+tnlEsc(m.winner_name||'')
+          +(m.winner_rank?' <span class="tnl-unc">#'+m.winner_rank+'</span>':'')+'</td>'
+        +'<td class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(m.loser_id)+'\')">'+tnlEsc(m.loser_name||'')
+          +(m.loser_rank?' <span class="tnl-unc">#'+m.loser_rank+'</span>':'')+'</td>'
+        +'<td class="n">'+tnlEsc(m.score||'')+(m.retirement?' ret.':'')+(m.walkover?' w/o':'')+'</td>'
+        +'<td class="n">'+tnlInt(m.minutes)+'</td></tr>';}).join('')
+    +'</tbody></table></div>';
+  out+='<div class="tnl-pager">'
+    +'<button class="tnl-btn ghost" onclick="tnlExPrev()"'+(TNL.ex.stack.length?'':' disabled')+'>Newer</button>'
+    +'<span class="tnl-unc">'+rows.length+' rows &middot; keyset paginated, never an offset</span>'
+    +'<button class="tnl-btn ghost" onclick="tnlExNext()"'+(rows.length<50?' disabled':'')+'>Older</button></div>';
+  return out;
+}
+
+/* ─── PLAYER PROFILE ───────────────────────────────────────────────────────*/
+function tnlSpark(hist){
+  if(!hist||hist.length<3)return '';
+  var pts=hist.slice().reverse().filter(function(h){return h.power_rating!=null;});
+  if(pts.length<3)return '';
+  var vals=pts.map(function(h){return Number(h.power_rating);});
+  var lo=Math.min.apply(null,vals),hi=Math.max.apply(null,vals),rng=(hi-lo)||1;
+  var w=100,h=46,step=w/(pts.length-1);
+  var d=pts.map(function(p,i){
+    var y=h-4-((Number(p.power_rating)-lo)/rng)*(h-10);
+    return (i?'L':'M')+(i*step).toFixed(2)+','+y.toFixed(2);}).join(' ');
+  return '<svg class="tnl-spark" viewBox="0 0 100 46" preserveAspectRatio="none" aria-label="Rating history">'
+    +'<path d="'+d+'" fill="none" stroke="var(--accent)" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>'
+    +'<div class="tnl-unc" style="display:flex;justify-content:space-between">'
+    +'<span>'+tnlEsc(pts[0].as_of)+' &middot; '+tnlNum(lo,1)+'</span>'
+    +'<span>'+tnlEsc(pts[pts.length-1].as_of)+' &middot; '+tnlNum(hi,1)+'</span></div>';
+}
+function tnlViewPlayer(){
+  var P=TNL.player;
+  if(!P)return '<div class="empty">Search a player to open their research page.</div>';
+  if(P.loading)return '<div class="empty">Loading&hellip;</div>';
+  if(P.__err)return '<div class="empty">'+tnlEsc(P.__err)+'</div>';
+  var c=P.card;
+  if(!c)return '<div class="empty">EdgeDesk has no rated record for this player.</div>';
+  var L=tnlLab();
+  var trans=L?L.surfaceTranslation(c):null;
+  var traj=L?L.trajectory(c):null;
+  var work=L?L.workload(c):null;
+  var band=L?L.powerBand(c.power_rating):null;
+
+  var out='<div class="tnl-hd" style="margin-bottom:10px"><div>'
+    +'<h3 style="font-size:19px">'+tnlEsc(c.full_name)+'</h3>'
+    +'<p>'+tnlEsc(c.country||'—')+' &middot; '+tnlEsc(c.tour)
+    +(c.plays?' &middot; '+(c.plays==='L'?'left-handed':c.plays==='R'?'right-handed':tnlEsc(c.plays)):'')
+    +(c.height_cm?' &middot; '+c.height_cm+'cm':'')
+    +(c.latest_age?' &middot; age '+tnlNum(c.latest_age,1):'')
+    +' &middot; '+tnlInt(c.matches_on_file)+' matches on file'
+    +(c.first_match?' ('+tnlEsc(c.first_match)+'–'+tnlEsc(c.last_match||'')+')':'')+'</p></div>'
+    +'<div class="tnl-hdmeta">'
+      +'<div><b style="font-size:20px;color:var(--citron,#d8f24b)">'+tnlNum(c.power_rating,1)+'</b></div>'
+      +'<div>'+tnlEsc(band?band.label:'')+'</div>'
+      +'<div>'+tnlUnc(c.rating_sample,c.uncertainty)+'</div>'
+      +'<div>'+(c.official_rank?'official #'+c.official_rank:'unranked')+'</div>'
+    +'</div></div>';
+
+  out+='<div class="tnl-grid">';
+
+  /* Career vs recent vs surface — the brief requires these be DISTINGUISHED,
+     not blended into one "form" number. */
+  out+=tnlCard('Career','Raw record across the whole archive. Not opponent-adjusted.',
+    '<div class="tnl-row"><span class="nm">Matches</span><span class="vl">'+tnlInt(c.matches_on_file)+'</span></div>'
+    +'<div class="tnl-row"><span class="nm">Win–loss</span><span class="vl">'+tnlInt(c.career_wins)+'–'+tnlInt(c.career_losses)+'</span></div>'
+    +'<div class="tnl-row"><span class="nm">Win rate</span><span class="vl">'+tnlPct(c.career_win_pct)+'</span></div>'
+    +'<div class="tnl-row"><span class="nm">First / last</span><span class="mt">'+tnlEsc(c.first_match||'—')+' → '+tnlEsc(c.last_match||'—')+'</span></div>');
+
+  out+=tnlCard('Recent form','Win rate over three horizons. Opponent strength is beside it, because a rate without it is not comparable.',
+    '<div class="tnl-row"><span class="nm">30 days</span><span class="vl">'+tnlPct(c.form_30d)+'</span></div>'
+    +'<div class="tnl-row"><span class="nm">90 days</span><span class="vl">'+tnlPct(c.form_90d)+'</span></div>'
+    +'<div class="tnl-row"><span class="nm">365 days</span><span class="vl">'+tnlPct(c.form_365d)+'</span>'+tnlUnc(c.form_sample_365d,null)+'</div>'
+    +'<div class="tnl-row"><span class="nm">Opponents, recent</span><span class="vl">'+tnlNum(c.sos_elo_recent,0)+'</span></div>'
+    +'<div class="tnl-row"><span class="nm">Opponents, career</span><span class="vl">'+tnlNum(c.sos_elo_career,0)+'</span></div>'
+    +(traj?'<div class="tnl-note"><b>'+tnlEsc(traj.label)+'.</b> '+tnlEsc(traj.why.join(' '))+'</div>':''));
+
+  out+=tnlCard('By surface','Surface rating against this player’s own baseline. The adjustment is shrunk by surface sample.',
+    (trans&&trans.baseline_elo!=null)
+      ? ['hard','clay','grass','carpet'].map(function(s){
+          var r=trans.surfaces[s];
+          if(!r)return '';
+          return '<div class="tnl-row"><span class="nm">'+s.charAt(0).toUpperCase()+s.slice(1)+'</span>'
+            +(r.elo!=null?'<span class="mt">'+tnlNum(r.elo,0)+'</span><span class="vl">'
+              +(r.adjustment>0?'+':'')+tnlNum(r.adjustment,0)+'</span>'+tnlUnc(r.sample,r.uncertainty)
+              :'<span class="tnl-flag unk">no rated match</span>')
+            +'</div>';}).join('')
+          +(trans.best?'<div class="tnl-note">Best: <b>'+tnlEsc(trans.best.surface)+'</b>'
+            +(trans.worst?', weakest: <b>'+tnlEsc(trans.worst.surface)+'</b>':'')
+            +(trans.versatility?'. '+tnlEsc(trans.versatility.label)+' — '+tnlNum(trans.versatility.spread,0)
+              +' points between best and worst across '+trans.versatility.surfaces_counted+' surfaces.':'')+'</div>':'')
+      : '<div class="empty" style="padding:12px">No overall rating to translate from.</div>');
+
+  out+=tnlCard('Serve and return','Rolling pre-match rates. Absent where the archive carried no serve statistics — which is most of the record before 1991.',
+    '<div class="tnl-row"><span class="nm">Serve strength</span><span class="vl">'+tnlPct(c.serve_strength,1)+'</span>'+tnlUnc(c.serve_sample,null)+'</div>'
+    +'<div class="tnl-row"><span class="nm">Return pressure</span><span class="vl">'+tnlPct(c.return_strength,1)+'</span></div>'
+    +(c.serve_strength==null?'<div class="tnl-miss">No serve statistics on file for this player. That is a gap in the source, not a zero.</div>':''));
+
+  out+=tnlCard('Workload and rest','Documented calendar rules. Not a fitness or injury claim.',
+    '<div class="tnl-row"><span class="nm">Class</span><span class="tnl-flag '
+      +(c.workload_class==='heavy'||c.workload_class==='elevated'?'warn':c.workload_class==='unknown'?'unk':'')+'">'
+      +tnlEsc(c.workload_class||'unknown')+'</span></div>'
+    +'<div class="tnl-row"><span class="nm">Last 7 / 14 / 28 days</span><span class="vl">'
+      +tnlInt(c.matches_7d)+' / '+tnlInt(c.matches_14d)+' / '+tnlInt(c.matches_28d)+'</span></div>'
+    +'<div class="tnl-row"><span class="nm">Rest days</span><span class="vl">'+tnlInt(c.rest_days)+'</span></div>'
+    +'<div class="tnl-row"><span class="nm">Since last match</span><span class="vl">'+tnlInt(c.days_since_last_match)+'</span></div>'
+    +(work&&work.why.length?'<div class="tnl-note">'+tnlEsc(work.why.join(' '))+'</div>':''));
+
+  out+=tnlCard('Rating history','What EdgeDesk would have said on each date, computed only from matches before it.',
+    (P.history&&P.history.length>2)?tnlSpark(P.history)
+      :'<div class="empty" style="padding:12px">Not enough history on file to draw a line.</div>');
+  out+='</div>';
+
+  /* Splits */
+  if(P.splits&&P.splits.length){
+    var kinds={};P.splits.forEach(function(s){(kinds[s.split_kind]=kinds[s.split_kind]||[]).push(s);});
+    out+='<div class="tnl-grid" style="margin-top:10px">';
+    Object.keys(kinds).forEach(function(k){
+      out+=tnlCard(k==='best_of'?'By format':k==='level'?'By tournament level':k==='environment'?'By environment':'By surface',
+        'Raw record. Average opponent ranking is beside it so a strong rate against a weak field is visible as one.',
+        '<div class="tnl-scroll"><table class="tnl-tbl"><thead><tr><th></th><th class="n">W–L</th><th class="n">Win%</th><th class="n">Avg opp</th></tr></thead><tbody>'
+        +kinds[k].filter(function(s){return s.matches>0;}).map(function(s){
+          return '<tr><td>'+tnlEsc(s.split_label)+'</td><td class="n">'+s.wins+'–'+s.losses+'</td>'
+            +'<td class="n">'+tnlPct(s.win_pct)+'</td><td class="n">'+(s.avg_opponent_rank?'#'+tnlNum(s.avg_opponent_rank,0):'—')+'</td></tr>';
+        }).join('')+'</tbody></table></div>');
+    });
+    out+='</div>';
+  }
+
+  /* Recent matches */
+  if(P.matches&&P.matches.length){
+    out+='<div class="tnl-card" style="margin-top:10px"><h4>Recent matches</h4>'
+      +'<div class="tnl-scroll"><table class="tnl-tbl"><thead><tr><th>Date</th><th>Tournament</th><th>Rd</th>'
+      +'<th>Surface</th><th></th><th>Opponent</th><th class="n">Score</th></tr></thead><tbody>'
+      +P.matches.map(function(m){
+        return '<tr><td>'+tnlEsc(m.match_date||'')+'</td><td>'+tnlEsc(m.tourney_name||'')+'</td>'
+          +'<td>'+tnlEsc(m.round||'')+'</td><td>'+tnlEsc(m.surface||'')+'</td>'
+          +'<td style="color:'+(m.won?'var(--pos)':'var(--neg)')+';font-weight:700">'+(m.won?'W':'L')+'</td>'
+          +'<td class="nm" onclick="tnlOpenPlayer(\''+tnlEsc(m.opponent_id)+'\')">'+tnlEsc(m.opponent_name||'—')
+            +(m.opponent_rank?' <span class="tnl-unc">#'+m.opponent_rank+'</span>':'')+'</td>'
+          +'<td class="n">'+tnlEsc(m.score||'')+(m.retirement?' ret.':'')+(m.walkover?' w/o':'')+'</td></tr>';}).join('')
+      +'</tbody></table></div></div>';
+  }
+
+  out+='<div class="tnl-form" style="margin-top:10px">'
+    +'<button class="tnl-btn ghost" onclick="tnlMuFrom(\'a\')">Use as Player A in the studio</button>'
+    +'<button class="tnl-btn ghost" onclick="tnlMuFrom(\'b\')">Use as Player B</button>'
+    +'<button class="tnl-btn ghost" onclick="tnlExSet(\'player_id\',\''+tnlEsc(c.player_id)+'\');tnlGo(\'explore\');tnlExGo()">Explore their record</button>'
+    +'</div>';
+  out+='<div class="tnl-note"><b>Career, recent and surface are three different questions.</b> '
+    +'They are shown apart because blending them hides the thing a researcher needs: whether a strong recent run happened '
+    +'on this player’s best surface against a weaker field, or on their worst against a stronger one. '
+    +'Every figure carries the sample it rests on.</div>';
+  return out;
+}
+window.tnlMuFrom=function(side){
+  if(!TNL.player||!TNL.player.card)return;
+  TNL.mu[side]=TNL.player.card;TNL.mu.result=null;tnlGo('matchup');
+};
+
+/* ─── MARKET COMPARISON — prepared, disabled, honest ───────────────────────
+   The brief asks for this tab to exist and to stay hidden until a verified odds
+   provider is connected and passes freshness checks, with no fake data behind
+   it. So it renders the DATABASE's answer. There is no mock, no sample price
+   and no "coming soon" illustration of numbers that do not exist. */
+function tnlViewMarket(d){
+  var m=(d&&d[0])||d||{};
+  if(m.available===true){
+    return '<div class="tnl-note"><b>A cleared odds provider is connected.</b> '+tnlEsc(m.reason||'')+'</div>'
+      +'<div class="empty">The market comparison module is available but not yet rendered in this build. '
+      +'The Lab does not depend on it.</div>';
+  }
+  return '<div class="tnl-off">'
+    +'<b>Market Comparison is off.</b>'
+    +tnlEsc(m.reason||'No cleared odds provider is registered.')
+    +'<div style="margin-top:14px;max-width:56ch;margin-left:auto;margin-right:auto;text-align:left">'
+    +'<div class="tnl-note">When a licensed provider is connected this tab will compare the EdgeDesk probability with the '
+    +'market-implied probability, the fair price, the available price, the model–market disagreement, expected value and '
+    +'closing-line movement.'
+    +'<br><br><b>It is off rather than empty on purpose.</b> EdgeDesk will not show a market number it has not received, '
+    +'and the historical archive behind this Lab is licensed for non-commercial research — it cannot be used as a price feed. '
+    +'Three conditions must all hold before this tab opens: the flag is on, a commercially cleared provider is registered, '
+    +'and its most recent snapshot is less than six hours old.'
+    +'<br><br>Status: flag '+(m.flag_enabled?'on':'<b>off</b>')
+    +' &middot; cleared provider '+(m.provider_ok?'registered':'<b>none</b>')
+    +' &middot; snapshot '+(m.freshness_ok?'fresh':'<b>none or stale</b>')+'.'
+    +'</div>'
+    +'<div class="tnl-note"><b>Nothing else in the Tennis Lab depends on this.</b> Ratings, surface translation, form, '
+    +'workload, the matchup studio, the historical explorer and the AI all answer from the record alone.</div>'
+    +'</div></div>';
 }
 
 /* ═══ TENNIS RESEARCH BOARD ═════════════════════════════════════════════════
