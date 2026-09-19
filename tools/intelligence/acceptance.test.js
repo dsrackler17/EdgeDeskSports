@@ -372,8 +372,22 @@ const MLB_PACKET = {
       home_team: g.home_team, away_team: g.away_team,
       home_id: g.home_team_id, away_id: g.away_team_id,
     })));
-    const twice = KERNEL.teamPhrases('How about Oregon?', cardIx).map((x) => x.phrase);
-    chk('a bare word is offered to the card resolver at all', twice.indexOf('Oregon') >= 0, twice);
+    /* WHICH school is read off the card. Naming one by hand -- this said
+       "Oregon" -- goes red the week that program has a bye, on a reader doing
+       exactly the right thing, which is the rot every case above was fixed
+       for. A one-word name, because the claim is about a BARE WORD; a card
+       with none is recorded as a skip. */
+    const oneWord = (function () {
+      for (const g of FX.SLATE.games) {
+        for (const t of [g.away_team, g.home_team]) if (/^[A-Z][A-Za-z'&.-]*$/.test(String(t || ''))) return t;
+      }
+      return null;
+    })();
+    if (!oneWord) chk('skipped: the published card carries no one-word school name', true);
+    else {
+      const twice = KERNEL.teamPhrases('How about ' + oneWord + '?', cardIx).map((x) => x.phrase);
+      chk('a bare word is offered to the card resolver at all', twice.indexOf(oneWord) >= 0, { asked: oneWord, offered: twice });
+    }
     chk('and ordinary words are not',
       KERNEL.teamPhrases('Anything worth betting?', cardIx).length === 0,
       KERNEL.teamPhrases('Anything worth betting?', cardIx));
