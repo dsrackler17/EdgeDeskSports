@@ -693,12 +693,31 @@ const MLB_PACKET = {
        itself, which does not move with the window, so it cannot go vacuous. */
     chk('"Texas State" is never read as "Texas"',
       EI.resolveTeam('Texas State', ix).key === 'texasstate', EI.resolveTeam('Texas State', ix));
-    const oh = R('What about Miami (OH) vs Cincinnati?');
-    chk('Miami (OH) reaches Cincinnati, not Miami Florida',
-      oh && oh.away_id === 'miamioh', oh && [oh.away_team, oh.home_team]);
-    const fl = R('What about Miami vs Wake Forest?');
-    chk('and plain Miami reaches Wake Forest',
-      fl && fl.away_id === 'miami' && fl.home_id === 'wakeforest', fl && [fl.away_team, fl.home_team]);
+    /* THE TWO MIAMIS — THE SAME ROT AS THE TEXAS STATE CASE ABOVE, AND THE
+       SAME REMEDY. This named two pairings by hand, "Miami (OH) vs
+       Cincinnati" and "Miami vs Wake Forest". Both were real when it was
+       written; by 19 September the card had moved on and Miami @ Wake Forest
+       was no longer on it. The resolver found no such pairing -- correctly --
+       the single-phrase fallback then returned Wake Forest's only remaining
+       game, and the assertion went red on a resolver doing exactly the right
+       thing. So the trap is asserted on the NAME RESOLUTION, which does not
+       move with the window and cannot go vacuous, and the end-to-end check
+       runs on whichever game the card actually holds for each program. */
+    chk('plain "Miami" is Miami (FL), never Miami (OH)',
+      EI.resolveTeam('Miami', ix).key === 'miami', EI.resolveTeam('Miami', ix));
+    chk('"Miami (OH)" is Miami (OH), never Miami (FL)',
+      EI.resolveTeam('Miami (OH)', ix).key === 'miamioh', EI.resolveTeam('Miami (OH)', ix));
+    [['miamioh', 'Miami (OH)'], ['miami', 'plain Miami']].forEach(([key, label]) => {
+      const g = games.find((x) => x.home_id === key || x.away_id === key);
+      /* A card carrying neither is a fact about the artifact, not about the
+         resolver, so it is recorded as a skip rather than asserted around. */
+      if (!g) { chk('skipped: the published card carries no ' + label + ' game', true); return; }
+      const got = R(`What about ${g.away_team} vs ${g.home_team}?`);
+      chk(label + ' reaches its own game, not the other Miami\'s',
+        got && String(got.game_id) === String(g.game_id)
+        && got.home_id === g.home_id && got.away_id === g.away_id,
+        { asked: g.away_team + ' @ ' + g.home_team, got: got && [got.away_team, got.home_team] });
+    });
     chk('an ordinary sentence resolves to no game at all',
       R('Anything worth betting tonight?') == null, R('Anything worth betting tonight?'));
     /* THE RESOLVER IS MASCOT-TOLERANT BY DESIGN — it exists to join a book's
