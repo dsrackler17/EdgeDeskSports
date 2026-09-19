@@ -141,10 +141,26 @@ jobs:
           if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
           node football/fbs_epa/build_epa.js --refresh $ARGS || true
 
+      # THE ARTIFACT'S OWN RULES, WHICH IS ALL THAT CAN HOLD HERE.
+      #
+      # path.test.js used to run in this step too, and it made the job fail
+      # every time the refresh above did its job. Its first section is "ONE
+      # NUMBER, FOUR SURFACES": it recomputes the quarterback card from the
+      # EPA artifact and asserts the published slate carries the same number.
+      # At THIS point in the pipeline the artifact has just been rewritten
+      # with the season in progress and the card has not been rebuilt yet --
+      # build_coverage.js is nine steps below -- so the two disagree by
+      # construction whenever a single EPA moved, which on a game day is
+      # always. Run 35455336373 died here on 0.1433 vs 0.1436, and took the
+      # starters, the profiles, the card and the commit down with it: the job
+      # never reached the rebuild that would have made the two agree again.
+      #
+      # So the cross-surface test belongs after the card is rebuilt, and that
+      # is where it already runs ("Prove the published card still holds its
+      # rules"). Nothing is lost by taking it out of this step; it is also
+      # still run before anything writes, against the committed pair.
       - name: Prove the refreshed EPA artifact still holds its rules
-        run: |
-          node football/fbs_epa/fbs_epa.test.js
-          node football/fbs_epa/path.test.js
+        run: node football/fbs_epa/fbs_epa.test.js
 
       - name: Build the team-game profiles
         run: |

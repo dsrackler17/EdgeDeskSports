@@ -3459,7 +3459,26 @@
     return String(w == null ? '' : w).toLowerCase()
       .replace(/n['’]t$/, '').replace(/['’](s|re|ve|ll|d|m)$/, '').replace(/[^a-z]/g, '');
   }
-  function isFiller(w) { var k = plainWord(w); return !k || !!NOT_A_NAME[k]; }
+  /* A TOKEN CARRYING AN AMPERSAND IS PART OF A NAME, NEVER AN ENGLISH WORD.
+     plainWord() strips everything that is not a letter so an ordinary word can
+     be looked up in the stop list, and that turns "A&M" into "am" -- the verb,
+     which IS in the list. So the second word of "Texas A&M" was trimmed as
+     filler, the two-word window never reached resolveTeam (which resolves it
+     correctly, to texasam), and the question fell back to the bare "Texas".
+     With a baseball board open that binds to the Texas Rangers: a college
+     football question answered as a baseball one, in silence — the exact
+     failure this layer was built to stop, and the one "Texas Tech contains
+     Texas, the MLB alias that started all of this" already names.
+
+     Published cards carry Texas A&M, East Texas A&M, Florida A&M, Alabama A&M
+     and NC A&T. A bare "&" keeps its filler status, so "William & Mary" is
+     unchanged — it never had the bug, because only the ENDS of a window are
+     trimmed and neither end of that one is filler. */
+  function isFiller(w) {
+    var s = String(w == null ? '' : w);
+    if (s.indexOf('&') >= 0 && /[A-Za-z]/.test(s)) return false;
+    var k = plainWord(w); return !k || !!NOT_A_NAME[k];
+  }
 
   function nameCandidates(text) {
     var raw = String(text == null ? '' : text);
