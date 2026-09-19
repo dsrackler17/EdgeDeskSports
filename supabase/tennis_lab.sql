@@ -299,27 +299,42 @@ returns table (available boolean, reason text, flag_enabled boolean,
 language sql stable security definer set search_path = tennis, pg_temp as $$
   with f as (
     select coalesce((select enabled from tennis.lab_flags where flag_key = 'market_comparison'), false) as on
-  ), p as (
-    select exists (
-      select 1 from tennis.source_licenses
-       where commercial_use = true and cleared_by is not null and cleared_at is not null
-         and source_key <> 'edgedesk'
-    ) as ok
   ), s as (
-    select max(captured_at) as last_at from tennis.odds_snapshots
+    -- THE SNAPSHOT AND ITS SOURCE, TOGETHER.
+    --
+    -- An earlier version asked two separate questions — "is any commercially
+    -- cleared source registered?" and "is any snapshot fresh?" — and a test
+    -- caught what that misses: the record contract SEEDS 'odds_api' as
+    -- cleared, so the provider half was already satisfied on a fresh install by
+    -- a placeholder row that has never delivered anything. The gate would then
+    -- have turned on the first time any snapshot arrived, from any source.
+    --
+    -- The question that actually matters is whether a CLEARED SOURCE HAS
+    -- RECENTLY DELIVERED, so it is asked as one join. A registration with no
+    -- deliveries proves nothing, and a delivery from an uncleared source is
+    -- exactly what the licence gate exists to refuse.
+    select max(o.captured_at) as last_at,
+           max(o.captured_at) filter (
+             where l.commercial_use = true and l.cleared_by is not null and l.cleared_at is not null
+           ) as cleared_at_ts
+      from tennis.odds_snapshots o
+      join tennis.source_licenses l on l.source_key = o.source_key
   )
-  select (f.on and p.ok and s.last_at is not null and s.last_at > now() - interval '6 hours') as available,
+  select (f.on
+          and s.cleared_at_ts is not null
+          and s.cleared_at_ts > now() - interval '6 hours') as available,
          case
            when not f.on then 'The Market Comparison module is switched off. EdgeDesk is a research product and ships with it disabled.'
-           when not p.ok then 'No commercially cleared odds provider is registered. The historical archive is non-commercial and cannot be used as a market feed.'
-           when s.last_at is null then 'No odds snapshot has ever been received.'
-           when s.last_at <= now() - interval '6 hours' then 'The most recent odds snapshot is more than six hours old and fails the freshness check.'
-           else 'A cleared provider is registered and its snapshot is fresh.'
+           when s.last_at is null then 'No odds snapshot has ever been received from any source.'
+           when s.cleared_at_ts is null then 'Odds snapshots exist, but none came from a commercially cleared provider. The historical archive is non-commercial and cannot be used as a market feed.'
+           when s.cleared_at_ts <= now() - interval '6 hours' then 'The most recent snapshot from a cleared provider is more than six hours old and fails the freshness check.'
+           else 'A cleared provider has delivered a fresh snapshot.'
          end as reason,
-         f.on as flag_enabled, p.ok as provider_ok,
-         (s.last_at is not null and s.last_at > now() - interval '6 hours') as freshness_ok,
+         f.on as flag_enabled,
+         (s.cleared_at_ts is not null) as provider_ok,
+         (s.cleared_at_ts is not null and s.cleared_at_ts > now() - interval '6 hours') as freshness_ok,
          s.last_at as last_snapshot_at
-    from f, p, s;
+    from f, s;
 $$;
 revoke all on function tennis.lab_market_available() from public;
 grant execute on function tennis.lab_market_available() to anon, authenticated, service_role;
@@ -858,7 +873,23 @@ returns table (
   official_rank integer, official_rank_points integer,
   latest_age numeric, rating_sample integer, uncertainty numeric,
   days_since_last_match integer, source_mode text, snapshot_date date)
-language sql stable security invoker set search_path = tennis, pg_temp as $$
+-- SECURITY DEFINER, and this is the reason.
+--
+-- The cutoff branch reads tennis.player_match_features, which is PRIVATE — no
+-- client role may select from it, and that is deliberate: it is the training
+-- surface and a reader with access to it could reconstruct the model's inputs
+-- wholesale. As `security invoker` this function therefore returned "permission
+-- denied for table player_match_features" to every signed-out visitor, and —
+-- because PostgreSQL checks table permissions when it PLANS the statement, not
+-- when a branch returns rows — it failed that way even with NO cutoff set,
+-- where the private branch produces nothing at all. The Matchup Studio, the
+-- centrepiece of the Lab, was dead for anon in both modes.
+--
+-- Definer is the correct posture rather than a workaround: what comes out is
+-- exactly two rows of pre-match state for two NAMED players, which is the
+-- narrow answer the studio needs. The table itself stays shut. Same pattern,
+-- and same reasoning, as tennis.ops_health() in the record contract.
+language sql stable security definer set search_path = tennis, pg_temp as $$
   with want as (
     select 'a'::text as side, p_player_a as pid
     union all select 'b', p_player_b
@@ -929,6 +960,7 @@ language sql stable security invoker set search_path = tennis, pg_temp as $$
          null::integer, 'as_of'::text, hist.snap
     from hist;
 $$;
+revoke all on function tennis.lab_matchup_inputs(text, text, text, date) from public;
 grant execute on function tennis.lab_matchup_inputs(text, text, text, date) to anon, authenticated, service_role;
 
 -- Head to head between two players, optionally on one surface.
@@ -967,7 +999,12 @@ returns table (match_id text, match_date date, tourney_name text, round text,
                surface text, level text, best_of integer,
                winner_name text, loser_name text, score text,
                elo_gap numeric, favourite_won boolean, similarity numeric)
-language sql stable security invoker set search_path = tennis, pg_temp as $$
+-- SECURITY DEFINER for the same reason as lab_matchup_inputs: the rating gap
+-- that makes a past match comparable is read from the private feature table.
+-- What leaves this function is a handful of completed matches and the Elo gap
+-- each was played at — public facts about finished tennis, not the feature
+-- surface they were computed from.
+language sql stable security definer set search_path = tennis, pg_temp as $$
   with bounded as (select least(greatest(coalesce(p_limit, 12), 1), 50) as n,
                           abs(coalesce(p_elo_gap, 0)) as gap),
   cand as (
@@ -1000,6 +1037,7 @@ language sql stable security invoker set search_path = tennis, pg_temp as $$
    order by abs(cand.mgap - bounded.gap), cand.match_date desc
    limit (select n from bounded);
 $$;
+revoke all on function tennis.lab_comparables(text, numeric, text, integer, text, integer) from public;
 grant execute on function tennis.lab_comparables(text, numeric, text, integer, text, integer) to anon, authenticated, service_role;
 
 
@@ -1405,6 +1443,14 @@ with checks as (
                and to_regprocedure('tennis.ai_lab_player(text)') is not null
                and to_regprocedure('tennis.ai_lab_rank_gap(text, text, integer)') is not null
                and to_regprocedure('tennis.ai_lab_health()') is not null
+              then 'ok' else 'CHECK THIS' end
+  union all select 16.5, 'a signed-out reader can run a matchup WITHOUT reading the private feature table',
+         case when (select prosecdef from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                     where n.nspname='tennis' and p.proname='lab_matchup_inputs')
+               and (select prosecdef from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                     where n.nspname='tennis' and p.proname='lab_comparables')
+               and has_function_privilege('anon','tennis.lab_matchup_inputs(text, text, text, date)','EXECUTE')
+               and not has_table_privilege('anon','tennis.player_match_features','SELECT')
               then 'ok' else 'CHECK THIS' end
   union all select 17, 'the lab health line is readable without reading a private table',
          case when (select count(*) from tennis.lab_health) = 1
