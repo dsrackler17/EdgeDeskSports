@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_fbs_epa_index_v1",
  "version": 1,
- "generated_at": "2026-09-17T17:38:42.891Z",
+ "generated_at": "2026-09-19T23:14:23.980Z",
  "season": 2026,
  "source": {
   "repository": "https://github.com/sportsdataverse/cfbfastR-cfb-data",
@@ -12,7 +12,7 @@
   },
   "manifest": null,
   "refreshed": {
-   "at": "2026-09-17T17:38:42.891Z",
+   "at": "2026-09-19T23:14:23.980Z",
    "commit": "main",
    "season": 2026
   }
@@ -26,63 +26,63 @@
     "file": "adv_passing_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_passing/parquet/adv_passing_2026.parquet",
     "ok": true,
-    "bytes": 63839,
-    "sha256": "0241f0cf9c5cf448cf7aad52c4352cf59ec5cd3334d10fd64dac75d3cfd72d88",
+    "bytes": 85002,
+    "sha256": "e2bd285fc25623e02a24a61da6a6f10265fc4ea620b0e91d246564ceb132cecf",
     "why": null,
-    "retrieved_at": "2026-09-17T17:38:42.891Z"
+    "retrieved_at": "2026-09-19T23:14:23.980Z"
    },
    {
     "file": "adv_team_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_team/parquet/adv_team_2026.parquet",
     "ok": true,
-    "bytes": 96388,
-    "sha256": "21ffa08ab0b919b3517d8d35fbfe5b23392485b5760fc991044f3cf1265c4fca",
+    "bytes": 109758,
+    "sha256": "f474a5763b6a7e6698ca97017475f635abf070b742fbe8ce4fdea8b32faed21f",
     "why": null,
-    "retrieved_at": "2026-09-17T17:38:42.891Z"
+    "retrieved_at": "2026-09-19T23:14:23.980Z"
    },
    {
     "file": "cfb_schedules_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_schedules/parquet/cfb_schedules_2026.parquet",
     "ok": true,
-    "bytes": 86232,
-    "sha256": "aeebf672ce963008c4cedfc85908adf374266c5ebb27c8f4795ae221d6b63ed4",
+    "bytes": 87059,
+    "sha256": "17d957d3c3cb45512973b624a006ef4f768fcd7e3686652aa66e744dc5ca141f",
     "why": null,
-    "retrieved_at": "2026-09-17T17:38:42.891Z"
+    "retrieved_at": "2026-09-19T23:14:23.980Z"
    },
    {
     "file": "cfb_rosters_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_rosters/parquet/cfb_rosters_2026.parquet",
     "ok": true,
-    "bytes": 1591586,
-    "sha256": "e9e97fef2911838546d6525fafada4653d526452b3ecb733356e33197415d510",
+    "bytes": 2659896,
+    "sha256": "570ee5aafa2f5eb429056a1f164c2e6c88bb69cf8b590907924a0dc01d685596",
     "why": null,
-    "retrieved_at": "2026-09-17T17:38:42.891Z"
+    "retrieved_at": "2026-09-19T23:14:23.980Z"
    }
   ],
   "built": {
    "games": 888,
-   "passer_games": 535,
-   "team_games": 357,
+   "passer_games": 756,
+   "team_games": 408,
    "quarantined": 0,
    "issues": {
-    "epa_denominator_consistent": 531,
-    "identity_unique_season_team_name": 474,
-    "team_or_unnamed_passing_rows_excluded": 4,
-    "identity_unmatched": 61,
-    "epa_denominator_unverified": 4
+    "epa_denominator_consistent": 747,
+    "identity_unique_season_team_name": 745,
+    "team_or_unnamed_passing_rows_excluded": 8,
+    "identity_unmatched": 11,
+    "epa_denominator_unverified": 9
    }
   }
  },
  "freshness": {
-  "generated_at": "2026-09-17T17:38:42.891Z",
-  "observations_through": "2026-09-13T03:59:00.000Z",
-  "last_completed_game": "2026-09-13T03:59:00.000Z",
-  "observation_age_hours": 109.662,
-  "completed_games_without_passing_data": 7,
-  "coverage": "PARTIAL",
-  "coverage_why": "7 completed games have no advanced passing row yet. The provider publishes that table on its own cadence, so those games are NOT in any quarterback’s history here — partial coverage, not an absence of football.",
+  "generated_at": "2026-09-19T23:14:23.980Z",
+  "observations_through": "2026-09-19T18:00:00.000Z",
+  "last_completed_game": "2026-09-19T18:00:00.000Z",
+  "observation_age_hours": 5.24,
+  "completed_games_without_passing_data": 0,
+  "coverage": "COMPLETE",
+  "coverage_why": null,
   "source_commit": null,
-  "source_retrieved_at": "2026-09-17T17:38:42.891Z",
+  "source_retrieved_at": "2026-09-19T23:14:23.980Z",
   "source_age_hours": 0,
   "state": "FRESH",
   "why": null
@@ -90,59 +90,52 @@
  "coverage": {
   "season": 2026,
   "scheduled_fbs_involving_games": 888,
-  "completed_by_cutoff": 185,
-  "completed_games_with_passing_data": 178,
-  "passer_rows": 532,
-  "passer_rows_with_athlete_id": 474,
+  "completed_by_cutoff": 204,
+  "completed_games_with_passing_data": 204,
+  "passer_rows": 748,
+  "passer_rows_with_athlete_id": 739,
   "identity": {
-   "repaired": 3,
+   "repaired": 2,
    "ambiguous": 0,
-   "unresolved": 58,
+   "unresolved": 9,
    "by_method": {
-    "initial_surname": 3
+    "initial_surname": 2
    },
-   "resolved_at_assembly": 474,
+   "resolved_at_assembly": 745,
    "same_athlete_rows_merged": {
-    "groups": 3,
-    "rows_merged": 3,
+    "groups": 8,
+    "rows_merged": 8,
     "by_season": {
-     "2026": 3
+     "2026": 8
     }
    },
    "unresolved_reasons": {
-    "no athlete of that name is on this team’s roster for this season": 1,
-    "no EdgeDesk roster covers this programme — it is not FBS this season, so its passers have no athlete id in any file EdgeDesk holds": 57
+    "no athlete of that name is on this team’s roster for this season": 2,
+    "no EdgeDesk roster covers this programme — it is not FBS this season, so its passers have no athlete id in any file EdgeDesk holds": 7
    }
   },
-  "players_in_artifact": 459,
-  "players_with_frozen_career": 365,
-  "players_with_current_season_games": 322,
+  "players_in_artifact": 594,
+  "players_with_frozen_career": 407,
+  "players_with_current_season_games": 500,
   "teams_in_artifact": 238,
   "fbs_teams": 138,
   "by_season": {
    "2026": {
     "games": 888,
-    "completed": 185,
+    "completed": 204,
     "fbs_teams": 138,
-    "passer_rows": 532,
-    "passer_rows_with_athlete_id": 474,
-    "epa_reconciled_rows": 528
+    "passer_rows": 748,
+    "passer_rows_with_athlete_id": 739,
+    "epa_reconciled_rows": 739
    }
   },
   "starters": {
    "fbs_teams_with_a_starter_record": 138,
-   "with_a_resolved_player": 136,
-   "joined_to_this_artifact": 135,
-   "with_measured_epa_history": 135,
+   "with_a_resolved_player": 137,
+   "joined_to_this_artifact": 137,
+   "with_measured_epa_history": 137,
    "no_epa_history": 0,
-   "unjoined": [
-    {
-     "team": "UL Monroe",
-     "player": "Austin Carlisle",
-     "player_id": "5207934",
-     "why": "no FBS passing row in 2014–2026 carries this athlete id — a true freshman, an FCS transfer or a passer who has not yet thrown"
-    }
-   ],
+   "unjoined": [],
    "note": "a starter with no measured history is NOT a starter with average history. He is reported with an empty sample and the reason."
   }
  },

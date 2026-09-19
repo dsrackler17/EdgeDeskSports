@@ -2,38 +2,38 @@
  "schema": "edgedesk_starters_v1_index",
  "version": 1,
  "season": 2026,
- "generated_at": "2026-09-19T13:24:25.628Z",
+ "generated_at": "2026-09-19T23:14:15.651Z",
  "sports": {
   "CFB": {
    "ok": true,
-   "week": 2,
-   "teams": 275,
+   "week": 3,
+   "teams": 284,
    "coverage": {
-    "total": 275,
+    "total": 284,
     "by_status": {
      "ANNOUNCED": 0,
      "EXPECTED": 0,
      "DEPTH_CHART": 0,
-     "PREVIOUS_GAME": 239,
-     "COMPETITION": 29,
-     "UNKNOWN": 7
+     "PREVIOUS_GAME": 238,
+     "COMPETITION": 22,
+     "UNKNOWN": 24
     },
     "by_field_state": {
-     "USABLE": 260,
+     "USABLE": 252,
      "RESEARCH_ONLY": 0,
      "STALE": 0,
      "CONFLICTING": 8,
      "NOT_APPLICABLE": 0,
      "FETCH_FAILED": 0,
-     "UNAVAILABLE": 7
+     "UNAVAILABLE": 24
     },
-    "with_player": 264,
+    "with_player": 256,
     "announced": 0,
     "availability_explicit": 1,
-    "availability_unknown": 274,
-    "conflicting": 16,
+    "availability_unknown": 283,
+    "conflicting": 19,
     "stale": 0,
-    "resolved_share": 0.96
+    "resolved_share": 0.901
    },
    "sources": [
     {
@@ -43,7 +43,7 @@
      "from": "network",
      "status": 200,
      "error": null,
-     "retrieved_at": "2026-09-19T13:24:25.814Z"
+     "retrieved_at": "2026-09-19T23:14:16.165Z"
     },
     {
      "field": "roster identity",
@@ -52,7 +52,7 @@
      "from": "network",
      "status": 200,
      "error": null,
-     "retrieved_at": "2026-09-19T13:24:25.883Z"
+     "retrieved_at": "2026-09-19T23:14:16.557Z"
     },
     {
      "field": "schedule",
@@ -61,7 +61,7 @@
      "from": "network",
      "status": 200,
      "error": null,
-     "retrieved_at": "2026-09-19T13:24:25.984Z"
+     "retrieved_at": "2026-09-19T23:14:16.571Z"
     },
     {
      "field": "start count 2025",
@@ -70,27 +70,105 @@
      "from": "network",
      "status": 200,
      "error": null,
-     "retrieved_at": "2026-09-19T13:24:27.834Z"
+     "retrieved_at": "2026-09-19T23:14:18.526Z"
     }
    ],
    "notes": [
     "start counts are games opened in 2025 and 2026 — not a career total, and named as such",
-    "14 team(s) on the roster feed have no attributed dropback in 2026 yet, so no previous-game evidence exists for them"
+    "5 team(s) on the roster feed have no attributed dropback in 2026 yet, so no previous-game evidence exists for them"
    ],
    "file": "football/starters/cfb_2026.json"
+  },
+  "NFL": {
+   "ok": true,
+   "week": 2,
+   "teams": 32,
+   "coverage": {
+    "total": 32,
+    "by_status": {
+     "ANNOUNCED": 0,
+     "EXPECTED": 0,
+     "DEPTH_CHART": 32,
+     "PREVIOUS_GAME": 0,
+     "COMPETITION": 0,
+     "UNKNOWN": 0
+    },
+    "by_field_state": {
+     "USABLE": 32,
+     "RESEARCH_ONLY": 0,
+     "STALE": 0,
+     "CONFLICTING": 0,
+     "NOT_APPLICABLE": 0,
+     "FETCH_FAILED": 0,
+     "UNAVAILABLE": 0
+    },
+    "with_player": 32,
+    "announced": 0,
+    "availability_explicit": 6,
+    "availability_unknown": 26,
+    "conflicting": 3,
+    "stale": 0,
+    "resolved_share": 1
+   },
+   "sources": [
+    {
+     "field": "dropback attribution",
+     "url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "ok": true,
+     "from": "network",
+     "status": 200,
+     "error": null,
+     "retrieved_at": "2026-09-19T23:14:21.475Z"
+    },
+    {
+     "field": "roster identity",
+     "url": "https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_2026.csv",
+     "ok": true,
+     "from": "network",
+     "status": 200,
+     "error": null,
+     "retrieved_at": "2026-09-19T23:14:21.565Z"
+    },
+    {
+     "field": "availability",
+     "url": "https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_2026.csv",
+     "ok": true,
+     "from": "network",
+     "status": 200,
+     "error": null,
+     "retrieved_at": "2026-09-19T23:14:21.712Z"
+    },
+    {
+     "field": "depth chart",
+     "url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "ok": true,
+     "from": "network",
+     "status": 200,
+     "error": null,
+     "retrieved_at": "2026-09-19T23:14:22.152Z"
+    }
+   ],
+   "notes": [
+    "NFL availability is the league injury report for week 2; a player with no row is UNKNOWN, not healthy"
+   ],
+   "file": "football/starters/nfl_2026.json"
   }
  },
  "retrieval": {
-  "started_at": "2026-09-19T13:24:25.628Z",
-  "elapsed_ms": 4714,
-  "requests": 4,
-  "bytes": 76332317,
-  "ok": 4,
+  "started_at": "2026-09-19T23:14:15.651Z",
+  "elapsed_ms": 8216,
+  "requests": 8,
+  "bytes": 135575907,
+  "ok": 8,
   "failed": 0,
   "from_cache": 0,
   "from_stale_cache": 0,
   "hosts": {
    "raw.githubusercontent.com": {
+    "consecutive_failures": 0,
+    "circuit_open": null
+   },
+   "github.com": {
     "consecutive_failures": 0,
     "circuit_open": null
    }
