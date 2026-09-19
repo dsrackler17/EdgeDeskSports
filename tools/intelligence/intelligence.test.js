@@ -1894,6 +1894,33 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       eq('and both sides of a matchup survive, each at full length',
         JSON.stringify(phrases('What do you think about North Texas vs Texas State this week?')),
         '["North Texas","Texas State"]');
+      /* THE SAME RULE, WITH AN AMPERSAND IN THE NAME. plainWord() strips
+         everything that is not a letter so an ordinary word can be looked up
+         in the stop list, which turned "A&M" into "am" -- the verb, which IS
+         in the list. The second word of "Texas A&M" was therefore trimmed as
+         filler, the two-word window never reached resolveTeam (which resolves
+         it correctly), and the question fell back to the bare "Texas". With a
+         baseball board open that binds to the Texas Rangers: the college
+         football question answered as a baseball one that this whole layer
+         exists to stop. Asserted on an index carrying the school BY
+         CONSTRUCTION, so it cannot go vacuous the week Texas A&M is not on
+         the published card -- which is the only reason it stayed hidden. */
+      const ampIx = I.fbsIndexFor(cardGames.concat([
+        { game_id: 'amp-1', home_team: 'Texas A&M', away_team: 'Kentucky', home_id: 'texasam', away_id: 'kentucky' },
+      ]));
+      const ampPhrases = (q) => I.teamPhrases(q, ampIx).map((p) => p.phrase);
+      eq('an ampersand is part of the name, not a filler word',
+        JSON.stringify(ampPhrases('What do you think about Kentucky vs Texas A&M?')),
+        '["Kentucky","Texas A&M"]');
+      /* A NAME WHOSE AMPERSAND IS A WHOLE TOKEN never had the bug -- only the
+         ENDS of a window are trimmed and neither end of "William & Mary" is
+         filler -- so it is pinned here to keep the fix from reaching it. */
+      const wmIx = I.fbsIndexFor(cardGames.concat([
+        { game_id: 'amp-2', home_team: 'William & Mary', away_team: 'Kentucky', home_id: 'williammary', away_id: 'kentucky' },
+      ]));
+      eq('and a name whose ampersand stands alone is unchanged',
+        JSON.stringify(I.teamPhrases('What do you think about Kentucky vs William & Mary?', wmIx).map((p) => p.phrase)),
+        '["Kentucky","William & Mary"]');
       chk('a bare word the writer capitalised is read as the team it names',
         phrases('Thoughts on Miami?').length === 1, phrases('Thoughts on Miami?'));
       chk('an all-lower-case question still resolves, because capitals carry no signal in it',
