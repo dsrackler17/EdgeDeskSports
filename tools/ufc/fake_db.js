@@ -13,6 +13,8 @@
    =========================================================================== */
 'use strict';
 
+const P = require('../lib/pgrest.js');
+
 function parseQuery(q) {
   const out = { filters: [], order: null, limit: null, offset: 0, select: null };
   String(q || '').split('&').forEach(part => {
@@ -83,6 +85,27 @@ function fakeDb(seed) {
     async selectAll(schema, rel, q) { stats.requests++; return query(schema, rel, q); },
     async upsert(schema, rel, rows, onConflict, o) {
       o = o || {}; stats.requests++; stats.writes++;
+      /* THE WIRE RULE THIS FAKE USED TO LET THROUGH. Real PostgREST refuses a
+         bulk write whose objects carry different keys with PGRST102 "All
+         object keys must match". This stand-in accepted anything, so the whole
+         UFC suite passed green while the first poll of a real live card failed
+         on exactly that and kept failing for ninety minutes.
+
+         tools/lib/fake_pgrest.js learned this after the tennis path was bitten
+         the same way; the UFC path kept its own copy and did not. It is split
+         through the SAME shared function the real client now uses, then each
+         group is checked, so if that function ever stops grouping correctly
+         these suites break instead of a live event. */
+      P.byKeyShape(rows).forEach(g => {
+        const sig = Object.keys(g[0]).sort().join(',');
+        g.forEach(r => {
+          if (Object.keys(r).sort().join(',') !== sig) {
+            const e = new Error(`UPSERT ${schema}.${rel} -> 400: {"code":"PGRST102","details":null,"hint":null,"message":"All object keys must match"}`);
+            e.code = 'PGRST102';
+            throw e;
+          }
+        });
+      });
       const keys = String(onConflict || '').split(',').map(s => s.trim()).filter(Boolean);
       const t = tbl(schema, rel), out = [];
       rows.forEach(r => {
