@@ -65,6 +65,31 @@ on:
       - 'tools/tennis/sql/**'
       - 'tools/tennis/tennis_sql.test.js'
       - 'tools/tennis/lab_sql.test.js'
+      # THE RECORD CONTRACT AND ITS SUITE. This job has run record_sql.test.js
+      # since the record shipped, and neither the contract nor the suite was
+      # ever in this list — the same omission the editorial block above
+      # records. A pull request could rewrite 2,400 lines of the schema that
+      # holds the licensing gate, the leakage bound and the append-only
+      # prediction ledger, and the one job that applies it to a real
+      # PostgreSQL would not run. This PR is the proof: it changes that file
+      # and went green without the suite executing.
+      - 'supabase/tennis_record.sql'
+      - 'tools/tennis/record_sql.test.js'
+      - 'tools/tennis/import.test.js'
+      - 'tools/tennis/leakage.test.js'
+      # THE SPLIT PARTS AND THE CHECK THAT KEEPS THEM HONEST. supabase/parts is
+      # what gets pasted into the Supabase SQL editor, so a split that has
+      # drifted from its source installs a contract the repository has already
+      # moved past — which is the state the tennis schema was found in.
+      # split_sql.test.js exists to catch exactly that and was wired into no
+      # workflow at all: it lived only in `npm test`. Both the generator and
+      # everything it splits belong here.
+      - 'supabase/parts/**'
+      - 'tools/sql/**'
+      - 'supabase/mlb_offense_history.sql'
+      - 'supabase/college_baseball.sql'
+      - 'supabase/fix_promote_deletes_mlb.sql'
+      - 'supabase/fix_promote_deletes_cbb.sql'
       # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
       # function and its refusals are the whole safety property — a short,
       # duplicated or unreconciled dataset must not be able to replace a good
@@ -126,6 +151,31 @@ on:
       - 'tools/tennis/sql/**'
       - 'tools/tennis/tennis_sql.test.js'
       - 'tools/tennis/lab_sql.test.js'
+      # THE RECORD CONTRACT AND ITS SUITE. This job has run record_sql.test.js
+      # since the record shipped, and neither the contract nor the suite was
+      # ever in this list — the same omission the editorial block above
+      # records. A pull request could rewrite 2,400 lines of the schema that
+      # holds the licensing gate, the leakage bound and the append-only
+      # prediction ledger, and the one job that applies it to a real
+      # PostgreSQL would not run. This PR is the proof: it changes that file
+      # and went green without the suite executing.
+      - 'supabase/tennis_record.sql'
+      - 'tools/tennis/record_sql.test.js'
+      - 'tools/tennis/import.test.js'
+      - 'tools/tennis/leakage.test.js'
+      # THE SPLIT PARTS AND THE CHECK THAT KEEPS THEM HONEST. supabase/parts is
+      # what gets pasted into the Supabase SQL editor, so a split that has
+      # drifted from its source installs a contract the repository has already
+      # moved past — which is the state the tennis schema was found in.
+      # split_sql.test.js exists to catch exactly that and was wired into no
+      # workflow at all: it lived only in `npm test`. Both the generator and
+      # everything it splits belong here.
+      - 'supabase/parts/**'
+      - 'tools/sql/**'
+      - 'supabase/mlb_offense_history.sql'
+      - 'supabase/college_baseball.sql'
+      - 'supabase/fix_promote_deletes_mlb.sql'
+      - 'supabase/fix_promote_deletes_cbb.sql'
       # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
       # function and its refusals are the whole safety property — a short,
       # duplicated or unreconciled dataset must not be able to replace a good
@@ -289,6 +339,16 @@ jobs:
           PGPASSWORD: postgres
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/articles/community_sql.test.js | tee community.log
+
+      # THE SPLIT PARTS MUST STILL BE THE CONTRACT. Needs no database: it
+      # re-runs the splitter over each source and compares the result to what
+      # is checked in, so a contract edited without regenerating its parts
+      # fails here instead of in the Supabase SQL editor weeks later. It ran
+      # in no workflow until now, and supabase/parts had been carrying a split
+      # of an older tennis contract for long enough to be pasted into
+      # production.
+      - name: The pasteable parts are the contract, not an older copy of it
+        run: node tools/sql/split_sql.test.js
 
       # THE TENNIS RECORD CONTRACT. Three questions only a real database can
       # answer, and all three are load-bearing:
