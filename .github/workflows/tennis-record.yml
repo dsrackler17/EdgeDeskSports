@@ -1,0 +1,222 @@
+# EdgeDesk Tennis — the research record.
+#
+# WHAT THIS WORKFLOW OWNS, and what it deliberately does not.
+#
+# tennis-sync.yml and tennis-live.yml own the PROVIDER layer: the draw, the
+# scoreboard, identity, the live match centre. Neither is touched here. This
+# one owns the RESEARCH RECORD — the historical match archive, the point-in-time
+# features, the rating layer, the model registry, the priced board and the
+# published record — and it is the only tennis workflow that needs a DIRECT
+# database connection.
+#
+# WHY A DIRECT CONNECTION. The feature and rating builders are set-based SQL
+# over hundreds of thousands of rows. Pushing that through PostgREST would be
+# tens of thousands of round trips, and an Edge Function has neither the memory
+# nor the wall clock for it. So these jobs speak psql.
+#
+# NO NEW SECRET. The credential is SB_DB_URL, which this repository already
+# holds and which deploy-intelligence.yml already uses to apply SQL migrations —
+# the same kind of credential for the same kind of use. It is passed to the
+# tools under the name SUPABASE_DB_URL, which is what Supabase's own docs call
+# it and what tools/tennis/lib/pg.js reads. It is read by the runner and by
+# nothing else; no browser, no Edge Function and no committed file ever sees it,
+# and tools/tennis/lib/pg.js redacts it from every error it raises.
+#
+# THE HISTORICAL BACKFILL IS NOT HERE ON PURPOSE. Importing 361,571 matches is
+# a one-off administrative act against a licence-restricted archive, and it is
+# run by a person who has read docs/tennis-architecture.md, with
+# `npm run tennis:record:import`. Putting it on a schedule would make an
+# accidental re-import of a non-commercial dataset a cron away.
+#
+# EVERY JOB IS SAFE TO RE-RUN. The features and ratings are recomputed from the
+# record; the board appends a prediction only where the model, the ratings and
+# a market snapshot all exist; settlement refuses to touch an already-settled
+# row; and the monitor writes nothing at all.
+name: Tennis record
+
+on:
+  schedule:
+    # nightly: rebuild the point-in-time features and the rating layer, in that
+    # order, because the ratings read the features
+    - cron: '35 5 * * *'
+    # every two hours through the tennis day: price the board and settle what
+    # finished. Deliberately not every 20 minutes — a rating layer rebuilt
+    # nightly does not move in between, so a faster board would republish the
+    # same number under a new timestamp and make the record look busier than it is.
+    - cron: '15 */2 * * *'
+    # weekly: the venue and weather backfill, and the model's calibration review
+    - cron: '20 7 * * 1'
+    # hourly: the monitor. Reads, never writes.
+    - cron: '50 * * * *'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job to run'
+        type: choice
+        options: [features, ratings, board, settle, incremental, weather, model, monitor, all]
+        required: true
+        default: monitor
+      commit:
+        description: 'Write to the database. Unchecked is a dry run that says what it would do.'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # The feature builder and the rating builder write the same rows. Two runs
+  # racing would not corrupt anything (every write is an upsert) but the second
+  # would read a half-rebuilt layer, so they queue.
+  group: tennis-record
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install the psql client
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      # The engine's own rules before anything is written: the null rule, the
+      # draw-slot identity, the research gates, and the mechanical assertion
+      # that no model input names a post-match column.
+      - name: The record engine's rules must pass before anything is written
+        run: |
+          node tools/tennis/model.test.js
+          node tools/tennis/providers.test.js
+          node tools/tennis/ai_tennis.test.js
+
+      - name: Decide which job this run is
+        id: pick
+        run: |
+          JOB="${{ inputs.job }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            case "${{ github.event.schedule }}" in
+              "35 5 * * *")   JOB=nightly ;;
+              "15 */2 * * *") JOB=board ;;
+              "20 7 * * 1")   JOB=weekly ;;
+              "50 * * * *")   JOB=monitor ;;
+              *)              JOB=monitor ;;
+            esac
+          fi
+          if [ -z "$JOB" ]; then JOB=monitor; fi
+          echo "job=$JOB" >> "$GITHUB_OUTPUT"
+          echo "This run is: $JOB"
+
+      - name: Refuse to run without a database connection
+        if: ${{ steps.pick.outputs.job != 'none' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SB_DB_URL is not set. The record jobs need a direct connection"
+            echo "::error::(Supabase > Connect > Session pooler), the same secret deploy-intelligence.yml"
+            echo "::error::uses to apply migrations. Nothing was read and nothing was written."
+            exit 1
+          fi
+          echo "A database connection is configured. The value is never printed."
+
+      # ── NIGHTLY ────────────────────────────────────────────────────────────
+      # Features first, then ratings: the rating layer reads the feature rows,
+      # so the reverse order would rate players against yesterday's features and
+      # nothing would say so.
+      - name: Rebuild the point-in-time features
+        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'features' || steps.pick.outputs.job == 'all' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/build_features.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
+
+      - name: Rebuild the rating layer
+        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'ratings' || steps.pick.outputs.job == 'all' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/build_ratings.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
+
+      - name: Refresh the official rankings from the provider
+        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'all' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/incremental.js rankings ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
+          || echo "::warning::the ranking refresh did not complete — the cursor did not advance and the next run re-reads this window"
+
+      # ── THE BOARD ──────────────────────────────────────────────────────────
+      # Results before prices: a match that finished should be settled before the
+      # board is rebuilt, so a finished match does not reappear as researchable.
+      - name: Take in results and recompute what they affect
+        if: ${{ steps.pick.outputs.job == 'board' || steps.pick.outputs.job == 'incremental' || steps.pick.outputs.job == 'all' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/incremental.js results ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
+          || echo "::warning::the incremental results job failed; the cursor did not advance"
+
+      - name: Settle the published record
+        if: ${{ steps.pick.outputs.job == 'board' || steps.pick.outputs.job == 'settle' || steps.pick.outputs.job == 'all' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/settle_record.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
+
+      - name: Price the research board
+        if: ${{ steps.pick.outputs.job == 'board' || steps.pick.outputs.job == 'all' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/price_board.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
+
+      # ── WEEKLY ─────────────────────────────────────────────────────────────
+      - name: Back-fill venue weather
+        if: ${{ steps.pick.outputs.job == 'weekly' || steps.pick.outputs.job == 'weather' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: |
+          echo "Weather back-fill is INDOOR-EXCLUDED and OUTDOOR-CONFIDENT-ONLY by construction"
+          echo "(tools/tennis/providers/open_meteo_weather.js). The free Open-Meteo tier is"
+          echo "NON-COMMERCIAL: set OPEN_METEO_API_KEY and register a commercial licence row"
+          echo "in tennis.source_licenses before weather reaches a paid surface."
+          node -e "const w=require('./tools/tennis/providers/open_meteo_weather.js');console.log(JSON.stringify(w.describe(),null,1))"
+
+      # A calibration review, not a retrain. A new model version is a deliberate
+      # act by a person: build_model.js registers a CANDIDATE and refuses to move
+      # production unless it beats the active model and the obvious baselines
+      # without a calibration failure. This run only reports where the active one
+      # stands, so a drift is seen before it is argued about.
+      - name: Review the active model's calibration
+        if: ${{ steps.pick.outputs.job == 'weekly' || steps.pick.outputs.job == 'model' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: node tools/tennis/build_model.js
+
+      # ── THE MONITOR ────────────────────────────────────────────────────────
+      # Reads, never writes. A failed ingestion that nobody sees is the same as
+      # no ingestion at all, so this is the job that makes a silent failure loud.
+      - name: Report ingestion health
+        if: ${{ always() && (steps.pick.outputs.job == 'monitor' || steps.pick.outputs.job == 'all' || steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'board') }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: |
+          node tools/tennis/incremental.js --status | tee status.log
+          if grep -qE '\|\s*NO\b|status.*error' status.log; then
+            echo "::warning::a tennis ingestion run did not reconcile or ended in error — see the status table above"
+          fi
+          if grep -q 'has not succeeded since' status.log; then
+            echo "::warning::a tennis job has not succeeded in over two days"
+          fi
+
+      - name: Say what this run did
+        if: ${{ always() }}
+        run: |
+          echo "job: ${{ steps.pick.outputs.job }}"
+          echo "writes: ${{ (github.event_name == 'schedule' || inputs.commit) && 'yes' || 'no (dry run)' }}"
+          echo ""
+          echo "The historical backfill is NOT on this schedule. It is a one-off"
+          echo "administrative act against a CC BY-NC-SA archive and is run by hand:"
+          echo "  npm run tennis:record:import -- --file <archive.csv.gz> --fast"

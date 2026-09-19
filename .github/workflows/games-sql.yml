@@ -286,6 +286,50 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/articles/community_sql.test.js | tee community.log
 
+      # THE TENNIS RECORD CONTRACT. Three questions only a real database can
+      # answer, and all three are load-bearing:
+      #
+      #   the LICENCE GATE — the app has told readers for months that "the
+      #   database refuses to store any source not cleared for commercial use".
+      #   That was a promise about a schema that did not exist. This attacks the
+      #   schema that now does: an unregistered source is refused, and the
+      #   non-commercial archive cannot claim clearance it does not have.
+      #
+      #   IMMUTABILITY — a published prediction, a model version and a settled
+      #   record must be un-rewritable EVEN BY THE PIPELINE THAT WROTE THEM. A
+      #   public record its own writer can edit is not a record, and that is a
+      #   property of triggers, which only a database can demonstrate.
+      #
+      #   THE PAYWALL — attacked as anon, as a signed-in free account and as an
+      #   entitled subscriber, because the boundary is RLS calling the same
+      #   entitlement rule the rest of the product uses, not application code.
+      - name: Run the tennis record SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/record_sql.test.js | tee tennis_record.log
+
+      # The importer, driven end to end: reconciliation, a duplicate import, a
+      # CORRECTED result, an interrupted run resumed, and quarantine. Every one
+      # of those is a claim about transactions and upserts, so a fake database
+      # would prove none of them.
+      - name: Run the tennis importer suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/import.test.js | tee tennis_import.log
+
+      # FEATURE LEAKAGE. The suite that decides whether any of the tennis
+      # modelling is worth anything: it rebuilds the rolling aggregates by hand
+      # from matches strictly earlier and fails on any disagreement, then proves
+      # a future match cannot change an earlier feature row and that a
+      # correction propagates forward and only forward.
+      - name: Run the tennis feature-leakage suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/leakage.test.js | tee tennis_leakage.log
+
       # The editorial system. Two rules in it are statements about VALUES
       # rather than about rows, so neither can be an RLS policy and both are
       # triggers: a pregame snapshot is immutable even to the service role the

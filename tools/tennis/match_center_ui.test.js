@@ -54,7 +54,17 @@ has(APP, 'tennis_live_center.sql', 'the migration is named where an operator wou
 has(SRC, 'first_point_at', 'the first-point boundary is carried into the page');
 has(SRC, 'close_bound_source', 'and the page can say which boundary it used');
 has(SRC, 'can never become a pre-match close', 'a live price is never presented as a close');
-has(SRC, 'there is no EdgeDesk tennis model', 'the model gate stays honest');
+/* The match centre still carries NO model price of its own — it compares books
+   to each other. Since the Research board shipped, EdgeDesk does have a tennis
+   model, so the old flat claim ("there is no EdgeDesk tennis model") would now
+   be false on the page. What must hold is narrower and still load-bearing: this
+   screen's fair number is the MARKET's, it claims no edge, and it points at the
+   board rather than pretending the model does not exist. */
+has(SRC, 'the MARKET\u2019s probability, not EdgeDesk\u2019s', 'the de-vigged number is still labelled the market\'s');
+has(SRC, 'The match centre carries no model price', 'this screen still carries no model price of its own');
+has(SRC, 'never to a model', 'and still claims no edge against one');
+has(SRC, 'Research board', 'it names where the model does live rather than denying it');
+lacks(SRC, 'there is no EdgeDesk tennis model', 'the flat no-model claim is gone now that one exists');
 has(SRC, 'A pair is a team', 'a doubles pair is never given a player baseline');
 has(SRC, 'never resolved to one of its players', 'the doubles rule is stated where a reader can see it');
 has(SRC, 'No Edge Function is involved', 'the architecture is stated on the page');
@@ -250,7 +260,11 @@ async function paint(tables, opts) {
   has(r.html, 'Market fact', 'the market is labelled as a market fact');
   has(r.html, 'Live match data', 'the live counts are labelled as provider data');
   has(r.html, 'EdgeDesk research', 'what EdgeDesk computed is labelled as such');
-  has(r.html, 'there is no EdgeDesk tennis model', 'the model gate is on screen');
+  /* the rendered card still says whose probability it is showing, and still
+     does not claim an edge — it just no longer denies that a model exists */
+  has(r.html, 'not EdgeDesk\u2019s', 'the rendered card labels the fair number as the market\'s');
+  has(r.html, 'The match centre carries no model price', 'and says this screen carries none of its own');
+  lacks(r.html, 'there is no EdgeDesk tennis model', 'without the claim that none exists anywhere');
   lacks(r.html, 'undefined', 'nothing renders as undefined');
   lacks(r.html, 'NaN', 'nothing renders as NaN');
   lacks(r.html, '[object Object]', 'nothing renders as a raw object');

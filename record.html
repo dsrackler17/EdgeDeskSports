@@ -192,6 +192,16 @@ footer a:hover{color:var(--text)}
   </div>
 </section>
 
+<section class="sec" id="tennisrecord">
+  <div class="wrap">
+    <span class="ey">Tennis</span>
+    <h2>The tennis record, published before the match</h2>
+    <p class="sub">Every tennis prediction EdgeDesk makes is written to <span class="mono">tennis.prediction_record</span> at the moment it is published &mdash; before the match is played &mdash; and the database physically refuses to let the claim be edited afterwards. Settlement writes the result <em>beside</em> it, never over it. What follows is that table, grouped, with the sample attached to every figure.</p>
+    <div id="recTennis"></div>
+    <div class="edrec-note" id="recTennisNote"></div>
+  </div>
+</section>
+
 <section class="sec">
   <div class="wrap">
     <span class="ey">The admission</span>
@@ -4346,6 +4356,124 @@ async function legacyFallback(){
   renderBookBias();
 }
 
+/* ── TENNIS ────────────────────────────────────────────────────────────────
+   Reads tennis.public_record_summary and tennis.public_record_calibration,
+   which are security_invoker views over tennis.prediction_record. Anon reads
+   them under the record table's own policy: a published claim becomes public
+   once the match it is about has STARTED, which is exactly the boundary
+   public_record already draws for every other sport. A live board never leaves
+   through this door.
+
+   NO ROI IS PUBLISHED, and the page says why: a return figure without the price
+   that was actually available and the sample it came from is not a
+   measurement. Brier, log loss, calibration and closing-line value are, and
+   every one of them is shown with its n. */
+async function sbGetTennis(q){
+  var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY,"accept-profile":"tennis"}});
+  if(!r.ok){var e=new Error("HTTP "+r.status);e.status=r.status;throw e;}
+  return await r.json();
+}
+function tnRecEsc(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function tnRecNum(v,d){var n=(v==null||v==='')?null:Number(v);return (n==null||!isFinite(n))?'—':n.toFixed(d==null?4:d);}
+async function loadTennisRecord(){
+  var host=$('recTennis'),note=$('recTennisNote');
+  if(!host)return;
+  var rows=null,cal=null;
+  try{rows=await sbGetTennis('public_record_summary?select=*&order=settled.desc&limit=80');}
+  catch(e){
+    host.innerHTML='<div class="empty">The tennis record could not be read'+
+      (e.status===404||e.status===406?' &mdash; supabase/tennis_record.sql has not been applied to this project yet.':'.')+
+      ' That is a read failure, not an empty record: nothing is shown rather than something invented.</div>';
+    return;
+  }
+  var settled=(rows||[]).filter(function(r){return Number(r.settled||0)>0;});
+  if(!settled.length){
+    host.innerHTML='<div class="empty">No tennis prediction has been settled yet. Published claims are written before '+
+      'the match and settled from the final result; until the first match finishes there is nothing to grade, and '+
+      'an empty record is the honest state rather than a placeholder.'+
+      ((rows&&rows.length)?' '+rows.reduce(function(a,r){return a+Number(r.predictions||0);},0)+' prediction(s) are published and awaiting a result.':'')+
+      '</div>';
+    if(note)note.textContent='No ROI is published here, and none will be: a return figure without the price that was actually available and the sample it came from is not a measurement.';
+    return;
+  }
+  try{cal=await sbGetTennis('public_record_calibration?select=*&order=bucket.asc&limit=200');}catch(_){cal=null;}
+
+  var totalN=0,brierSum=0,llSum=0,clvN=0,clvSum=0,beat=0;
+  settled.forEach(function(r){
+    var n=Number(r.settled||0);totalN+=n;
+    if(r.brier!=null)brierSum+=Number(r.brier)*n;
+    if(r.log_loss!=null)llSum+=Number(r.log_loss)*n;
+    if(r.clv_sample){clvN+=Number(r.clv_sample);clvSum+=Number(r.mean_clv||0)*Number(r.clv_sample);}
+    beat+=Number(r.beat_close||0);
+  });
+  var h='<div class="kpis">'+
+    '<div class="kpi"><span class="k">Settled predictions</span><span class="v">'+totalN+'</span></div>'+
+    '<div class="kpi"><span class="k">Brier score</span><span class="v">'+tnRecNum(totalN?brierSum/totalN:null)+'</span></div>'+
+    '<div class="kpi"><span class="k">Log loss</span><span class="v">'+tnRecNum(totalN?llSum/totalN:null)+'</span></div>'+
+    '<div class="kpi"><span class="k">Closing-line value</span><span class="v">'+(clvN?tnRecNum(clvSum/clvN,4):'no closing reference')+'</span></div>'+
+    '</div>';
+  if(totalN<100){
+    h+='<div class="empty" style="margin-top:10px"><b>Sample warning.</b> '+totalN+' settled prediction'+(totalN===1?'':'s')+
+      ' is not enough to measure a model. Nothing on this panel should be read as established until the sample is '+
+      'several hundred, and the counts below are printed on every row so you can see exactly how thin each one is.</div>';
+  }
+  if(clvN<totalN){
+    h+='<div class="empty" style="margin-top:10px">A closing price exists for '+clvN+' of '+totalN+
+      ' settled predictions. Closing-line value is averaged over those only, and is not extrapolated to the rest.</div>';
+  }
+
+  function table(title,keyFn,rows){
+    var by={};
+    rows.forEach(function(r){
+      var k=keyFn(r);if(k==null)return;
+      var b=by[k]||(by[k]={n:0,brier:0,ll:0,clvN:0,clv:0,pred:0});
+      var n=Number(r.settled||0);
+      b.n+=n;b.pred+=Number(r.predictions||0);
+      if(r.brier!=null)b.brier+=Number(r.brier)*n;
+      if(r.log_loss!=null)b.ll+=Number(r.log_loss)*n;
+      if(r.clv_sample){b.clvN+=Number(r.clv_sample);b.clv+=Number(r.mean_clv||0)*Number(r.clv_sample);}
+    });
+    var keys=Object.keys(by).sort();
+    if(!keys.length)return '';
+    return '<h3 style="margin:18px 0 6px;font-size:14px">'+tnRecEsc(title)+'</h3>'+
+      '<table class="edrec-tbl"><thead><tr><th>'+tnRecEsc(title)+'</th><th>settled</th><th>Brier</th><th>log loss</th><th>CLV</th></tr></thead><tbody>'+
+      keys.map(function(k){var b=by[k];
+        return '<tr><td>'+tnRecEsc(k)+(b.n<100?' <span style="opacity:.6">(small sample)</span>':'')+'</td>'+
+          '<td>'+b.n+'</td><td>'+tnRecNum(b.n?b.brier/b.n:null)+'</td>'+
+          '<td>'+tnRecNum(b.n?b.ll/b.n:null)+'</td>'+
+          '<td>'+(b.clvN?tnRecNum(b.clv/b.clvN):'—')+'</td></tr>';}).join('')+
+      '</tbody></table>';
+  }
+  h+=table('Tour',function(r){return r.tour||'unknown';},settled);
+  h+=table('Surface',function(r){return r.surface||'unknown';},settled);
+  h+=table('Confidence bucket',function(r){return r.confidence_bucket||'unknown';},settled);
+  h+=table('Model version',function(r){return r.model_version||'unknown';},settled);
+
+  if(cal&&cal.length){
+    var usable=cal.filter(function(c){return Number(c.n||0)>0;});
+    if(usable.length){
+      h+='<h3 style="margin:18px 0 6px;font-size:14px">Calibration</h3>'+
+        '<table class="edrec-tbl"><thead><tr><th>predicted</th><th>n</th><th>mean predicted</th><th>actually happened</th><th>gap</th></tr></thead><tbody>'+
+        usable.map(function(c){
+          var gap=(c.observed_rate!=null&&c.mean_predicted!=null)?(Number(c.observed_rate)-Number(c.mean_predicted)):null;
+          return '<tr><td>'+Math.round((Number(c.bucket_midpoint)||0)*100)+'%</td><td>'+c.n+
+            (Number(c.n)<30?' <span style="opacity:.6">(too few to read)</span>':'')+'</td>'+
+            '<td>'+tnRecNum(c.mean_predicted,3)+'</td><td>'+tnRecNum(c.observed_rate,3)+'</td>'+
+            '<td>'+(gap==null?'—':(gap>0?'+':'')+(gap*100).toFixed(1)+'pt')+'</td></tr>';}).join('')+
+        '</tbody></table>';
+    }
+  }
+  host.innerHTML=h;
+  if(note){
+    note.innerHTML='Every row above is counted from <span class="mono">tennis.prediction_record</span>, which is '+
+      'written before each match and which the database refuses to let anyone edit afterwards \u2014 including the '+
+      'pipeline that wrote it. Settlement may add the result and nothing else. '+
+      '<b>No ROI is published.</b> A return figure without the price that was actually available and the sample it '+
+      'came from is not a measurement, and the closing-line column above states exactly how many predictions had a '+
+      'closing reference at all. Research, not picks.';
+  }
+}
+
 async function load(){
   try{
     var g;
@@ -4403,6 +4531,7 @@ async function load(){
 }
 $('yr').textContent=new Date().getFullYear();
 load();
+try{loadTennisRecord();}catch(e){}   /* additive: a tennis read failure can never take the main record down */
 </script>
 </body>
 </html>

@@ -1086,6 +1086,54 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .tn-serve{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e0533a;margin-right:6px;vertical-align:middle}
 .tn-pts{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-top:5px}
 .tn-score-none{font-size:12px;color:var(--faint)}
+/* ---- tennis research board ---- */
+.tnb-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:flex-end}
+.tnb-fl{display:flex;flex-direction:column;gap:3px;min-width:120px;flex:1 1 130px}
+.tnb-fl>span{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.tnb-fl select{width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 7px;font:inherit;font-size:12px}
+.tnb-clear{flex:0 0 auto;background:var(--surface2);color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font:inherit;font-size:11.5px;cursor:pointer}
+.tnb-clear:hover{color:var(--text);border-color:var(--accent)}
+.tnb-licence{margin-bottom:10px;padding:9px 11px;border-radius:9px;background:rgba(217,154,43,.1);border:1px solid rgba(217,154,43,.38);color:#e8c98a;font-size:11.5px;line-height:1.5}
+.tnb-licence b{color:var(--warn)}
+.tnb-count{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;color:var(--faint);margin-bottom:8px}
+.tnb-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 12px;margin-bottom:9px;cursor:pointer}
+.tnb-card:hover{border-color:var(--accent)}
+.tnb-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.tnb-when{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--accent);letter-spacing:.04em;font-weight:700}
+.tnb-meta{font-size:10.5px;color:var(--faint);flex:1 1 auto;min-width:0}
+.tnb-names{display:flex;align-items:baseline;gap:8px;font-size:14.5px;font-weight:700;margin-bottom:8px;flex-wrap:wrap}
+.tnb-names .v{font-size:11px;color:var(--faint);font-weight:400}
+.tnb-compare{display:grid;grid-template-columns:1fr;gap:2px;margin-bottom:8px}
+.tnb-cmp{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;font-size:11.5px;padding:1px 0}
+.tnb-cmp .a{text-align:right;font-family:'JetBrains Mono',monospace;color:var(--dim)}
+.tnb-cmp .b{text-align:left;font-family:'JetBrains Mono',monospace;color:var(--dim)}
+.tnb-cmp .a.pos,.tnb-cmp .b.pos{color:var(--pos);font-weight:700}
+.tnb-cmp .k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);min-width:96px;text-align:center}
+.tnb-price{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;padding:8px 0;border-top:1px dashed var(--border)}
+.tnb-pcell{display:flex;flex-direction:column;gap:2px}
+.tnb-pcell .l{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.tnb-pcell .v{font-size:12.5px;font-weight:700;color:var(--text)}
+.tnb-pcell .v.pos{color:var(--pos)}.tnb-pcell .v.neg{color:var(--neg)}
+.tnb-stamp{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);letter-spacing:.04em;margin-top:2px}
+.tnb-locked{margin-top:8px;padding:8px 10px;border-radius:9px;background:var(--surface2);border:1px dashed var(--border);color:var(--dim);font-size:11.5px;line-height:1.5}
+.tnb-locked.mut{color:var(--faint)}
+.tnb-reasons{margin:6px 0 0;padding-left:16px;font-size:11px;color:var(--dim);line-height:1.5}
+.tnb-reasons.warn{color:var(--warn)}
+.tnb-oppline{margin-top:7px;padding-top:6px;border-top:1px dashed var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.03em}
+.tnb-warn{margin-top:7px;padding:7px 9px;border-radius:8px;background:rgba(217,154,43,.12);border:1px solid rgba(217,154,43,.35);color:#e8c98a;font-size:11px;line-height:1.5}
+.tnb-missing{display:flex;flex-wrap:wrap;gap:5px;padding:5px 0}
+.tnb-missing span{font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:2px 7px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--faint)}
+.tnb-rating{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px;padding:6px 0}
+.tnb-rcell{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:6px 8px}
+.tnb-rcell .l{display:block;font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.tnb-rcell .v{display:block;font-size:15px;font-weight:800;color:var(--text);margin-top:2px}
+.tnb-rcell .s{display:block;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);margin-top:1px}
+@media(max-width:520px){
+  .tnb-fl{flex:1 1 46%;min-width:0}
+  .tnb-cmp .k{min-width:78px;font-size:8.5px}
+  .tnb-names{font-size:13.5px}
+  .tnb-price{grid-template-columns:repeat(2,1fr)}
+}
 .tn-read{background:linear-gradient(180deg,rgba(47,167,154,.07),rgba(47,167,154,.02));border:1px solid rgba(47,167,154,.3);border-radius:12px;padding:11px 12px;margin-bottom:10px}
 .tn-read-h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--accent);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tn-read-l{display:grid;grid-template-columns:96px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px;align-items:start}
@@ -3095,12 +3143,23 @@ body.focus .dk-focusnote{display:block}
     <div id="tddOverview" class="fb-ov"></div>
     <div id="tddModules">
     <div class="fb-sechd"><span>Research modules</span><span class="r">record &middot; engine</span></div>
-    <div class="stseg fb-seg" id="tddTour" style="margin-bottom:10px"><button class="on" onclick="tddSetTour('ATP')"><b>ATP</b><small>Tour record</small></button><button onclick="tddSetTour('WTA')"><b>WTA</b><small>Tour record</small></button><button onclick="tddSetTour('LIVE')"><b>Live Match Center</b><small>On court now</small></button><button onclick="tddSetTour('RESEARCH')"><b>WTA research</b><small>Daily engine</small></button></div>
+    <div class="stseg fb-seg" id="tddTour" style="margin-bottom:10px"><button class="on" onclick="tddSetTour('ATP')"><b>ATP</b><small>Tour record</small></button><button onclick="tddSetTour('WTA')"><b>WTA</b><small>Tour record</small></button><button onclick="tddSetTour('BOARD')"><b>Research board</b><small>ATP &amp; WTA, fair price</small></button><button onclick="tddSetTour('LIVE')"><b>Live Match Center</b><small>On court now</small></button><button onclick="tddSetTour('RESEARCH')"><b>WTA research</b><small>Daily engine</small></button></div>
     <div id="tddRecord">
     <div class="flbanner demo" id="tddBanner">Loading tennis record&hellip;</div>
     <div class="stseg" id="tddSeg" style="margin-bottom:12px"><button class="on" onclick="tddSetSeg('rankings')">Rankings</button><button onclick="tddSetSeg('results')">Results</button><button onclick="tddSetSeg('players')">Players</button></div>
     <input class="stsearch" id="tddQ" placeholder="Search a player&hellip;" style="margin-bottom:12px;display:none" oninput="renderTennis()">
     <div id="tddBody"><div class="empty">Loading&hellip;</div></div>
+    </div>
+    <!-- RESEARCH BOARD: upcoming ATP and WTA singles, with EdgeDesk's fair
+         price beside the market's. Reads tennis.board_public (anyone) and
+         tennis.board_current / tennis.research_opportunities (subscribers).
+         Every priced column lives behind the entitlement the database itself
+         enforces, so a signed-out visitor gets zero rows rather than a
+         redacted one. Research, not picks: there is no stake and no verb. -->
+    <div id="tddBoard" class="hide">
+    <div class="flbanner demo" id="tnbBanner">Loading the tennis research board&hellip;</div>
+    <div id="tnbFilters"></div>
+    <div id="tnbBody"><div class="empty">Loading&hellip;</div></div>
     </div>
     <!-- Live Match Center: the tennis schema's live contract (tournaments,
          live_matches, match_live_state, match_set_stats, match_markets,
@@ -5037,7 +5096,14 @@ var RS_PROV={
     {nm:'Career and season win / loss / win rate',tier:'T2',src:'tennis.player_career and player_season — counted from the stored matches by SQL view'},
     {nm:'Surface splits',tier:'T2',src:'tennis.player_surface — the same count grouped by the published surface'},
     {nm:'Head-to-head record',tier:'T2',src:'tennis.h2h — counted from the stored matches'},
-    {nm:'Recent form strip',tier:'T2',src:'tennis.player_form — the last 20 stored matches, ordered by date'}
+    {nm:'Recent form strip',tier:'T2',src:'tennis.player_form — the last 20 stored matches, ordered by date'},
+    {nm:'Point-in-time pre-match features',tier:'T2',src:'tennis.player_match_features — one row per player per match, carrying only what was knowable before it. Private: no browser reads it.'},
+    {nm:'EdgeDesk power rating and surface ratings',tier:'T3',model:'tennis.rating_v1',src:'tennis.player_ratings_current — derived. Elo advanced from the stored record, shrunk toward the tour median by sample, always published with its uncertainty.'},
+    {nm:'Model probability and fair odds',tier:'T3',model:'tennis.match_winner',src:'tennis.model_predictions, under the active version in tennis.model_registry. Append-only: a prediction is never rewritten after it is made.'},
+    {nm:'Market price and de-vigged market probability',tier:'T0',src:'tennis.odds_snapshots — EdgeDesk\u2019s own capture, tagged PRE against the match\u2019s observed first point. A one-sided quote is never de-vigged.'},
+    {nm:'Research gaps, EV and reason codes',tier:'T2',src:'tennis.research_opportunities — arithmetic between the two numbers above, superseded rather than deleted when it changes'},
+    {nm:'Published record and calibration',tier:'T0',src:'tennis.prediction_record — written before the match and immutable thereafter; settled from the final result'},
+    {nm:'Tournament-week weather',tier:'T2',src:'tennis.weather_observations — Open-Meteo reanalysis for confidently resolved OUTDOOR venues only, labelled with its temporal precision and never presented as conditions at first serve'}
   ]
 };
 /* First-class known limitations, from module metadata — not buried in prose. */
@@ -5095,11 +5161,16 @@ var RS_LIMITS={
          'The variance shape is an assumption of the model, not a measurement.',
          'Each sport and market list is capped at the top 100 rows.',
          'A projection is not a price. An edge exists only once these beat a real closing number.'],
-  tennis:['Every figure is a published fact or a count over published facts. There is no model, no projection and no closing-line claim on this screen.',
+  tennis:['On the record tabs every figure is a published fact or a count over published facts. There is no model, no projection and no closing-line claim on those screens.',
+       'On the Research board a probability and a fair price ARE model output. Each carries the model version that produced it, the timestamp of the ratings it read, and the age of the price it was compared against.',
        'Career, surface and head-to-head describe the matches held in this database, which is not necessarily a full career.',
        'Surface is shown only where the source publishes it; it is never inferred from the tournament.',
        'Rankings are a position on tour, not a forecast of a match.',
-       'The database refuses to store any source not cleared for commercial use, so this module is empty until a licensed feed is loaded.'],
+       'The EdgeDesk power rating is shrunk toward the tour median in proportion to how little is known about a player, and is never shown without its sample and its uncertainty.',
+       'A missing model input is not a zero. It widens the uncertainty and can hold a match back from research grade; the missing inputs are listed on the match card.',
+       'Weather is a tournament-week reanalysis for resolved outdoor venues, not conditions at first serve, and it is never attached to an indoor or unknown environment.',
+       'Doubles is not rated or priced: a pair is a team, not a player.',
+       'The historical record behind these ratings is licensed CC BY-NC-SA 4.0 \u2014 non-commercial. The database refuses to mark it commercially cleared and it must be replaced by a licensed feed before it can fund a paid surface.'],
   lab:['Status is set by the validation gate server-side; this screen only displays it.',
        'Notes and validations are read without pagination, so very large sets can be truncated by the API row cap.',
        'A headline metric is one of several cells examined; weigh it against the disclosed comparison count.',
@@ -5833,7 +5904,7 @@ var RS_DATASETS={
   stats:{owned:false,
     text:'The builder’s tennis aggregates are not part of the Stats feed. The UFC rows shown here come from the live ufc schema, so the field dictionary in the UFC module governs them.'},
   tennis:{owned:true,
-    text:'This module reads the tennis schema, which stores licensed match facts and derives every split as a SQL view. The schema rejects any source not cleared for commercial use, so the non-commercial archives the deep-dive builder downloads cannot be loaded here — they are registered as blocked rather than merely omitted.'}
+    text:'This module reads the tennis schema: the match record and its SQL views, the point-in-time feature layer, the current rating layer, the market snapshots, the model registry and the published record. Every stored fact names its source, and tennis.source_licenses says what that source may be used for — the historical archive is registered NON-COMMERCIAL and research-only, and the database refuses to let any row claim otherwise. Replacing it with a licensed feed is one row in one table; no contract downstream of it changes.'}
 };
 function rsDatasetHTML(modId){
   var d=RS_DATASETS[modId];if(!d)return '';
@@ -12711,7 +12782,7 @@ var TDD_TOURS=['ATP','WTA'];
 /* segment row = the two tour records, the Live Match Center and the WTA
    research engine; view is the selected segment, tour is the last RECORD tour
    so neither the match center nor the engine becomes a tour of its own */
-var TDD_VIEWS=['ATP','WTA','LIVE','RESEARCH'];
+var TDD_VIEWS=['ATP','WTA','BOARD','LIVE','RESEARCH'];
 var TDD={tour:'ATP',view:'ATP',
   ATP:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''},
   WTA:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''}};
@@ -12748,16 +12819,17 @@ async function loadTennis(force,signal){
 window.tddSetTour=function(view){
   if(view==null)view=TDD.view;                 /* researchGo: keep the current segment */
   if(TDD_VIEWS.indexOf(view)<0)return;
-  var research=(view==='RESEARCH'),live=(view==='LIVE');
-  TDD.view=view;if(!research&&!live)TDD.tour=view;
+  var research=(view==='RESEARCH'),live=(view==='LIVE'),board=(view==='BOARD');
+  TDD.view=view;if(!research&&!live&&!board)TDD.tour=view;
   var b=$('tddTour').querySelectorAll('button');
   for(var i=0;i<b.length;i++)b[i].classList.toggle('on',TDD_VIEWS[i]===view);
-  var rec=$('tddRecord'),rs=$('tddResearch'),lv=$('tddLive');
-  if(rec)rec.classList.toggle('hide',research||live);
+  var rec=$('tddRecord'),rs=$('tddResearch'),lv=$('tddLive'),bd=$('tddBoard');
+  if(rec)rec.classList.toggle('hide',research||live||board);
   if(rs)rs.classList.toggle('hide',!research);
   if(lv)lv.classList.toggle('hide',!live);
+  if(bd)bd.classList.toggle('hide',!board);
   var f1=$('tddFresh'),f2=$('wtaFresh'),f3=$('tddLiveFresh');   /* rsFreshApply rewrites className, so toggle display */
-  if(f1)f1.style.display=(research||live)?'none':'';
+  if(f1)f1.style.display=(research||live||board)?'none':'';
   if(f2)f2.style.display=research?'':'none';
   if(f3)f3.style.display=live?'':'none';
   /* the match center polls on its own clock; leaving the view stops it */
@@ -12767,13 +12839,17 @@ window.tddSetTour=function(view){
     TDD.live.timer=setInterval(function(){if(TDD.view==='LIVE'&&!document.hidden)loadTennisLive(false);},20000);
     return;
   }
+  if(board){loadTennisBoard(false);return;}
   /* the overview reads both sources, so both load whichever block is showing */
   researchActivate('wta',false);               /* the wta module owns the engine block */
   if(research)return;
   researchActivate('tennis',false);            /* loads that tour on first view */
   renderTennis();
 };
-window.tddRefresh=function(){researchRefresh(TDD.view==='RESEARCH'?'wta':'tennis');};
+window.tddRefresh=function(){
+  if(TDD.view==='BOARD'){window.tnbRefresh();return;}
+  researchRefresh(TDD.view==='RESEARCH'?'wta':'tennis');
+};
 window.tddSetSeg=function(s){
   var t=tddT();t.seg=s;
   var b=$('tddSeg').querySelectorAll('button');
@@ -12875,6 +12951,10 @@ window.tddOpenPlayer=async function(ent){
     try{d.surface=await sbGetTennis('player_surface?select=surface,season,wins,losses,matches,win_pct'+q+'&order=season.desc&limit=60');}catch(_){d.surface=[];d.err=true;}
     try{d.form=await sbGetTennis('player_form?select=match_date,opponent_id,won,surface,tourney_name,round'+q+'&order=match_date.desc&limit=20');}catch(_){d.form=[];d.err=true;}
     try{d.h2h=await sbGetTennis('h2h?select=opponent_id,wins,losses,matches,last_meeting'+q+'&order=matches.desc&limit=10');}catch(_){d.h2h=[];d.err=true;}
+    /* the rating layer. Additive: a database with the record but no ratings
+       yet renders exactly what it always did, and says so where the ratings
+       would have been rather than showing a blank that looks like a zero. */
+    try{d.rating=(await sbGetTennis('player_profile?select=*&player_id=eq.'+f))[0]||null;}catch(_){d.rating=null;}
     t.prof[pid]=d;
   }
   if(m.style.display!=='block')return;             /* closed while loading */
@@ -12889,6 +12969,41 @@ function tddProfileHead(tour,pid){
     '<div class="st-meta" style="margin-bottom:10px">'+rsEsc(tour)+(tddMeta(p)?(' · '+rsEsc(tddMeta(p))):'')+(rk&&rk.points!=null?(' · '+rsEsc(''+rk.points)+' pts'):'')+'</div>';
 }
 function tddPct(v){return (v==null)?'—':(Math.round(+v*100)+'%');}
+/* THE RATING CARD. It never shows a 0-100 number without the sample behind it
+   and the uncertainty beside it: a player with nine matches on file and a
+   player with nine hundred do not deserve the same confidence, and a bare
+   number would hide that. A player with no rating row says so. */
+function tddRatingCard(r){
+  if(!r)return '<div class="fi-card"><div class="gd-line" style="font-weight:600"><span class="l">EdgeDesk rating</span>'+
+    '<span class="v mut">not built</span></div><div class="fi-empty">No rating has been built for this player yet. '+
+    'The rating layer is written by <span class="mono">tools/tennis/build_ratings.js</span>; until it has run there '+
+    'is nothing to show and nothing is estimated in its place.</div></div>';
+  var surf=r.power_rating_surface;
+  if(typeof surf==='string'){try{surf=JSON.parse(surf);}catch(_){surf=null;}}
+  function cell(label,val,sample,unc){
+    if(val==null)return '';
+    return '<div class="tnb-rcell"><span class="l">'+rsEsc(label)+'</span><span class="v">'+Number(val).toFixed(1)+'</span>'+
+      '<span class="s">n='+(sample==null?'—':sample)+(unc==null?'':' · ±'+Number(unc).toFixed(2))+'</span></div>';
+  }
+  var cells=cell('overall',r.power_rating,r.rating_sample,r.uncertainty);
+  ['hard','clay','grass','carpet'].forEach(function(k){
+    var x=surf&&surf[k];if(x)cells+=cell(k,x.power_rating,x.sample,x.uncertainty);
+  });
+  var fresh=r.rating_computed_at?('built '+tnbAgo(r.rating_computed_at)):'build time not recorded';
+  return '<div class="fi-card"><div class="gd-line" style="font-weight:600"><span class="l">EdgeDesk rating</span>'+
+    '<span class="v mut">'+rsEsc(fresh)+'</span></div>'+
+    '<div class="tnb-rating">'+(cells||'<div class="fi-empty">No rated surface for this player.</div>')+'</div>'+
+    '<div class="gd-line"><span class="l">Form 30 / 90 / 365</span><span class="v mono">'+
+      tddPct(r.form_30d)+' / '+tddPct(r.form_90d)+' / '+tddPct(r.form_365d)+'</span></div>'+
+    '<div class="gd-line"><span class="l">Matches 7 / 14 / 28 days</span><span class="v mono">'+
+      (r.matches_7d==null?'—':r.matches_7d)+' / '+(r.matches_14d==null?'—':r.matches_14d)+' / '+(r.matches_28d==null?'—':r.matches_28d)+'</span></div>'+
+    '<div class="gd-line"><span class="l">Days since last match</span><span class="v mono">'+(r.days_since_last_match==null?'—':r.days_since_last_match)+'</span></div>'+
+    '<div class="gd-line"><span class="l">Rating version</span><span class="v mut">'+rsEsc(''+(r.rating_version||'—'))+'</span></div>'+
+    '<div class="tn-ksf">0–100, where 50 is the median rated player on this tour on the day the rating was built and '+
+    'ten points is about one standard deviation of tour Elo. A thin record is shrunk toward 50 in proportion to what '+
+    'is missing, which is why the sample is printed under every number. It describes the record on file; it is not a '+
+    'forecast of a match.</div></div>';
+}
 function tddProfileBody(tour,pid,d){
   if(d.err&&!d.career&&!(d.form||[]).length){
     return '<div class="rs-none">The record for this player could not be read just now. That is a read failure, not an empty career — nothing is shown rather than something invented.</div>';
@@ -12926,8 +13041,522 @@ function tddProfileBody(tour,pid,d){
           (h.last_meeting?(' <span class="mut" style="font-size:10.5px">'+rsEsc(''+h.last_meeting)+'</span>'):'')+'</span></div>';}).join('')+'</div>')
     :'';
 
-  return career+surf+form+h2h+
-    '<div class="fi-foot">Career, surface and head-to-head are counted from the matches held in this database, so they describe the ingested record and not necessarily a full career. Rankings and results are the source’s published facts; every split here is arithmetic over them. No model, no projection, and no closing-line claim.</div>';
+  return tddRatingCard(d.rating)+career+surf+form+h2h+
+    '<div class="fi-foot">Career, surface and head-to-head are counted from the matches held in this database, so they describe the ingested record and not necessarily a full career. Rankings and results are the source’s published facts; every split here is arithmetic over them. The EdgeDesk rating above is a model output and is labelled with the version and the sample that produced it. No closing-line claim is made anywhere on this card.</div>';
+}
+
+/* ═══ TENNIS RESEARCH BOARD ═════════════════════════════════════════════════
+   Upcoming ATP and WTA singles, with EdgeDesk's fair price beside the market's.
+
+   WHAT IT READS, and why there are two reads rather than one:
+
+     tennis.board_public    the fixture, the surface, the round, the clock and
+                            what the RECORD says about the two players. Anyone
+                            may read it — signed out, signed in, subscribed.
+     tennis.board_current   the model probability, the fair price, the gap, the
+                            EV, the confidence and the model version. The
+                            DATABASE decides who sees this: the policy on
+                            tennis.model_predictions calls the same
+                            entitlement rule community_is_entitled() uses, so
+                            an unentitled reader gets zero rows from Postgres
+                            rather than a redacted row from this file.
+
+   That is the paywall, and it is drawn in the database rather than here. This
+   file's job is to say so honestly when the priced half comes back empty.
+
+   RESEARCH, NOT PICKS. There is no stake, no unit, no "play", and no ordering
+   by expected profit. The board sorts by how far EdgeDesk and the market
+   disagree, which is a research question, and every row carries what would
+   stop a careful reader trusting it: the gaps in the inputs, the sample behind
+   each rating, how old the price is, and the model version that produced the
+   number. A match that fails a research gate is still SHOWN — with the reason
+   — because a match that silently vanishes teaches a reader nothing.        */
+
+var TNB={
+  fixtures:[],priced:[],opps:[],health:null,byRef:{},
+  at:0,state:null,loading:null,entitled:null,openRef:null,openData:null,
+  f:{tour:'',surface:'',round:'',book:'',grade:'',edge:'',conf:'',quality:'',date:'',market:'match_winner'}
+};
+var TNB_COLS_PUBLIC='match_ref,match_scope,tour,tournament_id,tournament_name,tournament_level,surface,environment,round,best_of,scheduled_at,status,player_a_id,player_b_id,player_a_name,player_b_name,player_a_power,player_b_power,player_a_uncertainty,player_b_uncertainty,player_a_rank,player_b_rank,player_a_form_90d,player_b_form_90d,player_a_rest_days,player_b_rest_days,player_a_matches_14d,player_b_matches_14d,ratings_computed_at';
+
+function tnbEntitled(){try{return !!pgEntitled(window.SUB);}catch(_){return false;}}
+function tnbNum(v){var n=(v==null||v==='')?null:Number(v);return (n==null||!isFinite(n))?null:n;}
+function tnbPct(v,signed){var n=tnbNum(v);if(n==null)return '—';var x=Math.round(n*1000)/10;return (signed&&x>0?'+':'')+x.toFixed(1)+'%';}
+function tnbPts(v){var n=tnbNum(v);if(n==null)return '—';var x=Math.round(n*1000)/10;return (x>0?'+':'')+x.toFixed(1);}
+function tnbDec(v){var n=tnbNum(v);return n==null?'—':n.toFixed(2);}
+function tnbAm(v){var n=tnbNum(v);return n==null?'—':(n>0?'+'+Math.round(n):''+Math.round(n));}
+function tnbAgo(iso){
+  if(!iso)return '—';
+  var t=Date.parse(iso);if(!isFinite(t))return '—';
+  var m=Math.round((Date.now()-t)/60000);
+  if(m<1)return 'just now';
+  if(m<60)return m+'m ago';
+  var h=Math.round(m/60);if(h<48)return h+'h ago';
+  return Math.round(h/24)+'d ago';
+}
+function tnbWhen(iso){
+  if(!iso)return 'time not published';
+  var t=Date.parse(iso);if(!isFinite(t))return 'time not published';
+  var d=new Date(t),now=Date.now(),diff=t-now;
+  var hhmm=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  if(diff<0)return 'started '+tnbAgo(iso);
+  if(diff<86400000)return 'today '+hhmm;
+  if(diff<172800000)return 'tomorrow '+hhmm;
+  return d.toLocaleDateString([], {month:'short',day:'numeric'})+' '+hhmm;
+}
+
+async function loadTennisBoard(force,signal){
+  if(TNB.loading)return TNB.loading;
+  if(!force&&TNB.fixtures.length&&(Date.now()-TNB.at)<120000){renderTennisBoard();return;}
+  TNB.loading=(async function(){
+    try{
+      /* the record's own health line: coverage, freshness, the active model and
+         whether the source behind it is cleared for commercial use */
+      try{TNB.health=(await sbGetTennis('record_health?select=*&limit=1',signal))[0]||null;}catch(_){TNB.health=null;}
+
+      var from=new Date(Date.now()-6*3600*1000).toISOString();
+      var to=new Date(Date.now()+7*86400000).toISOString();
+      TNB.fixtures=await sbGetTennis('board_public?select='+TNB_COLS_PUBLIC+
+        '&scheduled_at=gte.'+from+'&scheduled_at=lte.'+to+'&order=scheduled_at.asc&limit=250',signal)||[];
+
+      /* THE PRICED HALF. A 401/403 or an empty set is not an error: it is the
+         entitlement boundary answering, and the page says which. */
+      TNB.entitled=tnbEntitled();
+      TNB.priced=[];TNB.opps=[];
+      if(TNB.entitled){
+        try{TNB.priced=await sbGetTennis('board_current?select=*&order=scheduled_at.asc&limit=250',signal)||[];}
+        catch(e){TNB.priced=[];TNB.pricedErr=e;}
+        try{TNB.opps=await sbGetTennis('research_opportunities?select=match_ref,market_type,selection,selection_player_id,sportsbook,model_prob,market_prob,fair_odds_decimal,fair_odds_american,market_odds_decimal,market_odds_american,estimated_edge,expected_value,confidence,data_quality_score,market_quality_score,reason_codes,research_grade,generated_at,expires_at&status=eq.open&order=estimated_edge.desc&limit=200',signal)||[];}
+        catch(e){TNB.opps=[];}
+      }
+      TNB.byRef={};
+      TNB.priced.forEach(function(p){TNB.byRef[p.match_ref]=p;});
+      if(signal&&signal.aborted)return;
+      TNB.at=Date.now();
+      TNB.state=TNB.fixtures.length?{state:'ok'}:{state:'empty'};
+      renderTennisBoard();
+    }catch(e){
+      var c=rsClassifyError(e);if(!c)return;
+      TNB.state=c;renderTennisBoard();
+    }finally{TNB.loading=null;}
+  })();
+  return TNB.loading;
+}
+window.loadTennisBoard=loadTennisBoard;
+
+window.tnbRefresh=function(){TNB.at=0;loadTennisBoard(true);};
+window.tnbSetFilter=function(k,v){TNB.f[k]=v;renderTennisBoard();};
+window.tnbClearFilters=function(){
+  Object.keys(TNB.f).forEach(function(k){TNB.f[k]=(k==='market')?'match_winner':'';});
+  renderTennisBoard();
+};
+
+function tnbRows(){
+  var f=TNB.f;
+  return TNB.fixtures.filter(function(x){
+    var p=TNB.byRef[x.match_ref]||null;
+    if(f.tour&&x.tour!==f.tour)return false;
+    if(f.surface&&(x.surface||'unknown')!==f.surface)return false;
+    if(f.round&&x.round!==f.round)return false;
+    if(f.date){
+      var d=x.scheduled_at?String(x.scheduled_at).slice(0,10):'';
+      if(d!==f.date)return false;
+    }
+    if(f.book){
+      if(!p||p.market_book!==f.book)return false;
+    }
+    if(f.grade){
+      if(!p||p.research_grade!==f.grade)return false;
+    }
+    if(f.edge){
+      if(!p||p.edge_a==null)return false;
+      var e=Math.max(Math.abs(tnbNum(p.edge_a)||0),Math.abs(tnbNum(p.edge_b)||0));
+      if(e<Number(f.edge))return false;
+    }
+    if(f.conf){
+      if(!p||tnbNum(p.confidence)==null||tnbNum(p.confidence)<Number(f.conf))return false;
+    }
+    if(f.quality){
+      /* data quality = the completeness the model actually had. A row with no
+         prediction has no completeness and is excluded by an explicit filter
+         rather than silently ranked last. */
+      var o=tnbOppFor(x.match_ref);
+      var q=o?tnbNum(o.data_quality_score):null;
+      if(q==null||q<Number(f.quality))return false;
+    }
+    return true;
+  }).sort(function(a,b){
+    var pa=TNB.byRef[a.match_ref],pb=TNB.byRef[b.match_ref];
+    var ga=pa&&pa.probability_gap_a!=null?Math.abs(Number(pa.probability_gap_a)):-1;
+    var gb=pb&&pb.probability_gap_a!=null?Math.abs(Number(pb.probability_gap_a)):-1;
+    if(ga!==gb)return gb-ga;                 /* the research question first */
+    return String(a.scheduled_at||'').localeCompare(String(b.scheduled_at||''));
+  });
+}
+function tnbOppFor(ref){
+  for(var i=0;i<TNB.opps.length;i++)if(TNB.opps[i].match_ref===ref)return TNB.opps[i];
+  return null;
+}
+function tnbUniq(list){var seen={},out=[];list.forEach(function(v){if(v==null||v==='')return;if(seen[v])return;seen[v]=1;out.push(v);});return out.sort();}
+
+function tnbFiltersHTML(){
+  var F=TNB.f;
+  function sel(key,label,opts,cur){
+    return '<label class="tnb-fl"><span>'+rsEsc(label)+'</span><select onchange="tnbSetFilter(\''+key+'\',this.value)">'+
+      '<option value="">Any</option>'+
+      opts.map(function(o){
+        var v=(typeof o==='object')?o.v:o,t=(typeof o==='object')?o.t:o;
+        return '<option value="'+rsEsc(''+v)+'"'+(String(cur)===String(v)?' selected':'')+'>'+rsEsc(''+t)+'</option>';
+      }).join('')+'</select></label>';
+  }
+  var dates=tnbUniq(TNB.fixtures.map(function(x){return x.scheduled_at?String(x.scheduled_at).slice(0,10):'';}));
+  var books=tnbUniq(TNB.priced.map(function(x){return x.market_book;}));
+  var on=Object.keys(F).filter(function(k){return F[k]&&k!=='market';}).length;
+  return '<div class="tnb-filters">'+
+    sel('tour','Tour',['ATP','WTA'],F.tour)+
+    sel('surface','Surface',['hard','clay','grass','carpet','unknown'],F.surface)+
+    sel('round','Round',tnbUniq(TNB.fixtures.map(function(x){return x.round;})),F.round)+
+    sel('date','Date',dates,F.date)+
+    sel('market','Market',[{v:'match_winner',t:'Match winner'},{v:'game_spread',t:'Game spread'},{v:'total_games',t:'Total games'},{v:'set_betting',t:'Set betting'}],F.market)+
+    (books.length?sel('book','Sportsbook',books,F.book):'')+
+    sel('grade','Research grade',[{v:'research',t:'Research'},{v:'provisional',t:'Provisional'},{v:'excluded',t:'Excluded'}],F.grade)+
+    sel('edge','Min gap',[{v:'0.02',t:'2 points'},{v:'0.04',t:'4 points'},{v:'0.06',t:'6 points'},{v:'0.10',t:'10 points'}],F.edge)+
+    sel('conf','Min confidence',[{v:'0.25',t:'0.25'},{v:'0.50',t:'0.50'},{v:'0.75',t:'0.75'}],F.conf)+
+    sel('quality','Min data quality',[{v:'0.6',t:'0.6'},{v:'0.8',t:'0.8'},{v:'0.9',t:'0.9'}],F.quality)+
+    (on?'<button class="tnb-clear" onclick="tnbClearFilters()">Clear '+on+' filter'+(on>1?'s':'')+'</button>':'')+
+    '</div>';
+}
+
+function tnbHealthHTML(){
+  var h=TNB.health;
+  if(!h)return '';
+  var chips=[];
+  function chip(label,val,cls){chips.push('<span class="tn-chip '+(cls||'')+'"><b>'+rsEsc(label)+'</b>'+rsEsc(''+val)+'</span>');}
+  chip('record',(h.matches!=null?Number(h.matches).toLocaleString():'—')+' matches');
+  chip('ATP/WTA',(h.atp_matches!=null?Number(h.atp_matches).toLocaleString():'—')+' / '+(h.wta_matches!=null?Number(h.wta_matches).toLocaleString():'—'));
+  chip('window',(h.first_match_date||'—')+' → '+(h.last_match_date||'—'));
+  chip('ratings',tnbAgo(h.ratings_computed_at));
+  chip('model',h.active_model_version||'none active',h.active_model_version?'ok':'neg');
+  if(h.open_data_issues!=null&&Number(h.open_data_issues)>0)chip('open data issues',h.open_data_issues,'warn');
+  if(h.failed_runs_7d!=null&&Number(h.failed_runs_7d)>0)chip('failed ingests (7d)',h.failed_runs_7d,'neg');
+  if(h.matches_without_surface!=null&&Number(h.matches_without_surface)>0)
+    chip('surface unknown',Number(h.matches_without_surface).toLocaleString(),'warn');
+  return '<div class="tn-chips" style="margin-bottom:10px">'+chips.join('')+'</div>';
+}
+
+/* The licence line. It is not a footnote: the historical record behind every
+   rating on this board is non-commercial, and saying so is the point of the
+   gate in the database. */
+function tnbLicenceHTML(){
+  var h=TNB.health;
+  if(h&&h.record_cleared_for_commercial_use===true)return '';
+  return '<div class="tnb-licence"><b>Research licence.</b> The historical match record behind these ratings is '+
+    'published under CC BY-NC-SA 4.0 — non-commercial, share-alike. EdgeDesk holds it for research and model '+
+    'development. The database refuses to mark it commercially cleared, and it must be replaced by a licensed '+
+    'feed before it can fund a paid tennis surface. Nothing downstream changes when it is: the source is one '+
+    'row in one table.</div>';
+}
+
+function tnbGradePill(g){
+  var m={research:['ok','RESEARCH'],provisional:['warn','PROVISIONAL'],excluded:['neg','EXCLUDED'],ungraded:['mut','UNGRADED']};
+  var x=m[g]||m.ungraded;
+  return '<span class="tn-state '+(x[0]==='ok'?'pre':x[0]==='neg'?'stale':'')+'" style="font-size:9px">'+x[1]+'</span>';
+}
+var TNB_REASONS={
+  incomplete_features:'too many model inputs are missing for this match',
+  thin_rating_sample:'at least one player has too few matches on file to rate confidently',
+  high_uncertainty:'the ratings behind this match carry high uncertainty',
+  surface_unknown:'the source does not publish this event’s surface',
+  no_market_price:'EdgeDesk has captured no price for this match',
+  market_too_wide:'the book’s margin is too wide for this to be a reference price',
+  market_stale:'the last price EdgeDesk captured is too old to compare against',
+  features_stale:'the ratings behind this match have not been rebuilt recently',
+  model_not_active:'no model version is active',
+  doubles_not_modelled:'this is a doubles match and a pair is a team, not a rated player',
+  player_unresolved:'at least one side has not been resolved to the player record',
+  large_model_market_gap:'EdgeDesk and the market disagree by a wide margin',
+  moderate_model_market_gap:'EdgeDesk and the market disagree moderately',
+  ratings_close:'the two ratings are close enough that small errors matter',
+  surface_record_diverges:'the two players’ records on this surface differ sharply',
+  rest_asymmetry:'one player has had materially more rest than the other',
+  heavy_recent_workload:'at least one player has a heavy recent schedule',
+  inputs_missing:'some model inputs were unavailable for this match'
+};
+function tnbReasonList(codes,cls){
+  var a=(codes||[]).filter(Boolean);
+  if(!a.length)return '';
+  return '<ul class="tnb-reasons '+(cls||'')+'">'+a.map(function(c){
+    return '<li>'+rsEsc(TNB_REASONS[c]||String(c).replace(/_/g,' '))+'</li>';}).join('')+'</ul>';
+}
+
+function tnbCompare(label,a,b,fmt,better){
+  var fa=fmt?fmt(a):(a==null?'—':a),fb=fmt?fmt(b):(b==null?'—':b);
+  var na=tnbNum(a),nb=tnbNum(b);
+  var la='',lb='';
+  if(na!=null&&nb!=null&&na!==nb){
+    var aBetter=better==='low'?(na<nb):(na>nb);
+    la=aBetter?' pos':'';lb=aBetter?'':' pos';
+  }
+  return '<div class="tnb-cmp"><span class="a'+la+'">'+rsEsc(''+fa)+'</span>'+
+    '<span class="k">'+rsEsc(label)+'</span><span class="b'+lb+'">'+rsEsc(''+fb)+'</span></div>';
+}
+
+function tnbCardHTML(x){
+  var p=TNB.byRef[x.match_ref]||null;
+  var o=tnbOppFor(x.match_ref);
+  var gap=p&&p.probability_gap_a!=null?Number(p.probability_gap_a):null;
+  var surface=x.surface||'unknown';
+  var head='<div class="tnb-head">'+
+    '<div class="tnb-when">'+rsEsc(tnbWhen(x.scheduled_at))+'</div>'+
+    '<div class="tnb-meta">'+rsEsc(x.tour||'')+' · '+rsEsc(x.tournament_name||'tournament not published')+
+      ' · '+rsEsc(surface)+' · '+rsEsc(x.environment||'unknown')+
+      (x.round?(' · '+rsEsc(x.round)):'')+(x.best_of?(' · best of '+rsEsc(''+x.best_of)):'')+'</div>'+
+    (p?tnbGradePill(p.research_grade):'')+'</div>';
+
+  var names='<div class="tnb-names"><span class="a">'+rsEsc(x.player_a_name||'—')+'</span>'+
+    '<span class="v">v</span><span class="b">'+rsEsc(x.player_b_name||'—')+'</span></div>';
+
+  var priced='';
+  if(p){
+    priced='<div class="tnb-price">'+
+      '<div class="tnb-pcell"><span class="l">EdgeDesk fair</span><span class="v mono">'+tnbPct(p.prob_a)+' · '+tnbDec(p.fair_odds_a_decimal)+' ('+tnbAm(p.fair_odds_a_american)+')</span></div>'+
+      '<div class="tnb-pcell"><span class="l">Market</span><span class="v mono">'+(p.market_prob_a==null?'no price captured':tnbPct(p.market_prob_a)+(p.market_book?(' · '+rsEsc(p.market_book)):''))+'</span></div>'+
+      '<div class="tnb-pcell"><span class="l">Gap</span><span class="v mono '+(gap==null?'':(gap>0?'pos':'neg'))+'">'+(gap==null?'—':tnbPts(gap)+' pts')+'</span></div>'+
+      '<div class="tnb-pcell"><span class="l">EV at that price</span><span class="v mono">'+(p.ev_a==null?'—':tnbPts(p.ev_a))+'</span></div>'+
+      '<div class="tnb-pcell"><span class="l">Confidence</span><span class="v mono">'+(p.confidence==null?'—':Number(p.confidence).toFixed(2))+'</span></div>'+
+      '<div class="tnb-pcell"><span class="l">Uncertainty</span><span class="v mono">'+(p.uncertainty==null?'—':Number(p.uncertainty).toFixed(2))+'</span></div>'+
+      '</div>'+
+      '<div class="tnb-stamp">model '+rsEsc(p.model_version||'—')+' · ratings '+rsEsc(tnbAgo(p.ratings_computed_at||x.ratings_computed_at))+
+        ' · price '+rsEsc(tnbAgo(p.market_captured_at))+'</div>'+
+      ((p.exclusion_reasons||[]).length?tnbReasonList(p.exclusion_reasons,'warn'):'');
+  }else if(!TNB.entitled){
+    priced='<div class="tnb-locked">EdgeDesk’s fair price, the gap against the market and the confidence for this '+
+      'match are part of the subscription. The record above is free.</div>';
+  }else{
+    priced='<div class="tnb-locked mut">No model price for this match yet. The board is rebuilt by '+
+      '<span class="mono">tools/tennis/price_board.js</span>; until it has run against this fixture there is '+
+      'nothing to compare, and nothing is guessed in its place.</div>';
+  }
+
+  var compare='<div class="tnb-compare">'+
+    tnbCompare('power rating',x.player_a_power,x.player_b_power,function(v){return v==null?'—':Number(v).toFixed(1);})+
+    tnbCompare('rating ±',x.player_a_uncertainty,x.player_b_uncertainty,function(v){return v==null?'—':Number(v).toFixed(2);},'low')+
+    tnbCompare('official rank',x.player_a_rank,x.player_b_rank,function(v){return v==null?'—':'#'+v;},'low')+
+    tnbCompare('form 90d',x.player_a_form_90d,x.player_b_form_90d,function(v){return v==null?'—':Math.round(v*100)+'%';})+
+    tnbCompare('rest (days)',x.player_a_rest_days,x.player_b_rest_days,function(v){return v==null?'—':v;})+
+    tnbCompare('matches 14d',x.player_a_matches_14d,x.player_b_matches_14d,function(v){return v==null?'—':v;},'low')+
+    '</div>';
+
+  return '<div class="tnb-card" onclick="tnbOpenMatch(decodeURIComponent(\''+encodeURIComponent(''+x.match_ref)+'\'))">'+
+    head+names+compare+priced+
+    (o?'<div class="tnb-oppline">Research note · '+rsEsc(o.selection||'')+' at '+rsEsc(o.sportsbook||'—')+
+        ' · gap '+tnbPts(o.estimated_edge)+' pts · data quality '+(o.data_quality_score==null?'—':Number(o.data_quality_score).toFixed(2))+
+        ' · market quality '+(o.market_quality_score==null?'—':Number(o.market_quality_score).toFixed(2))+'</div>':'')+
+    '</div>';
+}
+
+function renderTennisBoard(){
+  var body=$('tnbBody'),fl=$('tnbFilters'),ban=$('tnbBanner');
+  if(!body)return;
+  if(ban){
+    var h=TNB.health;
+    ban.textContent=h?('Tennis research board · '+(h.matches!=null?Number(h.matches).toLocaleString():'—')+
+      ' matches on record · '+(h.rated_players!=null?Number(h.rated_players).toLocaleString():'—')+' players rated')
+      :'Tennis research board';
+  }
+  if(TNB.state&&TNB.state.state&&TNB.state.state!=='ok'&&TNB.state.state!=='empty'){
+    if(fl)fl.innerHTML='';
+    body.innerHTML='<div class="empty">'+rsEsc(TNB.state.msg||'The tennis board could not be read just now. That is a read failure, not an empty slate.')+'</div>';
+    return;
+  }
+  if(fl)fl.innerHTML=tnbHealthHTML()+tnbLicenceHTML()+tnbFiltersHTML();
+
+  if(!TNB.fixtures.length){
+    body.innerHTML='<div class="empty">No ATP or WTA singles fixture is on file for the next seven days. '+
+      'The draw is written by the tennis sync (<span class="mono">tools/tennis/sync_events.js</span>); until it has '+
+      'run there is nothing to research, and an empty board is the honest answer rather than a sample.</div>';
+    return;
+  }
+  var rows=tnbRows();
+  if(!rows.length){
+    body.innerHTML='<div class="empty">'+TNB.fixtures.length+' fixture'+(TNB.fixtures.length>1?'s are':' is')+
+      ' on file, and none matches these filters. <button class="tnb-clear" onclick="tnbClearFilters()">Clear filters</button></div>';
+    return;
+  }
+  var priced=rows.filter(function(r){return !!TNB.byRef[r.match_ref];}).length;
+  var head='<div class="tnb-count">'+rows.length+' match'+(rows.length>1?'es':'')+
+    ' · '+priced+' priced'+(TNB.entitled?'':' (sign in to a subscription to see prices)')+
+    ' · sorted by how far EdgeDesk and the market disagree</div>';
+  body.innerHTML=head+rows.map(tnbCardHTML).join('')+
+    '<div class="tn-ksf">Every number here is either a count over the stored match record or a model output '+
+    'labelled with the version that produced it. EdgeDesk publishes no selection, no stake and no confidence '+
+    'that a match will go one way. A gap between a model and a market is a reason to look, not a reason to act.</div>';
+}
+window.renderTennisBoard=renderTennisBoard;
+
+/* ── one match, in full ─────────────────────────────────────────────────── */
+window.tnbCloseMatch=function(){
+  TNB.openRef=null;TNB.openData=null;
+  var m=$('tnbModal');if(m)m.style.display='none';
+  document.body.style.overflow='';
+};
+window.tnbOpenMatch=async function(ref){
+  var x=null;
+  for(var i=0;i<TNB.fixtures.length;i++)if(TNB.fixtures[i].match_ref===ref)x=TNB.fixtures[i];
+  if(!x)return;
+  TNB.openRef=ref;
+  var m=$('tnbModal'),card=$('tnbModalCard');
+  if(!m){
+    m=document.createElement('div');m.id='tnbModal';
+    m.setAttribute('style','display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto');
+    m.onclick=function(e){if(e.target===m)window.tnbCloseMatch();};
+    card=document.createElement('div');card.id='tnbModalCard';
+    card.setAttribute('style','max-width:640px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative');
+    m.appendChild(card);document.body.appendChild(m);
+  }
+  card=$('tnbModalCard');
+  m.style.display='block';document.body.style.overflow='hidden';m.scrollTop=0;
+  card.innerHTML=tnbMatchHead(x)+'<div class="fi-empty">Loading the match record…</div>';
+
+  var d={h2h:[],formA:[],formB:[],weather:null,err:false};
+  var qa='player_id=eq.'+encodeURIComponent(x.player_a_id||''),qb='player_id=eq.'+encodeURIComponent(x.player_b_id||'');
+  if(x.player_a_id&&x.player_b_id){
+    try{d.h2h=await sbGetTennis('h2h?select=wins,losses,matches,last_meeting,first_meeting&'+qa+'&opponent_id=eq.'+encodeURIComponent(x.player_b_id));}catch(_){d.err=true;}
+  }
+  if(x.player_a_id){try{d.formA=await sbGetTennis('player_form?select=match_date,won,surface,tourney_name,round,opponent_id&'+qa+'&order=match_date.desc&limit=10');}catch(_){d.err=true;}}
+  if(x.player_b_id){try{d.formB=await sbGetTennis('player_form?select=match_date,won,surface,tourney_name,round,opponent_id&'+qb+'&order=match_date.desc&limit=10');}catch(_){d.err=true;}}
+  if(x.player_a_id){try{d.profA=(await sbGetTennis('player_profile?select=*&'+qa))[0]||null;}catch(_){d.profA=null;}}
+  if(x.player_b_id){try{d.profB=(await sbGetTennis('player_profile?select=*&'+qb))[0]||null;}catch(_){d.profB=null;}}
+  if(TNB.openRef!==ref)return;
+  TNB.openData=d;
+  card.innerHTML=tnbMatchHead(x)+tnbMatchBody(x,d);
+};
+function tnbMatchHead(x){
+  return '<button onclick="tnbCloseMatch()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--faint);font-size:22px;cursor:pointer">×</button>'+
+    '<div class="st-nm" style="font-size:18px">'+rsEsc(x.player_a_name||'—')+' <span style="color:var(--faint)">v</span> '+rsEsc(x.player_b_name||'—')+'</div>'+
+    '<div class="st-meta" style="margin-bottom:10px">'+rsEsc(x.tour||'')+' · '+rsEsc(x.tournament_name||'tournament not published')+
+      ' · '+rsEsc(x.surface||'unknown')+' · '+rsEsc(x.environment||'unknown')+
+      (x.round?(' · '+rsEsc(x.round)):'')+' · '+rsEsc(tnbWhen(x.scheduled_at))+'</div>';
+}
+function tnbSurfaceSplit(prof,surface){
+  if(!prof)return null;
+  var s=prof.power_rating_surface;
+  if(typeof s==='string'){try{s=JSON.parse(s);}catch(_){s=null;}}
+  if(!s||!surface||surface==='unknown')return null;
+  return s[surface]||null;
+}
+function tnbMatchBody(x,d){
+  var p=TNB.byRef[x.match_ref]||null;
+  var o=tnbOppFor(x.match_ref);
+  var out='';
+
+  /* ratings, the surface-specific ones first because the surface is the whole
+     question this screen exists to answer */
+  var sa=tnbSurfaceSplit(d.profA,x.surface),sb=tnbSurfaceSplit(d.profB,x.surface);
+  out+='<div class="fi-card"><div class="gd-line" style="font-weight:600"><span class="l">ratings</span>'+
+    '<span class="v mut">0–100, shrunk toward 50 by how little is known</span></div>'+
+    tnbCompare('overall power',x.player_a_power,x.player_b_power,function(v){return v==null?'—':Number(v).toFixed(1);})+
+    tnbCompare(rsEsc(x.surface||'surface')+' power',sa?sa.power_rating:null,sb?sb.power_rating:null,function(v){return v==null?'—':Number(v).toFixed(1);})+
+    tnbCompare(rsEsc(x.surface||'surface')+' sample',sa?sa.sample:null,sb?sb.sample:null,function(v){return v==null?'—':v+' matches';})+
+    tnbCompare('official rank',x.player_a_rank,x.player_b_rank,function(v){return v==null?'—':'#'+v;},'low')+
+    '</div>';
+
+  out+='<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">form, schedule and rest</span>'+
+    '<span class="v mut">counted from the stored record</span></div>'+
+    tnbCompare('form 30d',d.profA?d.profA.form_30d:null,d.profB?d.profB.form_30d:null,function(v){return v==null?'—':Math.round(v*100)+'%';})+
+    tnbCompare('form 90d',x.player_a_form_90d,x.player_b_form_90d,function(v){return v==null?'—':Math.round(v*100)+'%';})+
+    tnbCompare('form 365d',d.profA?d.profA.form_365d:null,d.profB?d.profB.form_365d:null,function(v){return v==null?'—':Math.round(v*100)+'%';})+
+    tnbCompare('matches 14d',x.player_a_matches_14d,x.player_b_matches_14d,function(v){return v==null?'—':v;},'low')+
+    tnbCompare('rest (days)',x.player_a_rest_days,x.player_b_rest_days,function(v){return v==null?'—':v;})+
+    tnbCompare('career matches',d.profA?d.profA.matches:null,d.profB?d.profB.matches:null,function(v){return v==null?'—':v;})+
+    '</div>';
+
+  /* head to head, with the warning attached rather than implied */
+  var h=(d.h2h&&d.h2h[0])||null;
+  var hwarn='';
+  if(h){
+    var n=Number(h.matches||0);
+    var last=h.last_meeting?Date.parse(h.last_meeting):NaN;
+    var oldYears=isFinite(last)?((Date.now()-last)/(365*86400000)):null;
+    if(n<4)hwarn='This head-to-head is '+n+' match'+(n===1?'':'es')+' — too few to describe a pattern.';
+    else if(oldYears!=null&&oldYears>3)hwarn='The last meeting was over '+Math.floor(oldYears)+' years ago. Both players are different from the ones who played it.';
+  }
+  out+='<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">head to head</span>'+
+    '<span class="v mut">'+(h?('last met '+rsEsc(''+(h.last_meeting||'—'))):'no meeting on record')+'</span></div>'+
+    (h?('<div class="gd-line"><span class="l">'+rsEsc(x.player_a_name||'A')+'</span><span class="v mono">'+rsEsc(''+h.wins)+'–'+rsEsc(''+h.losses)+'</span></div>')
+      :'<div class="fi-empty">These two have not met in the stored record.</div>')+
+    (hwarn?('<div class="tnb-warn">'+rsEsc(hwarn)+'</div>'):'')+'</div>';
+
+  /* form strips */
+  function strip(name,rows){
+    if(!rows||!rows.length)return '';
+    return '<div class="gd-line"><span class="l">'+rsEsc(name)+'</span><span class="v"><span class="atp-form">'+
+      rows.slice().reverse().map(function(f){return '<i class="'+(f.won?'w':'l')+'"></i>';}).join('')+'</span></span></div>';
+  }
+  if((d.formA&&d.formA.length)||(d.formB&&d.formB.length)){
+    out+='<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">last ten on record</span>'+
+      '<span class="v mut">oldest first</span></div>'+strip(x.player_a_name||'A',d.formA)+strip(x.player_b_name||'B',d.formB)+'</div>';
+  }
+
+  /* the model, and what it did not know */
+  if(p){
+    out+='<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">EdgeDesk and the market</span>'+
+      '<span class="v mut">'+rsEsc(p.model_version||'')+'</span></div>'+
+      '<div class="gd-line"><span class="l">EdgeDesk probability</span><span class="v mono">'+tnbPct(p.prob_a)+' / '+tnbPct(p.prob_b)+'</span></div>'+
+      '<div class="gd-line"><span class="l">EdgeDesk fair odds</span><span class="v mono">'+tnbDec(p.fair_odds_a_decimal)+' / '+tnbDec(p.fair_odds_b_decimal)+'</span></div>'+
+      '<div class="gd-line"><span class="l">Market (margin removed)</span><span class="v mono">'+(p.market_prob_a==null?'no price captured':tnbPct(p.market_prob_a)+' / '+tnbPct(p.market_prob_b))+'</span></div>'+
+      '<div class="gd-line"><span class="l">Disagreement</span><span class="v mono">'+(p.probability_gap_a==null?'—':tnbPts(p.probability_gap_a)+' points')+'</span></div>'+
+      '<div class="gd-line"><span class="l">Confidence · uncertainty</span><span class="v mono">'+(p.confidence==null?'—':Number(p.confidence).toFixed(2))+' · '+(p.uncertainty==null?'—':Number(p.uncertainty).toFixed(2))+'</span></div>'+
+      '<div class="gd-line"><span class="l">Ratings as of</span><span class="v mut">'+rsEsc(tnbAgo(p.ratings_computed_at||x.ratings_computed_at))+'</span></div>'+
+      '<div class="gd-line"><span class="l">Price captured</span><span class="v mut">'+rsEsc(tnbAgo(p.market_captured_at))+(p.market_book?(' · '+rsEsc(p.market_book)):'')+'</span></div>'+
+      '<div class="gd-line"><span class="l">Research grade</span><span class="v">'+tnbGradePill(p.research_grade)+'</span></div>'+
+      '</div>';
+    if((p.missing_inputs||[]).length){
+      out+='<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">what the model did not have</span>'+
+        '<span class="v mut">'+p.missing_inputs.length+' input'+(p.missing_inputs.length>1?'s':'')+'</span></div>'+
+        '<div class="tnb-missing">'+p.missing_inputs.map(function(k){return '<span>'+rsEsc(String(k).replace(/^d_/,'').replace(/_/g,' '))+'</span>';}).join('')+'</div>'+
+        '<div class="tn-ksf">A missing input is not a zero. It widens the uncertainty above and can hold the match back from research grade entirely.</div></div>';
+    }
+    if((p.exclusion_reasons||[]).length){
+      out+='<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">why this is caveated</span></div>'+
+        tnbReasonList(p.exclusion_reasons)+'</div>';
+    }
+  }else{
+    out+='<div class="fi-card" style="margin-top:10px">'+
+      (TNB.entitled
+        ? '<div class="fi-empty">No model price exists for this match yet. Nothing is estimated in its place.</div>'
+        : '<div class="fi-empty">EdgeDesk’s probability, fair price and the gap against the market are part of the subscription.</div>')+
+      '</div>';
+  }
+
+  /* WEATHER. Outdoor only, and only where the observation is good enough. An
+     indoor event says so instead of showing a blank that looks like a gap. */
+  out+='<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">conditions</span>'+
+    '<span class="v mut">'+rsEsc(x.environment||'unknown')+'</span></div>'+
+    (x.environment==='indoor'
+      ? '<div class="fi-empty">Indoor. Weather is not a factor here and none is stored — this is a deliberate absence, not a missing reading.</div>'
+      : x.environment==='outdoor'
+        ? '<div class="fi-empty">EdgeDesk holds tournament-week reanalysis for resolved outdoor venues, not conditions at first serve. It is shown only where the venue resolved confidently and the observation passes the quality threshold; for this match it does not.</div>'
+        : '<div class="fi-empty">The source does not say whether this event is indoors or out, so no weather is attached. An unknown environment is never treated as outdoor.</div>')+
+    '</div>';
+
+  if(o){
+    out+='<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">research note</span>'+
+      '<span class="v mut">'+rsEsc(tnbAgo(o.generated_at))+'</span></div>'+
+      '<div class="gd-line"><span class="l">'+rsEsc(o.selection||'')+' at '+rsEsc(o.sportsbook||'—')+'</span><span class="v mono">'+tnbDec(o.market_odds_decimal)+' vs fair '+tnbDec(o.fair_odds_decimal)+'</span></div>'+
+      '<div class="gd-line"><span class="l">Gap · EV</span><span class="v mono">'+tnbPts(o.estimated_edge)+' pts · '+tnbPts(o.expected_value)+'</span></div>'+
+      '<div class="gd-line"><span class="l">Data quality · market quality</span><span class="v mono">'+
+        (o.data_quality_score==null?'—':Number(o.data_quality_score).toFixed(2))+' · '+
+        (o.market_quality_score==null?'—':Number(o.market_quality_score).toFixed(2))+'</span></div>'+
+      tnbReasonList(o.reason_codes)+'</div>';
+  }
+
+  out+='<div class="fi-foot">Research, not picks. EdgeDesk publishes a probability, the price that probability implies, '+
+    'the market’s own number beside it, and the reasons the gap might not be real. It does not publish a selection, '+
+    'a stake or a claim that a match is settled before it is played. Every figure above is either counted from the '+
+    'stored match record or produced by the named model version at the time stamped beside it.</div>';
+  if(d.err)out+='<div class="tnb-warn">Part of the record could not be read just now. What is missing is missing — nothing was substituted for it.</div>';
+  return out;
 }
 
 researchRegister({id:'tennis',label:'Tennis',schema:'tennis',cadenceMs:86400000,
@@ -17776,7 +18405,7 @@ function tnHeroHTML(m){
   if(mk&&mk.linked&&mk.devig&&mk.devig.home!=null){
     h+='<div class="tn-hero-mk">'+tnMarketTag()+' <b>'+tnPct(mk.devig.home,1)+'</b> '+stEsc(tnShort(m.home_name))
       +' · <b>'+tnPct(mk.devig.away,1)+'</b> '+stEsc(tnShort(m.away_name))
-      +'<small>de-vigged from the best price at each book. This is the MARKET’s probability, not EdgeDesk’s — there is no EdgeDesk tennis model.</small></div>';
+      +'<small>de-vigged from the best price at each book. This is the MARKET’s probability, not EdgeDesk’s. The match centre carries no model price: EdgeDesk’s own probability lives on the Research board, where it is published with its model version, its uncertainty and the age of the price it was compared against.</small></div>';
   }else if(mk&&mk.linked){
     h+='<div class="tn-hero-mk mut"><small>Linked to an odds fixture, but no two-way price is currently stored for it.</small></div>';
   }else if(mk&&mk.pending){
@@ -17951,7 +18580,7 @@ function tnMarketHTML(m){
   if(mk.devig&&mk.devig.vig!=null)
     out+='<div class="tn-caps-n">Two-way vig '+tnPct(mk.devig.vig,1)+' over '+(mk.nBooks!=null?mk.nBooks:'—')+' book'+(mk.nBooks===1?'':'s')+'. The de-vigged split is the market’s estimate, and the only probability on this page.</div>';
   out+=tnCaptureHTML(m);
-  out+='<div class="tn-ksf">Prices are the odds feed’s stored facts. <b>Fair</b> is the de-vigged two-way probability, which is the MARKET’s estimate and not EdgeDesk’s — there is no EdgeDesk tennis model, so no edge is claimed here.</div>';
+  out+='<div class="tn-ksf">Prices are the odds feed’s stored facts. <b>Fair</b> is the de-vigged two-way probability, which is the MARKET’s estimate and not EdgeDesk’s. No edge is claimed on this screen: the match centre compares books to each other, never to a model. EdgeDesk’s own probability and the gap against the market are on the Research board.</div>';
   return out;
 }
 function tnCaptureHTML(m){
