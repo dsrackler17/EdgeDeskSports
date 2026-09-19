@@ -18,6 +18,7 @@
    =========================================================================== */
 'use strict';
 
+const P = require('../lib/pgrest.js');
 const DEFAULT_URL = 'https://iattxbkbufslbauoumga.supabase.co';
 
 function config(env) {
@@ -101,11 +102,30 @@ function client(cfg, fetchImpl, opts) {
       if (!rows || !rows.length) return [];
       const out = [];
       const size = o.chunk || 400;
-      for (let i = 0; i < rows.length; i += size) {
-        const q = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : '';
-        const prefer = (o.ignoreDuplicates ? 'resolution=ignore-duplicates' : 'resolution=merge-duplicates') + ',' + (o.returning === false ? 'return=minimal' : 'return=representation');
-        const r = await call('POST', schema, `${rel}${q}`, rows.slice(i, i + size), { prefer }, `UPSERT ${schema}.${rel}`);
-        if (Array.isArray(r)) out.push(...r);
+      /* PostgREST builds ONE column list per bulk write, so every object in
+         the array must carry the SAME keys; a mixed array is refused whole
+         with PGRST102 "All object keys must match" and nothing is written.
+
+         live_poll.js sends exactly such an array: a scheduled bout has no
+         first_bell_at and a finished one does, and a bout carried over from
+         the database arrives with every column `select=*` returned. UFC live
+         run 66 hit it on its first poll of a real event and on all 22 retries
+         that followed — ninety minutes, not one row written, while the card
+         was actually being fought.
+
+         The batch is split by shape rather than padded, through the same
+         shared helper tools/lib/pgrest.js uses, because padding would be the
+         wrong fix: an omitted key is deliberate. ufc.bouts declares provider,
+         is_main, is_title, corner_source and status NOT NULL with defaults,
+         so writing null into a key a row simply did not mention would both
+         erase a stored value and break the insert. Omission has to survive. */
+      for (const group of P.byKeyShape(rows)) {
+        for (let i = 0; i < group.length; i += size) {
+          const q = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : '';
+          const prefer = (o.ignoreDuplicates ? 'resolution=ignore-duplicates' : 'resolution=merge-duplicates') + ',' + (o.returning === false ? 'return=minimal' : 'return=representation');
+          const r = await call('POST', schema, `${rel}${q}`, group.slice(i, i + size), { prefer }, `UPSERT ${schema}.${rel}`);
+          if (Array.isArray(r)) out.push(...r);
+        }
       }
       return out;
     },

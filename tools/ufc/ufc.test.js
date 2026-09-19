@@ -447,6 +447,54 @@ async function syncWith(db, doc, now, extra) {
   chk('a final or stale card never opens the gate', G.pick(evs.slice(1), Date.parse('2026-09-13T22:30:00Z')) === null);
   chk('a live card beats a scheduled one', G.pick([evs[0], { event_id: 'b', event_state: 'live', scheduled_at: '2026-09-13T20:00:00Z' }], Date.parse('2026-09-13T22:00:00Z')).event_id === 'b');
 
+  /* ====================================================================== */
+  /* 12. THE WIRE RULE A LIVE CARD TAUGHT US                                  */
+  /* ====================================================================== */
+  /* UFC live run 66 failed its first poll of a real event with PGRST102 "All
+     object keys must match", and then all 22 retries: ninety minutes of a card
+     being fought with not one row written. PostgREST builds ONE column list per
+     bulk write, and live_poll sends a scheduled bout (no first_bell_at), a
+     finished one (which has it) and a bout carried over from the database with
+     every column `select=*` returned, in a single array.
+
+     tools/lib/pgrest.js learned this when the tennis path was bitten the same
+     way. tools/ufc/db.js kept its own copy of upsert and did not, and neither
+     did tools/ufc/fake_db.js — which is why the suite was green throughout. */
+  {
+    const UD = require('./db.js');
+    const sent = [];
+    const fakeFetch = async (url, init) => {
+      sent.push({ url, body: JSON.parse(init.body) });
+      return { ok: true, status: 200, text: async () => '[]' };
+    };
+    const c = UD.client({ url: 'https://example.invalid', key: 'k' }, fakeFetch, { retries: 0 });
+    /* the three shapes of a real live card, exactly as pollOnce builds them */
+    const mixed = [
+      { bout_id: 'espn:1', event_id: 'e', status: 'scheduled' },
+      { bout_id: 'espn:2', event_id: 'e', status: 'live', first_bell_at: '2026-09-19T22:00:00Z', first_live_seen_at: '2026-09-19T22:00:00Z', elapsed_seconds: 45 },
+      { bout_id: 'espn:3', event_id: 'e', status: 'cancelled', status_detail: 'absent from provider card', source_updated_at: '2026-09-19T22:00:00Z', red_name: 'A', blue_name: 'B' }
+    ];
+    chk('a real live card genuinely holds more than one row shape',
+      new Set(mixed.map(r => Object.keys(r).sort().join(','))).size === 3);
+    await c.upsert('ufc', 'bouts', mixed, 'bout_id', { returning: false });
+    chk('the mixed array goes out as one request per shape, not one mixed request',
+      sent.length === 3, 'requests: ' + sent.length);
+    chk('and every request PostgREST receives carries a single uniform key set',
+      sent.every(r => { const sig = Object.keys(r.body[0]).sort().join(','); return r.body.every(x => Object.keys(x).sort().join(',') === sig); }));
+    eq('no row is dropped on the way', sent.reduce((n, r) => n + r.body.length, 0), mixed.length);
+    /* THE WRONG FIX, ruled out. ufc.bouts declares status NOT NULL with a
+       default, so padding the scheduled row's missing keys with null would
+       both erase stored values and break the insert. Omission must survive. */
+    chk('a key a row never mentioned is still absent on the wire, not null',
+      sent.every(r => r.body.every(x => !('first_bell_at' in x) || x.first_bell_at != null)),
+      JSON.stringify(sent.map(r => r.body[0])));
+
+    const single = [];
+    const c2 = UD.client({ url: 'https://example.invalid', key: 'k' }, async (u, i) => { single.push(JSON.parse(i.body)); return { ok: true, status: 200, text: async () => '[]' }; }, { retries: 0 });
+    await c2.upsert('ufc', 'bouts', [mixed[0], { bout_id: 'espn:4', event_id: 'e', status: 'scheduled' }], 'bout_id', { returning: false });
+    eq('rows that already share a shape still travel in one request', single.length, 1);
+  }
+
   const line = 'UFC pipeline | ' + pass + ' passed, ' + fail + ' failed';
   if (fail) { console.log('FAIL | ' + line); failures.forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
   console.log('PASS | ' + line);

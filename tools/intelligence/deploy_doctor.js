@@ -235,20 +235,51 @@ async function doctor(opts) {
          READER_RUNGS and _intelligence.js holds it as quote_ttl_buckets. */
       const RUNGS = [[0.5, 5], [2, 15], [6, 45], [24, 90], [72, 180], [Infinity, 360]];
       const limit = (RUNGS.find(([h]) => hrsToKick <= h) || RUNGS[RUNGS.length - 1])[1];
+      /* THE CADENCE FLOOR, WHICH THIS CHECK USED TO IGNORE AND SO CRIED WOLF.
+         capture/index.ts is explicit that a cadence looser than the rung it
+         feeds "IS NOT A BUG, BUT IT MUST NOT BE SILENT": the near tier runs
+         every ten minutes and the rung inside half an hour of kickoff is five,
+         so in that window a ten-minute-old price is the system working exactly
+         as designed and the reader is already calling the quote aging.
+         Grading that against the rung alone made every Saturday evening red —
+         and it accused the scheduler of not running while the scheduler was
+         running, because a ten-minute-old price is PROOF of a ten-minute
+         cadence, not evidence against it. The tiers mirror CADENCE_TIERS.
+         Slack covers the poke, the odds request and the upsert; past it the
+         age is longer than the cadence can explain and something really has
+         stopped calling capture. */
+      const TIERS = [[8, 10], [30, 30], [Infinity, 240]];
+      const cadence = (TIERS.find(([h]) => hrsToKick <= h) || TIERS[TIERS.length - 1])[1];
+      const floor = cadence + 3;
+      const state = ageMin <= limit ? 'CURRENT' : ageMin <= floor ? 'AGING' : 'STALE';
       const age = ageMin >= 120 ? `${(ageMin / 60).toFixed(1)} hours` : `${Math.round(ageMin)} minutes`;
-      add('the board is being captured',
-        ageMin <= limit ? 'CURRENT' : 'STALE',
-        `the newest capture on an upcoming game is ${age} old, against a ${limit}-minute limit `
-        + `for a game starting in ${hrsToKick < 24 ? hrsToKick.toFixed(1) + ' hours' : (hrsToKick / 24).toFixed(1) + ' days'}`
-        /* which game: a STALE verdict at 01:39 UTC on a Wednesday read as a
-           football board nobody was capturing, and was a tennis match — the
-           board's sports are not all football, and the sport is the first
-           thing the operator needs to know */
-        + ` (${r.sport_key || 'unknown sport'}, ${r.market || 'market unknown'}, kicks off ${r.commence_time || 'at an unknown time'})`,
-        ageMin <= limit ? null
-          : 'Nothing is calling capture on cadence. Read the next check first — it says whether capture is '
-            + 'refusing its callers or simply not being called. Then apply supabase/capture_cron.sql and check '
-            + 'cron.job_run_details; the GitHub backup is .github/workflows/capture.yml.');
+      if (state === 'AGING') {
+        add('the board is being captured', 'AGING',
+          `the newest capture on an upcoming game is ${age} old, inside the ${cadence}-minute cadence that `
+          + `feeds it but outside the ${limit}-minute rung for a game starting in ${hrsToKick.toFixed(1)} hours `
+          + `(${r.sport_key || 'unknown sport'}, ${r.market || 'market unknown'}, kicks off ${r.commence_time || 'at an unknown time'}). `
+          + 'The scheduler is keeping its cadence; that cadence cannot serve this rung, and the reader reports '
+          + 'those quotes as aging rather than current. Not a fault.',
+          null);
+      } else {
+        add('the board is being captured',
+          state,
+          `the newest capture on an upcoming game is ${age} old, against a ${limit}-minute limit `
+          + `for a game starting in ${hrsToKick < 24 ? hrsToKick.toFixed(1) + ' hours' : (hrsToKick / 24).toFixed(1) + ' days'}`
+          /* which game: a STALE verdict at 01:39 UTC on a Wednesday read as a
+             football board nobody was capturing, and was a tennis match — the
+             board's sports are not all football, and the sport is the first
+             thing the operator needs to know */
+          + ` (${r.sport_key || 'unknown sport'}, ${r.market || 'market unknown'}, kicks off ${r.commence_time || 'at an unknown time'})`,
+          state === 'CURRENT' ? null
+            /* the age is past what the cadence can account for, so this really
+               is a caller that has stopped rather than a rung the cadence
+               never served */
+            : `${Math.round(ageMin)} minutes is beyond the ${cadence}-minute cadence for this tier, so capture is `
+              + 'not being called on it. Read the next check first — it says whether capture is refusing its '
+              + 'callers or simply not being called. Then apply supabase/capture_cron.sql and check '
+              + 'cron.job_run_details; the GitHub backup is .github/workflows/capture.yml.');
+      }
     }
   }
 
