@@ -55,6 +55,16 @@ on:
       - 'football/data/**'
       - 'football/validation/**'
       - 'tools/football/**'
+      # THE STARTER CONTEXT, which until now no pull request could test.
+      # starters.test.js runs in exactly one workflow — starter-context.yml —
+      # and that workflow has only workflow_dispatch and schedule triggers, so
+      # nothing ran it on a change. This path list did not carry
+      # football/starters/** either. The result is the defect this file's own
+      # header names: a sort bug in build_starters.js shipped, sat unnoticed
+      # for weeks because a two-week-old start was still inside the freshness
+      # bound, and only surfaced when the feed rolled to week 3 and the weekly
+      # build went red. Every PR in between was green.
+      - 'football/starters/**'
       # The capture edge function and its suites. Before this, a change to the
       # single function that decides what EdgeDesk calls a bet triggered no CI
       # at all — it was not in either path list, because until v9 it was not in
@@ -117,6 +127,16 @@ on:
       - 'football/data/**'
       - 'football/validation/**'
       - 'tools/football/**'
+      # THE STARTER CONTEXT, which until now no pull request could test.
+      # starters.test.js runs in exactly one workflow — starter-context.yml —
+      # and that workflow has only workflow_dispatch and schedule triggers, so
+      # nothing ran it on a change. This path list did not carry
+      # football/starters/** either. The result is the defect this file's own
+      # header names: a sort bug in build_starters.js shipped, sat unnoticed
+      # for weeks because a two-week-old start was still inside the freshness
+      # bound, and only surfaced when the feed rolled to week 3 and the weekly
+      # build went red. Every PR in between was green.
+      - 'football/starters/**'
       # The capture edge function and its suites. Before this, a change to the
       # single function that decides what EdgeDesk calls a bet triggered no CI
       # at all — it was not in either path list, because until v9 it was not in
@@ -455,6 +475,15 @@ jobs:
       # request or a roster listing never becomes "everyone is available".
       - name: An unread availability report is never read as good news
         run: node football/availability/reports.test.js
+
+      # THE STARTER CONTEXT. Same defect as the confidence layer above, one
+      # directory over: the suite existed, package.json ran it, and the only
+      # workflow that invoked it fires on workflow_dispatch and schedule alone.
+      # No pull request could reach it. It holds the ordering rule that decides
+      # which game is a team's LAST one — the rule that quietly broke and took
+      # 57 teams to UNKNOWN when the feed rolled a week.
+      - name: A team's last game is its latest game, and a starter is never invented
+        run: node football/starters/starters.test.js
 
       # The per-input measurements the engine actually weights, and the
       # quarterback composite that keeps "we know who he is", "we expect him to

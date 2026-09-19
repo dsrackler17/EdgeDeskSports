@@ -63,6 +63,18 @@ on:
         description: 'Apply supabase/bankroll_and_stakes.sql — the reader''s risk policy and the write-once trail of every position the sizing engine produced (idempotent)'
         type: boolean
         default: false
+      apply_tennis_live_center:
+        description: 'Apply supabase/tennis_live_center.sql — the live match centre the record jobs join against (idempotent; already deployed, here so it has an apply path at all)'
+        type: boolean
+        default: false
+      apply_tennis_record:
+        description: 'Apply supabase/tennis_record.sql — the tennis research record contract the Tennis record workflow reads and writes (idempotent)'
+        type: boolean
+        default: false
+      apply_tennis_lab:
+        description: 'Apply supabase/tennis_lab.sql — the rating-lab columns and history on top of the record contract (idempotent; needs apply_tennis_record first, or already applied)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -178,6 +190,46 @@ jobs:
           # reading CHECK THIS is the thing to read before deploying anything.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/bankroll_and_stakes.sql
 
+      - name: Apply the tennis live centre contract
+        if: ${{ inputs.apply_tennis_live_center && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent, and already in production — tennis-live.yml has been
+          # green against it for weeks. It is here because it had no apply path
+          # either, and the record jobs join tennis.live_matches: a database
+          # rebuilt from this repository needs to be able to get it back.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_live_center.sql
+
+      # THE TENNIS RESEARCH RECORD. supabase/tennis_record.sql has been in the
+      # repository, tested by games-sql.yml against a throwaway PostgreSQL and
+      # read by tools/tennis/*, since the record shipped — but it had no apply
+      # path anywhere. games-sql.yml only ever proved it CAN be applied; nothing
+      # applied it to production. So every Tennis record run failed on
+      #   ERROR: relation "tennis.ingestion_runs" does not exist
+      # against a database where the schema had simply never been installed.
+      # This is that path, in the same opt-in shape as the three above.
+      - name: Apply the tennis research record contract
+        if: ${{ inputs.apply_tennis_record && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent: every object is `create ... if not exists` or
+          # `create or replace`, and record_sql.test.js applies the file twice
+          # against a throwaway server and re-runs the live suite after.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_record.sql
+
+      - name: Apply the tennis rating lab contract
+        if: ${{ inputs.apply_tennis_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Adds columns to tennis.player_ratings_current, which the record
+          # contract owns, so the record contract has to be in place first.
+          # lab_sql.test.js applies both orders on a bare database and re-runs
+          # the record and live reports after, so neither order breaks.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_lab.sql
+
       - name: Say what is skipped, rather than leaving it unsaid
         if: always()
         run: |
@@ -190,6 +242,9 @@ jobs:
             echo ''
             echo "- edgedesk_ai requested: ${{ inputs.deploy_function }}"
             echo "- capture requested: ${{ inputs.deploy_capture }}"
+            echo "- tennis live centre requested: ${{ inputs.apply_tennis_live_center }}"
+            echo "- tennis record contract requested: ${{ inputs.apply_tennis_record }}"
+            echo "- tennis rating lab requested: ${{ inputs.apply_tennis_lab }}"
             echo ''
             echo 'Confirm what is actually running with the **Intelligence doctor** workflow — it asks the'
             echo 'deployment rather than trusting this one.'

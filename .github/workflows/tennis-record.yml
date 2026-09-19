@@ -128,6 +128,45 @@ jobs:
           fi
           echo "A database connection is configured. The value is never printed."
 
+      # THE CONTRACT HAS TO BE INSTALLED, AND FOR EVERY RUN SO FAR IT WAS NOT.
+      #
+      # supabase/tennis_record.sql has been in this repository, proven against a
+      # throwaway PostgreSQL by games-sql.yml and read by every tool below,
+      # since the record shipped — but NO WORKFLOW EVER APPLIED IT. games-sql.yml
+      # only proves the file CAN be applied; deploy-intelligence.yml, the one
+      # job that speaks to production with psql, knew about three migrations and
+      # not this one. So the schema existed in git and nowhere else, and all
+      # four Tennis record runs died the same way:
+      #
+      #     ERROR:  relation "tennis.ingestion_runs" does not exist
+      #     ERROR:  relation "tennis.prediction_record" does not exist
+      #
+      # — three raw psql stack traces that read like a code fault and were not
+      # one. deploy-intelligence.yml now carries apply_tennis_record and
+      # apply_tennis_lab; this step is what tells an operator to use them,
+      # once, instead of leaving the answer in a stack trace.
+      - name: Refuse to run without the record contract installed
+        if: ${{ steps.pick.outputs.job != 'none' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: |
+          MISSING=$(psql "$SUPABASE_DB_URL" -tAX -v ON_ERROR_STOP=1 -c "
+            select coalesce(string_agg(t, ', ' order by t), '') from unnest(array[
+              'tennis.ingestion_runs', 'tennis.players', 'tennis.matches',
+              'tennis.prediction_record', 'tennis.live_matches'
+            ]) t where to_regclass(t) is null;")
+          if [ -n "$MISSING" ]; then
+            echo "::error::the tennis contract is not installed on this database."
+            echo "::error::missing: $MISSING"
+            echo "::error::Apply it ONCE from the Deploy intelligence workflow, in this order:"
+            echo "::error::  apply_tennis_live_center -> apply_tennis_record -> apply_tennis_lab"
+            echo "::error::Every file is idempotent, so re-running it is safe. By hand it is:"
+            echo "::error::  psql \"\$SUPABASE_DB_URL\" -v ON_ERROR_STOP=1 -f supabase/tennis_record.sql"
+            echo "::error::Nothing was read and nothing was written."
+            exit 1
+          fi
+          echo "The tennis contract is installed. Every relation these jobs read is present."
+
       # ── NIGHTLY ────────────────────────────────────────────────────────────
       # Features first, then ratings: the rating layer reads the feature rows,
       # so the reverse order would rate players against yesterday's features and

@@ -95,6 +95,28 @@ function usageEvidence(last, o) {
 }
 
 
+/* WHEN A GAME WAS PLAYED, AS AN ORDER.
+
+   This used to be a one-line sort on `String(kickoff || '') + week`, and that
+   string is not an order. A game the schedule feed does not carry has no
+   kickoff, so its key degenerated to the bare week digit — "2" — while a dated
+   game's key was "2026-09-05T23:00:00.000Z1". "2" sorts before "2026…", so an
+   UNDATED WEEK 2 GAME LANDED AHEAD OF A DATED WEEK 1 GAME and the team's most
+   recent start was read off the older of the two. The mistake was invisible
+   while the feed sat on week 2 — evidence two weeks old is still inside
+   starters.js's `usage_weeks: 2` bound — and surfaced the moment week 3 was
+   published, when the same misread start became three weeks old, went stale,
+   and took 57 teams from PREVIOUS_GAME to UNKNOWN in one refresh.
+
+   Two games are compared on the clock when both are dated and on the week
+   count otherwise. Never on the two glued together. */
+function playedOrder(a, b) {
+  const at = a.played_at ? Date.parse(a.played_at) : NaN;
+  const bt = b.played_at ? Date.parse(b.played_at) : NaN;
+  if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return at - bt;
+  return (a.week || 0) - (b.week || 0);
+}
+
 /* THE OPENER WHO DID NOT FINISH. Read off the same dropback counts, reported
    as participation and never as an injury. */
 function participationOf(last, url, source) {
@@ -210,13 +232,36 @@ async function buildCfb(sess, season, opts) {
 
   /* KICKOFF TIMES, so "the last game" is ordered by when it was played rather
      than by a week number that the postseason restarts. */
-  const kickoff = {};
+  const kickoff = {}, weekKickoffs = {};
   if (sched.ok) {
-    for (const g of R.parseCsv(sched.text, { columns: ['game_id', 'start_date', 'completed', 'home_team', 'away_team'] })) {
-      if (g.game_id) kickoff[String(g.game_id)] = g.start_date || null;
+    for (const g of R.parseCsv(sched.text, { columns: ['game_id', 'week', 'season_type', 'start_date', 'completed', 'home_team', 'away_team'] })) {
+      if (!g.game_id) continue;
+      kickoff[String(g.game_id)] = g.start_date || null;
+      /* REGULAR SEASON ONLY. The postseason restarts the week count, so a bowl
+         game filed as week 1 must never be used to date the opening Saturday. */
+      const w = R.NUM(g.week);
+      if (g.start_date && w != null && (g.season_type || 'regular') === 'regular') {
+        (weekKickoffs[w] = weekKickoffs[w] || []).push(g.start_date);
+      }
     }
   }
-  usage.forEach(u => { u.kickoff = kickoff[u.game_id] || null; });
+  /* THE SCHEDULE FEED CARRIES FBS GAMES ONLY. An FCS-vs-FCS game is attributed
+     in player_stats but appears in no schedule row, so it arrives with no
+     kickoff at all — 271 of 640 rows and 137 of 275 teams in a typical week.
+     Those games are dated from the games that DO carry a kickoff in the same
+     week, which the feed keeps cleanly separated (week 1 ends Sep 7, week 2
+     opens Sep 11), so an undated game still lands in its own week's slot.
+     Leaving them undated is what broke `starterOfGame`'s ordering: see
+     playedOrder above. */
+  const weekAt = {};
+  for (const w of Object.keys(weekKickoffs)) {
+    const times = weekKickoffs[w].slice().sort();
+    weekAt[w] = times[Math.floor(times.length / 2)];
+  }
+  usage.forEach(u => {
+    u.kickoff = kickoff[u.game_id] || null;
+    u.played_at = u.kickoff || (u.week != null ? (weekAt[u.week] || null) : null);
+  });
 
   /* rosters, per team, for identity and for duplicate-name refusal, plus the
      league-wide id map that makes a transfer detectable */
@@ -289,7 +334,7 @@ async function buildCfb(sess, season, opts) {
 
   for (const key of Object.keys(byTeam).sort()) {
     const t = byTeam[key];
-    t.games.sort((a, b) => (String(a.kickoff || '') + a.week).localeCompare(String(b.kickoff || '') + b.week) || (a.week - b.week));
+    t.games.sort(playedOrder);
     const starts = t.games.map(g => S.starterOfGame(g)).filter(Boolean);
     const last = starts.length ? starts[starts.length - 1] : null;
     const recent = t.games.slice(-2);
@@ -577,4 +622,4 @@ function writeSport(file, r, out, check) {
 if (require.main === module) {
   main().then(c => process.exit(c)).catch(e => { console.error('[starters] ' + ((e && e.stack) || e)); process.exit(2); });
 }
-module.exports = { buildCfb, buildNfl, cfbDropbackRows };
+module.exports = { buildCfb, buildNfl, cfbDropbackRows, playedOrder };
