@@ -1,6 +1,83 @@
--- tennis_record -- part 6 of 8.
+-- tennis_record -- part 6 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
+
+-- ===========================================================================
+-- PROVENANCE, RE-ATTACHED. Repairing a contract that was only half applied.
+--
+-- Every table above declares its link to tennis.ingestion_runs INLINE, in the
+-- create table body. That is correct on a clean database and useless on a
+-- half-built one: `create table if not exists` skips a table that already
+-- exists, and skips its constraints with it. A database where the run ledger
+-- was never created but the entity tables were — which is exactly what
+-- happened here, a hand-paste of the eight split files in which part 1 and
+-- part 5 did not land — gets its missing TABLES back from a re-apply and none
+-- of its provenance. Eleven foreign keys, silently absent, on a schema whose
+-- first premise is that no row is of unknown origin.
+--
+-- So the links are asserted again here, after every table exists, in the same
+-- guarded form LAYER 2 already uses for tennis.tournaments. On a clean install
+-- each one is already present and every branch is skipped. On a partial one
+-- they are what makes a re-apply a REPAIR rather than a patch over a hole.
+-- ===========================================================================
+do $$
+begin
+  if to_regclass('tennis.data_quality_issues') is not null
+     and not exists (select 1 from pg_constraint where conname = 'data_quality_issues_run_id_fkey') then
+    alter table tennis.data_quality_issues add constraint data_quality_issues_run_id_fkey
+      foreign key (run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+  if to_regclass('tennis.stg_archive_matches') is not null
+     and not exists (select 1 from pg_constraint where conname = 'stg_archive_matches_run_id_fkey') then
+    alter table tennis.stg_archive_matches add constraint stg_archive_matches_run_id_fkey
+      foreign key (run_id) references tennis.ingestion_runs (run_id) on delete cascade;
+  end if;
+  if to_regclass('tennis.players') is not null
+     and not exists (select 1 from pg_constraint where conname = 'players_ingestion_run_id_fkey') then
+    alter table tennis.players add constraint players_ingestion_run_id_fkey
+      foreign key (ingestion_run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+  if to_regclass('tennis.venues') is not null
+     and not exists (select 1 from pg_constraint where conname = 'venues_ingestion_run_id_fkey') then
+    alter table tennis.venues add constraint venues_ingestion_run_id_fkey
+      foreign key (ingestion_run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+  if to_regclass('tennis.matches') is not null
+     and not exists (select 1 from pg_constraint where conname = 'matches_ingestion_run_id_fkey') then
+    alter table tennis.matches add constraint matches_ingestion_run_id_fkey
+      foreign key (ingestion_run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+  if to_regclass('tennis.player_match_features') is not null
+     and not exists (select 1 from pg_constraint where conname = 'player_match_features_ingestion_run_id_fkey') then
+    alter table tennis.player_match_features add constraint player_match_features_ingestion_run_id_fkey
+      foreign key (ingestion_run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+  if to_regclass('tennis.player_ratings_current') is not null
+     and not exists (select 1 from pg_constraint where conname = 'player_ratings_current_ingestion_run_id_fkey') then
+    alter table tennis.player_ratings_current add constraint player_ratings_current_ingestion_run_id_fkey
+      foreign key (ingestion_run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+  if to_regclass('tennis.rankings_current') is not null
+     and not exists (select 1 from pg_constraint where conname = 'rankings_current_ingestion_run_id_fkey') then
+    alter table tennis.rankings_current add constraint rankings_current_ingestion_run_id_fkey
+      foreign key (ingestion_run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+  if to_regclass('tennis.weather_observations') is not null
+     and not exists (select 1 from pg_constraint where conname = 'weather_observations_ingestion_run_id_fkey') then
+    alter table tennis.weather_observations add constraint weather_observations_ingestion_run_id_fkey
+      foreign key (ingestion_run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+  if to_regclass('tennis.odds_snapshots') is not null
+     and not exists (select 1 from pg_constraint where conname = 'odds_snapshots_ingestion_run_id_fkey') then
+    alter table tennis.odds_snapshots add constraint odds_snapshots_ingestion_run_id_fkey
+      foreign key (ingestion_run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+  if to_regclass('tennis.model_predictions') is not null
+     and not exists (select 1 from pg_constraint where conname = 'model_predictions_ingestion_run_id_fkey') then
+    alter table tennis.model_predictions add constraint model_predictions_ingestion_run_id_fkey
+      foreign key (ingestion_run_id) references tennis.ingestion_runs (run_id) on delete set null;
+  end if;
+end $$;
 
 -- ===========================================================================
 -- LAYER 9 — THE EXPOSED SURFACE. Narrow views, and nothing else.
@@ -247,45 +324,3 @@ as $$
 $$;
 revoke all on function tennis.ops_health() from public;
 grant execute on function tennis.ops_health() to anon, authenticated, service_role;
-
--- Data freshness and coverage, for the page header and for the AI's "what is
--- missing" answer. One row.
---
--- ONE PASS OVER tennis.matches, NOT FOUR. The obvious version asks for the row
--- count, the ATP count, the WTA count, the first date, the last date and the
--- unknown-surface count as six separate scalar subqueries — six sequential
--- scans of the same table. Measured against 290,280 matches that took 334 ms,
--- and this view is loaded on EVERY research-board render, so it was the slowest
--- thing a reader waited for. Folding them into one aggregate with FILTER
--- clauses does the same work in a single pass.
-create or replace view tennis.record_health
-with (security_invoker = true) as
-  with m as (
-    select count(*)                                              as matches,
-           count(*) filter (where tour = 'ATP')                  as atp_matches,
-           count(*) filter (where tour = 'WTA')                  as wta_matches,
-           count(*) filter (where surface is null or surface = 'unknown') as matches_without_surface,
-           min(match_date)                                       as first_match_date,
-           max(match_date)                                       as last_match_date
-      from tennis.matches
-  ), r as (
-    select count(*) as rated_players, max(computed_at) as ratings_computed_at
-      from tennis.player_ratings_current
-  ), i as (
-    -- through the narrow definer door above, so the private tables stay private
-    select * from tennis.ops_health()
-  )
-  select m.matches, m.atp_matches, m.wta_matches,
-         (select count(*) from tennis.players)                   as players,
-         m.first_match_date, m.last_match_date, m.matches_without_surface,
-         r.rated_players, r.ratings_computed_at,
-         (select model_version from tennis.model_registry
-           where family = 'tennis_match_winner' and status = 'active')  as active_model_version,
-         i.last_prediction_at, i.open_opportunities,
-         i.last_successful_ingest, i.failed_runs_7d, i.open_data_issues,
-         -- is EVERY source behind the stored record cleared for commercial use?
-         -- Today this is false, deliberately, and the board says so on screen.
-         (select bool_and(l.commercial_use) from tennis.source_licenses l
-           where exists (select 1 from tennis.matches mm where mm.source_key = l.source_key))
-                                                                 as record_cleared_for_commercial_use
-    from m, r, i;

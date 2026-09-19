@@ -1,6 +1,36 @@
--- tennis_record -- part 5 of 8.
+-- tennis_record -- part 5 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
+
+-- Re-running the same model over the same features and the same market snapshot
+-- is a no-op rather than a second row. A unique INDEX with coalesce, not a
+-- UNIQUE constraint: both snapshot columns are nullable and two nulls would
+-- otherwise be distinct, so a model re-run before any market existed would
+-- write a second prediction every time.
+create unique index if not exists tennis_pred_unique_idx on tennis.model_predictions
+  (match_scope, match_ref, model_version,
+   coalesce(feature_snapshot_at, '-infinity'::timestamptz),
+   coalesce(market_snapshot_id, -1));
+create index if not exists tennis_pred_match_idx  on tennis.model_predictions (match_scope, match_ref, generated_at desc);
+create index if not exists tennis_pred_model_idx  on tennis.model_predictions (model_version, generated_at desc);
+create index if not exists tennis_pred_grade_idx  on tennis.model_predictions (research_grade, generated_at desc);
+create index if not exists tennis_pred_tour_idx   on tennis.model_predictions (tour, generated_at desc);
+
+create or replace function tennis.freeze_prediction()
+returns trigger
+language plpgsql
+as $$
+begin
+  raise exception using errcode = 'restrict_violation',
+    message = 'tennis.model_predictions is append-only: a prediction cannot be '
+              || lower(tg_op) || 'd after it is written',
+    hint = 'Write a new prediction row. The research layer '
+           '(tennis.research_opportunities) is the mutable surface; the '
+           'prediction that produced it is evidence and stays as it was.';
+end $$;
+drop trigger if exists tennis_pred_freeze on tennis.model_predictions;
+create trigger tennis_pred_freeze before update or delete on tennis.model_predictions
+  for each row execute function tennis.freeze_prediction();
 
 -- ===========================================================================
 -- LAYER 8 — RESEARCH OPPORTUNITIES. The mutable surface.

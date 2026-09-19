@@ -1,94 +1,7 @@
--- tennis_record -- part 8 of 8.
+-- tennis_record -- part 9 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
-
--- ===========================================================================
--- MAINTENANCE HELPERS. Used by the importer; not reachable from a browser.
--- ===========================================================================
-
--- Expensive secondary indexes are built AFTER a bulk backfill, not during it.
--- These two calls are what the importer brackets its COPY with.
-create or replace function tennis.drop_backfill_indexes()
-returns void
-language plpgsql
-security definer
-set search_path = tennis, pg_temp
-as $$
-declare i text;
-begin
-  foreach i in array array['tennis_matches_winner_date_idx','tennis_matches_loser_date_idx',
-                           'tennis_matches_surface_date_idx','tennis_matches_season_idx',
-                           'tennis_matches_uid_idx','tennis_matches_tournament_idx',
-                           'tennis_pmf_player_date_idx','tennis_pmf_surface_idx'] loop
-    execute format('drop index if exists tennis.%I', i);
-  end loop;
-end $$;
-
-create or replace function tennis.rebuild_backfill_indexes()
-returns void
-language plpgsql
-security definer
-set search_path = tennis, pg_temp
-as $$
-begin
-  create index if not exists tennis_matches_winner_date_idx  on tennis.matches (winner_id, match_date desc);
-  create index if not exists tennis_matches_loser_date_idx   on tennis.matches (loser_id, match_date desc);
-  create index if not exists tennis_matches_surface_date_idx on tennis.matches (surface, match_date desc);
-  create index if not exists tennis_matches_season_idx       on tennis.matches (tour, season desc, match_date desc);
-  create index if not exists tennis_matches_uid_idx          on tennis.matches (source_match_uid);
-  create index if not exists tennis_matches_tournament_idx   on tennis.matches (tournament_id, round_order);
-  create index if not exists tennis_pmf_player_date_idx      on tennis.player_match_features (player_id, match_date desc);
-  create index if not exists tennis_pmf_surface_idx          on tennis.player_match_features (surface, match_date);
-  analyze tennis.matches;
-  analyze tennis.player_match_features;
-  analyze tennis.players;
-end $$;
-
-revoke all on function tennis.drop_backfill_indexes() from public, anon, authenticated;
-revoke all on function tennis.rebuild_backfill_indexes() from public, anon, authenticated;
-grant execute on function tennis.drop_backfill_indexes() to service_role;
-grant execute on function tennis.rebuild_backfill_indexes() to service_role;
-
--- Record one data-quality issue, deduplicated. The importer calls this rather
--- than writing the table, so the dedup rule lives in one place.
-create or replace function tennis.record_quality_issue(
-  p_run_id uuid, p_source_key text, p_issue_type text, p_severity text,
-  p_entity_type text, p_entity_key text, p_field text,
-  p_observed text, p_expected text, p_detail text, p_payload jsonb default null)
-returns bigint
-language plpgsql
-security definer
-set search_path = tennis, pg_temp
-as $$
-declare id bigint;
-begin
-  insert into tennis.data_quality_issues
-    (run_id, source_key, issue_type, severity, entity_type, entity_key, field,
-     observed, expected, detail, payload)
-  values (p_run_id, p_source_key, p_issue_type, coalesce(p_severity,'warn'),
-          p_entity_type, p_entity_key, p_field, p_observed, p_expected, p_detail, p_payload)
-  on conflict (issue_type, coalesce(entity_type,''), coalesce(entity_key,''), coalesce(field,''))
-    where resolved_at is null
-  do update set occurrences = tennis.data_quality_issues.occurrences + 1,
-                last_seen_at = now(),
-                run_id = excluded.run_id,
-                detail = excluded.detail
-  returning issue_id into id;
-  return id;
-end $$;
-revoke all on function tennis.record_quality_issue(uuid, text, text, text, text, text, text, text, text, text, jsonb) from public, anon, authenticated;
-grant execute on function tennis.record_quality_issue(uuid, text, text, text, text, text, text, text, text, text, jsonb) to service_role;
-
--- ---------------------------------------------------------------------------
--- The freshness stamp the Tennis panel reads. Written here so a database that
--- has the contract but no rows yet still says which contract it has.
--- ---------------------------------------------------------------------------
-insert into tennis.meta (key, value)
-values ('record_contract', 'tennis_record.sql')
-on conflict (key) do update set value = excluded.value;
-
-notify pgrst, 'reload schema';
 
 -- ===========================================================================
 -- THE REPORT. Every row must read ok.
@@ -223,6 +136,11 @@ union all select 22, 'the LIVE contract is untouched by this file',
             when (select count(*) from pg_policies
                    where schemaname = 'tennis' and tablename = 'live_matches') >= 1
             then 'ok (live tables keep their own policies)' else 'CHECK THIS' end
+union all select 22.5, 'match identity is the draw slot AND the unordered player pair',
+       case when exists (select 1 from pg_indexes where schemaname = 'tennis'
+                          and indexname = 'tennis_matches_slot_unique_idx')
+             and not exists (select 1 from pg_constraint where conname = 'tennis_matches_slot_unique')
+            then 'ok' else 'CHECK THIS' end
 union all select 23, 'tennis.tournaments gained the archive columns and kept its own door',
        case when exists (select 1 from information_schema.columns
                           where table_schema = 'tennis' and table_name = 'tournaments'

@@ -73,12 +73,31 @@ permissions:
   contents: read
 
 jobs:
-  record:
+
+  # WHY THIS IS ITS OWN JOB, and not two more steps in the one below.
+  #
+  # Both guards used to live in the record job, and neither one guarded
+  # anything. A step in GitHub Actions is implicitly `if: success()` — but only
+  # while it has no `if:` of its own. Every step below carries one, to select
+  # the job this run is, and an explicit `if:` REPLACES the implicit
+  # success(), so a failed guard stopped nothing: the run went on to the
+  # feature builder, the settler and the monitor, and each one threw the raw
+  # psql error the guard had just explained in plain words. Run 5 is the
+  # receipt — seven lines of guidance followed by the stack traces they were
+  # written to replace, eleven annotations where there had been seven.
+  #
+  # A separate job cannot be bypassed that way. `needs:` is not a condition on
+  # a step, so nothing in the record job runs unless this one passed, and a
+  # step added later is gated whether or not whoever adds it remembers to be
+  # careful. That is the difference between a rule and a habit.
+  preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     defaults:
       run:
         shell: bash -eo pipefail {0}
+    outputs:
+      job: ${{ steps.pick.outputs.job }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -116,7 +135,7 @@ jobs:
           echo "This run is: $JOB"
 
       - name: Refuse to run without a database connection
-        if: ${{ steps.pick.outputs.job != 'none' }}
+        if: ${{ success() && steps.pick.outputs.job != 'none' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: |
@@ -146,45 +165,66 @@ jobs:
       # apply_tennis_lab; this step is what tells an operator to use them,
       # once, instead of leaving the answer in a stack trace.
       - name: Refuse to run without the record contract installed
-        if: ${{ steps.pick.outputs.job != 'none' }}
+        if: ${{ success() && steps.pick.outputs.job != 'none' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: |
           MISSING=$(psql "$SUPABASE_DB_URL" -tAX -v ON_ERROR_STOP=1 -c "
             select coalesce(string_agg(t, ', ' order by t), '') from unnest(array[
-              'tennis.ingestion_runs', 'tennis.players', 'tennis.matches',
-              'tennis.prediction_record', 'tennis.live_matches'
+              'tennis.data_quality_issues', 'tennis.ingestion_runs', 'tennis.matches', 'tennis.meta',
+              'tennis.model_predictions', 'tennis.model_registry', 'tennis.odds_snapshots', 'tennis.player_match_features',
+              'tennis.player_ratings_current', 'tennis.players', 'tennis.prediction_record', 'tennis.rankings_current',
+              'tennis.research_opportunities', 'tennis.source_licenses', 'tennis.stg_archive_matches', 'tennis.tournaments',
+              'tennis.venues', 'tennis.weather_observations', 'tennis.live_matches'
             ]) t where to_regclass(t) is null;")
           if [ -n "$MISSING" ]; then
-            echo "::error::the tennis contract is not installed on this database."
+            echo "::error::the tennis contract is incomplete on this database."
             echo "::error::missing: $MISSING"
-            echo "::error::Apply it ONCE from the Deploy intelligence workflow, in this order:"
+            echo "::error::Apply it from the Deploy intelligence workflow, in this order:"
             echo "::error::  apply_tennis_live_center -> apply_tennis_record -> apply_tennis_lab"
-            echo "::error::Every file is idempotent, so re-running it is safe. By hand it is:"
-            echo "::error::  psql \"\$SUPABASE_DB_URL\" -v ON_ERROR_STOP=1 -f supabase/tennis_record.sql"
+            echo "::error::Every file is idempotent — it creates what is absent and leaves"
+            echo "::error::what is present alone — so running it over a PARTIAL install is"
+            echo "::error::exactly the right repair, and running it twice is safe."
             echo "::error::Nothing was read and nothing was written."
             exit 1
           fi
           echo "The tennis contract is installed. Every relation these jobs read is present."
+
+  record:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install the psql client
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
 
       # ── NIGHTLY ────────────────────────────────────────────────────────────
       # Features first, then ratings: the rating layer reads the feature rows,
       # so the reverse order would rate players against yesterday's features and
       # nothing would say so.
       - name: Rebuild the point-in-time features
-        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'features' || steps.pick.outputs.job == 'all' }}
+        if: ${{ needs.preflight.outputs.job == 'nightly' || needs.preflight.outputs.job == 'features' || needs.preflight.outputs.job == 'all' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/build_features.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
 
       - name: Rebuild the rating layer
-        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'ratings' || steps.pick.outputs.job == 'all' }}
+        if: ${{ needs.preflight.outputs.job == 'nightly' || needs.preflight.outputs.job == 'ratings' || needs.preflight.outputs.job == 'all' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/build_ratings.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
 
       - name: Refresh the official rankings from the provider
-        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'all' }}
+        if: ${{ needs.preflight.outputs.job == 'nightly' || needs.preflight.outputs.job == 'all' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/incremental.js rankings ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
@@ -202,14 +242,14 @@ jobs:
       # failure here leaves the ratings intact and the Lab degraded, rather than
       # the whole record broken.
       - name: Snapshot the rating history
-        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'lab' || steps.pick.outputs.job == 'all' }}
+        if: ${{ needs.preflight.outputs.job == 'nightly' || needs.preflight.outputs.job == 'lab' || needs.preflight.outputs.job == 'all' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/build_history.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
           || echo "::warning::the rating history did not rebuild — trajectory deltas will be stale until it does"
 
       - name: Rebuild the Lab's derived signals
-        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'lab' || steps.pick.outputs.job == 'all' }}
+        if: ${{ needs.preflight.outputs.job == 'nightly' || needs.preflight.outputs.job == 'lab' || needs.preflight.outputs.job == 'all' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/build_lab.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
@@ -220,7 +260,7 @@ jobs:
       # step has no provider precondition and is expected to succeed on a
       # project that has never had an odds feed.
       - name: Generate the research brief
-        if: ${{ steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'brief' || steps.pick.outputs.job == 'all' }}
+        if: ${{ needs.preflight.outputs.job == 'nightly' || needs.preflight.outputs.job == 'brief' || needs.preflight.outputs.job == 'all' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/build_brief.js --all ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
@@ -229,27 +269,27 @@ jobs:
       # Results before prices: a match that finished should be settled before the
       # board is rebuilt, so a finished match does not reappear as researchable.
       - name: Take in results and recompute what they affect
-        if: ${{ steps.pick.outputs.job == 'board' || steps.pick.outputs.job == 'incremental' || steps.pick.outputs.job == 'all' }}
+        if: ${{ needs.preflight.outputs.job == 'board' || needs.preflight.outputs.job == 'incremental' || needs.preflight.outputs.job == 'all' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/incremental.js results ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
           || echo "::warning::the incremental results job failed; the cursor did not advance"
 
       - name: Settle the published record
-        if: ${{ steps.pick.outputs.job == 'board' || steps.pick.outputs.job == 'settle' || steps.pick.outputs.job == 'all' }}
+        if: ${{ needs.preflight.outputs.job == 'board' || needs.preflight.outputs.job == 'settle' || needs.preflight.outputs.job == 'all' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/settle_record.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
 
       - name: Price the research board
-        if: ${{ steps.pick.outputs.job == 'board' || steps.pick.outputs.job == 'all' }}
+        if: ${{ needs.preflight.outputs.job == 'board' || needs.preflight.outputs.job == 'all' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/price_board.js ${{ (github.event_name == 'schedule' || inputs.commit) && '--commit' || '' }}
 
       # ── WEEKLY ─────────────────────────────────────────────────────────────
       - name: Back-fill venue weather
-        if: ${{ steps.pick.outputs.job == 'weekly' || steps.pick.outputs.job == 'weather' }}
+        if: ${{ needs.preflight.outputs.job == 'weekly' || needs.preflight.outputs.job == 'weather' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: |
@@ -265,7 +305,7 @@ jobs:
       # without a calibration failure. This run only reports where the active one
       # stands, so a drift is seen before it is argued about.
       - name: Review the active model's calibration
-        if: ${{ steps.pick.outputs.job == 'weekly' || steps.pick.outputs.job == 'model' }}
+        if: ${{ needs.preflight.outputs.job == 'weekly' || needs.preflight.outputs.job == 'model' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: node tools/tennis/build_model.js
@@ -274,7 +314,7 @@ jobs:
       # Reads, never writes. A failed ingestion that nobody sees is the same as
       # no ingestion at all, so this is the job that makes a silent failure loud.
       - name: Report ingestion health
-        if: ${{ always() && (steps.pick.outputs.job == 'monitor' || steps.pick.outputs.job == 'all' || steps.pick.outputs.job == 'nightly' || steps.pick.outputs.job == 'board') }}
+        if: ${{ always() && (needs.preflight.outputs.job == 'monitor' || needs.preflight.outputs.job == 'all' || needs.preflight.outputs.job == 'nightly' || needs.preflight.outputs.job == 'board') }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
         run: |
@@ -289,7 +329,7 @@ jobs:
       - name: Say what this run did
         if: ${{ always() }}
         run: |
-          echo "job: ${{ steps.pick.outputs.job }}"
+          echo "job: ${{ needs.preflight.outputs.job }}"
           echo "writes: ${{ (github.event_name == 'schedule' || inputs.commit) && 'yes' || 'no (dry run)' }}"
           echo ""
           echo "The historical backfill is NOT on this schedule. It is a one-off"
