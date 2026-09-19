@@ -24,12 +24,56 @@ npm run tennis:model:build
 npm run tennis:board:build
 ```
 
+## When the archive arrives in numbered parts
+
+No single upload carries 120 MB, so the archive ships as fourteen `.csv.gz`
+parts with a manifest. **Verify before importing** — the importer will refuse
+otherwise, but it is worth looking first:
+
+```bash
+node tools/tennis/verify_parts.js --manifest 00_manifest.json --dir ./parts
+```
+
+It checks, by **checksum** rather than by name:
+
+- every part in the manifest has a file
+- its bytes match (a truncated gzip often still decompresses)
+- its row count matches, counted by decompressing it
+- all parts share one 108-column order
+- the parts' rows sum to the manifest's declared total
+
+Then import all of them as **one** dataset, with one reconciliation against the
+manifest:
+
+```bash
+npm run tennis:record:import -- --manifest 00_manifest.json --dir ./parts --chunk 20000 --fast
+```
+
+A duplicate upload of the same bytes is fine and is reported as such.
+
+### Why a missing part refuses the whole import
+
+This is the one failure the importer cannot detect afterwards. Importing
+thirteen of fourteen parts **succeeds**: every total reconciles against what was
+read, the run is marked `ok`, and the record is permanently missing a
+tour-decade with nothing downstream ever saying so. The manifest is the only
+thing that knows how much there should have been, so it is checked first and the
+import refuses on a gap — naming the exact file and its checksum.
+
+```
+  MISSING  part 11  11_EdgeDesk_Tennis_ATP_2021_2023.csv.gz
+           8,636 rows · 1,906,112 bytes
+           sha256 6a7a9dd4253fbf74863de95a8f51e8fefb086aee020a1d4985d338fde2da8909
+```
+
 ## Every flag
 
 | flag | what it does |
 |---|---|
 | `--file <path>` | `.csv`, `.csv.gz`, or `.zip` (with `--member`) |
 | `--member <path>` | the member inside a `.zip` |
+| `--manifest <path>` | a multi-part dataset's manifest (`.json` or `.csv`) |
+| `--dir <path>` | where the parts are; required with `--manifest` |
 | `--dry-run` | read, validate, reconcile, write **nothing** |
 | `--resume` | continue the last unfinished run **over the same bytes** |
 | `--tour ATP\|WTA` | one tour only (still reconciles over the whole file) |

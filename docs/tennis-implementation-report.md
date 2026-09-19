@@ -17,6 +17,7 @@ expandable tennis intelligence system.
 | `supabase/parts/tennis_record.part{1..8}-of-8.sql` | the same file, split for the dashboard editor |
 | `lib/tennis_model.js` | the shared engine: parsing, keys, features, model, price, rating, gates, metrics, fitter |
 | `tools/tennis/lib/csv.js` | streaming RFC-4180 CSV reader (zero dependencies) |
+| `tools/tennis/verify_parts.js` | verifies a multi-part upload against its manifest before anything is imported |
 | `tools/tennis/lib/pg.js` | the direct-connection database door, for bulk work only |
 | `tools/tennis/import_archive.js` | resumable, reconciling bulk importer |
 | `tools/tennis/build_features.js` | rolling serve/return/strength-of-schedule, leak-proof by window frame |
@@ -117,11 +118,46 @@ unchanged. **The historical backfill is on no schedule, deliberately.**
 
 ### The bundle as supplied
 
-The attached `EdgeDesk_Tennis_Claude_Dev_Bundle.zip` contains a **2,944-row
-development sample**, not the 361,571-row archive. `CLAUDE_IMPORT_INSTRUCTIONS.json`
-says so: *"Build and test against the sample; run the full historical import
-outside the agent context."* The full `EdgeDesk_Tennis_Dataset_ATP_WTA_1968_2026.zip`
-was not attached, so it has not been imported here.
+The first attachment (`EdgeDesk_Tennis_Claude_Dev_Bundle.zip`) contains a
+**2,944-row development sample**, not the archive — `CLAUDE_IMPORT_INSTRUCTIONS.json`
+says so directly.
+
+The archive was then supplied separately as **14 numbered `.csv.gz` parts** with
+a manifest. **13 arrived; part 11 did not.**
+
+| | |
+|---|---|
+| parts declared | 14 |
+| parts present and **checksum-verified** | **13** |
+| parts missing | **1 — `11_EdgeDesk_Tennis_ATP_2021_2023.csv.gz`** |
+| | 8,636 rows · 1,906,112 bytes |
+| | sha256 `6a7a9dd4253fbf74863de95a8f51e8fefb086aee020a1d4985d338fde2da8909` |
+| rows declared | 361,571 |
+| rows present | 352,935 |
+| column order | one shape, 108 columns, across all 13 |
+
+Seven parts were uploaded twice; identical bytes, so harmless, and reported as
+duplicates rather than as extra parts.
+
+**The archive has therefore not been imported.** The upload instructions said to
+*"stop and name the exact missing or invalid file rather than continuing with
+partial data"*, and that is the right instruction: importing 13 of 14 parts
+**succeeds** — every total reconciles against what was read, the run is marked
+`ok`, and the record is permanently short by 8,636 ATP matches from 2021–2023
+with nothing downstream ever saying so.
+
+So the rule is now **code rather than a thing I remembered**:
+
+- `tools/tennis/verify_parts.js` verifies a multi-part upload against its
+  manifest by checksum, decompressed row count and column order;
+- `import_archive.js --manifest <m> --dir <d>` verifies before reading a byte,
+  imports all parts as **one** run with **one** reconciliation against the
+  manifest's declared total, and refuses the whole import on any gap;
+- `import.test.js` proves the refusal, including that zero rows are written and
+  no run is even opened.
+
+Verified against the real upload: **0 rows written, 0 runs opened**, part 11
+named with its checksum.
 
 | | rows read | accepted | rejected | skipped | reconciled |
 |---|---:|---:|---:|---:|---|
@@ -310,11 +346,16 @@ Explicitly proven, as the brief required:
 
 ## 10. Remaining blockers
 
-1. **The full 361,571-row archive was not supplied.** The bundle contains the
-   2,944-row development sample and says the full import is run outside the
-   agent context. The importer is built and proven against the same 108-column
-   contract at 362,112-row cardinality; run `npm run tennis:record:import` with
-   the real file.
+1. **Part 11 of the archive is missing — `11_EdgeDesk_Tennis_ATP_2021_2023.csv.gz`**
+   (8,636 rows, sha256 `6a7a9dd4…`). 13 of 14 parts arrived and all 13 verify
+   exactly. Re-upload that one file and run:
+   ```bash
+   npm run tennis:record:verify -- --manifest 00_manifest.json --dir <dir>
+   npm run tennis:record:import -- --manifest 00_manifest.json --dir <dir> --chunk 20000 --fast
+   ```
+   Everything else is ready: the importer is proven against the development
+   sample, against a 362,112-row synthetic set at production cardinality, and
+   against the real parts' own 108-column shape.
 2. **No live tennis or odds provider credentials.** Complete per the brief:
    provider interfaces, adapters, fixtures and the historical dataset all work;
    `licensed_feed.js` is isolated and imported by nothing.

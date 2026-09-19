@@ -41,12 +41,28 @@
                      non-commercial; the database refuses any source it has
                      never heard of.
 
+     WHOLE OR NOT AT ALL
+                     A multi-part dataset is verified against its manifest
+                     BEFORE the first row is read, and a missing part refuses
+                     the whole import. This is the one failure this job cannot
+                     detect on its own afterwards: importing thirteen of
+                     fourteen parts SUCCEEDS, every total reconciles against
+                     what was read, and the record is permanently missing a
+                     tour-decade with nothing downstream ever saying so. The
+                     manifest is the only thing that knows how much there
+                     should have been, so it is checked first, by checksum.
+
    USAGE
 
      node tools/tennis/import_archive.js --file <csv|csv.gz|zip> [options]
 
        --file <path>          the archive. .csv, .csv.gz, or .zip with --member
        --member <path>        the member inside a .zip
+       --manifest <path>      a MULTI-PART dataset's manifest (.json or .csv).
+                              With --dir, every part is verified against it and
+                              then imported as ONE run. A missing or altered
+                              part REFUSES the import; see below.
+       --dir <path>           where the parts are
        --dry-run              read, validate, reconcile, write NOTHING
        --resume               continue the last unfinished run over these bytes
        --tour ATP|WTA         import one tour only
@@ -85,6 +101,8 @@ function parseArgs(argv) {
     const next = () => argv[++i];
     if (a === '--file') o.file = next();
     else if (a === '--member') o.member = next();
+    else if (a === '--manifest') o.manifest = next();
+    else if (a === '--dir') o.dir = next();
     else if (a === '--dry-run') o.dryRun = true;
     else if (a === '--resume') o.resume = true;
     else if (a === '--tour') o.tour = String(next() || '').toUpperCase();
@@ -419,7 +437,13 @@ async function main() {
 
   if (o.finalizeOnly) return finalize(db, o, null);
 
-  if (!o.file) { fail('--file is required'); return 1; }
+  /* ---- a MULTI-PART dataset ------------------------------------------- */
+  if (o.manifest) {
+    if (!o.dir) { fail('--manifest needs --dir, the directory the parts are in'); return 1; }
+    return importParts(db, o);
+  }
+
+  if (!o.file) { fail('--file is required (or --manifest with --dir for a multi-part dataset)'); return 1; }
   if (!fs.existsSync(o.file)) { fail('no such file: ' + o.file); return 1; }
 
   say(`file        : ${o.file}${o.member ? ' [' + o.member + ']' : ''}`);
@@ -499,6 +523,249 @@ async function main() {
   }
 
   /* ---- the read -------------------------------------------------------- */
+  const res = await runFileImport(db, o, runId, startChunk);
+  const totals = { read: res.read, accepted: res.accepted, rejected: res.rejected,
+                   skipped: res.skipped, issues: res.issues, chunks: res.chunks };
+  const elapsedSeconds = res.seconds || 0;
+  if (!res.ok) {
+    if (!o.dryRun && runId) {
+      db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(),
+                 error_summary=${PG.lit(String(res.error).slice(0, 900))} where run_id='${runId}'::uuid`);
+    }
+    fail('the import stopped: ' + res.error);
+    say('\nNothing is lost. Re-run with --resume to continue from the last committed chunk.');
+    return 1;
+  }
+
+  /* ---- reconciliation -------------------------------------------------- */
+  const accounted = totals.accepted + totals.rejected + totals.skipped;
+  const reconciled = accounted === totals.read;
+  say('');
+  say('  ── reconciliation ─────────────────────────────────────────');
+  say(`  source rows read       ${String(totals.read).padStart(10)}`);
+  say(`  accepted               ${String(totals.accepted).padStart(10)}`);
+  say(`  rejected (quarantined) ${String(totals.rejected).padStart(10)}`);
+  say(`  skipped by filter      ${String(totals.skipped).padStart(10)}`);
+  say(`  accounted for          ${String(accounted).padStart(10)}  ${reconciled ? 'RECONCILED' : 'MISMATCH'}`);
+  if (Object.keys(totals.issues).length) {
+    say('  data-quality issues seen:');
+    Object.keys(totals.issues).sort().forEach((k) => say(`    ${k.padEnd(24)} ${totals.issues[k]}`));
+  }
+
+  if (!reconciled) {
+    fail(`reconciliation failed: read ${totals.read}, accounted for ${accounted} (difference ${totals.read - accounted}). ` +
+         'The run is marked error and nothing further is derived from it.');
+    if (!o.dryRun && runId) {
+      db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(), reconciled=false,
+                 rows_read=${totals.read}, rows_inserted=${totals.accepted}, rows_rejected=${totals.rejected},
+                 error_summary='rows read and rows accounted for do not reconcile'
+               where run_id='${runId}'::uuid`);
+    }
+    return 1;
+  }
+
+  if (o.dryRun) {
+    say('\nDRY RUN — nothing was written. Re-run without --dry-run to import.');
+    return 0;
+  }
+
+  if (o.fast) {
+    say('indexes     : rebuilding the secondary indexes');
+    db.exec('select tennis.rebuild_backfill_indexes()');
+  }
+
+  /* the quality issues, recorded once per type rather than once per row */
+  Object.keys(totals.issues).forEach((type) => {
+    db.exec(`select tennis.record_quality_issue(${PG.lit(runId)}::uuid, ${PG.lit(o.sourceKey)},
+      ${PG.lit(type)}, 'warn', 'match', ${PG.lit('run:' + runId)}, null, null, null,
+      ${PG.lit(totals.issues[type] + ' row(s) in this import')}, null)`);
+  });
+
+  db.exec(`update tennis.ingestion_runs set
+             status='ok', finished_at=now(), reconciled=true,
+             rows_read=${totals.read}, rows_inserted=${totals.accepted},
+             rows_rejected=${totals.rejected},
+             details = coalesce(details,'{}'::jsonb) || ${PG.lit(JSON.stringify({
+               skipped: totals.skipped, chunks: totals.chunks, issues: totals.issues,
+               seconds: elapsedSeconds
+             }))}::jsonb
+           where run_id='${runId}'::uuid`);
+
+  return finalize(db, o, runId);
+}
+
+/* ───────────────────────────── multi-part ─────────────────────────────── */
+/* Verify every part against the manifest, then import them in manifest order as
+   ONE logical dataset — one reconciliation, against the manifest's declared
+   total rather than against whatever happened to be on disk. */
+async function importParts(db, o) {
+  const V = require('./verify_parts.js');
+  say('');
+  say('  ── verifying the parts before anything is read ─────────────');
+  const man = V.readManifest(o.manifest);
+  const byHash = await V.index(o.dir);
+
+  const resolved = [], missing = [], invalid = [];
+  for (const f of man.files) {
+    const hit = byHash.get(String(f.sha256).toLowerCase());
+    if (!hit) { missing.push(f); continue; }
+    const bytes = fs.statSync(hit[0]).size;
+    if (f.bytes && bytes !== f.bytes) { invalid.push({ f, why: 'byte size ' + bytes + ' ≠ ' + f.bytes }); continue; }
+    resolved.push({ f, path: hit[0], copies: hit.length });
+  }
+  say(`  parts declared   ${man.parts}`);
+  say(`  parts resolved   ${resolved.length}`);
+  say(`  rows declared    ${man.rows.toLocaleString()}`);
+
+  if (missing.length || invalid.length) {
+    fail(`the dataset is INCOMPLETE: ${missing.length} part(s) missing, ${invalid.length} invalid. Nothing was imported.`);
+    say('');
+    missing.forEach((f) => {
+      say(`  MISSING  part ${f.part}  ${f.file}`);
+      say(`           ${Number(f.rows).toLocaleString()} rows · ${Number(f.bytes).toLocaleString()} bytes`);
+      say(`           sha256 ${f.sha256}`);
+    });
+    invalid.forEach((x) => say(`  INVALID  part ${x.f.part}  ${x.f.file}  (${x.why})`));
+    say('');
+    say('  Importing the parts that ARE here would succeed and reconcile, and the record');
+    say('  would be permanently short by ' +
+        (man.rows - resolved.reduce((a, r) => a + Number(r.f.rows || 0), 0)).toLocaleString() +
+        ' matches with nothing downstream ever saying so.');
+    say('  Re-upload the part(s) named above and run this again.');
+    return 1;
+  }
+
+  /* One checksum over the whole dataset, so a resume can recognise it: the
+     sorted part checksums, hashed. Any part changing changes it. */
+  const datasetChecksum = crypto.createHash('sha256')
+    .update(man.files.map((f) => String(f.sha256).toLowerCase()).sort().join('\n')).digest('hex');
+  say(`  dataset checksum sha256 ${datasetChecksum}`);
+  say('  all parts present and intact.');
+
+  if (o.dryRun) {
+    say('');
+    say('  DRY RUN — the manifest verifies. Re-run without --dry-run to import all ' +
+        man.parts + ' parts as one dataset.');
+    return 0;
+  }
+
+  /* ONE run for the whole dataset, so the reconciliation is over the manifest
+     rather than over one file at a time. */
+  let runId = null, startPart = 0;
+  if (o.resume) {
+    const prev = db.rows(`select run_id, coalesce((details->>'last_part')::int, -1) as last_part,
+                                 rows_read from tennis.ingestion_runs
+                            where job = ${PG.lit(JOB)} and source_checksum = ${PG.lit(datasetChecksum)}
+                              and status in ('running','resumed')
+                            order by started_at desc limit 1`)[0];
+    if (prev) {
+      runId = prev.run_id;
+      startPart = Number(prev.last_part) + 1;
+      say(`  resuming run ${runId} from part ${startPart + 1} (${prev.rows_read} rows already read)`);
+      db.exec(`update tennis.ingestion_runs set status='resumed', updated_at=now() where run_id='${runId}'::uuid`);
+    }
+  }
+  if (!runId) {
+    runId = db.scalar(`insert into tennis.ingestion_runs
+        (job, source_key, source_version, source_checksum, source_file, build_version, scope, status, details)
+      values (${PG.lit(JOB)}, ${PG.lit(o.sourceKey)}, ${PG.lit(o.sourceVersion || null)},
+              ${PG.lit(datasetChecksum)}, ${PG.lit(path.basename(o.manifest))}, ${PG.lit(BUILD_VERSION)},
+              ${PG.lit(man.parts + ' parts / ' + man.rows + ' rows')}, 'running',
+              ${PG.lit(JSON.stringify({ parts: man.parts, declared_rows: man.rows, chunk_size: o.chunk }))}::jsonb)
+      returning run_id`).trim();
+    say(`  run ${runId}`);
+  }
+
+  if (o.fast) {
+    say('  indexes: dropping the expensive secondary indexes for the backfill');
+    db.exec('select tennis.drop_backfill_indexes()');
+  }
+
+  const grand = { read: 0, accepted: 0, rejected: 0, skipped: 0 };
+  const t0 = Date.now();
+  for (let i = 0; i < resolved.length; i++) {
+    const { f, path: file } = resolved[i];
+    if (i < startPart) { grand.read += Number(f.rows); grand.accepted += Number(f.rows); continue; }
+    say('');
+    say(`  ── part ${f.part}/${man.parts}  ${f.tour} ${f.years}  ${Number(f.rows).toLocaleString()} rows`);
+    const partOpts = Object.assign({}, o, { file, member: null, fast: false, limit: null });
+    /* the source contract, per part: a part that changed shape fails here rather
+       than becoming a column of nulls */
+    const hdr = await CSV.readHeader(file);
+    const miss = hdr ? M.REQUIRED_COLUMNS.filter((c) => hdr.indexOf(c) < 0) : M.REQUIRED_COLUMNS;
+    if (miss.length) {
+      fail(`part ${f.part} is missing required columns: ${miss.join(', ')}`);
+      db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(),
+                 error_summary=${PG.lit('part ' + f.part + ' changed shape')} where run_id='${runId}'::uuid`);
+      return 1;
+    }
+    if (f.columns && hdr.length !== Number(f.columns)) {
+      fail(`part ${f.part} holds ${hdr.length} columns, the manifest declares ${f.columns}`);
+      return 1;
+    }
+    const one = await runFileImport(db, partOpts, runId, 0);
+    if (!one.ok) {
+      db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(),
+                 error_summary=${PG.lit('part ' + f.part + ': ' + String(one.error).slice(0, 800))}
+               where run_id='${runId}'::uuid`);
+      fail(`part ${f.part} (${f.file}) failed: ${one.error}`);
+      say('  Nothing after it was imported. Re-run with --resume to continue from this part.');
+      return 1;
+    }
+    grand.read += one.read; grand.accepted += one.accepted;
+    grand.rejected += one.rejected; grand.skipped += one.skipped;
+    if (one.read !== Number(f.rows)) {
+      fail(`part ${f.part} holds ${one.read} rows, the manifest declares ${f.rows}. Stopping.`);
+      db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(), reconciled=false,
+                 error_summary='a part did not hold the row count its manifest declares'
+               where run_id='${runId}'::uuid`);
+      return 1;
+    }
+    db.exec(`update tennis.ingestion_runs set
+               details = coalesce(details,'{}'::jsonb) || jsonb_build_object('last_part', ${i}),
+               rows_read = ${grand.read}, rows_inserted = ${grand.accepted}, rows_rejected = ${grand.rejected},
+               updated_at = now() where run_id='${runId}'::uuid`);
+  }
+
+  const accounted = grand.accepted + grand.rejected + grand.skipped;
+  say('');
+  say('  ── reconciliation, over the whole dataset ─────────────────');
+  say(`  manifest declares      ${String(man.rows).padStart(10)}`);
+  say(`  source rows read       ${String(grand.read).padStart(10)}`);
+  say(`  accepted               ${String(grand.accepted).padStart(10)}`);
+  say(`  rejected (quarantined) ${String(grand.rejected).padStart(10)}`);
+  say(`  skipped by filter      ${String(grand.skipped).padStart(10)}`);
+  say(`  accounted for          ${String(accounted).padStart(10)}  ${accounted === grand.read ? 'RECONCILED' : 'MISMATCH'}`);
+  const matchesManifest = grand.read === man.rows;
+  say(`  matches the manifest   ${String(matchesManifest ? 'yes' : 'NO').padStart(10)}`);
+
+  if (accounted !== grand.read || !matchesManifest) {
+    db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(), reconciled=false,
+               rows_read=${grand.read}, rows_inserted=${grand.accepted}, rows_rejected=${grand.rejected},
+               error_summary='the dataset did not reconcile against its manifest'
+             where run_id='${runId}'::uuid`);
+    fail('the dataset did not reconcile against its manifest. Nothing is derived from this run.');
+    return 1;
+  }
+
+  if (o.fast) { say('  indexes: rebuilding'); db.exec('select tennis.rebuild_backfill_indexes()'); }
+  db.exec(`update tennis.ingestion_runs set status='ok', finished_at=now(), reconciled=true,
+             rows_read=${grand.read}, rows_inserted=${grand.accepted}, rows_rejected=${grand.rejected},
+             details = coalesce(details,'{}'::jsonb) ||
+               ${PG.lit(JSON.stringify({ skipped: grand.skipped, seconds: Math.round((Date.now() - t0) / 1000) }))}::jsonb
+           where run_id='${runId}'::uuid`);
+  return finalize(db, o, runId);
+}
+
+/* THE READ LOOP, extracted so the single-file path and the multi-part path run
+   the SAME code. A second copy of this is how a multi-part import ends up
+   quarantining differently from a single-file one, and nobody notices until a
+   count disagrees months later.
+
+   It reads one file into an EXISTING run, and returns what it accounted for.
+   The caller owns the run, the reconciliation and the exit code. */
+async function runFileImport(db, o, runId, startChunk) {
+  startChunk = startChunk || 0;
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'edgd-tennis-import-'));
   const seasonFilter = parseSeason(o.season);
   const totals = { read: 0, accepted: 0, rejected: 0, skipped: 0, chunks: 0, committed: 0, issues: {} };
@@ -596,73 +863,17 @@ async function main() {
     }
     await flush();
   } catch (e) {
-    if (!o.dryRun && runId) {
-      db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(),
-                 error_summary=${PG.lit(String(e.message).slice(0, 900))} where run_id='${runId}'::uuid`);
-    }
-    fail('the import stopped: ' + e.message);
-    say('\nNothing is lost. Re-run with --resume to continue from the last committed chunk.');
-    return 1;
+    return { ok: false, error: e.message, read: totals.read, accepted: totals.accepted,
+             rejected: totals.rejected, skipped: totals.skipped, issues: totals.issues,
+             chunks: totals.chunks };
   } finally {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
   }
-
-  /* ---- reconciliation -------------------------------------------------- */
-  const accounted = totals.accepted + totals.rejected + totals.skipped;
-  const reconciled = accounted === totals.read;
-  say('');
-  say('  ── reconciliation ─────────────────────────────────────────');
-  say(`  source rows read       ${String(totals.read).padStart(10)}`);
-  say(`  accepted               ${String(totals.accepted).padStart(10)}`);
-  say(`  rejected (quarantined) ${String(totals.rejected).padStart(10)}`);
-  say(`  skipped by filter      ${String(totals.skipped).padStart(10)}`);
-  say(`  accounted for          ${String(accounted).padStart(10)}  ${reconciled ? 'RECONCILED' : 'MISMATCH'}`);
-  if (Object.keys(totals.issues).length) {
-    say('  data-quality issues seen:');
-    Object.keys(totals.issues).sort().forEach((k) => say(`    ${k.padEnd(24)} ${totals.issues[k]}`));
-  }
-
-  if (!reconciled) {
-    fail(`reconciliation failed: read ${totals.read}, accounted for ${accounted} (difference ${totals.read - accounted}). ` +
-         'The run is marked error and nothing further is derived from it.');
-    if (!o.dryRun && runId) {
-      db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(), reconciled=false,
-                 rows_read=${totals.read}, rows_inserted=${totals.accepted}, rows_rejected=${totals.rejected},
-                 error_summary='rows read and rows accounted for do not reconcile'
-               where run_id='${runId}'::uuid`);
-    }
-    return 1;
-  }
-
-  if (o.dryRun) {
-    say('\nDRY RUN — nothing was written. Re-run without --dry-run to import.');
-    return 0;
-  }
-
-  if (o.fast) {
-    say('indexes     : rebuilding the secondary indexes');
-    db.exec('select tennis.rebuild_backfill_indexes()');
-  }
-
-  /* the quality issues, recorded once per type rather than once per row */
-  Object.keys(totals.issues).forEach((type) => {
-    db.exec(`select tennis.record_quality_issue(${PG.lit(runId)}::uuid, ${PG.lit(o.sourceKey)},
-      ${PG.lit(type)}, 'warn', 'match', ${PG.lit('run:' + runId)}, null, null, null,
-      ${PG.lit(totals.issues[type] + ' row(s) in this import')}, null)`);
-  });
-
-  db.exec(`update tennis.ingestion_runs set
-             status='ok', finished_at=now(), reconciled=true,
-             rows_read=${totals.read}, rows_inserted=${totals.accepted},
-             rows_rejected=${totals.rejected},
-             details = coalesce(details,'{}'::jsonb) || ${PG.lit(JSON.stringify({
-               skipped: totals.skipped, chunks: totals.chunks, issues: totals.issues,
-               seconds: Math.round((Date.now() - t0) / 1000)
-             }))}::jsonb
-           where run_id='${runId}'::uuid`);
-
-  return finalize(db, o, runId);
+  return { ok: true, read: totals.read, accepted: totals.accepted, rejected: totals.rejected,
+           skipped: totals.skipped, issues: totals.issues, chunks: totals.chunks,
+           seconds: Math.round((Date.now() - t0) / 1000) };
 }
+
 
 function newBuffer() {
   return { count: 0, accepted: 0, rejected: 0, firstRow: null, lastRow: null,
@@ -753,4 +964,4 @@ function finalize(db, o, runId) {
 if (require.main === module) {
   main().then((c) => process.exit(c)).catch((e) => { fail(String(e && e.stack || e)); process.exit(1); });
 }
-module.exports = { parseArgs, parseSeason, STG_COLUMNS, MATCH_COLS, FEATURE_COLS, PLAYER_COLS, pgArray, buildChunkScript };
+module.exports = { parseArgs, parseSeason, runFileImport, importParts, STG_COLUMNS, MATCH_COLS, FEATURE_COLS, PLAYER_COLS, pgArray, buildChunkScript };

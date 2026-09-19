@@ -54,6 +54,18 @@ npm run tennis:record:import -- --file EdgeDesk_Tennis_Dataset.zip \
 
 A plain `.csv` or `.csv.gz` works too — pass it to `--file` and drop `--member`.
 
+**If the archive arrived as numbered parts**, verify and import the whole set:
+
+```bash
+node tools/tennis/verify_parts.js --manifest 00_manifest.json --dir ./parts
+npm run tennis:record:import -- --manifest 00_manifest.json --dir ./parts --chunk 20000 --fast
+```
+
+The importer verifies every part by checksum before reading a byte and
+**refuses the whole import if one is missing** — naming the exact file. A
+partial import would otherwise succeed, reconcile, and leave the record
+permanently short with nothing downstream ever saying so.
+
 ### What to check when it finishes
 
 ```

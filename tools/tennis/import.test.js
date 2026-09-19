@@ -18,6 +18,13 @@
                       breaking the reconciliation over the FILE
      DRY RUN          writes nothing at all
 
+     MULTI-PART       a dataset that arrives in numbered parts is verified
+                      against its manifest by CHECKSUM before anything is read,
+                      and a missing or altered part refuses the whole import.
+                      This is the one failure the importer cannot catch
+                      afterwards: 13 of 14 parts imports cleanly, reconciles,
+                      and leaves the record permanently short.
+
    Run: node tools/tennis/import.test.js
    =========================================================================== */
 'use strict';
@@ -278,7 +285,123 @@ try {
   eq('a file missing required columns fails', r.status, 1);
   chk('and names the missing columns', /missing required columns/.test(r.stderr + r.stdout));
 
-  /* ── 10. NO CONTRACT, NO IMPORT ─────────────────────────────────────── */
+  /* ── 10. A MULTI-PART DATASET IS WHOLE OR IT IS NOTHING ─────────────── */
+  /* This is the failure the manifest exists to catch, and the one the importer
+     cannot catch on its own: importing 2 of 3 parts SUCCEEDS, every total
+     reconciles against what was read, and the record is permanently short with
+     nothing downstream ever saying so. */
+  const V = require('./verify_parts.js');
+  const partDir = path.join(tmp, 'parts');
+  fs.mkdirSync(partDir, { recursive: true });
+  const partRows = [
+    [row({ tourney_id: 'P1', match_num: '1', winner_id: '9001', winner_name: 'PA', loser_id: '9002', loser_name: 'PB', match_uid: 'p1a' }),
+     row({ tourney_id: 'P1', match_num: '2', winner_id: '9002', winner_name: 'PB', loser_id: '9003', loser_name: 'PC', match_uid: 'p1b' })],
+    [row({ tourney_id: 'P2', match_num: '1', winner_id: '9004', winner_name: 'PD', loser_id: '9005', loser_name: 'PE', match_uid: 'p2a' })],
+    [row({ tourney_id: 'P3', match_num: '1', tour: 'WTA', winner_id: '9006', winner_name: 'PF', loser_id: '9007', loser_name: 'PG', match_uid: 'p3a' })]
+  ];
+  const zlib = require('zlib');
+  const crypto2 = require('crypto');
+  const manFiles = [];
+  partRows.forEach((rows, i) => {
+    const name = `0${i + 1}_part.csv.gz`;
+    const buf = zlib.gzipSync(Buffer.from(HEADER.join(',') + '\n' + rows.join('\n') + '\n'));
+    fs.writeFileSync(path.join(partDir, name), buf);
+    manFiles.push({ part: i + 1, file: name, tour: i === 2 ? 'WTA' : 'ATP', years: '2024-2024',
+      rows: rows.length, columns: HEADER.length, bytes: buf.length,
+      sha256: crypto2.createHash('sha256').update(buf).digest('hex') });
+  });
+  const manPath = path.join(tmp, 'manifest.json');
+  const totalRows = manFiles.reduce((a, f) => a + f.rows, 0);
+  fs.writeFileSync(manPath, JSON.stringify({ parts: 3, rows: totalRows, files: manFiles }, null, 1));
+
+  /* the verifier, on a complete set */
+  let vr = cp.spawnSync('node', [path.join(ROOT, 'tools', 'tennis', 'verify_parts.js'),
+    '--manifest', manPath, '--dir', partDir, '--json'], { encoding: 'utf8', cwd: ROOT });
+  eq('the verifier passes a complete set', vr.status, 0);
+  let vj = JSON.parse(vr.stdout);
+  eq('and marks it verified', vj.verified, true);
+  eq('with every part present', vj.present, 3);
+  eq('and the rows reconciling to the manifest', vj.counted_rows, totalRows);
+  eq('and one column order across all parts', vj.schema_consistent, true);
+
+  /* a duplicate upload of the same bytes is harmless and is SAID to be */
+  fs.copyFileSync(path.join(partDir, '01_part.csv.gz'), path.join(partDir, 'copy-of-01_part.csv.gz'));
+  vr = cp.spawnSync('node', [path.join(ROOT, 'tools', 'tennis', 'verify_parts.js'),
+    '--manifest', manPath, '--dir', partDir, '--json'], { encoding: 'utf8', cwd: ROOT });
+  vj = JSON.parse(vr.stdout);
+  eq('a duplicate upload still verifies', vj.verified, true);
+  chk('and is reported as a duplicate rather than as an extra part', vj.duplicates.length === 1);
+  eq('and is not counted twice', vj.counted_rows, totalRows);
+  fs.unlinkSync(path.join(partDir, 'copy-of-01_part.csv.gz'));
+
+  /* THE IMPORT: complete set lands as ONE run */
+  psql(conn, ['-d', DB, '-q', '-c',
+    "delete from tennis.player_match_features; delete from tennis.matches; delete from tennis.rankings_current; " +
+    "delete from tennis.weather_observations; delete from tennis.players; delete from tennis.venues; " +
+    "delete from tennis.tournaments where provider='archive'; delete from tennis.stg_archive_matches; " +
+    "delete from tennis.data_quality_issues; delete from tennis.ingestion_runs"]);
+  r = runImport(['--manifest', manPath, '--dir', partDir]);
+  eq('a complete multi-part dataset imports', r.status, 0);
+  chk('and reconciles against the MANIFEST, not just against what it read',
+      /matches the manifest\s+yes/.test(r.stdout), r.stdout.slice(-900));
+  eq('every part\'s rows land', n('select count(*) from tennis.matches'), totalRows);
+  eq('as ONE ingestion run, not three', n("select count(*) from tennis.ingestion_runs where job='archive_import'"), 1);
+  eq('and that run is reconciled', q("select reconciled::text from tennis.ingestion_runs limit 1"), 'true');
+  eq('both tours landed', n('select count(distinct tour) from tennis.matches'), 2);
+
+  /* re-importing the whole dataset is still idempotent */
+  const mpBefore = n('select count(*) from tennis.matches');
+  r = runImport(['--manifest', manPath, '--dir', partDir]);
+  eq('a second multi-part import exits 0', r.status, 0);
+  eq('and creates no duplicates', n('select count(*) from tennis.matches'), mpBefore);
+
+  /* ── AND NOW THE ONE THAT MATTERS ──────────────────────────────────── */
+  const hidden = path.join(tmp, 'hidden-02.csv.gz');
+  fs.renameSync(path.join(partDir, '02_part.csv.gz'), hidden);
+  vr = cp.spawnSync('node', [path.join(ROOT, 'tools', 'tennis', 'verify_parts.js'),
+    '--manifest', manPath, '--dir', partDir], { encoding: 'utf8', cwd: ROOT });
+  eq('the verifier FAILS when a part is missing', vr.status, 1);
+  chk('and names the exact file', /02_part\.csv\.gz/.test(vr.stdout), vr.stdout.slice(-400));
+  chk('and its checksum, so the right file can be found',
+      vr.stdout.indexOf(manFiles[1].sha256) >= 0);
+  chk('and says why a partial import would be worse than a failed one',
+      /permanently missing/.test(vr.stdout));
+
+  const beforeRefusal = n('select count(*) from tennis.matches');
+  const runsBeforeRefusal = n('select count(*) from tennis.ingestion_runs');
+  r = runImport(['--manifest', manPath, '--dir', partDir]);
+  eq('THE IMPORTER REFUSES a partial dataset', r.status, 1);
+  chk('and names the missing part rather than a count', /02_part\.csv\.gz/.test(r.stdout + r.stderr));
+  chk('and says nothing was imported', /Nothing was imported/.test(r.stdout + r.stderr));
+  eq('not one row was written', n('select count(*) from tennis.matches'), beforeRefusal);
+  eq('and no run was even opened', n('select count(*) from tennis.ingestion_runs'), runsBeforeRefusal);
+
+  /* a part that is PRESENT but altered is a different, louder failure */
+  fs.renameSync(hidden, path.join(partDir, '02_part.csv.gz'));
+  const good02 = fs.readFileSync(path.join(partDir, '02_part.csv.gz'));
+  fs.writeFileSync(path.join(partDir, '02_part.csv.gz'),
+    zlib.gzipSync(Buffer.from(HEADER.join(',') + '\n' +
+      row({ tourney_id: 'P2', match_num: '1', winner_id: '9004', winner_name: 'PD',
+            loser_id: '9005', loser_name: 'PE', match_uid: 'p2a' }) + '\n' +
+      row({ tourney_id: 'P2', match_num: '2', winner_id: '9004', winner_name: 'PD',
+            loser_id: '9008', loser_name: 'PH', match_uid: 'p2b' }) + '\n')));
+  vr = cp.spawnSync('node', [path.join(ROOT, 'tools', 'tennis', 'verify_parts.js'),
+    '--manifest', manPath, '--dir', partDir], { encoding: 'utf8', cwd: ROOT });
+  eq('an ALTERED part fails verification too', vr.status, 1);
+  chk('and is reported as corrupt rather than missing',
+      /CORRUPT|does not match the manifest/.test(vr.stdout), vr.stdout.slice(-500));
+  r = runImport(['--manifest', manPath, '--dir', partDir]);
+  eq('and the importer refuses it', r.status, 1);
+  fs.writeFileSync(path.join(partDir, '02_part.csv.gz'), good02);
+
+  /* a dry run over a complete set verifies and writes nothing */
+  const dryBefore = n('select count(*) from tennis.ingestion_runs');
+  r = runImport(['--manifest', manPath, '--dir', partDir, '--dry-run']);
+  eq('a multi-part dry run exits 0', r.status, 0);
+  chk('and says the manifest verifies', /all parts present and intact/.test(r.stdout));
+  eq('and opens no run', n('select count(*) from tennis.ingestion_runs'), dryBefore);
+
+  /* ── 11. NO CONTRACT, NO IMPORT ─────────────────────────────────────── */
   const DB2 = DB + '_bare';
   psql(conn, ['-d', 'postgres', '-q', '-c', 'drop database if exists ' + DB2 + ' (force)']);
   psql(conn, ['-d', 'postgres', '-q', '-c', 'create database ' + DB2]);

@@ -140,6 +140,16 @@ recomputing a player's history by hand in JavaScript and failing on any
 disagreement — then proving a *future* match cannot change an earlier feature
 row, and that a correction propagates forward and only forward.
 
+### A multi-part dataset is whole or it is nothing
+
+The archive ships as fourteen compressed parts. Importing thirteen of them
+**succeeds**: every total reconciles against what was read, the run is marked
+`ok`, and the record is permanently missing a tour-decade with nothing
+downstream ever saying so. The manifest is the only thing that knows how much
+there should have been, so `tools/tennis/verify_parts.js` checks it first — by
+checksum, by decompressed row count, and by column order — and the importer
+refuses on any gap, naming the exact file.
+
 ### A published claim is immutable, including to its own writer
 
 `tennis.freeze_prediction()`, `tennis.freeze_model_version()` and
