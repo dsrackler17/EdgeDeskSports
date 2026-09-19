@@ -94,6 +94,49 @@ const OK_BOARD = signals(40, 144);
         const d = detailOf(await D.doctor(OPTS), 'the board is being captured');
         return /americanfootball_ncaaf/.test(d) && /spreads/.test(d) && /kicks off 20\d\d-/.test(d);
       })());
+    /* THE CADENCE FLOOR. capture/index.ts is explicit that a cadence looser
+       than the rung it feeds "IS NOT A BUG": the near tier runs every ten
+       minutes, the rung inside half an hour of kickoff is five, and a
+       ten-minute-old price in that window is the system working. Grading it
+       against the rung alone turned every evening with a game about to start
+       red — run 32 of Intelligence doctor is the receipt, and its fix text
+       told the operator to go and apply a scheduler that was running
+       correctly at that very moment. */
+    eq('production run 32 exactly: 10 minutes old, kickoff in 0.2 hours, is AGING and not STALE',
+      await board(signals(10, 0.2)), 'AGING');
+    eq('a price inside its rung is still CURRENT, not merely aging',
+      await board(signals(3, 0.2)), 'CURRENT');
+    eq('past the cadence it is STALE again — 20 minutes cannot come from a 10-minute tier',
+      await board(signals(20, 0.2)), 'STALE');
+    /* The allowance only ever opens where a cadence is LOOSER than the rung it
+       feeds. The day tier runs every 30 minutes against rungs of 90 and 180,
+       so it is always inside them and AGING can never apply to it — an hour-old
+       day-tier board is simply current. The board tier is the other place the
+       gap is real: 240 minutes against a 180-minute rung at three days out. */
+    eq('the day tier is tighter than every rung it feeds, so an hour old is just CURRENT',
+      await board(signals(60, 20)), 'CURRENT');
+    eq('the 240-minute board tier past its 180-minute rung is AGING',
+      await board(signals(200, 60)), 'AGING');
+    eq('and past the board cadence itself it is STALE',
+      await board(signals(300, 60)), 'STALE');
+    chk('an AGING board does not make the run actionable',
+      await (async () => {
+        net([...base, signals(10, 0.2)]);
+        return (await D.doctor(OPTS)).verdict !== 'ACTION NEEDED';
+      })());
+    chk('and it says the scheduler is keeping cadence rather than accusing it',
+      await (async () => {
+        net([...base, signals(10, 0.2)]);
+        const c = (await D.doctor(OPTS)).checks.find((x) => x.name === 'the board is being captured');
+        return c.fix === null && /cannot serve this rung/.test(c.detail) && /Not a fault/.test(c.detail);
+      })());
+    chk('a genuinely stale board still names the cadence it fell behind',
+      await (async () => {
+        net([...base, signals(2345, 60)]);
+        const c = (await D.doctor(OPTS)).checks.find((x) => x.name === 'the board is being captured');
+        return /beyond the 240-minute cadence/.test(c.fix || '');
+      })());
+
     eq('a board with no upcoming game on it at all is EMPTY',
       await board(['/rest/v1/signals', { status: 200, body: '[]' }]), 'EMPTY');
 
