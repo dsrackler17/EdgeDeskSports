@@ -1,4 +1,4 @@
--- tennis_record -- part 1 of 8.
+-- tennis_record -- part 1 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 

@@ -1,4 +1,4 @@
--- tennis_record -- part 3 of 8.
+-- tennis_record -- part 3 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
@@ -90,7 +90,10 @@ create table if not exists tennis.matches (
   constraint tennis_matches_sides_differ check (winner_id is null or loser_id is null or winner_id <> loser_id),
   constraint tennis_matches_quality_shape check (quality_score is null or (quality_score between 0 and 1)),
   -- THE IDEMPOTENT KEY. A second import of the same source updates this row.
-  constraint tennis_matches_slot_unique unique (source_key, tour, source_tourney_id, match_num),
+  -- The slot-unique constraint that used to live here has moved below, to a
+  -- unique INDEX. It has to: it now includes the UNORDERED player pair, and an
+  -- expression cannot appear in a table constraint. See the index for why.
+
   constraint tennis_matches_source_fk
     foreign key (source_key) references tennis.source_licenses (source_key) on delete restrict
 );
@@ -102,6 +105,31 @@ create index if not exists tennis_matches_loser_date_idx    on tennis.matches (l
 create index if not exists tennis_matches_surface_date_idx  on tennis.matches (surface, match_date desc);
 create index if not exists tennis_matches_season_idx        on tennis.matches (tour, season desc, match_date desc);
 create index if not exists tennis_matches_uid_idx           on tennis.matches (source_match_uid);
+
+-- IDENTITY: THE DRAW SLOT **AND WHO PLAYED IN IT**, never the result.
+--
+-- This was (source_key, tour, source_tourney_id, match_num) alone, and that is
+-- not unique in the real archive. Five WTA events restart match_num inside what
+-- the source calls one tourney_id — combined draws and satellite series like
+-- 1973-W-SL-USA-01A-1973 — giving 16 slots that each hold two DIFFERENT
+-- matches. Under the old key the second silently replaced the first: 16 real
+-- matches vanished while every import total still reconciled, because they had
+-- been read and accepted. They simply never became rows.
+--
+-- least()/greatest() make the pair UNORDERED, which is what preserves the
+-- original property this key exists for: a CORRECTED result swaps winner and
+-- loser, the pair is unchanged, and the correction updates the match it
+-- corrects instead of creating a second one. Two genuinely different matches in
+-- one slot now get two rows, which is what the source actually says.
+-- NULLS NOT DISTINCT, because the default would weaken the guarantee exactly
+-- where it is needed most: with both players unknown, every row's index entry
+-- would be distinct from every other and a slot could be filled any number of
+-- times. Two rows in the same slot with no players identified are the same
+-- match as far as anything can tell, and are deduped as one.
+create unique index if not exists tennis_matches_slot_unique_idx
+  on tennis.matches (source_key, tour, source_tourney_id, match_num,
+                     least(winner_id, loser_id), greatest(winner_id, loser_id))
+  nulls not distinct;
 drop trigger if exists tennis_matches_touch on tennis.matches;
 create trigger tennis_matches_touch before update on tennis.matches
   for each row execute function tennis.touch_updated_at();
@@ -282,32 +310,3 @@ create table if not exists tennis.rankings_current (
     foreign key (source_key) references tennis.source_licenses (source_key) on delete restrict
 );
 create index if not exists tennis_rankings_tour_rank_idx on tennis.rankings_current (tour, rank asc nulls last);
-drop trigger if exists tennis_rankings_touch on tennis.rankings_current;
-create trigger tennis_rankings_touch before update on tennis.rankings_current
-  for each row execute function tennis.touch_updated_at();
-
--- ---------------------------------------------------------------------------
--- THE RECORD VIEWS. These are the contract app.html:12874-12877 and
--- tools/tennis/build_baselines.js:148-151 have always called. They are counts
--- over tennis.matches and nothing else — no model, no projection — which is
--- what lets the Tennis panel keep saying every figure on it is a published
--- fact or a count over published facts.
---
--- security_invoker = true: the caller's own RLS decides what they see, so a
--- view can never become a way around a policy.
--- ---------------------------------------------------------------------------
-create or replace view tennis.player_match_rows
-with (security_invoker = true) as
-  select m.match_id, m.tour, m.match_date, m.season, m.surface, m.surface_group,
-         m.level, m.round, m.tourney_name, m.tournament_id, m.best_of, m.minutes,
-         m.score, m.retirement, m.walkover,
-         m.winner_id as player_id, m.loser_id as opponent_id, true as won
-    from tennis.matches m
-   where m.winner_id is not null
-  union all
-  select m.match_id, m.tour, m.match_date, m.season, m.surface, m.surface_group,
-         m.level, m.round, m.tourney_name, m.tournament_id, m.best_of, m.minutes,
-         m.score, m.retirement, m.walkover,
-         m.loser_id as player_id, m.winner_id as opponent_id, false as won
-    from tennis.matches m
-   where m.loser_id is not null;

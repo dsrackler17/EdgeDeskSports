@@ -16,8 +16,16 @@ const ROOT = path.join(__dirname, '..', '..');
 const SPLITTER = path.join(ROOT, 'tools', 'sql', 'split_sql.js');
 const PARTS = path.join(ROOT, 'supabase', 'parts');
 const LIMIT = 18000;
+// tennis_record joined this list late, and the gap is why it is here. Its parts
+// were checked in and then never checked again: supabase/parts carried a split
+// of an OLDER contract, ~1.7 KB short of the file beside it, and because the
+// name was missing from this array nothing said so. The Supabase SQL editor is
+// where those parts get pasted, so a stale split is not a cosmetic drift — it
+// is a production database built from a contract the repository had already
+// moved past, which is the state the tennis schema was actually found in.
 const SOURCES = ['mlb_pitcher_history', 'mlb_offense_history', 'college_baseball',
-                 'fix_promote_deletes_mlb', 'fix_promote_deletes_cbb'];
+                 'fix_promote_deletes_mlb', 'fix_promote_deletes_cbb',
+                 'tennis_record'];
 
 let pass = 0;
 const failures = [];
