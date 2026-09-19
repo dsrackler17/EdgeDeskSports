@@ -432,7 +432,20 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk(F, 'a board is built', !!r.j.board && r.j.board.schema === 'edgedesk_board_v1');
     chk(F, 'it reads every supported sport in season, not one', r.j.board.scope.sports.length >= 4 && r.j.board.scope.sports.indexOf('americanfootball_nfl') >= 0 && r.j.board.scope.sports.indexOf('americanfootball_ncaaf') >= 0, r.j.board.scope.sports);
     chk(F, 'the reader’s time zone resolves "today" (midnight Chicago is 05:00Z)', r.j.board.scope.timezone.zone === 'America/Chicago' && /T05:00:00/.test(r.j.board.scope.window.to), r.j.board.scope.window);
-    chk(F, 'games six days out are outside "today" and none is forced', r.j.board.eligibility.counts.outside_window >= 10 && r.j.board.opportunities.length === 0, r.j.board.eligibility.counts);
+    /* ── ANOTHER COUNT THIS TEST DOES NOT CONTROL ─────────────────────────
+       This asserted counts.outside_window >= 10 and rotted for exactly the
+       reason the started count below rotted. The card is the REAL committed
+       artifact, so how many of its games fall outside "today" is whatever the
+       calendar says: on 19 September 2026 six of them kicked off that very
+       day, the count was 8, and the board had read the window perfectly
+       correctly. Tomorrow it would be a different number again.
+
+       What this test does control is the two games the FIXTURE ITSELF places
+       six days out — the North Texas card and the Lions at Buffalo. Those are
+       outside "today" whenever the suite runs, and an empty card must never be
+       filled. That is the claim the name makes, so that is what is asserted. */
+    const sixOut = ['North Texas @ Texas State', 'Detroit Lions @ Buffalo Bills'];
+    chk(F, 'games six days out are outside "today" and none is forced', sixOut.every((mu) => r.j.board.eligibility.dropped.some((d) => d.matchup === mu && d.why === 'AFTER_WINDOW')) && r.j.board.opportunities.length === 0, { dropped: r.j.board.eligibility.dropped.map((d) => d.why + ':' + d.matchup), opportunities: r.j.board.opportunities.length });
     chk(F, 'coverage says which sports had games, which had none, which are out of season', r.j.board.coverage.some((c) => c.status === 'NO_ELIGIBLE_GAMES') && r.j.board.coverage.some((c) => c.status === 'NO_GAMES') && r.j.board.coverage.some((c) => c.status === 'OUT_OF_SEASON'), r.j.board.coverage.map((c) => c.sport + ':' + c.status));
     /* The board has two findings for an empty card and both are the finding:
        "no eligible games" when the window is empty, "nothing qualifies" when

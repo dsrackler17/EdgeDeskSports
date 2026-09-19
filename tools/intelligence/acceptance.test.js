@@ -185,6 +185,17 @@ const MLB_PACKET = {
      1. THE REPORTED CONVERSATION, EXACTLY AS IT WAS ASKED.
      ===================================================================== */
   const TXST = { game_id: '401858900', away_id: 'northtexas', home_id: 'texasstate' };
+  /* A SCHOOL THE PUBLISHED CARD CARRIES EXACTLY ONCE, read off the card for
+     the reason section 3 sets out: a school named here by hand goes red the
+     week its game drops off the front of the artifact, on a resolver that is
+     working perfectly. Exactly once, because a program the window holds twice
+     is deliberately left unresolved — that contract is asserted separately. */
+  function soleSchool(games) {
+    const seen = {};
+    games.forEach((g) => { seen[g.home_team] = (seen[g.home_team] || 0) + 1; seen[g.away_team] = (seen[g.away_team] || 0) + 1; });
+    for (const g of games) { for (const t of [g.home_team, g.away_team]) { if (seen[t] === 1) return t; } }
+    return null;
+  }
   {
     const ask = conversation({ packet: MLB_PACKET });
 
@@ -236,14 +247,27 @@ const MLB_PACKET = {
     chk('and no identity row claims one either',
       !(j.identity || []).some((i) => /^anything$/i.test(String(i.query || ''))), j.identity);
 
-    /* THE TOPIC SWITCH. A different game, named explicitly. */
-    const sw = await ask('What about Miami vs Wake Forest?');
-    assertsFor('topic switch', sw, { game_id: '401858226', away_id: 'miami', home_id: 'wakeforest' });
+    /* THE TOPIC SWITCH. A different game, named explicitly.
+
+       WHICH game is read off the card, not copied out of it, for the reason
+       section 3 sets out at length: the published artifact moves, and a game
+       named here by hand goes red the week it drops off the front — on a
+       resolver that is working perfectly. The claim is that an explicit
+       second matchup takes over the conversation, whichever one the card
+       happens to carry. */
+    const other = fx.slate.games.find((g) => String(g.game_id) !== TXST.game_id);
+    const sw = await ask(`What about ${other.away_team} vs ${other.home_team}?`);
+    assertsFor('topic switch', sw, { game_id: String(other.game_id), away_id: other.away_team_id, home_id: other.home_team_id });
     chk('the previous subject does not survive an explicit topic change',
       !/Texas State/.test(JSON.stringify(sw.decisions || [])), sw.decisions);
-    chk('and the two Miamis are not confused — Miami (OH) is on this same card',
-      (sw.research_context || {}).home_id !== 'miamioh'
-      && (sw.research_context || {}).away_id !== 'miamioh', sw.research_context);
+    /* The two Miamis are never confused: the switch lands on Miami (OH) only
+       when the card's own game IS Miami (OH). Vacuous on a card that carries
+       neither, which is why the same claim is asserted against the WHOLE
+       published artifact in section 6, where it cannot go vacuous. */
+    const isMiamiOh = (id) => id === 'miamioh';
+    chk('and the two Miamis are not confused',
+      isMiamiOh((sw.research_context || {}).home_id) === isMiamiOh(other.home_team_id)
+      && isMiamiOh((sw.research_context || {}).away_id) === isMiamiOh(other.away_team_id), sw.research_context);
   }
 
   /* =====================================================================
@@ -328,7 +352,8 @@ const MLB_PACKET = {
        LOADED. Before, this resolved to nothing and the sport was then taken
        from the open tab — a college question answered as a baseball one, in
        silence. The sport must come from the card the school is on. */
-    const j = await ask('How about Oregon?');
+    const bare = soleSchool(fx.slate.games);
+    const j = await ask(`How about ${bare}?`);
     eq('a bare school name settles the sport from the card, not the open board',
       j.sport, 'americanfootball_ncaaf');
     chk('and it never silently becomes a baseball question about the open board',
@@ -412,9 +437,15 @@ const MLB_PACKET = {
        system and conflating any two is how a 46-market board was described as
        having one. */
     const ask = conversation({ packet: MLB_PACKET });
-    const j = await ask('How does Oregon look this week?');
+    /* The game is read off the card again, and it is one of the card's LINED
+       games — it carries a consensus market number and no executable price,
+       which is the whole distinction this case exists to keep apart. The
+       fixture lines the games that follow the fixture matchup, so the one
+       after it is lined and, having no captured signal, unpriced. */
+    const unpriced = fx.slate.games[1];
+    const j = await ask(`How does ${unpriced.away_team} vs ${unpriced.home_team} look this week?`);
     const c = j.research_context || {};
-    eq('an unpriced game still resolves', c.game_id, '401858455');
+    eq('an unpriced game still resolves', c.game_id, String(unpriced.game_id));
     eq('and routes to football', j.sport, 'americanfootball_ncaaf');
     chk('the absence of a price is never reported as an absent game',
       !/no such game|game does not exist|not on the card/i.test(j.prompt || ''));
@@ -426,7 +457,7 @@ const MLB_PACKET = {
     chk('and the prompt says a market NUMBER is not an executable price',
       /not a price to bet into|no book, no per-side odds and no capture time|consensus line is a number/i.test(j.prompt || ''));
     chk('no decision is published for a game with no executable price',
-      (j.decisions || []).every((d) => String(d.game_id) !== '401858455'
+      (j.decisions || []).every((d) => String(d.game_id) !== String(unpriced.game_id)
         || (d.price && d.price.offered_american != null)),
       (j.decisions || []).map((d) => [d.game_id, d.price && d.price.offered_american]));
   }
