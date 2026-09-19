@@ -49,6 +49,33 @@ contract is not underneath it.
 These are enforced as code and checked as arithmetic, not asserted in comments.
 `tools/tennis/lab.test.js` mutation-tests each one: breaking it fails the suite.
 
+### Form windows are anchored to the record, not the clock
+
+The 30-, 90- and 365-day windows count back from the **last match on file**, not
+from today. On a live feed those are the same day. On an archive they are not —
+the supplied ATP/WTA archive ends 2026-05-25, and against `current_date` every
+one of 15,515 players had a null 30- and 90-day form and classified `returning
+from inactivity`. Two of the ten views rendered nothing, and the numbers that
+survived described a window in which no tennis had been played.
+
+"30-day form as at the end of the record" is a real statement about a historical
+archive. "30-day form as at today" over a record that stops in May is a statement
+about nothing. The anchor is stored as `form_as_of`, the page prints it on the
+header and on every player card, and the AI is required to quote it.
+
+### A placeholder is not a player
+
+The archive uses sentinel names for competitors it could not identify, and one
+id carries 87 matches played by 87 different people. Its rating is not a rating,
+and the daily brief duly published *"U Unknown up 7.4 rating points"* as a
+finding about a person who does not exist. Those ids are flagged and never
+listed as a player — but their **matches stay**, because the opponents' records
+are real.
+
+`Unknown <Surname>` is deliberately **not** caught: those are real people whose
+given name the archive lacks, and suppressing them would delete genuine records
+to tidy up a display.
+
 ### A missing value is never a zero
 
 An absent input stays absent through translation, trajectory, workload,
@@ -136,6 +163,18 @@ database (`tennis.power_rating_scale()`); `lab.test.js` fails if they drift.
 | 45–55 | Tour level |
 | 35–45 | Below tour |
 | < 35 | Developing |
+
+The surface translator differences a player's surface Elo against their overall
+Elo **from the same feature row**, not against today's overall rating. A surface
+rating is as of the player's last match *on that surface*; the overall rating is
+as of their last match *anywhere*. For a player whose surface mix shifted late in
+their career those are different points in it, and subtracting one from the other
+measures the gap between two career moments rather than a surface preference.
+
+Note what that board is and is not: it ranks how much a surface suits a player
+**relative to their own level**, which is a different question from who is best
+on it. Borg and Nadal top the absolute clay board; the *adjustment* board
+surfaces players whose clay record outruns their general one.
 
 **It clamps at both ends, and a clamp is not an achievement.** On a sixty-year
 record several all-time players reach 100 and a long tail sits at 0. Where that

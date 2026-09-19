@@ -114,7 +114,13 @@ alter table tennis.player_ratings_current
   add column if not exists workload_class    text,
   add column if not exists rating_delta_30d  numeric(6,2),
   add column if not exists rating_delta_90d  numeric(6,2),
-  add column if not exists lab_version       text;
+  add column if not exists lab_version       text,
+  -- THE DAY THE FORM WINDOWS ARE COUNTED BACK FROM. It is the latest match on
+  -- file, not the wall clock: on a live feed they are the same day, on an
+  -- archive they are not, and a "30-day form" with no anchor beside it is the
+  -- most quietly misleading number this product could publish. The page prints
+  -- it; the AI is required to quote it.
+  add column if not exists form_as_of        date;
 
 do $shape$
 begin
@@ -166,6 +172,23 @@ create index if not exists tennis_prc_delta30_idx    on tennis.player_ratings_cu
 -- same point-in-time rule the features obey. A snapshot is therefore safe to
 -- read as "what EdgeDesk would have said on that day".
 -- ===========================================================================
+-- A PLACEHOLDER IS NOT A PLAYER, and the Lab must never show one as one.
+--
+-- The archive uses sentinel names for competitors it could not identify. The
+-- worst is a single id carrying 87 matches played by 87 different people, and
+-- the daily brief duly published a rating movement for it as though it were a
+-- person. The MATCHES stay — they happened, and the opponents' records are real
+-- — but the placeholder is excluded everywhere a player is listed.
+--
+-- Set by tools/tennis/build_lab.js from lib/tennis_model.js isPlaceholderPlayer,
+-- so the rule lives in one place. Nullable and defaulted false: an existing row
+-- that has never been through the signal build is treated as a real player,
+-- which is the safe direction to be wrong.
+alter table tennis.players
+  add column if not exists is_placeholder boolean not null default false;
+create index if not exists tennis_players_real_idx
+  on tennis.players (tour, matches_on_file desc) where is_placeholder = false;
+
 create table if not exists tennis.rating_history (
   player_id       text not null references tennis.players (player_id) on delete cascade,
   as_of           date not null,
@@ -359,11 +382,18 @@ grant execute on function tennis.lab_market_available() to anon, authenticated, 
 
 -- The base row every leaderboard selects from. A view, so the functions below
 -- share one definition of "a rated player" and cannot drift.
-create or replace view tennis.lab_player_row
+-- DROPPED AND RECREATED, not replaced. `create or replace view` refuses to
+-- change an existing column's position or name, so adding form_as_of in the
+-- middle of the list fails with "cannot change name of view column". The
+-- functions below are recreated after it, and nothing outside this file reads
+-- the view directly.
+drop view if exists tennis.lab_health;
+drop view if exists tennis.lab_player_row cascade;
+create view tennis.lab_player_row
 with (security_invoker = true) as
   select p.player_id, p.tour, p.full_name, p.country, p.plays, p.height_cm,
          p.latest_age, p.matches_on_file, p.active, p.last_match,
-         r.power_rating, r.uncertainty, r.rating_sample,
+         r.power_rating, r.power_rating_surface, r.uncertainty, r.rating_sample,
          r.elo, r.hard_elo, r.clay_elo, r.grass_elo, r.carpet_elo, r.indoor_elo, r.outdoor_elo,
          r.elo_sample, r.hard_sample, r.clay_sample, r.grass_sample, r.carpet_sample,
          r.indoor_sample, r.outdoor_sample,
@@ -375,9 +405,12 @@ with (security_invoker = true) as
          r.trajectory_class, r.trajectory_direction, r.workload_class,
          r.rating_delta_30d, r.rating_delta_90d,
          r.official_rank, r.official_rank_points, r.official_rank_as_of,
-         r.last_match_date, r.rating_version, r.lab_version, r.computed_at as rating_computed_at
+         r.last_match_date, r.form_as_of,
+         r.rating_version, r.lab_version, r.computed_at as rating_computed_at
     from tennis.players p
-    join tennis.player_ratings_current r on r.player_id = p.player_id;
+    join tennis.player_ratings_current r on r.player_id = p.player_id
+   -- the single place the Lab decides who counts as a player
+   where p.is_placeholder = false;
 
 -- How a mode's metric is chosen, in ONE place. The nine modes in
 -- lib/tennis_lab.js LAB_MODES map here; lab_sql.test.js asserts every mode key
@@ -514,7 +547,17 @@ language sql stable security invoker set search_path = tennis, pg_temp as $$
                           25.0 as full_sample),
   base as (
     select v.player_id, v.full_name, v.country, v.tour, v.power_rating, v.official_rank,
-           v.elo as baseline_elo, bounded.s as surface,
+           -- THE PAIRED BASELINE, not today's overall rating.
+           -- power_rating_surface carries the overall Elo as at the same match
+           -- the surface figure came from. Differencing today's overall against
+           -- a surface figure frozen at a different career point measures the
+           -- gap between two moments, not a surface preference — which put Andy
+           -- Murray at the head of the clay-specialist board. Falls back to the
+           -- current overall Elo for a rating row built before this column
+           -- existed, so an un-rebuilt project degrades rather than breaks.
+           coalesce((v.power_rating_surface -> bounded.s ->> 'baseline_elo')::numeric,
+                    v.elo) as baseline_elo,
+           bounded.s as surface,
            case bounded.s when 'hard' then v.hard_elo when 'clay' then v.clay_elo
                           when 'grass' then v.grass_elo when 'carpet' then v.carpet_elo
                           when 'indoor' then v.indoor_elo end as selo,
@@ -687,6 +730,7 @@ language sql stable security invoker set search_path = tennis, pg_temp as $$
     from tennis.players p
     left join tennis.player_ratings_current r on r.player_id = p.player_id, bounded
    where bounded.q is not null
+     and p.is_placeholder = false
      and (p_tour is null or p.tour = p_tour)
      and (p.name_norm like bounded.q || '%' or p.name_norm like '%' || bounded.q || '%')
    -- exact prefix first, then the deepest record: a search for "federer"
@@ -698,7 +742,10 @@ $$;
 grant execute on function tennis.lab_search(text, text, integer) to anon, authenticated, service_role;
 
 -- THE PLAYER CARD. One call, everything the profile page opens with.
-create or replace function tennis.lab_player_card(p_player_id text)
+-- Same reason: RETURNS TABLE gained a column, and `create or replace function`
+-- cannot change a function's return type.
+drop function if exists tennis.lab_player_card(text);
+create function tennis.lab_player_card(p_player_id text)
 returns table (
   player_id text, full_name text, country text, tour text, plays text,
   height_cm integer, latest_age numeric, matches_on_file integer, active boolean,
@@ -718,7 +765,7 @@ returns table (
   rating_delta_30d numeric, rating_delta_90d numeric,
   official_rank integer, official_rank_points integer, official_rank_as_of date,
   career_wins bigint, career_losses bigint, career_win_pct numeric,
-  rating_version text, lab_version text, rating_computed_at timestamptz)
+  form_as_of date, rating_version text, lab_version text, rating_computed_at timestamptz)
 language sql stable security invoker set search_path = tennis, pg_temp as $$
   select v.player_id, v.full_name, v.country, v.tour, v.plays,
          v.height_cm, v.latest_age, v.matches_on_file, v.active,
@@ -735,7 +782,7 @@ language sql stable security invoker set search_path = tennis, pg_temp as $$
          v.rating_delta_30d, v.rating_delta_90d,
          v.official_rank, v.official_rank_points, v.official_rank_as_of,
          c.wins, c.losses, c.win_pct,
-         v.rating_version, v.lab_version, v.rating_computed_at
+         v.form_as_of, v.rating_version, v.lab_version, v.rating_computed_at
     from tennis.lab_player_row v
     join tennis.players p on p.player_id = v.player_id
     left join tennis.player_career c on c.player_id = v.player_id
@@ -1198,19 +1245,26 @@ grant execute on function tennis.lab_explore_summary(text, text, integer, intege
 create index if not exists tennis_matches_season_only_idx on tennis.matches (season);
 create index if not exists tennis_matches_date_only_idx on tennis.matches (match_date);
 
-create or replace view tennis.lab_health
+create view tennis.lab_health
 with (security_invoker = true) as
   select
     (select count(*) from tennis.matches) as matches_on_file,
     (select count(*) from tennis.players) as players_on_file,
     (select count(*) from tennis.player_ratings_current where power_rating is not null) as rated_players,
-    (select count(*) from tennis.rating_history) as history_rows,
+    -- HAS THE HISTORY BEEN BUILT, AND THROUGH WHEN. This was count(*) over
+    -- tennis.rating_history, which on the real archive is 435,350 rows and
+    -- 21 ms of the header's budget — on a panel loaded by every single render,
+    -- for a number nothing displayed. max(as_of) answers the operational
+    -- question ("is the rating history current?") off an index, and a null says
+    -- "never built" just as clearly as a zero did.
+    (select max(as_of) from tennis.rating_history) as history_through,
     (select max(match_date) from tennis.matches) as data_through,
     (select min(season) from tennis.matches) as first_season,
     (select max(season) from tennis.matches) as last_season,
     (select max(computed_at) from tennis.player_ratings_current) as ratings_computed_at,
     (select max(rating_version) from tennis.player_ratings_current) as rating_version,
     (select max(lab_version) from tennis.player_ratings_current) as lab_version,
+    (select max(form_as_of) from tennis.player_ratings_current) as form_as_of,
     (select model_version from tennis.model_registry where status = 'active' limit 1) as model_version,
     (select brief_date from tennis.research_briefs order by brief_date desc limit 1) as last_brief_date,
     -- ONE call, not two. Reading `available` and `reason` as separate scalar
@@ -1451,6 +1505,14 @@ with checks as (
                      where n.nspname='tennis' and p.proname='lab_comparables')
                and has_function_privilege('anon','tennis.lab_matchup_inputs(text, text, text, date)','EXECUTE')
                and not has_table_privilege('anon','tennis.player_match_features','SELECT')
+              then 'ok' else 'CHECK THIS' end
+  union all select 16.7, 'a placeholder competitor is never listed as a player',
+         case when exists (select 1 from information_schema.columns
+                            where table_schema='tennis' and table_name='players'
+                              and column_name='is_placeholder')
+               and not exists (select 1 from tennis.lab_player_row v
+                                join tennis.players p on p.player_id = v.player_id
+                               where p.is_placeholder)
               then 'ok' else 'CHECK THIS' end
   union all select 17, 'the lab health line is readable without reading a private table',
          case when (select count(*) from tennis.lab_health) = 1

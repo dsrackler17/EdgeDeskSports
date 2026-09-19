@@ -78,7 +78,25 @@ function stateSql(tourFilter) {
   const f = tourFilter ? `where tour = ${PG.lit(tourFilter)}` : '';
   const SURF = `('hard','clay','grass','carpet')`;
   return `
-with rows as materialized (select * from tennis.player_match_rows ${f}),
+-- THE FORM WINDOWS ARE ANCHORED TO THE RECORD, NOT TO THE WALL CLOCK.
+--
+-- as_of is the latest match date on file. On a live system fed by a current
+-- results provider that IS today, and nothing changes. On an archive it is the
+-- archive's own end, and that is the difference between a useful answer and no
+-- answer at all: the supplied ATP/WTA archive ends 2026-05-25, so against
+-- current_date every single one of 15,515 players had a null 30- and 90-day
+-- form and every one classified "returning from inactivity". Two of the Lab's
+-- views rendered nothing, and the numbers that did survive described a window
+-- in which no tennis had been played.
+--
+-- "30-day form as at the end of the record" is a real statement about a
+-- historical archive. "30-day form as at today" over a record that stops in May
+-- is a statement about nothing. The anchor is stored on every rating row as
+-- form_as_of and the page prints it, so the reader is never left to assume it
+-- means today — which is the brief's rule about labelling historical and
+-- current information, applied to the thing most likely to be misread.
+with as_of as (select coalesce(max(match_date), current_date) as d from tennis.matches),
+rows as materialized (select * from tennis.player_match_rows ${f}),
 last_match as (
   select distinct on (r.player_id)
          r.player_id, r.tour, r.match_id, r.match_date, r.won, r.opponent_id, r.surface
@@ -103,10 +121,23 @@ surface_counts as (
     from rows where surface in ${SURF}
    group by player_id, surface
 ),
--- and the most recent PRE-match surface Elo on each: one ordered pass
+-- The most recent PRE-match surface Elo on each surface, AND THE OVERALL ELO
+-- FROM THE SAME ROW. One ordered pass.
+--
+-- The paired baseline is the whole point. A surface rating is as of the
+-- player's last match ON THAT SURFACE; the overall rating is as of their last
+-- match ANYWHERE. For a player whose surface mix shifted late in their career
+-- those are different points in it, and subtracting one from the other
+-- measures the gap between two career moments rather than a surface
+-- preference. That produced a translator board headed by Andy Murray as the
+-- tour's biggest clay specialist — his clay ladder stopped updating while his
+-- overall kept falling through a hard-court decline.
+--
+-- Both figures come off the same feature row, so the difference is a single
+-- point in time by construction.
 surface_elo as (
   select distinct on (r.player_id, r.surface)
-         r.player_id, r.surface, f.surface_elo_pre as elo_pre
+         r.player_id, r.surface, f.surface_elo_pre as elo_pre, f.elo_pre as base_pre
     from rows r
     join tennis.player_match_features f
       on f.match_id = r.match_id and f.player_id = r.player_id
@@ -118,7 +149,8 @@ surface_elo as (
 -- "did not finish in nine minutes" to seconds.
 surface_agg as (
   select c.player_id,
-         json_agg(json_build_object('surface', c.surface, 'elo', e.elo_pre, 'n', c.n)) as surfaces
+         json_agg(json_build_object('surface', c.surface, 'elo', e.elo_pre,
+                                    'base', e.base_pre, 'n', c.n)) as surfaces
     from surface_counts c
     left join surface_elo e on e.player_id = c.player_id and e.surface = c.surface
    group by c.player_id
@@ -126,22 +158,23 @@ surface_agg as (
 form as (
   select player_id,
          count(*)::int as matches_all,
-         count(*) filter (where match_date >= current_date - 30)::int  as m30,
-         count(*) filter (where match_date >= current_date - 90)::int  as m90,
-         count(*) filter (where match_date >= current_date - 365)::int as m365,
-         count(*) filter (where match_date >= current_date - 7)::int   as m7,
-         count(*) filter (where match_date >= current_date - 14)::int  as m14,
-         count(*) filter (where match_date >= current_date - 28)::int  as m28,
-         avg(case when won then 1.0 else 0.0 end) filter (where match_date >= current_date - 30)  as f30,
-         avg(case when won then 1.0 else 0.0 end) filter (where match_date >= current_date - 90)  as f90,
-         avg(case when won then 1.0 else 0.0 end) filter (where match_date >= current_date - 365) as f365,
-         max(match_date) as last_match_date
+         count(*) filter (where match_date >= (select d from as_of) - 30)::int  as m30,
+         count(*) filter (where match_date >= (select d from as_of) - 90)::int  as m90,
+         count(*) filter (where match_date >= (select d from as_of) - 365)::int as m365,
+         count(*) filter (where match_date >= (select d from as_of) - 7)::int   as m7,
+         count(*) filter (where match_date >= (select d from as_of) - 14)::int  as m14,
+         count(*) filter (where match_date >= (select d from as_of) - 28)::int  as m28,
+         avg(case when won then 1.0 else 0.0 end) filter (where match_date >= (select d from as_of) - 30)  as f30,
+         avg(case when won then 1.0 else 0.0 end) filter (where match_date >= (select d from as_of) - 90)  as f90,
+         avg(case when won then 1.0 else 0.0 end) filter (where match_date >= (select d from as_of) - 365) as f365,
+         max(match_date) as last_match_date,
+         (select d from as_of) as form_as_of
     from rows group by player_id
 )
 select lf.player_id, lf.tour,
        lf.elo_pre, lf.opp_elo_pre, lf.won, lf.surface_elo_pre, lf.opp_surface_elo_pre, lf.last_surface,
        fo.matches_all, fo.m7, fo.m14, fo.m28, fo.m30, fo.m90, fo.m365,
-       fo.f30, fo.f90, fo.f365, fo.last_match_date,
+       fo.f30, fo.f90, fo.f365, fo.last_match_date, fo.form_as_of,
        rk.rank as official_rank, rk.points as official_rank_points, rk.as_of as official_rank_as_of,
        sa.surfaces
   from last_feat lf
@@ -216,7 +249,7 @@ async function main() {
     'matches_7d', 'matches_14d', 'matches_28d', 'rest_days',
     'official_rank', 'official_rank_points', 'official_rank_as_of',
     'power_rating', 'power_rating_surface', 'rating_sample', 'uncertainty',
-    'last_match_date', 'days_since_last_match', 'active', 'rating_version', 'source_key'];
+    'last_match_date', 'days_since_last_match', 'active', 'rating_version', 'source_key', 'form_as_of'];
 
   const lines = [];
   let usedSnapshot = 0, derived = 0;
@@ -248,11 +281,24 @@ async function main() {
       const e = surfaceElo(sf), n = surfaceN(sf);
       if (e == null) return;
       const p = M.powerRating(e, n, ref[tour]);
-      prSurface[sf] = { power_rating: p.power_rating, uncertainty: p.uncertainty, sample: n };
+      /* baseline_elo: the player's OVERALL Elo at the same match this surface
+         figure came from, so the translator can difference two numbers from one
+         moment rather than from two different points in a career. */
+      const x = surf[sf];
+      prSurface[sf] = { power_rating: p.power_rating, uncertainty: p.uncertainty, sample: n,
+                        baseline_elo: (x && x.base != null) ? M.round(Number(x.base), 3) : null };
     });
 
+    /* MEASURED FROM THE RECORD'S END, not from the wall clock — the same
+       anchor the form windows use. On a live feed the two are the same day. On
+       an archive that stops in May, measuring from today makes every player
+       "inactive for four months", which describes the dataset's staleness
+       rather than the player and empties the fatigue lab of the very players
+       it exists to show. `form_as_of` is stored beside it so a reader always
+       knows which day "since" is counted from. */
+    const asOf = s.form_as_of ? new Date(s.form_as_of + 'T00:00:00Z') : today;
     const last = s.last_match_date ? new Date(s.last_match_date + 'T00:00:00Z') : null;
-    const daysSince = last ? Math.floor((today - last) / 86400000) : null;
+    const daysSince = last ? Math.max(0, Math.floor((asOf - last) / 86400000)) : null;
     /* Rest days from the last match on file. It is a fact about the record,
        not about a schedule EdgeDesk does not hold. */
     const restDays = daysSince;
@@ -269,7 +315,7 @@ async function main() {
       pr.power_rating, JSON.stringify(prSurface), pr.sample, pr.uncertainty,
       s.last_match_date, daysSince,
       daysSince != null && daysSince <= 548 ? 't' : 'f',
-      version, 'edgedesk'
+      version, 'edgedesk', s.form_as_of || null
     ]));
   });
 

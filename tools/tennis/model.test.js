@@ -60,7 +60,55 @@ const slotB = M.matchKey('ATP', '2023-2843', 274);
 eq('the same draw slot is the same key', slotA, slotB);
 eq('the key does not contain either player', slotA, 'archive:ATP:2023-2843:274');
 chk('a different match number is a different match', M.matchKey('ATP', '2023-2843', 275) !== slotA);
+/* A PLACEHOLDER IS NOT A PLAYER.
+   The archive uses sentinel names for competitors it could not identify, and
+   one id carries 87 matches played by 87 different people. Its rating is not a
+   rating, and the daily brief duly published "U Unknown up 7.4 rating points"
+   as a finding about a person who does not exist. But "Unknown <Surname>" is a
+   REAL person whose given name the archive lacks — suppressing those would
+   delete genuine records to tidy up a display. */
+['U Unknown', 'Unknown', 'unknown unknown', 'Bye', 'BYE', 'Qualifier', 'TBD', ''].forEach((n) =>
+  chk('a placeholder competitor is recognised: ' + JSON.stringify(n), M.isPlaceholderPlayer(n)));
+['Unknown Doherty', 'Unknown Rios', 'Novak Djokovic', 'Aryna Sabalenka', 'Byron Black'].forEach((n) =>
+  chk('a real player is NOT suppressed: ' + n, !M.isPlaceholderPlayer(n)));
+chk('the surname Black is not read as "Bye"', !M.isPlaceholderPlayer('Byron Black'));
+
 chk('a different tour is a different match', M.matchKey('WTA', '2023-2843', 274) !== slotA);
+
+/* THE COLLISION THE REAL ARCHIVE CONTAINS.
+   Five WTA events restart match_num inside one tourney_id, giving 16 slots that
+   each hold two DIFFERENT matches. With the slot as the whole key the second
+   silently overwrote the first and 16 real matches vanished — while every
+   import total still reconciled, because they had been read and accepted.
+   The pair is part of the identity, and it is UNORDERED so that a correction
+   still updates the match it corrects. */
+{
+  const SLOT = ['WTA', '1973-W-SL-USA-01A-1973', 1, 'archive'];
+  const pairA = M.matchKey(...SLOT, '200001', '200002');
+  const pairB = M.matchKey(...SLOT, '200003', '200004');
+  chk('two DIFFERENT matches in one draw slot get different ids', pairA !== pairB);
+  chk('and neither collides with the bare slot', pairA !== M.matchKey(...SLOT) && pairB !== M.matchKey(...SLOT));
+
+  const corrected = M.matchKey(...SLOT, '200002', '200001');   // winner and loser swapped
+  chk('a CORRECTED result keeps the same match id — the pair is unordered', pairA === corrected);
+
+  chk('the id still leads with the draw slot, so it is readable',
+      pairA.indexOf('archive:WTA:1973-W-SL-USA-01A-1973:1') === 0, pairA);
+  chk('a caller with no pair still gets a stable slot key',
+      M.matchKey(...SLOT) === M.matchKey(...SLOT));
+
+  /* And through the real parser, which is what the importer actually calls. */
+  const row = (w, l) => ({ tour: 'WTA', tourney_id: 'T1', match_num: '5', tourney_date: '1973-06-01',
+    winner_id: w, loser_id: l, winner_name: 'W' + w, loser_name: 'L' + l,
+    score: '6-4 6-3', best_of: '3', round: 'R32', tourney_name: 'X' });
+  const p1 = M.parseArchiveRow(row('11', '22'));
+  const p2 = M.parseArchiveRow(row('33', '44'));
+  const p1c = M.parseArchiveRow(row('22', '11'));
+  chk('the parser gives two different slot-sharing matches two ids',
+      p1.match.match_id !== p2.match.match_id);
+  chk('and gives a corrected result the SAME id',
+      p1.match.match_id === p1c.match.match_id, p1.match.match_id + ' vs ' + p1c.match.match_id);
+}
 chk('a different source cannot collide with the archive',
     M.matchKey('ATP', '2023-2843', 274, 'licensed_feed') !== slotA);
 eq('a player key namespaces source and tour', M.playerKey('ATP', '105138'), 'archive:ATP:105138');

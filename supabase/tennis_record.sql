@@ -635,7 +635,10 @@ create table if not exists tennis.matches (
   constraint tennis_matches_sides_differ check (winner_id is null or loser_id is null or winner_id <> loser_id),
   constraint tennis_matches_quality_shape check (quality_score is null or (quality_score between 0 and 1)),
   -- THE IDEMPOTENT KEY. A second import of the same source updates this row.
-  constraint tennis_matches_slot_unique unique (source_key, tour, source_tourney_id, match_num),
+  -- The slot-unique constraint that used to live here has moved below, to a
+  -- unique INDEX. It has to: it now includes the UNORDERED player pair, and an
+  -- expression cannot appear in a table constraint. See the index for why.
+
   constraint tennis_matches_source_fk
     foreign key (source_key) references tennis.source_licenses (source_key) on delete restrict
 );
@@ -647,6 +650,31 @@ create index if not exists tennis_matches_loser_date_idx    on tennis.matches (l
 create index if not exists tennis_matches_surface_date_idx  on tennis.matches (surface, match_date desc);
 create index if not exists tennis_matches_season_idx        on tennis.matches (tour, season desc, match_date desc);
 create index if not exists tennis_matches_uid_idx           on tennis.matches (source_match_uid);
+
+-- IDENTITY: THE DRAW SLOT **AND WHO PLAYED IN IT**, never the result.
+--
+-- This was (source_key, tour, source_tourney_id, match_num) alone, and that is
+-- not unique in the real archive. Five WTA events restart match_num inside what
+-- the source calls one tourney_id — combined draws and satellite series like
+-- 1973-W-SL-USA-01A-1973 — giving 16 slots that each hold two DIFFERENT
+-- matches. Under the old key the second silently replaced the first: 16 real
+-- matches vanished while every import total still reconciled, because they had
+-- been read and accepted. They simply never became rows.
+--
+-- least()/greatest() make the pair UNORDERED, which is what preserves the
+-- original property this key exists for: a CORRECTED result swaps winner and
+-- loser, the pair is unchanged, and the correction updates the match it
+-- corrects instead of creating a second one. Two genuinely different matches in
+-- one slot now get two rows, which is what the source actually says.
+-- NULLS NOT DISTINCT, because the default would weaken the guarantee exactly
+-- where it is needed most: with both players unknown, every row's index entry
+-- would be distinct from every other and a slot could be filled any number of
+-- times. Two rows in the same slot with no players identified are the same
+-- match as far as anything can tell, and are deduped as one.
+create unique index if not exists tennis_matches_slot_unique_idx
+  on tennis.matches (source_key, tour, source_tourney_id, match_num,
+                     least(winner_id, loser_id), greatest(winner_id, loser_id))
+  nulls not distinct;
 drop trigger if exists tennis_matches_touch on tennis.matches;
 create trigger tennis_matches_touch before update on tennis.matches
   for each row execute function tennis.touch_updated_at();
@@ -2290,6 +2318,11 @@ union all select 22, 'the LIVE contract is untouched by this file',
             when (select count(*) from pg_policies
                    where schemaname = 'tennis' and tablename = 'live_matches') >= 1
             then 'ok (live tables keep their own policies)' else 'CHECK THIS' end
+union all select 22.5, 'match identity is the draw slot AND the unordered player pair',
+       case when exists (select 1 from pg_indexes where schemaname = 'tennis'
+                          and indexname = 'tennis_matches_slot_unique_idx')
+             and not exists (select 1 from pg_constraint where conname = 'tennis_matches_slot_unique')
+            then 'ok' else 'CHECK THIS' end
 union all select 23, 'tennis.tournaments gained the archive columns and kept its own door',
        case when exists (select 1 from information_schema.columns
                           where table_schema = 'tennis' and table_name = 'tournaments'
