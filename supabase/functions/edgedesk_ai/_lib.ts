@@ -1956,9 +1956,28 @@ export const SPORTS: Record<string, SportModule> = {
     key: "mma_mixed_martial_arts", label: "UFC/MMA", status: "CORE_ONLY", steps: ["rankings"],
     needs: "Fighter metrics live behind the ufc schema (ufc_fighters_sync / ufcstats_sync) and are not exposed to this function's reader. Core market research works.",
   },
+  /* WIRED as of the tennis record contract (supabase/tennis_record.sql). The
+     match record, the point-in-time feature layer, the rating layer, the model
+     registry, the market snapshots and the published record all live in the
+     `tennis` schema and are read through five BOUNDED security-definer
+     functions (tennis.ai_*), not through raw table access — so the retrieval
+     budget is a property of the database rather than a promise this function
+     makes. The priced ones check entitlement inside SQL, so an unentitled
+     reader is answered by Postgres with no rows rather than by this layer with
+     a redaction. See supabase/functions/edgedesk_ai/_tennis.js. */
   tennis_wta: {
-    key: "tennis_wta", label: "WTA", status: "CORE_ONLY", steps: [],
-    needs: "Surface/serve/return research lives behind the wta schema (wta_ingest / wta_elo / wta_research) and is not exposed to this function's reader. Core market research works.",
+    key: "tennis_wta", label: "WTA", status: "WIRED",
+    steps: ["tennis_rating", "tennis_surface", "tennis_form", "tennis_fatigue", "tennis_model", "market"],
+    needs: "Not ingested, and said rather than substituted: injuries and withdrawals (no source), "
+      + "point-by-point (no source), doubles ratings (a pair is a team, never a player), and exact "
+      + "first-serve times for historical matches (the archive dates a match to its tournament week, "
+      + "which is also why its weather is a week profile and never conditions at the toss).",
+  },
+  tennis_atp: {
+    key: "tennis_atp", label: "ATP", status: "WIRED",
+    steps: ["tennis_rating", "tennis_surface", "tennis_form", "tennis_fatigue", "tennis_model", "market"],
+    needs: "Same coverage and the same gaps as the WTA module: one record, one rating layer and one "
+      + "model serve both tours, with the tour as a column rather than a second implementation.",
   },
   americanfootball_ncaaf: {
     key: "americanfootball_ncaaf", label: "CFB", status: "WIRED",
@@ -2575,6 +2594,8 @@ const SPORT_LAYER_STEPS: Record<string, string[]> = {
   basketball_nba: ["team_efficiency", "matchup_context"],
   icehockey_nhl: ["team_efficiency", "matchup_context"],
   basketball_wnba: ["team_efficiency", "matchup_context"],
+  tennis_atp: ["tennis_rating", "tennis_surface", "tennis_form", "tennis_fatigue", "tennis_model"],
+  tennis_wta: ["tennis_rating", "tennis_surface", "tennis_form", "tennis_fatigue", "tennis_model"],
 };
 
 /**
@@ -7668,6 +7689,28 @@ export const SPORT_CAPABILITIES: Record<string, Record<string, boolean>> = {
        has availability, EdgeDesk just has no source for it. A real gap. */
     cbb_availability: true,
   },
+  /* Tennis. The `false` rows are the point: EdgeDesk has no injury source, no
+     point-by-point, no doubles rating and no exact first-serve time for a
+     historical match, and an answer has to be able to SAY that instead of
+     improvising around it. */
+  tennis_atp: {
+    schedule: true, market: true, rankings: true,
+    tennis_record: true, tennis_rating: true, tennis_surface: true, tennis_form: true,
+    tennis_fatigue: true, tennis_h2h: true, tennis_model: true, tennis_weather: true,
+    tennis_injury: false, tennis_point_by_point: false, tennis_doubles: false,
+    tennis_exact_start_time: false,
+    starters: false, pitching_season: false, pitching_matchup: false, offense: false,
+    bullpen: false, park: false, weather: false, quarterback: false, team_efficiency: false,
+  },
+  tennis_wta: {
+    schedule: true, market: true, rankings: true,
+    tennis_record: true, tennis_rating: true, tennis_surface: true, tennis_form: true,
+    tennis_fatigue: true, tennis_h2h: true, tennis_model: true, tennis_weather: true,
+    tennis_injury: false, tennis_point_by_point: false, tennis_doubles: false,
+    tennis_exact_start_time: false,
+    starters: false, pitching_season: false, pitching_matchup: false, offense: false,
+    bullpen: false, park: false, weather: false, quarterback: false, team_efficiency: false,
+  },
   _core: { market: true, schedule: false },
 };
 
@@ -7687,6 +7730,9 @@ const FIELD_CAPABILITY: Record<string, string> = {
   cfb_portal: "cfb_portal",
   cbb_matchup_edge: "cbb_matchup_edge", cbb_player_production: "cbb_player_production",
   cbb_ranking: "cbb_ranking", cbb_availability: "cbb_availability",
+  tennis_surface_leaders: "tennis_rating", tennis_player_context: "tennis_record",
+  tennis_match_context: "tennis_model", tennis_market_disagreement: "tennis_model",
+  tennis_data_health: "tennis_record",
 };
 
 export function sportSupports(sportKey: string | null, field: string): boolean {

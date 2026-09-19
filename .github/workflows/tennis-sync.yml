@@ -33,12 +33,16 @@ on:
   pull_request:
     paths:
       - 'lib/tennis_research.js'
+      - 'lib/tennis_model.js'
       - 'tools/tennis/**'
       - 'tools/lib/**'
       - 'supabase/tennis_live_center.sql'
       - 'supabase/tennis_player_directory.sql'
+      - 'supabase/tennis_record.sql'
+      - 'supabase/functions/edgedesk_ai/_tennis.js'
       - '.github/workflows/tennis-sync.yml'
       - '.github/workflows/tennis-live.yml'
+      - '.github/workflows/tennis-record.yml'
   workflow_dispatch:
     inputs:
       commit:
@@ -85,6 +89,12 @@ jobs:
 
       - name: The matching, market and first-point rules must pass before anything is written
         run: node tools/tennis/tennis.test.js
+
+      # The record engine too: the null rule, the draw-slot identity, the
+      # research gates and the fact that no model input names a post-match
+      # column. These are cheap and they guard the layer the sync now feeds.
+      - name: The record engine's own rules must pass
+        run: node tools/tennis/model.test.js && node tools/tennis/providers.test.js
 
       # A probe failure is worth seeing in the log but must not stop the sync:
       # the sync reports each tour's own failure, one tour answering is a

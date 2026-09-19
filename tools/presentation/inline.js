@@ -93,6 +93,17 @@ const LIBS = [
     start: '/*__EDRESEARCH_START__*/', end: '/*__EDRESEARCH_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The TENNIS retrieval layer: intent routing for the nine tennis questions,
+     the five bounded database calls that answer them, the answer contract
+     (data timestamp, market timestamp, model version, what is missing, whether
+     the match passes the research gates) and the rules the model is held to.
+     Server-side only: the browser's own board reads the same views directly. */
+  {
+    name: 'EDTENNIS',
+    src: path.join(FN, '_tennis.js'),
+    start: '/*__EDTENNIS_START__*/', end: '/*__EDTENNIS_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The analyst layer: the matchup interaction engine, recent-form
      assessment, nearby-line sensitivity from the registered margin
      distributions, conditional scenarios, follow-up resolution and the
