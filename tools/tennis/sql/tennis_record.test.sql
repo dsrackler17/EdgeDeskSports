@@ -140,10 +140,66 @@ begin
    where match_id = 'archive:ATP:t1:1';
 end $$;
 
+-- IDENTITY IS THE DRAW SLOT **AND THE UNORDERED PLAYER PAIR**.
+--
+-- This used to assert that the slot ALONE was unique. It is not, in the real
+-- archive: five WTA events restart match_num inside one tourney_id, giving 16
+-- slots that each hold two DIFFERENT matches. Under the slot-only rule the
+-- second silently replaced the first and 16 real matches vanished — while every
+-- import total still reconciled, because they had been read and accepted.
+--
+-- So the rule under test is now the one that is actually true, and it is two
+-- rules. The same pair in the same slot is the same match; a different pair in
+-- the same slot is a different match.
+select pg_temp.refused($$
+  insert into tennis.matches (match_id, source_key, tour, source_tourney_id, match_num,
+                              match_date, winner_id, loser_id)
+  values ('archive:ATP:t1:1:dup', 'archive', 'ATP', 't1', 1, '2024-05-01',
+          'archive:ATP:1', 'archive:ATP:2')
+$$, 'the SAME pair cannot occupy the same draw slot twice under a different id');
+
+select pg_temp.refused($$
+  insert into tennis.matches (match_id, source_key, tour, source_tourney_id, match_num,
+                              match_date, winner_id, loser_id)
+  values ('archive:ATP:t1:1:swap', 'archive', 'ATP', 't1', 1, '2024-05-01',
+          'archive:ATP:2', 'archive:ATP:1')
+$$, 'and neither can the same pair with winner and loser SWAPPED — the pair is unordered, so a correction updates rather than duplicates');
+
+-- NULLS NOT DISTINCT, and what it does and does not buy.
+-- A row with no players identified does NOT collide with a row in the same slot
+-- whose players ARE known: (null, null) and (1, 2) are different index entries,
+-- and nothing can tell whether they are the same match. What the clause buys is
+-- that TWO unidentified rows in one slot are one match rather than unlimited
+-- copies — which is the case that would otherwise let a slot be filled forever.
+do $$
+begin
+  insert into tennis.matches (match_id, source_key, tour, source_tourney_id, match_num, match_date)
+  values ('archive:ATP:tnul:1:a', 'archive', 'ATP', 'tnul', 1, '2024-05-01');
+  perform pg_temp.ok('a row with no players identified is stored');
+end $$;
+
 select pg_temp.refused($$
   insert into tennis.matches (match_id, source_key, tour, source_tourney_id, match_num, match_date)
-  values ('archive:ATP:t1:1:dup', 'archive', 'ATP', 't1', 1, '2024-05-01')
-$$, 'two rows cannot occupy the same draw slot under a different id');
+  values ('archive:ATP:tnul:1:b', 'archive', 'ATP', 'tnul', 1, '2024-05-01')
+$$, 'but a SECOND unidentified row cannot occupy the same slot — nulls are not distinct here');
+
+do $$
+declare n_before bigint; n_after bigint;
+begin
+  insert into tennis.players (player_id, tour, source_key, source_player_id, full_name, name_norm)
+  values ('archive:ATP:3', 'ATP', 'archive', '3', 'Player Three', 'player three'),
+         ('archive:ATP:4', 'ATP', 'archive', '4', 'Player Four', 'player four')
+  on conflict (player_id) do nothing;
+  select count(*) into n_before from tennis.matches;
+  insert into tennis.matches (match_id, source_key, tour, source_tourney_id, match_num,
+                              match_date, winner_id, loser_id, score)
+  values ('archive:ATP:t1:1:3-4', 'archive', 'ATP', 't1', 1, '2024-05-01',
+          'archive:ATP:3', 'archive:ATP:4', '6-1 6-1');
+  select count(*) into n_after from tennis.matches;
+  perform pg_temp.want(n_after = n_before + 1,
+    'but a DIFFERENT pair in the same draw slot IS a different match — this is the 16 the archive was losing');
+  delete from tennis.matches where match_id = 'archive:ATP:t1:1:3-4';
+end $$;
 
 select pg_temp.refused($$
   insert into tennis.matches (match_id, source_key, tour, source_tourney_id, match_num,

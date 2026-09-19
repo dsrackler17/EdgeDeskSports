@@ -28,6 +28,14 @@ const path = require('path');
 const cp = require('child_process');
 const M = require('../../lib/tennis_model.js');
 
+/* MATCH IDS ARE DERIVED, NOT SPELLED OUT. A match's identity is its draw slot
+   AND the unordered player pair — the pair is in the key because the real
+   archive has 16 slots holding two different matches each, and without it the
+   second silently overwrote the first. Hard-coding the old slot-only string
+   made this suite fail on that fix even though nothing it tests was broken.
+   Every fixture here is player 1 against player `l` in tournament `t`. */
+const mid = (t, l) => M.matchKey('ATP', t, 1, 'archive', '1', String(l));
+
 const ROOT = path.join(__dirname, '..', '..');
 const DB = 'edgedesk_tennis_leakage_test';
 const FEATURES = require('./build_features.js');
@@ -189,7 +197,7 @@ try {
   const byId = {}; afterAll.forEach(x => { byId[x.match_id] = x.serve_strength_pre; });
   beforeAll.forEach((b) => eq('a FUTURE match did not change ' + b.match_id, byId[b.match_id], b.serve_strength_pre));
   chk('and the new match itself got the history that preceded it',
-      byId['archive:ATP:TX:1'] != null);
+      byId[mid('TX', 77)] != null);
 
   /* ── 3. A CORRECTION PROPAGATES FORWARD, AND ONLY FORWARD ──────────── */
   /* rewrite match 3's serve numbers upstream and re-import */
@@ -209,12 +217,12 @@ try {
   const post = {};
   rows(`select match_id, serve_strength_pre from tennis.player_match_features
          where player_id = 'archive:ATP:1'`).forEach(x => { post[x.match_id] = x.serve_strength_pre; });
-  eq('a match BEFORE the correction is untouched', post['archive:ATP:T0:1'], pre['archive:ATP:T0:1']);
+  eq('a match BEFORE the correction is untouched', post[mid('T0', 10)], pre[mid('T0', 10)]);
   eq('the corrected match itself is untouched (its own numbers are not its inputs)',
-     post['archive:ATP:T2:1'], pre['archive:ATP:T2:1']);
+     post[mid('T2', 12)], pre[mid('T2', 12)]);
   chk('but a match AFTER the correction moved',
-      post['archive:ATP:T5:1'] !== pre['archive:ATP:T5:1'],
-      'before=' + pre['archive:ATP:T5:1'] + ' after=' + post['archive:ATP:T5:1']);
+      post[mid('T5', 15)] !== pre[mid('T5', 15)],
+      'before=' + pre[mid('T5', 15)] + ' after=' + post[mid('T5', 15)]);
 
   /* ── 4. STRUCTURAL: the feature table carries no post-match column ──── */
   const cols = rows(`select column_name from information_schema.columns
@@ -236,7 +244,7 @@ try {
   const trainSql = require('./build_model.js').loadSql(null);
   const train = rows(trainSql);
   chk('but it is excluded from the training set',
-      train.every(t => t.match_id !== 'archive:ATP:TW:1'), 'walkover present in training');
+      train.every(t => t.match_id !== mid('TW', 99)), 'walkover present in training');
   chk('while every played match is present', train.length >= 6);
   chk('and the training query reads the feature table, not the match table\'s statistics',
       /player_match_features/.test(trainSql) && !/m\.w_svpt|m\.w_ace/.test(trainSql));

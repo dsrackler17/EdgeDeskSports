@@ -81,7 +81,12 @@ function signalsSql(tourFilter) {
   const f = tourFilter ? `where r.tour = ${PG.lit(tourFilter)}` : '';
   const FV = PG.lit(M.FEATURE_VERSION);
   return `
-with rows as materialized (
+-- Anchored to the record, for the same reason build_ratings.js is: the recent
+-- strength of schedule has to cover the same window the recent FORM covers, or
+-- the trajectory rule compares a win rate over one period with an opponent
+-- quality over another and calls the difference a trend.
+with as_of as (select coalesce(max(match_date), current_date) as d from tennis.matches),
+rows as materialized (
   select r.player_id, r.tour, r.match_id, r.match_date, r.won, r.opponent_id, r.surface
     from tennis.player_match_rows r ${f}
 ),
@@ -101,7 +106,7 @@ serve as (
 -- career, so the trajectory rule can compare them.
 sos as (
   select x.player_id,
-         avg(fo.elo_pre) filter (where x.match_date >= current_date - 365) as sos_recent,
+         avg(fo.elo_pre) filter (where x.match_date >= (select d from as_of) - 365) as sos_recent,
          avg(fo.elo_pre) as sos_career,
          count(fo.elo_pre)::int as sos_n
     from rows x
@@ -143,16 +148,16 @@ env as (
 hist30 as (
   select distinct on (h.player_id) h.player_id, h.power_rating
     from tennis.rating_history h
-   where h.as_of <= current_date - 30
+   where h.as_of <= (select max(match_date) from tennis.matches) - 30
    order by h.player_id, h.as_of desc
 ),
 hist90 as (
   select distinct on (h.player_id) h.player_id, h.power_rating
     from tennis.rating_history h
-   where h.as_of <= current_date - 90
+   where h.as_of <= (select max(match_date) from tennis.matches) - 90
    order by h.player_id, h.as_of desc
 )
-select r.player_id, r.tour, r.power_rating, r.elo, r.rating_sample,
+select r.player_id, pl.full_name, pl.matches_on_file, r.tour, r.power_rating, r.elo, r.rating_sample,
        r.form_30d, r.form_90d, r.form_365d, r.form_sample_365d,
        r.matches_7d, r.matches_14d, r.matches_28d, r.rest_days, r.days_since_last_match,
        s.serve_strength_pre, s.return_strength_pre, s.serve_sample_pre,
@@ -162,6 +167,7 @@ select r.player_id, r.tour, r.power_rating, r.elo, r.rating_sample,
        h30.power_rating as rating_30d_ago,
        h90.power_rating as rating_90d_ago
   from tennis.player_ratings_current r
+  join tennis.players pl on pl.player_id = r.player_id
   left join serve s    on s.player_id = r.player_id
   left join sos so     on so.player_id = r.player_id
   left join surfwin sw on sw.player_id = r.player_id
@@ -222,8 +228,18 @@ async function main() {
      re-implementation of these rules would be a second definition of
      "improving", and the two would drift. */
   const lines = [];
-  const tally = { trajectory: {}, workload: {}, serve: 0, sos: 0, indoor: 0, delta: 0 };
+  const tally = { trajectory: {}, workload: {}, serve: 0, sos: 0, indoor: 0, delta: 0, placeholder: 0 };
+  const placeholders = [];
   state.forEach((s) => {
+    /* A PLACEHOLDER IS NOT A PLAYER. The archive's sentinel competitors — one
+       id carrying dozens of unrelated people — are flagged here so no
+       leaderboard, search, brief or AI answer lists one as a person. Their
+       matches stay: the OPPONENTS' records are real and must keep them. */
+    if (M.isPlaceholderPlayer(s.full_name)) {
+      tally.placeholder++;
+      placeholders.push({ player_id: s.player_id, full_name: s.full_name,
+                          matches: Number(s.matches_on_file) || 0 });
+    }
     const rating = {
       elo: s.elo,
       form_30d: s.form_30d, form_90d: s.form_90d, form_365d: s.form_365d,
@@ -273,6 +289,15 @@ async function main() {
     ].join('\t'));
   });
 
+  if (placeholders.length) {
+    say('\n  placeholder competitors (flagged, never listed as players)');
+    placeholders.sort((a, b) => b.matches - a.matches).slice(0, 6).forEach((p) => {
+      say(`    ${String(p.full_name).padEnd(24)} ${String(p.matches).padStart(6)} matches  ${p.player_id}`);
+    });
+    if (placeholders.length > 6) say(`    ...and ${placeholders.length - 6} more`);
+    say('    Their matches stay on file — the opponents\' records are real.');
+  }
+
   say('\n  classifications');
   Object.keys(tally.trajectory).sort().forEach((k) => {
     say(`    trajectory ${k.padEnd(18)} ${String(tally.trajectory[k]).padStart(7)}`);
@@ -308,6 +333,14 @@ async function main() {
       /* One UPDATE ... FROM, not a row-per-statement loop. The casts are
          explicit so a malformed value fails the transaction rather than
          silently landing as null. */
+      /* The placeholder flag, from the same library predicate the page and the
+         AI use. Set to FALSE for everyone first so a name corrected upstream
+         un-flags itself on the next build rather than staying suppressed. */
+      `update tennis.players set is_placeholder = false where is_placeholder;`,
+      placeholders.length
+        ? `update tennis.players set is_placeholder = true where player_id in (${
+            placeholders.map((p) => PG.lit(p.player_id)).join(',')});`
+        : 'select 1;',
       `update tennis.player_ratings_current r set
          serve_strength   = nullif(t.serve_strength, '')::numeric,
          return_strength  = nullif(t.return_strength, '')::numeric,

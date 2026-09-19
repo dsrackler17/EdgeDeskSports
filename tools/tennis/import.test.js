@@ -32,6 +32,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const cp = require('child_process');
+const M = require(path.join(__dirname, '..', '..', 'lib', 'tennis_model.js'));
 
 const ROOT = path.join(__dirname, '..', '..');
 const DB = 'edgedesk_tennis_import_test';
@@ -191,12 +192,22 @@ try {
   r = runImport(['--file', fixed]);
   eq('a corrected file imports', r.status, 0);
   eq('and does NOT create a second match for the same draw slot', n('select count(*) from tennis.matches'), 4);
-  eq('the correction took', q("select winner_id from tennis.matches where match_id='archive:ATP:2024-1:1'"), 'archive:ATP:200');
-  eq('the score was corrected too', q("select score from tennis.matches where match_id='archive:ATP:2024-1:1'"), '4-6 6-3 6-2');
+
+  /* The id is DERIVED, not spelled out. Pinning the literal made this suite
+     fail when the identity key legitimately gained the unordered player pair —
+     a change that fixed 16 real matches being silently overwritten — even
+     though the property under test (a correction updates the match it corrects)
+     was never broken. The property is what matters; the string is an
+     implementation detail of matchKey. */
+  const MID = M.matchKey('ATP', '2024-1', 1, 'archive', '100', '200');
+  eq('a correction maps to the SAME id as the original — the pair is unordered',
+     MID, M.matchKey('ATP', '2024-1', 1, 'archive', '200', '100'));
+  eq('the correction took', q("select winner_id from tennis.matches where match_id='" + MID + "'"), 'archive:ATP:200');
+  eq('the score was corrected too', q("select score from tennis.matches where match_id='" + MID + "'"), '4-6 6-3 6-2');
   eq('and the new source uid is kept as provenance',
-     q("select source_match_uid from tennis.matches where match_id='archive:ATP:2024-1:1'"), 'ATP_2024-1_1_200_100');
+     q("select source_match_uid from tennis.matches where match_id='" + MID + "'"), 'ATP_2024-1_1_200_100');
   eq('the feature rows followed the correction',
-     q("select player_role from tennis.player_match_features where match_id='archive:ATP:2024-1:1' and player_id='archive:ATP:200'"),
+     q("select player_role from tennis.player_match_features where match_id='" + MID + "' and player_id='archive:ATP:200'"),
      'winner');
 
   /* ── 4. QUARANTINE ──────────────────────────────────────────────────── */
@@ -400,6 +411,24 @@ try {
   eq('a multi-part dry run exits 0', r.status, 0);
   chk('and says the manifest verifies', /all parts present and intact/.test(r.stdout));
   eq('and opens no run', n('select count(*) from tennis.ingestion_runs'), dryBefore);
+
+  /* ── 10b. TWO DIFFERENT MATCHES IN ONE DRAW SLOT ──────────────────────
+     The real archive has 16 of these: five WTA events restart match_num inside
+     one tourney_id. Under the old slot-only key the second silently replaced
+     the first and the matches vanished while every total still reconciled. */
+  const collide = writeFile(tmp, 'collision.csv', [
+    row({ match_num: '77', winner_id: '300', winner_name: 'Gamma P', loser_id: '400',
+          loser_name: 'Delta P', match_uid: 'ATP_2024-1_77_300_400' }),
+    row({ match_num: '77', winner_id: '500', winner_name: 'Epsilon P', loser_id: '600',
+          loser_name: 'Zeta P', match_uid: 'ATP_2024-1_77_500_600' })
+  ]);
+  const beforeCollide = n('select count(*) from tennis.matches');
+  r = runImport(['--file', collide]);
+  eq('a file with two DIFFERENT matches in one draw slot imports', r.status, 0);
+  eq('and BOTH are stored — neither overwrites the other',
+     n('select count(*) from tennis.matches') - beforeCollide, 2);
+  eq('and they share the draw slot',
+     n("select count(*) from tennis.matches where source_tourney_id='2024-1' and match_num=77"), 2);
 
   /* ── 11. NO CONTRACT, NO IMPORT ─────────────────────────────────────── */
   const DB2 = DB + '_bare';

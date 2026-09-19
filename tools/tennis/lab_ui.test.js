@@ -73,8 +73,12 @@ function fx(name) {
 const rpcs = [...new Set((SRC.match(/tnlRpc\('([a-z_]+)'/g) || [])
   .map((m) => m.replace(/tnlRpc\('/, '').replace(/'$/, '')))];
 chk('the Lab calls at least a dozen distinct RPCs', rpcs.length >= 12, 'found ' + rpcs.length + ': ' + rpcs.join(','));
+/* `create or replace` OR a plain `create` — a function whose RETURNS TABLE
+   changes has to be dropped and recreated, because PostgreSQL will not let
+   `create or replace` change a return type. Pinning the `or replace` form made
+   this assertion fail on a legitimate column addition. */
 rpcs.forEach((r) => chk('tennis.' + r + ' is created by supabase/tennis_lab.sql',
-  new RegExp('create or replace function\\s+tennis\\.' + r + '\\s*\\(').test(SQL),
+  new RegExp('create (or replace )?function\\s+tennis\\.' + r + '\\s*\\(').test(SQL),
   'tennis.' + r + ' is called by the page but not created by the migration'));
 
 /* THE CENTRAL CLAIM: no odds anywhere. Not a table, not a column, not a

@@ -569,6 +569,46 @@ async function main() {
     return 0;
   }
 
+  /* ---- THE SECOND RECONCILIATION: accepted vs ACTUALLY STORED -----------
+     The check above compares rows READ with rows ACCOUNTED FOR, and it passes
+     whenever every row was classified. It says nothing about whether an
+     accepted row became a match.
+
+     That gap is not hypothetical. The real archive contains 16 draw slots that
+     each hold two DIFFERENT matches — five WTA events restart match_num inside
+     one tourney_id — and under the old identity key the second silently
+     replaced the first. Sixteen real matches vanished while the reconciliation
+     above still printed RECONCILED, because they had been read and accepted.
+
+     So the count is now closed at the far end too: every accepted row must be
+     findable as a match. A shortfall names itself, the run is marked error, and
+     nothing downstream is derived from it. */
+  if (!o.dryRun && runId) {
+    const stored = Number(db.scalar(
+      `select count(*) from tennis.matches where ingestion_run_id = '${runId}'::uuid`) || 0);
+    const lost = totals.accepted - stored;
+    say(`  accepted rows STORED as matches ${String(stored).padStart(10)}  ${lost === 0 ? 'RECONCILED' : 'MISMATCH'}`);
+    if (lost !== 0) {
+      fail(`identity collision: ${totals.accepted} rows were accepted but only ${stored} became matches `
+         + `(${lost} lost). Two source rows resolved to the same match_id, so one overwrote the other. `
+         + 'The run is marked error and nothing further is derived from it.');
+      const dupes = db.rows(
+        `select tour, source_tourney_id, match_num, count(*) as n
+           from tennis.stg_archive_matches
+          where run_id = '${runId}'::uuid and reject_reason is null
+          group by 1,2,3 having count(*) > 1 order by 4 desc limit 10`);
+      if (dupes.length) {
+        say('  slots holding more than one source row:');
+        dupes.forEach((d) => say(`    ${d.tour} ${d.source_tourney_id} #${d.match_num}  ${d.n} rows`));
+      }
+      db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(), reconciled=false,
+                 rows_read=${totals.read}, rows_inserted=${stored}, rows_rejected=${totals.rejected},
+                 error_summary='accepted rows did not all become matches — identity collision'
+               where run_id='${runId}'::uuid`);
+      return 1;
+    }
+  }
+
   if (o.fast) {
     say('indexes     : rebuilding the secondary indexes');
     db.exec('select tennis.rebuild_backfill_indexes()');
@@ -739,18 +779,46 @@ async function importParts(db, o) {
   const matchesManifest = grand.read === man.rows;
   say(`  matches the manifest   ${String(matchesManifest ? 'yes' : 'NO').padStart(10)}`);
 
-  if (accounted !== grand.read || !matchesManifest) {
+  /* AND THE FAR END OF THE COUNT: accepted vs ACTUALLY STORED.
+     Everything above compares rows read with rows classified, and passes as
+     long as every row was accounted for. It says nothing about whether an
+     accepted row became a match — and the real archive contains 16 draw slots
+     holding two DIFFERENT matches each, which under the old identity key
+     silently overwrote one another while this block still printed RECONCILED.
+     The manifest path needs the same guard as the single-file path. */
+  const stored = Number(db.scalar(
+    `select count(*) from tennis.matches where ingestion_run_id = '${runId}'::uuid`) || 0);
+  const lost = grand.accepted - stored;
+  say(`  stored as matches      ${String(stored).padStart(10)}  ${lost === 0 ? 'RECONCILED' : 'MISMATCH'}`);
+
+  if (accounted !== grand.read || !matchesManifest || lost !== 0) {
+    if (lost !== 0) {
+      fail(`identity collision: ${grand.accepted} rows were accepted but only ${stored} became matches `
+         + `(${lost} lost). Two source rows resolved to the same match_id, so one overwrote the other.`);
+      const dupes = db.rows(
+        `select tour, source_tourney_id, match_num, count(*) as n
+           from tennis.stg_archive_matches
+          where run_id = '${runId}'::uuid and reject_reason is null
+          group by 1,2,3 having count(*) > 1 order by 4 desc limit 10`);
+      if (dupes.length) {
+        say('  slots holding more than one source row:');
+        dupes.forEach((d) => say(`    ${d.tour} ${d.source_tourney_id} #${d.match_num}  ${d.n} rows`));
+      }
+    }
     db.exec(`update tennis.ingestion_runs set status='error', finished_at=now(), reconciled=false,
-               rows_read=${grand.read}, rows_inserted=${grand.accepted}, rows_rejected=${grand.rejected},
-               error_summary='the dataset did not reconcile against its manifest'
+               rows_read=${grand.read}, rows_inserted=${stored}, rows_rejected=${grand.rejected},
+               error_summary=${PG.lit(lost !== 0
+                 ? 'accepted rows did not all become matches — identity collision'
+                 : 'the dataset did not reconcile against its manifest')}
              where run_id='${runId}'::uuid`);
-    fail('the dataset did not reconcile against its manifest. Nothing is derived from this run.');
+    if (lost === 0) fail('the dataset did not reconcile against its manifest.');
+    say('Nothing is derived from this run.');
     return 1;
   }
 
   if (o.fast) { say('  indexes: rebuilding'); db.exec('select tennis.rebuild_backfill_indexes()'); }
   db.exec(`update tennis.ingestion_runs set status='ok', finished_at=now(), reconciled=true,
-             rows_read=${grand.read}, rows_inserted=${grand.accepted}, rows_rejected=${grand.rejected},
+             rows_read=${grand.read}, rows_inserted=${stored}, rows_rejected=${grand.rejected},
              details = coalesce(details,'{}'::jsonb) ||
                ${PG.lit(JSON.stringify({ skipped: grand.skipped, seconds: Math.round((Date.now() - t0) / 1000) }))}::jsonb
            where run_id='${runId}'::uuid`);

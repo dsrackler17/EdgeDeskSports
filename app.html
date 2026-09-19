@@ -14091,7 +14091,13 @@ function tnlViewPlayer(){
     +'<div class="tnl-row"><span class="nm">First / last</span><span class="mt">'+tnlEsc(c.first_match||'—')+' → '+tnlEsc(c.last_match||'—')+'</span></div>');
 
   out+=tnlCard('Recent form','Win rate over three horizons. Opponent strength is beside it, because a rate without it is not comparable.',
-    '<div class="tnl-row"><span class="nm">30 days</span><span class="vl">'+tnlPct(c.form_30d)+'</span></div>'
+    /* THE ANCHOR, on the card. The windows count back from the last match on
+       file, not from today. On a live feed those are the same day; on an
+       archive they are not, and a "30-day form" with no anchor beside it is
+       the most quietly misleading number this page could print. */
+    (c.form_as_of?'<div class="tnl-unc" style="margin-bottom:5px">windows count back from '
+      +tnlEsc(c.form_as_of)+', the last match on file \u2014 not from today</div>':'')
+    +'<div class="tnl-row"><span class="nm">30 days</span><span class="vl">'+tnlPct(c.form_30d)+'</span></div>'
     +'<div class="tnl-row"><span class="nm">90 days</span><span class="vl">'+tnlPct(c.form_90d)+'</span></div>'
     +'<div class="tnl-row"><span class="nm">365 days</span><span class="vl">'+tnlPct(c.form_365d)+'</span>'+tnlUnc(c.form_sample_365d,null)+'</div>'
     +'<div class="tnl-row"><span class="nm">Opponents, recent</span><span class="vl">'+tnlNum(c.sos_elo_recent,0)+'</span></div>'
