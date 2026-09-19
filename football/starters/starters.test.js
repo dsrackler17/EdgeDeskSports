@@ -173,6 +173,48 @@ function resolve(evidence, extra) {
   chk('a start three weeks old no longer stands as this week\'s expectation', oldStart.status === 'UNKNOWN', oldStart.status);
 }
 
+/* ---- 6b. a team's games are ordered by when they were PLAYED -------------- */
+{
+  /* THE REGRESSION. The schedule feed carries FBS games only, so an FCS-vs-FCS
+     game reaches the builder with no kickoff. The old sort keyed on
+     `String(kickoff || '') + week`, which turned that game into the bare digit
+     "2" and a dated week 1 game into "2026-09-05T23:00:00.000Z1" — and "2"
+     sorts first. The team's LAST game was therefore read as its week 1 one.
+     Harmless while the feed sat on week 2 and a two-week-old start was still
+     inside the freshness bound; 57 teams went PREVIOUS_GAME -> UNKNOWN the hour
+     week 3 was published and the same misread start turned three weeks old. */
+  /* Abilene Christian's real three rows on 19 Sep 2026, verbatim: one week 1
+     game the schedule feed dates, and two the feed does not carry at all.
+     `kickoff` is what the feed gave; `played_at` is kickoff or, where there is
+     none, the median kickoff of that same week. */
+  const acu = [
+    { week: 1, kickoff: '2026-09-05T23:00:00.000Z', played_at: '2026-09-05T23:00:00.000Z' },
+    { week: 1, kickoff: null, played_at: '2026-09-05T19:30:00.000Z' },
+    { week: 2, kickoff: null, played_at: '2026-09-12T20:00:00.000Z' }
+  ].sort(B.playedOrder);
+  chk('the last of a team\'s games is its LATEST, not the only one the feed dated',
+    acu[acu.length - 1].week === 2, acu.map(g => g.week));
+  chk('and the whole order is chronological', acu.map(g => g.week).join(',') === '1,1,2', acu.map(g => g.week));
+
+  const shuffled = [
+    { week: 2, played_at: '2026-09-12T20:00:00.000Z' },
+    { week: 1, played_at: '2026-08-30T16:00:00.000Z' },
+    { week: 3, played_at: '2026-09-19T20:30:00.000Z' }
+  ].sort(B.playedOrder);
+  chk('dated games sort on the clock', shuffled.map(g => g.week).join(',') === '1,2,3', shuffled.map(g => g.week));
+
+  const noDates = [{ week: 3, played_at: null }, { week: 1, played_at: null }, { week: 10, played_at: null }].sort(B.playedOrder);
+  chk('with nothing dated at all it falls back to the week count, and 10 is not "1"',
+    noDates.map(g => g.week).join(',') === '1,3,10', noDates.map(g => g.week));
+
+  const mixed = [
+    { week: 2, kickoff: null, played_at: null },
+    { week: 1, kickoff: '2026-08-30T16:00:00.000Z', played_at: '2026-08-30T16:00:00.000Z' }
+  ].sort(B.playedOrder);
+  chk('an undated game never jumps ahead of a dated one from an earlier week',
+    mixed[mixed.length - 1].week === 2, mixed.map(g => g.week));
+}
+
 /* ---- 7. availability is a second axis and is never read as healthy -------- */
 {
   const r = resolve([ev({ kind: 'GAME_USAGE', player_id: '1001' })], { availability_checked: true });
