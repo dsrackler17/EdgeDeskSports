@@ -13250,7 +13250,16 @@ function tnlInt(v){var n=Number(v);return (v==null||v===''||!isFinite(n))?'—':
 function tnlUnc(sample,unc){
   var bits=[];
   if(sample!=null&&sample!=='')bits.push('n='+tnlInt(sample));
-  if(unc!=null&&unc!=='')bits.push('±'+Math.round(Number(unc)*100)+'%');
+  /* ±0% IS NOT A THING THIS PAGE MAY PRINT. The stored uncertainty reaches
+     exactly zero at forty rated matches, and rendering "±0%" beside a name
+     claims EdgeDesk knows that player perfectly. What the zero means is only
+     that the SAMPLE has stopped being the limiting factor — the rating model
+     itself is still an estimate. So it is shown as a floor, and the Lab's
+     copy explains it. */
+  if(unc!=null&&unc!==''){
+    var u=Number(unc);
+    bits.push(u<=0.001?'sample full':'±'+Math.round(u*100)+'%');
+  }
   return bits.length?'<span class="tnl-unc">'+bits.join(' · ')+'</span>':'';
 }
 function tnlLab(){return (window.EDTennisLab||null);}

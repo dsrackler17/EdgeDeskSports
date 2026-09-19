@@ -347,6 +347,22 @@ function player(o) {
   chk('and which does NOT claim no schedule exists', !sched.note);
   chk('section titles never say "picks"',
     L.BRIEF_SECTIONS.every((s) => !/pick|bet|lock/i.test(s.title)));
+
+  /* A ZERO UNCERTAINTY IS NOT CERTAINTY. The stored figure hits exactly 0 at
+     forty rated matches, and printing "uncertainty 0%" beside a name claims
+     EdgeDesk knows that player perfectly. */
+  chk('a zero uncertainty is never phrased as certainty',
+    !/0%/.test(L.uncertaintyPhrase(0)) && /sample/.test(L.uncertaintyPhrase(0)),
+    'got: ' + L.uncertaintyPhrase(0));
+  chk('a real uncertainty is still stated as a percentage',
+    /35%/.test(L.uncertaintyPhrase(0.35)));
+  chk('an absent uncertainty is "unknown", not zero',
+    /unknown/.test(L.uncertaintyPhrase(null)));
+  const moved = L.buildBrief({ tour: 'ATP', movers: [
+    { player_id: 'a', full_name: 'A', delta: 3.2, sample: 400, uncertainty: 0 }] });
+  chk('and no brief line ever renders "uncertainty 0%"',
+    !/uncertainty 0%/.test(JSON.stringify(moved)),
+    JSON.stringify(moved.sections[0] && moved.sections[0].items[0]));
 }
 
 /* ───────────────────────────── FRESHNESS / QUALITY ─────────────────────── */

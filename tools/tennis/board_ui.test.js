@@ -289,15 +289,26 @@ function priced(over) {
 
   /* ---- the segment is wired ------------------------------------------- */
   has(APP, "tddSetTour('BOARD')", 'the board has a seat in the tennis segment row');
-  has(APP, "var TDD_VIEWS=['ATP','WTA','BOARD','LIVE','RESEARCH']", 'and a place in the view list');
+  has(APP, "'BOARD'", 'and a place in the view list');
   has(APP, 'id="tddBoard"', 'and a block of its own');
-  chk('the segment row and the view list are in the same order', () => {
-    const seg = APP.slice(APP.indexOf('id="tddTour"'), APP.indexOf('id="tddTour"') + 900);
-    const order = [];
-    const re = /tddSetTour\('([A-Z]+)'\)/g;
-    let m; while ((m = re.exec(seg))) order.push(m[1]);
-    return order.join(',') === 'ATP,WTA,BOARD,LIVE,RESEARCH';
-  });
+
+  /* THE INVARIANT, NOT THE LITERAL. tddSetTour toggles the segment buttons by
+     INDEX against TDD_VIEWS, so the two must stay in the same order or clicking
+     one tab highlights another. Pinning the exact list meant every legitimate
+     addition to the tennis module — the Lab was one — failed this suite for a
+     reason that had nothing to do with the board. What matters is that the
+     orders agree and that the board is still in both. */
+  const views = (APP.match(/var TDD_VIEWS=\[([^\]]*)\]/) || [])[1];
+  chk('the view list is declared', !!views, 'TDD_VIEWS was not found');
+  const declared = String(views || '').split(',').map((x) => x.trim().replace(/'/g, ''));
+  const seg = APP.slice(APP.indexOf('id="tddTour"'), APP.indexOf('id="tddTour"') + 1400);
+  const order = [];
+  const re = /tddSetTour\('([A-Z]+)'\)/g;
+  let m; while ((m = re.exec(seg))) order.push(m[1]);
+  chk('the segment row and the view list are in the same order',
+    order.join(',') === declared.join(','),
+    'segment: ' + order.join(',') + '  vs  views: ' + declared.join(','));
+  chk('the board is in both', declared.indexOf('BOARD') >= 0 && order.indexOf('BOARD') >= 0);
 
   if (fail) {
     console.log('FAIL | tennis research board UI | ' + fail + ' of ' + (pass + fail) + ' assertions failed');
