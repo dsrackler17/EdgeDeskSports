@@ -65,6 +65,23 @@ const W3 = [
 
 const code = n => String(n).toUpperCase().replace(/[^A-Z0-9]+/g, '').slice(0, 10);
 
+/* THE WEEK 1 PROVIDER IDS CANNOT BE HAND-PICKED EITHER.
+   The Week 1 feed numbers its events from a base, and the settlement record
+   grows every hour, so that block grows with it. Based at 300 it reached the
+   Week 2 fixtures the moment the record held 102 usable games: ids ran
+   300..402, the last two were 401 and 402, and those are SMU @ Baylor and
+   Idaho @ Utah. The sync matches a fixture to a held game by the provider ref
+   first, so it found Week 1 rows already carrying espn:401 and espn:402,
+   UPDATED them into Week 2 instead of creating those two games, and three
+   assertions went red on a sync doing exactly the right thing with the ids it
+   was handed -- the same way the literal counts and the pairing collisions
+   above went red before them.
+
+   So the base is DERIVED: one past the highest id any fixture claims. The
+   blocks are then disjoint by construction at every size the record will ever
+   reach, because Week 1's block only ever grows away from theirs. */
+const W1_ID_BASE = Math.max(...W2.concat(W3).map(g => Number(g.espn_id))) + 1;
+
 /* WEEK 1 IS EVERY SETTLED GAME IN THE COMMITTED RECORD -- EXCEPT ANY FIXTURE
    WEEK 2 OR 3 ALREADY CLAIMS.
 
@@ -241,7 +258,7 @@ function espnHandler(req, res) {
   const u = new URL(req.url, 'http://x');
   const week = Number(u.searchParams.get('week')), type = Number(u.searchParams.get('seasontype'));
   let events = [];
-  if (type === 2 && week === 1) events = W1.map((g, i) => espnEvent(g, 1, 300 + i));
+  if (type === 2 && week === 1) events = W1.map((g, i) => espnEvent(g, 1, W1_ID_BASE + i));
   if (type === 2 && week === 2) events = W2.map(g => espnEvent(MOVED && g.espn_id === '401'
     ? Object.assign({}, g, { kickoff_at: new Date(Date.parse(g.kickoff_at) + 2 * HOUR).toISOString() }) : g, 2, g.espn_id));
   if (type === 2 && week === 3) events = W3.map(g => espnEvent(g, 3, g.espn_id));

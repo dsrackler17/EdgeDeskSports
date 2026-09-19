@@ -78,7 +78,21 @@ function build(now) {
     model_fair_total: 58.1, data_completeness: 0.55,
     spread_recommendation: 'NO_MARKET', market_status: 'NOT JOINED IN THIS BUILD', quote_timestamp: null,
   };
-  const slate = Object.assign({}, SLATE, { games: [NT].concat(SLATE.games.slice(0, 6)) });
+  /* ── A CARD IS A CARD OF GAMES STILL TO COME ──────────────────────────
+     The artifact is real and committed, so its first rows are its EARLIEST
+     kickoffs — the very ones the wall clock passes first. Taking six in file
+     order made the fixture rot exactly as it was always going to: on 19
+     September 2026 three of the six had already kicked off, the board
+     dropped them as STARTED (correctly — a started game is never bettable),
+     and the suites that need a card to evaluate were left with one game.
+     So the six are the first six still AHEAD of the clock. The bytes are
+     still the artifact's own; only the window they are drawn from moves with
+     the calendar, which is precisely what the board itself does. */
+  const ahead = (games, n) => {
+    const up = games.filter((g) => Date.parse(g.kickoff) > now);
+    return (up.length >= n ? up : games).slice(0, n);
+  };
+  const slate = Object.assign({}, SLATE, { games: [NT].concat(ahead(SLATE.games, 6)) });
   /* One NFL game inside the window whatever the calendar says, on the front of
      the REAL committed NFL artifact, so the NFL card always carries a game the
      suites can name. The model fields are the shape the builder writes. */
@@ -97,7 +111,7 @@ function build(now) {
   };
   /* The real card's Detroit and Buffalo games are left off so "the Lions at
      Buffalo" resolves to exactly one game whatever week the artifact is from. */
-  const nflRest = NFL_SLATE.games.filter((g) => !/^(det|buf)$/i.test(String(g.home_team_id)) && !/^(det|buf)$/i.test(String(g.away_team_id))).slice(0, 6);
+  const nflRest = ahead(NFL_SLATE.games.filter((g) => !/^(det|buf)$/i.test(String(g.home_team_id)) && !/^(det|buf)$/i.test(String(g.away_team_id))), 6);
   const nfl = Object.assign({}, NFL_SLATE, { games: [NFLG].concat(nflRest) });
 
   const teams = [
