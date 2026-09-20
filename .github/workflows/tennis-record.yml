@@ -197,14 +197,20 @@ jobs:
           # indexes and constraints stand on: if one of those is absent, the
           # apply WILL stop there, and it is better said here than discovered
           # mid-migration.
+          # The columns asked for here are the ones the contract's indexes and
+          # constraints stand on AND that the file does not add itself. The
+          # tournaments block is deliberately short: tennis.tournaments belongs
+          # to the live centre, and tennis_record.sql brings it up to the
+          # contract with `alter table ... add column if not exists` before it
+          # indexes anything, so season/venue_id/latitude and the rest are NOT
+          # a conflict there and must not be reported as one.
           SHAPE=$(psql "$SUPABASE_DB_URL" -tAX -v ON_ERROR_STOP=1 -c "
             with required(tbl, col) as (values
               ('players','name_norm'), ('players','tour'), ('players','last_match'), ('players','player_uuid'),
               ('matches','tour'), ('matches','match_date'), ('matches','tournament_id'), ('matches','round_order'),
               ('matches','winner_id'), ('matches','loser_id'), ('matches','surface'), ('matches','season'),
               ('matches','source_match_uid'),
-              ('tournaments','tour'), ('tournaments','season'), ('tournaments','provider'),
-              ('tournaments','start_date'), ('tournaments','surface'),
+              ('tournaments','tour'), ('tournaments','provider'), ('tournaments','start_date'), ('tournaments','surface'),
               ('rankings_current','tour'), ('rankings_current','rank'),
               ('venues','venue_name'), ('venues','latitude'), ('venues','longitude')
             )
@@ -215,6 +221,26 @@ jobs:
                 select 1 from pg_attribute a
                 where a.attrelid = to_regclass('tennis.' || r.tbl)
                   and a.attname = r.col and a.attnum > 0 and not a.attisdropped);")
+
+          # AND A NAME THAT IS TAKEN BY SOMETHING THAT IS NOT A TABLE. A view
+          # answers to_regclass, so the relation check above calls it present;
+          # `create table if not exists` then skips it and the first index on
+          # it fails with "is not a table". Same class of fault as a missing
+          # column, same remedy, and invisible to a check that only asks
+          # whether the name resolves.
+          KIND=$(psql "$SUPABASE_DB_URL" -tAX -v ON_ERROR_STOP=1 -c "
+            select coalesce(string_agg('tennis.' || t || ' is a '
+                     || case c.relkind when 'v' then 'view' when 'm' then 'materialized view'
+                                       when 'f' then 'foreign table' when 'p' then 'partitioned table'
+                                       else c.relkind::text end, ', ' order by t), '')
+            from unnest(array['meta','source_licenses','ingestion_runs','data_quality_issues',
+                              'stg_archive_matches','players','venues','tournaments','matches',
+                              'player_match_features','player_ratings_current','rankings_current',
+                              'weather_observations','odds_snapshots','model_registry',
+                              'model_predictions','research_opportunities','prediction_record']) t
+            join pg_class c on c.oid = to_regclass('tennis.' || t)
+            where c.relkind <> 'r';")
+          if [ -n "$KIND" ]; then SHAPE="${SHAPE:+$SHAPE; }$KIND, where this contract needs an ordinary table"; fi
 
           if [ -n "$MISSING" ] || [ -n "$SHAPE" ]; then
             if [ -n "$MISSING" ]; then
