@@ -177,18 +177,120 @@ jobs:
               'tennis.research_opportunities', 'tennis.source_licenses', 'tennis.stg_archive_matches', 'tennis.tournaments',
               'tennis.venues', 'tennis.weather_observations', 'tennis.live_matches'
             ]) t where to_regclass(t) is null;")
-          if [ -n "$MISSING" ]; then
-            echo "::error::the tennis contract is incomplete on this database."
-            echo "::error::missing: $MISSING"
-            echo "::error::Apply it from the Deploy intelligence workflow, in this order:"
-            echo "::error::  apply_tennis_live_center -> apply_tennis_record -> apply_tennis_lab"
-            echo "::error::Every file is idempotent — it creates what is absent and leaves"
-            echo "::error::what is present alone — so running it over a PARTIAL install is"
-            echo "::error::exactly the right repair, and running it twice is safe."
+          # A RELATION THAT EXISTS IS NOT THE SAME AS A RELATION THAT MATCHES,
+          # and checking only the first is how a repair turned into a raw psql
+          # error halfway through a migration. On 2026-09-20 an apply of
+          # supabase/tennis_record.sql against production stopped at
+          #
+          #     NOTICE:  relation "players" already exists, skipping
+          #     ERROR:   column "name_norm" does not exist
+          #
+          # tennis.players PREDATES this contract. `create table if not exists`
+          # skipped it, and the very next statement — an index on name_norm —
+          # assumed the columns the file would have created. psql runs a -f
+          # script statement by statement, so everything before that line had
+          # already committed and the database was left further in than it
+          # started and still broken. The list above would have called that
+          # database fully installed the moment the last table appeared.
+          #
+          # So the shape is checked too, against the columns the contract's OWN
+          # indexes and constraints stand on: if one of those is absent, the
+          # apply WILL stop there, and it is better said here than discovered
+          # mid-migration.
+          # The columns asked for here are the ones the contract's indexes and
+          # constraints stand on AND that the file does not add itself. The
+          # tournaments block is deliberately short: tennis.tournaments belongs
+          # to the live centre, and tennis_record.sql brings it up to the
+          # contract with `alter table ... add column if not exists` before it
+          # indexes anything, so season/venue_id/latitude and the rest are NOT
+          # a conflict there and must not be reported as one.
+          SHAPE=$(psql "$SUPABASE_DB_URL" -tAX -v ON_ERROR_STOP=1 -c "
+            with required(tbl, col) as (values
+              ('players','name_norm'), ('players','tour'), ('players','last_match'), ('players','player_uuid'),
+              ('matches','tour'), ('matches','match_date'), ('matches','tournament_id'), ('matches','round_order'),
+              ('matches','winner_id'), ('matches','loser_id'), ('matches','surface'), ('matches','season'),
+              ('matches','source_match_uid'),
+              ('tournaments','tour'), ('tournaments','provider'), ('tournaments','start_date'), ('tournaments','surface'),
+              ('rankings_current','tour'), ('rankings_current','rank'),
+              ('venues','venue_name'), ('venues','latitude'), ('venues','longitude')
+            )
+            select coalesce(string_agg('tennis.' || r.tbl || '.' || r.col, ', ' order by r.tbl, r.col), '')
+            from required r
+            where to_regclass('tennis.' || r.tbl) is not null
+              and not exists (
+                select 1 from pg_attribute a
+                where a.attrelid = to_regclass('tennis.' || r.tbl)
+                  and a.attname = r.col and a.attnum > 0 and not a.attisdropped);")
+
+          # AND A NAME THAT IS TAKEN BY SOMETHING THAT IS NOT A TABLE. A view
+          # answers to_regclass, so the relation check above calls it present;
+          # `create table if not exists` then skips it and the first index on
+          # it fails with "is not a table". Same class of fault as a missing
+          # column, same remedy, and invisible to a check that only asks
+          # whether the name resolves.
+          KIND=$(psql "$SUPABASE_DB_URL" -tAX -v ON_ERROR_STOP=1 -c "
+            select coalesce(string_agg('tennis.' || t || ' is a '
+                     || case c.relkind when 'v' then 'view' when 'm' then 'materialized view'
+                                       when 'f' then 'foreign table' when 'p' then 'partitioned table'
+                                       else c.relkind::text end, ', ' order by t), '')
+            from unnest(array['meta','source_licenses','ingestion_runs','data_quality_issues',
+                              'stg_archive_matches','players','venues','tournaments','matches',
+                              'player_match_features','player_ratings_current','rankings_current',
+                              'weather_observations','odds_snapshots','model_registry',
+                              'model_predictions','research_opportunities','prediction_record']) t
+            join pg_class c on c.oid = to_regclass('tennis.' || t)
+            where c.relkind <> 'r';")
+          if [ -n "$KIND" ]; then SHAPE="${SHAPE:+$SHAPE; }$KIND, where this contract needs an ordinary table"; fi
+
+          if [ -n "$MISSING" ] || [ -n "$SHAPE" ]; then
+            if [ -n "$MISSING" ]; then
+              echo "::error::the tennis contract is incomplete on this database."
+              echo "::error::missing: $MISSING"
+            fi
+            if [ -n "$SHAPE" ]; then
+              echo "::error::a tennis relation EXISTS but does not match this contract."
+              echo "::error::absent columns: $SHAPE"
+              echo "::error::That table predates supabase/tennis_record.sql, so applying the file"
+              echo "::error::will NOT repair it: create-table-if-not-exists skips the table and the"
+              echo "::error::next index fails on the missing column, part-applied. The table has to"
+              echo "::error::be reconciled with the contract — or dropped, if it holds nothing worth"
+              echo "::error::keeping — before the apply can run to the end."
+              echo "::error::What is actually there:"
+              # tables AND views: a view is invisible to a relkind='r' listing,
+              # and a view holding a name this contract needs as a table is
+              # exactly one of the conflicts being reported. Anything that
+              # DEPENDS on a relation is listed too, because a dependent view is
+              # what stops that relation being replaced.
+              psql "$SUPABASE_DB_URL" -tAX -c "
+                select '  tennis.' || c.relname
+                     || ' [' || case c.relkind when 'r' then 'table' when 'v' then 'VIEW'
+                                                when 'm' then 'MATVIEW' else c.relkind::text end || ']'
+                     || case when c.relkind = 'r'
+                             then '  rows~' || coalesce((select s.n_live_tup from pg_stat_user_tables s where s.relid = c.oid)::text, '?')
+                             else '' end
+                     || coalesce('  depended on by: ' || (
+                          select string_agg(distinct dv.relname, ', ')
+                          from pg_depend d join pg_rewrite rw on rw.oid = d.objid
+                            join pg_class dv on dv.oid = rw.ev_class
+                          where d.refobjid = c.oid and d.classid = 'pg_rewrite'::regclass and dv.oid <> c.oid), '')
+                     || '  cols: ' || (select string_agg(a.attname, ',' order by a.attnum) from pg_attribute a
+                                        where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped)
+                from pg_class c join pg_namespace n on n.oid = c.relnamespace
+                where n.nspname = 'tennis' and c.relkind in ('r','v','m') order by c.relkind, c.relname;" || true
+            fi
+            if [ -z "$SHAPE" ]; then
+              echo "::error::Apply it from the Deploy intelligence workflow, in this order:"
+              echo "::error::  apply_tennis_live_center -> apply_tennis_record -> apply_tennis_lab"
+              echo "::error::Every file is idempotent over a database whose tables it created"
+              echo "::error::itself — it creates what is absent and leaves what is present alone —"
+              echo "::error::so running it over a PARTIAL install is the right repair, and running"
+              echo "::error::it twice is safe."
+            fi
             echo "::error::Nothing was read and nothing was written."
             exit 1
           fi
-          echo "The tennis contract is installed. Every relation these jobs read is present."
+          echo "The tennis contract is installed. Every relation these jobs read is present,"
+          echo "and each one carries the columns the contract's own indexes stand on."
 
   record:
     needs: preflight

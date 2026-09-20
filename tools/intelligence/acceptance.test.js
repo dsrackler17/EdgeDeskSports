@@ -686,9 +686,35 @@ const MLB_PACKET = {
     const ix = EI.fbsIndexFor(games);
     const R = (q) => sandbox.resolveQuestionToGame(q, games, ix);
 
-    const nt = R('What do you think about North Texas vs Texas State this week?');
-    chk('the browser resolves a named matchup off the published card',
-      nt && nt.home_id === 'texasstate' && nt.away_id === 'northtexas', nt && [nt.away_team, nt.home_team]);
+    /* THE SAME ROT ONE LINE UP, AND THE SAME REMEDY AS THE TWO BELOW. This
+       asked about "North Texas vs Texas State" and asserted that exact
+       pairing. It was real when it was written; by 20 September the card had
+       North Texas hosting Houston Christian, so the resolver returned the game
+       the card actually holds — correctly — and the assertion went red on a
+       resolver doing its job. It failed npm run intel:test, which is the FIRST
+       GATE of the Deploy intelligence workflow, so a stale fixture list was
+       standing between a merged migration and the database.
+
+       What has to hold is that a matchup NAMED OFF THE CARD resolves to that
+       game. So the pairing is taken from the card: the first game whose two
+       programs each appear on it exactly once, which is the condition the
+       resolver is documented to require (`hits.length === 1`) and the same
+       count the Texas State check below reasons about. */
+    const onCard = (id) => games.filter((x) => x.home_id === id || x.away_id === id).length;
+    const pick = games.find((g) => g.home_id && g.away_id
+      && onCard(g.home_id) === 1 && onCard(g.away_id) === 1
+      && EI.resolveTeam(g.home_team, ix).key === g.home_id
+      && EI.resolveTeam(g.away_team, ix).key === g.away_id);
+    if (!pick) {
+      /* a fact about the artifact, not about the resolver */
+      chk('skipped: no game on the card has both programs on it exactly once', true);
+    } else {
+      const nt = R(`What do you think about ${pick.away_team} vs ${pick.home_team} this week?`);
+      chk('the browser resolves a named matchup off the published card',
+        nt && String(nt.game_id) === String(pick.game_id)
+        && nt.home_id === pick.home_id && nt.away_id === pick.away_id,
+        { asked: pick.away_team + ' @ ' + pick.home_team, got: nt && [nt.away_team, nt.home_team] });
+    }
     /* A PROGRAM'S GAME COUNT IN THE WINDOW IS NOT A CONSTANT, AND THIS
        ASSERTED ONE. The ten-day lookahead spans one game week or two
        depending on the day it is built. When it spans two, Texas State has
