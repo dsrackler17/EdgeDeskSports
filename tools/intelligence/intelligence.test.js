@@ -1590,10 +1590,43 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     eq('and NO spread price is ever mirrored from the other side of a handicap', good.mirrored, 0);
 
     /* The same card stored the wrong way round. The guard must catch the rows
-       big enough to catch and must never flip one. */
+       big enough to catch and must never flip one.
+
+       "BIG ENOUGH TO CATCH" IS ARITHMETIC, NOT A ROUND NUMBER, and asserting a
+       COUNT of it made this a test of the week's schedule. An inverted row
+       reconciles at |2h + offset| against the model, where h is the game's
+       model_home_line, so the guard can only see it once that clears
+       orientation_bound_pts — about ten and a half points of projected margin
+       at a 21-point bound. How many games on a given Saturday are that
+       lopsided is a fact about the fixture list: the 2026 week-three card came
+       back with 26 of them against a `> 30` assertion, and the suite failed
+       with the guard catching every row it was capable of catching, 26 of 26.
+       That blocked the Deploy intelligence workflow, whose first step this is.
+
+       So the bound is derived from the engine's OWN published constants and
+       every catchable row must be caught — exactly, not "most". That is a
+       stronger statement than the one it replaces, and it is a statement about
+       the guard rather than about who was playing that week. The two rows
+       below then pin both ends of the rule against fixed numbers, so the guard
+       is exercised even on a card with no lopsided game in it at all. */
     const bad = runCard(linesFor(1.5, true));
-    chk('an inverted table has most of its spreads dropped rather than flipped',
-      bad.faults > 30, bad);
+    const OB = I.config().orientation_bound_pts;
+    const catchable = slate.games.filter((g, i) =>
+      !(i % 5 === 3) && g.model_home_line != null
+      && Math.abs(2 * g.model_home_line + 1.5) > OB).length;
+    eq('every inverted row the guard can see is dropped, not flipped', bad.faults, catchable);
+
+    /* and the rule itself, at both ends, independent of the card */
+    const invertedRow = I.resolveMarket({ signals: [], home_selection: 'H', away_selection: 'A',
+      model_home_line: -20,
+      lines: [{ game_id: 'x', provider: 'consensus', spread: 20, over_under: 55.5 }] });
+    chk('a plainly inverted row is a convention fault', !!invertedRow.spread.fault, invertedRow.spread);
+    eq('and it is dropped rather than negated into a usable number', invertedRow.spread.line, null);
+    const honestRow = I.resolveMarket({ signals: [], home_selection: 'H', away_selection: 'A',
+      model_home_line: -20,
+      lines: [{ game_id: 'x', provider: 'consensus', spread: -17, over_under: 55.5 }] });
+    chk('an honest three-point disagreement is never called a convention fault',
+      !honestRow.spread.fault, honestRow.spread);
     eq('and dropping a spread never invents an executable price', bad.priced, 0);
     chk('the games still count as carrying a market, because the total and the moneyline survive',
       bad.lined === good.lined, { bad: bad.lined, good: good.lined });

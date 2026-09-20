@@ -122,7 +122,22 @@ const identity = {
   chk('the backdoor module is an inference and says so', by.late_game_backdoor.kind === 'inference');
   chk('finishing is PARTIAL when one side has no red-zone record', by.finishing_drives.status !== 'MEASURED' || by.finishing_drives.missing.length >= 0);
   chk('three decisive factors at most, each with evidence from both sides', it.decisive_factors.length <= 3 && it.decisive_factors.length >= 2 && it.decisive_factors.every((d) => d.evidence.length >= 2 && d.mechanism), it.decisive_factors.map((d) => d.sentence));
-  chk('the counter-case favours the side the model does not', !it.counter_case || it.counter_case.favours !== it.model_favourite, it.counter_case);
+  /* THE PRODUCING HALF OF THE COUNTER-CASE RULE, PINNED WHERE IT CANNOT ROT.
+     `!it.counter_case ||` is vacuously true on a null, so this passed just as
+     happily on a layer that never produced a counter-case at all. The eval
+     suite tried to cover that by asserting one of its two LIVE questions would
+     produce one — which is a question about which way this week's z-scores
+     point, and went red on 20 September with nothing broken.
+     This fixture carries measured factors on BOTH sides of the model
+     favourite by construction, so a counter-case is owed here, every run. */
+  const opposing = it.modules.filter((m) => m.status === 'MEASURED' && m.advantage
+    && m.advantage.side && m.advantage.magnitude != null && m.advantage.side !== it.model_favourite);
+  chk('this fixture measures factors on both sides of the model favourite', opposing.length > 0,
+    it.modules.filter((m) => m.status === 'MEASURED' && m.advantage && m.advantage.side)
+      .map((m) => m.id + ':' + m.advantage.side));
+  chk('so a counter-case is PRODUCED, not refused', !!it.counter_case, it.model_favourite);
+  chk('the counter-case favours the side the model does not',
+    !!it.counter_case && it.counter_case.favours !== it.model_favourite, it.counter_case);
   chk('no module contains an invented coverage or tracking statistic', !/man coverage|zone rate|separation|time to throw:?\s*\d/i.test(JSON.stringify(it)));
 }
 

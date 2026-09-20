@@ -235,11 +235,31 @@ for (const id of ['cfb', 'nfl']) {
   chk(id + ': latency stays under two seconds on fixtures', a.latency_ms < 2000, a.latency_ms);
   chk(id + ': a conversation state is returned after', a.conversation_state);
 }
-/* The biconditional above is satisfied by a suite in which no counter-case is
-   ever produced, so something has to exercise the producing half. CFB does. */
-chk('the counter-case is produced somewhere, not only refused',
-  ['cfb', 'nfl'].some((id) => after.questions[id].counter_case),
-  ['cfb', 'nfl'].map((id) => ({ id: id, counter_case: after.questions[id].counter_case, opposing_factors: after.questions[id].opposing_factors })));
+/* WHICH HALF A LIVE QUESTION EXERCISES IS NOT A PROPERTY OF THE LAYER.
+
+   The biconditional above is satisfied by a suite in which no counter-case is
+   ever produced, so something has to exercise the producing half — and this
+   asserted that one of the two LIVE questions would. That is the same rot the
+   comment twenty lines up warns about, one check lower down: the layer builds
+   a counter-case only where a measured factor favours the side the model does
+   not, and on 20 September both fixtures came back with every measured factor
+   agreeing with the model favourite — opposing_factors 0 and 0. Nothing had
+   broken. The suite went red, and because `npm run intel:test` is the FIRST
+   GATE of the Deploy intelligence workflow, a fixture list was standing
+   between a merged migration and the database.
+
+   The producing half is pinned in analyst.test.js instead, on a fixed packet
+   built to carry measured factors on both sides of the favourite, where it
+   cannot rot. What is owed HERE is that the biconditional is doing work: the
+   modules were measured and the model named a favourite, so "no counter-case"
+   is a finding about this week's evidence rather than a layer that never ran. */
+['cfb', 'nfl'].forEach((id) => {
+  const a = after.questions[id];
+  chk(id + ': the counter-case rule ran against measured evidence, so its answer means something',
+    a.interactions_measured > 0 && !!a.model_favourite,
+    { measured: a.interactions_measured, model_favourite: a.model_favourite,
+      opposing_factors: a.opposing_factors, counter_case: a.counter_case });
+});
 chk('cfb: the live forecast was retrieved and applied', after.questions.cfb.weather_on_file && !before.questions.cfb.weather_on_file);
 chk('cfb: cover + push + lose reconcile to one', after.questions.cfb.sensitivity && Math.abs(after.questions.cfb.sensitivity.sum - 1) < 1e-3, after.questions.cfb.sensitivity);
 chk('cfb: the break-even the price requires is arithmetic on the price (-105 → 51.2%)', after.questions.cfb.sensitivity && Math.abs(after.questions.cfb.sensitivity.requires - 0.5122) < 0.002, after.questions.cfb.sensitivity);
