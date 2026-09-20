@@ -67,8 +67,12 @@ on:
         description: 'Apply supabase/tennis_live_center.sql — the live match centre the record jobs join against (idempotent; already deployed, here so it has an apply path at all)'
         type: boolean
         default: false
+      reconcile_tennis_record:
+        description: 'Apply supabase/tennis_record_reconcile.sql FIRST — drops the pre-contract tennis relations standing in the record contract''s way. Refuses to drop anything holding a row or carrying a dependent view; a no-op once the contract owns those names.'
+        type: boolean
+        default: false
       apply_tennis_record:
-        description: 'Apply supabase/tennis_record.sql — the tennis research record contract the Tennis record workflow reads and writes (idempotent)'
+        description: 'Apply supabase/tennis_record.sql — the tennis research record contract the Tennis record workflow reads and writes (idempotent over a database whose tables it created itself; see reconcile_tennis_record if it is not)'
         type: boolean
         default: false
       apply_tennis_lab:
@@ -200,6 +204,25 @@ jobs:
           # either, and the record jobs join tennis.live_matches: a database
           # rebuilt from this repository needs to be able to get it back.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_live_center.sql
+
+      # RECONCILE FIRST, WHERE THE NAMES ARE ALREADY TAKEN BY AN EARLIER DRAFT.
+      #
+      # "Idempotent" is true of tennis_record.sql over a database whose tables
+      # IT created. Production carried an older draft of the same names — a
+      # tennis.players with no name_norm, a tennis.matches with no
+      # source_match_uid, a tennis.rankings_current that was a VIEW — and
+      # `create table if not exists` skips a name that is taken whatever is
+      # behind it, so the apply stopped at the first index that assumed its own
+      # columns, part-applied. This file removes only what is in the way, and
+      # refuses to drop a relation that holds a row or that a view depends on.
+      # It is a no-op once the contract owns those names, so leaving it checked
+      # on a later run cannot do anything.
+      - name: Reconcile a pre-contract tennis schema
+        if: ${{ inputs.reconcile_tennis_record && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_record_reconcile.sql
 
       # THE TENNIS RESEARCH RECORD. supabase/tennis_record.sql has been in the
       # repository, tested by games-sql.yml against a throwaway PostgreSQL and
