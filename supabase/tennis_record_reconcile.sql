@@ -115,7 +115,42 @@ begin
                       'contract can own the name.', r.tbl, n;
     end if;
 
-    -- NOR IS ANYTHING BUILT ON TOP OF IT.
+    -- NOR IS ANYTHING BUILT ON TOP OF IT — unless this contract owns that name
+    -- too and will build it again.
+    --
+    -- The earlier draft shipped a read layer as well as tables: match_sides
+    -- over tennis.matches, and h2h / player_career / player_form /
+    -- player_season / player_surface over that. Five of those are the views
+    -- tennis_record.sql's own report calls "the five record views app.html has
+    -- always read", and it recreates every one of them — over its own
+    -- tennis.player_match_rows, without the draft's leading `tour` column. A
+    -- `create or replace view` cannot drop a column from an existing view, so
+    -- these have to go and come back rather than be replaced in place. They
+    -- hold no data: a view is a query.
+    --
+    -- Anything OUTSIDE that list is somebody else's and stops this file dead.
+    select string_agg(distinct dv.relname, ', ') into deps
+    from pg_depend d
+      join pg_rewrite rw on rw.oid = d.objid
+      join pg_class  dv  on dv.oid = rw.ev_class
+    where d.refobjid = to_regclass('tennis.' || r.tbl)
+      and d.classid = 'pg_rewrite'::regclass
+      and dv.oid <> to_regclass('tennis.' || r.tbl)
+      and dv.relname <> all (array[
+        -- recreated by tennis_record.sql
+        'player_match_rows', 'player_career', 'player_season', 'player_surface',
+        'player_form', 'h2h', 'board_public', 'board_current', 'board_research',
+        'player_profile', 'match_context', 'public_record_summary',
+        'public_record_calibration', 'record_health',
+        -- superseded by it: player_match_rows is what match_sides was
+        'match_sides', 'rankings_current']);
+    if deps is not null then
+      raise exception 'tennis.% predates the record contract, and % depends on it — and that is NOT a '
+                      'view this contract creates. Nothing has been dropped. Repoint or remove it '
+                      'first, so nothing of yours goes with the table.', r.tbl, deps;
+    end if;
+
+    -- what CASCADE is about to take with it, on the record
     select string_agg(distinct dv.relname, ', ') into deps
     from pg_depend d
       join pg_rewrite rw on rw.oid = d.objid
@@ -123,13 +158,10 @@ begin
     where d.refobjid = to_regclass('tennis.' || r.tbl)
       and d.classid = 'pg_rewrite'::regclass
       and dv.oid <> to_regclass('tennis.' || r.tbl);
-    if deps is not null then
-      raise exception 'tennis.% predates the record contract but % depends on it. Nothing has been '
-                      'dropped. Remove or repoint those first.', r.tbl, deps;
-    end if;
 
     execute format('drop table tennis.%I cascade', r.tbl);
-    raise notice 'dropped the EMPTY pre-contract table tennis.% — tennis_record.sql will create it properly', r.tbl;
+    raise notice 'dropped the EMPTY pre-contract table tennis.% — tennis_record.sql will create it properly%',
+      r.tbl, coalesce(' (and with it the derived view(s): ' || deps || ', which it recreates)', '');
     did := did + 1;
   end loop;
 
