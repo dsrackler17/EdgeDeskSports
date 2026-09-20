@@ -540,6 +540,32 @@ function ctxFor(talentRating, opts) {
   for (let i = 0; i < 20; i++) wild['t' + i].rank = i;      /* every team inverted */
   const chaos = ETSR.stability(now, wild);
   ok('stability: a board that turned over fails', chaos.failures.length > 0);
+  ok('stability: and it fails for real — the pool never changed', chaos.fails_build === true);
+
+  /* A LONGER RANKED LIST IS NOT A MOVING BOARD, and this is the case that
+     refused to publish a correct week-three rebuild. Twenty settled teams in
+     exactly the same order, with twenty newly-confident teams interleaved
+     between them: every one of the twenty is pushed down the page and not one
+     of them passed another. The raw difference reads that as a turnover — on
+     the real 2026 boards, 25.50 mean places and 56% moving fifteen or more,
+     against 6.21 and 8.8% once the same teams are put on the same scale. */
+  const grownPrev = {}, grownNow = {};
+  for (let i = 0; i < 20; i++) {
+    grownPrev['t' + i] = { etsr: 40 - i, rank: i + 1, talent: { rating: 50 } };
+    grownNow['t' + i] = { etsr: 40 - i, rank: 2 * i + 1, talent: { rating: 50 }, confidence: { value: 0.6 } };
+    grownNow['n' + i] = { etsr: 40 - i - 0.5, rank: 2 * i + 2, talent: { rating: 50 }, confidence: { value: 0.6 } };
+  }
+  const grown = ETSR.stability(grownNow, grownPrev);
+  eq('stability: teams the ranked list grew underneath have not moved', grown.mean_rank_shift, 0);
+  eq('stability: so a lengthening list raises no failure', grown.failures.length, 0);
+  ok('stability: the raw renumbering is still published, never bounded',
+    grown.whole_board.mean_rank_shift > 9);
+  eq('stability: the ranked pool is published, before', grown.ranked_pool.previous, 20);
+  eq('stability: and after', grown.ranked_pool.now, 40);
+  ok('stability: a pool that doubled is not a like-for-like comparison', grown.comparable === false);
+  ok('stability: and says so in words', grown.not_comparable_because.some(r => /ranked pool went from 20 teams to 40/.test(r)));
+  eq('stability: an unchanged pool leaves the two measures identical',
+    calm.whole_board.mean_rank_shift, calm.mean_rank_shift);
 
   const jump = { a: { etsr: 20, talent: { rating: 50 }, confidence: { value: 0.6 } } };
   const before = { a: { etsr: 2, talent: { rating: 50 } } };

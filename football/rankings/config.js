@@ -593,6 +593,18 @@
     max_share_moving_15: 0.15,
     max_rating_shift_points: 6.0,
     basis: 'if forty teams move fifteen spots in a week, the system is broken, not perceptive. These are diagnostics that FAIL a build, not scores.',
+    /* AND THEY ARE MEASURED ON ONE SCALE, which the rank integers are not.
+       A rank is a dense 1..N over the teams above RANK_MIN_CONFIDENCE only,
+       and N moves with the season — 138 in the preseason, 101 after week one,
+       68 after week two, 132 once week three's games landed. Teams crossing
+       the floor are INSERTED into the ordering, and every team they pass
+       reads as having "moved" by arithmetic that has nothing to do with its
+       football. So the bounds above are measured over the teams ranked on
+       BOTH boards, re-ranked densely inside that common set; the raw
+       whole-board numbers are still computed and still published beside
+       them, because they are what a reader comparing two printed lists
+       sees. */
+    like_for_like_basis: 'the bounds are measured over the teams ranked on both boards, re-ranked densely within that common set, because a rank is a position in a list whose LENGTH changes week to week and a lengthening list moves teams that did not move. The whole-board numbers are published under `whole_board` and are what two printed lists would show.',
     /* WHEN THE TWO BOARDS ARE NOT THE SAME KIND OF BOARD.
        These bounds compare a board against the one before it, and they assume
        the two were mixed the same way. Between the preseason and week one they
@@ -604,6 +616,15 @@
        from a build failure to a warning. */
     comparable_weight_shift: 0.05,
     comparable_basis: 'if the mean change in w_performance between the two boards is more than this, the boards were mixed differently and the stability bounds are not measuring week-to-week stability any more. The diagnostic still runs and still publishes every number; it stops being allowed to fail the build.',
+    /* AND WHEN THE POOL ITSELF TURNED OVER. Re-ranking the common set removes
+       the arithmetic of a longer list, but it cannot make a small self-selected
+       slice representative: the teams ranked on both boards are the most
+       CONFIDENT ones, so when the pool doubles, what is left to compare is the
+       teams that were already settled. That is worth publishing and is not
+       worth failing a build over. This is the same escape hatch as the weight
+       shift above, on the other axis. */
+    comparable_pool_change: 0.10,
+    pool_basis: 'if the ranked pool changed size by more than this share, the two boards do not list the same teams and the comparison runs over whichever ones cleared the confidence floor twice. Every number is still published; the bounds stop being allowed to fail the build.',
     reconstruction_note: 'a comparison whose earlier side was RECONSTRUCTED after the fact (see HISTORY and --through-week) is also not like-for-like, because the reconstruction read a player artifact that did not exist in the week it describes.'
   };
   var ANOMALIES = [

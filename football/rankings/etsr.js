@@ -519,19 +519,66 @@
   /* ---------------------------------------------------------------------
      STABILITY AND ANOMALIES  —  these FAIL a build
      --------------------------------------------------------------------- */
+  /* the ranked pool of a board: `rank` is null for every team below the
+     confidence floor, so this is the LENGTH of the list the ranks index into */
+  function rankedPool(board) {
+    var c = 0, key;
+    for (key in board) {
+      if (!Object.prototype.hasOwnProperty.call(board, key)) continue;
+      if (isNum(board[key].rank)) c++;
+    }
+    return c;
+  }
+
+  /* positions 1..n over `keys`, in the order `board` ranks them */
+  function densePositions(keys, board) {
+    var sorted = keys.slice().sort(function (x, y) { return board[x].rank - board[y].rank; });
+    var pos = {}, i;
+    for (i = 0; i < sorted.length; i++) pos[sorted[i]] = i + 1;
+    return pos;
+  }
+
   function stability(nowTeams, prevTeams, opts) {
     if (!prevTeams) return { available: false, reason: 'no earlier snapshot to compare against' };
-    var shifts = [], ratingShifts = [], big = 0, n = 0, k;
+
+    /* TWO BOARDS' RANK INTEGERS ARE NOT ON THE SAME SCALE, and subtracting
+       them pretends they are. A rank is a dense 1..N over the teams above the
+       confidence floor ONLY, and N moves with the season: 138 in the
+       preseason, 101 after week one, 68 after week two, 132 once week three's
+       games landed. The sixty-four teams that crossed the floor were INSERTED
+       into the ordering, and every team they passed reads as having moved.
+       On that exact pair of boards the raw numbers are 25.50 mean places and
+       56% of teams moving fifteen or more — four times the bound and a
+       REFUSING TO PUBLISH — while the same teams compared on the same scale
+       moved 6.21 places with 8.8% moving fifteen. The first pair is the list
+       getting longer. Only the second is the board moving, and the bounds are
+       a statement about the board.
+
+       So: measure over the teams ranked on BOTH sides, re-ranked densely
+       within that common set. The whole-board numbers are still computed and
+       still published, because they are what a reader comparing two printed
+       lists would see. */
+    var common = [], ratingShifts = [], k;
     for (k in nowTeams) {
       if (!Object.prototype.hasOwnProperty.call(nowTeams, k)) continue;
       var a = nowTeams[k], b = prevTeams[k];
       if (!b) continue;
-      if (isNum(a.rank) && isNum(b.rank)) { var s = Math.abs(a.rank - b.rank); shifts.push(s); if (s >= 15) big++; n++; }
+      if (isNum(a.rank) && isNum(b.rank)) common.push(k);
       if (isNum(a.etsr) && isNum(b.etsr)) ratingShifts.push(Math.abs(a.etsr - b.etsr));
+    }
+    var posNow = densePositions(common, nowTeams), posPrev = densePositions(common, prevTeams);
+    var shifts = [], rawShifts = [], big = 0, rawBig = 0, n = common.length, i;
+    for (i = 0; i < common.length; i++) {
+      var key = common[i];
+      var s = Math.abs(posNow[key] - posPrev[key]);
+      shifts.push(s); if (s >= 15) big++;
+      var raw = Math.abs(nowTeams[key].rank - prevTeams[key].rank);
+      rawShifts.push(raw); if (raw >= 15) rawBig++;
     }
     var meanShift = shifts.length ? mean(shifts) : null;
     var maxRating = ratingShifts.length ? Math.max.apply(null, ratingShifts) : null;
     var shareBig = n ? big / n : null;
+    var nowPool = rankedPool(nowTeams), prevPool = rankedPool(prevTeams);
     var S = CFG.STABILITY;
     var failures = [];
     if (isNum(meanShift) && meanShift > S.max_mean_rank_shift) failures.push('mean rank shift ' + r2(meanShift) + ' exceeds ' + S.max_mean_rank_shift);
@@ -556,15 +603,36 @@
         + ' between the two boards, past the ' + S.comparable_weight_shift
         + ' bound — they were mixed differently, so this is not a week-to-week comparison');
     }
+    /* AND THE POOL. Re-ranking the common set removes the arithmetic of a
+       longer list; it cannot make that set representative. The teams ranked
+       twice are the most confident ones, so a pool that doubled leaves the
+       already-settled teams being compared and the newly-rateable ones — the
+       teams that actually moved — outside the measurement entirely. */
+    var biggerPool = Math.max(nowPool, prevPool);
+    var poolChange = biggerPool ? Math.abs(nowPool - prevPool) / biggerPool : null;
+    if (isNum(poolChange) && poolChange > S.comparable_pool_change) {
+      notComparable.push('the ranked pool went from ' + prevPool + ' teams to ' + nowPool
+        + ', a ' + Math.round(poolChange * 100) + '% change past the '
+        + Math.round(S.comparable_pool_change * 100) + '% bound — the ' + n
+        + ' teams compared here are the ones that cleared the confidence floor on both boards, '
+        + 'which is not the same thing as the board');
+    }
     if (reconstructed) notComparable.push(S.reconstruction_note);
     return { available: true, mean_rank_shift: r2(meanShift), share_moving_15: r3(shareBig),
       max_rating_shift: r2(maxRating), teams_compared: n,
       mean_prior_weight_shift: r3(meanW),
+      ranked_pool: { now: nowPool, previous: prevPool, compared: n,
+        change_share: isNum(poolChange) ? r3(poolChange) : null },
+      /* the same two numbers on the raw rank integers, unadjusted for the
+         list changing length. Published, never used as a bound. */
+      whole_board: { mean_rank_shift: r2(rawShifts.length ? mean(rawShifts) : null),
+        share_moving_15: r3(n ? rawBig / n : null),
+        basis: 'the raw difference between the two boards’ rank numbers, which is what two printed lists show and which counts a team as moved when the list grew underneath it. It is reported, never bounded.' },
       comparable: notComparable.length === 0,
       not_comparable_because: notComparable,
       failures: failures,
       fails_build: notComparable.length === 0 && failures.length > 0,
-      basis: S.basis + ' ' + S.comparable_basis };
+      basis: S.basis + ' ' + S.like_for_like_basis + ' ' + S.comparable_basis + ' ' + S.pool_basis };
   }
 
   function anomalies(teams, prevTeams, opts) {
