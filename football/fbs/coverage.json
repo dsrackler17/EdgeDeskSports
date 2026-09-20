@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-19T23:15:00.303Z",
+ "generated_at": "2026-09-20T12:28:44.787Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,44 +119,44 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 126,
+  "total": 71,
   "by_group": {
-   "other": 79,
-   "p4": 69,
-   "independent": 4
+   "other": 42,
+   "p4": 38,
+   "independent": 2
   },
   "by_matchup": {
-   "non_conference": 59,
-   "conference": 40,
-   "fbs_fcs": 27
+   "non_conference": 26,
+   "conference": 32,
+   "fbs_fcs": 13
   },
   "by_conference": {
-   "mac": 18,
-   "american": 21,
-   "sec": 18,
-   "acc": 17,
-   "big12": 18,
-   "pac12": 15,
-   "bigten": 20,
-   "mwc": 12,
-   "cusa": 17,
-   "sunbelt": 25,
-   "independents": 4
+   "sunbelt": 12,
+   "cusa": 9,
+   "american": 11,
+   "bigten": 10,
+   "acc": 11,
+   "sec": 9,
+   "big12": 8,
+   "mac": 11,
+   "pac12": 8,
+   "mwc": 6,
+   "independents": 2
   }
  },
  "ok": true,
  "lookahead_days": 10,
- "absorbed_games": 205,
+ "absorbed_games": 260,
  "engine": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
   "trained_through": 2025
  },
  "projection_status": {
-  "PREDICTED": 126
+  "PREDICTED": 71
  },
  "weather": {
-  "requested": 124,
-  "answered": 124,
+  "requested": 70,
+  "answered": 70,
   "dome": 1,
   "no_venue": 0,
   "failed": 0,
@@ -164,10 +164,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "124 of 124 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "70 of 70 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 126
+  "NO_MARKET": 71
  },
  "checks": [
   {
@@ -204,12 +204,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 57,
-    "total": 126,
+    "non_power_games": 33,
+    "total": 71,
     "example": [
-     "Temple @ Toledo",
-     "Duquesne @ Washington State",
-     "Stonehill @ Massachusetts"
+     "Liberty @ Coastal Carolina",
+     "Army @ Temple",
+     "Navy @ UAB"
     ]
    }
   },
@@ -224,7 +224,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 40,
+    "conference_games": 32,
     "wrong": 0
    }
   },
@@ -232,7 +232,7 @@
    "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
    "ok": true,
    "detail": {
-    "fbs_fcs_games": 27,
+    "fbs_fcs_games": 13,
     "graded": []
    }
   },
@@ -256,8 +256,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 126,
-    "audit_total": 126
+    "slate": 71,
+    "audit_total": 71
    }
   },
   {
@@ -287,13 +287,13 @@
       "to": "Pac-12"
      },
      {
-      "team": "Boise State",
-      "from": "Mountain West",
+      "team": "Texas State",
+      "from": "Sun Belt",
       "to": "Pac-12"
      },
      {
-      "team": "Texas State",
-      "from": "Sun Belt",
+      "team": "Boise State",
+      "from": "Mountain West",
       "to": "Pac-12"
      },
      {
@@ -350,13 +350,13 @@
     "to": "Pac-12"
    },
    {
-    "team": "Boise State",
-    "from": "Mountain West",
+    "team": "Texas State",
+    "from": "Sun Belt",
     "to": "Pac-12"
    },
    {
-    "team": "Texas State",
-    "from": "Sun Belt",
+    "team": "Boise State",
+    "from": "Mountain West",
     "to": "Pac-12"
    },
    {
