@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T19:00:00.000Z",
   "game_when_label": "2026-09-26 19:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-19T22:55:23.156Z",
-  "generated_at": "2026-09-19T22:55:23.156Z",
+  "updated_at": "2026-09-20T04:46:18.037Z",
+  "generated_at": "2026-09-20T04:46:18.037Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -258,15 +258,15 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": null,
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
       "home": {
         "team": "Florida State",
-        "status": "PREVIOUS_GAME",
+        "status": "COMPETITION",
         "confirmed": false,
         "player": "Ashton Daniels",
         "player_id": "4838679",
-        "label": "Ashton Daniels — started the last game; no announcement for this one.",
+        "label": "unresolved: Ashton Daniels 92% of recent dropbacks and Trey Hedden 5% of recent dropbacks.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -335,12 +335,12 @@
             "why": "took the first dropback of the game"
           }
         ],
-        "source": "cfbfastR-data player_stats — play attribution",
-        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-09-07T23:30:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "source": "EdgeDesk player layer (EPIR) projected QB1",
+        "source_url": "football/players/teams/floridastate.json",
+        "published_at": "2026-09-18T11:28:00.102Z",
+        "retrieved_at": "2026-09-18T11:28:00.102Z"
       },
-      "generated_at": "2026-09-19T13:24:25.628Z",
+      "generated_at": "2026-09-19T23:14:15.651Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1254,6 +1254,12 @@
         {
           "sev": "LOW",
           "label": "missing",
+          "text": "home quarterback is contested — the evidence names more than one starter",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1279,12 +1285,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "no book total joined to this game",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "low confidence",
-          "text": "opponent-adjusted team rating is in the number but rests on a thin sample",
           "widening": null
         }
       ],
@@ -1492,13 +1492,13 @@
       "Florida State wins 98% of the time in EdgeDesk’s simulation, Central Arkansas 2%.",
       "Eight games in ten land between +8.5 and +52.5 for Florida State. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Central Arkansas quarterback: Donovyn Omolo — started the last game; no announcement for this one.",
-      "Florida State quarterback: Ashton Daniels — started the last game; no announcement for this one."
+      "Central Arkansas quarterback: Donovyn Omolo — started the last game; no announcement for this one."
     ],
     "missing": [
       "No projected score: no total published — EdgeDesk can price the side but cannot responsibly split it into a projected score.",
       "Central Arkansas is not one of the 138 FBS programmes EdgeDesk rates, so it carries no team rating. Nothing is estimated in its place.",
       "No availability report reached Donovyn Omolo — unknown is carried as unknown, never as healthy.",
+      "Florida State quarterback unresolved: unresolved: Ashton Daniels 92% of recent dropbacks and Trey Hedden 5% of recent dropbacks.",
       "No availability report reached Ashton Daniels — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1508,6 +1508,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-19T22:55:23.156Z"
+    "at": "2026-09-20T04:46:18.037Z"
   }
 }

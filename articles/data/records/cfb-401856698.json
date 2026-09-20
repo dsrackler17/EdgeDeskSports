@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Vanderbilt vs. Auburn: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Vanderbilt vs. Auburn 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Vanderbilt at Auburn at Auburn -3.6 with a 54.4 fair total. Auburn wins 59% of simulations. Data confidence 66%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Vanderbilt at Auburn at Auburn -3.6 with a 54.4 fair total. Auburn wins 59% of simulations. Data confidence 78%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Vanderbilt carries the stronger underlying team rating — +7.0 against +6.4, a 0.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Auburn -3.6 before any sportsbook number is consulted, with Auburn winning 59% of…",
   "home_team": "Auburn",
   "away_team": "Vanderbilt",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T20:15:00.000Z",
   "game_when_label": "2026-09-26 20:15 UTC",
   "published_at": null,
-  "updated_at": "2026-09-19T22:55:23.156Z",
-  "generated_at": "2026-09-19T22:55:23.156Z",
+  "updated_at": "2026-09-20T04:46:18.037Z",
+  "generated_at": "2026-09-20T04:46:18.037Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 66,
+  "confidence": 78,
   "priced": true,
   "fair_spread_text": "Auburn -3.6",
   "fair_total": "54.4",
@@ -65,7 +65,7 @@
     "lede": [
       "Vanderbilt carries the stronger underlying team rating — +7.0 against +6.4, a 0.6-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Auburn -3.6 before any sportsbook number is consulted, with Auburn winning 59% of simulations.",
-      "Data confidence on this matchup is 66% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 78% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
@@ -110,7 +110,7 @@
         "volatility_discriminates": false,
         "note": "Quoted from Auburn’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 66,
+      "confidence_pct": 78,
       "inputs_reached_pct": 59,
       "input_contract": {
         "fields": 17,
@@ -181,11 +181,11 @@
     "starters": {
       "away": {
         "team": "Vanderbilt",
-        "status": "COMPETITION",
+        "status": "PREVIOUS_GAME",
         "confirmed": false,
-        "player": "Blaze Berlowitz",
-        "player_id": "5121691",
-        "label": "unresolved: Jared Curtis 55% of recent dropbacks and Blaze Berlowitz 45% of recent dropbacks.",
+        "player": "Jared Curtis",
+        "player_id": "5158948",
+        "label": "Jared Curtis — started the last game; no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -195,9 +195,9 @@
           "source_url": null
         },
         "experience": {
-          "starts": 2,
-          "dropbacks": 43,
-          "seasons_observed": 2,
+          "starts": 1,
+          "dropbacks": 67,
+          "seasons_observed": 1,
           "seasons_read": [
             2025,
             2026
@@ -206,38 +206,25 @@
           "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
         },
         "competition": {
-          "contested": true,
+          "contested": false,
           "games": 2,
           "players": [
             {
               "player_id": "5158948",
               "player_name": "Jared Curtis",
-              "dropbacks": 31,
-              "share": 0.554
+              "dropbacks": 54,
+              "share": 0.857
             },
             {
               "player_id": "5121691",
               "player_name": "Blaze Berlowitz",
-              "dropbacks": 25,
-              "share": 0.446
+              "dropbacks": 9,
+              "share": 0.143
             }
           ]
         },
-        "conflicts": 0,
+        "conflicts": 1,
         "history": [
-          {
-            "week": 1,
-            "game_id": "401856669",
-            "opponent": "Austin Peay",
-            "dropbacks": 25,
-            "starter": {
-              "player_id": "5121691",
-              "player_name": "Blaze Berlowitz",
-              "share": 0.64
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 2,
             "game_id": "401856684",
@@ -250,12 +237,25 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 3,
+            "game_id": "401856695",
+            "opponent": "NC State",
+            "dropbacks": 32,
+            "starter": {
+              "player_id": "5158948",
+              "player_name": "Jared Curtis",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-09-12T20:15:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "published_at": "2026-09-19T16:45:00.000Z",
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
       "home": {
         "team": "Auburn",
@@ -341,9 +341,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-12T23:45:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
-      "generated_at": "2026-09-19T13:24:25.628Z",
+      "generated_at": "2026-09-19T23:14:15.651Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1442,7 +1442,7 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "away quarterback is contested — the evidence names more than one starter",
+          "text": "weather not supplied",
           "widening": null
         }
       ],
@@ -1660,6 +1660,7 @@
       "Auburn wins 59% of the time in EdgeDesk’s simulation, Vanderbilt 41%.",
       "Eight games in ten land between -19.4 and +24.6 for Auburn. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "Vanderbilt quarterback: Jared Curtis — started the last game; no announcement for this one.",
       "Auburn quarterback: Byrum Brown — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1682,8 +1683,7 @@
       "Vanderbilt — secondary: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Vanderbilt — depth: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Vanderbilt — continuity: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "Vanderbilt quarterback unresolved: unresolved: Jared Curtis 55% of recent dropbacks and Blaze Berlowitz 45% of recent dropbacks.",
-      "No availability report reached Blaze Berlowitz — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Jared Curtis — unknown is carried as unknown, never as healthy.",
       "No availability report reached Byrum Brown — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1693,6 +1693,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-19T22:55:23.156Z"
+    "at": "2026-09-20T04:46:18.037Z"
   }
 }

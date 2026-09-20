@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T00:00:00.000Z",
   "game_when_label": "2026-09-26 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-19T22:55:23.156Z",
-  "generated_at": "2026-09-19T22:55:23.156Z",
+  "updated_at": "2026-09-20T04:46:18.037Z",
+  "generated_at": "2026-09-20T04:46:18.037Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -181,11 +181,11 @@
     "starters": {
       "away": {
         "team": "Northwestern",
-        "status": "PREVIOUS_GAME",
+        "status": "COMPETITION",
         "confirmed": false,
         "player": "Aidan Chiles",
         "player_id": "5075805",
-        "label": "Aidan Chiles — started the last game; no announcement for this one.",
+        "label": "unresolved: Aidan Chiles 90% of recent dropbacks and Chase Mason 10% of recent dropbacks.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -235,10 +235,10 @@
             "why": "the player who took the first dropback threw 10% of the dropbacks; the usage leader was Aidan Chiles"
           }
         ],
-        "source": "cfbfastR-data player_stats — play attribution",
-        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-09-06T00:00:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "source": "EdgeDesk player layer (EPIR) projected QB1",
+        "source_url": "football/players/teams/northwestern.json",
+        "published_at": "2026-09-18T11:28:00.102Z",
+        "retrieved_at": "2026-09-18T11:28:00.102Z"
       },
       "home": {
         "team": "Indiana",
@@ -328,9 +328,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-12T16:00:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
-      "generated_at": "2026-09-19T13:24:25.628Z",
+      "generated_at": "2026-09-19T23:14:15.651Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1618,7 +1618,6 @@
       "Indiana wins 97% of the time in EdgeDesk’s simulation, Northwestern 3%.",
       "Eight games in ten land between +5.8 and +50.8 for Indiana. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Northwestern quarterback: Aidan Chiles — started the last game; no announcement for this one.",
       "Indiana quarterback: Josh Hoover — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1660,6 +1659,7 @@
       "Northwestern — secondary: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Northwestern — depth: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Northwestern — continuity: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Northwestern quarterback unresolved: unresolved: Aidan Chiles 90% of recent dropbacks and Chase Mason 10% of recent dropbacks.",
       "No availability report reached Aidan Chiles — unknown is carried as unknown, never as healthy.",
       "No availability report reached Josh Hoover — unknown is carried as unknown, never as healthy."
     ],
@@ -1670,6 +1670,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-19T22:55:23.156Z"
+    "at": "2026-09-20T04:46:18.037Z"
   }
 }

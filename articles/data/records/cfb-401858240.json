@@ -21,8 +21,8 @@
   "game_time": "2026-09-27T02:30:00.000Z",
   "game_when_label": "2026-09-27 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-19T22:55:23.156Z",
-  "generated_at": "2026-09-19T22:55:23.156Z",
+  "updated_at": "2026-09-20T04:46:18.037Z",
+  "generated_at": "2026-09-20T04:46:18.037Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -196,8 +196,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 2,
-          "dropbacks": 93,
+          "starts": 3,
+          "dropbacks": 115,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -213,32 +213,31 @@
             {
               "player_id": "5191162",
               "player_name": "Alberto Mendoza",
-              "dropbacks": 67,
-              "share": 0.985
+              "dropbacks": 66,
+              "share": 0.943
+            },
+            {
+              "player_id": "5193282",
+              "player_name": "JP Pickles",
+              "dropbacks": 2,
+              "share": 0.029
             },
             {
               "player_id": "5158973",
               "player_name": "Faizon Brandon",
               "dropbacks": 1,
-              "share": 0.015
+              "share": 0.014
+            },
+            {
+              "player_id": "5207610",
+              "player_name": "Grady Adamson",
+              "dropbacks": 1,
+              "share": 0.014
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 1,
-            "game_id": "401856776",
-            "opponent": "Colorado",
-            "dropbacks": 23,
-            "starter": {
-              "player_id": "5191162",
-              "player_name": "Alberto Mendoza",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 2,
             "game_id": "401856681",
@@ -251,20 +250,33 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 3,
+            "game_id": "401858228",
+            "opponent": "Mercer",
+            "dropbacks": 25,
+            "starter": {
+              "player_id": "5191162",
+              "player_name": "Alberto Mendoza",
+              "share": 0.88
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-09-12T23:00:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "published_at": "2026-09-19T16:00:00.000Z",
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
       "home": {
         "team": "Stanford",
-        "status": "PREVIOUS_GAME",
+        "status": "COMPETITION",
         "confirmed": false,
         "player": "Davis Warren",
         "player_id": "4878681",
-        "label": "Davis Warren — started the last game; no announcement for this one.",
+        "label": "unresolved: Davis Warren 99% of recent dropbacks and Mike Mitchell Jr. 1% of recent dropbacks.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -331,12 +343,12 @@
             "why": "took the first dropback of the game"
           }
         ],
-        "source": "cfbfastR-data player_stats — play attribution",
-        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-09-05T01:00:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "source": "EdgeDesk player layer (EPIR) projected QB1",
+        "source_url": "football/players/teams/stanford.json",
+        "published_at": "2026-09-18T11:28:00.102Z",
+        "retrieved_at": "2026-09-18T11:28:00.102Z"
       },
-      "generated_at": "2026-09-19T13:24:25.628Z",
+      "generated_at": "2026-09-19T23:14:15.651Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1512,13 +1524,13 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "weather not supplied",
+          "text": "home quarterback is contested — the evidence names more than one starter",
           "widening": null
         },
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home injury report not supplied",
+          "text": "weather not supplied",
           "widening": null
         }
       ],
@@ -1736,11 +1748,11 @@
       "Stanford wins 45% of the time in EdgeDesk’s simulation, Georgia Tech 55%.",
       "Eight games in ten land between -25.0 and +19.0 for Stanford. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Georgia Tech quarterback: Alberto Mendoza — started the last game; no announcement for this one.",
-      "Stanford quarterback: Davis Warren — started the last game; no announcement for this one."
+      "Georgia Tech quarterback: Alberto Mendoza — started the last game; no announcement for this one."
     ],
     "missing": [
       "No availability report reached Alberto Mendoza — unknown is carried as unknown, never as healthy.",
+      "Stanford quarterback unresolved: unresolved: Davis Warren 99% of recent dropbacks and Mike Mitchell Jr. 1% of recent dropbacks.",
       "No availability report reached Davis Warren — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1750,6 +1762,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-19T22:55:23.156Z"
+    "at": "2026-09-20T04:46:18.037Z"
   }
 }

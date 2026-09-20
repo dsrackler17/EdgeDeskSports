@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Bucknell vs. Pittsburgh: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Bucknell vs. Pittsburgh 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Bucknell at Pittsburgh at Pittsburgh -36.0. Pittsburgh wins 99% of simulations. Data confidence 45%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Bucknell at Pittsburgh at Pittsburgh -36.0. Pittsburgh wins 99% of simulations. Data confidence 32%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Pittsburgh carries a full EdgeDesk team rating at +7.1; Bucknell is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Pittsburgh -36.0 before any sportsbook number…",
   "home_team": "Pittsburgh",
   "away_team": "Bucknell",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T16:00:00.000Z",
   "game_when_label": "2026-09-26 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-19T22:55:23.156Z",
-  "generated_at": "2026-09-19T22:55:23.156Z",
+  "updated_at": "2026-09-20T04:46:18.037Z",
+  "generated_at": "2026-09-20T04:46:18.037Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 45,
+  "confidence": 32,
   "priced": true,
   "fair_spread_text": "Pittsburgh -36.0",
   "fair_total": null,
@@ -66,7 +66,7 @@
       "Pittsburgh carries a full EdgeDesk team rating at +7.1; Bucknell is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
       "EdgeDesk makes it Pittsburgh -36.0 before any sportsbook number is consulted, with Pittsburgh winning 99% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; Bucknell is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 45% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 32% — low enough that the exact margin should be read as provisional rather than as a settled number."
     ],
     "projection": {
       "priced": true,
@@ -101,7 +101,7 @@
         "volatility_discriminates": false,
         "note": "Quoted from Pittsburgh’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 45,
+      "confidence_pct": 32,
       "inputs_reached_pct": 50,
       "input_contract": {
         "fields": 17,
@@ -176,7 +176,7 @@
         "confirmed": false,
         "player": "Christopher Dietrich",
         "player_id": "5147067",
-        "label": "Christopher Dietrich — started the last game; no announcement for this one.",
+        "label": "Christopher Dietrich — started the last game (did not finish week 3; no injury report on file); no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -186,8 +186,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 7,
-          "dropbacks": 227,
+          "starts": 8,
+          "dropbacks": 237,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -203,38 +203,31 @@
             {
               "player_id": "5147067",
               "player_name": "Chris Dietrich",
-              "dropbacks": 72,
-              "share": 0.96
+              "dropbacks": 40,
+              "share": 0.625
             },
             {
-              "player_id": "4875733",
-              "player_name": "Pat McQuaide",
+              "player_id": "5402059",
+              "player_name": "Emmett Dowling",
+              "dropbacks": 21,
+              "share": 0.328
+            },
+            {
+              "player_id": "5289943",
+              "player_name": "Miles Teodecki",
               "dropbacks": 2,
-              "share": 0.027
+              "share": 0.031
             },
             {
               "player_id": "5302501",
               "player_name": "Ian Reynolds",
               "dropbacks": 1,
-              "share": 0.013
+              "share": 0.016
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 1,
-            "game_id": "401867989",
-            "opponent": "Villanova",
-            "dropbacks": 44,
-            "starter": {
-              "player_id": "5147067",
-              "player_name": "Chris Dietrich",
-              "share": 0.955
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 2,
             "game_id": "401867990",
@@ -247,12 +240,25 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 3,
+            "game_id": "401867991",
+            "opponent": "Pennsylvania",
+            "dropbacks": 33,
+            "starter": {
+              "player_id": "5147067",
+              "player_name": "Chris Dietrich",
+              "share": 0.303
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": null,
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
       "home": {
         "team": "Pittsburgh",
@@ -270,8 +276,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 12,
-          "dropbacks": 406,
+          "starts": 13,
+          "dropbacks": 431,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -287,38 +293,31 @@
             {
               "player_id": "5208095",
               "player_name": "Mason Heintschel",
-              "dropbacks": 73,
-              "share": 0.973
+              "dropbacks": 55,
+              "share": 0.902
+            },
+            {
+              "player_id": "4685694",
+              "player_name": "Steven Angeli",
+              "dropbacks": 4,
+              "share": 0.066
             },
             {
               "player_id": "4911929",
               "player_name": "Alonza Barnett",
               "dropbacks": 1,
-              "share": 0.013
+              "share": 0.016
             },
             {
               "player_id": "5085337",
               "player_name": "Keyone Jenkins",
               "dropbacks": 1,
-              "share": 0.013
+              "share": 0.016
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 1,
-            "game_id": "401858207",
-            "opponent": "Miami (OH)",
-            "dropbacks": 43,
-            "starter": {
-              "player_id": "5208095",
-              "player_name": "Mason Heintschel",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 2,
             "game_id": "401856790",
@@ -331,14 +330,27 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 3,
+            "game_id": "401858225",
+            "opponent": "Syracuse",
+            "dropbacks": 29,
+            "starter": {
+              "player_id": "5208095",
+              "player_name": "Mason Heintschel",
+              "share": 0.862
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-09-12T19:30:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "published_at": "2026-09-17T23:30:00.000Z",
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
-      "generated_at": "2026-09-19T13:24:25.628Z",
+      "generated_at": "2026-09-19T23:14:15.651Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1505,7 +1517,7 @@
       "Pittsburgh wins 99% of the time in EdgeDesk’s simulation, Bucknell 1%.",
       "Eight games in ten land between +13.0 and +57.0 for Pittsburgh. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Bucknell quarterback: Christopher Dietrich — started the last game; no announcement for this one.",
+      "Bucknell quarterback: Christopher Dietrich — started the last game (did not finish week 3; no injury report on file); no announcement for this one.",
       "Pittsburgh quarterback: Mason Heintschel — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1521,6 +1533,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-19T22:55:23.156Z"
+    "at": "2026-09-20T04:46:18.037Z"
   }
 }

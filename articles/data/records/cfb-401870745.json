@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Mercyhurst vs. Western Kentucky: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Mercyhurst vs. Western Kentucky 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Mercyhurst at Western Kentucky at Western Kentucky -21.4. Western Kentucky wins 92% of simulations. Data confidence 31%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Mercyhurst at Western Kentucky at Western Kentucky -21.4. Western Kentucky wins 92% of simulations. Data confidence 32%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Western Kentucky carries a full EdgeDesk team rating at -2.7; Mercyhurst is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Western Kentucky -21.4 before any…",
   "home_team": "Western Kentucky",
   "away_team": "Mercyhurst",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T23:00:00.000Z",
   "game_when_label": "2026-09-26 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-19T15:49:12.271Z",
-  "generated_at": "2026-09-19T22:55:23.156Z",
+  "updated_at": "2026-09-20T04:46:18.037Z",
+  "generated_at": "2026-09-20T04:46:18.037Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 31,
+  "confidence": 32,
   "priced": true,
   "fair_spread_text": "Western Kentucky -21.4",
   "fair_total": null,
@@ -66,7 +66,7 @@
       "Western Kentucky carries a full EdgeDesk team rating at -2.7; Mercyhurst is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
       "EdgeDesk makes it Western Kentucky -21.4 before any sportsbook number is consulted, with Western Kentucky winning 92% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; Mercyhurst is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 31% — low enough that the exact margin should be read as provisional rather than as a settled number."
+      "Data confidence on this matchup is 32% — low enough that the exact margin should be read as provisional rather than as a settled number."
     ],
     "projection": {
       "priced": true,
@@ -101,7 +101,7 @@
         "volatility_discriminates": false,
         "note": "Quoted from Western Kentucky’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 31,
+      "confidence_pct": 32,
       "inputs_reached_pct": 53,
       "input_contract": {
         "fields": 17,
@@ -172,11 +172,11 @@
     "starters": {
       "away": {
         "team": "Mercyhurst",
-        "status": "PREVIOUS_GAME",
+        "status": "COMPETITION",
         "confirmed": false,
-        "player": "Tyler Tusai",
-        "player_id": "5304132",
-        "label": "Tyler Tusai — started the last game (did not finish week 2; no injury report on file); no announcement for this one.",
+        "player": "Alex Gevaudan",
+        "player_id": "5227557",
+        "label": "unresolved: Alex Gevaudan 43% of recent dropbacks and Anthony Wolter 40% of recent dropbacks.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -186,9 +186,9 @@
           "source_url": null
         },
         "experience": {
-          "starts": 1,
-          "dropbacks": 19,
-          "seasons_observed": 1,
+          "starts": 4,
+          "dropbacks": 114,
+          "seasons_observed": 2,
           "seasons_read": [
             2025,
             2026
@@ -197,50 +197,37 @@
           "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
         },
         "competition": {
-          "contested": false,
+          "contested": true,
           "games": 2,
           "players": [
             {
-              "player_id": "5186736",
-              "player_name": "Anthony Wolter",
-              "dropbacks": 24,
-              "share": 0.364
-            },
-            {
               "player_id": "5227557",
               "player_name": "Alex Gevaudan",
-              "dropbacks": 21,
-              "share": 0.318
+              "dropbacks": 25,
+              "share": 0.431
+            },
+            {
+              "player_id": "5186736",
+              "player_name": "Anthony Wolter",
+              "dropbacks": 23,
+              "share": 0.397
             },
             {
               "player_id": "5304132",
               "player_name": "Tyler Tusai",
-              "dropbacks": 19,
-              "share": 0.288
+              "dropbacks": 9,
+              "share": 0.155
             },
             {
-              "player_id": "5224084",
-              "player_name": "Trey Hedden",
+              "player_id": "5261479",
+              "player_name": "Toa Faavae",
               "dropbacks": 1,
-              "share": 0.015
+              "share": 0.017
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 1,
-            "game_id": "401870790",
-            "opponent": "New Mexico State",
-            "dropbacks": 33,
-            "starter": {
-              "player_id": "5227557",
-              "player_name": "Alex Gevaudan",
-              "share": 0.636
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 2,
             "game_id": "401865252",
@@ -253,12 +240,25 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 3,
+            "game_id": "401873620",
+            "opponent": "Glenville State",
+            "dropbacks": 25,
+            "starter": {
+              "player_id": "5227557",
+              "player_name": "Alex Gevaudan",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-09-12T20:00:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "published_at": null,
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
       "home": {
         "team": "Western Kentucky",
@@ -336,9 +336,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-12T16:45:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
-      "generated_at": "2026-09-19T13:24:25.628Z",
+      "generated_at": "2026-09-19T23:14:15.651Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1241,6 +1241,12 @@
         {
           "sev": "LOW",
           "label": "missing",
+          "text": "away quarterback is contested — the evidence names more than one starter",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1266,12 +1272,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "no book total joined to this game",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "low confidence",
-          "text": "opponent-adjusted team rating is in the number but rests on a thin sample",
           "widening": null
         }
       ],
@@ -1479,13 +1479,13 @@
       "Western Kentucky wins 92% of the time in EdgeDesk’s simulation, Mercyhurst 8%.",
       "Eight games in ten land between -1.6 and +42.4 for Western Kentucky. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Mercyhurst quarterback: Tyler Tusai — started the last game (did not finish week 2; no injury report on file); no announcement for this one.",
       "Western Kentucky quarterback: Rodney Tisdale Jr. — started the last game (did not finish week 2; no injury report on file); no announcement for this one."
     ],
     "missing": [
       "No projected score: no total published — EdgeDesk can price the side but cannot responsibly split it into a projected score.",
       "Mercyhurst is not one of the 138 FBS programmes EdgeDesk rates, so it carries no team rating. Nothing is estimated in its place.",
-      "No availability report reached Tyler Tusai — unknown is carried as unknown, never as healthy.",
+      "Mercyhurst quarterback unresolved: unresolved: Alex Gevaudan 43% of recent dropbacks and Anthony Wolter 40% of recent dropbacks.",
+      "No availability report reached Alex Gevaudan — unknown is carried as unknown, never as healthy.",
       "No availability report reached Rodney Tisdale Jr. — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1495,6 +1495,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-19T22:55:23.156Z"
+    "at": "2026-09-20T04:46:18.037Z"
   }
 }

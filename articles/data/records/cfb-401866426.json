@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Robert Morris vs. Buffalo: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Robert Morris vs. Buffalo 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Robert Morris at Buffalo at Buffalo -18.8. Buffalo wins 89% of simulations. Data confidence 32%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Robert Morris at Buffalo at Buffalo -18.8. Buffalo wins 89% of simulations. Data confidence 43%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Buffalo carries a full EdgeDesk team rating at -6.8; Robert Morris is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Buffalo -18.8 before any sportsbook number is…",
   "home_team": "Buffalo",
   "away_team": "Robert Morris",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T19:30:00.000Z",
   "game_when_label": "2026-09-26 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-19T22:55:23.156Z",
-  "generated_at": "2026-09-19T22:55:23.156Z",
+  "updated_at": "2026-09-20T04:46:18.037Z",
+  "generated_at": "2026-09-20T04:46:18.037Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 32,
+  "confidence": 43,
   "priced": true,
   "fair_spread_text": "Buffalo -18.8",
   "fair_total": null,
@@ -66,7 +66,7 @@
       "Buffalo carries a full EdgeDesk team rating at -6.8; Robert Morris is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
       "EdgeDesk makes it Buffalo -18.8 before any sportsbook number is consulted, with Buffalo winning 89% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; Robert Morris is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 32% — low enough that the exact margin should be read as provisional rather than as a settled number."
+      "Data confidence on this matchup is 43% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -101,7 +101,7 @@
         "volatility_discriminates": false,
         "note": "Quoted from Buffalo’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 32,
+      "confidence_pct": 43,
       "inputs_reached_pct": 53,
       "input_contract": {
         "fields": 17,
@@ -258,15 +258,15 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-12T19:30:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
       "home": {
         "team": "Buffalo",
         "status": "PREVIOUS_GAME",
         "confirmed": false,
-        "player": "Elijah Holmes",
-        "player_id": "5328086",
-        "label": "Elijah Holmes — started the last game (did not finish week 2; no injury report on file); no announcement for this one.",
+        "player": "Jason Wright",
+        "player_id": "5222591",
+        "label": "Jason Wright — started the last game; no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -276,9 +276,9 @@
           "source_url": null
         },
         "experience": {
-          "starts": 2,
-          "dropbacks": 64,
-          "seasons_observed": 1,
+          "starts": 1,
+          "dropbacks": 54,
+          "seasons_observed": 2,
           "seasons_read": [
             2025,
             2026
@@ -291,34 +291,27 @@
           "games": 2,
           "players": [
             {
-              "player_id": "5328086",
-              "player_name": "Elijah Holmes",
-              "dropbacks": 64,
-              "share": 0.696
-            },
-            {
               "player_id": "5222591",
               "player_name": "Jason Wright",
-              "dropbacks": 28,
-              "share": 0.304
+              "dropbacks": 53,
+              "share": 0.757
+            },
+            {
+              "player_id": "5328086",
+              "player_name": "Elijah Holmes",
+              "dropbacks": 16,
+              "share": 0.229
+            },
+            {
+              "player_id": "4801299",
+              "player_name": "Rocco Becht",
+              "dropbacks": 1,
+              "share": 0.014
             }
           ]
         },
-        "conflicts": 0,
+        "conflicts": 1,
         "history": [
-          {
-            "week": 1,
-            "game_id": "401866409",
-            "opponent": "UAlbany",
-            "dropbacks": 48,
-            "starter": {
-              "player_id": "5328086",
-              "player_name": "Elijah Holmes",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 2,
             "game_id": "401866414",
@@ -331,14 +324,27 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 3,
+            "game_id": "401858456",
+            "opponent": "Penn State",
+            "dropbacks": 26,
+            "starter": {
+              "player_id": "5222591",
+              "player_name": "Jason Wright",
+              "share": 0.962
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-09-12T22:00:00.000Z",
-        "retrieved_at": "2026-09-19T13:24:25.814Z"
+        "published_at": "2026-09-19T16:00:00.000Z",
+        "retrieved_at": "2026-09-19T23:14:16.165Z"
       },
-      "generated_at": "2026-09-19T13:24:25.628Z",
+      "generated_at": "2026-09-19T23:14:15.651Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1494,7 +1500,7 @@
       "Eight games in ten land between -4.2 and +39.8 for Buffalo. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
       "Robert Morris quarterback: Carson Haggard — started the last game; no announcement for this one.",
-      "Buffalo quarterback: Elijah Holmes — started the last game (did not finish week 2; no injury report on file); no announcement for this one."
+      "Buffalo quarterback: Jason Wright — started the last game; no announcement for this one."
     ],
     "missing": [
       "No projected score: no total published — EdgeDesk can price the side but cannot responsibly split it into a projected score.",
@@ -1519,7 +1525,7 @@
       "Buffalo — depth: confidence 9% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Buffalo — continuity: confidence 9% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "No availability report reached Carson Haggard — unknown is carried as unknown, never as healthy.",
-      "No availability report reached Elijah Holmes — unknown is carried as unknown, never as healthy."
+      "No availability report reached Jason Wright — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
@@ -1528,6 +1534,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-19T22:55:23.156Z"
+    "at": "2026-09-20T04:46:18.037Z"
   }
 }
