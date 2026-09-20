@@ -256,13 +256,27 @@ jobs:
               echo "::error::be reconciled with the contract — or dropped, if it holds nothing worth"
               echo "::error::keeping — before the apply can run to the end."
               echo "::error::What is actually there:"
+              # tables AND views: a view is invisible to a relkind='r' listing,
+              # and a view holding a name this contract needs as a table is
+              # exactly one of the conflicts being reported. Anything that
+              # DEPENDS on a relation is listed too, because a dependent view is
+              # what stops that relation being replaced.
               psql "$SUPABASE_DB_URL" -tAX -c "
                 select '  tennis.' || c.relname
-                     || '  rows~' || coalesce((select s.n_live_tup from pg_stat_user_tables s where s.relid = c.oid)::text, '?')
+                     || ' [' || case c.relkind when 'r' then 'table' when 'v' then 'VIEW'
+                                                when 'm' then 'MATVIEW' else c.relkind::text end || ']'
+                     || case when c.relkind = 'r'
+                             then '  rows~' || coalesce((select s.n_live_tup from pg_stat_user_tables s where s.relid = c.oid)::text, '?')
+                             else '' end
+                     || coalesce('  depended on by: ' || (
+                          select string_agg(distinct dv.relname, ', ')
+                          from pg_depend d join pg_rewrite rw on rw.oid = d.objid
+                            join pg_class dv on dv.oid = rw.ev_class
+                          where d.refobjid = c.oid and d.classid = 'pg_rewrite'::regclass and dv.oid <> c.oid), '')
                      || '  cols: ' || (select string_agg(a.attname, ',' order by a.attnum) from pg_attribute a
                                         where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped)
                 from pg_class c join pg_namespace n on n.oid = c.relnamespace
-                where n.nspname = 'tennis' and c.relkind = 'r' order by c.relname;" || true
+                where n.nspname = 'tennis' and c.relkind in ('r','v','m') order by c.relkind, c.relname;" || true
             fi
             if [ -z "$SHAPE" ]; then
               echo "::error::Apply it from the Deploy intelligence workflow, in this order:"
