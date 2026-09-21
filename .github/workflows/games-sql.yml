@@ -77,6 +77,11 @@ on:
       - 'tools/tennis/record_sql.test.js'
       - 'tools/tennis/import.test.js'
       - 'tools/tennis/leakage.test.js'
+      # The record workflow's own preflight gate, and the workflow it is
+      # extracted from: a change to either must run the suite that proves an
+      # empty record is still refused.
+      - 'tools/tennis/record_workflow.test.js'
+      - '.github/workflows/tennis-record.yml'
       # THE SPLIT PARTS AND THE CHECK THAT KEEPS THEM HONEST. supabase/parts is
       # what gets pasted into the Supabase SQL editor, so a split that has
       # drifted from its source installs a contract the repository has already
@@ -163,6 +168,11 @@ on:
       - 'tools/tennis/record_sql.test.js'
       - 'tools/tennis/import.test.js'
       - 'tools/tennis/leakage.test.js'
+      # The record workflow's own preflight gate, and the workflow it is
+      # extracted from: a change to either must run the suite that proves an
+      # empty record is still refused.
+      - 'tools/tennis/record_workflow.test.js'
+      - '.github/workflows/tennis-record.yml'
       # THE SPLIT PARTS AND THE CHECK THAT KEEPS THEM HONEST. supabase/parts is
       # what gets pasted into the Supabase SQL editor, so a split that has
       # drifted from its source installs a contract the repository has already
@@ -393,6 +403,17 @@ jobs:
           PGPASSWORD: postgres
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/tennis/leakage.test.js | tee tennis_leakage.log
+
+      # THE WORKFLOW'S OWN PREFLIGHT GATE, run as shell against a real database.
+      # tennis-record.yml proved every relation existed and never asked whether
+      # a match was on file; production's record was empty and five of the seven
+      # build steps exited 0 over it. The gate is shell, so it is extracted from
+      # the YAML and executed here rather than re-described in JavaScript.
+      - name: Run the tennis record workflow gate
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/record_workflow.test.js | tee tennis_wfgate.log
 
       # THE TENNIS LAB. The research product over the record — surface
       # translation, form and trajectory, workload, the matchup studio, the
