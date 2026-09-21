@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-20T13:39:28.857Z",
+  "generated_at": "2026-09-21T15:59:07.843Z",
   "ok": true,
-  "last_ok_at": "2026-09-20T13:39:28.857Z",
+  "last_ok_at": "2026-09-21T15:59:07.843Z",
   "run": {
     "trigger": "schedule",
     "runner": "github-actions",
@@ -21,10 +21,10 @@
   },
   "learning": {
     "nfl": {
-      "completed_in_feed": 17,
-      "absorbed": 17,
+      "completed_in_feed": 31,
+      "absorbed": 31,
       "join_missed": 0,
-      "data_through": "2026-09-17",
+      "data_through": "2026-09-20",
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
@@ -36,21 +36,27 @@
   },
   "lines": {
     "nfl": {
-      "compared": 31,
-      "median_gap": 2.98,
-      "max_gap": 7.8,
+      "compared": 17,
+      "median_gap": 2.93,
+      "max_gap": 9.99,
       "outliers": [
         {
           "game": "KC @ MIA",
-          "gap": 7.8,
-          "model": -0.7,
-          "market": -8.5
+          "gap": 9.99,
+          "model": -1.51,
+          "market": -11.5
         },
         {
           "game": "NYJ @ DET",
-          "gap": 7.61,
-          "model": 15.11,
-          "market": 7.5
+          "gap": 8.72,
+          "model": 15.22,
+          "market": 6.5
+        },
+        {
+          "game": "PHI @ CHI",
+          "gap": 7.6,
+          "model": 3.1,
+          "market": -4.5
         }
       ],
       "orientation_faults": []
@@ -92,31 +98,31 @@
       "id": "nfl_ingest",
       "label": "NFL: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "17/17 absorbed, data through 2026-09-17"
+      "detail": "31/31 absorbed, data through 2026-09-20"
     },
     {
       "id": "nfl_projections",
       "label": "NFL: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "31/31 upcoming games PREDICTED, all inside bounds"
+      "detail": "17/17 upcoming games PREDICTED, all inside bounds"
     },
     {
       "id": "nfl_lines_market",
       "label": "NFL: market lines plausible",
       "status": "pass",
-      "detail": "31 lines inside plausible bounds"
+      "detail": "17 lines inside plausible bounds"
     },
     {
       "id": "nfl_lines_orientation",
       "label": "NFL: market lines point the right way",
       "status": "pass",
-      "detail": "31 joined line(s), none reconciled by negation"
+      "detail": "17 joined line(s), none reconciled by negation"
     },
     {
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
       "status": "warn",
-      "detail": "median gap 2.98 pts over 31 games; 2 game(s) beyond 7 pts"
+      "detail": "median gap 2.93 pts over 17 games; 3 game(s) beyond 7 pts"
     },
     {
       "id": "p4_season_window",
@@ -198,21 +204,21 @@
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-20T13:39:28.857Z",
+    "daily_check_last_run": "2026-09-21T15:59:07.843Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-20T13:39:28.857Z",
+    "engine_tests_last_run": "2026-09-21T15:59:07.843Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-20T13:39:28.857Z",
+    "nfl_ingest_last_run": "2026-09-21T15:59:07.843Z",
     "nfl_ingest_last_status": "ok",
-    "row_count_nfl_ingest": 17,
-    "p4_ingest_last_run": "2026-09-20T13:39:28.857Z",
+    "row_count_nfl_ingest": 31,
+    "p4_ingest_last_run": "2026-09-21T15:59:07.843Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 260,
-    "projection_guard_last_run": "2026-09-20T13:39:28.857Z",
+    "projection_guard_last_run": "2026-09-21T15:59:07.843Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-20T13:39:28.857Z",
+    "line_guard_last_run": "2026-09-21T15:59:07.843Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 31
+    "row_count_line_guard": 17
   },
   "scope": {
     "what_ok_means": "the pipeline ran: the engine suites pass, every feed answered, completed games absorbed into the ratings, every upcoming game projects inside bounds and no joined market line points the wrong way.",
@@ -230,7 +236,7 @@
     "biggest_gaps": [
       {
         "field": "qb_availability",
-        "mean_points_lost": 7.94
+        "mean_points_lost": 7.96
       },
       {
         "field": "team_rating",
@@ -246,7 +252,7 @@
       },
       {
         "field": "roster_talent",
-        "mean_points_lost": 1.99
+        "mean_points_lost": 1.97
       },
       {
         "field": "matchup_profile",
