@@ -132,7 +132,24 @@ function attachResearch(edition) {
   const byKey = Object.create(null);
   ASTORE.loadAll().forEach(r => {
     if (!r || !r.sport || r.game_id == null) return;
-    byKey[String(r.sport).toUpperCase() + ':' + r.game_id] = r;
+    const k = String(r.sport).toUpperCase() + ':' + r.game_id;
+    /* ONE GAME, MORE THAN ONE RECORD. A featured game ends up with two: the
+       pregame article, which IS the research, and the postgame audit written
+       after it, which carries none. Both key on sport+game_id, this map
+       assigned unconditionally, and loadAll() sorts by id — so
+       `postgame-nfl-2026_02_IND_KC` landed after `nfl-2026_02_IND_KC` and
+       overwrote the only copy of the research with a record that has none.
+
+       Every stored edition then failed revalidation on games whose research
+       was sitting on disk the whole time, and `send` refused them:
+       research_unavailable. The same refusal a real send would hit, for the
+       same reason, which is the failure the comment above describes.
+
+       candidates() already knew to tell the two apart (`article_type`
+       pregame). A record with no research must never displace one that has
+       it — tested by `a postgame audit never displaces the research`. */
+    if (byKey[k] && byKey[k].research && !r.research) return;
+    byKey[k] = r;
   });
   const missing = [];
   (edition.games || []).forEach(g => {

@@ -208,6 +208,22 @@ jobs:
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 
+      # THE QB ROSTER THE BROWSER CANNOT FETCH FOR ITSELF. nflverse publishes
+      # rosters as GitHub release assets, and a release download carries no
+      # Access-Control-Allow-Origin, so app.html's registry got "Failed to
+      # fetch" and sat on its bundled snapshot. Fetched here, where there is no
+      # CORS, and committed for the page to read from its own origin. The
+      # script refuses to write a file outside the app's own sanity bounds, so
+      # a broken feed leaves the previous snapshot standing rather than
+      # becoming the floor.
+      - name: NFL QB roster snapshot for the football module
+        run: node football/nfl/build_qb_roster.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: Prove the QB snapshot is one app.html can read
+        run: node football/nfl/qb_roster.test.js
+
       # THE IDENTITY PROFILES: one dated file per FBS team and NFL club from
       # everything above (rankings detail, profiles, starters and the depth
       # chart this job just cached, coaching, the NFL report), measured,
