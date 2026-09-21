@@ -3900,15 +3900,40 @@ var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
    ~2 min before expiry. A single in-flight refresh is shared to avoid a stampede
    when several loaders fire at once. */
 var _edRefreshing=null;
+/* Set once the auth server has DEFINITIVELY refused the stored refresh token, so
+   reads stop re-presenting a credential that is never going to work again. */
+window.__EDGE_SESSION_DEAD=null;
+function edDropDeadSession(why){
+  /* ONLY the session key. edSignOut() also wipes the CLV ledger, saved research,
+     favourites and prefs and then navigates away — right when a PERSON signs out,
+     wrong as an automatic recovery, which must cost the reader nothing but the
+     login they have to redo. */
+  window.__EDGE_SESSION_DEAD=why||'the saved session is no longer valid';
+  try{localStorage.removeItem('edgedesk_session');}catch(e){}
+  try{if(typeof sysHealthPaint==='function')sysHealthPaint();}catch(e){}
+}
 async function edRefreshSession(){
   var s=edSession(); if(!s||!s.refresh_token)return null;
   try{
     var r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
       headers:{apikey:SB_KEY,'content-type':'application/json'},
       body:JSON.stringify({refresh_token:s.refresh_token})});
-    if(!r.ok)return null;
+    if(!r.ok){
+      /* 400/401 here means the refresh token is spent, rotated away or revoked: it
+         will NEVER succeed again. Keeping it was the whole bug — edToken() went on
+         handing out the expired access token, every read 401'd, the 401 path retried
+         the same dead refresh token, and the app sat in a permanent
+         "Database read failed" that only clearing site data could lift.
+         5xx and network failures are transient, so they leave the session alone. */
+      if(r.status===400||r.status===401){
+        var why='the sign-in session expired and could not be renewed';
+        try{var b=await r.text();if(/refresh_token_not_found|already\s*used/i.test(b))why='the saved sign-in was revoked or already spent on another tab';}catch(_){}
+        edDropDeadSession(why);
+      }
+      return null;
+    }
     var d=await r.json();
-    if(d&&d.access_token){try{localStorage.setItem('edgedesk_session',JSON.stringify(d));}catch(e){}return d;}
+    if(d&&d.access_token){window.__EDGE_SESSION_DEAD=null;try{localStorage.setItem('edgedesk_session',JSON.stringify(d));}catch(e){}return d;}
   }catch(e){}
   return null;
 }
@@ -3928,25 +3953,75 @@ async function edToken(){
   if(exp&&(exp-Date.now())<120000){
     var n=await edRefreshShared();
     if(n&&n.access_token)return n.access_token;
+    /* The refresh failed. Presenting the expired token anyway guarantees a 401 on
+       reads the anon key would have served, so the public boards went dark for a
+       reader whose only problem was a stale login. Anon is the documented fallback
+       for exactly this, and RLS still decides what it may see. */
+    if(!edSession())return SB_KEY;                 // definitively dead, cleared above
+    if(exp<=Date.now())return SB_KEY;              // transient failure, but this token IS expired
   }
   return s.access_token;
+}
+/* ===== WHAT FAILED, NOT JUST THAT SOMETHING DID ==========================
+   sbFetch has always captured the status and the PostgREST body, and every caller
+   threw both away: System health read a CSS class off a pill and could say no more
+   than "read failed". That sentence is unactionable — a rotated key, a paused
+   project, an unapplied migration and an expired login all produce it and all need
+   different fixes. The last failure is kept here so the panel can name the cause. */
+var ED_DB={ok:false,at:0,failAt:0,status:null,code:null,detail:null,where:null};
+function edNoteDbOk(){ED_DB.ok=true;ED_DB.at=Date.now();}
+function edNoteDbError(er,where){
+  if(er&&er.name==='AbortError')return;            // a superseded load is not a failure
+  ED_DB.ok=false;ED_DB.failAt=Date.now();
+  ED_DB.status=(er&&er.status)||null;
+  if(where)ED_DB.where=String(where).split('?')[0];
+  var b=(er&&er.body)||'',code=null,detail=null;
+  try{var j=JSON.parse(b);code=j.code||null;detail=j.message||j.hint||null;}
+  catch(_){detail=b?String(b).slice(0,180):null;}
+  ED_DB.code=code;ED_DB.detail=detail;
+}
+/* One plain sentence naming the cause, for the System health panel. */
+function edDbReason(){
+  if(!ED_DB.failAt||ED_DB.ok)return null;          // recovered since — do not show a stale cause
+  var s=ED_DB.status,c=ED_DB.code,d=ED_DB.detail||'',w=ED_DB.where?(' \u00b7 '+ED_DB.where):'';
+  /* A missing column outranks a stale login: no amount of signing in installs a
+     migration, and reaching this line at all means even the anon fallback failed. */
+  if(c==='42703'||/does not exist/i.test(d))return 'a column the board reads is not in the database \u2014 a migration has not been applied'+(d?(': '+d):'');
+  if(window.__EDGE_SESSION_DEAD)return window.__EDGE_SESSION_DEAD+' \u2014 sign in again';
+  if(s===401||s===403)return 'the database refused the key (HTTP '+s+')'+w;
+  if(s===404)return 'that table is not exposed to the API (HTTP 404)'+w;
+  if(s===406)return 'that schema is not in the API\u2019s exposed list (HTTP 406)'+w;
+  if(s==null)return 'the database could not be reached at all \u2014 network, DNS, or a paused project'+w;
+  if(s>=500)return 'the database answered '+s+' \u2014 the project may be paused or overloaded'+w;
+  return 'HTTP '+s+(d?(' \u2014 '+d):'')+w;
 }
 async function sbFetch(q,extra,signal){
   var t=await edToken();
   var h={apikey:SB_KEY,authorization:"Bearer "+t};
   if(extra)for(var k in extra)h[k]=extra[k];
-  var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h,signal:signal});
+  var r;
+  try{ r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h,signal:signal}); }
+  catch(e){ edNoteDbError(e,q); throw e; }        // a transport failure has no status; record it as one
   if(r.status===401){                     // token rejected — refresh once (shared single-flight), retry once
     var n=await edRefreshShared();
     if(n&&n.access_token){h.authorization="Bearer "+n.access_token;r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h,signal:signal});}
+    /* Still refused, and we were not already anon: the READER'S token is the problem,
+       not the query. Read on as the anon visitor rather than taking the public boards
+       down with one stale login. RLS decides what anon sees, so this widens nothing. */
+    if(r.status===401&&h.authorization!=="Bearer "+SB_KEY){
+      h.authorization="Bearer "+SB_KEY;
+      r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h,signal:signal});
+    }
   }
   if(!r.ok){
     /* message is unchanged (rsClassifyError still reads it); status and body ride
        along so a caller can tell "column does not exist" from a real outage. */
     var er=new Error("db "+r.status);er.status=r.status;
     try{er.body=await r.text();}catch(_){}
+    edNoteDbError(er,q);
     throw er;
   }
+  edNoteDbOk();
   return r.json();
 }
 async function sbGet(q,signal){return sbFetch(q,null,signal);}
@@ -6539,6 +6614,7 @@ async function loadEdges(){
        back turns "the board is empty" into "run the migration". */
     var _m=String((e&&e.message)||e);
     if(/actionable|qual_reason|column|schema cache|PGRST/i.test(_m)) window.__QUAL_SCHEMA_ERR=_m.slice(0,300);
+    edNoteDbError(e,'the live board');
     $('dbPill').textContent='DB error';$('dbPill').className='pill err';setStale(0);$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
   finally{ if(_gen===LOAD_EDGES_GEN) LOAD_EDGES_BUSY=false; }   // only the latest load clears the in-flight flag
 }
@@ -8340,7 +8416,7 @@ async function loadRecordProof(){
     $('recKpis').innerHTML=kpi(total,'captured')+kpi(gradedEdges+' / '+graded,'edges graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','edge hit rate')+kpi(avgCLV!=null?((avgCLV>=0?'+':'')+(avgCLV*100).toFixed(1)+'%'):'—','edge avg CLV')+kpi(med!=null?((med>=0?'+':'')+(med*100).toFixed(1)+'%'):'—','edge median CLV')+kpi(posRate!=null?(posRate*100).toFixed(0)+'%':'—','CLV+ rate · clv>0')+kpi(beatRate!=null?(beatRate*100).toFixed(0)+'%':'—','edges beat close');
     renderSlice();renderCalib();
     if(total===0)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0">No data yet. The capture job logs signals continuously; grades fill in after games finish.</div>');
-  }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+  }catch(e){edNoteDbError(e,'the record analytics');$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
 }
 /* ═══ WHICH SYSTEM PRODUCED THIS RECORD ═══════════════════════════════════
    A record computed over signals from two different qualification policies is
@@ -8611,6 +8687,7 @@ async function loadRecord(force){
     recApplyFilters();
     try{recCheckHash();}catch(_){}
   }catch(e){
+    edNoteDbError(e,'the record');
     $('dbPill').textContent='DB error';$('dbPill').className='pill err';
     $('recHero').innerHTML='';
     $('recPoolNote').innerHTML=recEmptyHTML('error','<b>Could not reach the database.</b><br>'+recEsc(e.message)+'<br>Nothing is shown rather than something stale.',true);
@@ -22310,10 +22387,21 @@ function sysHealthHTML(){
   var s=sysHealthState(),h=s.health,out='';
   out+='<div class="hph">System health</div>';
 
-  /* 1 · DATABASE */
-  out+=shRow('Database',null,
+  /* 1 · DATABASE — and WHY, whenever there is a why. "read failed" on its own
+     sent the reader to the browser console: a refused key, an unexposed table, an
+     unapplied migration and a paused project all read identically and none of them
+     are fixed the same way. sbFetch already captures the status and the PostgREST
+     message, so the panel names the cause instead of only the symptom. */
+  var dbWhy=null;
+  try{ if(s.dbErr&&typeof edDbReason==='function')dbWhy=edDbReason(); }catch(_){}
+  out+=shRow('Database',dbWhy,
     s.dbErr?'read failed':(s.dbOk?'connected':'connecting…'),
     s.dbErr?'err':(s.dbOk?'ok':'mut'));
+  /* An expired login is not an outage and must not be reported as one. Reads fall
+     back to the anon reader, so the public boards keep answering while anything
+     user-scoped is legitimately empty — which would otherwise read as lost data. */
+  if(window.__EDGE_SESSION_DEAD)
+    out+=shRow('Sign-in',window.__EDGE_SESSION_DEAD,'signed out','warn');
 
   /* 2 · MODEL HEALTH — the daily self-check over the football engines */
   if(h&&h.checks){

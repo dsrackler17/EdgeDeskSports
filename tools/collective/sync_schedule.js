@@ -100,7 +100,7 @@ const API = (process.env.COLLECTIVE_API ||
 const SB_URL = process.env.EDGEDESK_SUPABASE_URL ||
   'https://iattxbkbufslbauoumga.supabase.co';
 const ANON = process.env.SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzU4NzUsImV4cCI6MjA3MTkxMTg3NX0.Ej0xLYSNJgvDCMCLxHPQTG7ivRUyPvvSGKvUlgQ4qYA';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8';
 
 /* ESPN's own season/week addressing, which is what a schedule is actually
    organised by -- asking by date means guessing which days a week touches,
