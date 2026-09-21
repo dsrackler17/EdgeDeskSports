@@ -30,6 +30,13 @@
 --   0  licensing       tennis.source_licenses + tennis.enforce_source_license
 --                      No match, feature or rating may name a source that is
 --                      not registered. Nothing is "unknown provenance".
+--                      + tennis.enforce_commercial_clearance, which is the
+--                      OTHER half and was missing until 2026-09-21: an
+--                      opportunity inherits the licence of the model that
+--                      produced it, so a research-only model's priced output
+--                      cannot be stored stamped sellable. Registration proved
+--                      the archive was non-commercial; nothing had ever
+--                      refused a row that ignored the answer.
 --   1  raw / staging   tennis.stg_archive_matches — the 108-column import
 --                      surface, every column text, nothing typed or trusted
 --                      yet. PRIVATE: no client role may read it.
@@ -174,6 +181,55 @@ values
    array['research','commercial','display']::text[],
    'The market prices EdgeDesk already licenses for every other sport.',
    'edgedesk-ops', now()),
+  -- THE THREE MIRRORS THAT LOOK CLEAR AND ARE NOT. Registered here at
+  -- commercial_use = false so that reaching for one is refused by the same
+  -- gate as the archive, rather than discovered later by a lawyer.
+  --
+  -- Every quote below was read FROM THE SOURCE on 2026-09-21, not from a
+  -- search result. That distinction is the point of this block: a search for
+  -- "commercially usable tennis dataset" returns TennisMyLife described as
+  -- MIT-licensed. Its own README says the opposite, in its own words. A
+  -- summary is not a licence.
+  ('tennismylife',
+   'TennisMyLife / TML-Database — complete live ATP match database',
+   'No commercial licence granted',
+   'https://github.com/Tennismylife/TML-Database',
+   'TennisMyLife / CanalTenis, derived from Jeff Sackmann tennis_atp',
+   false, true, false, true,
+   array['research']::text[],
+   'REFUSED FOR SALE, from its own README: "Redistribution, commercial use, '
+   'or selling of the raw database without permission from TennisMyLife '
+   'and/or the ATP may violate copyright or terms of use" and "All data usage '
+   'is non-commercial unless explicitly permitted." It is ALSO derived from '
+   'Sackmann''s CC BY-NC-SA work, which share-alike carries forward: a '
+   'downstream mirror cannot grant rights upstream withheld. Read at source '
+   '2026-09-21.',
+   null, null),
+  ('tennis_data_uk',
+   'tennis-data.co.uk — ATP/WTA results with closing odds, 2000-present',
+   'Free for personal use; commercial use by separate agreement only',
+   'http://www.tennis-data.co.uk/alldata.php',
+   'tennis-data.co.uk',
+   false, true, false, false,
+   array['research']::text[],
+   'The one candidate with a real commercial path: the publisher licenses '
+   'commercial use separately, so this becomes sellable only when a signed '
+   'agreement exists — at which point set commercial_use = true WITH '
+   'cleared_by and cleared_at naming who signed it. Until then it is research '
+   'only. Carries closing prices, which is what CLV grading needs.',
+   null, null),
+  ('match_charting',
+   'Tennis Abstract Match Charting Project — shot-by-shot',
+   'CC BY-NC-SA 4.0',
+   'https://creativecommons.org/licenses/by-nc-sa/4.0/',
+   'The Tennis Abstract Match Charting Project',
+   false, true, false, true,
+   array['research']::text[],
+   'NON-COMMERCIAL, and the maintainer says so in the repository in terms '
+   'worth quoting: "I am serious about the license, and I am really '
+   'disappointed with the handful of people who have chosen to violate it." '
+   'Read at source 2026-09-21.',
+   null, null),
   ('edgedesk',
    'EdgeDesk-derived values (features, ratings, model output)',
    'Proprietary',
@@ -286,39 +342,3 @@ create index if not exists tennis_ingestion_runs_source_idx
 drop trigger if exists tennis_ingestion_runs_touch on tennis.ingestion_runs;
 create trigger tennis_ingestion_runs_touch before update on tennis.ingestion_runs
   for each row execute function tennis.touch_updated_at();
-
--- What was wrong with a row, kept rather than discarded. A quarantined row is
--- evidence: it says the source changed shape, or that a player id collided, or
--- that a "match" lasted four minutes. Silence would say nothing changed.
-create table if not exists tennis.data_quality_issues (
-  issue_id       bigserial primary key,
-  run_id         uuid references tennis.ingestion_runs (run_id) on delete set null,
-  source_key     text,
-  issue_type     text not null,
-  severity       text not null default 'warn',
-  entity_type    text,                              -- 'match','player','tournament','venue','rating'
-  entity_key     text,
-  field          text,
-  observed       text,
-  expected       text,
-  detail         text,
-  payload        jsonb,
-  first_seen_at  timestamptz not null default now(),
-  last_seen_at   timestamptz not null default now(),
-  occurrences    integer not null default 1,
-  resolved_at    timestamptz,
-  constraint tennis_dq_severity_shape check (severity in ('info','warn','error','fatal')),
-  constraint tennis_dq_type_shape check (issue_type in (
-    'malformed_record','unresolved_player','duplicate_identifier','impossible_statistic',
-    'missing_surface','ambiguous_venue','stale_rating','missing_feature','score_unparsed',
-    'out_of_range','source_conflict','license_refused','reconciliation_gap'))
-);
-create index if not exists tennis_dq_type_idx on tennis.data_quality_issues (issue_type, last_seen_at desc);
-create index if not exists tennis_dq_run_idx  on tennis.data_quality_issues (run_id);
-create index if not exists tennis_dq_open_idx on tennis.data_quality_issues (resolved_at) where resolved_at is null;
--- One open issue per (type, entity, field): a second sighting bumps the count
--- rather than writing a second row, so a recurring fault is one line with a
--- number on it instead of ten thousand.
-create unique index if not exists tennis_dq_dedup_idx
-  on tennis.data_quality_issues (issue_type, coalesce(entity_type,''), coalesce(entity_key,''), coalesce(field,''))
-  where resolved_at is null;

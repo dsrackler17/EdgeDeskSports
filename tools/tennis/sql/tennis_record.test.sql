@@ -110,6 +110,95 @@ select pg_temp.want(tennis.license_allows('archive', 'research'), 'the archive m
 select pg_temp.want(not tennis.license_allows('archive', 'commercial'), 'and may NOT be used commercially');
 select pg_temp.want(not tennis.license_allows('does_not_exist', 'research'), 'an unknown source allows nothing');
 
+-- THE MIRRORS. Every free tennis archive reachable in September 2026 is
+-- non-commercial, INCLUDING the one a web search describes as MIT-licensed:
+-- TennisMyLife's own README refuses commercial use and selling in its own
+-- words, and it is derived from Sackmann besides. They are registered so that
+-- reaching for one is refused by the same gate as the archive, rather than
+-- found out afterwards. If one of these ever flips to commercial_use = true it
+-- must carry a named clearer, which the constraint above already forces.
+select pg_temp.want(
+  (select count(*) from tennis.source_licenses
+    where source_key in ('tennismylife','tennis_data_uk','match_charting')) = 3,
+  'the three non-commercial mirrors are registered rather than left unknown');
+select pg_temp.want(
+  not exists (select 1 from tennis.source_licenses
+               where source_key in ('tennismylife','tennis_data_uk','match_charting','archive')
+                 and commercial_use),
+  'and NONE of them, nor the archive, is marked sellable');
+
+-- THE GATE ITSELF, NOT JUST THE REGISTER. Everything above proves the LICENCE
+-- TABLE is honest: the archive is marked non-commercial, license_allows() says
+-- no. None of it proved anything REFUSES a row that ignores the answer — and
+-- until this trigger existed, nothing did. license_allows(source,'commercial')
+-- was defined, granted, and called from this test file alone; no production
+-- path asked it. research_opportunities.source_key DEFAULTS to 'edgedesk',
+-- which is cleared for commercial use, so the priced output of a model trained
+-- on a CC BY-NC-SA archive landed in the table stamped sellable, by default,
+-- with no statement anywhere saying otherwise. That is the licence breach the
+-- header of the contract already claimed was refused.
+--
+-- An opportunity inherits the licence of the model that produced it. These
+-- four assertions are the whole of that rule.
+insert into tennis.model_registry (model_version, feature_version, training_cutoff, status, source_key)
+values ('licence-probe-archive', 'tennis-features-1.0.0', '2024-01-01', 'candidate', 'archive'),
+       ('licence-probe-cleared', 'tennis-features-1.0.0', '2024-01-01', 'candidate', 'odds_api')
+on conflict (model_version) do nothing;
+
+select pg_temp.refused($$
+  insert into tennis.research_opportunities (match_ref, market_type, selection, model_version, source_key)
+  values ('licence:probe:1', 'match_winner', 'A', 'licence-probe-archive', 'edgedesk')
+$$, 'an opportunity from an ARCHIVE-trained model cannot be stamped commercially clear');
+
+select pg_temp.allowed($$
+  insert into tennis.research_opportunities (match_ref, market_type, selection, model_version, source_key)
+  values ('licence:probe:2', 'match_winner', 'A', 'licence-probe-archive', 'archive')
+$$, 'but the same row stamped RESEARCH-ONLY is stored, because that is the truth');
+
+select pg_temp.allowed($$
+  insert into tennis.research_opportunities (match_ref, market_type, selection, model_version, source_key)
+  values ('licence:probe:3', 'match_winner', 'A', 'licence-probe-cleared', 'edgedesk')
+$$, 'a model trained on a COMMERCIALLY CLEARED source may be sold');
+
+-- The insert path alone would be a gate with a door beside it: write the row
+-- honestly, then restamp it. Both columns are watched, so neither UPDATE
+-- launders the licence.
+select pg_temp.refused($$
+  update tennis.research_opportunities set source_key = 'edgedesk' where match_ref = 'licence:probe:2'
+$$, 'and a research-only row cannot be RESTAMPED commercially clear afterwards');
+
+select pg_temp.refused($$
+  update tennis.research_opportunities set model_version = 'licence-probe-archive'
+   where match_ref = 'licence:probe:3'
+$$, 'nor can a cleared row be repointed at an archive-trained model');
+
+-- Two rows that must NOT be caught: the gate refuses over-claiming, not
+-- ordinary work. A hand-entered row has no model to inherit from, and an
+-- unrelated column on an honest row is nobody's business.
+select pg_temp.allowed($$
+  insert into tennis.research_opportunities (match_ref, market_type, selection, source_key)
+  values ('licence:probe:4', 'match_winner', 'A', 'edgedesk')
+$$, 'a row with no model behind it is its own provenance and passes');
+
+select pg_temp.allowed($$
+  update tennis.research_opportunities set status = 'expired' where match_ref = 'licence:probe:2'
+$$, 'and changing an unrelated column on an honest row is not a licence event');
+
+-- THE LAST DOOR, AND IT IS SHUT BY A GUARD IN ANOTHER SECTION. research
+-- _opportunities.model_version is a foreign key ON DELETE SET NULL, so
+-- deleting the model would strip the row of the provenance it inherits and
+-- leave it stamped sellable with nothing left to contradict it. That is only
+-- closed because model_registry refuses DELETE outright (see IMMUTABILITY
+-- below). Asserted HERE as well, because the day someone relaxes that trigger
+-- for an unrelated reason, this is the consequence nobody would connect to it.
+select pg_temp.refused($$
+  delete from tennis.model_registry where model_version = 'licence-probe-archive'
+$$, 'a model cannot be deleted out from under the rows that inherit its licence');
+
+-- These rows stay on file deliberately. The paywall section below asserts a
+-- free account reads ZERO opportunities; against an empty table that assertion
+-- passes whether RLS works or not.
+
 -- ── 2. IDEMPOTENCY AND CORRECTIONS ─────────────────────────────────────────
 do $$
 declare n_before bigint; n_after bigint; w text;

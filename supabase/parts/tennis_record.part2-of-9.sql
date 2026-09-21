@@ -2,6 +2,42 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- What was wrong with a row, kept rather than discarded. A quarantined row is
+-- evidence: it says the source changed shape, or that a player id collided, or
+-- that a "match" lasted four minutes. Silence would say nothing changed.
+create table if not exists tennis.data_quality_issues (
+  issue_id       bigserial primary key,
+  run_id         uuid references tennis.ingestion_runs (run_id) on delete set null,
+  source_key     text,
+  issue_type     text not null,
+  severity       text not null default 'warn',
+  entity_type    text,                              -- 'match','player','tournament','venue','rating'
+  entity_key     text,
+  field          text,
+  observed       text,
+  expected       text,
+  detail         text,
+  payload        jsonb,
+  first_seen_at  timestamptz not null default now(),
+  last_seen_at   timestamptz not null default now(),
+  occurrences    integer not null default 1,
+  resolved_at    timestamptz,
+  constraint tennis_dq_severity_shape check (severity in ('info','warn','error','fatal')),
+  constraint tennis_dq_type_shape check (issue_type in (
+    'malformed_record','unresolved_player','duplicate_identifier','impossible_statistic',
+    'missing_surface','ambiguous_venue','stale_rating','missing_feature','score_unparsed',
+    'out_of_range','source_conflict','license_refused','reconciliation_gap'))
+);
+create index if not exists tennis_dq_type_idx on tennis.data_quality_issues (issue_type, last_seen_at desc);
+create index if not exists tennis_dq_run_idx  on tennis.data_quality_issues (run_id);
+create index if not exists tennis_dq_open_idx on tennis.data_quality_issues (resolved_at) where resolved_at is null;
+-- One open issue per (type, entity, field): a second sighting bumps the count
+-- rather than writing a second row, so a recurring fault is one line with a
+-- number on it instead of ten thousand.
+create unique index if not exists tennis_dq_dedup_idx
+  on tennis.data_quality_issues (issue_type, coalesce(entity_type,''), coalesce(entity_key,''), coalesce(field,''))
+  where resolved_at is null;
+
 -- ===========================================================================
 -- LAYER 1 — RAW / STAGING. The import surface. PRIVATE: no client role reads
 -- it, ever. Every column is text because a staging table that types its input

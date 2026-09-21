@@ -141,3 +141,9 @@ requires a named clearer and a clearance date, and a row naming an unregistered
 source is refused outright. Replace it with a licensed feed before it funds a
 paid tennis surface — `docs/tennis-architecture.md` §4 is the three-step
 procedure, and nothing downstream changes.
+
+## Before any of this ships for money
+
+Read `docs/runbooks/tennis-licensing.md`. The archive is CC BY-NC-SA: importing
+and researching are fine, selling the output is not, and the database refuses
+to store a row that claims otherwise.

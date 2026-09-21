@@ -2,6 +2,80 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- ===========================================================================
+-- ROW LEVEL SECURITY, GRANTS, AND THE DOOR EACH TABLE HAS.
+--
+-- Four postures, and every table below is in exactly one of them:
+--
+--   PRIVATE      staging, point-in-time features, ingestion runs, data-quality
+--                issues. RLS on, NO grant to any client role. Not readable by
+--                a browser under any session, entitled or not. These are the
+--                model's training inputs and the pipeline's own diary.
+--   PUBLIC       the record: players, matches, tournaments, rankings, ratings,
+--                venues, weather, licences. Readable by anyone, writable by
+--                nobody but the service role.
+--   SUBSCRIBER   predictions, odds snapshots, research opportunities. Readable
+--                only by a signed-in account that public.community_is_entitled
+--                says is entitled.
+--   RECORD       tennis.prediction_record — public once the match has started
+--                or settled, subscriber-only before then. Exactly the boundary
+--                public.public_brief_closes already draws: the live board is
+--                the paywall, the history is not.
+--
+-- No client role gets INSERT, UPDATE or DELETE on anything. The pipeline writes
+-- as service_role, which bypasses RLS, and that is the only write door.
+-- Only tables THIS file creates are touched: the live contract's own tables and
+-- policies are left exactly as they are.
+-- ===========================================================================
+
+-- ---- PRIVATE ---------------------------------------------------------------
+do $$
+declare t text;
+begin
+  foreach t in array array['stg_archive_matches','player_match_features',
+                           'ingestion_runs','data_quality_issues'] loop
+    execute format('alter table tennis.%I enable row level security', t);
+    execute format('revoke all on tennis.%I from anon, authenticated', t);
+    execute format('grant all on tennis.%I to service_role', t);
+    -- no policy: RLS with no policy denies every row to every non-bypassing role
+    execute format('drop policy if exists %I on tennis.%I', 'tennis_' || t || '_public_read', t);
+  end loop;
+end $$;
+
+-- ---- PUBLIC ----------------------------------------------------------------
+do $$
+declare t text;
+begin
+  foreach t in array array['players','matches','venues','weather_observations',
+                           'rankings_current','player_ratings_current','source_licenses',
+                           'model_registry'] loop
+    execute format('alter table tennis.%I enable row level security', t);
+    execute format('revoke insert, update, delete, truncate, references, trigger on tennis.%I from anon, authenticated', t);
+    execute format('grant select on tennis.%I to anon, authenticated', t);
+    execute format('grant all on tennis.%I to service_role', t);
+    execute format('drop policy if exists %I on tennis.%I', 'tennis_' || t || '_public_read', t);
+    execute format('create policy %I on tennis.%I for select to anon, authenticated using (true)',
+                   'tennis_' || t || '_public_read', t);
+  end loop;
+end $$;
+
+-- tennis.tournaments is the live contract's table. It already carries RLS, a
+-- public read policy and the service-role grant; this file adds columns to it
+-- and must not restate its door. The report checks the door is still there.
+do $$
+begin
+  if to_regclass('tennis.tournaments') is not null
+     and not exists (select 1 from pg_policies
+                      where schemaname = 'tennis' and tablename = 'tournaments') then
+    -- only when nothing has granted it yet (this file applied first)
+    execute 'alter table tennis.tournaments enable row level security';
+    execute 'revoke insert, update, delete, truncate, references, trigger on tennis.tournaments from anon, authenticated';
+    execute 'grant select on tennis.tournaments to anon, authenticated';
+    execute 'grant all on tennis.tournaments to service_role';
+    execute 'create policy tennis_tournaments_public_read on tennis.tournaments for select to anon, authenticated using (true)';
+  end if;
+end $$;
+
 -- ---- SUBSCRIBER ------------------------------------------------------------
 do $$
 declare t text;

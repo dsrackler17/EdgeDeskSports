@@ -96,6 +96,87 @@ drop trigger if exists tennis_ro_touch on tennis.research_opportunities;
 create trigger tennis_ro_touch before update on tennis.research_opportunities
   for each row execute function tennis.touch_updated_at();
 
+-- THE COMMERCIAL GATE THE HEADER OF THIS FILE PROMISED AND NOBODY WROTE.
+--
+-- Line 20 says a row is "REFUSED wherever a row claims commercial clearance it
+-- does not have", and tennis.license_allows(source, 'commercial') exists to
+-- answer exactly that question. It was called in one place: the test suite.
+-- No production path in this repository ever asked it. The gate was a comment.
+--
+-- What that left open is not theoretical. A research opportunity defaults to
+-- source_key 'edgedesk', which IS commercially cleared, and its own registry
+-- note says the quiet part:
+--
+--     Derived FROM a non-commercial source, so a derived row still carries
+--     the source key it was derived from and is gated by that source, not
+--     by this row.
+--
+-- Nothing gated it. A model trained on the CC BY-NC-SA archive could produce a
+-- priced opportunity stamped 'edgedesk', and the database would store it as
+-- commercially clear and serve it to a paying subscriber. That is the precise
+-- licence breach this layer was built to make impossible.
+--
+-- The rule, stated once: AN OPPORTUNITY INHERITS THE LICENCE OF THE MODEL THAT
+-- PRODUCED IT. Commercial clearance is an AND over the chain, never a property
+-- of the last row in it. A research-only stamp is always allowed — claiming
+-- LESS than you are entitled to is not a breach — so this refuses in exactly
+-- one direction.
+create or replace function tennis.enforce_commercial_clearance()
+returns trigger
+language plpgsql
+security definer
+set search_path = tennis, pg_temp
+as $$
+declare
+  claims_commercial boolean;
+  model_source      text;
+begin
+  -- Does this row claim to be sellable at all? If not, there is nothing to
+  -- over-claim and the chain does not need walking.
+  select l.commercial_use into claims_commercial
+    from tennis.source_licenses l
+   where l.source_key = new.source_key;
+  if not coalesce(claims_commercial, false) then
+    return new;
+  end if;
+
+  -- An opportunity with no model behind it is a hand-written or imported row;
+  -- its own source_key is the whole of its provenance.
+  if new.model_version is null then
+    return new;
+  end if;
+
+  select r.source_key into model_source
+    from tennis.model_registry r
+   where r.model_version = new.model_version;
+  if model_source is null then
+    return new;                      -- the FK already refuses an unknown model
+  end if;
+
+  if not tennis.license_allows(model_source, 'commercial') then
+    raise exception using
+      errcode = 'check_violation',
+      message = 'tennis.research_opportunities: this row is stamped "'
+                || new.source_key || '", which is cleared for commercial use, but '
+                || 'model "' || new.model_version || '" was trained on "'
+                || model_source || '", which is NOT',
+      hint = 'An opportunity inherits the licence of the model that produced it. '
+             'Either register a commercially cleared source for that model''s '
+             'training data (tennis.source_licenses, with cleared_by and '
+             'cleared_at), or store this row against a research-only source_key. '
+             'Claiming clearance the training data does not carry is the licence '
+             'breach this gate exists to refuse.';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function tennis.enforce_commercial_clearance() from public, anon, authenticated;
+
+drop trigger if exists tennis_ro_commercial_clearance on tennis.research_opportunities;
+create trigger tennis_ro_commercial_clearance
+  before insert or update of source_key, model_version on tennis.research_opportunities
+  for each row execute function tennis.enforce_commercial_clearance();
+
 -- ===========================================================================
 -- LAYER 10 — PUBLIC RECORD and CALIBRATION.
 --
@@ -235,54 +316,3 @@ with (security_invoker = true) as
     from tennis.prediction_record r
    where r.settled_at is not null
    group by r.model_version, r.tour, width_bucket(r.prob_a, 0, 1, 10);
-
--- ===========================================================================
--- ENTITLEMENT. One authority, reused rather than re-implemented.
---
--- public.community_is_entitled(uuid) is the project's entitlement rule: the
--- owner comp, the active/trialing period, and Stripe's 21-day past_due grace.
--- This delegates to it wherever it is installed, so tennis can never drift
--- from what the rest of the product means by "subscriber". The fallback exists
--- only so this file applies to a database that has tennis but not yet the
--- community contract — and it evaluates the identical predicate against
--- public.subscriptions rather than inventing a second rule.
--- ===========================================================================
-create or replace function tennis.viewer_is_entitled()
-returns boolean
-language plpgsql
-stable
-security definer
-set search_path = public, tennis, pg_temp
-as $$
-declare
-  uid uuid;
-  ok  boolean;
-begin
-  begin
-    uid := auth.uid();
-  exception when others then
-    return false;
-  end;
-  if uid is null then return false; end if;
-
-  if to_regprocedure('public.community_is_entitled(uuid)') is not null then
-    execute 'select public.community_is_entitled($1)' into ok using uid;
-    return coalesce(ok, false);
-  end if;
-
-  if to_regclass('public.subscriptions') is null then return false; end if;
-  execute $q$
-    select exists (
-      select 1 from public.subscriptions s
-       where s.user_id = $1
-         and ( (s.status = 'active' and coalesce(s.price_id, '') in ('owner_comp'))
-            or (s.status in ('active','trialing')
-                and (s.current_period_end is null or s.current_period_end >= now()))
-            or (s.status = 'past_due'
-                and (s.current_period_end is null or now() - s.current_period_end < interval '21 days')) )
-    )
-  $q$ into ok using uid;
-  return coalesce(ok, false);
-end $$;
-revoke all on function tennis.viewer_is_entitled() from public;
-grant execute on function tennis.viewer_is_entitled() to anon, authenticated, service_role;
