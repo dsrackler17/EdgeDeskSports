@@ -26,6 +26,13 @@
 --   0  licensing       tennis.source_licenses + tennis.enforce_source_license
 --                      No match, feature or rating may name a source that is
 --                      not registered. Nothing is "unknown provenance".
+--                      + tennis.enforce_commercial_clearance, which is the
+--                      OTHER half and was missing until 2026-09-21: an
+--                      opportunity inherits the licence of the model that
+--                      produced it, so a research-only model's priced output
+--                      cannot be stored stamped sellable. Registration proved
+--                      the archive was non-commercial; nothing had ever
+--                      refused a row that ignored the answer.
 --   1  raw / staging   tennis.stg_archive_matches — the 108-column import
 --                      surface, every column text, nothing typed or trusted
 --                      yet. PRIVATE: no client role may read it.
@@ -170,6 +177,55 @@ values
    array['research','commercial','display']::text[],
    'The market prices EdgeDesk already licenses for every other sport.',
    'edgedesk-ops', now()),
+  -- THE THREE MIRRORS THAT LOOK CLEAR AND ARE NOT. Registered here at
+  -- commercial_use = false so that reaching for one is refused by the same
+  -- gate as the archive, rather than discovered later by a lawyer.
+  --
+  -- Every quote below was read FROM THE SOURCE on 2026-09-21, not from a
+  -- search result. That distinction is the point of this block: a search for
+  -- "commercially usable tennis dataset" returns TennisMyLife described as
+  -- MIT-licensed. Its own README says the opposite, in its own words. A
+  -- summary is not a licence.
+  ('tennismylife',
+   'TennisMyLife / TML-Database — complete live ATP match database',
+   'No commercial licence granted',
+   'https://github.com/Tennismylife/TML-Database',
+   'TennisMyLife / CanalTenis, derived from Jeff Sackmann tennis_atp',
+   false, true, false, true,
+   array['research']::text[],
+   'REFUSED FOR SALE, from its own README: "Redistribution, commercial use, '
+   'or selling of the raw database without permission from TennisMyLife '
+   'and/or the ATP may violate copyright or terms of use" and "All data usage '
+   'is non-commercial unless explicitly permitted." It is ALSO derived from '
+   'Sackmann''s CC BY-NC-SA work, which share-alike carries forward: a '
+   'downstream mirror cannot grant rights upstream withheld. Read at source '
+   '2026-09-21.',
+   null, null),
+  ('tennis_data_uk',
+   'tennis-data.co.uk — ATP/WTA results with closing odds, 2000-present',
+   'Free for personal use; commercial use by separate agreement only',
+   'http://www.tennis-data.co.uk/alldata.php',
+   'tennis-data.co.uk',
+   false, true, false, false,
+   array['research']::text[],
+   'The one candidate with a real commercial path: the publisher licenses '
+   'commercial use separately, so this becomes sellable only when a signed '
+   'agreement exists — at which point set commercial_use = true WITH '
+   'cleared_by and cleared_at naming who signed it. Until then it is research '
+   'only. Carries closing prices, which is what CLV grading needs.',
+   null, null),
+  ('match_charting',
+   'Tennis Abstract Match Charting Project — shot-by-shot',
+   'CC BY-NC-SA 4.0',
+   'https://creativecommons.org/licenses/by-nc-sa/4.0/',
+   'The Tennis Abstract Match Charting Project',
+   false, true, false, true,
+   array['research']::text[],
+   'NON-COMMERCIAL, and the maintainer says so in the repository in terms '
+   'worth quoting: "I am serious about the license, and I am really '
+   'disappointed with the handful of people who have chosen to violate it." '
+   'Read at source 2026-09-21.',
+   null, null),
   ('edgedesk',
    'EdgeDesk-derived values (features, ratings, model output)',
    'Proprietary',
@@ -1278,6 +1334,87 @@ create index if not exists tennis_ro_edge_idx on tennis.research_opportunities (
 drop trigger if exists tennis_ro_touch on tennis.research_opportunities;
 create trigger tennis_ro_touch before update on tennis.research_opportunities
   for each row execute function tennis.touch_updated_at();
+
+-- THE COMMERCIAL GATE THE HEADER OF THIS FILE PROMISED AND NOBODY WROTE.
+--
+-- Line 20 says a row is "REFUSED wherever a row claims commercial clearance it
+-- does not have", and tennis.license_allows(source, 'commercial') exists to
+-- answer exactly that question. It was called in one place: the test suite.
+-- No production path in this repository ever asked it. The gate was a comment.
+--
+-- What that left open is not theoretical. A research opportunity defaults to
+-- source_key 'edgedesk', which IS commercially cleared, and its own registry
+-- note says the quiet part:
+--
+--     Derived FROM a non-commercial source, so a derived row still carries
+--     the source key it was derived from and is gated by that source, not
+--     by this row.
+--
+-- Nothing gated it. A model trained on the CC BY-NC-SA archive could produce a
+-- priced opportunity stamped 'edgedesk', and the database would store it as
+-- commercially clear and serve it to a paying subscriber. That is the precise
+-- licence breach this layer was built to make impossible.
+--
+-- The rule, stated once: AN OPPORTUNITY INHERITS THE LICENCE OF THE MODEL THAT
+-- PRODUCED IT. Commercial clearance is an AND over the chain, never a property
+-- of the last row in it. A research-only stamp is always allowed — claiming
+-- LESS than you are entitled to is not a breach — so this refuses in exactly
+-- one direction.
+create or replace function tennis.enforce_commercial_clearance()
+returns trigger
+language plpgsql
+security definer
+set search_path = tennis, pg_temp
+as $$
+declare
+  claims_commercial boolean;
+  model_source      text;
+begin
+  -- Does this row claim to be sellable at all? If not, there is nothing to
+  -- over-claim and the chain does not need walking.
+  select l.commercial_use into claims_commercial
+    from tennis.source_licenses l
+   where l.source_key = new.source_key;
+  if not coalesce(claims_commercial, false) then
+    return new;
+  end if;
+
+  -- An opportunity with no model behind it is a hand-written or imported row;
+  -- its own source_key is the whole of its provenance.
+  if new.model_version is null then
+    return new;
+  end if;
+
+  select r.source_key into model_source
+    from tennis.model_registry r
+   where r.model_version = new.model_version;
+  if model_source is null then
+    return new;                      -- the FK already refuses an unknown model
+  end if;
+
+  if not tennis.license_allows(model_source, 'commercial') then
+    raise exception using
+      errcode = 'check_violation',
+      message = 'tennis.research_opportunities: this row is stamped "'
+                || new.source_key || '", which is cleared for commercial use, but '
+                || 'model "' || new.model_version || '" was trained on "'
+                || model_source || '", which is NOT',
+      hint = 'An opportunity inherits the licence of the model that produced it. '
+             'Either register a commercially cleared source for that model''s '
+             'training data (tennis.source_licenses, with cleared_by and '
+             'cleared_at), or store this row against a research-only source_key. '
+             'Claiming clearance the training data does not carry is the licence '
+             'breach this gate exists to refuse.';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function tennis.enforce_commercial_clearance() from public, anon, authenticated;
+
+drop trigger if exists tennis_ro_commercial_clearance on tennis.research_opportunities;
+create trigger tennis_ro_commercial_clearance
+  before insert or update of source_key, model_version on tennis.research_opportunities
+  for each row execute function tennis.enforce_commercial_clearance();
 
 -- ===========================================================================
 -- LAYER 10 — PUBLIC RECORD and CALIBRATION.

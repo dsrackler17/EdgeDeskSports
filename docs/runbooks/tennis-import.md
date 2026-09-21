@@ -141,3 +141,37 @@ requires a named clearer and a clearance date, and a row naming an unregistered
 source is refused outright. Replace it with a licensed feed before it funds a
 paid tennis surface — `docs/tennis-architecture.md` §4 is the three-step
 procedure, and nothing downstream changes.
+
+## Before any of this ships for money
+
+Read `docs/runbooks/tennis-licensing.md`. The archive is CC BY-NC-SA: importing
+and researching are fine, selling the output is not, and the database refuses
+to store a row that claims otherwise.
+
+## The Tennis panel's Slate / Qualify / Watched
+
+Those three counters read `wta.daily_research`, `wta.watchlist` and
+`wta.meta`. **No file in this repository ever created them** — `git log --all
+--name-only` matches no path containing "wta" at any point in the history.
+The schema is named in `supabase/expose_schemas.sql`, so PostgREST routed to
+it and answered that the relations were not there, which the panel reported
+honestly as *"The wta schema answers and is empty — zero rows."*
+
+`supabase/wta_board.sql` builds them as **views over the tennis record**, not
+as a second pipeline. The `tennis` contract already computes everything they
+were meant to carry: `tennis.board_current` is a superset of
+`daily_research`, and `tennis.prediction_record` carries the graded CLV the
+watchlist reports. A second producer would mean two models, two records and
+two answers to the same question.
+
+```bash
+psql "$SUPABASE_DB_URL" -f supabase/wta_board.sql   # idempotent; every row must say ok
+```
+
+Apply it once. It needs no schedule and no backfill: the counters come alive
+the moment the archive is imported and the nightly jobs run, because the views
+**are** the record.
+
+`app.html` needs no change — the views carry the column names the page already
+reads, and `tools/tennis/wta_board_sql.test.js` reads those field names out of
+`app.html` and fails if either side renames one.

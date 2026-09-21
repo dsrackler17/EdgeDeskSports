@@ -3,6 +3,57 @@
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
 -- ===========================================================================
+-- ENTITLEMENT. One authority, reused rather than re-implemented.
+--
+-- public.community_is_entitled(uuid) is the project's entitlement rule: the
+-- owner comp, the active/trialing period, and Stripe's 21-day past_due grace.
+-- This delegates to it wherever it is installed, so tennis can never drift
+-- from what the rest of the product means by "subscriber". The fallback exists
+-- only so this file applies to a database that has tennis but not yet the
+-- community contract — and it evaluates the identical predicate against
+-- public.subscriptions rather than inventing a second rule.
+-- ===========================================================================
+create or replace function tennis.viewer_is_entitled()
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public, tennis, pg_temp
+as $$
+declare
+  uid uuid;
+  ok  boolean;
+begin
+  begin
+    uid := auth.uid();
+  exception when others then
+    return false;
+  end;
+  if uid is null then return false; end if;
+
+  if to_regprocedure('public.community_is_entitled(uuid)') is not null then
+    execute 'select public.community_is_entitled($1)' into ok using uid;
+    return coalesce(ok, false);
+  end if;
+
+  if to_regclass('public.subscriptions') is null then return false; end if;
+  execute $q$
+    select exists (
+      select 1 from public.subscriptions s
+       where s.user_id = $1
+         and ( (s.status = 'active' and coalesce(s.price_id, '') in ('owner_comp'))
+            or (s.status in ('active','trialing')
+                and (s.current_period_end is null or s.current_period_end >= now()))
+            or (s.status = 'past_due'
+                and (s.current_period_end is null or now() - s.current_period_end < interval '21 days')) )
+    )
+  $q$ into ok using uid;
+  return coalesce(ok, false);
+end $$;
+revoke all on function tennis.viewer_is_entitled() from public;
+grant execute on function tennis.viewer_is_entitled() to anon, authenticated, service_role;
+
+-- ===========================================================================
 -- PROVENANCE, RE-ATTACHED. Repairing a contract that was only half applied.
 --
 -- Every table above declares its link to tennis.ingestion_runs INLINE, in the
@@ -284,43 +335,3 @@ with (security_invoker = true) as
     left join tennis.player_ratings_current r on r.player_id = p.player_id
     left join tennis.rankings_current k on k.player_id = p.player_id
     left join tennis.player_career c on c.player_id = p.player_id;
-
--- THE OPERATIONAL NUMBERS, through a narrow door.
---
--- tennis.ingestion_runs and tennis.data_quality_issues are PRIVATE: they are the
--- pipeline's own diary and no browser reads them. But the board header has to be
--- able to say "the last ingest succeeded four hours ago" and "two data-quality
--- issues are open", or a reader cannot tell fresh from stale.
---
--- So exactly three AGGREGATE numbers come out, through a security-definer
--- function with a fixed search path. No row, no job name, no error text, no
--- entity id. A `security_invoker` view cannot do this — it would need the
--- caller to hold SELECT on the private tables, which is the thing being avoided.
---
--- This is also a bug this file previously had and did not notice: the earlier
--- record_health read those tables directly as an invoker view, which worked
--- only because `select count(*) from tennis.record_health` lets the planner skip
--- the scalar subqueries entirely. A reader doing `select *` — which is what the
--- page actually does — got "permission denied for table ingestion_runs".
-create or replace function tennis.ops_health()
-returns table (last_successful_ingest timestamptz, failed_runs_7d bigint,
-               open_data_issues bigint, last_prediction_at timestamptz,
-               open_opportunities bigint)
-language sql
-stable
-security definer
-set search_path = tennis, pg_temp
-as $$
-  select (select max(finished_at) from tennis.ingestion_runs where status = 'ok'),
-         (select count(*) from tennis.ingestion_runs
-           where status = 'error' and started_at > now() - interval '7 days'),
-         (select count(*) from tennis.data_quality_issues where resolved_at is null),
-         -- WHEN the last prediction was made and HOW MANY opportunities are open.
-         -- Both are freshness facts: they say the system is alive. Neither says
-         -- what the model thinks or what any price is, so both are safe for an
-         -- anonymous header while the tables behind them stay subscriber-gated.
-         (select max(generated_at) from tennis.model_predictions),
-         (select count(*) from tennis.research_opportunities where status = 'open');
-$$;
-revoke all on function tennis.ops_health() from public;
-grant execute on function tennis.ops_health() to anon, authenticated, service_role;

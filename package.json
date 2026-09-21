@@ -108,7 +108,7 @@
     "ufc:live": "node tools/ufc/live_poll.js",
     "ufc:gate": "node tools/ufc/live_gate.js",
     "tennis:test": "node tools/tennis/tennis.test.js && node tools/tennis/match_center_ui.test.js && node tools/tennis/model.test.js && node tools/tennis/providers.test.js && node tools/tennis/ai_tennis.test.js && node tools/tennis/board_ui.test.js && node tools/tennis/lab.test.js && node tools/tennis/lab_ui.test.js",
-    "tennis:sql": "node tools/tennis/tennis_sql.test.js && node tools/tennis/record_sql.test.js && node tools/tennis/import.test.js && node tools/tennis/leakage.test.js && node tools/tennis/record_workflow.test.js && node tools/tennis/lab_sql.test.js",
+    "tennis:sql": "node tools/tennis/tennis_sql.test.js && node tools/tennis/record_sql.test.js && node tools/tennis/import.test.js && node tools/tennis/leakage.test.js && node tools/tennis/record_workflow.test.js && node tools/tennis/lab_sql.test.js && node tools/tennis/wta_board_sql.test.js",
     "tennis:sync": "node tools/tennis/sync_events.js",
     "tennis:verify": "node tools/tennis/sync_events.js --verify",
     "tennis:baselines": "node tools/tennis/build_baselines.js",
@@ -230,6 +230,7 @@
     "mlb:off:refresh:commit": "node tools/mlb/refresh_offense.js --commit",
     "mlb:off:refresh:test": "node tools/mlb/offense_refresh.test.js",
     "mlb:off:test": "node tools/mlb/offense_dataset.js && node tools/mlb/offense_features.test.js && node tools/mlb/offense_refresh.test.js && node tools/mlb/offense_import.test.js && node tools/intelligence/mlb_offense.test.js",
-    "sql:split": "node tools/sql/split_sql.js"
+    "sql:split": "node tools/sql/split_sql.js",
+    "tennis:wta:sql": "node tools/tennis/wta_board_sql.test.js"
   }
 }

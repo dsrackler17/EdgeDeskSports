@@ -2,6 +2,46 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- THE OPERATIONAL NUMBERS, through a narrow door.
+--
+-- tennis.ingestion_runs and tennis.data_quality_issues are PRIVATE: they are the
+-- pipeline's own diary and no browser reads them. But the board header has to be
+-- able to say "the last ingest succeeded four hours ago" and "two data-quality
+-- issues are open", or a reader cannot tell fresh from stale.
+--
+-- So exactly three AGGREGATE numbers come out, through a security-definer
+-- function with a fixed search path. No row, no job name, no error text, no
+-- entity id. A `security_invoker` view cannot do this — it would need the
+-- caller to hold SELECT on the private tables, which is the thing being avoided.
+--
+-- This is also a bug this file previously had and did not notice: the earlier
+-- record_health read those tables directly as an invoker view, which worked
+-- only because `select count(*) from tennis.record_health` lets the planner skip
+-- the scalar subqueries entirely. A reader doing `select *` — which is what the
+-- page actually does — got "permission denied for table ingestion_runs".
+create or replace function tennis.ops_health()
+returns table (last_successful_ingest timestamptz, failed_runs_7d bigint,
+               open_data_issues bigint, last_prediction_at timestamptz,
+               open_opportunities bigint)
+language sql
+stable
+security definer
+set search_path = tennis, pg_temp
+as $$
+  select (select max(finished_at) from tennis.ingestion_runs where status = 'ok'),
+         (select count(*) from tennis.ingestion_runs
+           where status = 'error' and started_at > now() - interval '7 days'),
+         (select count(*) from tennis.data_quality_issues where resolved_at is null),
+         -- WHEN the last prediction was made and HOW MANY opportunities are open.
+         -- Both are freshness facts: they say the system is alive. Neither says
+         -- what the model thinks or what any price is, so both are safe for an
+         -- anonymous header while the tables behind them stay subscriber-gated.
+         (select max(generated_at) from tennis.model_predictions),
+         (select count(*) from tennis.research_opportunities where status = 'open');
+$$;
+revoke all on function tennis.ops_health() from public;
+grant execute on function tennis.ops_health() to anon, authenticated, service_role;
+
 -- Data freshness and coverage, for the page header and for the AI's "what is
 -- missing" answer. One row.
 --
@@ -260,78 +300,4 @@ begin
     execute format('revoke all on function %s from public', f);
     execute format('grant execute on function %s to anon, authenticated, service_role', f);
   end loop;
-end $$;
-
--- ===========================================================================
--- ROW LEVEL SECURITY, GRANTS, AND THE DOOR EACH TABLE HAS.
---
--- Four postures, and every table below is in exactly one of them:
---
---   PRIVATE      staging, point-in-time features, ingestion runs, data-quality
---                issues. RLS on, NO grant to any client role. Not readable by
---                a browser under any session, entitled or not. These are the
---                model's training inputs and the pipeline's own diary.
---   PUBLIC       the record: players, matches, tournaments, rankings, ratings,
---                venues, weather, licences. Readable by anyone, writable by
---                nobody but the service role.
---   SUBSCRIBER   predictions, odds snapshots, research opportunities. Readable
---                only by a signed-in account that public.community_is_entitled
---                says is entitled.
---   RECORD       tennis.prediction_record — public once the match has started
---                or settled, subscriber-only before then. Exactly the boundary
---                public.public_brief_closes already draws: the live board is
---                the paywall, the history is not.
---
--- No client role gets INSERT, UPDATE or DELETE on anything. The pipeline writes
--- as service_role, which bypasses RLS, and that is the only write door.
--- Only tables THIS file creates are touched: the live contract's own tables and
--- policies are left exactly as they are.
--- ===========================================================================
-
--- ---- PRIVATE ---------------------------------------------------------------
-do $$
-declare t text;
-begin
-  foreach t in array array['stg_archive_matches','player_match_features',
-                           'ingestion_runs','data_quality_issues'] loop
-    execute format('alter table tennis.%I enable row level security', t);
-    execute format('revoke all on tennis.%I from anon, authenticated', t);
-    execute format('grant all on tennis.%I to service_role', t);
-    -- no policy: RLS with no policy denies every row to every non-bypassing role
-    execute format('drop policy if exists %I on tennis.%I', 'tennis_' || t || '_public_read', t);
-  end loop;
-end $$;
-
--- ---- PUBLIC ----------------------------------------------------------------
-do $$
-declare t text;
-begin
-  foreach t in array array['players','matches','venues','weather_observations',
-                           'rankings_current','player_ratings_current','source_licenses',
-                           'model_registry'] loop
-    execute format('alter table tennis.%I enable row level security', t);
-    execute format('revoke insert, update, delete, truncate, references, trigger on tennis.%I from anon, authenticated', t);
-    execute format('grant select on tennis.%I to anon, authenticated', t);
-    execute format('grant all on tennis.%I to service_role', t);
-    execute format('drop policy if exists %I on tennis.%I', 'tennis_' || t || '_public_read', t);
-    execute format('create policy %I on tennis.%I for select to anon, authenticated using (true)',
-                   'tennis_' || t || '_public_read', t);
-  end loop;
-end $$;
-
--- tennis.tournaments is the live contract's table. It already carries RLS, a
--- public read policy and the service-role grant; this file adds columns to it
--- and must not restate its door. The report checks the door is still there.
-do $$
-begin
-  if to_regclass('tennis.tournaments') is not null
-     and not exists (select 1 from pg_policies
-                      where schemaname = 'tennis' and tablename = 'tournaments') then
-    -- only when nothing has granted it yet (this file applied first)
-    execute 'alter table tennis.tournaments enable row level security';
-    execute 'revoke insert, update, delete, truncate, references, trigger on tennis.tournaments from anon, authenticated';
-    execute 'grant select on tennis.tournaments to anon, authenticated';
-    execute 'grant all on tennis.tournaments to service_role';
-    execute 'create policy tennis_tournaments_public_read on tennis.tournaments for select to anon, authenticated using (true)';
-  end if;
 end $$;

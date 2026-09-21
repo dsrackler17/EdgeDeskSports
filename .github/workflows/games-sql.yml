@@ -65,6 +65,8 @@ on:
       - 'tools/tennis/sql/**'
       - 'tools/tennis/tennis_sql.test.js'
       - 'tools/tennis/lab_sql.test.js'
+      - 'supabase/wta_board.sql'
+      - 'tools/tennis/wta_board_sql.test.js'
       # THE RECORD CONTRACT AND ITS SUITE. This job has run record_sql.test.js
       # since the record shipped, and neither the contract nor the suite was
       # ever in this list — the same omission the editorial block above
@@ -156,6 +158,8 @@ on:
       - 'tools/tennis/sql/**'
       - 'tools/tennis/tennis_sql.test.js'
       - 'tools/tennis/lab_sql.test.js'
+      - 'supabase/wta_board.sql'
+      - 'tools/tennis/wta_board_sql.test.js'
       # THE RECORD CONTRACT AND ITS SUITE. This job has run record_sql.test.js
       # since the record shipped, and neither the contract nor the suite was
       # ever in this list — the same omission the editorial block above
@@ -442,6 +446,22 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/tennis/lab_sql.test.js | tee tennis_lab.log
 
+      # THE WTA RESEARCH BOARD. app.html read wta.daily_research, wta.watchlist
+      # and wta.meta from the day the Tennis panel shipped, and no file in this
+      # repository ever created them — the panel's "the wta schema answers and
+      # is empty" was the honest report of a schema that was never built. They
+      # are now VIEWS over the tennis record rather than a second pipeline,
+      # which makes one new failure possible: the views and the page can
+      # disagree about a column name, and PostgREST answers that with a 400 the
+      # panel would report as a database fault. The suite reads the field names
+      # OUT of app.html and requires each to be a real column, so a rename on
+      # either side fails here rather than on the website.
+      - name: Run the WTA research board SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/wta_board_sql.test.js | tee tennis_wta.log
+
       # The editorial system. Two rules in it are statements about VALUES
       # rather than about rows, so neither can be an RLS policy and both are
       # triggers: a pregame snapshot is immutable even to the service role the
@@ -632,7 +652,7 @@ jobs:
           # be read off the run at all. Now it names the file and shows the tail
           # that failed to satisfy it.
           bad=0
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log tennis_record.log tennis_import.log tennis_leakage.log tennis_wfgate.log tennis_lab.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log tennis_record.log tennis_import.log tennis_leakage.log tennis_wfgate.log tennis_lab.log tennis_wta.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
             if [ ! -f "$f" ]; then
               echo "::error::REFUSING: $f was never written — the step that produces it did not run"
               bad=1
