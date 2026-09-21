@@ -109,10 +109,36 @@ function build(now) {
     reference_market: { source: 'nflverse games.csv consensus (reference, not a price, no book, no capture time)', home_line: -2.5, home_margin: 2.5, total: 49.5, home_ml: -140, away_ml: 120, convention: 'home_line: negative = home favoured (betting)' },
     market_status: 'NOT JOINED IN THIS BUILD',
   };
-  /* The real card's Detroit and Buffalo games are left off so "the Lions at
-     Buffalo" resolves to exactly one game whatever week the artifact is from. */
-  const nflRest = ahead(NFL_SLATE.games.filter((g) => !/^(det|buf)$/i.test(String(g.home_team_id)) && !/^(det|buf)$/i.test(String(g.away_team_id))), 6);
-  const nfl = Object.assign({}, NFL_SLATE, { games: [NFLG].concat(nflRest) });
+  /* THE WATCHLIST GAME, OWNED BY THE FIXTURE.
+     The NFL watchlist claim — a reference line that cannot qualify but carries a
+     bet-to number — used to ride on whichever real slate game happened to have a
+     consensus line that week. The artifact moved: 17 of its 24 games now carry no
+     reference_market at all, Houston's among them, and the watchlist silently
+     emptied. Nothing was wrong with the board; the fixture had stopped describing
+     the state it was named for.
+
+     So the game is built here, like the Lions at Buffalo above. The numbers are
+     chosen to sit in the band the claim needs and to stay there: a 5.0-point
+     disagreement clears the LEAN tier's 1.5-point requirement with room, stays
+     well under the 7-point outlier threshold that would divert it to a data
+     check, and leaves the cover probability ~1.6pp clear of break-even, so a
+     coefficient nudge in the validation artifact cannot quietly flip it back to
+     PASS. A reference line and no book keeps it off the qualified board. */
+  const NFLW = Object.assign({}, NFLG, {
+    game_id: 'nfl-fx-ind-hou',
+    home_code: 'HOU', away_code: 'IND', home_team: 'Houston Texans', away_team: 'Indianapolis Colts',
+    home_team_id: 'hou', away_team_id: 'ind', venue: 'NRG Stadium', roof: 'closed', surface: 'sportturf',
+    home_starter: { player_name: 'C.J. Stroud', player_id: '00-0039163', source: 'nflverse games.csv', status: 'SCHEDULE_FEED' },
+    away_starter: { player_name: 'Anthony Richardson', player_id: '00-0038996', source: 'nflverse games.csv', status: 'SCHEDULE_FEED' },
+    model_home_line: -8, model_home_margin: 8, model_home_win_prob: 0.7421,
+    outcome_range: { p10: -9, p50: 8, p90: 25, sigma: 10.7, basis: 'margin_pmf_by_spread', unit: 'home margin, points' },
+    reference_market: Object.assign({}, NFLG.reference_market, { home_line: -3, home_margin: 3, home_ml: -170, away_ml: 145 }),
+  });
+  /* The real card's Detroit, Buffalo, Houston and Indianapolis games are left off
+     so "the Lions at Buffalo" and "the Texans" each resolve to exactly one game
+     whatever week the artifact is from. */
+  const nflRest = ahead(NFL_SLATE.games.filter((g) => !/^(det|buf|hou|ind)$/i.test(String(g.home_team_id)) && !/^(det|buf|hou|ind)$/i.test(String(g.away_team_id))), 6);
+  const nfl = Object.assign({}, NFL_SLATE, { games: [NFLG, NFLW].concat(nflRest) });
 
   const teams = [
     { team_id: 1, school: 'North Texas', mascot: 'Mean Green', abbreviation: 'UNT', conference: 'American Athletic', classification: 'fbs' },
