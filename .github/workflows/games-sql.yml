@@ -610,7 +610,17 @@ jobs:
           # did not list it would go green on a newsletter suite that never
           # ran — which is the exact failure this step exists to refuse.
           #
-          # NOTE, not fixed here because it is not this change's to widen:
+          # THE FIVE TENNIS LOGS ARE ON THIS LIST NOW, AND WERE NOT.
+          # tennis.log was the only one here, so record_sql, import, leakage and
+          # lab — the suites that hold the licensing gate, the leakage bound and
+          # the append-only prediction ledger — could each SKIP and this job
+          # would still report green. Adding tennis_wfgate.log without the other
+          # four would have left the new suite guarded and its neighbours not,
+          # which is the same omission one file further along. That is the sixth
+          # and seventh instance of the pattern this step exists to refuse: the
+          # absence of a signal reading exactly like a passing one.
+          #
+          # NOTE, still not fixed here because it is not this change's to widen:
           # cards.log, season.log and offline.log are produced by steps above
           # and are still absent from this list.
           #
@@ -622,7 +632,7 @@ jobs:
           # be read off the run at all. Now it names the file and shows the tail
           # that failed to satisfy it.
           bad=0
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log tennis_record.log tennis_import.log tennis_leakage.log tennis_wfgate.log tennis_lab.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
             if [ ! -f "$f" ]; then
               echo "::error::REFUSING: $f was never written — the step that produces it did not run"
               bad=1
