@@ -25,6 +25,23 @@ const ROOT = path.join(__dirname, '..', '..');
 const SHOTS = process.argv.includes('--shots');
 const SHOT_DIR = process.env.DESK_SHOT_DIR || path.join(ROOT, '.desk-shots');
 
+/* THE MATCHUP, TAKEN FROM THE CARD RATHER THAN REMEMBERED.
+   The question below used to name North Texas and Texas State, because they
+   were on the FBS card the week this was written. The nightly build moves that
+   card. Once they fell off it the panel answered — correctly — that no game
+   with both of those sides is on any card EdgeDesk publishes, never called the
+   stubbed function at all, and all 23 rendering assertions failed against a
+   screen that was behaving exactly as designed.
+
+   The names are read off the committed slate instead, so the question always
+   names a game the app can resolve. WHICH game it is does not matter: every
+   assertion here is about how an answer is RENDERED, never about who plays. */
+const FBS_SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/fbs/slate.json'), 'utf8'));
+const GAME = (FBS_SLATE.games || []).find((g) => g && g.home_team && g.away_team && g.home_team_id && g.away_team_id);
+if (!GAME) { console.log('SKIPPED: football/fbs/slate.json carries no resolvable game'); process.exit(0); }
+const AWAY = GAME.away_team, HOME = GAME.home_team;
+const MATCHUP = AWAY + ' @ ' + HOME;
+
 let pass = 0, fail = 0; const failures = [];
 function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; failures.push({ name, detail }); }
 function eq(name, got, want) { chk(name, got === want, { got, want }); }
@@ -52,17 +69,17 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
 
 /* ---- the function's answer, in both shapes ----------------------------- */
 const SUMMARY = {
-  matchup: 'North Texas @ Texas State', kickoff: new Date(Date.now() + 6 * 864e5).toISOString(),
-  read: "Texas State is favored by 2.5, but EdgeDesk doesn't have enough current evidence to call that value. "
+  matchup: MATCHUP, kickoff: new Date(Date.now() + 6 * 864e5).toISOString(),
+  read: HOME + " is favored by 2.5, but EdgeDesk doesn't have enough current evidence to call that value. "
       + "The last FanDuel quote is stale — 38.5 hours old, so I'd treat the matchup as research-only until the market refreshes.",
-  why: ['The market number: Texas State is favored by 2.5, last seen at FanDuel.',
+  why: ['The market number: ' + HOME + ' is favored by 2.5, last seen at FanDuel.',
         "EdgeDesk's model projects -2.4 on this side. It has no validated outcome probability in this market, so it is a comparison point, not an edge."],
   could_be_wrong: ['Current edge 0.4% is already below the 0.5% floor.',
                    'This model is marked EXPERIMENTAL in this market — its walk-forward record does not beat the closing line.'],
   price_needed: 'Good to -112; worse than that and the expected return falls below the floor.',
   data_blockers: ['The FanDuel quote is 38.5 hours old. It is the last price EdgeDesk observed, not one you can take now.',
-                  'Texas State: no availability report on file. That is UNKNOWN, not healthy.'],
-  primary: { market: 'spreads', selection: 'North Texas', handicap: 2.5, offered_american: '-105',
+                  HOME + ': no availability report on file. That is UNKNOWN, not healthy.'],
+  primary: { market: 'spreads', selection: AWAY, handicap: 2.5, offered_american: '-105',
              book: 'FanDuel', freshness: 'STALE', decision: 'WATCH', strength: null },
   other_markets: 5,
   ev_provenance: 'This expected return is measured against a sharp-market fair price, not produced by EdgeDesk’s model — '
@@ -70,27 +87,27 @@ const SUMMARY = {
   source: 'deterministic',
 };
 const DECISIONS = [
-  { primary: true, market: 'spreads', selection: 'North Texas', handicap: 2.5, decision: 'WATCH', price: { offered_american: '-105', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
-  { primary: false, market: 'spreads', selection: 'Texas State', handicap: -2.5, decision: 'WATCH', price: { offered_american: '-115', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
+  { primary: true, market: 'spreads', selection: AWAY, handicap: 2.5, decision: 'WATCH', price: { offered_american: '-105', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
+  { primary: false, market: 'spreads', selection: HOME, handicap: -2.5, decision: 'WATCH', price: { offered_american: '-115', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
   { primary: false, market: 'totals', selection: 'Over', handicap: 57.5, decision: 'WATCH', price: { offered_american: '-110', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
   { primary: false, market: 'totals', selection: 'Under', handicap: 57.5, decision: 'WATCH', price: { offered_american: '-110', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
-  { primary: false, market: 'h2h', selection: 'North Texas', handicap: null, decision: 'WATCH', price: { offered_american: '+120', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
-  { primary: false, market: 'h2h', selection: 'Texas State', handicap: null, decision: 'WATCH', price: { offered_american: '-142', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
+  { primary: false, market: 'h2h', selection: AWAY, handicap: null, decision: 'WATCH', price: { offered_american: '+120', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
+  { primary: false, market: 'h2h', selection: HOME, handicap: null, decision: 'WATCH', price: { offered_american: '-142', book: 'FanDuel' }, gates: { freshness: { status: 'STALE' } } },
 ];
 const RESEARCH = {
   intent: 'cfb_research_matchup', depth: 'DEEP', sport: 'americanfootball_ncaaf',
   decisions: DECISIONS, evidence_packets: [],
-  research_context: { sport: 'americanfootball_ncaaf', game_id: '401858900', away: 'North Texas', home: 'Texas State',
-    away_id: 'northtexas', home_id: 'texasstate', single_game: true, sport_source: 'a matchup named in this message' },
+  research_context: { sport: 'americanfootball_ncaaf', game_id: String(GAME.game_id), away: AWAY, home: HOME,
+    away_id: GAME.away_team_id, home_id: GAME.home_team_id, single_game: true, sport_source: 'a matchup named in this message' },
 };
 const NARRATED = {
   build: 'e2e', model: 'claude-test', answer:
 `**The Desk's read**
-Texas State is favored by 2.5, but EdgeDesk doesn't have enough current evidence to call that value. The last FanDuel quote is stale, so I'd treat the matchup as research-only until the market refreshes.
+${HOME} is favored by 2.5, but EdgeDesk doesn't have enough current evidence to call that value. The last FanDuel quote is stale, so I'd treat the matchup as research-only until the market refreshes.
 
 **Why**
-- The market has Texas State -2.5 and EdgeDesk's own number sits at -2.4, so the two effectively agree.
-- North Texas is 2-0 but has not played anyone who tests them.
+- The market has ${HOME} -2.5 and EdgeDesk's own number sits at -2.4, so the two effectively agree.
+- ${AWAY} is 2-0 but has not played anyone who tests them.
 
 **What could make it wrong**
 - The model is experimental in this market and does not beat the closing line.
@@ -107,7 +124,7 @@ Texas State is favored by 2.5, but EdgeDesk doesn't have enough current evidence
    staleness caveat instead of a football read. Verbatim opening, abridged
    body. This is the failure the panel must not pass through. */
 const WRONG_SHAPE = { build: 'e2e', model: 'claude-test',
-  answer: 'WARNING — this answer is provisional. All six priced markets on North Texas @ Texas State are on '
+  answer: 'WARNING — this answer is provisional. All six priced markets on ' + MATCHUP + ' are on '
     + 'stale quotes (captured 2345 minutes ago, well past the 90-minute freshness limit), so nothing below is '
     + 'currently bettable.\n\nThe deterministic decision layer returned WATCH on all six selections. '
     + 'Research priority is MEDIUM. The validation registry caps spreads at RESEARCH_LEAN.',
@@ -122,7 +139,7 @@ const LIVE = { build: 'e2e', model: 'claude-test', answer: NARRATED.answer,
   matchup_summary: Object.assign({}, SUMMARY, {
     game_state: 'IN_PROGRESS',
     kickoff: new Date(Date.now() - 40 * 60000).toISOString(),
-    read: 'North Texas @ Texas State is already under way. EdgeDesk\u2019s research is pregame only — no live '
+    read: MATCHUP + ' is already under way. EdgeDesk\u2019s research is pregame only — no live '
       + 'price, score or clock is ingested — so what follows is what the desk had before kickoff, not a read on '
       + 'the game as it stands.',
     price_needed: null,
@@ -199,7 +216,7 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
     return page.evaluate(() => document.getElementById('edaiLog').innerHTML);
   }
 
-  const Q = 'What do you think about North Texas vs Texas State this week? Anything worth betting?';
+  const Q = 'What do you think about ' + AWAY + ' vs ' + HOME + ' this week? Anything worth betting?';
   try {
     /* ══ 1. THE IDENTITY ══════════════════════════════════════════════ */
     {

@@ -146,7 +146,13 @@ try {
   chk('a parlay minimum above the maximum is refused', !!err && /parlay_band/.test(err), err && err.slice(0, 160));
 
   /* ---- the trail ----------------------------------------------------- */
-  const KICK = '2026-09-20T19:00:00Z', BUILT = '2026-09-16T12:00:00Z';
+  /* RELATIVE TO NOW, NOT A DATE ON A CALENDAR. These were fixed timestamps, and
+     stake_open_exposure filters on `kickoff > now()`: the moment the hardcoded
+     kickoff passed, the open-exposure block started failing everywhere, for a
+     reason that had nothing to do with the code under test. A fixture for "a game
+     that has not started" has to keep meaning that tomorrow. */
+  const DAY = 86400000, iso = (ms) => new Date(Date.now() + ms).toISOString();
+  const KICK = iso(2 * DAY), BUILT = iso(-1 * DAY), AFTER_KICK = iso(3 * DAY);
   psql(`insert into public.stake_recommendations (recommendation_id, card_id, snapshot_hash, built_at, sport, game_id, matchup, kickoff, market, selection, side, handicap,
         odds_american, odds_decimal, book, price_captured_at, price_age_seconds, price_freshness,
         model_probability, calibrated_probability, conservative_probability, conservative_method, no_vig_market_probability,
@@ -173,7 +179,7 @@ try {
   err = mustFail("delete from public.stake_recommendations where recommendation_id='stake_abc'");
   chk('and it cannot be deleted', !!err && /never deleted/.test(err), err && err.slice(0, 160));
 
-  err = mustFail(`insert into public.stake_recommendations (recommendation_id, snapshot_hash, built_at, kickoff, status) values ('leak','x','2026-09-21T00:00:00Z','${KICK}','PASS')`);
+  err = mustFail(`insert into public.stake_recommendations (recommendation_id, snapshot_hash, built_at, kickoff, status) values ('leak','x','${AFTER_KICK}','${KICK}','PASS')`);
   chk('a recommendation built after kickoff is refused', !!err && /cannot postdate kickoff/.test(err), err && err.slice(0, 160));
   err = mustFail(`insert into public.stake_recommendations (recommendation_id, snapshot_hash, built_at, kickoff, status, recommended_units) values ('zerobet','x','${BUILT}','${KICK}','BET',0)`);
   chk('a BET at zero units is refused by the database', !!err && /stake_bet_is_sized/.test(err), err && err.slice(0, 160));
