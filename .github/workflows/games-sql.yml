@@ -77,6 +77,11 @@ on:
       - 'tools/tennis/record_sql.test.js'
       - 'tools/tennis/import.test.js'
       - 'tools/tennis/leakage.test.js'
+      # The record workflow's own preflight gate, and the workflow it is
+      # extracted from: a change to either must run the suite that proves an
+      # empty record is still refused.
+      - 'tools/tennis/record_workflow.test.js'
+      - '.github/workflows/tennis-record.yml'
       # THE SPLIT PARTS AND THE CHECK THAT KEEPS THEM HONEST. supabase/parts is
       # what gets pasted into the Supabase SQL editor, so a split that has
       # drifted from its source installs a contract the repository has already
@@ -163,6 +168,11 @@ on:
       - 'tools/tennis/record_sql.test.js'
       - 'tools/tennis/import.test.js'
       - 'tools/tennis/leakage.test.js'
+      # The record workflow's own preflight gate, and the workflow it is
+      # extracted from: a change to either must run the suite that proves an
+      # empty record is still refused.
+      - 'tools/tennis/record_workflow.test.js'
+      - '.github/workflows/tennis-record.yml'
       # THE SPLIT PARTS AND THE CHECK THAT KEEPS THEM HONEST. supabase/parts is
       # what gets pasted into the Supabase SQL editor, so a split that has
       # drifted from its source installs a contract the repository has already
@@ -394,6 +404,17 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/tennis/leakage.test.js | tee tennis_leakage.log
 
+      # THE WORKFLOW'S OWN PREFLIGHT GATE, run as shell against a real database.
+      # tennis-record.yml proved every relation existed and never asked whether
+      # a match was on file; production's record was empty and five of the seven
+      # build steps exited 0 over it. The gate is shell, so it is extracted from
+      # the YAML and executed here rather than re-described in JavaScript.
+      - name: Run the tennis record workflow gate
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/record_workflow.test.js | tee tennis_wfgate.log
+
       # THE TENNIS LAB. The research product over the record — surface
       # translation, form and trajectory, workload, the matchup studio, the
       # historical explorer.
@@ -589,7 +610,17 @@ jobs:
           # did not list it would go green on a newsletter suite that never
           # ran — which is the exact failure this step exists to refuse.
           #
-          # NOTE, not fixed here because it is not this change's to widen:
+          # THE FIVE TENNIS LOGS ARE ON THIS LIST NOW, AND WERE NOT.
+          # tennis.log was the only one here, so record_sql, import, leakage and
+          # lab — the suites that hold the licensing gate, the leakage bound and
+          # the append-only prediction ledger — could each SKIP and this job
+          # would still report green. Adding tennis_wfgate.log without the other
+          # four would have left the new suite guarded and its neighbours not,
+          # which is the same omission one file further along. That is the sixth
+          # and seventh instance of the pattern this step exists to refuse: the
+          # absence of a signal reading exactly like a passing one.
+          #
+          # NOTE, still not fixed here because it is not this change's to widen:
           # cards.log, season.log and offline.log are produced by steps above
           # and are still absent from this list.
           #
@@ -601,7 +632,7 @@ jobs:
           # be read off the run at all. Now it names the file and shows the tail
           # that failed to satisfy it.
           bad=0
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log tennis_record.log tennis_import.log tennis_leakage.log tennis_wfgate.log tennis_lab.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
             if [ ! -f "$f" ]; then
               echo "::error::REFUSING: $f was never written — the step that produces it did not run"
               bad=1

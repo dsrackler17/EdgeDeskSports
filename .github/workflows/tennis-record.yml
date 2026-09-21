@@ -292,6 +292,77 @@ jobs:
           echo "The tennis contract is installed. Every relation these jobs read is present,"
           echo "and each one carries the columns the contract's own indexes stand on."
 
+      # A CONTRACT THAT IS INSTALLED IS NOT A RECORD THAT HOLDS ANYTHING.
+      #
+      # Every check above proves the relations exist and carry the columns this
+      # contract's indexes stand on. Not one of them asks whether a single match
+      # is on file. On 2026-09-21 none was: the archive import is a one-off
+      # administrative act (docs/runbooks/tennis-import.md) and it had never run
+      # against this database. Against an installed-but-empty record the steps
+      # below do this:
+      #
+      #   build_features   exit 0    wrote nothing
+      #   build_ratings    exit 0    "no rated players: the record is empty"
+      #   build_history    exit 0    "no point-in-time features on file"
+      #   build_lab        exit 0    "no rated players on file"
+      #   build_brief      exit 0    "nothing on file to write about yet"
+      #   build_model      exit 1    "only 0 usable matches"
+      #   price_board      exit 1    "no ACTIVE tennis model is registered"
+      #
+      # So `nightly` reported SUCCESS over an empty record while `board` and
+      # `weekly` went red on two different late errors, neither naming the
+      # cause — which is exactly the intermittent red this workflow has shown
+      # for days. Five of the seven steps exiting 0 is the worse half: a job
+      # that produced nothing must never report success, and the absence of a
+      # signal is indistinguishable from a passing one.
+      #
+      # The counts are printed on EVERY run, so "what is actually on file" is a
+      # line in the log rather than something to go and ask the database.
+      - name: Refuse to run on an empty record
+        if: ${{ success() && steps.pick.outputs.job != 'none' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: |
+          COUNTS=$(psql "$SUPABASE_DB_URL" -tAX -F'|' -v ON_ERROR_STOP=1 -c "
+            select (select count(*) from tennis.matches),
+                   (select count(*) from tennis.players),
+                   (select count(*) from tennis.player_match_features),
+                   (select count(*) from tennis.player_ratings_current),
+                   (select count(*) from tennis.model_registry where status = 'active');")
+          MATCHES=$(echo "$COUNTS" | cut -d'|' -f1)
+          PLAYERS=$(echo "$COUNTS" | cut -d'|' -f2)
+          FEATURES=$(echo "$COUNTS" | cut -d'|' -f3)
+          RATED=$(echo "$COUNTS" | cut -d'|' -f4)
+          ACTIVE=$(echo "$COUNTS" | cut -d'|' -f5)
+          echo "On file: ${MATCHES} match(es), ${PLAYERS} player(s), ${FEATURES} feature row(s),"
+          echo "         ${RATED} rated player(s), ${ACTIVE} active model(s)."
+
+          # The monitor only reads and reports, and an empty record is exactly
+          # the thing worth reporting, so it is never refused.
+          if [ "${MATCHES:-0}" -eq 0 ] && [ "${{ steps.pick.outputs.job }}" != "monitor" ]; then
+            echo "::error::the tennis record is EMPTY — 0 matches on file."
+            echo "::error::The contract is installed correctly; it has simply never been loaded."
+            echo "::error::Nothing this job runs can produce a rating, a model, a board or a brief"
+            echo "::error::from an empty record, so it is refused here rather than six steps in."
+            echo "::error::"
+            echo "::error::The historical backfill is NOT on any schedule. It is a one-off"
+            echo "::error::administrative act against a CC BY-NC-SA archive, run by hand — see"
+            echo "::error::docs/runbooks/tennis-import.md:"
+            echo "::error::"
+            echo "::error::  npm run tennis:record:verify -- --manifest 00_manifest.json --dir ./parts"
+            echo "::error::  npm run tennis:record:import  -- --manifest 00_manifest.json --dir ./parts --chunk 20000 --fast"
+            echo "::error::  npm run tennis:features:build && npm run tennis:ratings:build"
+            echo "::error::  npm run tennis:model:build   && npm run tennis:board:build"
+            echo "::error::"
+            echo "::error::Nothing was read and nothing was written."
+            exit 1
+          fi
+
+          if [ "${MATCHES:-0}" -eq 0 ]; then
+            echo "::warning::the tennis record is empty — 0 matches on file. The monitor runs anyway;"
+            echo "::warning::every other job on this workflow is refused until the archive is imported."
+          fi
+
   record:
     needs: preflight
     runs-on: ubuntu-latest

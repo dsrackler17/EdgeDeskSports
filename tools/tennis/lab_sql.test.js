@@ -193,7 +193,13 @@ try {
     console.log('FAIL | tennis lab SQL | the attack suite made only ' + oks + ' assertions; expected at least 70');
     throw new Error('thin');
   }
-  console.log('ok | tennis lab SQL | report all ok, idempotent, record and live contracts intact, '
+  /* PASS, not 'ok'. Every other SQL suite in this repository reports success
+     with a leading PASS, and games-sql.yml's final step refuses a run whose
+     logs do not carry one — which is how it catches a suite that SKIPPED in
+     the job whose whole purpose is to run it. This file was the only one
+     spelling it differently, so it could not be added to that list without
+     failing a green run, and it sat outside the guard because of a word. */
+  console.log('PASS | tennis lab SQL | report all ok, idempotent, record and live contracts intact, '
             + oks + ' assertions against a real PostgreSQL');
 } catch (e) {
   code = 1;
