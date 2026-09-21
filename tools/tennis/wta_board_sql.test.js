@@ -97,6 +97,44 @@ chk('it is idempotent', psql(conn, ['-d', DB, '-q', '-v', 'ON_ERROR_STOP=1', '-f
 chk('the record contract still answers after wta is applied',
   q("select count(*) from tennis.board_current") === '0');
 
+/* ---- 1b. A HAND-MADE wta SCHEMA, WHICH IS WHAT PRODUCTION ACTUALLY HAD ---
+   The repository never created these relations, but the live database held
+   them as TABLES, made by hand in the dashboard before this file existed.
+   `create or replace view` over a table does not replace it, it fails with
+   ERROR 42809, which is exactly where the first production run stopped —
+   with wta.meta holding 14 rows of somebody's data.
+
+   Those rows must survive. The contract renames a pre-existing table aside
+   rather than dropping it, so a wrong call is reversible with a rename. */
+{
+  run(`drop schema if exists wta cascade;
+       create schema wta;
+       create table wta.meta (key text primary key, value text);
+       insert into wta.meta select 'stamp_'||g, 'v'||g from generate_series(1,14) g;
+       create table wta.daily_research (slate_date date, fav_id text);
+       create table wta.watchlist (player_id text);`);
+  const rescue = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-f', WTA]);
+  chk('the contract applies over a hand-made wta schema of TABLES',
+    rescue.status === 0, String(rescue.stderr || '').slice(0, 200));
+  eq('and the 14 rows that were there are PRESERVED, not dropped',
+    q('select count(*) from wta.meta_legacy'), '14');
+  eq('meta is a view now', q(`select relkind::text from pg_class c join pg_namespace n
+       on n.oid=c.relnamespace where n.nspname='wta' and c.relname='meta'`), 'v');
+  eq('and so are the other two',
+    q(`select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace
+        where n.nspname='wta' and c.relkind='v'
+          and c.relname in ('daily_research','watchlist')`), '2');
+  /* A SECOND RUN MUST NOT RESCUE AGAIN. It now finds views, not tables, so
+     nothing is renamed and meta_legacy is not overwritten by an empty one. */
+  const again = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-f', WTA]);
+  chk('a second run is idempotent over the rescued schema', again.status === 0);
+  chk('and does not rescue anything a second time',
+    !/has been preserved/.test(String(again.stdout || '') + String(again.stderr || '')));
+  eq('so the preserved rows are still there after re-running',
+    q('select count(*) from wta.meta_legacy'), '14');
+  run('drop table if exists wta.meta_legacy, wta.daily_research_legacy, wta.watchlist_legacy;');
+}
+
 /* ---- 2. the page's own field list, read out of app.html ----------------- */
 const app = fs.readFileSync(APP, 'utf8');
 const wtaStart = app.indexOf('async function sbGetWta(');

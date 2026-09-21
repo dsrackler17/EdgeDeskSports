@@ -57,6 +57,45 @@ comment on schema wta is
   'The Tennis panel''s research board. Views over the tennis record contract; '
   'no tables, no separate pipeline. See supabase/wta_board.sql.';
 
+-- ── A HAND-MADE wta SCHEMA GETS OUT OF THE WAY, IT DOES NOT GET DROPPED ────
+-- The repository never created these three relations, but a PRODUCTION
+-- database can still hold them: they were made by hand in the Supabase
+-- dashboard before this file existed. `create or replace view` over a TABLE
+-- does not replace it, it fails —
+--
+--     ERROR: 42809: "meta" is not a view
+--
+-- which is where this file stopped the first time it was run against the live
+-- database, with wta.meta holding 14 rows.
+--
+-- Those rows are somebody's data. This RENAMES each pre-existing table aside
+-- to <name>_legacy, keeping every row, and then builds the view in its place.
+-- Nothing is dropped, so a wrong call here is reversible with a rename; and
+-- because a second run finds a view rather than a table, it is idempotent.
+-- Read what was preserved with:
+--     select * from wta.meta_legacy;
+do $$
+declare r record; legacy text;
+begin
+  for r in
+    select c.relname
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'wta'
+       and c.relkind = 'r'                       -- an ordinary table, not a view
+       and c.relname in ('meta', 'daily_research', 'watchlist')
+  loop
+    legacy := r.relname || '_legacy';
+    -- never clobber an earlier rescue either
+    if to_regclass('wta.' || legacy) is not null then
+      legacy := legacy || '_' || to_char(now(), 'YYYYMMDDHH24MISS');
+    end if;
+    execute format('alter table wta.%I rename to %I', r.relname, legacy);
+    raise notice 'wta.% was a TABLE and has been preserved as wta.% (% row(s)); the view now stands in its place',
+      r.relname, legacy, (select n_live_tup from pg_stat_user_tables
+                           where schemaname = 'wta' and relname = legacy);
+  end loop;
+end $$;
+
 -- ── wta.meta ───────────────────────────────────────────────────────────────
 -- The same key/value build stamps the rest of the app reads, plus the ranking
 -- date the research cards print, so the page needs one call rather than two.
