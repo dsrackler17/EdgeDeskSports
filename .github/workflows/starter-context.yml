@@ -264,7 +264,20 @@ jobs:
           # -A over the directories, for the same reason availability-sync.yml
           # does it: `git add a b c` stages NOTHING if any one path is missing,
           # and a new artifact's first run is exactly when one is.
-          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ football/nfl/ football/identity/ football/pricing/
+          #
+          # football/coaching/ IS ON THIS LIST BECAUSE IT WAS NOT.
+          # This job runs build_coaching.js, which rewrites
+          # football/coaching/continuity.json with a fresh generated_at, and
+          # then build_matchup_metrics.js, which stamps that timestamp into
+          # every team's coaching.as_of. metrics.json was committed; its input
+          # was not. The repository was left holding a metrics.json that cited
+          # a coaching build nobody could see, so the `--check` gate in
+          # Intelligence CI rebuilt from the continuity.json that IS committed,
+          # got different timestamps, and reported "artifact differs from a
+          # fresh build" — on main, on every pull request, until a human
+          # rebuilt by hand. An output whose input is not committed beside it
+          # cannot be verified, which is the whole point of the gate.
+          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ football/coaching/ football/nfl/ football/identity/ football/pricing/
           if git diff --cached --quiet; then
             echo 'starter context and profiles unchanged — nothing to commit'
             exit 0
