@@ -49569,7 +49569,17 @@ function fbGradeGame(g,p){
    starter is shown only when games.csv carries home_qb_id / away_qb_id, and
    the roster order (Excel, nflverse, jersey, experience) is never read as a
    depth chart. Nothing here touches the trained model. */
-function FB_URL_ROSTER(y){return 'https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_'+y+'.csv';}
+/* THE ROSTER COMES FROM THIS SITE, NOT FROM GITHUB.
+   A release download answers with a 302 to release-assets.githubusercontent.com
+   and carries no Access-Control-Allow-Origin on that hop, so the browser refuses
+   the request before it sees a status: fetch() rejects with a bare TypeError and
+   the panel read "last fetch: Failed to fetch" while the file itself was healthy.
+   The registry then sat on its bundled snapshot for good. (FB_URL_GAMES and
+   FB_URL_CFB below work because raw.githubusercontent.com does send the header;
+   release assets never do, and nflverse publishes rosters only as release
+   assets.) football/nfl/build_qb_roster.js fetches it where there is no CORS and
+   commits the columns this parser reads, so nothing below this line changed. */
+function FB_URL_ROSTER(y){return '/football/nfl/qbs_'+y+'.csv';}
 var FB_QB_TTL_MS=6*3600e3, FB_QB_STORE='edgedesk_nfl_qbs_v1', FB_QB_SEED_ASOF='2026-09-02', FB_QB_SEED_SEASON=2026;
 /* nflverse and older feeds spell a few franchises differently; the site's codes win */
 var FB_NFL_TEAM_ALIAS={JAC:'JAX',LAR:'LA',STL:'LA',WSH:'WAS',OAK:'LV',SD:'LAC',HST:'HOU',BLT:'BAL',CLV:'CLE',ARZ:'ARI'};
