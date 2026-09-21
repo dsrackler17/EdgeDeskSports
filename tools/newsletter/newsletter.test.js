@@ -1331,6 +1331,42 @@ section('7 — the provider');
       chk('and re-attachment is what makes the figures supported at all',
         emptySupport.length === 0, emptySupport.slice(0, 3).join(' | '));
 
+      /* THE SECOND RECORD, WHICH IS NOT THE RESEARCH.
+
+         A featured game ends up with two records: the pregame article, which
+         IS the research, and the postgame audit written after the game, which
+         carries none. attachResearch() keyed both on sport+game_id and
+         assigned unconditionally, and store.loadAll() sorts by id — so
+         `postgame-nfl-…` landed after `nfl-…` and overwrote the only copy of
+         the research with a record that had none. Every stored edition then
+         failed revalidation on games whose research was on disk the whole
+         time, and a real `send` was refused: research_unavailable.
+
+         Driven here rather than observed, because whether the store happens
+         to hold a postgame audit for a featured game today is not something
+         this suite controls — and the day it does is the day sending breaks. */
+      {
+        const ed = { sport: 'NFL', games: [{ key: 'NFL:fixture_game', sport: 'NFL', game_id: 'fixture_game' }] };
+        const both = [
+          { id: 'postgame-nfl-fixture_game', sport: 'NFL', game_id: 'fixture_game', article_type: 'postgame' },
+          { id: 'nfl-fixture_game', sport: 'NFL', game_id: 'fixture_game', article_type: 'pregame',
+            research: { schema: 'fixture', numbers: { yards: 412 } } },
+        ];
+        const real = require('../articles/store.js').loadAll;
+        /* both orders: the bug only showed in the one loadAll() happens to produce */
+        ['postgame last', 'postgame first'].forEach((order, i) => {
+          const rows = i === 0 ? [both[1], both[0]] : [both[0], both[1]];
+          require('../articles/store.js').loadAll = () => rows;
+          try {
+            const g = JSON.parse(JSON.stringify(ed));
+            const gone = RUN.attachResearch(g);
+            chk('a postgame audit never displaces the research (' + order + ')',
+              gone.length === 0 && !!g.games[0].research && g.games[0].research.numbers.yards === 412,
+              { missing: gone, got: g.games[0].research });
+          } finally { require('../articles/store.js').loadAll = real; }
+        });
+      }
+
       /* AND THE EARLY WARNING, REPORTED RATHER THAN ASSERTED.
 
          The question the operator actually needs answered is not "do all
