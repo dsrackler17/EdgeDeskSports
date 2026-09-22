@@ -804,6 +804,68 @@ section('NFL coaching staff research');
     Bn.takeaway.text, 'Coaching / Staff research');
   has('and says the official projection is unchanged',
     Bn.takeaway.text, 'official EdgeDesk NFL projection is unchanged');
+
+  const rawPriority = E.researchPriority({
+    coaching_research: {
+      shadow_reference: null,
+      research_read: { state: 'RAW_COMPONENT_EVIDENCE' }
+    }
+  });
+  eq('comparable raw coaching evidence raises research priority by one',
+    rawPriority.score, 1);
+  has('and the driver says this is research priority only',
+    rawPriority.drivers[0].why, 'research priority only');
+
+  const shadowPriority = E.researchPriority({
+    coaching_research: {
+      shadow_reference: { home_margin_delta: 0.30 },
+      research_read: { state: 'CALIBRATED_SHADOW' }
+    }
+  });
+  eq('a pronounced calibrated coaching contrast raises research priority by two',
+    shadowPriority.score, 2);
+  has('and explicitly refuses to alter the official projection',
+    shadowPriority.drivers[0].why, 'does not alter the official projection');
+
+  const cardNow = Date.parse('2026-09-22T18:00:00Z');
+  const ranked = E.rankFootballCard({
+    now: cardNow,
+    within_hours: 72,
+    games: [
+      {
+        game_id: 'plain-nfl',
+        sport: E.NFL_SPORT,
+        home: 'Plain Home',
+        away: 'Plain Away',
+        kickoff: '2026-09-23T18:00:00Z',
+        week: 3,
+        model_home_line: -2,
+        market_home_handicap: null,
+        data_completeness: 1
+      },
+      {
+        game_id: 'coaching-nfl',
+        sport: E.NFL_SPORT,
+        home: 'Coach Home',
+        away: 'Coach Away',
+        kickoff: '2026-09-24T18:00:00Z',
+        week: 3,
+        model_home_line: -2,
+        market_home_handicap: null,
+        data_completeness: 1,
+        coaching_staff_research: {
+          shadow_reference: { home_margin_delta: 0.30 },
+          research_read: { state: 'CALIBRATED_SHADOW' }
+        }
+      }
+    ]
+  });
+  eq('otherwise-equal NFL games put the coaching-contrast game first for research',
+    ranked.ranked[0].game_id, 'coaching-nfl');
+  chk('the coaching game is prioritized, not recommended',
+    ranked.ranked[0].priority === ranked.ranked[1].priority + 2 &&
+      /NOT a recommendation/i.test(E.researchPriority({}).caveat),
+    ranked.ranked);
 }
 
 done();
