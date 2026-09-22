@@ -34935,6 +34935,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (o.missing_critical && o.missing_critical.length) add(2, 'A decision-critical input is missing (' + o.missing_critical.slice(0, 3).join(', ') + '); retrieving it could change the answer.');
     if (o.personnel_change) add(3, 'A personnel change is on file that the model’s season inputs do not reflect.');
 
+    var coaching = o.coaching_research || null;
+    if (coaching) {
+      var shadow = coaching.shadow_reference || null;
+      var shift = shadow ? Math.abs(num(shadow.home_margin_delta) || 0) : 0;
+      if (shift >= 0.25) {
+        add(2, 'Coaching / Staff has a pronounced calibrated research contrast in this matchup (' +
+          shift.toFixed(2) + ' points at the unvalidated 1.0-point reference cap). It does not alter the official projection, but it is worth investigating.');
+      } else if (shift >= 0.10) {
+        add(1, 'Coaching / Staff has a measurable calibrated research contrast in this matchup (' +
+          shift.toFixed(2) + ' points at the unvalidated 1.0-point reference cap). It does not alter the official projection.');
+      } else if (coaching.research_read && coaching.research_read.state === 'RAW_COMPONENT_EVIDENCE') {
+        add(1, 'Both teams have comparable raw Coaching / Staff evidence on at least one measured component. The league cohort is not yet sufficient for a calibrated shadow, so this raises research priority only.');
+      }
+    }
+
     return {
       score: score,
       band: score >= 6 ? 'HIGH' : score >= 3 ? 'MEDIUM' : 'LOW',
@@ -37364,7 +37379,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if (g.availability_unknown) missing.push('availability');
       var pr = researchPriority({
         disagreement: dis, quote_state: qs, missing_critical: missing,
-        model_directional: !!g.model_directional, personnel_change: !!g.personnel_change
+        model_directional: !!g.model_directional, personnel_change: !!g.personnel_change,
+        coaching_research: g.coaching_staff_research || null
       });
       rows.push({
         game_id: g.game_id, sport: g.sport || CFB_SPORT,
@@ -37375,6 +37391,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         quote: hasPrice ? { book: g.quote_book || null, price_american: g.quote_price_american || null,
           observed_at: g.quote_observed_at, age_min: qs ? qs.age_min : null, actionable: qs ? qs.actionable : false } : null,
         disagreement: dis,
+        coaching_staff_research: g.coaching_staff_research || null,
         priority: pr.score, band: pr.band, drivers: pr.drivers,
         why: pr.drivers.length ? pr.drivers[0].why
           : 'Nothing about this game raises its research priority above the rest of the card. It is still researchable; it is simply not first.'
