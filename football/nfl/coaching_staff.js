@@ -381,6 +381,20 @@
     return teamRow;
   }
 
+  function researchAdjustmentFactor(teamRow) {
+    if (!teamRow || teamRow.coaching_staff_available !== true ||
+        typeof teamRow.coaching_staff_rating !== 'number' || !isFinite(teamRow.coaching_staff_rating) ||
+        typeof teamRow.coaching_staff_reliability !== 'number' || !isFinite(teamRow.coaching_staff_reliability) ||
+        !(teamRow.coaching_staff_reliability > 0)) {
+      return null;
+    }
+    return r3(clamp(
+      ((teamRow.coaching_staff_rating - 50) / 50) * teamRow.coaching_staff_reliability,
+      -1,
+      1
+    ));
+  }
+
   function assignResearchRanks(teamKeys, teams) {
     var ranked = (teamKeys || []).map(function (team) {
       return teams[team];
@@ -477,6 +491,7 @@
     reliabilityFor: reliabilityFor,
     calibrateInputAcrossLeague: calibrateInputAcrossLeague,
     finalizeTeam: finalizeTeam,
+    researchAdjustmentFactor: researchAdjustmentFactor,
     assignResearchRanks: assignResearchRanks,
     build: build
   };
