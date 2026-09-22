@@ -246,6 +246,9 @@ assert.strictEqual(
   earlyMatchup.component_comparisons.efficiency_development.home_raw,
   0.04
 );
+assert.strictEqual(earlyMatchup.research_read.state, 'NO_COMPARABLE_EVIDENCE');
+assert.strictEqual(earlyMatchup.research_read.direction, null);
+assert.match(earlyMatchup.research_read.sentence, /not yet comparable/i);
 
 /* A real league calibration requires the same minimum 20-team cohort used by
    the college coaching/program layer. With 21 teams, raw zero is legitimately
@@ -320,6 +323,9 @@ assert.strictEqual(shadowMatchup.shadow_reference.shadow_home_line, -3.16);
 assert.strictEqual(shadowMatchup.shadow_reference.direction, 'HOME');
 assert.strictEqual(shadowMatchup.shadow_reference.applied_to_official_projection, false);
 assert.match(shadowMatchup.shadow_reference.note, /does not change EdgeDesk's official NFL projection/i);
+assert.strictEqual(shadowMatchup.research_read.state, 'CALIBRATED_SHADOW');
+assert.strictEqual(shadowMatchup.research_read.direction, 'HOME');
+assert.match(shadowMatchup.research_read.sentence, /official EdgeDesk NFL projection is unchanged/i);
 assert.strictEqual(calibrated.affects_nfl_projection, false);
 
 console.log('nfl coaching_staff contract: passed');
