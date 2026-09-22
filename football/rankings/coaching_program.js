@@ -1,11 +1,11 @@
 /* ============================================================================
    COACHING / PROGRAM EDGE
 
-   STEP 3: measurable talent conversion + multi-season overperformance.
+   STEP 5: measured subcomponents + final reliability shrinkage.
 
-   This layer is intentionally RESEARCH-ONLY. It does not move ETSR yet and it
-   does not publish a final coaching/program rating yet. Step 5 owns the final
-   reliability/shrinkage calculation.
+   This layer is intentionally RESEARCH-ONLY. It now publishes a reliability-
+   shrunk coaching/program rating, but it still does not rank teams or move
+   ETSR. Ranking/history/UI and ETSR promotion remain later validation steps.
 
    Missing evidence is NULL, never a fake 50. A real residual can legitimately
    land at 50 because 50 means league-average measured conversion, not missing.
@@ -69,14 +69,22 @@ function emptyTeam(teamKey) {
     coaching_program_schema: SCHEMA,
     coaching_program_team_key: teamKey || null,
     coaching_program_rating: null,
+    coaching_program_raw_score: null,
     coaching_program_rank: null,
     coaching_program_reliability: 0,
+    coaching_program_observed_weight: 0,
     coaching_program_adjustment_points: 0,
     coaching_program_inputs: inputs,
+    coaching_program_reliability_details: {
+      observed_configured_weight: 0,
+      missing_configured_weight: 1,
+      contributions: [],
+      formula: '50 + (raw_score - 50) * coaching_program_reliability'
+    },
     coaching_program_warnings: [{
-      id: 'COACHING_PROGRAM_FINAL_SCORE_NOT_ENABLED',
+      id: 'COACHING_PROGRAM_NO_USABLE_SCORE',
       severity: 'info',
-      detail: 'Measured subcomponents may exist, but final reliability/shrinkage and ETSR impact are not enabled yet.'
+      detail: 'No measured subcomponent with positive reliability is available, so no coaching/program score is published.'
     }],
     coaching_program_available: false,
     coaching_program_affects_etsr: false
@@ -590,6 +598,102 @@ function staffEvidence(keys, artifact) {
 }
 
 
+/* --------------------------------------------------------------------------
+   STEP 5 — FINAL RELIABILITY + SHRINKAGE
+
+   Raw score:
+     configured component weights, renormalized across measured inputs only.
+
+   Reliability:
+     sum(configured_weight * component_reliability) across measured inputs.
+     Because the complete configured weight sums to 1.00, missing components
+     automatically reduce total reliability instead of becoming fake neutral
+     observations.
+
+   Final:
+     50 + (raw_score - 50) * reliability
+
+   This publishes a research score only. Rank and ETSR impact remain disabled
+   until their own steps.
+   -------------------------------------------------------------------------- */
+function finalizeTeam(team) {
+  const inputs = team && team.coaching_program_inputs ? team.coaching_program_inputs : {};
+  const used = [];
+  let observedWeight = 0;
+  let rawWeighted = 0;
+  let totalReliability = 0;
+
+  for (const def of COMPONENTS) {
+    const x = inputs[def.id];
+    if (!x || x.available !== true || !isNum(x.value) || !isNum(x.reliability) || !(x.reliability > 0)) continue;
+    const reliability = clamp(x.reliability, 0, 1);
+    observedWeight += def.weight;
+    rawWeighted += def.weight * clamp(x.value, 0, 100);
+    totalReliability += def.weight * reliability;
+    used.push({
+      id: def.id,
+      value: r1(clamp(x.value, 0, 100)),
+      configured_weight: def.weight,
+      normalized_weight: null,
+      reliability: r3(reliability),
+      reliability_contribution: r3(def.weight * reliability)
+    });
+  }
+
+  if (!(observedWeight > 0) || !used.length) {
+    team.coaching_program_rating = null;
+    team.coaching_program_raw_score = null;
+    team.coaching_program_reliability = 0;
+    team.coaching_program_observed_weight = 0;
+    team.coaching_program_available = false;
+    team.coaching_program_reliability_details = {
+      observed_configured_weight: 0,
+      missing_configured_weight: 1,
+      contributions: [],
+      formula: '50 + (raw_score - 50) * coaching_program_reliability'
+    };
+    return team;
+  }
+
+  const raw = rawWeighted / observedWeight;
+  const reliability = clamp(totalReliability, 0, 1);
+  const finalScore = clamp(50 + (raw - 50) * reliability, 0, 100);
+  for (const u of used) u.normalized_weight = r3(u.configured_weight / observedWeight);
+
+  team.coaching_program_raw_score = r1(raw);
+  team.coaching_program_rating = r1(finalScore);
+  team.coaching_program_reliability = r3(reliability);
+  team.coaching_program_observed_weight = r3(observedWeight);
+  team.coaching_program_available = true;
+  team.coaching_program_rank = null;
+  team.coaching_program_adjustment_points = 0;
+  team.coaching_program_affects_etsr = false;
+  team.coaching_program_reliability_details = {
+    observed_configured_weight: r3(observedWeight),
+    missing_configured_weight: r3(1 - observedWeight),
+    contributions: used,
+    raw_score: r1(raw),
+    final_score: r1(finalScore),
+    reliability: r3(reliability),
+    formula: '50 + (raw_score - 50) * coaching_program_reliability',
+    weighting_basis: 'configured weights are renormalized across measured components; missing components contribute zero reliability rather than a neutral score'
+  };
+  team.coaching_program_warnings = [{
+    id: 'COACHING_PROGRAM_RESEARCH_ONLY',
+    severity: 'info',
+    detail: 'The coaching/program score is measured and reliability-shrunk, but it is not yet ranked and does not affect ETSR.'
+  }];
+  if (observedWeight < 1) {
+    team.coaching_program_warnings.push({
+      id: 'COACHING_PROGRAM_PARTIAL_COVERAGE',
+      severity: 'info',
+      detail: 'Unmeasured components were excluded from the raw score and reduced total reliability by their missing configured weight.'
+    });
+  }
+  return team;
+}
+
+
 function build(teamKeys, opts) {
   opts = opts || {};
   const keys = teamKeys || [];
@@ -616,7 +720,7 @@ function build(teamKeys, opts) {
   const staff = staffEvidence(keys, opts.allow_current === false ? null : opts.staff);
 
   const teams = {};
-  let measured = 0;
+  let measured = 0, scored = 0;
   for (const key of keys) {
     const t = emptyTeam(key);
     let teamMeasured = false;
@@ -657,17 +761,18 @@ function build(teamKeys, opts) {
       t.coaching_program_warnings.push({
         id: 'COACHING_PROGRAM_PARTIAL_MEASUREMENT',
         severity: 'info',
-        detail: 'Talent conversion, persistent overperformance, roster management and development may be measured. Staff continuity is evidence-only and game management is unavailable. Final reliability/shrinkage and ETSR impact remain disabled.'
+        detail: 'Measured inputs are available; staff continuity remains evidence-only and game management remains unavailable.'
       });
     }
-    teams[key] = t;
+    teams[key] = finalizeTeam(t);
+    if (teams[key].coaching_program_available) scored++;
   }
 
   return {
     schema: SCHEMA,
-    status: measured ? 'PARTIAL_RESEARCH' : 'CONTRACT_ONLY',
+    status: scored ? 'SCORED_RESEARCH' : (measured ? 'PARTIAL_RESEARCH' : 'CONTRACT_ONLY'),
     affects_etsr: false,
-    final_score_enabled: false,
+    final_score_enabled: true,
     components: COMPONENTS.map(x => ({ id: x.id, weight: x.weight })),
     decay_weights: DECAY.slice(),
     season_models: seasonModels,
@@ -688,5 +793,6 @@ module.exports = {
   rosterManagement,
   developmentModel,
   staffEvidence,
+  finalizeTeam,
   build
 };

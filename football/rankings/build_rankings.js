@@ -629,8 +629,11 @@ async function main() {
       run_defence_power: rdp,
       coaching_program_schema: cp.coaching_program_schema,
       coaching_program_rating: cp.coaching_program_rating,
+      coaching_program_raw_score: cp.coaching_program_raw_score,
       coaching_program_rank: cp.coaching_program_rank,
       coaching_program_reliability: cp.coaching_program_reliability,
+      coaching_program_observed_weight: cp.coaching_program_observed_weight,
+      coaching_program_reliability_details: cp.coaching_program_reliability_details,
       coaching_program_adjustment_points: cp.coaching_program_adjustment_points,
       coaching_program_inputs: cp.coaching_program_inputs,
       coaching_program_warnings: cp.coaching_program_warnings,
@@ -711,7 +714,8 @@ async function main() {
     data_freshness: dataFreshness(sched[cur], play[cur], perf, finality[cur]),
     carryover: finalSlope,
     coaching_program: { schema: coachingProgram.schema, status: coachingProgram.status, affects_etsr: false,
-      final_score_enabled: false,
+      final_score_enabled: true,
+      ranking_enabled: false,
       measured_components: ['talent_conversion', 'multi_season_program_overperformance', 'roster_management_retention', 'development'],
       observed_not_scored: ['staff_continuity_stability'],
       unavailable_components: ['game_management'],
@@ -720,7 +724,7 @@ async function main() {
         : { available: false, reason: coachingContinuityRaw
           ? 'coaching continuity artifact season does not match this rankings build'
           : 'coaching continuity artifact is missing' },
-      note: 'Step 4 research layer: roster management and same-program player development are measured. HC continuity is observed but deliberately not scored; OC/DC and game management remain unavailable. Final coaching/program shrinkage, ranking and ETSR impact remain disabled.' },
+      note: 'Step 5 research layer: measured component weights are renormalized across available inputs, missing weights reduce reliability, and the final score is shrunk toward 50. Ranking and ETSR impact remain disabled.' },
     centre: built.centre, centre_basis: built.centre_basis,
     market: market.available
       ? { available: true, games: market.games, home_field: market.home_field, iterations: market.iterations,
