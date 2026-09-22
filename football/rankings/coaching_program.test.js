@@ -476,3 +476,70 @@ assert.strictEqual(nowTeamForMovement.coaching_program_affects_etsr, false);
 
 console.log('coaching_program Step 6 backend: passed');
 
+/* =====================================================================
+   STEP 7 — capped point translation, still research-only by default.
+   ===================================================================== */
+assert.strictEqual(CFG.coachingProgram.enabled, true);
+assert.strictEqual(CFG.coachingProgram.maxPointAdjustment, 1.5);
+assert.strictEqual(CFG.coachingProgram.affectsETSR, false);
+assert.strictEqual(CFG.coachingProgram.applyTo, 'prior');
+
+const cpMax = ETSR.coachingProgramAdjustment(
+  { coaching_program: { rating: 100, reliability: 1 } },
+  CFG.coachingProgram
+);
+assert.strictEqual(cpMax.candidate_points, 1.5);
+assert.strictEqual(cpMax.applied_points, 0);
+assert.strictEqual(cpMax.affects_etsr, false);
+
+const cpMin = ETSR.coachingProgramAdjustment(
+  { coaching_program: { rating: 0, reliability: 1 } },
+  CFG.coachingProgram
+);
+assert.strictEqual(cpMin.candidate_points, -1.5);
+
+const cpHalf = ETSR.coachingProgramAdjustment(
+  { coaching_program: { rating: 75, reliability: 0.5 } },
+  CFG.coachingProgram
+);
+assert.strictEqual(cpHalf.candidate_points, 0.375,
+  '((75-50)/50) * 1.5 * .5 must equal +0.375');
+
+const cpMissing = ETSR.coachingProgramAdjustment({ coaching_program: null }, CFG.coachingProgram);
+assert.strictEqual(cpMissing.candidate_points, null);
+assert.strictEqual(cpMissing.applied_points, 0);
+
+const cpDisabled = ETSR.coachingProgramAdjustment(
+  { coaching_program: { rating: 100, reliability: 1 } },
+  Object.assign({}, CFG.coachingProgram, { enabled: false, affectsETSR: true })
+);
+assert.strictEqual(cpDisabled.candidate_points, null);
+assert.strictEqual(cpDisabled.applied_points, 0,
+  'enabled=false must be a hard stop even if affectsETSR is accidentally true');
+
+const cpPromoted = ETSR.coachingProgramAdjustment(
+  { coaching_program: { rating: 75, reliability: 0.5 } },
+  Object.assign({}, CFG.coachingProgram, { affectsETSR: true })
+);
+assert.strictEqual(cpPromoted.candidate_points, 0.375);
+assert.strictEqual(cpPromoted.applied_points, 0.375);
+assert.strictEqual(cpPromoted.affects_etsr, true);
+
+/* Weekly snapshots freeze the candidate even while the applied adjustment is
+   zero, so Step 8 can validate what the model knew then instead of recomputing
+   history with whatever code exists later. */
+const frozenCandidateTeam = movementTeam(62, 68, 0.5, 65, 55, 12);
+frozenCandidateTeam.coaching_program_candidate_adjustment_points = 0.18;
+frozenCandidateTeam.coaching_program_adjustment_points = 0;
+frozenCandidateTeam.coaching_program_adjustment = {
+  weighted_etsr_points_before_recentering: 0,
+  max_point_adjustment: 1.5
+};
+const frozenCandidate = HISTORY.snapshotTeam(frozenCandidateTeam);
+assert.strictEqual(frozenCandidate.coaching_program.candidate_adjustment_points, 0.18);
+assert.strictEqual(frozenCandidate.coaching_program.adjustment_points, 0);
+assert.strictEqual(frozenCandidate.coaching_program.max_point_adjustment, 1.5);
+
+console.log('coaching_program Step 7: passed');
+
+
