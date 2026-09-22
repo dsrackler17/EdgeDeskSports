@@ -71,11 +71,13 @@ const evidenceOut = C.build(['ARI', 'BUF', 'KC'], {
 });
 assert.strictEqual(evidenceOut.status, 'EVIDENCE_ONLY');
 const buf = evidenceOut.teams.BUF;
-assert.strictEqual(buf.coaching_staff_inputs.current_residual_conversion.available, true);
-assert.strictEqual(buf.coaching_staff_inputs.current_residual_conversion.value, 1.75);
+assert.strictEqual(buf.coaching_staff_inputs.current_residual_conversion.available, false);
+assert.strictEqual(buf.coaching_staff_inputs.current_residual_conversion.raw_value, 1.75);
+assert.strictEqual(buf.coaching_staff_inputs.current_residual_conversion.value, null);
 assert.strictEqual(buf.coaching_staff_inputs.current_residual_conversion.observations, 3);
 assert.strictEqual(buf.coaching_staff_inputs.current_residual_conversion.weighted_evidence, null);
 assert.strictEqual(buf.coaching_staff_inputs.current_residual_conversion.reliability, 0);
+assert.match(buf.coaching_staff_inputs.current_residual_conversion.reason, /at least 20 teams/i);
 assert.strictEqual(buf.coaching_staff_rating, null);
 assert.strictEqual(buf.coaching_staff_rank, null);
 assert.strictEqual(buf.coaching_staff_reliability, 0);
@@ -167,19 +169,23 @@ const composite = C.build(['KC', 'BUF'], {
   }
 });
 assert.strictEqual(composite.status, 'EVIDENCE_ONLY');
-assert.strictEqual(composite.teams.KC.coaching_staff_inputs.current_residual_conversion.value, 0.5);
-assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.available, true);
-assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.value, 1.25);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.current_residual_conversion.raw_value, 0.5);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.current_residual_conversion.value, null);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.available, false);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.raw_value, 1.25);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.value, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.observations, 9);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.weighted_evidence, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.reliability, 0);
-assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.available, true);
-assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.value, 0.8);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.available, false);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.raw_value, 0.8);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.value, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.observations, 17);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.weighted_evidence, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.reliability, 0);
-assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.available, true);
-assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.value, 0.04);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.available, false);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.raw_value, 0.04);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.value, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.observations, 6);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.weighted_evidence, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.reliability, 0);
@@ -192,5 +198,48 @@ assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_c
 assert.strictEqual(composite.teams.KC.coaching_staff_rating, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_adjustment_points, 0);
 assert.strictEqual(composite.affects_nfl_projection, false);
+
+/* A real league calibration requires the same minimum 20-team cohort used by
+   the college coaching/program layer. With 21 teams, raw zero is legitimately
+   league-average and may calibrate to 50; that is measured 50, not missing 50. */
+const leagueKeys = [];
+const leagueEvidence = { teams: {} };
+for (let i = 0; i < 21; i++) {
+  const team = 'T' + String(i).padStart(2, '0');
+  leagueKeys.push(team);
+  leagueEvidence.teams[team] = {
+    team,
+    available: true,
+    value: i - 10,
+    observations: 17,
+    source: 'frozen pregame residual ledger'
+  };
+}
+const calibrated = C.build(leagueKeys, leagueEvidence);
+assert.strictEqual(calibrated.status, 'RESEARCH_ONLY');
+assert.strictEqual(calibrated.calibration.current_residual_conversion.usable, true);
+assert.strictEqual(calibrated.calibration.current_residual_conversion.cohort_teams, 21);
+assert.strictEqual(calibrated.calibration.current_residual_conversion.mean_raw, 0);
+
+const mid = calibrated.teams.T10;
+assert.strictEqual(mid.coaching_staff_inputs.current_residual_conversion.raw_value, 0);
+assert.strictEqual(mid.coaching_staff_inputs.current_residual_conversion.value, 50);
+assert.strictEqual(mid.coaching_staff_inputs.current_residual_conversion.calibrated_z, 0);
+assert.strictEqual(mid.coaching_staff_inputs.current_residual_conversion.reliability, 1);
+assert.strictEqual(mid.coaching_staff_inputs.current_residual_conversion.weighted_evidence, 0);
+assert.strictEqual(mid.coaching_staff_raw_score, 50);
+assert.strictEqual(mid.coaching_staff_rating, 50);
+assert.strictEqual(mid.coaching_staff_reliability, 0.45);
+assert.strictEqual(mid.coaching_staff_observed_weight, 0.45);
+assert.strictEqual(mid.coaching_staff_available, true);
+assert.strictEqual(mid.coaching_staff_adjustment_points, 0);
+assert.strictEqual(mid.coaching_staff_affects_nfl_projection, false);
+
+const high = calibrated.teams.T20;
+assert.ok(high.coaching_staff_inputs.current_residual_conversion.value > 50);
+assert.ok(high.coaching_staff_rating > 50);
+assert.ok(high.coaching_staff_rating < high.coaching_staff_raw_score,
+  'partial configured coverage must shrink the research rating toward 50');
+assert.strictEqual(calibrated.affects_nfl_projection, false);
 
 console.log('nfl coaching_staff contract: passed');
