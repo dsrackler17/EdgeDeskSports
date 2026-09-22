@@ -16,6 +16,10 @@ const out = C.build(['ARI', 'BUF']);
 assert.strictEqual(out.schema, 'edgedesk_nfl_coaching_staff_v1');
 assert.strictEqual(out.status, 'CONTRACT_ONLY');
 assert.strictEqual(out.affects_nfl_projection, false);
+assert.strictEqual(out.validation.status, 'RESEARCH_ONLY');
+assert.strictEqual(out.validation.may_move_lines, false);
+assert.strictEqual(out.validation.selected_cap, null);
+assert.strictEqual(out.validation.artifact, 'football/nfl/coaching_staff_validation.json');
 assert.deepStrictEqual(Object.keys(out.teams).sort(), ['ARI', 'BUF']);
 
 const t = out.teams.ARI;
@@ -96,6 +100,7 @@ assert.strictEqual(buf.coaching_staff_candidate_adjustment_points, null);
 assert.strictEqual(buf.coaching_staff_adjustment_points, 0);
 assert.strictEqual(buf.coaching_staff_affects_nfl_projection, false);
 assert.strictEqual(buf.coaching_staff_available, false);
+assert.strictEqual(buf.coaching_staff_research_factor, null);
 assert.strictEqual(C.researchAdjustmentFactor(buf), null);
 assert.strictEqual(buf.coaching_staff_rank, null);
 assert.strictEqual(buf.coaching_staff_rank_of, null);
@@ -251,6 +256,7 @@ assert.strictEqual(C.researchAdjustmentFactor(mid), 0);
 assert.strictEqual(mid.coaching_staff_reliability, 0.45);
 assert.strictEqual(mid.coaching_staff_observed_weight, 0.45);
 assert.strictEqual(mid.coaching_staff_available, true);
+assert.strictEqual(mid.coaching_staff_research_factor, 0);
 assert.strictEqual(mid.coaching_staff_rank, 11);
 assert.strictEqual(mid.coaching_staff_rank_of, 21);
 assert.strictEqual(mid.coaching_staff_adjustment_points, 0);
@@ -267,6 +273,7 @@ assert.ok(high.coaching_staff_rating > 50);
 assert.ok(high.coaching_staff_rating < high.coaching_staff_raw_score,
   'partial configured coverage must shrink the research rating toward 50');
 assert.strictEqual(C.researchAdjustmentFactor(high), 0.08);
+assert.strictEqual(high.coaching_staff_research_factor, 0.08);
 assert.strictEqual(C.researchAdjustmentFactor(calibrated.teams.T00), -0.08);
 assert.strictEqual(calibrated.affects_nfl_projection, false);
 
