@@ -26,6 +26,10 @@ on:
       last:  { description: 'Last season',  required: false, default: '2025' }
       tune:  { description: 'Tune seasons, comma separated',    required: false, default: '2024' }
       hold:  { description: 'Holdout seasons, comma separated', required: false, default: '2025' }
+      coaching_first: { description: 'CFB coaching first season', required: false, default: '2021' }
+      coaching_last:  { description: 'CFB coaching last season', required: false, default: '2025' }
+      coaching_tune:  { description: 'CFB coaching tune seasons', required: false, default: '2021,2022,2023' }
+      coaching_hold:  { description: 'CFB coaching holdout seasons', required: false, default: '2024,2025' }
       write:
         description: 'Write football/validation/feature-status.json (a promotion decision)'
         type: boolean
@@ -83,6 +87,16 @@ jobs:
             --cache .cache/football \
             ${{ github.event.inputs.write == 'true' && '--write' || '' }}
 
+      - name: CFB Coaching / Program cap walk-forward
+        run: |
+          node --max-old-space-size=8192 football/rankings/validate_coaching_program.js \
+            --first ${{ github.event.inputs.coaching_first || '2021' }} \
+            --last  ${{ github.event.inputs.coaching_last  || '2025' }} \
+            --tune  ${{ github.event.inputs.coaching_tune  || '2021,2022,2023' }} \
+            --hold  ${{ github.event.inputs.coaching_hold  || '2024,2025' }} \
+            --cache .cache/football \
+            ${{ github.event.inputs.write == 'true' && '--write' || '' }}
+
       # The published experiments, through the same gate. Runs whether or not
       # the heavy walk-forward above could rebuild its own arms, because it
       # needs neither the cache nor the corpus — only the artifacts.
@@ -96,7 +110,7 @@ jobs:
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add football/validation/feature-status.json football/cfb_p4/research/qb_epa.json
+          git add football/validation/feature-status.json football/cfb_p4/research/qb_epa.json football/rankings/coaching_program_validation.json
           if git diff --cached --quiet; then echo 'registry unchanged'; exit 0; fi
           git commit -m "football: feature promotion registry"
           git push
