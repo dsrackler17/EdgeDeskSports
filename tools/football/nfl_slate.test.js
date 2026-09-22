@@ -85,10 +85,18 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
     art.coaching_staff_ledger);
   const g = art.games.find((x) => x.game_id === '2026_02_KC_BUF');
   chk('the row carries display names and codes', g && g.home_team === 'Buffalo Bills' && g.away_code === 'KC', g && g.home_team);
+  chk('the schedule feed head coaches ride on the pregame row',
+    g && g.home_head_coach === 'Sean McDermott' && g.away_head_coach === 'Andy Reid',
+    g && [g.home_head_coach, g.away_head_coach]);
   chk('kickoff is Eastern converted to UTC', g && g.kickoff === '2026-09-20T17:00:00.000Z', g && g.kickoff);
   chk('the game is predicted', g && g.model_status === 'PREDICTED', g && g.model_reason);
   chk('the frozen upcoming margin is exactly the pregame model margin',
     g && coachingLedger.pending[g.game_id] && coachingLedger.pending[g.game_id].pregame_home_margin === g.model_home_margin,
+    g && coachingLedger.pending[g.game_id]);
+  chk('the frozen ledger preserves the pregame head coaches',
+    g && coachingLedger.pending[g.game_id] &&
+      coachingLedger.pending[g.game_id].home_head_coach === 'Sean McDermott' &&
+      coachingLedger.pending[g.game_id].away_head_coach === 'Andy Reid',
     g && coachingLedger.pending[g.game_id]);
   chk('home line is the negated margin', g && g.model_home_line === -g.model_home_margin && g.model_home_line != null, g && [g.model_home_line, g.model_home_margin]);
   chk('a win probability rides along', g && g.model_home_win_prob > 0 && g.model_home_win_prob < 1);
