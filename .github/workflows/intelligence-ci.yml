@@ -153,6 +153,8 @@ jobs:
         run: node tools/football/matchup_metrics.test.js
       - name: The committed metrics artifact matches its inputs
         run: node tools/football/build_matchup_metrics.js --check
+      - name: Frozen NFL coaching evidence stays immutable
+        run: node football/nfl/coaching_staff_ledger.test.js
       - name: The NFL slate builder agrees with the browser engine
         run: node tools/football/nfl_slate.test.js
       - name: The identity profiles copy, date and separate measured from inferred
