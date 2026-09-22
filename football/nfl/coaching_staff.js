@@ -49,6 +49,9 @@
 
   function blankInput(id) {
     var meta = INPUTS[id];
+    var reason = id === 'game_management'
+      ? 'structured fourth-down, timeout or other decision-quality evidence is not ingested; close-game record, penalties and raw timeout counts are not accepted as coaching-quality proxies'
+      : 'not implemented in the Step 1 contract-only plumbing';
     return {
       id: id,
       label: meta.label,
@@ -60,7 +63,7 @@
       source: null,
       last_updated: null,
       available: false,
-      reason: 'not implemented in the Step 1 contract-only plumbing'
+      reason: reason
     };
   }
 
