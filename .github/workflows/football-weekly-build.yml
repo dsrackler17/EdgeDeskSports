@@ -91,6 +91,7 @@ on:
       - 'football/cfb_p4/engine.js'
       - 'football/cfb_p4/canonical_rating.test.js'
       - 'football/fbs/build_coverage.js'
+      - 'tools/football/patch_cfb_fixture_availability.js'
       - 'tools/football/patch_cfb_canonical_rating.js'
       - 'tools/football/patch_cfb_efficiency_replay.js'
       - 'football/rankings/engine_efficiency.js'
@@ -205,9 +206,13 @@ jobs:
           node football/rating/sync_rankings.js
           node football/rating/sync_rankings.test.js
 
-      # app.html is a checked-in legacy single-file client. Patch its small CFB
-      # mirror before testing so the browser and the Node coverage builder use
-      # the same canonical neutral-field rating backbone.
+      # app.html is a checked-in legacy single-file client. Apply the same
+      # fixture-scoped availability contract before any other CFB browser patch.
+      - name: Patch browser fixture-scoped CFB availability
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_cfb_fixture_availability.js
+
+      # Keep the browser on the same canonical neutral-field rating backbone.
       - name: Patch browser canonical CFB rating
         if: steps.go.outputs.run == 'true'
         run: node tools/football/patch_cfb_canonical_rating.js
