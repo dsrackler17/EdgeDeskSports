@@ -241,6 +241,7 @@ async function build(opts) {
       game_id: String(g.game_id), season: num(g.season), week: num(g.week), game_type: g.game_type || 'REG',
       kickoff: etToIso(g.gameday, g.gametime), gameday: g.gameday || null, gametime_et: g.gametime || null,
       home_code: g.home_team, away_code: g.away_team,
+      home_head_coach: g.home_coach || null, away_head_coach: g.away_coach || null,
       home_team: names[g.home_team] || g.home_team, away_team: names[g.away_team] || g.away_team,
       home_team_id: String(g.home_team || '').toLowerCase(), away_team_id: String(g.away_team || '').toLowerCase(),
       venue: g.stadium || null, roof: g.roof || null, surface: g.surface || null, div_game: num(g.div_game) === 1,
