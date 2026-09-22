@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-22T02:28:19.605Z",
+ "generated_at": "2026-09-22T02:32:17.004Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -149,7 +149,14 @@
  "absorbed_games": 260,
  "engine": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
-  "trained_through": 2025
+  "trained_through": 2025,
+  "rating_backbone": {
+   "source": "edgedesk_national_rankings_v1",
+   "season": 2026,
+   "teams": 138,
+   "availability_stripped_before_matchup": true,
+   "problem": null
+  }
  },
  "projection_status": {
   "PREDICTED": 73
@@ -171,6 +178,17 @@
  },
  "checks": [
   {
+   "name": "canonical neutral-field ETSR covers every active FBS program",
+   "ok": true,
+   "detail": {
+    "source": "edgedesk_national_rankings_v1",
+    "teams": 138,
+    "expected": 138,
+    "problem": null,
+    "missing": []
+   }
+  },
+  {
    "name": "every active FBS team resolves to a canonical identity",
    "ok": true,
    "detail": {
@@ -186,7 +204,7 @@
    }
   },
   {
-   "name": "every FBS-vs-FBS game has both teams in the rating state",
+   "name": "every FBS-vs-FBS game has both teams in the canonical rating state",
    "ok": true,
    "detail": {
     "unrated": []
