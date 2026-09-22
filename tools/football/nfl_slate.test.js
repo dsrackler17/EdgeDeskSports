@@ -43,7 +43,12 @@ const STW = [STW_HEAD,
 const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,full_name,gsis_id,espn_id\n2026,SF,QB,QB,13,ACT,Brock Purdy,00-0037834,4361741\n2026,LA,QB,QB,9,ACT,Matthew Stafford,00-0036355,12483';
 
 (async () => {
-  const art = await B.build({ now: NOW, fetchText: async (u) => (/games\.csv/.test(u) ? GAMES : /stats_team_week/.test(u) ? STW : /roster/.test(u) ? ROSTER : ''), lookahead: 12 });
+  const art = await B.build({
+    now: NOW,
+    fetchText: async (u) => (/games\.csv/.test(u) ? GAMES : /stats_team_week/.test(u) ? STW : /roster/.test(u) ? ROSTER : ''),
+    lookahead: 12,
+    coachingSeed: { schema: 'fixture-empty-seed', teams: {} }
+  });
   chk('schema', art.schema === 'edgedesk_nfl_slate_v1');
   chk('the completed game was absorbed', art.absorbed_games === 1, art.absorbed_games);
   chk('two upcoming games are on the slate', art.counts.games === 2, art.counts);
