@@ -130,7 +130,8 @@ chk('identity enrichment uses the rated athlete and best same-group replacement'
     && r[0].starter === true
     && Math.abs(r[0].snap_share - 0.93) < 1e-9
     && r[0].replacement_player_id === '222'
-    && Math.abs(r[0].replacement_quality - 0.54) < 1e-9
+    && r[0].replacement_quality === null
+    && Math.abs(r[0].replacement_quality_research - 0.54) < 1e-9
     && r[0].player_rating === 61;
 });
 
