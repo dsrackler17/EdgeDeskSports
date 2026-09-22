@@ -99,6 +99,12 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
       art.coaching_staff.teams.SF.coaching_staff_inputs.multi_season_head_coach.value === null,
     art.coaching_staff && art.coaching_staff.teams.SF &&
       art.coaching_staff.teams.SF.coaching_staff_inputs.multi_season_head_coach);
+  chk('one frozen season is not enough for franchise program persistence',
+    art.coaching_staff && art.coaching_staff.teams.SF &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.program_persistence.available === false &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.program_persistence.value === null,
+    art.coaching_staff && art.coaching_staff.teams.SF &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.program_persistence);
   const g = art.games.find((x) => x.game_id === '2026_02_KC_BUF');
   chk('the row carries display names and codes', g && g.home_team === 'Buffalo Bills' && g.away_code === 'KC', g && g.home_team);
   chk('the schedule feed head coaches ride on the pregame row',
