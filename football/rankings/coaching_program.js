@@ -1,11 +1,11 @@
 /* ============================================================================
    COACHING / PROGRAM EDGE
 
-   STEP 3: measurable talent conversion + multi-season overperformance.
+   STEP 5: measured subcomponents + final reliability shrinkage.
 
-   This layer is intentionally RESEARCH-ONLY. It does not move ETSR yet and it
-   does not publish a final coaching/program rating yet. Step 5 owns the final
-   reliability/shrinkage calculation.
+   This layer is intentionally RESEARCH-ONLY. It now publishes a reliability-
+   shrunk coaching/program rating, but it still does not rank teams or move
+   ETSR. Ranking/history/UI and ETSR promotion remain later validation steps.
 
    Missing evidence is NULL, never a fake 50. A real residual can legitimately
    land at 50 because 50 means league-average measured conversion, not missing.
