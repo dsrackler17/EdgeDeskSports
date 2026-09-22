@@ -105,6 +105,12 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
       art.coaching_staff.teams.SF.coaching_staff_inputs.program_persistence.value === null,
     art.coaching_staff && art.coaching_staff.teams.SF &&
       art.coaching_staff.teams.SF.coaching_staff_inputs.program_persistence);
+  chk('insufficient team-week games keep efficiency development unavailable',
+    art.coaching_staff && art.coaching_staff.teams.SF &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.efficiency_development.available === false &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.efficiency_development.value === null,
+    art.coaching_staff && art.coaching_staff.teams.SF &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.efficiency_development);
   const g = art.games.find((x) => x.game_id === '2026_02_KC_BUF');
   chk('the row carries display names and codes', g && g.home_team === 'Buffalo Bills' && g.away_code === 'KC', g && g.home_team);
   chk('the schedule feed head coaches ride on the pregame row',
