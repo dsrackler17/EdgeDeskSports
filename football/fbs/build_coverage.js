@@ -260,13 +260,37 @@ async function main() {
     source: `cfbfastR-data schedules ${a.season}`, params: P,
     knownFbs: (P.rating && P.rating.seed_ratings) || null });
   const { st, absorbed } = buildState(rowsBySeason, a.season);
+
+  /* THE TEAM-STRENGTH BACKBONE. Historical replay above still owns game
+     counts, scoring, efficiency and uncertainty. The current neutral-field
+     mean comes from the richer national ETSR artifact, installed only AFTER
+     replay so it cannot leak backwards into historical updates. Current
+     availability is stripped here because the matchup layer prices the actual
+     missing athlete separately for this fixture. */
+  const canonicalRatingData = readJson(path.join(ROOT, 'football', 'rating', 'current.json'), null);
+  let canonicalRatingProblem = null;
+  if (!canonicalRatingData) {
+    canonicalRatingProblem = 'football/rating/current.json is missing';
+  } else if (canonicalRatingData.source_schema !== 'edgedesk_national_rankings_v1') {
+    canonicalRatingProblem = 'rating artifact is not sourced from national ETSR';
+  } else if (+canonicalRatingData.season !== +a.season) {
+    canonicalRatingProblem = 'rating artifact is for season ' + canonicalRatingData.season + ', not ' + a.season;
+  } else {
+    E.ingest.setCanonicalRatings(st, canonicalRatingData, {
+      strip_availability: true,
+      source: 'EdgeDesk national ETSR · neutral-field pricing backbone'
+    });
+  }
+
   const built = FBS.buildSlate({ rows: target, universe, now: Date.now(), lookaheadDays: a.lookahead });
   const slate = built.items;
 
   /* Every committed input, read once, and the season's own schedule index so
      rest and travel are measured off the same rows the slate is built from. */
   const ctx = IN.load({ season: a.season, params: P, normKey: FBS.normKey });
-  const si = IN.scheduleIndex(target, st.r);
+  const ratingIndex = Object.assign({}, st.r);
+  Object.keys(st.canonicalRatings || {}).forEach(k => { ratingIndex[k] = st.canonicalRatings[k].value; });
+  const si = IN.scheduleIndex(target, ratingIndex);
 
   let weatherReport = null;
   /* THE FORECAST THE BOARD ALREADY FETCHES. This job passed `weather: null`
@@ -333,16 +357,42 @@ async function main() {
     recs[rec] = (recs[rec] || 0) + 1;
   }
 
-  const report = FBS.audit(universe, { slate, ratings: st.r, projected });
+  const auditRatings = Object.assign({}, st.r);
+  Object.keys(st.canonicalRatings || {}).forEach(k => { auditRatings[k] = st.canonicalRatings[k].value; });
+  const report = FBS.audit(universe, { slate, ratings: auditRatings, projected });
   report.generated_at = new Date().toISOString();
   report.lookahead_days = a.lookahead;
   report.absorbed_games = absorbed;
-  report.engine = { model_version: P.model_version, trained_through: P.trained_through_season };
+  report.engine = {
+    model_version: P.model_version,
+    trained_through: P.trained_through_season,
+    rating_backbone: {
+      source: st.canonicalRatingMeta && st.canonicalRatingMeta.schema,
+      season: st.canonicalRatingMeta && st.canonicalRatingMeta.season,
+      teams: st.canonicalRatingCount || 0,
+      availability_stripped_before_matchup: !!(st.canonicalRatingMeta && st.canonicalRatingMeta.strip_availability),
+      problem: canonicalRatingProblem
+    }
+  };
   report.projection_status = statuses;
   report.weather = weatherReport;
   report.spread_recommendation = recs;
   report.checks = [];
   report.failures = [];
+
+  /* 0 — the richer neutral-field rating really is the pricing backbone. */
+  const canonicalMissing = [];
+  for (const k of universe.order) {
+    const t = universe.teams[k];
+    if (t.division === 'fbs' && !(st.canonicalRatings && st.canonicalRatings[k]))
+      canonicalMissing.push(t.name);
+  }
+  run(report, 'canonical neutral-field ETSR covers every active FBS program',
+    { source: report.engine.rating_backbone.source, teams: st.canonicalRatingCount || 0,
+      expected: universe.counts.fbs_teams, problem: canonicalRatingProblem,
+      missing: canonicalMissing.slice(0, 12) },
+    !canonicalRatingProblem && canonicalMissing.length === 0
+      && st.canonicalRatingCount === universe.counts.fbs_teams);
 
   /* 1 — canonical identity for every active FBS team */
   run(report, 'every active FBS team resolves to a canonical identity',
@@ -364,10 +414,10 @@ async function main() {
   for (const it of slate) {
     if (it.meta.fbs_sides !== 2) continue;
     for (const side of [it.meta.home, it.meta.away])
-      if (!Object.prototype.hasOwnProperty.call(st.r, side.key))
+      if (!(st.canonicalRatings && st.canonicalRatings[side.key]))
         unrated.push({ game: `${it.meta.away.name} @ ${it.meta.home.name}`, team: side.name });
   }
-  run(report, 'every FBS-vs-FBS game has both teams in the rating state',
+  run(report, 'every FBS-vs-FBS game has both teams in the canonical rating state',
     { unrated }, unrated.length === 0);
 
   /* 4 — no duplicate canonical games */
