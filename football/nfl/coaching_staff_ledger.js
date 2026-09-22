@@ -21,6 +21,8 @@
 const SCHEMA = 'edgedesk_nfl_coaching_staff_ledger_v1';
 const EVIDENCE_SCHEMA = 'edgedesk_nfl_coaching_staff_current_residual_v1';
 const HEAD_COACH_EVIDENCE_SCHEMA = 'edgedesk_nfl_coaching_staff_head_coach_residual_v1';
+const PROGRAM_EVIDENCE_SCHEMA = 'edgedesk_nfl_coaching_staff_program_persistence_v1';
+const PROGRAM_DECAY = Object.freeze([0.45, 0.30, 0.17, 0.08]);
 
 function isNum(x) {
   return typeof x === 'number' && Number.isFinite(x);
@@ -242,6 +244,133 @@ function summarizeHeadCoachResidual(ledger, opts) {
   };
 }
 
+function summarizeProgramPersistence(ledger, opts) {
+  opts = opts || {};
+  const currentSeason = Number(opts.currentSeason);
+  const requested = Array.isArray(opts.teamKeys) ? opts.teamKeys.map(String) : [];
+  const minSeasons = opts.minSeasons == null ? 2 : Math.max(2, Number(opts.minSeasons) || 2);
+  const teams = {};
+
+  function blank(team) {
+    return {
+      team,
+      available: false,
+      value: null,
+      observations: 0,
+      season_count: 0,
+      seasons: [],
+      observed_decay_weight: 0,
+      total_evidence: null,
+      source: 'time-decayed same-franchise evidence from the frozen pregame residual ledger',
+      reason: 'requires frozen same-franchise residual evidence across at least ' + minSeasons + ' seasons'
+    };
+  }
+
+  requested.forEach((team) => { teams[team] = blank(team); });
+
+  if (!Number.isFinite(currentSeason)) {
+    return {
+      schema: PROGRAM_EVIDENCE_SCHEMA,
+      input: 'program_persistence',
+      current_season: null,
+      decay: PROGRAM_DECAY.slice(),
+      min_seasons: minSeasons,
+      teams,
+      error: 'currentSeason is required'
+    };
+  }
+  if (!ledger || ledger.schema !== SCHEMA || !ledger.settled) {
+    return {
+      schema: PROGRAM_EVIDENCE_SCHEMA,
+      input: 'program_persistence',
+      current_season: currentSeason,
+      decay: PROGRAM_DECAY.slice(),
+      min_seasons: minSeasons,
+      teams,
+      error: 'invalid ledger'
+    };
+  }
+
+  const byTeamSeason = {};
+  Object.keys(ledger.settled).sort().forEach((id) => {
+    const rec = ledger.settled[id];
+    if (!rec) return;
+    const season = Number(rec.season);
+    if (!Number.isFinite(season)) return;
+    const sides = [
+      [rec.home_code, rec.team_evidence && rec.team_evidence.home],
+      [rec.away_code, rec.team_evidence && rec.team_evidence.away]
+    ];
+
+    sides.forEach(([team, evidence]) => {
+      if (!team || !isNum(evidence)) return;
+      team = String(team);
+      if (requested.length && !requested.includes(team)) return;
+      byTeamSeason[team] = byTeamSeason[team] || {};
+      const bucket = byTeamSeason[team][season] || { sum: 0, observations: 0, game_ids: [] };
+      bucket.sum += evidence;
+      bucket.observations += 1;
+      bucket.game_ids.push(String(rec.game_id || id));
+      byTeamSeason[team][season] = bucket;
+    });
+  });
+
+  requested.forEach((team) => {
+    const row = teams[team];
+    const seasons = [];
+    let observedWeight = 0;
+    let weightedValue = 0;
+    let observations = 0;
+    let totalEvidence = 0;
+
+    for (let offset = 0; offset < PROGRAM_DECAY.length; offset++) {
+      const season = currentSeason - offset;
+      const bucket = byTeamSeason[team] && byTeamSeason[team][season];
+      if (!bucket || !(bucket.observations > 0)) continue;
+      const meanEvidence = bucket.sum / bucket.observations;
+      const configuredWeight = PROGRAM_DECAY[offset];
+      seasons.push({
+        season,
+        configured_weight: configuredWeight,
+        mean_evidence: r3(meanEvidence),
+        observations: bucket.observations,
+        game_ids: bucket.game_ids.slice()
+      });
+      observedWeight += configuredWeight;
+      observations += bucket.observations;
+      totalEvidence += bucket.sum;
+    }
+
+    if (observedWeight > 0) {
+      seasons.forEach((s) => {
+        s.normalized_weight = r3(s.configured_weight / observedWeight);
+        weightedValue += s.mean_evidence * (s.configured_weight / observedWeight);
+      });
+    }
+
+    row.seasons = seasons;
+    row.season_count = seasons.length;
+    row.observations = observations;
+    row.observed_decay_weight = r3(observedWeight);
+    if (observations) row.total_evidence = r3(totalEvidence);
+
+    if (row.season_count >= minSeasons && observedWeight > 0) {
+      row.value = r3(weightedValue);
+      row.available = true;
+      row.reason = null;
+    }
+  });
+
+  return {
+    schema: PROGRAM_EVIDENCE_SCHEMA,
+    input: 'program_persistence',
+    current_season: currentSeason,
+    decay: PROGRAM_DECAY.slice(),
+    min_seasons: minSeasons,
+    teams
+  };
+}
+
 function settle(ledger, finalRow) {
   const id = validGameId(finalRow);
   if (!ledger || ledger.schema !== SCHEMA) {
@@ -286,9 +415,12 @@ module.exports = {
   SCHEMA,
   EVIDENCE_SCHEMA,
   HEAD_COACH_EVIDENCE_SCHEMA,
+  PROGRAM_EVIDENCE_SCHEMA,
+  PROGRAM_DECAY,
   newLedger,
   capture,
   settle,
   summarizeCurrentResidual,
-  summarizeHeadCoachResidual
+  summarizeHeadCoachResidual,
+  summarizeProgramPersistence
 };
