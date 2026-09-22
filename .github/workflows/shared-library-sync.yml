@@ -1,0 +1,62 @@
+# EdgeDesk shared-library hosts are generated from canonical source blocks.
+# This workflow makes that generation automatic instead of relying on a human
+# to remember to run tools/presentation/inline.js after every canonical edit.
+name: Shared library sync
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'football/fbs/fbs.js'
+      - 'lib/mlb_pitcher_history.js'
+      - 'lib/mlb_offense_history.js'
+      - 'supabase/functions/edgedesk_ai/_lib.ts'
+      - 'supabase/functions/edgedesk_ai/_presentation.js'
+      - 'supabase/functions/edgedesk_ai/_intelligence.js'
+      - 'supabase/functions/edgedesk_ai/_research.js'
+      - 'supabase/functions/edgedesk_ai/_tennis.js'
+      - 'supabase/functions/edgedesk_ai/_analyst.js'
+      - 'supabase/functions/edgedesk_ai/_pricing.js'
+      - 'supabase/functions/edgedesk_ai/_board.js'
+      - 'supabase/functions/edgedesk_ai/_stake.js'
+      - 'supabase/functions/edgedesk_ai/_mlbhist.js'
+      - 'supabase/functions/edgedesk_ai/_mlboff.js'
+      - 'tools/presentation/inline.js'
+      - '.github/workflows/shared-library-sync.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shared-library-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Generate shared-library hosts
+        run: node tools/presentation/inline.js
+
+      - name: Prove the generated hosts are in sync
+        run: node tools/presentation/inline.js --check
+
+      - name: Commit generated hosts
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          tools/ci/push_generated.sh "${GITHUB_REF_NAME}" "sync shared library hosts" -- \
+            supabase/functions/edgedesk_ai/_intelligence.js \
+            supabase/functions/edgedesk_ai/_mlbhist.js \
+            supabase/functions/edgedesk_ai/_mlboff.js \
+            supabase/functions/edgedesk_ai/index.ts \
+            app.html brief.html record.html
