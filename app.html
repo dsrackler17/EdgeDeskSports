@@ -51934,9 +51934,16 @@ function fbP4SchedCtx(g,which){
    saying everybody is available. Those are different statements and they must
    not collapse into each other at the edge of the engine. */
 var FBP4_AVAIL_STATUS={OUT:'out',DOUBTFUL:'doubtful',QUESTIONABLE:'questionable',
-  GAME_TIME_DECISION:'questionable',DAY_TO_DAY:'questionable',PROBABLE:'probable',
-  LIMITED:'probable'};
-function fbP4Injuries(teamName){
+  GAME_TIME_DECISION:'questionable',DAY_TO_DAY:'questionable',
+  /* QUESTIONABLE has the engine's measured 0.50 status weight, which is the
+     correct half-game representation for OUT_FIRST_HALF. */
+  OUT_FIRST_HALF:'questionable',PROBABLE:'probable',LIMITED:'probable'};
+function fbP4OfficialForGame(t,gameId){
+  var r=t&&t.official_report;
+  if(!r||r.ok===false||r.game_id==null||gameId==null)return null;
+  return String(r.game_id)===String(gameId)?r:null;
+}
+function fbP4Injuries(teamName,gameId){
   var C=window.EDCARD;
   if(!C||!C.cavTeam) return null;
   var t=null; try{ t=C.cavTeam(teamName); }catch(_){ return null; }
@@ -51945,23 +51952,26 @@ function fbP4Injuries(teamName){
   if(!t) return null;
   var q=String(t.dataQuality||'NONE').toUpperCase();
   if(q==='NONE'||q==='LIMITED') return null;
+  var report=fbP4OfficialForGame(t,gameId);
+  var scoped=(t.players||[]).filter(function(p){
+    return p.game_id==null||gameId==null||String(p.game_id)===String(gameId);
+  });
   var out=[];
-  (t.players||[]).forEach(function(p){
-    var st=FBP4_AVAIL_STATUS[String(p.availability_status||'').toUpperCase()];
-    if(!st) return;                       /* an observation is not a designation */
-    out.push({player:p.player_name||null, position:p.position||null,
-      /* the SAME starter test the availability layer itself uses, so one
-         record does not read as a starter in one place and a backup in
-         another; an unknown depth role stays unknown */
+  scoped.forEach(function(p){
+    var st=FBP4_AVAIL_STATUS[String(p.availability_status||p.status||'').toUpperCase()];
+    if(!st) return;
+    out.push({player:p.player_name||p.name||null, position:p.position||null,
       starter:p.depth_role==null?null:/(^|[^0-9])1($|[^0-9])|starter|^qb1|^rb1|^wr1|^lt$|^rt$/i.test(String(p.depth_role)),
-      snap_share:null,                    /* no public college feed carries it */
-      severity:null,
-      status:st,
-      replacement_quality:null,           /* nor this */
+      snap_share:null,severity:null,status:st,replacement_quality:null,
       source:p.source_name||t.team_name||null,
       as_of:p.observed_at||t.lastUpdated||null});
   });
-  return out;
+  if(out.length)return out;
+  /* [] means "known clean" to the engine. Only a comprehensive report for
+     THIS fixture earns that meaning; historical fixture rows cannot. */
+  if(report&&report.comprehensive)return [];
+  if(scoped.some(function(p){return p.game_id==null;}))return out;
+  return null;
 }
 /* ---- AN OUTCOME PROBABILITY, RENDERED WITHOUT CLAIMING CERTAINTY --------
    Delegates to football/matchup/confidence.js so the board and the committed
@@ -52148,10 +52158,10 @@ function fbP4Request(u,opts){
          sentences applies. */
       home:{conference:g.home_conference,roster:FB.p4.roster[hk]||null,
         qb:null,qb_context:fbP4QbContext(g.home_team),
-        injuries:fbP4Injuries(g.home_team),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
+        injuries:fbP4Injuries(g.home_team,g.game_id),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
       away:{conference:g.away_conference,roster:FB.p4.roster[ak]||null,
         qb:null,qb_context:fbP4QbContext(g.away_team),
-        injuries:fbP4Injuries(g.away_team),news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
+        injuries:fbP4Injuries(g.away_team,g.game_id),news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
     },
     venue:{home:V[hk]||null,away:V[ak]||null},
     weather:FB.p4.weather[g.game_id]||null,
@@ -52279,15 +52289,24 @@ function fbP4Contract(u){
      the percentage: EdgeDesk tried and got nothing, which is a real hole. */
   var avAge=fbP4AgeH(fbP4AvailAsOf());
   [['home',homeFbs,g.home_team],['away',awayFbs,g.away_team]].forEach(function(x){
-    var side=x[0],isFbs=x[1],name=x[2],list=fbP4Injuries(name),t=null;
+    var side=x[0],isFbs=x[1],name=x[2],list=fbP4Injuries(name,g.game_id),t=null,report=null;
     try{ t=C&&C.cavTeam?C.cavTeam(name):null; }catch(_){ t=null; }
+    report=fbP4OfficialForGame(t,g.game_id);
     if(list&&list.length)K.push(fbP4CRow('availability',side,(avAge!=null&&avAge>FBP4_STALE_H.availability)?'STALE':'USABLE',
       {source:'EdgeDesk college availability layer',as_of:fbP4AvailAsOf(),
         detail:list.length+' absence report'+(list.length===1?'':'s')+' on file'}));
+    else if(list&&report&&report.comprehensive)K.push(fbP4CRow('availability',side,(avAge!=null&&avAge>FBP4_STALE_H.availability)?'STALE':'USABLE',
+      {source:'official conference availability report',as_of:report.retrieved_at||fbP4AvailAsOf(),
+        detail:'the comprehensive official report for THIS game was read and names nobody unavailable \u2014 '
+          +'a report of no absences, which is not the same as no report'}));
     else if(list)K.push(fbP4CRow('availability',side,(avAge!=null&&avAge>FBP4_STALE_H.availability)?'STALE':'USABLE',
       {source:'EdgeDesk college availability layer',as_of:fbP4AvailAsOf(),
-        detail:'the sources were read and named nobody \u2014 a report of no absences, '
-          +'which is not the same as no report'}));
+        detail:'the current unscoped sources were read and named nobody; no fixture-specific comprehensive '
+          +'filing establishes a clean roster, so this is not described as one'}));
+    else if(report)K.push(fbP4CRow('availability',side,'RESEARCH_ONLY',
+      {source:'official conference availability report',as_of:report.retrieved_at||fbP4AvailAsOf(),
+        detail:'the official report for THIS game was read, but its scope is not comprehensive and it names no '
+          +'priced absence. Silence therefore remains unknown rather than becoming a clean injury report'}));
     else if(!isFbs)K.push(fbP4CRow('availability',side,'NOT_APPLICABLE',
       {detail:name+' is outside the FBS availability registry'}));
     else K.push(fbP4CRow('availability',side,t?'FETCH_FAILED':'UNAVAILABLE',
