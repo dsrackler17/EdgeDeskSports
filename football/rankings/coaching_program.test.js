@@ -96,15 +96,19 @@ const seasons = {
   2026: layer(2026)
 };
 const measured = CP.build(['elite', 'middle', 'under'], { season: 2026, seasons });
-assert.strictEqual(measured.status, 'PARTIAL_RESEARCH');
+assert.strictEqual(measured.status, 'SCORED_RESEARCH');
 assert.strictEqual(measured.affects_etsr, false);
-assert.strictEqual(measured.final_score_enabled, false);
+assert.strictEqual(measured.final_score_enabled, true);
 
 const elite = measured.teams.elite;
 const middle = measured.teams.middle;
 const under = measured.teams.under;
 for (const t of [elite, middle, under]) {
-  assert.strictEqual(t.coaching_program_rating, null, 'Step 3 must not jump ahead to final shrinkage');
+  assert.ok(Number.isFinite(t.coaching_program_rating), 'Step 5 should publish a reliability-shrunk research score');
+  assert.ok(Number.isFinite(t.coaching_program_raw_score));
+  assert.strictEqual(t.coaching_program_observed_weight, 0.6);
+  assert.ok(t.coaching_program_reliability > 0 && t.coaching_program_reliability <= 0.6);
+  assert.strictEqual(t.coaching_program_rank, null);
   assert.strictEqual(t.coaching_program_adjustment_points, 0);
   assert.strictEqual(t.coaching_program_affects_etsr, false);
   assert.strictEqual(t.coaching_program_inputs.talent_conversion.available, true);
@@ -274,11 +278,92 @@ const integrated = CP.build(integratedKeys, {
   development_last_updated: '2026-09-22T00:00:00Z'
 });
 assert.strictEqual(integrated.affects_etsr, false);
-assert.strictEqual(integrated.final_score_enabled, false);
-assert.strictEqual(integrated.teams.roster_39.coaching_program_rating, null);
+assert.strictEqual(integrated.final_score_enabled, true);
+assert.ok(Number.isFinite(integrated.teams.roster_39.coaching_program_rating));
 assert.strictEqual(integrated.teams.roster_39.coaching_program_adjustment_points, 0);
 assert.strictEqual(integrated.teams.roster_39.coaching_program_inputs.roster_management_retention.available, true);
 assert.strictEqual(integrated.teams.devgood.coaching_program_inputs.development.available, true);
 assert.strictEqual(integrated.teams.devgood.coaching_program_inputs.game_management.available, false);
 
 console.log('coaching_program Step 4: passed');
+
+
+/* =====================================================================
+   STEP 5 — configured-weight renormalization + reliability shrinkage.
+   ===================================================================== */
+function scoredInput(value, reliability, configuredWeight) {
+  return {
+    value,
+    observations: 10,
+    weighted_evidence: ((value - 50) / 12) * reliability,
+    reliability,
+    source: 'synthetic',
+    last_updated: null,
+    configured_weight: configuredWeight,
+    available: true,
+    reason: null
+  };
+}
+
+/* With staff and game management unavailable, the four measurable pieces
+   cover .85 of the configured model. Raw score = 60.0 exactly:
+     (.35*80 + .25*60 + .15*40 + .10*20) / .85 = 60
+   reliability = .85 when every observed input is perfectly reliable.
+   final = 50 + (60 - 50) * .85 = 58.5 */
+const formulaTeam = CP.emptyTeam('formula');
+formulaTeam.coaching_program_inputs.talent_conversion = scoredInput(80, 1, 0.35);
+formulaTeam.coaching_program_inputs.multi_season_program_overperformance = scoredInput(60, 1, 0.25);
+formulaTeam.coaching_program_inputs.roster_management_retention = scoredInput(40, 1, 0.15);
+formulaTeam.coaching_program_inputs.development = scoredInput(20, 1, 0.10);
+CP.finalizeTeam(formulaTeam);
+assert.strictEqual(formulaTeam.coaching_program_raw_score, 60);
+assert.strictEqual(formulaTeam.coaching_program_observed_weight, 0.85);
+assert.strictEqual(formulaTeam.coaching_program_reliability, 0.85);
+assert.strictEqual(formulaTeam.coaching_program_rating, 58.5);
+assert.strictEqual(formulaTeam.coaching_program_rank, null);
+assert.strictEqual(formulaTeam.coaching_program_adjustment_points, 0);
+assert.strictEqual(formulaTeam.coaching_program_affects_etsr, false);
+assert.ok(Math.abs(
+  formulaTeam.coaching_program_reliability_details.contributions
+    .reduce((s, x) => s + x.normalized_weight, 0) - 1
+) < 0.002, 'observed configured weights must renormalize to one');
+
+/* Remove development rather than silently substituting a neutral 50.
+   Remaining configured weight is .75; missing weight lowers reliability. */
+const missingTeam = CP.emptyTeam('missing');
+missingTeam.coaching_program_inputs.talent_conversion = scoredInput(80, 1, 0.35);
+missingTeam.coaching_program_inputs.multi_season_program_overperformance = scoredInput(60, 1, 0.25);
+missingTeam.coaching_program_inputs.roster_management_retention = scoredInput(40, 1, 0.15);
+CP.finalizeTeam(missingTeam);
+assert.strictEqual(missingTeam.coaching_program_observed_weight, 0.75);
+assert.strictEqual(missingTeam.coaching_program_reliability, 0.75);
+assert.strictEqual(missingTeam.coaching_program_raw_score, 65.3);
+assert.strictEqual(missingTeam.coaching_program_rating, 61.5);
+assert.strictEqual(
+  missingTeam.coaching_program_reliability_details.missing_configured_weight,
+  0.25
+);
+
+/* Weak evidence must pull an extreme raw score back toward 50. */
+const weakTeam = CP.emptyTeam('weak');
+weakTeam.coaching_program_inputs.talent_conversion = scoredInput(100, 0.1, 0.35);
+weakTeam.coaching_program_inputs.multi_season_program_overperformance = scoredInput(100, 0.1, 0.25);
+weakTeam.coaching_program_inputs.roster_management_retention = scoredInput(100, 0.1, 0.15);
+weakTeam.coaching_program_inputs.development = scoredInput(100, 0.1, 0.10);
+CP.finalizeTeam(weakTeam);
+assert.strictEqual(weakTeam.coaching_program_raw_score, 100);
+assert.strictEqual(weakTeam.coaching_program_reliability, 0.085);
+assert.strictEqual(weakTeam.coaching_program_rating, 54.3);
+
+/* A real measured 50 is allowed to be 50. Missing evidence is still null. */
+const averageTeam = CP.emptyTeam('average');
+averageTeam.coaching_program_inputs.talent_conversion = scoredInput(50, 1, 0.35);
+CP.finalizeTeam(averageTeam);
+assert.strictEqual(averageTeam.coaching_program_available, true);
+assert.strictEqual(averageTeam.coaching_program_rating, 50);
+const noEvidence = CP.emptyTeam('none');
+CP.finalizeTeam(noEvidence);
+assert.strictEqual(noEvidence.coaching_program_available, false);
+assert.strictEqual(noEvidence.coaching_program_rating, null);
+
+console.log('coaching_program Step 5: passed');
