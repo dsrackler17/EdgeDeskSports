@@ -362,7 +362,8 @@ chk('this season is trusted more the more of it has been played',
   chk('both roster paths record when they were read', (app.match(/S\.rosterAsOf=/g) || []).length >= 3,
     (app.match(/S\.rosterAsOf=[^;]*/g) || []));
   chk('the availability layer now reaches the engine instead of a hardcoded null',
-    /injuries:fbP4Injuries\(g\.home_team\)/.test(app) && /injuries:fbP4Injuries\(g\.away_team\)/.test(app));
+    /injuries:fbP4Injuries\(g\.home_team,g\.game_id\)/.test(app)
+      && /injuries:fbP4Injuries\(g\.away_team,g\.game_id\)/.test(app));
   chk('a team EdgeDesk could not read still reports NO injury report rather than a clean one',
     /if\(q==='NONE'\|\|q==='LIMITED'\) return null;/.test(app));
   /* THE PRICED QB INPUT STAYS NULL — and that is now a narrower claim than it
