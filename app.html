@@ -49815,7 +49815,7 @@ function fbLoadNfl(signal){
     if(toAbsorb.length){
       var seasons={};toAbsorb.forEach(function(g){seasons[fbNum(g.season)]=1;});
       var fetches=Object.keys(seasons).map(function(y2){
-        return fbFetchText(FB_URL_STW(y2),signal).then(function(t){return fbCsv(t);}).catch(function(e){S.notes.push('stats_team_week_'+y2+' unavailable ('+((e&&e.message)||'load failed')+') — '+y2+' results not absorbed into ratings');return [];});
+        return fbFetchText(FB_URL_STW(y2),signal).then(function(t){return fbCsv(t);}).catch(function(e){S.notes.push('NFL team stats are temporarily unavailable, so some recent completed games are not included in the ratings yet. EdgeDesk is keeping the last trusted ratings instead of guessing and will update automatically when the feed returns.');return [];});
       });
       stwP=Promise.all(fetches).then(function(all){
         var byGame={};
@@ -49859,7 +49859,7 @@ function fbLoadNfl(signal){
           done:r.home_score!=null&&r.away_score!=null,type:r.game_type||'REG'});
       }
       S.games.sort(function(a,b){return a.t-b.t;});
-      if(!absorbed&&maxSeason>st.seededThrough){if(toAbsorb.length)S.notes.push(toAbsorb.length+' completed '+maxSeason+' game'+(toAbsorb.length===1?'':'s')+' found, but none could be absorbed because team-week stats were unavailable or unmatched — ratings remain the trained '+st.seededThrough+' seeds with the learned season carry-over applied.');else S.notes.push('No completed '+maxSeason+' games yet — ratings are the trained '+st.seededThrough+' seeds with the learned season carry-over applied.');}
+      if(!absorbed&&maxSeason>st.seededThrough){if(toAbsorb.length)S.notes.push('Recent NFL games were found, but their team stats have not finished syncing into the ratings yet. EdgeDesk is keeping the last trusted ratings until the data is complete.');else S.notes.push('The '+maxSeason+' NFL season has not produced a completed game for the ratings yet. EdgeDesk starts from last season\'s trained ratings with the normal offseason carry-over until real '+maxSeason+' results are available.');}
       /* upcoming slate */
       var now=Date.now(),hi=now+FB_LOOKAHEAD_D*864e5;
       S.up=[];
@@ -49875,13 +49875,13 @@ function fbLoadNfl(signal){
       return fbSignals('americanfootball_nfl',signal);
     }).then(function(sig){
       S.sig=sig;
-      if(!Object.keys(sig).length)S.notes.push('No captured NFL quotes in this window (offseason, or capture has not priced NFL yet); nflverse reference numbers shown where published are a consensus close, not a bettable price.');
+      if(!Object.keys(sig).length)S.notes.push('Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number.');
       /* wait briefly for the roster; a slow roster host never holds the board */
       var settled=false;
       qbP.then(function(){if(settled&&FB.at&&window.RESEARCH_SUB==='football'){try{window.renderFootball();}catch(_){}}});
       return Promise.race([qbP,new Promise(function(res){setTimeout(res,12000);})]).then(function(){
         settled=true;
-        if(S.qbs.length&&S.qbSource!=='nflverse')S.notes.push('QB rosters: nflverse roster_'+maxSeason+'.csv '+(S.qbError?('unavailable ('+S.qbError+')'):'not yet checked')+' — showing '+(S.qbSource==='cache'?('the last successful sync from '+ago(S.qbUpdatedAt)):('the bundled '+fbQbSeedDate()+' snapshot'))+'. Roster membership only; no starter is inferred from it.');
+        if(S.qbs.length&&S.qbSource!=='nflverse')S.notes.push('The live NFL QB roster update could not load, so EdgeDesk is showing '+(S.qbSource==='cache'?('the last successful roster sync from '+ago(S.qbUpdatedAt)):('its saved '+fbQbSeedDate()+' roster snapshot'))+'. This only affects the roster display; EdgeDesk does not guess who is starting.');
       });
     });
   });
