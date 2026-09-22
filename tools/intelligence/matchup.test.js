@@ -704,4 +704,106 @@ section('postgame review');
   has('and says why', wrongMarket.price_quality.why, 'different market');
 }
 
+
+/* =====================================================================
+   14. NFL COACHING / STAFF — useful research, never a silent line change.
+   ===================================================================== */
+section('NFL coaching staff research');
+{
+  const coachResearch = {
+    schema: 'edgedesk_nfl_coaching_staff_matchup_v1',
+    status: 'SHADOW_AVAILABLE',
+    affects_nfl_projection: false,
+    validation_status: 'RESEARCH_ONLY',
+    selected_cap: null,
+    home: { team: 'BUF', available: true, rating: 58, rank: 7, rank_of: 32, reliability: 0.5, research_factor: 0.08, inputs: {} },
+    away: { team: 'KC', available: true, rating: 42, rank: 25, rank_of: 32, reliability: 0.5, research_factor: -0.08, inputs: {} },
+    component_comparisons: {},
+    research_read: {
+      state: 'CALIBRATED_SHADOW',
+      direction: 'HOME',
+      sentence: 'Calibrated Coaching / Staff research points home in this matchup. At the unvalidated 1.0-point reference cap, the shadow home-margin shift is +0.16 points. The official EdgeDesk NFL projection is unchanged.'
+    },
+    shadow_reference: {
+      reference_cap_points: 1,
+      cap_status: 'UNVALIDATED_REFERENCE_ONLY',
+      factor_delta_home_minus_away: 0.16,
+      home_margin_delta: 0.16,
+      official_model_home_margin: 2.5,
+      shadow_home_margin: 2.66,
+      official_model_home_line: -2.5,
+      shadow_home_line: -2.66,
+      direction: 'HOME',
+      applied_to_official_projection: false
+    }
+  };
+  const row = {
+    game_id: 'nfl-coach-test',
+    season: 2026,
+    week: 3,
+    kickoff: '2026-09-27T17:00:00.000Z',
+    home_team: 'Buffalo Bills',
+    away_team: 'Kansas City Chiefs',
+    home_team_id: 'buf',
+    away_team_id: 'kc',
+    model_status: 'PREDICTED',
+    model_home_line: -2.5,
+    model_home_margin: 2.5,
+    model_fair_total: 49,
+    data_completeness: 0.8,
+    input_coverage: 0.8,
+    coaching_staff_research: coachResearch
+  };
+  const res = {
+    state: 'RESOLVED',
+    sport: E.NFL_SPORT,
+    game_id: row.game_id,
+    home: row.home_team,
+    away: row.away_team,
+    home_id: row.home_team_id,
+    away_id: row.away_team_id,
+    subject: row.home_team,
+    subject_id: row.home_team_id,
+    kickoff: row.kickoff,
+    week: row.week,
+    source: 'the NFL board'
+  };
+  const Rn = E.matchupResearch({
+    sport: E.NFL_SPORT,
+    resolution: res,
+    slate_row: row,
+    ratings: {},
+    previous: { home: [], away: [] },
+    availability: {},
+    now: Date.parse('2026-09-22T18:00:00Z')
+  });
+  eq('NFL matchup research carries the slate coaching object unchanged',
+    Rn.coaching_staff.shadow_reference.shadow_home_line, -2.66);
+  eq('and it still says the coaching layer cannot move the official projection',
+    Rn.coaching_staff.affects_nfl_projection, false);
+  chk('the research packet names the coaching shadow as a limitation rather than an official input',
+    Rn.limits.some((x) => /research-only shadow read/i.test(x) && /does not alter the official/i.test(x)),
+    Rn.limits);
+
+  const Bn = E.matchupBrief({
+    research: Rn,
+    home_record: null,
+    away_record: null,
+    market_board: null,
+    ranked_of: null,
+    timezone: 'America/Chicago',
+    now: Date.parse('2026-09-22T18:00:00Z')
+  });
+  eq('the official NFL line in the brief remains the model line',
+    Bn.numbers.model.home_line.value, -2.5);
+  eq('the coaching shadow is exposed separately',
+    Bn.numbers.coaching_shadow.shadow_home_line, -2.66);
+  eq('the full coaching research object travels with the brief',
+    Bn.coaching_staff.validation_status, 'RESEARCH_ONLY');
+  has('the deterministic NFL takeaway actually uses the coaching research',
+    Bn.takeaway.text, 'Coaching / Staff research');
+  has('and says the official projection is unchanged',
+    Bn.takeaway.text, 'official EdgeDesk NFL projection is unchanged');
+}
+
 done();
