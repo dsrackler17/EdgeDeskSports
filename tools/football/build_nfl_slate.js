@@ -351,6 +351,10 @@ async function build(opts) {
     head_coach: COACHING_LEDGER.summarizeHeadCoachResidual(opts.coachingLedger, {
       teamKeys: coachingTeamKeys,
       currentCoaches: coachesNow
+    }),
+    program: COACHING_LEDGER.summarizeProgramPersistence(opts.coachingLedger, {
+      currentSeason: season,
+      teamKeys: coachingTeamKeys
     })
   } : null;
   const coachingStaff = COACHING_STAFF.build(coachingTeamKeys, coachingEvidence);
