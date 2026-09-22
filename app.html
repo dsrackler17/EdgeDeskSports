@@ -49412,7 +49412,7 @@ var FB=window.FB={sport:'nfl',scope:'auto',at:0,builtAt:null,loading:null,engine
   _cache:{},_pred:{}};
 var FB_TTL_MS=30*60*1000, FB_LOOKAHEAD_D=12;
 var FB_URL_GAMES='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
-function FB_URL_STW(y){return 'https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_'+y+'.csv';}
+function FB_URL_STW(y){return '/football/nfl/stats_team_week_'+y+'.csv';}
 function FB_URL_CFB(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_'+y+'.csv';}
 var FB_NFL_NAMES={'Arizona Cardinals':'ARI','Atlanta Falcons':'ATL','Baltimore Ravens':'BAL','Buffalo Bills':'BUF','Carolina Panthers':'CAR','Chicago Bears':'CHI','Cincinnati Bengals':'CIN','Cleveland Browns':'CLE','Dallas Cowboys':'DAL','Denver Broncos':'DEN','Detroit Lions':'DET','Green Bay Packers':'GB','Houston Texans':'HOU','Indianapolis Colts':'IND','Jacksonville Jaguars':'JAX','Kansas City Chiefs':'KC','Los Angeles Rams':'LA','Los Angeles Chargers':'LAC','Las Vegas Raiders':'LV','Miami Dolphins':'MIA','Minnesota Vikings':'MIN','New England Patriots':'NE','New Orleans Saints':'NO','New York Giants':'NYG','New York Jets':'NYJ','Philadelphia Eagles':'PHI','Pittsburgh Steelers':'PIT','Seattle Seahawks':'SEA','San Francisco 49ers':'SF','Tampa Bay Buccaneers':'TB','Tennessee Titans':'TEN','Washington Commanders':'WAS'};
 var FB_CODE_NAMES={};(function(){for(var k in FB_NFL_NAMES)if(FB_NFL_NAMES.hasOwnProperty(k))FB_CODE_NAMES[FB_NFL_NAMES[k]]=k;})();
@@ -49815,7 +49815,7 @@ function fbLoadNfl(signal){
     if(toAbsorb.length){
       var seasons={};toAbsorb.forEach(function(g){seasons[fbNum(g.season)]=1;});
       var fetches=Object.keys(seasons).map(function(y2){
-        return fbFetchText(FB_URL_STW(y2),signal).then(function(t){return fbCsv(t);}).catch(function(){S.notes.push('stats_team_week_'+y2+' not published yet — '+y2+' results not absorbed into ratings');return [];});
+        return fbFetchText(FB_URL_STW(y2),signal).then(function(t){return fbCsv(t);}).catch(function(e){S.notes.push('stats_team_week_'+y2+' unavailable ('+((e&&e.message)||'load failed')+') — '+y2+' results not absorbed into ratings');return [];});
       });
       stwP=Promise.all(fetches).then(function(all){
         var byGame={};
@@ -49859,7 +49859,7 @@ function fbLoadNfl(signal){
           done:r.home_score!=null&&r.away_score!=null,type:r.game_type||'REG'});
       }
       S.games.sort(function(a,b){return a.t-b.t;});
-      if(!absorbed&&maxSeason>st.seededThrough)S.notes.push('No completed '+maxSeason+' games yet — ratings are the trained '+st.seededThrough+' seeds with the learned season carry-over applied.');
+      if(!absorbed&&maxSeason>st.seededThrough){if(toAbsorb.length)S.notes.push(toAbsorb.length+' completed '+maxSeason+' game'+(toAbsorb.length===1?'':'s')+' found, but none could be absorbed because team-week stats were unavailable or unmatched — ratings remain the trained '+st.seededThrough+' seeds with the learned season carry-over applied.');else S.notes.push('No completed '+maxSeason+' games yet — ratings are the trained '+st.seededThrough+' seeds with the learned season carry-over applied.');}
       /* upcoming slate */
       var now=Date.now(),hi=now+FB_LOOKAHEAD_D*864e5;
       S.up=[];
