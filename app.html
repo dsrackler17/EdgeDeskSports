@@ -51906,7 +51906,11 @@ function fbP4SchedCtx(g,which){
   var list=S.schedIdx&&S.schedIdx[tk];if(!list||!list.length)return null;
   var i=-1,j;for(j=0;j<list.length;j++)if(String(list[j].gid)===String(g.game_id)){i=j;break;}
   if(i<0)return null;
-  var r=(S.state&&S.state.r)||{};
+  function fbP4ScheduleOpponentRating(k){
+    var st=S.state||{},cr=st.canonicalRatings||{},lr=st.r||{};
+    if(cr[k]&&cr[k].value!=null&&isFinite(cr[k].value))return +cr[k].value;
+    return lr[k]!=null&&isFinite(lr[k])?+lr[k]:null;
+  }
   var prev=i>0?list[i-1]:null,next=(i+1<list.length)?list[i+1]:null;
   var consec=0;for(j=i-1;j>=0&&list[j].road;j--)consec++;
   var road3=0;for(j=Math.max(0,i-3);j<i;j++)if(list[j].road)road3++;
@@ -51914,8 +51918,8 @@ function fbP4SchedCtx(g,which){
     rest_days:prev?Math.round((list[i].t-prev.t)/864e5):null,
     consecutive_road:i>0?consec:null,
     road_last3:i>0?road3:null,
-    prev_opp_rating:(prev&&r[prev.oppKey]!=null)?r[prev.oppKey]:null,
-    next_opp_rating:(next&&r[next.oppKey]!=null)?r[next.oppKey]:null
+    prev_opp_rating:prev?fbP4ScheduleOpponentRating(prev.oppKey):null,
+    next_opp_rating:next?fbP4ScheduleOpponentRating(next.oppKey):null
   };
   var any=false,k;for(k in out)if(out.hasOwnProperty(k)&&out[k]!=null)any=true;
   return any?out:null;
