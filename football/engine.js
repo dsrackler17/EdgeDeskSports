@@ -48,6 +48,17 @@
 
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
 
+  function nflStaffApi() {
+    var a = root.EDNFLCoachingStaff;
+    if (!a && typeof require === 'function') {
+      try { a = require('./nfl/coaching_staff.js'); } catch (e) { /* browser path */ }
+    }
+    return a || null;
+  }
+  function nflStaffParams() {
+    return root.EDNFLCoachingStaffParams || null;
+  }
+
   /* ---------------- shared: odds math ---------------- */
   var odds = {
     amToDec: function (a) { return a > 0 ? a / 100 + 1 : 100 / (-a) + 1; },
@@ -250,9 +261,11 @@
     /* fresh mutable rating state from the shipped end-of-training seeds */
     newState: function () {
       var sp = sportParams('nfl'); if (!sp) return null;
+      var CS = nflStaffApi();
       var st = { hp: clone(sp.hyperparams), team: clone(sp.seed_ratings),
         lmean: clone(sp.league_means), teamQb: clone(sp.seed_team_qb || {}),
         qb: clone(sp.seed_qb_values || {}), ngames: {},
+        coachingStaff: CS ? CS.newState(nflStaffParams() || {}) : null,
         seededThrough: sp.trained_through_season };
       var t;
       for (t in st.team) if (st.team.hasOwnProperty(t)) st.ngames[t] = 99;
@@ -272,6 +285,8 @@
         for (i = 0; i < NFL_RATE_FEATS.length; i++) st.team[t][NFL_RATE_FEATS[i]] *= c;
         st.teamQb[t] = (st.teamQb[t] || 0) * c;
       }
+      var CS = nflStaffApi();
+      if (CS && st.coachingStaff) CS.seasonBreak(st.coachingStaff);
     },
     qbEff: function (st, qbId) {
       var q = st.qb[qbId];
@@ -305,8 +320,19 @@
     /* ordered absorb: pairs = [[homeTeam, homeRaw],[awayTeam, awayRaw]];
        qbStarts = [[team, qbId, passDevOrNull], ...] in the same order.
        Order is part of the algorithm (league means update sequentially). */
-    absorbGame: function (st, pairs, qbStarts) {
+    absorbGame: function (st, pairs, qbStarts, game) {
       var pre = {}, i, j, t, raw, opp, f, v, lm, cf, perf, a;
+      var staffPregame = null, staffActualMargin = null;
+      var CS = nflStaffApi();
+      /* The coaching residual is frozen BEFORE this game's team/QB state is
+         absorbed. Market data is not an argument and cannot enter the update. */
+      if (CS && st.coachingStaff && game && pairs && pairs.length === 2) {
+        try {
+          staffPregame = nfl.predict(st, game);
+          if (isNum(pairs[0][1].pts_for) && isNum(pairs[1][1].pts_for))
+            staffActualMargin = pairs[0][1].pts_for - pairs[1][1].pts_for;
+        } catch (_) { staffPregame = null; }
+      }
       for (i = 0; i < pairs.length; i++) pre[pairs[i][0]] = clone(nfl._team(st, pairs[i][0]));
       for (i = 0; i < pairs.length; i++) {
         t = pairs[i][0]; raw = pairs[i][1];
@@ -336,6 +362,10 @@
           var at = st.hp.alpha;
           st.teamQb[t] = (1 - at) * (st.teamQb[t] || 0) + at * e;
         }
+      }
+      if (CS && st.coachingStaff && staffPregame && isNum(staffActualMargin)) {
+        CS.absorb(st.coachingStaff, game, staffPregame.base_model_spread,
+          staffActualMargin, isNum(game.season) ? game.season : null);
       }
     },
     /* game = {home, away, home_qb_id?, away_qb_id?, home_rest?, away_rest?,
@@ -413,8 +443,23 @@
       var koerner = lin(F.spread, NFL_SPREAD_FEATS, sp.w_spread, spreadTerms);
       var ctxAdj = lin(F.ctx, NFL_CTX_FEATS, sp.w_ctx, ctxTerms);
       var total = lin(F.total, NFL_TOTAL_FEATS, sp.w_total, totalTerms);
+      var baseSpread = koerner + ctxAdj;
+      var CS = nflStaffApi();
+      var staff = CS && st.coachingStaff
+        ? CS.matchup(st.coachingStaff, game.home_coach, game.away_coach)
+        : { available: false, candidate_adjustment_points: null,
+            applied_adjustment_points: 0, affects_model: false,
+            warnings: ['NFL Coaching / Staff module is not loaded'] };
+      var staffPts = isNum(staff.applied_adjustment_points)
+        ? staff.applied_adjustment_points : 0;
+      if (staffPts !== 0) ctxTerms.push({
+        key: 'coaching_staff', value: staff.raw_difference_points,
+        weight: 1, points: staffPts
+      });
       return { koerner_spread: koerner, ctx_adj: ctxAdj,
-        model_spread: koerner + ctxAdj, sharp_total: total,
+        base_model_spread: baseSpread,
+        coaching_staff: staff,
+        model_spread: baseSpread + staffPts, sharp_total: total,
         terms: { spread: spreadTerms, ctx: ctxTerms, total: totalTerms },
         features: F, known: F.known };
     }
@@ -593,6 +638,8 @@
       var pr = nfl.predict(req.state, req.game);
       comp.koerner_spread = pr.koerner_spread;
       comp.stuckey_ctx_adj = pr.ctx_adj;
+      comp.coaching_staff_adjustment = pr.coaching_staff
+        ? pr.coaching_staff.applied_adjustment_points : 0;
       comp.sharp_total = pr.sharp_total;
       fairSpread = pr.model_spread;
       fairTotal = pr.sharp_total;
@@ -634,6 +681,8 @@
          are DESCRIPTIONS of the number above, never a second estimate of it. */
       contributions: terms,
       features: feats,
+      coaching_staff: sport === 'nfl' ? pr.coaching_staff : null,
+      base_model_spread: sport === 'nfl' ? pr.base_model_spread : null,
       outcome_range: dist.marginQuantiles(sport, fairSpread, [0.1, 0.5, 0.9]),
       market: {
         spread_line: isNum(mkt.spread_line) ? mkt.spread_line : null,
