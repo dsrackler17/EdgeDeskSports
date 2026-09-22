@@ -97,6 +97,8 @@ on:
       - 'football/rankings/backfill.js'
       - 'football/rankings/refresh.js'
       - 'football/rankings/*.test.js'
+      - 'football/rating/sync_rankings.js'
+      - 'football/rating/sync_rankings.test.js'
       - '.github/workflows/football-weekly-build.yml'
 
 permissions:
@@ -222,6 +224,15 @@ jobs:
       # self-consistent rather than publishing a card against last week's
       # starters. They are cheap against the cache this job already warms, and
       # a failure is not fatal: the assembly degrades to a declared gap.
+      # THE APP'S POWER-RATING ENDPOINT IS NOW A VIEW OF ETSR, NOT A SECOND
+      # MODEL. This keeps the legacy app contract while making the national
+      # rankings pipeline the one source of truth for team strength.
+      - name: Publish canonical FBS power rating
+        if: steps.go.outputs.run == 'true'
+        run: |
+          node football/rating/sync_rankings.js
+          node football/rating/sync_rankings.test.js
+
       - name: Starter context
         if: steps.go.outputs.run == 'true'
         run: node football/starters/build_starters.js --sport cfb
@@ -368,6 +379,16 @@ jobs:
               fail('the board says ' + r.week_label + ' but this build read no completed game — the feed is stale');
             if (!fresh.completed_games_digest && r.week_ordinal > 0)
               fail('the board carries no completed-game digest, so the refresh check cannot tell whether it is current');
+            const power = require('./football/rating/current.json');
+            if (power.source_schema !== 'edgedesk_national_rankings_v1')
+              fail('the app power-rating endpoint is not sourced from national ETSR');
+            if (power.team_count !== r.team_count)
+              fail('power-rating compatibility view has ' + power.team_count + ' teams, rankings has ' + r.team_count);
+            const powerByKey = Object.fromEntries(power.teams.map(t => [t.key, t]));
+            for (const [k, rt] of Object.entries(r.teams)) {
+              if (!powerByKey[k] || Math.abs(powerByKey[k].rating - rt.etsr) > 0.011)
+                fail('power-rating drift for ' + k + ': app ' + (powerByKey[k] && powerByKey[k].rating) + ' vs ETSR ' + rt.etsr);
+            }
             const h = require('./football/rankings/health.json');
             if (h.teams_processed !== h.fbs_teams_expected)
               fail(h.teams_processed + ' of ' + h.fbs_teams_expected + ' FBS teams were processed');
@@ -422,6 +443,7 @@ jobs:
             football/data/box football/rankings/current.json \
             football/rankings/snapshots football/rankings/params.js \
             football/rankings/history.json football/rankings/health.json \
+            football/rating/current.json \
             football/matchup/metrics.json \
             football/fbs/coverage.json football/fbs/slate.json \
             football/starters football/matchup \
