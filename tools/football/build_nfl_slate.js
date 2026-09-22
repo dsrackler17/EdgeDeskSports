@@ -45,6 +45,7 @@ const CACHE = path.join(OUT_DIR, '.cache');
 const SCHEMA = 'edgedesk_nfl_slate_v1';
 const COACHING_LEDGER_OUT = path.join(OUT_DIR, 'coaching_staff_ledger.json');
 const COACHING_LEDGER = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff_ledger.js'));
+const COACHING_STAFF = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff.js'));
 let NV = null; try { NV = require(path.join(__dirname, 'nfl_venues.js')); } catch (_) { NV = null; }
 let WX = null, RECOVERY = null; try { WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js')); RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js')); } catch (_) { WX = null; }
 const FORECAST_STORE = path.join(ROOT, 'football', 'venues', 'forecasts.json');
@@ -131,8 +132,41 @@ function applyCoachingLedger(ledger, upcomingGames, scheduleRows, observedAt) {
   return report;
 }
 
-/** Eastern-time kickoff from games.csv's gameday + gametime, as ISO UTC. */
-function etToIso(gameday, gametime) {
+function currentHeadCoaches(scheduleRows, season, now) {
+  const picked = {};
+  const targetSeason = season == null ? null : Number(season);
+  const targetTime = Number(now);
+
+  for (const u of (scheduleRows || [])) {
+    const g = u && u.g;
+    if (!g) continue;
+    if (targetSeason != null && Number(g.season) !== targetSeason) continue;
+    const t = Number(u.t);
+    const distance = Number.isFinite(t) && Number.isFinite(targetTime)
+      ? Math.abs(t - targetTime)
+      : Number.POSITIVE_INFINITY;
+
+    const take = (code, coach) => {
+      if (!code || !coach) return;
+      const key = String(code);
+      const name = String(coach).trim();
+      if (!name) return;
+      const prev = picked[key];
+      if (!prev || distance < prev.distance || (distance === prev.distance && t > prev.t)) {
+        picked[key] = { coach: name, distance, t: Number.isFinite(t) ? t : -Infinity };
+      }
+    };
+
+    take(g.home_team, g.home_coach);
+    take(g.away_team, g.away_coach);
+  }
+
+  const out = {};
+  Object.keys(picked).forEach((team) => { out[team] = picked[team].coach; });
+  return out;
+}
+
+/** Eastern-time kickoff from games.csv's gameday + gametime, as ISO UTC. */function etToIso(gameday, gametime) {
   if (!gameday) return null;
   const hm = /^(\d{1,2}):(\d{2})/.exec(String(gametime || '12:00')) || ['', '12', '00'];
   const guess = Date.parse(gameday + 'T' + hm[1].padStart(2, '0') + ':' + hm[2] + ':00Z');
@@ -302,6 +336,25 @@ async function build(opts) {
     teams[code] = row;
   }
 
+  const coachingTeamKeys = Array.from(new Set(
+    Object.keys(teams).concat((S.games || []).flatMap((u) => {
+      const g = u && u.g;
+      return g ? [g.home_team, g.away_team].filter(Boolean) : [];
+    }))
+  )).sort();
+  const coachesNow = currentHeadCoaches(S.games || [], season, now);
+  const coachingEvidence = opts.coachingLedger ? {
+    current_residual: COACHING_LEDGER.summarizeCurrentResidual(opts.coachingLedger, {
+      season,
+      teamKeys: coachingTeamKeys
+    }),
+    head_coach: COACHING_LEDGER.summarizeHeadCoachResidual(opts.coachingLedger, {
+      teamKeys: coachingTeamKeys,
+      currentCoaches: coachesNow
+    })
+  } : null;
+  const coachingStaff = COACHING_STAFF.build(coachingTeamKeys, coachingEvidence);
+
   const forecast = await fetchNflForecasts(games, { offline: !!opts.offline });
   games.forEach((g) => { const w = forecast.byGame[String(g.game_id)]; const v = nflForecastWanted([g])[0]; g.venue_geography = v && v.venue ? { name: v.venue.name, lat: v.venue.lat, lon: v.venue.lon, tz_name: v.venue.tz_name, roof: v.venue.roof, verification: v.venue.verification, source: v.venue.source } : null; if (w) g.forecast = w; });
 
@@ -340,6 +393,7 @@ async function build(opts) {
     counts: { games: games.length, predicted: games.filter((g) => g.model_status === 'PREDICTED').length, with_reference: games.filter((g) => g.reference_market).length, teams: Object.keys(teams).length },
     ranks_of: ranks ? ranks.of || null : null,
     games, teams,
+    coaching_staff: coachingStaff,
     /* Slice 4: THE RANKED BOARD. Every game priced by the pricing kernel from
        its reference market at -110 (assumed, and said so), against the
        validation record in football/validation/pricing_nfl.json, so the
@@ -390,5 +444,5 @@ async function main() {
   console.log('wrote ' + path.relative(ROOT, COACHING_LEDGER_OUT));
   console.log('wrote ' + path.relative(ROOT, OUT));
 }
-module.exports = { build, nflForecastWanted, fetchNflForecasts, applyCoachingLedger, loadCoachingLedger, SCHEMA, OUT, COACHING_LEDGER_OUT, etToIso };
+module.exports = { build, nflForecastWanted, fetchNflForecasts, applyCoachingLedger, loadCoachingLedger, currentHeadCoaches, SCHEMA, OUT, COACHING_LEDGER_OUT, etToIso };
 if (require.main === module) main();
