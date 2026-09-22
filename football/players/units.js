@@ -133,12 +133,20 @@
     var exper = expVals.length ? clamp((mean(expVals) - 1) / 3, 0, 1) : null;
 
     /* availability of the projected starters, and how much of it is UNKNOWN */
-    var unknownShare = 0, outCount = 0;
-    for (i = 0; i < Math.min(starterSlots, participants.length); i++) {
-      if (participants[i].availability === 'UNKNOWN') unknownShare++;
-      if (participants[i].availability === 'OUT' || participants[i].availability === 'DOUBTFUL') outCount++;
+    var unknownShare = 0, outCount = 0, unavailableShare = 0;
+    var starterSeen = Math.min(starterSlots, participants.length);
+    for (i = 0; i < starterSeen; i++) {
+      var ast = participants[i].availability;
+      if (ast === 'UNKNOWN') unknownShare++;
+      if (ast === 'OUT' || ast === 'DOUBTFUL') outCount++;
+      /* Expected share of starter availability lost. This is deliberately
+         separate from UNKNOWN: silence contributes ZERO loss and ZERO
+         evidence, not a clean bill of health. */
+      var aww = AVAIL_W[ast] != null ? AVAIL_W[ast] : 1;
+      if (ast !== 'UNKNOWN') unavailableShare += (1 - aww);
     }
-    unknownShare = starterSlots ? unknownShare / Math.min(starterSlots, participants.length || 1) : 1;
+    unknownShare = starterSlots ? unknownShare / (starterSeen || 1) : 1;
+    unavailableShare = starterSlots ? unavailableShare / (starterSeen || 1) : 0;
 
     /* TEAM CONTEXT: for groups with no individual production feed, the team's
        own observed play-level record is the only real evidence, and it is
@@ -164,8 +172,10 @@
       depth_quality: depthQ == null ? null : Math.round(depthQ * 10) / 10,
       continuity: cont == null ? null : Math.round(cont * 1000) / 1000,
       experience: exper == null ? null : Math.round(exper * 1000) / 1000,
-      availability: { starters_out: outCount, unknown_share: Math.round(unknownShare * 100) / 100,
-        basis: outCount || unknownShare < 1
+      availability: { starters_out: outCount,
+        unavailable_share: Math.round(unavailableShare * 1000) / 1000,
+        unknown_share: Math.round(unknownShare * 100) / 100,
+        basis: unavailableShare > 0 || unknownShare < 1
           ? 'from EdgeDesk availability evidence, including valid official conference reports for the team’s next game when one is required'
           : 'no availability record reached this group — UNKNOWN, which is not the same as healthy' },
       roster_size: players.length,
@@ -186,7 +196,7 @@
   function emptyGroup(group, rosterSize, reason) {
     return { schema: SCHEMA, group: group, rating: null, available: false, confidence: 0,
       starter_quality: null, depth_quality: null, continuity: null, experience: null,
-      availability: { starters_out: 0, unknown_share: 1, basis: 'no projected participant' },
+      availability: { starters_out: 0, unavailable_share: 0, unknown_share: 1, basis: 'no projected participant' },
       roster_size: rosterSize || 0, projected: [], team_context: null,
       production_feed: (CFG.MEASURES[group] || []).length > 0,
       production_feed_reason: CFG.NO_PRODUCTION_FEED[group] || null,
