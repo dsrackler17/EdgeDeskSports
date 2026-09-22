@@ -97,7 +97,8 @@ has(html, 'nothing on this page is computed in your browser', 'and that nothing 
 has(html, 'EdgeDesk top 25', 'the top 25 is present');
 has(html, 'Data coverage', 'the coverage view is present');
 has(html, 'Recruiting', 'coverage names the recruiting gap');
-has(html, 'Coaching', 'and the coaching gap');
+has(html, 'Coaching / program', 'coverage names the measured coaching/program layer');
+has(html, '>Coaching / Program<', 'Coaching / Program is a national rankings tab');
 has(html, 'What is allowed to move a line', 'the promotion state leads the board');
 
 /* the top team is a real team from the artifact */
@@ -168,6 +169,11 @@ has(th, 'Run defense', 'and the run defence detail');
 has(th, 'Market comparison', 'and the market, in its own box');
 has(th, 'Confidence and data quality', 'and confidence');
 has(th, 'vs an average FBS team', 'the units of ETSR are on screen');
+has(th, 'Coaching / Program', 'team detail carries Coaching / Program');
+has(th, 'Missing evidence stays unavailable', 'a team with no current coaching score is not filled with a fake 50');
+has(APP, 'Measured and ranked, but not currently an ETSR input.', 'the UI carries the exact research-only ETSR status');
+has(APP, 'Exact ETSR adjustment:', 'and shows the exact committed adjustment rather than calculating one in the browser');
+has(APP, 'private locker-room dynamics', 'and names the private context nobody can observe');
 
 /* a team with no market number must not throw or invent one */
 const noMkt = Object.values(DATA.teams).find(t => !t.market || !t.market.available);
@@ -184,6 +190,36 @@ if (noEtsr) {
   const E = makeCtx();
   E.FB.rk.team = noEtsr.key;
   chk('a team with no rating still renders a page', () => { const h = { innerHTML: '' }; E.fbRkRender(h); return h.innerHTML.length > 300; });
+}
+
+/* A scored fixture verifies that the page renders the committed coaching
+   score/rank/reliability fields rather than only its missing-data state. */
+if (top) {
+  const C = makeCtx();
+  const copy = JSON.parse(JSON.stringify(DATA));
+  const ct = copy.teams[top.key];
+  ct.coaching_program_rating = 63.4;
+  ct.coaching_program_raw_score = 70.0;
+  ct.coaching_program_reliability = 0.67;
+  ct.coaching_program_observed_weight = 0.85;
+  ct.coaching_program_adjustment_points = 0;
+  ct.coaching_program_affects_etsr = false;
+  ct.coaching_program_inputs = ct.coaching_program_inputs || {};
+  ct.coaching_program_inputs.talent_conversion = {
+    value: 72, observations: 3, weighted_evidence: 1.1, reliability: 0.7,
+    source: 'synthetic measured source', last_updated: '2026-09-22T00:00:00Z', available: true
+  };
+  ct.ranks = ct.ranks || {};
+  ct.ranks.coaching_program = { rank: 7, value: 63.4, unranked: false, reason: null };
+  C.FB.rk.data = copy;
+  C.FB.rk.team = top.key;
+  const ch = { innerHTML: '' };
+  chk('a scored Coaching / Program detail renders', () => { C.fbRkRender(ch); return ch.innerHTML.length > 800; });
+  has(ch.innerHTML, '63.4', 'the committed coaching/program rating is rendered');
+  has(ch.innerHTML, '#7', 'the committed coaching/program rank is rendered');
+  has(ch.innerHTML, '67%', 'the committed coaching/program reliability is rendered');
+  has(ch.innerHTML, 'synthetic measured source', 'the subfactor provenance is rendered');
+  has(ch.innerHTML, 'Exact ETSR adjustment: +0.0', 'the zero ETSR adjustment is shown exactly');
 }
 
 /* ======================================================================== */
@@ -238,7 +274,7 @@ chk('and what it was built on', !!DATA.built_on && !!DATA.built_on.player_artifa
 
   chk('Special teams is a tab on the board', /Special teams/.test(board));
   chk('the tab list covers every category the request named', () => {
-    const want = ['Overall', 'Talent', 'Performance', 'Offense', 'Defense', 'Special teams',
+    const want = ['Overall', 'Talent', 'Performance', 'Coaching / Program', 'Offense', 'Defense', 'Special teams',
       'Run O', 'Pass O', 'Run D', 'Pass D', 'QB', 'OL', 'WR', 'RB', 'DL', 'LB', 'Secondary',
       'Depth', 'Continuity'];
     const missing = want.filter(w => board.indexOf('>' + w + '<') < 0);
