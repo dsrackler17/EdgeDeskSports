@@ -13,12 +13,16 @@ const first = L.capture(ledger, {
   kickoff: '2026-09-27T17:00:00Z',
   home_code: 'KC',
   away_code: 'DEN',
+  home_head_coach: 'Andy Reid',
+  away_head_coach: 'Sean Payton',
   model_home_margin: 4.25,
   captured_at: '2026-09-22T17:00:00Z',
   model_version: 'nfl-test'
 });
 assert.strictEqual(first.captured, true);
 assert.strictEqual(ledger.pending.g1.pregame_home_margin, 4.25);
+assert.strictEqual(ledger.pending.g1.home_head_coach, 'Andy Reid');
+assert.strictEqual(ledger.pending.g1.away_head_coach, 'Sean Payton');
 
 /* A later build is not allowed to rewrite history. */
 const overwrite = L.capture(ledger, {
@@ -93,5 +97,77 @@ assert.strictEqual(otherSeason.teams.KC.value, null);
 const invalidEvidence = L.summarizeCurrentResidual(null, { teamKeys: ['KC'] });
 assert.match(invalidEvidence.error, /invalid ledger/i);
 assert.strictEqual(invalidEvidence.teams.KC.value, null);
+
+/* Multi-season head-coach evidence follows the coach across teams, but is not
+   available until the frozen ledger contains at least two distinct seasons. */
+const coachLedger = L.newLedger();
+
+L.capture(coachLedger, {
+  game_id: 'hc-2025',
+  season: 2025,
+  home_code: 'KC',
+  away_code: 'DEN',
+  home_head_coach: 'Andy Reid',
+  away_head_coach: 'Sean Payton',
+  model_home_margin: 3
+});
+L.settle(coachLedger, {
+  game_id: 'hc-2025',
+  home_score: 27,
+  away_score: 20
+}); // residual +4 => Reid +2
+
+let hc = L.summarizeHeadCoachResidual(coachLedger, {
+  teamKeys: ['KC', 'DEN', 'BUF'],
+  currentCoaches: {
+    KC: 'Andy Reid',
+    DEN: 'Sean Payton'
+  }
+});
+assert.strictEqual(hc.schema, L.HEAD_COACH_EVIDENCE_SCHEMA);
+assert.strictEqual(hc.input, 'multi_season_head_coach');
+assert.strictEqual(hc.teams.KC.available, false);
+assert.strictEqual(hc.teams.KC.value, null);
+assert.strictEqual(hc.teams.KC.observations, 1);
+assert.strictEqual(hc.teams.KC.season_count, 1);
+assert.deepStrictEqual(hc.teams.KC.seasons, [2025]);
+assert.strictEqual(hc.teams.BUF.available, false);
+assert.strictEqual(hc.teams.BUF.value, null);
+assert.match(hc.teams.BUF.reason, /current head coach is unavailable/i);
+
+L.capture(coachLedger, {
+  game_id: 'hc-2026',
+  season: 2026,
+  home_code: 'BUF',
+  away_code: 'KC',
+  home_head_coach: 'New Coach',
+  away_head_coach: 'Andy Reid',
+  model_home_margin: 1
+});
+L.settle(coachLedger, {
+  game_id: 'hc-2026',
+  home_score: 20,
+  away_score: 24
+}); // actual -4, residual -5 => away Reid +2.5
+
+hc = L.summarizeHeadCoachResidual(coachLedger, {
+  teamKeys: ['KC', 'BUF'],
+  currentCoaches: {
+    KC: 'Andy Reid',
+    BUF: 'New Coach'
+  }
+});
+assert.strictEqual(hc.teams.KC.available, true);
+assert.strictEqual(hc.teams.KC.observations, 2);
+assert.strictEqual(hc.teams.KC.season_count, 2);
+assert.deepStrictEqual(hc.teams.KC.seasons, [2025, 2026]);
+assert.strictEqual(hc.teams.KC.total_evidence, 4.5);
+assert.strictEqual(hc.teams.KC.mean_evidence, 2.25);
+assert.strictEqual(hc.teams.KC.value, 2.25);
+assert.deepStrictEqual(hc.teams.KC.game_ids, ['hc-2025', 'hc-2026']);
+assert.strictEqual(hc.teams.BUF.available, false);
+assert.strictEqual(hc.teams.BUF.value, null);
+assert.strictEqual(hc.teams.BUF.observations, 1);
+assert.strictEqual(hc.teams.BUF.season_count, 1);
 
 console.log('nfl coaching_staff_ledger: passed');
