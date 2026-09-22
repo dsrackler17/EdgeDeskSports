@@ -398,6 +398,97 @@
     ));
   }
 
+  function matchupResearchContext(homeRow, awayRow, opts) {
+    opts = opts || {};
+    var referenceCap = typeof opts.reference_cap_points === 'number' && isFinite(opts.reference_cap_points)
+      ? Math.abs(opts.reference_cap_points) : 1;
+    var modelHomeMargin = typeof opts.model_home_margin === 'number' && isFinite(opts.model_home_margin)
+      ? opts.model_home_margin : null;
+
+    function summary(row) {
+      if (!row) return null;
+      var inputs = {};
+      Object.keys(INPUTS).forEach(function (id) {
+        var x = row.coaching_staff_inputs && row.coaching_staff_inputs[id];
+        inputs[id] = x ? {
+          available: x.available === true,
+          configured_weight: x.configured_weight,
+          value: typeof x.value === 'number' && isFinite(x.value) ? x.value : null,
+          raw_value: typeof x.raw_value === 'number' && isFinite(x.raw_value) ? x.raw_value : null,
+          calibrated_z: typeof x.calibrated_z === 'number' && isFinite(x.calibrated_z) ? x.calibrated_z : null,
+          observations: Number(x.observations) || 0,
+          reliability: typeof x.reliability === 'number' && isFinite(x.reliability) ? x.reliability : 0,
+          reason: x.reason || null,
+          source: x.source || null
+        } : null;
+      });
+      return {
+        team: row.team || null,
+        available: row.coaching_staff_available === true,
+        rating: typeof row.coaching_staff_rating === 'number' && isFinite(row.coaching_staff_rating) ? row.coaching_staff_rating : null,
+        rank: row.coaching_staff_rank == null ? null : row.coaching_staff_rank,
+        rank_of: row.coaching_staff_rank_of == null ? null : row.coaching_staff_rank_of,
+        reliability: typeof row.coaching_staff_reliability === 'number' && isFinite(row.coaching_staff_reliability) ? row.coaching_staff_reliability : 0,
+        research_factor: typeof row.coaching_staff_research_factor === 'number' && isFinite(row.coaching_staff_research_factor)
+          ? row.coaching_staff_research_factor : researchAdjustmentFactor(row),
+        inputs: inputs
+      };
+    }
+
+    var home = summary(homeRow);
+    var away = summary(awayRow);
+    var comparisons = {};
+    Object.keys(INPUTS).forEach(function (id) {
+      var h = home && home.inputs ? home.inputs[id] : null;
+      var a = away && away.inputs ? away.inputs[id] : null;
+      var hr = h && typeof h.raw_value === 'number' ? h.raw_value : null;
+      var ar = a && typeof a.raw_value === 'number' ? a.raw_value : null;
+      comparisons[id] = {
+        home_raw: hr,
+        away_raw: ar,
+        home_minus_away_raw: hr != null && ar != null ? r3(hr - ar) : null,
+        comparable: hr != null && ar != null,
+        note: hr != null && ar != null
+          ? 'Positive means the home side has stronger measured evidence on this component; raw values are compared only within the same component.'
+          : 'One or both sides lack measured raw evidence for this component.'
+      };
+    });
+
+    var hf = home && typeof home.research_factor === 'number' ? home.research_factor : null;
+    var af = away && typeof away.research_factor === 'number' ? away.research_factor : null;
+    var factorDelta = hf != null && af != null ? r3(hf - af) : null;
+    var shadow = null;
+    if (factorDelta != null) {
+      var marginDelta = r3(referenceCap * factorDelta);
+      var shadowMargin = modelHomeMargin == null ? null : r3(modelHomeMargin + marginDelta);
+      shadow = {
+        reference_cap_points: referenceCap,
+        cap_status: 'UNVALIDATED_REFERENCE_ONLY',
+        factor_delta_home_minus_away: factorDelta,
+        home_margin_delta: marginDelta,
+        official_model_home_margin: modelHomeMargin,
+        shadow_home_margin: shadowMargin,
+        official_model_home_line: modelHomeMargin == null ? null : r3(-modelHomeMargin),
+        shadow_home_line: shadowMargin == null ? null : r3(-shadowMargin),
+        direction: factorDelta > 0 ? 'HOME' : factorDelta < 0 ? 'AWAY' : 'EVEN',
+        applied_to_official_projection: false,
+        note: 'Research-only shadow at a 1.0-point reference cap. The cap is not validated or selected, and this number does not change EdgeDesk\'s official NFL projection.'
+      };
+    }
+
+    return {
+      schema: 'edgedesk_nfl_coaching_staff_matchup_v1',
+      status: shadow ? 'SHADOW_AVAILABLE' : 'EVIDENCE_ONLY',
+      affects_nfl_projection: false,
+      validation_status: 'RESEARCH_ONLY',
+      selected_cap: null,
+      home: home,
+      away: away,
+      component_comparisons: comparisons,
+      shadow_reference: shadow
+    };
+  }
+
   function assignResearchRanks(teamKeys, teams) {
     var ranked = (teamKeys || []).map(function (team) {
       return teams[team];
@@ -501,6 +592,7 @@
     calibrateInputAcrossLeague: calibrateInputAcrossLeague,
     finalizeTeam: finalizeTeam,
     researchAdjustmentFactor: researchAdjustmentFactor,
+    matchupResearchContext: matchupResearchContext,
     assignResearchRanks: assignResearchRanks,
     build: build
   };
