@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-22T02:48:35.113Z",
+ "generated_at": "2026-09-22T02:54:11.006Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -153,7 +153,11 @@
   "rating_backbone": {
    "source": "edgedesk_national_rankings_v1",
    "season": 2026,
-   "teams": 138,
+   "teams_loaded": 138,
+   "teams_active_in_pricing": 0,
+   "calibration_measured": false,
+   "mode": "SHADOW_RESEARCH",
+   "production_strength_source": "walk-forward-tested CFB replay with current score + efficiency absorption",
    "availability_stripped_before_matchup": true,
    "problem": null
   },
@@ -228,11 +232,13 @@
    }
   },
   {
-   "name": "canonical neutral-field ETSR covers every active FBS program",
+   "name": "canonical neutral-field ETSR research map covers every active FBS program",
    "ok": true,
    "detail": {
     "source": "edgedesk_national_rankings_v1",
     "teams": 138,
+    "active_in_pricing": 0,
+    "mode": "SHADOW_RESEARCH",
     "expected": 138,
     "problem": null,
     "missing": []
@@ -254,10 +260,11 @@
    }
   },
   {
-   "name": "every FBS-vs-FBS game has both teams in the canonical rating state",
+   "name": "every FBS-vs-FBS game has both teams in the active pricing rating state",
    "ok": true,
    "detail": {
-    "unrated": []
+    "unrated": [],
+    "pricing_source": "walk-forward-tested CFB replay with current score + efficiency absorption"
    }
   },
   {
@@ -468,7 +475,7 @@
      "away": false
     }
    ],
-   "effect": "ETSR still supplies neutral-field team strength; matchup efficiency for those teams remains on the trained seed and confidence stays lower until the play feed lands"
+   "effect": "production team strength still comes from the replay; missing play-level rows leave that team on older efficiency state and confidence stays lower until the play feed lands. ETSR remains research context until calibrated."
   }
  ],
  "season_aware": {
