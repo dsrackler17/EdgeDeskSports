@@ -53,5 +53,19 @@ chk('missing play-level data never becomes fake efficiency',
     && E.strength.profile(noEff.st,'texastech',true).efficiency_is_seed===true,
   noEff);
 
+const late=E.newState();
+E.ingest.seasonBreak(late);
+const beforeRating=E.strength.rating(late,'texastech',true);
+E.ingest.absorbEfficiencyGame(late,{
+  home:'Texas Tech',away:'LSU',
+  team_stats:{home:eff.games.G1.teams.texastech,away:eff.games.G1.teams.lsu}
+});
+chk('late efficiency-only replay marks current play data fresh',
+  late.effFresh&&late.effFresh.texastech>0&&late.effFresh.lsu>0,late.effFresh);
+chk('late efficiency-only replay never changes the score-based rating state',
+  E.strength.rating(late,'texastech',true)===beforeRating
+    && (late.absorbed||0)===0,
+  {before:beforeRating,after:E.strength.rating(late,'texastech',true),absorbed:late.absorbed});
+
 console.log((fail?'FAILED ':'ALL GREEN ')+pass+' passed, '+fail+' failed');
 process.exit(fail?1:0);
