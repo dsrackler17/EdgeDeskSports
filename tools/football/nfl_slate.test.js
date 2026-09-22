@@ -66,6 +66,33 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
   chk('the engine version is stamped', /edgedesk_football/.test(art.engine.model_version) && /edgedesk_football/.test(g.model_version));
   chk('clubs carry ratings and ranks', art.teams.SF && typeof art.teams.SF.ratings.net_epa === 'number' || (art.teams.SF && Object.keys(art.teams.SF.ratings).length > 3), art.teams.SF && Object.keys(art.teams.SF.ratings).slice(0, 5));
   chk('the engine\u2019s validation record rides with the artifact and forbids a probability', art.engine.validation && art.engine.validation.tier === 'RESEARCH' && art.engine.validation.may_produce_probability === false && /does not beat the close/.test(art.engine.validation.record));
+
+  chk('NFL Coaching / Staff is published as research only',
+    art.coaching_staff && art.coaching_staff.status === 'RESEARCH_ONLY'
+      && art.coaching_staff.affects_projection === false
+      && art.coaching_staff.adjustment_points === 0,
+    art.coaching_staff);
+  chk('the completed game contributes one leak-free coaching residual',
+    art.coaching_staff && art.coaching_staff.observed_games === 1,
+    art.coaching_staff && art.coaching_staff.observed_games);
+  chk('a team with measured residual evidence carries a coaching/staff score',
+    art.teams.SF && art.teams.SF.coaching_staff
+      && typeof art.teams.SF.coaching_staff.coaching_staff_rating === 'number'
+      && art.teams.SF.coaching_staff.coaching_staff_reliability > 0
+      && art.teams.SF.coaching_staff.coach === 'Kyle Shanahan',
+    art.teams.SF && art.teams.SF.coaching_staff);
+  chk('the measured coaching/staff score cannot move the NFL projection',
+    art.teams.SF && art.teams.SF.coaching_staff
+      && art.teams.SF.coaching_staff.coaching_staff_adjustment_points === 0
+      && art.teams.SF.coaching_staff.coaching_staff_affects_projection === false);
+  chk('an upcoming team with no observed coaching evidence stays unavailable, not fake 50',
+    g && g.coaching_staff && g.coaching_staff.home === null && g.coaching_staff.adjustment_points === 0,
+    g && g.coaching_staff);
+  chk('an upcoming game between measured teams carries both research records',
+    d && d.coaching_staff && d.coaching_staff.home && d.coaching_staff.away
+      && d.coaching_staff.affects_projection === false,
+    d && d.coaching_staff);
+
   chk('nothing in the artifact is a price', !JSON.stringify(art.games).includes('"best_dec"') && !JSON.stringify(art.games).includes('"odds_american"'));
   done();
 })().catch((e) => { console.error(e); process.exit(1); });
