@@ -134,7 +134,8 @@ function normRows(raw) {
    different state than the board's would be measuring the wrong thing. */
 function buildState(rowsBySeason, season, efficiency) {
   const st = E.newState();
-  let absorbed = 0;
+  let absorbed = 0, efficiencyGames = 0, efficiencyTeamRows = 0;
+  const efficiencyMissingFinalGames = [];
   for (let y = P.trained_through_season + 1; y <= season; y++) {
     E.ingest.seasonBreak(st);
     const rows = rowsBySeason[y];
@@ -157,7 +158,9 @@ function buildState(rowsBySeason, season, efficiency) {
       absorbed++;
     }
   }
-  return { st, absorbed };
+  return { st, absorbed, efficiency_games_absorbed: efficiencyGames,
+    efficiency_team_rows_absorbed: efficiencyTeamRows,
+    efficiency_missing_final_games: efficiencyMissingFinalGames };
 }
 
 /* PROJECT A GAME THE WAY THE TERMINAL DOES.
@@ -389,6 +392,19 @@ async function main() {
       teams: st.canonicalRatingCount || 0,
       availability_stripped_before_matchup: !!(st.canonicalRatingMeta && st.canonicalRatingMeta.strip_availability),
       problem: canonicalRatingProblem
+    },
+    efficiency_replay: {
+      source_schema: engineEfficiency && engineEfficiency.schema || null,
+      season: engineEfficiency && engineEfficiency.season != null ? engineEfficiency.season : null,
+      artifact_games_with_stats: engineEfficiency && engineEfficiency.games_with_stats || 0,
+      artifact_team_game_rows: engineEfficiency && engineEfficiency.team_game_rows || 0,
+      games_absorbed_with_stats: stateBuild.efficiency_games_absorbed,
+      team_rows_absorbed: stateBuild.efficiency_team_rows_absorbed,
+      final_games_without_play_stats: stateBuild.efficiency_missing_final_games.length,
+      missing_game_ids: stateBuild.efficiency_missing_final_games.slice(0, 20),
+      measured_features: engineEfficiency && engineEfficiency.measured_features || [],
+      unavailable_features: engineEfficiency && engineEfficiency.unavailable_features || [],
+      basis: 'score/margin is absorbed for every completed game; play-level efficiency is additionally absorbed only where the public rankings play feed has a real team-game row'
     }
   };
   report.projection_status = statuses;
