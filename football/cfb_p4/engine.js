@@ -2695,7 +2695,12 @@
     setCanonicalRatings: function (state, dataset, opts) {
       if (!state) return state;
       opts = opts || {};
-      var rows = dataset && dataset.teams, out = {}, i, t, k, v, av, removed;
+      var rawRows = dataset && dataset.teams;
+      var rows = Array.isArray(rawRows) ? rawRows
+        : (rawRows && typeof rawRows === 'object'
+          ? Object.keys(rawRows).map(function (key) { return rawRows[key]; })
+          : []);
+      var out = {}, i, t, k, v, av, removed;
       var promoted = opts.activate === true
         || (opts.activate == null && dataset && dataset.calibration
           && dataset.calibration.measured === true);
