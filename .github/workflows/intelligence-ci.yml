@@ -155,6 +155,8 @@ jobs:
         run: node tools/football/build_matchup_metrics.js --check
       - name: NFL coaching contract stays evidence-only
         run: node football/nfl/coaching_staff.test.js
+      - name: NFL coaching efficiency evidence is reproducible
+        run: node football/nfl/coaching_staff_efficiency.test.js
       - name: Frozen NFL coaching evidence stays immutable
         run: node football/nfl/coaching_staff_ledger.test.js
       - name: The NFL slate builder agrees with the browser engine
