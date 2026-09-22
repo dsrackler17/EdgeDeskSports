@@ -350,6 +350,29 @@ function fakeUnits(level, opts) {
   ok('talent: no week-to-week smoothing is imposed on top of a measured shrinkage',
     hi.smoothing.applied === false && /career-shrunk/i.test(hi.smoothing.basis));
 
+  /* UNKNOWN AVAILABILITY MUST NEVER BECOME HEALTHY just because other teams
+     have real reports. This bug only wakes up once league-wide availability
+     has variance, which is exactly when official reports start arriving. */
+  const availLeague = {};
+  for (let i = 0; i < 20; i++) {
+    const u = fakeUnits(50 + i / 10);
+    for (const g of Object.keys(u.groups)) {
+      u.groups[g].unk = 0;
+      u.groups[g].unav = (i % 5) * 0.05;
+    }
+    availLeague['a' + i] = u;
+  }
+  const blind = fakeUnits(55);
+  for (const g of Object.keys(blind.groups)) { blind.groups[g].unk = 1; blind.groups[g].unav = 0; }
+  availLeague.blind = blind;
+  const availBuilt = TAL.build(availLeague, {}).teams;
+  ok('talent availability: a fully covered team can score availability',
+    availBuilt.a0.availability.rating != null);
+  eq('talent availability: an unknown roster has no availability rating',
+    availBuilt.blind.availability.rating, null);
+  ok('talent availability: unknown is explicitly missing, not a clean zero',
+    availBuilt.blind.missing.some(x => x.id === 'availability'));
+
   /* a unit a roster does not SPELL is not a missing unit */
   const noEdge = TAL.build({ a: fakeUnits(50) }, {}).teams.a;
   ok('talent: an unspelled EDGE is not reported missing', (noEdge.missing_units || []).indexOf('EDGE') < 0);
