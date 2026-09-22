@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-21T22:38:30.120Z",
+ "generated_at": "2026-09-22T01:27:23.785Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,21 +119,21 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 71,
+  "total": 73,
   "by_group": {
-   "other": 42,
+   "other": 44,
    "p4": 38,
    "independent": 2
   },
   "by_matchup": {
    "non_conference": 26,
-   "conference": 32,
+   "conference": 34,
    "fbs_fcs": 13
   },
   "by_conference": {
    "sunbelt": 12,
-   "cusa": 9,
-   "american": 11,
+   "cusa": 10,
+   "american": 12,
    "bigten": 10,
    "acc": 11,
    "sec": 9,
@@ -152,11 +152,11 @@
   "trained_through": 2025
  },
  "projection_status": {
-  "PREDICTED": 71
+  "PREDICTED": 73
  },
  "weather": {
-  "requested": 70,
-  "answered": 70,
+  "requested": 72,
+  "answered": 72,
   "dome": 1,
   "no_venue": 0,
   "failed": 0,
@@ -164,10 +164,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "70 of 70 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "72 of 72 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 71
+  "NO_MARKET": 73
  },
  "checks": [
   {
@@ -204,8 +204,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 33,
-    "total": 71,
+    "non_power_games": 35,
+    "total": 73,
     "example": [
      "Liberty @ Coastal Carolina",
      "Army @ Temple",
@@ -224,7 +224,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 32,
+    "conference_games": 34,
     "wrong": 0
    }
   },
@@ -256,8 +256,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 71,
-    "audit_total": 71
+    "slate": 73,
+    "audit_total": 73
    }
   },
   {
