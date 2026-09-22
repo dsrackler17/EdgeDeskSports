@@ -619,22 +619,25 @@ function build(teamKeys, opts) {
   let measured = 0;
   for (const key of keys) {
     const t = emptyTeam(key);
+    let teamMeasured = false;
     const cur = seasonModels[currentSeason] && seasonModels[currentSeason].teams
       ? seasonModels[currentSeason].teams[key] : null;
     if (cur) {
       t.coaching_program_inputs.talent_conversion = cur;
       measured++;
+      teamMeasured = true;
     }
 
     const ms = multiSeason(key, currentSeason, seasonModels);
     if (ms.available) {
       t.coaching_program_inputs.multi_season_program_overperformance = ms;
       measured++;
+      teamMeasured = true;
     }
 
     if (roster[key]) {
       t.coaching_program_inputs.roster_management_retention = roster[key];
-      if (roster[key].available) measured++;
+      if (roster[key].available) { measured++; teamMeasured = true; }
     }
 
     if (staff[key]) t.coaching_program_inputs.staff_continuity_stability = staff[key];
@@ -642,6 +645,7 @@ function build(teamKeys, opts) {
     if (development.teams[key]) {
       t.coaching_program_inputs.development = development.teams[key];
       measured++;
+      teamMeasured = true;
     }
 
     const gm = emptyInput(configured('game_management'));
@@ -649,7 +653,7 @@ function build(teamKeys, opts) {
     gm.reason = 'unavailable: the current play-by-play layer does not yet cleanly identify coach decisions, alternatives and counterfactual win value, so no game-management grade is invented';
     t.coaching_program_inputs.game_management = gm;
 
-    if (measured) {
+    if (teamMeasured) {
       t.coaching_program_warnings.push({
         id: 'COACHING_PROGRAM_PARTIAL_MEASUREMENT',
         severity: 'info',
