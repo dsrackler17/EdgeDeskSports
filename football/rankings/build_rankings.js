@@ -515,24 +515,10 @@ async function main() {
 
   const perf = perfBySeason[cur];
   const schemeHead = playersCur.scheme || {};
-  const context = {};
-  for (const k of Object.keys(curTalent.teams)) {
-    const t = curTalent.teams[k];
-    const p = perf.teams[k] || null;
-    const sh = schemeHead[k] || null;
-    context[k] = {
-      talent: t, performance: p,
-      continuity: TAL.continuityRating(t, playersCur.teams[k]),
-      sample: p ? p.sample : { games: 0, fbs_equivalent_games: 0, distinct_opponents: 0, non_fbs_share: null },
-      scheme_confidence: sh ? sh.confidence : null,
-      prev_etsr: chain[cur - 1] ? chain[cur - 1][k] : null,
-      league_slope: finalSlope.value
-    };
-  }
-  const built = ETSR.build({ keys: Object.keys(curTalent.teams), context, params });
 
-  /* ---- assemble the team records ---- */
-  const week = resolveWeek(sched[cur]);
+  /* Coaching / Program is built BEFORE the current ETSR pass so the team
+     rating can see its measured score and reliability. The promotion switch
+     remains OFF in config until walk-forward validation clears it. */
   const coachingSeasons = {};
   for (const y of seasons) {
     const sb = seasonBuilds[y];
@@ -562,6 +548,31 @@ async function main() {
        reconstruction rather than leaking future personnel information. */
     allow_current: THROUGH_ORD == null
   });
+
+  const context = {};
+  for (const k of Object.keys(curTalent.teams)) {
+    const t = curTalent.teams[k];
+    const p = perf.teams[k] || null;
+    const sh = schemeHead[k] || null;
+    const cp = coachingProgram.teams[k] || COACHING_PROGRAM.emptyTeam(k);
+    context[k] = {
+      talent: t, performance: p,
+      continuity: TAL.continuityRating(t, playersCur.teams[k]),
+      sample: p ? p.sample : { games: 0, fbs_equivalent_games: 0, distinct_opponents: 0, non_fbs_share: null },
+      scheme_confidence: sh ? sh.confidence : null,
+      prev_etsr: chain[cur - 1] ? chain[cur - 1][k] : null,
+      league_slope: finalSlope.value,
+      coaching_program: {
+        rating: cp.coaching_program_rating,
+        reliability: cp.coaching_program_reliability,
+        available: cp.coaching_program_available
+      }
+    };
+  }
+  const built = ETSR.build({ keys: Object.keys(curTalent.teams), context, params });
+
+  /* ---- assemble the team records ---- */
+  const week = resolveWeek(sched[cur]);
   const market = await marketPower(cur, sched[cur], CACHE);
   const overrides = readJson(OVERRIDES, { overrides: [] });
   const teams = {};
@@ -634,11 +645,16 @@ async function main() {
       coaching_program_reliability: cp.coaching_program_reliability,
       coaching_program_observed_weight: cp.coaching_program_observed_weight,
       coaching_program_reliability_details: cp.coaching_program_reliability_details,
-      coaching_program_adjustment_points: cp.coaching_program_adjustment_points,
+      coaching_program_candidate_adjustment_points: row.coaching_program_adjustment
+        ? row.coaching_program_adjustment.candidate_points : null,
+      coaching_program_adjustment_points: row.coaching_program_adjustment
+        ? row.coaching_program_adjustment.applied_points : 0,
+      coaching_program_adjustment: row.coaching_program_adjustment,
       coaching_program_inputs: cp.coaching_program_inputs,
       coaching_program_warnings: cp.coaching_program_warnings,
       coaching_program_available: cp.coaching_program_available,
-      coaching_program_affects_etsr: cp.coaching_program_affects_etsr,
+      coaching_program_affects_etsr: !!(row.coaching_program_adjustment
+        && row.coaching_program_adjustment.affects_etsr),
       market: ETSR.marketCompare(row.etsr, market.available ? market.power[k] : null)
     };
   }
@@ -715,7 +731,13 @@ async function main() {
        the board; these four numbers are how that is seen rather than assumed. */
     data_freshness: dataFreshness(sched[cur], play[cur], perf, finality[cur]),
     carryover: finalSlope,
-    coaching_program: { schema: coachingProgram.schema, status: coachingProgram.status, affects_etsr: false,
+    coaching_program: { schema: coachingProgram.schema, status: coachingProgram.status,
+      enabled: CFG.coachingProgram.enabled,
+      max_point_adjustment: CFG.coachingProgram.maxPointAdjustment,
+      affects_etsr: !!(CFG.coachingProgram.enabled && CFG.coachingProgram.affectsETSR),
+      apply_to: CFG.coachingProgram.applyTo,
+      formula: CFG.coachingProgram.formula,
+      validation_required: CFG.coachingProgram.validationRequired,
       final_score_enabled: true,
       ranking_enabled: true,
       measured_components: ['talent_conversion', 'multi_season_program_overperformance', 'roster_management_retention', 'development'],
@@ -726,7 +748,7 @@ async function main() {
         : { available: false, reason: coachingContinuityRaw
           ? 'coaching continuity artifact season does not match this rankings build'
           : 'coaching continuity artifact is missing' },
-      note: 'Step 6 research layer: the reliability-shrunk coaching/program score is ranked using coaching/program reliability, preserved in immutable snapshots/history and exposed to the UI. ETSR impact remains disabled.' },
+      note: 'Step 7 candidate layer: the capped coaching/program point translation is computed and audited on the PRIOR / PROGRAM side. coachingProgram.affectsETSR remains false by default, so the applied adjustment is 0 until Step 8 walk-forward validation earns promotion.' },
     centre: built.centre, centre_basis: built.centre_basis,
     market: market.available
       ? { available: true, games: market.games, home_field: market.home_field, iterations: market.iterations,
