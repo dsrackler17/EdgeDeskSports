@@ -282,9 +282,23 @@
     return teamRow;
   }
 
+  function copyEvidenceContext(input, evidenceRow) {
+    if (!input || !evidenceRow) return input;
+    var observations = Number(evidenceRow.observations);
+    if (isFinite(observations) && observations >= 0) input.observations = observations;
+    if (evidenceRow.source) input.source = evidenceRow.source;
+    if (evidenceRow.last_updated) input.last_updated = evidenceRow.last_updated;
+    if (typeof evidenceRow.value === 'number' && isFinite(evidenceRow.value)) {
+      input.raw_value = evidenceRow.value;
+    }
+    if (evidenceRow.reason) input.reason = evidenceRow.reason;
+    return input;
+  }
+
   function applyCurrentResidualEvidence(teamRow, evidenceRow) {
     if (!teamRow || !teamRow.coaching_staff_inputs) return teamRow;
     var input = teamRow.coaching_staff_inputs.current_residual_conversion;
+    copyEvidenceContext(input, evidenceRow);
     if (!input || !evidenceRow || evidenceRow.available !== true ||
         typeof evidenceRow.value !== 'number' || !isFinite(evidenceRow.value) ||
         !(Number(evidenceRow.observations) > 0)) {
@@ -307,6 +321,7 @@
   function applyHeadCoachEvidence(teamRow, evidenceRow) {
     if (!teamRow || !teamRow.coaching_staff_inputs) return teamRow;
     var input = teamRow.coaching_staff_inputs.multi_season_head_coach;
+    copyEvidenceContext(input, evidenceRow);
     if (!input || !evidenceRow || evidenceRow.available !== true ||
         typeof evidenceRow.value !== 'number' || !isFinite(evidenceRow.value) ||
         !(Number(evidenceRow.observations) > 0) ||
@@ -327,6 +342,7 @@
   function applyProgramPersistenceEvidence(teamRow, evidenceRow) {
     if (!teamRow || !teamRow.coaching_staff_inputs) return teamRow;
     var input = teamRow.coaching_staff_inputs.program_persistence;
+    copyEvidenceContext(input, evidenceRow);
     if (!input || !evidenceRow || evidenceRow.available !== true ||
         typeof evidenceRow.value !== 'number' || !isFinite(evidenceRow.value) ||
         !(Number(evidenceRow.observations) > 0) ||
@@ -347,6 +363,7 @@
   function applyEfficiencyDevelopmentEvidence(teamRow, evidenceRow) {
     if (!teamRow || !teamRow.coaching_staff_inputs) return teamRow;
     var input = teamRow.coaching_staff_inputs.efficiency_development;
+    copyEvidenceContext(input, evidenceRow);
     if (!input || !evidenceRow || evidenceRow.available !== true ||
         typeof evidenceRow.value !== 'number' || !isFinite(evidenceRow.value) ||
         !(Number(evidenceRow.observations) > 0)) {
@@ -425,6 +442,7 @@
     NFL_REGULAR_SEASON_GAMES: NFL_REGULAR_SEASON_GAMES,
     blankInput: blankInput,
     emptyTeam: emptyTeam,
+    copyEvidenceContext: copyEvidenceContext,
     applyCurrentResidualEvidence: applyCurrentResidualEvidence,
     applyHeadCoachEvidence: applyHeadCoachEvidence,
     applyProgramPersistenceEvidence: applyProgramPersistenceEvidence,
