@@ -53,19 +53,23 @@ for (const team of ['A','B','C','D']) {
 assert.ok(built.teams.A.coaching_staff_rating > built.teams.B.coaching_staff_rating);
 assert.ok(built.teams.A.coaching_staff_rank < built.teams.B.coaching_staff_rank);
 
-/* Missing evidence remains null. There is no fake neutral 50. */
+/* Truly missing evidence remains absent. There is no fake neutral 50. */
 const empty = C.finalize(C.newState());
 assert.deepStrictEqual(empty.teams, {});
 
+/* One game is measured, not hidden, but its reliability is deliberately tiny
+   and the final rating is pulled hard toward 50. */
 const one = C.newState();
 C.observeGame(one, {
   home: 'A', away: 'B',
   pregame_home_margin: 0, actual_home_margin: 7
 });
 const oneBuilt = C.finalize(one);
-assert.strictEqual(oneBuilt.teams.A.coaching_staff_rating, null);
-assert.strictEqual(oneBuilt.teams.A.coaching_staff_available, false);
-assert.ok(oneBuilt.teams.A.coaching_staff_warnings.some(w => w.id === 'no_publishable_score'));
+assert.ok(oneBuilt.teams.A.coaching_staff_rating != null);
+assert.strictEqual(oneBuilt.teams.A.coaching_staff_available, true);
+assert.ok(oneBuilt.teams.A.coaching_staff_reliability < 0.1);
+assert.ok(Math.abs(oneBuilt.teams.A.coaching_staff_rating - 50)
+  < Math.abs(oneBuilt.teams.A.coaching_staff_raw_score - 50));
 
 /* Historical HC evidence follows the coach, not the franchise logo. */
 const seedState = C.newState();
