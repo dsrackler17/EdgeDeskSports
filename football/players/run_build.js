@@ -149,7 +149,7 @@ function loadStarterOverrides(season) {
   const j = B.readJson(path.join(DIR, '..', 'starters', 'cfb_' + season + '.json'), null);
   const byTeam = {};
   let accepted = 0, refused = 0;
-  const rows = j && Array.isArray(j.teams) ? j.teams : [];
+  const rows = j && j.teams ? (Array.isArray(j.teams) ? j.teams : Object.values(j.teams)) : [];
   const allowed = { ANNOUNCED: 1, EXPECTED: 1, DEPTH_CHART: 1, PREVIOUS_GAME: 1 };
 
   for (const row of rows) {
