@@ -43,15 +43,19 @@
      UNKNOWN is UNKNOWN and is carried as full participation with the
      uncertainty raised, because assuming a silent player is hurt would be
      just as invented as assuming he is fine. */
-  var AVAIL_W = { OUT: 0, DOUBTFUL: 0.15, QUESTIONABLE: 0.5, PROBABLE: 0.9, ACTIVE: 1, UNKNOWN: 1 };
+  var AVAIL_W = { OUT: 0, OUT_FIRST_HALF: 0.5, DOUBTFUL: 0.15, QUESTIONABLE: 0.5, PROBABLE: 0.9, ACTIVE: 1, UNKNOWN: 1 };
 
   function availStatus(rec) {
     if (!rec) return 'UNKNOWN';
     var s = String(rec.status || rec.state || '').toUpperCase().replace(/[^A-Z]/g, '');
+    /* ORDER MATTERS. Big Ten OUT_FIRST_HALF is half-game unavailability, not
+       full-game OUT. The generic OUT check used to catch it first and remove a
+       player for all four quarters. */
+    if (/OUTFIRSTHALF/.test(s)) return 'OUT_FIRST_HALF';
     if (/OUT|SUSPEND|SEASON/.test(s)) return 'OUT';
     if (/DOUBT/.test(s)) return 'DOUBTFUL';
-    if (/QUESTION|GTD|DAYTODAY/.test(s)) return 'QUESTIONABLE';
-    if (/PROBABLE|LIKELY/.test(s)) return 'PROBABLE';
+    if (/QUESTION|GTD|GAMETIMEDECISION|DAYTODAY/.test(s)) return 'QUESTIONABLE';
+    if (/PROBABLE|LIKELY|EXPECTED/.test(s)) return 'PROBABLE';
     if (/ACTIVE|AVAILABLE|CLEARED/.test(s)) return 'ACTIVE';
     return 'UNKNOWN';
   }
@@ -162,7 +166,7 @@
       experience: exper == null ? null : Math.round(exper * 1000) / 1000,
       availability: { starters_out: outCount, unknown_share: Math.round(unknownShare * 100) / 100,
         basis: outCount || unknownShare < 1
-          ? 'from football/availability/current.json, EdgeDesk’s own evidence-ranked college availability dataset'
+          ? 'from EdgeDesk availability evidence, including valid official conference reports for the team’s next game when one is required'
           : 'no availability record reached this group — UNKNOWN, which is not the same as healthy' },
       roster_size: players.length,
       projected: participants.slice(0, Math.max(curve.length, starterSlots)).map(function (p) {
