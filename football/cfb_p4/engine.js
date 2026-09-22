@@ -2696,10 +2696,15 @@
       if (!state) return state;
       opts = opts || {};
       var rows = dataset && dataset.teams, out = {}, i, t, k, v, av, removed;
+      var promoted = opts.activate === true
+        || (opts.activate == null && dataset && dataset.calibration
+          && dataset.calibration.measured === true);
       if (!rows || !rows.length) {
         state.canonicalRatings = {};
+        state.canonicalResearchRatings = {};
         state.canonicalRatingMeta = null;
         state.canonicalRatingCount = 0;
+        state.canonicalRatingActiveCount = 0;
         return state;
       }
       for (i = 0; i < rows.length; i++) {
@@ -2726,13 +2731,22 @@
             + (removed < 0 ? '; current availability contribution removed before game-specific injury pricing' : '')
         };
       }
-      state.canonicalRatings = out;
+      /* Always retain the canonical research map for display/audit. It becomes
+         the PRICED Layer-1 mean only after the dataset's own calibration gate
+         is measured, or an explicit test opts into activation. This enforces
+         the contract published by football/rating/current.json instead of
+         letting a caller silently promote fallback point scalars. */
+      state.canonicalResearchRatings = out;
+      state.canonicalRatings = promoted ? out : {};
       state.canonicalRatingCount = Object.keys(out).length;
+      state.canonicalRatingActiveCount = promoted ? state.canonicalRatingCount : 0;
       state.canonicalRatingMeta = {
         schema: dataset.source_schema || dataset.schema || null,
         season: dataset.season == null ? null : dataset.season,
         generated_at: dataset.source_generated_at || dataset.generated_at || null,
-        strip_availability: opts.strip_availability === true
+        strip_availability: opts.strip_availability === true,
+        calibration_measured: !!(dataset && dataset.calibration && dataset.calibration.measured === true),
+        promoted_to_pricing: promoted
       };
       return state;
     },
