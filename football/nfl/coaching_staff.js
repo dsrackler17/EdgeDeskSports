@@ -89,15 +89,42 @@
     };
   }
 
-  function build(teamKeys) {
+  function applyCurrentResidualEvidence(teamRow, evidenceRow) {
+    if (!teamRow || !teamRow.coaching_staff_inputs) return teamRow;
+    var input = teamRow.coaching_staff_inputs.current_residual_conversion;
+    if (!input || !evidenceRow || evidenceRow.available !== true ||
+        typeof evidenceRow.value !== 'number' || !isFinite(evidenceRow.value) ||
+        !(Number(evidenceRow.observations) > 0)) {
+      return teamRow;
+    }
+
+    input.value = evidenceRow.value;
+    input.observations = Number(evidenceRow.observations);
+    input.source = evidenceRow.source || 'frozen pregame residual ledger';
+    input.last_updated = evidenceRow.last_updated || null;
+    input.available = true;
+    input.reason = null;
+
+    /* Deliberately not populated yet: weighted_evidence and reliability.
+       Raw evidence existing is not permission to invent a scoring curve. */
+    return teamRow;
+  }
+
+  function build(teamKeys, evidence) {
     var teams = {};
+    var hasEvidence = false;
+    var evidenceTeams = evidence && evidence.teams ? evidence.teams : {};
     (teamKeys || []).forEach(function (team) {
       teams[team] = emptyTeam(team);
+      applyCurrentResidualEvidence(teams[team], evidenceTeams[team]);
+      if (teams[team].coaching_staff_inputs.current_residual_conversion.available) {
+        hasEvidence = true;
+      }
     });
 
     return {
       schema: SCHEMA,
-      status: 'CONTRACT_ONLY',
+      status: hasEvidence ? 'EVIDENCE_ONLY' : 'CONTRACT_ONLY',
       affects_nfl_projection: false,
       inputs: Object.keys(INPUTS).map(function (id) {
         return {
@@ -115,6 +142,7 @@
     INPUTS: INPUTS,
     blankInput: blankInput,
     emptyTeam: emptyTeam,
+    applyCurrentResidualEvidence: applyCurrentResidualEvidence,
     build: build
   };
 
