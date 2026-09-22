@@ -720,7 +720,7 @@ function build(teamKeys, opts) {
   const staff = staffEvidence(keys, opts.allow_current === false ? null : opts.staff);
 
   const teams = {};
-  let measured = 0;
+  let measured = 0, scored = 0;
   for (const key of keys) {
     const t = emptyTeam(key);
     let teamMeasured = false;
@@ -765,11 +765,12 @@ function build(teamKeys, opts) {
       });
     }
     teams[key] = finalizeTeam(t);
+    if (teams[key].coaching_program_available) scored++;
   }
 
   return {
     schema: SCHEMA,
-    status: measured ? 'SCORED_RESEARCH' : 'CONTRACT_ONLY',
+    status: scored ? 'SCORED_RESEARCH' : (measured ? 'PARTIAL_RESEARCH' : 'CONTRACT_ONLY'),
     affects_etsr: false,
     final_score_enabled: true,
     components: COMPONENTS.map(x => ({ id: x.id, weight: x.weight })),
