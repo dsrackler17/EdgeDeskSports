@@ -5616,6 +5616,16 @@
         }
       });
     }
+    var coachingStaffResearch = row && row.coaching_staff_research ? row.coaching_staff_research : null;
+    if (coachingStaffResearch) {
+      var cr = coachingStaffResearch.research_read || null;
+      if (coachingStaffResearch.shadow_reference) {
+        limits.push('NFL Coaching / Staff publishes a research-only shadow read for this matchup. It does not alter the official EdgeDesk projection: ' +
+          (cr && cr.sentence ? cr.sentence : 'the coaching cap is unvalidated and selected_cap is null.'));
+      } else if (cr && cr.state === 'RAW_COMPONENT_EVIDENCE') {
+        limits.push('NFL Coaching / Staff has raw component evidence for both sides but no calibrated shadow yet. ' + cr.sentence);
+      }
+    }
     var contract = contractRead(row, SLATE);
     if (contract && num(row.input_coverage) != null && num(row.input_coverage) < 0.6) {
       limits.push('This projection is running on ' + Math.round(num(row.input_coverage) * 100)
@@ -5641,6 +5651,7 @@
       identity: identity, model: model, market: market, ratings: ratings,
       previous_games: previous, availability: availability,
       starters: starters, quarterback: quarterback, input_contract: contract,
+      coaching_staff: coachingStaffResearch,
       missing: missing, limits: uniq(limits.filter(Boolean)),
       status: {
         answerable: answerable,
