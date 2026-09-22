@@ -24,6 +24,27 @@ assert.strictEqual(ledger.pending.g1.pregame_home_margin, 4.25);
 assert.strictEqual(ledger.pending.g1.home_head_coach, 'Andy Reid');
 assert.strictEqual(ledger.pending.g1.away_head_coach, 'Sean Payton');
 
+const researchFrozen = L.freezeResearchSnapshot(ledger, 'g1', {
+  frozen_at: '2026-09-22T17:00:00Z',
+  home: { available: true, rating: 58.9, reliability: 0.45, factor: 0.08 },
+  away: { available: true, rating: 50, reliability: 0.45, factor: 0 }
+});
+assert.strictEqual(researchFrozen.frozen, true);
+assert.strictEqual(ledger.pending.g1.coaching_research.projection_influence, false);
+assert.strictEqual(ledger.pending.g1.coaching_research.applied_points, 0);
+assert.strictEqual(ledger.pending.g1.coaching_research.home.rating, 58.9);
+assert.strictEqual(ledger.pending.g1.coaching_research.home.reliability, 0.45);
+assert.strictEqual(ledger.pending.g1.coaching_research.home.factor, 0.08);
+
+const researchOverwrite = L.freezeResearchSnapshot(ledger, 'g1', {
+  home: { available: true, rating: 99, reliability: 1, factor: 0.98 },
+  away: { available: true, rating: 1, reliability: 1, factor: -0.98 }
+});
+assert.strictEqual(researchOverwrite.frozen, false);
+assert.match(researchOverwrite.reason, /already frozen/i);
+assert.strictEqual(ledger.pending.g1.coaching_research.home.rating, 58.9);
+assert.strictEqual(ledger.pending.g1.coaching_research.home.factor, 0.08);
+
 /* A later build is not allowed to rewrite history. */
 const overwrite = L.capture(ledger, {
   game_id: 'g1',
@@ -35,6 +56,12 @@ assert.strictEqual(overwrite.captured, false);
 assert.strictEqual(ledger.pending.g1.pregame_home_margin, 4.25);
 
 /* Unknown finals cannot be retroactively projected. */
+const noResearchBackfill = L.freezeResearchSnapshot(ledger, 'g2', {
+  home: { available: true, rating: 60, reliability: 1, factor: 0.2 }
+});
+assert.strictEqual(noResearchBackfill.frozen, false);
+assert.match(noResearchBackfill.reason, /no frozen pregame projection/i);
+
 const unknown = L.settle(ledger, {
   game_id: 'g2',
   home_score: 24,
@@ -58,6 +85,9 @@ assert.strictEqual(settled.record.team_evidence.home, 1.375);
 assert.strictEqual(settled.record.team_evidence.away, -1.375);
 assert.strictEqual(ledger.pending.g1, undefined);
 assert.ok(ledger.settled.g1);
+assert.strictEqual(ledger.settled.g1.coaching_research.home.rating, 58.9);
+assert.strictEqual(ledger.settled.g1.coaching_research.home.factor, 0.08);
+assert.strictEqual(ledger.settled.g1.coaching_research.applied_points, 0);
 
 /* Settlement is immutable too. */
 const resettle = L.settle(ledger, {
