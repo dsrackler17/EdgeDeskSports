@@ -111,9 +111,16 @@ const NOW = Date.parse('2026-09-15T18:00:00Z');
        leak into the next game. Detailed matching/current-fixture behavior is
        pinned in availability_fixture.test.js. */
     if (q === 'OFFICIAL' && t.official_report && t.official_report.game_id != null) {
-      const got = IN.injuriesFor(ctx, name, 'definitely-not-' + String(t.official_report.game_id));
+      const oldGame = String(t.official_report.game_id);
+      const got = IN.injuriesFor(ctx, name, 'definitely-not-' + oldGame);
+      const staleNames = (t.players || [])
+        .filter(p => p.game_id != null && String(p.game_id) === oldGame
+          && IN.AVAIL_TO_ENGINE[String(p.status || '').toUpperCase()])
+        .map(p => p.player_name || p.name).filter(Boolean);
       chk('an official availability report is fixture-scoped for ' + (name || k),
-        got === null, { grade: q, report_game: t.official_report.game_id, got: got === null ? 'null' : ('array[' + got.length + ']') });
+        got === null || got.every(r => staleNames.indexOf(r.player) < 0),
+        { grade: q, report_game: oldGame, stale_names: staleNames,
+          got: got === null ? 'null' : got.map(r => r.player) });
     }
   });
   chk('the overlay names every grade it can produce, and says which of them are reports',
