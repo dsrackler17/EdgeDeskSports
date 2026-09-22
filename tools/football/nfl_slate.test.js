@@ -83,6 +83,22 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
   chk('ledger wiring is evidence-only',
     art.coaching_staff_ledger && art.coaching_staff_ledger.projection_influence === false && art.coaching_staff_ledger.scoring_enabled === false,
     art.coaching_staff_ledger);
+  chk('the slate publishes the evidence-only coaching staff contract',
+    art.coaching_staff && art.coaching_staff.status === 'EVIDENCE_ONLY' && art.coaching_staff.affects_nfl_projection === false,
+    art.coaching_staff && art.coaching_staff.status);
+  chk('current frozen residual evidence is published without becoming a rating',
+    art.coaching_staff && art.coaching_staff.teams.SF &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.current_residual_conversion.available === true &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.current_residual_conversion.value === 2 &&
+      art.coaching_staff.teams.SF.coaching_staff_rating === null &&
+      art.coaching_staff.teams.SF.coaching_staff_adjustment_points === 0,
+    art.coaching_staff && art.coaching_staff.teams.SF);
+  chk('one frozen season is not enough for multi-season head-coach evidence',
+    art.coaching_staff && art.coaching_staff.teams.SF &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.multi_season_head_coach.available === false &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.multi_season_head_coach.value === null,
+    art.coaching_staff && art.coaching_staff.teams.SF &&
+      art.coaching_staff.teams.SF.coaching_staff_inputs.multi_season_head_coach);
   const g = art.games.find((x) => x.game_id === '2026_02_KC_BUF');
   chk('the row carries display names and codes', g && g.home_team === 'Buffalo Bills' && g.away_code === 'KC', g && g.home_team);
   chk('the schedule feed head coaches ride on the pregame row',
