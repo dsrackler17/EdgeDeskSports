@@ -231,6 +231,12 @@ jobs:
       - name: NFL Coaching Staff stays measured and research-only
         run: node football/nfl/coaching_staff.test.js
 
+      - name: NFL Coaching Staff tune and holdout stay separated
+        run: node football/nfl/validate_coaching_staff.test.js
+
+      - name: NFL Coaching Staff research scripts parse
+        run: python3 -m py_compile football/research/nfl_coaching_staff.py football/research/build_features.py
+
       - name: The NFL slate carries Coaching Staff without moving projections
         run: node tools/football/nfl_slate.test.js
 
