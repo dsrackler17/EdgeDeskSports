@@ -281,6 +281,29 @@ async function main() {
   const { st, absorbed } = buildState(rowsBySeason, a.season,
     engineEfficiencyProblem ? null : engineEfficiency);
 
+  /* Prove that "absorbed" also means the replay saw real team efficiency,
+     not merely a final score. This is checked against the exact completed
+     games being replayed, not against the artifact's raw row count. */
+  let completedWithBothEfficiency = 0;
+  const completedMissingEfficiency = [];
+  const hasNumericEfficiency = o => !!(o && Object.values(o)
+    .some(v => typeof v === 'number' && isFinite(v)));
+  for (const y of Object.keys(rowsBySeason)) {
+    for (const r of rowsBySeason[y] || []) {
+      if (!r.completed || r.home_points == null || r.away_points == null) continue;
+      const eg = engineEfficiency && engineEfficiency.games
+        ? engineEfficiency.games[String(r.game_id)] : null;
+      const hk = FBS.normKey(r.home_team), ak = FBS.normKey(r.away_team);
+      const h = eg && eg.teams ? eg.teams[hk] : null;
+      const aStats = eg && eg.teams ? eg.teams[ak] : null;
+      if (hasNumericEfficiency(h) && hasNumericEfficiency(aStats)) completedWithBothEfficiency++;
+      else completedMissingEfficiency.push({
+        game_id: r.game_id, game: r.away_team + ' @ ' + r.home_team,
+        home: hasNumericEfficiency(h), away: hasNumericEfficiency(aStats)
+      });
+    }
+  }
+
   /* THE TEAM-STRENGTH BACKBONE. Historical replay above still owns game
      counts, scoring, efficiency and uncertainty. The current neutral-field
      mean comes from the richer national ETSR artifact, installed only AFTER
@@ -410,8 +433,25 @@ async function main() {
   report.projection_status = statuses;
   report.weather = weatherReport;
   report.spread_recommendation = recs;
+  report.engine_efficiency = {
+    schema: engineEfficiency && engineEfficiency.schema || null,
+    season: engineEfficiency && engineEfficiency.season || null,
+    games_in_artifact: engineEfficiency && engineEfficiency.games
+      ? Object.keys(engineEfficiency.games).length : 0,
+    completed_games_replayed: absorbed,
+    completed_games_with_both_team_efficiency: completedWithBothEfficiency,
+    missing_count: completedMissingEfficiency.length,
+    problem: engineEfficiencyProblem
+  };
   report.checks = [];
   report.failures = [];
+
+  run(report, 'every completed replayed game carries team efficiency for both sides',
+    { replayed: absorbed, with_both: completedWithBothEfficiency,
+      problem: engineEfficiencyProblem,
+      missing: completedMissingEfficiency.slice(0, 10) },
+    !engineEfficiencyProblem && completedMissingEfficiency.length === 0
+      && completedWithBothEfficiency === absorbed);
 
   /* 0 — the richer neutral-field rating really is the pricing backbone. */
   const canonicalMissing = [];
