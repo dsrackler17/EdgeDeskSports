@@ -289,6 +289,14 @@ function mkR(id, group, epir, conf, status, role) {
   eq('group: starter quality is QB1', qb.starter_quality, 90);
   ok('group: depth quality is separate and lower', qb.depth_quality < qb.starter_quality);
 
+  const resolvedQb2 = UNITS.rateGroup('QB',
+    [mkR(1, 'QB', 90, 0.9), mkR(2, 'QB', 40, 0.5), mkR(3, 'QB', 30, 0.3)],
+    { starter_override: { QB: { player_key: 'a:2', player_name: 'P2',
+      status: 'PREVIOUS_GAME', field_state: 'USABLE', source: 'test', basis: 'resolved starter test' } } });
+  eq('starter context: resolved QB receives slot one', resolvedQb2.projected[0].key, 'a:2');
+  ok('starter context: changing the actual QB changes the room rating', resolvedQb2.rating < qb.rating);
+  eq('starter context: the evidence ships with the unit', resolvedQb2.starter_evidence.player_key, 'a:2');
+
   const ol = UNITS.rateGroup('OL', [1, 2, 3, 4, 5, 6, 7].map(i => mkR(i, 'OL', 50 + i, 0.3)), {});
   ok('group: an offensive line has no production feed', ol.production_feed === false);
   ok('group: and says why on its face', /no public feed/i.test(ol.production_feed_reason));
