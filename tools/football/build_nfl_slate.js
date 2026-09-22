@@ -112,7 +112,16 @@ async function build(opts) {
   const T = win.__FBTEST;
   const fetched = [];
   /* the network, cached; the captured-quote read answered empty on purpose */
-  const getText = opts.fetchText || ((u) => fetchText(u, !!opts.offline));
+  const getText = opts.fetchText || ((u) => {
+    const s = String(u || '');
+    if (s.startsWith('/')) {
+      const local = path.join(ROOT, s.replace(/^\\/+/, ''));
+      if (fs.existsSync(local) && fs.statSync(local).isFile()) {
+        return Promise.resolve(fs.readFileSync(local, 'utf8'));
+      }
+    }
+    return fetchText(s, !!opts.offline);
+  });
   win.fetch = async (url) => {
     const u = String(url);
     const text = await getText(u);
