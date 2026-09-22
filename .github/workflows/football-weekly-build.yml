@@ -93,7 +93,6 @@ on:
       - 'football/fbs/build_coverage.js'
       - 'tools/football/patch_cfb_fixture_availability.js'
       - 'tools/football/patch_cfb_canonical_rating.js'
-      - 'tools/football/patch_cfb_efficiency_replay.js'
       - 'football/rankings/engine_efficiency.js'
       - 'football/fbs/efficiency_replay.test.js'
       - 'package.json'
@@ -216,10 +215,6 @@ jobs:
       - name: Patch browser canonical CFB rating
         if: steps.go.outputs.run == 'true'
         run: node tools/football/patch_cfb_canonical_rating.js
-
-      - name: Patch browser CFB efficiency replay
-        if: steps.go.outputs.run == 'true'
-        run: node tools/football/patch_cfb_efficiency_replay.js
 
       # The suites gate the write. A build that would commit a dataset its own
       # rules reject has to fail BEFORE it writes anything.
