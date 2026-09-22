@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: nfl-coaching-staff-validation-${{ github.ref }}
@@ -24,6 +24,8 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
       - uses: actions/setup-node@v5
         with:
@@ -89,6 +91,21 @@ jobs:
             reason:j.reason
           },null,2));
           NODE
+
+      - name: Freeze validation and 2026 seed on the PR branch
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          cp .cache/nfl-coaching/out/nfl_coaching_staff_validation.json football/validation/nfl_coaching_staff.json
+          cp .cache/nfl-coaching/out/coaching_staff_seed.json football/nfl/coaching_staff_seed.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add football/validation/nfl_coaching_staff.json football/nfl/coaching_staff_seed.json
+          if git diff --cached --quiet; then
+            echo 'validation artifacts unchanged'
+          else
+            git commit -m 'nfl: freeze coaching staff validation and seed'
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
