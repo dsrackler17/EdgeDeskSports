@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_rankings_health_v1",
- "generated_at": "2026-09-22T14:11:22.240Z",
+ "generated_at": "2026-09-22T14:57:33.446Z",
  "build_version": {
   "schema_version": "1.1.0",
   "versions": {
@@ -9,6 +9,7 @@
    "team_rating": "team_rating_v1",
    "run_defence_power": "run_defence_power_v1",
    "special_teams": "special_teams_v1",
+   "coaching_program": "coaching_program_v1",
    "player_rating": "player_rating_v1",
    "scheme_matchup": "scheme_matchup_v1",
    "simulation": "simulation_v1"
@@ -26,6 +27,7 @@
   "overall": 138,
   "talent": 138,
   "performance": 138,
+  "coaching_program": 138,
   "offense": 138,
   "defense": 138,
   "special_teams": 130,
@@ -58,6 +60,14 @@
    "rated": 138,
    "ranked": 133,
    "unranked_low_confidence": 5,
+   "no_rating": 0,
+   "coverage": 1
+  },
+  "coaching_program": {
+   "label": "Coaching / Program",
+   "rated": 138,
+   "ranked": 138,
+   "unranked_low_confidence": 0,
    "no_rating": 0,
    "coverage": 1
   },
@@ -224,10 +234,11 @@
  },
  "confidence": {
   "below_rank_floor": 5,
+  "coaching_program_below_rank_floor": 0,
   "rank_floor": 0.22,
   "one_game_teams": 0,
   "one_game_rated": 0,
-  "basis": "a team below the rank floor keeps its RATING and loses its RANK in every category. A one-game team is rated, heavily shrunk and openly low-confidence — that is what confidence is for."
+  "basis": "ordinary categories use overall team confidence for the rank floor. Coaching / Program uses its own coaching_program_reliability. In either case a team keeps its rating and loses only its rank when reliability is below the floor."
  },
  "genuinely_unavailable": [
   {
@@ -389,12 +400,12 @@
    "week_ordinal": 3,
    "week_label": "Week 3",
    "season_type": "regular",
-   "generated_at": "2026-09-22T14:11:22.240Z",
+   "generated_at": "2026-09-22T14:57:33.446Z",
    "team_count": 138,
    "rating_version": "team_rating_v1"
   }
  },
- "last_rankings_build": "2026-09-22T14:11:22.240Z",
+ "last_rankings_build": "2026-09-22T14:57:33.446Z",
  "notes": [
   "Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.",
   "A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null."
