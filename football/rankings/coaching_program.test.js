@@ -3,6 +3,9 @@
 
 const assert = require('assert');
 const CP = require('./coaching_program.js');
+const CFG = require('./config.js');
+const ETSR = require('./etsr.js');
+const HISTORY = require('./history.js');
 
 const ids = [
   'talent_conversion',
@@ -367,3 +370,109 @@ assert.strictEqual(noEvidence.coaching_program_available, false);
 assert.strictEqual(noEvidence.coaching_program_rating, null);
 
 console.log('coaching_program Step 5: passed');
+
+/* =====================================================================
+   STEP 6 — category rank, immutable snapshot shape and arithmetic movement.
+   ===================================================================== */
+const coachingCat = CFG.RANKINGS.find(x => x.id === 'coaching_program');
+assert.ok(coachingCat, 'Coaching / Program must be a registered rankings category');
+assert.strictEqual(coachingCat.field, 'coaching_program_rating');
+assert.strictEqual(coachingCat.confidence_field, 'coaching_program_reliability');
+assert.strictEqual(coachingCat.research_only, true);
+
+/* Overall confidence must NOT decide this category. */
+const rankTeams = {
+  reliable: {
+    confidence: { value: 0.05 },
+    coaching_program_rating: 61,
+    coaching_program_reliability: 0.80
+  },
+  unreliable: {
+    confidence: { value: 0.95 },
+    coaching_program_rating: 99,
+    coaching_program_reliability: 0.10
+  },
+  second: {
+    confidence: { value: 0.95 },
+    coaching_program_rating: 55,
+    coaching_program_reliability: 0.70
+  }
+};
+const cpRank = ETSR.rank(rankTeams, coachingCat);
+assert.strictEqual(cpRank.ranks.reliable.rank, 1);
+assert.strictEqual(cpRank.ranks.second.rank, 2);
+assert.strictEqual(cpRank.ranks.unreliable.rank, null);
+assert.strictEqual(cpRank.ranks.unreliable.unranked, true);
+assert.ok(/coaching\/program reliability/i.test(cpRank.ranks.unreliable.reason));
+
+/* Snapshot only records what existed at that week. It carries enough of the
+   coaching calculation to difference subfactors later without recomputation. */
+function movementTeam(rating, raw, reliability, talentValue, devValue, rank) {
+  return {
+    etsr: 3, rank: 20, confidence: { value: 0.8 },
+    talent: { rating: 60 }, weights: { performance: 0.4 },
+    performance: {
+      rating: 55, offense: 56, defense: 54, special_teams: 50,
+      run_offense: 55, pass_offense: 57, run_defense: 53, pass_defense: 55,
+      opponent_delta: 0.2
+    },
+    run_defence_power: { score: 53 },
+    availability: { rating: 50 },
+    coaching_program_rating: rating,
+    coaching_program_raw_score: raw,
+    coaching_program_rank: rank,
+    coaching_program_reliability: reliability,
+    coaching_program_observed_weight: 0.85,
+    coaching_program_adjustment_points: 0,
+    coaching_program_affects_etsr: false,
+    coaching_program_inputs: {
+      talent_conversion: scoredInput(talentValue, 0.8, 0.35),
+      development: scoredInput(devValue, 0.5, 0.10)
+    },
+    ranks: {
+      overall: { value: 3, rank: 20, unranked: false },
+      talent: { value: 60, rank: 20, unranked: false },
+      performance: { value: 55, rank: 25, unranked: false },
+      coaching_program: { value: rating, rank, unranked: rank == null }
+    },
+    gates: []
+  };
+}
+const prevTeamForMovement = movementTeam(55, 58, 0.50, 60, 50, 30);
+const nowTeamForMovement = movementTeam(60, 64, 0.60, 68, 44, 18);
+const prevSnapshotTeam = HISTORY.snapshotTeam(prevTeamForMovement);
+assert.strictEqual(prevSnapshotTeam.coaching_program.rating, 55);
+assert.strictEqual(prevSnapshotTeam.coaching_program.reliability, 0.5);
+assert.strictEqual(prevSnapshotTeam.coaching_program.affects_etsr, false);
+assert.strictEqual(prevSnapshotTeam.coaching_program.inputs.talent_conversion.value, 60);
+assert.ok(prevSnapshotTeam.cat.coaching_program);
+
+const moved = ETSR.movement(nowTeamForMovement, prevSnapshotTeam, {
+  season: 2026, week_ordinal: 3, week_label: 'Week 3',
+  current_ordinal: 4, current_season: 2026
+});
+assert.strictEqual(moved.coaching_program.available, true);
+assert.strictEqual(moved.coaching_program.rating.delta, 5);
+assert.strictEqual(moved.coaching_program.raw_score.delta, 6);
+assert.strictEqual(moved.coaching_program.reliability.delta, 0.1);
+assert.strictEqual(moved.coaching_program.inputs.talent_conversion.value.delta, 8);
+assert.strictEqual(moved.coaching_program.inputs.development.value.delta, -6);
+assert.ok(moved.drivers.some(d => d.id === 'coaching_program' && d.delta === 5));
+assert.strictEqual(moved.categories.coaching_program.rank.delta, 12);
+
+/* The history read model carries the category and detailed coaching delta. */
+const hSeries = HISTORY.seriesFor('x', [
+  { season: 2026, week_ordinal: 3, week_label: 'Week 3', teams: { x: prevSnapshotTeam } },
+  { season: 2026, week_ordinal: 4, week_label: 'Week 4', teams: { x: HISTORY.snapshotTeam(nowTeamForMovement) } }
+]);
+assert.strictEqual(hSeries.length, 2);
+assert.strictEqual(hSeries[1].categories.coaching_program.value, 60);
+assert.strictEqual(hSeries[1].delta.categories.coaching_program.value, 5);
+assert.strictEqual(hSeries[1].delta.coaching_program.inputs.talent_conversion.value, 8);
+
+/* Ranking/history exposure still cannot leak into ETSR. */
+assert.strictEqual(nowTeamForMovement.coaching_program_adjustment_points, 0);
+assert.strictEqual(nowTeamForMovement.coaching_program_affects_etsr, false);
+
+console.log('coaching_program Step 6 backend: passed');
+
