@@ -255,6 +255,16 @@ jobs:
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
           ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
 
+      # Rankings now read the head-coach continuity artifact. Build it first so
+      # this weekly run never grades staff from last week's committed file.
+      # The source carries HC only; a fetch/read failure degrades staff evidence
+      # to unavailable instead of blocking the entire rankings build.
+      - name: Coaching continuity for rankings
+        if: steps.go.outputs.run == 'true'
+        run: node football/coaching/build_coaching.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
       - name: National rankings, special teams and ETSR
         if: steps.go.outputs.run == 'true' && github.event.inputs.backfill != 'true'
         run: node --max-old-space-size=6144 football/rankings/build_rankings.js --cache .cache/football
@@ -342,9 +352,6 @@ jobs:
         run: node football/venues/build_venues.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
-
-      - name: Coaching continuity
-        run: node football/coaching/build_coaching.js
 
       - name: Matchup metrics for the research desk
         run: node tools/football/build_matchup_metrics.js

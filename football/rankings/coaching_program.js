@@ -268,6 +268,328 @@ function multiSeason(teamKey, currentSeason, seasonModels) {
   };
 }
 
+
+/* --------------------------------------------------------------------------
+   ROSTER MANAGEMENT / RETENTION
+
+   The score uses retained VALUE, returning STARTERS and net transfer VALUE.
+   Raw portal volume is never a positive input. Headcount churn is published as
+   context only; a team cannot improve this score by simply processing more
+   transactions.
+   -------------------------------------------------------------------------- */
+function transferFacts(t) {
+  if (!t) return null;
+  if (isNum(t.in) || isNum(t.out)) {
+    return {
+      in_count: isNum(t.in) ? t.in : 0,
+      out_count: isNum(t.out) ? t.out : 0,
+      value_in: isNum(t.value_in) ? t.value_in : null,
+      value_out: isNum(t.value_out) ? t.value_out : null,
+      net_value: isNum(t.net_value) ? t.net_value : null,
+      starters_in: isNum(t.starters_in) ? t.starters_in : 0,
+      starters_out: isNum(t.starters_out) ? t.starters_out : 0,
+      unknown_in: isNum(t.unknown_in) ? t.unknown_in : 0
+    };
+  }
+  const tin = t.in || {}, tout = t.out || {};
+  return {
+    in_count: isNum(tin.count) ? tin.count : 0,
+    out_count: isNum(tout.count) ? tout.count : 0,
+    value_in: isNum(tin.value) ? tin.value : null,
+    value_out: isNum(tout.value) ? tout.value : null,
+    net_value: isNum(t.net_value) ? t.net_value : null,
+    starters_in: Array.isArray(tin.starter_level) ? tin.starter_level.length : 0,
+    starters_out: Array.isArray(tout.starter_level) ? tout.starter_level.length : 0,
+    unknown_in: Array.isArray(tin.high_uncertainty) ? tin.high_uncertainty.length : 0
+  };
+}
+
+function starterRetention(ret) {
+  const by = ret && ret.by_group;
+  if (!by) return { value: null, starters: 0, groups: 0 };
+  let s = 0, n = 0, groups = 0;
+  for (const g of Object.keys(by)) {
+    const b = by[g];
+    if (!b || !isNum(b.starters) || !(b.starters > 0) || !isNum(b.starters_returning)) continue;
+    s += clamp(b.starters_returning, 0, 1) * b.starters;
+    n += b.starters;
+    groups++;
+  }
+  return { value: n > 0 ? s / n : null, starters: n, groups };
+}
+
+function leagueZ(rows, field) {
+  const vals = Object.keys(rows).map(k => rows[k][field]).filter(isNum);
+  const m = mean(vals), s = sd(vals);
+  return { mean: m, sd: s, n: vals.length, usable: vals.length >= MIN_COHORT && s > 0 };
+}
+
+function rosterManagement(keys, rosterByTeam, lastUpdated, allow) {
+  const out = {};
+  const raw = {};
+  if (allow === false) {
+    for (const k of keys) {
+      const e = emptyInput(configured('roster_management_retention'));
+      e.reason = 'disabled for reconstructed history because the committed current roster artifact would leak later-season personnel information';
+      out[k] = e;
+    }
+    return out;
+  }
+
+  for (const k of keys) {
+    const r = rosterByTeam && rosterByTeam[k];
+    const ret = r && r.returning;
+    const tx = transferFacts(r && r.transfers);
+    const sr = starterRetention(ret);
+    raw[k] = {
+      value_continuity: ret && isNum(ret.value_continuity) ? ret.value_continuity : null,
+      roster_continuity: ret && isNum(ret.roster_continuity) ? ret.roster_continuity : null,
+      players_prior: ret && isNum(ret.players_prior) ? ret.players_prior : 0,
+      players_returning: ret && isNum(ret.players_returning) ? ret.players_returning : 0,
+      starter_retention: sr.value,
+      starters_observed: sr.starters,
+      starter_groups: sr.groups,
+      transfer_net_value: tx && isNum(tx.net_value) ? tx.net_value : null,
+      transfer: tx
+    };
+  }
+
+  const stats = {
+    value_continuity: leagueZ(raw, 'value_continuity'),
+    starter_retention: leagueZ(raw, 'starter_retention'),
+    transfer_net_value: leagueZ(raw, 'transfer_net_value')
+  };
+
+  for (const k of keys) {
+    const r = raw[k];
+    const parts = [];
+    const rels = [];
+    function add(id, field, reliability) {
+      const st = stats[field], v = r[field];
+      if (!isNum(v) || !st.usable) return;
+      const z = (v - st.mean) / st.sd;
+      parts.push({ id, value: r3(v), z: r3(z), cohort_teams: st.n });
+      rels.push(clamp(reliability, 0, 1));
+    }
+
+    add('meaningful_production_retained', 'value_continuity', r.players_prior > 0 ? 1 : 0);
+    add('returning_starters', 'starter_retention', r.starters_observed > 0 ? clamp(r.starters_observed / 22, 0, 1) : 0);
+    const tx = r.transfer;
+    const transferKnown = tx && tx.in_count > 0
+      ? clamp(1 - tx.unknown_in / tx.in_count, 0, 1)
+      : (tx ? 1 : 0);
+    add('net_transfer_value', 'transfer_net_value', transferKnown);
+
+    const e = emptyInput(configured('roster_management_retention'));
+    if (!parts.length) {
+      e.reason = 'retention/portal evidence exists for too few FBS teams to standardise this component';
+      out[k] = e;
+      continue;
+    }
+    const z = mean(parts.map(p => p.z));
+    const coverage = parts.length / 3;
+    const reliability = clamp(coverage * mean(rels), 0, 1);
+    e.value = r1(clamp(50 + RATING_SD * z, 0, 100));
+    e.observations = r.players_prior + r.starters_observed
+      + (tx ? tx.in_count + tx.out_count : 0);
+    e.weighted_evidence = r3(z * reliability);
+    e.reliability = r3(reliability);
+    e.source = 'football/players/current.json returning-production and transfer-value records';
+    e.last_updated = lastUpdated || null;
+    e.available = true;
+    e.reason = null;
+    e.details = {
+      residual_z: r3(z),
+      scored_parts: parts,
+      meaningful_production_retained: r3(r.value_continuity),
+      roster_continuity_context_only: r3(r.roster_continuity),
+      starter_retention: r3(r.starter_retention),
+      starters_observed: r.starters_observed,
+      transfer: tx,
+      portal_volume_scored: false,
+      churn_count_context_only: tx ? tx.in_count + tx.out_count : null,
+      positional_replacement: 'not scored: the committed team artifact does not retain transfer value by position group',
+      basis: 'league-standardised retained production value, returning starters and net transfer value; raw portal volume is context only'
+    };
+    out[k] = e;
+  }
+  return out;
+}
+
+/* --------------------------------------------------------------------------
+   DEVELOPMENT
+
+   Same athlete, same programme, consecutive seasons. Current raw quality is
+   regressed on prior raw quality across the FBS returning-player population.
+   A team's score is the evidence-weighted residual, so signing a better
+   transfer cannot masquerade as player development.
+   -------------------------------------------------------------------------- */
+function rawQuality(p) {
+  return p && p.components && p.components.quality && isNum(p.components.quality.z_raw)
+    ? p.components.quality.z_raw : null;
+}
+
+function developmentModel(currentSeason, layers, lastUpdated) {
+  const out = { available: false, teams: {}, model: null, warnings: [] };
+  const cur = layers && layers[currentSeason] && layers[currentSeason].players;
+  const prev = layers && layers[currentSeason - 1] && layers[currentSeason - 1].players;
+  if (!cur || !prev) {
+    out.warnings.push('consecutive-season player records are unavailable');
+    return out;
+  }
+
+  const prevByKey = {};
+  for (const team of Object.keys(prev)) {
+    for (const p of (prev[team] || [])) {
+      if (!p || !p.key) continue;
+      prevByKey[p.key] = { team, player: p };
+    }
+  }
+
+  const pairs = [];
+  for (const team of Object.keys(cur)) {
+    for (const p of (cur[team] || [])) {
+      if (!p || !p.key) continue;
+      const old = prevByKey[p.key];
+      if (!old || old.team !== team) continue;
+      if (p.mid_season_move || old.player.mid_season_move) continue;
+      const x = rawQuality(old.player), y = rawQuality(p);
+      if (!isNum(x) || !isNum(y)) continue;
+      const conf = Math.min(isNum(p.confidence) ? p.confidence : 0, isNum(old.player.confidence) ? old.player.confidence : 0);
+      const sample = Math.min(isNum(p.sample_size) ? p.sample_size : 0, isNum(old.player.sample_size) ? old.player.sample_size : 0);
+      if (!(conf > 0) || !(sample > 0)) continue;
+      pairs.push({
+        team, key: p.key, group: p.group || old.player.group || null,
+        prior_z: x, current_z: y, confidence: conf, sample,
+        weight: Math.sqrt(sample) * conf
+      });
+    }
+  }
+
+  if (pairs.length < 40) {
+    out.warnings.push('fewer than 40 same-program returning players have measurable quality in consecutive seasons');
+    return out;
+  }
+
+  const xs = pairs.map(p => p.prior_z), ys = pairs.map(p => p.current_z);
+  const vx = cov(xs, xs);
+  const beta = vx > 0 ? cov(xs, ys) / vx : null;
+  if (!isNum(beta)) {
+    out.warnings.push('returning-player development regression could not be fitted');
+    return out;
+  }
+  const intercept = mean(ys) - beta * mean(xs);
+  for (const p of pairs) p.residual = p.current_z - (intercept + beta * p.prior_z);
+  const rs = pairs.map(p => p.residual), rm = mean(rs), rsd = sd(rs);
+  if (!(rsd > 0)) {
+    out.warnings.push('returning-player development residual has no usable variance');
+    return out;
+  }
+  for (const p of pairs) p.residual_z = (p.residual - rm) / rsd;
+
+  function aggregate(list) {
+    let sw = 0, sz = 0, sc = 0;
+    for (const p of list) {
+      sw += p.weight;
+      sz += p.residual_z * p.weight;
+      sc += p.confidence * p.weight;
+    }
+    if (!(sw > 0)) return null;
+    return { z: sz / sw, confidence: sc / sw, observations: list.length, evidence_weight: sw };
+  }
+  function groupDetail(list, name, predicate) {
+    const a = aggregate(list.filter(predicate));
+    return a ? {
+      value: r1(clamp(50 + RATING_SD * a.z, 0, 100)),
+      residual_z: r3(a.z), observations: a.observations,
+      evidence_confidence: r3(a.confidence)
+    } : { value: null, residual_z: null, observations: 0, evidence_confidence: 0,
+      reason: name + ' has no same-program returning player with measurable consecutive-season quality' };
+  }
+
+  const byTeam = {};
+  for (const p of pairs) (byTeam[p.team] = byTeam[p.team] || []).push(p);
+  for (const team of Object.keys(byTeam)) {
+    const list = byTeam[team];
+    const a = aggregate(list);
+    if (!a) continue;
+    const sampleRel = list.length / (list.length + 8);
+    const reliability = clamp(sampleRel * a.confidence, 0, 1);
+    out.teams[team] = {
+      value: r1(clamp(50 + RATING_SD * a.z, 0, 100)),
+      observations: list.length,
+      weighted_evidence: r3(a.z * reliability),
+      reliability: r3(reliability),
+      source: 'football/players/epir.js same-athlete raw quality across consecutive seasons',
+      last_updated: lastUpdated || null,
+      configured_weight: configured('development').weight,
+      available: true,
+      reason: null,
+      details: {
+        residual_z: r3(a.z),
+        regression: { intercept: r3(intercept), beta_prior_quality: r3(beta), league_pairs: pairs.length },
+        qb: groupDetail(list, 'QB development', p => p.group === 'QB'),
+        ol: groupDetail(list, 'OL development', p => p.group === 'OL'),
+        defense: groupDetail(list, 'defensive development', p => ['DL', 'EDGE', 'LB', 'CB', 'S', 'DB'].includes(p.group)),
+        transfer_credit: false,
+        basis: 'same-player, same-program improvement relative to a league regression on the player\'s prior raw quality; evidence is weighted by prior/current sample and confidence'
+      }
+    };
+  }
+
+  out.available = true;
+  out.model = { pairs: pairs.length, intercept: r3(intercept), beta_prior_quality: r3(beta), residual_sd: r3(rsd) };
+  return out;
+}
+
+/* --------------------------------------------------------------------------
+   STAFF CONTINUITY / STABILITY
+
+   The current public source knows the HC only. Continuity is evidence, not a
+   directional coaching-quality claim, so this remains unscored until a
+   walk-forward validates an effect. OC/DC are explicitly unknown.
+   -------------------------------------------------------------------------- */
+function staffEvidence(keys, artifact) {
+  const out = {};
+  const valid = artifact && artifact.by_team ? artifact : null;
+  for (const k of keys) {
+    const e = emptyInput(configured('staff_continuity_stability'));
+    const r = valid && valid.by_team[k];
+    if (!r) {
+      e.reason = valid
+        ? 'no corroborated head-coach row for this team; OC/DC are unavailable in the source'
+        : 'coaching continuity artifact unavailable or stale';
+      out[k] = e;
+      continue;
+    }
+    const known = Array.isArray(r.known) ? r.known.length : 0;
+    e.observations = known;
+    e.weighted_evidence = 0;
+    e.reliability = r3(clamp(known / 3, 0, 1));
+    e.source = r.source || artifact.source || null;
+    e.last_updated = artifact.generated_at || null;
+    e.available = false;
+    e.reason = 'head-coach continuity is observed, but continuity is not automatically positive or negative; coordinator continuity is unavailable, so no directional staff score is published';
+    e.details = {
+      hc: r.hc || null,
+      since_season: r.since_season == null ? null : r.since_season,
+      tenure_seasons: r.tenure_seasons == null ? null : r.tenure_seasons,
+      tenure_is_floor: r.tenure_is_floor == null ? null : r.tenure_is_floor,
+      previous_hc: r.previous_hc || null,
+      new_hc: r.new_hc == null ? null : r.new_hc,
+      new_oc: null,
+      new_dc: null,
+      known: r.known || [],
+      unknown: r.unknown || ['oc', 'dc'],
+      in_season_change: r.in_season_change || null,
+      directional_score_applied: false
+    };
+    out[k] = e;
+  }
+  return out;
+}
+
+
 function build(teamKeys, opts) {
   opts = opts || {};
   const keys = teamKeys || [];
@@ -284,26 +606,58 @@ function build(teamKeys, opts) {
     }
   }
 
+  const roster = rosterManagement(
+    keys,
+    layers[currentSeason] && layers[currentSeason].roster,
+    opts.roster_last_updated,
+    opts.allow_current !== false
+  );
+  const development = developmentModel(currentSeason, layers, opts.development_last_updated);
+  const staff = staffEvidence(keys, opts.allow_current === false ? null : opts.staff);
+
   const teams = {};
   let measured = 0;
   for (const key of keys) {
     const t = emptyTeam(key);
+    let teamMeasured = false;
     const cur = seasonModels[currentSeason] && seasonModels[currentSeason].teams
       ? seasonModels[currentSeason].teams[key] : null;
     if (cur) {
       t.coaching_program_inputs.talent_conversion = cur;
       measured++;
+      teamMeasured = true;
     }
+
     const ms = multiSeason(key, currentSeason, seasonModels);
     if (ms.available) {
       t.coaching_program_inputs.multi_season_program_overperformance = ms;
       measured++;
+      teamMeasured = true;
     }
-    if (cur || ms.available) {
+
+    if (roster[key]) {
+      t.coaching_program_inputs.roster_management_retention = roster[key];
+      if (roster[key].available) { measured++; teamMeasured = true; }
+    }
+
+    if (staff[key]) t.coaching_program_inputs.staff_continuity_stability = staff[key];
+
+    if (development.teams[key]) {
+      t.coaching_program_inputs.development = development.teams[key];
+      measured++;
+      teamMeasured = true;
+    }
+
+    const gm = emptyInput(configured('game_management'));
+    gm.source = 'cfbfastR play-by-play; no validated decision-state model is implemented';
+    gm.reason = 'unavailable: the current play-by-play layer does not yet cleanly identify coach decisions, alternatives and counterfactual win value, so no game-management grade is invented';
+    t.coaching_program_inputs.game_management = gm;
+
+    if (teamMeasured) {
       t.coaching_program_warnings.push({
         id: 'COACHING_PROGRAM_PARTIAL_MEASUREMENT',
         severity: 'info',
-        detail: 'Talent conversion and multi-season overperformance are measured; roster management, staff continuity, development, game management and final shrinkage are not implemented yet.'
+        detail: 'Talent conversion, persistent overperformance, roster management and development may be measured. Staff continuity is evidence-only and game management is unavailable. Final reliability/shrinkage and ETSR impact remain disabled.'
       });
     }
     teams[key] = t;
@@ -317,6 +671,8 @@ function build(teamKeys, opts) {
     components: COMPONENTS.map(x => ({ id: x.id, weight: x.weight })),
     decay_weights: DECAY.slice(),
     season_models: seasonModels,
+    development_model: development.model,
+    development_warnings: development.warnings,
     teams
   };
 }
@@ -329,5 +685,8 @@ module.exports = {
   emptyTeam,
   seasonTalentConversion,
   multiSeason,
+  rosterManagement,
+  developmentModel,
+  staffEvidence,
   build
 };
