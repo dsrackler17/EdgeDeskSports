@@ -170,7 +170,7 @@ has(th, 'Market comparison', 'and the market, in its own box');
 has(th, 'Confidence and data quality', 'and confidence');
 has(th, 'vs an average FBS team', 'the units of ETSR are on screen');
 has(th, 'Coaching / Program', 'team detail carries Coaching / Program');
-has(th, 'Missing evidence stays unavailable', 'a team with no current coaching score is not filled with a fake 50');
+has(APP, 'Missing evidence stays unavailable', 'the missing-score path keeps unavailable evidence distinct from a real measured 50');
 has(APP, 'Measured and ranked, but not currently an ETSR input.', 'the UI carries the exact research-only ETSR status');
 has(APP, 'Exact ETSR adjustment:', 'and shows the exact committed adjustment rather than calculating one in the browser');
 has(APP, 'private locker-room dynamics', 'and names the private context nobody can observe');
@@ -219,7 +219,7 @@ if (top) {
   has(ch.innerHTML, '#7', 'the committed coaching/program rank is rendered');
   has(ch.innerHTML, '67%', 'the committed coaching/program reliability is rendered');
   has(ch.innerHTML, 'synthetic measured source', 'the subfactor provenance is rendered');
-  has(ch.innerHTML, 'Exact ETSR adjustment: +0.0', 'the zero ETSR adjustment is shown exactly');
+  has(ch.innerHTML, 'Exact ETSR adjustment: 0.0', 'the zero ETSR adjustment is shown exactly');
 }
 
 /* ======================================================================== */
