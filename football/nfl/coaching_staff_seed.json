@@ -1,0 +1,626 @@
+{
+ "schema": "edgedesk_nfl_coaching_staff_seed_v1",
+ "trained_through_season": 2025,
+ "reliability_k": 4.0,
+ "decay": {
+  "1": 0.45,
+  "2": 0.3,
+  "3": 0.17,
+  "4": 0.08
+ },
+ "teams": {
+  "WAS": {
+   "head_coach": {
+    "coach": "Dan Quinn",
+    "rating": 44.9,
+    "observations": 37,
+    "weighted_evidence": -0.546,
+    "reliability": 0.677,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 39.6,
+    "observations": 71,
+    "weighted_evidence": -0.985,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "NYJ": {
+   "head_coach": {
+    "coach": "Aaron Glenn",
+    "rating": 17.5,
+    "observations": 17,
+    "weighted_evidence": -3.892,
+    "reliability": 0.364,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 25.6,
+    "observations": 68,
+    "weighted_evidence": -2.206,
+    "reliability": 0.944,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "DET": {
+   "head_coach": {
+    "coach": "Dan Campbell",
+    "rating": 58.4,
+    "observations": 72,
+    "weighted_evidence": 1.097,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 63.4,
+    "observations": 72,
+    "weighted_evidence": 1.097,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "ARI": {
+   "head_coach": {
+    "coach": "Jonathan Gannon",
+    "rating": 39.7,
+    "observations": 51,
+    "weighted_evidence": -1.186,
+    "reliability": 0.853,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 36.3,
+    "observations": 68,
+    "weighted_evidence": -1.271,
+    "reliability": 0.944,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "DAL": {
+   "head_coach": {
+    "coach": "Brian Schottenheimer",
+    "rating": 42.4,
+    "observations": 17,
+    "weighted_evidence": -0.854,
+    "reliability": 0.364,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 43.5,
+    "observations": 71,
+    "weighted_evidence": -0.641,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "ATL": {
+   "head_coach": {
+    "coach": "Raheem Morris",
+    "rating": 43.6,
+    "observations": 34,
+    "weighted_evidence": -0.705,
+    "reliability": 0.671,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 42.8,
+    "observations": 68,
+    "weighted_evidence": -0.704,
+    "reliability": 0.944,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "PIT": {
+   "head_coach": {
+    "coach": "Mike Tomlin",
+    "rating": 52.6,
+    "observations": 71,
+    "weighted_evidence": 0.391,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 55.4,
+    "observations": 71,
+    "weighted_evidence": 0.391,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "BAL": {
+   "head_coach": {
+    "coach": "John Harbaugh",
+    "rating": 53.1,
+    "observations": 73,
+    "weighted_evidence": 0.45,
+    "reliability": 0.948,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 56.0,
+    "observations": 73,
+    "weighted_evidence": 0.45,
+    "reliability": 0.948,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "SF": {
+   "head_coach": {
+    "coach": "Kyle Shanahan",
+    "rating": 48.8,
+    "observations": 76,
+    "weighted_evidence": -0.076,
+    "reliability": 0.95,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 50.0,
+    "observations": 76,
+    "weighted_evidence": -0.076,
+    "reliability": 0.95,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "CHI": {
+   "head_coach": {
+    "coach": "Ben Johnson",
+    "rating": 56.4,
+    "observations": 19,
+    "weighted_evidence": 0.85,
+    "reliability": 0.372,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 53.9,
+    "observations": 70,
+    "weighted_evidence": 0.262,
+    "reliability": 0.946,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "CIN": {
+   "head_coach": {
+    "coach": "Zac Taylor",
+    "rating": 43.9,
+    "observations": 70,
+    "weighted_evidence": -0.675,
+    "reliability": 0.946,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 43.1,
+    "observations": 70,
+    "weighted_evidence": -0.675,
+    "reliability": 0.946,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "DEN": {
+   "head_coach": {
+    "coach": "Sean Payton",
+    "rating": 58.9,
+    "observations": 54,
+    "weighted_evidence": 1.151,
+    "reliability": 0.857,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 62.4,
+    "observations": 71,
+    "weighted_evidence": 1.002,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "MIA": {
+   "head_coach": {
+    "coach": "Mike McDaniel",
+    "rating": 43.1,
+    "observations": 70,
+    "weighted_evidence": -0.775,
+    "reliability": 0.946,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 42.0,
+    "observations": 70,
+    "weighted_evidence": -0.775,
+    "reliability": 0.946,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "HOU": {
+   "head_coach": {
+    "coach": "DeMeco Ryans",
+    "rating": 61.7,
+    "observations": 57,
+    "weighted_evidence": 1.496,
+    "reliability": 0.86,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 65.5,
+    "observations": 74,
+    "weighted_evidence": 1.274,
+    "reliability": 0.949,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "CLE": {
+   "head_coach": {
+    "coach": "Kevin Stefanski",
+    "rating": 37.4,
+    "observations": 69,
+    "weighted_evidence": -1.46,
+    "reliability": 0.945,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 34.1,
+    "observations": 69,
+    "weighted_evidence": -1.46,
+    "reliability": 0.945,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "IND": {
+   "head_coach": {
+    "coach": "Shane Steichen",
+    "rating": 50.5,
+    "observations": 51,
+    "weighted_evidence": 0.135,
+    "reliability": 0.853,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 49.4,
+    "observations": 68,
+    "weighted_evidence": -0.128,
+    "reliability": 0.944,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "CAR": {
+   "head_coach": {
+    "coach": "Dave Canales",
+    "rating": 44.0,
+    "observations": 35,
+    "weighted_evidence": -0.661,
+    "reliability": 0.673,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 39.1,
+    "observations": 69,
+    "weighted_evidence": -1.029,
+    "reliability": 0.945,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "JAX": {
+   "head_coach": {
+    "coach": "Liam Coen",
+    "rating": 78.7,
+    "observations": 18,
+    "weighted_evidence": 3.563,
+    "reliability": 0.368,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 64.5,
+    "observations": 71,
+    "weighted_evidence": 1.189,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "GB": {
+   "head_coach": {
+    "coach": "Matt LaFleur",
+    "rating": 49.3,
+    "observations": 72,
+    "weighted_evidence": -0.017,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 50.7,
+    "observations": 72,
+    "weighted_evidence": -0.017,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "MIN": {
+   "head_coach": {
+    "coach": "Kevin O'Connell",
+    "rating": 58.2,
+    "observations": 70,
+    "weighted_evidence": 1.071,
+    "reliability": 0.946,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 63.2,
+    "observations": 70,
+    "weighted_evidence": 1.071,
+    "reliability": 0.946,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "BUF": {
+   "head_coach": {
+    "coach": "Sean McDermott",
+    "rating": 58.4,
+    "observations": 76,
+    "weighted_evidence": 1.091,
+    "reliability": 0.95,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 63.4,
+    "observations": 76,
+    "weighted_evidence": 1.091,
+    "reliability": 0.95,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "NE": {
+   "head_coach": {
+    "coach": "Mike Vrabel",
+    "rating": 62.3,
+    "observations": 55,
+    "weighted_evidence": 1.564,
+    "reliability": 0.653,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 53.9,
+    "observations": 72,
+    "weighted_evidence": 0.263,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "SEA": {
+   "head_coach": {
+    "coach": "Mike Macdonald",
+    "rating": 72.5,
+    "observations": 37,
+    "weighted_evidence": 2.808,
+    "reliability": 0.677,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 72.4,
+    "observations": 72,
+    "weighted_evidence": 1.876,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "NO": {
+   "head_coach": {
+    "coach": "Kellen Moore",
+    "rating": 43.3,
+    "observations": 17,
+    "weighted_evidence": -0.749,
+    "reliability": 0.364,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 40.8,
+    "observations": 68,
+    "weighted_evidence": -0.876,
+    "reliability": 0.944,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "TEN": {
+   "head_coach": {
+    "coach": "Brian Callahan",
+    "rating": 29.9,
+    "observations": 34,
+    "weighted_evidence": -2.378,
+    "reliability": 0.671,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 27.7,
+    "observations": 68,
+    "weighted_evidence": -2.018,
+    "reliability": 0.944,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "LV": {
+   "head_coach": {
+    "coach": "Pete Carroll",
+    "rating": 34.1,
+    "observations": 52,
+    "weighted_evidence": -1.87,
+    "reliability": 0.65,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 34.5,
+    "observations": 68,
+    "weighted_evidence": -1.424,
+    "reliability": 0.944,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "KC": {
+   "head_coach": {
+    "coach": "Andy Reid",
+    "rating": 53.2,
+    "observations": 78,
+    "weighted_evidence": 0.452,
+    "reliability": 0.951,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 56.1,
+    "observations": 78,
+    "weighted_evidence": 0.452,
+    "reliability": 0.951,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "LAC": {
+   "head_coach": {
+    "coach": "Jim Harbaugh",
+    "rating": 56.2,
+    "observations": 36,
+    "weighted_evidence": 0.821,
+    "reliability": 0.675,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 54.7,
+    "observations": 71,
+    "weighted_evidence": 0.333,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "NYG": {
+   "head_coach": {
+    "coach": "Brian Daboll",
+    "rating": 43.8,
+    "observations": 70,
+    "weighted_evidence": -0.69,
+    "reliability": 0.946,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 43.0,
+    "observations": 70,
+    "weighted_evidence": -0.69,
+    "reliability": 0.946,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "LA": {
+   "head_coach": {
+    "coach": "Sean McVay",
+    "rating": 60.9,
+    "observations": 74,
+    "weighted_evidence": 1.393,
+    "reliability": 0.949,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 66.9,
+    "observations": 74,
+    "weighted_evidence": 1.393,
+    "reliability": 0.949,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "PHI": {
+   "head_coach": {
+    "coach": "Nick Sirianni",
+    "rating": 53.8,
+    "observations": 77,
+    "weighted_evidence": 0.536,
+    "reliability": 0.951,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 57.0,
+    "observations": 77,
+    "weighted_evidence": 0.536,
+    "reliability": 0.951,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  },
+  "TB": {
+   "head_coach": {
+    "coach": "Todd Bowles",
+    "rating": 48.3,
+    "observations": 72,
+    "weighted_evidence": -0.136,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+    "last_updated": "2025-12-31"
+   },
+   "program": {
+    "rating": 49.3,
+    "observations": 72,
+    "weighted_evidence": -0.136,
+    "reliability": 0.947,
+    "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+    "last_updated": "2025-12-31"
+   }
+  }
+ },
+ "provenance": {
+  "base_predictions": "football/research/train_nfl.py nfl_oos.csv model_spread",
+  "coach_identity": "nflverse/nfldata games.csv home_coach/away_coach",
+  "note": "No OC/DC identities, reputation ratings, championships, salary or media priors are used."
+ }
+}
