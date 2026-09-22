@@ -774,4 +774,4 @@ if (require.main === module) {
     process.exit(2);
   });
 }
-module.exports = { parseCsv, normRows, buildState, loadSeason };
+module.exports = { parseCsv, normRows, buildState, efficiencyForGame, loadSeason };
