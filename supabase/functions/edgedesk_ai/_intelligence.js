@@ -4698,6 +4698,11 @@
       lines.push(board.status.user);
     }
     if (drivers.length) lines.push('The matchup turns most on ' + drivers[0].family_label + ': ' + drivers[0].statement);
+    var coachingStaff = R.coaching_staff || null;
+    if (coachingStaff && coachingStaff.research_read &&
+        coachingStaff.research_read.state !== 'NO_COMPARABLE_EVIDENCE') {
+      lines.push('Coaching / Staff research: ' + coachingStaff.research_read.sentence);
+    }
 
     return {
       schema: BRIEF_SCHEMA,
@@ -4722,7 +4727,8 @@
         model: R.model || null,
         market_row: marketRow, market_status: board ? board.status : null,
         consensus: board ? board.consensus : null,
-        comparison: comparison
+        comparison: comparison,
+        coaching_shadow: coachingStaff && coachingStaff.shadow_reference ? coachingStaff.shadow_reference : null
       },
       /* The full price board, carried so a renderer never has to go and get
          it a second time and risk showing a different number than the one the
@@ -4737,6 +4743,7 @@
       counter: counter.strongest, counter_others: counter.others, counter_all: counter.all,
       what_would_change: change.items,
       availability: avail,
+      coaching_staff: coachingStaff,
       previous_games: R.previous_games || null,
       /* ONE CAVEAT, ONCE. matchupResearch, counterCase and the availability
          headline all legitimately reach the same conclusion about the same
