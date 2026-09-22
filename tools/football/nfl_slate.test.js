@@ -165,6 +165,26 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
       art.coaching_staff.teams.SF.coaching_staff_inputs.efficiency_development.value === null,
     art.coaching_staff && art.coaching_staff.teams.SF &&
       art.coaching_staff.teams.SF.coaching_staff_inputs.efficiency_development);
+  const rematch = art.games.find((x) => x.game_id === '2026_02_SF_LA');
+  chk('each NFL game row carries coaching/staff research context',
+    rematch && rematch.coaching_staff_research &&
+      rematch.coaching_staff_research.schema === 'edgedesk_nfl_coaching_staff_matchup_v1' &&
+      rematch.coaching_staff_research.affects_nfl_projection === false,
+    rematch && rematch.coaching_staff_research);
+  chk('early-season coaching context compares raw evidence before league calibration',
+    rematch && rematch.coaching_staff_research &&
+      rematch.coaching_staff_research.component_comparisons.current_residual_conversion.home_raw === -2 &&
+      rematch.coaching_staff_research.component_comparisons.current_residual_conversion.away_raw === 2 &&
+      rematch.coaching_staff_research.component_comparisons.current_residual_conversion.home_minus_away_raw === -4,
+    rematch && rematch.coaching_staff_research &&
+      rematch.coaching_staff_research.component_comparisons.current_residual_conversion);
+  chk('the early-season row does not invent a calibrated coaching shadow',
+    rematch && rematch.coaching_staff_research &&
+      rematch.coaching_staff_research.status === 'EVIDENCE_ONLY' &&
+      rematch.coaching_staff_research.shadow_reference === null &&
+      rematch.coaching_staff_research.selected_cap === null,
+    rematch && rematch.coaching_staff_research);
+
   const g = art.games.find((x) => x.game_id === '2026_02_KC_BUF');
   chk('the row carries display names and codes', g && g.home_team === 'Buffalo Bills' && g.away_code === 'KC', g && g.home_team);
   chk('the schedule feed head coaches ride on the pregame row',
