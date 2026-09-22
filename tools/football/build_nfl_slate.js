@@ -46,6 +46,7 @@ const SCHEMA = 'edgedesk_nfl_slate_v1';
 let NV = null; try { NV = require(path.join(__dirname, 'nfl_venues.js')); } catch (_) { NV = null; }
 let WX = null, RECOVERY = null; try { WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js')); RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js')); } catch (_) { WX = null; }
 let COACHING = null; try { COACHING = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff.js')); } catch (_) { COACHING = null; }
+const COACHING_SEED_FILE = path.join(ROOT, 'football', 'nfl', 'coaching_staff_seed.json');
 const FORECAST_STORE = path.join(ROOT, 'football', 'venues', 'forecasts.json');
 
 /* Slice 4: THE NFL FORECAST. The same keyless provider and the same module the
@@ -150,8 +151,12 @@ async function build(opts) {
     teams: {},
     reason: COACHING ? 'no completed leak-free pregame residuals were available' : 'coaching_staff.js unavailable'
   };
+  let coachingSeed = null;
   if (COACHING) {
-    const cs = COACHING.newState();
+    try {
+      coachingSeed = opts.coachingSeed || JSON.parse(fs.readFileSync(COACHING_SEED_FILE, 'utf8'));
+    } catch (_) { coachingSeed = opts.coachingSeed || null; }
+    const cs = COACHING.newState(coachingSeed && coachingSeed.teams ? coachingSeed.teams : null);
     (S.games || []).filter((u) => u.done && u.g).forEach((u) => {
       const g = u.g, p = S.weekPreds && S.weekPreds[g.game_id];
       if (!p || p.status !== 'PREDICTED' || !p.model || num(p.model.fair_spread) == null
@@ -166,7 +171,14 @@ async function build(opts) {
         at: g.gameday || null
       });
     });
-    coaching = COACHING.finalize(cs);
+    coaching = COACHING.finalize(cs, {
+      seeds: coachingSeed && coachingSeed.teams ? coachingSeed.teams : null
+    });
+    coaching.seed = coachingSeed ? {
+      schema: coachingSeed.schema || null,
+      trained_through_season: coachingSeed.trained_through_season || null,
+      reliability_k: coachingSeed.reliability_k || null
+    } : null;
   }
 
   /* the module already trimmed S.up to its window; widen from S.games when a
@@ -297,6 +309,7 @@ async function build(opts) {
       adjustment_points: 0,
       observed_games: coaching.observed_games || 0,
       cross_section: coaching.cross_section || null,
+      historical_seed: coaching.seed || null,
       config: coaching.config || null,
       basis: 'Measured and ranked from leak-free pregame residuals. Missing historical staff inputs remain unavailable. No NFL projection uses this component yet.'
     },
