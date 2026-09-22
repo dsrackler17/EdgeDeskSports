@@ -337,6 +337,7 @@ function summarizeProgramPersistence(ledger, opts) {
         game_ids: bucket.game_ids.slice()
       });
       observedWeight += configuredWeight;
+      weightedValue += meanEvidence * configuredWeight;
       observations += bucket.observations;
       totalEvidence += bucket.sum;
     }
@@ -344,7 +345,6 @@ function summarizeProgramPersistence(ledger, opts) {
     if (observedWeight > 0) {
       seasons.forEach((s) => {
         s.normalized_weight = r3(s.configured_weight / observedWeight);
-        weightedValue += s.mean_evidence * (s.configured_weight / observedWeight);
       });
     }
 
@@ -355,7 +355,7 @@ function summarizeProgramPersistence(ledger, opts) {
     if (observations) row.total_evidence = r3(totalEvidence);
 
     if (row.season_count >= minSeasons && observedWeight > 0) {
-      row.value = r3(weightedValue);
+      row.value = r3(weightedValue / observedWeight);
       row.available = true;
       row.reason = null;
     }
