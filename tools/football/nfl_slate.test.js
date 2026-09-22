@@ -47,7 +47,17 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
     now: NOW,
     fetchText: async (u) => (/games\.csv/.test(u) ? GAMES : /stats_team_week/.test(u) ? STW : /roster/.test(u) ? ROSTER : ''),
     lookahead: 12,
-    coachingSeed: { schema: 'fixture-empty-seed', teams: {} }
+    coachingSeed: { schema: 'fixture-empty-seed', teams: {} },
+    coachingValidation: {
+      schema: 'fixture-nfl-coaching-validation',
+      status: 'CANDIDATE',
+      affects_projection: false,
+      tuned_cap: 1,
+      selected_cap: 0,
+      selected_reliability_k: 4,
+      verdict: { effect_size: 0.014, p_value: 0.4305 },
+      reason: 'fixture holdout did not clear promotion'
+    }
   });
   chk('schema', art.schema === 'edgedesk_nfl_slate_v1');
   chk('the completed game was absorbed', art.absorbed_games === 1, art.absorbed_games);
@@ -77,6 +87,15 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
       && art.coaching_staff.affects_projection === false
       && art.coaching_staff.adjustment_points === 0,
     art.coaching_staff);
+  chk('the frozen NFL validation verdict rides with the slate',
+    art.coaching_staff && art.coaching_staff.validation
+      && art.coaching_staff.validation.status === 'CANDIDATE'
+      && art.coaching_staff.validation.tuned_cap === 1
+      && art.coaching_staff.validation.selected_cap === 0
+      && art.coaching_staff.validation.selected_reliability_k === 4
+      && art.coaching_staff.validation.effect_size === 0.014
+      && art.coaching_staff.validation.p_value === 0.4305,
+    art.coaching_staff && art.coaching_staff.validation);
   chk('the completed game contributes one leak-free coaching residual',
     art.coaching_staff && art.coaching_staff.observed_games === 1,
     art.coaching_staff && art.coaching_staff.observed_games);
@@ -97,6 +116,18 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
     d && d.coaching_staff && d.coaching_staff.home && d.coaching_staff.away
       && d.coaching_staff.affects_projection === false,
     d && d.coaching_staff);
+  chk('the game exposes the tuned research cap but applies the validated zero cap',
+    d && d.coaching_staff
+      && d.coaching_staff.validation_status === 'CANDIDATE'
+      && d.coaching_staff.tuned_candidate_cap === 1
+      && d.coaching_staff.validated_cap === 0
+      && d.coaching_staff.adjustment_points === 0,
+    d && d.coaching_staff);
+  chk('the candidate matchup shift is audit-only and the model line is unchanged',
+    d && d.coaching_staff && typeof d.coaching_staff.candidate_matchup_points === 'number'
+      && d.coaching_staff.adjustment_points === 0
+      && d.model_home_line === -d.model_home_margin,
+    d && [d.coaching_staff, d.model_home_line, d.model_home_margin]);
 
   chk('nothing in the artifact is a price', !JSON.stringify(art.games).includes('"best_dec"') && !JSON.stringify(art.games).includes('"odds_american"'));
   done();
