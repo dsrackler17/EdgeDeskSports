@@ -87,6 +87,7 @@
       coaching_staff_rating: null,
       coaching_staff_raw_score: null,
       coaching_staff_rank: null,
+      coaching_staff_rank_of: null,
       coaching_staff_reliability: 0,
       coaching_staff_observed_weight: 0,
       coaching_staff_candidate_adjustment_points: null,
@@ -380,6 +381,30 @@
     return teamRow;
   }
 
+  function assignResearchRanks(teamKeys, teams) {
+    var ranked = (teamKeys || []).map(function (team) {
+      return teams[team];
+    }).filter(function (row) {
+      return row && row.coaching_staff_available === true &&
+        typeof row.coaching_staff_rating === 'number' && isFinite(row.coaching_staff_rating);
+    }).sort(function (a, b) {
+      if (b.coaching_staff_rating !== a.coaching_staff_rating) {
+        return b.coaching_staff_rating - a.coaching_staff_rating;
+      }
+      return String(a.team || '').localeCompare(String(b.team || ''));
+    });
+
+    var prev = null;
+    var rank = 0;
+    ranked.forEach(function (row, i) {
+      if (prev == null || row.coaching_staff_rating !== prev) rank = i + 1;
+      row.coaching_staff_rank = rank;
+      row.coaching_staff_rank_of = ranked.length;
+      prev = row.coaching_staff_rating;
+    });
+    return ranked.length;
+  }
+
   function build(teamKeys, evidence) {
     var teams = {};
     var hasEvidence = false;
@@ -417,12 +442,14 @@
       finalizeTeam(teams[team]);
       if (teams[team].coaching_staff_available) hasRating = true;
     });
+    var rankedTeams = assignResearchRanks(teamKeys, teams);
 
     return {
       schema: SCHEMA,
       status: hasRating ? 'RESEARCH_ONLY' : (hasEvidence ? 'EVIDENCE_ONLY' : 'CONTRACT_ONLY'),
       affects_nfl_projection: false,
       calibration: calibration,
+      ranked_teams: rankedTeams,
       inputs: Object.keys(INPUTS).map(function (id) {
         return {
           id: id,
@@ -450,6 +477,7 @@
     reliabilityFor: reliabilityFor,
     calibrateInputAcrossLeague: calibrateInputAcrossLeague,
     finalizeTeam: finalizeTeam,
+    assignResearchRanks: assignResearchRanks,
     build: build
   };
 
