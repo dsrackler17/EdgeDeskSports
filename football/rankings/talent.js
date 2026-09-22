@@ -85,6 +85,7 @@
       experience: num(x.ex != null ? x.ex : x.experience),
       roster_size: num(x.n != null ? x.n : x.roster_size) || 0,
       starters_out: num(x.out != null ? x.out : (x.availability && x.availability.starters_out)) || 0,
+      unavailable_share: num(x.unav != null ? x.unav : (x.availability && x.availability.unavailable_share)),
       unknown_share: num(x.unk != null ? x.unk : (x.availability && x.availability.unknown_share))
     };
   }
@@ -120,6 +121,7 @@
       continuity: r3(w('continuity')), experience: r3(w('experience')),
       roster_size: parts.reduce(function (a, b) { return a + b.g.roster_size; }, 0),
       starters_out: parts.reduce(function (a, b) { return a + b.g.starters_out; }, 0),
+      unavailable_share: r3(w('unavailable_share')),
       unknown_share: r3(w('unknown_share')),
       spellings_found: parts.map(function (p) { return p.spelling; })
     };
@@ -186,14 +188,18 @@
 
       /* availability: a share of PROJECTED STARTER position value that is
          known to be unavailable. UNKNOWN is carried as unknown, never as fit. */
-      var outPv = 0, totPv = 0, unkPv = 0, records = 0;
+      var unavailablePv = 0, knownPv = 0, totPv = 0, unkPv = 0, records = 0;
       for (var a = 0; a < all.length; a++) {
         var uu = units[all[a]];
         if (!uu || !uu.available) continue;
         var pv = unitPositionValue(all[a]);
         totPv += pv;
-        if (uu.starters_out > 0) outPv += pv * Math.min(1, uu.starters_out / 2);
-        if (uu.unknown_share != null) { unkPv += pv * uu.unknown_share; if (uu.unknown_share < 1) records++; }
+        if (uu.unavailable_share != null) unavailablePv += pv * uu.unavailable_share;
+        if (uu.unknown_share != null) {
+          unkPv += pv * uu.unknown_share;
+          knownPv += pv * Math.max(0, 1 - uu.unknown_share);
+          if (uu.unknown_share < 1) records++;
+        }
       }
       per[k] = {
         covered_units: [],
@@ -207,7 +213,13 @@
         transfer_in: tx ? tx.in : null, transfer_out: tx ? tx.out : null,
         transfer_net_value: tx ? tx.net_value : null,
         transfer_starters_in: tx ? tx.starters_in : null, transfer_starters_out: tx ? tx.starters_out : null,
-        availability_out_share: totPv > 0 ? outPv / totPv : null,
+        /* The dedicated availability component is conservative: only a
+           near-complete report may score it. Partial evidence still changes
+           the affected position group above, but it cannot turn silence about
+           the rest of the roster into health. */
+        availability_coverage_share: totPv > 0 ? knownPv / totPv : null,
+        availability_out_share: (totPv > 0 && knownPv / totPv >= 0.999)
+          ? unavailablePv / knownPv : null,
         availability_unknown_share: totPv > 0 ? unkPv / totPv : null,
         availability_records: records,
         offense_units: roll(units, OFFENSE_UNITS, 'rating').value,
@@ -275,11 +287,19 @@
         transfers: { index: P.transfer_index, net_value: P.transfer_net_value,
           in: P.transfer_in, out: P.transfer_out,
           starters_in: P.transfer_starters_in, starters_out: P.transfer_starters_out },
-        availability: { out_share: r3(P.availability_out_share), unknown_share: r3(P.availability_unknown_share),
+        availability: {
+          out_share: r3(P.availability_out_share),
+          expected_unavailable_share: r3(P.availability_out_share),
+          coverage_share: r3(P.availability_coverage_share),
+          unknown_share: r3(P.availability_unknown_share),
           records: P.availability_records,
           rating: r1(scaled('availability_out_share', k, true)),
-          basis: P.availability_records ? 'from football/availability/current.json, EdgeDesk’s own evidence-ranked dataset'
-            : 'no live availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy.' },
+          basis: P.availability_out_share != null
+            ? 'projected starter availability is fully covered by current evidence; partial-game statuses are weighted by expected participation'
+            : (P.availability_records
+              ? 'some current availability evidence exists, but projected starter coverage is incomplete; named absences affect their units while the separate availability component stays unscored'
+              : 'no live availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy.')
+        },
         player_confidence: r3(P.confidence),
         recruiting: { applied: false, reason: CFG.TALENT.recruiting.reason },
         smoothing: CFG.TALENT.smoothing,
