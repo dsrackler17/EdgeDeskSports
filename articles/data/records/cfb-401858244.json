@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "William & Mary vs. Duke: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "William & Mary vs. Duke 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices William & Mary at Duke at Duke -39.1. Duke wins 99% of simulations. Data confidence 43%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices William & Mary at Duke at Duke -39.1. Duke wins 99% of simulations. Data confidence 43%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Duke carries a full EdgeDesk team rating at -0.2; William & Mary is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Duke -39.1 before any sportsbook number is…",
   "home_team": "Duke",
   "away_team": "William & Mary",
@@ -21,11 +21,11 @@
   "game_time": "2026-09-26T19:30:00.000Z",
   "game_when_label": "2026-09-26 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-22T04:44:08.090Z",
-  "generated_at": "2026-09-22T11:27:42.488Z",
+  "updated_at": "2026-09-22T17:38:06.707Z",
+  "generated_at": "2026-09-22T17:38:06.707Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "RESEARCH",
+  "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
   "confidence": 43,
   "priced": true,
   "fair_spread_text": "Duke -39.1",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-22. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-22, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -164,8 +164,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "RESEARCH",
+      "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -246,7 +246,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": null,
-        "retrieved_at": "2026-09-22T02:55:27.358Z"
+        "retrieved_at": "2026-09-22T15:51:54.938Z"
       },
       "home": {
         "team": "Duke",
@@ -336,9 +336,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T20:00:00.000Z",
-        "retrieved_at": "2026-09-22T02:55:27.358Z"
+        "retrieved_at": "2026-09-22T15:51:54.938Z"
       },
-      "generated_at": "2026-09-22T02:56:09.206Z",
+      "generated_at": "2026-09-22T15:52:40.469Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1197,8 +1197,8 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "sample",
-          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "label": "market disagreement",
+          "text": "The market disagrees by 4.4 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
           "widening": null
         },
         {
@@ -1247,18 +1247,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
           "widening": null
         },
         {
@@ -1321,15 +1309,25 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Duke -39.1",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Duke -43.5",
+      "difference": "4.4 points",
+      "difference_n": 4.42191940336653,
+      "total_model": null,
+      "total_market": "62.5",
+      "book": "captured · FanDuel",
+      "captured": "2026-09-22T16:18:01.053+00:00",
+      "capture_age": "1 hour old",
+      "stale": false,
+      "classification": "RESEARCH",
+      "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "headline": "EdgeDesk rates one side of this game and not the other. What it has is below; what it does not have is named.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "RESEARCH",
+      "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": null,
@@ -1471,7 +1469,7 @@
       "EdgeDesk’s line is Duke -39.1 on a neutral read of the two teams, before any book is consulted.",
       "Duke wins >99% of the time in EdgeDesk’s simulation, William & Mary <1%. Neither side is certain: one side rounds past the boundary, so it is shown bounded: a projection built on a continuous margin distribution cannot mean 100% or 0%",
       "Eight games in ten land between +16.1 and +60.1 for Duke. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Duke -43.5 at captured · FanDuel, 4.4 points from EdgeDesk’s number.",
       "William & Mary quarterback: Winston Watkins — started the last game; no announcement for this one.",
       "Duke quarterback: Walker Eget — started the last game; no announcement for this one."
     ],
@@ -1488,6 +1486,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-22T11:27:42.488Z"
+    "at": "2026-09-22T17:38:06.707Z"
   }
 }

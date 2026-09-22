@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Howard vs. Rutgers: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Howard vs. Rutgers 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Howard at Rutgers at Rutgers -26.3. Rutgers wins 96% of simulations. Data confidence 51%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Howard at Rutgers at Rutgers -26.3. Rutgers wins 96% of simulations. Data confidence 51%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Rutgers carries a full EdgeDesk team rating at +1.0; Howard is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Rutgers -26.3 before any sportsbook number is…",
   "home_team": "Rutgers",
   "away_team": "Howard",
@@ -21,11 +21,11 @@
   "game_time": "2026-09-25T23:00:00.000Z",
   "game_when_label": "2026-09-25 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-22T04:44:08.090Z",
-  "generated_at": "2026-09-22T11:27:42.488Z",
+  "updated_at": "2026-09-22T17:38:06.707Z",
+  "generated_at": "2026-09-22T17:38:06.707Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "INVESTIGATE",
+  "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
   "confidence": 51,
   "priced": true,
   "fair_spread_text": "Rutgers -26.3",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-22. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-22, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -164,8 +164,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "INVESTIGATE",
+      "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -258,7 +258,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-12T16:00:00.000Z",
-        "retrieved_at": "2026-09-22T02:55:27.358Z"
+        "retrieved_at": "2026-09-22T15:51:54.938Z"
       },
       "home": {
         "team": "Rutgers",
@@ -348,9 +348,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-22T02:55:27.358Z"
+        "retrieved_at": "2026-09-22T15:51:54.938Z"
       },
-      "generated_at": "2026-09-22T02:56:09.206Z",
+      "generated_at": "2026-09-22T15:52:40.469Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1216,8 +1216,8 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "sample",
-          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "label": "market disagreement",
+          "text": "The market disagrees by 16.2 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
           "widening": null
         },
         {
@@ -1272,18 +1272,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
           "widening": null
         },
         {
@@ -1346,15 +1334,25 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Rutgers -26.3",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Rutgers -42.5",
+      "difference": "16.2 points",
+      "difference_n": 16.160167796319136,
+      "total_model": null,
+      "total_market": "53.5",
+      "book": "captured · FanDuel",
+      "captured": "2026-09-22T16:18:01.053+00:00",
+      "capture_age": "1 hour old",
+      "stale": false,
+      "classification": "INVESTIGATE",
+      "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "headline": "EdgeDesk rates one side of this game and not the other. What it has is below; what it does not have is named.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "INVESTIGATE",
+      "note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": null,
@@ -1496,7 +1494,7 @@
       "EdgeDesk’s line is Rutgers -26.3 on a neutral read of the two teams, before any book is consulted.",
       "Rutgers wins 96% of the time in EdgeDesk’s simulation, Howard 4%.",
       "Eight games in ten land between +3.3 and +47.3 for Rutgers. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Rutgers -42.5 at captured · FanDuel, 16.2 points from EdgeDesk’s number.",
       "Howard quarterback: Ja'Shawn Scroggins — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1513,6 +1511,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-22T11:27:42.488Z"
+    "at": "2026-09-22T17:38:06.707Z"
   }
 }
