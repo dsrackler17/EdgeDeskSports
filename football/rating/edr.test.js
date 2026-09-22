@@ -389,8 +389,10 @@ chk('this season is trusted more the more of it has been played',
       const body = app.slice(i, app.indexOf('\nfunction ', i + 10));
       return !/epa_per_db|rush_value|season_epa|career_epa/.test(body);
     })());
-  chk('snap share and replacement quality are left null rather than invented for college football',
-    /snap_share:null,/.test(app) && /replacement_quality:null,/.test(app));
+  chk('college availability uses measured snap share only after a unique player join, and never prices guessed replacement quality',
+    /snap_share:athlete&&athlete\.share!=null&&isFinite\(athlete\.share\)\?\+athlete\.share:null,/.test(app)
+      && /replacement_quality:null,/.test(app)
+      && /replacement_quality_research:researchRepl/.test(app));
   chk('the app reads the committed rating file', /football\/rating\/current\.json/.test(app));
   chk('the board still shows the engine state the lines are actually priced from, alongside the rating',
     /priced from/.test(app));
