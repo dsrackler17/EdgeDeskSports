@@ -34,6 +34,7 @@
     team_rating: 'team_rating_v1',
     run_defence_power: 'run_defence_power_v1',
     special_teams: 'special_teams_v1',
+    coaching_program: 'coaching_program_v1',
     /* the layers underneath, restated so every artifact says what it was built
        on rather than leaving the reader to guess */
     player_rating: 'player_rating_v1',
@@ -555,6 +556,9 @@
     { id: 'overall',      label: 'Overall',      field: 'etsr',                   dir: -1 },
     { id: 'talent',       label: 'Talent',       field: 'talent.rating',          dir: -1 },
     { id: 'performance',  label: 'Performance',  field: 'performance.rating',     dir: -1 },
+    { id: 'coaching_program', label: 'Coaching / Program', field: 'coaching_program_rating', dir: -1,
+      confidence_field: 'coaching_program_reliability', confidence_label: 'coaching/program reliability',
+      research_only: true },
     { id: 'offense',      label: 'Offense',      field: 'performance.offense',    dir: -1 },
     { id: 'defense',      label: 'Defense',      field: 'performance.defense',    dir: -1 },
     { id: 'run_offense',  label: 'Run offense',  field: 'performance.run_offense',dir: -1 },
@@ -583,7 +587,7 @@
    * MOVEMENT, STABILITY AND ANOMALIES                                   *
    * ------------------------------------------------------------------ */
   var MOVEMENT = {
-    explain_components: ['talent', 'performance', 'offense', 'defense', 'special_teams', 'run_offense',
+    explain_components: ['talent', 'performance', 'coaching_program', 'offense', 'defense', 'special_teams', 'run_offense',
       'pass_offense', 'run_defense', 'pass_defense', 'opponent_adjustment', 'prior_weight', 'availability'],
     min_reportable_points: 0.05,
     basis: 'movement is explained by DIFFERENCING the components between two snapshots and reporting the ones that actually moved. No model is asked why a rating changed, because the answer is arithmetic and the arithmetic is available.'
