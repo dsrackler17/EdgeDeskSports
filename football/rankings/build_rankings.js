@@ -653,6 +653,8 @@ async function main() {
       const r = ranks[cat].ranks[k];
       teams[k].ranks[cat] = r ? { rank: r.rank, value: r.value, unranked: !!r.unranked, reason: r.reason || null } : null;
     }
+    teams[k].coaching_program_rank = teams[k].ranks.coaching_program
+      ? teams[k].ranks.coaching_program.rank : null;
     teams[k].achievement = ETSR.achievement(k, ranks);
     teams[k].why = ETSR.why(k, teams, ranks, { team_count: Object.keys(teams).length });
   }
@@ -715,7 +717,7 @@ async function main() {
     carryover: finalSlope,
     coaching_program: { schema: coachingProgram.schema, status: coachingProgram.status, affects_etsr: false,
       final_score_enabled: true,
-      ranking_enabled: false,
+      ranking_enabled: true,
       measured_components: ['talent_conversion', 'multi_season_program_overperformance', 'roster_management_retention', 'development'],
       observed_not_scored: ['staff_continuity_stability'],
       unavailable_components: ['game_management'],
@@ -724,7 +726,7 @@ async function main() {
         : { available: false, reason: coachingContinuityRaw
           ? 'coaching continuity artifact season does not match this rankings build'
           : 'coaching continuity artifact is missing' },
-      note: 'Step 5 research layer: measured component weights are renormalized across available inputs, missing weights reduce reliability, and the final score is shrunk toward 50. Ranking and ETSR impact remain disabled.' },
+      note: 'Step 6 research layer: the reliability-shrunk coaching/program score is ranked using coaching/program reliability, preserved in immutable snapshots/history and exposed to the UI. ETSR impact remains disabled.' },
     centre: built.centre, centre_basis: built.centre_basis,
     market: market.available
       ? { available: true, games: market.games, home_field: market.home_field, iterations: market.iterations,
@@ -822,7 +824,10 @@ async function main() {
       offense: r.categories.offense ? r.categories.offense.value : null,
       defense: r.categories.defense ? r.categories.defense.value : null,
       special_teams: r.categories.special_teams ? r.categories.special_teams.value : null,
-      talent: r.categories.talent ? r.categories.talent.value : null
+      talent: r.categories.talent ? r.categories.talent.value : null,
+      coaching_program: r.categories.coaching_program ? r.categories.coaching_program.value : null,
+      coaching_program_rank: r.categories.coaching_program ? r.categories.coaching_program.rank : null,
+      coaching_program_reliability: r.coaching_program ? r.coaching_program.reliability : null
     }));
     teams[k].history_basis = 'every week this team has been on the board, oldest first, straight out of the immutable weekly snapshots. The full per-category series with its deltas is football/rankings/history.json.';
   }
@@ -1047,6 +1052,7 @@ function pipelineHealth(a) {
     if (t.performance.offense == null) miss.push('offense');
     if (t.performance.defense == null) miss.push('defense');
     if (!t.special_teams || t.special_teams.rating == null) miss.push('special_teams');
+    if (t.coaching_program_rating == null) miss.push('coaching_program');
     if (!miss.length) continue;
     const reasons = [];
     /* WHY A TEAM THAT PLAYED HAS NO OFFENCE. "No metric cleared its floor" is
@@ -1076,6 +1082,9 @@ function pipelineHealth(a) {
     if (!t.special_teams || t.special_teams.rating == null) {
       reasons.push('special teams: ' + ((t.special_teams && t.special_teams.reason) || 'no special-teams record'));
     }
+    if (t.coaching_program_rating == null) {
+      reasons.push('coaching / program: no reliability-shrunk score was published because no measured subcomponent with positive reliability was available');
+    }
     if (!reasons.length) reasons.push('no rating in ' + miss.join(', ') + ' and no reason was recorded — investigate');
     gaps.push({ team: t.team || k, key: k,
       games_played: smp.games_played == null ? 0 : smp.games_played,
@@ -1085,6 +1094,8 @@ function pipelineHealth(a) {
   }
 
   const lowConf = keys.filter(k => teams[k].confidence.value < CFG.RANK_MIN_CONFIDENCE).length;
+  const lowCoachingReliability = keys.filter(k => teams[k].coaching_program_rating != null
+    && teams[k].coaching_program_reliability < CFG.RANK_MIN_CONFIDENCE).length;
   const oneGame = keys.filter(k => teams[k].performance.sample && teams[k].performance.sample.games === 1);
 
   return {
@@ -1102,6 +1113,7 @@ function pipelineHealth(a) {
       overall: has(t => t.etsr),
       talent: has(t => t.talent.rating),
       performance: has(t => t.performance.rating),
+      coaching_program: has(t => t.coaching_program_rating),
       offense: has(t => t.performance.offense),
       defense: has(t => t.performance.defense),
       special_teams: has(t => t.special_teams && t.special_teams.rating),
@@ -1115,10 +1127,11 @@ function pipelineHealth(a) {
     by_category: byCategory,
     confidence: {
       below_rank_floor: lowConf,
+      coaching_program_below_rank_floor: lowCoachingReliability,
       rank_floor: CFG.RANK_MIN_CONFIDENCE,
       one_game_teams: oneGame.length,
       one_game_rated: oneGame.filter(k => teams[k].performance.rating != null).length,
-      basis: 'a team below the rank floor keeps its RATING and loses its RANK in every category. A one-game team is rated, heavily shrunk and openly low-confidence — that is what confidence is for.'
+      basis: 'ordinary categories use overall team confidence for the rank floor. Coaching / Program uses its own coaching_program_reliability. In either case a team keeps its rating and loses only its rank when reliability is below the floor.'
     },
     genuinely_unavailable: gaps,
     ingestion: {
@@ -1192,7 +1205,7 @@ function printHealth(h) {
   log('\n  PIPELINE HEALTH — ' + h.season + ' ' + h.week_label);
   log('    ' + String(h.fbs_teams_expected).padStart(4) + '  FBS teams');
   log('    ' + String(h.teams_processed).padStart(4) + '  teams processed');
-  for (const id of ['overall', 'talent', 'performance', 'offense', 'defense', 'special_teams',
+  for (const id of ['overall', 'talent', 'performance', 'coaching_program', 'offense', 'defense', 'special_teams',
     'run_offense', 'pass_offense', 'run_defense', 'pass_defense']) {
     log('    ' + String(h.ratings[id]).padStart(4) + '  ' + id.replace(/_/g, ' ') + ' ratings');
   }

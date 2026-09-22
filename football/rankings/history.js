@@ -80,6 +80,29 @@
       } : null,
       run_defence_power: { score: team.run_defence_power ? team.run_defence_power.score : null },
       availability: { rating: team.availability ? team.availability.rating : null },
+      coaching_program: {
+        rating: team.coaching_program_rating == null ? null : r2(team.coaching_program_rating),
+        raw_score: team.coaching_program_raw_score == null ? null : r2(team.coaching_program_raw_score),
+        rank: team.coaching_program_rank == null ? null : team.coaching_program_rank,
+        reliability: team.coaching_program_reliability == null ? 0 : r2(team.coaching_program_reliability),
+        observed_weight: team.coaching_program_observed_weight == null ? 0 : r2(team.coaching_program_observed_weight),
+        adjustment_points: team.coaching_program_adjustment_points == null ? 0 : r2(team.coaching_program_adjustment_points),
+        affects_etsr: !!team.coaching_program_affects_etsr,
+        inputs: (function () {
+          var src = team.coaching_program_inputs || {}, cp = {}, id;
+          for (id in src) {
+            if (!Object.prototype.hasOwnProperty.call(src, id)) continue;
+            cp[id] = {
+              value: src[id].value == null ? null : r2(src[id].value),
+              reliability: src[id].reliability == null ? 0 : r2(src[id].reliability),
+              observations: src[id].observations == null ? 0 : src[id].observations,
+              weighted_evidence: src[id].weighted_evidence == null ? 0 : r2(src[id].weighted_evidence),
+              available: src[id].available === true
+            };
+          }
+          return cp;
+        })()
+      },
       /* [value, rank] per category — the whole board, per team, per week */
       cat: out,
       gates: (team.gates || []).map(function (g) { return g.id; })
@@ -114,6 +137,7 @@
         generated_at: s.generated_at || null,
         rating_version: (s.versions && s.versions.team_rating) || null,
         etsr: t.etsr, rank: t.rank, confidence: t.confidence,
+        coaching_program: t.coaching_program || null,
         categories: {}
       };
       for (j = 0; j < cats.length; j++) {
@@ -132,7 +156,30 @@
       cur.previous = { season: prev.season, week_ordinal: prev.week_ordinal, week_label: prev.week_label,
         weeks_between: (cur.season === prev.season) ? (cur.week_ordinal - prev.week_ordinal) : null };
       cur.delta = { etsr: (isNum(cur.etsr) && isNum(prev.etsr)) ? r2(cur.etsr - prev.etsr) : null,
-        rank: (isNum(cur.rank) && isNum(prev.rank)) ? (prev.rank - cur.rank) : null, categories: {} };
+        rank: (isNum(cur.rank) && isNum(prev.rank)) ? (prev.rank - cur.rank) : null, categories: {},
+        coaching_program: null };
+      if (cur.coaching_program || prev.coaching_program) {
+        var ca = cur.coaching_program || {}, cb = prev.coaching_program || {}, sub = {}, sid;
+        var ai = ca.inputs || {}, bi = cb.inputs || {};
+        var ids = {};
+        for (sid in ai) if (Object.prototype.hasOwnProperty.call(ai, sid)) ids[sid] = 1;
+        for (sid in bi) if (Object.prototype.hasOwnProperty.call(bi, sid)) ids[sid] = 1;
+        for (sid in ids) {
+          var av = ai[sid] && ai[sid].value, bv = bi[sid] && bi[sid].value;
+          var ar = ai[sid] && ai[sid].reliability, br = bi[sid] && bi[sid].reliability;
+          sub[sid] = {
+            value: (isNum(av) && isNum(bv)) ? r2(av - bv) : null,
+            reliability: (isNum(ar) && isNum(br)) ? r2(ar - br) : null
+          };
+        }
+        cur.delta.coaching_program = {
+          rating: (isNum(ca.rating) && isNum(cb.rating)) ? r2(ca.rating - cb.rating) : null,
+          raw_score: (isNum(ca.raw_score) && isNum(cb.raw_score)) ? r2(ca.raw_score - cb.raw_score) : null,
+          reliability: (isNum(ca.reliability) && isNum(cb.reliability)) ? r2(ca.reliability - cb.reliability) : null,
+          rank: (isNum(ca.rank) && isNum(cb.rank)) ? (cb.rank - ca.rank) : null,
+          inputs: sub
+        };
+      }
       for (j = 0; j < cats.length; j++) {
         var cc = cats[j];
         var a = cur.categories[cc], b = prev.categories[cc];
