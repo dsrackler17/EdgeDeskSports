@@ -130,37 +130,68 @@ function normRows(raw) {
 
 /* ------------------------------------------------------- the rating state
    The browser seeds from the trained table and absorbs every completed game
-   in kickoff order. Replayed identically here: a coverage report built off a
-   different state than the board's would be measuring the wrong thing. */
+   in kickoff order. Score/margin always advances the legacy scoring and
+   uncertainty machinery. The current rankings play artifact, when it has a
+   real row for that game, advances play-level efficiency on the SAME replay.
+   A missing play row stays missing; the final score is never reverse-engineered
+   into fake success rate, yards/play, pressure, pace, or EPA. */
+function efficiencyForGame(ds, r, season) {
+  if (!ds || ds.schema !== 'edgedesk_cfb_engine_efficiency_v1'
+      || +ds.season !== +season || !ds.games || r.game_id == null) return null;
+  const g = ds.games[String(r.game_id)];
+  if (!g || !g.teams) return null;
+  const hk = FBS.normKey(r.home_team), ak = FBS.normKey(r.away_team);
+  const home = hk ? (g.teams[hk] || null) : null;
+  const away = ak ? (g.teams[ak] || null) : null;
+  if (!home && !away) return null;
+  return { home, away };
+}
+
 function buildState(rowsBySeason, season, efficiency) {
   const st = E.newState();
   let absorbed = 0, efficiencyGames = 0, efficiencyTeamRows = 0;
   const efficiencyMissingFinalGames = [];
+
   for (let y = P.trained_through_season + 1; y <= season; y++) {
     E.ingest.seasonBreak(st);
     const rows = rowsBySeason[y];
     if (!rows) continue;
-    const ordered = rows.slice().sort((a, b) => String(a.start_date).localeCompare(String(b.start_date)));
-    for (const r of ordered) {
-      if (!r.completed || r.home_points == null || r.away_points == null) continue;
-      const eg = efficiency && efficiency.games && efficiency.games[String(r.game_id)];
-      const hKey = FBS.normKey(r.home_team), aKey = FBS.normKey(r.away_team);
+    const ordered = rows.slice().sort((a, b) =>
+      String(a.start_date).localeCompare(String(b.start_date))
+      || String(a.game_id).localeCompare(String(b.game_id)));
+
+    for (const row of ordered) {
+      if (!row.completed || row.home_points == null || row.away_points == null) continue;
+      const teamStats = y === season ? efficiencyForGame(efficiency, row, season) : null;
+
       E.ingest.absorbGame(st, {
-        home: r.home_team, away: r.away_team,
-        home_fbs: FBS.isFbsDivision(r.home_division, r.home_team, { knownFbs: P.rating.seed_ratings }),
-        away_fbs: FBS.isFbsDivision(r.away_division, r.away_team, { knownFbs: P.rating.seed_ratings }),
-        neutral_site: r.neutral_site, home_points: r.home_points, away_points: r.away_points,
-        team_stats: eg && eg.teams ? {
-          home: eg.teams[hKey] || null,
-          away: eg.teams[aKey] || null
-        } : null
+        home: row.home_team, away: row.away_team,
+        home_fbs: FBS.isFbsDivision(row.home_division, row.home_team, { knownFbs: P.rating.seed_ratings }),
+        away_fbs: FBS.isFbsDivision(row.away_division, row.away_team, { knownFbs: P.rating.seed_ratings }),
+        neutral_site: row.neutral_site,
+        home_points: row.home_points, away_points: row.away_points,
+        team_stats: teamStats
       });
+
+      if (y === season) {
+        if (teamStats) {
+          efficiencyGames++;
+          if (teamStats.home) efficiencyTeamRows++;
+          if (teamStats.away) efficiencyTeamRows++;
+        } else if (row.game_id != null) {
+          efficiencyMissingFinalGames.push(String(row.game_id));
+        }
+      }
       absorbed++;
     }
   }
-  return { st, absorbed, efficiency_games_absorbed: efficiencyGames,
+
+  return {
+    st, absorbed,
+    efficiency_games_absorbed: efficiencyGames,
     efficiency_team_rows_absorbed: efficiencyTeamRows,
-    efficiency_missing_final_games: efficiencyMissingFinalGames };
+    efficiency_missing_final_games: efficiencyMissingFinalGames
+  };
 }
 
 /* PROJECT A GAME THE WAY THE TERMINAL DOES.
@@ -278,28 +309,30 @@ async function main() {
     engineEfficiencyProblem = 'engine-efficiency artifact is for season ' + engineEfficiency.season + ', not ' + a.season;
   }
 
-  const { st, absorbed } = buildState(rowsBySeason, a.season,
+  const stateBuild = buildState(rowsBySeason, a.season,
     engineEfficiencyProblem ? null : engineEfficiency);
+  const { st, absorbed } = stateBuild;
 
-  /* Prove that "absorbed" also means the replay saw real team efficiency,
-     not merely a final score. This is checked against the exact completed
-     games being replayed, not against the artifact's raw row count. */
+  /* Keep score-final coverage and play-level coverage separate. The latter can
+     legitimately lag the former by a provider publish cycle, and that gap must
+     lower context confidence rather than either inventing stats or killing the
+     entire board. */
   let completedWithBothEfficiency = 0;
   const completedMissingEfficiency = [];
   const hasNumericEfficiency = o => !!(o && Object.values(o)
     .some(v => typeof v === 'number' && isFinite(v)));
-  for (const y of Object.keys(rowsBySeason)) {
-    for (const r of rowsBySeason[y] || []) {
-      if (!r.completed || r.home_points == null || r.away_points == null) continue;
-      const eg = engineEfficiency && engineEfficiency.games
-        ? engineEfficiency.games[String(r.game_id)] : null;
-      const hk = FBS.normKey(r.home_team), ak = FBS.normKey(r.away_team);
-      const h = eg && eg.teams ? eg.teams[hk] : null;
-      const aStats = eg && eg.teams ? eg.teams[ak] : null;
-      if (hasNumericEfficiency(h) && hasNumericEfficiency(aStats)) completedWithBothEfficiency++;
-      else completedMissingEfficiency.push({
-        game_id: r.game_id, game: r.away_team + ' @ ' + r.home_team,
-        home: hasNumericEfficiency(h), away: hasNumericEfficiency(aStats)
+  for (const row of target) {
+    if (!row.completed || row.home_points == null || row.away_points == null) continue;
+    const joined = efficiencyForGame(engineEfficiency, row, a.season);
+    const home = joined && joined.home, away = joined && joined.away;
+    if (hasNumericEfficiency(home) && hasNumericEfficiency(away)) {
+      completedWithBothEfficiency++;
+    } else {
+      completedMissingEfficiency.push({
+        game_id: row.game_id,
+        game: row.away_team + ' @ ' + row.home_team,
+        home: hasNumericEfficiency(home),
+        away: hasNumericEfficiency(away)
       });
     }
   }
@@ -446,12 +479,21 @@ async function main() {
   report.checks = [];
   report.failures = [];
 
-  run(report, 'every completed replayed game carries team efficiency for both sides',
-    { replayed: absorbed, with_both: completedWithBothEfficiency,
-      problem: engineEfficiencyProblem,
-      missing: completedMissingEfficiency.slice(0, 10) },
-    !engineEfficiencyProblem && completedMissingEfficiency.length === 0
-      && completedWithBothEfficiency === absorbed);
+  run(report, 'current-season engine efficiency artifact matches the pricing replay',
+    { schema: engineEfficiency && engineEfficiency.schema,
+      season: engineEfficiency && engineEfficiency.season,
+      problem: engineEfficiencyProblem },
+    !engineEfficiencyProblem);
+
+  report.warnings = report.warnings || [];
+  if (completedMissingEfficiency.length) {
+    report.warnings.push({
+      name: 'completed games waiting on play-level efficiency',
+      count: completedMissingEfficiency.length,
+      detail: completedMissingEfficiency.slice(0, 10),
+      effect: 'ETSR still supplies neutral-field team strength; matchup efficiency for those teams remains on the trained seed and confidence stays lower until the play feed lands'
+    });
+  }
 
   /* 0 — the richer neutral-field rating really is the pricing backbone. */
   const canonicalMissing = [];
