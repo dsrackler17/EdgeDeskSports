@@ -148,5 +148,11 @@ def build_cfb():
 
 
 if __name__ == '__main__':
-    build_nfl()
-    build_cfb()
+    nfl_only = '--nfl-only' in sys.argv
+    cfb_only = '--cfb-only' in sys.argv
+    if nfl_only and cfb_only:
+        raise SystemExit('choose at most one of --nfl-only / --cfb-only')
+    if not cfb_only:
+        build_nfl()
+    if not nfl_only:
+        build_cfb()
