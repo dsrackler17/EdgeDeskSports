@@ -532,7 +532,25 @@ async function main() {
 
   /* ---- assemble the team records ---- */
   const week = resolveWeek(sched[cur]);
-  const coachingProgram = COACHING_PROGRAM.build(Object.keys(curTalent.teams));
+  const coachingSeasons = {};
+  for (const y of seasons) {
+    const sb = seasonBuilds[y];
+    if (!sb || !perfBySeason[y]) continue;
+    coachingSeasons[y] = {
+      /* The current season uses the committed player artifact, exactly like
+         the published TALENT column. Prior seasons use their historical roster
+         layer, which was already built above for the carryover chain. */
+      talent: y === cur ? curTalent.teams : sb.talent.teams,
+      performance: perfBySeason[y].teams
+    };
+  }
+  const coachingProgram = COACHING_PROGRAM.build(Object.keys(curTalent.teams), {
+    season: cur,
+    seasons: coachingSeasons,
+    /* A reconstructed old week reads today's player artifact. Refuse that
+       current-season coaching residual instead of leaking future roster data. */
+    allow_current: THROUGH_ORD == null
+  });
   const market = await marketPower(cur, sched[cur], CACHE);
   const overrides = readJson(OVERRIDES, { overrides: [] });
   const teams = {};
@@ -682,7 +700,9 @@ async function main() {
     data_freshness: dataFreshness(sched[cur], play[cur], perf, finality[cur]),
     carryover: finalSlope,
     coaching_program: { schema: coachingProgram.schema, status: coachingProgram.status, affects_etsr: false,
-      note: 'Step 2 contract-only plumbing: every coaching/program subcomponent is unavailable until measurable inputs are implemented.' },
+      final_score_enabled: false,
+      measured_components: ['talent_conversion', 'multi_season_program_overperformance'],
+      note: 'Step 3 research layer: talent conversion and persistent residual are measured. Final coaching/program shrinkage, ranking and ETSR impact remain disabled.' },
     centre: built.centre, centre_basis: built.centre_basis,
     market: market.available
       ? { available: true, games: market.games, home_field: market.home_field, iterations: market.iterations,
