@@ -64,4 +64,34 @@ const resettle = L.settle(ledger, {
 assert.strictEqual(resettle.settled, false);
 assert.strictEqual(ledger.settled.g1.residual, 2.75);
 
+/* Raw current-residual evidence is measurable, season-scoped and honest about
+   missing teams. No score, reliability curve or neutral default is invented. */
+const current = L.summarizeCurrentResidual(ledger, {
+  season: 2026,
+  teamKeys: ['KC', 'DEN', 'BUF']
+});
+assert.strictEqual(current.schema, L.EVIDENCE_SCHEMA);
+assert.strictEqual(current.input, 'current_residual_conversion');
+assert.strictEqual(current.teams.KC.available, true);
+assert.strictEqual(current.teams.KC.observations, 1);
+assert.strictEqual(current.teams.KC.value, 1.375);
+assert.strictEqual(current.teams.KC.total_evidence, 1.375);
+assert.deepStrictEqual(current.teams.KC.game_ids, ['g1']);
+assert.strictEqual(current.teams.DEN.available, true);
+assert.strictEqual(current.teams.DEN.value, -1.375);
+assert.strictEqual(current.teams.BUF.available, false);
+assert.strictEqual(current.teams.BUF.value, null);
+assert.strictEqual(current.teams.BUF.observations, 0);
+
+const otherSeason = L.summarizeCurrentResidual(ledger, {
+  season: 2025,
+  teamKeys: ['KC']
+});
+assert.strictEqual(otherSeason.teams.KC.available, false);
+assert.strictEqual(otherSeason.teams.KC.value, null);
+
+const invalidEvidence = L.summarizeCurrentResidual(null, { teamKeys: ['KC'] });
+assert.match(invalidEvidence.error, /invalid ledger/i);
+assert.strictEqual(invalidEvidence.teams.KC.value, null);
+
 console.log('nfl coaching_staff_ledger: passed');
