@@ -250,6 +250,12 @@ jobs:
       - name: The player quality panel says what it can and cannot see
         run: node tools/football/player_quality_ui.test.js
 
+      # app.html is intentionally patched by narrow, idempotent scripts rather
+      # than replaced as a four-megabyte blob. Apply the Coaching / Program UI
+      # patch before any test that executes the rankings renderer.
+      - name: Patch Coaching / Program rankings UI
+        run: node tools/football/patch_coaching_program_ui.js
+
       # The national rankings, the enrichment layer and the promotion gate that
       # decides whether any of it is allowed to move a projected number.
       - name: The rankings and the enrichment obey their own rules
