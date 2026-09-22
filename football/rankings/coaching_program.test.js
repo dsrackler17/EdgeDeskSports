@@ -34,7 +34,11 @@ for (const id of ids) {
   assert.strictEqual(x.observations, 0);
   assert.strictEqual(x.weighted_evidence, 0);
   assert.strictEqual(x.reliability, 0);
-  assert.strictEqual(x.source, null);
+  if (id === 'game_management') {
+    assert.ok(/play-by-play/i.test(x.source || ''), 'game management should name the audited source even while unscored');
+  } else {
+    assert.strictEqual(x.source, null);
+  }
   assert.strictEqual(x.available, false);
   configuredWeight += x.configured_weight;
 }
