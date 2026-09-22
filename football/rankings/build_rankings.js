@@ -66,6 +66,7 @@ const OUT_HEALTH = path.join(DIR, 'health.json');
 const OUT_HIST = path.join(DIR, 'history.json');
 const OUT_PARAMS = path.join(DIR, 'params.js');
 const OVERRIDES = path.join(DIR, 'overrides.json');
+const COACHING_CONTINUITY = path.join(DIR, '..', 'coaching', 'continuity.json');
 
 function arg(name, fb) {
   const i = process.argv.indexOf('--' + name);
@@ -537,18 +538,28 @@ async function main() {
     const sb = seasonBuilds[y];
     if (!sb || !perfBySeason[y]) continue;
     coachingSeasons[y] = {
-      /* The current season uses the committed player artifact, exactly like
-         the published TALENT column. Prior seasons use their historical roster
-         layer, which was already built above for the carryover chain. */
+      /* Talent follows the published contract. Roster management uses the
+         committed current team artifact, while development uses same-player
+         reconstructed season records so transfers cannot receive development
+         credit merely for arriving talented. */
       talent: y === cur ? curTalent.teams : sb.talent.teams,
-      performance: perfBySeason[y].teams
+      performance: perfBySeason[y].teams,
+      roster: y === cur ? playersCur.teams : layers[y].units,
+      players: layers[y].byTeam
     };
   }
+  const coachingContinuityRaw = readJson(COACHING_CONTINUITY, null);
+  const coachingContinuity = coachingContinuityRaw && coachingContinuityRaw.season === cur
+    ? coachingContinuityRaw : null;
   const coachingProgram = COACHING_PROGRAM.build(Object.keys(curTalent.teams), {
     season: cur,
     seasons: coachingSeasons,
-    /* A reconstructed old week reads today's player artifact. Refuse that
-       current-season coaching residual instead of leaking future roster data. */
+    staff: coachingContinuity,
+    roster_last_updated: playersCur.generated_at || null,
+    development_last_updated: startedAt,
+    /* The committed current roster and current staff artifact did not exist
+       at old weekly cutoffs. Refuse those two current-season inputs during a
+       reconstruction rather than leaking future personnel information. */
     allow_current: THROUGH_ORD == null
   });
   const market = await marketPower(cur, sched[cur], CACHE);
@@ -701,8 +712,15 @@ async function main() {
     carryover: finalSlope,
     coaching_program: { schema: coachingProgram.schema, status: coachingProgram.status, affects_etsr: false,
       final_score_enabled: false,
-      measured_components: ['talent_conversion', 'multi_season_program_overperformance'],
-      note: 'Step 3 research layer: talent conversion and persistent residual are measured. Final coaching/program shrinkage, ranking and ETSR impact remain disabled.' },
+      measured_components: ['talent_conversion', 'multi_season_program_overperformance', 'roster_management_retention', 'development'],
+      observed_not_scored: ['staff_continuity_stability'],
+      unavailable_components: ['game_management'],
+      staff_artifact: coachingContinuity
+        ? { available: true, season: coachingContinuity.season, generated_at: coachingContinuity.generated_at || null }
+        : { available: false, reason: coachingContinuityRaw
+          ? 'coaching continuity artifact season does not match this rankings build'
+          : 'coaching continuity artifact is missing' },
+      note: 'Step 4 research layer: roster management and same-program player development are measured. HC continuity is observed but deliberately not scored; OC/DC and game management remain unavailable. Final coaching/program shrinkage, ranking and ETSR impact remain disabled.' },
     centre: built.centre, centre_basis: built.centre_basis,
     market: market.available
       ? { available: true, games: market.games, home_field: market.home_field, iterations: market.iterations,
