@@ -97,7 +97,7 @@ function applyCoachingLedger(ledger, upcomingGames, scheduleRows, observedAt) {
   if (!ledger || ledger.schema !== COACHING_LEDGER.SCHEMA || !ledger.pending || !ledger.settled) {
     throw new Error('invalid NFL coaching ledger');
   }
-  const report = { captured: 0, already_frozen: 0, settled: 0, skipped_unpriced: 0, pending_total: 0, settled_total: 0 };
+  const report = { captured: 0, captured_ids: [], already_frozen: 0, settled: 0, skipped_unpriced: 0, pending_total: 0, settled_total: 0, research_snapshots_frozen: 0 };
 
   /* Settlement comes only from a projection that was frozen on an earlier
      build. A completed game with no pending row is ignored rather than being
@@ -125,13 +125,45 @@ function applyCoachingLedger(ledger, upcomingGames, scheduleRows, observedAt) {
       continue;
     }
     const r = COACHING_LEDGER.capture(ledger, Object.assign({}, g, { captured_at: observedAt }));
-    if (r.captured) report.captured++;
+    if (r.captured) { report.captured++; report.captured_ids.push(String(g.game_id)); }
     else if (/already frozen/i.test(String(r.reason || ''))) report.already_frozen++;
   }
 
   report.pending_total = Object.keys(ledger.pending).length;
   report.settled_total = Object.keys(ledger.settled).length;
   return report;
+}
+
+function freezeCapturedCoachingResearch(ledger, capturedIds, upcomingGames, coachingStaff, frozenAt) {
+  if (!ledger || ledger.schema !== COACHING_LEDGER.SCHEMA) return 0;
+  const byGame = {};
+  (upcomingGames || []).forEach((g) => { if (g && g.game_id != null) byGame[String(g.game_id)] = g; });
+  const teams = coachingStaff && coachingStaff.teams ? coachingStaff.teams : {};
+  let frozen = 0;
+
+  function side(teamCode) {
+    const row = teamCode ? teams[String(teamCode)] : null;
+    const factor = COACHING_STAFF.researchAdjustmentFactor(row);
+    return {
+      available: !!(row && row.coaching_staff_available === true),
+      rating: row && typeof row.coaching_staff_rating === 'number' ? row.coaching_staff_rating : null,
+      reliability: row && typeof row.coaching_staff_reliability === 'number' ? row.coaching_staff_reliability : 0,
+      factor: factor
+    };
+  }
+
+  (capturedIds || []).forEach((id) => {
+    const g = byGame[String(id)];
+    if (!g) return;
+    const r = COACHING_LEDGER.freezeResearchSnapshot(ledger, String(id), {
+      frozen_at: frozenAt || null,
+      home: side(g.home_code),
+      away: side(g.away_code)
+    });
+    if (r.frozen) frozen++;
+  });
+
+  return frozen;
 }
 
 function currentHeadCoaches(scheduleRows, season, now) {
@@ -368,6 +400,15 @@ async function build(opts) {
     })
   } : null;
   const coachingStaff = COACHING_STAFF.build(coachingTeamKeys, coachingEvidence);
+  if (coachingLedgerReport && opts.coachingLedger) {
+    coachingLedgerReport.research_snapshots_frozen = freezeCapturedCoachingResearch(
+      opts.coachingLedger,
+      coachingLedgerReport.captured_ids,
+      games,
+      coachingStaff,
+      new Date(now).toISOString()
+    );
+  }
 
   const forecast = await fetchNflForecasts(games, { offline: !!opts.offline });
   games.forEach((g) => { const w = forecast.byGame[String(g.game_id)]; const v = nflForecastWanted([g])[0]; g.venue_geography = v && v.venue ? { name: v.venue.name, lat: v.venue.lat, lon: v.venue.lon, tz_name: v.venue.tz_name, roof: v.venue.roof, verification: v.venue.verification, source: v.venue.source } : null; if (w) g.forecast = w; });
@@ -458,5 +499,5 @@ async function main() {
   console.log('wrote ' + path.relative(ROOT, COACHING_LEDGER_OUT));
   console.log('wrote ' + path.relative(ROOT, OUT));
 }
-module.exports = { build, nflForecastWanted, fetchNflForecasts, applyCoachingLedger, loadCoachingLedger, currentHeadCoaches, SCHEMA, OUT, COACHING_LEDGER_OUT, etToIso };
+module.exports = { build, nflForecastWanted, fetchNflForecasts, applyCoachingLedger, freezeCapturedCoachingResearch, loadCoachingLedger, currentHeadCoaches, SCHEMA, OUT, COACHING_LEDGER_OUT, etToIso };
 if (require.main === module) main();
