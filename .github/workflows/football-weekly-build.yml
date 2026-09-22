@@ -83,7 +83,6 @@ on:
       - 'football/players/units.js'
       - 'football/players/scheme.js'
       - 'football/players/build_players.js'
-      - 'football/players/build_injury_index.js'
       - 'football/players/run_build.js'
       - 'football/players/*.test.js'
       - 'football/availability/**'
@@ -248,10 +247,6 @@ jobs:
         run: node --max-old-space-size=6144 football/players/build_players.js --cache .cache/football
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
           ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
-
-      - name: Build injury identity index
-        if: steps.go.outputs.run == 'true'
-        run: node football/players/build_injury_index.js
 
       - name: National rankings, special teams and ETSR
         if: steps.go.outputs.run == 'true' && github.event.inputs.backfill != 'true'
@@ -491,7 +486,7 @@ jobs:
           # generated file both sides rewrote cannot leave unmerged paths.
           bash tools/ci/push_generated.sh "${GITHUB_REF_NAME}" \
             "football: ${SEASON} ${WEEK} ratings and rankings" -- \
-            football/players/current.json football/players/index.json football/players/injury_index.json \
+            football/players/current.json football/players/index.json \
             football/players/params.js football/players/teams \
             football/players/snapshots football/players/candidates \
             football/data/box football/rankings/current.json football/rankings/engine_efficiency.json \
