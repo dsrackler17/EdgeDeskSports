@@ -976,14 +976,14 @@ function buildRequest(ctx, o) {
       if (isNum(rat) && isFbs) {
         const n = gamesOf(key);
         contract.push(row('team_rating', side, 'USABLE',
-          { source: 'EdgeDesk ETSR + the trained preseason seed',
+          { source: 'EdgeDesk CFB pricing rating state: trained preseason seed + completed-game replay',
             identity: 'the engine’s own team key',
             detail: 'rated ' + Math.round(rat * 100) / 100
               + (n == null ? '' : ' over ' + n + ' absorbed game(s) this season')
               + ', blended with the trained prior on the learned curve' }));
       } else {
         contract.push(row('team_rating', side, 'UNAVAILABLE',
-          { source: 'EdgeDesk ETSR',
+          { source: 'EdgeDesk CFB pricing non-FBS floor',
             detail: name + ' is outside the rated FBS field, so the projection uses params.rating.fcs_rating '
               + '— ONE floor number shared by every FCS programme. That is not a rating of this team, and '
               + 'the engine charges the full weight of the rating input for it. This row exists so that charge '
