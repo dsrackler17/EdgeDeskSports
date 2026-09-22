@@ -96,6 +96,7 @@ assert.strictEqual(buf.coaching_staff_candidate_adjustment_points, null);
 assert.strictEqual(buf.coaching_staff_adjustment_points, 0);
 assert.strictEqual(buf.coaching_staff_affects_nfl_projection, false);
 assert.strictEqual(buf.coaching_staff_available, false);
+assert.strictEqual(C.researchAdjustmentFactor(buf), null);
 assert.strictEqual(buf.coaching_staff_rank, null);
 assert.strictEqual(buf.coaching_staff_rank_of, null);
 
@@ -246,6 +247,7 @@ assert.strictEqual(mid.coaching_staff_inputs.current_residual_conversion.reliabi
 assert.strictEqual(mid.coaching_staff_inputs.current_residual_conversion.weighted_evidence, 0);
 assert.strictEqual(mid.coaching_staff_raw_score, 50);
 assert.strictEqual(mid.coaching_staff_rating, 50);
+assert.strictEqual(C.researchAdjustmentFactor(mid), 0);
 assert.strictEqual(mid.coaching_staff_reliability, 0.45);
 assert.strictEqual(mid.coaching_staff_observed_weight, 0.45);
 assert.strictEqual(mid.coaching_staff_available, true);
@@ -264,6 +266,8 @@ assert.strictEqual(calibrated.teams.T00.coaching_staff_rank_of, 21);
 assert.ok(high.coaching_staff_rating > 50);
 assert.ok(high.coaching_staff_rating < high.coaching_staff_raw_score,
   'partial configured coverage must shrink the research rating toward 50');
+assert.strictEqual(C.researchAdjustmentFactor(high), 0.08);
+assert.strictEqual(C.researchAdjustmentFactor(calibrated.teams.T00), -0.08);
 assert.strictEqual(calibrated.affects_nfl_projection, false);
 
 console.log('nfl coaching_staff contract: passed');
