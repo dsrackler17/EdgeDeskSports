@@ -220,6 +220,11 @@ jobs:
       - name: The dashboard files a slate under its sport, and can cover a new one
         run: node tools/collective/dashboard_model_resolution.test.js
 
+      # app.html is a checked-in legacy single-file client. Materialize
+      # the NFL Coaching / Staff research panel before any suite reads it.
+      - name: Patch NFL Coaching / Staff UI
+        run: node tools/football/patch_nfl_coaching_staff_ui.js
+
       # Reads the real functions out of app.html rather than a copy, so it
       # fails loudly if the block it slices moves instead of testing nothing.
       - name: The research boards can still post to the Collective
@@ -239,6 +244,9 @@ jobs:
 
       - name: The NFL slate carries Coaching Staff without moving projections
         run: node tools/football/nfl_slate.test.js
+
+      - name: The NFL board shows staff research and zero applied points
+        run: node tools/football/nfl_coaching_staff_ui.test.js
 
       # THE FBS UNIVERSE. Who is FBS this season, what conference they are in
       # THIS season, which program group that puts them in, what belongs on
