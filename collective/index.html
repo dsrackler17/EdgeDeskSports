@@ -2720,6 +2720,157 @@ function modelBehaviorHTML(b,coveragePct){
    a model the wall has not heard of keeps its slug as its name rather than
    being dropped: an unnamed model is the server's omission and hiding it
    would be worse than showing a slug. */
+
+/* ---- market usefulness: edge buckets + closing-line value -------------
+   ATS alone answers whether a side covered. These answer two different
+   questions that are more useful when deciding whether a model's disagreement
+   with the market is worth listening to:
+
+     CLV: did the MARKET move in the direction of the side the model named?
+          Positive points mean the number available when the model posted was
+          better than the captured close for that side.
+     EDGE BUCKET: how far the model's own spread was from the market line AT
+          SUBMISSION. This is frozen before the outcome and never uses the
+          closing line to decide which bucket a game belongs in.
+
+   Both stay descriptive. A 6-point disagreement on four games is four games,
+   not a magic "strong play" label. Every output carries its sample. */
+function marketClvPoints(side,postedLine,referenceLine){
+  side=String(side||'').toLowerCase();
+  if(side!=='home'&&side!=='away')return null;
+  if(postedLine==null||referenceLine==null)return null;
+  var p=Number(postedLine),r=Number(referenceLine);
+  if(!isFinite(p)||!isFinite(r))return null;
+  /* home pick: -3 posted and -5 close = +2 points of CLV.
+     away pick: home -3 posted and -1 close = away +3 vs +1 = +2. */
+  var v=side==='home'?(p-r):(r-p);
+  return Math.round(v*100)/100;
+}
+function edgeBucketKey(points){
+  if(points==null)return null;
+  var p=Number(points);
+  if(!isFinite(p)||p<0)return null;
+  if(p<2)return '0-2';
+  if(p<4)return '2-4';
+  if(p<6)return '4-6';
+  return '6+';
+}
+function diagBucket(label){
+  return {label:label,wins:0,losses:0,pushes:0,n:0,clv_sum:0,clv_n:0};
+}
+function finishDiagBucket(b){
+  var wl=b.wins+b.losses;
+  b.win_pct=wl?b.wins/wl:null;
+  b.avg_clv=b.clv_n?b.clv_sum/b.clv_n:null;
+  return b;
+}
+function modelBettingDiagnostics(games,cs,ms){
+  var order=['0-2','2-4','4-6','6+'];
+  var buckets={
+    '0-2':diagBucket('0-2 pts'),
+    '2-4':diagBucket('2-4 pts'),
+    '4-6':diagBucket('4-6 pts'),
+    '6+':diagBucket('6+ pts')
+  };
+  var clvSum=0,clvN=0,clvPos=0,clvNeg=0,clvZero=0,edgeN=0,seen={};
+  (games||[]).forEach(function(g){
+    var k=gameKey(g);
+    if(seen[k])return;
+    var fr=finalResult(g);
+    if(!fr)return;
+    var rows=(g&&g.models)||[];
+    for(var i=0;i<rows.length;i++){
+      var mr=rows[i];
+      if(!mr||mr.creator_slug!==cs||mr.model_slug!==ms)continue;
+      seen[k]=1;
+      var gr=rowGrade(g,mr);
+      if(!gr)break;
+      var side=pickSideNorm(mr)||impliedSide(mr,fr.closing_spread);
+      var clv=marketClvPoints(side,mr.line_at_submission,fr.closing_spread);
+      if(clv!=null){
+        clvSum+=clv;clvN++;
+        if(clv>0.005)clvPos++;
+        else if(clv<-0.005)clvNeg++;
+        else clvZero++;
+      }
+
+      /* A bucket describes the model's numerical disagreement AT POST time.
+         If its stated side contradicts its own two spread numbers, there is
+         no honest way to call that magnitude an edge on the stated side, so
+         keep the ATS result but leave it out of this diagnostic. */
+      if(gr.pick_result!=null&&mr.projected_spread!=null&&mr.line_at_submission!=null
+          &&!wireContradiction(mr)){
+        var model=Number(mr.projected_spread),posted=Number(mr.line_at_submission);
+        if(isFinite(model)&&isFinite(posted)){
+          var key=edgeBucketKey(Math.abs(model-posted));
+          var b=key&&buckets[key];
+          if(b){
+            edgeN++;b.n++;
+            if(gr.pick_result==='win')b.wins++;
+            else if(gr.pick_result==='loss')b.losses++;
+            else if(gr.pick_result==='push')b.pushes++;
+            if(clv!=null){b.clv_sum+=clv;b.clv_n++;}
+          }
+        }
+      }
+      break;
+    }
+  });
+  order.forEach(function(k){finishDiagBucket(buckets[k]);});
+  var large=diagBucket('4+ pts');
+  ['4-6','6+'].forEach(function(k){
+    var b=buckets[k];
+    large.wins+=b.wins;large.losses+=b.losses;large.pushes+=b.pushes;large.n+=b.n;
+    large.clv_sum+=b.clv_sum;large.clv_n+=b.clv_n;
+  });
+  finishDiagBucket(large);
+  return {
+    clv_n:clvN,avg_clv:clvN?clvSum/clvN:null,
+    clv_positive:clvPos,clv_negative:clvNeg,clv_zero:clvZero,
+    clv_positive_pct:clvN?clvPos/clvN:null,
+    edge_n:edgeN,bucket_order:order,buckets:buckets,large:large
+  };
+}
+function signedPts(v){
+  if(v==null||!isFinite(Number(v)))return '-';
+  v=Number(v);
+  return (v>0?'+':'')+fmtNum(v)+' pts';
+}
+function bucketRecordText(b){
+  if(!b||!b.n)return '-';
+  return b.wins+'-'+b.losses+'-'+b.pushes;
+}
+function bettingDiagnosticsHTML(d){
+  if(!d||(!d.clv_n&&!d.edge_n))return '';
+  var large=d.large||diagBucket('4+ pts');
+  var rows=(d.bucket_order||[]).map(function(k){
+    var b=d.buckets[k];
+    if(!b||!b.n)return '';
+    return '<tr><td>'+esc(b.label)+'</td>'+
+      '<td class="num mono">'+esc(bucketRecordText(b))+'</td>'+
+      '<td class="num">'+fmtPct(b.win_pct)+'</td>'+
+      '<td class="num">'+signedPts(b.avg_clv)+'</td>'+
+      '<td class="num">'+b.n+'</td></tr>';
+  }).filter(Boolean).join('');
+  return '<h2>Market usefulness <span class="note" style="font-weight:400">does the disagreement contain information?</span></h2>'+
+    '<div class="panel"><div class="kv">'+
+      (d.clv_n?'<span><div class="k">Avg CLV</div><div class="v">'+signedPts(d.avg_clv)+
+        '<div class="nsamp">n='+d.clv_n+'</div></div></span>':'')+
+      (d.clv_n?'<span><div class="k">Positive CLV</div><div class="v">'+fmtPct(d.clv_positive_pct,0)+
+        '<div class="nsamp">'+d.clv_positive+' beat close · '+d.clv_zero+' tied · '+d.clv_negative+' trailed</div></div></span>':'')+
+      (large.n?'<span><div class="k">4+ pt edge ATS</div><div class="v">'+esc(bucketRecordText(large))+
+        ' &middot; '+fmtPct(large.win_pct,0)+'<div class="nsamp">n='+large.n+'</div></div></span>':'')+
+      (d.edge_n?'<span><div class="k">Edge-bucket sample</div><div class="v">'+d.edge_n+
+        '<div class="nsamp">ATS-graded games with model + posted market lines</div></div></span>':'')+
+    '</div>'+
+    (rows?'<div class="tblwrap mini" style="margin-top:10px"><table style="min-width:520px"><thead><tr>'+
+      '<th>Model edge at submission</th><th class="num">ATS</th><th class="num">Win %</th>'+
+      '<th class="num">Avg CLV</th><th class="num">n</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'')+
+    '<p class="note" style="margin-top:8px"><b>Edge bucket</b> is the absolute gap between the model spread and the market line when the model posted. '+
+    '<b>CLV</b> is the posted market number versus the Collective&rsquo;s captured close, turned onto the model&rsquo;s side; positive means the model had the better number. '+
+    'ATS is still graded only against the captured close. These are diagnostics, not confidence labels, and every sample stays visible.</p></div>';
+}
+
 function modelsInGames(games,wall){
   var byKey={},out=[];
   (wall||[]).forEach(function(r){
@@ -2789,7 +2940,8 @@ function localRankings(games,settled,wall,thresholds){
       implied_n:rec.implied,
       margin_mae:rec.margin_mae,margin_mae_n:rec.margin_n,
       brier:rec.brier,brier_n:rec.brier_n,
-      record:rec,coverage_pct:cov.pct,coverage:cov,live:rec.live};
+      record:rec,coverage_pct:cov.pct,coverage:cov,live:rec.live,
+      betting:modelBettingDiagnostics(settled,m.creator_slug,m.model_slug)};
   });
   var boards={
     win_pct:rankBoard(entries,'win_pct',-1,minG,minC),
@@ -4761,12 +4913,14 @@ async function renderModel(view,cs,ms){
       'None of them is a loss and none of them is counted in the win percentage.</p>'
       :'<h2>Every graded game</h2><div class="emptybox">No game of this model&rsquo;s has finished yet. Every pick it posts appears here the moment its game does, with the closing line it was graded against and whether it won.</div>';
     var cal=calibrationHTML(calCal);
+    var betting='';
+    try{betting=bettingDiagnosticsHTML(modelBettingDiagnostics(logGames,cs,ms));}catch(_){betting='';}
     var behave='';
     try{behave=modelBehaviorHTML(modelBehavior(logGames,cs,ms),covPct);}catch(_){behave='';}
     /* Who it is, how it has performed (the record and the log are the
        page), how it behaves, what it says now, then the methodology and the
        coverage table: the supporting evidence sits under the answer. */
-    if(!paint(view,tok,head+who+stats+gl+cal+behave+vs+method+cov+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>'))return;
+    if(!paint(view,tok,head+who+stats+gl+cal+betting+behave+vs+method+cov+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>'))return;
     if($('glFilter'))$('glFilter').onchange=function(){
       var v=this.value;
       document.querySelectorAll('#glTbl tbody tr').forEach(function(tr){
@@ -5300,8 +5454,15 @@ async function renderRankings(view){
          reader is actually on. The server's board wins when this page can
          confirm at least one of its rows belongs here — or when it has
          nothing of its own to offer. */
-      if(srv.length&&!seasonTainted&&(!loc.length||srv.some(knownRow)))return {rows:srv,live:false};
-      return {rows:loc,live:loc.length>0};
+      /* The local season pass carries the metric-specific sample (ATS n,
+         margin n, Brier n) and the freshest captured closes. The server's
+         generic `graded` count is a useful fallback, but it can say 139
+         beside a Win % that actually stands on 38 ATS results. When this
+         page has the season in hand, use the rows whose denominator belongs
+         to the metric being shown. */
+      if(loc.length)return {rows:loc,live:true};
+      if(srv.length&&!seasonTainted)return {rows:srv,live:false};
+      return {rows:[],live:false};
     }
     /* Decided once, so the boards and the "not yet ranked" list below them
        cannot disagree about the same model. */
@@ -5458,6 +5619,36 @@ async function renderRankings(view){
         'Win percentage excludes pushes; <b>each metric carries its own sample</b> (the <span class="mono">n=</span> under every value), because a model can post a spread with no pick side or a pick side with no win probability &mdash; a zero in one column never means the others are empty. '+
         'A finished game the Collective captured no closing line for has no against-the-spread result at all \u2014 it is not a loss, it is not counted, and it is named in the breakdown above.</p>';
     }
+    function marketDiagnosticsHTML(){
+      var es=((local&&local.entries)||[]).filter(function(e){
+        return e&&e.betting&&(e.betting.clv_n||e.betting.edge_n);
+      }).sort(function(a,b){
+        return String(a.creator_name).localeCompare(String(b.creator_name))
+          ||String(a.model_name).localeCompare(String(b.model_name));
+      });
+      if(!es.length)return '';
+      var rows=es.map(function(e){
+        var d=e.betting,lg=d.large||{};
+        var href=profHref(e.creator_slug,e.model_slug);
+        return '<tr class="rowlink" data-href="'+href+'">'+
+          '<td><a href="'+href+'" class="nm">'+esc(e.creator_name)+'</a>'+
+            (fmap[e.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+
+            '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(e.model_name)+'</span></td>'+
+          '<td class="num">'+signedPts(d.avg_clv)+(d.clv_n?'<div class="nsamp">n='+d.clv_n+'</div>':'')+'</td>'+
+          '<td class="num">'+(d.clv_n?fmtPct(d.clv_positive_pct,0):'-')+'</td>'+
+          '<td class="num">'+(lg.n?esc(bucketRecordText(lg))+' &middot; '+fmtPct(lg.win_pct,0):'-')+
+            (lg.n?'<div class="nsamp">n='+lg.n+'</div>':'')+'</td>'+
+          '<td class="num">'+d.edge_n+'</td></tr>';
+      }).join('');
+      return '<h2>Market diagnostics <span class="note" style="font-weight:400">where the model-market disagreement has gone</span></h2>'+
+        '<div class="tblwrap"><table><thead><tr><th>Model</th>'+
+        '<th class="num" title="posted market line versus captured close, turned onto the model side">Avg CLV</th>'+
+        '<th class="num" title="share of tracked lines where the posted number was better than the close">Positive CLV</th>'+
+        '<th class="num" title="ATS record when the model spread differed from the posted market by at least four points">4+ pt edge ATS</th>'+
+        '<th class="num" title="ATS-graded games that had both a model spread and a market line at submission">Bucket n</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+        '<p class="note" style="margin-top:8px">This table is deliberately not another ranking. It shows whether a model tends to beat the closing number and how its larger pregame disagreements have graded. Small samples stay small instead of being turned into a badge.</p>';
+    }
     /* ---- who is genuinely not on a board yet ---------------------------
        This list is built here and NEVER from /v1/rankings. The server's own
        unranked list is wrong twice over: it recites a twenty-game minimum
@@ -5508,6 +5699,7 @@ async function renderRankings(view){
       (['win_pct','margin_mae','brier'].some(function(k){return picks[k].live;})
         ?gradeNote('The values marked live are'):'')+
       standingsHTML()+
+      marketDiagnosticsHTML()+
       (collStats?(function(){
         var a=collStats.ats,m2=collStats.ml;
         var atsN=a.w+a.l;
