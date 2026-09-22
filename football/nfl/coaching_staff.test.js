@@ -202,10 +202,14 @@ assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_developme
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.reliability, 0);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.efficiency_development.available, false);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.efficiency_development.value, null);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.efficiency_development.observations, 0);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.efficiency_development.source, 'nflverse stats_team_week weekly team stats');
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.program_persistence.available, false);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.program_persistence.value, null);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_coach.available, false);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_coach.value, null);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_coach.observations, 4);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_coach.source, 'frozen pregame residual ledger + frozen nflverse head-coach identity');
 assert.strictEqual(composite.teams.KC.coaching_staff_rating, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_adjustment_points, 0);
 assert.strictEqual(composite.affects_nfl_projection, false);
