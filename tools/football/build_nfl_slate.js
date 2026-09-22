@@ -46,6 +46,8 @@ const SCHEMA = 'edgedesk_nfl_slate_v1';
 const COACHING_LEDGER_OUT = path.join(OUT_DIR, 'coaching_staff_ledger.json');
 const COACHING_LEDGER = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff_ledger.js'));
 const COACHING_STAFF = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff.js'));
+const COACHING_EFFICIENCY = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff_efficiency.js'));
+const TEAM_WEEK = require(path.join(ROOT, 'football', 'nfl', 'build_team_week.js'));
 let NV = null; try { NV = require(path.join(__dirname, 'nfl_venues.js')); } catch (_) { NV = null; }
 let WX = null, RECOVERY = null; try { WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js')); RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js')); } catch (_) { WX = null; }
 const FORECAST_STORE = path.join(ROOT, 'football', 'venues', 'forecasts.json');
@@ -199,6 +201,7 @@ async function build(opts) {
   M.loadNflEngine(win, ROOT);
   const T = win.__FBTEST;
   const fetched = [];
+  let teamWeekText = null;
   /* the network, cached; the captured-quote read answered empty on purpose */
   const getText = opts.fetchText || ((u) => {
     const s = String(u || '');
@@ -213,6 +216,7 @@ async function build(opts) {
   win.fetch = async (url) => {
     const u = String(url);
     const text = await getText(u);
+    if (/stats_team_week/i.test(u)) teamWeekText = text;
     fetched.push({ url: u, bytes: text.length });
     return { ok: true, status: 200, text: async () => text, json: async () => JSON.parse(text) };
   };
@@ -343,6 +347,8 @@ async function build(opts) {
     }))
   )).sort();
   const coachesNow = currentHeadCoaches(S.games || [], season, now);
+  let teamWeekRows = [];
+  try { teamWeekRows = TEAM_WEEK.parseCsv(teamWeekText || '').rows || []; } catch (_) { teamWeekRows = []; }
   const coachingEvidence = opts.coachingLedger ? {
     current_residual: COACHING_LEDGER.summarizeCurrentResidual(opts.coachingLedger, {
       season,
@@ -354,6 +360,10 @@ async function build(opts) {
     }),
     program: COACHING_LEDGER.summarizeProgramPersistence(opts.coachingLedger, {
       currentSeason: season,
+      teamKeys: coachingTeamKeys
+    }),
+    efficiency: COACHING_EFFICIENCY.build(teamWeekRows, {
+      season,
       teamKeys: coachingTeamKeys
     })
   } : null;
