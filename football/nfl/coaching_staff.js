@@ -1,7 +1,7 @@
 /* ============================================================================
    EdgeDesk NFL — COACHING / STAFF research contract.
 
-   STEP 1 ONLY.
+   RESEARCH-ONLY CALIBRATION LAYER.
 
    NFL-specific inputs:
      current_residual_conversion 45%
@@ -10,11 +10,14 @@
      efficiency_development       5%
      game_management              5%
 
-   This file deliberately scores NOTHING yet.
+   Measured inputs may be calibrated against a sufficiently large NFL cohort
+   and combined into a reliability-shrunk RESEARCH rating. That rating has zero
+   projection influence.
 
    Missing evidence is unavailable, never a fake neutral 50. No championships,
    salary, career win percentage, media reputation or famous-coach bonus may
-   enter the score. The NFL projection impact is exactly zero in this step.
+   enter the score. A legitimate calibrated league-average observation may be
+   50; missing evidence remains null.
    ========================================================================== */
 (function () {
   'use strict';
@@ -91,9 +94,9 @@
       coaching_staff_affects_nfl_projection: false,
       coaching_staff_inputs: inputs,
       coaching_staff_warnings: [{
-        id: 'NFL_COACHING_STAFF_NOT_SCORED',
+        id: 'NFL_COACHING_STAFF_NOT_CALIBRATED',
         severity: 'info',
-        detail: 'NFL Coaching / Staff contract exists, but no measured input has been scored yet.'
+        detail: 'NFL Coaching / Staff has no league-calibrated input with positive reliability for this team yet.'
       }],
       coaching_staff_available: false
     };
