@@ -138,3 +138,143 @@ assert.strictEqual(backfillMulti.details.observed_decay_weight, 0.55);
 assert.ok(!backfillMulti.details.seasons.some(s => s.season === 2026));
 
 console.log('coaching_program Step 3: passed');
+
+/* =====================================================================
+   STEP 4 — roster management, staff evidence, same-program development.
+   ===================================================================== */
+const rosterKeys = [];
+const roster = {};
+for (let i = 0; i < 40; i++) {
+  const k = 'roster_' + i;
+  rosterKeys.push(k);
+  const retention = 0.18 + i * 0.016;
+  roster[k] = {
+    returning: {
+      value_continuity: retention,
+      roster_continuity: 0.4 + (i % 6) * 0.03,
+      players_prior: 100,
+      players_returning: Math.round(100 * retention),
+      by_group: { ALL: { starters: 22, starters_returning: retention } }
+    },
+    transfers: {
+      in: 10, out: 10, value_in: 40 + i * 2, value_out: 80 - i,
+      net_value: -40 + i * 3, starters_in: i % 4, starters_out: (39 - i) % 3,
+      unknown_in: 2
+    }
+  };
+}
+/* Same scored evidence, wildly different portal volume. The number of portal
+   transactions must not become a quality signal. */
+roster.volume_low = {
+  returning: { value_continuity: 0.5, roster_continuity: 0.5, players_prior: 100, players_returning: 50,
+    by_group: { ALL: { starters: 22, starters_returning: 0.5 } } },
+  transfers: { in: 4, out: 4, net_value: 20, unknown_in: 0 }
+};
+roster.volume_high = {
+  returning: { value_continuity: 0.5, roster_continuity: 0.5, players_prior: 100, players_returning: 50,
+    by_group: { ALL: { starters: 22, starters_returning: 0.5 } } },
+  transfers: { in: 40, out: 40, net_value: 20, unknown_in: 0 }
+};
+rosterKeys.push('volume_low', 'volume_high');
+
+const rosterOut = CP.rosterManagement(rosterKeys, roster, '2026-09-22T00:00:00Z', true);
+assert.ok(rosterOut.roster_39.value > rosterOut.roster_0.value,
+  'retained value/starters/net portal value should separate strong and weak roster management');
+assert.strictEqual(rosterOut.volume_low.value, rosterOut.volume_high.value,
+  'portal volume itself must not improve the score');
+assert.strictEqual(rosterOut.volume_low.details.portal_volume_scored, false);
+assert.notStrictEqual(
+  rosterOut.volume_low.details.churn_count_context_only,
+  rosterOut.volume_high.details.churn_count_context_only
+);
+
+const rosterBackfill = CP.rosterManagement(['volume_low'], roster, null, false);
+assert.strictEqual(rosterBackfill.volume_low.available, false);
+assert.strictEqual(rosterBackfill.volume_low.value, null);
+
+/* Staff continuity is published as evidence, never as a directional bonus. */
+const staffArtifact = {
+  generated_at: '2026-09-22T00:00:00Z',
+  source: 'synthetic',
+  by_team: {
+    stable: { hc: 'Coach A', since_season: 2024, tenure_seasons: 3, new_hc: false,
+      new_oc: null, new_dc: null, known: ['hc'], unknown: ['oc', 'dc'], source: 'synthetic' },
+    changed: { hc: 'Coach B', since_season: 2026, tenure_seasons: 1, new_hc: true,
+      new_oc: null, new_dc: null, known: ['hc'], unknown: ['oc', 'dc'], source: 'synthetic' }
+  }
+};
+const staffOut = CP.staffEvidence(['stable', 'changed'], staffArtifact);
+for (const k of ['stable', 'changed']) {
+  assert.strictEqual(staffOut[k].value, null);
+  assert.strictEqual(staffOut[k].available, false);
+  assert.strictEqual(staffOut[k].weighted_evidence, 0);
+  assert.strictEqual(staffOut[k].details.directional_score_applied, false);
+}
+assert.strictEqual(staffOut.stable.details.new_hc, false);
+assert.strictEqual(staffOut.changed.details.new_hc, true);
+
+/* Development: same athlete + same programme only, with current quality
+   residualised against prior quality across the league. */
+function player(key, team, group, z, sample) {
+  return {
+    key, team_key: team, group,
+    confidence: 0.9, sample_size: sample || 100, mid_season_move: false,
+    components: { quality: { z_raw: z } }
+  };
+}
+const devLayers = { 2025: { players: {} }, 2026: { players: {} } };
+for (let i = 0; i < 40; i++) {
+  const team = 'dev_' + i, key = 'p:' + i;
+  const prior = -1.5 + i * 0.075;
+  devLayers[2025].players[team] = [player(key, team, i % 4 === 0 ? 'QB' : 'LB', prior)];
+  devLayers[2026].players[team] = [player(key, team, i % 4 === 0 ? 'QB' : 'LB', 0.8 * prior + ((i % 5) - 2) * 0.03)];
+}
+devLayers[2025].players.devgood = [];
+devLayers[2026].players.devgood = [];
+devLayers[2025].players.devbad = [];
+devLayers[2026].players.devbad = [];
+for (let i = 0; i < 8; i++) {
+  const group = i === 0 ? 'QB' : (i < 4 ? 'OL' : 'LB');
+  devLayers[2025].players.devgood.push(player('good:' + i, 'devgood', group, -0.4 + i * 0.1));
+  devLayers[2026].players.devgood.push(player('good:' + i, 'devgood', group, 1.4 + i * 0.1));
+  devLayers[2025].players.devbad.push(player('bad:' + i, 'devbad', group, -0.4 + i * 0.1));
+  devLayers[2026].players.devbad.push(player('bad:' + i, 'devbad', group, -1.4 + i * 0.1));
+}
+/* Same athlete id, different team: must be excluded as a transfer rather than
+   awarded to the destination programme. */
+devLayers[2025].players.oldschool = [player('transfer:1', 'oldschool', 'QB', -2)];
+devLayers[2026].players.devgood.push(player('transfer:1', 'devgood', 'QB', 2));
+
+const dev = CP.developmentModel(2026, devLayers, '2026-09-22T00:00:00Z');
+assert.strictEqual(dev.available, true);
+assert.ok(dev.teams.devgood.value > 55, 'same-program improvement should grade above average');
+assert.ok(dev.teams.devbad.value < 45, 'same-program regression should grade below average');
+assert.strictEqual(dev.teams.devgood.observations, 8,
+  'the transfer must not be counted as development by the new programme');
+assert.ok(dev.teams.devgood.details.qb.value != null);
+assert.ok(dev.teams.devgood.details.ol.value != null);
+assert.ok(dev.teams.devgood.details.defense.value != null);
+assert.strictEqual(dev.teams.devgood.details.transfer_credit, false);
+
+/* Integration still does NOT publish a final coaching rating or ETSR input. */
+const integratedSeasons = {
+  2025: Object.assign({}, seasons[2025], { players: devLayers[2025].players }),
+  2026: Object.assign({}, seasons[2026], { roster, players: devLayers[2026].players })
+};
+const integratedKeys = rosterKeys.concat(['devgood', 'devbad']);
+const integrated = CP.build(integratedKeys, {
+  season: 2026,
+  seasons: integratedSeasons,
+  staff: staffArtifact,
+  roster_last_updated: '2026-09-22T00:00:00Z',
+  development_last_updated: '2026-09-22T00:00:00Z'
+});
+assert.strictEqual(integrated.affects_etsr, false);
+assert.strictEqual(integrated.final_score_enabled, false);
+assert.strictEqual(integrated.teams.roster_39.coaching_program_rating, null);
+assert.strictEqual(integrated.teams.roster_39.coaching_program_adjustment_points, 0);
+assert.strictEqual(integrated.teams.roster_39.coaching_program_inputs.roster_management_retention.available, true);
+assert.strictEqual(integrated.teams.devgood.coaching_program_inputs.development.available, true);
+assert.strictEqual(integrated.teams.devgood.coaching_program_inputs.game_management.available, false);
+
+console.log('coaching_program Step 4: passed');
