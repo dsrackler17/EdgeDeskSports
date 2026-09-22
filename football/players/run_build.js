@@ -140,6 +140,48 @@ function loadAvailability(sched, nowMs) {
   };
 }
 
+
+/* A resolved QB starter changes WHO receives QB1 participation weight, not the
+   player's underlying EPIR. Only corroborated, USABLE evidence is allowed to
+   override the room model. A competition, conflict or unknown starter remains
+   a competition, conflict or unknown starter. */
+function loadStarterOverrides(season) {
+  const j = B.readJson(path.join(DIR, '..', 'starters', 'cfb_' + season + '.json'), null);
+  const byTeam = {};
+  let accepted = 0, refused = 0;
+  const rows = j && Array.isArray(j.teams) ? j.teams : [];
+  const allowed = { ANNOUNCED: 1, EXPECTED: 1, DEPTH_CHART: 1, PREVIOUS_GAME: 1 };
+
+  for (const row of rows) {
+    const status = String(row.status || '').toUpperCase();
+    const field = String(row.field_state || '').toUpperCase();
+    const conflicts = row.conflicts || [];
+    const teamKey = row.team_id || EPIR.teamKey(row.team);
+    const playerId = row.player_id == null ? null : String(row.player_id);
+    const safe = field === 'USABLE' && !!allowed[status] && !!teamKey && !!playerId
+      && row.identity_corroborated === true && conflicts.length === 0;
+    if (!safe) { refused++; continue; }
+
+    byTeam[teamKey] = {
+      QB: {
+        player_key: 'a:' + playerId,
+        player_name: row.player_name || null,
+        status: status,
+        field_state: field,
+        source: row.source || null,
+        basis: row.basis || null
+      }
+    };
+    accepted++;
+  }
+  return {
+    byTeam, accepted, refused,
+    generated_at: j && j.generated_at,
+    week: j && j.week,
+    basis: 'corroborated USABLE QB starter evidence only; competitions/conflicts/unknowns never override the room model'
+  };
+}
+
 async function main() {
   const season = B.SEASON, back = B.SEASONS_BACK;
   const startedAt = new Date().toISOString();
@@ -383,6 +425,10 @@ async function main() {
     + `${avail.officialRows} named official player row(s), ${avail.officialFailures} failed official read(s), `
     + `${avail.stale} stale reports ignored, ${Object.keys(availByKey).length} players resolved`);
 
+  /* ---------------- resolved QB starter context ---------------- */
+  const starters = loadStarterOverrides(cur);
+  log(`  QB starter context: ${starters.accepted} safe override(s), ${starters.refused} unresolved/refused row(s)`);
+
   /* ---------------- units, returning value, transfers ---------------- */
   const prevSeason = usable.length > 1 ? usable[usable.length - 2] : null;
   const byTeam = {};
@@ -418,8 +464,14 @@ async function main() {
     const tv = UNITS.transferValue(incoming, outgoing, {});
     netValues.push(tv.net_value);
 
+    const candidateStarter = starters.byTeam[key] || null;
+    const joinedStarter = candidateStarter && candidateStarter.QB
+      && byTeam[key].some(r => r.key === candidateStarter.QB.player_key)
+      ? candidateStarter : null;
+
     const unit = UNITS.rateTeam(key, teamName, byTeam[key], {
       availability: availByKey, teamContext: ctx, conference: sched[cur].conf[key] || null,
+      starter_override: joinedStarter,
       season: cur, returning: ret, transfers: tv, as_of: startedAt
     });
     teams[key] = unit;
