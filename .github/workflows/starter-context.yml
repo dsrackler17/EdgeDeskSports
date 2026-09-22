@@ -59,6 +59,7 @@ on:
     paths:
       - 'football/nfl/build_team_week.js'
       - 'tools/football/build_nfl_slate.js'
+      - 'tools/football/build_nfl_coaching_validation.js'
       - 'tools/football/patch_nfl_live_paths.js'
       - '.github/workflows/starter-context.yml'
   schedule:
@@ -235,6 +236,10 @@ jobs:
       - name: NFL slate for the research desk
         run: node tools/football/build_nfl_slate.js || echo "::warning::the NFL slate could not be rebuilt this run — the previous artifact stands"
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: NFL coaching frozen validation report
+        run: node tools/football/build_nfl_coaching_validation.js || echo "::warning::the NFL coaching validation report could not be rebuilt this run — the previous artifact stands"
         continue-on-error: true
 
       # THE IDENTITY PROFILES: one dated file per FBS team and NFL club from
