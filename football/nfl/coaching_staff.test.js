@@ -222,6 +222,31 @@ assert.strictEqual(composite.teams.KC.coaching_staff_rating, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_adjustment_points, 0);
 assert.strictEqual(composite.affects_nfl_projection, false);
 
+const earlyMatchup = C.matchupResearchContext(
+  composite.teams.KC,
+  composite.teams.BUF,
+  { model_home_margin: 3 }
+);
+assert.strictEqual(earlyMatchup.status, 'EVIDENCE_ONLY');
+assert.strictEqual(earlyMatchup.affects_nfl_projection, false);
+assert.strictEqual(earlyMatchup.shadow_reference, null);
+assert.strictEqual(
+  earlyMatchup.component_comparisons.current_residual_conversion.home_raw,
+  0.5
+);
+assert.strictEqual(
+  earlyMatchup.component_comparisons.current_residual_conversion.away_raw,
+  null
+);
+assert.strictEqual(
+  earlyMatchup.component_comparisons.current_residual_conversion.comparable,
+  false
+);
+assert.strictEqual(
+  earlyMatchup.component_comparisons.efficiency_development.home_raw,
+  0.04
+);
+
 /* A real league calibration requires the same minimum 20-team cohort used by
    the college coaching/program layer. With 21 teams, raw zero is legitimately
    league-average and may calibrate to 50; that is measured 50, not missing 50. */
@@ -275,6 +300,26 @@ assert.ok(high.coaching_staff_rating < high.coaching_staff_raw_score,
 assert.strictEqual(C.researchAdjustmentFactor(high), 0.08);
 assert.strictEqual(high.coaching_staff_research_factor, 0.08);
 assert.strictEqual(C.researchAdjustmentFactor(calibrated.teams.T00), -0.08);
+
+const shadowMatchup = C.matchupResearchContext(
+  calibrated.teams.T20,
+  calibrated.teams.T00,
+  { model_home_margin: 3, reference_cap_points: 1 }
+);
+assert.strictEqual(shadowMatchup.status, 'SHADOW_AVAILABLE');
+assert.strictEqual(shadowMatchup.selected_cap, null);
+assert.strictEqual(shadowMatchup.validation_status, 'RESEARCH_ONLY');
+assert.strictEqual(shadowMatchup.home.rating, calibrated.teams.T20.coaching_staff_rating);
+assert.strictEqual(shadowMatchup.away.rating, calibrated.teams.T00.coaching_staff_rating);
+assert.strictEqual(shadowMatchup.shadow_reference.factor_delta_home_minus_away, 0.16);
+assert.strictEqual(shadowMatchup.shadow_reference.home_margin_delta, 0.16);
+assert.strictEqual(shadowMatchup.shadow_reference.official_model_home_margin, 3);
+assert.strictEqual(shadowMatchup.shadow_reference.shadow_home_margin, 3.16);
+assert.strictEqual(shadowMatchup.shadow_reference.official_model_home_line, -3);
+assert.strictEqual(shadowMatchup.shadow_reference.shadow_home_line, -3.16);
+assert.strictEqual(shadowMatchup.shadow_reference.direction, 'HOME');
+assert.strictEqual(shadowMatchup.shadow_reference.applied_to_official_projection, false);
+assert.match(shadowMatchup.shadow_reference.note, /does not change EdgeDesk's official NFL projection/i);
 assert.strictEqual(calibrated.affects_nfl_projection, false);
 
 console.log('nfl coaching_staff contract: passed');
