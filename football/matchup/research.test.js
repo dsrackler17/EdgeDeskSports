@@ -99,29 +99,43 @@ const NOW = Date.parse('2026-09-15T18:00:00Z');
   Object.keys(ctx.availability_by_team).forEach(k => {
     const t = ctx.availability_by_team[k];
     const q = OVERLAY.normGrade(t.dataQuality || t.data_quality);
-    const got = IN.injuriesFor(ctx, t.team_name || t.team_display);
-    const want = !!AV_GRADED[q];
-    chk('availability grade ' + q + ' decides what reaches the engine for ' + (t.team_name || k),
-      want ? Array.isArray(got) : got === null, { grade: q, got: got === null ? 'null' : ('array[' + got.length + ']') });
+    const name = t.team_name || t.team_display;
+    if (!AV_GRADED[q]) {
+      const got = IN.injuriesFor(ctx, name, 'CURRENT_FIXTURE');
+      chk('an ungraded availability read stays unknown for ' + (name || k),
+        got === null, { grade: q, got: got === null ? 'null' : ('array[' + got.length + ']') });
+      return;
+    }
+    /* OFFICIAL is not a magic synonym for current. A filing belongs to one
+       fixture, so calling without that fixture must never let an old report
+       leak into the next game. Detailed matching/current-fixture behavior is
+       pinned in availability_fixture.test.js. */
+    if (q === 'OFFICIAL' && t.official_report && t.official_report.game_id != null) {
+      const got = IN.injuriesFor(ctx, name, 'definitely-not-' + String(t.official_report.game_id));
+      chk('an official availability report is fixture-scoped for ' + (name || k),
+        got === null, { grade: q, report_game: t.official_report.game_id, got: got === null ? 'null' : ('array[' + got.length + ']') });
+    }
   });
   chk('the overlay names every grade it can produce, and says which of them are reports',
     OVERLAY.GRADES.join(',') === 'OFFICIAL,STRONG,PARTIAL,LIMITED,NONE'
       && OVERLAY.isGraded('OFFICIAL') && OVERLAY.isGraded('STRONG') && OVERLAY.isGraded('PARTIAL')
       && !OVERLAY.isGraded('LIMITED') && !OVERLAY.isGraded('NONE') && !OVERLAY.isGraded(undefined),
     OVERLAY.GRADES);
-  chk('an OFFICIAL read — an ingested conference filing — reaches the engine as a real report',
+  chk('an OFFICIAL read for this fixture reaches the engine as a real report',
     (() => {
       const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'OFFICIAL',
-        players: [{ player_name: 'A Player', position: 'WR', status: 'OUT', depth_role: 'WR2' }] } },
+        official_report: { ok: true, game_id: 'G1', comprehensive: true },
+        players: [{ player_name: 'A Player', position: 'WR', status: 'OUT', depth_role: 'WR2', game_id: 'G1' }] } },
         availability_as_of: null };
-      const r = IN.injuriesFor(fake, 'Someteam');
+      const r = IN.injuriesFor(fake, 'Someteam', 'G1');
       return Array.isArray(r) && r.length === 1 && r[0].status === 'out';
     })());
-  chk('an OFFICIAL read that lists nobody reaches the engine as a report of no absences, not as null',
+  chk('a comprehensive OFFICIAL report for this fixture may report no absences',
     (() => {
-      const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'OFFICIAL', players: [] } },
-        availability_as_of: null };
-      const r = IN.injuriesFor(fake, 'Someteam');
+      const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'OFFICIAL',
+        official_report: { ok: true, game_id: 'G1', comprehensive: true, report_of_no_absences: true },
+        players: [] } }, availability_as_of: null };
+      const r = IN.injuriesFor(fake, 'Someteam', 'G1');
       return Array.isArray(r) && r.length === 0;
     })());
   chk('an ungraded availability read never reaches the engine as a clean report',
@@ -130,12 +144,11 @@ const NOW = Date.parse('2026-09-15T18:00:00Z');
         availability_as_of: null };
       return IN.injuriesFor(fake, 'Someteam') === null;
     })());
-  chk('a graded read that names nobody still reaches the engine as a real report',
+  chk('a graded non-comprehensive read that names nobody stays unknown',
     (() => {
       const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'STRONG', players: [] } },
         availability_as_of: null };
-      const r = IN.injuriesFor(fake, 'Someteam');
-      return Array.isArray(r) && r.length === 0;
+      return IN.injuriesFor(fake, 'Someteam', 'G1') === null;
     })());
   chk('the injury join itself is intact — a graded read with a listed player carries him through',
     (() => {
