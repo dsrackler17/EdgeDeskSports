@@ -78,7 +78,7 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
     coachingLedger.settled['2026_01_LA_SF'] && coachingLedger.settled['2026_01_LA_SF'].residual === 4,
     coachingLedger.settled['2026_01_LA_SF']);
   chk('the build froze both upcoming projections',
-    Object.keys(coachingLedger.pending).length === 2 && art.coaching_staff_ledger && art.coaching_staff_ledger.captured === 2,
+    Object.keys(coachingLedger.pending).length === 2 && art.coaching_staff_ledger && art.coaching_staff_ledger.pending_total === 2,
     art.coaching_staff_ledger);
   chk('ledger wiring is evidence-only',
     art.coaching_staff_ledger && art.coaching_staff_ledger.projection_influence === false && art.coaching_staff_ledger.scoring_enabled === false,
