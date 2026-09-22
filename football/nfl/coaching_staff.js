@@ -90,6 +90,7 @@
       coaching_staff_rank_of: null,
       coaching_staff_reliability: 0,
       coaching_staff_observed_weight: 0,
+      coaching_staff_research_factor: null,
       coaching_staff_candidate_adjustment_points: null,
       coaching_staff_adjustment_points: 0,
       coaching_staff_affects_nfl_projection: false,
@@ -240,6 +241,7 @@
       teamRow.coaching_staff_raw_score = null;
       teamRow.coaching_staff_reliability = 0;
       teamRow.coaching_staff_observed_weight = 0;
+      teamRow.coaching_staff_research_factor = null;
       teamRow.coaching_staff_available = false;
       return teamRow;
     }
@@ -254,6 +256,7 @@
     teamRow.coaching_staff_reliability = r3(reliability);
     teamRow.coaching_staff_observed_weight = r3(observedWeight);
     teamRow.coaching_staff_available = true;
+    teamRow.coaching_staff_research_factor = researchAdjustmentFactor(teamRow);
     teamRow.coaching_staff_rank = null;
     teamRow.coaching_staff_candidate_adjustment_points = null;
     teamRow.coaching_staff_adjustment_points = 0;
@@ -462,6 +465,12 @@
       schema: SCHEMA,
       status: hasRating ? 'RESEARCH_ONLY' : (hasEvidence ? 'EVIDENCE_ONLY' : 'CONTRACT_ONLY'),
       affects_nfl_projection: false,
+      validation: {
+        artifact: 'football/nfl/coaching_staff_validation.json',
+        status: 'RESEARCH_ONLY',
+        may_move_lines: false,
+        selected_cap: null
+      },
       calibration: calibration,
       ranked_teams: rankedTeams,
       inputs: Object.keys(INPUTS).map(function (id) {
