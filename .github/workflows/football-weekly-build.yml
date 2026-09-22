@@ -182,6 +182,17 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"; echo "up to date: ${{ steps.refresh.outputs.reason }}"
           fi
 
+      # Materialise the canonical ETSR compatibility view BEFORE the preflight.
+      # This adapter fits nothing and changes no model weight; it only makes the
+      # legacy football/rating/current.json contract describe the rankings file
+      # already on disk. Without this bootstrap, the old rating file can fail
+      # the new contract before the workflow reaches the later publication step.
+      - name: Materialize canonical power rating for preflight
+        if: steps.go.outputs.run == 'true'
+        run: |
+          node football/rating/sync_rankings.js
+          node football/rating/sync_rankings.test.js
+
       # The suites gate the write. A build that would commit a dataset its own
       # rules reject has to fail BEFORE it writes anything.
       - name: Suites (before)
