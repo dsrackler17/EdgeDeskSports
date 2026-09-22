@@ -96,6 +96,8 @@ assert.strictEqual(buf.coaching_staff_candidate_adjustment_points, null);
 assert.strictEqual(buf.coaching_staff_adjustment_points, 0);
 assert.strictEqual(buf.coaching_staff_affects_nfl_projection, false);
 assert.strictEqual(buf.coaching_staff_available, false);
+assert.strictEqual(buf.coaching_staff_rank, null);
+assert.strictEqual(buf.coaching_staff_rank_of, null);
 
 const kc = evidenceOut.teams.KC;
 assert.strictEqual(kc.coaching_staff_inputs.current_residual_conversion.available, false);
@@ -247,11 +249,18 @@ assert.strictEqual(mid.coaching_staff_rating, 50);
 assert.strictEqual(mid.coaching_staff_reliability, 0.45);
 assert.strictEqual(mid.coaching_staff_observed_weight, 0.45);
 assert.strictEqual(mid.coaching_staff_available, true);
+assert.strictEqual(mid.coaching_staff_rank, 11);
+assert.strictEqual(mid.coaching_staff_rank_of, 21);
 assert.strictEqual(mid.coaching_staff_adjustment_points, 0);
 assert.strictEqual(mid.coaching_staff_affects_nfl_projection, false);
 
 const high = calibrated.teams.T20;
 assert.ok(high.coaching_staff_inputs.current_residual_conversion.value > 50);
+assert.strictEqual(calibrated.ranked_teams, 21);
+assert.strictEqual(calibrated.teams.T20.coaching_staff_rank, 1);
+assert.strictEqual(calibrated.teams.T20.coaching_staff_rank_of, 21);
+assert.strictEqual(calibrated.teams.T00.coaching_staff_rank, 21);
+assert.strictEqual(calibrated.teams.T00.coaching_staff_rank_of, 21);
 assert.ok(high.coaching_staff_rating > 50);
 assert.ok(high.coaching_staff_rating < high.coaching_staff_raw_score,
   'partial configured coverage must shrink the research rating toward 50');
