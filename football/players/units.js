@@ -73,9 +73,18 @@
     var curve = CFG.ROLE.depth_curve[group] || [1];
     var contract = CFG.MEASURES[group] || [];
 
-    /* project participation: order by EPIR x confidence so an unknown player
-       does not leapfrog a proven one, then lay the depth curve over it. */
+    /* project participation: normally order by EPIR x confidence. At QB,
+       however, a USABLE resolved starter is stronger evidence about WHO will
+       take QB1 snaps than the room model's own projection. It reorders the
+       room; it does not change either player's EPIR. */
+    var starterOverride = (group === 'QB' && opts.starter_override && opts.starter_override.QB)
+      ? opts.starter_override.QB : null;
+    var starterKey = starterOverride && starterOverride.player_key ? String(starterOverride.player_key) : null;
     var ranked = players.slice().sort(function (a, b) {
+      if (starterKey) {
+        var aa = String(a.key) === starterKey, bb = String(b.key) === starterKey;
+        if (aa !== bb) return aa ? -1 : 1;
+      }
       var ka = a.epir * (0.5 + 0.5 * a.confidence), kb = b.epir * (0.5 + 0.5 * b.confidence);
       if (kb !== ka) return kb - ka;
       return (b.sample_size || 0) - (a.sample_size || 0);
@@ -186,6 +195,14 @@
           effective_weight: Math.round(p.effective_weight * 1000) / 1000,
           availability: p.availability, status: p.player.status };
       }),
+      starter_evidence: starterOverride ? {
+        player_key: starterKey,
+        player_name: starterOverride.player_name || null,
+        status: starterOverride.status || null,
+        field_state: starterOverride.field_state || null,
+        source: starterOverride.source || null,
+        basis: starterOverride.basis || null
+      } : null,
       team_context: ctxBlend,
       production_feed: contract.length ? true : false,
       production_feed_reason: contract.length ? null : (CFG.NO_PRODUCTION_FEED[group] || null),
