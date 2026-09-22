@@ -54,6 +54,12 @@ on:
         description: 'Prior seasons to read for the start count (default 1, 0 skips)'
         required: false
         default: ''
+  push:
+    branches: [main]
+    paths:
+      - 'football/nfl/build_team_week.js'
+      - 'tools/football/build_nfl_slate.js'
+      - '.github/workflows/starter-context.yml'
   schedule:
     - cron: '20 7,19 * * 0,1'    # Sunday and Monday, after the weekend's games settle
     - cron: '20 13 * * 2,3,4,5'  # Tuesday to Friday, once a day as reports land
@@ -203,19 +209,15 @@ jobs:
       - name: Matchup metrics for the research desk
         run: node tools/football/build_matchup_metrics.js
 
-      - name: NFL slate for the research desk
-        run: node tools/football/build_nfl_slate.js || echo "::warning::the NFL slate could not be rebuilt this run — the previous artifact stands"
+      # nflverse publishes the live NFL team-week and roster files as GitHub
+      # release assets. Browsers can fail on the release redirect because it is
+      # not a stable CORS data endpoint, so refresh both server-side and commit
+      # same-origin snapshots before rebuilding the NFL slate.
+      - name: NFL team-week snapshot for the football module
+        run: node football/nfl/build_team_week.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 
-      # THE QB ROSTER THE BROWSER CANNOT FETCH FOR ITSELF. nflverse publishes
-      # rosters as GitHub release assets, and a release download carries no
-      # Access-Control-Allow-Origin, so app.html's registry got "Failed to
-      # fetch" and sat on its bundled snapshot. Fetched here, where there is no
-      # CORS, and committed for the page to read from its own origin. The
-      # script refuses to write a file outside the app's own sanity bounds, so
-      # a broken feed leaves the previous snapshot standing rather than
-      # becoming the floor.
       - name: NFL QB roster snapshot for the football module
         run: node football/nfl/build_qb_roster.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
@@ -223,6 +225,13 @@ jobs:
 
       - name: Prove the QB snapshot is one app.html can read
         run: node football/nfl/qb_roster.test.js
+
+      # Build after both mirrors refresh so the artifact and browser use the
+      # same current-season inputs.
+      - name: NFL slate for the research desk
+        run: node tools/football/build_nfl_slate.js || echo "::warning::the NFL slate could not be rebuilt this run — the previous artifact stands"
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
 
       # THE IDENTITY PROFILES: one dated file per FBS team and NFL club from
       # everything above (rankings detail, profiles, starters and the depth
