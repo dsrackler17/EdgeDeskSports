@@ -45,6 +45,7 @@ const CACHE = path.join(OUT_DIR, '.cache');
 const SCHEMA = 'edgedesk_nfl_slate_v1';
 let NV = null; try { NV = require(path.join(__dirname, 'nfl_venues.js')); } catch (_) { NV = null; }
 let WX = null, RECOVERY = null; try { WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js')); RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js')); } catch (_) { WX = null; }
+let COACHING = null; try { COACHING = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff.js')); } catch (_) { COACHING = null; }
 const FORECAST_STORE = path.join(ROOT, 'football', 'venues', 'forecasts.json');
 
 /* Slice 4: THE NFL FORECAST. The same keyless provider and the same module the
@@ -138,6 +139,36 @@ async function build(opts) {
   const now = opts.now || Date.now();
   const lookaheadDays = opts.lookahead || T.FB_LOOKAHEAD_D || 12;
 
+  /* NFL Coaching / Staff research layer. Every residual uses S.weekPreds,
+     which fbLoadNfl froze BEFORE that completed game was absorbed. There is
+     no hindsight reconstruction here, and the component cannot move a line. */
+  let coaching = {
+    schema: 'edgedesk_nfl_coaching_staff_v1',
+    status: 'UNAVAILABLE',
+    affects_projection: false,
+    observed_games: 0,
+    teams: {},
+    reason: COACHING ? 'no completed leak-free pregame residuals were available' : 'coaching_staff.js unavailable'
+  };
+  if (COACHING) {
+    const cs = COACHING.newState();
+    (S.games || []).filter((u) => u.done && u.g).forEach((u) => {
+      const g = u.g, p = S.weekPreds && S.weekPreds[g.game_id];
+      if (!p || p.status !== 'PREDICTED' || !p.model || num(p.model.fair_spread) == null
+        || num(g.home_score) == null || num(g.away_score) == null) return;
+      COACHING.observeGame(cs, {
+        home: g.home_team,
+        away: g.away_team,
+        home_coach: g.home_coach || null,
+        away_coach: g.away_coach || null,
+        pregame_home_margin: num(p.model.fair_spread),
+        actual_home_margin: num(g.home_score) - num(g.away_score),
+        at: g.gameday || null
+      });
+    });
+    coaching = COACHING.finalize(cs);
+  }
+
   /* the module already trimmed S.up to its window; widen from S.games when a
      longer lookahead was asked for */
   const pool = (S.games || []).filter((u) => !u.done && u.t >= now - 6 * 3600000 && u.t <= now + lookaheadDays * 86400000);
@@ -191,6 +222,14 @@ async function build(opts) {
       home_team_id: String(g.home_team || '').toLowerCase(), away_team_id: String(g.away_team || '').toLowerCase(),
       venue: g.stadium || null, roof: g.roof || null, surface: g.surface || null, div_game: num(g.div_game) === 1,
       home_rest: num(g.home_rest), away_rest: num(g.away_rest),
+      home_coach: g.home_coach || null, away_coach: g.away_coach || null,
+      coaching_staff: {
+        affects_projection: false,
+        adjustment_points: 0,
+        home: coaching.teams[g.home_team] || null,
+        away: coaching.teams[g.away_team] || null,
+        basis: 'research-only Coaching / Staff ratings from leak-free pregame residuals; no line adjustment is applied'
+      },
       home_starter: g.home_qb_name ? { player_name: g.home_qb_name, player_id: g.home_qb_id || null, source: 'nflverse games.csv', status: 'SCHEDULE_FEED' } : null,
       away_starter: g.away_qb_name ? { player_name: g.away_qb_name, player_id: g.away_qb_id || null, source: 'nflverse games.csv', status: 'SCHEDULE_FEED' } : null,
       model_status: priced ? 'PREDICTED' : (p ? p.status : 'ERROR'),
@@ -239,6 +278,7 @@ async function build(opts) {
     for (const k of Object.keys(t)) if (typeof t[k] === 'number') row.ratings[k] = r4(t[k]);
     if (ranks && ranks.by) for (const k of Object.keys(ranks.by)) if (ranks.by[k].rank && ranks.by[k].rank[code] != null) row.ranks[k] = { rank: ranks.by[k].rank[code], of: ranks.by[k].of };
     if (st.qb && st.qb[code]) row.qb = st.qb[code];
+    row.coaching_staff = coaching.teams[code] || null;
     row.results = results[code] || [];
     teams[code] = row;
   }
@@ -250,6 +290,16 @@ async function build(opts) {
     schema: SCHEMA, version: 1, season, generated_at: new Date().toISOString(),
     source: 'nflverse/nfldata games.csv + nflverse-data stats_team_week, through the football module in app.html',
     forecasts: forecast.report,
+    coaching_staff: {
+      schema: coaching.schema,
+      status: coaching.status,
+      affects_projection: false,
+      adjustment_points: 0,
+      observed_games: coaching.observed_games || 0,
+      cross_section: coaching.cross_section || null,
+      config: coaching.config || null,
+      basis: 'Measured and ranked from leak-free pregame residuals. Missing historical staff inputs remain unavailable. No NFL projection uses this component yet.'
+    },
     engine: { model_version: meta.model_version, feature_version: meta.nfl && meta.nfl.feature_version, trained_through: meta.nfl && meta.nfl.trained_through, built_at: meta.built_at,
       /* THE MARGIN DISTRIBUTION, so the desk can read a nearby line under the
          model's own residuals: sigma, the pooled residual pmf and the mass on
