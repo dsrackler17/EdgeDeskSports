@@ -606,6 +606,15 @@ function build(teamKeys, opts) {
     }
   }
 
+  const roster = rosterManagement(
+    keys,
+    layers[currentSeason] && layers[currentSeason].roster,
+    opts.roster_last_updated,
+    opts.allow_current !== false
+  );
+  const development = developmentModel(currentSeason, layers, opts.development_last_updated);
+  const staff = staffEvidence(keys, opts.allow_current === false ? null : opts.staff);
+
   const teams = {};
   let measured = 0;
   for (const key of keys) {
@@ -616,16 +625,35 @@ function build(teamKeys, opts) {
       t.coaching_program_inputs.talent_conversion = cur;
       measured++;
     }
+
     const ms = multiSeason(key, currentSeason, seasonModels);
     if (ms.available) {
       t.coaching_program_inputs.multi_season_program_overperformance = ms;
       measured++;
     }
-    if (cur || ms.available) {
+
+    if (roster[key]) {
+      t.coaching_program_inputs.roster_management_retention = roster[key];
+      if (roster[key].available) measured++;
+    }
+
+    if (staff[key]) t.coaching_program_inputs.staff_continuity_stability = staff[key];
+
+    if (development.teams[key]) {
+      t.coaching_program_inputs.development = development.teams[key];
+      measured++;
+    }
+
+    const gm = emptyInput(configured('game_management'));
+    gm.source = 'cfbfastR play-by-play; no validated decision-state model is implemented';
+    gm.reason = 'unavailable: the current play-by-play layer does not yet cleanly identify coach decisions, alternatives and counterfactual win value, so no game-management grade is invented';
+    t.coaching_program_inputs.game_management = gm;
+
+    if (measured) {
       t.coaching_program_warnings.push({
         id: 'COACHING_PROGRAM_PARTIAL_MEASUREMENT',
         severity: 'info',
-        detail: 'Talent conversion and multi-season overperformance are measured; roster management, staff continuity, development, game management and final shrinkage are not implemented yet.'
+        detail: 'Talent conversion, persistent overperformance, roster management and development may be measured. Staff continuity is evidence-only and game management is unavailable. Final reliability/shrinkage and ETSR impact remain disabled.'
       });
     }
     teams[key] = t;
@@ -639,6 +667,8 @@ function build(teamKeys, opts) {
     components: COMPONENTS.map(x => ({ id: x.id, weight: x.weight })),
     decay_weights: DECAY.slice(),
     season_models: seasonModels,
+    development_model: development.model,
+    development_warnings: development.warnings,
     teams
   };
 }
@@ -651,5 +681,8 @@ module.exports = {
   emptyTeam,
   seasonTalentConversion,
   multiSeason,
+  rosterManagement,
+  developmentModel,
+  staffEvidence,
   build
 };
