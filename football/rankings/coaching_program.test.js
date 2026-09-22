@@ -525,6 +525,21 @@ assert.strictEqual(cpPromoted.candidate_points, 0.375);
 assert.strictEqual(cpPromoted.applied_points, 0.375);
 assert.strictEqual(cpPromoted.affects_etsr, true);
 
+/* Weekly snapshots freeze the candidate even while the applied adjustment is
+   zero, so Step 8 can validate what the model knew then instead of recomputing
+   history with whatever code exists later. */
+const frozenCandidateTeam = movementTeam(62, 68, 0.5, 65, 55, 12);
+frozenCandidateTeam.coaching_program_candidate_adjustment_points = 0.18;
+frozenCandidateTeam.coaching_program_adjustment_points = 0;
+frozenCandidateTeam.coaching_program_adjustment = {
+  weighted_etsr_points_before_recentering: 0,
+  max_point_adjustment: 1.5
+};
+const frozenCandidate = HISTORY.snapshotTeam(frozenCandidateTeam);
+assert.strictEqual(frozenCandidate.coaching_program.candidate_adjustment_points, 0.18);
+assert.strictEqual(frozenCandidate.coaching_program.adjustment_points, 0);
+assert.strictEqual(frozenCandidate.coaching_program.max_point_adjustment, 1.5);
+
 console.log('coaching_program Step 7: passed');
 
 
