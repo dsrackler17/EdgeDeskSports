@@ -335,7 +335,14 @@
         seededThrough: P.trained_through_season,
         season: P.trained_through_season,
         absorbed: 0,
-        conf: clone(P.conference && P.conference.seed_strength || {})
+        conf: clone(P.conference && P.conference.seed_strength || {}),
+        /* Optional current neutral-field backbone supplied AFTER historical
+           replay. The replay still owns scoring, game counts, efficiency and
+           uncertainty state; this owns only the team-strength mean used by
+           projection. */
+        canonicalRatings: {},
+        canonicalRatingMeta: null,
+        canonicalRatingCount: 0
       };
       /* Two rating tracks run side by side. `r` CARRIES last season forward
          (the model's preseason belief, decayed by the learned carry-over);
@@ -351,6 +358,8 @@
     },
     rating: function (st, teamKey, isFbs) {
       if (isFbs === false) return st.hp.fcs_rating;
+      var cr = st.canonicalRatings && st.canonicalRatings[teamKey];
+      if (cr && isNum(cr.value)) return cr.value;
       return has(st.r, teamKey) ? st.r[teamKey] : st.hp.init_rating;
     },
     games: function (st, teamKey) { return st.n[teamKey] || 0; },
@@ -382,6 +391,14 @@
       var carried = strength.rating(st, teamKey, isFbs);
       if (isFbs === false) return { value: carried, prior_weight: 1, carried: carried,
         this_season: carried, games_played: null, basis: 'FCS bucket' };
+      var cr = st.canonicalRatings && st.canonicalRatings[teamKey];
+      if (cr && isNum(cr.value)) {
+        var cplayed = (st.gamesThisSeason && st.gamesThisSeason[teamKey]) || 0;
+        return { value: cr.value, prior_weight: 0, carried: cr.value,
+          this_season: cr.value, games_played: cplayed, canonical: true,
+          source: cr.source || 'canonical neutral-field rating',
+          basis: cr.basis || 'canonical neutral-field rating supplied after replay' };
+      }
       /* An FBS team the rating state has never seen has NO rating. Falling back
          to init_rating here would hand back a confident number for a team the
          model has never heard of — the exact fabrication the core invariant
@@ -496,12 +513,17 @@
     profile: function (st, teamKey, isFbs) {
       var P = params();
       var n = strength.games(st, teamKey);
-      var known = has(st.r, teamKey);
-      var conf = clamp(n / ((P && P.rating.games_for_full_confidence) || 6), 0, 1);
+      var cr = st.canonicalRatings && st.canonicalRatings[teamKey];
+      var known = has(st.r, teamKey) || (cr && isNum(cr.value));
+      var conf = cr && isNum(cr.confidence) ? clamp(cr.confidence, 0, 1)
+        : clamp(n / ((P && P.rating.games_for_full_confidence) || 6), 0, 1);
       var e = st.eff[teamKey] || null, out = {
         rating: known || isFbs === false
           ? M(strength.rating(st, teamKey, isFbs), { n: n, confidence: conf,
-              source: 'opponent-adjusted capped-margin rating', basis: 'results' })
+              source: cr ? (cr.source || 'canonical neutral-field rating')
+                : 'opponent-adjusted capped-margin rating',
+              basis: cr ? (cr.basis || 'canonical neutral-field rating supplied after replay') : 'results',
+              as_of: cr && cr.as_of || null })
           : M.missing('team not in rating state (never observed)'),
         games: n,
         scoring: st.scoring[teamKey]
@@ -2605,6 +2627,55 @@
       return state;
     },
     seasonBreak: function (state) { strength.seasonBreak(state); return state; },
+    /* Install the richer current FBS rating AFTER replay. This is deliberately
+       separate from st.r/st.rf: historical replay still drives game counts,
+       scoring, efficiency and uncertainty. By default current availability is
+       removed from the canonical rating because injuries are applied again,
+       by athlete identity, in Layer 2 for this specific matchup. */
+    setCanonicalRatings: function (state, dataset, opts) {
+      if (!state) return state;
+      opts = opts || {};
+      var rows = dataset && dataset.teams, out = {}, i, t, k, v, av, removed;
+      if (!rows || !rows.length) {
+        state.canonicalRatings = {};
+        state.canonicalRatingMeta = null;
+        state.canonicalRatingCount = 0;
+        return state;
+      }
+      for (i = 0; i < rows.length; i++) {
+        t = rows[i] || {};
+        k = normKey(t.canonical_key || t.key || t.team);
+        v = t.rating;
+        if (!k || !isNum(v)) continue;
+        removed = 0;
+        av = t.components && t.components.availability
+          ? t.components.availability.points : null;
+        if (opts.strip_availability === true && isNum(av) && av < 0) {
+          removed = av;
+          v -= av;
+        }
+        out[k] = {
+          value: v,
+          confidence: isNum(t.confidence) ? t.confidence : null,
+          source: opts.source || (dataset.source_schema
+            ? dataset.source_schema + ' canonical neutral-field rating'
+            : 'canonical neutral-field rating'),
+          as_of: dataset.source_generated_at || dataset.generated_at || null,
+          availability_removed: removed,
+          basis: 'canonical ETSR backbone'
+            + (removed < 0 ? '; current availability contribution removed before game-specific injury pricing' : '')
+        };
+      }
+      state.canonicalRatings = out;
+      state.canonicalRatingCount = Object.keys(out).length;
+      state.canonicalRatingMeta = {
+        schema: dataset.source_schema || dataset.schema || null,
+        season: dataset.season == null ? null : dataset.season,
+        generated_at: dataset.source_generated_at || dataset.generated_at || null,
+        strip_availability: opts.strip_availability === true
+      };
+      return state;
+    },
     /* Recruiting star ratings are NOT in the public roster feed this engine
        reads. Supply them here and the blue-chip layer switches on; do not,
        and it stays honestly dark. */
