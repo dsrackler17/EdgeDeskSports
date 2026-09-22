@@ -20,6 +20,7 @@
 
 const SCHEMA = 'edgedesk_nfl_coaching_staff_ledger_v1';
 const EVIDENCE_SCHEMA = 'edgedesk_nfl_coaching_staff_current_residual_v1';
+const HEAD_COACH_EVIDENCE_SCHEMA = 'edgedesk_nfl_coaching_staff_head_coach_residual_v1';
 
 function isNum(x) {
   return typeof x === 'number' && Number.isFinite(x);
@@ -151,6 +152,96 @@ function summarizeCurrentResidual(ledger, opts) {
   };
 }
 
+function summarizeHeadCoachResidual(ledger, opts) {
+  opts = opts || {};
+  const requested = Array.isArray(opts.teamKeys) ? opts.teamKeys.map(String) : [];
+  const currentCoaches = opts.currentCoaches || {};
+  const minSeasons = opts.minSeasons == null ? 2 : Math.max(2, Number(opts.minSeasons) || 2);
+  const teams = {};
+
+  function coachKey(v) {
+    return v == null ? null : String(v).trim().toLowerCase() || null;
+  }
+
+  function blank(team) {
+    const coach = currentCoaches[team] == null ? null : String(currentCoaches[team]).trim() || null;
+    return {
+      team,
+      head_coach: coach,
+      available: false,
+      value: null,
+      observations: 0,
+      season_count: 0,
+      seasons: [],
+      total_evidence: null,
+      mean_evidence: null,
+      game_ids: [],
+      source: 'frozen pregame residual ledger + frozen nflverse head-coach identity',
+      reason: coach
+        ? 'requires frozen residual evidence for the current head coach across at least ' + minSeasons + ' seasons'
+        : 'current head coach is unavailable'
+    };
+  }
+
+  requested.forEach((team) => { teams[team] = blank(team); });
+
+  if (!ledger || ledger.schema !== SCHEMA || !ledger.settled) {
+    return {
+      schema: HEAD_COACH_EVIDENCE_SCHEMA,
+      input: 'multi_season_head_coach',
+      min_seasons: minSeasons,
+      teams,
+      error: 'invalid ledger'
+    };
+  }
+
+  requested.forEach((team) => {
+    const row = teams[team];
+    const target = coachKey(row.head_coach);
+    if (!target) return;
+
+    let sum = 0;
+    const seasons = new Set();
+
+    Object.keys(ledger.settled).sort().forEach((id) => {
+      const rec = ledger.settled[id];
+      if (!rec) return;
+      const season = Number(rec.season);
+      const sides = [
+        { coach: rec.home_head_coach, evidence: rec.team_evidence && rec.team_evidence.home },
+        { coach: rec.away_head_coach, evidence: rec.team_evidence && rec.team_evidence.away }
+      ];
+
+      sides.forEach((side) => {
+        if (coachKey(side.coach) !== target || !isNum(side.evidence)) return;
+        row.observations += 1;
+        sum += side.evidence;
+        row.game_ids.push(String(rec.game_id || id));
+        if (Number.isFinite(season)) seasons.add(season);
+      });
+    });
+
+    row.seasons = Array.from(seasons).sort((a, b) => a - b);
+    row.season_count = row.seasons.length;
+    if (row.observations) {
+      row.total_evidence = r3(sum);
+      row.mean_evidence = r3(sum / row.observations);
+    }
+    if (row.observations && row.season_count >= minSeasons) {
+      row.value = row.mean_evidence;
+      row.available = true;
+      row.reason = null;
+    }
+  });
+
+  return {
+    schema: HEAD_COACH_EVIDENCE_SCHEMA,
+    input: 'multi_season_head_coach',
+    min_seasons: minSeasons,
+    teams
+  };
+}
+
 function settle(ledger, finalRow) {
   const id = validGameId(finalRow);
   if (!ledger || ledger.schema !== SCHEMA) {
@@ -194,8 +285,10 @@ function settle(ledger, finalRow) {
 module.exports = {
   SCHEMA,
   EVIDENCE_SCHEMA,
+  HEAD_COACH_EVIDENCE_SCHEMA,
   newLedger,
   capture,
   settle,
-  summarizeCurrentResidual
+  summarizeCurrentResidual,
+  summarizeHeadCoachResidual
 };
