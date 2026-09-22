@@ -29,6 +29,52 @@ chk('8:15 PM ET in September is 00:15 UTC next day', B.etToIso('2026-09-17', '20
 chk('1:00 PM ET in December is 18:00 UTC', B.etToIso('2026-12-13', '13:00') === '2026-12-13T18:00:00.000Z', B.etToIso('2026-12-13', '13:00'));
 chk('a missing time defaults to noon ET', /T16:00:00/.test(B.etToIso('2026-09-20', null)) || /T17:00:00/.test(B.etToIso('2026-09-20', null)));
 
+const researchLedger = L.newLedger();
+L.capture(researchLedger, {
+  game_id: 'research-g',
+  season: 2026,
+  week: 2,
+  home_code: 'A',
+  away_code: 'B',
+  model_home_margin: 1,
+  captured_at: '2026-09-16T12:00:00.000Z'
+});
+const researchCount = B.freezeCapturedCoachingResearch(
+  researchLedger,
+  ['research-g'],
+  [{ game_id: 'research-g', home_code: 'A', away_code: 'B' }],
+  {
+    teams: {
+      A: { coaching_staff_available: true, coaching_staff_rating: 60, coaching_staff_reliability: 0.5 },
+      B: { coaching_staff_available: true, coaching_staff_rating: 40, coaching_staff_reliability: 0.5 }
+    }
+  },
+  '2026-09-16T12:00:00.000Z'
+);
+chk('newly captured game freezes a coaching research snapshot',
+  researchCount === 1 &&
+    researchLedger.pending['research-g'].coaching_research.home.factor === 0.1 &&
+    researchLedger.pending['research-g'].coaching_research.away.factor === -0.1 &&
+    researchLedger.pending['research-g'].coaching_research.applied_points === 0,
+  researchLedger.pending['research-g'].coaching_research);
+const researchRewrite = B.freezeCapturedCoachingResearch(
+  researchLedger,
+  ['research-g'],
+  [{ game_id: 'research-g', home_code: 'A', away_code: 'B' }],
+  {
+    teams: {
+      A: { coaching_staff_available: true, coaching_staff_rating: 100, coaching_staff_reliability: 1 },
+      B: { coaching_staff_available: true, coaching_staff_rating: 0, coaching_staff_reliability: 1 }
+    }
+  },
+  '2026-09-17T12:00:00.000Z'
+);
+chk('later build cannot rewrite the frozen coaching research snapshot',
+  researchRewrite === 0 &&
+    researchLedger.pending['research-g'].coaching_research.home.factor === 0.1 &&
+    researchLedger.pending['research-g'].coaching_research.away.factor === -0.1,
+  researchLedger.pending['research-g'].coaching_research);
+
 const NOW = Date.parse('2026-09-16T12:00:00Z');
 const GAMES = [
   'game_id,season,game_type,week,gameday,weekday,gametime,away_team,away_score,home_team,home_score,location,result,total,overtime,old_game_id,gsis,nfl_detail_id,pfr,pff,espn,ftn,away_rest,home_rest,away_moneyline,home_moneyline,spread_line,away_spread_odds,home_spread_odds,total_line,under_odds,over_odds,div_game,roof,surface,temp,wind,away_qb_id,home_qb_id,away_qb_name,home_qb_name,away_coach,home_coach,referee,stadium_id,stadium',
@@ -128,6 +174,15 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
       coachingLedger.pending[g.game_id].home_head_coach === 'Sean McDermott' &&
       coachingLedger.pending[g.game_id].away_head_coach === 'Andy Reid',
     g && coachingLedger.pending[g.game_id]);
+  chk('the frozen ledger also preserves the pregame coaching research state',
+    g && coachingLedger.pending[g.game_id] &&
+      coachingLedger.pending[g.game_id].coaching_research &&
+      coachingLedger.pending[g.game_id].coaching_research.projection_influence === false &&
+      coachingLedger.pending[g.game_id].coaching_research.applied_points === 0 &&
+      coachingLedger.pending[g.game_id].coaching_research.home.available === false &&
+      coachingLedger.pending[g.game_id].coaching_research.home.factor === null &&
+      coachingLedger.pending[g.game_id].coaching_research.away.factor === null,
+    g && coachingLedger.pending[g.game_id] && coachingLedger.pending[g.game_id].coaching_research);
   chk('home line is the negated margin', g && g.model_home_line === -g.model_home_margin && g.model_home_line != null, g && [g.model_home_line, g.model_home_margin]);
   chk('a win probability rides along', g && g.model_home_win_prob > 0 && g.model_home_win_prob < 1);
   chk('the outcome range is p10/p50/p90 of the home margin', g && g.outcome_range && g.outcome_range.p10 < g.outcome_range.p50 && g.outcome_range.p50 < g.outcome_range.p90 && /home margin/.test(g.outcome_range.unit));
