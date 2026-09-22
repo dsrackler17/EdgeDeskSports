@@ -115,7 +115,7 @@ async function build(opts) {
   const getText = opts.fetchText || ((u) => {
     const s = String(u || '');
     if (s.startsWith('/')) {
-      const local = path.join(ROOT, s.replace(/^\\/+/, ''));
+      const local = path.join(ROOT, s.replace(/^\/+/, ''));
       if (fs.existsSync(local) && fs.statSync(local).isFile()) {
         return Promise.resolve(fs.readFileSync(local, 'utf8'));
       }
