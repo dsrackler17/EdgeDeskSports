@@ -1,15 +1,9 @@
-# EdgeDesk Football — the EdgeDesk Rating (EDR).
+# EdgeDesk Football — canonical FBS power-rating publication.
 #
-# EdgeDesk's own answer to "how good is this team", in points against an
-# average FBS team. Not a poll, not a service, not another model: it is
-# rebuilt from results EdgeDesk can check, the roster EdgeDesk already
-# commits, and the availability layer EdgeDesk already collects.
-#
-# The one thing this job does that a preseason ranking cannot: it MEASURES how
-# much last season still predicts this one, every week, and reweights itself.
-# That measured slope is the portal/NIL argument settled with arithmetic
-# instead of an opinion, and it ships inside the dataset so it can be argued
-# with.
+# The national rankings/ETSR build owns the team-strength arithmetic. This job
+# only republishes that same rating through football/rating/current.json, the
+# legacy contract app.html already reads. One team, one power rating, no second
+# cron job quietly recomputing a rival answer from a different model.
 #
 # Cadence follows the football week (UTC; ET is four hours behind):
 #   Sun 09:00 UTC  the week's results are all in — the full weekly rebuild
@@ -63,13 +57,10 @@ jobs:
       - name: The rules must pass before anything is allowed to write
         run: node football/rating/edr.test.js
 
-      - name: Rebuild the EdgeDesk Rating
+      - name: Publish ETSR through the app rating contract
         run: |
-          ARGS=""
-          if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
-          if [ -n "${{ github.event.inputs.seasons }}" ]; then ARGS="$ARGS --seasons ${{ github.event.inputs.seasons }}"; fi
-          if [ -n "${{ github.event.inputs.week }}" ]; then ARGS="$ARGS --week ${{ github.event.inputs.week }}"; fi
-          node football/rating/build_rating.js $ARGS
+          node football/rating/sync_rankings.js
+          node football/rating/sync_rankings.test.js
 
       # The dataset that just got written has to survive the same rules again —
       # the shipped-file checks in the suite read football/rating/current.json.
@@ -88,7 +79,7 @@ jobs:
             echo 'rating unchanged — nothing to commit'
             exit 0
           fi
-          git commit -m 'rating sync: EdgeDesk Rating rebuilt from results, roster and availability'
+          git commit -m 'rating sync: publish canonical ETSR power rating'
           for i in 1 2 3 4; do
             git push origin "${{ github.ref_name }}" && exit 0
             git pull --rebase origin "${{ github.ref_name }}" || true
