@@ -206,6 +206,12 @@ jobs:
         run: node football/data/build_box.js --seasons 4 --cache .cache/football
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
 
+      - name: Starter context for player-rating input
+        if: steps.go.outputs.run == 'true'
+        run: node football/starters/build_starters.js --sport cfb
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
       - name: Player ratings (v1 canonical, v2 candidate)
         if: steps.go.outputs.run == 'true'
         run: node --max-old-space-size=6144 football/players/build_players.js --cache .cache/football
