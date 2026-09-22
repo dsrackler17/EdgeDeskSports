@@ -48,6 +48,7 @@ const UNITS = require('../players/units.js');
 const PSCHEME = require('../players/scheme.js');
 const CFG = require('./config.js');
 const PERF = require('./performance.js');
+const ENGINE_EFF = require('./engine_efficiency.js');
 const TAL = require('./talent.js');
 const ETSR = require('./etsr.js');
 const SPECIAL = require('./special_teams.js');
@@ -58,6 +59,7 @@ const DIR = __dirname;
 const PLAYERS_DIR = path.join(DIR, '..', 'players');
 const BOX_DIR = path.join(DIR, '..', 'data', 'box');
 const OUT_CUR = path.join(DIR, 'current.json');
+const OUT_ENGINE_EFF = path.join(DIR, 'engine_efficiency.json');
 const OUT_SNAP = path.join(DIR, 'snapshots');
 const OUT_HEALTH = path.join(DIR, 'health.json');
 const OUT_HIST = path.join(DIR, 'history.json');
@@ -797,6 +799,12 @@ async function main() {
      football/health.json already makes for the daily model check. */
   fs.writeFileSync(OUT_HEALTH, JSON.stringify(health, null, 1));
 
+  const engineEfficiency = ENGINE_EFF.build(play[cur].teamGames, {
+    fbs: sched[cur].fbs,
+    season: cur,
+    generated_at: startedAt
+  });
+  writeIfChanged(OUT_ENGINE_EFF, JSON.stringify(engineEfficiency));
   writeIfChanged(OUT_CUR, JSON.stringify(manifest));
   writeIfChanged(OUT_PARAMS, paramsFile(params, finalSlope, startedAt));
   printTop(teams, 15);
