@@ -443,9 +443,21 @@ function normKey(s) {
    real report saying everybody is available). Collapsing those two was never
    an option and is not one here. */
 const AVAIL_TO_ENGINE = { OUT: 'out', DOUBTFUL: 'doubtful', QUESTIONABLE: 'questionable',
-  GAME_TIME_DECISION: 'questionable', DAY_TO_DAY: 'questionable', PROBABLE: 'probable', LIMITED: 'probable' };
+  GAME_TIME_DECISION: 'questionable', DAY_TO_DAY: 'questionable',
+  /* The pricing engine has no half-game designation. QUESTIONABLE is its
+     measured 0.50 status weight, so OUT_FIRST_HALF maps there: exactly half
+     the full-OUT status effect instead of disappearing or becoming four
+     quarters of absence. */
+  OUT_FIRST_HALF: 'questionable',
+  PROBABLE: 'probable', LIMITED: 'probable' };
 
-function injuriesFor(ctx, teamName) {
+function officialReportForGame(team, gameId) {
+  const r = team && team.official_report;
+  if (!r || !r.ok || r.game_id == null || gameId == null) return null;
+  return String(r.game_id) === String(gameId) ? r : null;
+}
+
+function injuriesFor(ctx, teamName, gameId) {
   const t = ctx.availability_by_team[normKey(teamName)];
   if (!t) return null;
   /* THE GATE THIS FUNCTION WAS MISSING, and the reason football/fbs/slate.json
@@ -470,8 +482,16 @@ function injuriesFor(ctx, teamName) {
      PARTIAL are reads that reached a report; LIMITED and NONE are not. */
   const q = AV_OVERLAY.normGrade(t.dataQuality || t.data_quality);
   if (!AV_OVERLAY.isGraded(q)) return null;
+
+  /* A conference filing is evidence about ONE fixture. Historical reports stay
+     on disk for audit/backtest purposes, so the consumer must scope them here.
+     Unscoped rows are the general automated/media evidence layer and may carry
+     forward while fresh; a row that names a game may not. */
+  const official = officialReportForGame(t, gameId);
+  const scoped = (t.players || []).filter(p =>
+    p.game_id == null || gameId == null || String(p.game_id) === String(gameId));
   const out = [];
-  (t.players || []).forEach(p => {
+  scoped.forEach(p => {
     const st = AVAIL_TO_ENGINE[String(p.status || '').toUpperCase()];
     if (!st) return;
     out.push({
@@ -481,7 +501,19 @@ function injuriesFor(ctx, teamName) {
       source: p.source_name || t.team_name || null, as_of: p.observed_at || t.lastUpdated || ctx.availability_as_of
     });
   });
-  return out;
+  if (out.length) return out;
+
+  /* An empty array means a real clean report to the engine. Grant that meaning
+     only to a COMPREHENSIVE official filing for THIS game. A selected report
+     naming nobody, or an OFFICIAL grade inherited from last week's filing, is
+     still unknown for the mean and returns null. */
+  if (official && official.comprehensive) return [];
+
+  /* General unscoped evidence can still be a graded read that simply carries
+     no priced designation. Preserve the pre-existing contract for that case,
+     but never let an old fixture-scoped row create the empty array. */
+  if (scoped.some(p => p.game_id == null)) return out;
+  return null;
 }
 
 /* --------------------------------------------------- schedule stress, offline */
@@ -660,7 +692,7 @@ function buildRequest(ctx, o) {
      None of them is health. A comprehensive report naming nobody is the ONLY
      thing that means nobody is out, and only the policy registry may say a
      source is comprehensive. */
-  const ih = injuriesFor(ctx, g.home_team), ia = injuriesFor(ctx, g.away_team);
+  const ih = injuriesFor(ctx, g.home_team, g.game_id), ia = injuriesFor(ctx, g.away_team, g.game_id);
   const avAge = hoursSince(ctx.availability_as_of, now);
   const policyGame = { home_conference: g.home_conference, away_conference: g.away_conference,
     is_conference_game: g.home_conference != null && g.away_conference != null
@@ -671,36 +703,51 @@ function buildRequest(ctx, o) {
   [['home', ih, homeFbs, g.home_team], ['away', ia, awayFbs, g.away_team]].forEach(([side, list, isFbs, name]) => {
     const pol = avPolicy[side];
     const t = ctx.availability_by_team[normKey(name)] || null;
-    const official = !!(t && t.official_report);
-    const comprehensive = !!(t && t.official_report && t.official_report.comprehensive);
+    const report = officialReportForGame(t, g.game_id);
+    const official = !!report;
+    const comprehensive = !!(report && report.comprehensive);
+    const observedAt = report ? report.published_at : (t && t.observed_at) || ctx.availability_as_of;
+    const evidenceAsOf = report ? (report.retrieved_at || report.published_at) : ctx.availability_as_of;
+    const evidenceAge = hoursSince(observedAt || evidenceAsOf, now);
     const polNote = pol && pol.why ? ' ' + pol.why + '.' : '';
     if (list && list.length) {
       avEvidence[side] = 'EXPLICIT';
-      contract.push(row('availability', side, avAge != null && avAge > 48 ? 'STALE' : 'USABLE',
+      contract.push(row('availability', side, evidenceAge != null && evidenceAge > 48 ? 'STALE' : 'USABLE',
         { source: (official ? pol.conference + ' availability report' : 'EdgeDesk college availability layer'),
-          as_of: ctx.availability_as_of, observed_at: (t && t.official_report && t.official_report.published_at) || null,
-          age_hours: avAge, identity: 'resolved against the current-season roster by name; a name that is not on '
+          as_of: evidenceAsOf, observed_at: observedAt || null,
+          age_hours: evidenceAge, identity: 'resolved against the current-season roster by name; a name that is not on '
             + 'the roster is refused rather than invented',
           detail: `${list.length} absence report(s) on file` + polNote,
           fix: null }));
     } else if (list && comprehensive) {
       /* the one branch that may say nobody is out */
       avEvidence[side] = 'COMPREHENSIVE_SILENCE';
-      contract.push(row('availability', side, avAge != null && avAge > 48 ? 'STALE' : 'USABLE',
+      contract.push(row('availability', side, evidenceAge != null && evidenceAge > 48 ? 'STALE' : 'USABLE',
         { source: pol.conference + ' availability report',
-          as_of: ctx.availability_as_of, observed_at: (t.official_report && t.official_report.published_at) || null,
-          age_hours: avAge,
+          as_of: evidenceAsOf, observed_at: observedAt || null,
+          age_hours: evidenceAge,
           detail: 'the ' + pol.conference + ' report for this game designates every player and names nobody on this '
             + 'roster — a report of no absences, which is a different statement from no report' }));
     } else if (list) {
       /* sources answered and named nobody, but nothing comprehensive covers
          this game, so this is not a clean bill of health for the roster */
-      contract.push(row('availability', side, avAge != null && avAge > 48 ? 'STALE' : 'USABLE',
-        { source: 'EdgeDesk college availability layer', as_of: ctx.availability_as_of, age_hours: avAge,
+      contract.push(row('availability', side, evidenceAge != null && evidenceAge > 48 ? 'STALE' : 'USABLE',
+        { source: 'EdgeDesk college availability layer', as_of: evidenceAsOf, age_hours: evidenceAge,
           detail: 'the sources EdgeDesk reads were read and named nobody. No COMPREHENSIVE report covers this '
             + 'fixture, so this is an absence of named absences and not a statement that the roster is whole'
             + polNote,
           fix: pol && pol.report_url ? ('ingest the ' + pol.conference + ' report from ' + pol.report_url) : null }));
+    } else if (official) {
+      /* A selected/absence-only report was successfully read for THIS game,
+         but silence is not health. Publish the retrieval as research context
+         and keep the engine injury mean unknown. */
+      contract.push(row('availability', side,
+        evidenceAge != null && evidenceAge > 48 ? 'STALE' : 'RESEARCH_ONLY',
+        { source: pol.conference + ' availability report',
+          as_of: evidenceAsOf, observed_at: observedAt || null, age_hours: evidenceAge,
+          detail: 'the official report for this game was read and names no priced absence, but its policy is '
+            + 'not comprehensive. Silence therefore says nothing about players not listed, so it is not handed '
+            + 'to the pricing engine as a clean injury report' }));
     } else if (!isFbs) {
       contract.push(row('availability', side, 'UNAVAILABLE',
         { detail: `${name} is outside the FBS availability registry, so no availability read covers it. The `
@@ -729,7 +776,7 @@ function buildRequest(ctx, o) {
       const failed = t && isNum(t.sources_failed) ? t.sources_failed : null;
       const checked = t && isNum(t.sources_checked) ? t.sources_checked : null;
       contract.push(row('availability', side, q === 'LIMITED' ? 'FETCH_FAILED' : 'UNAVAILABLE',
-        { source: 'EdgeDesk college availability layer', as_of: ctx.availability_as_of,
+        { source: 'EdgeDesk college availability layer', as_of: evidenceAsOf,
           detail: !t
             ? `${name} is not in the availability registry; the engine prices this as maximum injury uncertainty, never as healthy`
             : `EdgeDesk read ${checked == null ? 'the'  : checked} source(s) for ${name} and ${failed ? failed + ' refused' : 'none carried a usable report'}`
@@ -830,7 +877,7 @@ function buildRequest(ctx, o) {
       qbAvailEvidence[side] = 'COMPREHENSIVE_SILENCE';
       qbAvailWhy[side] = 'named nowhere on a comprehensive report for this game';
       contract.push(row('qb_availability', side, 'USABLE',
-        { source: pol && pol.conference, as_of: ctx.availability_as_of,
+        { source: pol && pol.conference, as_of: evidenceAsOf,
           detail: 'the comprehensive ' + (pol && pol.conference) + ' availability report for this game designates '
             + 'every player and does not name him, which is a report that he is available' }));
     } else if (pol && pol.state === 'NOT_REQUIRED_FOR_THIS_GAME') {
@@ -1272,5 +1319,5 @@ function summarise(contract) {
   };
 }
 
-module.exports = { load, buildRequest, injuriesFor, scheduleIndex, schedCtx,
-  summarise, STATES, PRICED_STARTER_STATUSES, normKey, row };
+module.exports = { load, buildRequest, injuriesFor, officialReportForGame, scheduleIndex, schedCtx,
+  summarise, STATES, PRICED_STARTER_STATUSES, normKey, row, AVAIL_TO_ENGINE };
