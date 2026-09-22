@@ -120,6 +120,26 @@ const composite = C.build(['KC', 'BUF'], {
         source: 'frozen pregame residual ledger + frozen nflverse head-coach identity'
       }
     }
+  },
+  program: {
+    teams: {
+      KC: {
+        available: true,
+        value: 0.8,
+        observations: 17,
+        season_count: 2,
+        seasons: [2026, 2025],
+        source: 'time-decayed same-franchise evidence from the frozen pregame residual ledger'
+      },
+      BUF: {
+        available: false,
+        value: null,
+        observations: 8,
+        season_count: 1,
+        seasons: [2026],
+        source: 'time-decayed same-franchise evidence from the frozen pregame residual ledger'
+      }
+    }
   }
 });
 assert.strictEqual(composite.status, 'EVIDENCE_ONLY');
@@ -129,6 +149,13 @@ assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_co
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.observations, 9);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.weighted_evidence, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.reliability, 0);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.available, true);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.value, 0.8);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.observations, 17);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.weighted_evidence, null);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.reliability, 0);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.program_persistence.available, false);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.program_persistence.value, null);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_coach.available, false);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_coach.value, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_rating, null);
