@@ -35,29 +35,109 @@ const r4 = v => v == null ? null : Math.round(v * 10000) / 10000;
    carries no athlete id. A name join is the weakest join this repo makes, so
    it is (a) scoped to one team, (b) refused when the report is stale, and
    (c) recorded on the player as a name join so the confidence pays for it. */
-function loadAvailability() {
+function loadAvailability(sched, nowMs) {
+  nowMs = nowMs || Date.now();
   const j = B.readJson(path.join(DIR, '..', 'availability', 'current.json'), null);
-  if (!j || !j.teams) return { byTeamName: {}, meta: null, records: 0 };
   const byTeamName = {};
   let records = 0, stale = 0;
-  for (const id of Object.keys(j.teams)) {
-    const t = j.teams[id];
-    const key = EPIR.teamKey(t.team_name || t.team_display);
-    if (!key) continue;
-    const m = byTeamName[key] = byTeamName[key] || {};
-    for (const p of (t.players || [])) {
-      /* HISTORICAL is the dataset's own word for "this report is old". An old
-         report is not evidence about this week and is not used. */
-      if (String(p.freshness || '').toUpperCase() === 'HISTORICAL') { stale++; continue; }
-      const nk = EPIR.nameKey(p.player_name);
-      if (!nk) continue;
-      m[nk] = { status: p.availability_status, source: p.source_name,
-        as_of: p.observed_at, confidence: p.confidence, impact: p.impact_level,
-        join: 'name_within_team' };
-      records++;
+
+  /* THE GENERAL EVIDENCE LAYER. These are school/reporting/participation facts
+     that are not tied to one conference filing. They stay useful when no
+     conference report is required, but never get upgraded from UNKNOWN merely
+     because a source failed. */
+  if (j && j.teams) {
+    for (const id of Object.keys(j.teams)) {
+      const t = j.teams[id];
+      const key = EPIR.teamKey(t.team_name || t.team_display);
+      if (!key) continue;
+      const m = byTeamName[key] = byTeamName[key] || {};
+      for (const p of (t.players || [])) {
+        if (String(p.freshness || '').toUpperCase() === 'HISTORICAL') { stale++; continue; }
+        const nk = EPIR.nameKey(p.player_name);
+        if (!nk) continue;
+        m[nk] = { status: p.availability_status, source: p.source_name,
+          as_of: p.observed_at, confidence: p.confidence, impact: p.impact_level,
+          join: 'name_within_team', evidence: 'general' };
+        records++;
+      }
     }
   }
-  return { byTeamName, records, stale, meta: { season: j.season, week: j.week, generated_at: j.generated_at, coverage: j.coverage } };
+
+  /* THE FORMAL GAME REPORTS. College football now has conference availability
+     filings for many conference games. They are fixture-specific, so only the
+     NEXT game for a team can affect the CURRENT roster-strength rating. A
+     report for last Saturday is history; a report for a later fixture does not
+     leak backwards into this one. */
+  const nextByTeam = {};
+  for (const g of ((sched && sched.games) || [])) {
+    if (!g || g.completed || !g.game_id) continue;
+    const at = Date.parse(g.start_date || '');
+    if (!isFinite(at) || at < nowMs - 6 * 3600000) continue;
+    for (const key of [g.home, g.away]) {
+      if (!key) continue;
+      if (!nextByTeam[key] || at < nextByTeam[key].at)
+        nextByTeam[key] = { game_id: String(g.game_id), at, kickoff: g.start_date || null };
+    }
+  }
+
+  const officialByTeamName = {}, officialByPlayerId = {}, comprehensiveTeams = {};
+  let officialReports = 0, officialRows = 0, officialFailures = 0;
+  const reportDir = path.join(DIR, '..', 'availability', 'reports');
+  if (fs.existsSync(reportDir)) {
+    for (const file of fs.readdirSync(reportDir)) {
+      if (!/\.json$/i.test(file)) continue;
+      const rep = B.readJson(path.join(reportDir, file), null);
+      if (!rep || !rep.team || !rep.game_id) continue;
+      const key = EPIR.teamKey(rep.team);
+      const next = key && nextByTeam[key];
+      if (!next || String(rep.game_id) !== next.game_id) continue;
+      if (!rep.ok) { officialFailures++; continue; }
+
+      officialReports++;
+      const source = (rep.conference || 'Conference') + ' official availability report';
+      const asOf = rep.published_at || rep.retrieved_at || null;
+      const teamMap = officialByTeamName[key] = officialByTeamName[key] || {};
+      for (const row of (rep.rows || [])) {
+        const rec = { status: row.status, source, as_of: asOf, confidence: 1,
+          impact: null, join: row.player_id ? 'official_conference_player_id' : 'official_conference_name',
+          evidence: 'official_conference', game_id: String(rep.game_id),
+          conference: rep.conference || null };
+        if (row.player_id) officialByPlayerId[String(row.player_id)] = rec;
+        const nk = EPIR.nameKey(row.player_name);
+        if (nk) teamMap[nk] = rec;
+        officialRows++;
+      }
+
+      /* In a COMPREHENSIVE report, silence about a player means available.
+         That is safe only when the document parsed without unresolved player
+         lines. A failed or partially-unparsed document NEVER becomes a clean
+         bill of health. */
+      if (rep.comprehensive === true && (!rep.unparsed || rep.unparsed.length === 0)) {
+        const have = comprehensiveTeams[key];
+        const pub = Date.parse(asOf || 0);
+        const prev = have ? Date.parse(have.as_of || 0) : NaN;
+        if (!have || (isFinite(pub) && (!isFinite(prev) || pub >= prev))) {
+          comprehensiveTeams[key] = { status: 'AVAILABLE', source, as_of: asOf,
+            confidence: 1, impact: null, join: 'official_conference_comprehensive_silence',
+            evidence: 'official_conference', game_id: String(rep.game_id),
+            conference: rep.conference || null };
+        }
+      }
+    }
+  }
+
+  return {
+    byTeamName, officialByTeamName, officialByPlayerId, comprehensiveTeams,
+    records, stale, officialReports, officialRows, officialFailures,
+    meta: {
+      season: j && j.season, week: j && j.week, generated_at: j && j.generated_at,
+      coverage: j && j.coverage,
+      official_reports_for_next_game: officialReports,
+      official_player_rows_for_next_game: officialRows,
+      official_report_failures_for_next_game: officialFailures,
+      basis: 'general EdgeDesk availability plus valid official conference reports for each team’s next game; failed reads remain UNKNOWN'
+    }
+  };
 }
 
 async function main() {
@@ -275,15 +355,33 @@ async function main() {
   log(`  EPIR v2 candidate: ${moved} players move by 0.05+ (mean |move| ${moved ? (movedSum / moved).toFixed(2) : '0'}), ${newlyRated} players rateable for the first time`);
 
   /* ---------------- availability ---------------- */
-  const avail = loadAvailability();
+  const avail = loadAvailability(sched[cur], Date.now());
   const availByKey = {};
   for (const r of curRated.ratings) {
-    const t = avail.byTeamName[r.team_key];
-    if (!t) continue;
-    const rec = t[EPIR.nameKey(r.name)];
+    const aid = r.athlete_id || (String(r.key || '').indexOf('a:') === 0 ? String(r.key).slice(2) : null);
+    const officialById = aid ? avail.officialByPlayerId[String(aid)] : null;
+    const ot = avail.officialByTeamName[r.team_key] || null;
+    const officialByName = ot ? ot[EPIR.nameKey(r.name)] : null;
+    const generalTeam = avail.byTeamName[r.team_key] || null;
+    const general = generalTeam ? generalTeam[EPIR.nameKey(r.name)] : null;
+    const comprehensive = avail.comprehensiveTeams[r.team_key] || null;
+
+    let rec = officialById || officialByName || null;
+    if (!rec && comprehensive) {
+      /* A newer high-confidence direct report may supersede the formal filing;
+         otherwise a successfully parsed comprehensive filing is the strongest
+         evidence that an unlisted player is AVAILABLE for this fixture. */
+      const ga = general && Date.parse(general.as_of || 0);
+      const ca = Date.parse(comprehensive.as_of || 0);
+      rec = (general && general.confidence >= 0.8 && isFinite(ga) && isFinite(ca) && ga > ca)
+        ? general : comprehensive;
+    }
+    if (!rec) rec = general;
     if (rec) availByKey[r.key] = rec;
   }
-  log(`  availability: ${avail.records} live records, ${avail.stale} stale reports ignored, ${Object.keys(availByKey).length} joined to a rated player`);
+  log(`  availability: ${avail.records} general records, ${avail.officialReports} valid official next-game report(s), `
+    + `${avail.officialRows} named official player row(s), ${avail.officialFailures} failed official read(s), `
+    + `${avail.stale} stale reports ignored, ${Object.keys(availByKey).length} players resolved`);
 
   /* ---------------- units, returning value, transfers ---------------- */
   const prevSeason = usable.length > 1 ? usable[usable.length - 2] : null;
