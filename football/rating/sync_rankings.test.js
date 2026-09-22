@@ -66,6 +66,18 @@ chk('when the ETSR scalar is not measured the app contract says so', () => {
 });
 chk('conference and program-group metadata survive for filtering', () =>
   out.teams.every(t => t.conference && t.conference_id && t.fbs_group));
+chk('legacy conference coverage reconciles to the canonical field', () =>
+  out.conference_coverage
+    && out.conference_coverage.with_conference === out.team_count
+    && out.conference_coverage.without_conference === 0);
+chk('every team has subgroup ranks in the same order as the national view', () => {
+  const g = {}, c = {};
+  return out.teams.every(t => {
+    g[t.fbs_group] = (g[t.fbs_group] || 0) + 1;
+    c[t.conference_id] = (c[t.conference_id] || 0) + 1;
+    return t.group_rank === g[t.fbs_group] && t.conference_rank === c[t.conference_id];
+  });
+});
 chk('the compatibility digest is stable for the same source', () =>
   S.buildCompatibility(src).digest === out.digest);
 
