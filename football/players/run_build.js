@@ -801,7 +801,9 @@ function unitSummaries(teams) {
       const x = u.groups[gk];
       g[gk] = { r: x.rating, c: r2(x.confidence), sq: x.starter_quality, dq: x.depth_quality,
         ct: x.continuity, ex: x.experience, n: x.roster_size,
-        out: x.availability.starters_out, unk: x.availability.unknown_share,
+        out: x.availability.starters_out,
+        unav: x.availability.unavailable_share == null ? null : x.availability.unavailable_share,
+        unk: x.availability.unknown_share,
         pf: x.production_feed ? 1 : 0, tc: x.team_context ? r3(x.team_context.weight) : null };
     }
     out[k] = {
