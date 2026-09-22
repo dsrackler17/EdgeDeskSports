@@ -14,6 +14,7 @@
 'use strict';
 const path = require('path');
 const B = require('./build_nfl_slate.js');
+const L = require('../../football/nfl/coaching_staff_ledger.js');
 
 let pass = 0, fail = 0; const failures = [];
 function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; failures.push({ name, detail }); }
@@ -43,14 +44,52 @@ const STW = [STW_HEAD,
 const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,full_name,gsis_id,espn_id\n2026,SF,QB,QB,13,ACT,Brock Purdy,00-0037834,4361741\n2026,LA,QB,QB,9,ACT,Matthew Stafford,00-0036355,12483';
 
 (async () => {
-  const art = await B.build({ now: NOW, fetchText: async (u) => (/games\.csv/.test(u) ? GAMES : /stats_team_week/.test(u) ? STW : /roster/.test(u) ? ROSTER : ''), lookahead: 12 });
+  const emptyLedger = L.newLedger();
+  const noBackfill = B.applyCoachingLedger(emptyLedger, [], [{
+    done: true,
+    g: { game_id: 'already-final', home_score: 31, away_score: 10 }
+  }], new Date(NOW).toISOString());
+  chk('a completed game without a frozen projection is not backfilled',
+    noBackfill.settled === 0 && Object.keys(emptyLedger.settled).length === 0, noBackfill);
+
+  const coachingLedger = L.newLedger();
+  L.capture(coachingLedger, {
+    game_id: '2026_01_LA_SF',
+    season: 2026,
+    week: 1,
+    kickoff: '2026-09-11T00:15:00.000Z',
+    home_code: 'SF',
+    away_code: 'LA',
+    model_home_margin: 3,
+    captured_at: '2026-09-10T12:00:00.000Z',
+    model_version: 'frozen-fixture'
+  });
+
+  const art = await B.build({
+    now: NOW,
+    fetchText: async (u) => (/games\.csv/.test(u) ? GAMES : /stats_team_week/.test(u) ? STW : /roster/.test(u) ? ROSTER : ''),
+    lookahead: 12,
+    coachingLedger
+  });
   chk('schema', art.schema === 'edgedesk_nfl_slate_v1');
   chk('the completed game was absorbed', art.absorbed_games === 1, art.absorbed_games);
   chk('two upcoming games are on the slate', art.counts.games === 2, art.counts);
+  chk('the previously frozen completed game settles from the final score',
+    coachingLedger.settled['2026_01_LA_SF'] && coachingLedger.settled['2026_01_LA_SF'].residual === 4,
+    coachingLedger.settled['2026_01_LA_SF']);
+  chk('the build froze both upcoming projections',
+    Object.keys(coachingLedger.pending).length === 2 && art.coaching_staff_ledger && art.coaching_staff_ledger.captured === 2,
+    art.coaching_staff_ledger);
+  chk('ledger wiring is evidence-only',
+    art.coaching_staff_ledger && art.coaching_staff_ledger.projection_influence === false && art.coaching_staff_ledger.scoring_enabled === false,
+    art.coaching_staff_ledger);
   const g = art.games.find((x) => x.game_id === '2026_02_KC_BUF');
   chk('the row carries display names and codes', g && g.home_team === 'Buffalo Bills' && g.away_code === 'KC', g && g.home_team);
   chk('kickoff is Eastern converted to UTC', g && g.kickoff === '2026-09-20T17:00:00.000Z', g && g.kickoff);
   chk('the game is predicted', g && g.model_status === 'PREDICTED', g && g.model_reason);
+  chk('the frozen upcoming margin is exactly the pregame model margin',
+    g && coachingLedger.pending[g.game_id] && coachingLedger.pending[g.game_id].pregame_home_margin === g.model_home_margin,
+    g && coachingLedger.pending[g.game_id]);
   chk('home line is the negated margin', g && g.model_home_line === -g.model_home_margin && g.model_home_line != null, g && [g.model_home_line, g.model_home_margin]);
   chk('a win probability rides along', g && g.model_home_win_prob > 0 && g.model_home_win_prob < 1);
   chk('the outcome range is p10/p50/p90 of the home margin', g && g.outcome_range && g.outcome_range.p10 < g.outcome_range.p50 && g.outcome_range.p50 < g.outcome_range.p90 && /home margin/.test(g.outcome_range.unit));
