@@ -60,6 +60,7 @@ on:
       - 'football/venues/forecasts.json'
       - 'tools/football/build_matchup_metrics.js'
       - 'tools/football/build_nfl_slate.js'
+      - 'tools/football/build_nfl_coaching_validation.js'
       - 'tools/football/matchup_metrics.test.js'
       - 'tools/football/nfl_slate.test.js'
       - 'tools/football/_module.js'
@@ -158,7 +159,9 @@ jobs:
       - name: NFL coaching efficiency evidence is reproducible
         run: node football/nfl/coaching_staff_efficiency.test.js
       - name: NFL coaching frozen walk-forward report stays research-only
-        run: node football/nfl/coaching_staff_validation.test.js
+        run: |
+          node -e "require('./tools/football/build_nfl_coaching_validation.js')"
+          node football/nfl/coaching_staff_validation.test.js
       - name: Frozen NFL coaching evidence stays immutable
         run: node football/nfl/coaching_staff_ledger.test.js
       - name: The NFL slate builder agrees with the browser engine
