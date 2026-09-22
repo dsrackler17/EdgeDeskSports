@@ -414,7 +414,8 @@ function ctxFor(talentRating, opts) {
       distinct_opponents: 8, non_fbs_share: 0, offensive_plays: 600, defensive_plays: 600 },
     scheme_confidence: 0.7,
     prev_etsr: opts.prev === undefined ? 5 : opts.prev,
-    league_slope: opts.slope === undefined ? 0.73 : opts.slope
+    league_slope: opts.slope === undefined ? 0.73 : opts.slope,
+    coaching_program: opts.coaching_program || null
   };
 }
 (function etsr() {
@@ -427,6 +428,43 @@ function ctxFor(talentRating, opts) {
   ok('ETSR: and whether they were measured', row.scalars.measured === false);
   ok('ETSR: the prior and performance weights sum to one',
     Math.abs(row.weights.performance + row.weights.prior - 1) < 1e-9);
+
+  /* Step 7: Coaching / Program has a candidate translation but is not allowed
+     to alter ETSR until the separate promotion switch is enabled. */
+  ok('coaching config: candidate machinery is enabled', CFG.coachingProgram.enabled === true);
+  eq('coaching config: the initial cap is 1.5 points', CFG.coachingProgram.maxPointAdjustment, 1.5);
+  ok('coaching config: ETSR promotion is OFF by default', CFG.coachingProgram.affectsETSR === false);
+  ok('coaching config: the adjustment belongs on the prior side', CFG.coachingProgram.applyTo === 'prior');
+
+  const cpCtx = ctxFor(70, { coaching_program: { rating: 100, reliability: 1 } });
+  const cpOff = ETSR.rateTeam('x', cpCtx, null);
+  const cpBase = ETSR.rateTeam('x', ctxFor(70), null);
+  eq('coaching candidate: +100 at full reliability produces the +1.5 cap',
+    cpOff.coaching_program_adjustment.candidate_points, 1.5);
+  eq('coaching candidate: default-off promotion applies exactly zero points',
+    cpOff.coaching_program_adjustment.applied_points, 0);
+  eq('coaching candidate: default-off leaves the prior unchanged',
+    cpOff.prior.points, cpBase.prior.points);
+  eq('coaching candidate: default-off leaves raw ETSR unchanged',
+    cpOff.etsr_raw, cpBase.etsr_raw);
+
+  const oldAffects = CFG.coachingProgram.affectsETSR;
+  CFG.coachingProgram.affectsETSR = true;
+  try {
+    const cpOn = ETSR.rateTeam('x', cpCtx, null);
+    eq('coaching promotion: when explicitly enabled it applies the capped prior adjustment',
+      cpOn.coaching_program_adjustment.applied_points, 1.5);
+    close('coaching promotion: the prior rises by the full prior-side adjustment',
+      cpOn.prior.points - cpBase.prior.points, 1.5, 0.011);
+    close('coaching promotion: current-season performance fades the ETSR contribution',
+      cpOn.etsr_raw - cpBase.etsr_raw,
+      1.5 * (1 - cpOn.weights.performance), 0.011);
+    close('coaching promotion: the audit publishes that pre-recentre contribution',
+      cpOn.coaching_program_adjustment.weighted_etsr_points_before_recentering,
+      1.5 * (1 - cpOn.weights.performance), 0.002);
+  } finally {
+    CFG.coachingProgram.affectsETSR = oldAffects;
+  }
 
   /* the ramp: more games means more weight on this season */
   const w0 = ETSR.rateTeam('x', ctxFor(70, { games: 0 }), null);
