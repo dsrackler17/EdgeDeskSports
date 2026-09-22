@@ -129,19 +129,42 @@
     return teamRow;
   }
 
+  function applyProgramPersistenceEvidence(teamRow, evidenceRow) {
+    if (!teamRow || !teamRow.coaching_staff_inputs) return teamRow;
+    var input = teamRow.coaching_staff_inputs.program_persistence;
+    if (!input || !evidenceRow || evidenceRow.available !== true ||
+        typeof evidenceRow.value !== 'number' || !isFinite(evidenceRow.value) ||
+        !(Number(evidenceRow.observations) > 0) ||
+        !(Number(evidenceRow.season_count) >= 2)) {
+      return teamRow;
+    }
+
+    input.value = evidenceRow.value;
+    input.observations = Number(evidenceRow.observations);
+    input.source = evidenceRow.source || 'time-decayed same-franchise evidence from frozen pregame residuals';
+    input.last_updated = evidenceRow.last_updated || null;
+    input.available = true;
+    input.reason = null;
+    return teamRow;
+  }
+
   function build(teamKeys, evidence) {
     var teams = {};
     var hasEvidence = false;
     var currentResidualEvidence = evidence && evidence.current_residual ? evidence.current_residual : evidence;
     var headCoachEvidence = evidence && evidence.head_coach ? evidence.head_coach : null;
+    var programEvidence = evidence && evidence.program ? evidence.program : null;
     var currentResidualTeams = currentResidualEvidence && currentResidualEvidence.teams ? currentResidualEvidence.teams : {};
     var headCoachTeams = headCoachEvidence && headCoachEvidence.teams ? headCoachEvidence.teams : {};
+    var programTeams = programEvidence && programEvidence.teams ? programEvidence.teams : {};
     (teamKeys || []).forEach(function (team) {
       teams[team] = emptyTeam(team);
       applyCurrentResidualEvidence(teams[team], currentResidualTeams[team]);
       applyHeadCoachEvidence(teams[team], headCoachTeams[team]);
+      applyProgramPersistenceEvidence(teams[team], programTeams[team]);
       if (teams[team].coaching_staff_inputs.current_residual_conversion.available ||
-          teams[team].coaching_staff_inputs.multi_season_head_coach.available) {
+          teams[team].coaching_staff_inputs.multi_season_head_coach.available ||
+          teams[team].coaching_staff_inputs.program_persistence.available) {
         hasEvidence = true;
       }
     });
@@ -168,6 +191,7 @@
     emptyTeam: emptyTeam,
     applyCurrentResidualEvidence: applyCurrentResidualEvidence,
     applyHeadCoachEvidence: applyHeadCoachEvidence,
+    applyProgramPersistenceEvidence: applyProgramPersistenceEvidence,
     build: build
   };
 
