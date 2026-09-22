@@ -308,6 +308,19 @@ function mkR(id, group, epir, conf, status, role) {
   const unknown = UNITS.rateGroup('QB', [mkR(1, 'QB', 90, 0.9), mkR(2, 'QB', 40, 0.5)], {});
   eq('availability: silence is UNKNOWN, not healthy', unknown.availability.unknown_share, 1);
 
+  /* A first-half suspension is not a full-game absence. This used to be
+     swallowed by the generic /OUT/ branch and remove the player entirely. */
+  eq('availability: OUT_FIRST_HALF keeps its own state',
+    UNITS.availStatus({ status: 'OUT_FIRST_HALF' }), 'OUT_FIRST_HALF');
+  eq('availability: OUT_FIRST_HALF carries half-game participation',
+    UNITS.AVAIL_W.OUT_FIRST_HALF, 0.5);
+  const half = UNITS.rateGroup('QB', [mkR(1, 'QB', 90, 0.9), mkR(2, 'QB', 40, 0.5)],
+    { availability: { 'a:1': { status: 'OUT_FIRST_HALF', source: 'official test' } } });
+  ok('availability: a first-half suspension hurts less than a full-game OUT',
+    half.rating > hurt.rating);
+  ok('availability: and still hurts versus fully available',
+    half.rating < unknown.rating);
+
   const none = UNITS.rateGroup('QB', [], {});
   eq('group: an empty room has NO rating', none.rating, null);
   ok('group: and is not scored as zero', none.available === false);
