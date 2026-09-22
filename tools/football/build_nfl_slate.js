@@ -43,6 +43,8 @@ const OUT_DIR = path.join(ROOT, 'football', 'nfl');
 const OUT = path.join(OUT_DIR, 'slate.json');
 const CACHE = path.join(OUT_DIR, '.cache');
 const SCHEMA = 'edgedesk_nfl_slate_v1';
+const COACHING_LEDGER_OUT = path.join(OUT_DIR, 'coaching_staff_ledger.json');
+const COACHING_LEDGER = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff_ledger.js'));
 let NV = null; try { NV = require(path.join(__dirname, 'nfl_venues.js')); } catch (_) { NV = null; }
 let WX = null, RECOVERY = null; try { WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js')); RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js')); } catch (_) { WX = null; }
 const FORECAST_STORE = path.join(ROOT, 'football', 'venues', 'forecasts.json');
@@ -76,6 +78,58 @@ async function fetchNflForecasts(games, opts) {
 function r2(v) { const n = Number(v); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function r4(v) { const n = Number(v); return Number.isFinite(n) ? Math.round(n * 10000) / 10000 : null; }
 function num(v) { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
+
+function loadCoachingLedger() {
+  if (!fs.existsSync(COACHING_LEDGER_OUT)) return COACHING_LEDGER.newLedger();
+  let ledger;
+  try { ledger = JSON.parse(fs.readFileSync(COACHING_LEDGER_OUT, 'utf8')); }
+  catch (e) { throw new Error('NFL coaching ledger is unreadable: ' + (e && e.message || e)); }
+  if (!ledger || ledger.schema !== COACHING_LEDGER.SCHEMA || !ledger.pending || !ledger.settled) {
+    throw new Error('NFL coaching ledger has an invalid schema; refusing to replace frozen history');
+  }
+  return ledger;
+}
+
+function applyCoachingLedger(ledger, upcomingGames, scheduleRows, observedAt) {
+  if (!ledger || ledger.schema !== COACHING_LEDGER.SCHEMA || !ledger.pending || !ledger.settled) {
+    throw new Error('invalid NFL coaching ledger');
+  }
+  const report = { captured: 0, already_frozen: 0, settled: 0, skipped_unpriced: 0, pending_total: 0, settled_total: 0 };
+
+  /* Settlement comes only from a projection that was frozen on an earlier
+     build. A completed game with no pending row is ignored rather than being
+     retroactively projected after the result is known. */
+  for (const u of (scheduleRows || [])) {
+    const g = u && u.g;
+    const id = g && g.game_id != null ? String(g.game_id) : null;
+    if (!u || !u.done || !g || !id || !ledger.pending[id]) continue;
+    if (g.home_score == null || g.away_score == null) continue;
+    const s = COACHING_LEDGER.settle(ledger, {
+      game_id: id,
+      home_score: num(g.home_score),
+      away_score: num(g.away_score),
+      settled_at: observedAt
+    });
+    if (s.settled) report.settled++;
+  }
+
+  /* Freeze only clean pregame model projections. capture() itself refuses an
+     overwrite, so later builds can observe a moved model without rewriting
+     the evidence that will eventually be graded. */
+  for (const g of (upcomingGames || [])) {
+    if (!g || g.model_status !== 'PREDICTED' || num(g.model_home_margin) == null) {
+      report.skipped_unpriced++;
+      continue;
+    }
+    const r = COACHING_LEDGER.capture(ledger, Object.assign({}, g, { captured_at: observedAt }));
+    if (r.captured) report.captured++;
+    else if (/already frozen/i.test(String(r.reason || ''))) report.already_frozen++;
+  }
+
+  report.pending_total = Object.keys(ledger.pending).length;
+  report.settled_total = Object.keys(ledger.settled).length;
+  return report;
+}
 
 /** Eastern-time kickoff from games.csv's gameday + gametime, as ISO UTC. */
 function etToIso(gameday, gametime) {
@@ -219,6 +273,10 @@ async function build(opts) {
     };
   });
 
+  const coachingLedgerReport = opts.coachingLedger
+    ? applyCoachingLedger(opts.coachingLedger, games, S.games || [], new Date(now).toISOString())
+    : null;
+
   /* per-club completed results this season, from the schedule feed the
      absorb pass read: the games each club has ACTUALLY played, with the
      score, so the desk can read form against who it came against */
@@ -268,6 +326,12 @@ async function build(opts) {
         record: (() => { const a = meta.validation.nfl.ats_vs_close || {}; const bands = Object.keys(a).sort((x, y) => Number(x) - Number(y)).map((k) => `${a[k].win_pct}% at ${k}+ points (n=${a[k].n}, p=${a[k].binom_p_one_sided})`); return `NFL ${meta.validation.nfl.oos_test_window || 'walk-forward'} vs the closing consensus: spread MAE ${meta.validation.nfl.spread_mae_model} against the market's ${meta.validation.nfl.spread_mae_closing_market}; ATS ${bands.join(', ')}. No band clears p<0.05; the model does not beat the close.`; })(),
       } : null },
     absorbed_games: S.absorbed || 0, notes: S.notes || [], lookahead_days: lookaheadDays,
+    coaching_staff_ledger: coachingLedgerReport ? Object.assign({
+      artifact: 'football/nfl/coaching_staff_ledger.json',
+      schema: COACHING_LEDGER.SCHEMA,
+      projection_influence: false,
+      scoring_enabled: false
+    }, coachingLedgerReport) : null,
     window: { from: new Date(now - 6 * 3600000).toISOString(), to: new Date(now + lookaheadDays * 86400000).toISOString() },
     feeds: fetched.map((f) => ({ url: f.url, bytes: f.bytes })),
     counts: { games: games.length, predicted: games.filter((g) => g.model_status === 'PREDICTED').length, with_reference: games.filter((g) => g.reference_market).length, teams: Object.keys(teams).length },
@@ -300,8 +364,11 @@ async function main() {
   const check = args.includes('--check');
   const offline = args.includes('--offline');
   const li = args.indexOf('--lookahead');
-  let art;
-  try { art = await build({ offline, lookahead: li >= 0 ? Number(args[li + 1]) : null }); }
+  let art, coachingLedger;
+  try {
+    coachingLedger = loadCoachingLedger();
+    art = await build({ offline, lookahead: li >= 0 ? Number(args[li + 1]) : null, coachingLedger });
+  }
   catch (e) { console.error('the NFL slate could not be built: ' + (e && e.message || e)); process.exit(2); }
   const text = JSON.stringify(art, null, 1) + '\n';
   console.log(`nfl slate: season ${art.season}, ${art.counts.games} games in ${art.lookahead_days} days (${art.counts.predicted} predicted, ${art.counts.with_reference} with a reference line), ${art.counts.teams} clubs, ${art.absorbed_games} games absorbed — ${Math.round(text.length / 1024)} KB`);
@@ -315,8 +382,10 @@ async function main() {
     process.exit(same ? 0 : 1);
   }
   fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.writeFileSync(COACHING_LEDGER_OUT, JSON.stringify(coachingLedger, null, 1) + '\n');
   fs.writeFileSync(OUT, text);
+  console.log('wrote ' + path.relative(ROOT, COACHING_LEDGER_OUT));
   console.log('wrote ' + path.relative(ROOT, OUT));
 }
-module.exports = { build, nflForecastWanted, fetchNflForecasts, SCHEMA, OUT, etToIso };
+module.exports = { build, nflForecastWanted, fetchNflForecasts, applyCoachingLedger, loadCoachingLedger, SCHEMA, OUT, COACHING_LEDGER_OUT, etToIso };
 if (require.main === module) main();
