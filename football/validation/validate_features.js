@@ -118,9 +118,12 @@ function buildLayer(season, week, play, sched, roster, careerV1, careerV2, box, 
     season, careerIndex: only(careerV2), params: null, variant: 'v2' });
 
   const scheme = PSCHEME.buildProfiles(teamAgg.off, teamAgg.def, { season, rosterPositions: {} });
-  function unitsOf(ratings) {
+  function byTeamOf(ratings) {
     const byTeam = {};
     for (const r of ratings) if (r.team_key) (byTeam[r.team_key] = byTeam[r.team_key] || []).push(r);
+    return byTeam;
+  }
+  function unitsOf(byTeam) {
     const u = {};
     for (const key of Object.keys(byTeam)) {
       if (!sched[season].fbs[key]) continue;
@@ -129,8 +132,13 @@ function buildLayer(season, week, play, sched, roster, careerV1, careerV2, box, 
     }
     return u;
   }
+  const byTeamV1 = byTeamOf(v1.ratings), byTeamV2 = byTeamOf(v2.ratings);
   const perf = PERF.build(partial.teamGames, { fbs: sched[season].fbs });
-  return { unitsV1: unitsOf(v1.ratings), unitsV2: unitsOf(v2.ratings), scheme, perf };
+  return {
+    unitsV1: unitsOf(byTeamV1), unitsV2: unitsOf(byTeamV2),
+    ratingsV1: v1.ratings, ratingsV2: v2.ratings,
+    byTeamV1, byTeamV2, scheme, perf
+  };
 }
 
 /* per-game feature deltas, all in the layer's own units (never points) */
