@@ -2,16 +2,16 @@
 'use strict';
 
 /* ============================================================================
-   KEEP THE LEGACY BROWSER ON THE CANONICAL CFB TEAM-STRENGTH BACKBONE.
+   KEEP THE LEGACY BROWSER ON THE SAME ETSR PROMOTION CONTRACT AS NODE.
 
-   The Node coverage build and the browser both replay the trained engine for
-   scoring/game-count/uncertainty context. Team-strength mean is different:
-   after replay, football/rating/current.json supplies the richer national ETSR
-   neutral-field backbone. Current availability is stripped from that number
-   because the matchup layer prices the actual missing athlete separately.
+   football/rating/current.json is the canonical research power rating. Its
+   point scale may replace the production Layer-1 mean ONLY when that artifact
+   says calibration.measured=true. Until then the trained/replayed CFB engine
+   remains the production team-strength source and ETSR is display/audit/shadow
+   context.
 
-   Idempotent by design. If app.html moves, fail on the anchor rather than
-   quietly shipping two different CFB models.
+   This patch upgrades both the original browser and the briefly shipped
+   premature "ETSR is the pricing backbone" version.
    ========================================================================== */
 
 const fs=require('fs');
@@ -20,10 +20,10 @@ const ROOT=path.join(__dirname,'..','..');
 const FILE=path.join(ROOT,'app.html');
 let s=fs.readFileSync(FILE,'utf8');
 
-const MARK='function fbP4ApplyCanonicalRating(){';
-if(s.includes(MARK)
-  && s.includes('fbP4ApplyCanonicalRating();done();return v;')
-  && s.includes('Canonical FBS power rating did not load')){
+const NEW_MARK="mode==='PRICED_CANONICAL'";
+if(s.includes('function fbP4ApplyCanonicalRating(){')
+  && s.includes(NEW_MARK)
+  && s.includes('fbP4ApplyCanonicalRating();done();return v;')){
   console.log('[cfb-browser-canonical-rating] already patched');
   process.exit(0);
 }
@@ -33,86 +33,113 @@ function replaceOne(oldText,newText,label){
   if(n!==1)throw new Error(label+': expected exactly one old anchor, found '+n);
   s=s.replace(oldText,newText);
 }
+function replaceIf(oldText,newText){
+  if(s.includes(oldText))s=s.replace(oldText,newText);
+}
 
-replaceOne(
+replaceIf(
 `   EDR IS RESEARCH CONTEXT. No bet is priced from it: the Power 4 engine's own
    rating state still produces every line on this board. */`,
+`   EDR IS THE CANONICAL RESEARCH POWER RATING. It is loaded beside the
+   production engine and shown on the same neutral-field scale, but it replaces
+   the production Layer-1 mean only after its own point-scale calibration is
+   measured. Until then the enriched trained/replayed engine prices the game. */`);
+
+replaceIf(
 `   EDR IS NOW THE TEAM-STRENGTH BACKBONE. The trained engine still owns
    scoring, matchup, venue and uncertainty machinery, but its neutral-field
    Layer-1 team mean is replaced after replay by this current national ETSR.
    Current availability is stripped from ETSR before the game-specific injury
    layer is applied, so one absence cannot be charged twice. */`,
-'EDR role comment');
+`   EDR IS THE CANONICAL RESEARCH POWER RATING. It is loaded beside the
+   production engine and shown on the same neutral-field scale, but it replaces
+   the production Layer-1 mean only after its own point-scale calibration is
+   measured. Until then the enriched trained/replayed engine prices the game. */`);
 
-replaceOne(
-`  return best;
-}
-/* ═══ THE MODEL'S MEASURED RECORD, PER CONFERENCE ══════════════════════════`,
-`  return best;
-}
-
-/* Install the same canonical team-strength mean the weekly coverage build uses.
-   Replay remains intact for scoring, game counts and uncertainty; only the
-   neutral-field rating mean is replaced. Fail closed if the artifact is absent
-   or from another season instead of publishing the legacy score-only fallback. */
-function fbP4ApplyCanonicalRating(){
+const helper=`function fbP4ApplyCanonicalRating(){
   var S=FB.p4,D=FB.edr&&FB.edr.data,E=window.EDCfbP4;
   if(!S||!S.state)return 0;
   if(!D||!D.teams||!E||!E.ingest||typeof E.ingest.setCanonicalRatings!=='function'){
-    if(!S.gate)S.gate='Canonical FBS power rating did not load. EdgeDesk will not publish a fallback line from the legacy score-only replay.';
+    S.notes.push('Canonical FBS research power rating did not load. Production pricing remains on the trained/replayed CFB engine; no fallback rating is invented.');
     return 0;
   }
   if(D.season!=null&&S.season!=null&&+D.season!==+S.season){
-    S.gate='Canonical FBS power rating is for season '+D.season+', but this board is '+S.season+'. No projection is published across mismatched seasons.';
+    S.notes.push('Canonical FBS research power rating is for season '+D.season+', not '+S.season
+      +'. It is excluded from this board; production pricing remains on the current-season replay.');
     return 0;
   }
   E.ingest.setCanonicalRatings(S.state,D,{
     strip_availability:true,
-    source:'EdgeDesk national ETSR · neutral-field pricing backbone'
+    source:'EdgeDesk national ETSR · neutral-field research power rating'
   });
   var n=S.state.canonicalRatingCount||0;
+  var active=S.state.canonicalRatingActiveCount||0;
   var expected=S.uni&&S.uni.counts?S.uni.counts.fbs_teams:null;
   S.canonicalRatingCount=n;
   S.canonicalRatingSource=D.source_schema||D.schema||null;
+  S.canonicalRatingMode=active>0?'PRICED_CANONICAL':'SHADOW_RESEARCH';
   if(!n||(expected!=null&&n!==expected)){
-    S.gate='Canonical FBS power rating covers '+n+' team'+(n===1?'':'s')
-      +(expected!=null?(' but this season has '+expected+' active FBS programs'):'')
-      +'. EdgeDesk will not fill the gap with the legacy replay.';
-    return 0;
+    S.notes.push('Canonical FBS research rating covers '+n+' team'+(n===1?'':'s')
+      +(expected!=null?(' of '+expected+' active FBS programs'):'')
+      +'. The incomplete research map is not substituted for the production replay.');
+    return n;
   }
-  S.notes.push('Pricing backbone: '+n+' current FBS ETSR ratings on one neutral-field points scale. '
-    +'Current availability is removed from that baseline and applied separately by athlete for this matchup.');
+  var mode=S.canonicalRatingMode;
+  if(mode==='PRICED_CANONICAL'){
+    S.notes.push('Measured ETSR promotion is active: '+active+' FBS ratings supply the neutral-field Layer-1 mean. '
+      +'Current availability is stripped from that baseline and applied separately for this matchup.');
+  }else{
+    S.notes.push('Power-rating context: '+n+' current FBS ETSR ratings are loaded in SHADOW_RESEARCH mode. '
+      +'Their point-scale calibration is not yet measured, so production pricing remains on the trained/replayed '
+      +'engine with current score and efficiency absorption.');
+  }
   return n;
+}`;
+
+const hs=s.indexOf('function fbP4ApplyCanonicalRating(){');
+if(hs>=0){
+  const he=s.indexOf('/* ═══ THE MODEL\'S MEASURED RECORD, PER CONFERENCE',hs);
+  if(he<0)throw new Error('canonical helper end anchor missing');
+  s=s.slice(0,hs)+helper+s.slice(he);
+}else{
+  replaceOne(
+`  return best;
 }
 /* ═══ THE MODEL'S MEASURED RECORD, PER CONFERENCE ══════════════════════════`,
-'canonical browser helper');
+`  return best;
+}
 
-replaceOne(
-`          if(!n&&yy===cur)S.notes.push('No completed '+yy+' games in the feed yet — ratings are the trained '
-            +P.trained_through_season+' seeds with the learned season carry-over applied, and the preseason '
-            +'prior therefore carries most of the weight. The model says so in every card.');`,
+${helper}
+/* ═══ THE MODEL'S MEASURED RECORD, PER CONFERENCE ══════════════════════════`,
+'canonical helper insertion');
+}
+
+replaceIf(
 `          if(!n&&yy===cur)S.notes.push('No completed '+yy+' games reached the legacy replay yet. That replay still '
             +'supplies scoring and uncertainty context, while the neutral-field team-strength mean comes from the '
             +'current national ETSR artifact once the board load completes.');`,
-'no-completed-games note');
+`          if(!n&&yy===cur)S.notes.push('No completed '+yy+' games reached the production replay yet. '
+            +'The engine therefore remains on its trained prior and learned offseason carry-over; ETSR is separate '
+            +'research context until its point-scale calibration is measured.');`);
 
-replaceOne(
-`  /* The rating rides along with the load rather than racing the render.
-     It can never fail the board: fbEdrLoad resolves to null on any error and
-     the board says the rating could not be read instead of showing nothing. */
-  var edr=Promise.resolve(null);`,
+replaceIf(
 `  /* The rating rides along with the load rather than racing the render.
      It is now a REQUIRED pricing input. A missing or wrong-season artifact
      gates projections instead of quietly reviving the legacy score-only mean. */
   var edr=Promise.resolve(null);`,
-'load-guard comment');
+`  /* The canonical research rating rides along with the load rather than
+     racing the render. It is not a required pricing input until its own
+     calibration contract promotes it. */
+  var edr=Promise.resolve(null);`);
 
-replaceOne(
+if(s.includes(
+`  return Promise.all([fbP4Load(force,signal),edr]).then(done,function(e){done();throw e;});`)){
+  s=s.replace(
 `  return Promise.all([fbP4Load(force,signal),edr]).then(done,function(e){done();throw e;});`,
 `  return Promise.all([fbP4Load(force,signal),edr]).then(function(v){
     fbP4ApplyCanonicalRating();done();return v;
-  },function(e){done();throw e;});`,
-'load-guard canonical apply');
+  },function(e){done();throw e;});`);
+}
 
 fs.writeFileSync(FILE,s);
 console.log('[cfb-browser-canonical-rating] patched app.html');
