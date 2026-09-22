@@ -18,10 +18,12 @@
    is allowed to carry into the following season exactly as production would.
 
    Selection rule:
-     1. must clear football/validation/promote.js on at least two holdout seasons
-     2. holdout RMSE may not worsen by more than 0.01
-     3. the coaching adjustment must point positively into Model A's residual
-     4. lowest holdout MAE wins; ties within 0.01 go to the smaller cap
+     1. the TUNE window chooses one cap by MAE, with an RMSE and residual guard
+     2. that cap is frozen before the HOLDOUT is opened
+     3. the frozen cap must clear football/validation/promote.js on at least
+        two holdout seasons
+     4. holdout RMSE may not worsen by more than 0.01 and the coaching
+        adjustment must still point positively into Model A's residual
 
    ATS-versus-close, market disagreement and reliability buckets are reported
    but NOT optimized. Optimizing five caps and six betting thresholds on the
@@ -295,11 +297,14 @@ function marketBenchmark(rows) {
   return VF.score(sub, r => r.market);
 }
 
-function selectCap(arms, baseline) {
+function selectTuneCap(arms, baseline) {
   const eligible = (arms || []).filter(a =>
     a.cap > 0
-    && a.verdict && a.verdict.status === 'VALIDATED'
-    && isNum(a.metrics.rmse) && isNum(baseline.rmse)
+    && isNum(a.metrics && a.metrics.spread_mae)
+    && isNum(a.metrics && a.metrics.rmse)
+    && isNum(baseline && baseline.spread_mae)
+    && isNum(baseline && baseline.rmse)
+    && (baseline.spread_mae - a.metrics.spread_mae) >= PROMOTE.RULES.min_pooled_improvement
     && a.metrics.rmse <= baseline.rmse + 0.01
     && a.predictive_residual && isNum(a.predictive_residual.slope)
     && a.predictive_residual.slope > 0
@@ -312,20 +317,59 @@ function selectCap(arms, baseline) {
   if (!eligible.length) {
     return {
       selected_cap: 0,
-      affects_etsr: false,
-      status: 'RESEARCH_ONLY',
-      reason: 'no non-zero cap cleared the full out-of-sample promotion gate, RMSE guard and positive residual-direction check'
+      reason: 'no non-zero cap improved tune MAE by the minimum effect while passing the RMSE and residual-direction guards'
     };
   }
-  const win = eligible[0];
   return {
-    selected_cap: win.cap,
-    affects_etsr: true,
-    status: 'VALIDATED',
-    spread_mae: win.metrics.spread_mae,
-    rmse: win.metrics.rmse,
-    effect_size: win.verdict.effect_size,
-    reason: 'lowest holdout MAE among caps that cleared every predeclared promotion and stability condition'
+    selected_cap: eligible[0].cap,
+    tune_spread_mae: eligible[0].metrics.spread_mae,
+    tune_rmse: eligible[0].metrics.rmse,
+    tune_improvement: r3(baseline.spread_mae - eligible[0].metrics.spread_mae),
+    reason: 'lowest tune-window MAE among caps passing the predeclared guards; ties within 0.01 go to the smaller cap'
+  };
+}
+
+function promotionDecision(tuned, holdArms, holdBaseline) {
+  if (!tuned || !(tuned.selected_cap > 0)) {
+    return {
+      selected_cap: 0,
+      tuned_cap: 0,
+      affects_etsr: false,
+      status: 'RESEARCH_ONLY',
+      reason: tuned && tuned.reason ? tuned.reason : 'the tune window selected no non-zero cap'
+    };
+  }
+  const arm = (holdArms || []).find(a => a.cap === tuned.selected_cap);
+  if (!arm) {
+    return {
+      selected_cap: 0,
+      tuned_cap: tuned.selected_cap,
+      affects_etsr: false,
+      status: 'RESEARCH_ONLY',
+      reason: 'the frozen tune-selected cap has no holdout result'
+    };
+  }
+  const rmseOk = isNum(arm.metrics.rmse) && isNum(holdBaseline.rmse)
+    && arm.metrics.rmse <= holdBaseline.rmse + 0.01;
+  const residualOk = arm.predictive_residual && isNum(arm.predictive_residual.slope)
+    && arm.predictive_residual.slope > 0;
+  const validated = arm.verdict && arm.verdict.status === 'VALIDATED' && rmseOk && residualOk;
+  return {
+    selected_cap: validated ? tuned.selected_cap : 0,
+    tuned_cap: tuned.selected_cap,
+    affects_etsr: validated,
+    status: validated ? 'VALIDATED' : (arm.verdict ? arm.verdict.status : 'RESEARCH_ONLY'),
+    holdout_spread_mae: arm.metrics.spread_mae,
+    holdout_rmse: arm.metrics.rmse,
+    effect_size: arm.verdict ? arm.verdict.effect_size : null,
+    conditions: {
+      promotion_gate: arm.verdict ? arm.verdict.status : null,
+      rmse_guard: rmseOk,
+      positive_residual_direction: residualOk
+    },
+    reason: validated
+      ? 'the cap was selected on tune data only and then cleared every holdout promotion condition'
+      : 'the tune-selected cap was frozen before holdout and did not clear every holdout promotion condition'
   };
 }
 
@@ -452,8 +496,22 @@ async function main() {
     log(`  replayed ${y}: ${rows.filter(r => r.season === y).length} FBS-vs-FBS games`);
   }
 
+  const tuneRows = rows.filter(r => tune.includes(r.season) && isNum(r.predictions['0']));
   const holdRows = rows.filter(r => hold.includes(r.season) && isNum(r.predictions['0']));
   const baseF = r => r.predictions['0'];
+
+  const tuneBaseline = VF.score(tuneRows, baseF);
+  const tuneArms = CAPS.filter(x => x > 0).map(cap => {
+    const f = r => r.predictions[capKey(cap)];
+    return {
+      cap,
+      metrics: VF.score(tuneRows, f),
+      predictive_residual: predictiveResidual(tuneRows, baseF, f)
+    };
+  });
+  const tuned = selectTuneCap(tuneArms, tuneBaseline);
+  log('  tune selected cap: ±' + tuned.selected_cap);
+
   const baseline = VF.score(holdRows, baseF);
   baseline.feature = 'coaching_program_cap_0';
   baseline.market = marketBenchmark(holdRows);
@@ -485,6 +543,7 @@ async function main() {
       cap,
       metrics,
       verdict,
+      selected_on_tune: cap === tuned.selected_cap,
       predictive_residual: predictiveResidual(holdRows, baseF, f),
       reliability_buckets: reliabilityBuckets(holdRows, baseF, f),
       ats_vs_close: atsVsClose(holdRows, f),
@@ -496,10 +555,11 @@ async function main() {
           ? r3(modelOnMarket.spread_mae - marketScore.spread_mae) : null
       }
     });
-    log(`  cap ±${cap}: MAE ${metrics.spread_mae} RMSE ${metrics.rmse} ${verdict.status}`);
+    log(`  holdout cap ±${cap}: MAE ${metrics.spread_mae} RMSE ${metrics.rmse} ${verdict.status}`
+      + (cap === tuned.selected_cap ? '  [FROZEN TUNE CHOICE]' : ''));
   }
 
-  const selection = selectCap(arms, baseline);
+  const selection = promotionDecision(tuned, arms, baseline);
   const doc = {
     schema: 'edgedesk_coaching_program_validation_v1',
     sport: 'americanfootball_ncaaf',
@@ -508,8 +568,9 @@ async function main() {
       sport_specific: true,
       statement: 'CFB selects its own Coaching / Program cap. No result in this artifact is transferable to NFL, tennis, baseball, UFC or another sport without that sport running its own holdout.',
       caps_tested: CAPS,
-      primary_selection_metric: 'holdout spread MAE after all promotion conditions',
-      tie_break: 'if MAE differs by <= 0.01, choose the smaller cap',
+      primary_selection_metric: 'tune-window spread MAE after RMSE and residual-direction guards',
+      holdout_role: 'certification only; the holdout cannot change the tune-selected cap',
+      tie_break: 'if tune MAE differs by <= 0.01, choose the smaller cap',
       ats_policy: 'ATS-versus-close is reported at fixed thresholds and never optimized to choose the cap'
     },
     frame: {
@@ -518,6 +579,7 @@ async function main() {
       leakage: 'each week is rebuilt from games strictly before that week; prior-season chains are cap-specific',
       market: 'closing spread is benchmark-only and is never an input to a rating'
     },
+    tune: { baseline: tuneBaseline, arms: tuneArms, selection: tuned },
     baseline,
     arms,
     selection
@@ -544,7 +606,8 @@ module.exports = {
   atsVsClose,
   predictiveResidual,
   reliabilityBuckets,
-  selectCap,
+  selectTuneCap,
+  promotionDecision,
   main
 };
 
