@@ -400,6 +400,16 @@ async function build(opts) {
     })
   } : null;
   const coachingStaff = COACHING_STAFF.build(coachingTeamKeys, coachingEvidence);
+  games.forEach((g) => {
+    g.coaching_staff_research = COACHING_STAFF.matchupResearchContext(
+      coachingStaff.teams[g.home_code] || null,
+      coachingStaff.teams[g.away_code] || null,
+      {
+        model_home_margin: num(g.model_home_margin),
+        reference_cap_points: 1
+      }
+    );
+  });
   if (coachingLedgerReport && opts.coachingLedger) {
     coachingLedgerReport.research_snapshots_frozen = freezeCapturedCoachingResearch(
       opts.coachingLedger,
