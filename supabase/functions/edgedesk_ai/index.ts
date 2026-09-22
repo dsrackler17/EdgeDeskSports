@@ -17381,6 +17381,11 @@ const EDPRES: any = (globalThis as any).EDPRES;
       lines.push(board.status.user);
     }
     if (drivers.length) lines.push('The matchup turns most on ' + drivers[0].family_label + ': ' + drivers[0].statement);
+    var coachingStaff = R.coaching_staff || null;
+    if (coachingStaff && coachingStaff.research_read &&
+        coachingStaff.research_read.state !== 'NO_COMPARABLE_EVIDENCE') {
+      lines.push('Coaching / Staff research: ' + coachingStaff.research_read.sentence);
+    }
 
     return {
       schema: BRIEF_SCHEMA,
@@ -17405,7 +17410,8 @@ const EDPRES: any = (globalThis as any).EDPRES;
         model: R.model || null,
         market_row: marketRow, market_status: board ? board.status : null,
         consensus: board ? board.consensus : null,
-        comparison: comparison
+        comparison: comparison,
+        coaching_shadow: coachingStaff && coachingStaff.shadow_reference ? coachingStaff.shadow_reference : null
       },
       /* The full price board, carried so a renderer never has to go and get
          it a second time and risk showing a different number than the one the
@@ -17420,6 +17426,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
       counter: counter.strongest, counter_others: counter.others, counter_all: counter.all,
       what_would_change: change.items,
       availability: avail,
+      coaching_staff: coachingStaff,
       previous_games: R.previous_games || null,
       /* ONE CAVEAT, ONCE. matchupResearch, counterCase and the availability
          headline all legitimately reach the same conclusion about the same
@@ -18299,6 +18306,16 @@ const EDPRES: any = (globalThis as any).EDPRES;
         }
       });
     }
+    var coachingStaffResearch = row && row.coaching_staff_research ? row.coaching_staff_research : null;
+    if (coachingStaffResearch) {
+      var cr = coachingStaffResearch.research_read || null;
+      if (coachingStaffResearch.shadow_reference) {
+        limits.push('NFL Coaching / Staff publishes a research-only shadow read for this matchup. It does not alter the official EdgeDesk projection: ' +
+          (cr && cr.sentence ? cr.sentence : 'the coaching cap is unvalidated and selected_cap is null.'));
+      } else if (cr && cr.state === 'RAW_COMPONENT_EVIDENCE') {
+        limits.push('NFL Coaching / Staff has raw component evidence for both sides but no calibrated shadow yet. ' + cr.sentence);
+      }
+    }
     var contract = contractRead(row, SLATE);
     if (contract && num(row.input_coverage) != null && num(row.input_coverage) < 0.6) {
       limits.push('This projection is running on ' + Math.round(num(row.input_coverage) * 100)
@@ -18324,6 +18341,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
       identity: identity, model: model, market: market, ratings: ratings,
       previous_games: previous, availability: availability,
       starters: starters, quarterback: quarterback, input_contract: contract,
+      coaching_staff: coachingStaffResearch,
       missing: missing, limits: uniq(limits.filter(Boolean)),
       status: {
         answerable: answerable,
