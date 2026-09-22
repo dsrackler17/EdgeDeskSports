@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-22T02:37:15.408Z",
+ "generated_at": "2026-09-22T02:41:16.499Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -156,6 +156,38 @@
    "teams": 138,
    "availability_stripped_before_matchup": true,
    "problem": null
+  },
+  "efficiency_replay": {
+   "source_schema": "edgedesk_cfb_engine_efficiency_v1",
+   "season": 2026,
+   "artifact_games_with_stats": 463,
+   "artifact_team_game_rows": 914,
+   "games_absorbed_with_stats": 260,
+   "team_rows_absorbed": 417,
+   "final_games_without_play_stats": 0,
+   "missing_game_ids": [],
+   "measured_features": [
+    "success_rate",
+    "early_down_success",
+    "yards_per_play",
+    "sack_rate_allowed",
+    "stuff_rate",
+    "third_down_rate",
+    "red_zone_success",
+    "pass_rate",
+    "plays_per_game"
+   ],
+   "unavailable_features": [
+    "epa_per_play",
+    "epa_pass",
+    "epa_rush",
+    "passing_down_success",
+    "expl_epa_rate",
+    "front_disruption_rate",
+    "points_per_drive",
+    "start_field_position"
+   ],
+   "basis": "score/margin is absorbed for every completed game; play-level efficiency is additionally absorbed only where the public rankings play feed has a real team-game row"
   }
  },
  "projection_status": {
@@ -176,7 +208,25 @@
  "spread_recommendation": {
   "NO_MARKET": 73
  },
+ "engine_efficiency": {
+  "schema": "edgedesk_cfb_engine_efficiency_v1",
+  "season": 2026,
+  "games_in_artifact": 463,
+  "completed_games_replayed": 260,
+  "completed_games_with_both_team_efficiency": 157,
+  "missing_count": 103,
+  "problem": null
+ },
  "checks": [
+  {
+   "name": "current-season engine efficiency artifact matches the pricing replay",
+   "ok": true,
+   "detail": {
+    "schema": "edgedesk_cfb_engine_efficiency_v1",
+    "season": 2026,
+    "problem": null
+   }
+  },
   {
    "name": "canonical neutral-field ETSR covers every active FBS program",
    "ok": true,
@@ -352,6 +402,75 @@
   }
  ],
  "failures": [],
+ "warnings": [
+  {
+   "name": "completed games waiting on play-level efficiency",
+   "count": 103,
+   "detail": [
+    {
+     "game_id": "401864424",
+     "game": "Merrimack @ Delaware",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401856767",
+     "game": "Bethune-Cookman @ UCF",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401866409",
+     "game": "UAlbany @ Buffalo",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401864425",
+     "game": "West Georgia @ Kennesaw State",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401856663",
+     "game": "Arkansas-Pine Bluff @ Missouri",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401858422",
+     "game": "Eastern Illinois @ Minnesota",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401856768",
+     "game": "Idaho @ Utah",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401866623",
+     "game": "North Carolina A&T @ Georgia State",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401858435",
+     "game": "Indiana State @ Purdue",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401856769",
+     "game": "Long Island University @ Kansas",
+     "home": true,
+     "away": false
+    }
+   ],
+   "effect": "ETSR still supplies neutral-field team strength; matchup efficiency for those teams remains on the trained seed and confidence stays lower until the play feed lands"
+  }
+ ],
  "season_aware": {
   "tested": true,
   "prior_season": 2025,
