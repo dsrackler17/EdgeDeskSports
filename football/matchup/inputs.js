@@ -578,7 +578,12 @@ function injuriesFor(ctx, teamName, gameId) {
     const replacement = athlete ? replacementFor(ctx, teamName, athlete, scoped) : null;
     const role = athlete && athlete.role != null ? athlete.role : p.depth_role;
     const share = athlete && isNum(athlete.share) ? athlete.share : null;
-    const replQuality = replacement && isNum(replacement.e)
+    /* Player quality is still research-only. Keep the resolved replacement
+       and his rating for audit/explanation, but do NOT feed that unpromoted
+       rating into the priced replacement_quality field. The engine therefore
+       retains its trained/default neutral replacement assumption until this
+       layer clears walk-forward validation. */
+    const replQualityResearch = replacement && isNum(replacement.e)
       ? Math.max(0, Math.min(1, replacement.e / 100)) : null;
     out.push({
       player: playerName,
@@ -591,7 +596,8 @@ function injuriesFor(ctx, teamName, gameId) {
       snap_share: share,
       severity: null,
       status: st,
-      replacement_quality: replQuality,
+      replacement_quality: null,
+      replacement_quality_research: replQualityResearch,
       replacement_player_id: replacement ? String(replacement.id) : null,
       replacement_player: replacement ? replacement.n : null,
       replacement_rating: replacement && isNum(replacement.e) ? replacement.e : null,
