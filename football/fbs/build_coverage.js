@@ -132,7 +132,7 @@ function normRows(raw) {
    The browser seeds from the trained table and absorbs every completed game
    in kickoff order. Replayed identically here: a coverage report built off a
    different state than the board's would be measuring the wrong thing. */
-function buildState(rowsBySeason, season) {
+function buildState(rowsBySeason, season, efficiency) {
   const st = E.newState();
   let absorbed = 0;
   for (let y = P.trained_through_season + 1; y <= season; y++) {
@@ -142,11 +142,17 @@ function buildState(rowsBySeason, season) {
     const ordered = rows.slice().sort((a, b) => String(a.start_date).localeCompare(String(b.start_date)));
     for (const r of ordered) {
       if (!r.completed || r.home_points == null || r.away_points == null) continue;
+      const eg = efficiency && efficiency.games && efficiency.games[String(r.game_id)];
+      const hKey = FBS.normKey(r.home_team), aKey = FBS.normKey(r.away_team);
       E.ingest.absorbGame(st, {
         home: r.home_team, away: r.away_team,
         home_fbs: FBS.isFbsDivision(r.home_division, r.home_team, { knownFbs: P.rating.seed_ratings }),
         away_fbs: FBS.isFbsDivision(r.away_division, r.away_team, { knownFbs: P.rating.seed_ratings }),
-        neutral_site: r.neutral_site, home_points: r.home_points, away_points: r.away_points
+        neutral_site: r.neutral_site, home_points: r.home_points, away_points: r.away_points,
+        team_stats: eg && eg.teams ? {
+          home: eg.teams[hKey] || null,
+          away: eg.teams[aKey] || null
+        } : null
       });
       absorbed++;
     }
@@ -259,7 +265,18 @@ async function main() {
   const universe = FBS.buildUniverse({ rows: target, season: a.season,
     source: `cfbfastR-data schedules ${a.season}`, params: P,
     knownFbs: (P.rating && P.rating.seed_ratings) || null });
-  const { st, absorbed } = buildState(rowsBySeason, a.season);
+  const engineEfficiency = readJson(path.join(ROOT, 'football', 'rankings', 'engine_efficiency.json'), null);
+  let engineEfficiencyProblem = null;
+  if (!engineEfficiency) {
+    engineEfficiencyProblem = 'football/rankings/engine_efficiency.json is missing';
+  } else if (engineEfficiency.schema !== 'edgedesk_cfb_engine_efficiency_v1') {
+    engineEfficiencyProblem = 'unexpected engine-efficiency schema';
+  } else if (+engineEfficiency.season !== +a.season) {
+    engineEfficiencyProblem = 'engine-efficiency artifact is for season ' + engineEfficiency.season + ', not ' + a.season;
+  }
+
+  const { st, absorbed } = buildState(rowsBySeason, a.season,
+    engineEfficiencyProblem ? null : engineEfficiency);
 
   /* THE TEAM-STRENGTH BACKBONE. Historical replay above still owns game
      counts, scoring, efficiency and uncertainty. The current neutral-field
