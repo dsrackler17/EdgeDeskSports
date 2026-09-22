@@ -2836,6 +2836,17 @@ function signedPts(v){
   v=Number(v);
   return (v>0?'+':'')+fmtNum(v)+' pts';
 }
+function lineValueHtml(side,posted,reference,settled){
+  var v=marketClvPoints(side,posted,reference);
+  if(v==null)return '';
+  var col=v>0.005?'var(--pos)':(v<-0.005?'var(--neg)':'var(--faint)');
+  var label=settled?'CLV':'move';
+  var title=settled
+    ?'Closing-line value: positive means the market line available when this model posted was better for its side than the Collective’s captured close.'
+    :'Line movement since this model posted: positive means its posted number is better for its side than the current market.';
+  return '<div class="nsamp" style="color:'+col+'" title="'+esc(title)+'">'+label+' '+signedPts(v)+'</div>';
+}
+
 function bucketRecordText(b){
   if(!b||!b.n)return '-';
   return b.wins+'-'+b.losses+'-'+b.pushes;
@@ -4841,10 +4852,13 @@ async function renderModel(view,cs,ms){
           if(mr.creator_slug!==cs||mr.model_slug!==ms||mr.locked)return;
           var mg=marketFor(mkt,g);
           var mSpread=mg?MCOdds.consensusSpread(mg):null;
+          var posted=mr.line_at_submission;
+          var move=lineValueHtml(pickSideNorm(mr),posted,mSpread,false);
           rows.push('<tr><td>'+esc(g.label||((g.away||'')+' @ '+(g.home||'')))+
             '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(kickoffFmt(g.kickoff_at))+'</span></td>'+
             '<td class="num">'+(mr.projected_spread!=null?esc(g.home)+' '+fmtSpread(mr.projected_spread):'<span class="note">no spread</span>')+'</td>'+
-            '<td class="num">'+(mSpread!=null?esc(g.home)+' '+MCOdds.line(mSpread):'<span class="note">market unavailable</span>')+'</td>'+
+            '<td class="num">'+(posted!=null?esc(g.home)+' '+fmtSpread(posted):'<span class="note">not posted</span>')+'</td>'+
+            '<td class="num">'+(mSpread!=null?esc(g.home)+' '+MCOdds.line(mSpread)+move:'<span class="note">market unavailable</span>')+'</td>'+
             '<td class="num">'+MCOdds.edgeHtml(mr.projected_spread,mSpread,g.home,g.away)+'</td>'+
             '<td class="num">'+(mg?'<a href="#market/'+esc(mg.event_id)+'">books</a>':'')+'</td></tr>');
         });
@@ -4852,10 +4866,10 @@ async function renderModel(view,cs,ms){
       if(rows.length){
         vs='<h2>What it says now <span class="note" style="font-weight:400">the current slate against the market</span></h2>'+
           '<div class="tblwrap"><table><thead><tr><th>Game</th><th class="num">Model spread</th>'+
-          '<th class="num">Market</th><th class="num">Difference</th><th class="num"></th></tr></thead><tbody>'+
+          '<th class="num">Market at post</th><th class="num">Market now</th><th class="num">Model vs now</th><th class="num"></th></tr></thead><tbody>'+
           rows.join('')+'</tbody></table></div>'+
-          '<p class="note" style="margin-top:8px">Market numbers are the Collective&#39;s own consensus, median across retail books, in home convention. '+
-          (mkt?MCOdds.freshChip(mkt):'')+' A difference is shown only where the model published a spread of its own.</p>';
+          '<p class="note" style="margin-top:8px">Market numbers are in home convention. <b>Move</b> turns the change onto the model&rsquo;s named side: positive means the number it posted against is better than the current market. '+
+          'Current market is the Collective&#39;s consensus, median across retail books. '+(mkt?MCOdds.freshChip(mkt):'')+'</p>';
       }
     }
     var method='<h2>Methodology</h2>'+(d.model.description
@@ -5135,16 +5149,24 @@ async function renderBoard(view){
               '>err '+fmtNum(gr.margin_error)+' &middot; brier '+fmtNum(gr.brier,3)+'</span>';
         }
         var hw=mr.home_win_probability;
+        var marketHomeProb=(window.MCOdds&&mg)?MCOdds.consensusHomeProb(mg):null;
+        var probGap=(hw!=null&&marketHomeProb!=null&&isFinite(Number(hw))&&isFinite(Number(marketHomeProb)))
+          ?Number(hw)-Number(marketHomeProb):null;
+        var probGapHtml=probGap==null?'':('<div class="nsamp" title="model HOME win probability minus the market&rsquo;s no-vig HOME win probability">'+
+          (probGap>0?'+':'')+fmtNum(100*probGap,1)+' pp vs mkt</div>');
         var vsMkt=(mktSpread!=null&&mr.projected_spread!=null&&window.MCOdds)
           ? '<span title="Model spread minus the market consensus, both in home convention"> '+MCOdds.edgeHtml(mr.projected_spread,mktSpread,g.home,g.away)+'</span>':'';
+        var frNow=finalResult(g);
+        var refLine=frNow?frNow.closing_spread:mktSpread;
+        var lineValue=lineValueHtml(pickSideNorm(mr),mr.line_at_submission,refLine,!!frNow);
         var lead=pickLeadText(mr,g.kickoff_at);
         rows+='<tr>'+
           '<td>'+who+(mr.late?' <span class="chip late">Late, ungraded</span>':'')+
             (lead?'<br><span class="note" style="font-size:11px">'+esc(lead)+'</span>':'')+'</td>'+
           '<td>'+(hw!=null?esc(hw>=0.5?g.home:g.away):'-')+'</td>'+
-          '<td class="num">'+(hw!=null?fmtPct(hw,0):'-')+'</td>'+
+          '<td class="num">'+(hw!=null?fmtPct(hw,0)+probGapHtml:'-')+'</td>'+
           '<td class="num">'+(mr.projected_spread!=null?fmtSpread(mr.projected_spread)+vsMkt:'-')+'</td>'+
-          '<td class="num">'+(mr.line_at_submission!=null?fmtSpread(mr.line_at_submission):'-')+'</td>'+
+          '<td class="num">'+(mr.line_at_submission!=null?fmtSpread(mr.line_at_submission)+lineValue:'-')+'</td>'+
           '<td>'+(pickSideNorm(mr)?pickDisp(g,mr):'-')+'</td>'+
           '<td class="num">'+(mr.cover_probability!=null?fmtPct(mr.cover_probability,0):'-')+'</td>'+
           '<td class="num">'+(mr.projected_total!=null?fmtNum(mr.projected_total):'-')+'</td>'+
@@ -5176,9 +5198,9 @@ async function renderBoard(view){
         rows='<div class="tblwrap" style="margin:10px 13px 12px"><table><thead><tr>'+
           '<th>Model</th>'+
           '<th title="the outright (moneyline) winner this model calls">ML pick</th>'+
-          '<th class="num" title="the model&#39;s probability that the HOME team wins outright — the number the consensus averages">Home win %</th>'+
-          '<th class="num" title="the model&#39;s own projected spread, stated for the home side">Spread (home)</th>'+
-          '<th class="num" title="the market line the pick was posted against, stated for the home side">Market (home)</th>'+
+          '<th class="num" title="the model&#39;s probability that the HOME team wins outright; the small number compares it with the market&#39;s no-vig probability">Home win %</th>'+
+          '<th class="num" title="the model&#39;s own projected spread, stated for the home side; the inline delta compares it with the current market">Spread (home)</th>'+
+          '<th class="num" title="the market line the pick was posted against, stated for the home side; move is versus current market before kickoff and CLV versus the captured close after">Market at post</th>'+
           '<th title="the spread pick, stated from the picked team at the market line">Spread pick</th>'+
           '<th class="num" title="the model&#39;s probability that the HOME side covers at the posted line">Home cover %</th>'+
           '<th class="num" title="the model&#39;s projected total points">Total</th>'+
