@@ -83,6 +83,56 @@
   }
 
   /* ---------------------------------------------------------------------
+     COACHING / PROGRAM ADJUSTMENT
+
+     The score itself is already reliability-shrunk toward 50. The promotion
+     formula deliberately multiplies by reliability again: weak evidence gets
+     both a conservative score and a conservative point translation.
+
+     enabled computes the candidate so validation can inspect it.
+     affectsETSR is the separate promotion switch that may actually apply it.
+     --------------------------------------------------------------------- */
+  function coachingProgramAdjustment(ctx, config) {
+    var C = config || CFG.coachingProgram || {};
+    var cp = ctx && ctx.coaching_program;
+    var rating = num(cp && cp.rating);
+    var reliability = num(cp && cp.reliability);
+    var maxPts = num(C.maxPointAdjustment);
+    var out = {
+      enabled: C.enabled === true,
+      affects_etsr: C.enabled === true && C.affectsETSR === true,
+      rating: isNum(rating) ? r1(rating) : null,
+      reliability: isNum(reliability) ? r3(clamp(reliability, 0, 1)) : null,
+      max_point_adjustment: isNum(maxPts) ? r2(maxPts) : null,
+      candidate_points: null,
+      applied_points: 0,
+      weighted_etsr_points_before_recentering: 0,
+      apply_to: C.applyTo || 'prior',
+      formula: C.formula || null,
+      basis: C.basis || null,
+      reason: null
+    };
+    if (!out.enabled) {
+      out.reason = 'coachingProgram.enabled is false';
+      return out;
+    }
+    if (!(isNum(maxPts) && maxPts >= 0)) {
+      out.reason = 'coachingProgram.maxPointAdjustment is missing or invalid';
+      return out;
+    }
+    if (!isNum(rating) || !isNum(reliability)) {
+      out.reason = 'no measured coaching/program rating and reliability are available';
+      return out;
+    }
+    var rel = clamp(reliability, 0, 1);
+    var candidate = clamp(((rating - 50) / 50) * maxPts * rel, -maxPts, maxPts);
+    out.candidate_points = r3(candidate);
+    if (out.affects_etsr) out.applied_points = r3(candidate);
+    else out.reason = 'measured and ranked, but coachingProgram.affectsETSR is false pending walk-forward validation';
+    return out;
+  }
+
+  /* ---------------------------------------------------------------------
      RUN DEFENCE POWER
      --------------------------------------------------------------------- */
   function runDefencePower(talentTeam, perfTeam) {
@@ -288,9 +338,24 @@
       priorParts = { note: 'neither a prior-season rating nor a talent rating is available — no prior term can be formed' };
     }
 
+    var cpAdjustment = coachingProgramAdjustment(ctx, CFG.coachingProgram);
+    var priorBeforeCoaching = priorPoints;
+    if (isNum(priorPoints) && isNum(cpAdjustment.applied_points) && cpAdjustment.applied_points !== 0) {
+      priorPoints += cpAdjustment.applied_points;
+    } else if (!isNum(priorPoints) && cpAdjustment.applied_points !== 0) {
+      cpAdjustment.applied_points = 0;
+      cpAdjustment.reason = 'a coaching/program candidate exists, but no PRIOR term exists for this team, so nothing is applied';
+    }
+    priorParts.before_coaching_program = r2(priorBeforeCoaching);
+    priorParts.coaching_program_adjustment = r2(cpAdjustment.applied_points);
+    priorParts.after_coaching_program = r2(priorPoints);
+
     var gp = num(ctx.sample && ctx.sample.fbs_equivalent_games) || 0;
     var wPerf = isNum(perfPoints) ? gp / (gp + kk) : 0;
     if (!(gp >= CFG.PRIORS.min_games_for_performance)) wPerf = 0;
+    cpAdjustment.weighted_etsr_points_before_recentering = r3(
+      isNum(priorBeforeCoaching) ? (1 - wPerf) * cpAdjustment.applied_points : 0
+    );
 
     var etsrRaw = null;
     if (isNum(priorPoints) && isNum(perfPoints)) etsrRaw = (1 - wPerf) * priorPoints + wPerf * perfPoints;
@@ -308,6 +373,7 @@
         ramp_basis: CFG.PRIORS.ramp_basis, games_used: r2(gp),
         talent_floor: CFG.PRIORS.talent_floor_weight, talent_floor_basis: CFG.PRIORS.talent_floor_basis },
       prior: { points: r2(priorPoints), parts: priorParts, carryover: carry },
+      coaching_program_adjustment: cpAdjustment,
       performance_points: r2(perfPoints), talent_points: r2(talentPoints),
       scalars: { talent_points_per_z: tp, performance_points_per_z: pp, measured: measured,
         basis: CFG.ETSR.scalar_basis },
@@ -773,6 +839,7 @@
 
   return { SCHEMA: SCHEMA, rateTeam: rateTeam, build: build, carryover: carryover,
     runDefencePower: runDefencePower, gates: gates, confidence: confidence,
+    coachingProgramAdjustment: coachingProgramAdjustment,
     rank: rank, rankAll: rankAll, movement: movement, why: why,
     achievement: achievement, marketCompare: marketCompare,
     stability: stability, anomalies: anomalies, get: get, config: CFG };

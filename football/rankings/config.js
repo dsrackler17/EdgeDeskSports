@@ -423,6 +423,16 @@
   /* ------------------------------------------------------------------ *
    * ETSR — the team rating, in points versus an average FBS team        *
    * ------------------------------------------------------------------ */
+  var coachingProgram = {
+    enabled: true,
+    maxPointAdjustment: 1.5,
+    affectsETSR: false,
+    applyTo: 'prior',
+    formula: 'clamp(((rating - 50) / 50) * maxPointAdjustment * reliability, -maxPointAdjustment, +maxPointAdjustment)',
+    validationRequired: true,
+    basis: 'Coaching / Program is measured and ranked, but it may move ETSR only after walk-forward validation. When promoted, its capped point adjustment is added to the PRIOR / PROGRAM side before the current-season performance ramp, so the effect naturally fades as current-season evidence takes over.'
+  };
+
   var ETSR = {
     /* points per standard deviation of net efficiency and of talent are
        MEASURED (params.js). These are the fallbacks used before the fit has
@@ -720,6 +730,7 @@
     PRIORS: PRIORS,
     CARRYOVER: CARRYOVER,
     TALENT: TALENT,
+    coachingProgram: coachingProgram,
     ETSR: ETSR,
     RUN_DEFENCE_POWER: RUN_DEFENCE_POWER,
     CONFIDENCE: CONFIDENCE,

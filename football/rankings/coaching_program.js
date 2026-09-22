@@ -1,11 +1,12 @@
 /* ============================================================================
    COACHING / PROGRAM EDGE
 
-   STEP 5: measured subcomponents + final reliability shrinkage.
+   MEASURED COMPONENT LAYER: subcomponents + final reliability shrinkage.
 
-   This layer is intentionally RESEARCH-ONLY. It now publishes a reliability-
-   shrunk coaching/program rating, but it still does not rank teams or move
-   ETSR. Ranking/history/UI and ETSR promotion remain later validation steps.
+   This module owns the measured coaching/program score. The outer rankings
+   pipeline owns national ranks, immutable history and the optional ETSR point
+   translation. That translation remains research-only until walk-forward
+   validation explicitly promotes it.
 
    Missing evidence is NULL, never a fake 50. A real residual can legitimately
    land at 50 because 50 means league-average measured conversion, not missing.
@@ -681,7 +682,7 @@ function finalizeTeam(team) {
   team.coaching_program_warnings = [{
     id: 'COACHING_PROGRAM_RESEARCH_ONLY',
     severity: 'info',
-    detail: 'The coaching/program score is measured and reliability-shrunk, but it is not yet ranked and does not affect ETSR.'
+    detail: 'The coaching/program score is measured and reliability-shrunk. National ranking is assigned by the rankings pipeline; ETSR influence is controlled separately by the validation-gated coachingProgram config.'
   }];
   if (observedWeight < 1) {
     team.coaching_program_warnings.push({
