@@ -337,12 +337,12 @@ async function main() {
     }
   }
 
-  /* THE TEAM-STRENGTH BACKBONE. Historical replay above still owns game
-     counts, scoring, efficiency and uncertainty. The current neutral-field
-     mean comes from the richer national ETSR artifact, installed only AFTER
-     replay so it cannot leak backwards into historical updates. Current
-     availability is stripped here because the matchup layer prices the actual
-     missing athlete separately for this fixture. */
+  /* THE CANONICAL POWER-RATING CANDIDATE. Historical replay above owns the
+     production team-strength mean until ETSR's own point scale is measured and
+     promoted. ETSR is still loaded AFTER replay for research/display/audit, so
+     it cannot leak backwards into historical updates. If promoted later,
+     current availability is stripped because the matchup layer prices the
+     actual missing athlete separately for this fixture. */
   const canonicalRatingData = readJson(path.join(ROOT, 'football', 'rating', 'current.json'), null);
   let canonicalRatingProblem = null;
   if (!canonicalRatingData) {
@@ -354,7 +354,7 @@ async function main() {
   } else {
     E.ingest.setCanonicalRatings(st, canonicalRatingData, {
       strip_availability: true,
-      source: 'EdgeDesk national ETSR · neutral-field pricing backbone'
+      source: 'EdgeDesk national ETSR · neutral-field research power rating'
     });
   }
 
@@ -445,7 +445,13 @@ async function main() {
     rating_backbone: {
       source: st.canonicalRatingMeta && st.canonicalRatingMeta.schema,
       season: st.canonicalRatingMeta && st.canonicalRatingMeta.season,
-      teams: st.canonicalRatingCount || 0,
+      teams_loaded: st.canonicalRatingCount || 0,
+      teams_active_in_pricing: st.canonicalRatingActiveCount || 0,
+      calibration_measured: !!(st.canonicalRatingMeta && st.canonicalRatingMeta.calibration_measured),
+      mode: st.canonicalRatingMeta && st.canonicalRatingMeta.promoted_to_pricing
+        ? 'PRICED_CANONICAL' : 'SHADOW_RESEARCH',
+      production_strength_source: st.canonicalRatingMeta && st.canonicalRatingMeta.promoted_to_pricing
+        ? 'national ETSR' : 'walk-forward-tested CFB replay with current score + efficiency absorption',
       availability_stripped_before_matchup: !!(st.canonicalRatingMeta && st.canonicalRatingMeta.strip_availability),
       problem: canonicalRatingProblem
     },
@@ -491,19 +497,22 @@ async function main() {
       name: 'completed games waiting on play-level efficiency',
       count: completedMissingEfficiency.length,
       detail: completedMissingEfficiency.slice(0, 10),
-      effect: 'ETSR still supplies neutral-field team strength; matchup efficiency for those teams remains on the trained seed and confidence stays lower until the play feed lands'
+      effect: 'production team strength still comes from the replay; missing play-level rows leave that team on older efficiency state and confidence stays lower until the play feed lands. ETSR remains research context until calibrated.'
     });
   }
 
-  /* 0 — the richer neutral-field rating really is the pricing backbone. */
+  /* 0 — the canonical research rating must still cover the whole FBS universe,
+         whether or not its point scale has earned pricing promotion yet. */
   const canonicalMissing = [];
+  const canonicalResearch = st.canonicalResearchRatings || st.canonicalRatings || {};
   for (const k of universe.order) {
     const t = universe.teams[k];
-    if (t.division === 'fbs' && !(st.canonicalRatings && st.canonicalRatings[k]))
-      canonicalMissing.push(t.name);
+    if (t.division === 'fbs' && !canonicalResearch[k]) canonicalMissing.push(t.name);
   }
-  run(report, 'canonical neutral-field ETSR covers every active FBS program',
+  run(report, 'canonical neutral-field ETSR research map covers every active FBS program',
     { source: report.engine.rating_backbone.source, teams: st.canonicalRatingCount || 0,
+      active_in_pricing: st.canonicalRatingActiveCount || 0,
+      mode: report.engine.rating_backbone.mode,
       expected: universe.counts.fbs_teams, problem: canonicalRatingProblem,
       missing: canonicalMissing.slice(0, 12) },
     !canonicalRatingProblem && canonicalMissing.length === 0
@@ -524,16 +533,22 @@ async function main() {
   run(report, 'every active FBS team carries a conference or Independent classification',
     { without: noConf }, noConf.length === 0);
 
-  /* 3 — both teams of every FBS-vs-FBS game are in the rating state */
+  /* 3 — both teams of every FBS-vs-FBS game exist in the ACTIVE pricing
+         rating state. Today that is the trained/replayed engine; after a future
+         measured ETSR promotion either source may satisfy this check. */
   const unrated = [];
   for (const it of slate) {
     if (it.meta.fbs_sides !== 2) continue;
-    for (const side of [it.meta.home, it.meta.away])
-      if (!(st.canonicalRatings && st.canonicalRatings[side.key]))
+    for (const side of [it.meta.home, it.meta.away]) {
+      const activeCanonical = st.canonicalRatings && st.canonicalRatings[side.key];
+      const replayKnown = Object.prototype.hasOwnProperty.call(st.r || {}, side.key);
+      if (!activeCanonical && !replayKnown)
         unrated.push({ game: `${it.meta.away.name} @ ${it.meta.home.name}`, team: side.name });
+    }
   }
-  run(report, 'every FBS-vs-FBS game has both teams in the canonical rating state',
-    { unrated }, unrated.length === 0);
+  run(report, 'every FBS-vs-FBS game has both teams in the active pricing rating state',
+    { unrated, pricing_source: report.engine.rating_backbone.production_strength_source },
+    unrated.length === 0);
 
   /* 4 — no duplicate canonical games */
   run(report, 'no canonical game appears twice on the slate',
