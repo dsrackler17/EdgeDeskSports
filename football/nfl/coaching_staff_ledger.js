@@ -65,6 +65,8 @@ function capture(ledger, row) {
     kickoff: row.kickoff || null,
     home_code: row.home_code,
     away_code: row.away_code,
+    home_head_coach: row.home_head_coach || null,
+    away_head_coach: row.away_head_coach || null,
     pregame_home_margin: r3(row.model_home_margin),
     captured_at: row.captured_at || null,
     model_version: row.model_version || null,
