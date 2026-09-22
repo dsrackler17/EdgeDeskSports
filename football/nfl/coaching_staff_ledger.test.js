@@ -170,4 +170,34 @@ assert.strictEqual(hc.teams.BUF.value, null);
 assert.strictEqual(hc.teams.BUF.observations, 1);
 assert.strictEqual(hc.teams.BUF.season_count, 1);
 
+/* Program persistence is the same franchise across seasons, time-decayed.
+   Current season receives 45%, prior season 30%, normalized over observed
+   seasons. One frozen season is still not "persistence." */
+const program = L.summarizeProgramPersistence(coachLedger, {
+  currentSeason: 2026,
+  teamKeys: ['KC', 'BUF', 'DEN']
+});
+assert.strictEqual(program.schema, L.PROGRAM_EVIDENCE_SCHEMA);
+assert.strictEqual(program.input, 'program_persistence');
+assert.deepStrictEqual(program.decay, [0.45, 0.30, 0.17, 0.08]);
+assert.strictEqual(program.teams.KC.available, true);
+assert.strictEqual(program.teams.KC.season_count, 2);
+assert.strictEqual(program.teams.KC.observations, 2);
+assert.strictEqual(program.teams.KC.observed_decay_weight, 0.75);
+assert.strictEqual(program.teams.KC.value, 2.3);
+assert.deepStrictEqual(program.teams.KC.seasons.map((s) => s.season), [2026, 2025]);
+assert.strictEqual(program.teams.KC.seasons[0].normalized_weight, 0.6);
+assert.strictEqual(program.teams.KC.seasons[1].normalized_weight, 0.4);
+assert.strictEqual(program.teams.BUF.available, false);
+assert.strictEqual(program.teams.BUF.value, null);
+assert.strictEqual(program.teams.BUF.season_count, 1);
+assert.strictEqual(program.teams.DEN.available, false);
+assert.strictEqual(program.teams.DEN.value, null);
+
+const badProgram = L.summarizeProgramPersistence(coachLedger, {
+  teamKeys: ['KC']
+});
+assert.match(badProgram.error, /currentSeason is required/i);
+assert.strictEqual(badProgram.teams.KC.value, null);
+
 console.log('nfl coaching_staff_ledger: passed');
