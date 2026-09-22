@@ -349,7 +349,9 @@
     for (k in teams) {
       if (!Object.prototype.hasOwnProperty.call(teams, k)) continue;
       var v = get(teams[k], category.field);
-      var conf = num(teams[k].confidence && teams[k].confidence.value);
+      var confPath = category.confidence_field || null;
+      var conf = confPath ? num(get(teams[k], confPath))
+        : num(teams[k].confidence && teams[k].confidence.value);
       if (!isNum(num(v))) continue;
       list.push({ key: k, value: num(v), confidence: conf == null ? 0 : conf });
     }
@@ -361,7 +363,7 @@
     for (var i = 0; i < list.length; i++) {
       if (list[i].confidence < CFG.RANK_MIN_CONFIDENCE) {
         out[list[i].key] = { rank: null, value: r2(list[i].value), unranked: true,
-          reason: 'confidence ' + Math.round(list[i].confidence * 100) + '% is below the '
+          reason: (category.confidence_label || 'confidence') + ' ' + Math.round(list[i].confidence * 100) + '% is below the '
             + Math.round(CFG.RANK_MIN_CONFIDENCE * 100) + '% floor. ' + CFG.RANK_MIN_CONFIDENCE_BASIS };
         continue;
       }
@@ -411,6 +413,59 @@
       drivers.push({ id: pairs[i][0], label: pairs[i][2], from: r2(b), to: r2(a), delta: r2(d) });
     }
     drivers.sort(function (x, y) { return Math.abs(y.delta) - Math.abs(x.delta); });
+    var cpMove = null;
+    var cpNow = num(get(now, 'coaching_program_rating'));
+    var cpPrev = num(get(prev, 'coaching_program.rating'));
+    if (isNum(cpNow) || isNum(cpPrev)) {
+      var cpInputsNow = now.coaching_program_inputs || {};
+      var cpInputsPrev = (prev.coaching_program && prev.coaching_program.inputs) || {};
+      var cpIds = {}, cpSub = {}, cpId;
+      for (cpId in cpInputsNow) if (Object.prototype.hasOwnProperty.call(cpInputsNow, cpId)) cpIds[cpId] = 1;
+      for (cpId in cpInputsPrev) if (Object.prototype.hasOwnProperty.call(cpInputsPrev, cpId)) cpIds[cpId] = 1;
+      var cpLabels = {
+        talent_conversion: 'talent conversion',
+        multi_season_program_overperformance: 'multi-season overperformance',
+        roster_management_retention: 'roster management / retention',
+        staff_continuity_stability: 'staff continuity / stability',
+        development: 'development',
+        game_management: 'game management'
+      };
+      for (cpId in cpIds) {
+        var na = cpInputsNow[cpId] || {}, pb = cpInputsPrev[cpId] || {};
+        var nv2 = num(na.value), pv2 = num(pb.value);
+        var nr2 = num(na.reliability), pr2 = num(pb.reliability);
+        cpSub[cpId] = {
+          label: cpLabels[cpId] || cpId.replace(/_/g, ' '),
+          value: { from: r2(pv2), to: r2(nv2),
+            delta: (isNum(nv2) && isNum(pv2)) ? r2(nv2 - pv2) : null },
+          reliability: { from: r2(pr2), to: r2(nr2),
+            delta: (isNum(nr2) && isNum(pr2)) ? r2(nr2 - pr2) : null }
+        };
+      }
+      var cpRawNow = num(get(now, 'coaching_program_raw_score'));
+      var cpRawPrev = num(get(prev, 'coaching_program.raw_score'));
+      var cpRelNow = num(get(now, 'coaching_program_reliability'));
+      var cpRelPrev = num(get(prev, 'coaching_program.reliability'));
+      cpMove = {
+        available: isNum(cpNow) && isNum(cpPrev),
+        reason: (isNum(cpNow) && isNum(cpPrev)) ? null
+          : 'both snapshots need a coaching/program score before its movement can be differenced',
+        rating: { from: r2(cpPrev), to: r2(cpNow),
+          delta: (isNum(cpNow) && isNum(cpPrev)) ? r2(cpNow - cpPrev) : null },
+        raw_score: { from: r2(cpRawPrev), to: r2(cpRawNow),
+          delta: (isNum(cpRawNow) && isNum(cpRawPrev)) ? r2(cpRawNow - cpRawPrev) : null },
+        reliability: { from: r2(cpRelPrev), to: r2(cpRelNow),
+          delta: (isNum(cpRelNow) && isNum(cpRelPrev)) ? r2(cpRelNow - cpRelPrev) : null },
+        inputs: cpSub
+      };
+      if (isNum(cpNow) && isNum(cpPrev)) {
+        var cpd = cpNow - cpPrev;
+        if (Math.abs(cpd) >= CFG.MOVEMENT.min_reportable_points) {
+          drivers.push({ id: 'coaching_program', label: 'coaching / program', from: r2(cpPrev), to: r2(cpNow), delta: r2(cpd) });
+          drivers.sort(function (x, y) { return Math.abs(y.delta) - Math.abs(x.delta); });
+        }
+      }
+    }
     var etsrNow = num(get(now, 'etsr')), etsrPrev = num(get(prev, 'etsr'));
     var rankNow = num(get(now, 'rank')), rankPrev = num(get(prev, 'rank'));
     /* per-category movement, so every column on the board can show a Δ week
@@ -446,6 +501,7 @@
       rank: { from: rankPrev, to: rankNow,
         delta: (isNum(rankNow) && isNum(rankPrev)) ? (rankPrev - rankNow) : null },
       categories: cats,
+      coaching_program: cpMove,
       drivers: drivers,
       basis: CFG.MOVEMENT.basis + ' ' + CFG.HISTORY.delta_basis
     };
