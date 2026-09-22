@@ -132,6 +132,12 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
   chk('the slate publishes the evidence-only coaching staff contract',
     art.coaching_staff && art.coaching_staff.status === 'EVIDENCE_ONLY' && art.coaching_staff.affects_nfl_projection === false,
     art.coaching_staff && art.coaching_staff.status);
+  chk('the slate keeps coaching validation research-only and cap-less',
+    art.coaching_staff && art.coaching_staff.validation &&
+      art.coaching_staff.validation.status === 'RESEARCH_ONLY' &&
+      art.coaching_staff.validation.may_move_lines === false &&
+      art.coaching_staff.validation.selected_cap === null,
+    art.coaching_staff && art.coaching_staff.validation);
   chk('small-cohort residual stays raw and does not become a rating',
     art.coaching_staff && art.coaching_staff.teams.SF &&
       art.coaching_staff.teams.SF.coaching_staff_inputs.current_residual_conversion.raw_value === 2 &&
