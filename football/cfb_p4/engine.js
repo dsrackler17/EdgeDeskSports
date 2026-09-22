@@ -1551,26 +1551,70 @@
       if (!W) return { points: M.missing('injury weights not trained'),
         uncertainty: M.missing('injury weights not trained'), detail: [] };
       var posW = W.position_weight || {}, statusW = W.status_weight || {};
-      var totalPts = 0, unc = 0, detail = [], i, it, pw, sw, share, repl, c;
+      var totalPts = 0, unc = 0, detail = [], seen = {}, i, it, pw, sw, share, c, key, primary;
       for (i = 0; i < list.length; i++) {
-        it = list[i];
+        it = list[i] || {};
+        /* Availability overlays can carry the same evidence through multiple
+           sources. One athlete gets one effect. Prefer athlete id; fall back
+           to a conservative team-local name key. */
+        key = it.athlete_id != null ? ('id:' + String(it.athlete_id))
+          : (it.player ? ('name:' + String(it.player).toLowerCase().replace(/[^a-z0-9]+/g, '')) : null);
+        if (key && seen[key]) {
+          detail.push({ player: it.player, athlete_id: it.athlete_id || null,
+            note: 'duplicate availability row ignored after first athlete match' });
+          continue;
+        }
+        if (key) seen[key] = true;
+
         pw = posW[String(it.position || '').toUpperCase()];
-        if (!isNum(pw)) { detail.push({ player: it.player, note: 'position not weighted; ignored in the mean, counted in uncertainty' }); unc += 0.1; continue; }
         sw = statusW[String(it.status || '').toLowerCase()];
         if (!isNum(sw)) sw = statusW.questionable != null ? statusW.questionable : 0.5;
         share = isNum(it.snap_share) ? clamp(it.snap_share, 0, 1) : (it.starter ? 0.8 : 0.3);
-        repl = isNum(it.replacement_quality) ? clamp(it.replacement_quality, 0, 1) : 0.5;
-        c = -pw * sw * share * (1 - repl);
+
+        /* LOAD-BEARING CALIBRATION RULE. The only trained injury coefficient
+           is primary-QB absence: train_layers.py fits a binary indicator for
+           whether that team's primary quarterback played. It did NOT fit a
+           second snap-share or replacement-quality multiplier. Applying those
+           multipliers here silently shrank the measured 3.902-point effect.
+           Therefore a trained position moves the mean only when this row is
+           explicitly the starter/primary player. Everything else remains an
+           information/volatility signal until it earns its own coefficient. */
+        primary = it.starter === true;
+        if (!isNum(pw) || !primary) {
+          unc += (!isNum(pw) ? 0.1 : 0.08) * Math.max(share, 0.25);
+          detail.push({ player: it.player, athlete_id: it.athlete_id || null,
+            position: it.position, status: it.status, snap_share: share, points: 0,
+            source: it.source || null, as_of: it.as_of || null,
+            note: !isNum(pw)
+              ? 'position has no trained injury weight; mean unchanged, uncertainty retained'
+              : 'trained position but player is not identified as the primary starter; mean unchanged' });
+          continue;
+        }
+
+        c = -pw * sw;
         totalPts += c;
         /* a GAME-TIME DECISION is the most uncertain state there is, and
            that uncertainty is priced separately from the mean effect */
-        unc += (sw > 0.15 && sw < 0.85 ? 0.35 : 0.1) * share * (pw / (W.max_position_weight || 7));
-        detail.push({ player: it.player, position: it.position, status: it.status,
-          snap_share: share, points: c, source: it.source || null, as_of: it.as_of || null });
+        unc += (sw > 0.15 && sw < 0.85 ? 0.35 : 0.1)
+          * Math.max(share, 0.8) * (pw / (W.max_position_weight || 7));
+        detail.push({ player: it.player, athlete_id: it.athlete_id || null,
+          position: it.position, status: it.status, snap_share: share, points: c,
+          source: it.source || null, as_of: it.as_of || null,
+          basis: 'primary-player absence coefficient; no untrained replacement-quality multiplier' });
       }
+
+      /* The current parameter set has one trained position effect: primary QB
+         absence. No interaction for two simultaneous primary-QB rows was ever
+         trained, so a team's injury mean cannot exceed that largest measured
+         effect. This also makes duplicated/conflicting reports fail safely. */
+      var cap = isNum(W.max_team_points) ? Math.abs(W.max_team_points)
+        : (isNum(W.max_position_weight) ? Math.abs(W.max_position_weight) : null);
+      if (isNum(cap)) totalPts = clamp(totalPts, -cap, cap);
+
       return {
         points: M(totalPts, { n: list.length, confidence: 0.6, source: 'supplied injury report',
-          basis: 'position importance is nonlinear — a starting QB is not a rotational linebacker' }),
+          basis: 'only explicitly primary players with trained absence coefficients move the mean; '
+            + 'untrained positions and replacement quality affect explanation/uncertainty only' }),
         uncertainty: M(clamp(unc, 0, 1), { confidence: 0.7, source: 'injury status ambiguity' }),
         detail: detail
       };
