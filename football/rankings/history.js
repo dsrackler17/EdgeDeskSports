@@ -86,7 +86,15 @@
         rank: team.coaching_program_rank == null ? null : team.coaching_program_rank,
         reliability: team.coaching_program_reliability == null ? 0 : r2(team.coaching_program_reliability),
         observed_weight: team.coaching_program_observed_weight == null ? 0 : r2(team.coaching_program_observed_weight),
+        candidate_adjustment_points: team.coaching_program_candidate_adjustment_points == null
+          ? null : r2(team.coaching_program_candidate_adjustment_points),
         adjustment_points: team.coaching_program_adjustment_points == null ? 0 : r2(team.coaching_program_adjustment_points),
+        weighted_etsr_points_before_recentering: team.coaching_program_adjustment
+          && team.coaching_program_adjustment.weighted_etsr_points_before_recentering != null
+          ? r2(team.coaching_program_adjustment.weighted_etsr_points_before_recentering) : 0,
+        max_point_adjustment: team.coaching_program_adjustment
+          && team.coaching_program_adjustment.max_point_adjustment != null
+          ? r2(team.coaching_program_adjustment.max_point_adjustment) : null,
         affects_etsr: !!team.coaching_program_affects_etsr,
         inputs: (function () {
           var src = team.coaching_program_inputs || {}, cp = {}, id;
@@ -177,6 +185,13 @@
           raw_score: (isNum(ca.raw_score) && isNum(cb.raw_score)) ? r2(ca.raw_score - cb.raw_score) : null,
           reliability: (isNum(ca.reliability) && isNum(cb.reliability)) ? r2(ca.reliability - cb.reliability) : null,
           rank: (isNum(ca.rank) && isNum(cb.rank)) ? (cb.rank - ca.rank) : null,
+          candidate_adjustment_points: (isNum(ca.candidate_adjustment_points) && isNum(cb.candidate_adjustment_points))
+            ? r2(ca.candidate_adjustment_points - cb.candidate_adjustment_points) : null,
+          adjustment_points: (isNum(ca.adjustment_points) && isNum(cb.adjustment_points))
+            ? r2(ca.adjustment_points - cb.adjustment_points) : null,
+          weighted_etsr_points_before_recentering:
+            (isNum(ca.weighted_etsr_points_before_recentering) && isNum(cb.weighted_etsr_points_before_recentering))
+              ? r2(ca.weighted_etsr_points_before_recentering - cb.weighted_etsr_points_before_recentering) : null,
           inputs: sub
         };
       }
