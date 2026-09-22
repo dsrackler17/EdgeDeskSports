@@ -589,12 +589,21 @@ section('the football card, ranked');
   games[0].quote_book = 'DraftKings'; games[0].quote_price_american = '-110';
   games[1].market_home_handicap = -3.5; games[1].quote_observed_at = '2026-09-13T02:00:00Z'; games[1].quote_book = 'FanDuel';
   games[2].market_home_handicap = -30.5;
-  const r = E.rankFootballCard({ games, now: NOW, within_hours: 14 * 24 });
-  eq('the denominator is the SCHEDULE, not the priced rows', r.counts.in_window, games.length);
+  const withinHours = 14 * 24;
+  const windowStart = NOW - 6 * 3600e3;
+  const windowEnd = NOW + withinHours * 3600e3;
+  const scheduledInWindow = games.filter((g) => {
+    const kick = Date.parse(g.kickoff);
+    return !Number.isFinite(kick) || (kick >= windowStart && kick <= windowEnd);
+  });
+  const r = E.rankFootballCard({ games, now: NOW, within_hours: withinHours });
+  eq('the denominator is the SCHEDULE, not the priced rows', r.counts.scheduled, games.length);
+  eq('the requested window contains every scheduled candidate in that window', r.counts.in_window, scheduledInWindow.length);
   chk('and the three counts are reported separately', r.counts.with_market_number === 3 && r.counts.with_executable_price === 2,
     r.counts);
   eq('a stale price is counted as stale', r.counts.stale_price, 1);
-  chk('every scheduled game is in the ranking', r.ranked.length === games.length, r.ranked.length);
+  chk('every scheduled game in the requested window is in the ranking',
+    r.ranked.length === scheduledInWindow.length, r.ranked.length);
   chk('a game with no market is still rankable', r.ranked.some((x) => x.market_state === 'NO MARKET'), r.ranked.slice(0, 3));
   has('the statement separates card claims from price claims', r.statement, 'about PRICES');
   has('and the contract refuses gap-size ranking', r.contract, 'a bigger gap is a weaker signal');
