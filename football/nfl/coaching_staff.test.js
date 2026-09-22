@@ -40,6 +40,17 @@ for (const id of ids) {
   weight += x.configured_weight;
 }
 assert.ok(Math.abs(weight - 1) < 1e-12, 'NFL coaching/staff weights must sum to 1');
+
+assert.strictEqual(C.MIN_COHORT, 20);
+assert.strictEqual(C.RATING_SD, 12);
+assert.strictEqual(C.NFL_REGULAR_SEASON_GAMES, 17);
+assert.strictEqual(C.reliabilityFor('current_residual_conversion', { observations: 17 }), 1);
+assert.strictEqual(C.reliabilityFor('current_residual_conversion', { observations: 8 }), 8 / 17);
+assert.strictEqual(C.reliabilityFor('multi_season_head_coach', { observations: 34, season_count: 2 }), 1);
+assert.strictEqual(C.reliabilityFor('multi_season_head_coach', { observations: 17, season_count: 2 }), 0.5);
+assert.strictEqual(C.reliabilityFor('program_persistence', { observations: 51, season_count: 3 }), 1);
+assert.strictEqual(C.reliabilityFor('efficiency_development', { observations: 6, games_available: 6 }), 6 / 17);
+assert.strictEqual(C.reliabilityFor('game_management', { observations: 99 }), 0);
 assert.ok(!JSON.stringify(t).includes('"coaching_staff_rating":50'));
 assert.strictEqual(t.coaching_staff_inputs.game_management.value, null);
 assert.match(t.coaching_staff_inputs.game_management.reason, /fourth-down/i);
