@@ -140,6 +140,26 @@ const composite = C.build(['KC', 'BUF'], {
         source: 'time-decayed same-franchise evidence from the frozen pregame residual ledger'
       }
     }
+  },
+  efficiency: {
+    teams: {
+      KC: {
+        available: true,
+        value: 0.04,
+        observations: 6,
+        games_available: 6,
+        source: 'nflverse stats_team_week weekly team stats',
+        opponent_strength_adjusted: false
+      },
+      BUF: {
+        available: false,
+        value: null,
+        observations: 0,
+        games_available: 5,
+        source: 'nflverse stats_team_week weekly team stats',
+        opponent_strength_adjusted: false
+      }
+    }
   }
 });
 assert.strictEqual(composite.status, 'EVIDENCE_ONLY');
@@ -154,6 +174,13 @@ assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.observations, 17);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.weighted_evidence, null);
 assert.strictEqual(composite.teams.KC.coaching_staff_inputs.program_persistence.reliability, 0);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.available, true);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.value, 0.04);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.observations, 6);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.weighted_evidence, null);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.efficiency_development.reliability, 0);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.efficiency_development.available, false);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.efficiency_development.value, null);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.program_persistence.available, false);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.program_persistence.value, null);
 assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_coach.available, false);
