@@ -6,6 +6,10 @@ const C = require('./coaching_staff.js');
 
 assert.strictEqual(C.SCHEMA, 'edgedesk_nfl_coaching_staff_v1');
 assert.strictEqual(C.CONFIG.affects_nfl_projection, false);
+assert.strictEqual(C.CONFIG.residual_reliability_k, 4);
+assert.strictEqual(C.CONFIG.validation_status, 'CANDIDATE');
+assert.strictEqual(C.CONFIG.tuned_candidate_max_point_adjustment, 1);
+assert.strictEqual(C.CONFIG.validated_max_point_adjustment, 0);
 assert.strictEqual(C.CONFIG.candidate_max_point_adjustment, 0);
 
 const sumW = Object.keys(C.INPUTS).reduce((s, k) => s + C.INPUTS[k].weight, 0);
@@ -44,6 +48,8 @@ for (const team of ['A','B','C','D']) {
   assert.ok(t.coaching_staff_reliability > 0);
   assert.strictEqual(t.coaching_staff_affects_projection, false);
   assert.strictEqual(t.coaching_staff_adjustment_points, 0);
+  assert.strictEqual(t.coaching_staff_validated_cap, 0);
+  assert.ok(typeof t.coaching_staff_residual_points === 'number');
   assert.ok(t.coaching_staff_inputs.current_residual_conversion.available);
   assert.strictEqual(t.coaching_staff_inputs.multi_season_head_coach.available, false);
   assert.strictEqual(t.coaching_staff_inputs.game_management.available, false);
