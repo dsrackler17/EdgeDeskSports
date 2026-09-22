@@ -326,12 +326,14 @@ async function build(opts) {
         record: (() => { const a = meta.validation.nfl.ats_vs_close || {}; const bands = Object.keys(a).sort((x, y) => Number(x) - Number(y)).map((k) => `${a[k].win_pct}% at ${k}+ points (n=${a[k].n}, p=${a[k].binom_p_one_sided})`); return `NFL ${meta.validation.nfl.oos_test_window || 'walk-forward'} vs the closing consensus: spread MAE ${meta.validation.nfl.spread_mae_model} against the market's ${meta.validation.nfl.spread_mae_closing_market}; ATS ${bands.join(', ')}. No band clears p<0.05; the model does not beat the close.`; })(),
       } : null },
     absorbed_games: S.absorbed || 0, notes: S.notes || [], lookahead_days: lookaheadDays,
-    coaching_staff_ledger: coachingLedgerReport ? Object.assign({
+    coaching_staff_ledger: coachingLedgerReport ? {
       artifact: 'football/nfl/coaching_staff_ledger.json',
       schema: COACHING_LEDGER.SCHEMA,
+      pending_total: coachingLedgerReport.pending_total,
+      settled_total: coachingLedgerReport.settled_total,
       projection_influence: false,
       scoring_enabled: false
-    }, coachingLedgerReport) : null,
+    } : null,
     window: { from: new Date(now - 6 * 3600000).toISOString(), to: new Date(now + lookaheadDays * 86400000).toISOString() },
     feeds: fetched.map((f) => ({ url: f.url, bytes: f.bytes })),
     counts: { games: games.length, predicted: games.filter((g) => g.model_status === 'PREDICTED').length, with_reference: games.filter((g) => g.reference_market).length, teams: Object.keys(teams).length },
