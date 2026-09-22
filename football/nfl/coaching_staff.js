@@ -45,11 +45,17 @@
     game_management: { label: 'Game management', weight: 0.05 }
   });
   var CONFIG = Object.freeze({
-    residual_reliability_k: 8,
+    /* 2003-2015 tune window selected k=4. The 2016-2025 holdout did NOT
+       validate a non-zero pricing cap, so this changes reliability display
+       only and still moves zero projected points. */
+    residual_reliability_k: 4,
     rating_points_per_z: 12,
+    validation_status: 'CANDIDATE',
+    tuned_candidate_max_point_adjustment: 1,
+    validated_max_point_adjustment: 0,
     affects_nfl_projection: false,
     candidate_max_point_adjustment: 0,
-    basis: 'Measured and ranked as research. It does not affect the NFL projection until NFL-specific walk-forward validation promotes a non-zero cap.'
+    basis: 'Measured and ranked as research. NFL 2003-2015 tuned k=4 and a ±1.0 candidate cap, but 2016-2025 improved MAE by only 0.014 with paired p=0.4305. The shared promotion gate therefore keeps the validated cap at 0.'
   });
 
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
@@ -186,13 +192,17 @@
       input.efficiency_development = seedInput('efficiency_development', s, 'development', t.coach);
       input.game_management = seedInput('game_management', s, 'game_management', t.coach);
 
-      var observedWeight = 0, weighted = 0, weightedRel = 0;
+      var observedWeight = 0, weighted = 0, weightedRel = 0, weightedPointEvidence = 0, pointEvidenceWeight = 0;
       Object.keys(INPUTS).forEach(function (id) {
         var x = input[id], w = INPUTS[id].weight;
         if (x.available && isNum(x.value) && x.reliability > 0) {
           observedWeight += w;
           weighted += w * x.value;
           weightedRel += w * x.reliability;
+          if (isNum(x.weighted_evidence)) {
+            weightedPointEvidence += w * x.weighted_evidence;
+            pointEvidenceWeight += w;
+          }
         }
       });
 
@@ -200,6 +210,8 @@
       var rel = observedWeight > 0 ? (weightedRel / observedWeight) * observedWeight : 0;
       rel = clamp(rel, 0, 1);
       var rating = isNum(raw) ? 50 + (raw - 50) * rel : null;
+      var rawResidualPoints = pointEvidenceWeight > 0 ? weightedPointEvidence / pointEvidenceWeight : null;
+      var residualPoints = isNum(rawResidualPoints) ? rawResidualPoints * rel : null;
       var warnings = [];
       Object.keys(INPUTS).forEach(function (id) {
         if (!input[id].available) warnings.push({
@@ -220,9 +232,13 @@
         coaching_staff_raw_score: r1(raw),
         coaching_staff_reliability: r3(rel),
         coaching_staff_observed_weight: r3(observedWeight),
+        coaching_staff_raw_residual_points: r3(rawResidualPoints),
+        coaching_staff_residual_points: r3(residualPoints),
         coaching_staff_available: rating != null,
         coaching_staff_rank: null,
         coaching_staff_affects_projection: false,
+        coaching_staff_candidate_cap: CONFIG.tuned_candidate_max_point_adjustment,
+        coaching_staff_validated_cap: CONFIG.validated_max_point_adjustment,
         coaching_staff_adjustment_points: 0,
         coaching_staff_inputs: input,
         coaching_staff_warnings: warnings,
