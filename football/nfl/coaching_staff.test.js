@@ -41,6 +41,10 @@ for (const id of ids) {
 }
 assert.ok(Math.abs(weight - 1) < 1e-12, 'NFL coaching/staff weights must sum to 1');
 assert.ok(!JSON.stringify(t).includes('"coaching_staff_rating":50'));
+assert.strictEqual(t.coaching_staff_inputs.game_management.value, null);
+assert.match(t.coaching_staff_inputs.game_management.reason, /fourth-down/i);
+assert.match(t.coaching_staff_inputs.game_management.reason, /close-game record/i);
+assert.match(t.coaching_staff_inputs.game_management.reason, /not accepted/i);
 
 /* Raw measured evidence may populate the configured input without silently
    turning itself into a rating, reliability score or projection adjustment. */
