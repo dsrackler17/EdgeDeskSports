@@ -217,22 +217,19 @@ function teamRow(t, src) {
 }
 
 function addSubRanks(rows) {
-  const group = {}, conf = {};
+  /* rows is already in the canonical national ordering. Sub-ranks are views
+     over THAT ordering, not a second rating and not a second sort. A team held
+     out of the national rank by a confidence gate still has a power rating and
+     still belongs somewhere in its conference/group ordering. */
+  const groupN = {}, confN = {};
   rows.forEach(t => {
-    (group[t.fbs_group] = group[t.fbs_group] || []).push(t);
-    (conf[t.conference_id || 'unknown'] = conf[t.conference_id || 'unknown'] || []).push(t);
+    const g = t.fbs_group || 'other';
+    const c = t.conference_id || 'unknown';
+    groupN[g] = (groupN[g] || 0) + 1;
+    confN[c] = (confN[c] || 0) + 1;
+    t.group_rank = groupN[g];
+    t.conference_rank = confN[c];
   });
-  function rankBuckets(obj, field) {
-    Object.keys(obj).forEach(k => {
-      obj[k].sort((a, b) => (b.rating == null ? -Infinity : b.rating) - (a.rating == null ? -Infinity : a.rating));
-      let n = 0;
-      obj[k].forEach(t => {
-        if (typeof t.rank === 'number') t[field] = ++n;
-      });
-    });
-  }
-  rankBuckets(group, 'group_rank');
-  rankBuckets(conf, 'conference_rank');
 }
 
 function buildCompatibility(src) {
@@ -298,6 +295,15 @@ function buildCompatibility(src) {
     seasons_used: src.built_on && src.built_on.seasons_read ? src.built_on.seasons_read : [src.season],
     prior_seasons_applied: pairs.map(p => p.from),
     team_count: rows.length,
+    conference_coverage: {
+      with_conference: rows.filter(t => !!t.conference_id).length,
+      without_conference: rows.filter(t => !t.conference_id).length,
+      conferences: rows.reduce((o, t) => {
+        const k = t.conference_id || 'unknown';
+        o[k] = (o[k] || 0) + 1;
+        return o;
+      }, {})
+    },
     teams: rows,
     calibration: {
       measured: rows.every(t => t.source_rating.scalars_measured === true),
