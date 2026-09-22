@@ -19,6 +19,7 @@
 'use strict';
 
 const SCHEMA = 'edgedesk_nfl_coaching_staff_ledger_v1';
+const EVIDENCE_SCHEMA = 'edgedesk_nfl_coaching_staff_current_residual_v1';
 
 function isNum(x) {
   return typeof x === 'number' && Number.isFinite(x);
@@ -75,6 +76,79 @@ function capture(ledger, row) {
   return { captured: true, record: rec };
 }
 
+function summarizeCurrentResidual(ledger, opts) {
+  opts = opts || {};
+  const season = opts.season == null ? null : Number(opts.season);
+  const requested = Array.isArray(opts.teamKeys) ? opts.teamKeys.map(String) : null;
+  const teams = {};
+
+  function blank(code) {
+    return {
+      team: code,
+      available: false,
+      value: null,
+      observations: 0,
+      total_evidence: null,
+      mean_evidence: null,
+      game_ids: [],
+      source: 'frozen pregame residual ledger',
+      reason: 'no settled frozen pregame residual evidence'
+    };
+  }
+
+  if (requested) requested.forEach((code) => { teams[code] = blank(code); });
+
+  if (!ledger || ledger.schema !== SCHEMA || !ledger.settled) {
+    return {
+      schema: EVIDENCE_SCHEMA,
+      season,
+      input: 'current_residual_conversion',
+      teams,
+      error: 'invalid ledger'
+    };
+  }
+
+  const sums = {};
+  Object.keys(ledger.settled).sort().forEach((id) => {
+    const rec = ledger.settled[id];
+    if (!rec) return;
+    if (season != null && Number(rec.season) !== season) return;
+
+    const pairs = [
+      [rec.home_code, rec.team_evidence && rec.team_evidence.home],
+      [rec.away_code, rec.team_evidence && rec.team_evidence.away]
+    ];
+
+    pairs.forEach(([code, evidence]) => {
+      if (!code || !isNum(evidence)) return;
+      code = String(code);
+      if (requested && !requested.includes(code)) return;
+      if (!teams[code]) teams[code] = blank(code);
+      if (!sums[code]) sums[code] = 0;
+      sums[code] += evidence;
+      teams[code].observations += 1;
+      teams[code].game_ids.push(String(rec.game_id || id));
+    });
+  });
+
+  Object.keys(teams).forEach((code) => {
+    const row = teams[code];
+    if (!row.observations) return;
+    row.total_evidence = r3(sums[code]);
+    row.mean_evidence = r3(sums[code] / row.observations);
+    row.value = row.mean_evidence;
+    row.available = true;
+    row.reason = null;
+  });
+
+  return {
+    schema: EVIDENCE_SCHEMA,
+    season,
+    input: 'current_residual_conversion',
+    teams
+  };
+}
+
 function settle(ledger, finalRow) {
   const id = validGameId(finalRow);
   if (!ledger || ledger.schema !== SCHEMA) {
@@ -117,7 +191,9 @@ function settle(ledger, finalRow) {
 
 module.exports = {
   SCHEMA,
+  EVIDENCE_SCHEMA,
   newLedger,
   capture,
-  settle
+  settle,
+  summarizeCurrentResidual
 };
