@@ -81,6 +81,49 @@ function capture(ledger, row) {
   return { captured: true, record: rec };
 }
 
+function freezeResearchSnapshot(ledger, gameId, snapshot) {
+  const id = gameId == null ? null : String(gameId);
+  if (!ledger || ledger.schema !== SCHEMA) {
+    return { frozen: false, reason: 'invalid ledger' };
+  }
+  if (!id) return { frozen: false, reason: 'game_id is required' };
+  if (ledger.settled[id]) {
+    return { frozen: false, reason: 'game is already settled', record: ledger.settled[id] };
+  }
+
+  const pending = ledger.pending[id];
+  if (!pending) {
+    return { frozen: false, reason: 'no frozen pregame projection exists for this game' };
+  }
+  if (pending.coaching_research) {
+    return { frozen: false, reason: 'coaching research snapshot is already frozen', record: pending };
+  }
+
+  function side(row) {
+    row = row || {};
+    const rating = Number(row.rating);
+    const reliability = Number(row.reliability);
+    const factor = Number(row.factor);
+    return {
+      available: row.available === true,
+      rating: Number.isFinite(rating) ? r3(rating) : null,
+      reliability: Number.isFinite(reliability) ? r3(reliability) : 0,
+      factor: Number.isFinite(factor) ? r3(factor) : null
+    };
+  }
+
+  pending.coaching_research = {
+    schema: 'edgedesk_nfl_coaching_staff_pregame_research_v1',
+    frozen_at: snapshot && snapshot.frozen_at ? snapshot.frozen_at : (pending.captured_at || null),
+    projection_influence: false,
+    applied_points: 0,
+    home: side(snapshot && snapshot.home),
+    away: side(snapshot && snapshot.away)
+  };
+
+  return { frozen: true, record: pending };
+}
+
 function summarizeCurrentResidual(ledger, opts) {
   opts = opts || {};
   const season = opts.season == null ? null : Number(opts.season);
@@ -419,6 +462,7 @@ module.exports = {
   PROGRAM_DECAY,
   newLedger,
   capture,
+  freezeResearchSnapshot,
   settle,
   summarizeCurrentResidual,
   summarizeHeadCoachResidual,
