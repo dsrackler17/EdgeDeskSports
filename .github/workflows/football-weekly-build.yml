@@ -92,6 +92,7 @@ on:
       - 'football/cfb_p4/canonical_rating.test.js'
       - 'football/fbs/build_coverage.js'
       - 'tools/football/patch_cfb_fixture_availability.js'
+      - 'tools/football/patch_cfb_injury_identity.js'
       - 'tools/football/patch_cfb_canonical_rating.js'
       - 'football/rankings/engine_efficiency.js'
       - 'football/fbs/efficiency_replay.test.js'
@@ -210,6 +211,10 @@ jobs:
       - name: Patch browser fixture-scoped CFB availability
         if: steps.go.outputs.run == 'true'
         run: node tools/football/patch_cfb_fixture_availability.js
+
+      - name: Patch browser CFB injury identity
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_cfb_injury_identity.js
 
       # Keep the browser on the same canonical neutral-field rating backbone.
       - name: Patch browser canonical CFB rating
