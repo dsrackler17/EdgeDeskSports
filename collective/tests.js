@@ -1614,7 +1614,8 @@ chk('the page defines the grading functions this section tests',
    'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
    'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames',
    'noCapturedClose', 'closelessLogRow', 'markCloselessGraded', 'closelessNote',
-   'serverRecordFor', 'logTally', 'atsReason'
+   'serverRecordFor', 'logTally', 'atsReason', 'marketClvPoints', 'edgeBucketKey',
+   'modelBettingDiagnostics', 'bettingDiagnosticsHTML', 'lineValueHtml'
   ].every(function (n) { return typeof sandbox[n] === 'function'; }),
   { missing: ['atsResult', 'finalResult', 'projectedMargin', 'gradableRow', 'localGrade',
       'serverGrade', 'rowGrade', 'modelRecord', 'modelCoverage', 'modelsInGames',
@@ -1622,7 +1623,8 @@ chk('the page defines the grading functions this section tests',
       'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
       'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames',
       'noCapturedClose', 'closelessLogRow', 'markCloselessGraded', 'closelessNote',
-      'serverRecordFor', 'logTally', 'atsReason']
+      'serverRecordFor', 'logTally', 'atsReason', 'marketClvPoints', 'edgeBucketKey',
+      'modelBettingDiagnostics', 'bettingDiagnosticsHTML', 'lineValueHtml']
       .filter(function (n) { return typeof sandbox[n] !== 'function'; }) });
 
 if (typeof sandbox.localGrade === 'function') try {
@@ -1653,6 +1655,41 @@ if (typeof sandbox.localGrade === 'function') try {
     });
     return r;
   }
+
+  /* ---- market usefulness: CLV + edge buckets -------------------------
+     These numbers are allowed to describe a signal only if the sign
+     convention is right. Home and away are mirror images, and the bucket
+     is frozen from model-vs-market AT SUBMISSION rather than from the close. */
+  chk('CLV is positive when a home pick got -3 and the market closed -5',
+    near(G.marketClvPoints('home', -3, -5), 2));
+  chk('CLV is positive when an away pick got +3 and the market closed +1',
+    near(G.marketClvPoints('away', -3, -1), 2));
+  chk('CLV is negative when the posted number was worse than the close',
+    near(G.marketClvPoints('home', -5, -3), -2)
+      && near(G.marketClvPoints('away', -1, -3), -2));
+  chk('CLV needs a side and two real lines',
+    G.marketClvPoints(null, -3, -5) === null
+      && G.marketClvPoints('home', null, -5) === null
+      && G.marketClvPoints('home', -3, null) === null);
+  chk('edge buckets have stable boundaries',
+    G.edgeBucketKey(0) === '0-2'
+      && G.edgeBucketKey(1.99) === '0-2'
+      && G.edgeBucketKey(2) === '2-4'
+      && G.edgeBucketKey(4) === '4-6'
+      && G.edgeBucketKey(6) === '6+');
+
+  chk('diagnostics keep edge-at-post separate from closing-line value',
+    (function () {
+      var a=gm({id:'d1',hs:30,as:20,close:-5});
+      a.models=[mr({pick_side:'home',projected_spread:-8,line_at_submission:-3})];
+      var b=gm({id:'d2',hs:21,as:20,close:-2});
+      b.models=[mr({pick_side:'away',projected_spread:2,line_at_submission:-4})];
+      var d=G.modelBettingDiagnostics([a,b],'c','m');
+      return d.clv_n===2 && near(d.avg_clv,2) && near(d.clv_positive_pct,1)
+        && d.buckets['4-6'].n===1 && d.buckets['4-6'].wins===1
+        && d.buckets['6+'].n===1 && d.buckets['6+'].wins===1
+        && d.large.n===2 && d.large.wins===2;
+    })());
 
   /* ---- the cover rule, written once and shared ------------------------
      Home convention on both sides: margin + closing spread. A home team
