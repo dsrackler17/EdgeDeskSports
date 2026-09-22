@@ -122,9 +122,14 @@ function loadNflEngine(win, root) {
   root = root || ROOT;
   vm.runInContext(fs.readFileSync(path.join(root, 'football', 'params.js'), 'utf8'), win, { filename: 'football/params.js' });
   win.module = { exports: {} };
+  vm.runInContext(fs.readFileSync(path.join(root, 'football', 'nfl', 'coaching_staff.js'), 'utf8'), win,
+    { filename: 'football/nfl/coaching_staff.js' });
+  vm.runInContext(fs.readFileSync(path.join(root, 'football', 'nfl', 'coaching_staff_params.js'), 'utf8'), win,
+    { filename: 'football/nfl/coaching_staff_params.js' });
   vm.runInContext(fs.readFileSync(path.join(root, 'football', 'engine.js'), 'utf8'), win, { filename: 'football/engine.js' });
   delete win.module;
-  if (!win.EDFootball || !win.EDFootballParams) throw new Error('the football engine loaded but its globals are missing');
+  if (!win.EDFootball || !win.EDFootballParams || !win.EDNFLCoachingStaff || !win.EDNFLCoachingStaffParams)
+    throw new Error('the football engine loaded but its NFL coaching/staff globals are missing');
   return win.EDFootball;
 }
 
@@ -151,6 +156,7 @@ function stageNflGame(win, opts) {
     home_qb_id: opts.home_qb_id === undefined ? null : opts.home_qb_id,
     away_qb_id: opts.away_qb_id === undefined ? null : opts.away_qb_id,
     home_qb_name: opts.home_qb_name || null, away_qb_name: opts.away_qb_name || null,
+    home_coach: opts.home_coach || null, away_coach: opts.away_coach || null,
     /* the nflverse consensus columns the schedule row itself carries — the
        second of the two market paths fbNflMarketFor() reads. */
     spread_line: opts.spread_line == null ? null : opts.spread_line,
