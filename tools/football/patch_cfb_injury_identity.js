@@ -4,19 +4,13 @@
 /* ============================================================================
    ENRICH LIVE CFB INJURY ROWS WITH THE SAME PLAYER IDENTITY/USAGE DATA AS NODE.
 
-   Runs AFTER patch_cfb_fixture_availability.js.
+   Runs AFTER patch_cfb_fixture_availability.js. It never guesses an athlete:
+   only a unique team/name match is accepted. Player ratings remain research
+   metadata and never enter replacement_quality, so this does not promote the
+   unvalidated player-quality layer into pricing.
 
-   The browser reads ONE compact artifact:
-     football/players/injury_index.json
-
-   It never guesses an athlete. Only a unique team/name match is accepted.
-   Athlete identity, starter role and measured snap share may reach the injury
-   contract. Player rating and replacement rating remain RESEARCH metadata and
-   never enter replacement_quality, so this does not promote the unvalidated
-   player-quality layer into pricing.
-
-   The patch is idempotent and can also upgrade the older version that fetched
-   individual team files.
+   To keep the board fast, only teams with a current priced availability row
+   have their compact team player file prefetched.
    ========================================================================== */
 
 const fs=require('fs');
@@ -25,9 +19,9 @@ const ROOT=path.join(__dirname,'..','..');
 const FILE=path.join(ROOT,'app.html');
 let s=fs.readFileSync(FILE,'utf8');
 
-const MARK='function fbP4InjuryIndexEnsure(){';
+const MARK='function fbP4InjuryIdentity(teamName,playerName){';
 if(s.includes(MARK)
-  && s.includes('return fbP4InjuryIndexEnsure().catch(function(){});')
+  && s.includes('return fbP4InjuryPlayerEnsure().catch(function(){});')
   && s.includes('replacement_quality_research:')){
   console.log('[cfb-browser-injury-identity] already patched');
   process.exit(0);
@@ -39,78 +33,82 @@ function replaceOne(oldText,newText,label){
   s=s.replace(oldText,newText);
 }
 
-const HELPERS=`function fbP4PersonKey(v){
+replaceOne(
+`function fbP4OfficialForGame(t,gameId){`,
+`function fbP4PersonKey(v){
   if(v==null)return null;
   try{v=String(v).trim().toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'');}
   catch(_){v=String(v).trim().toLowerCase();}
   return v.replace(/[^a-z0-9]+/g,'')||null;
 }
-function fbP4InjuryIndexEnsure(){
-  var S=FB.p4;
-  if(S.injuryIdentityIndex)return Promise.resolve(S.injuryIdentityIndex);
-  if(S._injuryIdentityP)return S._injuryIdentityP;
-  S._injuryIdentityP=fetch('football/players/injury_index.json?v='+Date.now(),
-    {cache:'no-store'}).then(function(r){
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      return r.json();
-    }).then(function(d){
-      if(!d||d.schema!=='edgedesk_cfb_injury_identity_v1')
-        throw new Error('unexpected injury-identity schema');
-      if(d.season!=null&&S.season!=null&&+d.season!==+S.season)
-        throw new Error('injury identity index is for season '+d.season+', not '+S.season);
-      S.injuryIdentityIndex=d;S._injuryIdentityP=null;
-      return d;
-    }).catch(function(e){
-      S._injuryIdentityP=null;
-      S.notes.push('Player identity could not be joined to availability ('+((e&&e.message)||'load failed')
-        +'). Injury evidence remains usable, but unresolved rows keep generic starter/snap assumptions.');
-      return null;
-    });
-  return S._injuryIdentityP;
-}
-function fbP4InjuryTeamIndex(teamName){
-  var d=FB.p4&&FB.p4.injuryIdentityIndex,k=fbP4Key(teamName);
-  return d&&d.teams&&d.teams[k]?d.teams[k]:null;
+function fbP4InjuryTeamFile(teamName){
+  var k=fbP4Key(teamName);
+  return FB.pq&&FB.pq.teams&&FB.pq.teams[k]?FB.pq.teams[k]:null;
 }
 function fbP4InjuryIdentity(teamName,playerName){
-  var d=fbP4InjuryTeamIndex(teamName),nk=fbP4PersonKey(playerName);
-  if(!d||!nk||!d.by_name||!Object.prototype.hasOwnProperty.call(d.by_name,nk))return null;
-  return d.by_name[nk]||null;
-}
-function fbP4InjuryReplacement(athlete,scoped){
-  var r=athlete&&athlete.replacement?athlete.replacement:null,blocked={},i,p,st,k;
-  if(!r)return null;
-  for(i=0;i<(scoped||[]).length;i++){
-    p=scoped[i]||{};
-    st=String(p.status||p.availability_status||'').toUpperCase();
-    if(st!=='OUT'&&st!=='DOUBTFUL'&&st!=='OUT_FIRST_HALF')continue;
-    k=fbP4PersonKey(p.player_name||p.name);if(k)blocked[k]=1;
+  var d=fbP4InjuryTeamFile(teamName),nk=fbP4PersonKey(playerName),hit=null,n=0,i,p;
+  if(!d||!nk||!d.players)return null;
+  for(i=0;i<d.players.length;i++){
+    p=d.players[i];
+    if(p&&fbP4PersonKey(p.n)===nk){hit=p;n++;}
   }
-  return blocked[fbP4PersonKey(r.n)]?null:r;
+  return n===1?hit:null;
 }
-`;
-
-const oldHelperStart=s.indexOf('function fbP4InjuryTeamFile(teamName){');
-if(oldHelperStart>=0){
-  const oldHelperEnd=s.indexOf('function fbP4OfficialForGame(t,gameId){',oldHelperStart);
-  if(oldHelperEnd<0)throw new Error('older injury identity helper has no official-report anchor');
-  s=s.slice(0,oldHelperStart)+HELPERS+s.slice(oldHelperEnd);
-}else if(!s.includes(MARK)){
-  replaceOne(
-    'function fbP4OfficialForGame(t,gameId){',
-    HELPERS+'function fbP4OfficialForGame(t,gameId){',
-    'injury identity helper insertion');
+function fbP4InjuryReplacement(teamName,athlete,scoped){
+  var d=fbP4InjuryTeamFile(teamName),g,i,p,blocked={};
+  if(!d||!athlete||!d.players)return null;
+  g=String(athlete.g||athlete.p||'').toUpperCase();
+  (scoped||[]).forEach(function(x){
+    var st=String(x.status||x.availability_status||'').toUpperCase();
+    if(st==='OUT'||st==='DOUBTFUL'||st==='OUT_FIRST_HALF'){
+      var k=fbP4PersonKey(x.player_name||x.name);if(k)blocked[k]=1;
+    }
+  });
+  var rows=d.players.filter(function(x){
+    return x&&String(x.g||x.p||'').toUpperCase()===g
+      && String(x.id||'')!==String(athlete.id||'')
+      && !blocked[fbP4PersonKey(x.n)]
+      && x.e!=null&&isFinite(x.e);
+  }).sort(function(a,b){
+    return (+b.e)-(+a.e)||((b.share==null?-1:+b.share)-(a.share==null?-1:+a.share));
+  });
+  return rows.length?rows[0]:null;
 }
+/* Load only player files that can affect a current injury row. */
+function fbP4InjuryPlayerEnsure(){
+  if(!FB.pq||typeof fbPqTeam!=='function'||!window.EDCARD||!window.EDCARD.cavTeam)
+    return Promise.resolve([]);
+  var need={},ps=[];
+  (FB.p4.up||[]).forEach(function(u){
+    [[u.g.home_team,u.g.game_id],[u.g.away_team,u.g.game_id]].forEach(function(x){
+      var name=x[0],gid=x[1],t=null,q,has=false;
+      try{t=window.EDCARD.cavTeam(name);}catch(_){t=null;}
+      if(!t)return;
+      q=String(t.dataQuality||'NONE').toUpperCase();
+      if(q==='NONE'||q==='LIMITED')return;
+      (t.players||[]).forEach(function(p){
+        if(has)return;
+        if(p.game_id!=null&&gid!=null&&String(p.game_id)!==String(gid))return;
+        if(FBP4_AVAIL_STATUS[String(p.status||p.availability_status||'').toUpperCase()])has=true;
+      });
+      if(has)need[fbP4Key(name)]=1;
+    });
+  });
+  Object.keys(need).forEach(function(k){ps.push(fbPqTeam(k));});
+  return Promise.all(ps);
+}
+function fbP4OfficialForGame(t,gameId){`,
+'browser injury identity helpers');
 
-const genericRow=`    out.push({player:p.player_name||p.name||null, position:p.position||null,
+replaceOne(
+`    out.push({player:p.player_name||p.name||null, position:p.position||null,
       starter:p.depth_role==null?null:/(^|[^0-9])1($|[^0-9])|starter|^qb1|^rb1|^wr1|^lt$|^rt$/i.test(String(p.depth_role)),
       snap_share:null,severity:null,status:st,replacement_quality:null,
       source:p.source_name||t.team_name||null,
-      as_of:p.observed_at||t.lastUpdated||null});`;
-
-const enrichedRow=`    var playerName=p.player_name||p.name||null;
+      as_of:p.observed_at||t.lastUpdated||null});`,
+`    var playerName=p.player_name||p.name||null;
     var athlete=fbP4InjuryIdentity(teamName,playerName);
-    var replacement=athlete?fbP4InjuryReplacement(athlete,scoped):null;
+    var replacement=athlete?fbP4InjuryReplacement(teamName,athlete,scoped):null;
     var role=athlete&&athlete.role!=null?athlete.role:p.depth_role;
     var researchRepl=replacement&&replacement.e!=null&&isFinite(replacement.e)
       ?Math.max(0,Math.min(1,+replacement.e/100)):null;
@@ -129,30 +127,19 @@ const enrichedRow=`    var playerName=p.player_name||p.name||null;
       replacement_player:replacement?replacement.n:null,
       replacement_rating:replacement&&replacement.e!=null&&isFinite(replacement.e)?+replacement.e:null,
       source:p.source_name||t.team_name||null,
-      as_of:p.observed_at||t.lastUpdated||null});`;
+      as_of:p.observed_at||t.lastUpdated||null});`,
+'browser injury row enrichment');
 
-if(s.includes(genericRow)){
-  replaceOne(genericRow,enrichedRow,'browser injury row enrichment');
-}else if(!s.includes('replacement_quality_research:')){
-  throw new Error('browser injury row is neither generic nor already enriched');
-}
-
-/* Upgrade the old per-team prefetch call if an earlier generated app has it. */
-if(s.includes('return fbP4InjuryPlayerEnsure().catch(function(){});')){
-  s=s.replace('return fbP4InjuryPlayerEnsure().catch(function(){});',
-    'return fbP4InjuryIndexEnsure().catch(function(){});');
-}else if(!s.includes('return fbP4InjuryIndexEnsure().catch(function(){});')){
-  replaceOne(
+replaceOne(
 `    return fbP4TalentMerge(signal).catch(function(){});
   }).then(function(){
     var ids=FB.p4.up.map(function(u){return u.g.game_id;}).filter(Boolean);`,
 `    return fbP4TalentMerge(signal).catch(function(){});
   }).then(function(){
-    return fbP4InjuryIndexEnsure().catch(function(){});
+    return fbP4InjuryPlayerEnsure().catch(function(){});
   }).then(function(){
     var ids=FB.p4.up.map(function(u){return u.g.game_id;}).filter(Boolean);`,
-    'load compact injury identity index');
-}
+'preload injury player files');
 
 fs.writeFileSync(FILE,s);
 console.log('[cfb-browser-injury-identity] patched app.html');
