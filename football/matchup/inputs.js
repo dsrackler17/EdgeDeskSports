@@ -267,6 +267,15 @@ function load(opts) {
     } else out.problems.push('football/players/current.json is missing — no roster carries a talent composite');
   } catch (e) { out.problems.push('the player layer could not be merged: ' + ((e && e.message) || e)); }
 
+  /* Individual player identity/value rows. These stay separate from the team
+     talent composite because they answer a different question: when an
+     availability source names a player, who exactly is he and how much of the
+     unit does he actually play? */
+  out.player_details_by_team = loadPlayerDetails();
+  out.player_detail_teams = Object.keys(out.player_details_by_team).length;
+  if (!out.player_detail_teams) out.problems.push(
+    'football/players/teams has no readable player detail files — injury rows cannot be identity-enriched');
+
   /* THE COLLEGE AVAILABILITY LAYER, as three sources merged once.
 
      The automated collector read is one of them. The other two are the thing
@@ -436,6 +445,76 @@ function normKey(s) {
   return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '') || null;
 }
 
+function normPersonName(s) {
+  if (s == null) return null;
+  let v = String(s).trim().toLowerCase();
+  try { v = v.normalize('NFKD').replace(/[\u0300-\u036f]/g, ''); } catch (_) {}
+  return v.replace(/[^a-z0-9]+/g, '') || null;
+}
+
+/* Build a compact individual-player index from football/players/teams/*.json.
+   Availability sources rarely publish athlete ids, so the only safe bridge is
+   a UNIQUE name inside the already-known team. Ambiguity deliberately resolves
+   to nothing; a wrong athlete is worse than an unknown athlete. */
+function loadPlayerDetails() {
+  const out = {};
+  const dir = path.join(ROOT, 'football', 'players', 'teams');
+  if (!fs.existsSync(dir)) return out;
+  for (const f of fs.readdirSync(dir)) {
+    if (!/\.json$/.test(f)) continue;
+    const d = readJson(path.join(dir, f), null);
+    if (!d || !Array.isArray(d.players)) continue;
+    const tk = normKey(d.key || d.team || f.replace(/\.json$/, ''));
+    if (!tk) continue;
+    const byName = {}, groups = {};
+    for (const p of d.players) {
+      if (!p || !p.n) continue;
+      const nk = normPersonName(p.n);
+      if (nk) {
+        if (!byName[nk]) byName[nk] = p;
+        else byName[nk] = null; /* ambiguous within this team: refuse the join */
+      }
+      const g = String(p.g || p.p || '').toUpperCase();
+      if (g) (groups[g] = groups[g] || []).push(p);
+    }
+    Object.keys(groups).forEach(g => groups[g].sort((a, b) =>
+      (isNum(b.e) ? b.e : -Infinity) - (isNum(a.e) ? a.e : -Infinity)
+      || (isNum(b.share) ? b.share : -1) - (isNum(a.share) ? a.share : -1)));
+    out[tk] = { team: d.team || null, generated_at: d.generated_at || null, by_name: byName, groups };
+  }
+  return out;
+}
+
+function playerIdentity(ctx, teamName, playerName) {
+  const t = ctx && ctx.player_details_by_team && ctx.player_details_by_team[normKey(teamName)];
+  const nk = normPersonName(playerName);
+  if (!t || !nk || !Object.prototype.hasOwnProperty.call(t.by_name || {}, nk)) return null;
+  return t.by_name[nk] || null;
+}
+
+function replacementFor(ctx, teamName, athlete, scopedAvailability) {
+  if (!athlete) return null;
+  const t = ctx && ctx.player_details_by_team && ctx.player_details_by_team[normKey(teamName)];
+  if (!t) return null;
+  const g = String(athlete.g || athlete.p || '').toUpperCase();
+  const rows = (t.groups && t.groups[g]) || [];
+  const blocked = {};
+  (scopedAvailability || []).forEach(p => {
+    const st = String(p.status || p.availability_status || '').toUpperCase();
+    if (st === 'OUT' || st === 'DOUBTFUL' || st === 'OUT_FIRST_HALF') {
+      const k = normPersonName(p.player_name || p.name);
+      if (k) blocked[k] = true;
+    }
+  });
+  for (const p of rows) {
+    if (!p || String(p.id || '') === String(athlete.id || '')) continue;
+    if (blocked[normPersonName(p.n)]) continue;
+    if (!isNum(p.e)) continue;
+    return p;
+  }
+  return null;
+}
+
 /* --------------------------------------------------------------- injuries */
 /* THE SAME CONTRACT THE TERMINAL USES, and the same distinction it protects:
    a team EdgeDesk could not read returns null (the engine prices maximum
@@ -492,13 +571,32 @@ function injuriesFor(ctx, teamName, gameId) {
     p.game_id == null || gameId == null || String(p.game_id) === String(gameId));
   const out = [];
   scoped.forEach(p => {
-    const st = AVAIL_TO_ENGINE[String(p.status || '').toUpperCase()];
+    const st = AVAIL_TO_ENGINE[String(p.status || p.availability_status || '').toUpperCase()];
     if (!st) return;
+    const playerName = p.player_name || p.name || null;
+    const athlete = playerIdentity(ctx, teamName, playerName);
+    const replacement = athlete ? replacementFor(ctx, teamName, athlete, scoped) : null;
+    const role = athlete && athlete.role != null ? athlete.role : p.depth_role;
+    const share = athlete && isNum(athlete.share) ? athlete.share : null;
+    const replQuality = replacement && isNum(replacement.e)
+      ? Math.max(0, Math.min(1, replacement.e / 100)) : null;
     out.push({
-      player: p.player_name || p.name || null, position: p.position || null,
-      starter: p.depth_role == null ? null : /(^|[^0-9])1($|[^0-9])|starter|^qb1|^rb1|^wr1|^lt$|^rt$/i.test(String(p.depth_role)),
-      snap_share: null, severity: null, status: st, replacement_quality: null,
-      source: p.source_name || t.team_name || null, as_of: p.observed_at || t.lastUpdated || ctx.availability_as_of
+      player: playerName,
+      athlete_id: athlete ? String(athlete.id) : null,
+      identity_basis: athlete ? 'unique team/name -> player-layer athlete_id' : null,
+      identity_confidence: athlete && isNum(athlete.cf) ? athlete.cf : null,
+      player_rating: athlete && isNum(athlete.e) ? athlete.e : null,
+      position: (athlete && (athlete.p || athlete.g)) || p.position || null,
+      starter: role == null ? null : /(^|[^0-9])1($|[^0-9])|starter|^qb1|^rb1|^wr1|^lt$|^rt$/i.test(String(role)),
+      snap_share: share,
+      severity: null,
+      status: st,
+      replacement_quality: replQuality,
+      replacement_player_id: replacement ? String(replacement.id) : null,
+      replacement_player: replacement ? replacement.n : null,
+      replacement_rating: replacement && isNum(replacement.e) ? replacement.e : null,
+      source: p.source_name || t.team_name || null,
+      as_of: p.observed_at || t.lastUpdated || ctx.availability_as_of
     });
   });
   if (out.length) return out;
@@ -1320,4 +1418,5 @@ function summarise(contract) {
 }
 
 module.exports = { load, buildRequest, injuriesFor, officialReportForGame, scheduleIndex, schedCtx,
-  summarise, STATES, PRICED_STARTER_STATUSES, normKey, row, AVAIL_TO_ENGINE };
+  summarise, STATES, PRICED_STARTER_STATUSES, normKey, normPersonName, row, AVAIL_TO_ENGINE,
+  loadPlayerDetails, playerIdentity, replacementFor };
