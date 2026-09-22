@@ -2626,6 +2626,22 @@
       strength.absorb(state, g);
       return state;
     },
+    /* Browser-safe late join for the rankings play artifact. The normal game
+       replay may finish before this small JSON arrives. Applying efficiency
+       afterwards must NOT absorb the score a second time, so this route updates
+       only the play-level EWMA state and its freshness counters. Call it in
+       chronological game order because the opponent adjustment is sequential. */
+    absorbEfficiencyGame: function (state, game) {
+      if (!state || !game || !game.team_stats) return state;
+      var h = normKey(game.home), a = normKey(game.away);
+      if (!h || !a) return state;
+      var g = { home: h, away: a, team_stats: {} };
+      g.team_stats[h] = game.team_stats.home || null;
+      g.team_stats[a] = game.team_stats.away || null;
+      if (!g.team_stats[h] && !g.team_stats[a]) return state;
+      strength.absorbEfficiency(state, g);
+      return state;
+    },
     seasonBreak: function (state) { strength.seasonBreak(state); return state; },
     /* Install the richer current FBS rating AFTER replay. This is deliberately
        separate from st.r/st.rf: historical replay still drives game counts,
