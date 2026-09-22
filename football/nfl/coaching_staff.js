@@ -476,6 +476,49 @@
       };
     }
 
+    var comparable = Object.keys(INPUTS).filter(function (id) {
+      return comparisons[id] && comparisons[id].comparable;
+    }).sort(function (a, b) {
+      return INPUTS[b].weight - INPUTS[a].weight;
+    });
+    var primary = comparable.length ? comparable[0] : null;
+    var primaryDelta = primary ? comparisons[primary].home_minus_away_raw : null;
+    var primaryDirection = primaryDelta == null ? null : primaryDelta > 0 ? 'HOME' : primaryDelta < 0 ? 'AWAY' : 'EVEN';
+    var researchRead;
+    if (shadow) {
+      researchRead = {
+        state: 'CALIBRATED_SHADOW',
+        comparable_components: comparable,
+        primary_component: primary,
+        primary_direction: primaryDirection,
+        direction: shadow.direction,
+        sentence: 'Calibrated Coaching / Staff research points ' + shadow.direction.toLowerCase() +
+          ' in this matchup. At the unvalidated ' + shadow.reference_cap_points.toFixed(1) +
+          '-point reference cap, the shadow home-margin shift is ' +
+          (shadow.home_margin_delta >= 0 ? '+' : '') + shadow.home_margin_delta +
+          ' points. The official EdgeDesk NFL projection is unchanged.'
+      };
+    } else if (primary) {
+      researchRead = {
+        state: 'RAW_COMPONENT_EVIDENCE',
+        comparable_components: comparable,
+        primary_component: primary,
+        primary_direction: primaryDirection,
+        direction: primaryDirection,
+        sentence: INPUTS[primary].label + ' is the highest-weight coaching component currently comparable for both teams and its raw evidence favors ' +
+          primaryDirection.toLowerCase() + '. The league cohort is not yet sufficient for a calibrated matchup shadow, so no point adjustment is implied.'
+      };
+    } else {
+      researchRead = {
+        state: 'NO_COMPARABLE_EVIDENCE',
+        comparable_components: [],
+        primary_component: null,
+        primary_direction: null,
+        direction: null,
+        sentence: 'Coaching / Staff evidence is not yet comparable for both teams in this matchup. No coaching point adjustment is implied.'
+      };
+    }
+
     return {
       schema: 'edgedesk_nfl_coaching_staff_matchup_v1',
       status: shadow ? 'SHADOW_AVAILABLE' : 'EVIDENCE_ONLY',
@@ -485,6 +528,7 @@
       home: home,
       away: away,
       component_comparisons: comparisons,
+      research_read: researchRead,
       shadow_reference: shadow
     };
   }
