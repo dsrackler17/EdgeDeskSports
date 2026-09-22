@@ -89,4 +89,50 @@ const ari = evidenceOut.teams.ARI;
 assert.strictEqual(ari.coaching_staff_inputs.current_residual_conversion.available, false);
 assert.strictEqual(ari.coaching_staff_inputs.current_residual_conversion.value, null);
 
+/* Multi-season head-coach evidence may populate only its own raw input. */
+const composite = C.build(['KC', 'BUF'], {
+  current_residual: {
+    teams: {
+      KC: {
+        available: true,
+        value: 0.5,
+        observations: 2,
+        source: 'frozen pregame residual ledger'
+      }
+    }
+  },
+  head_coach: {
+    teams: {
+      KC: {
+        available: true,
+        value: 1.25,
+        observations: 9,
+        season_count: 2,
+        seasons: [2025, 2026],
+        source: 'frozen pregame residual ledger + frozen nflverse head-coach identity'
+      },
+      BUF: {
+        available: false,
+        value: null,
+        observations: 4,
+        season_count: 1,
+        seasons: [2026],
+        source: 'frozen pregame residual ledger + frozen nflverse head-coach identity'
+      }
+    }
+  }
+});
+assert.strictEqual(composite.status, 'EVIDENCE_ONLY');
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.current_residual_conversion.value, 0.5);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.available, true);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.value, 1.25);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.observations, 9);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.weighted_evidence, null);
+assert.strictEqual(composite.teams.KC.coaching_staff_inputs.multi_season_head_coach.reliability, 0);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_coach.available, false);
+assert.strictEqual(composite.teams.BUF.coaching_staff_inputs.multi_season_head_coach.value, null);
+assert.strictEqual(composite.teams.KC.coaching_staff_rating, null);
+assert.strictEqual(composite.teams.KC.coaching_staff_adjustment_points, 0);
+assert.strictEqual(composite.affects_nfl_projection, false);
+
 console.log('nfl coaching_staff contract: passed');
