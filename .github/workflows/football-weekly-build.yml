@@ -107,6 +107,7 @@ on:
       - 'football/rankings/*.test.js'
       - 'football/rating/sync_rankings.js'
       - 'football/rating/sync_rankings.test.js'
+      - 'tools/football/patch_cfb_engine_efficiency.js'
       - '.github/workflows/football-weekly-build.yml'
 
 permissions:
@@ -210,6 +211,10 @@ jobs:
 
       # The suites gate the write. A build that would commit a dataset its own
       # rules reject has to fail BEFORE it writes anything.
+      - name: Patch legacy CFB browser efficiency
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_cfb_engine_efficiency.js
+
       - name: Suites (before)
         if: steps.go.outputs.run == 'true'
         run: npm run cfb:test
@@ -482,4 +487,5 @@ jobs:
             football/venues football/coaching \
             football/pricing football/validation/pricing_nfl.json football/validation/pricing_cfb.json \
             football/validation/feature-status-nfl.json football/venues/nfl_stadiums.verification.json \
-            football/validation/movement_nfl.json football/validation/movement_cfb.json
+            football/validation/movement_nfl.json football/validation/movement_cfb.json \
+            app.html
