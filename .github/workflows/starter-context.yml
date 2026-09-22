@@ -59,6 +59,7 @@ on:
     paths:
       - 'football/nfl/build_team_week.js'
       - 'tools/football/build_nfl_slate.js'
+      - 'tools/football/patch_nfl_live_paths.js'
       - '.github/workflows/starter-context.yml'
   schedule:
     - cron: '20 7,19 * * 0,1'    # Sunday and Monday, after the weekend's games settle
@@ -213,6 +214,9 @@ jobs:
       # release assets. Browsers can fail on the release redirect because it is
       # not a stable CORS data endpoint, so refresh both server-side and commit
       # same-origin snapshots before rebuilding the NFL slate.
+      - name: Patch app NFL live-feed paths
+        run: node tools/football/patch_nfl_live_paths.js
+
       - name: NFL team-week snapshot for the football module
         run: node football/nfl/build_team_week.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
@@ -286,7 +290,7 @@ jobs:
           # fresh build" — on main, on every pull request, until a human
           # rebuilt by hand. An output whose input is not committed beside it
           # cannot be verified, which is the whole point of the gate.
-          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ football/coaching/ football/nfl/ football/identity/ football/pricing/
+          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ football/coaching/ football/nfl/ football/identity/ football/pricing/ app.html tools/football/patch_nfl_live_paths.js
           if git diff --cached --quiet; then
             echo 'starter context and profiles unchanged — nothing to commit'
             exit 0
