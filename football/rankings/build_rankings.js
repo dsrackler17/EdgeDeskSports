@@ -52,6 +52,7 @@ const ENGINE_EFF = require('./engine_efficiency.js');
 const TAL = require('./talent.js');
 const ETSR = require('./etsr.js');
 const SPECIAL = require('./special_teams.js');
+const COACHING_PROGRAM = require('./coaching_program.js');
 const HISTORY = require('./history.js');
 const FEEDCACHE = require('../data/feed_cache.js');
 
@@ -531,11 +532,13 @@ async function main() {
 
   /* ---- assemble the team records ---- */
   const week = resolveWeek(sched[cur]);
+  const coachingProgram = COACHING_PROGRAM.build(Object.keys(curTalent.teams));
   const market = await marketPower(cur, sched[cur], CACHE);
   const overrides = readJson(OVERRIDES, { overrides: [] });
   const teams = {};
   for (const k of Object.keys(built.rows)) {
     const row = built.rows[k], t = curTalent.teams[k], p = perf.teams[k] || null;
+    const cp = coachingProgram.teams[k] || COACHING_PROGRAM.emptyTeam(k);
     const rdp = ETSR.runDefencePower(t, p);
     const cont = context[k].continuity;
     const align = TAL.alignment(t, schemeHead[k] ? { offense: schemeHead[k].offense, defense: schemeHead[k].defense } : null);
@@ -595,6 +598,15 @@ async function main() {
         unknown_share: t.availability.unknown_share, records: t.availability.records,
         basis: t.availability.basis },
       run_defence_power: rdp,
+      coaching_program_schema: cp.coaching_program_schema,
+      coaching_program_rating: cp.coaching_program_rating,
+      coaching_program_rank: cp.coaching_program_rank,
+      coaching_program_reliability: cp.coaching_program_reliability,
+      coaching_program_adjustment_points: cp.coaching_program_adjustment_points,
+      coaching_program_inputs: cp.coaching_program_inputs,
+      coaching_program_warnings: cp.coaching_program_warnings,
+      coaching_program_available: cp.coaching_program_available,
+      coaching_program_affects_etsr: cp.coaching_program_affects_etsr,
       market: ETSR.marketCompare(row.etsr, market.available ? market.power[k] : null)
     };
   }
@@ -669,6 +681,8 @@ async function main() {
        the board; these four numbers are how that is seen rather than assumed. */
     data_freshness: dataFreshness(sched[cur], play[cur], perf, finality[cur]),
     carryover: finalSlope,
+    coaching_program: { schema: coachingProgram.schema, status: coachingProgram.status, affects_etsr: false,
+      note: 'Step 2 contract-only plumbing: every coaching/program subcomponent is unavailable until measurable inputs are implemented.' },
     centre: built.centre, centre_basis: built.centre_basis,
     market: market.available
       ? { available: true, games: market.games, home_field: market.home_field, iterations: market.iterations,
