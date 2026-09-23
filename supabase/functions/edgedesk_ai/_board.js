@@ -128,8 +128,19 @@
   function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
   function fmtLine(v) { var n = num(v); if (n == null) return ''; return (n > 0 ? '+' : '') + n; }
   function pct(p, d) { var n = num(p); if (n == null) return '—'; return (n * 100).toFixed(d == null ? 1 : d) + '%'; }
-  function decToAm(dec) { var d = num(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function decToAm(dec) { return ODDS().decToAm(dec); }
+  function amToDec(am) { return ODDS().amToDec(am); }
   function uniq(a) { var seen = {}, out = []; (a || []).forEach(function (x) { var k = String(x); if (!seen[k]) { seen[k] = 1; out.push(x); } }); return out; }
   function fnv1a(s) { var h = 0x811c9dc5; s = str(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
   function marketWord(m) { var k = normMarket(m); return k === 'spreads' ? 'spread' : k === 'totals' ? 'total' : k === 'h2h' ? 'moneyline' : str(m); }
@@ -813,6 +824,7 @@
 
   return {
     VERSION: VERSION, SCHEMA: SCHEMA, STATE_SCHEMA: STATE_SCHEMA, RECORD_SCHEMA: RECORD_SCHEMA, SUPPORTED: SUPPORTED, RULES: RULES, DEFAULT_TZ: DEFAULT_TZ, SANE_EV: SANE_EV, OUTLIER_GAP_POINTS: OUTLIER_GAP_POINTS,
+    FRESH_WEIGHT: FRESH_WEIGHT, TIER_WEIGHT: TIER_WEIGHT,
     validZone: validZone, resolveZone: resolveZone, localMidnight: localMidnight, localDate: localDate, localTime: localTime, inSeason: inSeason,
     detectSports: detectSports, detectMarkets: detectMarkets, resolveScope: resolveScope,
     eligible: eligible, sideOf: sideOf, fromDecision: fromDecision, fromPricingRow: fromPricingRow, qualify: qualify, rankScore: rankScore,

@@ -21252,11 +21252,22 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     q = p - 0.5; r = q * q;
     return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
   }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
-  function decToAm(dec) { var d = num(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function amToDec(am) { return ODDS().amToDec(am); }
+  function decToAm(dec) { return ODDS().decToAm(dec); }
   function logit(p) { p = Math.min(0.999, Math.max(0.001, p)); return Math.log(p / (1 - p)); }
   function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
-  function devig2(amA, amB) { var a = amToDec(amA), b = amToDec(amB); if (!a || !b) return null; var ia = 1 / a, ib = 1 / b; return { a: ia / (ia + ib), b: ib / (ia + ib), overround: r4(ia + ib - 1) }; }
+  function devig2(amA, amB) { return ODDS().devig2(amA, amB); }
 
   /* -------------------------------------------------------- validation */
   /** Register football/validation/pricing_<sport>.json for a sport. */
@@ -21369,7 +21380,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     var cover = normCdf(z) - push / 2;
     return { cover: r4(Math.max(0, Math.min(1, cover))), push: r4(push), lose: r4(Math.max(0, 1 - cover - push)) };
   }
-  function breakEven(oddsAmerican, push) { var d = amToDec(oddsAmerican); if (!d) return null; return r4((1 - (num(push) || 0)) / d); }
+  function breakEven(oddsAmerican, push) { return ODDS().breakEven(oddsAmerican, push); }
 
   /** One side of a spread, priced. sel line is the selection's own line (positive = getting points). */
   function priceSpreadSide(o) {
@@ -21729,8 +21740,19 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
   function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
   function fmtLine(v) { var n = num(v); if (n == null) return ''; return (n > 0 ? '+' : '') + n; }
   function pct(p, d) { var n = num(p); if (n == null) return '—'; return (n * 100).toFixed(d == null ? 1 : d) + '%'; }
-  function decToAm(dec) { var d = num(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function decToAm(dec) { return ODDS().decToAm(dec); }
+  function amToDec(am) { return ODDS().amToDec(am); }
   function uniq(a) { var seen = {}, out = []; (a || []).forEach(function (x) { var k = String(x); if (!seen[k]) { seen[k] = 1; out.push(x); } }); return out; }
   function fnv1a(s) { var h = 0x811c9dc5; s = str(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
   function marketWord(m) { var k = normMarket(m); return k === 'spreads' ? 'spread' : k === 'totals' ? 'total' : k === 'h2h' ? 'moneyline' : str(m); }
@@ -22414,6 +22436,7 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
 
   return {
     VERSION: VERSION, SCHEMA: SCHEMA, STATE_SCHEMA: STATE_SCHEMA, RECORD_SCHEMA: RECORD_SCHEMA, SUPPORTED: SUPPORTED, RULES: RULES, DEFAULT_TZ: DEFAULT_TZ, SANE_EV: SANE_EV, OUTLIER_GAP_POINTS: OUTLIER_GAP_POINTS,
+    FRESH_WEIGHT: FRESH_WEIGHT, TIER_WEIGHT: TIER_WEIGHT,
     validZone: validZone, resolveZone: resolveZone, localMidnight: localMidnight, localDate: localDate, localTime: localTime, inSeason: inSeason,
     detectSports: detectSports, detectMarkets: detectMarkets, resolveScope: resolveScope,
     eligible: eligible, sideOf: sideOf, fromDecision: fromDecision, fromPricingRow: fromPricingRow, qualify: qualify, rankScore: rankScore,
@@ -22424,6 +22447,2570 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
 });
 /*__EDBOARD_END__*/
 const EDBOARD: any = (globalThis as any).EDBOARD;
+/* ========================================================================
+   PART 1g2 — THE RESEARCH CORE, THE GAME RESEARCH CONTRACT AND THE DESK
+   KERNEL (EDDESK). Inlined from lib/research_core.js, lib/game_research.js
+   and _desk.js by tools/presentation/inline.js. Do not edit here.
+   ======================================================================== */
+/*__EDRCORE_START__*/
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.EDResearch = factory();
+})(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this), function () {
+  'use strict';
+
+  var R = { version: 'research_core/1' };
+  var EPS = 1e-9;
+
+  /* ------------------------------------------------------------- numbers */
+  function num(v) {
+    if (v == null || v === '') return null;
+    var n = Number(v);
+    return isFinite(n) ? n : null;
+  }
+  function round(v, d) {
+    if (v == null || !isFinite(v)) return null;
+    var f = Math.pow(10, d == null ? 2 : d);
+    return Math.round(v * f) / f;
+  }
+  R.num = num;
+  R.round = round;
+
+  /* ========================================================= CONVENTIONS */
+  R.SIDES = ['home', 'away'];
+
+  function normSide(side) {
+    var s = String(side == null ? '' : side).toLowerCase();
+    return (s === 'home' || s === 'away') ? s : null;
+  }
+  R.normSide = normSide;
+
+  /* The line for one side, from the home-stated line. */
+  R.sideLine = function (homeLine, side) {
+    var l = num(homeLine), s = normSide(side);
+    if (l == null || !s) return null;
+    return s === 'home' ? l : (l === 0 ? 0 : -l);
+  };
+  /* The home-stated line, from one side's line. Symmetric by construction. */
+  R.homeLineFromSide = function (sideLine, side) {
+    return R.sideLine(sideLine, side);
+  };
+  /* A home spread as a projected home margin, and back. */
+  R.marginFromSpread = function (homeSpread) {
+    var s = num(homeSpread);
+    return s == null ? null : (s === 0 ? 0 : -s);
+  };
+  R.spreadFromMargin = function (homeMargin) {
+    var m = num(homeMargin);
+    return m == null ? null : (m === 0 ? 0 : -m);
+  };
+  /* THE ENGINE CONVENTION IS THE OPPOSITE SIGN. football/cfb_p4/engine.js
+     and football/engine.js publish `fair_spread` as a projected HOME MARGIN
+     (+ = home favoured; cfb_p4/engine.js: "home perspective, + = home
+     favoured by"). Every engine number enters the research layer through
+     this one named function, so no caller negates it by hand. */
+  R.homeLineFromEngineFairSpread = function (engineFairSpread) {
+    return R.spreadFromMargin(engineFairSpread);
+  };
+
+  /* Which side a model's number is on relative to a market line, both home
+     stated. null when they are equal (the model leans neither way) or when
+     either is missing. This is the ONLY way a side is ever derived from two
+     numbers here; the sign of a spread alone never names a side. */
+  R.sideVsLine = function (modelSpread, line) {
+    var m = num(modelSpread), l = num(line);
+    if (m == null || l == null) return null;
+    if (Math.abs(m - l) < EPS) return null;
+    return m < l ? 'home' : 'away';
+  };
+
+  /* The model-vs-market gap in points: absolute, and signed toward home
+     (positive = the model is further onto HOME than the market). */
+  R.spreadGap = function (modelSpread, line) {
+    var m = num(modelSpread), l = num(line);
+    if (m == null || l == null) return null;
+    var toward = l - m;
+    return {
+      points: round(Math.abs(toward), 4),
+      toward_home: round(toward, 4),
+      side: Math.abs(toward) < EPS ? null : (toward > 0 ? 'home' : 'away')
+    };
+  };
+
+  /* ============================================================== CLV
+     Closing-line value in points, turned onto the side taken.
+       HOME: posted -3, close -5  -> +2   (home now costs 5, you had 3)
+       AWAY: home posted -3, home close -1 -> away +3 vs +1 -> +2
+     Positive always means the number taken was better than the reference. */
+  R.clvPoints = function (side, postedHomeLine, referenceHomeLine) {
+    var s = normSide(side), p = num(postedHomeLine), r = num(referenceHomeLine);
+    if (!s || p == null || r == null) return null;
+    var v = s === 'home' ? (p - r) : (r - p);
+    return round(v, 4) === 0 ? 0 : round(v, 4);
+  };
+
+  /* CLV in price terms at the SAME line: the no-vig probability the close
+     gives the side, minus the break-even of the price taken. Only defined
+     when the line did not change, because two prices at two different
+     numbers are not comparable without a push/margin distribution. */
+  R.clvPrice = function (takenAmerican, closeSideAmerican, closeOtherAmerican, sameLine) {
+    if (!sameLine) return null;
+    var be = R.impliedProb(takenAmerican);
+    var nv = R.noVigTwoWay(closeSideAmerican, closeOtherAmerican);
+    if (be == null || !nv) return null;
+    return round(nv.a - be, 6);
+  };
+
+  /* Market movement relative to a model, from the line at submission to a
+     later line (current, or the close). Side is fixed AT SUBMISSION: the side
+     the model's number was on against the line it was posted against. */
+  R.movementVsModel = function (modelSpread, postedLine, laterLine) {
+    var side = R.sideVsLine(modelSpread, postedLine);
+    var m = num(modelSpread), p = num(postedLine), l = num(laterLine);
+    if (m == null || p == null || l == null) return null;
+    var moved = round(l - p, 4);
+    var toward = side ? R.clvPoints(side, p, l) : null;
+    var gapThen = Math.abs(m - p), gapNow = Math.abs(m - l);
+    var status = 'flat';
+    if (Math.abs(moved) >= EPS) {
+      if (!side) status = 'model_on_line';
+      else status = toward > 0 ? 'toward_model' : 'away_from_model';
+    }
+    return {
+      side_at_submission: side,
+      moved_points: moved === 0 ? 0 : moved,
+      toward_model_points: toward,
+      gap_at_submission: round(gapThen, 4),
+      gap_now: round(gapNow, 4),
+      passed_model: !!(side && ((p - m) * (l - m) < -EPS)),
+      status: status
+    };
+  };
+
+  /* ======================================================== KEY NUMBERS
+     Final-margin values that occur far more often than their neighbours in
+     football. The lists are conventional labels, not value estimates: this
+     file states that a move crossed 3, never what crossing 3 is worth. */
+  R.KEY_NUMBERS = {
+    NFL: { primary: [3, 7], secondary: [10, 6, 4, 14] },
+    CFB: { primary: [3, 7], secondary: [10, 14, 17] }
+  };
+  function sportKey(sport) {
+    var s = String(sport || '').toUpperCase();
+    if (s === 'NCAAF' || s === 'CFP' || s === 'CFB_P4' || s === 'FBS') return 'CFB';
+    return R.KEY_NUMBERS[s] ? s : null;
+  }
+  /* Every key number a move from line a to line b touched. Home-stated
+     lines; a key number k is checked on both sides (+k and -k).
+       crossed: the move went through it (-2.5 -> -3.5 crosses 3)
+       onto:    the move landed on it       (-2.5 -> -3)
+       off:     the move left it            (-3 -> -3.5) */
+  R.keyNumberCrossings = function (fromLine, toLine, sport) {
+    var a = num(fromLine), b = num(toLine), sk = sportKey(sport);
+    if (a == null || b == null || !sk) return null;
+    var set = R.KEY_NUMBERS[sk], out = [];
+    function tier(k) { return set.primary.indexOf(k) >= 0 ? 'primary' : 'secondary'; }
+    set.primary.concat(set.secondary).forEach(function (k) {
+      [k, -k].forEach(function (s) {
+        var kind = null;
+        if ((a - s) * (b - s) < -EPS) kind = 'crossed';
+        else if (Math.abs(b - s) < EPS && Math.abs(a - s) >= EPS) kind = 'onto';
+        else if (Math.abs(a - s) < EPS && Math.abs(b - s) >= EPS) kind = 'off';
+        if (kind) out.push({ key: k, at: s, kind: kind, tier: tier(k) });
+      });
+    });
+    out.sort(function (x, y) { return Math.abs(x.at) - Math.abs(y.at); });
+    return out;
+  };
+
+  /* =========================================================== ODDS MATH */
+  R.americanToDecimal = function (american) {
+    var a = num(american);
+    if (a == null || Math.abs(a) < 100) return null;
+    return a > 0 ? 1 + a / 100 : 1 + 100 / (-a);
+  };
+  /* The implied probability of a price is also its break-even win rate. */
+  R.impliedProb = function (american) {
+    var d = R.americanToDecimal(american);
+    return d == null ? null : 1 / d;
+  };
+  R.breakEven = R.impliedProb;
+  R.decimalToAmerican = function (dec) {
+    var d = num(dec);
+    if (d == null || d <= 1) return null;
+    return d >= 2 ? 100 * (d - 1) : -100 / (d - 1);
+  };
+  R.probToAmerican = function (p) {
+    p = num(p);
+    if (p == null || p <= 0 || p >= 1) return null;
+    return p >= 0.5 ? -100 * p / (1 - p) : 100 * (1 - p) / p;
+  };
+  /* Two-way no-vig by proportional (multiplicative) normalisation. Returns
+     both fair probabilities and the overround; null unless both prices are
+     real. */
+  R.noVigTwoWay = function (americanA, americanB) {
+    var pa = R.impliedProb(americanA), pb = R.impliedProb(americanB);
+    if (pa == null || pb == null) return null;
+    var s = pa + pb;
+    return { a: pa / s, b: pb / s, overround: s - 1 };
+  };
+  /* Expected return per unit staked at an American price, given an explicit
+     win probability and (for spreads on whole numbers) an explicit push
+     probability. Never called with a probability derived from a spread gap. */
+  R.expectedRoi = function (winProb, american, pushProb) {
+    var p = num(winProb), d = R.americanToDecimal(american);
+    var q = pushProb == null ? 0 : num(pushProb);
+    if (p == null || d == null || q == null) return null;
+    if (p < 0 || p > 1 || q < 0 || p + q > 1 + EPS) return null;
+    var lose = Math.max(0, 1 - p - q);
+    return p * (d - 1) - lose;
+  };
+  /* ------------------------------------------- THE EDGE-KERNEL CONVENTION
+     The edge-function kernels (EDPRICE, EDBOARD, EDSTAKE, EDDESK) each carried
+     a byte-identical copy of these five helpers. They are kept here, ONCE,
+     under their own name, because they are NOT the same functions as the
+     strict ones above and must not be swapped for them:
+       odds.amToDec     accepts ANY nonzero American number (a +50 is read as
+                        1.5), where americanToDecimal refuses |a| < 100. The
+                        kernels have always been lenient and their callers
+                        and tests rely on it.
+       odds.decToAm     ROUNDS to a whole American price (a display and a
+                        record value); decimalToAmerican does not round.
+       odds.probToAm    the same rounding, from a probability.
+       odds.breakEven   (1 - push) / decimal, to four places, with a push
+                        mass; breakEven above takes no push and does not round.
+       odds.devig2      two American prices, proportional no-vig, overround to
+                        four places (noVigTwoWay: strict prices, unrounded).
+     Not here on purpose: EDINTEL's impliedProb takes a DECIMAL price where
+     impliedProb above takes an American one — same name, different input. */
+  function oddsNum(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return Number.isFinite(n) ? n : null; }
+  function r4(v) { return v == null ? null : Math.round(v * 10000) / 10000; }
+  R.odds = {
+    amToDec: function (am) { var a = oddsNum(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); },
+    decToAm: function (dec) { var d = oddsNum(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); },
+    probToAm: function (p) { p = oddsNum(p); if (p == null || p <= 0 || p >= 1) return null; return R.odds.decToAm(1 / p); },
+    breakEven: function (am, push) { var d = R.odds.amToDec(am); if (!d) return null; return r4((1 - (oddsNum(push) || 0)) / d); },
+    devig2: function (amA, amB) { var a = R.odds.amToDec(amA), b = R.odds.amToDec(amB); if (!a || !b) return null; var ia = 1 / a, ib = 1 / b; return { a: ia / (ia + ib), b: ib / (ia + ib), overround: r4(ia + ib - 1) }; }
+  };
+
+  /* Everything a price-aware panel shows, in one object. `prob` must be an
+     explicit model probability for THIS wager at THIS line; when it is not
+     available, every model-dependent field is null and `reason` says why. */
+  R.priceAssessment = function (american, prob, pushProb) {
+    var be = R.breakEven(american);
+    var out = {
+      american: num(american), decimal: R.americanToDecimal(american),
+      implied_prob: be, break_even: be,
+      model_prob: null, prob_edge: null, expected_roi: null, reason: null
+    };
+    if (be == null) { out.reason = 'no valid price'; return out; }
+    var p = num(prob);
+    if (p == null || p < 0 || p > 1) { out.reason = 'no explicit model probability for this wager'; return out; }
+    out.model_prob = p;
+    out.prob_edge = p - be;
+    out.expected_roi = R.expectedRoi(p, american, pushProb);
+    return out;
+  };
+
+  /* ============================================================ STATISTICS */
+  function finite(arr) {
+    var out = [];
+    (arr || []).forEach(function (v) { var n = num(v); if (n != null) out.push(n); });
+    return out;
+  }
+  R.finite = finite;
+  R.mean = function (arr) {
+    var a = finite(arr);
+    if (!a.length) return null;
+    return a.reduce(function (s, v) { return s + v; }, 0) / a.length;
+  };
+  R.quantile = function (arr, q) {
+    var a = finite(arr).sort(function (x, y) { return x - y; });
+    if (!a.length) return null;
+    var pos = (a.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return a[lo] + (a[hi] - a[lo]) * (pos - lo);
+  };
+  R.median = function (arr) { return R.quantile(arr, 0.5); };
+  /* Sample standard deviation (n-1). null below two values. */
+  R.sd = function (arr) {
+    var a = finite(arr);
+    if (a.length < 2) return null;
+    var m = R.mean(a);
+    var ss = a.reduce(function (s, v) { return s + (v - m) * (v - m); }, 0);
+    return Math.sqrt(ss / (a.length - 1));
+  };
+  R.rmse = function (arr) {
+    var a = finite(arr);
+    if (!a.length) return null;
+    return Math.sqrt(a.reduce(function (s, v) { return s + v * v; }, 0) / a.length);
+  };
+  /* Median absolute deviation about the median, scaled by 1.4826 so it
+     estimates a normal standard deviation. Robust to a few blowouts. */
+  R.madScale = function (arr) {
+    var a = finite(arr);
+    if (a.length < 2) return null;
+    var med = R.median(a);
+    return 1.4826 * R.median(a.map(function (v) { return Math.abs(v - med); }));
+  };
+
+  /* Wilson score interval for a proportion k/n. The honest interval for small
+     samples: 10-8 is 55.6% with a 95% interval of roughly 34%-75%. */
+  R.wilson = function (k, n, z) {
+    k = num(k); n = num(n); z = z == null ? 1.96 : z;
+    if (k == null || n == null || n <= 0 || k < 0 || k > n) return null;
+    var p = k / n, z2 = z * z;
+    var den = 1 + z2 / n;
+    var centre = (p + z2 / (2 * n)) / den;
+    var half = (z * Math.sqrt(p * (1 - p) / n + z2 / (4 * n * n))) / den;
+    return { p: p, lo: Math.max(0, centre - half), hi: Math.min(1, centre + half), n: n, z: z };
+  };
+
+  /* Two-sided 95% Student-t critical values; beyond 30 df the normal. */
+  var T95 = [null, 12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, 2.306, 2.262, 2.228,
+    2.201, 2.179, 2.160, 2.145, 2.131, 2.120, 2.110, 2.101, 2.093, 2.086,
+    2.080, 2.074, 2.069, 2.064, 2.060, 2.056, 2.052, 2.048, 2.045, 2.042];
+  R.tCritical95 = function (df) {
+    if (!(df >= 1)) return null;
+    return df <= 30 ? T95[Math.floor(df)] : 1.96;
+  };
+  /* A 95% interval on a mean. null below two observations: one number has no
+     spread to report and pretending otherwise is false precision. */
+  R.meanInterval = function (arr) {
+    var a = finite(arr);
+    if (a.length < 2) return null;
+    var m = R.mean(a), s = R.sd(a), t = R.tCritical95(a.length - 1);
+    var half = t * s / Math.sqrt(a.length);
+    return { mean: m, lo: m - half, hi: m + half, n: a.length, sd: s };
+  };
+
+  /* Pearson correlation on paired finite values. */
+  R.correlation = function (xs, ys) {
+    if (!xs || !ys || xs.length !== ys.length) return null;
+    var px = [], py = [];
+    for (var i = 0; i < xs.length; i++) {
+      var x = num(xs[i]), y = num(ys[i]);
+      if (x != null && y != null) { px.push(x); py.push(y); }
+    }
+    if (px.length < 3) return null;
+    var mx = R.mean(px), my = R.mean(py), sxy = 0, sxx = 0, syy = 0;
+    for (var j = 0; j < px.length; j++) {
+      sxy += (px[j] - mx) * (py[j] - my);
+      sxx += (px[j] - mx) * (px[j] - mx);
+      syy += (py[j] - my) * (py[j] - my);
+    }
+    if (sxx < EPS || syy < EPS) return null;
+    return sxy / Math.sqrt(sxx * syy);
+  };
+
+  /* ============================================================ SCORING */
+  R.brier = function (prob, outcome) {
+    var p = num(prob);
+    if (p == null || p < 0 || p > 1 || (outcome !== 0 && outcome !== 1)) return null;
+    return (p - outcome) * (p - outcome);
+  };
+  R.logLoss = function (prob, outcome) {
+    var p = num(prob);
+    if (p == null || p < 0 || p > 1 || (outcome !== 0 && outcome !== 1)) return null;
+    var e = 1e-6;
+    p = Math.min(1 - e, Math.max(e, p));
+    return -(outcome * Math.log(p) + (1 - outcome) * Math.log(1 - p));
+  };
+  /* Brier skill against a benchmark, computed ONLY on games where both have a
+     probability. pairs: [{model, market, outcome}]. A skill score quoted
+     against a benchmark measured on different games is not a skill score. */
+  R.brierSkill = function (pairs) {
+    var ms = 0, bs = 0, n = 0;
+    (pairs || []).forEach(function (r) {
+      var a = R.brier(r && r.model, r && r.outcome), b = R.brier(r && r.market, r && r.outcome);
+      if (a == null || b == null) return;
+      ms += a; bs += b; n++;
+    });
+    if (!n) return { n: 0, model_brier: null, market_brier: null, skill: null };
+    var mb = ms / n, kb = bs / n;
+    return { n: n, model_brier: mb, market_brier: kb, skill: kb > EPS ? 1 - mb / kb : null };
+  };
+
+  /* ============================================================ BUCKETS */
+  R.EDGE_BUCKETS = [
+    { key: '0-2', label: '0-2 pts', lo: 0, hi: 2 },
+    { key: '2-4', label: '2-4 pts', lo: 2, hi: 4 },
+    { key: '4-6', label: '4-6 pts', lo: 4, hi: 6 },
+    { key: '6+', label: '6+ pts', lo: 6, hi: Infinity }
+  ];
+  R.EDGE_THRESHOLDS = [2, 3, 4, 5, 6];
+  /* Lower bound inclusive, upper exclusive: exactly 2.0 is in 2-4. */
+  R.edgeBucketKey = function (points) {
+    var p = num(points);
+    if (p == null || p < 0) return null;
+    for (var i = 0; i < R.EDGE_BUCKETS.length; i++) {
+      var b = R.EDGE_BUCKETS[i];
+      if (p >= b.lo - EPS && p < b.hi - EPS) return b.key;
+    }
+    return null;
+  };
+  R.NORMALIZED_BUCKETS = [
+    { key: '<0.25', label: 'under 0.25σ', lo: 0, hi: 0.25 },
+    { key: '0.25-0.5', label: '0.25-0.5σ', lo: 0.25, hi: 0.5 },
+    { key: '0.5-0.75', label: '0.5-0.75σ', lo: 0.5, hi: 0.75 },
+    { key: '0.75+', label: '0.75σ+', lo: 0.75, hi: Infinity }
+  ];
+  R.normalizedBucketKey = function (z) {
+    var p = num(z);
+    if (p == null || p < 0) return null;
+    for (var i = 0; i < R.NORMALIZED_BUCKETS.length; i++) {
+      var b = R.NORMALIZED_BUCKETS[i];
+      if (p >= b.lo - EPS && p < b.hi - EPS) return b.key;
+    }
+    return null;
+  };
+  R.LEAD_BUCKETS = [
+    { key: '72h+', label: '72h+', lo: 72, hi: Infinity },
+    { key: '24-72h', label: '24-72h', lo: 24, hi: 72 },
+    { key: '6-24h', label: '6-24h', lo: 6, hi: 24 },
+    { key: '1-6h', label: '1-6h', lo: 1, hi: 6 },
+    { key: '<1h', label: 'under 1h', lo: 0, hi: 1 }
+  ];
+  R.leadHours = function (submittedAt, kickoffAt) {
+    var s = new Date(submittedAt).getTime(), k = new Date(kickoffAt).getTime();
+    if (!submittedAt || !kickoffAt || !isFinite(s) || !isFinite(k)) return null;
+    return (k - s) / 3600000;
+  };
+  /* A submission at or after kickoff has no lead-time bucket: it is not a
+     pregame forecast and is reported separately, never folded into <1h. */
+  R.leadBucketKey = function (submittedAt, kickoffAt) {
+    var h = R.leadHours(submittedAt, kickoffAt);
+    if (h == null) return null;
+    if (h <= 0) return 'after_kickoff';
+    for (var i = 0; i < R.LEAD_BUCKETS.length; i++) {
+      var b = R.LEAD_BUCKETS[i];
+      if (h >= b.lo && h < b.hi) return b.key;
+    }
+    return null;
+  };
+
+  /* ============================================== UNCERTAINTY / NORMALISED
+     Expected model error from the model's OWN finished forecasts, walk
+     forward: only residuals from games that were final BEFORE `asOf` count.
+     residual = projected home margin - actual home margin.
+     Methods, all reported so none is presented as the one truth:
+       rmse — root mean square residual (includes any bias; the default,
+              because a biased model's error about the line is larger)
+       sd   — residual standard deviation (bias removed)
+       mad  — 1.4826 x median absolute deviation (robust to blowouts)
+     Below `minN` residuals the answer is null with a reason. */
+  R.SCALE_METHODS = ['rmse', 'sd', 'mad'];
+  R.DEFAULT_SCALE_MIN_N = 12;
+  R.errorScale = function (history, asOf, opts) {
+    opts = opts || {};
+    var method = opts.method || 'rmse';
+    var minN = opts.minN == null ? R.DEFAULT_SCALE_MIN_N : opts.minN;
+    var cutoff = asOf == null ? null : new Date(asOf).getTime();
+    if (asOf != null && !isFinite(cutoff)) return { scale: null, n: 0, method: method, reason: 'no prediction time' };
+    var res = [];
+    (history || []).forEach(function (h) {
+      if (!h) return;
+      var r = num(h.residual);
+      if (r == null) return;
+      if (cutoff != null) {
+        var t = new Date(h.final_at).getTime();
+        /* unknown finish time = cannot prove it was known: excluded */
+        if (!h.final_at || !isFinite(t) || t >= cutoff) return;
+      }
+      res.push(r);
+    });
+    var out = { scale: null, n: res.length, method: method, min_n: minN, reason: null };
+    if (res.length < minN) { out.reason = 'fewer than ' + minN + ' finished forecasts before this one'; return out; }
+    var s = method === 'sd' ? R.sd(res) : method === 'mad' ? R.madScale(res) : R.rmse(res);
+    if (s == null || s < EPS) { out.reason = 'residual scale not estimable'; return out; }
+    out.scale = s;
+    return out;
+  };
+  R.normalizedEdge = function (modelSpread, line, scale) {
+    var g = R.spreadGap(modelSpread, line), s = num(scale);
+    if (!g || s == null || s <= 0) return null;
+    return g.points / s;
+  };
+
+  /* ================================================== AGREEMENT / OUTLIERS
+     rows: [{id, spread}] home-stated model spreads for ONE game.
+     line: the market line they are compared with (optional). */
+  R.agreement = function (rows, line) {
+    var list = (rows || []).filter(function (r) { return r && num(r.spread) != null; });
+    var sp = list.map(function (r) { return num(r.spread); });
+    var out = {
+      n: sp.length, mean: R.mean(sp), median: R.median(sp),
+      min: sp.length ? Math.min.apply(null, sp) : null,
+      max: sp.length ? Math.max.apply(null, sp) : null,
+      sd: R.sd(sp), range: null,
+      lean: { home: 0, away: 0, on_line: 0 }, median_gap: null, market_line: num(line)
+    };
+    if (sp.length) out.range = out.max - out.min;
+    if (out.market_line != null) {
+      list.forEach(function (r) {
+        var s = R.sideVsLine(r.spread, out.market_line);
+        if (s === 'home') out.lean.home++;
+        else if (s === 'away') out.lean.away++;
+        else out.lean.on_line++;
+      });
+      if (out.median != null) out.median_gap = R.spreadGap(out.median, out.market_line);
+    }
+    return out;
+  };
+
+  /* Effective number of independent models from a correlation matrix:
+       n_eff = n^2 / sum_ij rho_ij
+     Negative correlations are floored at zero so n_eff never exceeds n.
+     Any missing pair makes the answer null: an unmeasured pair is not an
+     independent pair. */
+  R.effectiveIndependentCount = function (matrix) {
+    if (!matrix || !matrix.length) return null;
+    var n = matrix.length, s = 0;
+    for (var i = 0; i < n; i++) {
+      if (!matrix[i] || matrix[i].length !== n) return null;
+      for (var j = 0; j < n; j++) {
+        var r = i === j ? 1 : num(matrix[i][j]);
+        if (r == null) return null;
+        s += Math.max(0, Math.min(1, r));
+      }
+    }
+    return s > EPS ? (n * n) / s : null;
+  };
+
+  /* Outlier status of one model's number against the OTHER models' numbers.
+     Descriptive only: an outlier is not wrong.
+       aligned  |dev from others' median| < 1.5
+       mild     1.5 - 3
+       strong   >= 3
+     lone: with at least two others, the model is the only one on its side of
+     the market line. */
+  R.OUTLIER_MILD = 1.5;
+  R.OUTLIER_STRONG = 3;
+  R.outlierStatus = function (modelSpread, otherSpreads, line) {
+    var m = num(modelSpread), others = finite(otherSpreads);
+    if (m == null || others.length < 2) return null;
+    var med = R.median(others), dev = m - med, a = Math.abs(dev);
+    var status = a < R.OUTLIER_MILD ? 'aligned' : a < R.OUTLIER_STRONG ? 'mild' : 'strong';
+    var lone = false, l = num(line);
+    if (l != null) {
+      var mine = R.sideVsLine(m, l);
+      if (mine) lone = others.every(function (o) { return R.sideVsLine(o, l) !== mine; });
+    }
+    return { status: status, lone: lone, deviation: round(dev, 4), others_median: med, others_n: others.length,
+      label: lone ? 'LONE OUTLIER' : status.toUpperCase() };
+  };
+
+  return R;
+});
+/*__EDRCORE_END__*/
+/*__EDGAMERES_START__*/
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    var R = require('./research_core.js'), E = null;
+    try { E = require('./research_eval.js'); } catch (e) { E = null; }
+    module.exports = factory(R, E);
+  } else root.EDGameResearch = factory(root.EDResearch, root.EDResearchEval || null);
+})(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this), function (R, E) {
+  'use strict';
+  if (!R) throw new Error('game_research needs research_core loaded first');
+  var G = { version: 'game_research/1' };
+  var num = R.num, round = R.round;
+
+  function ms(iso) { if (!iso) return null; var t = new Date(iso).getTime(); return isFinite(t) ? t : null; }
+  function ageHours(iso, now) {
+    var a = ms(iso), b = ms(now);
+    return (a == null || b == null) ? null : (b - a) / 3600000;
+  }
+  /* A number with where it came from. `value` null means unavailable. */
+  function fact(value, source, capturedAt, rule, extra) {
+    var o = { value: value == null ? null : value, source: source || null,
+      captured_at: capturedAt || null, rule: rule || null };
+    if (extra) for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) o[k] = extra[k];
+    return o;
+  }
+  G.fact = fact;
+
+  /* ------------------------------------------------------------ freshness */
+  G.FRESH_HOURS = { market: 6, injuries: 48, starters: 96, qb: 96, weather: 24,
+    team_ratings: 192, efficiency: 192, player_quality: 336, coaching: 2160,
+    model_inputs: 192, scores: 12 };
+  G.QUALITY_CATEGORIES = ['market', 'scores', 'injuries', 'starters', 'qb', 'weather',
+    'team_ratings', 'efficiency', 'player_quality', 'coaching', 'model_inputs'];
+  G.qualityStatus = function (entry, category, now) {
+    if (entry && entry.status && G.QUALITY_CREDIT[entry.status] != null) return entry.status;
+    if (!entry || entry.available === false) return 'UNAVAILABLE';
+    if (entry.available == null && !entry.captured_at) return 'UNAVAILABLE';
+    var limit = entry.max_age_h != null ? entry.max_age_h : G.FRESH_HOURS[category];
+    var age = ageHours(entry.captured_at, now);
+    if (limit != null && age != null && age > limit) return 'STALE';
+    if (entry.partial) return 'PARTIAL';
+    return 'AVAILABLE';
+  };
+  /* Categories and a completeness figure that explains itself: every point
+     lost is attributed to a named category and status. */
+  G.QUALITY_CREDIT = { AVAILABLE: 1, PARTIAL: 0.5, STALE: 0.5, UNAVAILABLE: 0 };
+  G.dataQuality = function (quality, now, applicable) {
+    var cats = applicable || G.QUALITY_CATEGORIES;
+    var rows = cats.map(function (c) {
+      var e = quality && quality[c];
+      var st = G.qualityStatus(e, c, now);
+      return { category: c, status: st, captured_at: (e && e.captured_at) || null,
+        age_hours: e ? round(ageHours(e.captured_at, now), 1) : null,
+        source: (e && e.source) || null, note: (e && e.note) || null,
+        credit: G.QUALITY_CREDIT[st] };
+    });
+    var credit = rows.reduce(function (s, r) { return s + r.credit; }, 0);
+    return {
+      categories: rows,
+      completeness: rows.length ? credit / rows.length : null,
+      rule: 'completeness = mean credit over ' + rows.length + ' categories (AVAILABLE 1, PARTIAL 0.5, STALE 0.5, UNAVAILABLE 0)',
+      missing: rows.filter(function (r) { return r.status === 'UNAVAILABLE'; }).map(function (r) { return r.category; }),
+      stale: rows.filter(function (r) { return r.status === 'STALE'; }).map(function (r) { return r.category; }),
+      partial: rows.filter(function (r) { return r.status === 'PARTIAL'; }).map(function (r) { return r.category; })
+    };
+  };
+
+  /* The terminal's input contract (app.html fbP4Contract rows:
+     {field, side, state, as_of, source, detail}) folded into the quality
+     categories. NOT_APPLICABLE rows drop out; a category whose every row is
+     not applicable is not a category for this game. RESEARCH_ONLY data is
+     present but unpriced: AVAILABLE, with the note saying so. */
+  G.CONTRACT_CATEGORY = { availability: 'injuries', qb_starter: 'qb', qb_availability: 'qb',
+    roster: 'player_quality', roster_talent: 'player_quality', recruiting_talent: 'player_quality',
+    coaching_continuity: 'coaching', weather: 'weather', venue_geography: 'model_inputs',
+    schedule_context: 'model_inputs' };
+  G.qualityFromContract = function (rows) {
+    var by = {};
+    (rows || []).forEach(function (r) {
+      if (!r || r.state === 'NOT_APPLICABLE') return;
+      var c = G.CONTRACT_CATEGORY[r.field];
+      if (!c) return;
+      (by[c] = by[c] || []).push(r);
+    });
+    var out = {};
+    Object.keys(by).forEach(function (c) {
+      var list = by[c];
+      var unav = list.filter(function (r) { return r.state === 'UNAVAILABLE' || r.state === 'FETCH_FAILED'; }).length;
+      var stale = list.filter(function (r) { return r.state === 'STALE'; }).length;
+      var research = list.filter(function (r) { return r.state === 'RESEARCH_ONLY'; }).length;
+      var status = unav === list.length ? 'UNAVAILABLE' : unav ? 'PARTIAL' : stale ? 'STALE' : 'AVAILABLE';
+      var times = list.map(function (r) { return ms(r.as_of); }).filter(function (t) { return t != null; });
+      out[c] = { status: status,
+        captured_at: times.length ? new Date(Math.min.apply(null, times)).toISOString() : null,
+        source: list.map(function (r) { return r.source; }).filter(Boolean).filter(function (v, i, a) { return a.indexOf(v) === i; }).join('; ') || null,
+        note: list.map(function (r) { return r.field + (r.side ? ' ' + r.side : '') + ': ' + r.state; }).join(' · ')
+          + (research ? ' (research only: retrieved, not priced)' : '') };
+    });
+    return out;
+  };
+
+  /* ----------------------------------------------------- model, normalised
+     Accepts either an already home-line model or a raw engine projection. */
+  G.modelFrom = function (model) {
+    if (!model) return null;
+    var eng = model.engine || null;
+    var line = num(model.home_line);
+    var total = num(model.total), hwp = num(model.home_win_prob), sigma = num(model.sigma);
+    var sigmaSource = model.sigma_source || null;
+    var components = null;
+    if (eng && eng.model) {
+      if (line == null) line = R.homeLineFromEngineFairSpread(eng.model.fair_spread);
+      if (total == null) total = num(eng.model.fair_total);
+      if (hwp == null) hwp = num(eng.model.home_win_prob);
+      if (sigma == null && num(eng.model.sigma_margin) != null) {
+        sigma = num(eng.model.sigma_margin);
+        sigmaSource = sigmaSource || 'engine per-game margin sigma (fitted residual distribution)';
+      }
+      components = G.decompose(eng);
+    }
+    return {
+      model_id: model.model_id || (eng && eng.engine) || null,
+      version: model.version || (eng && eng.model_version) || null,
+      data_version: model.data_version || (eng && eng.feature_version) || null,
+      captured_at: model.captured_at || (eng && eng.prediction_timestamp) || null,
+      home_line: line, total: total, home_win_prob: hwp,
+      sigma: sigma, sigma_source: sigmaSource,
+      confidence: eng && eng.scores ? num(eng.scores.confidence) : num(model.confidence),
+      p10_margin: eng && eng.model ? num(eng.model.p10_margin) : null,
+      p90_margin: eng && eng.model ? num(eng.model.p90_margin) : null,
+      decomposition: components,
+      cover_at: typeof model.cover_at === 'function' ? model.cover_at : null,
+      engine_cover: eng && eng.cover && eng.market && num(eng.market.spread_line) != null
+        ? { home_line: R.homeLineFromEngineFairSpread(eng.market.spread_line), win: num(eng.cover.win),
+            push: num(eng.cover.push), lose: num(eng.cover.lose), basis: eng.cover.basis || null } : null
+    };
+  };
+
+  /* ---------------------------------------------- fair-line decomposition
+     The CFB P4 engine's spread IS an additive sum of named terms (engine.js
+     `fairSpread += pts(terms[i].m)`), so this decomposition is EXACT, not an
+     attribution. Each term is converted onto the home line. `exact` is
+     verified, not assumed: the terms must sum to the published number. */
+  G.decompose = function (eng) {
+    if (!eng || !eng.contributions || !eng.model) return null;
+    var rows = eng.contributions.map(function (c) {
+      var pts = num(c.points);
+      return {
+        key: c.key, label: c.label || c.key,
+        value: pts == null ? null : R.homeLineFromEngineFairSpread(pts),
+        available: !!c.available, missing: !c.available,
+        reliability: c.confidence == null ? null : num(c.confidence),
+        source: c.source || null, basis: c.basis || null, reason: c.reason || null
+      };
+    });
+    var sum = rows.reduce(function (s, r) { return s + (r.value == null ? 0 : r.value); }, 0);
+    var fair = R.homeLineFromEngineFairSpread(eng.model.fair_spread);
+    var totals = (eng.total_contributions || []).map(function (c) {
+      return { key: c.key, label: c.label || c.key, value: num(c.points), available: !!c.available,
+        source: c.source || null, reason: c.reason || null };
+    });
+    return {
+      method: 'exact additive terms from the engine',
+      exact: fair != null && Math.abs(sum - fair) < 0.01,
+      home_line: fair, sum: round(sum, 4), components: rows,
+      /* weather moves the TOTAL in this engine, not the spread */
+      total_components: totals
+    };
+  };
+
+  /* --------------------------------------------------------------- market */
+  G.lineShopping = function (books, consensusLine) {
+    var list = (books || []).filter(function (b) { return b && num(b.line) != null; });
+    if (!list.length) return { available: false, reason: 'no per-book quotes on file', books: [] };
+    var lines = list.map(function (b) { return num(b.line); });
+    /* HOME wants the highest home line (fewest points laid / most taken);
+       AWAY wants the lowest home line. Ties broken by the better price. */
+    function better(side, a, b) {
+      var la = num(a.line), lb = num(b.line);
+      if (la !== lb) return side === 'home' ? la > lb : la < lb;
+      var pa = R.americanToDecimal(side === 'home' ? a.price_home : a.price_away);
+      var pb = R.americanToDecimal(side === 'home' ? b.price_home : b.price_away);
+      return (pa || 0) > (pb || 0);
+    }
+    function pick(side, best) {
+      var out = list[0];
+      for (var i = 1; i < list.length; i++) {
+        if (best ? better(side, list[i], out) : better(side, out, list[i])) out = list[i];
+      }
+      return summarise(side, out);
+    }
+    function summarise(side, b) {
+      var price = side === 'home' ? b.price_home : b.price_away;
+      return { book: b.book, home_line: num(b.line), side_line: R.sideLine(b.line, side),
+        price: num(price), break_even: R.breakEven(price), captured_at: b.captured_at || null };
+    }
+    /* best PRICE at the consensus number, kept apart from the best NUMBER:
+       neither is "better" without weighing line against price */
+    function bestPriceAt(side, line) {
+      if (line == null) return null;
+      var at = list.filter(function (b) { return num(b.line) === line; });
+      if (!at.length) return null;
+      var o = at[0];
+      at.forEach(function (b) {
+        var d = R.americanToDecimal(side === 'home' ? b.price_home : b.price_away);
+        var od = R.americanToDecimal(side === 'home' ? o.price_home : o.price_away);
+        if ((d || 0) > (od || 0)) o = b;
+      });
+      return summarise(side, o);
+    }
+    var primary = num(consensusLine);
+    return {
+      available: true, n_books: list.length,
+      range: { min: Math.min.apply(null, lines), max: Math.max.apply(null, lines) },
+      dispersion: R.sd(lines),
+      best_number: { home: pick('home', true), away: pick('away', true) },
+      worst_number: { home: pick('home', false), away: pick('away', false) },
+      best_price_at_consensus: { line: primary, home: bestPriceAt('home', primary), away: bestPriceAt('away', primary) },
+      books: list.map(function (b) {
+        return { book: b.book, home_line: num(b.line), price_home: num(b.price_home), price_away: num(b.price_away),
+          captured_at: b.captured_at || null };
+      })
+    };
+  };
+
+  /* --------------------------------------------------------- price-aware EV
+     Only from the model's OWN cover probability at that exact line. With no
+     such probability everything model-dependent is null and says why. */
+  G.priceAtLine = function (model, side, homeLine, american) {
+    var l = num(homeLine);
+    var cov = null, basis = null;
+    if (model && l != null) {
+      if (model.cover_at) {
+        try { cov = model.cover_at(l); basis = 'model distribution at this line'; } catch (e) { cov = null; }
+      } else if (model.engine_cover && Math.abs(model.engine_cover.home_line - l) < 1e-9) {
+        cov = model.engine_cover; basis = 'engine cover probability at the joined line';
+      }
+    }
+    var p = null, push = null;
+    if (cov && num(cov.win) != null) {
+      p = side === 'home' ? num(cov.win) : num(cov.lose);
+      push = num(cov.push) == null ? 0 : num(cov.push);
+    }
+    var a = R.priceAssessment(american, p, push);
+    a.side = side; a.home_line = l; a.side_line = R.sideLine(l, side);
+    a.push_prob = p == null ? null : push; a.basis = p == null ? null : basis;
+    if (p == null && a.break_even != null) a.reason = 'no model cover probability at this line';
+    return a;
+  };
+
+  /* --------------------------------------------------------- the builder */
+  G.build = function (input) {
+    input = input || {};
+    var now = input.now || new Date().toISOString();
+    var g = input.game || {};
+    var mk = input.market || {};
+    var model = G.modelFrom(input.model);
+    var cur = mk.current || {}, open = mk.open || {}, close = mk.close || {};
+    var curLine = num(cur.line), openLine = num(open.line), closeLine = num(close.line);
+    var ml = mk.moneyline || {};
+    var nv = R.noVigTwoWay(ml.home, ml.away);
+    var mLine = model ? model.home_line : null;
+
+    /* ---- model vs market */
+    var gap = R.spreadGap(mLine, curLine);
+    var z = (gap && model && model.sigma) ? gap.points / model.sigma : null;
+    var mvm = {
+      raw_gap: fact(gap ? gap.points : null, 'model home line - current consensus', cur.captured_at, '|model - market|'),
+      side: gap ? gap.side : null,
+      normalized_gap: fact(z == null ? null : round(z, 3), model ? model.sigma_source : null, model ? model.captured_at : null,
+        'raw gap / model expected error (sigma)', { sigma: model ? model.sigma : null }),
+      probability_gap: fact((model && model.home_win_prob != null && nv) ? model.home_win_prob - nv.a : null,
+        'model home win prob - no-vig moneyline', ml.captured_at, 'multiplicative de-vig'),
+      movement_since_open: (openLine != null && curLine != null && mLine != null) ? R.movementVsModel(mLine, openLine, curLine) : null,
+      key_numbers_since_open: (openLine != null && curLine != null) ? R.keyNumberCrossings(openLine, curLine, g.sport) : null,
+      clv_vs_close: null
+    };
+    if (closeLine != null && mLine != null) {
+      var refLine = openLine != null ? openLine : null;
+      var side = R.sideVsLine(mLine, refLine != null ? refLine : curLine);
+      mvm.clv_vs_close = fact(refLine != null && side ? R.clvPoints(side, refLine, closeLine) : null,
+        'open vs captured close, on the model side at open', close.captured_at, 'side-oriented CLV points');
+    }
+
+    /* ---- the market block */
+    var shop = G.lineShopping(mk.books, curLine);
+    var market = {
+      open: fact(openLine, open.source, open.captured_at),
+      current: fact(curLine, cur.source, cur.captured_at, 'consensus home line',
+        { age_hours: round(ageHours(cur.captured_at, now), 1),
+          stale: ageHours(cur.captured_at, now) != null && ageHours(cur.captured_at, now) > G.FRESH_HOURS.market }),
+      close: fact(closeLine, close.source, close.captured_at),
+      close_total: fact(num(close.total), close.source, close.captured_at),
+      total: fact(num((mk.total || {}).line), (mk.total || {}).source, (mk.total || {}).captured_at),
+      moneyline: { home: num(ml.home), away: num(ml.away), captured_at: ml.captured_at || null,
+        no_vig_home: nv ? nv.a : null, no_vig_away: nv ? nv.b : null, overround: nv ? nv.overround : null },
+      history: (mk.history || []).filter(function (h) { return h && num(h.line) != null; }),
+      shopping: shop
+    };
+
+    /* ---- price-aware EV at the best number and at the consensus */
+    var price = { home: null, away: null, note: null };
+    if (model && shop.available) {
+      ['home', 'away'].forEach(function (s) {
+        var b = shop.best_number[s];
+        price[s] = { best_number: G.priceAtLine(model, s, b.home_line, b.price),
+          at_consensus: shop.best_price_at_consensus[s]
+            ? G.priceAtLine(model, s, shop.best_price_at_consensus[s].home_line, shop.best_price_at_consensus[s].price) : null };
+      });
+    } else price.note = model ? 'no per-book prices on file' : 'no model projection';
+
+    /* ---- collective */
+    var col = (input.collective || []).filter(function (c) { return c && num(c.home_line) != null; });
+    var agreement = R.agreement(col.map(function (c) { return { id: c.model_id, spread: c.home_line }; }), curLine);
+    var members = col.map(function (c) {
+      var others = col.filter(function (o) { return o !== c; }).map(function (o) { return o.home_line; });
+      var cg = R.spreadGap(c.home_line, curLine);
+      return {
+        model_id: c.model_id, name: c.name || c.model_id, creator: c.creator || null,
+        home_line: num(c.home_line), home_win_prob: num(c.home_win_prob),
+        market_gap: cg ? cg.points : null, lean: cg ? cg.side : null,
+        prob_gap: (num(c.home_win_prob) != null && nv) ? num(c.home_win_prob) - nv.a : null,
+        line_at_submission: num(c.line_at_submission), received_at: c.received_at || null,
+        movement: (num(c.line_at_submission) != null && curLine != null)
+          ? R.movementVsModel(c.home_line, c.line_at_submission, curLine) : null,
+        room: R.outlierStatus(c.home_line, others, curLine)
+      };
+    });
+    var edRoom = (mLine != null && col.length >= 2)
+      ? R.outlierStatus(mLine, col.map(function (c) { return c.home_line; }), curLine) : null;
+    var corr = input.correlation || null;
+
+    /* ---- history */
+    var hist = null;
+    if (E && input.history && input.history.rows && model) {
+      var target = E.deriveRow({ model_id: model.model_id, sport: g.sport, game_id: g.game_id,
+        kickoff_at: g.kickoff_at, predicted_at: model.captured_at, spread: mLine,
+        line_at_prediction: curLine }, model.sigma ? { scale: model.sigma, n: null, method: 'sigma' } : null);
+      var mine = input.history.rows.filter(function (r) { return r.model_id === model.model_id; });
+      var bucketRows = mine.filter(function (r) { return r.edge_bucket === target.edge_bucket; });
+      hist = {
+        edge_bucket: target.edge_bucket, lead_bucket: target.lead_bucket,
+        bucket: E.summarize(bucketRows),
+        similar: E.similarSituations(target, mine, { minN: 10 })
+      };
+    }
+
+    /* ---- data quality */
+    var quality = G.dataQuality(input.quality, now, input.quality_categories);
+
+    /* ---- postgame */
+    var res = input.result || {};
+    var autopsy = null;
+    if (res.final && num(res.home_score) != null && num(res.away_score) != null) {
+      var margin = num(res.home_score) - num(res.away_score);
+      var pm = R.marginFromSpread(mLine), cm = R.marginFromSpread(closeLine);
+      var sideOpen = R.sideVsLine(mLine, openLine != null ? openLine : curLine);
+      autopsy = {
+        final_margin: margin,
+        model_home_line: mLine, close_home_line: closeLine,
+        model_margin_error: pm == null ? null : round(Math.abs(pm - margin), 2),
+        market_margin_error: cm == null ? null : round(Math.abs(cm - margin), 2),
+        model_closer_than_market: (pm != null && cm != null) ? Math.abs(pm - margin) < Math.abs(cm - margin) : null,
+        side: sideOpen,
+        ats_vs_close: E && sideOpen && closeLine != null ? E.atsResult(margin, closeLine, sideOpen) : null,
+        clv: mvm.clv_vs_close ? mvm.clv_vs_close.value : null,
+        components: G.componentAutopsy(model && model.decomposition, input.actual_components)
+      };
+    }
+
+    /* ---- scenarios: supplied by a caller that re-ran the model */
+    var scenarios = (input.scenarios || []).filter(function (s) { return s && s.supported && num(s.home_line) != null; })
+      .map(function (s) {
+        return { label: s.label, hypothetical: true, baseline_home_line: mLine, scenario_home_line: num(s.home_line),
+          difference: mLine == null ? null : round(num(s.home_line) - mLine, 2), affected: s.affected || [] };
+      });
+
+    var out = {
+      contract: G.version,
+      built_at: now,
+      identity: { sport: g.sport || null, season: g.season == null ? null : g.season, week: g.week == null ? null : g.week,
+        game_id: g.game_id || null, home: g.home || null, away: g.away || null,
+        kickoff_at: g.kickoff_at || null, venue: g.venue || null, status: g.status || null },
+      model: model ? {
+        model_id: model.model_id, version: model.version, data_version: model.data_version,
+        captured_at: model.captured_at,
+        fair_home_line: fact(mLine, model.model_id, model.captured_at, 'home line; negative = home favoured'),
+        projected_home_margin: R.marginFromSpread(mLine),
+        projected_total: fact(model.total, model.model_id, model.captured_at),
+        home_win_prob: fact(model.home_win_prob, model.model_id, model.captured_at),
+        expected_error: fact(model.sigma, model.sigma_source, model.captured_at),
+        interval_80: (model.p10_margin != null && model.p90_margin != null)
+          ? { lo_margin: model.p10_margin, hi_margin: model.p90_margin } : null,
+        confidence: model.confidence,
+        decomposition: model.decomposition,
+        cover_at_joined_line: model.engine_cover
+      } : null,
+      market: market,
+      model_vs_market: mvm,
+      price: price,
+      collective: {
+        n: agreement.n, agreement: agreement, members: members,
+        edgedesk_room: edRoom,
+        effective_independent: corr ? corr.effective_n : null,
+        independence_note: corr ? (corr.effective_n == null ? 'insufficient shared history to measure independence' : null)
+          : 'no correlation history supplied'
+      },
+      model_history: (input.model_history || []).filter(function (h) { return h && num(h.home_line) != null; }),
+      history: hist,
+      quality: quality,
+      scenarios: scenarios,
+      autopsy: autopsy
+    };
+    out.flags = G.researchFlags(out, now);
+    return out;
+  };
+
+  /* Forecast vs measured, only for components with an ACTUAL on file. No
+     measured actual means no statement about that component. */
+  G.componentAutopsy = function (decomp, actuals) {
+    if (!decomp || !decomp.components) return { available: false, reason: 'no decomposition' };
+    if (!actuals) return { available: false, reason: 'no measured component outcomes on file; no component is blamed' };
+    var rows = [];
+    decomp.components.forEach(function (c) {
+      var a = actuals[c.key];
+      if (!a || num(a.value) == null || c.value == null) return;
+      rows.push({ key: c.key, label: c.label, forecast: c.value, actual: num(a.value),
+        miss: round(num(a.value) - c.value, 2), source: a.source || null });
+    });
+    rows.sort(function (x, y) { return Math.abs(y.miss) - Math.abs(x.miss); });
+    return { available: rows.length > 0, rows: rows,
+      reason: rows.length ? null : 'no component had both a forecast and a measured outcome' };
+  };
+
+  /* ------------------------------------------------- watchlist timeline
+     A snapshot is the handful of facts a follower cares about, each with the
+     time it was CAPTURED (not the time it was looked at). A timeline event
+     exists only where two snapshots actually differ, and carries the capture
+     time of the new fact — so the timeline contains real captured changes
+     only, never an interpolated or assumed one. */
+  G.snapshot = function (o) {
+    if (!o) return null;
+    var comps = {};
+    ((o.model && o.model.decomposition && o.model.decomposition.components) || []).forEach(function (c) {
+      comps[c.key] = { label: c.label, value: c.value == null ? null : round(c.value, 2), missing: !!c.missing };
+    });
+    var q = {};
+    ((o.quality && o.quality.categories) || []).forEach(function (c) { q[c.category] = c.status; });
+    return {
+      seen_at: o.built_at,
+      market: { line: o.market.current.value, at: o.market.current.captured_at },
+      total: { line: o.market.total.value, at: o.market.total.captured_at },
+      moneyline_home: { price: o.market.moneyline.home, at: o.market.moneyline.captured_at },
+      fair: { line: o.model ? o.model.fair_home_line.value : null, at: o.model ? o.model.captured_at : null },
+      win_prob: { value: o.model ? o.model.home_win_prob.value : null, at: o.model ? o.model.captured_at : null },
+      completeness: o.quality ? o.quality.completeness : null,
+      quality: q, components: comps
+    };
+  };
+  G.TIMELINE_MIN = { market: 0.5, total: 0.5, fair: 0.1, win_prob: 0.005, component: 0.1 };
+  G.timelineEvents = function (prev, next) {
+    if (!prev || !next) return [];
+    var ev = [];
+    function at(x, fallback) { return (x && x.at) || fallback || next.seen_at; }
+    function moved(a, b, min) { return a != null && b != null && Math.abs(a - b) >= min - 1e-9; }
+    function appeared(a, b) { return (a == null) !== (b == null); }
+    [['market', 'Market spread', G.TIMELINE_MIN.market, 'line'], ['total', 'Market total', G.TIMELINE_MIN.total, 'line'],
+      ['fair', 'EdgeDesk fair line', G.TIMELINE_MIN.fair, 'line']].forEach(function (d) {
+      var a = prev[d[0]] && prev[d[0]][d[3]], b = next[d[0]] && next[d[0]][d[3]];
+      if (moved(a, b, d[2]) || appeared(a, b))
+        ev.push({ at: at(next[d[0]]), kind: d[0], label: d[1], from: a == null ? null : a, to: b == null ? null : b,
+          observed: next[d[0]] && next[d[0]].at ? 'captured' : 'first seen' });
+    });
+    var pa = prev.moneyline_home && prev.moneyline_home.price, pb = next.moneyline_home && next.moneyline_home.price;
+    if ((pa != null && pb != null && pa !== pb) || appeared(pa, pb))
+      ev.push({ at: at(next.moneyline_home), kind: 'moneyline', label: 'Home moneyline', from: pa == null ? null : pa, to: pb == null ? null : pb,
+        observed: next.moneyline_home && next.moneyline_home.at ? 'captured' : 'first seen' });
+    var wa = prev.win_prob && prev.win_prob.value, wb = next.win_prob && next.win_prob.value;
+    if (moved(wa, wb, G.TIMELINE_MIN.win_prob))
+      ev.push({ at: at(next.win_prob), kind: 'win_prob', label: 'Model home win probability', from: wa, to: wb, observed: 'captured' });
+    Object.keys(next.components || {}).forEach(function (k) {
+      var a = prev.components && prev.components[k], b = next.components[k];
+      if (!a || !b) return;
+      if (moved(a.value, b.value, G.TIMELINE_MIN.component) || a.missing !== b.missing)
+        ev.push({ at: at(next.fair), kind: 'component', key: k, label: b.label, from: a.missing ? null : a.value, to: b.missing ? null : b.value, observed: 'captured' });
+    });
+    Object.keys(next.quality || {}).forEach(function (k) {
+      var a = prev.quality && prev.quality[k], b = next.quality[k];
+      if (a && b && a !== b) ev.push({ at: next.seen_at, kind: 'quality', key: k, label: k.replace(/_/g, ' ') + ' data', from: a, to: b, observed: 'first seen' });
+    });
+    ev.sort(function (x, y) { return (ms(x.at) || 0) - (ms(y.at) || 0); });
+    return ev;
+  };
+
+  /* ---------------------------------------------------- typed evidence
+     What an explanation may cite. Every item is one field of the research
+     object, typed so a reader (or a writing model) can never blur a market
+     fact into a model output or a hypothetical into a forecast:
+       FACT, MODEL_OUTPUT, MARKET_DATA, HISTORICAL, UNCERTAINTY, HYPOTHETICAL.
+     `explain` answers the standard research questions ONLY by assembling
+     these items; a question the object cannot answer says so. */
+  G.EVIDENCE_TYPES = ['FACT', 'MODEL_OUTPUT', 'MARKET_DATA', 'HISTORICAL', 'UNCERTAINTY', 'HYPOTHETICAL'];
+  function sgn(v, d) { return v == null ? 'n/a' : (v > 0 ? '+' : '') + Number(v).toFixed(d == null ? 1 : d); }
+  G.evidence = function (o) {
+    var ev = [];
+    function add(type, key, text, f) {
+      ev.push({ type: type, key: key, text: text, source: f && f.source || null, captured_at: f && f.captured_at || null });
+    }
+    if (!o) return ev;
+    var id = o.identity, h = id.home || 'home', a = id.away || 'away';
+    add('FACT', 'game', a + ' at ' + h + (id.kickoff_at ? ', kickoff ' + id.kickoff_at : ''));
+    var mk = o.market, mv = o.model_vs_market, md = o.model;
+    if (mk.current.value != null) add('MARKET_DATA', 'market_line', 'Current consensus ' + h + ' ' + sgn(mk.current.value), mk.current);
+    else add('MARKET_DATA', 'market_line', 'No current market line is on file');
+    if (mk.open.value != null) add('MARKET_DATA', 'open_line', 'Opened ' + h + ' ' + sgn(mk.open.value), mk.open);
+    if (mk.moneyline.no_vig_home != null) add('MARKET_DATA', 'no_vig', 'No-vig market probability ' + h + ' ' + (100 * mk.moneyline.no_vig_home).toFixed(1) + '%', { captured_at: mk.moneyline.captured_at });
+    if (md) {
+      add('MODEL_OUTPUT', 'fair_line', 'EdgeDesk fair line ' + h + ' ' + sgn(md.fair_home_line.value) + ' (' + (md.version || 'unversioned') + ')', md.fair_home_line);
+      if (md.home_win_prob.value != null) add('MODEL_OUTPUT', 'win_prob', 'EdgeDesk ' + h + ' win probability ' + (100 * md.home_win_prob.value).toFixed(1) + '%', md.home_win_prob);
+      ((md.decomposition && md.decomposition.components) || []).forEach(function (c) {
+        if (c.missing) add('UNCERTAINTY', 'component:' + c.key, c.label + ' is not in the number: ' + (c.reason || c.source || 'not supplied'));
+        else add('MODEL_OUTPUT', 'component:' + c.key, c.label + ' ' + sgn(c.value) + ' pts on the home line' + (c.reliability != null ? ' (engine confidence ' + Math.round(100 * c.reliability) + '%)' : ''), { source: c.source });
+      });
+      if (md.expected_error.value != null) add('UNCERTAINTY', 'expected_error', 'Expected error about the fair line ±' + md.expected_error.value.toFixed(1) + ' pts (' + md.expected_error.source + ')', md.expected_error);
+    }
+    if (mv.raw_gap.value != null) add('MODEL_OUTPUT', 'gap', 'EdgeDesk is ' + mv.raw_gap.value.toFixed(1) + ' pts from the market' + (mv.normalized_gap.value != null ? ', ' + mv.normalized_gap.value.toFixed(2) + 'σ' : ''));
+    if (mv.movement_since_open && mv.movement_since_open.toward_model_points != null)
+      add('MARKET_DATA', 'movement', 'Since the open the market moved ' + sgn(mv.movement_since_open.toward_model_points) + ' pts toward EdgeDesk\'s side');
+    (mv.key_numbers_since_open || []).forEach(function (k) { add('MARKET_DATA', 'key_number', 'The line ' + k.kind + ' ' + k.key + ' since the open'); });
+    var c = o.collective;
+    if (c.n) add('MODEL_OUTPUT', 'collective', c.n + ' Collective model' + (c.n === 1 ? '' : 's') + ': ' + c.agreement.lean.home + ' lean ' + h + ', ' + c.agreement.lean.away + ' lean ' + a
+      + (c.agreement.median != null ? ', median ' + h + ' ' + sgn(c.agreement.median) : '') + '. Independent models; inclusion is not endorsement');
+    if (c.effective_independent != null) add('HISTORICAL', 'independence', 'Effective independent models ' + c.effective_independent.toFixed(1));
+    if (o.history && o.history.bucket && o.history.bucket.ats.n)
+      add('HISTORICAL', 'bucket', 'At a ' + o.history.edge_bucket + ' pt gap this model went ' + o.history.bucket.ats.wins + '-' + o.history.bucket.ats.losses + '-' + o.history.bucket.ats.pushes
+        + ' ATS (n=' + o.history.bucket.ats.n + (o.history.bucket.ats.interval ? ', 95% interval ' + Math.round(100 * o.history.bucket.ats.interval.lo) + '-' + Math.round(100 * o.history.bucket.ats.interval.hi) + '%' : '') + ')');
+    o.quality.categories.forEach(function (q) {
+      if (q.status !== 'AVAILABLE') add('UNCERTAINTY', 'quality:' + q.category, q.category.replace(/_/g, ' ') + ' data is ' + q.status, q);
+    });
+    (o.scenarios || []).forEach(function (sc) {
+      add('HYPOTHETICAL', 'scenario:' + sc.label, 'If ' + sc.label.charAt(0).toLowerCase() + sc.label.slice(1) + ': fair line ' + h + ' ' + sgn(sc.scenario_home_line) + ' (' + sgn(sc.difference) + ')');
+    });
+    return ev;
+  };
+  G.QUESTIONS = {
+    why_different: 'Why is EdgeDesk different from the market?',
+    other_models: 'Are the other models seeing the same thing?',
+    history: 'Has EdgeDesk done well when it disagrees this much?',
+    movement: 'Has the market moved toward EdgeDesk?',
+    invalidate: 'What could invalidate this projection?',
+    threshold: 'What number would materially change the research?'
+  };
+  G.explain = function (o, q, opts) {
+    opts = opts || {};
+    var ev = G.evidence(o), pick = function (fn) { return ev.filter(fn); };
+    var out = { question: G.QUESTIONS[q] || q, evidence: [], answerable: true };
+    if (q === 'why_different') {
+      if (o.model_vs_market.raw_gap.value == null) { out.answerable = false; out.evidence = pick(function (e) { return e.key === 'market_line'; }); return out; }
+      var comps = ((o.model && o.model.decomposition && o.model.decomposition.components) || []).filter(function (c) { return !c.missing && c.value; })
+        .sort(function (x, y) { return Math.abs(y.value) - Math.abs(x.value); }).slice(0, 4).map(function (c) { return 'component:' + c.key; });
+      out.evidence = pick(function (e) { return e.key === 'fair_line' || e.key === 'market_line' || e.key === 'gap' || comps.indexOf(e.key) >= 0; });
+      out.note = 'The components are what the fair line is built from. The market publishes no decomposition, so which component the market disagrees with cannot be observed.';
+    } else if (q === 'other_models') {
+      out.evidence = pick(function (e) { return e.key === 'collective' || e.key === 'independence'; });
+      if (!out.evidence.length) { out.answerable = false; out.note = 'No Collective model has posted this game.'; }
+    } else if (q === 'history') {
+      out.evidence = pick(function (e) { return e.key === 'bucket'; });
+      if (!out.evidence.length) { out.answerable = false; out.note = 'No walk-forward history for this model at this gap is loaded here.'; }
+    } else if (q === 'movement') {
+      out.evidence = pick(function (e) { return e.key === 'open_line' || e.key === 'market_line' || e.key === 'movement' || e.key === 'key_number'; });
+      if (!pick(function (e) { return e.key === 'movement'; }).length) { out.answerable = false; out.note = 'No opening line is on file, so movement cannot be measured.'; }
+    } else if (q === 'invalidate') {
+      out.evidence = pick(function (e) { return e.type === 'UNCERTAINTY' || e.type === 'HYPOTHETICAL'; });
+    } else if (q === 'threshold') {
+      var th = opts.research_gap == null ? 2 : opts.research_gap, f = o.model && o.model.fair_home_line.value;
+      if (f == null) { out.answerable = false; return out; }
+      out.evidence = pick(function (e) { return e.key === 'fair_line' || e.key === 'market_line'; });
+      out.derived = { rule: 'the model-market gap falls inside ' + th + ' pts', home_line_lo: round(f - th, 1), home_line_hi: round(f + th, 1) };
+      out.note = 'Arithmetic on the fair line, not a forecast: a market between ' + sgn(f - th) + ' and ' + sgn(f + th) + ' would put the gap under the ' + th + '-pt research threshold.';
+    } else { out.answerable = false; }
+    return out;
+  };
+
+  /* ------------------------------------------------------ research queue
+     Transparent flags, each with the rule that raised it. `priority` is a
+     count of raised flags for ordering a slate — it is NOT a probability,
+     a rating or a recommendation. */
+  G.FLAG_RULES = {
+    LARGE_DISAGREEMENT: 'normalized gap >= 0.25 sigma, or raw gap >= 3 pts when no sigma',
+    MARKET_TOWARD_MODEL: 'consensus moved >= 1 pt toward the model since open',
+    MARKET_AWAY_FROM_MODEL: 'consensus moved >= 1 pt away from the model since open',
+    KEY_NUMBER: 'consensus crossed or landed on a primary key number since open',
+    MODEL_CONSENSUS: '3+ Collective models and at least 75% lean the same way as EdgeDesk',
+    LONE_OUTLIER: 'EdgeDesk is the only model on its side of the market',
+    HIGH_UNCERTAINTY: 'data completeness below 70% or any stale market/QB/injury category',
+    PRICE_DISPERSION: 'books differ by 1+ point on the spread',
+    STALE_MARKET: 'current consensus older than the market freshness window',
+    NO_MARKET: 'no current market line'
+  };
+  G.QUALIFIER_FLAGS = ['NO_MARKET', 'STALE_MARKET', 'HIGH_UNCERTAINTY'];
+  G.researchFlags = function (o, now) {
+    var f = [];
+    function add(k, detail) { f.push({ key: k, rule: G.FLAG_RULES[k], detail: detail || null }); }
+    var mv = o.model_vs_market;
+    if (o.market.current.value == null) add('NO_MARKET');
+    else if (o.market.current.stale) add('STALE_MARKET', o.market.current.age_hours + 'h old');
+    var z = mv.normalized_gap.value, raw = mv.raw_gap.value;
+    if ((z != null && z >= 0.25) || (z == null && raw != null && raw >= 3))
+      add('LARGE_DISAGREEMENT', round(raw, 1) + ' pts' + (z != null ? ' / ' + round(z, 2) + ' sigma' : ''));
+    var m = mv.movement_since_open;
+    if (m && m.toward_model_points != null) {
+      if (m.toward_model_points >= 1) add('MARKET_TOWARD_MODEL', m.toward_model_points + ' pts');
+      else if (m.toward_model_points <= -1) add('MARKET_AWAY_FROM_MODEL', (-m.toward_model_points) + ' pts');
+    }
+    if ((mv.key_numbers_since_open || []).some(function (k) { return k.tier === 'primary' && k.kind !== 'off'; }))
+      add('KEY_NUMBER', mv.key_numbers_since_open.map(function (k) { return k.kind + ' ' + k.key; }).join(', '));
+    var c = o.collective;
+    if (c.n >= 3 && mv.side) {
+      var same = mv.side === 'home' ? c.agreement.lean.home : c.agreement.lean.away;
+      if (same / c.n >= 0.75) add('MODEL_CONSENSUS', same + ' of ' + c.n + ' lean ' + mv.side);
+    }
+    if (c.edgedesk_room && c.edgedesk_room.lone) add('LONE_OUTLIER');
+    var q = o.quality;
+    if ((q.completeness != null && q.completeness < 0.7)
+      || q.stale.some(function (k) { return k === 'market' || k === 'qb' || k === 'injuries'; }))
+      add('HIGH_UNCERTAINTY', 'completeness ' + (q.completeness == null ? 'n/a' : Math.round(q.completeness * 100) + '%'));
+    var sh = o.market.shopping;
+    if (sh.available && sh.range.max - sh.range.min >= 1) add('PRICE_DISPERSION', (sh.range.max - sh.range.min) + ' pts across ' + sh.n_books + ' books');
+    /* Market-state flags and HIGH_UNCERTAINTY qualify a game; they never put
+       one in the research queue on their own. */
+    var research = f.filter(function (x) { return G.QUALIFIER_FLAGS.indexOf(x.key) < 0; }).length;
+    return { flags: f, priority: research,
+      priority_rule: 'count of research flags raised, excluding the qualifiers ' + G.QUALIFIER_FLAGS.join(', ')
+        + '; ordering only, not a probability or a recommendation' };
+  };
+
+  return G;
+});
+/*__EDGAMERES_END__*/
+/*__EDDESK_START__*/
+/* ===========================================================================
+   EdgeDesk DESK KERNEL — the analyst's answer, built from typed evidence.
+
+   ONE FILE, ONE HOST. This exact block is inlined into
+     - supabase/functions/edgedesk_ai/index.ts
+   by tools/presentation/inline.js; presentation_sync.test.js fails when the
+   copy drifts. Edit THIS file, then `node tools/presentation/inline.js`.
+
+   WHAT IT IS FOR
+     A reader types "What's the best market line value today?", "Is Maryland
+     -2.5 worth betting?", "Why?", "What if it drops to +2.5?", "Compare that
+     to Maryland ML" or "Anything safer?" and gets a direct answer:
+
+         ANSWER -> PRICE -> WHY -> RISK
+
+     in three to eight sentences, at the depth the question asked for.
+
+   WHO OWNS WHAT
+     - The BACKEND calculates: fair lines and blends (EDPRICE), cover
+       probabilities (EDPRICE.coverAt, or the model's own cover curve), quote
+       freshness (EDINTEL.quoteState), the canonical per-game research object
+       (lib/game_research.js: gap, movement, data quality, typed evidence).
+     - THIS KERNEL structures and decides: the sport-aware evidence contract,
+       the verdict for a price, the price ladder, the board ranking, the
+       conversation state and the words. Every rule is below, printed, and
+       deterministic: the same evidence gives the same answer.
+     - The WRITING MODEL (when the host uses one) may only rephrase the
+       answer this kernel wrote; `allowedNumbers()` feeds the host's critic.
+       It never ranks, never prices and never supplies a number.
+
+   THE RULES
+     - Missing evidence stays missing (null) and lowers certainty. Nothing is
+       filled with a neutral value.
+     - A side's quality is never a price. "Team X is good" is not "Team X -7
+       is a good price": every verdict is taken at an actual line and price.
+     - A stale or unknown-age market is never a current opportunity.
+     - Validation tiers are the pricing kernel's and are never upgraded here.
+       A RESEARCH-tier market (the CFB spread today) can be a research lead;
+       its confidence is capped by the tier weight the board already uses.
+     - Similar Situations is withheld until SIMILAR_MIN_SETTLED comparable
+       settled pregame predictions exist, and its features are pregame only.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDDESK = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 1;
+  var EVIDENCE_SCHEMA = 'edgedesk_desk_evidence_v1';
+  var ANSWER_SCHEMA = 'edgedesk_desk_answer_v1';
+  var STATE_SCHEMA = 'edgedesk_desk_state_v1';
+  var HISTORY_SCHEMA = 'edgedesk_prediction_history_v1';
+  var CFB = 'americanfootball_ncaaf', NFL = 'americanfootball_nfl';
+  var SPORTS = {
+    americanfootball_ncaaf: { key: CFB, short: 'CFB', label: 'college football' },
+    americanfootball_nfl: { key: NFL, short: 'NFL', label: 'NFL' }
+  };
+
+  /* ------------------------------------------------------ the constants
+     Every threshold is borrowed from a kernel that already owns it, with a
+     fallback equal to that kernel's shipped value so the rules hold when
+     this file is loaded on its own (tests). */
+  function RS() { return root.EDRESEARCH || null; }
+  function PK() {
+    if (root.EDPRICE) return root.EDPRICE;
+    if (typeof require === 'function') { try { return require('./_pricing.js'); } catch (_) { /* host inlines it */ } }
+    return null;
+  }
+  function IK() { return root.EDINTEL || null; }
+  function BK() { return root.EDBOARD || null; }
+  function GR() {
+    if (root.EDGameResearch) return root.EDGameResearch;
+    if (typeof require === 'function') { try { return require('../../../lib/game_research.js'); } catch (_) { /* host inlines it */ } }
+    return null;
+  }
+  /** Research threshold in points: EDRESEARCH's RESEARCH LEAD rule (|gap| >= 3). */
+  function researchGap() { var r = RS(); return (r && r.DEFAULT_THRESHOLDS && num(r.DEFAULT_THRESHOLDS.disagreement_points)) || 3; }
+  /** The hard disagreement rule (EDRESEARCH MODEL DISAGREEMENT, EDBOARD R0): a data check, never a pick. */
+  function outlierGap() { var b = BK(); return (b && num(b.OUTLIER_GAP_POINTS)) || 7; }
+  /* EDBOARD R6 weights, reused rather than re-invented. */
+  var FRESH_WEIGHT_DEFAULT = { CURRENT: 1, AGING: 0.85, STALE: 0.1, UNKNOWN: 0.05, LINE_ONLY: 0.05, STARTED: 0, NONE: 0 };
+  var TIER_WEIGHT_DEFAULT = { VALIDATED: 1, LEAN: 0.8, PROBABILITY: 0.6, RESEARCH: 0.4 };
+  function freshWeight(s) { var b = BK(); var t = (b && b.FRESH_WEIGHT) || FRESH_WEIGHT_DEFAULT; return t[s] != null ? t[s] : 0; }
+  function tierWeight(t) { var b = BK(); var w = (b && b.TIER_WEIGHT) || TIER_WEIGHT_DEFAULT; return w[t] != null ? w[t] : w.RESEARCH; }
+  /* Each piece of IMPORTANT evidence that is missing multiplies certainty by this. */
+  var MISSING_PENALTY = 0.85;
+  /* Grades. Evidence quality reads the data; confidence reads data x tier x freshness. */
+  var QUALITY_GRADES = [[0.75, 'STRONG'], [0.55, 'MODERATE'], [0.35, 'WEAK']];
+  var CONFIDENCE_GRADES = [[0.6, 'HIGH'], [0.4, 'MEDIUM'], [0.0001, 'LOW']];
+  /* Similar Situations: never shown below this many comparable SETTLED pregame predictions. */
+  var SIMILAR_MIN_SETTLED = 50;
+  var SIMILAR_MIN_TOTAL_SETTLED = 150;
+
+  /* ------------------------------------------------------------- helpers */
+  function num(v) { if (v === null || v === undefined || v === '' || typeof v === 'boolean') return null; var n = Number(v); return Number.isFinite(n) ? n : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function r1(v) { var n = num(v); return n == null ? null : Math.round(n * 10) / 10; }
+  function r2(v) { var n = num(v); return n == null ? null : Math.round(n * 100) / 100; }
+  function half(v) { var n = num(v); return n == null ? null : Math.round(n * 2) / 2; }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return Number.isFinite(v) ? v : null; var t = Date.parse(String(v)); return Number.isFinite(t) ? t : null; }
+  function iso(v) { var t = toMs(v); return t == null ? null : new Date(t).toISOString(); }
+  function normName(s) { return str(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function fmtLine(v) { var n = num(v); if (n == null) return '—'; if (n === 0) return 'pick’em'; return (n > 0 ? '+' : '') + r1(n); }
+  function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
+  function pct(p) { var n = num(p); return n == null ? '—' : Math.round(n * 100) + '%'; }
+  function pts(v) { var n = num(v); if (n == null) return '—'; var a = Math.abs(r1(n)); return a + (a === 1 ? ' point' : ' points'); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function probToAm(p) { return ODDS().probToAm(p); }
+  function breakEven(odds, push) { return ODDS().breakEven(odds, push); }
+  function gradeOf(v, table) { if (v == null) return 'INSUFFICIENT'; for (var i = 0; i < table.length; i++) if (v >= table[i][0]) return table[i][1]; return 'INSUFFICIENT'; }
+  function cap(s) { s = str(s); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function uniq(a) { var o = [], seen = {}; (a || []).forEach(function (x) { var k = typeof x === 'string' ? x : JSON.stringify(x); if (!seen[k]) { seen[k] = 1; o.push(x); } }); return o; }
+  function sportShort(s) { return SPORTS[s] ? SPORTS[s].short : str(s); }
+  function other(side) { return side === 'home' ? 'away' : side === 'away' ? 'home' : side === 'over' ? 'under' : 'over'; }
+
+  /* ================================================================
+     1. THE TYPED EVIDENCE CONTRACT (edgedesk_desk_evidence_v1)
+
+     INPUT (host-normalised; every field optional except sport and game):
+       sport, now,
+       game:       {game_id, home, away, kickoff, venue, neutral_site, status, season, week}
+       projection: {home_line, total, home_win_prob, version, generated_at,
+                    completeness, information_confidence, priced_confidence,
+                    sigma, cover_curve:[{home_line, win, push, lose}],
+                    contributions:[{key, points}]}      (home-margin points)
+       market:     {spread:{home_line, book, price_home, price_away, captured_at, freshness, executable, source},
+                    total:{line, book, price_over, price_under, captured_at, freshness, executable, source},
+                    moneyline:{home, away, book, captured_at, freshness, source},
+                    open:{home_line, captured_at, source}}
+       contract:   CFB input-contract rows [{field, side, state, as_of, source, detail}]
+       cfb:        {home_starter, away_starter, home_qb_epa, away_qb_epa}
+       nfl:        {home_starter, away_starter, home_rest, away_rest, roof, surface,
+                    div_game, data_quality, injuries:{home:[..], away:[..], as_of, source}, scenarios}
+     ================================================================ */
+  var CONTRACT_EXTRA = { team_rating: 'team_ratings', qb_efficiency_history: 'qb' };
+  var APPLICABLE = {
+    americanfootball_ncaaf: ['market', 'team_ratings', 'qb', 'injuries', 'player_quality', 'coaching', 'model_inputs', 'weather'],
+    americanfootball_nfl: ['market', 'qb', 'injuries', 'model_inputs', 'weather']
+  };
+  var CATEGORY_LABEL = { team_ratings: 'team rating', qb: 'quarterback', injuries: 'injury', player_quality: 'roster quality', coaching: 'coaching', weather: 'weather', model_inputs: 'model input', market: 'market' };
+  var NFL_DRIVER_LABEL = { baseline: 'home field', net_pts: 'scoring margin', net_epa: 'overall EPA per play', net_pass: 'passing efficiency',
+    net_rush: 'rushing efficiency', qb_adj_diff: 'quarterback adjustment', rest_diff: 'rest', div_game: 'division-game adjustment' };
+
+  /** Market state for one quote: CURRENT / AGING / STALE / UNKNOWN / LINE_ONLY / STARTED / NONE. */
+  function quoteStatus(q, marketKey, kickoff, now) {
+    if (!q || (num(q.home_line) == null && num(q.line) == null && num(q.home) == null && num(q.away) == null)) return { state: 'NONE', actionable: false, age_hours: null, why: 'no market on file' };
+    var k = toMs(kickoff);
+    var at = toMs(q.captured_at);
+    var age = at == null ? null : r1((now - at) / 3600000);
+    if (k != null && k <= now) return { state: 'STARTED', actionable: false, age_hours: age, why: 'the game has started; pregame prices only' };
+    if (q.freshness && FRESH_WEIGHT_DEFAULT[q.freshness] != null) return { state: q.freshness, actionable: q.freshness === 'CURRENT' || q.freshness === 'AGING', age_hours: age, why: q.freshness_why || null };
+    if (q.executable === false && at == null) return { state: 'LINE_ONLY', actionable: false, age_hours: null, why: 'a reference number with no book and no capture time; not a price you can take' };
+    var I = IK();
+    if (I && typeof I.quoteState === 'function') {
+      var s = I.quoteState({ captured_at: q.captured_at, market: marketKey, kickoff: kickoff, now: now });
+      return { state: s.status, actionable: !!s.actionable, age_hours: age, why: s.why || null };
+    }
+    if (at == null) return { state: 'UNKNOWN', actionable: false, age_hours: null, why: 'no capture time' };
+    var limit = 6; /* game_research FRESH_HOURS.market */
+    if (age > limit) return { state: 'STALE', actionable: false, age_hours: age, why: 'captured ' + age + 'h ago, past the ' + limit + 'h market window' };
+    if (age > limit / 2) return { state: 'AGING', actionable: true, age_hours: age, why: 'captured ' + age + 'h ago' };
+    return { state: 'CURRENT', actionable: true, age_hours: age, why: 'captured ' + age + 'h ago' };
+  }
+
+  /** The model's OWN cover probability for HOME at a home line, from its published cover curve (NFL), or null. */
+  function curveCoverAt(curve, homeLine) {
+    if (!Array.isArray(curve) || homeLine == null) return null;
+    for (var i = 0; i < curve.length; i++) {
+      var c = curve[i];
+      if (c && num(c.home_line) != null && Math.abs(num(c.home_line) - homeLine) < 1e-9 && num(c.win) != null)
+        return { win: num(c.win), push: num(c.push) || 0, lose: num(c.lose) };
+    }
+    return null;
+  }
+
+  function contractBy(rows) {
+    var by = {};
+    (rows || []).forEach(function (r) { if (!r || !r.field) return; by[r.field] = by[r.field] || {}; by[r.field][r.side || 'game'] = r; });
+    return by;
+  }
+  function parseNum(re, s) { var m = re.exec(str(s)); return m ? num(m[1]) : null; }
+  function sideRow(row) {
+    if (!row) return null;
+    return { state: row.state || null, detail: row.detail || null, source: row.source || null, as_of: row.as_of || row.observed_at || null, priced: row.priced === true };
+  }
+
+  /** CFB-specific evidence, read from the published input contract. Values that do not parse stay null. */
+  function cfbEvidence(input) {
+    var by = contractBy(input.contract);
+    var c = input.cfb || {};
+    function pair(field, re) {
+      var f = by[field] || {};
+      var o = { home: sideRow(f.home), away: sideRow(f.away) };
+      if (re) ['home', 'away'].forEach(function (s) { if (o[s]) o[s].value = o[s].state === 'UNAVAILABLE' || o[s].state === 'FETCH_FAILED' ? null : parseNum(re, o[s].detail); });
+      return o;
+    }
+    function qb(side) {
+      var st = c[side + '_starter'] || null, epa = c[side + '_qb_epa'] || null;
+      var season = epa && epa.season && epa.season.state === 'MEASURED' ? epa.season : null;
+      return {
+        name: st ? (st.player_name || null) : null,
+        status: st ? (st.status || null) : null,
+        confirmed: st ? st.confirmed === true : false,
+        epa_per_dropback: season ? num(season.epa_per_dropback) : null,
+        dropbacks: season ? num(season.dropbacks) : null,
+        epa_state: epa ? epa.state || null : null,
+        priced: false,
+        note: epa ? (epa.pricing_statement || null) : null
+      };
+    }
+    var avail = by.availability || {};
+    return {
+      team_rating: pair('team_rating', /rated (-?\d+(?:\.\d+)?)/),
+      roster_talent: pair('roster_talent', /composite (-?\d+(?:\.\d+)?)/),
+      recruiting: pair('recruiting_talent', /composite (-?\d+(?:\.\d+)?)/),
+      coaching: pair('coaching_continuity'),
+      schedule: pair('schedule_context', /rest (\d+)d/),
+      venue: pair('venue_geography'),
+      weather: sideRow((by.weather || {}).game),
+      availability: { home: sideRow(avail.home), away: sideRow(avail.away) },
+      qb: { home: qb('home'), away: qb('away') }
+    };
+  }
+
+  /** NFL-specific evidence: professional roster, starters, the official injury report, rest, roof, drivers. */
+  function nflEvidence(input) {
+    var n = input.nfl || {}, pj = input.projection || {};
+    function starter(s) { var st = n[s + '_starter']; return st ? { name: st.player_name || null, status: st.status || null, confirmed: /CONFIRM|OFFICIAL/i.test(str(st.status)), source: st.source || null } : { name: null, status: null, confirmed: false, source: null }; }
+    var drivers = (pj.contributions || []).filter(function (c) { return c && num(c.points) != null; }).map(function (c) {
+      return { key: c.key, label: NFL_DRIVER_LABEL[c.key] || str(c.key).replace(/_/g, ' '), home_margin_points: r2(c.points) };
+    });
+    var inj = n.injuries || null;
+    function injSide(s) {
+      if (!inj || !Array.isArray(inj[s])) return null;
+      return inj[s].map(function (p) { return { player: p.player || p.name || null, position: p.position || null, status: p.status || p.report_status || null }; })
+        .filter(function (p) { return p.player; });
+    }
+    return {
+      qb: { home: starter('home'), away: starter('away') },
+      rest: { home: num(n.home_rest), away: num(n.away_rest) },
+      roof: n.roof || null, surface: n.surface || null, div_game: n.div_game == null ? null : !!n.div_game,
+      drivers: drivers,
+      injuries: inj ? { home: injSide('home'), away: injSide('away'), as_of: inj.as_of || null, source: inj.source || null } : null,
+      data_quality: n.data_quality || null,
+      scenarios: n.scenarios || null
+    };
+  }
+
+  /**
+   * Build the evidence contract for one game.
+   * The canonical research object is lib/game_research.js's; this wraps it
+   * with the pricing kernel's fair line and tier, the market states, a
+   * sport-specific block, the confidence grade and the missing-evidence list.
+   */
+  function evidence(input, opts) {
+    input = input || {}; opts = opts || {};
+    var now = toMs(input.now != null ? input.now : opts.now); if (now == null) now = Date.now();
+    var sport = input.sport, g = input.game || {}, pj = input.projection || {}, mk = input.market || {};
+    var P = PK(), G = GR();
+    var projHome = num(pj.home_line), projTotal = num(pj.total), projWp = num(pj.home_win_prob);
+    var hasProj = projHome != null;
+    var sp = mk.spread || null, tt = mk.total || null, ml = mk.moneyline || null, op = mk.open || null;
+    var st = {
+      spread: quoteStatus(sp, 'spreads', g.kickoff, now),
+      total: quoteStatus(tt ? { line: tt.line, captured_at: tt.captured_at, executable: tt.executable, freshness: tt.freshness } : null, 'totals', g.kickoff, now),
+      moneyline: quoteStatus(ml, 'h2h', g.kickoff, now)
+    };
+    var mktHome = sp ? num(sp.home_line) : null, mktTotal = tt ? num(tt.line) : null;
+
+    /* ---- the pricing kernel's fair lines and tiers (never recomputed here) */
+    var FS = P && (hasProj || mktHome != null) ? P.fairSpread({ sport: sport, model_home_line: projHome, market_home_line: mktHome }) : null;
+    var FT = P && (projTotal != null || mktTotal != null) ? P.fairTotal({ sport: sport, model_total: projTotal, market_total: mktTotal }) : null;
+    var FM = P && (projWp != null || (ml && num(ml.home) != null && num(ml.away) != null)) ? P.fairMoneyline({ sport: sport, model_home_win_prob: projWp, market_home_ml: ml ? ml.home : null, market_away_ml: ml ? ml.away : null }) : null;
+    var tierSpread = FS && FS.tier ? FS.tier : (P ? P.validationFor(sport, 'spread').tier : 'RESEARCH');
+    var sigSpread = FS && num(FS.sigma) != null ? num(FS.sigma) : (P ? num(P.sigmaFor(sport, 'spread', P.validationFor(sport, 'spread')).sigma) : null);
+    var sigTotal = FT && num(FT.sigma) != null ? num(FT.sigma) : (P ? num(P.sigmaFor(sport, 'total', P.validationFor(sport, 'total')).sigma) : null);
+    if (num(pj.sigma) != null && sigSpread == null) sigSpread = num(pj.sigma);
+
+    /* ---- the canonical research object */
+    var research = null;
+    if (G) {
+      var qual = G.qualityFromContract ? G.qualityFromContract((input.contract || []).map(function (r) {
+        return r && CONTRACT_EXTRA[r.field] ? Object.assign({}, r, { field: CONTRACT_EXTRA[r.field] === 'team_ratings' ? '__team_rating' : r.field }) : r;
+      })) : {};
+      /* team ratings: a category game_research does not map from the contract */
+      var tr = (input.contract || []).filter(function (r) { return r && r.field === 'team_rating'; });
+      if (tr.length) {
+        var trUn = tr.filter(function (r) { return r.state === 'UNAVAILABLE' || r.state === 'FETCH_FAILED'; }).length;
+        qual.team_ratings = { status: trUn === tr.length ? 'UNAVAILABLE' : trUn ? 'PARTIAL' : 'AVAILABLE', source: tr[0].source || null, note: 'team rating (published input contract)' };
+      }
+      /* A report that was not REQUIRED is not a report that says anyone is healthy. */
+      var av = (input.contract || []).filter(function (r) { return r && r.field === 'availability'; });
+      if (av.length && av.every(function (r) { return r.state === 'NOT_REQUIRED'; }))
+        qual.injuries = { status: 'PARTIAL', note: 'no availability report was required for this game, so health is unknown rather than clean' };
+      if (sport === NFL) {
+        var nf = input.nfl || {};
+        if (nf.injuries) qual.injuries = { available: true, captured_at: nf.injuries.as_of || null, source: nf.injuries.source || 'official NFL injury report' };
+        var qbKnown = nf.home_starter && nf.away_starter;
+        qual.qb = qbKnown ? { status: 'PARTIAL', note: 'starters from the schedule feed; not confirmed' } : { status: 'UNAVAILABLE', note: 'no starting quarterback on file for one or both sides' };
+        if (nf.roof && /dome|closed/i.test(nf.roof)) qual.weather = { status: 'AVAILABLE', note: 'indoor venue' };
+      }
+      qual.market = sp && num(sp.home_line) != null ? { status: st.spread.state === 'CURRENT' || st.spread.state === 'AGING' ? 'AVAILABLE' : st.spread.state === 'STALE' ? 'STALE' : 'PARTIAL', captured_at: sp.captured_at || null, note: 'spread market ' + st.spread.state } : { status: 'UNAVAILABLE', note: 'no spread market on file' };
+      qual.model_inputs = hasProj ? { available: true, captured_at: pj.generated_at || null, max_age_h: 192 } : { status: 'UNAVAILABLE', note: 'no projection on file' };
+      var cc = null;
+      if (Array.isArray(pj.cover_curve) && pj.cover_curve.length) cc = function (hl) { return curveCoverAt(pj.cover_curve, hl); };
+      research = G.build({
+        now: iso(now),
+        game: { sport: sport, season: g.season, week: g.week, game_id: g.game_id, home: g.home, away: g.away, kickoff_at: g.kickoff, venue: g.venue, status: g.status },
+        model: hasProj ? { model_id: pj.version || null, version: pj.version || null, captured_at: pj.generated_at || null, home_line: projHome, total: projTotal, home_win_prob: projWp, sigma: sigSpread, sigma_source: FS ? FS.sigma_basis : null, cover_at: cc || undefined } : null,
+        market: {
+          open: op ? { line: op.home_line, captured_at: op.captured_at, source: op.source } : undefined,
+          current: sp ? { line: sp.home_line, captured_at: sp.captured_at, source: sp.source || sp.book } : undefined,
+          total: tt ? { line: tt.line, captured_at: tt.captured_at } : undefined,
+          moneyline: ml ? { home: ml.home, away: ml.away, captured_at: ml.captured_at, source: ml.source } : undefined,
+          books: sp && sp.book && num(sp.home_line) != null ? [{ book: sp.book, line: sp.home_line, price_home: sp.price_home, price_away: sp.price_away, captured_at: sp.captured_at }] : []
+        },
+        quality: qual,
+        quality_categories: APPLICABLE[sport] || APPLICABLE[NFL]
+      });
+    }
+
+    /* ---- gap, in the research object's own terms */
+    var gapPts = research && research.model_vs_market.raw_gap.value != null ? research.model_vs_market.raw_gap.value : (hasProj && mktHome != null ? Math.abs(projHome - mktHome) : null);
+    var gapSide = research ? research.model_vs_market.side : (hasProj && mktHome != null ? (projHome < mktHome ? 'home' : projHome > mktHome ? 'away' : null) : null);
+
+    /* ---- sport-specific block */
+    var specific = sport === CFB ? { cfb: cfbEvidence(input) } : sport === NFL ? { nfl: nflEvidence(input) } : {};
+
+    /* ---- what is missing, and which of it matters */
+    var missing = [];
+    function miss(key, why, important) { missing.push({ key: key, why: why, important: !!important }); }
+    if (!hasProj) miss('projection', 'no EdgeDesk projection is on file for this game', true);
+    if (mktHome == null) miss('spread_market', 'no spread market is on file', true);
+    else if (st.spread.state === 'STALE' || st.spread.state === 'UNKNOWN') miss('current_spread', 'the last spread on file is ' + st.spread.state.toLowerCase() + (st.spread.age_hours != null ? ' (' + st.spread.age_hours + 'h old)' : ''), true);
+    if (research) research.quality.categories.forEach(function (q) {
+      if (q.category === 'market' || q.category === 'model_inputs') return;
+      var lab = CATEGORY_LABEL[q.category] || q.category.replace(/_/g, ' ');
+      if (q.status === 'UNAVAILABLE') miss(q.category, 'EdgeDesk has no ' + lab + ' information for this game' + (q.note ? ' (' + q.note + ')' : ''), q.category === 'injuries' || q.category === 'qb' || q.category === 'team_ratings');
+      else if (q.status === 'STALE') miss(q.category, 'the ' + lab + ' information is out of date', q.category === 'injuries' || q.category === 'qb');
+    });
+    if (research && research.quality.categories.some(function (q) { return q.category === 'model_inputs' && q.status === 'STALE'; })) miss('model_inputs', 'the projection was built more than 8 days ago', true);
+    if (sport === NFL && specific.nfl && specific.nfl.data_quality && Array.isArray(specific.nfl.data_quality.missing))
+      specific.nfl.data_quality.missing.forEach(function (m) { miss('nfl:' + m, 'the NFL build reports ' + m + ' missing', true); });
+
+    /* ---- reliability and confidence (deterministic; see CONFIDENCE RULE) */
+    var info = num(pj.information_confidence);
+    if (info != null && info > 1) info = info / 100;
+    var completeness = research ? research.quality.completeness : num(pj.completeness);
+    var dataQ = info != null ? info : completeness;
+    var important = missing.filter(function (m) { return m.important; }).length;
+    var qScore = dataQ == null ? null : r2(dataQ * Math.pow(MISSING_PENALTY, important));
+    var reliability = {
+      information_confidence: info, priced_confidence: num(pj.priced_confidence) != null ? (num(pj.priced_confidence) > 1 ? num(pj.priced_confidence) / 100 : num(pj.priced_confidence)) : null,
+      completeness: completeness == null ? null : r2(completeness), engine_completeness: num(pj.completeness),
+      score: qScore, grade: gradeOf(qScore, QUALITY_GRADES),
+      rule: 'evidence quality = (information confidence, else data completeness) x ' + MISSING_PENALTY + ' per important missing input (' + important + ')'
+    };
+
+    var flags = research ? research.flags : null;
+    return {
+      schema: EVIDENCE_SCHEMA, version: VERSION, built_at: iso(now),
+      sport: sport, sport_label: SPORTS[sport] ? SPORTS[sport].label : sport, sport_short: sportShort(sport),
+      identity: { game_id: g.game_id != null ? String(g.game_id) : null, home: g.home || null, away: g.away || null, kickoff: g.kickoff || null,
+        venue: g.venue || null, neutral_site: g.neutral_site === true, status: g.status || 'scheduled', season: g.season == null ? null : g.season, week: g.week == null ? null : g.week },
+      projection: { home_line: projHome, total: projTotal, home_win_prob: projWp, version: pj.version || null, generated_at: pj.generated_at || null, has_cover_curve: Array.isArray(pj.cover_curve) && pj.cover_curve.length > 0 },
+      fair: {
+        spread: FS && FS.ok ? { fair_home_line: num(FS.fair_home_line), status: FS.status, tier: FS.tier, tier_basis: FS.tier_basis || null, required_edge_points: num(FS.required_edge_points), sigma: num(FS.sigma), sigma_basis: FS.sigma_basis || null, basis: FS.basis || null } : null,
+        total: FT && FT.ok ? { fair_total: num(FT.fair_total), status: FT.status, tier: FT.tier, tier_basis: FT.tier_basis || null, sigma: num(FT.sigma) } : null,
+        moneyline: FM && FM.ok ? { fair_home_win_prob: num(FM.fair_home_win_prob), status: FM.status, tier: FM.tier, tier_basis: FM.tier_basis || null } : null,
+        tier: tierSpread, sigma_spread: sigSpread, sigma_total: sigTotal
+      },
+      market: {
+        spread: sp ? { home_line: mktHome, book: sp.book || null, price_home: num(sp.price_home), price_away: num(sp.price_away), captured_at: sp.captured_at || null, source: sp.source || null, executable: sp.executable !== false, state: st.spread.state, actionable: st.spread.actionable, age_hours: st.spread.age_hours, why: st.spread.why } : { state: 'NONE' },
+        total: tt ? { line: mktTotal, book: tt.book || null, price_over: num(tt.price_over), price_under: num(tt.price_under), captured_at: tt.captured_at || null, source: tt.source || null, executable: tt.executable !== false, state: st.total.state, actionable: st.total.actionable, age_hours: st.total.age_hours } : { state: 'NONE' },
+        moneyline: ml ? { home: num(ml.home), away: num(ml.away), book: ml.book || null, captured_at: ml.captured_at || null, source: ml.source || null, state: st.moneyline.state, actionable: st.moneyline.actionable, age_hours: st.moneyline.age_hours } : { state: 'NONE' },
+        open: op && num(op.home_line) != null ? { home_line: num(op.home_line), captured_at: op.captured_at || null, source: op.source || null } : null,
+        movement: research ? research.model_vs_market.movement_since_open : null
+      },
+      gap: { points: gapPts == null ? null : r2(gapPts), side: gapSide, normalized: sigSpread && gapPts != null ? r2(gapPts / sigSpread) : null, outlier: gapPts != null && gapPts >= outlierGap() },
+      reliability: reliability,
+      specific: specific,
+      missing: missing,
+      typed: research && G ? G.evidence(research) : [],
+      flags: flags ? flags.flags.map(function (f) { return f.key; }) : [],
+      research: research,
+      _curve: Array.isArray(pj.cover_curve) ? pj.cover_curve : null
+    };
+  }
+
+  /* ================================================================
+     2. PRICE A SELECTION AT AN ACTUAL LINE AND PRICE
+
+     VERDICTS
+       VALUE      the price clears EdgeDesk's rule for this market's tier:
+                  VALIDATED/LEAN -> EDPRICE status PLAY or LEAN_PLAY;
+                  RESEARCH -> the projection's own cover probability beats
+                  the break-even AND the line is at least the research gap
+                  (3 pts, EDRESEARCH) better than the projection.
+       THIN       positive against the break-even, short of that rule.
+       NO_VALUE   at or worse than the break-even: the market is efficient.
+       OVERPRICED the market asks for more than EdgeDesk's own number (the
+                  projection is on the other side of it).
+       NO_PRICE / NO_PROJECTION  nothing to price.
+     ================================================================ */
+  function selFair(E, sel) {
+    var pj = E.projection;
+    if (sel.market === 'spread') { if (pj.home_line == null) return null; return sel.side === 'home' ? pj.home_line : -pj.home_line; }
+    if (sel.market === 'total') return pj.total;
+    return null;
+  }
+  /** Points of value vs the projection, positive = the line is better than EdgeDesk's number for this selection. */
+  function valuePoints(E, sel, line) {
+    var f = selFair(E, sel); if (f == null || num(line) == null) return null;
+    if (sel.market === 'spread') return r2(num(line) - f);
+    if (sel.market === 'total') return r2(sel.side === 'over' ? f - num(line) : num(line) - f);
+    return null;
+  }
+  function homeLineOf(sel, line) { return sel.side === 'home' ? num(line) : -num(line); }
+  /** Model cover probability of the selection at `line`, with where it came from. */
+  function modelCover(E, sel, line) {
+    var P = PK(), f = selFair(E, sel);
+    if (f == null || num(line) == null || !P) return null;
+    if (sel.market === 'spread') {
+      var hl = homeLineOf(sel, line);
+      var c = curveCoverAt(E._curve, hl);
+      if (c) return { cover: sel.side === 'home' ? c.win : c.lose, push: c.push || 0, basis: 'EdgeDesk’s own margin distribution for this game' };
+      var r = P.coverAt(f, num(line), E.fair.sigma_spread);
+      return r ? { cover: r.cover, push: r.push, basis: 'the projection with the pricing kernel’s residual sigma (' + E.fair.sigma_spread + ')' } : null;
+    }
+    if (sel.market === 'total') {
+      var s = E.fair.sigma_total; if (!s) return null;
+      var pt = P.priceTotalSide({ fair: { ok: true, fair_total: f, sigma: s, tier: 'RESEARCH', model_total: f, market_total: num(line) }, side: sel.side, market_total: num(line), odds_american: sel.odds });
+      return pt ? { cover: pt.cover_at_market, push: pt.push_at_market || 0, basis: 'the projected total with the pricing kernel’s residual sigma (' + s + ')' } : null;
+    }
+    return null;
+  }
+  function mlThresholdPP(E) {
+    /* the probability equivalent of the research gap at this sport's sigma */
+    var P = PK(), s = E.fair.sigma_spread; if (!P || !s) return 5;
+    var z = researchGap() / s;
+    var cov = P.coverAt(0, researchGap(), s); /* P(margin < gap) with fair 0 */
+    return cov ? r2((cov.cover + cov.push / 2 - 0.5) * 100) : r2(z * 39.9);
+  }
+
+  /** Evaluate one selection {market, side, line, odds}. Pure; no state. */
+  function evaluate(E, sel) {
+    sel = Object.assign({}, sel);
+    var P = PK();
+    var out = { sel: sel, label: selLabel(E, sel), verdict: null, value_points: null, prob: null, fair: null, why: null, tier: null, current: false, market_state: null, outlier: false };
+    var mkState = sel.market === 'spread' ? E.market.spread : sel.market === 'total' ? E.market.total : E.market.moneyline;
+    out.market_state = sel.hypothetical ? 'HYPOTHETICAL' : (mkState ? mkState.state : 'NONE');
+    out.current = !sel.hypothetical && !!(mkState && mkState.actionable);
+    /* a line with no price on file is judged at -110 and SAYS so; the assumed price never becomes the selection's price */
+    var odds = num(sel.odds) != null ? num(sel.odds) : -110;
+    out.odds_assumed = num(sel.odds) == null;
+
+    if (sel.market === 'moneyline') {
+      var tierM = E.fair.moneyline ? E.fair.moneyline.tier : 'RESEARCH';
+      var pHome = tierM === 'RESEARCH' || !E.fair.moneyline ? E.projection.home_win_prob : E.fair.moneyline.fair_home_win_prob;
+      out.tier = tierM;
+      if (pHome == null) { out.verdict = 'NO_PROJECTION'; out.why = 'no EdgeDesk win probability is on file'; return out; }
+      if (num(sel.odds) == null) { out.verdict = 'NO_PRICE'; return out; }
+      var p = sel.side === 'home' ? pHome : 1 - pHome;
+      var be = breakEven(odds, 0);
+      var edge = r2((p - be) * 100);
+      var thr = mlThresholdPP(E);
+      out.prob = { win: r2(p), break_even: r2(be), edge_pp: edge, basis: tierM === 'RESEARCH' ? 'the projection’s win probability, research tier' : 'the validated moneyline blend' };
+      out.fair = { price: probToAm(p), basis: out.prob.basis };
+      out.threshold_pp = thr;
+      out.verdict = edge >= thr ? 'VALUE' : edge > 0 ? 'THIN' : edge > -thr ? 'NO_VALUE' : 'OVERPRICED';
+      out.ladder = { kind: 'price', fair_price: probToAm(p), attractive_price: p - thr / 100 > 0 ? probToAm(p - thr / 100) : null, rule: 'fair price = EdgeDesk’s win probability; attractive = ' + thr + ' probability points better (the research gap of ' + researchGap() + ' pts at sigma ' + E.fair.sigma_spread + ')' };
+      return out;
+    }
+
+    var fairSel = selFair(E, sel);
+    if (fairSel == null) { out.verdict = 'NO_PROJECTION'; out.why = 'no EdgeDesk projection is on file'; out.tier = E.fair.tier; return out; }
+    if (num(sel.line) == null) { out.verdict = 'NO_PRICE'; out.why = 'no line on file'; out.tier = E.fair.tier; return out; }
+    var v = valuePoints(E, sel, sel.line);
+    out.value_points = v;
+    out.outlier = v != null && Math.abs(v) >= outlierGap();
+    var tier = sel.market === 'spread' ? (E.fair.spread ? E.fair.spread.tier : E.fair.tier) : (E.fair.total ? E.fair.total.tier : 'RESEARCH');
+    out.tier = tier;
+    var validated = tier === 'VALIDATED' || tier === 'LEAN';
+    if (validated && P && sel.market === 'spread') {
+      var FS = P.fairSpread({ sport: E.sport, model_home_line: E.projection.home_line, market_home_line: homeLineOf(sel, sel.line) });
+      var r = P.priceSpreadSide({ fair: FS, side: sel.side, selection: sel.team, odds_american: odds });
+      out.fair = { line: r.fair_line, basis: 'the validated blend of projection and market (' + tier + ' tier)', projection_line: fairSel };
+      out.prob = { cover: r.cover_at_market, push: r.push_at_market, break_even: r.break_even, edge_pp: r.edge_pp, basis: 'the validated blend (' + tier + ')' };
+      out.pricing_status = r.status;
+      out.required_points = r.required_edge_points;
+      if (r.status === 'PLAY' || r.status === 'LEAN_PLAY') out.verdict = 'VALUE';
+      else if (v != null && v < 0) out.verdict = 'OVERPRICED';
+      else if (r.edge_pp != null && r.edge_pp > 0) out.verdict = 'THIN';
+      else out.verdict = 'NO_VALUE';
+      out.why = r.why;
+    } else {
+      var mc = modelCover(E, Object.assign({}, sel, { odds: odds }), sel.line);
+      var be2 = breakEven(odds, mc ? mc.push : 0);
+      var edge2 = mc ? r2((mc.cover - be2) * 100) : null;
+      out.fair = { line: fairSel, basis: 'EdgeDesk’s projection (' + tier + ' tier: the projection has not been validated as a betting price in this market)', projection_line: fairSel };
+      out.prob = mc ? { cover: mc.cover, push: mc.push, break_even: r2(be2), edge_pp: edge2, basis: mc.basis + ', conditional on the projection being right' } : null;
+      out.required_points = researchGap();
+      if (v != null && v < 0) out.verdict = 'OVERPRICED';
+      else if (edge2 == null || edge2 <= 0) out.verdict = 'NO_VALUE';
+      else if (v >= researchGap()) out.verdict = 'VALUE';
+      else out.verdict = 'THIN';
+    }
+    return out;
+  }
+
+  /**
+   * THE PRICE LADDER: where this selection stops being worth it, from the
+   * same evaluate() at every half point. attractive_at is the worst line that
+   * is still VALUE; playable_at the worst that is VALUE or THIN.
+   */
+  function ladder(E, sel) {
+    if (sel.market === 'moneyline') { var m = evaluate(E, sel); return m.ladder || null; }
+    var f = selFair(E, sel); if (f == null) return null;
+    var betterIsHigher = !(sel.market === 'total' && sel.side === 'over');
+    var lines = [];
+    for (var d = -8; d <= 16; d += 0.5) lines.push(half(f) + (betterIsHigher ? d : -d));
+    var attractive = null, playable = null;
+    lines.forEach(function (L) {
+      var e = evaluate(E, Object.assign({}, sel, { line: L, hypothetical: true }));
+      if (attractive == null && e.verdict === 'VALUE') attractive = L;
+      if (playable == null && (e.verdict === 'VALUE' || e.verdict === 'THIN')) playable = L;
+    });
+    return { kind: sel.market === 'total' ? 'total' : 'line', attractive_at: attractive, playable_at: playable, better_is_higher: betterIsHigher,
+      rule: 'each half point re-evaluated by the same verdict rule at ' + fmtAm(sel.odds == null ? -110 : sel.odds) + '; attractive = the worst number still VALUE, playable = the worst still THIN or better' };
+  }
+  function ladderText(E, sel, L) {
+    if (!L) return null;
+    if (L.kind === 'price') {
+      if (L.fair_price == null) return null;
+      return 'EdgeDesk’s fair price is ' + fmtAm(L.fair_price) + (L.attractive_price != null ? '; it gets attractive around ' + fmtAm(L.attractive_price) + ' or better' : '') + '.';
+    }
+    var fmt = sel.market === 'total' ? function (x) { return (sel.side === 'over' ? 'Over ' : 'Under ') + x; } : fmtLine;
+    var who = sel.market === 'total' ? cap(sel.side) : sel.team;
+    if (L.playable_at == null) return 'No number in a normal range makes ' + who + ' a value, by EdgeDesk’s rule.';
+    var worse = L.better_is_higher ? L.playable_at - 0.5 : L.playable_at + 0.5;
+    var parts = [];
+    if (L.attractive_at != null) parts.push(fmt(L.attractive_at) + ' or better is attractive');
+    if (L.playable_at !== L.attractive_at) parts.push(fmt(L.playable_at) + ' is still playable');
+    return cap(parts.join('; ')) + '. At ' + fmt(worse) + ' or worse, pass.';
+  }
+
+  /* ================================================================
+     3. REASONS AND RISKS, oriented onto a selection, from typed evidence
+     ================================================================ */
+  function poss(t) { t = str(t); return /s$/i.test(t) ? t + '’' : t + '’s'; }
+  function teamOf(E, side) { return side === 'home' ? E.identity.home : side === 'away' ? E.identity.away : null; }
+  function reasonsFor(E, sel) {
+    var out = [], side = sel.side, oth = other(side);
+    var me = teamOf(E, side), them = teamOf(E, oth);
+    var sp = E.specific || {};
+    if (sel.market === 'spread' || sel.market === 'moneyline') {
+      if (sp.cfb) {
+        var tr = sp.cfb.team_rating, a = tr[side] && tr[side].value, b = tr[oth] && tr[oth].value;
+        if (a != null && b != null && Math.abs(a - b) >= 1)
+          out.push({ key: 'team_rating', favours: a > b ? side : oth, weight: Math.abs(a - b), text: (a > b ? me : them) + ' grades ' + r1(Math.abs(a - b)) + ' points stronger on EdgeDesk’s team rating (' + r1(Math.max(a, b)) + ' vs ' + r1(Math.min(a, b)) + ')' });
+        var rt = sp.cfb.roster_talent, ra = rt[side] && rt[side].value, rb = rt[oth] && rt[oth].value;
+        if (ra != null && rb != null && Math.abs(ra - rb) >= 3)
+          out.push({ key: 'roster_talent', favours: ra > rb ? side : oth, weight: Math.abs(ra - rb) / 5, text: (ra > rb ? me : them) + ' has the stronger measured roster (production composite ' + r1(Math.max(ra, rb)) + ' vs ' + r1(Math.min(ra, rb)) + ')' });
+        var qa = sp.cfb.qb[side], qb = sp.cfb.qb[oth];
+        if (qa && qb && qa.epa_per_dropback != null && qb.epa_per_dropback != null && Math.abs(qa.epa_per_dropback - qb.epa_per_dropback) >= 0.08) {
+          var better = qa.epa_per_dropback > qb.epa_per_dropback ? qa : qb;
+          out.push({ key: 'qb', favours: better === qa ? side : oth, weight: 1, research_only: true, text: better.name + ' has the better passing efficiency this season (' + r2(better.epa_per_dropback) + ' EPA per dropback vs ' + r2((better === qa ? qb : qa).epa_per_dropback) + '; research context, not priced)' });
+        }
+        var sc = sp.cfb.schedule, sa = sc[side] && sc[side].value, sb = sc[oth] && sc[oth].value;
+        if (sa != null && sb != null && Math.abs(sa - sb) >= 3) out.push({ key: 'rest', favours: sa > sb ? side : oth, weight: 0.5, text: (sa > sb ? me : them) + ' has ' + Math.abs(sa - sb) + ' more days of rest' });
+      }
+      if (sp.nfl) {
+        (sp.nfl.drivers || []).filter(function (d) { return d.key !== 'baseline' && Math.abs(d.home_margin_points) >= 0.4; })
+          .sort(function (x, y) { return Math.abs(y.home_margin_points) - Math.abs(x.home_margin_points); }).slice(0, 3).forEach(function (d) {
+            var fav = d.home_margin_points > 0 ? 'home' : 'away';
+            out.push({ key: 'driver:' + d.key, favours: fav, weight: Math.abs(d.home_margin_points), text: teamOf(E, fav) + ' gains ' + pts(d.home_margin_points) + ' on ' + d.label + ' in EdgeDesk’s projection' });
+          });
+        var rs = sp.nfl.rest;
+        if (rs.home != null && rs.away != null && Math.abs(rs.home - rs.away) >= 3) { var rf = rs.home > rs.away ? 'home' : 'away'; out.push({ key: 'rest', favours: rf, weight: 0.5, text: teamOf(E, rf) + ' has ' + Math.abs(rs.home - rs.away) + ' more days of rest' }); }
+      }
+      var mv = E.market.movement;
+      if (mv && mv.toward_model_points != null && Math.abs(mv.toward_model_points) >= 1)
+        out.push({ key: 'movement', favours: mv.toward_model_points > 0 ? E.gap.side : other(E.gap.side), weight: 0.8, text: 'the market has moved ' + pts(mv.toward_model_points) + (mv.toward_model_points > 0 ? ' toward' : ' away from') + ' EdgeDesk’s number since the open' });
+    }
+    if (sel.market === 'total' && E.projection.total != null) {
+      out.push({ key: 'total', favours: E.projection.total > (sel.line || 0) ? 'over' : 'under', weight: 1, text: 'EdgeDesk projects ' + r1(E.projection.total) + ' total points' });
+      if (sp.nfl && sp.nfl.roof && /dome|closed/i.test(sp.nfl.roof)) out.push({ key: 'roof', favours: null, weight: 0.2, text: 'indoor game, so weather is not a factor' });
+    }
+    out.sort(function (x, y) { return y.weight - x.weight; });
+    return { for: out.filter(function (r) { return r.favours === side; }), against: out.filter(function (r) { return r.favours === oth; }), neutral: out.filter(function (r) { return r.favours == null; }) };
+  }
+  function risksFor(E, sel, ev) {
+    var r = [], side = sel.side, sp = E.specific || {};
+    var me = teamOf(E, side);
+    if (ev && ev.outlier) r.push({ key: 'outlier', text: 'the gap is ' + pts(ev.value_points) + ', past the ' + outlierGap() + '-point line where EdgeDesk treats a disagreement as a data check (a wrong input is likelier than a mispriced market)' });
+    var tier = ev ? ev.tier : E.fair.tier;
+    if (tier === 'RESEARCH') {
+      var basis = sel.market === 'spread' && E.fair.spread ? E.fair.spread.tier_basis : sel.market === 'total' && E.fair.total ? E.fair.total.tier_basis : E.fair.moneyline ? E.fair.moneyline.tier_basis : null;
+      r.push({ key: 'tier', text: E.sport_short + ' ' + (sel.market === 'moneyline' ? 'moneyline' : sel.market) + ' projections are research tier' + (basis ? ': ' + basis : '') });
+    }
+    if (sel.market !== 'total' && side && sp.cfb) {
+      var q = sp.cfb.qb[side];
+      if (q && !q.confirmed) r.push({ key: 'qb', text: (q.name ? q.name + ' is not confirmed as ' + poss(me) + ' starter' : poss(me) + ' starter is unresolved') });
+      var c = sp.cfb.coaching[side];
+      if (c && /FIRST SEASON/i.test(str(c.detail))) r.push({ key: 'coaching', text: me + ' has a first-year head coach, so last season’s data describes a different program' });
+    }
+    if (sel.market !== 'total' && side && sp.nfl) {
+      var nq = sp.nfl.qb[side];
+      if (nq && !nq.name) r.push({ key: 'qb', text: 'no starting quarterback is on file for ' + me });
+      else if (nq && !nq.confirmed) r.push({ key: 'qb', text: nq.name + ' is ' + poss(me) + ' starter by the schedule feed, not a confirmed report' });
+    }
+    E.missing.filter(function (m) { return m.important && m.key !== 'projection' && m.key !== 'spread_market'; }).forEach(function (m) { r.push({ key: 'missing:' + m.key, text: m.why }); });
+    var rs = reasonsFor(E, sel).against;
+    if (rs.length) r.push({ key: 'counter', text: 'the other side has a case: ' + rs[0].text });
+    var mk = sel.market === 'spread' ? E.market.spread : sel.market === 'total' ? E.market.total : E.market.moneyline;
+    if (mk && mk.state === 'AGING') r.push({ key: 'aging', text: 'the price was captured ' + (mk.age_hours != null ? mk.age_hours + 'h' : 'a while') + ' ago; confirm it is still there' });
+    /* the strongest risk first: data problems, then the model's record, then the matchup */
+    var order = { outlier: 0, qb: 1, 'missing:injuries': 2, tier: 3, coaching: 4, counter: 5, aging: 6 };
+    r.sort(function (a, b) { var x = order[a.key] != null ? order[a.key] : (/^missing/.test(a.key) ? 2 : 7), y = order[b.key] != null ? order[b.key] : (/^missing/.test(b.key) ? 2 : 7); return x - y; });
+    return r;
+  }
+
+  /* ================================================================
+     4. CONFIDENCE RULE
+       score = evidence quality x validation-tier weight x quote-freshness
+       weight (the EDBOARD R6 weights). HIGH >= 0.6 (VALIDATED tier only), MEDIUM >= 0.4, LOW > 0.
+       INSUFFICIENT: no projection, no price, or a market that is not current.
+       An outlier gap caps it at LOW.
+     ================================================================ */
+  function confidence(E, ev) {
+    var q = E.reliability.score;
+    if (!ev || ev.verdict === 'NO_PROJECTION' || ev.verdict === 'NO_PRICE' || q == null) return { grade: 'INSUFFICIENT', score: null, rule: 'no projection, price or evidence-quality measure' };
+    var st = ev.market_state === 'HYPOTHETICAL' ? 'CURRENT' : ev.market_state;
+    var s = r2(q * tierWeight(ev.tier) * freshWeight(st));
+    var g = !ev.current && ev.market_state !== 'HYPOTHETICAL' ? 'INSUFFICIENT' : gradeOf(s, CONFIDENCE_GRADES);
+    if (ev.outlier && (g === 'HIGH' || g === 'MEDIUM')) g = 'LOW';
+    /* only a VALIDATED tier can carry HIGH: LEAN is break-even history, not a profit */
+    if (g === 'HIGH' && ev.tier !== 'VALIDATED') g = 'MEDIUM';
+    return { grade: g, score: s, parts: { evidence_quality: q, tier: ev.tier, tier_weight: tierWeight(ev.tier), market_state: ev.market_state, freshness_weight: freshWeight(st) },
+      rule: 'evidence quality ' + q + ' x tier ' + ev.tier + ' (' + tierWeight(ev.tier) + ') x market ' + st + ' (' + freshWeight(st) + ') = ' + s + '; HIGH >= 0.6, MEDIUM >= 0.4' };
+  }
+
+  /* ================================================================
+     5. SELECTIONS AND THE BOARD RANKING
+     ================================================================ */
+  function selLabel(E, sel) {
+    if (sel.market === 'total') return cap(sel.side) + ' ' + (sel.line == null ? '' : r1(sel.line)) + (E && E.identity && E.identity.home ? ' (' + E.identity.away + ' at ' + E.identity.home + ')' : '');
+    var t = sel.team || teamOf(E, sel.side);
+    if (sel.market === 'moneyline') return t + ' ML';
+    return t + ' ' + fmtLine(sel.line);
+  }
+  /** The market selections that exist on the evidence right now. */
+  function currentSelections(E, markets) {
+    var out = [], want = markets && markets.length ? markets : ['spread', 'total'];
+    var sp = E.market.spread;
+    if (want.indexOf('spread') >= 0 && sp && sp.home_line != null) ['home', 'away'].forEach(function (s) {
+      out.push({ sport: E.sport, game_id: E.identity.game_id, market: 'spread', side: s, team: teamOf(E, s), line: s === 'home' ? sp.home_line : -sp.home_line,
+        odds: s === 'home' ? sp.price_home : sp.price_away, book: sp.book });
+    });
+    var tt = E.market.total;
+    if (want.indexOf('total') >= 0 && tt && tt.line != null) ['over', 'under'].forEach(function (s) {
+      out.push({ sport: E.sport, game_id: E.identity.game_id, market: 'total', side: s, team: null, line: tt.line, odds: s === 'over' ? tt.price_over : tt.price_under, book: tt.book });
+    });
+    var ml = E.market.moneyline;
+    if (want.indexOf('moneyline') >= 0 && ml && ml.home != null && ml.away != null) ['home', 'away'].forEach(function (s) {
+      out.push({ sport: E.sport, game_id: E.identity.game_id, market: 'moneyline', side: s, team: teamOf(E, s), line: null, odds: s === 'home' ? ml.home : ml.away, book: ml.book });
+    });
+    return out;
+  }
+  function isDog(sel) { return sel.market === 'moneyline' ? num(sel.odds) > 0 : sel.market === 'spread' ? num(sel.line) > 0 : false; }
+  function isFav(sel) { return sel.market === 'moneyline' ? num(sel.odds) < 0 : sel.market === 'spread' ? num(sel.line) < 0 : false; }
+  function selKey(sel) { return [sel.sport, sel.game_id, sel.market, sel.side].join('|'); }
+
+  /**
+   * THE OPPORTUNITY SCORE (reproducible, documented; EDBOARD R6 plus the
+   * missing-evidence penalty already inside evidence quality):
+   *   score = edge_pp x quote-freshness weight x tier weight x evidence quality
+   * edge_pp is the cover (or win) probability minus the break-even at the
+   * quoted price, from evaluate(). Only VALUE candidates qualify; THIN and
+   * better are kept as "closest" when nothing qualifies. A stale, unknown or
+   * reference-only price is never a current opportunity. An outlier gap is
+   * held as a data check.
+   *   safety  = orders VALUE/THIN by confidence score, then by cushion (points
+   *             past the playable line), then by score.
+   *   disagreement = orders by raw model-market gap, evidence quality beside it.
+   */
+  function scoreOf(E, ev) {
+    if (!ev.prob || ev.prob.edge_pp == null) return null;
+    var st = ev.market_state === 'HYPOTHETICAL' ? 'CURRENT' : ev.market_state;
+    return r2(ev.prob.edge_pp * freshWeight(st) * tierWeight(ev.tier) * (E.reliability.score == null ? 0 : E.reliability.score));
+  }
+  function rank(Es, opts) {
+    opts = opts || {};
+    var sort = opts.sort || 'value';
+    var markets = opts.markets || (opts.filter && opts.filter.underdog ? ['spread', 'moneyline'] : ['spread', 'total']);
+    var ex = {}; (opts.exclude || []).forEach(function (k) { ex[k] = 1; });
+    var exGames = {}; (opts.exclude_games || []).forEach(function (k) { exGames[k] = 1; });
+    var cands = [], stale = [], checks = [], reference = [], started = 0;
+    (Es || []).forEach(function (E) {
+      if (!E || !E.identity) return;
+      if (opts.sports && opts.sports.length && opts.sports.indexOf(E.sport) < 0) return;
+      if (exGames[E.sport + '|' + E.identity.game_id]) return;
+      currentSelections(E, markets).forEach(function (sel) {
+        if (ex[selKey(sel)]) return;
+        if (opts.filter && opts.filter.underdog && !isDog(sel)) return;
+        if (opts.filter && opts.filter.favorite && !isFav(sel)) return;
+        var ev = evaluate(E, sel);
+        if (ev.verdict !== 'VALUE' && ev.verdict !== 'THIN' && sort !== 'disagreement') return;
+        var row = { key: selKey(sel), E: E, sel: ev.sel, ev: ev, score: scoreOf(E, ev), confidence: confidence(E, ev) };
+        if (ev.market_state === 'STARTED') { started++; return; }
+        /* a gap past the outlier line is a data question whatever the market state */
+        if (ev.outlier) { checks.push(row); return; }
+        if (ev.market_state === 'STALE' || ev.market_state === 'UNKNOWN') { stale.push(row); return; }
+        if (ev.market_state === 'LINE_ONLY') { reference.push(row); return; }
+        cands.push(row);
+      });
+    });
+    function cushion(row) {
+      var L = ladder(row.E, row.sel); if (!L || L.kind === 'price' || L.playable_at == null) return 0;
+      return L.better_is_higher ? row.sel.line - L.playable_at : L.playable_at - row.sel.line;
+    }
+    var byScore = function (a, b) { return (b.score == null ? -1e9 : b.score) - (a.score == null ? -1e9 : a.score) || a.key.localeCompare(b.key); };
+    if (sort === 'safety') cands.forEach(function (r) { r.cushion = cushion(r); });
+    cands.sort(sort === 'safety' ? function (a, b) { return ((b.confidence.score || 0) - (a.confidence.score || 0)) || (b.cushion - a.cushion) || byScore(a, b); }
+      : sort === 'disagreement' ? function (a, b) { return (Math.abs(b.ev.value_points || 0) - Math.abs(a.ev.value_points || 0)) || byScore(a, b); }
+      : function (a, b) { var va = a.ev.verdict === 'VALUE' ? 1 : 0, vb = b.ev.verdict === 'VALUE' ? 1 : 0; return (vb - va) || byScore(a, b); });
+    /* one selection per game */
+    var seen = {}, list = [];
+    cands.forEach(function (r) { var g = r.E.sport + '|' + r.E.identity.game_id; if (seen[g]) return; seen[g] = 1; list.push(r); });
+    var qualified = list.filter(function (r) { return r.ev.verdict === 'VALUE' && (sort !== 'disagreement' || true); });
+    reference.sort(byScore); stale.sort(byScore);
+    return { sort: sort, qualified: sort === 'disagreement' ? list : qualified, closest: list.filter(function (r) { return r.ev.verdict !== 'VALUE'; }),
+      all: list, stale: stale, reference: reference, data_checks: checks, started: started, evaluated: (Es || []).length,
+      rule: 'score = edge (probability points at the quoted price) x quote freshness x validation tier x evidence quality; VALUE only; one per game; stale, unknown-age and reference-only prices never qualify; a gap of ' + outlierGap() + '+ points is a data check' };
+  }
+
+  /* ================================================================
+     6. INTENT
+     ================================================================ */
+  var RX = {
+    board: /\b(best|top|strongest|biggest|safest|most|any(thing)?)\b.*\b(value|values|bets?|plays?|edges?|lines?|spreads?|sides?|dogs?|underdogs?|favou?rites?|totals?|markets?|opportunit\w*|disagree\w*|pick)\b|\bwhere\b.*\b(disagree|differ)\w*\b|\bbest\s+(cfb|nfl|college|football|market)\b|\bwhat\s+(should|do)\s+i\s+bet\b/i,
+    game: /\b(anything|something|what)\b.*\b(worth|to)\b.*\b(bet(ting)?|play)\b.*\b(game|matchup|this one)\b|\b(in|on) (this|that) game\b/i,
+    why: /^\s*(why|how come|explain|what'?s the (reason|case)|why do(es)? (you|edgedesk|we) like)\b/i,
+    risk: /\b(risk|risks|worry|worried|concern|downside|could go wrong|what could (make|go)|scares?|against it|case against)\b/i,
+    passline: /\b(what|which|at what)\b.*\b(line|number|price)\b.*\b(pass|stop|off|no longer|not worth|walk away)\b|\bwhen (would|do) (you|i) pass\b|\bhow low\b|\bhow high\b|\bstill (a )?(bet|play|good)\b.*\bat\b/i,
+    linechange: /\b(what if|if it|if the line|drops? to|moves? to|goes to|falls? to|gets? to|only get|can only get|at [+-]?\d)/i,
+    compare: /\b(compare|comparison|versus|vs\.?|or)\b.*|\bwhich (one|would you|is better|do you prefer)\b|\brather have\b/i,
+    choose: /\bwhich (one|would you|is better|do you prefer|do you like more)\b|\brather have\b|\bbetter bet\b/i,
+    safer: /\b(safer|safest|less risk|lower risk|more conservative|something else|another one|anything else|alternatives?|other options?)\b/i,
+    deep: /\b(deep ?dive|go deeper|deeper|more detail|full (analysis|breakdown)|break it down|show (me )?(the )?(evidence|work|numbers)|everything)\b/i,
+    similar: /\b(similar|comparable|like this|historically|history|track record|past games)\b/i,
+    method: /\b(how does edgedesk|methodology|how do you (rank|price|calculate)|what does .* mean)\b/i
+  };
+  var SPORT_RX = [[NFL, /\bnfl\b|\bpro football\b/i], [CFB, /\b(cfb|college football|ncaaf|college|fbs|ncaa football)\b/i]];
+  function detectSports(q) { var out = []; SPORT_RX.forEach(function (s) { if (s[1].test(q)) out.push(s[0]); }); return out; }
+  function detectMarket(q) {
+    if (/\b(ml|moneyline|money line|straight up|to win outright|outright)\b/i.test(q)) return 'moneyline';
+    if (/\b(total|totals|over|under|o\/u)\b/i.test(q)) return 'total';
+    if (/\b(spread|spreads|ats|points)\b/i.test(q)) return 'spread';
+    return null;
+  }
+  /** Numbers in the text: lines (|x| < 60) and American prices (|x| >= 100). */
+  function parseNumbers(q) {
+    var out = { lines: [], prices: [], pk: /\b(pk|pick ?'?em|pick)\b/i.test(q) };
+    var re = /(^|[\s(@,:])([+-]?\d{1,3}(?:\.5|\.0)?)(?=$|[\s),?.!]|\b)/g, m;
+    while ((m = re.exec(q))) {
+      var raw = m[2], n = num(raw); if (n == null) continue;
+      if (Math.abs(n) >= 100) out.prices.push({ value: n, signed: /^[+-]/.test(raw), at: m.index });
+      else if (Math.abs(n) < 60) out.lines.push({ value: n, signed: /^[+-]/.test(raw), at: m.index });
+    }
+    return out;
+  }
+
+  /** Find the teams the question names among the games in hand, left to right, longest name first. */
+  function resolveTeams(q, Es) {
+    var nq = ' ' + normName(q) + ' ';
+    var hits = [];
+    (Es || []).forEach(function (E) {
+      ['home', 'away'].forEach(function (side) {
+        var name = teamOf(E, side); if (!name) return;
+        var variants = [normName(name)];
+        if (E.sport === NFL) {
+          var parts = normName(name).split(' ');
+          if (parts.length > 1) {
+            variants.push(parts[parts.length - 1]);
+            /* the city, only where it names one club on the card ("Houston" yes, "New York" no) */
+            var city = parts.slice(0, -1).join(' ');
+            var clubs = 0; (Es || []).forEach(function (X) { if (X.sport === NFL) ['home', 'away'].forEach(function (s2) { var n2 = normName(teamOf(X, s2)); if (n2.indexOf(city + ' ') === 0) clubs++; }); });
+            if (clubs === 1) variants.push(city);
+          }
+        }
+        variants.forEach(function (v) {
+          if (!v || v.length < 3) return;
+          var i = nq.indexOf(' ' + v + ' ');
+          if (i >= 0) hits.push({ E: E, side: side, team: name, at: i, len: v.length });
+        });
+      });
+    });
+    /* drop a hit inside a longer one ("Carolina" inside "Coastal Carolina") */
+    hits = hits.filter(function (h) { return !hits.some(function (o) { return o !== h && o.len > h.len && o.at <= h.at && o.at + o.len >= h.at + h.len; }); });
+    hits.sort(function (a, b) { return a.at - b.at || b.len - a.len; });
+    var seen = {}, out = [];
+    hits.forEach(function (h) { var k = h.E.sport + '|' + h.E.identity.game_id + '|' + h.side; if (seen[k]) return; seen[k] = 1; out.push(h); });
+    return out;
+  }
+
+  function classify(question, state, Es) {
+    var q = str(question).trim();
+    var st = sanitizeState(state);
+    var hasFocus = !!(st && st.focus);
+    var teams = resolveTeams(q, Es || []);
+    var nums = parseNumbers(q);
+    var market = detectMarket(q);
+    var sports = detectSports(q);
+    var o = { intent: null, question: q, sports: sports, market: market, teams: teams.map(function (t) { return { team: t.team, side: t.side, sport: t.E.sport, game_id: t.E.identity.game_id }; }),
+      numbers: nums, filter: { underdog: /\b(dog|dogs|underdog|underdogs)\b/i.test(q), favorite: /\b(favou?rite|favou?rites|chalk)\b/i.test(q) }, sort: 'value', depth: 'short' };
+    if (/\b(safest|safer|safe)\b/i.test(q)) o.sort = 'safety';
+    if (/\b(disagree\w*|differ\w*|furthest|biggest (gap|difference))\b/i.test(q)) o.sort = 'disagreement';
+    if (RX.deep.test(q)) o.depth = 'deep';
+    var pronoun = /\b(it|that|this|them|those|these|that one|this one|the line|the number)\b/i.test(q);
+    var shortQ = q.split(/\s+/).length <= 6;
+
+    if (teams.length >= 2 && (RX.compare.test(q) || RX.choose.test(q)) && !(teams.length === 2 && teams[0].E === teams[1].E && !market && !/\bcompare|rather|which\b/i.test(q))) o.intent = 'COMPARE';
+    else if (teams.length >= 1 && hasFocus && /\bcompare|versus|\bvs\b|rather|which\b/i.test(q)) o.intent = 'COMPARE';
+    else if (teams.length === 0 && hasFocus && /\b(compare|versus|vs\.?)\b/i.test(q)) o.intent = 'COMPARE';
+    else if (teams.length >= 1 && RX.game.test(q)) o.intent = 'GAME';
+    else if (teams.length >= 1) o.intent = RX.deep.test(q) ? 'DEEP' : RX.risk.test(q) ? 'RISK' : 'MARKET';
+    else if (hasFocus && RX.choose.test(q) && st.compare && st.compare.length >= 2) o.intent = 'CHOOSE';
+    else if (hasFocus && RX.linechange.test(q) && (nums.lines.length || nums.prices.length || nums.pk)) o.intent = 'LINE_CHANGE';
+    else if (hasFocus && RX.passline.test(q)) o.intent = 'PASS_LINE';
+    else if (hasFocus && RX.game.test(q)) o.intent = 'GAME';
+    else if (hasFocus && RX.deep.test(q)) o.intent = 'DEEP';
+    else if (hasFocus && RX.risk.test(q)) o.intent = 'RISK';
+    else if (hasFocus && RX.safer.test(q)) o.intent = 'SAFER';
+    else if (hasFocus && RX.similar.test(q) && shortQ) o.intent = 'SIMILAR';
+    else if (hasFocus && (RX.why.test(q) || (pronoun && /\bwhy|like\b/i.test(q)))) o.intent = 'EXPLAIN';
+    else if (RX.board.test(q) || (sports.length && /\b(value|bet|play|dog|underdog|edge)\b/i.test(q))) o.intent = 'BOARD';
+    else if (hasFocus && pronoun && shortQ) o.intent = 'EXPLAIN';
+    return o;
+  }
+
+  /* ================================================================
+     7. CONVERSATION STATE (edgedesk_desk_state_v1)
+     Identifiers and numbers only. The host re-evaluates every item against
+     fresh evidence; nothing is believed on the browser's say-so.
+     ================================================================ */
+  function cleanSel(s) {
+    if (!s || typeof s !== 'object') return null;
+    var m = ['spread', 'total', 'moneyline'].indexOf(s.market) >= 0 ? s.market : null;
+    var side = ['home', 'away', 'over', 'under'].indexOf(s.side) >= 0 ? s.side : null;
+    if (!m || !side || !s.game_id) return null;
+    return { sport: SPORTS[s.sport] ? s.sport : null, game_id: str(s.game_id).slice(0, 60), market: m, side: side, team: s.team ? str(s.team).slice(0, 60) : null,
+      line: num(s.line), odds: num(s.odds), book: s.book ? str(s.book).slice(0, 40) : null };
+  }
+  function sanitizeState(raw) {
+    if (!raw || typeof raw !== 'object' || raw.schema !== STATE_SCHEMA) return null;
+    return { schema: STATE_SCHEMA, focus: cleanSel(raw.focus), compare: Array.isArray(raw.compare) ? raw.compare.map(cleanSel).filter(Boolean).slice(0, 2) : [],
+      board: Array.isArray(raw.board) ? raw.board.map(cleanSel).filter(Boolean).slice(0, 5) : [],
+      sports: Array.isArray(raw.sports) ? raw.sports.filter(function (s) { return SPORTS[s]; }).slice(0, 2) : [],
+      sort: ['value', 'safety', 'disagreement'].indexOf(raw.sort) >= 0 ? raw.sort : 'value',
+      last_intent: str(raw.last_intent).slice(0, 20) || null, turns: Math.min(50, num(raw.turns) || 0) };
+  }
+  function nextState(prev, turn) {
+    var p = sanitizeState(prev) || { schema: STATE_SCHEMA, focus: null, compare: [], board: [], sports: [], sort: 'value', last_intent: null, turns: 0 };
+    var s = { schema: STATE_SCHEMA, focus: turn.focus ? cleanSel(turn.focus) : p.focus, compare: turn.compare ? turn.compare.map(cleanSel).filter(Boolean) : p.compare,
+      board: turn.board ? turn.board.map(cleanSel).filter(Boolean).slice(0, 5) : p.board, sports: turn.sports || p.sports, sort: turn.sort || p.sort,
+      last_intent: turn.intent || null, turns: (p.turns || 0) + 1 };
+    return s;
+  }
+
+  /* ================================================================
+     8. SIMILAR SITUATIONS — the gate and the pregame-only feature vector
+     ================================================================ */
+  /* The ONLY fields a similarity vector may read. Every one exists before kickoff. */
+  var PREGAME_FEATURES = ['sport', 'market', 'side_is_home', 'side_is_underdog', 'selection_line', 'fair_line', 'value_points', 'normalized_gap', 'tier', 'confidence_score', 'evidence_quality', 'market_state'];
+  var POSTGAME_KEYS = ['result', 'home_score', 'away_score', 'final_margin', 'close_line', 'close_price', 'clv', 'clv_points', 'settled', 'settled_at', 'outcome', 'won', 'graded', 'ats_result'];
+  /** A history record from a frozen pregame evaluation. Refuses one captured at or after kickoff. */
+  function historyRecord(E, ev, o) {
+    o = o || {};
+    var cap = toMs(o.captured_at != null ? o.captured_at : E.built_at), k = toMs(E.identity.kickoff);
+    if (cap == null || k == null || cap >= k) return { ok: false, why: 'a history record must be captured before kickoff' };
+    var sel = ev.sel, c = confidence(E, ev);
+    var features = {
+      sport: E.sport, market: sel.market, side_is_home: sel.side === 'home', side_is_underdog: isDog(sel),
+      selection_line: num(sel.line), fair_line: ev.fair ? num(ev.fair.line) : null, value_points: num(ev.value_points),
+      normalized_gap: E.gap.normalized, tier: ev.tier, confidence_score: c.score, evidence_quality: E.reliability.score, market_state: ev.market_state
+    };
+    var rec = {
+      schema: HISTORY_SCHEMA, sport: E.sport, game_id: E.identity.game_id, home_team: E.identity.home, away_team: E.identity.away, kickoff: iso(k), captured_at: iso(cap),
+      market: sel.market, side: sel.side, selection: ev.label, line: num(sel.line), odds: num(sel.odds), book: sel.book || null,
+      fair_line: features.fair_line, fair_price: ev.fair && ev.fair.price != null ? ev.fair.price : null,
+      market_home_line: E.market.spread.home_line != null ? E.market.spread.home_line : null, projection_home_line: E.projection.home_line,
+      value_points: features.value_points, cover_prob: ev.prob ? (ev.prob.cover != null ? ev.prob.cover : ev.prob.win) : null, edge_pp: ev.prob ? ev.prob.edge_pp : null,
+      verdict: ev.verdict, tier: ev.tier, confidence_grade: c.grade, confidence_score: c.score, evidence_quality: E.reliability.score,
+      model_version: E.projection.version, features: features,
+      typed_evidence: E.typed.map(function (t) { return { type: t.type, key: t.key }; })
+    };
+    rec.record_id = 'dh_' + fnv(JSON.stringify([rec.sport, rec.game_id, rec.market, rec.side, rec.line, rec.odds, rec.captured_at, rec.model_version]));
+    return { ok: true, record: rec };
+  }
+  function fnv(s) { var h = 0x811c9dc5; s = str(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  /** The similarity vector: pregame fields only, whatever the row carries. */
+  function similarityVector(rec) {
+    var f = (rec && rec.features) || {};
+    var v = {}; PREGAME_FEATURES.forEach(function (k) { v[k] = f[k] === undefined ? null : f[k]; });
+    return v;
+  }
+  function leaks(obj) { var bad = []; Object.keys(obj || {}).forEach(function (k) { if (POSTGAME_KEYS.indexOf(k) >= 0) bad.push(k); }); return bad; }
+  /**
+   * Similar Situations. `rows` are settled history rows (record + result).
+   * Withheld unless there are SIMILAR_MIN_TOTAL_SETTLED settled rows for the
+   * sport and market and SIMILAR_MIN_SETTLED of them are comparable. A row
+   * captured at or after its kickoff is excluded, never used.
+   */
+  function similarSituations(target, rows) {
+    rows = Array.isArray(rows) ? rows : [];
+    var t = target && target.features ? target.features : {};
+    var valid = rows.filter(function (r) { return r && r.settled === true && toMs(r.captured_at) != null && toMs(r.kickoff) != null && toMs(r.captured_at) < toMs(r.kickoff) && r.sport === t.sport && r.market === t.market; });
+    if (valid.length < SIMILAR_MIN_TOTAL_SETTLED) return { available: false, n_settled: valid.length, required: SIMILAR_MIN_TOTAL_SETTLED,
+      text: 'Similar situations: building history. Not enough comparable settled EdgeDesk predictions yet (' + valid.length + ' settled, ' + SIMILAR_MIN_TOTAL_SETTLED + ' needed before any comparison is shown).' };
+    var tv = similarityVector(target);
+    var comp = valid.filter(function (r) {
+      var v = similarityVector(r);
+      return v.tier === tv.tier && v.side_is_underdog === tv.side_is_underdog && v.value_points != null && tv.value_points != null && Math.abs(v.value_points - tv.value_points) <= 1.5;
+    });
+    if (comp.length < SIMILAR_MIN_SETTLED) return { available: false, n_settled: valid.length, n_comparable: comp.length, required: SIMILAR_MIN_SETTLED,
+      text: 'Similar situations: building history. ' + comp.length + ' comparable settled predictions so far; ' + SIMILAR_MIN_SETTLED + ' are needed before they may inform an answer.' };
+    var w = comp.filter(function (r) { return r.outcome === 'WIN'; }).length, l = comp.filter(function (r) { return r.outcome === 'LOSS'; }).length;
+    var clv = comp.map(function (r) { return num(r.clv_points); }).filter(function (x) { return x != null; });
+    return { available: true, n_comparable: comp.length, wins: w, losses: l, pushes: comp.length - w - l,
+      mean_clv: clv.length ? r2(clv.reduce(function (a, b) { return a + b; }, 0) / clv.length) : null,
+      rule: 'same sport, market, tier and underdog status; value within 1.5 points; captured before kickoff; settled',
+      text: 'Similar situations: ' + comp.length + ' comparable settled predictions went ' + w + '-' + l + (clv.length ? ', average CLV ' + r1(clv.reduce(function (a, b) { return a + b; }, 0) / clv.length) + ' pts' : '') + '.' };
+  }
+
+  /* ================================================================
+     9. THE ANSWER
+     ================================================================ */
+  var VERDICT_OPEN = {
+    VALUE: function (lab) { return 'Yes — ' + lab + ' has value at this price.'; },
+    THIN: function (lab) { return 'Only slightly. ' + lab + ' is a hair better than EdgeDesk’s number, not enough to clear its threshold.'; },
+    NO_VALUE: function (lab) { return 'No. ' + lab + ' is roughly where EdgeDesk has it: the market is efficiently priced here.'; },
+    OVERPRICED: function (lab) { return 'No. At ' + lab + ' you’re paying more than EdgeDesk’s number.'; }
+  };
+  function priceSentence(E, ev) {
+    var sel = ev.sel;
+    if (sel.market === 'moneyline') {
+      if (!ev.prob) return null;
+      return 'EdgeDesk has ' + sel.team + ' winning ' + pct(ev.prob.win) + ' of the time (fair price ' + fmtAm(ev.fair.price) + '); ' + fmtAm(sel.odds) + ' needs ' + pct(ev.prob.break_even) + '.';
+    }
+    var f = ev.fair ? ev.fair.projection_line : null;
+    if (f == null) return null;
+    var v = ev.value_points;
+    if (sel.market === 'total') return 'EdgeDesk projects ' + r1(E.projection.total) + ' points, so ' + ev.label + ' is ' + (v >= 0 ? pts(v) + ' of value' : pts(v) + ' the wrong side of our number') + '.';
+    var favSide = E.projection.home_line < 0 ? 'home' : E.projection.home_line > 0 ? 'away' : null;
+    var gameLine = favSide ? teamOf(E, favSide) + ' ' + fmtLine(-Math.abs(E.projection.home_line)) : 'a pick’em';
+    var s = 'EdgeDesk makes it ' + gameLine + ', so ' + ev.label + ' is ' + (v > 0 ? pts(v) + ' better than our number' : v < 0 ? pts(v) + ' worse than our number' : 'exactly our number') + '.';
+    if (ev.fair.basis && /blend/.test(ev.fair.basis) && ev.fair.line != null) s += ' The validated blend prices ' + sel.team + ' at ' + fmtLine(ev.fair.line) + '.';
+    return s;
+  }
+  function confidenceSentence(E, ev) {
+    var c = confidence(E, ev);
+    var q = E.reliability;
+    var why = [];
+    if (ev.tier === 'RESEARCH') why.push('the ' + E.sport_short + ' ' + (ev.sel.market === 'moneyline' ? 'moneyline' : ev.sel.market) + ' model is research tier');
+    else if (ev.tier === 'LEAN') why.push('LEAN tier: the graded record cleared break-even, not a profit');
+    if (q.grade === 'STRONG') why.push('evidence quality is strong');
+    else if (q.grade === 'MODERATE') why.push('evidence quality is moderate');
+    else if (q.grade === 'WEAK') why.push('the evidence is thin');
+    else if (q.grade === 'INSUFFICIENT') why.push('the evidence is insufficient');
+    var mi = E.missing.filter(function (m) { return m.important; });
+    if (mi.length) why.push(mi.length + ' important input' + (mi.length === 1 ? ' is' : 's are') + ' missing');
+    if (ev.outlier) why.push('the gap is big enough to suspect a data problem');
+    var g = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low', INSUFFICIENT: 'Insufficient' }[c.grade];
+    return 'Confidence: ' + g + (why.length ? ' — ' + why.join('; ') + '.' : '.');
+  }
+  function marketNote(E, ev) {
+    var sel = ev.sel;
+    var mk = sel.market === 'spread' ? E.market.spread : sel.market === 'total' ? E.market.total : E.market.moneyline;
+    if (ev.market_state === 'HYPOTHETICAL') return null;
+    if (!mk || mk.state === 'NONE') return 'No market is on file for this, so there is no price to judge.';
+    if (mk.state === 'STALE' || mk.state === 'UNKNOWN') return 'Careful: the last price on file is ' + (mk.state === 'STALE' ? 'stale' : 'of unknown age') + (mk.age_hours != null ? ' (' + mk.age_hours + 'h old)' : '') + ', so this is not a current price. Re-check the line before acting.';
+    if (mk.state === 'LINE_ONLY') return 'That number is a reference line with no book or capture time, not a price you can take. Confirm it at your book.';
+    if (mk.state === 'STARTED') return 'This game has started; EdgeDesk only prices pregame.';
+    if (ev.odds_assumed && ev.sel.market !== 'moneyline') return 'No price is on file for that number, so it is judged at -110.';
+    return null;
+  }
+  function where(sel) { return (sel.odds != null ? ' (' + fmtAm(sel.odds) + (sel.book ? ', ' + sel.book : '') + ')' : sel.book ? ' (' + sel.book + ')' : ''); }
+
+  /** One selection, answered: verdict, price, why, confidence, risk, price boundary. */
+  function answerSelection(E, ev, o) {
+    o = o || {};
+    var L = [], sel = ev.sel;
+    if (ev.verdict === 'NO_PROJECTION') return E.identity.away + ' at ' + E.identity.home + ': EdgeDesk has no projection on file for this game, so it can’t judge any price here.';
+    if (ev.verdict === 'NO_PRICE') return 'There is no ' + sel.market + ' on file for ' + (sel.team || 'this game') + ', so there is nothing to price. Tell me the number you can get and I’ll evaluate it.';
+    var lead = o.lead || VERDICT_OPEN[ev.verdict](ev.label + where(sel));
+    L.push(lead);
+    var ps = priceSentence(E, ev); if (ps) L.push(ps);
+    if (ev.verdict === 'OVERPRICED' && sel.market !== 'total' && sel.market !== 'moneyline') {
+      var wp = E.projection.home_win_prob;
+      var myWp = wp == null ? null : sel.side === 'home' ? wp : 1 - wp;
+      if (myWp != null && myWp > 0.5) L.push('EdgeDesk does expect ' + sel.team + ' to win (' + pct(myWp) + '), but winning isn’t covering ' + fmtLine(sel.line) + '.');
+      var oth = evaluate(E, Object.assign({}, sel, { side: other(sel.side), team: teamOf(E, other(sel.side)), line: -sel.line, odds: null, hypothetical: true }));
+      if (oth.verdict === 'VALUE' || oth.verdict === 'THIN') L.push('If anything, the value is on ' + oth.label + '.');
+    }
+    var R = reasonsFor(E, sel);
+    if ((ev.verdict === 'VALUE' || ev.verdict === 'THIN') && R.for.length) L.push('Why: ' + R.for.slice(0, 2).map(function (x) { return x.text; }).join('; ') + '.');
+    var mn = marketNote(E, ev); if (mn) L.push(mn);
+    L.push(confidenceSentence(E, ev));
+    if (ev.verdict === 'VALUE' || ev.verdict === 'THIN') {
+      var risks = risksFor(E, sel, ev);
+      if (risks.length) L.push('Main risk: ' + risks[0].text + '.');
+      var lt = ladderText(E, sel, ladder(E, sel)); if (lt) L.push('Price: ' + lt);
+    }
+    return L.join(' ');
+  }
+
+  function fmtRow(r) { return r.ev.label + where(r.sel) + (r.ev.value_points != null ? ', ' + pts(r.ev.value_points) + ' vs our number' : r.ev.prob ? ', ' + r1(r.ev.prob.edge_pp) + ' pts of win probability' : ''); }
+
+  function answerBoard(Es, cls, st) {
+    var sports = cls.sports && cls.sports.length ? cls.sports : (st && st.sports && st.sports.length && /\b(it|that|another|else|more)\b/i.test(cls.question) ? st.sports : null);
+    var markets = cls.market ? [cls.market] : null;
+    var R = rank(Es, { sports: sports, sort: cls.sort, filter: cls.filter, markets: markets, exclude: cls.exclude || [] });
+    var scope = (sports && sports.length === 1 ? SPORTS[sports[0]].short + ' ' : '') + (cls.filter.underdog ? 'underdog ' : '') + (cls.market === 'total' ? 'total ' : cls.market === 'moneyline' ? 'moneyline ' : '');
+    var L = [], focus = null;
+    var nCur = (Es || []).filter(function (E) { return (!sports || sports.indexOf(E.sport) >= 0) && ((E.market.spread && E.market.spread.actionable) || (E.market.total && E.market.total.actionable)); }).length;
+    var nGames = (Es || []).filter(function (E) { return !sports || sports.indexOf(E.sport) >= 0; }).length;
+    if (cls.sort === 'disagreement') {
+      var d = R.qualified.slice(0, 3);
+      if (!d.length) L.push('No current ' + scope + 'market shows a positive disagreement with EdgeDesk right now (' + nCur + ' of ' + nGames + ' games have a current price).');
+      else {
+        focus = d[0];
+        L.push('Biggest disagreement right now: ' + d[0].ev.label + where(d[0].sel) + '. ' + priceSentence(d[0].E, d[0].ev));
+        L.push(confidenceSentence(d[0].E, d[0].ev));
+        if (d.length > 1) L.push('Next: ' + d.slice(1).map(fmtRow).join('; ') + '.');
+      }
+      if (R.data_checks.length) L.push('Held back as possible data errors (gap ' + outlierGap() + '+ pts): ' + R.data_checks.slice(0, 2).map(fmtRow).join('; ') + '.');
+    } else if (R.qualified.length) {
+      var top = R.qualified[0]; focus = top;
+      var head = (cls.sort === 'safety' ? 'Safest ' + scope + 'value right now' : 'Best ' + scope + 'value right now') + ': ' + top.ev.label + where(top.sel) + '.';
+      L.push(answerSelection(top.E, top.ev, { lead: head }));
+      var more = R.qualified.slice(1, 4);
+      if (more.length) L.push('Other values: ' + more.map(fmtRow).join('; ') + '.');
+    } else {
+      if (!nCur) L.push('Nothing to call value right now: EdgeDesk has no current ' + scope + 'book prices for the ' + nGames + ' game' + (nGames === 1 ? '' : 's') + ' it checked, and it won’t judge a price it can’t see.');
+      else L.push('Nothing stands out enough at current ' + scope + 'prices. EdgeDesk checked ' + nGames + ' game' + (nGames === 1 ? '' : 's') + (nCur < nGames ? ' (' + nCur + ' with a current price)' : '') + ' and none clears its threshold.');
+      if (R.closest.length) {
+        var c = R.closest[0]; focus = c;
+        var lt = ladderText(c.E, c.sel, ladder(c.E, c.sel));
+        L.push('Closest: ' + fmtRow(c) + '.' + (lt ? ' ' + lt : ''));
+      }
+      if (!nCur && R.reference.length) L.push('On reference lines (not live prices): ' + R.reference.slice(0, 2).map(fmtRow).join('; ') + '. Confirm them at your book.');
+      if (R.stale.length) L.push(R.stale.length + ' more looked interesting on stale prices, which EdgeDesk won’t present as current.');
+      if (R.data_checks.length) L.push('Held back as likely data errors (a gap of ' + outlierGap() + '+ points): ' + R.data_checks.slice(0, 2).map(function (r) { return r.ev.label; }).join('; ') + '.');
+    }
+    return { text: L.join('\n\n'), focus: focus, ranking: R };
+  }
+
+  function findEvidence(Es, sel) { return (Es || []).filter(function (E) { return E.identity.game_id === String(sel.game_id) && (!sel.sport || E.sport === sel.sport); })[0] || null; }
+  /** Build the selection a question names: team + market + line/price, defaulting to the current market. */
+  function selectionFromMention(E, side, cls, idx) {
+    var market = cls.market || 'spread';
+    if (market === 'total') side = /\bunder\b/i.test(cls.question) ? 'under' : 'over';
+    var sel = { sport: E.sport, game_id: E.identity.game_id, market: market, side: side, team: market === 'total' ? null : teamOf(E, side) };
+    var cur = currentSelections(E, [market]).filter(function (s) { return s.side === side; })[0] || null;
+    var lines = cls.numbers.lines, prices = cls.numbers.prices;
+    var line = lines.length ? lines[Math.min(idx || 0, lines.length - 1)].value : (cls.numbers.pk ? 0 : null);
+    if (market === 'moneyline') { sel.odds = prices.length ? prices[Math.min(idx || 0, prices.length - 1)].value : cur ? cur.odds : null; sel.book = cur && sel.odds === cur.odds ? cur.book : null; sel.user_price = !!prices.length; return sel; }
+    if (line != null) {
+      if (market === 'total') line = Math.abs(line);
+      sel.line = line; sel.odds = prices.length ? prices[0].value : (cur && cur.line === line ? cur.odds : null); sel.book = cur && cur.line === line ? cur.book : null;
+      sel.user_price = !cur || cur.line !== line;
+    } else if (cur) { sel.line = cur.line; sel.odds = cur.odds; sel.book = cur.book; }
+    return sel;
+  }
+  function withHypothetical(E, sel) {
+    /* a number the reader named is priced as a number, not as a current market */
+    if (!sel.user_price) return evaluate(E, sel);
+    var ev = evaluate(E, Object.assign({}, sel, { hypothetical: true }));
+    ev.user_number = true;
+    return ev;
+  }
+
+  function deepDive(E, ev, historyRows) {
+    var L = [], sel = ev.sel;
+    L.push(answerSelection(E, ev));
+    L.push('');
+    L.push('THE NUMBERS');
+    L.push('- Projection: ' + E.identity.home + ' ' + fmtLine(E.projection.home_line) + (E.projection.total != null ? ', total ' + r1(E.projection.total) : '') + (E.projection.home_win_prob != null ? ', ' + E.identity.home + ' win ' + pct(E.projection.home_win_prob) : '') + ' (' + (E.projection.version || 'unversioned') + ').');
+    if (E.market.spread.home_line != null) L.push('- Market: ' + E.identity.home + ' ' + fmtLine(E.market.spread.home_line) + (E.market.spread.book ? ' at ' + E.market.spread.book : '') + ', ' + E.market.spread.state.toLowerCase() + (E.market.spread.age_hours != null ? ' (' + E.market.spread.age_hours + 'h old)' : '') + '.');
+    if (E.market.open) L.push('- Opened ' + E.identity.home + ' ' + fmtLine(E.market.open.home_line) + '.');
+    if (E.gap.points != null) L.push('- Gap: ' + pts(E.gap.points) + (E.gap.normalized != null ? ' (' + E.gap.normalized + ' of the model’s expected error)' : '') + '.');
+    if (ev.prob) L.push('- ' + (sel.market === 'moneyline' ? 'Win' : 'Cover') + ' probability ' + pct(ev.prob.cover != null ? ev.prob.cover : ev.prob.win) + ' against ' + pct(ev.prob.break_even) + ' needed (' + ev.prob.basis + ').');
+    var tb = E.fair[sel.market === 'moneyline' ? 'moneyline' : sel.market];
+    L.push('- Validation: ' + (ev.tier || 'RESEARCH') + (tb && tb.tier_basis ? ' — ' + tb.tier_basis : '') + '.');
+    var R = reasonsFor(E, sel);
+    if (R.for.length || R.against.length || R.neutral.length) {
+      L.push(''); L.push('WHAT DRIVES IT');
+      R.for.forEach(function (x) { L.push('- For: ' + x.text + '.'); });
+      R.against.forEach(function (x) { L.push('- Against: ' + x.text + '.'); });
+      R.neutral.forEach(function (x) { L.push('- ' + cap(x.text) + '.'); });
+    }
+    L.push(''); L.push('EVIDENCE QUALITY');
+    L.push('- ' + cap(E.reliability.grade.toLowerCase()) + (E.reliability.information_confidence != null ? ' (information confidence ' + pct(E.reliability.information_confidence) + ')' : E.reliability.completeness != null ? ' (data completeness ' + pct(E.reliability.completeness) + ')' : '') + '.');
+    if (E.research) E.research.quality.categories.filter(function (q) { return q.status !== 'AVAILABLE'; }).forEach(function (q) { L.push('- ' + cap(q.category.replace(/_/g, ' ')) + ': ' + q.status.toLowerCase() + (q.note ? ' — ' + q.note : '') + '.'); });
+    var risks = risksFor(E, sel, ev);
+    if (risks.length) { L.push(''); L.push('RISKS'); risks.slice(0, 5).forEach(function (r) { L.push('- ' + cap(r.text) + '.'); }); }
+    L.push(''); L.push(similarSituations(historyTarget(E, ev), historyRows).text);
+    return L.join('\n');
+  }
+
+  /**
+   * Answer one turn. o.question, o.evidence ([evidence()]), o.state (carried),
+   * o.history_rows (settled history, optional). Returns the text, the focus,
+   * the new state and what was used.
+   */
+  function answer(o) {
+    o = o || {};
+    var Es = (o.evidence || []).filter(Boolean);
+    var st = sanitizeState(o.state);
+    var cls = o.classification || classify(o.question, st, Es);
+    var out = { schema: ANSWER_SCHEMA, version: VERSION, intent: cls.intent, text: '', focus: null, compare: null, board: null, evaluations: [], ranking_rule: null, similar: null };
+    function focusEv() {
+      if (!st || !st.focus) return null;
+      var E = findEvidence(Es, st.focus); if (!E) return null;
+      return { E: E, ev: evaluate(E, st.focus.line != null || st.focus.market === 'moneyline' ? st.focus : Object.assign({}, st.focus)) };
+    }
+    var intent = cls.intent;
+    if (!intent) { out.text = null; return out; }
+
+    if (intent === 'BOARD' || intent === 'SAFER') {
+      if (intent === 'SAFER') { cls.sort = 'safety'; cls.exclude = st && st.focus ? [selKey(st.focus)] : []; if (!cls.sports.length && st && st.sports.length) cls.sports = st.sports; }
+      var b = answerBoard(Es, cls, st);
+      out.text = b.text; out.ranking_rule = b.ranking.rule;
+      out.board = b.ranking.qualified.slice(0, 5).map(function (r) { return r.sel; });
+      out.evaluations = b.ranking.all.slice(0, 5).map(function (r) { return summarizeEval(r.E, r.ev); });
+      out.counts = { evaluated: b.ranking.evaluated, qualified: b.ranking.qualified.length, stale: b.ranking.stale.length, reference: b.ranking.reference.length, data_checks: b.ranking.data_checks.length };
+      if (b.focus) out.focus = b.focus.sel;
+      if (intent === 'SAFER' && st && st.focus && b.focus) out.compare = [st.focus, b.focus.sel];
+      out.sports = cls.sports.length ? cls.sports : null; out.sort = cls.sort;
+      return finish(out, st, cls);
+    }
+
+    if ((intent === 'MARKET' || intent === 'RISK' || intent === 'DEEP') && cls.teams.length) {
+      var t = cls.teams[0];
+      var E0 = findEvidence(Es, { game_id: t.game_id, sport: t.sport });
+      var sel0 = selectionFromMention(E0, t.side, cls, 0);
+      var ev0 = withHypothetical(E0, sel0);
+      out.focus = ev0.sel; out.evaluations = [summarizeEval(E0, ev0)];
+      if (intent === 'RISK') out.text = riskText(E0, ev0);
+      else if (intent === 'DEEP') out.text = deepDive(E0, ev0, o.history_rows);
+      else out.text = answerSelection(E0, ev0) + (ev0.user_number && E0.market.spread.home_line != null && sel0.market === 'spread' ? ' (Current market: ' + teamOf(E0, sel0.side) + ' ' + fmtLine(sel0.side === 'home' ? E0.market.spread.home_line : -E0.market.spread.home_line) + ', ' + E0.market.spread.state.toLowerCase() + '.)' : '');
+      return finish(out, st, cls);
+    }
+
+    if (intent === 'GAME') {
+      var E1 = cls.teams.length ? findEvidence(Es, { game_id: cls.teams[0].game_id, sport: cls.teams[0].sport }) : (st && st.focus ? findEvidence(Es, st.focus) : null);
+      if (!E1) { out.text = 'Which game? Name a team and I’ll check every price on it.'; return finish(out, st, cls); }
+      var evs = currentSelections(E1, ['spread', 'total', 'moneyline']).map(function (s) { return evaluate(E1, s); });
+      var good = evs.filter(function (e) { return (e.verdict === 'VALUE' || e.verdict === 'THIN') && e.current; })
+        .sort(function (a, b) { return (b.verdict === 'VALUE') - (a.verdict === 'VALUE') || (scoreOf(E1, b) || 0) - (scoreOf(E1, a) || 0); });
+      out.evaluations = evs.map(function (e) { return summarizeEval(E1, e); });
+      if (!evs.length) out.text = 'There is no market on file for ' + E1.identity.away + ' at ' + E1.identity.home + ', so there is nothing to price yet.';
+      else if (!good.length) {
+        var stale = evs.some(function (e) { return !e.current; });
+        out.text = 'No. EdgeDesk checked ' + evs.length + ' prices on ' + E1.identity.away + ' at ' + E1.identity.home + ' and ' + (stale ? 'none is both current and better than its number.' : 'every one is within its number: this game looks efficiently priced.');
+        var closest = evs.filter(function (e) { return e.prob && e.prob.edge_pp != null; }).sort(function (a, b) { return b.prob.edge_pp - a.prob.edge_pp; })[0];
+        if (closest) {
+          out.focus = closest.sel; var lt = ladderText(E1, closest.sel, ladder(E1, closest.sel));
+          out.text += ' Closest is ' + closest.label + where(closest.sel) + (closest.value_points != null ? ', ' + pts(closest.value_points) + (closest.value_points >= 0 ? ' better' : ' worse') + ' than our number, not enough to beat the price' : '') + '.' + (lt ? ' ' + lt : '');
+        }
+        out.text += ' ' + confidenceSentence(E1, closest || evs[0]);
+      } else {
+        out.focus = good[0].sel;
+        out.text = answerSelection(E1, good[0], { lead: (good[0].verdict === 'VALUE' ? 'Yes: ' : 'Only a small one: ') + good[0].label + where(good[0].sel) + ' is the price to look at in this game.' });
+      }
+      return finish(out, st, cls);
+    }
+
+    if (intent === 'COMPARE' || intent === 'CHOOSE') {
+      var pair = [];
+      if (intent === 'CHOOSE' && st) pair = st.compare.slice(0, 2);
+      else {
+        if (cls.teams.length >= 2) pair = cls.teams.slice(0, 2).map(function (t2, i) { var E2 = findEvidence(Es, { game_id: t2.game_id, sport: t2.sport }); return E2 ? selectionFromMention(E2, t2.side, cls, i) : null; }).filter(Boolean);
+        else if (cls.teams.length === 1 && st && st.focus) {
+          var t3 = cls.teams[0], E3 = findEvidence(Es, { game_id: t3.game_id, sport: t3.sport });
+          pair = [st.focus, selectionFromMention(E3, t3.side, cls, 0)];
+        }
+      }
+      if (pair.length < 2) { out.text = 'Compare which two? Name both, e.g. “UCLA +3.5 vs Maryland ML”.'; return finish(out, st, cls); }
+      out.text = compareText(Es, pair, out);
+      out.compare = pair;
+      return finish(out, st, cls);
+    }
+
+    var fe = focusEv();
+    if (!fe) {
+      out.text = 'I’m not sure which bet you mean. Name the team (and the number if you have one), or ask for the best value on the board.';
+      return finish(out, st, cls);
+    }
+    out.focus = fe.ev.sel; out.evaluations = [summarizeEval(fe.E, fe.ev)];
+    if (intent === 'EXPLAIN') out.text = explainText(fe.E, fe.ev);
+    else if (intent === 'RISK') out.text = riskText(fe.E, fe.ev);
+    else if (intent === 'PASS_LINE') out.text = passText(fe.E, fe.ev);
+    else if (intent === 'DEEP') out.text = deepDive(fe.E, fe.ev, o.history_rows);
+    else if (intent === 'SIMILAR') { out.similar = similarSituations(historyTarget(fe.E, fe.ev), o.history_rows); out.text = out.similar.text; }
+    else if (intent === 'LINE_CHANGE') {
+      var s2 = Object.assign({}, fe.ev.sel);
+      var nl = cls.numbers.lines.length ? cls.numbers.lines[0] : null;
+      if (s2.market === 'moneyline') { if (cls.numbers.prices.length) s2.odds = cls.numbers.prices[0].value; }
+      else {
+        if (nl) s2.line = s2.market === 'total' ? Math.abs(nl.value) : nl.signed ? nl.value : (Math.sign(s2.line || 1) || 1) * Math.abs(nl.value);
+        else if (cls.numbers.pk) s2.line = 0;
+        if (cls.numbers.prices.length) s2.odds = cls.numbers.prices[0].value;
+      }
+      s2.hypothetical = true; s2.book = null;
+      var ev2 = evaluate(fe.E, s2);
+      var before = fe.ev.verdict, after = ev2.verdict;
+      var lead = before === after ? 'At ' + ev2.label + ' the answer doesn’t change: ' : 'At ' + ev2.label + ' the answer changes: ';
+      var what = { VALUE: 'it still clears EdgeDesk’s threshold', THIN: 'it’s only thin value, below EdgeDesk’s threshold', NO_VALUE: 'the value is gone', OVERPRICED: 'it’s now worse than EdgeDesk’s number' }[after] || 'it can’t be priced';
+      if (before === after) what = { VALUE: 'still attractive', THIN: 'still only thin value', NO_VALUE: 'still no value', OVERPRICED: 'still worse than our number' }[after] || what;
+      var L2 = [lead + what + (ev2.value_points != null ? ' (' + (ev2.value_points >= 0 ? pts(ev2.value_points) + ' of value' : pts(ev2.value_points) + ' short') + ', was ' + (fe.ev.value_points != null ? pts(fe.ev.value_points) : '—') + ').' : ev2.prob ? ' (' + r1(ev2.prob.edge_pp) + ' pts of edge, was ' + (fe.ev.prob ? r1(fe.ev.prob.edge_pp) : '—') + ').' : '.')];
+      var lt2 = ladderText(fe.E, s2, ladder(fe.E, s2)); if (lt2) L2.push(lt2);
+      L2.push(confidenceSentence(fe.E, ev2));
+      out.text = L2.join(' ');
+      out.focus = Object.assign({}, s2); delete out.focus.hypothetical;
+      out.evaluations = [summarizeEval(fe.E, fe.ev), summarizeEval(fe.E, ev2)];
+      out.compare = [fe.ev.sel, out.focus];
+    }
+    return finish(out, st, cls);
+  }
+  function historyTarget(E, ev) { var h = historyRecord(E, ev, { captured_at: E.built_at }); return h.ok ? h.record : { features: { sport: E.sport, market: ev.sel.market, tier: ev.tier, value_points: ev.value_points, side_is_underdog: isDog(ev.sel) } }; }
+  function finish(out, st, cls) {
+    out.state = nextState(st, { focus: out.focus, compare: out.compare, board: out.board, intent: out.intent, sports: out.sports || null, sort: out.sort || null });
+    out.allowed = allowedNumbers(out);
+    return out;
+  }
+  function explainText(E, ev) {
+    var R = reasonsFor(E, ev.sel), L = [];
+    var v = ev.value_points;
+    if (ev.verdict === 'VALUE' || ev.verdict === 'THIN') {
+      L.push('The case for ' + ev.label + ' is the price first: ' + (priceSentence(E, ev) || '').replace(/^EdgeDesk/, 'EdgeDesk'));
+      if (R.for.length) L.push('Behind that number: ' + R.for.slice(0, 3).map(function (x) { return x.text; }).join('; ') + '.');
+      else L.push('The projection doesn’t publish a single dominant driver for this game, so the case rests on the number itself.');
+      if (R.against.length) L.push('Against it: ' + R.against[0].text + '.');
+    } else {
+      L.push('EdgeDesk doesn’t like ' + ev.label + ' at this price. ' + (priceSentence(E, ev) || ''));
+      if (R.against.length) L.push('The other side’s case: ' + R.against.slice(0, 2).map(function (x) { return x.text; }).join('; ') + '.');
+    }
+    L.push(confidenceSentence(E, ev));
+    return L.join(' ');
+  }
+  function riskText(E, ev) {
+    var r = risksFor(E, ev.sel, ev);
+    if (!r.length) return 'Nothing in EdgeDesk’s evidence argues against ' + ev.label + ' specifically, which is not the same as it being safe. ' + confidenceSentence(E, ev);
+    return 'Biggest risk on ' + ev.label + ': ' + r[0].text + '.' + (r.length > 1 ? ' Also: ' + r.slice(1, 3).map(function (x) { return x.text; }).join('; ') + '.' : '') + ' ' + confidenceSentence(E, ev);
+  }
+  function passText(E, ev) {
+    var L = ladder(E, ev.sel), t = ladderText(E, ev.sel, L);
+    if (!t) return 'EdgeDesk can’t draw a price boundary for ' + ev.label + ': it has no projection to price against.';
+    return t + ' Right now it’s ' + ev.label + where(ev.sel) + ', ' + ({ VALUE: 'which clears the threshold', THIN: 'which is thin value', NO_VALUE: 'which has no value', OVERPRICED: 'which is worse than our number' }[ev.verdict] || 'not priced') + '.';
+  }
+  function compareText(Es, pair, out) {
+    var rows = pair.map(function (s) { var E = findEvidence(Es, s); if (!E) return null; var ev = withHypothetical(E, s); return { E: E, ev: ev, c: confidence(E, ev), score: scoreOf(E, ev) }; });
+    if (rows.some(function (r) { return !r; })) return 'One of those games is no longer on EdgeDesk’s card, so I can’t compare them.';
+    out.evaluations = rows.map(function (r) { return summarizeEval(r.E, r.ev); });
+    var L = rows.map(function (r) {
+      var e = r.ev;
+      var val = e.value_points != null ? pts(e.value_points) + (e.value_points >= 0 ? ' better' : ' worse') + ' than our number' : e.prob ? (e.prob.edge_pp >= 0 ? r1(e.prob.edge_pp) + ' pts of win probability above' : r1(Math.abs(e.prob.edge_pp)) + ' pts of win probability short of') + ' break-even' : 'no price';
+      return e.label + where(e.sel) + ': ' + ({ VALUE: 'value', THIN: 'thin value', NO_VALUE: 'no value', OVERPRICED: 'overpriced' }[e.verdict] || 'not priced') + ', ' + val + ', confidence ' + r.c.grade.toLowerCase() + '.';
+    });
+    var rankV = { VALUE: 3, THIN: 2, NO_VALUE: 1, OVERPRICED: 0 };
+    var a = rows[0], b = rows[1];
+    var pick = (rankV[a.ev.verdict] || 0) !== (rankV[b.ev.verdict] || 0) ? ((rankV[a.ev.verdict] || 0) > (rankV[b.ev.verdict] || 0) ? a : b) : ((a.score || -1e9) >= (b.score || -1e9) ? a : b);
+    var none = (rankV[a.ev.verdict] || 0) < 2 && (rankV[b.ev.verdict] || 0) < 2;
+    var head = none ? 'Neither is worth it at these prices.' : 'I’d rather have ' + pick.ev.label + '.';
+    var why = none ? '' : ' ' + (pick.ev.verdict !== (pick === a ? b : a).ev.verdict ? 'It’s the one that actually clears EdgeDesk’s number.' : 'Same verdict, but it scores higher once edge, price freshness, validation tier and evidence quality are weighed together.');
+    var rk = risksFor(pick.E, pick.ev.sel, pick.ev);
+    return head + why + '\n\n' + L.map(function (x) { return '- ' + x; }).join('\n') + (none || !rk.length ? '' : '\n\nMain risk on ' + pick.ev.label + ': ' + rk[0].text + '.');
+  }
+  function summarizeEval(E, ev) {
+    return { sport: E.sport, game_id: E.identity.game_id, matchup: E.identity.away + ' @ ' + E.identity.home, kickoff: E.identity.kickoff,
+      selection: ev.label, market: ev.sel.market, side: ev.sel.side, line: num(ev.sel.line), odds: num(ev.sel.odds), book: ev.sel.book || null,
+      verdict: ev.verdict, value_points: ev.value_points, prob: ev.prob, fair: ev.fair, tier: ev.tier, market_state: ev.market_state, current: ev.current,
+      outlier: ev.outlier, confidence: confidence(E, ev), evidence_quality: E.reliability, score: scoreOf(E, ev), ladder: ladder(E, ev.sel),
+      reasons: reasonsFor(E, ev.sel), risks: risksFor(E, ev.sel, ev).slice(0, 4), missing: E.missing };
+  }
+
+  /** Every number the answer may contain, for the host's critic. */
+  function allowedNumbers(out) {
+    var nums = [];
+    function add(v) { var n = num(v); if (n == null) return; nums.push(n, r1(n), Math.abs(n), Math.abs(r1(n)), Math.round(n), Math.round(Math.abs(n))); }
+    (out.evaluations || []).forEach(function (e) {
+      add(e.line); add(e.odds); add(e.value_points);
+      if (e.prob) { add((e.prob.cover != null ? e.prob.cover : e.prob.win) * 100); add(e.prob.break_even * 100); add(e.prob.edge_pp); }
+      if (e.fair) { add(e.fair.line); add(e.fair.projection_line); add(e.fair.price); }
+      if (e.ladder) { add(e.ladder.attractive_at); add(e.ladder.playable_at); add(e.ladder.fair_price); add(e.ladder.attractive_price); }
+    });
+    var m = str(out.text).match(/[+-]?\d+(?:\.\d+)?/g) || [];
+    m.forEach(function (x) { add(x); });
+    return uniq(nums);
+  }
+
+  /* ================================================================
+     10. THE CRITIC for a rephrased answer: numbers and names must come from
+     the kernel's answer; no certainty words; short.
+     ================================================================ */
+  var CERTAINTY = /\b(guarantee\w*|can'?t (lose|miss)|lock|locks|sure thing|free money|will (win|cover|cash)|no[- ]brainer|easy money)\b/i;
+  function critic(prose, out, ctx) {
+    var issues = [], p = str(prose);
+    ctx = ctx || {};
+    if (!p.trim()) return { verdict: 'FAIL', findings: [{ code: 'EMPTY' }] };
+    if (CERTAINTY.test(p)) issues.push({ code: 'CERTAINTY', severity: 'FAIL', detail: (CERTAINTY.exec(p) || [])[0] });
+    var allowed = out.allowed || allowedNumbers(out);
+    var found = p.replace(/\b(19|20)\d{2}\b/g, ' ').match(/[+-]?\d+(?:\.\d+)?/g) || [];
+    var bad = found.filter(function (x) { var n = Math.abs(num(x)); return n != null && n > 1 && !allowed.some(function (a) { return Math.abs(Math.abs(a) - n) < 0.051; }); });
+    if (bad.length) issues.push({ code: 'NUMBER_NOT_IN_EVIDENCE', severity: 'FAIL', detail: uniq(bad).slice(0, 6).join(', ') });
+    var sentences = p.split(/(?<=[.!?])\s+/).filter(function (s) { return s.trim(); }).length;
+    if (out.intent !== 'DEEP' && sentences > 12) issues.push({ code: 'TOO_LONG', severity: 'FAIL', detail: sentences + ' sentences' });
+    if (out.intent !== 'DEEP' && /^\s*#+\s|THE CASE FOR EACH SIDE|WHAT THE MARKET SAYS/im.test(p)) issues.push({ code: 'TEMPLATE', severity: 'FAIL', detail: 'section headings in a short answer' });
+    var kv = /\b(yes|no)\b/i.exec(str(out.text).slice(0, 12)), pv = /\b(yes|no)\b/i.exec(p.slice(0, 40));
+    if (kv && pv && kv[1].toLowerCase() !== pv[1].toLowerCase()) issues.push({ code: 'VERDICT_FLIPPED', severity: 'FAIL', detail: 'the kernel said ' + kv[1] + ', the prose said ' + pv[1] });
+    /* the headline facts survive: every number in EdgeDesk's first sentence appears in the rewrite */
+    var first = str(out.text).split(/(?<=[.!?])\s+/)[0] || '';
+    var keyNums = (first.match(/[+-]?\d+(?:\.\d+)?/g) || []).map(function (x) { return Math.abs(num(x)); });
+    var proseNums = (p.match(/[+-]?\d+(?:\.\d+)?/g) || []).map(function (x) { return Math.abs(num(x)); });
+    var dropped = keyNums.filter(function (k) { return !proseNums.some(function (x) { return Math.abs(x - k) < 0.051; }); });
+    if (dropped.length) issues.push({ code: 'KEY_FACT_DROPPED', severity: 'FAIL', detail: dropped.join(', ') });
+    if (/^Nothing stands out/.test(str(out.text)) && !/\bnothing\b|\bno (bet|value|play)\b|\bpass\b/i.test(p)) issues.push({ code: 'PASS_TURNED_INTO_PICK', severity: 'FAIL' });
+    /* a team on the board that EdgeDesk's answer did not name may not appear: the writer cannot change the pick */
+    var said = ' ' + normName(out.text) + ' ', wrote = ' ' + normName(p) + ' ';
+    var intruders = uniq((ctx.teams || []).filter(function (t) { var n = normName(t); return n.length >= 3 && wrote.indexOf(' ' + n + ' ') >= 0 && said.indexOf(' ' + n + ' ') < 0; }));
+    if (intruders.length) issues.push({ code: 'TEAM_NOT_IN_ANSWER', severity: 'FAIL', detail: intruders.slice(0, 4).join(', ') });
+    return { verdict: issues.some(function (i) { return i.severity === 'FAIL'; }) ? 'FAIL' : 'PASS', findings: issues };
+  }
+  /** The instruction for a writing model that may only rephrase. */
+  var NARRATION_CONTRACT = [
+    'You are EdgeDesk’s betting research analyst. Below is EdgeDesk’s own answer, computed deterministically from its evidence.',
+    'Rewrite it so it reads like a sharp, direct human analyst. Keep the SAME verdict, the SAME order (answer, price, why, risk), and EVERY number exactly as given.',
+    'Do not add any number, team, player, statistic or claim that is not in the answer. Do not recalculate anything. No headings, no bullet lists unless the answer has them.',
+    'Keep it about as long as the answer or shorter (3-8 sentences for a normal question). Never promise an outcome. Return only the rewritten answer.'
+  ].join(' ');
+
+  return {
+    VERSION: VERSION, EVIDENCE_SCHEMA: EVIDENCE_SCHEMA, ANSWER_SCHEMA: ANSWER_SCHEMA, STATE_SCHEMA: STATE_SCHEMA, HISTORY_SCHEMA: HISTORY_SCHEMA,
+    SPORTS: SPORTS, MISSING_PENALTY: MISSING_PENALTY, QUALITY_GRADES: QUALITY_GRADES, CONFIDENCE_GRADES: CONFIDENCE_GRADES,
+    SIMILAR_MIN_SETTLED: SIMILAR_MIN_SETTLED, SIMILAR_MIN_TOTAL_SETTLED: SIMILAR_MIN_TOTAL_SETTLED, PREGAME_FEATURES: PREGAME_FEATURES, POSTGAME_KEYS: POSTGAME_KEYS,
+    researchGap: researchGap, outlierGap: outlierGap, quoteStatus: quoteStatus,
+    evidence: evidence, evaluate: evaluate, ladder: ladder, ladderText: ladderText, confidence: confidence, reasonsFor: reasonsFor, risksFor: risksFor,
+    currentSelections: currentSelections, rank: rank, scoreOf: scoreOf, classify: classify, resolveTeams: resolveTeams, parseNumbers: parseNumbers,
+    sanitizeState: sanitizeState, nextState: nextState, answer: answer, summarizeEval: summarizeEval, allowedNumbers: allowedNumbers,
+    historyRecord: historyRecord, similarityVector: similarityVector, similarSituations: similarSituations, leaks: leaks,
+    critic: critic, NARRATION_CONTRACT: NARRATION_CONTRACT
+  };
+});
+/*__EDDESK_END__*/
+const EDDESK: any = (globalThis as any).EDDESK;
 
 /* ========================================================================
    PART 1h — THE STAKING KERNEL (EDSTAKE). Inlined from _stake.js by
@@ -22791,8 +25378,19 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
   function P() { return root.EDPRICE || null; }
   function B() { return root.EDBOARD || null; }
   function R() { return root.EDRESEARCH || null; }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
-  function decToAm(dec) { var d = num(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function amToDec(am) { return ODDS().amToDec(am); }
+  function decToAm(dec) { return ODDS().decToAm(dec); }
   function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
   function fmtLine(v) { var n = num(v); if (n == null) return ''; return (n > 0 ? '+' : '') + n; }
   function fmtUnits(v) { var n = num(v); return n == null ? '—' : n.toFixed(2) + 'u'; }
@@ -33929,6 +36527,245 @@ function researchSummary(research: ResearchOut | null, plan: Plan) {
     : { intent: plan.intent, mode: plan.mode, depth: plan.depth, retrievals: 0, note: "retrieval unavailable — answered from the attached packet only" };
 }
 
+/* ========================================================================
+   THE DESK TURN (EDDESK) — the short, direct answer.
+
+   A reader asks "What's the best market line value today?", "Is Maryland
+   -2.5 worth betting?", "Why?", "What if it drops to +2.5?", "Compare that
+   to Maryland ML". This turn:
+     1. reads the CFB and/or NFL card the board already reads (the published
+        slates, the captured prices joined by EDINTEL, the pricing
+        validation), plus the FBS input contract and the NFL injury report;
+     2. builds ONE typed-evidence contract per game (EDDESK.evidence, which
+        wraps lib/game_research.js and EDPRICE — nothing is re-derived here);
+     3. classifies the question against the conversation's carried desk state
+        and answers it deterministically (EDDESK.answer): ANSWER, PRICE, WHY,
+        RISK, at the depth asked;
+     4. optionally lets the writing model rephrase that answer, under a
+        critic that rejects any number, team or verdict the kernel did not
+        write — a failed rewrite ships EdgeDesk's own words;
+     5. records the focus selection write-once to desk_prediction_history
+        (pregame only), the history Similar Situations will one day read.
+
+   Only a client that says it renders the desk (`desk: true`) gets this turn;
+   every other caller keeps the full research contract unchanged. A question
+   the desk does not answer (staking and units, other sports, a player, a
+   research essay) falls through to the pipeline below, untouched.
+   ======================================================================== */
+const DESK_ENABLED = (Deno.env.get("EDGEDESK_DESK") ?? "1") !== "0";
+const DESK_NARRATE = (Deno.env.get("EDGEDESK_DESK_NARRATE") ?? "1") !== "0";
+const DESK_OTHER_SPORTS = /\b(mlb|baseball|pitchers?|innings?|nba|wnba|basketball|nhl|hockey|ufc|mma|fighters?|tennis|wta|atp|golf|soccer)\b/i;
+const DESK_STAKING = /\b(units?|bankroll|kelly|stake|staking|how much (should|do) i (bet|put)|parlay|sizing|size it)\b/i;
+const DESK_BETTING_WORDS = /\b(worth|like|bet|bets|betting|value|play|take|lay|spread|ml|moneyline|money line|dog|underdog|favou?rite|over|under|total|line|price|edge|safer|safest|risk|why|compare|rather|deep|pass)\b/i;
+let LAST_DESK_WRITE: any = null;
+
+/** One market on one game from the captured signals: both sides where both were captured at the same number. */
+export function deskSignalQuote(g: SlateGame, market: "spreads" | "totals" | "h2h"): any | null {
+  const rows = (g.signals ?? []).filter((x: any) => EDINTEL.normMarket(x.market) === market && num(x.best_dec) != null)
+    .sort((a: any, b: any) => String(b.last_seen_at ?? "").localeCompare(String(a.last_seen_at ?? "")));
+  if (!rows.length) return null;
+  const sideOf = (x: any) => market === "totals"
+    ? (/^over/i.test(String(x.selection ?? "")) ? "over" : /^under/i.test(String(x.selection ?? "")) ? "under" : null)
+    : EDBOARD.sideOf(x.selection, g);
+  const by: Record<string, any> = {};
+  for (const x of rows) { const s = sideOf(x); if (s && !by[s]) by[s] = x; }
+  const am = (x: any) => x ? EDINTEL.decToAmerican(num(x.best_dec)) : null;
+  const older = (a: any, b: any) => !a ? b?.last_seen_at ?? null : !b ? a.last_seen_at ?? null : (String(a.last_seen_at) < String(b.last_seen_at) ? a.last_seen_at : b.last_seen_at);
+  if (market === "spreads") {
+    const h = by.home, a = by.away;
+    const lead = h && num(h.point) != null ? h : a && num(a.point) != null ? a : null;
+    if (!lead) return null;
+    const homeLine = lead === h ? num(h.point)! : -num(a.point)!;
+    const both = h && a && num(h.point) != null && num(a.point) != null && Math.abs(num(h.point)! + num(a.point)!) < 1e-9;
+    const pick = both ? null : lead;
+    return { home_line: homeLine, price_home: both || pick === h ? am(h) : null, price_away: both || pick === a ? am(a) : null,
+      book: lead.best_book ?? null, captured_at: both ? older(h, a) : lead.last_seen_at ?? null, executable: true, source: "signals (EdgeDesk capture)",
+      sig_keys: [h?.sig_key, a?.sig_key].filter(Boolean) };
+  }
+  if (market === "totals") {
+    const o = by.over, u = by.under, lead = o && num(o.point) != null ? o : u && num(u.point) != null ? u : null;
+    if (!lead) return null;
+    const both = o && u && num(o.point) === num(u.point);
+    return { line: num(lead.point), price_over: both || lead === o ? am(o) : null, price_under: both || lead === u ? am(u) : null,
+      book: lead.best_book ?? null, captured_at: both ? older(o, u) : lead.last_seen_at ?? null, executable: true, source: "signals (EdgeDesk capture)" };
+  }
+  const h = by.home, a = by.away;
+  if (!h && !a) return null;
+  return { home: am(h), away: am(a), book: (h ?? a).best_book ?? null, captured_at: older(h, a), source: "signals (EdgeDesk capture)" };
+}
+
+/** The host's half of the evidence contract: one game's facts, handed to EDDESK.evidence. Never computes a number. */
+export function deskGameInput(sport: string, g: SlateGame, now: number, extra: { fbs_row?: any; nfl_teams?: any; nfl_metrics_at?: string | null; fbs_generated_at?: string | null }): any {
+  const spread = deskSignalQuote(g, "spreads");
+  let spreadIn: any = spread;
+  if (!spreadIn) {
+    const sq = boardSpreadQuote(g, now);
+    if (sq && num(sq.market_home_line) != null) spreadIn = { home_line: num(sq.market_home_line), book: null, captured_at: null, executable: false, source: sq.source };
+  }
+  const total = deskSignalQuote(g, "totals");
+  let totalIn: any = total;
+  if (!totalIn) { const tq = boardTotalQuote(g, now); if (tq && num(tq.total) != null) totalIn = { line: num(tq.total), captured_at: null, executable: false, source: tq.source }; }
+  const ml = deskSignalQuote(g, "h2h");
+  const row = extra.fbs_row ?? null;
+  const sb = row?.confidence_ledger?.scoreboard ?? null;
+  const input: any = {
+    sport, now,
+    game: { game_id: g.game_id, home: g.home_team, away: g.away_team, kickoff: g.kickoff, venue: g.venue, neutral_site: g.neutral_site === true, status: g.status, season: g.season, week: g.week },
+    projection: g.model_home_line == null ? {} : {
+      home_line: num(g.model_home_line), total: num(g.model_total), home_win_prob: num(g.model_home_win_prob) ?? null,
+      version: g.model_version ?? null, generated_at: g.model_generated_at ?? extra.fbs_generated_at ?? null,
+      completeness: num(g.model_completeness),
+      information_confidence: num(sb?.information_confidence?.value_pct), priced_confidence: num(sb?.priced_confidence?.value_pct),
+      sigma: num((g as any).outcome_range?.sigma), cover_curve: (g as any).cover_curve ?? null,
+      contributions: (g as any).contributions?.spread ?? null,
+    },
+    market: { spread: spreadIn ?? undefined, total: totalIn ?? undefined, moneyline: ml ?? undefined },
+  };
+  if (sport === "americanfootball_ncaaf") {
+    input.contract = Array.isArray(row?.input_contract) ? row.input_contract : [];
+    input.cfb = { home_starter: row?.home_starter ?? null, away_starter: row?.away_starter ?? null, home_qb_epa: row?.home_qb_epa ?? null, away_qb_epa: row?.away_qb_epa ?? null };
+  } else {
+    const teams = extra.nfl_teams ?? null;
+    const inj = (id: string | null) => {
+      const t = teams && id ? teams[String(id).toUpperCase()] : null;
+      /* an official report for a DIFFERENT week is not this game's report: it is left out, and the category reads unavailable */
+      if (!t?.injuries || !Array.isArray(t.injuries.players) || num(t.injuries.week) !== num(g.week)) return null;
+      return t.injuries.players.map((p: any) => ({ player: p.name, position: p.position, status: p.status }));
+    };
+    const hi = inj(g.home_id), ai = inj(g.away_id);
+    input.nfl = {
+      home_starter: (g as any).home_starter ?? null, away_starter: (g as any).away_starter ?? null,
+      home_rest: (g as any).home_rest ?? null, away_rest: (g as any).away_rest ?? null, roof: (g as any).roof ?? null, surface: (g as any).surface ?? null,
+      div_game: (g as any).div_game ?? null, data_quality: (g as any).data_quality ?? null, scenarios: (g as any).scenarios ?? null,
+      injuries: hi && ai ? { home: hi, away: ai, as_of: extra.nfl_metrics_at ?? null, source: "official NFL injury report (football/matchup/metrics.json)" } : null,
+    };
+  }
+  return input;
+}
+
+/** Every pregame game on the football cards in scope, as typed evidence. */
+async function deskEvidence(dal: Dal, sports: string[], now: number): Promise<{ evidence: any[]; coverage: any[] }> {
+  const evidence: any[] = [], coverage: any[] = [];
+  dal.budget = Math.max(dal.budget, 24 + 8 * sports.length);
+  for (const sport of sports) {
+    const cov: any = { sport, label: sport === "americanfootball_nfl" ? "NFL" : "CFB", games: 0, with_projection: 0, with_current_price: 0, errors: [] as string[], source: null };
+    try {
+      if (EDPRICE) {
+        const rel = "football/validation/pricing_" + (sport === "americanfootball_nfl" ? "nfl" : "cfb") + ".json";
+        try { const pv = await dal.getArtifact(rel, { free: true }); if (pv.json) EDPRICE.loadValidation(sport, pv.json); else cov.errors.push(rel + " could not be read; the market prices as RESEARCH"); } catch { cov.errors.push(rel + " could not be read"); }
+      }
+      const si = await dal.getSlateIndex(sport, {});
+      cov.source = si.source_label || si.source; cov.errors.push(...(si.errors ?? []).slice(0, 4));
+      const fbsRows = new Map<string, any>();
+      let fbsAt: string | null = null;
+      if (sport === "americanfootball_ncaaf") { const a = await dal.getFbsSlateArtifact(); fbsAt = a.meta?.generated_at ?? null; for (const r of a.games ?? []) fbsRows.set(String(r.game_id), r); }
+      let nflTeams: any = null, nflAt: string | null = null;
+      if (sport === "americanfootball_nfl") { const m = await dal.getMatchupMetrics(); nflTeams = m.json?.nfl?.teams ?? null; nflAt = m.json?.generated_at ?? null; if (m.error) cov.errors.push("football/matchup/metrics.json: " + m.error); }
+      for (const g of si.index) {
+        const k = Date.parse(String(g.kickoff ?? ""));
+        if (!Number.isFinite(k) || k <= now) continue;
+        cov.games++;
+        const E = EDDESK.evidence(deskGameInput(sport, g, now, { fbs_row: fbsRows.get(String(g.game_id)) ?? null, fbs_generated_at: fbsAt, nfl_teams: nflTeams, nfl_metrics_at: nflAt }), { now });
+        if (E.projection.home_line != null) cov.with_projection++;
+        if (E.market.spread && E.market.spread.actionable) cov.with_current_price++;
+        evidence.push(E);
+      }
+    } catch (e) { cov.errors.push("the card could not be read: " + String((e as Error)?.message ?? e).slice(0, 160)); }
+    coverage.push(cov);
+  }
+  return { evidence, coverage };
+}
+
+/** Write-once history of the focus selection, pregame, under the caller's own token. */
+async function publishDeskHistory(auth: string, rec: any): Promise<void> {
+  if (!rec || !SUPABASE_URL) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/desk_prediction_history?on_conflict=record_id`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json", prefer: "return=minimal,resolution=ignore-duplicates" },
+      body: JSON.stringify({ record_id: rec.record_id, sport: rec.sport, game_id: rec.game_id, home_team: rec.home_team, away_team: rec.away_team, kickoff: rec.kickoff, captured_at: rec.captured_at,
+        market: rec.market, side: rec.side, selection: rec.selection, line: rec.line, odds: rec.odds, book: rec.book,
+        fair_line: rec.fair_line, value_points: rec.value_points, cover_prob: rec.cover_prob, edge_pp: rec.edge_pp, verdict: rec.verdict,
+        tier: rec.tier, confidence_grade: rec.confidence_grade, confidence_score: rec.confidence_score, evidence_quality: rec.evidence_quality,
+        model_version: rec.model_version, market_home_line: rec.market_home_line, projection_home_line: rec.projection_home_line,
+        features: rec.features, typed_evidence: rec.typed_evidence }),
+    });
+    LAST_DESK_WRITE = { ok: r.ok, status: r.status, at: new Date().toISOString(), record_id: rec.record_id, detail: r.ok ? null : String(await r.text().catch(() => "")).slice(0, 200) };
+  } catch (e) { LAST_DESK_WRITE = { ok: false, status: null, at: new Date().toISOString(), record_id: rec.record_id, detail: String((e as Error)?.message ?? e).slice(0, 200) }; }
+}
+
+/** Settled comparable history for Similar Situations, when the reader asked for it. Empty when unreadable: the gate then withholds. */
+async function deskHistoryRows(dal: Dal, sport: string, market: string): Promise<any[]> {
+  try {
+    const r = await dal.read(`desk_prediction_history_settled?select=sport,market,kickoff,captured_at,settled,outcome,clv_points,features&sport=eq.${encodeURIComponent(sport)}&market=eq.${encodeURIComponent(market)}&limit=2000`, "memory");
+    return Array.isArray(r.rows) ? r.rows : [];
+  } catch { return []; }
+}
+
+/**
+ * THE DESK TURN. Returns the response body, or null when this is not a desk
+ * question (the caller then runs the full research pipeline as before).
+ */
+export async function deskTurn(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch }): Promise<any | null> {
+  if (!DESK_ENABLED || !EDDESK || !o.body || o.body.desk !== true) return null;
+  const q = String(o.body.question ?? "").trim();
+  if (!q || q.length > 400) return null;
+  if (DESK_OTHER_SPORTS.test(q) || DESK_STAKING.test(q)) return null;
+  const now = o.now ?? Date.now();
+  const st = EDDESK.sanitizeState(o.body?.research_context?.desk ?? null);
+  const pre = EDDESK.classify(q, st, []);
+  if (!pre.intent && !DESK_BETTING_WORDS.test(q) && !/[+-]\d/.test(q)) return null;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  const inSeason = (k: string) => !EDBOARD || EDBOARD.inSeason(k, now, BOARD_DEFAULT_TZ);
+  const sports = (pre.sports.length ? pre.sports : ["americanfootball_ncaaf", "americanfootball_nfl"]).filter(inSeason);
+  if (!sports.length) return null;
+  const dal = new Dal({ supabaseUrl: SUPABASE_URL, apikey: SUPABASE_ANON_KEY, authorization: o.auth, budget: 40, mlbFallback: MLB_FALLBACK });
+  const { evidence, coverage } = await deskEvidence(dal, sports, now);
+  const cls = EDDESK.classify(q, st, evidence);
+  if (!cls.intent) return null;
+  /* a follow-up whose game is no longer on the card falls through rather than guessing */
+  let history: any[] = [];
+  if (cls.intent === "SIMILAR" && st?.focus?.sport) history = await deskHistoryRows(dal, st.focus.sport, st.focus.market);
+  const out = EDDESK.answer({ question: q, evidence, state: st, classification: cls, history_rows: history });
+  if (!out.text) return null;
+  if (!evidence.length && cls.intent === "BOARD") out.text = "EdgeDesk has no pregame " + sports.map((s) => s === "americanfootball_nfl" ? "NFL" : "college football").join(" or ") + " games with projections on the card right now, so there is nothing to rank.";
+
+  /* ---- optional rephrasing, under the desk critic --------------------- */
+  let answer = out.text, narration: any = { ok: true, prose: "DETERMINISTIC", critic: null };
+  let model: string | null = null;
+  if (DESK_NARRATE && ANTHROPIC_API_KEY && out.intent !== "DEEP") {
+    try {
+      const mc = await callModel({ system: EDDESK.NARRATION_CONTRACT, messages: [{ role: "user", content: out.text }], max_tokens: 600 });
+      const prose = mc.ok ? (mc.data?.content ?? []).filter((b: any) => b?.type === "text").map((b: any) => b.text).join("").trim() : "";
+      const teams = evidence.flatMap((E: any) => [E.identity.home, E.identity.away]);
+      const crit = prose ? EDDESK.critic(prose, out, { teams }) : { verdict: "FAIL", findings: [{ code: mc.ok ? "EMPTY" : "MODEL_ERROR", detail: mc.ok ? null : String(mc.status) }] };
+      narration = { ok: crit.verdict === "PASS", prose: crit.verdict === "PASS" ? "MODEL" : "REJECTED_BY_CRITIC", critic: crit };
+      if (crit.verdict === "PASS") { answer = prose; model = MODEL; }
+    } catch (e) { narration = { ok: false, prose: "DETERMINISTIC", critic: null, error: String((e as Error)?.message ?? e).slice(0, 160) }; }
+  }
+
+  /* ---- the record: the focus selection at a current, pregame price ---- */
+  const focusE = out.focus ? evidence.find((E: any) => E.identity.game_id === String(out.focus.game_id) && E.sport === out.focus.sport) : null;
+  if (focusE && out.focus) {
+    const ev = EDDESK.evaluate(focusE, out.focus);
+    if (ev.current) { const h = EDDESK.historyRecord(focusE, ev, { captured_at: now }); if (h.ok) await publishDeskHistory(o.auth, h.record); }
+  }
+  const slimEval = (e: any) => ({ ...e, reasons: { for: e.reasons.for.slice(0, 3), against: e.reasons.against.slice(0, 2) }, missing: (e.missing ?? []).slice(0, 6) });
+  return {
+    answer, model,
+    desk: {
+      schema: EDDESK.ANSWER_SCHEMA, version: EDDESK.VERSION, intent: out.intent, focus: out.focus, compare: out.compare, board: out.board,
+      evaluations: (out.evaluations ?? []).slice(0, 6).map(slimEval), counts: out.counts ?? null, ranking_rule: out.ranking_rule, similar: out.similar ?? null,
+      coverage, deterministic_answer: out.text, narration, write: LAST_DESK_WRITE,
+    },
+    desk_state: out.state,
+    deterministic_desk_answer: out.text,
+    narration,
+    research: focusE ? { research_context: { sport: focusE.sport, game_id: focusE.identity.game_id, home: focusE.identity.home, away: focusE.identity.away, turns: 1 } } : null,
+    build: BUILD,
+  };
+}
+
 export async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -34105,6 +36942,14 @@ export async function handle(req: Request): Promise<Response> {
   try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
 
   const history = Array.isArray(body?.history) ? body.history.slice(-8) : [];
+
+  /* --- the desk: a short, direct answer from typed evidence -------------
+     Only for a client that renders it (`desk: true`); anything the desk
+     does not answer returns null here and runs the full pipeline below. */
+  if (!dry && body?.desk === true) {
+    try { const d = await deskTurn({ body, auth }); if (d) return json(d); }
+    catch (e) { try { console.error("edgedesk_ai desk turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
+  }
 
   /* --- plan ------------------------------------------------------------- */
   let plan = classify(String(body?.question ?? ""), String(body?.mode ?? ""));

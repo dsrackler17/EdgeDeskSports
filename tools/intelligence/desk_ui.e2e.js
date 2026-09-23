@@ -167,6 +167,8 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
     else { console.log('SKIPPED: no Chromium (' + String(e.message).split('\n')[0] + ')'); site.srv.close(); process.exit(0); }
   }
 
+  /* every body sent to the function, so a test can read what the panel carried */
+  const SENT = [];
   async function openDesk(viewport, reply) {
     const ctx = await browser.newContext({ viewport });
     await ctx.addInitScript(() => {
@@ -182,7 +184,9 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
       const url = route.request().url();
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
       if (/functions\/v1\/edgedesk_ai/.test(url)) {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(reply) });
+        let sentBody = null; try { sentBody = JSON.parse(route.request().postData() || 'null'); } catch (_) { sentBody = null; }
+        SENT.push(sentBody);
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(typeof reply === 'function' ? reply(sentBody) : reply) });
       }
       if (/supabase\.co/.test(url)) {
         if (/\/subscriptions/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json',
@@ -466,6 +470,47 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
         !document.getElementById('edaiLog').querySelector('.dk-live'));
       chk('a scheduled game carries no such notice', none);
       await pre.ctx.close();
+    }
+    /* ══ 6. THE DESK'S SHORT ANSWER, AND THE STATE IT CARRIES ═════════ */
+    {
+      const EV = { sport: 'americanfootball_nfl', game_id: 'nfl-e2e', matchup: 'Indianapolis Colts @ Houston Texans', selection: 'Houston Texans -3', market: 'spread', side: 'home',
+        line: -3, odds: -110, book: 'FanDuel', verdict: 'VALUE', value_points: 5, prob: { cover: 0.54, break_even: 0.5238, edge_pp: 1.6, basis: 'the validated blend (LEAN)' },
+        fair: { line: -4.25, projection_line: -8 }, tier: 'LEAN', market_state: 'CURRENT', current: true,
+        confidence: { grade: 'MEDIUM', score: 0.5, rule: 'evidence quality x tier x freshness' }, evidence_quality: { grade: 'STRONG', score: 0.8 },
+        ladder: { attractive_at: -3.5, playable_at: -4, rule: 'each half point re-evaluated' },
+        reasons: { for: [{ text: 'Houston Texans gains 1.6 points on passing efficiency in EdgeDesk’s projection' }], against: [] },
+        risks: [{ text: 'C.J. Stroud is Houston Texans’ starter by the schedule feed, not a confirmed report' }], missing: [] };
+      const DESK = (body) => ({
+        build: 'e2e', model: null,
+        answer: body && body.research_context && body.research_context.desk ? 'The case for Houston Texans -3 is the price first.' : 'Best value right now: Houston Texans -3 (-110, FanDuel). EdgeDesk makes it Houston Texans -8, so Houston Texans -3 is 5 points better than our number. Confidence: Medium.',
+        desk: { schema: 'edgedesk_desk_answer_v1', version: 1, intent: body && body.research_context && body.research_context.desk ? 'EXPLAIN' : 'BOARD', evaluations: [EV],
+          ranking_rule: 'score = edge x quote freshness x validation tier x evidence quality', coverage: [{ label: 'NFL', games: 14, with_current_price: 9 }], narration: { prose: 'DETERMINISTIC' } },
+        desk_state: { schema: 'edgedesk_desk_state_v1', focus: { sport: 'americanfootball_nfl', game_id: 'nfl-e2e', market: 'spread', side: 'home', team: 'Houston Texans', line: -3, odds: -110 }, compare: [], board: [], sports: [], sort: 'value', last_intent: 'BOARD', turns: 1 },
+        research: null });
+      SENT.length = 0;
+      const { page, ctx, errors } = await openDesk({ width: 1280, height: 900 }, DESK);
+      await ask(page, "What's the best market line value today?");
+      const first = await page.evaluate(() => {
+        const log = document.getElementById('edaiLog');
+        const read = log.querySelector('.dk-read');
+        const det = [...log.querySelectorAll('details.dk-more')].filter((d) => /the evidence/i.test((d.querySelector('summary') || {}).textContent || ''))[0];
+        return { read: read ? read.innerText : null, lab: read ? read.querySelector('.lab').textContent.trim() : null,
+          strip: [...log.querySelectorAll('.edai-src')].map((x) => x.innerText).join(' | '),
+          evidence: det ? { open: det.hasAttribute('open'), text: det.innerText } : null };
+      });
+      chk('desk: the answer comes first, as The Desk’s read', /^the desk[\u2019']s read$/i.test(first.lab || '') && /^The Desk.s read\s*Best value right now: Houston Texans -3/i.test((first.read || '').trim()), first.read);
+      chk('desk: one line of the numbers the answer rests on', /Houston Texans -3/.test(first.strip) && /EdgeDesk -8/.test(first.strip) && /confidence medium/.test(first.strip) && /54% vs 52% needed/.test(first.strip), first.strip);
+      chk('desk: the evidence is folded and closed', first.evidence && first.evidence.open === false, first.evidence);
+      chk('desk: the panel says it renders the desk', SENT.length >= 1 && SENT[SENT.length - 1] && SENT[SENT.length - 1].desk === true, SENT.map((b) => b && b.desk));
+      const before = SENT.length;
+      await page.evaluate(() => { document.getElementById('edaiText').value = 'Why?'; return window.EDAI.sendText(); });
+      await page.waitForFunction(() => /The case for Houston Texans -3/.test(document.getElementById('edaiLog').innerText), null, { timeout: 20000 }).catch(() => {});
+      const why = SENT.slice(before).filter(Boolean).pop();
+      chk('desk: "Why?" goes to the desk carrying the focus', why && why.research_context && why.research_context.desk && why.research_context.desk.focus.team === 'Houston Texans', why && why.research_context);
+      chk('desk: and the answer about that bet is shown', await page.evaluate(() => /The case for Houston Texans -3/.test(document.getElementById('edaiLog').innerText)));
+      chk('desk: the page threw no errors', errors.length === 0, errors);
+      if (SHOTS) { fs.mkdirSync(SHOT_DIR, { recursive: true }); await page.screenshot({ path: path.join(SHOT_DIR, 'desk-short.png'), fullPage: false }); }
+      await ctx.close();
     }
   } catch (e) {
     console.log('THREW: ' + String((e && e.stack) || e).slice(0, 900));

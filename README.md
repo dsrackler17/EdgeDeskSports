@@ -162,6 +162,23 @@ decoration. Today it does not: `npm run stake:validate` keeps the NFL spread
 and total in SHADOW and both college markets in RESEARCH ONLY, and the desk
 says so. See `docs/runbooks/staking.md`.
 
+Slice 9 (the desk) makes the answer short and direct. "What's the best market
+line value today?", "Is Maryland -2.5 worth betting?", "Why?", "What if it
+drops to +2.5?", "Compare that to Maryland ML", "Anything safer?" get the answer
+first, then the price, the reason and the risk, in a few sentences.
+Every number comes from one typed-evidence contract per game
+(`supabase/functions/edgedesk_ai/_desk.js` over `lib/game_research.js` and the
+pricing kernel), for college football and the NFL alike. The board is ranked by
+the documented board score, never by the writing model. A price boundary comes
+from the same verdict rule at every half point ("+3.5 is attractive, +1.5 is
+still playable, at +1 or worse pass"). Stale and reference-only prices are
+never current opportunities, and "nothing stands out" is a normal answer. The
+conversation keeps the bet under discussion. Every focus selection is frozen
+pregame in `desk_prediction_history`, so Similar Situations can be measured
+honestly once 150 settled predictions exist; until then it says "building
+history". See `docs/intelligence-architecture.md` §15 and
+`docs/odds-helpers-audit.md`.
+
 - `docs/intelligence-audit.md` — what was found before the change
 - `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
 - `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`

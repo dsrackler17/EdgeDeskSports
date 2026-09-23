@@ -132,6 +132,33 @@ const LIBS = [
     start: '/*__EDBOARD_START__*/', end: '/*__EDBOARD_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The canonical research arithmetic and the per-game research contract
+     (lib/research_core.js, lib/game_research.js) — the same files the
+     terminal and the Collective load in the browser — so the desk reads a
+     game through the one typed-evidence object rather than re-deriving it.
+     ORDER MATTERS: game_research reads EDResearch when it loads. */
+  {
+    name: 'EDRCORE',
+    src: path.join(ROOT, 'lib', 'research_core.js'),
+    start: '/*__EDRCORE_START__*/', end: '/*__EDRCORE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDGAMERES',
+    src: path.join(ROOT, 'lib', 'game_research.js'),
+    start: '/*__EDGAMERES_START__*/', end: '/*__EDGAMERES_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* The desk layer: the sport-aware typed-evidence contract, the price
+     verdict and ladder, the deterministic board ranking, intent, the
+     conversation state, Similar Situations' gate and the short answer.
+     Server-side only. */
+  {
+    name: 'EDDESK',
+    src: path.join(FN, '_desk.js'),
+    start: '/*__EDDESK_START__*/', end: '/*__EDDESK_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The staking layer (Slice 8): the bankroll policy, the reliability score,
      the conservative probability, expected value at the executable price,
      Kelly under every exposure cap, the portfolio rules, the card and the

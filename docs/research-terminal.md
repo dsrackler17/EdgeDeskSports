@@ -118,6 +118,9 @@ one it is N/A.
    engines, and other pages. They are not refactored here: they are working
    production code. New code uses `EDResearch`. Consolidation is a follow-up
    that has to be verified module by module.
+   *Update (AI Desk upgrade):* audited in `docs/odds-helpers-audit.md`. The
+   four server kernels' identical copies now call `R.odds`. The rest are kept
+   separate, each with its reason written down.
 6. **No finish time on the wire** (ruled). Walk-forward cutoffs treat a
    result as known at kickoff + 6h (`EDResearchEval.finalKnownAt`). This is a
    fixed rule, not an estimate, and it can only make the evaluation stricter.
