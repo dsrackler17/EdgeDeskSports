@@ -162,6 +162,11 @@ chk('decimal to American', near(R.decimalToAmerican(1.9090909), -110, 1e-3) && n
 /* ---- 8. research queue language --------------------------------------- */
 chk('flags carry their rule; priority is documented as not a probability', o.flags.flags.every((f) => f.rule)
   && /not a probability or a recommendation/.test(o.flags.priority_rule));
+chk('flag details are rounded for reading', o.flags.flags.every((f) => !/\d\.\d{3,}/.test(f.detail || '')));
+chk('qualifier flags alone give a priority of zero', (() => {
+  const n = G.build({ game, now: NOW, model: { engine: project({}) }, market: {} });
+  return n.flags.flags.length > 0 && n.flags.priority === 0;
+})());
 chk('no flag or rule speaks in picks', !/BEST BET|LOCK|GUARANTEE|SMASH/i.test(JSON.stringify(G.FLAG_RULES)));
 
 /* ---- 9. history --------------------------------------------------------- */
@@ -212,6 +217,28 @@ chk('no flag or rule speaks in picks', !/BEST BET|LOCK|GUARANTEE|SMASH/i.test(JS
     b.components[k].value = (b.components[k].value || 0) + 1;
     return G.timelineEvents(a, b).some((e) => e.kind === 'component' && e.key === k);
   })());
+})();
+
+/* ---- 10c. typed evidence and explanation -------------------------------- */
+(function () {
+  const ev = G.evidence(o);
+  chk('every evidence item is typed from the fixed vocabulary', ev.length > 5 && ev.every((e) => G.EVIDENCE_TYPES.indexOf(e.type) >= 0));
+  chk('market facts are MARKET_DATA and the fair line is MODEL_OUTPUT, never mixed', ev.find((e) => e.key === 'market_line').type === 'MARKET_DATA'
+    && ev.find((e) => e.key === 'fair_line').type === 'MODEL_OUTPUT');
+  chk('a missing component is stated as UNCERTAINTY, not as a zero contribution', ev.filter((e) => /^component:/.test(e.key) && e.type === 'UNCERTAINTY').every((e) => /not in the number/.test(e.text)));
+  const why = G.explain(o, 'why_different');
+  chk('"why different" cites the fair line, the market, the gap and the largest components only', why.answerable && why.evidence.some((e) => e.key === 'gap')
+    && why.evidence.filter((e) => /^component:/.test(e.key)).length <= 4 && /cannot be observed/.test(why.note));
+  chk('every number in an explanation appears in the evidence it cites (no generated numbers)', (() => {
+    const txt = why.evidence.map((e) => e.text).join(' ');
+    return why.evidence.every((e) => txt.indexOf(e.text) >= 0) && !('text' in why);
+  })());
+  chk('a question the object cannot answer says so', G.explain(o, 'other_models').answerable === false && G.explain(o, 'history').answerable === false);
+  const t = G.explain(o, 'threshold');
+  chk('the threshold answer is arithmetic on the fair line and labelled not a forecast', near(t.derived.home_line_hi - t.derived.home_line_lo, 4, 0.11) && /not a forecast/.test(t.note));
+  const s2 = G.build({ game, now: NOW, model: { home_line: -7.2 }, market, scenarios: [{ label: 'QB1 unavailable', home_line: -3.8, supported: true }] });
+  chk('scenarios enter the evidence only as HYPOTHETICAL', G.evidence(s2).filter((e) => /^scenario:/.test(e.key)).every((e) => e.type === 'HYPOTHETICAL'));
+  chk('movement is answered from the open and the current line', G.explain(o, 'movement').answerable === true);
 })();
 
 /* ---- 11. scenarios ----------------------------------------------------- */

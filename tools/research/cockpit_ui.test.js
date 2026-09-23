@@ -144,10 +144,38 @@ chk('without the shared layer the cockpit renders nothing rather than a differen
     return /Follow this game/.test(c.fbGxWatch(unit('78'), p)); })());
 })();
 
+/* ---- explain ---- */
+chk('explain tags every line with its evidence type and flags unanswerable questions', (() => {
+  setMarket({ spread_line: 3.5, total_line: 52.5, quotes_h2h: [[1.625, 2.35]], book: 'consensus', as_of: recent, stale: false });
+  const h = c.fbGxExplain(unit('ex'), p);
+  return /model output/.test(h) && /market data/.test(h) && /uncertainty/.test(h) && /Not answerable/.test(h) && /Nothing here is written by a language model/.test(h);
+})());
+
+/* ---- the research queue ---- */
+(function () {
+  c.FB = { p4: {} };
+  setMarket({ spread_line: 3.5, total_line: 52.5, quotes_h2h: null, book: 'consensus', as_of: recent, stale: false });
+  const far = project({ spread_line: 3.5 });
+  const rows = [{ u: unit('q1'), p: far }, { u: unit('q2'), p: { status: 'BLOCKED' } }];
+  const html = c.fbP4QueueHTML(rows);
+  const o = c.fbGxResearchObj(rows[0].u, far);
+  if (o.flags.priority) {
+    chk('the queue lists a flagged game with its gap in points and sigma', /WORTH RESEARCHING/.test(html) && /pts/.test(html) && /σ/.test(html));
+    chk('the queue says it is a reading order, not a ranking of bets', /not a ranking of bets and not a probability/.test(html));
+  } else chk('an unflagged slate draws no queue', html === '');
+  chk('a blocked projection never enters the queue', !/q2/.test(html));
+  chk('no market alone never queues a game', (() => {
+    setMarket({ spread_line: null, total_line: null, quotes_h2h: null, book: null, as_of: null, stale: false });
+    const u2 = unit('q3');
+    return c.fbP4QueueHTML([{ u: u2, p: project({}) }]) === '';
+  })());
+  chk('the board mounts the queue above its rows', fnSrc('fbP4BoardHTML').indexOf('fbP4QueueHTML(visible)') > 0);
+})();
+
 /* ---- the card mounts it, and the page loads the layer ---- */
-chk('fbP4Card mounts the cockpit sections', ['fbGxResearchRead(u,p)', 'fbGxDecomp(u,p)', 'fbGxPrice(u,p)', 'fbGxQuality(u,p)', 'fbGxScenarios(u,p)', 'fbGxWatch(u,p)']
+chk('fbP4Card mounts the cockpit sections', ['fbGxResearchRead(u,p)', 'fbGxDecomp(u,p)', 'fbGxPrice(u,p)', 'fbGxQuality(u,p)', 'fbGxScenarios(u,p)', 'fbGxWatch(u,p)', 'fbGxExplain(u,p)']
   .every((k) => fnSrc('fbP4Card').indexOf(k) >= 0));
-chk('every new section has a toggle default so the first click does what it shows', /research:true,decomp:true,price:false,dq:false,scen:false,watch:false/.test(APP));
+chk('every new section has a toggle default so the first click does what it shows', /research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false/.test(APP));
 chk('the board loads the shared research layer', ['lib/research_core.js', 'lib/research_eval.js', 'lib/game_research.js']
   .every((k) => fnSrc('fbP4Ensure').indexOf(k) >= 0));
 done();

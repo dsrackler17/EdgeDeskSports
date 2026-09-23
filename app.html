@@ -54547,7 +54547,7 @@ window.fbGxToggle=function(gid,id){
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
 var FB_GX_DEFAULT={drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
-  research:true,decomp:true,price:false,dq:false,scen:false,watch:false};
+  research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
    Plain text that stands alone away from this page. No ids, no JSON, no
@@ -54893,7 +54893,7 @@ function fbGxQuality(u,p){
   var cls={AVAILABLE:'ok',PARTIAL:'warn',STALE:'warn',UNAVAILABLE:'neg'};
   var rows=o.quality.categories.map(function(c){
     return '<tr><td>'+fbEsc(c.category.replace(/_/g,' '))+'</td><td><span class="gx-st '+cls[c.status]+'">'+fbEsc(c.status)+'</span></td>'
-      +'<td class="num">'+(c.age_hours!=null?fbEsc(c.age_hours+'h'):'—')+'</td>'
+      +'<td class="num">'+(c.age_hours!=null?fbEsc(c.age_hours<48?Math.round(c.age_hours)+'h':Math.round(c.age_hours/24)+'d'):'—')+'</td>'
       +'<td style="font-size:11px;color:var(--faint)">'+fbEsc([c.source,c.note].filter(Boolean).join(' · '))+'</td></tr>';
   }).join('');
   return '<div class="tblwrap"><table class="mini" style="width:100%;font-size:12px"><thead><tr><th>Category</th><th>Status</th><th class="num">Age</th><th>Detail</th></tr></thead><tbody>'
@@ -55026,6 +55026,63 @@ window.fbGxFollow=function(gid){
   if(el&&u&&p){var tmp=document.createElement('div');tmp.innerHTML=fbGxWatch(u,p);if(tmp.firstChild)el.replaceWith(tmp.firstChild);}
   else if(el)el.querySelector('button').textContent=w[gid]?'Unfollow this game':'Follow this game';
 };
+/* ── THE RESEARCH QUEUE ─────────────────────────────────────────────────
+   The board's games that raised at least one research flag, ordered by how
+   many flags they raised and then by normalized gap. The order is a reading
+   order, not a ranking of bets: every flag names the rule that raised it and
+   the count is not a probability. Market-state flags (no market, stale
+   market) never put a game in the queue on their own. */
+function fbP4QueueHTML(visible){
+  if(!window.EDGameResearch)return '';
+  var items=[];
+  (visible||[]).forEach(function(r){
+    if(!r||!r.p||r.p.status!=='PREDICTED')return;
+    var o=null;try{o=fbGxResearchObj(r.u,r.p);}catch(_){o=null;}
+    if(!o||!o.flags||!o.flags.priority)return;
+    items.push({r:r,o:o,z:o.model_vs_market.normalized_gap.value,
+      flags:o.flags.flags.filter(function(f){return f.key!=='NO_MARKET'&&f.key!=='STALE_MARKET';})});
+  });
+  if(!items.length)return '';
+  items.sort(function(a,b){return (b.o.flags.priority-a.o.flags.priority)||((b.z||0)-(a.z||0));});
+  var rows=items.slice(0,12).map(function(x){
+    var g=x.r.u.g,gid=String(g.game_id);
+    return '<div onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="cursor:pointer;border-bottom:1px solid var(--border);padding:6px 2px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline">'
+      +'<span style="min-width:180px">'+fbEsc(g.away_team)+' <span class="mut">→</span> '+fbEsc(g.home_team)+'</span>'
+      +'<span class="mut">'+(x.o.model_vs_market.raw_gap.value!=null?x.o.model_vs_market.raw_gap.value.toFixed(1)+' pts':'')
+        +(x.z!=null?' · '+x.z.toFixed(2)+'σ':'')+'</span>'
+      +'<span>'+x.flags.map(function(f){return '<span class="ec mut" title="'+fbEsc(f.rule)+'">'+fbEsc(f.key.replace(/_/g,' ').toLowerCase())+'</span>';}).join(' ')+'</span></div>';
+  }).join('');
+  return '<details class="gx-queue" style="margin:8px 0 10px"'+(FB.p4.queueOpen?' open':'')+' ontoggle="FB.p4.queueOpen=this.open">'
+    +'<summary class="mono" style="cursor:pointer;font-size:11px;color:var(--dim)"><b style="color:var(--text)">WORTH RESEARCHING</b> · '
+    +items.length+' game'+(items.length===1?'':'s')+' raised a research flag</summary>'
+    +'<div class="mono" style="font-size:11.5px;margin-top:4px">'+rows+'</div>'
+    +'<div class="gd-modelnote" style="margin-top:6px">Ordered by the number of research flags raised, then by normalized gap. '
+    +'This is a reading order, not a ranking of bets and not a probability; hover a flag for the rule behind it.</div></details>';
+}
+/* ── EXPLAIN THIS RESEARCH ─────────────────────────────────────────────
+   Answers to the standard research questions, assembled ONLY from typed
+   evidence in the research object (lib/game_research.js evidence/explain).
+   No sentence here is generated: each line is one field, tagged as FACT,
+   MODEL OUTPUT, MARKET DATA, HISTORICAL, UNCERTAINTY or HYPOTHETICAL, and a
+   question the object cannot answer says so. */
+var FB_GX_EVTAG={FACT:'fact',MODEL_OUTPUT:'model output',MARKET_DATA:'market data',HISTORICAL:'historical',UNCERTAINTY:'uncertainty',HYPOTHETICAL:'hypothetical'};
+function fbGxExplain(u,p){
+  var o=fbGxResearchObj(u,p),GR=window.EDGameResearch;
+  if(!o||!GR||!GR.explain)return '';
+  var MP=(window.EDCfbP4Params&&window.EDCfbP4Params.market)||{};
+  return Object.keys(GR.QUESTIONS).map(function(q){
+    var a=GR.explain(o,q,{research_gap:MP.min_research_gap!=null?MP.min_research_gap:2});
+    var lines=(a.evidence||[]).map(function(e){
+      return '<li><span class="ec mut" style="margin-right:6px">'+fbEsc(FB_GX_EVTAG[e.type]||e.type)+'</span>'+fbEsc(e.text)
+        +(e.captured_at?' <span class="gx-miss">· '+fbGxAgo(e.captured_at)+'</span>':'')+'</li>';
+    }).join('');
+    return '<div style="margin:0 0 10px"><div style="font-weight:600;font-size:12.5px">'+fbEsc(a.question)+'</div>'
+      +(a.answerable?'':'<div class="gx-miss">Not answerable from this game’s research object'+(a.note?': '+fbEsc(a.note):'.')+'</div>')
+      +(lines?'<ul style="margin:4px 0 0;padding-left:18px;font-size:12px;line-height:1.5">'+lines+'</ul>':'')
+      +(a.answerable&&a.note?'<div class="gx-foot">'+fbEsc(a.note)+'</div>':'')+'</div>';
+  }).join('')
+  +'<div class="gx-foot">Every line is a stored field with its type. Nothing here is written by a language model and nothing is a recommendation.</div>';
+}
 function fbP4Card(u){
   var g=u.g,E=window.EDCfbP4,m=u.meta;
   var p=FB.p4._proj&&FB.p4._proj[String(g.game_id)];
@@ -55119,6 +55176,8 @@ function fbP4Card(u){
       'available, partial, stale or unavailable — and why')
     +fbGxSec(gid,'scen','Scenarios · hypothetical',fbGxScenarios(u,p),false,
       'the engine re-run with one supplied input removed')
+    +fbGxSec(gid,'explain','Explain this research',fbGxExplain(u,p),false,
+      'answers built only from typed evidence — fact, model, market, history, uncertainty, hypothetical')
     +fbGxSec(gid,'watch','Follow · what changed',fbGxWatch(u,p),false,
       'a timeline of captured changes for games you follow')
     +fbGxSec(gid,'matchup','Programs, conferences and the FBS rating',fbP4MatchupHTML(u,p),true,
@@ -55976,6 +56035,7 @@ function fbP4BoardHTML(){
   var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 46px 100px;gap:2px 8px;align-items:center';
   var html=head+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c);
   if(!visible.length)return html+fbP4EmptyHTML(rows,c);
+  try{html+=fbP4QueueHTML(visible);}catch(_){}
   html+='<div style="overflow-x:auto"><div class="mono" style="font-size:11px;min-width:700px">'
     +'<div style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
     +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>GAP</span><span>STATUS</span></div>';
