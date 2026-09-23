@@ -23793,6 +23793,7 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
     americanfootball_ncaaf: ['market', 'team_ratings', 'qb', 'injuries', 'player_quality', 'coaching', 'model_inputs', 'weather'],
     americanfootball_nfl: ['market', 'qb', 'injuries', 'model_inputs', 'weather']
   };
+  var CATEGORY_LABEL = { team_ratings: 'team rating', qb: 'quarterback', injuries: 'injury', player_quality: 'roster quality', coaching: 'coaching', weather: 'weather', model_inputs: 'model input', market: 'market' };
   var NFL_DRIVER_LABEL = { baseline: 'home field', net_pts: 'scoring margin', net_epa: 'overall EPA per play', net_pass: 'passing efficiency',
     net_rush: 'rushing efficiency', qb_adj_diff: 'quarterback adjustment', rest_diff: 'rest', div_game: 'division-game adjustment' };
 
@@ -23989,8 +23990,9 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
     else if (st.spread.state === 'STALE' || st.spread.state === 'UNKNOWN') miss('current_spread', 'the last spread on file is ' + st.spread.state.toLowerCase() + (st.spread.age_hours != null ? ' (' + st.spread.age_hours + 'h old)' : ''), true);
     if (research) research.quality.categories.forEach(function (q) {
       if (q.category === 'market' || q.category === 'model_inputs') return;
-      if (q.status === 'UNAVAILABLE') miss(q.category, q.category.replace(/_/g, ' ') + ' data is unavailable' + (q.note ? ' (' + q.note + ')' : ''), q.category === 'injuries' || q.category === 'qb' || q.category === 'team_ratings');
-      else if (q.status === 'STALE') miss(q.category, q.category.replace(/_/g, ' ') + ' data is stale', q.category === 'injuries' || q.category === 'qb');
+      var lab = CATEGORY_LABEL[q.category] || q.category.replace(/_/g, ' ');
+      if (q.status === 'UNAVAILABLE') miss(q.category, 'EdgeDesk has no ' + lab + ' information for this game' + (q.note ? ' (' + q.note + ')' : ''), q.category === 'injuries' || q.category === 'qb' || q.category === 'team_ratings');
+      else if (q.status === 'STALE') miss(q.category, 'the ' + lab + ' information is out of date', q.category === 'injuries' || q.category === 'qb');
     });
     if (research && research.quality.categories.some(function (q) { return q.category === 'model_inputs' && q.status === 'STALE'; })) miss('model_inputs', 'the projection was built more than 8 days ago', true);
     if (sport === NFL && specific.nfl && specific.nfl.data_quality && Array.isArray(specific.nfl.data_quality.missing))
@@ -24104,7 +24106,9 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
     var mkState = sel.market === 'spread' ? E.market.spread : sel.market === 'total' ? E.market.total : E.market.moneyline;
     out.market_state = sel.hypothetical ? 'HYPOTHETICAL' : (mkState ? mkState.state : 'NONE');
     out.current = !sel.hypothetical && !!(mkState && mkState.actionable);
-    if (sel.odds == null) sel.odds = -110, out.odds_assumed = true;
+    /* a line with no price on file is judged at -110 and SAYS so; the assumed price never becomes the selection's price */
+    var odds = num(sel.odds) != null ? num(sel.odds) : -110;
+    out.odds_assumed = num(sel.odds) == null;
 
     if (sel.market === 'moneyline') {
       var tierM = E.fair.moneyline ? E.fair.moneyline.tier : 'RESEARCH';
@@ -24113,7 +24117,7 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
       if (pHome == null) { out.verdict = 'NO_PROJECTION'; out.why = 'no EdgeDesk win probability is on file'; return out; }
       if (num(sel.odds) == null) { out.verdict = 'NO_PRICE'; return out; }
       var p = sel.side === 'home' ? pHome : 1 - pHome;
-      var be = breakEven(sel.odds, 0);
+      var be = breakEven(odds, 0);
       var edge = r2((p - be) * 100);
       var thr = mlThresholdPP(E);
       out.prob = { win: r2(p), break_even: r2(be), edge_pp: edge, basis: tierM === 'RESEARCH' ? 'the projection’s win probability, research tier' : 'the validated moneyline blend' };
@@ -24135,7 +24139,7 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
     var validated = tier === 'VALIDATED' || tier === 'LEAN';
     if (validated && P && sel.market === 'spread') {
       var FS = P.fairSpread({ sport: E.sport, model_home_line: E.projection.home_line, market_home_line: homeLineOf(sel, sel.line) });
-      var r = P.priceSpreadSide({ fair: FS, side: sel.side, selection: sel.team, odds_american: sel.odds });
+      var r = P.priceSpreadSide({ fair: FS, side: sel.side, selection: sel.team, odds_american: odds });
       out.fair = { line: r.fair_line, basis: 'the validated blend of projection and market (' + tier + ' tier)', projection_line: fairSel };
       out.prob = { cover: r.cover_at_market, push: r.push_at_market, break_even: r.break_even, edge_pp: r.edge_pp, basis: 'the validated blend (' + tier + ')' };
       out.pricing_status = r.status;
@@ -24146,8 +24150,8 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
       else out.verdict = 'NO_VALUE';
       out.why = r.why;
     } else {
-      var mc = modelCover(E, sel, sel.line);
-      var be2 = breakEven(sel.odds, mc ? mc.push : 0);
+      var mc = modelCover(E, Object.assign({}, sel, { odds: odds }), sel.line);
+      var be2 = breakEven(odds, mc ? mc.push : 0);
       var edge2 = mc ? r2((mc.cover - be2) * 100) : null;
       out.fair = { line: fairSel, basis: 'EdgeDesk’s projection (' + tier + ' tier: the projection has not been validated as a betting price in this market)', projection_line: fairSel };
       out.prob = mc ? { cover: mc.cover, push: mc.push, break_even: r2(be2), edge_pp: edge2, basis: mc.basis + ', conditional on the projection being right' } : null;
@@ -24186,7 +24190,7 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
       if (L.fair_price == null) return null;
       return 'EdgeDesk’s fair price is ' + fmtAm(L.fair_price) + (L.attractive_price != null ? '; it gets attractive around ' + fmtAm(L.attractive_price) + ' or better' : '') + '.';
     }
-    var fmt = sel.market === 'total' ? function (x) { return (sel.side === 'over' ? 'o' : 'u') + x; } : fmtLine;
+    var fmt = sel.market === 'total' ? function (x) { return (sel.side === 'over' ? 'Over ' : 'Under ') + x; } : fmtLine;
     var who = sel.market === 'total' ? cap(sel.side) : sel.team;
     if (L.playable_at == null) return 'No number in a normal range makes ' + who + ' a value, by EdgeDesk’s rule.';
     var worse = L.better_is_higher ? L.playable_at - 0.5 : L.playable_at + 0.5;
@@ -24296,7 +24300,7 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
      5. SELECTIONS AND THE BOARD RANKING
      ================================================================ */
   function selLabel(E, sel) {
-    if (sel.market === 'total') return cap(sel.side) + ' ' + (sel.line == null ? '' : r1(sel.line));
+    if (sel.market === 'total') return cap(sel.side) + ' ' + (sel.line == null ? '' : r1(sel.line)) + (E && E.identity && E.identity.home ? ' (' + E.identity.away + ' at ' + E.identity.home + ')' : '');
     var t = sel.team || teamOf(E, sel.side);
     if (sel.market === 'moneyline') return t + ' ML';
     return t + ' ' + fmtLine(sel.line);
@@ -24360,9 +24364,10 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
         if (ev.verdict !== 'VALUE' && ev.verdict !== 'THIN' && sort !== 'disagreement') return;
         var row = { key: selKey(sel), E: E, sel: ev.sel, ev: ev, score: scoreOf(E, ev), confidence: confidence(E, ev) };
         if (ev.market_state === 'STARTED') { started++; return; }
+        /* a gap past the outlier line is a data question whatever the market state */
+        if (ev.outlier) { checks.push(row); return; }
         if (ev.market_state === 'STALE' || ev.market_state === 'UNKNOWN') { stale.push(row); return; }
         if (ev.market_state === 'LINE_ONLY') { reference.push(row); return; }
-        if (ev.outlier) { checks.push(row); return; }
         cands.push(row);
       });
     });
@@ -24430,7 +24435,16 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
       ['home', 'away'].forEach(function (side) {
         var name = teamOf(E, side); if (!name) return;
         var variants = [normName(name)];
-        if (E.sport === NFL) { var parts = normName(name).split(' '); if (parts.length > 1) variants.push(parts[parts.length - 1]); }
+        if (E.sport === NFL) {
+          var parts = normName(name).split(' ');
+          if (parts.length > 1) {
+            variants.push(parts[parts.length - 1]);
+            /* the city, only where it names one club on the card ("Houston" yes, "New York" no) */
+            var city = parts.slice(0, -1).join(' ');
+            var clubs = 0; (Es || []).forEach(function (X) { if (X.sport === NFL) ['home', 'away'].forEach(function (s2) { var n2 = normName(teamOf(X, s2)); if (n2.indexOf(city + ' ') === 0) clubs++; }); });
+            if (clubs === 1) variants.push(city);
+          }
+        }
         variants.forEach(function (v) {
           if (!v || v.length < 3) return;
           var i = nq.indexOf(' ' + v + ' ');
@@ -24464,6 +24478,7 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
 
     if (teams.length >= 2 && (RX.compare.test(q) || RX.choose.test(q)) && !(teams.length === 2 && teams[0].E === teams[1].E && !market && !/\bcompare|rather|which\b/i.test(q))) o.intent = 'COMPARE';
     else if (teams.length >= 1 && hasFocus && /\bcompare|versus|\bvs\b|rather|which\b/i.test(q)) o.intent = 'COMPARE';
+    else if (teams.length === 0 && hasFocus && /\b(compare|versus|vs\.?)\b/i.test(q)) o.intent = 'COMPARE';
     else if (teams.length >= 1 && RX.game.test(q)) o.intent = 'GAME';
     else if (teams.length >= 1) o.intent = RX.deep.test(q) ? 'DEEP' : RX.risk.test(q) ? 'RISK' : 'MARKET';
     else if (hasFocus && RX.choose.test(q) && st.compare && st.compare.length >= 2) o.intent = 'CHOOSE';
@@ -24623,6 +24638,7 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
     if (mk.state === 'STALE' || mk.state === 'UNKNOWN') return 'Careful: the last price on file is ' + (mk.state === 'STALE' ? 'stale' : 'of unknown age') + (mk.age_hours != null ? ' (' + mk.age_hours + 'h old)' : '') + ', so this is not a current price. Re-check the line before acting.';
     if (mk.state === 'LINE_ONLY') return 'That number is a reference line with no book or capture time, not a price you can take. Confirm it at your book.';
     if (mk.state === 'STARTED') return 'This game has started; EdgeDesk only prices pregame.';
+    if (ev.odds_assumed && ev.sel.market !== 'moneyline') return 'No price is on file for that number, so it is judged at -110.';
     return null;
   }
   function where(sel) { return (sel.odds != null ? ' (' + fmtAm(sel.odds) + (sel.book ? ', ' + sel.book : '') + ')' : sel.book ? ' (' + sel.book + ')' : ''); }
@@ -24682,7 +24698,8 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
       var more = R.qualified.slice(1, 4);
       if (more.length) L.push('Other values: ' + more.map(fmtRow).join('; ') + '.');
     } else {
-      L.push('Nothing stands out enough at current ' + scope + 'prices. EdgeDesk checked ' + nGames + ' game' + (nGames === 1 ? '' : 's') + (nCur < nGames ? ' (' + nCur + ' with a current price)' : '') + ' and none clears its threshold.');
+      if (!nCur) L.push('Nothing to call value right now: EdgeDesk has no current ' + scope + 'book prices for the ' + nGames + ' game' + (nGames === 1 ? '' : 's') + ' it checked, and it won’t judge a price it can’t see.');
+      else L.push('Nothing stands out enough at current ' + scope + 'prices. EdgeDesk checked ' + nGames + ' game' + (nGames === 1 ? '' : 's') + (nCur < nGames ? ' (' + nCur + ' with a current price)' : '') + ' and none clears its threshold.');
       if (R.closest.length) {
         var c = R.closest[0]; focus = c;
         var lt = ladderText(c.E, c.sel, ladder(c.E, c.sel));
@@ -24690,6 +24707,7 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
       }
       if (!nCur && R.reference.length) L.push('On reference lines (not live prices): ' + R.reference.slice(0, 2).map(fmtRow).join('; ') + '. Confirm them at your book.');
       if (R.stale.length) L.push(R.stale.length + ' more looked interesting on stale prices, which EdgeDesk won’t present as current.');
+      if (R.data_checks.length) L.push('Held back as likely data errors (a gap of ' + outlierGap() + '+ points): ' + R.data_checks.slice(0, 2).map(function (r) { return r.ev.label; }).join('; ') + '.');
     }
     return { text: L.join('\n\n'), focus: focus, ranking: R };
   }
@@ -24802,9 +24820,12 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
       else if (!good.length) {
         var stale = evs.some(function (e) { return !e.current; });
         out.text = 'No. EdgeDesk checked ' + evs.length + ' prices on ' + E1.identity.away + ' at ' + E1.identity.home + ' and ' + (stale ? 'none is both current and better than its number.' : 'every one is within its number: this game looks efficiently priced.');
-        var closest = evs.filter(function (e) { return e.value_points != null && e.value_points > 0; }).sort(function (a, b) { return b.value_points - a.value_points; })[0];
-        if (closest) { out.focus = closest.sel; var lt = ladderText(E1, closest.sel, ladder(E1, closest.sel)); out.text += ' Closest: ' + closest.label + (lt ? '. ' + lt : '.'); }
-        out.text += ' ' + confidenceSentence(E1, evs[0]);
+        var closest = evs.filter(function (e) { return e.prob && e.prob.edge_pp != null; }).sort(function (a, b) { return b.prob.edge_pp - a.prob.edge_pp; })[0];
+        if (closest) {
+          out.focus = closest.sel; var lt = ladderText(E1, closest.sel, ladder(E1, closest.sel));
+          out.text += ' Closest is ' + closest.label + where(closest.sel) + (closest.value_points != null ? ', ' + pts(closest.value_points) + (closest.value_points >= 0 ? ' better' : ' worse') + ' than our number, not enough to beat the price' : '') + '.' + (lt ? ' ' + lt : '');
+        }
+        out.text += ' ' + confidenceSentence(E1, closest || evs[0]);
       } else {
         out.focus = good[0].sel;
         out.text = answerSelection(E1, good[0], { lead: (good[0].verdict === 'VALUE' ? 'Yes: ' : 'Only a small one: ') + good[0].label + where(good[0].sel) + ' is the price to look at in this game.' });

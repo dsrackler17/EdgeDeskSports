@@ -41456,7 +41456,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   /* A short follow-up on the bet already under discussion goes straight to
      the desk with its state, instead of being resolved against whatever
      signal or board happens to be open. */
-  function deskFollowUp(t){
+  function deskStateFollowUp(t){
     if(!LAST_DESK||!LAST_DESK.focus) return false;
     var s=String(t||'').trim(); if(s.split(/\s+/).length>12) return false;
     return /^(why|how come|explain)\b|\b(risk|worry|downside|what if|drops?|moves?|goes|falls?|only get|at [+-]?\d|compare|versus|\bvs\b|rather|which one|safer|safest|anything else|another|deep ?dive|go deeper|more detail|pass|stop|similar|history|that|it|this one)\b/i.test(s);
@@ -46514,7 +46514,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
            question about a team is never answered by whatever card happens to
            be loaded. Everything downstream is unchanged for every question
            that names nobody. */
-        if(deskFollowUp(t)){
+        if(deskStateFollowUp(t)){
           thinking(true);
           LAST_ASK={mode:'chat',question:t,x:null,extra:null};
           var resF=await askAI('chat',t,null);

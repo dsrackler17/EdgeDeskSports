@@ -736,3 +736,78 @@ PostgreSQL: immutability, no-delete, no-lookahead, the two size constraints,
 the caps' coherence, the grades and the baselines, append-only responses, RLS),
 the `staking` family in `evals.test.js` (38 assertions through the real
 handler) and the staking panel in `structured_ui.test.js`.
+
+## 15. Slice 9 — the desk (a short, direct answer from typed evidence)
+
+A reader should be able to type "What's the best market line value today?"
+or "Is Maryland -2.5 worth betting?" and get the answer first, then the
+price, then why, then the risk, in three to eight sentences. They shouldn't
+have to know where to look or what the fields are called.
+
+```
+question + desk_state ─▶ deskTurn (index.ts, only for a client sending desk:true)
+   ─▶ Dal.getSlateIndex(CFB, NFL)  + FBS input contract + NFL injury report + pricing validation
+   ─▶ EDDESK.evidence(game)        ← wraps EDGameResearch.build (lib/game_research.js) and EDPRICE
+   ─▶ EDDESK.classify(question)    BOARD · MARKET · GAME · EXPLAIN · RISK · PASS_LINE ·
+                                   LINE_CHANGE · COMPARE · CHOOSE · SAFER · DEEP · SIMILAR
+   ─▶ EDDESK.answer()              deterministic: verdict, price, why, confidence, risk, price ladder
+   ─▶ optional rephrase by the writing model, under EDDESK.critic (else EdgeDesk's words ship)
+   ─▶ desk_prediction_history      the focus selection, write-once, pregame
+   ─▶ { answer, desk, desk_state }  → app.html deskShortHTML, LAST_DESK carried back
+anything else (staking, other sports, a question the desk doesn't answer) → the pipeline above, unchanged
+```
+
+| piece | file | owns |
+|---|---|---|
+| Desk kernel `EDDESK` | `supabase/functions/edgedesk_ai/_desk.js` | the evidence contract (`edgedesk_desk_evidence_v1`), verdicts, the price ladder, the board ranking, intent, the conversation state, Similar Situations' gate, the short answer, the rephrase critic |
+| Research core + game contract | `lib/research_core.js`, `lib/game_research.js` (inlined as `EDRCORE`, `EDGAMERES`) | gap, movement, data quality, typed evidence items; the odds convention `R.odds` |
+| Host | `index.ts` `deskTurn`, `deskGameInput`, `deskEvidence` | reading the cards and turning them into the kernel's input; never computes a number |
+| History | `supabase/desk_prediction_history.sql`, `tools/intelligence/desk_history.js` | the frozen pregame record, finals, the settled view |
+
+**The evidence contract.** Common fields for both sports: identity, the
+projection, EDPRICE's fair lines and tiers, market state per market
+(CURRENT / AGING / STALE / UNKNOWN / LINE_ONLY / STARTED / NONE), the gap,
+reliability, the typed evidence items and the missing list. Then a
+`specific.cfb` block (team rating, roster and recruiting talent, coaching,
+QB and passing efficiency, schedule, venue, weather, availability) *or* a
+`specific.nfl` block (starters, rest, roof, surface, the engine's drivers,
+the official injury report for this week, the build's data quality). One
+sport's fields never carry the other's evidence. Anything missing stays
+null and goes on the `missing` list; an important one lowers certainty.
+
+**Verdicts, at an actual line and price.** VALUE / THIN / NO_VALUE /
+OVERPRICED. For a VALIDATED or LEAN tier they are EDPRICE's own statuses on
+its blend. For a RESEARCH tier: the projection's own cover probability
+(the NFL cover curve, else EDPRICE.coverAt with the kernel's sigma) against
+the break-even, with VALUE needing the research gap (3 points, EDRESEARCH).
+"Team X wins 70%" is never "Team X -7 is a good price": laying more than
+EdgeDesk's number is OVERPRICED whatever the win probability.
+
+**The price ladder** re-runs that verdict at every half point: *attractive*
+is the worst number still VALUE, *playable* the worst still THIN or better.
+
+**The ranking** is EDBOARD R6: edge in probability points × quote freshness
+× validation tier × evidence quality. VALUE only, one selection per game.
+Stale, unknown-age and reference-only prices never qualify, and a gap of 7+
+points is held as a data check. Safety orders by confidence, then cushion;
+"disagree most" orders by the raw gap. When nothing clears, the answer is
+"Nothing stands out enough at current prices", with the closest number.
+
+**Confidence** = evidence quality × tier weight × freshness weight
+(HIGH ≥ 0.6, and only on a VALIDATED tier; MEDIUM ≥ 0.4; LOW otherwise;
+INSUFFICIENT with no projection, no price or no current market). Evidence
+quality = information confidence (else completeness) × 0.85 for each
+important missing input.
+
+**Similar Situations** is withheld until 150 settled pregame predictions exist
+for the sport and market, and 50 of them are comparable. The server refuses
+any record captured at or after kickoff, and any record whose features carry
+a postgame key. Until then the desk says "building history".
+
+**Switches.** `EDGEDESK_DESK=0` turns the desk turn off (every question takes
+the pipeline). `EDGEDESK_DESK_NARRATE=0` ships EdgeDesk's words without a
+rephrase.
+
+**Verification.** `npm run intel:desk` (kernel + real handler),
+`npm run intel:desk:sql` (live PostgreSQL), `tools/research/odds_parity.test.js`,
+and section 6 of `tools/intelligence/desk_ui.e2e.js` (Chromium).

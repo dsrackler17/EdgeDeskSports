@@ -128,7 +128,7 @@ const NOW = Date.now();
   /* ---- 5. stale prices ------------------------------------------------- */
   const stale = SIGNALS.map((s) => Object.assign({}, s, { last_seen_at: new Date(NOW - 2126 * 60000).toISOString() }));
   const s1 = await ask("What's the best market line value today?", { signals: stale });
-  ok('a stale price is never the current best value', !/^Best value right now/.test(s1.j.answer) && /^Nothing stands out/.test(s1.j.desk.deterministic_answer), s1.j.desk.deterministic_answer);
+  ok('a stale price is never the current best value', !/^Best value right now/.test(s1.j.answer) && /^Nothing (stands out|to call value)/.test(s1.j.desk.deterministic_answer), s1.j.desk.deterministic_answer);
   ok('nothing stale is recorded', !posted.some((p) => p.table === 'desk_prediction_history'));
 
   /* ---- 6. what the desk does not answer ------------------------------ */
