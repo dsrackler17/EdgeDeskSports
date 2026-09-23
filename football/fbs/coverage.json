@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-22T15:53:09.796Z",
+ "generated_at": "2026-09-23T01:44:56.897Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,23 +119,23 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 73,
+  "total": 76,
   "by_group": {
-   "other": 44,
-   "p4": 38,
+   "other": 45,
+   "p4": 40,
    "independent": 2
   },
   "by_matchup": {
    "non_conference": 26,
-   "conference": 34,
+   "conference": 37,
    "fbs_fcs": 13
   },
   "by_conference": {
    "sunbelt": 12,
-   "cusa": 10,
+   "cusa": 11,
    "american": 12,
-   "bigten": 10,
-   "acc": 11,
+   "bigten": 11,
+   "acc": 12,
    "sec": 9,
    "big12": 8,
    "mac": 11,
@@ -195,22 +195,26 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 73
+  "PREDICTED": 76
  },
  "weather": {
-  "requested": 72,
-  "answered": 72,
+  "requested": 75,
+  "answered": 56,
   "dome": 1,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 19,
+  "carried": 16,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "no hour within four hours of kickoff": 7,
+   "HTTP 429": 8,
+   "host circuit open: HTTP 429 x3": 4
+  },
   "host": "api.open-meteo.com",
-  "summary": "72 of 72 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "56 of 75 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 19 request(s) failed; 16 carried the last observed forecast forward at its real age (no hour within four hours of kickoff x7, HTTP 429 x8, host circuit open: HTTP 429 x3 x4)"
  },
  "spread_recommendation": {
-  "NO_MARKET": 73
+  "NO_MARKET": 76
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -279,8 +283,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 35,
-    "total": 73,
+    "non_power_games": 36,
+    "total": 76,
     "example": [
      "Liberty @ Coastal Carolina",
      "Army @ Temple",
@@ -299,7 +303,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 34,
+    "conference_games": 37,
     "wrong": 0
    }
   },
@@ -331,8 +335,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 73,
-    "audit_total": 73
+    "slate": 76,
+    "audit_total": 76
    }
   },
   {
