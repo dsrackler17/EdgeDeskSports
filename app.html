@@ -37951,12 +37951,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      middle of a baseball conversation does not forget who was being discussed
      — and is replaced whenever the server resolves new pitchers. */
   var LAST_MLB=null;
+  /* THE DESK'S CONVERSATION STATE (edgedesk_desk_state_v1): the selection
+     being discussed and the pair being compared, as identifiers and numbers.
+     It is what makes "Why?", "What if it drops to +2.5?" and "Which would you
+     rather have?" land on the right bet. The server re-prices every item. */
+  var LAST_DESK=null;
   function clientTimeZone(){ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone||null; }catch(_){ return null; } }
   function carriedContext(){
     var c=LAST_CTX?Object.assign({},LAST_CTX):{};
     if(LAST_BOARD) c.board=LAST_BOARD;
     if(LAST_MLB) c.mlb_pitchers=LAST_MLB;
-    return (LAST_CTX||LAST_BOARD||LAST_MLB)?c:null;
+    if(LAST_DESK) c.desk=LAST_DESK;
+    return (LAST_CTX||LAST_BOARD||LAST_MLB||LAST_DESK)?c:null;
   }
   /* The last question, so a failed narration can be asked for again without
      the reader retyping it. */
@@ -41408,6 +41414,53 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return h;
   }
 
+  /* ---- THE DESK'S SHORT ANSWER ----------------------------------------
+     The answer first, in EdgeDesk's words (or the model's rephrasing of
+     them, when the server's critic passed it); then one line of the numbers
+     that answer rests on; then the evidence, folded. Every number is the
+     server's. Nothing here computes anything. */
+  function deskIsAnswer(d){ return !!(d&&d.desk&&d.desk.schema==='edgedesk_desk_answer_v1'); }
+  function deskNum(v,sign){ if(v==null||!isFinite(+v)) return '\u2014'; v=+v; return (sign&&v>0?'+':'')+(Math.round(v*10)/10); }
+  function deskPct(p){ return p==null||!isFinite(+p)?'\u2014':Math.round(+p*100)+'%'; }
+  function deskShortHTML(d){
+    var D=d.desk||{}, ans=(d.answer&&String(d.answer).trim())||D.deterministic_answer||'';
+    var h='<div class="dk-read"><div class="lab">The Desk\u2019s read</div>'+mdToHtml(ans)+'</div>';
+    var e=(D.evaluations||[])[0];
+    if(e && D.intent!=='COMPARE' && D.intent!=='CHOOSE'){
+      var chips=[];
+      chips.push('<b>'+esc(e.selection)+'</b>'+(e.odds!=null?' '+esc(deskNum(e.odds,true)):'')+(e.book?' \u00b7 '+esc(e.book):''));
+      if(e.fair&&e.fair.projection_line!=null) chips.push('EdgeDesk '+esc(deskNum(e.fair.projection_line,true)));
+      if(e.value_points!=null) chips.push((e.value_points>=0?'+':'')+esc(deskNum(e.value_points))+' pts vs our number');
+      if(e.prob&&(e.prob.cover!=null||e.prob.win!=null)) chips.push(esc(deskPct(e.prob.cover!=null?e.prob.cover:e.prob.win))+' vs '+esc(deskPct(e.prob.break_even))+' needed');
+      if(e.confidence) chips.push('confidence '+esc(String(e.confidence.grade||'').toLowerCase()));
+      if(e.evidence_quality) chips.push('evidence '+esc(String(e.evidence_quality.grade||'').toLowerCase()));
+      chips.push(esc(String(e.market_state||'').toLowerCase().replace(/_/g,' ')));
+      h+='<div class="edai-src" style="margin-top:6px">'+chips.join(' \u00b7 ')+'</div>';
+    }
+    var more='';
+    (D.evaluations||[]).slice(0,4).forEach(function(x){
+      var r=x.reasons||{}, lis=[];
+      (r['for']||[]).forEach(function(t){ lis.push('<li>For: '+esc(t.text)+'</li>'); });
+      (r.against||[]).forEach(function(t){ lis.push('<li>Against: '+esc(t.text)+'</li>'); });
+      (x.risks||[]).forEach(function(t){ lis.push('<li>Risk: '+esc(t.text)+'</li>'); });
+      (x.missing||[]).filter(function(m){ return m.important; }).forEach(function(m){ lis.push('<li>Missing: '+esc(m.why)+'</li>'); });
+      if(x.confidence&&x.confidence.rule) lis.push('<li class="m">Confidence rule: '+esc(x.confidence.rule)+'</li>');
+      if(x.ladder&&x.ladder.rule) lis.push('<li class="m">Price rule: '+esc(x.ladder.rule)+'</li>');
+      more+='<div class="dk-sec"><div class="h">'+esc(x.selection)+' \u2014 '+esc(x.matchup||'')+' ('+esc(String(x.verdict||'').toLowerCase().replace(/_/g,' '))+', '+esc(x.tier||'')+' tier)</div><ul>'+lis.join('')+'</ul></div>';
+    });
+    if(D.ranking_rule) more+='<div class="edai-src">How the board is ranked: '+esc(D.ranking_rule)+'</div>';
+    if(D.coverage&&D.coverage.length) more+='<div class="edai-src">'+D.coverage.map(function(c){ return esc(c.label)+': '+esc(c.games)+' games, '+esc(c.with_current_price)+' with a current price'; }).join(' \u00b7 ')+'</div>';
+    if(more) h+='<details class="dk-more"><summary>The evidence</summary><div style="margin-top:6px">'+more+'</div></details>';
+    return h;
+  }
+  /* A short follow-up on the bet already under discussion goes straight to
+     the desk with its state, instead of being resolved against whatever
+     signal or board happens to be open. */
+  function deskFollowUp(t){
+    if(!LAST_DESK||!LAST_DESK.focus) return false;
+    var s=String(t||'').trim(); if(s.split(/\s+/).length>12) return false;
+    return /^(why|how come|explain)\b|\b(risk|worry|downside|what if|drops?|moves?|goes|falls?|only get|at [+-]?\d|compare|versus|\bvs\b|rather|which one|safer|safest|anything else|another|deep ?dive|go deeper|more detail|pass|stop|similar|history|that|it|this one)\b/i.test(s);
+  }
   function deskAnswerHTML(answer, S){
     var live=deskLiveHTML(S);
     var shaped=deskProseHTML(answer);
@@ -42456,6 +42509,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     LAST_ASK={mode:'chat',question:t,x:null,extra:{presentation_mode:'STANDARD',matchup:res}};
     try{
       var d=await callFn('chat',t,null,{presentation_mode:'STANDARD'},matchupPacket(R,res));
+      if(deskIsAnswer(d)){
+        /* The answer to the question asked, then the research card folded
+           underneath it for anyone who wants the whole game. */
+        try{ if(d.desk_state&&d.desk_state.schema==='edgedesk_desk_state_v1') LAST_DESK=d.desk_state; }catch(_){}
+        var ansM=(d.answer&&String(d.answer).trim())||d.deterministic_desk_answer||'';
+        if(host){ host.innerHTML=deskShortHTML(d)+'<details class="dk-more"><summary>The full research card</summary>'+researchCardHTML(B)+'</details>'; host.appendChild(note); }
+        if(ansM){ HIST.push({role:'user',content:t}); HIST.push({role:'assistant',content:ansM}); }
+        note.textContent=d.model?('The Desk \u00b7 EdgeDesk\u2019s evidence, written by '+d.model):'The Desk \u00b7 EdgeDesk\u2019s evidence and words';
+        return true;
+      }
       var S=d&&d.matchup_summary;
       var narrated=!!(d&&d.answer)&&!(d.narration&&d.narration.ok===false);
       if(S){
@@ -43284,6 +43347,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
       body:JSON.stringify({mode:mode,question:question,packet:packet,history:HIST.slice(-6),compare:compareArr||null,
         presentation_mode:pm, preset:(extra&&extra.preset)||null,
+        /* This panel renders the desk's short answer (edgedesk_desk_answer_v1);
+           the server answers a football value question that way and runs the
+           full research pipeline for everything else. */
+        desk:true,
         /* The reader's own time zone, so "today" and "tonight" are their day. */
         timezone:clientTimeZone(),
         /* Identifiers only — see LAST_CTX and LAST_BOARD. */
@@ -43356,6 +43423,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         LAST_CTX = (rc&&rc.game_id) ? {sport:rc.sport,game_id:rc.game_id,home:rc.home,away:rc.away,
           home_id:rc.home_id,away_id:rc.away_id,turns:rc.turns||1,
           state:(cs&&cs.game&&String(cs.game.game_id)===String(rc.game_id))?cs:null} : LAST_CTX; }catch(_){}
+      /* THE DESK'S SHORT ANSWER, when the server gave one. */
+      if(deskIsAnswer(d)){
+        try{ if(d.desk_state&&d.desk_state.schema==='edgedesk_desk_state_v1') LAST_DESK=d.desk_state; }catch(_){}
+        var ansD=(d.answer&&String(d.answer).trim())||d.deterministic_desk_answer||'';
+        if(ansD){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:ansD}); }
+        LAST_ASK={mode:mode,question:question,x:x,extra:extra};
+        return {html:deskShortHTML(d), src:d.model?('The Desk \u00b7 EdgeDesk\u2019s evidence, written by '+d.model):'The Desk \u00b7 EdgeDesk\u2019s evidence and words'};
+      }
       /* Slice 7: A CARD-WIDE ANSWER IS THE BOARD. The ranked list, the
          watchlist, the coverage and every source and timestamp come from the
          server's own board object; the prose is the model's when its checks
@@ -46128,7 +46203,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* A new conversation drops the subject as well as the log — otherwise the
        first question of the next conversation inherits the last one's game. */
     newConversation:function(){
-      HIST=[]; SESSION={eventId:null,cache:{},matchup:null,matchupId:null}; LAST_TURN=null; LAST_BOARD=null; LAST_CTX=null;
+      HIST=[]; SESSION={eventId:null,cache:{},matchup:null,matchupId:null}; LAST_TURN=null; LAST_BOARD=null; LAST_CTX=null; LAST_DESK=null;
       emptyState(); renderActions();
     },
     resolveMatchupFor:function(q){
@@ -46439,6 +46514,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
            question about a team is never answered by whatever card happens to
            be loaded. Everything downstream is unchanged for every question
            that names nobody. */
+        if(deskFollowUp(t)){
+          thinking(true);
+          LAST_ASK={mode:'chat',question:t,x:null,extra:null};
+          var resF=await askAI('chat',t,null);
+          thinking(false);
+          if(resF&&!resF.failed){ var dF=push('a',resF.html); if(resF.src&&dF){ var sF=document.createElement('div'); sF.className='edai-src'; sF.textContent=resF.src; dF.appendChild(sF); } return; }
+        }
         if(await matchupRoute(t)) return;
         var ctx=buildCtx();
         /* Slice 7: A CARD-WIDE BETTING QUESTION GOES TO THE DESK. The server

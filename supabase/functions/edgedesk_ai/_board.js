@@ -813,6 +813,7 @@
 
   return {
     VERSION: VERSION, SCHEMA: SCHEMA, STATE_SCHEMA: STATE_SCHEMA, RECORD_SCHEMA: RECORD_SCHEMA, SUPPORTED: SUPPORTED, RULES: RULES, DEFAULT_TZ: DEFAULT_TZ, SANE_EV: SANE_EV, OUTLIER_GAP_POINTS: OUTLIER_GAP_POINTS,
+    FRESH_WEIGHT: FRESH_WEIGHT, TIER_WEIGHT: TIER_WEIGHT,
     validZone: validZone, resolveZone: resolveZone, localMidnight: localMidnight, localDate: localDate, localTime: localTime, inSeason: inSeason,
     detectSports: detectSports, detectMarkets: detectMarkets, resolveScope: resolveScope,
     eligible: eligible, sideOf: sideOf, fromDecision: fromDecision, fromPricingRow: fromPricingRow, qualify: qualify, rankScore: rankScore,
