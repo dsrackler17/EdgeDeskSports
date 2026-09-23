@@ -26,10 +26,22 @@ Later batches extend it rather than replace it.
 | File | Browser global | Owns |
 |---|---|---|
 | `lib/research_core.js` | `EDResearch` | Line convention, CLV, market movement vs a model, key numbers, American odds / break-even / no-vig / EV, Wilson and t intervals, Brier / log loss / Brier skill, edge / normalized / lead-time buckets, walk-forward error scale, agreement, effective independent count, outlier status |
-| `lib/research_eval.js` | `EDResearchEval` | One prediction-record shape, the leakage guard, the walk-forward evaluator, per-model diagnostics, calibration, scale-method comparison, similar situations, residual correlation |
+| `lib/research_eval.js` | `EDResearchEval` | One prediction-record shape, the leakage guard, the walk-forward evaluator, per-model diagnostics, calibration, scale-method comparison, similar situations, residual correlation, component diagnostics, ensemble research |
+| `lib/game_research.js` | `EDGameResearch` | The canonical per-game research object: identity, model, exact decomposition, market, line shopping, price-aware EV, Collective agreement, history, data quality, research flags, scenarios, watchlist snapshots and timeline, postgame autopsy |
 
-Both have no dependencies and run unchanged in the browser and in Node. The
-tests are `tools/research/*.test.js` (`npm run research:test`). They run
+All three have no dependencies and run unchanged in the browser and in Node.
+
+### Where it is used
+
+| Surface | What it shows |
+|---|---|
+| `app.html`, CFB game card | **The research read**: market, fair line, raw and σ gap, both probabilities, total, completeness, research flags. **Fair-line decomposition**: exact engine terms with reliability and source. **Price and break-even**: the model's own cover probability at the line, with a labelled reference price. **Data quality by category.** **Scenarios**: the engine re-run with one supplied input removed. **Follow**: a timeline of captured changes |
+| `collective/index.html`, model page | Market usefulness: per-metric n, Wilson intervals, gap, threshold, normalized, lead-time, role and room breakdowns, and Brier skill against the close |
+| `collective/index.html`, rankings | Market diagnostics table and the model-independence panel |
+| `collective/index.html`, board | Room chip on a model standing apart |
+| `tools/research/operator_report.js` | Operator-only walk-forward report, fed by `backtest_engine.js --records` or a Collective export |
+
+The tests are `tools/research/*.test.js` (`npm run research:test`). They run
 first in `npm test` and in the Collective CI job.
 
 ## 3. Terminology
@@ -109,6 +121,18 @@ one it is N/A.
 6. **No finish time on the wire** (ruled). Walk-forward cutoffs treat a
    result as known at kickoff + 6h (`EDResearchEval.finalKnownAt`). This is a
    fixed rule, not an estimate, and it can only make the evaluation stricter.
-7. **Room comparison uses final pregame numbers.** A model posted early is
+7. **Same-slate leakage in the engine replay** (found, measured, not yet
+   fixed). `football/cfb_p4/research/backtest_engine.js` absorbs results in
+   kickoff order. A 7pm game can therefore be projected from a state that
+   already holds a noon result from the same slate, and it certainly will be
+   when two games share a kickoff time. With `--records`, the rating state is
+   an input stamped with the final-known time of the last result it absorbed,
+   and the evaluator rejects every such record by name. On the synthetic fixture
+   in `tools/research/operator_report.test.js`, most later-slot games are
+   rejected. The headline in `BACKTEST.md` was produced by this replay and
+   should be re-run through the operator report before it is quoted as
+   walk-forward. That changes a published backtest number, not a production
+   projection, so it is left for the owner to re-run on the full data.
+8. **Room comparison uses final pregame numbers.** A model posted early is
    compared with numbers that may have been posted after it. The label says
    "room", not "at the time".

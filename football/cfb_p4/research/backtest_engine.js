@@ -131,6 +131,19 @@ st.lmeanPts = P.rating.league_mean_pts;
 st.season = REPLAY_FROM;
 
 var rows = [], season = REPLAY_FROM, projected = 0, refused = 0, refusals = {};
+/* --records FILE: every projected game ALSO written as a prediction record in
+   the shape lib/research_eval.js evaluates (tools/research/operator_report.js).
+   The replay projects from the pregame state, so the prediction time is one
+   minute before kickoff and the rating state's only input is the last game
+   already absorbed — stated in the record's input manifest, where the
+   evaluator's leakage guard checks it. market.csv's close is in the MARGIN
+   convention (it is subtracted from the margin above), so it crosses into
+   home lines through the shared layer's named converter. There is no opening
+   line in this data: the posted line IS the close, and CLV is not reported. */
+var RECORDS = arg('records', null);
+var RC = RECORDS ? require(path.join(HERE, '..', '..', '..', 'lib', 'research_core.js')) : null;
+var RE = RECORDS ? require(path.join(HERE, '..', '..', '..', 'lib', 'research_eval.js')) : null;
+var records = [], lastAbsorbedKick = null;
 games.forEach(function (g) {
   if (g.season !== season) { E.ingest.seasonBreak(st); season = g.season; }
   if (!g.completed) return;
@@ -157,12 +170,38 @@ games.forEach(function (g) {
         n_games: Math.min(E.strength.games(st, E.normKey(g.home)),
                           E.strength.games(st, E.normKey(g.away)))
       });
+      if (RECORDS && g.kick) {
+        var closeHome = mk.spread_close == null ? null : RC.spreadFromMargin(mk.spread_close);
+        var comps = {};
+        (out.contributions || []).forEach(function (c) {
+          if (c.available) comps[c.key] = RC.homeLineFromEngineFairSpread(c.points);
+        });
+        records.push({
+          model_id: 'edgedesk/cfb_p4', model_version: P.model_version, sport: 'CFB',
+          season: g.season, game_id: String(g.game_id),
+          kickoff_at: new Date(g.kick).toISOString(),
+          predicted_at: new Date(g.kick - 60000).toISOString(),
+          spread: RC.homeLineFromEngineFairSpread(out.model.fair_spread),
+          home_win_prob: out.model.home_win_prob,
+          line_at_prediction: closeHome, close_line: closeHome, clv_not_applicable: true,
+          home_score: g.home_points, away_score: g.away_points,
+          final_at: RE.finalKnownAt(new Date(g.kick).toISOString()),
+          components: comps,
+          /* the state holds the RESULT of the last absorbed game, which was
+             known only once that game ended: stamped by the evaluator's own
+             final-known rule, so a same-slate result the replay absorbed
+             before this kickoff is caught by the leakage guard, not scored */
+          inputs: lastAbsorbedKick ? [{ name: 'rating_state (latest absorbed result)',
+            captured_at: RE.finalKnownAt(new Date(lastAbsorbedKick).toISOString()) }] : []
+        });
+      }
     } else {
       refused++;
       refusals[out.status] = (refusals[out.status] || 0) + 1;
     }
   }
 
+  if (g.kick) lastAbsorbedKick = g.kick;
   var ts = effByGame[g.game_id];
   E.ingest.absorbGame(st, {
     home: g.home, away: g.away, home_fbs: g.home_fbs, away_fbs: g.away_fbs,
@@ -248,6 +287,10 @@ var result = {
 };
 
 console.log(JSON.stringify(result, null, 2));
+if (RECORDS) {
+  try { fs.writeFileSync(String(RECORDS), JSON.stringify(records)); console.error('[write] ' + records.length + ' prediction records -> ' + RECORDS); }
+  catch (e) { console.error('[warn] could not write ' + RECORDS + ': ' + e.message); }
+}
 var dest = path.join(DATA, 'out', 'backtest_engine.json');
 try { fs.writeFileSync(dest, JSON.stringify(result, null, 2)); console.error('[write] ' + dest); }
 catch (e) { console.error('[warn] could not write ' + dest + ': ' + e.message); }

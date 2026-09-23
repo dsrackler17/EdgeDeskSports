@@ -168,4 +168,44 @@ chk('calibration bins carry n, predicted, observed and interval', (() => {
   return b && near(b.observed, 0.5) && near(b.predicted, 0.71) && b.interval;
 })());
 
+/* ---- 9. component diagnostics --------------------------------------- */
+(function () {
+  const recs = [];
+  for (let i = 0; i < 60; i++) {
+    const good = (i % 7) - 3;                 /* a real signal: the result moves with it one for one */
+    const noise = ((i * 13) % 5) - 2;         /* a component with no relation to the result */
+    const margin = 3 - good * -1 + ((i * 5) % 3 - 1);
+    recs.push(rec({ game_id: 'k' + i, season: i < 30 ? 2024 : 2025, spread: -3 + good * -1 + noise,
+      components: { hfa: -3, good: -good, noise: noise }, home_score: 20 + margin, away_score: 20 }));
+  }
+  const rows = E.evaluate(recs).rows;
+  const d = Object.fromEntries(E.componentDiagnostics(rows).map((x) => [x.key, x]));
+  chk('a component that tracks the result improves MAE when kept', d.good.all.delta_mae > 0);
+  chk('its slope is near 1 (correctly sized)', near(d.good.all.slope, 1, 0.2), d.good.all);
+  chk('a pure-noise component makes MAE worse and its slope sits near 0', d.noise.all.delta_mae < 0 && Math.abs(d.noise.all.slope) < 0.4, d.noise.all);
+  chk('noise reads as overshooting: its interval sits below 1', /overshoots/.test(d.noise.reading));
+  chk('components are split by season for drift', d.good.by_season.length === 2);
+  chk('below the minimum sample no reading is given', /insufficient sample/.test(E.componentDiagnostics(rows.slice(0, 10))[0].reading));
+})();
+
+/* ---- 10. ensemble research ------------------------------------------ */
+(function () {
+  const recs = [];
+  for (let i = 0; i < 40; i++) {
+    const m = (i % 11) - 5;
+    const base = { game_id: 'n' + i, predicted_at: day(1 + Math.floor(i / 2), 1), kickoff_at: day(1 + Math.floor(i / 2), 18),
+      final_at: day(1 + Math.floor(i / 2), 22), home_score: 20 + m, away_score: 20 };
+    recs.push(rec(Object.assign({ model_id: 'good/1', spread: -m + 1 }, base)));
+    recs.push(rec(Object.assign({ model_id: 'bad/1', spread: -m + 9 }, base)));
+    recs.push(rec(Object.assign({ model_id: 'mid/1', spread: -m - 3 }, base)));
+  }
+  const res = E.ensembleResearch(E.evaluate(recs).rows, { minN: 5 });
+  chk('every game with 2+ models is an ensemble game', res.n_games === 40);
+  chk('development and holdout halves are reported separately', res.development.n_games === 20 && res.holdout.n_games === 20);
+  chk('inverse-error weighting only exists once every model has a prior sample', res.all.methods.inverse_mae.n < 40 && res.all.methods.inverse_mae.n > 0);
+  chk('methods are compared with the plain mean on the same games', res.holdout.methods.inverse_mae.vs_mean_same_games != null);
+  chk('the best prior model beats the mean on holdout here, and it is measured, not assumed', res.holdout.methods.best_prior_model.mae < res.holdout.methods.mean.mae);
+  chk('each individual model is scored on its own games beside the mean ensemble on those games', res.all.individual['good/1'].n === 40);
+})();
+
 done();

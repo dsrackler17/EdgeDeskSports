@@ -123,6 +123,21 @@ chk('with the model\'s own cover_at function every line can be priced', (() => {
   chk('a 36h-old consensus is flagged STALE_MARKET', st.market.current.stale === true && st.flags.flags.some((f) => f.key === 'STALE_MARKET'));
 })();
 
+chk('contract rows fold into categories: all-unavailable, mixed, stale, not-applicable', (() => {
+  const q = G.qualityFromContract([
+    { field: 'qb_starter', side: 'home', state: 'USABLE', as_of: '2025-10-09T00:00:00Z' },
+    { field: 'qb_starter', side: 'away', state: 'UNAVAILABLE' },
+    { field: 'availability', side: 'home', state: 'UNAVAILABLE' }, { field: 'availability', side: 'away', state: 'FETCH_FAILED' },
+    { field: 'weather', state: 'STALE', as_of: '2025-10-01T00:00:00Z' },
+    { field: 'coaching_continuity', state: 'NOT_APPLICABLE' },
+    { field: 'roster', side: 'home', state: 'RESEARCH_ONLY' }
+  ]);
+  return q.qb.status === 'PARTIAL' && q.injuries.status === 'UNAVAILABLE' && q.weather.status === 'STALE'
+    && !q.coaching && q.player_quality.status === 'AVAILABLE' && /research only/.test(q.player_quality.note)
+    && G.qualityStatus(q.qb, 'qb', NOW) === 'PARTIAL';
+})());
+chk('decimal to American', near(R.decimalToAmerican(1.9090909), -110, 1e-3) && near(R.decimalToAmerican(2.5), 150) && R.decimalToAmerican(1) === null);
+
 /* ---- 7. collective ----------------------------------------------------- */
 (function () {
   const col = [
@@ -176,6 +191,27 @@ chk('no flag or rule speaks in picks', !/BEST BET|LOCK|GUARANTEE|SMASH/i.test(JS
     actual_components: { rating: { value: -1, source: 'box score efficiency' } } });
   chk('autopsy compares only components with a measured actual', b.autopsy.components.rows.length === 1 && b.autopsy.components.rows[0].key === 'rating');
   chk('no autopsy before a final', o.autopsy === null);
+})();
+
+/* ---- 10b. watchlist timeline ----------------------------------------- */
+(function () {
+  const a = G.snapshot(o);
+  const eng2 = project({ spread_line: 4.5, total_line: 52.5 });
+  const o2 = G.build({ game, now: '2025-10-10T18:00:00Z', model: { engine: eng2 },
+    market: Object.assign({}, market, { current: { line: -4.5, captured_at: '2025-10-10T17:32:00Z', source: 'consensus' } }),
+    quality: { market: { captured_at: '2025-10-10T17:32:00Z' }, injuries: { captured_at: '2025-10-10T09:00:00Z' } } });
+  const ev = G.timelineEvents(a, G.snapshot(o2));
+  const mkt = ev.find((e) => e.kind === 'market');
+  chk('a market move is an event stamped with the market capture time, not the viewing time', mkt && mkt.from === -3.5 && mkt.to === -4.5
+    && mkt.at === '2025-10-10T17:32:00Z', ev);
+  chk('an injury report turning fresh is a quality event', ev.some((e) => e.kind === 'quality' && e.key === 'injuries' && e.from === 'STALE' && e.to === 'AVAILABLE'));
+  chk('identical snapshots produce no events', G.timelineEvents(a, G.snapshot(o)).length === 0);
+  chk('a half-point threshold: a 0.25 move is not an event', G.timelineEvents({ market: { line: -3.5 } }, { market: { line: -3.75, at: 'x' }, seen_at: 'y' }).length === 0);
+  chk('a component change is named', (() => {
+    const b = JSON.parse(JSON.stringify(a)); const k = Object.keys(b.components)[0];
+    b.components[k].value = (b.components[k].value || 0) + 1;
+    return G.timelineEvents(a, b).some((e) => e.kind === 'component' && e.key === k);
+  })());
 })();
 
 /* ---- 11. scenarios ----------------------------------------------------- */

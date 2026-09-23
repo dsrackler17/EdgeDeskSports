@@ -1714,6 +1714,16 @@ if (typeof sandbox.localGrade === 'function') try {
       var d=G.modelBettingDiagnostics([g],'c','m');
       return d.clv_n===0 && d.excluded_untimed===1;
     })());
+  chk('the board names a lone outlier descriptively and says nothing about an aligned model',
+    (function () {
+      var g=gm({id:'r1',kickoff:FUTURE});
+      g.models=[mr({cs:'a',projected_spread:-9,line_at_submission:-5.5}),
+        mr({cs:'b',projected_spread:-4,line_at_submission:-5.5}),
+        mr({cs:'c',projected_spread:-4.5,line_at_submission:-5.5}),
+        mr({cs:'d',projected_spread:-3,line_at_submission:-5.5})];
+      var lone=G.roomChipHtml(g,g.models[0]), aligned=G.roomChipHtml(g,g.models[1]);
+      return /lone outlier/.test(lone) && /not wrong/.test(lone) && aligned==='';
+    })());
   chk('each diagnostic metric carries its own n and ATS carries an interval',
     (function () {
       var a=gm({id:'d5',hs:30,as:20,close:-5});

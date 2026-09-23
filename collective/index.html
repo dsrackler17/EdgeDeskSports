@@ -2770,6 +2770,18 @@ function roomStatusFor(g,mr){
   });
   return R.outlierStatus(R.spreadFromMargin(mine),others,mr.line_at_submission);
 }
+/* The board's chip for the same fact. Nothing for an aligned model: the
+   chip exists to point at a model standing apart, never to grade it. */
+var ROOM_CHIP={mild:'mild outlier',strong:'strong outlier',lone:'lone outlier'};
+function roomChipHtml(g,mr){
+  if(!mr||mr.locked||mr.late)return '';
+  var st=null;try{st=roomStatusFor(g,mr);}catch(_){st=null;}
+  var k=roomKey(st);
+  if(!k||!ROOM_CHIP[k])return '';
+  return ' <span class="chip" title="'+esc('This model sits '+fmtNum(Math.abs(st.deviation))+' pts from the median of the other '+st.others_n+
+    ' models'+(st.lone?', and is the only one on its side of the line it was posted against':'')+
+    '. Descriptive only: an outlier is not wrong.')+'">'+esc(ROOM_CHIP[k])+'</span>';
+}
 function roomKey(st){
   if(!st)return null;
   return st.lone?'lone':st.status;
@@ -5236,7 +5248,7 @@ async function renderBoard(view){
         var lineValue=lineValueHtml(pickSideNorm(mr),mr.line_at_submission,refLine,!!frNow);
         var lead=pickLeadText(mr,g.kickoff_at);
         rows+='<tr>'+
-          '<td>'+who+(mr.late?' <span class="chip late">Late, ungraded</span>':'')+
+          '<td>'+who+(mr.late?' <span class="chip late">Late, ungraded</span>':'')+roomChipHtml(g,mr)+
             (lead?'<br><span class="note" style="font-size:11px">'+esc(lead)+'</span>':'')+'</td>'+
           '<td>'+(hw!=null?esc(hw>=0.5?g.home:g.away):'-')+'</td>'+
           '<td class="num">'+(hw!=null?fmtPct(hw,0)+probGapHtml:'-')+'</td>'+
