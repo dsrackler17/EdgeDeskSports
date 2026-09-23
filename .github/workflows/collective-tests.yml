@@ -25,6 +25,12 @@ on:
       # touching only a test file went green without executing it.
       - 'collective/tests.js'
       - 'collective/tests_render.js'
+      # The canonical research arithmetic every Collective diagnostic and the
+      # EdgeDesk research contract are computed with, and its suites.
+      - 'lib/research_core.js'
+      - 'lib/research_eval.js'
+      - 'lib/game_research.js'
+      - 'tools/research/**'
       - 'tools/collective/**'
       - 'brief.html'
       - 'record.html'
@@ -97,6 +103,12 @@ on:
       # touching only a test file went green without executing it.
       - 'collective/tests.js'
       - 'collective/tests_render.js'
+      # The canonical research arithmetic every Collective diagnostic and the
+      # EdgeDesk research contract are computed with, and its suites.
+      - 'lib/research_core.js'
+      - 'lib/research_eval.js'
+      - 'lib/game_research.js'
+      - 'tools/research/**'
       - 'tools/collective/**'
       - 'brief.html'
       - 'record.html'
@@ -180,6 +192,8 @@ jobs:
       # finished slate showed no grades at all was not gating the file it
       # guards, and a change that emptied every record again would have gone
       # green. Both are offline and take seconds.
+      - name: Research core and walk-forward evaluator
+        run: npm run -s research:test
       - name: The upload path and the page's pure functions
         run: node collective/tests.js
 

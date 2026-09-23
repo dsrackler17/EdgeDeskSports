@@ -552,6 +552,8 @@ a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
 
 <!-- The odds components. One file, shared by this page, the embed and the
      admin console, so a price rendered in two places is the same price. -->
+<script src="../lib/research_core.js"></script>
+<script src="../lib/research_eval.js"></script>
 <script src="odds.js"></script>
 <!-- Which week is CURRENT. One rule, shared by this page and the schedule
      sync, so the slate a reader is shown and the slate that gets loaded can
@@ -2721,115 +2723,152 @@ function modelBehaviorHTML(b,coveragePct){
    being dropped: an unnamed model is the server's omission and hiding it
    would be worse than showing a slug. */
 
-/* ---- market usefulness: edge buckets + closing-line value -------------
-   ATS alone answers whether a side covered. These answer two different
-   questions that are more useful when deciding whether a model's disagreement
-   with the market is worth listening to:
+/* ---- market usefulness: the research evaluator -----------------------
+   ATS alone answers whether a side covered. The diagnostics below answer
+   whether a model's DISAGREEMENT with the market carries information: CLV,
+   edge buckets, normalized edge, lead time, favourite/underdog and how the
+   model graded when it stood apart from the room.
 
-     CLV: did the MARKET move in the direction of the side the model named?
-          Positive points mean the number available when the model posted was
-          better than the captured close for that side.
-     EDGE BUCKET: how far the model's own spread was from the market line AT
-          SUBMISSION. This is frozen before the outcome and never uses the
-          closing line to decide which bucket a game belongs in.
+   None of the arithmetic lives on this page any more. The line convention,
+   CLV, buckets, intervals and the walk-forward evaluator are the canonical
+   ones in lib/research_core.js and lib/research_eval.js, shared with the
+   EdgeDesk terminal and pinned by tools/research/*.test.js. This block only
+   turns a Collective game row into the evaluator's record, and renders.
 
-   Both stay descriptive. A 6-point disagreement on four games is four games,
-   not a magic "strong play" label. Every output carries its sample. */
+   Two rules the evaluator enforces that the first version of this section
+   did not:
+     * The side used for CLV and the edge bucket is fixed AT SUBMISSION —
+       the named side, else the model's number against the line it was
+       posted against. It used to fall back to the side implied against the
+       CLOSE, which let the closing line choose which way CLV was measured.
+       ATS grading is unchanged: it still follows the published contract.
+     * A row with no receipt time cannot be proven pregame and is left out
+       of these diagnostics (it is still in the record), and counted. */
+function rxCore(){return (typeof window!=='undefined'&&window.EDResearch)||null;}
+function rxEval(){return (typeof window!=='undefined'&&window.EDResearchEval)||null;}
 function marketClvPoints(side,postedLine,referenceLine){
-  side=String(side||'').toLowerCase();
-  if(side!=='home'&&side!=='away')return null;
-  if(postedLine==null||referenceLine==null)return null;
-  var p=Number(postedLine),r=Number(referenceLine);
-  if(!isFinite(p)||!isFinite(r))return null;
-  /* home pick: -3 posted and -5 close = +2 points of CLV.
-     away pick: home -3 posted and -1 close = away +3 vs +1 = +2. */
-  var v=side==='home'?(p-r):(r-p);
-  return Math.round(v*100)/100;
+  var R=rxCore();return R?R.clvPoints(side,postedLine,referenceLine):null;
 }
 function edgeBucketKey(points){
-  if(points==null)return null;
-  var p=Number(points);
-  if(!isFinite(p)||p<0)return null;
-  if(p<2)return '0-2';
-  if(p<4)return '2-4';
-  if(p<6)return '4-6';
-  return '6+';
+  var R=rxCore();return R?R.edgeBucketKey(points):null;
 }
-function diagBucket(label){
-  return {label:label,wins:0,losses:0,pushes:0,n:0,clv_sum:0,clv_n:0};
-}
-function finishDiagBucket(b){
-  var wl=b.wins+b.losses;
-  b.win_pct=wl?b.wins/wl:null;
-  b.avg_clv=b.clv_n?b.clv_sum/b.clv_n:null;
-  return b;
-}
-function modelBettingDiagnostics(games,cs,ms){
-  var order=['0-2','2-4','4-6','6+'];
-  var buckets={
-    '0-2':diagBucket('0-2 pts'),
-    '2-4':diagBucket('2-4 pts'),
-    '4-6':diagBucket('4-6 pts'),
-    '6+':diagBucket('6+ pts')
-  };
-  var clvSum=0,clvN=0,clvPos=0,clvNeg=0,clvZero=0,edgeN=0,seen={};
-  (games||[]).forEach(function(g){
-    var k=gameKey(g);
-    if(seen[k])return;
-    var fr=finalResult(g);
-    if(!fr)return;
-    var rows=(g&&g.models)||[];
-    for(var i=0;i<rows.length;i++){
-      var mr=rows[i];
-      if(!mr||mr.creator_slug!==cs||mr.model_slug!==ms)continue;
-      seen[k]=1;
-      var gr=rowGrade(g,mr);
-      if(!gr)break;
-      var side=pickSideNorm(mr)||impliedSide(mr,fr.closing_spread);
-      var clv=marketClvPoints(side,mr.line_at_submission,fr.closing_spread);
-      if(clv!=null){
-        clvSum+=clv;clvN++;
-        if(clv>0.005)clvPos++;
-        else if(clv<-0.005)clvNeg++;
-        else clvZero++;
-      }
-
-      /* A bucket describes the model's numerical disagreement AT POST time.
-         If its stated side contradicts its own two spread numbers, there is
-         no honest way to call that magnitude an edge on the stated side, so
-         keep the ATS result but leave it out of this diagnostic. */
-      if(gr.pick_result!=null&&mr.projected_spread!=null&&mr.line_at_submission!=null
-          &&!wireContradiction(mr)){
-        var model=Number(mr.projected_spread),posted=Number(mr.line_at_submission);
-        if(isFinite(model)&&isFinite(posted)){
-          var key=edgeBucketKey(Math.abs(model-posted));
-          var b=key&&buckets[key];
-          if(b){
-            edgeN++;b.n++;
-            if(gr.pick_result==='win')b.wins++;
-            else if(gr.pick_result==='loss')b.losses++;
-            else if(gr.pick_result==='push')b.pushes++;
-            if(clv!=null){b.clv_sum+=clv;b.clv_n++;}
-          }
-        }
-      }
-      break;
-    }
+/* How far this model's number sat from the OTHER models on the same game,
+   against the line it was posted into. Descriptive: an outlier is not
+   wrong. Compared with the room's final pregame numbers (one row per model,
+   latest before the lock), so a model posted early is compared with numbers
+   that may have been posted after it — the label says "room", not "at the
+   time". */
+function roomStatusFor(g,mr){
+  var R=rxCore();if(!R||!g||!mr)return null;
+  var mine=projectedMargin(mr);if(mine==null)return null;
+  var others=[];
+  ((g&&g.models)||[]).forEach(function(o){
+    if(!o||o===mr||o.locked||o.late)return;
+    if(o.creator_slug===mr.creator_slug&&o.model_slug===mr.model_slug)return;
+    var pm=projectedMargin(o);
+    if(pm!=null)others.push(R.spreadFromMargin(pm));
   });
-  order.forEach(function(k){finishDiagBucket(buckets[k]);});
-  var large=diagBucket('4+ pts');
-  ['4-6','6+'].forEach(function(k){
-    var b=buckets[k];
-    large.wins+=b.wins;large.losses+=b.losses;large.pushes+=b.pushes;large.n+=b.n;
-    large.clv_sum+=b.clv_sum;large.clv_n+=b.clv_n;
-  });
-  finishDiagBucket(large);
+  return R.outlierStatus(R.spreadFromMargin(mine),others,mr.line_at_submission);
+}
+/* The board's chip for the same fact. Nothing for an aligned model: the
+   chip exists to point at a model standing apart, never to grade it. */
+var ROOM_CHIP={mild:'mild outlier',strong:'strong outlier',lone:'lone outlier'};
+function roomChipHtml(g,mr){
+  if(!mr||mr.locked||mr.late)return '';
+  var st=null;try{st=roomStatusFor(g,mr);}catch(_){st=null;}
+  var k=roomKey(st);
+  if(!k||!ROOM_CHIP[k])return '';
+  return ' <span class="chip" title="'+esc('This model sits '+fmtNum(Math.abs(st.deviation))+' pts from the median of the other '+st.others_n+
+    ' models'+(st.lone?', and is the only one on its side of the line it was posted against':'')+
+    '. Descriptive only: an outlier is not wrong.')+'">'+esc(ROOM_CHIP[k])+'</span>';
+}
+function roomKey(st){
+  if(!st)return null;
+  return st.lone?'lone':st.status;
+}
+/* One Collective row as the evaluator's record. The grader of record's
+   answers (ATS, margin error, Brier — server first, then this page's
+   published rule) are passed through untouched, so no number here can
+   disagree with the model's record above it. */
+function collectiveResearchRecord(g,mr){
+  var R=rxCore(),E=rxEval();if(!R||!E)return null;
+  var fr=finalResult(g),gr=rowGrade(g,mr),pm=projectedMargin(mr);
+  var cp=g&&g.result&&g.result.closing_home_ml_prob;
   return {
-    clv_n:clvN,avg_clv:clvN?clvSum/clvN:null,
-    clv_positive:clvPos,clv_negative:clvNeg,clv_zero:clvZero,
-    clv_positive_pct:clvN?clvPos/clvN:null,
-    edge_n:edgeN,bucket_order:order,buckets:buckets,large:large
+    model_id:mr.creator_slug+'/'+mr.model_slug,
+    sport:(g&&g.sport)||null,game_id:gameKey(g),
+    kickoff_at:g.kickoff_at||null,
+    predicted_at:mr.received_at||mr.submitted_at||null,
+    spread:pm==null?null:R.spreadFromMargin(pm),
+    home_win_prob:mr.home_win_probability==null?null:mr.home_win_probability,
+    pick_side:pickSideNorm(mr),
+    line_at_prediction:mr.line_at_submission==null?null:mr.line_at_submission,
+    close_line:fr?fr.closing_spread:null,
+    close_home_prob:cp==null?null:cp,
+    home_score:fr?fr.home:null,away_score:fr?fr.away:null,
+    final_at:fr?E.finalKnownAt(g.kickoff_at):null,
+    ats_result:gr?gr.pick_result:null,
+    abs_error_of_record:gr?gr.margin_error:null,
+    brier_of_record:gr?gr.brier:null,
+    room:roomKey(roomStatusFor(g,mr))
   };
+}
+/* Every graded, gradable row of every model in these games, as records.
+   One row per model per game, the same rule as the record. */
+function collectiveResearchRecords(games){
+  var out=[],seen={};
+  (games||[]).forEach(function(g){
+    if(!finalResult(g))return;
+    var k=gameKey(g);
+    ((g&&g.models)||[]).forEach(function(mr){
+      if(!mr||!gradableRow(mr))return;
+      var id=k+'|'+mr.creator_slug+'/'+mr.model_slug;
+      if(seen[id])return;
+      seen[id]=1;
+      if(!rowGrade(g,mr))return;
+      var r=collectiveResearchRecord(g,mr);
+      if(r)out.push(r);
+    });
+  });
+  return out;
+}
+function legacyBucket(label,s){
+  var a=(s&&s.ats)||{},c=(s&&s.clv)||{};
+  return {label:label,wins:a.wins||0,losses:a.losses||0,pushes:a.pushes||0,
+    n:(s&&s.n_rows)||0,win_pct:a.pct==null?null:a.pct,
+    avg_clv:c.mean==null?null:c.mean,clv_n:c.n||0,summary:s||null};
+}
+/* The diagnostic for one model. The legacy fields (clv_n, avg_clv,
+   buckets, large, ...) are kept so every existing reader still works; the
+   full evaluator output rides along as `research`. Pass `allRecords` to
+   reuse one evaluation of the whole season across models. */
+function modelBettingDiagnostics(games,cs,ms,allEval){
+  var R=rxCore(),E=rxEval();
+  var empty={clv_n:0,avg_clv:null,clv_positive:0,clv_negative:0,clv_zero:0,
+    clv_positive_pct:null,edge_n:0,bucket_order:['0-2','2-4','4-6','6+'],
+    buckets:{},large:legacyBucket('4+ pts',null),research:null,excluded_untimed:0};
+  if(!R||!E)return empty;
+  var id=cs+'/'+ms;
+  var ev=allEval||E.evaluate(collectiveResearchRecords(games));
+  var rows=ev.rows.filter(function(r){return r.model_id===id;});
+  var untimed=ev.rejected.filter(function(x){return x.record&&x.record.model_id===id;}).length;
+  var d=E.modelDiagnostics(rows);
+  var o=d.overall;
+  var out={
+    clv_n:o.clv.n,avg_clv:o.clv.mean,median_clv:o.clv.median,
+    clv_positive:o.clv.positive,clv_negative:o.clv.negative,clv_zero:o.clv.zero,
+    clv_positive_pct:o.clv.positive_pct,
+    edge_n:rows.filter(function(r){return r.edge_bucket!=null&&r.ats!=null;}).length,
+    bucket_order:['0-2','2-4','4-6','6+'],buckets:{},
+    large:legacyBucket('4+ pts',(d.edge_thresholds.filter(function(t){return t.threshold===4;})[0]||{}).summary),
+    research:d,rows:rows,excluded_untimed:untimed,
+    calibration:E.calibration(rows)
+  };
+  d.edge_buckets.forEach(function(b){
+    var def=R.EDGE_BUCKETS.filter(function(x){return x.key===b.key;})[0];
+    out.buckets[b.key]=legacyBucket(def?def.label:b.key,b.summary);
+  });
+  return out;
 }
 function signedPts(v){
   if(v==null||!isFinite(Number(v)))return '-';
@@ -2846,40 +2885,82 @@ function lineValueHtml(side,posted,reference,settled){
     :'Line movement since this model posted: positive means its posted number is better for its side than the current market.';
   return '<div class="nsamp" style="color:'+col+'" title="'+esc(title)+'">'+label+' '+signedPts(v)+'</div>';
 }
-
 function bucketRecordText(b){
   if(!b||!b.n)return '-';
   return b.wins+'-'+b.losses+'-'+b.pushes;
 }
+/* A proportion with its 95% interval and its own n, so 10-8 never reads as
+   more certain than it is. */
+function pctCI(iv,d){
+  if(!iv)return '-';
+  return fmtPct(iv.p,d==null?1:d)+'<div class="nsamp" title="95% Wilson interval">'+
+    fmtPct(iv.lo,0)+'&ndash;'+fmtPct(iv.hi,0)+' &middot; n='+iv.n+'</div>';
+}
+function valN(v,n,f){
+  if(v==null||!n)return '-';
+  return f(v)+'<div class="nsamp">n='+n+'</div>';
+}
+/* One summary as a table row: ATS W-L-P, win % with its interval, CLV mean,
+   median and positive share, MAE and Brier — each on its own n. */
+function diagRowHTML(label,s,title){
+  if(!s||!s.n_rows)return '<tr class="dim"><td'+(title?' title="'+esc(title)+'"':'')+'>'+esc(label)+'</td><td colspan="7" class="note">no graded games</td></tr>';
+  var a=s.ats,c=s.clv;
+  return '<tr><td'+(title?' title="'+esc(title)+'"':'')+'>'+esc(label)+'</td>'+
+    '<td class="num mono">'+(a.n?a.wins+'-'+a.losses+'-'+a.pushes:'-')+'</td>'+
+    '<td class="num">'+pctCI(a.interval,1)+'</td>'+
+    '<td class="num">'+valN(c.mean,c.n,signedPts)+'</td>'+
+    '<td class="num">'+(c.n?signedPts(c.median):'-')+'</td>'+
+    '<td class="num">'+(c.n?fmtPct(c.positive_pct,0):'-')+'</td>'+
+    '<td class="num">'+valN(s.mae.value,s.mae.n,function(v){return fmtNum(v);})+'</td>'+
+    '<td class="num">'+valN(s.brier.value,s.brier.n,function(v){return fmtNum(v,3);})+'</td></tr>';
+}
+var DIAG_HEAD='<th class="num" title="against the spread, graded on the captured close by the published rule">ATS</th>'+
+  '<th class="num" title="wins over wins+losses; the small line is the 95% Wilson interval and its n">Win %</th>'+
+  '<th class="num" title="posted market line versus the captured close, turned onto the side the model took at submission">Avg CLV</th>'+
+  '<th class="num">Median CLV</th><th class="num">+CLV</th>'+
+  '<th class="num" title="mean absolute error of the projected margin">MAE</th>'+
+  '<th class="num" title="mean Brier score of the home-win probability">Brier</th>';
+function diagTableHTML(title,groups,labels,firstCol,titles){
+  if(!groups||!groups.some(function(g){return g.summary&&g.summary.n_rows;}))return '';
+  return '<div class="note" style="margin:12px 0 4px;font-weight:600">'+esc(title)+'</div>'+
+    '<div class="tblwrap mini"><table style="min-width:760px"><thead><tr><th>'+esc(firstCol)+'</th>'+DIAG_HEAD+'</tr></thead><tbody>'+
+    groups.map(function(g){return diagRowHTML(labels[g.key]||g.key,g.summary,titles&&titles[g.key]);}).join('')+
+    '</tbody></table></div>';
+}
 function bettingDiagnosticsHTML(d){
-  if(!d||(!d.clv_n&&!d.edge_n))return '';
-  var large=d.large||diagBucket('4+ pts');
-  var rows=(d.bucket_order||[]).map(function(k){
-    var b=d.buckets[k];
-    if(!b||!b.n)return '';
-    return '<tr><td>'+esc(b.label)+'</td>'+
-      '<td class="num mono">'+esc(bucketRecordText(b))+'</td>'+
-      '<td class="num">'+fmtPct(b.win_pct)+'</td>'+
-      '<td class="num">'+signedPts(b.avg_clv)+'</td>'+
-      '<td class="num">'+b.n+'</td></tr>';
-  }).filter(Boolean).join('');
+  if(!d||!d.research)return '';
+  var R=rxCore(),dx=d.research,o=dx.overall;
+  if(!o.n_rows)return '';
+  var lab=function(list){var m={};list.forEach(function(b){m[b.key]=b.label;});return m;};
+  var thr=dx.edge_thresholds.map(function(t){return {key:t.threshold+'+',summary:t.summary};});
+  var thrLab={};thr.forEach(function(t){thrLab[t.key]=t.key+' pts';});
+  var bm=o.market_benchmark;
+  var head='<div class="kv">'+
+    '<span><div class="k">ATS</div><div class="v">'+(o.ats.n?o.ats.wins+'-'+o.ats.losses+'-'+o.ats.pushes:'-')+pctCI(o.ats.interval,1)+'</div></span>'+
+    (o.clv.n?'<span><div class="k">Avg CLV</div><div class="v">'+signedPts(o.clv.mean)+'<div class="nsamp">median '+signedPts(o.clv.median)+' &middot; n='+o.clv.n+'</div></div></span>':'')+
+    (o.clv.n?'<span><div class="k">Positive CLV</div><div class="v">'+pctCI(o.clv.positive_interval,0)+
+      '<div class="nsamp">'+o.clv.positive+' beat close · '+o.clv.zero+' tied · '+o.clv.negative+' trailed</div></div></span>':'')+
+    (o.mae.n?'<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(o.mae.value)+'<div class="nsamp">n='+o.mae.n+'</div></div></span>':'')+
+    (o.brier.n?'<span><div class="k">Brier</div><div class="v">'+fmtNum(o.brier.value,3)+'<div class="nsamp">n='+o.brier.n+'</div></div></span>':'')+
+    (bm&&bm.n?'<span title="Brier skill against the no-vig closing moneyline, on the SAME games only. Positive = better calibrated than the close."><div class="k">Brier skill vs close</div><div class="v">'+
+      (bm.skill==null?'-':(bm.skill>0?'+':'')+fmtNum(bm.skill,3))+'<div class="nsamp">model '+fmtNum(bm.model_brier,3)+' · market '+fmtNum(bm.market_brier,3)+' · n='+bm.n+'</div></div></span>':'')+
+    '</div>';
+  var norm=diagTableHTML('Normalized edge at submission (gap ÷ walk-forward expected error)',dx.normalized_buckets,lab(R.NORMALIZED_BUCKETS),'Normalized gap');
+  var normNote=dx.normalized_unavailable?'<p class="note">'+dx.normalized_unavailable+' graded game'+(dx.normalized_unavailable===1?'':'s')+
+    ' had no normalized edge: the model had fewer than '+R.DEFAULT_SCALE_MIN_N+' finished forecasts before posting, so no expected error could be measured without looking ahead.</p>':'';
   return '<h2>Market usefulness <span class="note" style="font-weight:400">does the disagreement contain information?</span></h2>'+
-    '<div class="panel"><div class="kv">'+
-      (d.clv_n?'<span><div class="k">Avg CLV</div><div class="v">'+signedPts(d.avg_clv)+
-        '<div class="nsamp">n='+d.clv_n+'</div></div></span>':'')+
-      (d.clv_n?'<span><div class="k">Positive CLV</div><div class="v">'+fmtPct(d.clv_positive_pct,0)+
-        '<div class="nsamp">'+d.clv_positive+' beat close · '+d.clv_zero+' tied · '+d.clv_negative+' trailed</div></div></span>':'')+
-      (large.n?'<span><div class="k">4+ pt edge ATS</div><div class="v">'+esc(bucketRecordText(large))+
-        ' &middot; '+fmtPct(large.win_pct,0)+'<div class="nsamp">n='+large.n+'</div></div></span>':'')+
-      (d.edge_n?'<span><div class="k">Edge-bucket sample</div><div class="v">'+d.edge_n+
-        '<div class="nsamp">ATS-graded games with model + posted market lines</div></div></span>':'')+
-    '</div>'+
-    (rows?'<div class="tblwrap mini" style="margin-top:10px"><table style="min-width:520px"><thead><tr>'+
-      '<th>Model edge at submission</th><th class="num">ATS</th><th class="num">Win %</th>'+
-      '<th class="num">Avg CLV</th><th class="num">n</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'')+
-    '<p class="note" style="margin-top:8px"><b>Edge bucket</b> is the absolute gap between the model spread and the market line when the model posted. '+
-    '<b>CLV</b> is the posted market number versus the Collective&rsquo;s captured close, turned onto the model&rsquo;s side; positive means the model had the better number. '+
-    'ATS is still graded only against the captured close. These are diagnostics, not confidence labels, and every sample stays visible.</p></div>';
+    '<div class="panel">'+head+
+    diagTableHTML('By model-market gap at submission',dx.edge_buckets,lab(R.EDGE_BUCKETS),'Gap')+
+    diagTableHTML('Cumulative gap thresholds (fixed in advance, not tuned on this sample)',thr,thrLab,'Gap at least')+
+    norm+normNote+
+    diagTableHTML('By lead time before kickoff',dx.lead_buckets,lab(R.LEAD_BUCKETS),'Posted')+
+    diagTableHTML('Favourite or underdog at submission',dx.roles,{favorite:'Took the favourite',underdog:'Took the underdog',pickem:'Pick-em'},'Side')+
+    diagTableHTML('Against the rest of the room',dx.room,{aligned:'Aligned (<1.5 pts from room median)',mild:'Mild outlier (1.5-3 pts)',strong:'Strong outlier (3+ pts)',lone:'Lone model on its side'},'Position')+
+    (d.excluded_untimed?'<p class="note">'+d.excluded_untimed+' graded row'+(d.excluded_untimed===1?'':'s')+' carried no receipt time and cannot be shown to be pregame; '+(d.excluded_untimed===1?'it is':'they are')+' in the record but not in these diagnostics.</p>':'')+
+    '<p class="note" style="margin-top:8px"><b>Gap</b> is the absolute difference between the model&rsquo;s number and the market line it was posted against. '+
+    '<b>CLV</b> is that posted number versus the Collective&rsquo;s captured close, turned onto the side the model took <i>at submission</i>; positive means the model had the better number. '+
+    '<b>Normalized gap</b> divides the gap by the model&rsquo;s own root-mean-square error on games that had finished before it posted. '+
+    'Every percentage carries its 95% interval and every column its own n. These are research diagnostics, not confidence labels or recommendations.</p></div>';
 }
 
 function modelsInGames(games,wall){
@@ -2935,6 +3016,10 @@ function localRankings(games,settled,wall,thresholds){
      the honest way to say "this is early" without hiding the model. */
   var minG=(thresholds&&thresholds.min_graded_games!=null)?thresholds.min_graded_games:0;
   var minC=(thresholds&&thresholds.min_coverage_pct!=null)?thresholds.min_coverage_pct:0;
+  /* One walk-forward evaluation of the whole season, shared by every model's
+     diagnostics, rather than one per model. */
+  var seasonEval=null;
+  try{var EV=rxEval();if(EV)seasonEval=EV.evaluate(collectiveResearchRecords(settled));}catch(_){seasonEval=null;}
   var entries=modelsInGames(games,wall).map(function(m){
     var rec=modelRecord(settled,m.creator_slug,m.model_slug);
     var cov=modelCoverage(settled,m.creator_slug,m.model_slug);
@@ -2952,7 +3037,7 @@ function localRankings(games,settled,wall,thresholds){
       margin_mae:rec.margin_mae,margin_mae_n:rec.margin_n,
       brier:rec.brier,brier_n:rec.brier_n,
       record:rec,coverage_pct:cov.pct,coverage:cov,live:rec.live,
-      betting:modelBettingDiagnostics(settled,m.creator_slug,m.model_slug)};
+      betting:seasonEval?modelBettingDiagnostics(settled,m.creator_slug,m.model_slug,seasonEval):null};
   });
   var boards={
     win_pct:rankBoard(entries,'win_pct',-1,minG,minC),
@@ -3009,7 +3094,9 @@ function localRankings(games,settled,wall,thresholds){
         return String(a.model_name).localeCompare(String(b.model_name));
       }),
     unranked:unranked,
-    entries:entries
+    entries:entries,
+    /* the season's walk-forward evaluation, for the cross-model panels */
+    research_eval:seasonEval
   };
 }
 /* ================= final scores the wire does not carry ================
@@ -5161,7 +5248,7 @@ async function renderBoard(view){
         var lineValue=lineValueHtml(pickSideNorm(mr),mr.line_at_submission,refLine,!!frNow);
         var lead=pickLeadText(mr,g.kickoff_at);
         rows+='<tr>'+
-          '<td>'+who+(mr.late?' <span class="chip late">Late, ungraded</span>':'')+
+          '<td>'+who+(mr.late?' <span class="chip late">Late, ungraded</span>':'')+roomChipHtml(g,mr)+
             (lead?'<br><span class="note" style="font-size:11px">'+esc(lead)+'</span>':'')+'</td>'+
           '<td>'+(hw!=null?esc(hw>=0.5?g.home:g.away):'-')+'</td>'+
           '<td class="num">'+(hw!=null?fmtPct(hw,0)+probGapHtml:'-')+'</td>'+
@@ -5643,33 +5730,71 @@ async function renderRankings(view){
     }
     function marketDiagnosticsHTML(){
       var es=((local&&local.entries)||[]).filter(function(e){
-        return e&&e.betting&&(e.betting.clv_n||e.betting.edge_n);
+        return e&&e.betting&&e.betting.research&&e.betting.research.overall.n_rows;
       }).sort(function(a,b){
         return String(a.creator_name).localeCompare(String(b.creator_name))
           ||String(a.model_name).localeCompare(String(b.model_name));
       });
       if(!es.length)return '';
       var rows=es.map(function(e){
-        var d=e.betting,lg=d.large||{};
+        var dx=e.betting.research,o=dx.overall;
+        var t4=(dx.edge_thresholds.filter(function(t){return t.threshold===4;})[0]||{}).summary;
+        var nz=(dx.normalized_buckets.filter(function(b){return b.key==='0.75+';})[0]||{}).summary;
+        var bm=o.market_benchmark;
         var href=profHref(e.creator_slug,e.model_slug);
+        var rec=function(s){return (s&&s.ats.n)?esc(s.ats.wins+'-'+s.ats.losses+'-'+s.ats.pushes)+pctCI(s.ats.interval,0):'-';};
         return '<tr class="rowlink" data-href="'+href+'">'+
           '<td><a href="'+href+'" class="nm">'+esc(e.creator_name)+'</a>'+
             (fmap[e.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+
             '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(e.model_name)+'</span></td>'+
-          '<td class="num">'+signedPts(d.avg_clv)+(d.clv_n?'<div class="nsamp">n='+d.clv_n+'</div>':'')+'</td>'+
-          '<td class="num">'+(d.clv_n?fmtPct(d.clv_positive_pct,0):'-')+'</td>'+
-          '<td class="num">'+(lg.n?esc(bucketRecordText(lg))+' &middot; '+fmtPct(lg.win_pct,0):'-')+
-            (lg.n?'<div class="nsamp">n='+lg.n+'</div>':'')+'</td>'+
-          '<td class="num">'+d.edge_n+'</td></tr>';
+          '<td class="num">'+rec(o)+'</td>'+
+          '<td class="num">'+valN(o.mae.value,o.mae.n,function(v){return fmtNum(v);})+'</td>'+
+          '<td class="num">'+valN(o.brier.value,o.brier.n,function(v){return fmtNum(v,3);})+'</td>'+
+          '<td class="num">'+(bm&&bm.n&&bm.skill!=null?(bm.skill>0?'+':'')+fmtNum(bm.skill,3)+'<div class="nsamp">n='+bm.n+'</div>':'-')+'</td>'+
+          '<td class="num">'+valN(o.clv.mean,o.clv.n,signedPts)+'</td>'+
+          '<td class="num">'+(o.clv.n?signedPts(o.clv.median):'-')+'</td>'+
+          '<td class="num">'+(o.clv.n?pctCI(o.clv.positive_interval,0):'-')+'</td>'+
+          '<td class="num">'+rec(t4)+'</td>'+
+          '<td class="num">'+rec(nz)+'</td></tr>';
       }).join('');
-      return '<h2>Market diagnostics <span class="note" style="font-weight:400">where the model-market disagreement has gone</span></h2>'+
-        '<div class="tblwrap"><table><thead><tr><th>Model</th>'+
-        '<th class="num" title="posted market line versus captured close, turned onto the model side">Avg CLV</th>'+
-        '<th class="num" title="share of tracked lines where the posted number was better than the close">Positive CLV</th>'+
-        '<th class="num" title="ATS record when the model spread differed from the posted market by at least four points">4+ pt edge ATS</th>'+
-        '<th class="num" title="ATS-graded games that had both a model spread and a market line at submission">Bucket n</th>'+
+      return '<h2>Market diagnostics <span class="note" style="font-weight:400">descriptive research, not a ranking</span></h2>'+
+        '<div class="tblwrap"><table style="min-width:980px"><thead><tr><th>Model</th>'+
+        '<th class="num" title="ATS W-L-P on the captured close; 95% Wilson interval and its n below">ATS</th>'+
+        '<th class="num" title="mean absolute error of the projected margin">MAE</th>'+
+        '<th class="num" title="mean Brier score of the home-win probability">Brier</th>'+
+        '<th class="num" title="1 - model Brier / no-vig closing-moneyline Brier, on the SAME games only">Brier skill</th>'+
+        '<th class="num" title="posted market line versus captured close, turned onto the side the model took at submission">Avg CLV</th>'+
+        '<th class="num">Median CLV</th>'+
+        '<th class="num" title="share of tracked lines where the posted number was better than the close">+CLV</th>'+
+        '<th class="num" title="ATS when the model differed from the posted market by 4+ points (threshold fixed in advance)">4+ pt gap ATS</th>'+
+        '<th class="num" title="ATS when the gap was at least 0.75 of the model&rsquo;s own walk-forward expected error">0.75σ+ ATS</th>'+
         '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
-        '<p class="note" style="margin-top:8px">This table is deliberately not another ranking. It shows whether a model tends to beat the closing number and how its larger pregame disagreements have graded. Small samples stay small instead of being turned into a badge.</p>';
+        '<p class="note" style="margin-top:8px">Each column stands on its own sample, printed beneath it, and every percentage carries a 95% interval. The full breakdown by gap, normalized gap, lead time, favourite/underdog and position against the room is on each model&rsquo;s page. Nothing here is combined into a score.</p>'+
+        independenceHTML();
+    }
+    /* How many INDEPENDENT opinions the room holds. Models whose errors move
+       together are one opinion counted twice. Residual correlation is
+       measured only on games both models forecast, and a pair with fewer
+       than the minimum overlap is not guessed at. */
+    function independenceHTML(){
+      var EV=rxEval(),se=local&&local.research_eval;
+      if(!EV||!se||!se.rows.length)return '';
+      var c=EV.modelCorrelation(se.rows,{minOverlap:15});
+      if(c.models.length<2)return '';
+      var name={};((local&&local.entries)||[]).forEach(function(e){name[e.creator_slug+'/'+e.model_slug]=e.creator_name+' · '+e.model_name;});
+      var head='<tr><th></th>'+c.models.map(function(m,i){return '<th class="num" title="'+esc(name[m]||m)+'">'+(i+1)+'</th>';}).join('')+'</tr>';
+      var body=c.models.map(function(m,i){
+        return '<tr><td>'+(i+1)+'. '+esc(name[m]||m)+'</td>'+c.matrix[i].map(function(v,j){
+          if(i===j)return '<td class="num note">&mdash;</td>';
+          return '<td class="num">'+(v==null?'<span class="note" title="fewer than '+c.min_overlap+' shared games ('+c.overlap[i][j]+')">n/a</span>':fmtNum(v,2)+'<div class="nsamp">n='+c.overlap[i][j]+'</div>')+'</td>';
+        }).join('')+'</tr>';
+      }).join('');
+      return '<h2>Model independence <span class="note" style="font-weight:400">do their errors move together?</span></h2>'+
+        '<div class="panel"><div class="kv"><span><div class="k">Effective independent models</div><div class="v">'+
+        (c.effective_n==null?'<span class="note">not measurable yet</span>':fmtNum(c.effective_n,1)+' <span class="note">of '+c.models.length+'</span>')+'</div></span></div>'+
+        '<div class="tblwrap mini" style="margin-top:10px"><table><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
+        '<p class="note" style="margin-top:8px">Correlation of each pair&rsquo;s margin errors on the games both forecast. Effective count = n&sup2; &divide; the sum of the correlation matrix (negative correlations floored at zero). '+
+        (c.effective_n==null?'It is left unstated while any pair has fewer than '+c.min_overlap+' shared finished games &mdash; an unmeasured pair is not an independent pair.':'Four models posting the same lean are only as many opinions as this number says.')+'</p></div>';
     }
     /* ---- who is genuinely not on a board yet ---------------------------
        This list is built here and NEVER from /v1/rankings. The server's own

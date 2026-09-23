@@ -51006,6 +51006,11 @@ function fbP4Ensure(){
        the same game. Optional in the same way as the two above: it changes no
        projected number, so a missing file must not gate a board. */
     .then(function(){return fbScript('football/matchup/confidence.js').catch(function(){});})
+    /* THE SHARED RESEARCH LAYER. Optional in the same way: it computes no
+       projection, and the research cockpit renders nothing without it. */
+    .then(function(){return fbScript('lib/research_core.js').catch(function(){});})
+    .then(function(){return fbScript('lib/research_eval.js').catch(function(){});})
+    .then(function(){return fbScript('lib/game_research.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/qb_context.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/forecast.js').catch(function(){});})
     .then(function(){return fbScript('football/venues/descriptions.js').catch(function(){});})
@@ -54541,7 +54546,8 @@ window.fbGxToggle=function(gid,id){
     var b=el.querySelector('.gx-sec-h');if(b){b.setAttribute('aria-expanded',String(FB_GX_OPEN[k]));
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
-var FB_GX_DEFAULT={drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false};
+var FB_GX_DEFAULT={drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
+  research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
    Plain text that stands alone away from this page. No ids, no JSON, no
@@ -54719,6 +54725,364 @@ function fbP4MatchupHTML(u,p){
     +'actually knew. Nothing here is a recommendation.</div>';
   return h;
 }
+/* ═══ THE RESEARCH COCKPIT ═════════════════════════════════════════════════
+   The canonical research object for this game, built by lib/game_research.js
+   from facts this card already holds: the engine projection `p`, the joined
+   market (fbP4Market) and the input contract (fbP4ContractFor). Nothing here
+   is a new projection. The arithmetic — gap, normalized gap, no-vig,
+   break-even, EV, key numbers, the exact decomposition, data quality — is
+   the shared layer's, so this card and every other research surface state
+   the same number the same way.
+
+   CONVENTIONS. The engine and fbP4Market speak MARGIN convention (+ = home
+   favoured). The research object speaks HOME LINES (negative = home
+   favoured). Every crossing goes through EDResearch's named converters.
+
+   Renders nothing when the shared layer did not load: a research read that
+   might be computed differently from the rest of the terminal is worse than
+   none. */
+function fbGxResearchObj(u,p){
+  var GR=window.EDGameResearch,R=window.EDResearch,E=window.EDCfbP4;
+  if(!GR||!R||!p||p.status!=='PREDICTED')return null;
+  var mk=null;try{mk=fbP4Market(u);}catch(_){mk=null;}
+  var key=String(p.prediction_timestamp)+'|'+String(mk&&mk.spread_line)+'|'+String(mk&&mk.as_of);
+  if(u._gr&&u._gr.key===key)return u._gr.v;
+  var g=u.g,m=p.model;
+  var unc=(p.layers&&p.layers.uncertainty)||{};
+  /* The model's OWN distribution at any home line — the same function that
+     produced p.cover at the joined line — so every book's number can be
+     priced without deriving a probability from a spread gap. */
+  var coverAt=(E&&E.dist&&typeof E.dist.coverProbSpread==='function')?function(homeLine){
+    return E.dist.coverProbSpread(m.fair_spread,R.marginFromSpread(homeLine),unc.sigma,unc.sigma_base);
+  }:null;
+  var market={};
+  if(mk&&mk.spread_line!=null){
+    market.current={line:R.spreadFromMargin(mk.spread_line),captured_at:mk.as_of||null,source:mk.book||null};
+  }
+  if(p.market&&p.market.opening_spread!=null)
+    market.open={line:R.spreadFromMargin(p.market.opening_spread),captured_at:null,source:'opening line (engine market input)'};
+  if(mk&&mk.total_line!=null)market.total={line:mk.total_line,captured_at:mk.as_of||null,source:mk.book||null};
+  /* quotes_h2h holds the BEST decimal price per side, possibly from two
+     different books. De-vigged, it understates the overround; the source says so. */
+  var q=mk&&mk.quotes_h2h&&mk.quotes_h2h[0];
+  if(q&&q[0]>1&&q[1]>1)market.moneyline={home:R.decimalToAmerican(q[0]),away:R.decimalToAmerican(q[1]),
+    captured_at:mk.as_of||null,source:'best available prices per side, de-vigged'};
+  var quality={};
+  try{
+    var cov=(typeof fbP4ContractFor==='function')?fbP4ContractFor(u):null;
+    if(cov&&cov.rows)quality=GR.qualityFromContract(cov.rows);
+  }catch(_){}
+  quality.market=mk&&mk.spread_line!=null
+    ?{status:mk.stale?'STALE':'AVAILABLE',captured_at:mk.as_of||null,source:mk.book||null}
+    :{status:'UNAVAILABLE',note:mk&&mk.spread_fault?'spread dropped: opposite convention':'no market joined'};
+  quality.team_ratings={status:'AVAILABLE',captured_at:p.prediction_timestamp||null,source:'engine rating state'};
+  var cats=Object.keys(quality);
+  var o=null;
+  try{
+    o=GR.build({
+      now:new Date().toISOString(),
+      game:{sport:'CFB',season:g.season,week:g.week,game_id:String(g.game_id),home:g.home_team,away:g.away_team,
+        kickoff_at:u.t?new Date(u.t).toISOString():null,venue:(p.game&&p.game.venue_id)||null},
+      model:{engine:p,cover_at:coverAt},
+      market:market,
+      quality:quality,quality_categories:cats
+    });
+  }catch(_){o=null;}
+  if(o)o._cover_at=coverAt;
+  u._gr={key:key,v:o};
+  return o;
+}
+function fbGxAgo(iso){
+  if(!iso)return '<span class="gx-miss">time not recorded</span>';
+  var h=(Date.now()-Date.parse(iso))/36e5;
+  if(!isFinite(h))return '<span class="gx-miss">time not recorded</span>';
+  return fbEsc(h<1?Math.max(1,Math.round(h*60))+'m ago':h<48?Math.round(h)+'h ago':Math.round(h/24)+'d ago');
+}
+function fbGxLine(team,v){return v==null?'<span class="gx-miss">—</span>':fbEsc(team)+' '+fbPts(v);}
+function fbGxPct(x,d){return x==null?'<span class="gx-miss">n/a</span>':(100*x).toFixed(d==null?1:d)+'%';}
+/* ── THE ANSWER FIRST ────────────────────────────────────────────────── */
+function fbGxResearchRead(u,p){
+  var o=fbGxResearchObj(u,p);
+  if(!o||!o.model)return '';
+  var h=u.g.home_team,mv=o.model_vs_market,mk=o.market,md=o.model;
+  function cell(l,v,sub,title){
+    return '<div class="gx-c"'+(title?' title="'+fbEsc(title)+'"':'')+'><div class="l">'+fbEsc(l)+'</div><div class="v">'+v+'</div>'
+      +(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
+  }
+  var nv=mk.moneyline.no_vig_home;
+  var out='<div class="gx-grid">';
+  out+=cell('Market now',fbGxLine(h,mk.current.value),mk.current.value!=null?(fbEsc(mk.current.source||'')+' · '+fbGxAgo(mk.current.captured_at)):'no market joined');
+  out+=cell('EdgeDesk fair',fbGxLine(h,md.fair_home_line.value),'model · '+fbGxAgo(md.captured_at));
+  out+=cell('Raw difference',mv.raw_gap.value!=null?mv.raw_gap.value.toFixed(1)+' pts':'<span class="gx-miss">—</span>',
+    mv.side?('EdgeDesk further toward '+fbEsc(mv.side==='home'?u.g.home_team:u.g.away_team)):'');
+  out+=cell('Normalized difference',mv.normalized_gap.value!=null?mv.normalized_gap.value.toFixed(2)+'σ':'<span class="gx-miss">—</span>',
+    md.expected_error.value!=null?('expected error ±'+md.expected_error.value.toFixed(1)+' pts'):'',
+    'raw difference ÷ the model’s own per-game margin sigma ('+(md.expected_error.source||'')+'). A size, not a recommendation.');
+  out+=cell('Win probability',fbGxPct(md.home_win_prob.value),fbEsc(h)+' · model');
+  out+=cell('Market no-vig',fbGxPct(nv),nv!=null?(fbEsc(h)+' · '+fbEsc(mk.moneyline.captured_at?'moneyline':'')):'no moneyline joined',
+    'multiplicative de-vig of the '+(nv!=null?'best available prices per side':'moneyline'));
+  out+=cell('Probability difference',mv.probability_gap.value!=null?((mv.probability_gap.value>0?'+':'')+(100*mv.probability_gap.value).toFixed(1)+' pp'):'<span class="gx-miss">n/a</span>',
+    'model minus market, '+fbEsc(h));
+  out+=cell('Projected total',md.projected_total.value!=null?md.projected_total.value.toFixed(1):'<span class="gx-miss">—</span>',
+    mk.total.value!=null?('market '+mk.total.value):'no market total');
+  var q=o.quality;
+  out+=cell('Data completeness',q.completeness!=null?Math.round(q.completeness*100)+'%':'<span class="gx-miss">—</span>',
+    q.categories.length+' categories · see breakdown','completeness = '+q.rule);
+  out+='</div>';
+  var fl=(o.flags&&o.flags.flags)||[];
+  if(fl.length)out+='<div class="gx-foot" style="margin-top:8px">'+fl.map(function(f){
+    return '<span class="ec mut" title="'+fbEsc(f.rule)+'" style="margin-right:6px">'+fbEsc(f.key.replace(/_/g,' ').toLowerCase())
+      +(f.detail?' · '+fbEsc(f.detail):'')+'</span>';
+  }).join('')+'</div>';
+  out+='<div class="gx-foot">Research flags describe why a game may be worth reading; they are not a pick, a rating or a probability. '
+    +'Hover a flag for the rule that raised it.</div>';
+  return out;
+}
+/* ── WHY EDGEDESK IS DIFFERENT: the exact decomposition ───────────────── */
+function fbGxDecomp(u,p){
+  var o=fbGxResearchObj(u,p);
+  var d=o&&o.model&&o.model.decomposition;
+  if(!d)return '';
+  var h=u.g.home_team;
+  var rows=d.components.map(function(c){
+    return '<tr'+(c.missing?' style="opacity:.6"':'')+'><td>'+fbEsc(c.label)+'</td>'
+      +'<td class="num mono">'+(c.missing?'<span class="gx-miss">missing · 0</span>':fbEsc(h)+' '+fbPts(c.value))+'</td>'
+      +'<td class="num">'+(c.reliability!=null?Math.round(c.reliability*100)+'%':'—')+'</td>'
+      +'<td style="font-size:11px;color:var(--faint)">'+fbEsc(c.missing?(c.reason||c.source||'not supplied'):(c.source||''))+'</td></tr>';
+  }).join('');
+  var tot=(d.total_components||[]).filter(function(c){return c.available&&c.value;});
+  return '<div class="tblwrap"><table class="mini" style="width:100%;font-size:12px"><thead><tr><th>Component</th><th class="num">Home line pts</th>'
+    +'<th class="num" title="the engine&rsquo;s own confidence in this term">Reliability</th><th>Source</th></tr></thead><tbody>'+rows
+    +'<tr style="border-top:1px solid var(--border);font-weight:600"><td>Fair line</td><td class="num mono">'+fbEsc(h)+' '+fbPts(d.home_line)+'</td><td></td>'
+    +'<td style="font-size:11px;color:var(--faint)">'+(d.exact?'terms sum exactly to the published number':'terms do NOT sum to the published number — treat as approximate')+'</td></tr>'
+    +'</tbody></table></div>'
+    +'<div class="gx-foot">'+fbEsc(d.method)+'. Negative points move the line toward '+fbEsc(h)+'. A missing term adds exactly zero and widens the outcome range instead. '
+    +(tot.length?('Weather and pace move the total, not the spread: '+tot.map(function(c){return fbEsc(c.label)+' '+fbPts(c.value);}).join(', ')+'.'):'')
+    +'</div>';
+}
+/* ── PRICE-AWARE EV ─────────────────────────────────────────────────── */
+function fbGxPrice(u,p){
+  var o=fbGxResearchObj(u,p);
+  if(!o||!o.model)return '';
+  var R=window.EDResearch,md=o.model,h=u.g.home_team,a=u.g.away_team;
+  var mkLine=o.market.current.value;
+  if(mkLine==null)return '<div class="gx-none">No market line is joined, so there is no price to assess.</div>';
+  /* The card holds one reference quote with no per-side spread price, so the
+     break-even is stated at a -110 REFERENCE price, labelled as such — it is
+     not the market's price and the column says so. The probability is the
+     model's own distribution at this exact line. */
+  var rows=[['home',h],['away',a]].map(function(x){
+    var pr=window.EDGameResearch.priceAtLine({cover_at:o._cover_at||null,engine_cover:md.cover_at_joined_line},x[0],mkLine,-110);
+    return '<tr><td>'+fbEsc(x[1])+' '+fbPts(R.sideLine(mkLine,x[0]))+'</td>'
+      +'<td class="num">-110 <span class="gx-miss">reference</span></td>'
+      +'<td class="num">'+fbGxPct(pr.break_even,2)+'</td>'
+      +'<td class="num">'+fbGxPct(pr.model_prob,1)+(pr.push_prob?'<div class="s" style="font-size:10.5px;color:var(--faint)">push '+(100*pr.push_prob).toFixed(1)+'%</div>':'')+'</td>'
+      +'<td class="num">'+(pr.prob_edge!=null?((pr.prob_edge>0?'+':'')+(100*pr.prob_edge).toFixed(1)+' pp'):'<span class="gx-miss">n/a</span>')+'</td>'
+      +'<td class="num">'+(pr.expected_roi!=null?((pr.expected_roi>0?'+':'')+(100*pr.expected_roi).toFixed(1)+'%'):'<span class="gx-miss">n/a</span>')+'</td></tr>';
+  }).join('');
+  return '<div class="tblwrap"><table class="mini" style="width:100%;font-size:12px"><thead><tr><th>Side</th><th class="num">Reference price</th>'
+    +'<th class="num">Break-even</th><th class="num">Model cover</th><th class="num">Difference</th><th class="num">Expected ROI</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'<div class="gx-foot">The model cover probability is the engine&rsquo;s own margin distribution at this exact line, with the push mass kept apart (a push is not a loss). '
+    +'The joined quote carries no per-side spread price, so the break-even is shown at a -110 <b>reference</b> price, not the market&rsquo;s; the real price changes the break-even and the ROI. '
+    +'The engine&rsquo;s validation tier governs whether this is anything more than research — see the edge tag in the detail section.</div>';
+}
+/* ── DATA QUALITY, explained ─────────────────────────────────────────── */
+function fbGxQuality(u,p){
+  var o=fbGxResearchObj(u,p);
+  if(!o)return '';
+  var cls={AVAILABLE:'ok',PARTIAL:'warn',STALE:'warn',UNAVAILABLE:'neg'};
+  var rows=o.quality.categories.map(function(c){
+    return '<tr><td>'+fbEsc(c.category.replace(/_/g,' '))+'</td><td><span class="gx-st '+cls[c.status]+'">'+fbEsc(c.status)+'</span></td>'
+      +'<td class="num">'+(c.age_hours!=null?fbEsc(c.age_hours<48?Math.round(c.age_hours)+'h':Math.round(c.age_hours/24)+'d'):'—')+'</td>'
+      +'<td style="font-size:11px;color:var(--faint)">'+fbEsc([c.source,c.note].filter(Boolean).join(' · '))+'</td></tr>';
+  }).join('');
+  return '<div class="tblwrap"><table class="mini" style="width:100%;font-size:12px"><thead><tr><th>Category</th><th>Status</th><th class="num">Age</th><th>Detail</th></tr></thead><tbody>'
+    +rows+'</tbody></table></div><div class="gx-foot">'+fbEsc(o.quality.rule)+'. Nothing missing is filled in; a missing category lowers completeness instead.</div>';
+}
+/* ── SCENARIOS: the engine, re-run ──────────────────────────────────────
+   Hypotheticals the model architecture can actually recompute: the same
+   request with ONE supplied input taken away. A scenario runs only when the
+   baseline had that input — removing an injury report that was never
+   supplied would report a zero effect that means nothing. Quarterback
+   scenarios are not offered: the college request carries no quarterback
+   value (qb:null) for the engine to change, and the card says so rather than
+   inventing a replacement-level number. Every row is labelled hypothetical. */
+function fbGxScenarioRuns(u,p){
+  var E=window.EDCfbP4,R=window.EDResearch;
+  if(!E||!R||typeof fbP4Request!=='function'||!p||p.status!=='PREDICTED')return null;
+  var key=String(p.prediction_timestamp);
+  if(u._scen&&u._scen.key===key)return u._scen.v;
+  var req0;try{req0=fbP4Request(u);}catch(_){req0=null;}
+  if(!req0){u._scen={key:key,v:null};return null;}
+  function has(v){return v!=null&&!(Array.isArray(v)&&!v.length);}
+  var defs=[
+    {label:'Home injury report removed',ok:has(req0.teams&&req0.teams.home&&req0.teams.home.injuries),mod:function(r){r.teams.home.injuries=null;}},
+    {label:'Away injury report removed',ok:has(req0.teams&&req0.teams.away&&req0.teams.away.injuries),mod:function(r){r.teams.away.injuries=null;}},
+    {label:'Weather record removed',ok:has(req0.weather),mod:function(r){r.weather=null;}},
+    {label:'Played on a neutral field',ok:!(req0.game&&req0.game.neutral_site),mod:function(r){r.game.neutral_site=true;}}
+  ];
+  var base=null;try{base=E.projectGame(req0);}catch(_){base=null;}
+  if(!base||base.status!=='PREDICTED'){u._scen={key:key,v:null};return null;}
+  var bc={};(base.contributions||[]).forEach(function(c){bc[c.key]=c.points||0;});
+  var runs=defs.map(function(d){
+    if(!d.ok)return {label:d.label,supported:false,why:'not supplied in the baseline, so there is nothing to remove'};
+    var r;try{r=JSON.parse(JSON.stringify(req0));}catch(_){return {label:d.label,supported:false,why:'request could not be copied'};}
+    r.state=req0.state;
+    d.mod(r);
+    var out;try{out=E.projectGame(r);}catch(e){out={status:'BLOCKED',reason:e&&e.message};}
+    if(!out||out.status!=='PREDICTED')return {label:d.label,supported:false,why:'the engine returned '+((out&&out.status)||'nothing')};
+    var aff=(out.contributions||[]).filter(function(c){return Math.abs((c.points||0)-(bc[c.key]||0))>0.01;}).map(function(c){return c.label||c.key;});
+    return {label:d.label,supported:true,home_line:R.homeLineFromEngineFairSpread(out.model.fair_spread),affected:aff,
+      p10:out.model.p10_margin,p90:out.model.p90_margin,sigma:out.model.sigma_margin,total:out.model.fair_total};
+  });
+  var v={base:{home_line:R.homeLineFromEngineFairSpread(base.model.fair_spread),p10:base.model.p10_margin,p90:base.model.p90_margin,
+    sigma:base.model.sigma_margin,total:base.model.fair_total},runs:runs};
+  u._scen={key:key,v:v};
+  return v;
+}
+function fbGxScenarios(u,p){
+  var s=fbGxScenarioRuns(u,p),GR=window.EDGameResearch;
+  if(!s||!GR)return '';
+  var h=u.g.home_team;
+  var sc=GR.build({game:{home:h,away:u.g.away_team},model:{home_line:s.base.home_line},
+    scenarios:s.runs.filter(function(r){return r.supported;})}).scenarios;
+  var byLabel={};sc.forEach(function(x){byLabel[x.label]=x;});
+  var rows=s.runs.map(function(r){
+    if(!r.supported)return '<tr style="opacity:.65"><td>'+fbEsc(r.label)+'</td><td colspan="4" class="gx-miss">not run: '+fbEsc(r.why)+'</td></tr>';
+    var x=byLabel[r.label];
+    return '<tr><td>'+fbEsc(r.label)+' <span class="ec mut">hypothetical</span></td>'
+      +'<td class="num mono">'+fbEsc(h)+' '+fbPts(r.home_line)+'</td>'
+      +'<td class="num mono">'+(x&&x.difference!=null?fbPts(x.difference):'—')+'</td>'
+      +'<td class="num mono">'+fbPts(r.p10)+' … '+fbPts(r.p90)+'</td>'
+      +'<td style="font-size:11px;color:var(--faint)">'+fbEsc(r.affected.length?r.affected.join(', '):(Math.abs(r.sigma-s.base.sigma)>0.01?'no spread term moved; the outcome range changed':'no term moved'))+'</td></tr>';
+  }).join('');
+  return '<div class="gx-foot" style="margin:0 0 6px">Baseline '+fbEsc(h)+' '+fbPts(s.base.home_line)+' · home margin p10 '+fbPts(s.base.p10)+' … p90 '+fbPts(s.base.p90)+'</div>'
+    +'<div class="tblwrap"><table class="mini" style="width:100%;font-size:12px"><thead><tr><th>Scenario</th><th class="num">Fair line</th>'
+    +'<th class="num">Difference</th><th class="num">Home margin p10…p90</th><th>Components that moved</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'<div class="gx-foot">Each row is the engine re-run with one supplied input taken away. It is <b>hypothetical</b>, not a forecast. '
+    +'A missing input adds zero to the mean and widens the range, so a removal can move the range without moving the line. '
+    +'Quarterback scenarios are not offered: the college request carries no quarterback value for the engine to change.</div>';
+}
+/* ── FOLLOW A GAME: the change timeline ─────────────────────────────────
+   A followed game keeps a short history of research snapshots in THIS
+   browser. Each time the card is built for it, the new snapshot is compared
+   with the last one and only real differences become timeline events, each
+   stamped with the capture time of the fact that changed (the market's own
+   capture time, the model's own projection time). Nothing is back-filled:
+   the timeline starts when the game is followed, and says so. */
+var FB_WATCH_KEY='ed_research_watch_v1',FB_WATCH_MAX_EVENTS=60;
+function fbWatchLoad(){try{var s=localStorage.getItem(FB_WATCH_KEY);var o=s?JSON.parse(s):{};return (o&&typeof o==='object')?o:{};}catch(_){return {};}}
+function fbWatchSave(w){try{localStorage.setItem(FB_WATCH_KEY,JSON.stringify(w));return true;}catch(_){return false;}}
+function fbWatchRecord(gid,label,o){
+  var GR=window.EDGameResearch;if(!GR||!o)return null;
+  var w=fbWatchLoad(),e=w[gid];if(!e)return null;
+  var snap=GR.snapshot(o);
+  var ev=e.last?GR.timelineEvents(e.last,snap):[];
+  if(!e.last||ev.length){
+    e.events=(e.events||[]).concat(ev).slice(-FB_WATCH_MAX_EVENTS);
+    e.last=snap;e.label=label;
+    fbWatchSave(w);
+  }
+  return e;
+}
+function fbWatchTimelineHTML(e,home){
+  var h=fbEsc(home);
+  function v(ev,x){
+    if(x==null)return '<span class="gx-miss">none</span>';
+    if(ev.kind==='market'||ev.kind==='fair'||ev.kind==='component')return h+' '+fbPts(x);
+    if(ev.kind==='win_prob')return (100*x).toFixed(1)+'%';
+    if(ev.kind==='moneyline')return (x>0?'+':'')+Math.round(x);
+    return fbEsc(String(x));
+  }
+  var list=(e.events||[]).slice().reverse();
+  var start=e.since?new Date(e.since).toLocaleString():'';
+  if(!list.length)return '<div class="gx-none">No change captured since you followed this game'+(start?' ('+fbEsc(start)+')':'')+'. '
+    +'Market, EdgeDesk fair line, win probability, component and data-quality changes will appear here as they are captured.</div>';
+  return '<div class="tblwrap"><table class="mini" style="width:100%;font-size:12px"><thead><tr><th>When</th><th>What</th><th class="num">From</th><th class="num">To</th></tr></thead><tbody>'
+    +list.map(function(ev){
+      return '<tr><td class="mono" style="white-space:nowrap">'+fbEsc(ev.at?new Date(ev.at).toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}):'')
+        +(ev.observed==='first seen'?' <span class="gx-miss" title="the source carries no capture time; this is when this device first saw it">seen</span>':'')+'</td>'
+        +'<td>'+fbEsc(ev.label)+'</td><td class="num mono">'+v(ev,ev.from)+'</td><td class="num mono">'+v(ev,ev.to)+'</td></tr>';
+    }).join('')+'</tbody></table></div>'
+    +'<div class="gx-foot">Changes this device captured since '+fbEsc(start||'you followed the game')+'. Each time is the capture time of the new fact where the source records one.</div>';
+}
+function fbGxWatch(u,p){
+  var o=fbGxResearchObj(u,p);if(!o)return '';
+  var gid=String(u.g.game_id),w=fbWatchLoad(),on=!!w[gid];
+  var e=on?fbWatchRecord(gid,u.g.away_team+' @ '+u.g.home_team,o):null;
+  return '<div id="gxw-'+fbEsc(gid)+'">'
+    +'<button class="btn ghost sm" onclick="fbGxFollow(\''+fbEsc(gid)+'\')">'+(on?'Unfollow this game':'Follow this game')+'</button>'
+    +(on&&e?fbWatchTimelineHTML(e,u.g.home_team):'<div class="gx-foot">Follow to keep a timeline of market, model and data changes for this game in this browser.</div>')
+    +'</div>';
+}
+window.fbGxFollow=function(gid){
+  var w=fbWatchLoad();
+  if(w[gid])delete w[gid];
+  else w[gid]={since:new Date().toISOString(),events:[],last:null};
+  if(!fbWatchSave(w)){alert('This browser is not letting EdgeDesk store a watchlist.');return;}
+  var u=null;((FB.p4&&FB.p4.up)||[]).forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
+  var p=u&&FB.p4._proj&&FB.p4._proj[String(gid)];
+  var el=document.getElementById('gxw-'+gid);
+  if(el&&u&&p){var tmp=document.createElement('div');tmp.innerHTML=fbGxWatch(u,p);if(tmp.firstChild)el.replaceWith(tmp.firstChild);}
+  else if(el)el.querySelector('button').textContent=w[gid]?'Unfollow this game':'Follow this game';
+};
+/* ── THE RESEARCH QUEUE ─────────────────────────────────────────────────
+   The board's games that raised at least one research flag, ordered by how
+   many flags they raised and then by normalized gap. The order is a reading
+   order, not a ranking of bets: every flag names the rule that raised it and
+   the count is not a probability. Market-state flags (no market, stale
+   market) never put a game in the queue on their own. */
+function fbP4QueueHTML(visible){
+  if(!window.EDGameResearch)return '';
+  var items=[];
+  (visible||[]).forEach(function(r){
+    if(!r||!r.p||r.p.status!=='PREDICTED')return;
+    var o=null;try{o=fbGxResearchObj(r.u,r.p);}catch(_){o=null;}
+    if(!o||!o.flags||!o.flags.priority)return;
+    items.push({r:r,o:o,z:o.model_vs_market.normalized_gap.value,
+      flags:o.flags.flags.filter(function(f){return f.key!=='NO_MARKET'&&f.key!=='STALE_MARKET';})});
+  });
+  if(!items.length)return '';
+  items.sort(function(a,b){return (b.o.flags.priority-a.o.flags.priority)||((b.z||0)-(a.z||0));});
+  var rows=items.slice(0,12).map(function(x){
+    var g=x.r.u.g,gid=String(g.game_id);
+    return '<div onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="cursor:pointer;border-bottom:1px solid var(--border);padding:6px 2px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline">'
+      +'<span style="min-width:180px">'+fbEsc(g.away_team)+' <span class="mut">→</span> '+fbEsc(g.home_team)+'</span>'
+      +'<span class="mut">'+(x.o.model_vs_market.raw_gap.value!=null?x.o.model_vs_market.raw_gap.value.toFixed(1)+' pts':'')
+        +(x.z!=null?' · '+x.z.toFixed(2)+'σ':'')+'</span>'
+      +'<span>'+x.flags.map(function(f){return '<span class="ec mut" title="'+fbEsc(f.rule)+'">'+fbEsc(f.key.replace(/_/g,' ').toLowerCase())+'</span>';}).join(' ')+'</span></div>';
+  }).join('');
+  return '<details class="gx-queue" style="margin:8px 0 10px"'+(FB.p4.queueOpen?' open':'')+' ontoggle="FB.p4.queueOpen=this.open">'
+    +'<summary class="mono" style="cursor:pointer;font-size:11px;color:var(--dim)"><b style="color:var(--text)">WORTH RESEARCHING</b> · '
+    +items.length+' game'+(items.length===1?'':'s')+' raised a research flag</summary>'
+    +'<div class="mono" style="font-size:11.5px;margin-top:4px">'+rows+'</div>'
+    +'<div class="gd-modelnote" style="margin-top:6px">Ordered by the number of research flags raised, then by normalized gap. '
+    +'This is a reading order, not a ranking of bets and not a probability; hover a flag for the rule behind it.</div></details>';
+}
+/* ── EXPLAIN THIS RESEARCH ─────────────────────────────────────────────
+   Answers to the standard research questions, assembled ONLY from typed
+   evidence in the research object (lib/game_research.js evidence/explain).
+   No sentence here is generated: each line is one field, tagged as FACT,
+   MODEL OUTPUT, MARKET DATA, HISTORICAL, UNCERTAINTY or HYPOTHETICAL, and a
+   question the object cannot answer says so. */
+var FB_GX_EVTAG={FACT:'fact',MODEL_OUTPUT:'model output',MARKET_DATA:'market data',HISTORICAL:'historical',UNCERTAINTY:'uncertainty',HYPOTHETICAL:'hypothetical'};
+function fbGxExplain(u,p){
+  var o=fbGxResearchObj(u,p),GR=window.EDGameResearch;
+  if(!o||!GR||!GR.explain)return '';
+  var MP=(window.EDCfbP4Params&&window.EDCfbP4Params.market)||{};
+  return Object.keys(GR.QUESTIONS).map(function(q){
+    var a=GR.explain(o,q,{research_gap:MP.min_research_gap!=null?MP.min_research_gap:2});
+    var lines=(a.evidence||[]).map(function(e){
+      return '<li><span class="ec mut" style="margin-right:6px">'+fbEsc(FB_GX_EVTAG[e.type]||e.type)+'</span>'+fbEsc(e.text)
+        +(e.captured_at?' <span class="gx-miss">· '+fbGxAgo(e.captured_at)+'</span>':'')+'</li>';
+    }).join('');
+    return '<div style="margin:0 0 10px"><div style="font-weight:600;font-size:12.5px">'+fbEsc(a.question)+'</div>'
+      +(a.answerable?'':'<div class="gx-miss">Not answerable from this game’s research object'+(a.note?': '+fbEsc(a.note):'.')+'</div>')
+      +(lines?'<ul style="margin:4px 0 0;padding-left:18px;font-size:12px;line-height:1.5">'+lines+'</ul>':'')
+      +(a.answerable&&a.note?'<div class="gx-foot">'+fbEsc(a.note)+'</div>':'')+'</div>';
+  }).join('')
+  +'<div class="gx-foot">Every line is a stored field with its type. Nothing here is written by a language model and nothing is a recommendation.</div>';
+}
 function fbP4Card(u){
   var g=u.g,E=window.EDCfbP4,m=u.meta;
   var p=FB.p4._proj&&FB.p4._proj[String(g.game_id)];
@@ -54804,6 +55168,10 @@ function fbP4Card(u){
   var body=fbGxSummary(u,p,gid)
     +fbGxSec(gid,'matchup','Programs, conferences and the FBS rating',fbP4MatchupHTML(u,p),true,
       'who is playing, on one all-FBS scale')
+    +fbGxSec(gid,'research','The research read',fbGxResearchRead(u,p),true,
+      'model vs market in points, in σ and in probability — research, not a pick')
+    +fbGxSec(gid,'decomp','Fair-line decomposition',fbGxDecomp(u,p),true,
+      'every term the engine priced, exactly as it sums')
     +fbGxSec(gid,'venue','Venue and game-time forecast',fbGxWeather(u),true,
         'surface, roof, elevation, and the forecast for kickoff and the three hours after it')
     +fbGxSec(gid,'drivers','Why EdgeDesk prices it here',fbGxDrivers(p),true)
@@ -54812,6 +55180,16 @@ function fbP4Card(u){
       'passing EPA per dropback, with the sample it came off — research context, not priced')
     +fbGxSec(gid,'cases','The case for each side',fbGxCases(u,p),true)
     +fbGxSec(gid,'scale','Model vs market',fbGxScale(u,p),true)
+    +fbGxSec(gid,'price','Price and break-even',fbGxPrice(u,p),false,
+      'EV only from the model’s own cover probability at this line')
+    +fbGxSec(gid,'dq','Data quality by category',fbGxQuality(u,p),false,
+      'available, partial, stale or unavailable — and why')
+    +fbGxSec(gid,'scen','Scenarios · hypothetical',fbGxScenarios(u,p),false,
+      'the engine re-run with one supplied input removed')
+    +fbGxSec(gid,'explain','Explain this research',fbGxExplain(u,p),false,
+      'answers built only from typed evidence — fact, model, market, history, uncertainty, hypothetical')
+    +fbGxSec(gid,'watch','Follow · what changed',fbGxWatch(u,p),false,
+      'a timeline of captured changes for games you follow')
     +fbGxSec(gid,'detail','Model and market detail',L,false,'spreads, totals, moneyline, outcome range')
     +fbGxSec(gid,'scores','Model scores',chips+compl,false,'confidence, volatility, stability')
     +fbGxSec(gid,'edr','EdgeDesk rating · research context',edr,false,'not the number this line is priced from')
@@ -55657,6 +56035,7 @@ function fbP4BoardHTML(){
   var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 46px 100px;gap:2px 8px;align-items:center';
   var html=head+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c);
   if(!visible.length)return html+fbP4EmptyHTML(rows,c);
+  try{html+=fbP4QueueHTML(visible);}catch(_){}
   html+='<div style="overflow-x:auto"><div class="mono" style="font-size:11px;min-width:700px">'
     +'<div style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
     +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>GAP</span><span>STATUS</span></div>';
