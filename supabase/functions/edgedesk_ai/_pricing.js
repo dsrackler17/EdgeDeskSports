@@ -97,11 +97,22 @@
     q = p - 0.5; r = q * q;
     return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
   }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
-  function decToAm(dec) { var d = num(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function amToDec(am) { return ODDS().amToDec(am); }
+  function decToAm(dec) { return ODDS().decToAm(dec); }
   function logit(p) { p = Math.min(0.999, Math.max(0.001, p)); return Math.log(p / (1 - p)); }
   function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
-  function devig2(amA, amB) { var a = amToDec(amA), b = amToDec(amB); if (!a || !b) return null; var ia = 1 / a, ib = 1 / b; return { a: ia / (ia + ib), b: ib / (ia + ib), overround: r4(ia + ib - 1) }; }
+  function devig2(amA, amB) { return ODDS().devig2(amA, amB); }
 
   /* -------------------------------------------------------- validation */
   /** Register football/validation/pricing_<sport>.json for a sport. */
@@ -214,7 +225,7 @@
     var cover = normCdf(z) - push / 2;
     return { cover: r4(Math.max(0, Math.min(1, cover))), push: r4(push), lose: r4(Math.max(0, 1 - cover - push)) };
   }
-  function breakEven(oddsAmerican, push) { var d = amToDec(oddsAmerican); if (!d) return null; return r4((1 - (num(push) || 0)) / d); }
+  function breakEven(oddsAmerican, push) { return ODDS().breakEven(oddsAmerican, push); }
 
   /** One side of a spread, priced. sel line is the selection's own line (positive = getting points). */
   function priceSpreadSide(o) {

@@ -361,8 +361,19 @@
   function P() { return root.EDPRICE || null; }
   function B() { return root.EDBOARD || null; }
   function R() { return root.EDRESEARCH || null; }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
-  function decToAm(dec) { var d = num(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function amToDec(am) { return ODDS().amToDec(am); }
+  function decToAm(dec) { return ODDS().decToAm(dec); }
   function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
   function fmtLine(v) { var n = num(v); if (n == null) return ''; return (n > 0 ? '+' : '') + n; }
   function fmtUnits(v) { var n = num(v); return n == null ? '—' : n.toFixed(2) + 'u'; }

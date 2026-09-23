@@ -108,10 +108,19 @@
   function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
   function pct(p) { var n = num(p); return n == null ? '—' : Math.round(n * 100) + '%'; }
   function pts(v) { var n = num(v); if (n == null) return '—'; var a = Math.abs(r1(n)); return a + (a === 1 ? ' point' : ' points'); }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
-  function decToAm(d) { d = num(d); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
-  function probToAm(p) { p = num(p); if (p == null || p <= 0 || p >= 1) return null; return decToAm(1 / p); }
-  function breakEven(odds, push) { var P = PK(); if (P) return P.breakEven(odds, push); var d = amToDec(odds); return d ? (1 - (num(push) || 0)) / d : null; }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function probToAm(p) { return ODDS().probToAm(p); }
+  function breakEven(odds, push) { return ODDS().breakEven(odds, push); }
   function gradeOf(v, table) { if (v == null) return 'INSUFFICIENT'; for (var i = 0; i < table.length; i++) if (v >= table[i][0]) return table[i][1]; return 'INSUFFICIENT'; }
   function cap(s) { s = str(s); return s.charAt(0).toUpperCase() + s.slice(1); }
   function uniq(a) { var o = [], seen = {}; (a || []).forEach(function (x) { var k = typeof x === 'string' ? x : JSON.stringify(x); if (!seen[k]) { seen[k] = 1; o.push(x); } }); return o; }

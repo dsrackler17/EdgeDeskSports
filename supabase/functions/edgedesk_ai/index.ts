@@ -21252,11 +21252,22 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     q = p - 0.5; r = q * q;
     return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
   }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
-  function decToAm(dec) { var d = num(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function amToDec(am) { return ODDS().amToDec(am); }
+  function decToAm(dec) { return ODDS().decToAm(dec); }
   function logit(p) { p = Math.min(0.999, Math.max(0.001, p)); return Math.log(p / (1 - p)); }
   function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
-  function devig2(amA, amB) { var a = amToDec(amA), b = amToDec(amB); if (!a || !b) return null; var ia = 1 / a, ib = 1 / b; return { a: ia / (ia + ib), b: ib / (ia + ib), overround: r4(ia + ib - 1) }; }
+  function devig2(amA, amB) { return ODDS().devig2(amA, amB); }
 
   /* -------------------------------------------------------- validation */
   /** Register football/validation/pricing_<sport>.json for a sport. */
@@ -21369,7 +21380,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     var cover = normCdf(z) - push / 2;
     return { cover: r4(Math.max(0, Math.min(1, cover))), push: r4(push), lose: r4(Math.max(0, 1 - cover - push)) };
   }
-  function breakEven(oddsAmerican, push) { var d = amToDec(oddsAmerican); if (!d) return null; return r4((1 - (num(push) || 0)) / d); }
+  function breakEven(oddsAmerican, push) { return ODDS().breakEven(oddsAmerican, push); }
 
   /** One side of a spread, priced. sel line is the selection's own line (positive = getting points). */
   function priceSpreadSide(o) {
@@ -21729,8 +21740,19 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
   function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
   function fmtLine(v) { var n = num(v); if (n == null) return ''; return (n > 0 ? '+' : '') + n; }
   function pct(p, d) { var n = num(p); if (n == null) return '—'; return (n * 100).toFixed(d == null ? 1 : d) + '%'; }
-  function decToAm(dec) { var d = num(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function decToAm(dec) { return ODDS().decToAm(dec); }
+  function amToDec(am) { return ODDS().amToDec(am); }
   function uniq(a) { var seen = {}, out = []; (a || []).forEach(function (x) { var k = String(x); if (!seen[k]) { seen[k] = 1; out.push(x); } }); return out; }
   function fnv1a(s) { var h = 0x811c9dc5; s = str(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
   function marketWord(m) { var k = normMarket(m); return k === 'spreads' ? 'spread' : k === 'totals' ? 'total' : k === 'h2h' ? 'moneyline' : str(m); }
@@ -22643,6 +22665,34 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
     var lose = Math.max(0, 1 - p - q);
     return p * (d - 1) - lose;
   };
+  /* ------------------------------------------- THE EDGE-KERNEL CONVENTION
+     The edge-function kernels (EDPRICE, EDBOARD, EDSTAKE, EDDESK) each carried
+     a byte-identical copy of these five helpers. They are kept here, ONCE,
+     under their own name, because they are NOT the same functions as the
+     strict ones above and must not be swapped for them:
+       odds.amToDec     accepts ANY nonzero American number (a +50 is read as
+                        1.5), where americanToDecimal refuses |a| < 100. The
+                        kernels have always been lenient and their callers
+                        and tests rely on it.
+       odds.decToAm     ROUNDS to a whole American price (a display and a
+                        record value); decimalToAmerican does not round.
+       odds.probToAm    the same rounding, from a probability.
+       odds.breakEven   (1 - push) / decimal, to four places, with a push
+                        mass; breakEven above takes no push and does not round.
+       odds.devig2      two American prices, proportional no-vig, overround to
+                        four places (noVigTwoWay: strict prices, unrounded).
+     Not here on purpose: EDINTEL's impliedProb takes a DECIMAL price where
+     impliedProb above takes an American one — same name, different input. */
+  function oddsNum(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return Number.isFinite(n) ? n : null; }
+  function r4(v) { return v == null ? null : Math.round(v * 10000) / 10000; }
+  R.odds = {
+    amToDec: function (am) { var a = oddsNum(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); },
+    decToAm: function (dec) { var d = oddsNum(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); },
+    probToAm: function (p) { p = oddsNum(p); if (p == null || p <= 0 || p >= 1) return null; return R.odds.decToAm(1 / p); },
+    breakEven: function (am, push) { var d = R.odds.amToDec(am); if (!d) return null; return r4((1 - (oddsNum(push) || 0)) / d); },
+    devig2: function (amA, amB) { var a = R.odds.amToDec(amA), b = R.odds.amToDec(amB); if (!a || !b) return null; var ia = 1 / a, ib = 1 / b; return { a: ia / (ia + ib), b: ib / (ia + ib), overround: r4(ia + ib - 1) }; }
+  };
+
   /* Everything a price-aware panel shows, in one object. `prob` must be an
      explicit model probability for THIS wager at THIS line; when it is not
      available, every model-dependent field is null and `reason` says why. */
@@ -23700,10 +23750,19 @@ const EDBOARD: any = (globalThis as any).EDBOARD;
   function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
   function pct(p) { var n = num(p); return n == null ? '—' : Math.round(n * 100) + '%'; }
   function pts(v) { var n = num(v); if (n == null) return '—'; var a = Math.abs(r1(n)); return a + (a === 1 ? ' point' : ' points'); }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
-  function decToAm(d) { d = num(d); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
-  function probToAm(p) { p = num(p); if (p == null || p <= 0 || p >= 1) return null; return decToAm(1 / p); }
-  function breakEven(odds, push) { var P = PK(); if (P) return P.breakEven(odds, push); var d = amToDec(odds); return d ? (1 - (num(push) || 0)) / d : null; }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function probToAm(p) { return ODDS().probToAm(p); }
+  function breakEven(odds, push) { return ODDS().breakEven(odds, push); }
   function gradeOf(v, table) { if (v == null) return 'INSUFFICIENT'; for (var i = 0; i < table.length; i++) if (v >= table[i][0]) return table[i][1]; return 'INSUFFICIENT'; }
   function cap(s) { s = str(s); return s.charAt(0).toUpperCase() + s.slice(1); }
   function uniq(a) { var o = [], seen = {}; (a || []).forEach(function (x) { var k = typeof x === 'string' ? x : JSON.stringify(x); if (!seen[k]) { seen[k] = 1; o.push(x); } }); return o; }
@@ -25298,8 +25357,19 @@ const EDDESK: any = (globalThis as any).EDDESK;
   function P() { return root.EDPRICE || null; }
   function B() { return root.EDBOARD || null; }
   function R() { return root.EDRESEARCH || null; }
-  function amToDec(am) { var a = num(am); if (a == null || a === 0) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a); }
-  function decToAm(dec) { var d = num(dec); if (d == null || d <= 1) return null; return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); }
+  /* Odds arithmetic: ONE copy, lib/research_core.js R.odds (the edge-kernel
+     convention; see docs/odds-helpers-audit.md). Inlined ahead of the request
+     path in index.ts; required directly under Node. */
+  var ODDS_ = null;
+  function ODDS() {
+    if (ODDS_) return ODDS_;
+    var rc = root.EDResearch && root.EDResearch.odds ? root.EDResearch : null;
+    if (!rc && typeof require === 'function') { try { rc = require('../../../lib/research_core.js'); } catch (_) { rc = null; } }
+    if (!rc || !rc.odds) throw new Error('lib/research_core.js (R.odds) must be loaded before this kernel prices anything');
+    return (ODDS_ = rc.odds);
+  }
+  function amToDec(am) { return ODDS().amToDec(am); }
+  function decToAm(dec) { return ODDS().decToAm(dec); }
   function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
   function fmtLine(v) { var n = num(v); if (n == null) return ''; return (n > 0 ? '+' : '') + n; }
   function fmtUnits(v) { var n = num(v); return n == null ? '—' : n.toFixed(2) + 'u'; }
