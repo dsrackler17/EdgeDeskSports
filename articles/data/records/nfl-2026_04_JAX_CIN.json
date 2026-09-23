@@ -23,8 +23,8 @@
   "game_time": "2026-10-04T13:00:00.000Z",
   "game_when_label": "2026-10-04 13:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-22T21:13:11.423Z",
-  "generated_at": "2026-09-23T16:48:44.416Z",
+  "updated_at": "2026-09-23T21:26:32.400Z",
+  "generated_at": "2026-09-23T21:26:32.400Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk differs from the market by 4.4 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -66,11 +66,11 @@
       "Jacksonville Jaguars carries the stronger EdgeDesk offensive profile (#8 in EPA per play) and the better defensive rating with it, so the ratings point the same way on both sides of the ball.",
       "EdgeDesk’s independent projection makes it Cincinnati Bengals +1.4 with a fair total of 48.4 — approximately a one-score game, before any sportsbook number is consulted.",
       "The widest measured matchup on the board is Jacksonville Jaguars pass offence vs Cincinnati Bengals pass defence, which sits +0.229 from the league mean once the two ratings are combined the way the model combines them.",
-      "The largest uncertainty is quarterback information: Jacksonville Jaguars and Cincinnati Bengals have no confirmed starter on file, which materially affects how much confidence the exact number deserves."
+      "The largest uncertainty is availability: NFL injury report — not loaded in this session."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -1.3898563512013924,
+      "fair_spread": -1.4396374564255217,
       "fair_spread_text": "Cincinnati Bengals +1.4",
       "favourite": "Jacksonville Jaguars",
       "underdog": "Cincinnati Bengals",
@@ -104,8 +104,8 @@
       "moneyline": {
         "home": "Cincinnati Bengals",
         "away": "Jacksonville Jaguars",
-        "home_odds": "+123",
-        "away_odds": "-123",
+        "home_odds": "+124",
+        "away_odds": "-124",
         "note": "EdgeDesk’s own fair price, with no margin in it. It is not a quote and nobody offers it."
       },
       "outcome_range": {
@@ -950,32 +950,32 @@
         "rows": [
           {
             "k": "Confirmation",
-            "a": "STARTER NOT CONFIRMED",
-            "h": "STARTER NOT CONFIRMED",
+            "a": "STARTER CONFIRMED",
+            "h": "STARTER CONFIRMED",
             "note": "from the schedule feed’s own starter id"
           },
           {
             "k": "Quarterback",
-            "a": "not named — nobody has confirmed a starter",
-            "h": "not named — nobody has confirmed a starter",
+            "a": "Trevor Lawrence",
+            "h": "Joe Burrow",
             "note": null
           },
           {
             "k": "Roster check",
-            "a": "nothing to check until a starter is named",
-            "h": "nothing to check until a starter is named",
+            "a": "on the active roster",
+            "h": "on the active roster",
             "note": null
           },
           {
             "k": "Learned sample",
-            "a": "no starter to look up",
-            "h": "no starter to look up",
+            "a": "79 learned starts",
+            "h": "83 learned starts",
             "note": "starts the QB layer has actually absorbed"
           },
           {
             "k": "Model adjustment",
-            "a": "0.0 — an absence, not an average",
-            "h": "0.0 — an absence, not an average",
+            "a": "+0.104 rating units against this team’s own QB baseline",
+            "h": "+0.095 rating units against this team’s own QB baseline",
             "note": "this quarterback against his own team’s QB baseline. With no confirmed starter the term contributes nothing, which is not a claim that the position is league average"
           },
           {
@@ -986,9 +986,8 @@
           }
         ],
         "reads": [
-          "The quarterback difference is worth 0.0 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
-          "Jacksonville Jaguars’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Jacksonville Jaguars contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Nick Mullens, Trevor Lawrence.",
-          "Cincinnati Bengals’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Cincinnati Bengals contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Joe Flacco, Joe Burrow.",
+          "The quarterback difference is worth -0.0 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
+          "Both starters are confirmed by the schedule feed, so the quarterback term is priced from the learned value of the two players actually named.",
           "The learned QB layer is identity-keyed and value-only: it says how a quarterback has played, never how he is feeling, and it knows nothing about a start nobody has announced."
         ]
       },
@@ -1094,18 +1093,6 @@
       "items": [
         {
           "sev": "HIGH",
-          "label": "Jacksonville Jaguars — starting quarterback unknown",
-          "text": "No confirmed starter id for Jacksonville Jaguars. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
-          "label": "Cincinnati Bengals — starting quarterback unknown",
-          "text": "No confirmed starter id for Cincinnati Bengals. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
           "label": "availability not on file",
           "text": "NFL injury report — not loaded in this session.",
           "widening": null
@@ -1120,18 +1107,6 @@
           "sev": "MEDIUM",
           "label": "early-season sample",
           "text": "Only 31 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "home QB starter unknown",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "away QB starter unknown",
           "widening": null
         },
         {
@@ -1324,6 +1299,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-23T16:48:44.416Z"
+    "at": "2026-09-23T21:26:32.400Z"
   }
 }
