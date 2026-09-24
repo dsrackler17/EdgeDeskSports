@@ -1602,7 +1602,14 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-wr-f{display:flex;align-items:center;gap:8px;margin:7px 0 0 24px;font:10.5px 'JetBrains Mono',monospace;color:var(--faint);min-width:0}
 .fb-wr-f .ts{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .fb-wr-few{font-size:11.5px;color:var(--dim);padding:10px 0 0;border-top:1px solid var(--border)}
+.fb-wr-cols{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp3,12px);align-items:start}
+@media(min-width:900px){.fb-wr-cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.fb-wr-cols .fb-card.fb-wr{margin-bottom:0;padding-top:12px}
+.fb-wr .rs-pv-h{margin-bottom:2px}
+.fb-wr-q{font-size:12.5px;color:var(--dim);line-height:1.5;padding:8px 0 4px}
+.fb-wr-q small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px}
 @media(max-width:400px){.fb-card.fb-wr{padding:2px 12px 10px}.fb-wr-v,.fb-wr-w,.fb-wr-f,.fb-wr-u{margin-left:0}}
+@media(max-width:480px){.fb-wr-h .m,.fb-wr-f .ts{white-space:normal}.fb-wr-r{padding:9px 0}}
 /* research tools */
 .fb-tools{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:520px){.fb-tools{grid-template-columns:1fr 1fr}}
@@ -56747,37 +56754,68 @@ function fbWrRowHTML(x){
       +'<button class="fb-lnk" onclick="fbWrOpen(\''+edAttrJs(c.board)+'\',\''+edAttrJs(c.gid)+'\','+x.rank+')">Open research</button></div>'
     +'</div>';
 }
+/* One league's list. Each league is ranked only against itself: an NFL
+   gap and a college gap sit on different scales of expected error and
+   different data, so the two boards get two reading orders, side by side. */
+function fbWrPanel(which,cands,P){
+  var label=which==='nfl'?'NFL':'CFB';
+  function card(right,body){
+    return '<div class="fb-card fb-wr" id="fbWr-'+which+'"><div class="rs-pv-h"><span class="t">'+label+'</span>'
+      +'<span class="s">'+right+'</span></div>'+body+'</div>';
+  }
+  function quiet(t,small){return '<div class="fb-wr-q">'+t+(small?'<small>'+small+'</small>':'')+'</div>';}
+  /* the college slate joins when the FBS board loads, as it always has; the
+     panel can start that same load in place rather than inventing a list */
+  if(which==='cfb'&&!(FB.p4&&FB.p4.loadedAt)){
+    if(FB.p4&&FB.p4._loading)return card('loading',quiet('Loading the college slate…'));
+    return card('not loaded',quiet('The college slate loads with the FBS board.',
+      '<button class="fb-lnk" style="margin:8px 0 0" onclick="fbWrLoadCfb()">Load the college slate</button>'));
+  }
+  if(which==='cfb'&&FB.p4.engineErr)return card('unavailable',quiet('The FBS board did not load ('+fbEsc(FB.p4.engineErr)+'). Nothing is ranked rather than something invented.'));
+  if(!cands.length)return card('no games',quiet('No '+label+' games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed.'));
+  var res=P.rank(cands,FB_WR_N);
+  if(!res.items.length){
+    var by={};res.excluded.forEach(function(e){by[e.reasons[0]]=(by[e.reasons[0]]||0)+1;});
+    var parts=Object.keys(P.REASONS).filter(function(k){return by[k];}).map(function(k){return by[k]+' '+(FB_WR_REASON[k]||k);});
+    return card('none clear the gates',quiet('No '+label+' game clears the research gates right now.',
+      cands.length+' game'+(cands.length===1?'':'s')+' checked'+(parts.length?(': '+fbEsc(parts.join(' · '))):'')+'. Nothing is forced onto this list.'));
+  }
+  return card(res.eligible+' of '+cands.length+' clear the gates',
+    res.items.map(fbWrRowHTML).join('')
+    +(res.items.length<FB_WR_N?('<div class="fb-wr-few">Only '+res.items.length+' '+label+' game'+(res.items.length===1?' clears':'s clear')
+      +' the gates right now. Nothing is added to fill the list.</div>'):''));
+}
 function fbWrInner(rows){
   var P=window.EDResearchPriority,st=FB.ui.wrLayer||{};
   function head(r){return '<div class="fb-sechd"><span>5 Games Worth Researching</span><span class="r">'+r+'</span></div>';}
-  var note='<p class="rs-pv-note">Reading order, not a ranking of bets. Research signals can be wrong.</p>';
   if(!P)return head('not loaded')+'<div class="fb-quiet">The research-priority layer (lib/research_priority.js) did not load. Nothing is ranked rather than something invented.</div>';
   if(!fbWrLayerReady())return head(st.err?'unavailable':'loading')+'<div class="fb-quiet">'+(st.err
     ? 'The shared research layer did not load ('+fbEsc(st.err)+'), so there is no normalized gap or research flag to order by. Nothing is ranked rather than something invented.'
     : 'Loading the shared research layer…')+'</div>';
   var ix={};((FB.p4&&FB.p4.up)||[]).forEach(function(u){ix[String(u.g.game_id)]=u;});
   var cands=(rows||[]).map(function(r){return fbWrCandidate(r,ix);});
-  var res=P.rank(cands,FB_WR_N),scope=fbEsc(fbScopeLabel());
-  if(!res.items.length){
-    var by={};res.excluded.forEach(function(e){by[e.reasons[0]]=(by[e.reasons[0]]||0)+1;});
-    var parts=Object.keys(P.REASONS).filter(function(k){return by[k];}).map(function(k){return by[k]+' '+(FB_WR_REASON[k]||k);});
-    return head('none clear the gates · '+scope)+'<div class="fb-quiet">'+(cands.length
-      ? 'No game on the board clears the research gates right now.<small>'+cands.length+' game'+(cands.length===1?'':'s')+' checked'
-        +(parts.length?(': '+fbEsc(parts.join(' · '))):'')+'. Nothing is forced onto this list.</small>'
-      : 'No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed.')+'</div>'+note;
-  }
   var open=!!RS_TK_OPEN.fbWrHow;
-  return head(res.eligible+' of '+cands.length+' clear the gates · '+scope)
-    +'<div class="fb-card fb-wr">'+res.items.map(fbWrRowHTML).join('')
-    +(res.items.length<FB_WR_N?('<div class="fb-wr-few">Only '+res.items.length+' game'+(res.items.length===1?' clears':'s clear')
-      +' the gates right now. Nothing is added to fill the list.</div>'):'')
-    +note
+  return head('ranked by league')
+    +'<div class="fb-wr-cols">'
+    +fbWrPanel('nfl',cands.filter(function(c){return c.sport==='nfl';}),P)
+    +fbWrPanel('cfb',cands.filter(function(c){return c.sport==='cfb';}),P)
+    +'</div>'
+    +'<p class="rs-pv-note">Reading order, not a ranking of bets. Research signals can be wrong.</p>'
     +'<button class="fb-how" id="fbWrHowBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="fbWrHowCol" onclick="rsTkColToggle(\'fbWrHow\',\'Hide\',\'How this order is built →\')">'+(open?'Hide':'How this order is built →')+'</button>'
     +'<div class="fb-col'+(open?' open':'')+'" id="fbWrHowCol"><div class="fb-howbody">'
+    +'<b>Two lists.</b> NFL and CFB are ranked separately, each against its own league, up to five games each. '
     +'<b>Gates.</b> A game is listed only with a PREDICTED projection and a current market quote, and never when it is DATA FAULT, THIN DATA, on a stale quote, or has nothing to explain. '
     +'INVESTIGATE games appear only when they clear every gate, and are marked Higher uncertainty at a gap of 7+ pts, with incomplete inputs or with an unknown QB starter. '
-    +'<b>Order.</b> '+fbEsc(P.RULE)+'</div></div></div>';
+    +'<b>Order.</b> '+fbEsc(P.RULE)+'</div></div>';
 }
+/* start the FBS board's own load in place — the same call fbSetSport('p4') makes */
+window.fbWrLoadCfb=function(){
+  if(!FB.p4||FB.p4.loadedAt||FB.p4._loading)return;
+  edEvent('research_worth_researching_cfb_load',{surface:'worth_researching'});
+  FB.p4._loading=fbP4LoadGuarded(false).then(function(){FB.p4._loading=null;window.renderFootball();})
+    .catch(function(){FB.p4._loading=null;window.renderFootball();});
+  fbWrPaint();
+};
 window.fbWrOpen=function(sport,gid,rank){edEvent('research_game_open',{surface:'worth_researching',sport:sport,rank:rank});fbOpenGame(sport,gid);};
 /* The Today signals, folded under the reading order rather than repeated
    beside it: the same cards from the same fbTodayItems, one tap away, with
@@ -57048,7 +57086,8 @@ window.fbStartGo=function(which){
   }
   if(which==='today'){
     edEvent('research_signal_open',{surface:'start_here'});
-    var t=document.querySelector('#fbOverview .fb-today');
+    /* the reading order is where "today" starts; the Today cards fold under it */
+    var t=$('fbWr')||document.querySelector('#fbOverview .fb-today');
     if(t){try{t.scrollIntoView({behavior:'smooth',block:'center'});}catch(_){}}
     return;
   }
