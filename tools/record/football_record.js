@@ -126,9 +126,12 @@ async function nflSources(ledger, now, log) {
 function needsEspn(e, nowMs) {
   const k = Date.parse(e.kickoff);
   if (!Number.isFinite(k)) return false;
-  if (k > nowMs) return k - nowMs <= QUOTE_DAYS * DAY && (!e.market_pick || !e.entry);
+  /* ahead: until it has a quote, and every run inside the pre-close window,
+     where the last line before kickoff is kept as the close's fallback */
+  if (k > nowMs) return k - nowMs <= QUOTE_DAYS * DAY && (!e.market_pick || !e.entry || k - nowMs <= C.PRECLOSE_HOURS * 3600000);
   return nowMs - k <= CHASE_DAYS * DAY && (!e.final || !e.close || e.close.home_line == null);
 }
+function lacksClose(e) { return !e.close || e.close.home_line == null; }
 
 async function cfbSources(ledger, now, log) {
   const nowMs = Date.parse(now);
@@ -144,26 +147,47 @@ async function cfbSources(ledger, now, log) {
     try { Object.assign(espn, S.parseEspnScoreboard(JSON.parse(await S.fetchText(S.espnScoreboardUrl('cfb', d), 30000)))); ok++; }
     catch (e) { bad++; }
   }
-  /* a game the day's scoreboard did not carry (the groups filter, a moved
-     date) is asked for by its own id */
-  const missing = want.filter((id) => !espn[id]).slice(0, MAX_ESPN_SUMMARIES);
-  let sum = 0;
-  for (const id of missing) {
-    try { const g = S.parseEspnSummary(JSON.parse(await S.fetchText(S.espnSummaryUrl('cfb', id), 30000)), id); if (g) { espn[id] = g; sum++; } }
-    catch (_) { /* noted in the count */ }
+  /* WHAT THE SCOREBOARD SAID ABOUT FINISHED GAMES, in the log on every run:
+     the first live run found 160 finished games and 0 closes, and only a
+     count like this says whether that is a parser or a feed with no odds. */
+  const fin = want.map((id) => espn[id]).filter((g) => g && g.completed);
+  log.push('espn finished games on the scoreboard: ' + fin.length + ', carrying odds ' + fin.filter((g) => g.odds_n > 0).length
+    + ', with a readable line ' + fin.filter((g) => g.close && g.close.home_line != null).length);
+  /* asked for by its own id: a game the day's scoreboard did not carry (the
+     groups filter, a moved date), then a finished game it carried with no
+     line — the summary's odds block can outlive the scoreboard's. Newest
+     first, capped per run; the next run takes the rest. */
+  const byKick = (a, b) => Date.parse(ledger.games[b].kickoff) - Date.parse(ledger.games[a].kickoff);
+  const absent = want.filter((id) => !espn[id]);
+  const bare = want.filter((id) => espn[id] && espn[id].completed && (!espn[id].close || espn[id].close.home_line == null)
+    && lacksClose(ledger.games[id])).sort(byKick);
+  const ask = absent.concat(bare).slice(0, MAX_ESPN_SUMMARIES);
+  let sum = 0, sumLine = 0;
+  for (const id of ask) {
+    try {
+      const g = S.parseEspnSummary(JSON.parse(await S.fetchText(S.espnSummaryUrl('cfb', id), 30000)), id);
+      if (!g) continue;
+      sum++;
+      if (g.close && g.close.home_line != null) sumLine++;
+      if (!espn[id] || (g.close && g.close.home_line != null) || (g.market && !espn[id].market)) espn[id] = g;
+    } catch (_) { /* noted in the count */ }
   }
-  log.push('espn: ' + ok + ' scoreboard day(s) read' + (bad ? ', ' + bad + ' failed' : '') + ', ' + sum + '/' + missing.length + ' summaries, ' + want.length + ' game(s) wanted');
+  log.push('espn: ' + ok + ' scoreboard day(s) read' + (bad ? ', ' + bad + ' failed' : '') + ', ' + sum + '/' + ask.length
+    + ' summaries (' + sumLine + ' with a closing line), ' + want.length + ' game(s) wanted');
 
-  const t = { market: 0, close: 0, final: 0, contested: 0 };
+  const t = { market: 0, close: 0, final: 0, contested: 0, last_quote: 0, close_from_last_quote: 0 };
   Object.keys(ledger.games).forEach((id) => {
     const e = ledger.games[id], es = espn[id], cs = sched[id];
     if (es && es.market && C.fillMarket(e, es.market, now)) t.market++;
+    if (es && es.market && C.noteQuote(e, es.market, now)) t.last_quote++;
     if (es && es.close && C.setClose(e, es.close, now)) t.close++;
     /* two finals that disagree settle nothing */
     const a = es && es.final, b = cs && cs.final;
     if (a && b && (a.home_score !== b.home_score || a.away_score !== b.away_score)) { t.contested++; return; }
     const f = a && b ? { home_score: a.home_score, away_score: a.away_score, source: 'espn+cfbfastR' } : (a || b);
     if (f && Date.parse(e.kickoff) <= nowMs && C.setFinal(e, f, now)) t.final++;
+    /* the source kept no close for a finished game: its last pregame line */
+    if (C.closeFromLastQuote(e, now)) t.close_from_last_quote++;
   });
   log.push('cfb filled: ' + JSON.stringify(t));
 }
@@ -196,7 +220,7 @@ function buildSummary(ledgers, sums, now) {
     ],
     sources: {
       nfl: { projection: SLATES.nfl, market: 'nflverse consensus (the slate’s own reference line)', close: 'nflverse consensus at the final', final: 'nflverse' },
-      cfb: { projection: SLATES.cfb, market: 'ESPN scoreboard line (named book)', close: 'ESPN line frozen at kickoff', final: 'ESPN and cfbfastR, which must agree' },
+      cfb: { projection: SLATES.cfb, market: 'ESPN scoreboard line (named book)', close: 'ESPN line frozen at kickoff; where ESPN keeps none for a finished game, the last ESPN line this record captured before kickoff', final: 'ESPN and cfbfastR, which must agree' },
     },
     sports: { nfl: sums.nfl, cfb: sums.cfb },
     cfb_groups: {},

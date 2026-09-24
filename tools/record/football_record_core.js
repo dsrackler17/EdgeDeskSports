@@ -236,6 +236,42 @@ function fillMarket(e, q, nowIso) {
   return did;
 }
 
+/* THE LAST PREGAME QUOTE — the close when the source keeps none.
+
+   ESPN's scoreboard carries a line while a college game is ahead and, it
+   turned out on the first live run, none once the game is final: 160
+   finished games, 0 closes. So inside the last PRECLOSE_HOURS before kickoff
+   every run keeps the latest line it saw, and a finished game the source
+   gave no close is graded against that — the last number this record
+   captured before kickoff, from the same source, labelled as such. The same
+   shape as the edges pipeline's `last_tick` close. It changes only when the
+   line does, so a quiet market writes nothing. */
+const PRECLOSE_HOURS = 36;
+function noteQuote(e, q, nowIso) {
+  if (!e || !q) return false;
+  const now = ms(nowIso), kick = ms(e.kickoff);
+  if (now == null || kick == null || now >= kick || kick - now > PRECLOSE_HOURS * 3600000) return false;
+  const mq = quote(q, nowIso);
+  if (!mq || mq.home_line == null) return false;
+  const lq = e.last_quote;
+  if (lq && same(lq.home_line, mq.home_line) && same(lq.total, mq.total) && lq.book === mq.book
+    && family(lq.source) === family(mq.source)) return false;
+  e.last_quote = mq;
+  return true;
+}
+/** A finished game with no close from its source takes its last pregame
+    quote as the close. Never before the final, never a quote from after
+    kickoff, never over a close the source did give. */
+function closeFromLastQuote(e, nowIso) {
+  if (!e || !e.last_quote || !e.final) return false;
+  if (e.close && e.close.home_line != null) return false;
+  const now = ms(nowIso), kick = ms(e.kickoff), lq = e.last_quote;
+  if (now == null || kick == null || now < kick || !(ms(lq.at) < kick)) return false;
+  e.close = { home_line: lq.home_line, total: lq.total, source: lq.source, book: lq.book,
+    basis: 'last pregame capture', at: lq.at };
+  return true;
+}
+
 /** The closing line, once the game is under way. Fills what is missing;
     never replaces a close already held from the same source. */
 function setClose(e, c, nowIso) {
@@ -459,7 +495,7 @@ function gradeLedger(ledger, nowIso) {
 }
 
 module.exports = {
-  SCHEMA, SUMMARY_SCHEMA, GUARD, LEAN, BREAK_EVEN_PCT, MODEL,
-  emptyLedger, projectionFromSlate, groupOf, recordProjection, fillMarket, setClose, setFinal,
+  SCHEMA, SUMMARY_SCHEMA, GUARD, LEAN, BREAK_EVEN_PCT, MODEL, PRECLOSE_HOURS,
+  emptyLedger, projectionFromSlate, groupOf, recordProjection, fillMarket, noteQuote, closeFromLastQuote, setClose, setFinal,
   gradeGame, gradeLedger, summarize, clvPts, leanSpread, leanTotal, family, num,
 };

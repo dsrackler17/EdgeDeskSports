@@ -39,7 +39,7 @@ either slate is rebuilt). Nobody edits these by hand.
 | | Market at entry | Close | Final |
 |---|---|---|---|
 | NFL | nflverse consensus — the slate's own reference line from the same build | nflverse consensus once the result is posted | nflverse |
-| CFB | ESPN scoreboard line (the book ESPN names) | ESPN's line frozen at kickoff | ESPN and cfbfastR, which must agree |
+| CFB | ESPN scoreboard line (the book ESPN names) | ESPN's line frozen at kickoff; where ESPN keeps none for a finished game, the last ESPN line this record captured before kickoff (`close.basis: "last pregame capture"`) | ESPN and cfbfastR, which must agree |
 
 ## Commands
 

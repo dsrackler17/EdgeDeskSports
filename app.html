@@ -10021,7 +10021,7 @@ function rfbRenderGames(L){
     var ouTxt=g.total&&g.total.side?(g.total.side==='over'?'O':'U'):null;
     var cv=g.clv_entry&&g.clv_entry.spread?g.clv_entry.spread.pts:null;
     var when='';try{when=new Date(e.kickoff).toLocaleDateString([], {month:'short',day:'numeric'});}catch(_){}
-    var tip='First number '+rfbLine(e.first&&e.first.home_line)+(e.revisions?(' · revised '+e.revisions+'×'):'')+(ent?(' · entry quote '+(ent.book||ent.source||'')):'')+(g.beyond_guard?' · beyond the line guard':'');
+    var tip='First number '+rfbLine(e.first&&e.first.home_line)+(e.revisions?(' · revised '+e.revisions+'×'):'')+(ent?(' · entry quote '+(ent.book||ent.source||'')):'')+(cl&&cl.basis?' · close: '+cl.basis+(cl.book?' ('+cl.book+')':''):'')+(g.beyond_guard?' · beyond the line guard':'');
     h+='<tr title="'+recEsc(tip)+'"><td>'+recEsc(when)+(e.week!=null?' <span class="muted">w'+e.week+'</span>':'')+'</td>'
       +'<td style="text-align:left">'+recEsc(ac)+' @ '+recEsc(hc)+(g.beyond_guard?' <span class="rtag small">guard</span>':'')+'</td>'
       +'<td>'+recEsc(hc)+' '+rfbLine(e.pick&&e.pick.home_line)+(e.pick&&e.pick.total!=null?' <span class="muted">'+Number(e.pick.total).toFixed(1)+'</span>':'')+'</td>'
