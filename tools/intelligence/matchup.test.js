@@ -87,12 +87,17 @@ function avFor(name) { return AVAIL_IX[cavNorm(name)] || null; }
 function pickBriefSubject() {
   const seen = {};
   SLATE.games.forEach((g) => { [g.home_team_id, g.away_team_id].forEach((k) => { seen[k] = (seen[k] || 0) + 1; }); });
+  /* Only the NAMED team has to be unique: the question names one programme.
+     A window spanning two weekends has almost no P4 game whose two teams
+     both play once (0 of 49 on the 2026-09-23 card), but plenty whose home or
+     away side does. */
   const eligible = SLATE.games.filter((g) => g.model_status === 'PREDICTED'
     && g.home_fbs_group === 'p4' && g.away_fbs_group === 'p4'
-    && Date.parse(g.kickoff) > NOW && seen[g.home_team_id] === 1 && seen[g.away_team_id] === 1
+    && Date.parse(g.kickoff) > NOW && (seen[g.home_team_id] === 1 || seen[g.away_team_id] === 1)
     && rkFor(g.home_team) && rkFor(g.away_team))
     .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
-  return eligible.length ? eligible[0].home_team : 'Texas Tech';
+  if (!eligible.length) return 'Texas Tech';
+  return seen[eligible[0].home_team_id] === 1 ? eligible[0].home_team : eligible[0].away_team;
 }
 const BRIEF_SUBJECT = pickBriefSubject();
 

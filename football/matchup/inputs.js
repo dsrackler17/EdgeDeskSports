@@ -804,6 +804,9 @@ function buildRequest(ctx, o) {
     kickoff: g.start_date };
   const avPolicy = { home: POLICY.forGame(policyGame, 'home', now), away: POLICY.forGame(policyGame, 'away', now) };
   const avEvidence = { home: 'NONE', away: 'NONE' };
+  /* when each side's availability evidence was read — the QB rows below cite
+     it, and they run in a different loop from the one that computes it */
+  const avAsOf = { home: null, away: null };
   [['home', ih, homeFbs, g.home_team], ['away', ia, awayFbs, g.away_team]].forEach(([side, list, isFbs, name]) => {
     const pol = avPolicy[side];
     const t = ctx.availability_by_team[normKey(name)] || null;
@@ -812,6 +815,7 @@ function buildRequest(ctx, o) {
     const comprehensive = !!(report && report.comprehensive);
     const observedAt = report ? report.published_at : (t && t.observed_at) || ctx.availability_as_of;
     const evidenceAsOf = report ? (report.retrieved_at || report.published_at) : ctx.availability_as_of;
+    avAsOf[side] = evidenceAsOf;
     const evidenceAge = hoursSince(observedAt || evidenceAsOf, now);
     const polNote = pol && pol.why ? ' ' + pol.why + '.' : '';
     if (list && list.length) {
@@ -981,7 +985,7 @@ function buildRequest(ctx, o) {
       qbAvailEvidence[side] = 'COMPREHENSIVE_SILENCE';
       qbAvailWhy[side] = 'named nowhere on a comprehensive report for this game';
       contract.push(row('qb_availability', side, 'USABLE',
-        { source: pol && pol.conference, as_of: evidenceAsOf,
+        { source: pol && pol.conference, as_of: avAsOf[side],
           detail: 'the comprehensive ' + (pol && pol.conference) + ' availability report for this game designates '
             + 'every player and does not name him, which is a report that he is available' }));
     } else if (pol && pol.state === 'NOT_REQUIRED_FOR_THIS_GAME') {
