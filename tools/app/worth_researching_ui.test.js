@@ -16,8 +16,10 @@
         the research layer's window) never appear;
      3  INVESTIGATE appears only when otherwise eligible, and a 7+ pt gap or
         an unknown QB is labelled Higher uncertainty;
-     4  five rows when more qualify, fewer when fewer do, an honest empty
-        state when none do, and a loading / failed state for the layer;
+     4  NFL and CFB are two lists, each ranked only against its own league:
+        five rows each when more qualify, fewer when fewer do, an honest
+        empty state when none do, a not-loaded / loading / failed state for
+        the college slate, and a loading / failed state for the layer;
      5  every row shows rank, matchup, kickoff, league, EdgeDesk and market
         spreads, the difference, one "why", the status and Open research —
         which goes through the board's existing fbOpenGame;
@@ -127,14 +129,20 @@ const BOARD = [
   nflRow('203', 'Kansas City Chiefs', 'Miami Dolphins', 9, 3, { ageH: 10 }),   /* captured 10h ago: stale by the layer  */
   nflRow('204', 'Seattle Seahawks', 'Los Angeles Chargers', 7, 3.5, { src: 'nflverse reference' }),  /* reference line  */
   nflRow('205', 'Atlanta Falcons', 'New Orleans Saints', 3, 2),               /* AGREEMENT 1 pt: nothing to explain    */
-  nflRow('206', 'Denver Broncos', 'Los Angeles Rams', 20, 3)                   /* DATA FAULT: past the 14-pt guard      */
+  nflRow('206', 'Denver Broncos', 'Los Angeles Rams', 20, 3),                  /* DATA FAULT: past the 14-pt guard      */
+  nflRow('207', 'Green Bay Packers', 'Minnesota Vikings', 7, 3),               /* eligible: 4 pts                       */
+  nflRow('208', 'Dallas Cowboys', 'Washington Commanders', 5.5, 3),            /* eligible: 2.5 pts                     */
+  nflRow('209', 'Pittsburgh Steelers', 'Cincinnati Bengals', 1, -2),           /* eligible: a flip                      */
+  cfbRow(109, 'Georgia', 'Alabama', 6, 2),                                     /* eligible: 4 pts                       */
+  cfbRow(110, 'LSU', 'Tennessee', 5, 2.5),                                     /* eligible: 2.5 pts                     */
+  cfbRow(111, 'Michigan', 'Ohio State', -3, -6.5)                              /* eligible: closer than the market      */
 ];
 const BY_GID = {}; BOARD.forEach((r) => { BY_GID[r.gid] = r; });
 
 /* ---- the world the module runs in --------------------------------------- */
 function makeCtx(opts) {
   opts = opts || {};
-  const fired = [], opened = [], scripts = [], gx = [];
+  const fired = [], opened = [], scripts = [], gx = [], loads = [];
   const c = { console, Date, Math, JSON, String, Number, Object, Array, isFinite, RegExp, Error, Promise, parseFloat, parseInt };
   c.window = c; c.self = c; c.globalThis = c;
   vm.createContext(c);
@@ -144,7 +152,9 @@ function makeCtx(opts) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'football', 'params.js'), 'utf8'), c);
   vm.runInContext(PAGE_HELPERS, c);
   Object.assign(c, {
-    FB: { ui: opts.ui || {}, p4: { up: CFB_UP } }, FB_LOOKAHEAD_D: 12, RS_TK_OPEN: {},
+    FB: { ui: opts.ui || {}, p4: { up: CFB_UP, loadedAt: opts.cfbLoaded === false ? 0 : NOW, _loading: opts.cfbLoading ? {} : null,
+      engineErr: opts.cfbErr || null } }, FB_LOOKAHEAD_D: 12, RS_TK_OPEN: {},
+    fbP4LoadGuarded: (force) => { loads.push(force); return new Promise(() => {}); }, renderFootball: () => {},
     $: () => null, document: { getElementById: () => null },
     fbScopeLabel: () => 'NFL + FBS', fbGameRows: () => opts.rows || BOARD,
     fbScript: (src) => { scripts.push(src); return Promise.resolve(); },
@@ -161,12 +171,19 @@ function makeCtx(opts) {
         game: { sport: 'CFB', game_id: r.gid, home: r.home, away: r.away }, model: { engine: p }, market,
         quality: r._quality, quality_categories: Object.keys(r._quality) });
     },
-    __fired: fired, __opened: opened, __scripts: scripts, __gx: gx
+    __fired: fired, __opened: opened, __scripts: scripts, __gx: gx, __loads: loads
   });
   vm.runInContext(SRC, c, { filename: 'app.html:worth-researching' });
   return c;
 }
 function rowsOf(html) { return html.split('<div class="fb-wr-r">').slice(1); }
+function panelOf(html, which) {
+  const a = html.indexOf('id="fbWr-' + which + '"');
+  if (a < 0) return '';
+  const b = which === 'nfl' ? html.indexOf('id="fbWr-cfb"', a) : html.indexOf('<p class="rs-pv-note">', a);
+  return html.slice(a, b < 0 ? undefined : b);
+}
+const titles = (rows) => rows.map((r) => (r.match(/<span class="m">([^<]+)<\/span>/) || [])[1]);
 
 /* ======================================================================== */
 /* 1. THE FULL BOARD                                                        */
@@ -174,12 +191,26 @@ function rowsOf(html) { return html.split('<div class="fb-wr-r">').slice(1); }
 const C = makeCtx();
 const before = JSON.stringify(BOARD);
 const HTML = C.fbWrInner(BOARD);
-const ROWS = rowsOf(HTML);
+const NFLP = panelOf(HTML, 'nfl'), CFBP = panelOf(HTML, 'cfb');
+const NROWS = rowsOf(NFLP), CROWS = rowsOf(CFBP), ROWS = NROWS.concat(CROWS);
 eq('the board is read without changing a row, a projection or a market', JSON.stringify(BOARD), before);
 has(HTML, '5 Games Worth Researching', 'the section is titled');
-eq('more than five eligible: exactly five rows', ROWS.length, 5);
-has(HTML, '6 of 14 clear the gates', 'and the header says how many cleared of how many');
-same('ranked 1 to 5', ROWS.map((r) => (r.match(/<span class="n">(\d)<\/span>/) || [])[1]), ['1', '2', '3', '4', '5']);
+has(HTML, '<span class="r">ranked by league</span>', 'and says the leagues are ranked separately');
+chk('NFL and CFB each have their own panel, NFL first', NFLP && CFBP && HTML.indexOf('id="fbWr-nfl"') < HTML.indexOf('id="fbWr-cfb"'));
+has(NFLP, '<span class="t">NFL</span>', 'the NFL panel is labelled');
+has(CFBP, '<span class="t">CFB</span>', 'the CFB panel is labelled');
+eq('NFL: more than five eligible, exactly five rows', NROWS.length, 5);
+eq('CFB: more than five eligible, exactly five rows', CROWS.length, 5);
+has(NFLP, '6 of 9 clear the gates', 'the NFL panel counts NFL games only');
+has(CFBP, '6 of 11 clear the gates', 'the CFB panel counts CFB games only');
+[NROWS, CROWS].forEach((rows, i) => same((i ? 'CFB' : 'NFL') + ' is ranked 1 to 5 on its own',
+  rows.map((r) => (r.match(/<span class="n">(\d)<\/span>/) || [])[1]), ['1', '2', '3', '4', '5']));
+chk('every NFL row is an NFL game', NROWS.every((r) => /fbWrOpen\(&#39;nfl&#39;|fbWrOpen\('nfl'/.test(r) && /<span class="ts">NFL · /.test(r)));
+chk('every CFB row is a CFB game', CROWS.every((r) => /fbWrOpen\(&#39;p4&#39;|fbWrOpen\('p4'/.test(r) && /<span class="ts">CFB · /.test(r)));
+/* one league never moves the other's list */
+const nflOnly = C.fbWrInner(BOARD.filter((r) => r.sport === 'nfl')), cfbOnly = C.fbWrInner(BOARD.filter((r) => r.sport === 'p4'));
+eq('the NFL list is the same with or without college games on the board', panelOf(nflOnly, 'nfl'), NFLP);
+eq('the CFB list is the same with or without NFL games on the board', panelOf(cfbOnly, 'cfb'), CFBP);
 
 /* the candidates carry the board's own statuses, verbatim */
 const ix = {}; CFB_UP.forEach((u) => { ix[String(u.g.game_id)] = u; });
@@ -208,10 +239,12 @@ eq('Clemson is out: the quote aged past the window after its research object was
 eq('the 10h NFL quote is out as stale', reasons['nfl|203'], 'STALE_MARKET');
 eq('the 1-pt NFL agreement has nothing to explain', reasons['nfl|205'], 'NOTHING_TO_EXPLAIN');
 eq('Denver is out as a data fault', reasons['nfl|206'], 'DATA_FAULT');
-eq('six are eligible', R0.eligible, 6);
-same('the list is the ordering layer\'s top five, in its order',
-  ROWS.map((r) => (r.match(/<span class="m">([^<]+)<\/span>/) || [])[1]),
-  R0.items.slice(0, 5).map((x) => x.candidate.away + ' @ ' + x.candidate.home));
+eq('twelve are eligible across both leagues', R0.eligible, 12);
+const byLeague = (sport) => C.EDResearchPriority.rank(BOARD.filter((r) => r.sport === sport).map((r) => C.fbWrCandidate(r, ix)), 5);
+same('the NFL list is the ordering layer\'s NFL top five, in its order', titles(NROWS),
+  byLeague('nfl').items.map((x) => x.candidate.away + ' @ ' + x.candidate.home));
+same('the CFB list is the ordering layer\'s CFB top five, in its order', titles(CROWS),
+  byLeague('p4').items.map((x) => x.candidate.away + ' @ ' + x.candidate.home));
 
 /* every row carries what the spec asks for, and nothing more */
 ROWS.forEach((r, i) => {
@@ -246,8 +279,11 @@ const qb = ROWS.find((r) => r.indexOf('New York Jets @ Chicago Bears') >= 0);
 chk('an NFL game with an unknown QB is listed', !!qb);
 has(qb || '', 'Higher uncertainty · QB starter unknown', 'and says why its uncertainty is higher');
 /* the consensus line is honest about what it is */
-const cons = [HTML].concat(ROWS).join('');
-chk('a game on a consensus line says so', /Oklahoma @ Texas[\s\S]*?consensus line|Los Angeles Chargers @ Seattle Seahawks[\s\S]*?consensus line/.test(cons));
+const consRow = rowsOf(C.fbWrInner([BY_GID['204'], BY_GID['201']])).find((r) => r.indexOf('Los Angeles Chargers @ Seattle Seahawks') >= 0) || '';
+has(consRow, '<span class="ts">NFL · ', 'a game on a consensus line is listed when it earns a place');
+chk('and says it is on a consensus line, with no invented quote age', /· consensus line<\/span>/.test(consRow) && !/market \d+(s|m|h) ago/.test(consRow));
+chk('the full board ranks both consensus-line games below captured quotes in their leagues',
+  titles(NROWS).indexOf('Los Angeles Chargers @ Seattle Seahawks') < 0 && titles(CROWS).indexOf('Oklahoma @ Texas') < 0);
 chk('a captured quote carries its age', /market \d+(s|m|h) ago/.test(HTML));
 
 /* the reading-order note and the rule */
@@ -261,11 +297,14 @@ chk('the same board shuffled renders the same list', C.fbWrInner(BOARD.slice().r
 /* ======================================================================== */
 /* 2. OPEN RESEARCH GOES THROUGH THE EXISTING ROUTE                          */
 /* ======================================================================== */
-const call = (ROWS[0].match(/onclick="(fbWrOpen\([^"]*\))"/) || [])[1];
-chk('the action calls fbWrOpen', !!call, ROWS[0].slice(-300));
-vm.runInContext(String(call).replace(/&#39;/g, "'"), C);
-eq('which opens the game through fbOpenGame', C.__opened.length, 1);
-chk('with the board sport and game id', C.__opened[0] && ['p4', 'nfl'].indexOf(C.__opened[0][0]) >= 0 && BY_GID[C.__opened[0][1]]);
+[NROWS[0], CROWS[0]].forEach((row, i) => {
+  const call = (row.match(/onclick="(fbWrOpen\([^"]*\))"/) || [])[1];
+  chk('the action calls fbWrOpen (' + (i ? 'CFB' : 'NFL') + ')', !!call, row.slice(-300));
+  vm.runInContext(String(call).replace(/&#39;/g, "'"), C);
+});
+eq('which opens each game through fbOpenGame', C.__opened.length, 2);
+chk('an NFL row opens the NFL board game', C.__opened[0] && C.__opened[0][0] === 'nfl' && BY_GID[C.__opened[0][1]]);
+chk('a CFB row opens the FBS board game', C.__opened[1] && C.__opened[1][0] === 'p4' && BY_GID[C.__opened[1][1]]);
 chk('and counts the open on the existing analytics event',
   C.__fired.some((f) => f[0] === 'research_game_open' && f[1].surface === 'worth_researching' && f[1].rank === 1));
 has(APP, 'window.fbOpenGame=function(sport,gid){', 'fbOpenGame is the board\'s existing opener');
@@ -274,16 +313,35 @@ has(APP, 'window.fbOpenGame=function(sport,gid){', 'fbOpenGame is the board\'s e
 /* 3. FEWER, NONE, AND A LAYER THAT IS NOT THERE                            */
 /* ======================================================================== */
 let h = makeCtx().fbWrInner([BY_GID['101'], BY_GID['201'], BY_GID['103']]);
-eq('fewer than five eligible: that many rows', rowsOf(h).length, 2);
-has(h, 'Only 2 games clear the gates right now. Nothing is added to fill the list.', 'and it says nothing was added');
+eq('fewer than five eligible: one NFL row', rowsOf(panelOf(h, 'nfl')).length, 1);
+eq('and one CFB row', rowsOf(panelOf(h, 'cfb')).length, 1);
+has(panelOf(h, 'nfl'), 'Only 1 NFL game clears the gates right now. Nothing is added to fill the list.', 'the NFL panel says nothing was added');
+has(panelOf(h, 'cfb'), 'Only 1 CFB game clears the gates right now. Nothing is added to fill the list.', 'and so does the CFB panel');
 h = makeCtx().fbWrInner([BY_GID['103'], BY_GID['104'], BY_GID['105']]);
 eq('none eligible: no rows', rowsOf(h).length, 0);
-has(h, 'No game on the board clears the research gates right now.', 'the empty state says so');
-has(h, '3 games checked: 1 data fault · 1 thin data · 1 stale quote', 'and why, by gate');
-has(h, 'Nothing is forced onto this list.', 'without forcing anything onto it');
+has(panelOf(h, 'cfb'), 'No CFB game clears the research gates right now.', 'the CFB empty state says so');
+has(panelOf(h, 'cfb'), '3 games checked: 1 data fault · 1 thin data · 1 stale quote', 'and why, by gate');
+has(panelOf(h, 'cfb'), 'Nothing is forced onto this list.', 'without forcing anything onto it');
+has(panelOf(h, 'nfl'), 'No NFL games inside the next 12 days in the schedule feed.', 'a league with no games says its feed is empty');
 h = makeCtx().fbWrInner([]);
-has(h, 'No games inside the next 12 days in the schedule feed.', 'an empty board says the feed is empty');
+has(h, 'No NFL games inside the next 12 days in the schedule feed.', 'an empty board says the NFL feed is empty');
+has(h, 'No CFB games inside the next 12 days in the schedule feed.', 'and the CFB feed');
 lacks(h, 'fb-wr-r', 'and lists nothing');
+/* the college slate still joins only when the FBS board loads */
+const U = makeCtx({ cfbLoaded: false });
+h = U.fbWrInner(BOARD.filter((r) => r.sport === 'nfl'));
+eq('before the college slate loads, the NFL list is already there', rowsOf(panelOf(h, 'nfl')).length, 5);
+has(panelOf(h, 'cfb'), 'The college slate loads with the FBS board.', 'and the CFB panel says why it is empty');
+has(panelOf(h, 'cfb'), 'onclick="fbWrLoadCfb()">Load the college slate</button>', 'with a way to load it in place');
+lacks(panelOf(h, 'cfb'), 'fb-wr-r', 'rather than a list');
+U.fbWrLoadCfb(); U.fbWrLoadCfb();
+same('the button starts the FBS board\'s own load, once', U.__loads, [false]);
+chk('and records it', U.__fired.some((f) => f[0] === 'research_worth_researching_cfb_load'));
+has(U.fbWrInner(BOARD.filter((r) => r.sport === 'nfl')), 'Loading the college slate', 'the panel shows the load in flight');
+has(APP, 'FB.p4._loading=fbP4LoadGuarded(false).then(function(){FB.p4._loading=null;window.renderFootball();})',
+  'the same load call fbSetSport(\'p4\') makes');
+has(makeCtx({ cfbErr: 'engine threw' }).fbWrInner(BOARD), 'The FBS board did not load (engine threw). Nothing is ranked rather than something invented.',
+  'a failed FBS load says so and ranks nothing');
 
 const L = makeCtx({ layer: false });
 h = L.fbWrInner(BOARD);
@@ -310,6 +368,7 @@ chk('the module sits under the snapshot and above the Today signals',
   && OV.indexOf("'<div id=\"fbWr\">'+fbWrInner(rows)+'</div>'") < OV.indexOf('Today in football'));
 has(OV, "fbWrTodayFold(items,rsTkToday(items,'fbToday'", 'the Today signals fold under it rather than repeating beside it');
 has(fnSrc('fbRenderOverview'), 'if(FB.at)fbWrEnsureLayer();', 'the overview asks for the research layer once the engine is up');
+has(APP, "var t=$('fbWr')||document.querySelector('#fbOverview .fb-today');", '"Research today" lands on the reading order, not a folded card');
 const T = makeCtx();
 const items = [{ pri: 'major' }, { pri: 'neg' }, { pri: 'warn' }, { pri: 'info' }];
 const fold = T.fbWrTodayFold(items, '<div class="fb-today">CARDS</div>');
