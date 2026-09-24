@@ -1,0 +1,94 @@
+# EdgeDesk Football — the model's own record, NFL and CFB.
+#
+# THIS IS NOT THE EDGES RECORD. The Record tab's edges record grades rows of
+# `signals` — prices the capture flagged — and nothing here reads or writes
+# them. This job grades the NUMBER the football model publishes on the two
+# slates (football/nfl/slate.json, football/fbs/slate.json): the pregame fair
+# spread, total and win probability, against the closing line and the final,
+# with closing-line value in points. tools/record/football_record_core.js
+# holds the rules; record/football/ holds the record.
+#
+# WHEN IT RUNS
+#   · right after either slate is rebuilt (workflow_run), so the market quote
+#     is taken as close as possible to the moment the number was published;
+#   · hourly in season, which is what catches the closes and finals;
+#   · by hand, with `backfill` to replay every committed version of the two
+#     slates from git history — the commit time is the proof each replayed
+#     number was public before kickoff.
+#
+# NO SECRET. Every source is public and keyless (nflverse, cfbfastR, ESPN);
+# the record is committed with GITHUB_TOKEN. A source that is down is a line
+# in the log and a game that waits, never a failed run: nothing is estimated.
+name: Football model record
+
+on:
+  schedule:
+    - cron: '47 * * 8-12,1 *'       # hourly, August through January
+    - cron: '47 12 * 2-7 1'         # Mondays out of season: settles stragglers, finds nothing
+  workflow_run:
+    workflows:
+      - 'Starter context and research profiles'
+      - 'Football weekly build'
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: 'Replay every committed version of both slates from git history first'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-model-record
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        if: ${{ !inputs.backfill }}
+        with:
+          ref: main
+
+      # The backfill needs the slates' history, not the whole repository's
+      # blobs: a blob-less clone fetches only the versions it replays.
+      - uses: actions/checkout@v5
+        if: ${{ inputs.backfill }}
+        with:
+          ref: main
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The record's rules must pass before it is allowed to write
+        run: node tools/record/football_record.test.js
+
+      - name: Record, close, settle and grade
+        run: node tools/record/football_record.js --write ${{ inputs.backfill && '--backfill' || '' }}
+
+      - name: Publish the record
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- record/football/
+          if git diff --cached --quiet; then
+            echo 'football model record unchanged — nothing to publish'
+            exit 0
+          fi
+          git commit -m 'record: football model — pregame numbers graded against the close'
+          for i in 1 2 3 4; do
+            git push origin HEAD:main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the football model record after 4 attempts'
+          exit 1

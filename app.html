@@ -3014,6 +3014,16 @@ body.focus .dk-focusnote{display:block}
   <!-- RECORD -->
   <section id="v-record" class="view hide">
     <div class="row-between"><h2 style="margin:0">Records</h2><span class="spacer"></span><span class="freshness" id="recFresh">&#8212;</span><button class="refreshbtn" title="Refresh" id="recRefresh">&#8635;</button></div>
+    <!-- TWO BOOKS, NEVER MIXED. The edges record grades prices the capture
+         flagged (signals). The football model record grades the number the
+         football model published (record/football/, written by
+         .github/workflows/football-model-record.yml). Neither reads the other. -->
+    <div class="stseg" id="recBook" role="tablist" aria-label="Which record">
+      <button data-rb="edges" class="on" role="tab" aria-selected="true">Edges record</button>
+      <button data-rb="football" role="tab" aria-selected="false">Football model record</button>
+    </div>
+    <div id="recFbWrap" class="hide"></div>
+    <div id="recEdgesWrap">
     <p class="lede">The auto-graded closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b>. Entry prices are frozen at flag time, the close is snapshotted, and every row grades itself after the game. Nothing here is typed in by hand and nothing is estimated.</p>
     <!-- THE PROOF LAYER — static framing only; every number stays in the
          renderers below (recHero, recKpis, the proof pane). -->
@@ -3117,6 +3127,7 @@ body.focus .dk-focusnote{display:block}
       <h3>Calibration <span class="muted" style="font-weight:400;font-size:11px">&mdash; flagged vs realized</span></h3>
       <div class="tblwrap"><table class="tbl" id="calibTbl"><thead><tr><th>Edge bucket</th><th>n</th><th>Pred</th><th>Win%</th><th>CLV</th></tr></thead><tbody></tbody></table></div>
     </div>
+    </div><!-- /recEdgesWrap -->
   </section>
 
   <!-- LEDGER -->
@@ -9866,6 +9877,198 @@ function recGo(tab){
   });
 })();
 function recResetFilters(){recSetFilterState({});$('rfSaved').value='';recApplyFilters();}
+
+/* =====================================================================
+   FOOTBALL MODEL RECORD — the research tool's own book, NFL and CFB.
+
+   A SEPARATE RECORD, NOT A FILTER OF THE EDGES ONE. The edges record grades
+   prices the capture flagged (signals, price CLV). This grades the NUMBER
+   the football model published before kickoff — the same engine run the
+   Football board prints — against the closing line and the final, with CLV
+   in points. It reads only the committed artifacts in record/football/,
+   written hourly by .github/workflows/football-model-record.yml from
+   tools/record/football_record.js; it needs no login and no database, and
+   it computes nothing the artifact does not already say.
+   ===================================================================== */
+var RFB={sum:null,err:null,at:0,p:null,led:{},ledP:{},sport:'nfl',view:'graded',limit:60};
+var RFB_MIN=50;   /* below this many graded games, every rate is tagged as a thin sample */
+var RFB_TTL=10*60000;
+function rfbFetch(url){return fetch(url,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});}
+function rfbLoad(force){
+  if(RFB.sum&&!force&&Date.now()-RFB.at<RFB_TTL)return Promise.resolve(RFB.sum);
+  if(RFB.p)return RFB.p;
+  RFB.p=rfbFetch('record/football/summary.json').then(function(j){
+    if(force)RFB.led={};
+    RFB.sum=j;RFB.err=null;RFB.at=Date.now();RFB.p=null;return j;
+  }).catch(function(e){RFB.err=String((e&&e.message)||e).slice(0,90);RFB.p=null;return null;});
+  return RFB.p;
+}
+function rfbLedger(sport){
+  var s=RFB.sum;if(!s)return Promise.resolve(null);
+  var k=sport+'_'+s.season;
+  if(RFB.led[k])return Promise.resolve(RFB.led[k]);
+  if(RFB.ledP[k])return RFB.ledP[k];
+  RFB.ledP[k]=rfbFetch('record/football/'+k+'.json').then(function(j){RFB.led[k]=j;delete RFB.ledP[k];return j;})
+    .catch(function(){delete RFB.ledP[k];return null;});
+  return RFB.ledP[k];
+}
+function rfbRecStr(r){return r&&r.n?(r.w+'-'+r.l+(r.p?'-'+r.p:'')):'—';}
+function rfbPct(r){return r&&r.pct!=null?r.pct.toFixed(1)+'%':'—';}
+function rfbPts(v,d){return v==null?'—':((v>0?'+':'')+Number(v).toFixed(d==null?2:d));}
+function rfbCls(v){return v==null?'rmut':v>0?'rpos':v<0?'rneg':'rmut';}
+function rfbLine(v){if(v==null)return '—';var x=Math.round(v*10)/10;return x===0?'PK':((x>0?'+':'')+x.toFixed(1));}
+function rfbTeam(e,side){return side==='home'?(e.home_code||e.home||'Home'):(e.away_code||e.away||'Away');}
+function rfbRate(r){
+  /* a side record against break-even: colour only when it is on one side of it */
+  if(!r||r.pct==null)return 'rmut';
+  return r.pct>=52.38?'rpos':r.pct<50?'rneg':'rmut';
+}
+function rfbKpi(n,l,s,cls){return '<div class="rkpi"><div class="n '+(cls||'')+'">'+n+'</div><div class="l">'+l+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>';}
+function rfbSmall(n){return n<RFB_MIN?'<span class="rtag small">n='+n+'</span>':'';}
+
+function rfbHeadHTML(s){
+  return '<p class="lede">The football model’s <b style="color:var(--text);font-weight:600">own record</b>, kept apart from the edges record. Every game below is the number the model published before kickoff — the same engine run the Football board shows — graded against the closing line and the final score. Nothing is typed in by hand and nothing is estimated.</p>'
+    +'<div class="ph"><div class="ey">How this record is kept</div>'
+    +'<div class="ph-chain"><span>Pregame number</span><span>Market at entry</span><span>Closing line</span><span>Final</span><span>Graded</span></div>'
+    +'<div class="ph-two">'
+    +'<div class="ph-c"><b>Against the spread</b><div class="q">Was the model on the right side of the close?</div><p>The model’s side is its last pregame number against the closing line, graded on the final margin. At standard prices a side has to win 52.4% to break even.</p></div>'
+    +'<div class="ph-c evid"><b>Closing-line value</b><div class="q">Did the market move toward the model?</div><p>Points the line moved toward the side the model leaned, from the market number recorded with the model’s number to the close. Over many games this is the evidence that a disagreement carried information.</p></div>'
+    +'</div></div>';
+}
+
+function rfbRender(){
+  var host=$('recFbWrap');if(!host)return;
+  var s=RFB.sum;
+  if(!s){
+    host.innerHTML=RFB.err
+      ?rfbHeadHTML(null)+recEmptyHTML('error','<b>The football model record could not be read.</b><br>'+recEsc(RFB.err))
+      :rfbHeadHTML(null)+'<div class="rkpis"><div class="rskel"></div><div class="rskel"></div><div class="rskel"></div><div class="rskel"></div></div>';
+    return;
+  }
+  var sp=RFB.sport==='cfb'?'cfb':'nfl',S=s.sports&&s.sports[sp];
+  var h=rfbHeadHTML(s);
+  h+='<div class="stseg" id="rfbSport" style="max-width:360px"><button data-rfs="nfl" class="'+(sp==='nfl'?'on':'')+'">NFL</button><button data-rfs="cfb" class="'+(sp==='cfb'?'on':'')+'">College (FBS)</button></div>';
+  if(!S){host.innerHTML=h+recEmptyHTML('empty','<b>No '+(sp==='nfl'?'NFL':'college')+' record on file yet.</b>');return;}
+  var c=S.counts||{},ats=S.ats||{},ou=S.ou||{},clv=S.clv||{},er=S.error||{};
+  var ce=clv.spread_entry||{},cp=clv.spread_pick||{},cl=clv.spread_entry_lean||{},te=clv.total_entry||{};
+  h+='<div class="rec-count">'+recEsc(S.model||'')+(S.versions&&S.versions.length?' · '+recEsc(S.versions.join(', ')):'')+' · '+recEsc(String(s.season))+' season · updated '+recEsc(s.generated_at?whenLabel(s.generated_at):'—')+'</div>';
+  if(!c.graded){
+    h+='<div class="rec-note"><b>Nothing graded yet for this sport.</b> '+(c.recorded||0)+' pregame numbers are on the record; each one grades itself once its closing line and final score are in. '
+      +(c.final_no_close?c.final_no_close+' finished game'+(c.final_no_close===1?' is':'s are')+' waiting on a closing line.':'')+'</div>';
+  }
+  var small=rfbSmall(c.graded||0);
+  h+='<div class="rkpis">'
+    +rfbKpi(rfbRecStr(ats.all),'vs the spread'+small,rfbPct(ats.all)+' · model side vs the close · break-even 52.4%',rfbRate(ats.all))
+    +rfbKpi(rfbPts(ce.avg)+(ce.n?' pts':''),'avg CLV'+rfbSmall(ce.n||0),ce.n?('beat the close '+ce.beat_pct+'% · '+ce.beat+' up, '+ce.flat+' flat, '+ce.lost+' down · n='+ce.n):'no game has both a recorded market number and a close yet',rfbCls(ce.avg))
+    +rfbKpi(rfbRecStr(ou.all),'totals',rfbPct(ou.all)+' · model side vs the closing total',rfbRate(ou.all))
+    +rfbKpi(rfbRecStr(S.su),'straight up',rfbPct(S.su)+' · the model’s favourite to win')
+    +rfbKpi(rfbRecStr(ats.lean),'spread, 2+ pt gaps',rfbPct(ats.lean)+' · where the model disagreed with the close by 2 or more',rfbRate(ats.lean))
+    +rfbKpi(er.n?(er.model_mae.toFixed(2)+' / '+er.close_mae.toFixed(2)):'—','margin miss: model / close',er.n?('average points off the real margin · model nearer on '+er.model_closer_pct+'% of '+er.n):'no graded game yet',er.n?(er.model_mae<=er.close_mae?'rpos':'rneg'):'rmut')
+    +rfbKpi(rfbPts(cp.avg)+(cp.n?' pts':''),'CLV, last number',cp.n?('from the model’s final pregame number · beat the close '+cp.beat_pct+'% · n='+cp.n):'no pair yet',rfbCls(cp.avg))
+    +rfbKpi(String(c.recorded||0),'games recorded',(c.graded||0)+' graded · '+(c.pregame||0)+' ahead · '+((c.awaiting_final||0)+(c.final_no_close||0))+' waiting on a final or close')
+    +'</div>';
+  h+='<div class="rec-note"><b>How to read this.</b> A record against the spread swings a lot over a few dozen games; closing-line value settles far faster and is the number to watch. '
+    +(cl.n?'On 2+ point disagreements at entry the average CLV is '+rfbPts(cl.avg)+' pts (n='+cl.n+'). ':'')
+    +(te.n?'Totals CLV at entry: '+rfbPts(te.avg)+' pts (n='+te.n+'). ':'')
+    +(S.brier&&S.brier.n?'Win-probability Brier score: '+S.brier.model.toFixed(3)+' (0.25 is a coin flip; lower is better). ':'')
+    +(c.beyond_guard?c.beyond_guard+' game'+(c.beyond_guard===1?'':'s')+' finished more than '+S.guard_points+' pts from the close — graded and counted, flagged below. ':'')
+    +'</div>';
+
+  if(sp==='cfb'&&s.cfb_groups){
+    var G=s.cfb_groups,lab={p4:'Power 4 involved',other_fbs:'Other FBS',fbs_fcs:'FBS vs FCS'};
+    h+='<h3 style="margin:16px 0 8px">By matchup</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Group</th><th>Graded</th><th>ATS</th><th>Totals</th><th>SU</th><th>CLV</th></tr></thead><tbody>';
+    ['p4','other_fbs','fbs_fcs'].forEach(function(k){var g=G[k];if(!g)return;var gc=(g.clv&&g.clv.spread_entry)||{};
+      h+='<tr><td>'+lab[k]+'</td><td>'+(g.counts.graded||0)+' / '+(g.counts.recorded||0)+'</td><td class="'+rfbRate(g.ats.all)+'">'+rfbRecStr(g.ats.all)+'</td><td>'+rfbRecStr(g.ou.all)+'</td><td>'+rfbRecStr(g.su)+'</td><td class="'+rfbCls(gc.avg)+'">'+rfbPts(gc.avg)+(gc.n?' <span class="muted">n='+gc.n+'</span>':'')+'</td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  var W=(S.weeks||[]).filter(function(w){return w.graded||w.recorded;});
+  if(W.length){
+    h+='<h3 style="margin:16px 0 8px">Week by week</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Week</th><th>Graded</th><th>ATS</th><th>Totals</th><th>Avg CLV</th></tr></thead><tbody>';
+    W.slice().reverse().forEach(function(w){
+      h+='<tr><td>'+(w.week!=null?'Week '+w.week:'—')+'</td><td>'+w.graded+' / '+w.recorded+'</td><td class="'+rfbRate(w.ats)+'">'+rfbRecStr(w.ats)+'</td><td>'+rfbRecStr(w.ou)+'</td><td class="'+rfbCls(w.clv&&w.clv.avg)+'">'+(w.clv&&w.clv.n?rfbPts(w.clv.avg)+' <span class="muted">n='+w.clv.n+'</span>':'—')+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='<h3 style="margin:16px 0 8px">Every game</h3>'
+    +'<div class="stseg" id="rfbView" style="max-width:420px"><button data-rfv="graded" class="'+(RFB.view==='graded'?'on':'')+'">Finished</button><button data-rfv="upcoming" class="'+(RFB.view==='upcoming'?'on':'')+'">Upcoming</button><button data-rfv="all" class="'+(RFB.view==='all'?'on':'')+'">All</button></div>'
+    +'<div id="rfbGames"><div class="rskel" style="height:120px"></div></div>';
+  var src=(s.sources&&s.sources[sp])||{};
+  h+='<div class="rec-note" style="margin-top:14px"><b>Where every number comes from.</b> Model: '+recEsc(src.projection||'')+'. Market: '+recEsc(src.market||'')+'. Close: '+recEsc(src.close||'')+'. Final: '+recEsc(src.final||'')+'.</div>';
+  if(s.rules&&s.rules.length)h+='<ul style="margin:6px 0 0;padding-left:18px;font-size:11px;color:var(--dim);line-height:1.55">'+s.rules.map(function(t){return '<li>'+recEsc(t)+'</li>';}).join('')+'</ul>';
+  host.innerHTML=h;
+  rfbLedger(sp).then(function(L){if(RFB.sport===sp&&RFB.sum===s)rfbRenderGames(L);});
+}
+
+function rfbRenderGames(L){
+  var host=$('rfbGames');if(!host)return;
+  if(!L||!L.games){host.innerHTML=recEmptyHTML('empty','<b>The per-game record could not be read.</b>');return;}
+  var now=Date.now();
+  var rows=Object.keys(L.games).map(function(k){return L.games[k];}).filter(function(e){
+    var st=e.grade&&e.grade.status;
+    if(RFB.view==='graded')return st==='GRADED'||st==='FINAL_NO_CLOSE';
+    if(RFB.view==='upcoming')return st==='PREGAME'||st==='AWAITING_FINAL';
+    return true;
+  });
+  rows.sort(function(a,b){var d=Date.parse(a.kickoff)-Date.parse(b.kickoff);return RFB.view==='upcoming'?d:-d;});
+  if(!rows.length){host.innerHTML=recEmptyHTML('empty',RFB.view==='graded'?'<b>No finished games on the record yet.</b>':'<b>No upcoming games on the record right now.</b>');return;}
+  var shown=rows.slice(0,RFB.limit);
+  function res(r){return r==='win'?'<span class="spill won">W</span>':r==='loss'?'<span class="spill lost">L</span>':r==='push'?'<span class="spill push">P</span>':'<span class="muted">—</span>';}
+  var h='<div class="rtblwrap"><table class="rtbl" style="min-width:860px"><thead><tr><th>Kickoff</th><th style="text-align:left">Game</th><th>Model</th><th>Market at entry</th><th>Close</th><th>Final</th><th>ATS</th><th>Totals</th><th>CLV</th></tr></thead><tbody>';
+  shown.forEach(function(e){
+    var g=e.grade||{},hc=rfbTeam(e,'home'),ac=rfbTeam(e,'away');
+    var ent=e.entry&&e.entry.market,cl=e.close;
+    var sideTxt=g.spread&&g.spread.side?rfbTeam(e,g.spread.side):null;
+    var ouTxt=g.total&&g.total.side?(g.total.side==='over'?'O':'U'):null;
+    var cv=g.clv_entry&&g.clv_entry.spread?g.clv_entry.spread.pts:null;
+    var when='';try{when=new Date(e.kickoff).toLocaleDateString([], {month:'short',day:'numeric'});}catch(_){}
+    var tip='First number '+rfbLine(e.first&&e.first.home_line)+(e.revisions?(' · revised '+e.revisions+'×'):'')+(ent?(' · entry quote '+(ent.book||ent.source||'')):'')+(g.beyond_guard?' · beyond the line guard':'');
+    h+='<tr title="'+recEsc(tip)+'"><td>'+recEsc(when)+(e.week!=null?' <span class="muted">w'+e.week+'</span>':'')+'</td>'
+      +'<td style="text-align:left">'+recEsc(ac)+' @ '+recEsc(hc)+(g.beyond_guard?' <span class="rtag small">guard</span>':'')+'</td>'
+      +'<td>'+recEsc(hc)+' '+rfbLine(e.pick&&e.pick.home_line)+(e.pick&&e.pick.total!=null?' <span class="muted">'+Number(e.pick.total).toFixed(1)+'</span>':'')+'</td>'
+      +'<td>'+(ent&&ent.home_line!=null?rfbLine(ent.home_line)+(ent.total!=null?' <span class="muted">'+ent.total+'</span>':''):'<span class="muted">—</span>')+'</td>'
+      +'<td>'+(cl&&cl.home_line!=null?rfbLine(cl.home_line)+(cl.total!=null?' <span class="muted">'+cl.total+'</span>':''):'<span class="muted">'+(g.status==='PREGAME'?'ahead':'waiting')+'</span>')+'</td>'
+      +'<td>'+(e.final?(e.final.away_score+'–'+e.final.home_score):'<span class="muted">—</span>')+'</td>'
+      +'<td>'+(sideTxt?recEsc(sideTxt)+' ':'')+res(g.spread&&g.spread.result)+'</td>'
+      +'<td>'+(ouTxt?ouTxt+' ':'')+res(g.total&&g.total.result)+'</td>'
+      +'<td class="'+rfbCls(cv)+'">'+rfbPts(cv,1)+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  if(rows.length>shown.length)h+='<div class="rpager"><button class="rbtn" id="rfbMore">Show more ('+(rows.length-shown.length)+' left)</button></div>';
+  h+='<div class="rec-note" style="margin-top:8px">Lines are the home side’s, as a book prints them (negative = home favoured). The ATS and totals columns name the side the model’s last pregame number took against the close. CLV is measured from the entry: the first time the record held both the model’s number and a market number before kickoff.</div>';
+  host.innerHTML=h;
+}
+
+function recBook(b){
+  b=b==='football'?'football':'edges';
+  var seg=$('recBook');if(!seg)return;
+  var bs=seg.querySelectorAll('button');
+  for(var i=0;i<bs.length;i++){var on=bs[i].dataset.rb===b;bs[i].classList.toggle('on',on);bs[i].setAttribute('aria-selected',on?'true':'false');}
+  $('recEdgesWrap').classList.toggle('hide',b!=='edges');
+  $('recFbWrap').classList.toggle('hide',b!=='football');
+  try{localStorage.setItem('edgedesk_rec_book',b);}catch(_){}
+  if(b==='football'){rfbRender();rfbLoad().then(rfbRender);}
+}
+window.recBook=recBook;
+window.EDFootballRecord={
+  load:rfbLoad,
+  summary:function(){return RFB.sum;},
+  /* the Football board's "Track record" drawer links here */
+  open:function(sport){RFB.sport=sport==='cfb'?'cfb':'nfl';show('record');recBook('football');}
+};
+(function rfbWire(){
+  var seg=$('recBook');if(!seg)return;
+  seg.addEventListener('click',function(e){var b=e.target.closest('button');if(b&&b.dataset.rb)recBook(b.dataset.rb);});
+  $('recFbWrap').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    if(b.dataset.rfs){RFB.sport=b.dataset.rfs;RFB.limit=60;rfbRender();}
+    else if(b.dataset.rfv){RFB.view=b.dataset.rfv;RFB.limit=60;rfbRender();}
+    else if(b.id==='rfbMore'){RFB.limit+=60;rfbLedger(RFB.sport).then(rfbRenderGames);}
+  });
+  /* the header refresh reloads whichever book is open */
+  $('recRefresh').addEventListener('click',function(){if(!$('recFbWrap').classList.contains('hide'))rfbLoad(true).then(rfbRender);});
+  var saved=null;try{saved=localStorage.getItem('edgedesk_rec_book');}catch(_){}
+  if(saved==='football')recBook('football');
+})();
 
 /* =====================================================================
    Signal Receipt drawer  —  frontend-only. No new API calls: every
@@ -56436,6 +56639,11 @@ function fbModelStatusHTML(){
   if(wf)badges.push(['blue','Walk-forward tracked']);
   if(wf&&!wf.beats_closing_line)badges.push(['amber','CLV validation pending']);
   else if(!wf)badges.push(['mut','No market backtest loaded']);
+  /* the model's own live record (record/football/summary.json): loaded once,
+     cached, and shown on the next render — never awaited here */
+  var LR=null;try{LR=window.EDFootballRecord.summary();if(!LR)window.EDFootballRecord.load();}catch(_){LR=null;}
+  var ls=LR&&LR.sports&&LR.sports[isP4?'cfb':'nfl'];
+  if(ls)badges.push(ls.counts&&ls.counts.graded?['blue','Live record · '+ls.counts.graded+' graded']:['mut','Live record · recording']);
   var h=FB.health;
   if(h)badges.push(h.ok?['green','Self-check passed']:['red','Self-check failed']);
   else if(FB.healthErr||FB.at)badges.push(['mut','No self-check record']);
@@ -56473,7 +56681,9 @@ function fbDrawerHTML(kind){
     }
     return h;
   }
-  h+='<h3>Track record</h3><div class="sub">out-of-sample · nothing here is a live claim</div>';
+  h+='<h3>Track record</h3><div class="sub">the live record first, then the out-of-sample backtest</div>';
+  h+=fbLiveRecordHTML(isP4?'cfb':'nfl');
+  h+='<h4 style="margin-top:14px">Backtest · out of sample</h4>';
   var v=M&&M.validation;
   if(isP4){
     var vm=v&&v.market;
@@ -56515,9 +56725,32 @@ function fbDrawerHTML(kind){
   h+='<h4>Independent record</h4><p>Numbers synced to the Collective are graded there against its own captured closing lines — not by this engine, and not self-reported. That graded CLV is the only record that can ever change the badges above.</p>';
   return h;
 }
+/* THE LIVE RECORD, read from record/football/summary.json — the model's own
+   book (tools/record/football_record.js), separate from the edges record:
+   every number was published before kickoff and graded against the close.
+   Nothing here is recomputed in the browser. */
+function fbLiveRecordHTML(sp){
+  var R=window.EDFootballRecord,s=null;try{s=R&&R.summary();}catch(_){s=null;}
+  var S=s&&s.sports&&s.sports[sp];
+  var h='<h4>Live record · pregame numbers graded against the close</h4>';
+  if(!S)return h+'<p>'+(R?'Loading the recorded season…':'The recorded season is not available on this page.')+'</p>';
+  function rs(r){return r&&r.n?(r.w+'-'+r.l+(r.p?'-'+r.p:'')+(r.pct!=null?' · '+r.pct.toFixed(1)+'%':'')):'—';}
+  function pts(v){return v==null?'—':((v>0?'+':'')+Number(v).toFixed(2)+' pts');}
+  var c=S.counts||{},ce=(S.clv&&S.clv.spread_entry)||{},er=S.error||{};
+  h+='<div class="fb-tbl-wrap"><table class="fb-tbl"><tr><th>Measure</th><th>'+fbEsc(String(s.season))+'</th></tr>'
+    +'<tr><td>Games recorded · graded</td><td>'+(c.recorded||0)+' · '+(c.graded||0)+'</td></tr>'
+    +'<tr><td>Against the spread (model side vs the close)</td><td>'+rs(S.ats&&S.ats.all)+'</td></tr>'
+    +'<tr><td>Totals (model side vs the closing total)</td><td>'+rs(S.ou&&S.ou.all)+'</td></tr>'
+    +'<tr><td>Closing-line value (points toward the model)</td><td>'+pts(ce.avg)+(ce.n?' · beat the close '+ce.beat_pct+'% · n='+ce.n:'')+'</td></tr>'
+    +'<tr><td>Margin miss, model vs close</td><td>'+(er.n?(er.model_mae.toFixed(2)+' vs '+er.close_mae.toFixed(2)+' pts'):'—')+'</td></tr></table></div>'
+    +'<p>Kept apart from the edges record. The model’s side is its last pregame number against the closing line; CLV is how far the market moved toward the side it leaned after the record captured both numbers. '
+    +'<button class="fb-btn" data-rfb-open="'+fbEsc(sp)+'" onclick="try{rsTkDrawerClose();}catch(_){}EDFootballRecord.open(this.getAttribute(\'data-rfb-open\'))">Open the full record</button></p>';
+  return h;
+}
 window.fbDrawerOpen=function(kind){
   rsTkDrawerOpen(fbDrawerHTML(kind));
   try{rsModelsLoad().then(function(){if(rsTkDrawerIsOpen())rsTkDrawerOpen(fbDrawerHTML(kind));});}catch(_){}
+  if(kind==='record'){try{window.EDFootballRecord.load().then(function(){if(rsTkDrawerIsOpen())rsTkDrawerOpen(fbDrawerHTML(kind));});}catch(_){}}
 };
 window.fbDrawerClose=function(){rsTkDrawerClose();};
 /* ---- system health: one line, diagnostics behind it ---- */
