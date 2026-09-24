@@ -116,6 +116,7 @@ on:
       - 'football/rating/sync_rankings.test.js'
       - 'tools/football/patch_cfb_engine_efficiency.js'
       - 'tools/football/patch_coaching_program_ui.js'
+      - 'tools/football/patch_nfl_coaching_staff_ui.js'
       - '.github/workflows/football-weekly-build.yml'
 
 permissions:
@@ -238,6 +239,10 @@ jobs:
       - name: Patch Coaching / Program rankings UI
         if: steps.go.outputs.run == 'true'
         run: node tools/football/patch_coaching_program_ui.js
+
+      - name: Patch NFL Coaching / Staff UI
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_nfl_coaching_staff_ui.js
 
       - name: Suites (before)
         if: steps.go.outputs.run == 'true'

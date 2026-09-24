@@ -1,0 +1,118 @@
+name: NFL Coaching Staff validation
+
+on:
+  pull_request:
+    paths:
+      - 'football/nfl/coaching_staff.js'
+      - 'football/nfl/validate_coaching_staff.js'
+      - 'football/research/nfl_coaching_staff.py'
+      - 'football/research/build_features.py'
+      - 'football/research/train_nfl.py'
+      - '.github/workflows/nfl-coaching-staff-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nfl-coaching-staff-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install research dependencies
+        run: pip install --quiet numpy pandas
+
+      - uses: actions/cache@v4
+        with:
+          path: .cache/nfl-coaching/data
+          key: nfl-coaching-public-feeds-through-2025-v1
+
+      - name: Fetch NFL-only historical feeds
+        run: |
+          set -euo pipefail
+          D=.cache/nfl-coaching/data
+          have_team=$(find "$D/nfl" -maxdepth 1 -name 'stw_*.csv' 2>/dev/null | wc -l || true)
+          have_player=$(find "$D/nfl" -maxdepth 1 -name 'spw_*.csv' 2>/dev/null | wc -l || true)
+          if [ -f "$D/nfl/games.csv" ] && [ "$have_team" -eq 27 ] && [ "$have_player" -eq 27 ]; then
+            echo "historical NFL cache restored"
+          else
+            bash football/research/fetch_nfl_data.sh "$D"
+          fi
+
+      - name: Rebuild NFL feature tables
+        run: |
+          rm -rf .cache/nfl-coaching/out
+          mkdir -p .cache/nfl-coaching/out
+          python3 football/research/build_features.py \
+            .cache/nfl-coaching/data .cache/nfl-coaching/out --nfl-only
+
+      - name: Rebuild the frozen NFL OOS projection ledger
+        run: |
+          python3 football/research/train_nfl.py .cache/nfl-coaching/out
+
+      - name: Run Coaching / Staff tune and holdout replay
+        run: |
+          python3 football/research/nfl_coaching_staff.py .cache/nfl-coaching/out \
+            --experiment-out .cache/nfl-coaching/out/nfl_coaching_staff_experiment.json \
+            --seed-out .cache/nfl-coaching/out/coaching_staff_seed.json
+
+      - name: Apply the shared promotion gate
+        run: |
+          node football/nfl/validate_coaching_staff.js \
+            --in .cache/nfl-coaching/out/nfl_coaching_staff_experiment.json \
+            --out .cache/nfl-coaching/out/nfl_coaching_staff_validation.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='.cache/nfl-coaching/out/nfl_coaching_staff_validation.json';
+          const j=JSON.parse(fs.readFileSync(p,'utf8'));
+          console.log('NFL COACHING STAFF FINAL');
+          console.log(JSON.stringify({
+            status:j.status,
+            affects_projection:j.affects_projection,
+            selected_cap:j.selected_cap,
+            selected_reliability_k:j.selected_reliability_k,
+            tuned_cap:j.tuned_cap||0,
+            reason:j.reason
+          },null,2));
+          NODE
+
+      - name: Freeze validation and 2026 seed on the PR branch
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          cp .cache/nfl-coaching/out/nfl_coaching_staff_validation.json football/validation/nfl_coaching_staff.json
+          cp .cache/nfl-coaching/out/coaching_staff_seed.json football/nfl/coaching_staff_seed.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add football/validation/nfl_coaching_staff.json football/nfl/coaching_staff_seed.json
+          if git diff --cached --quiet; then
+            echo 'validation artifacts unchanged'
+          else
+            git commit -m 'nfl: freeze coaching staff validation and seed'
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nfl-coaching-staff-validation
+          path: |
+            .cache/nfl-coaching/out/nfl_coaching_staff_experiment.json
+            .cache/nfl-coaching/out/nfl_coaching_staff_validation.json
+            .cache/nfl-coaching/out/coaching_staff_seed.json
+          if-no-files-found: error
+          retention-days: 30
