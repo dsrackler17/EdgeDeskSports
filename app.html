@@ -1582,6 +1582,27 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-lnk:hover{border-color:rgba(47,167,154,.5);background:rgba(47,167,154,.08)}
 .fb-quiet{border:1px dashed var(--border);border-radius:12px;padding:16px 14px;color:var(--dim);font-size:13px;line-height:1.5;background:var(--surface)}
 .fb-quiet small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px}
+/* 5 Games Worth Researching: compact rows inside one card (fbWrRowHTML) */
+.fb-card.fb-wr{padding:4px 14px 12px}
+.fb-wr-r{padding:11px 0;border-top:1px solid var(--border);min-width:0}
+.fb-wr-r:first-child{border-top:none}
+.fb-wr-h{display:flex;align-items:baseline;gap:8px;min-width:0}
+.fb-wr-h .n{flex:none;width:16px;color:var(--faint);font:600 11px 'JetBrains Mono',monospace}
+.fb-wr-h .m{flex:1 1 auto;min-width:0;font-size:13.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-wr-st{flex:none;font:600 9.5px 'JetBrains Mono',monospace;letter-spacing:.07em;text-transform:uppercase;border:1px solid rgba(47,167,154,.45);border-radius:5px;padding:1px 6px;color:var(--accent)}
+.fb-wr-st.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.fb-wr-st.mut{color:var(--dim);border-color:var(--border)}
+.fb-wr-u{margin:4px 0 0 24px;font-size:10.5px;letter-spacing:.02em;color:var(--warn)}
+.fb-wr-v{display:flex;flex-wrap:wrap;gap:3px 14px;margin:6px 0 0 24px;font:12px 'JetBrains Mono',monospace;color:var(--text);min-width:0}
+.fb-wr-v span{white-space:nowrap}
+.fb-wr-v i{font:normal 700 9.5px 'Inter',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-right:5px}
+.fb-wr-v .mdl{color:var(--mdl)}
+.fb-wr-w{margin:6px 0 0 24px;font-size:12px;line-height:1.45;color:var(--dim)}
+.fb-wr-w b{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-right:6px}
+.fb-wr-f{display:flex;align-items:center;gap:8px;margin:7px 0 0 24px;font:10.5px 'JetBrains Mono',monospace;color:var(--faint);min-width:0}
+.fb-wr-f .ts{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.fb-wr-few{font-size:11.5px;color:var(--dim);padding:10px 0 0;border-top:1px solid var(--border)}
+@media(max-width:400px){.fb-card.fb-wr{padding:2px 12px 10px}.fb-wr-v,.fb-wr-w,.fb-wr-f,.fb-wr-u{margin-left:0}}
 /* research tools */
 .fb-tools{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:520px){.fb-tools{grid-template-columns:1fr 1fr}}
@@ -3890,6 +3911,11 @@ window.mcRefresh=function(){
 <script src="/lib/mlb_pitcher_history.js?v=20260917a"></script>
 <script src="/lib/mlb_offense_history.js?v=20260917a"></script>
 <script src="/lib/college_baseball.js?v=20260918b"></script>
+<!-- "5 Games Worth Researching" on the Football overview: a reading order over
+     numbers the board already produced. It computes no projection, line or
+     status; the SAME file is what tools/football/research_priority.test.js
+     holds to its gates, its order and its explanations. -->
+<script src="/lib/research_priority.js?v=20260924a"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -56588,6 +56614,183 @@ function fbSignalCardHTML(it){
     onclick:"fbFocusGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"')",
     action:{label:'Open research',onclick:"fbSigOpen('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"','"+edAttrJs(it.k)+"')"}});
 }
+/* ═══ FIVE GAMES WORTH RESEARCHING ═════════════════════════════════════════
+   "Where should I start researching?" — answered from the rows fbGameRows()
+   already built, never from a new projection. Each row is read into a
+   candidate through the board's OWN readers:
+
+     status           fbP4StatusFor (CFB) / fbNflResearchState (NFL), verbatim
+     normalized gap,  lib/game_research.js: the cockpit's fbGxResearchObj for
+     research flags,  CFB, and the same builder over the NFL row's own model
+     completeness     and market numbers — with no quality categories, because
+                      the NFL model publishes none and none are invented
+     leans            the engines' RESEARCH_LEAN classification (fbRecDisagrees)
+     QB unknown       the engines' own "starter unknown" warnings
+
+   lib/research_priority.js then gates, scores, orders and explains. Nothing
+   here changes a projection, a status, the board's order or the Today
+   signals, and a game this cannot read fully is left out, not filled in. */
+var FB_WR_N=5;
+var FB_WR_LIBS=['lib/research_core.js','lib/research_eval.js','lib/game_research.js'];
+var FB_WR_QB_UNKNOWN=/(qb starter|starting quarterback) unknown/i;
+var FB_WR_REASON={NOT_PROJECTED:'not projected',NO_MARKET:'no market',DATA_FAULT:'data fault',THIN_DATA:'thin data',
+  STALE_MARKET:'stale quote',STATUS:'other status',NO_NORMALIZED_GAP:'no normalized gap',NOTHING_TO_EXPLAIN:'nothing to explain'};
+var FB_WR_UNC={large_gap:'gap of 7+ pts',high_uncertainty:'input data incomplete or out of date',qb_unknown:'QB starter unknown'};
+function fbWrNum(x){return (typeof x==='number'&&isFinite(x))?x:null;}
+/* The shared research layer loads with the FBS board. The overview asks for
+   the same three files through the same fbScript keys, so whichever asks
+   first loads them and the other reuses the load. */
+function fbWrLayerReady(){return !!(window.EDGameResearch&&window.EDResearch);}
+function fbWrEnsureLayer(){
+  var st=FB.ui.wrLayer||(FB.ui.wrLayer={});
+  if(fbWrLayerReady()||st.p||st.err)return;
+  st.p=FB_WR_LIBS.reduce(function(pr,src){return pr.then(function(){return fbScript(src).catch(function(){});});},Promise.resolve())
+    .then(function(){st.p=null;if(!fbWrLayerReady())st.err='lib/game_research.js did not load';fbWrPaint();});
+}
+/* repaint the module alone when the layer lands — the overview is not rebuilt */
+function fbWrPaint(){
+  var h=$('fbWr');
+  if(h)try{h.innerHTML=fbWrInner(fbGameRows());}catch(_){}
+}
+/* the NFL row through the shared research builder: the engine's fair line,
+   the learned margin σ the market-vs-research band already uses, and the
+   market numbers the row carries. Cached per game until an input changes,
+   and re-judged hourly so a quote cannot stay "fresh" while the page sits. */
+function fbWrNflObj(r){
+  var GR=window.EDGameResearch,R=window.EDResearch,p=r.p,mk=r.mkt||{};
+  if(!GR||!R||!r.ok||!p||!p.model)return null;
+  var sig=null;try{sig=fbWrNum(window.EDFootballParams.nfl.sigma_margin);}catch(_){}
+  var live=r.src==='captured'&&mk.spread_line!=null,at=live&&mk.at?mk.at:null;
+  var key=[p.fingerprint||p.prediction_timestamp,mk.spread_line,mk.total_line,at,sig,Math.floor(Date.now()/36e5)].join('|');
+  var cache=FB.ui.wrNfl||(FB.ui.wrNfl={});
+  if(cache[r.gid]&&cache[r.gid].key===key)return cache[r.gid].v;
+  var market={};
+  if(mk.spread_line!=null)market.current={line:R.spreadFromMargin(mk.spread_line),captured_at:at,
+    source:live?('captured · '+(mk.spread_book||'book not recorded')):'nflverse consensus reference'};
+  if(mk.total_line!=null)market.total={line:mk.total_line,captured_at:mk.total_book?at:null,
+    source:mk.total_book?('captured · '+mk.total_book):'nflverse consensus reference'};
+  var q=mk.quotes_h2h&&mk.quotes_h2h[0];
+  if(q&&q[0]>1&&q[1]>1)market.moneyline={home:R.decimalToAmerican(q[0]),away:R.decimalToAmerican(q[1]),
+    captured_at:at,source:'best available prices per side, de-vigged'};
+  var o=null;
+  try{
+    o=GR.build({now:new Date().toISOString(),
+      game:{sport:'NFL',week:r.week,game_id:r.gid,home:r.home,away:r.away,kickoff_at:r.t?new Date(r.t).toISOString():null},
+      model:{model_id:'edgedesk_nfl',version:p.model_version||null,captured_at:p.prediction_timestamp||null,
+        home_line:R.homeLineFromEngineFairSpread(p.model.fair_spread),total:p.model.fair_total,home_win_prob:p.model.home_win_prob,
+        sigma:sig,sigma_source:'learned NFL margin sigma (football/params.js)'},
+      market:market,quality:{},quality_categories:[]});
+  }catch(_){o=null;}
+  cache[r.gid]={key:key,v:o};
+  return o;
+}
+/* the CFB row through the research cockpit's own object — the same one the
+   game card shows, so the list and the card cannot disagree */
+function fbWrCfbObj(r,ix){
+  var u=ix&&ix[r.gid];
+  if(!u||!r.ok||typeof fbGxResearchObj!=='function')return null;
+  try{return fbGxResearchObj(u,r.p);}catch(_){return null;}
+}
+function fbWrCandidate(r,ix){
+  var cfb=r.sport==='p4',p=r.p,mk=r.mkt||{},ok=!!(r.ok&&p&&p.model),st=null;
+  try{st=cfb?fbP4StatusFor(p,mk).t:fbNflResearchState(p,mk).label;}catch(_){st=null;}
+  var live=cfb?/^captured/.test(String(mk.book||'')):(r.src==='captured');
+  var at=cfb?(mk.as_of?Date.parse(mk.as_of):null):fbWrNum(r.at);
+  var age=(live&&at!=null&&isFinite(at))?Math.max(0,(Date.now()-at)/36e5):null;
+  var c={key:r.sport+'|'+r.gid,sport:cfb?'cfb':'nfl',board:r.sport,gid:String(r.gid),home:r.home,away:r.away,kickoff:fbWrNum(r.t),
+    status:st,projected:ok,
+    model_margin:ok?fbWrNum(p.model.fair_spread):null,market_margin:fbWrNum(mk.spread_line),normalized_gap:null,
+    market:mk.spread_line==null?null:{kind:live?'live':'consensus',at:live&&at!=null&&isFinite(at)?at:null,
+      age_h:age==null?null:Math.round(age*10)/10,stale:!!(r.stale||mk.stale),source:r.book||r.src||null},
+    fault:!!r.fault,thin:!!r.thin,completeness:null,flags:[],qualifiers:[],
+    model_total:ok?fbWrNum(p.model.fair_total):null,market_total:fbWrNum(mk.total_line),total_gap:fbWrNum(r.gapT),
+    movement:{spread_moved:null,spread_toward_model:null,h2h_pp:fbWrNum(r.move)},
+    qb_unknown:(r.warn||[]).some(function(w){return FB_WR_QB_UNKNOWN.test(String(w));})};
+  if(!ok)return c;
+  if(fbRecDisagrees(p.edge&&p.edge.spread))c.flags.push('SPREAD_LEAN');
+  if(fbRecDisagrees(p.edge&&p.edge.total))c.flags.push('TOTAL_LEAN');
+  var o=cfb?fbWrCfbObj(r,ix):fbWrNflObj(r);
+  if(!o)return c;
+  var mv=o.model_vs_market||{},QUAL=window.EDResearchPriority.QUALIFIERS;
+  c.normalized_gap=mv.normalized_gap?fbWrNum(mv.normalized_gap.value):null;
+  ((o.flags&&o.flags.flags)||[]).forEach(function(f){
+    var list=QUAL.indexOf(f.key)>=0?c.qualifiers:c.flags;
+    if(list.indexOf(f.key)<0)list.push(f.key);
+  });
+  if(cfb&&o.quality)c.completeness=fbWrNum(o.quality.completeness);
+  var m=mv.movement_since_open;
+  if(m){
+    c.movement.spread_moved=fbWrNum(m.moved_points)==null?null:Math.abs(m.moved_points);
+    c.movement.spread_toward_model=fbWrNum(m.toward_model_points);
+  }
+  /* the shared layer's own freshness window, judged NOW: its object may have
+     been cached while the quote was younger */
+  var fh=window.EDGameResearch.FRESH_HOURS?EDGameResearch.FRESH_HOURS.market:null;
+  if(c.market&&c.market.age_h!=null&&fh!=null&&c.market.age_h>fh&&c.qualifiers.indexOf('STALE_MARKET')<0)
+    c.qualifiers.push('STALE_MARKET');
+  return c;
+}
+function fbWrRowHTML(x){
+  var c=x.candidate,u=x.detail.uncertainty,when='';
+  try{when=c.kickoff?whenLabel(new Date(c.kickoff).toISOString()):'';}catch(_){}
+  var stCls=c.status==='RESEARCH'?'':(c.status==='INVESTIGATE'?'warn':'mut');
+  var mk=c.market,mAge=mk.kind==='live'?(mk.at!=null?('market '+ago(mk.at)):'market on file'):'consensus line';
+  return '<div class="fb-wr-r">'
+    +'<div class="fb-wr-h"><span class="n">'+x.rank+'</span><span class="m">'+fbEsc(c.away+' @ '+c.home)+'</span>'
+      +'<span class="fb-wr-st '+stCls+'">'+fbEsc(c.status)+'</span></div>'
+    +(u.elevated?'<div class="fb-wr-u">Higher uncertainty · '+fbEsc(u.reasons.map(function(k){return FB_WR_UNC[k]||k;}).join(' · '))+'</div>':'')
+    +'<div class="fb-wr-v"><span><i>Market</i>'+fbEsc(c.home+' '+fbHomeLine(c.market_margin))+'</span>'
+      +'<span class="mdl"><i>EdgeDesk</i>'+fbEsc(c.home+' '+fbHomeLine(c.model_margin))+'</span>'
+      +'<span><i>Difference</i>'+Math.abs(c.model_margin-c.market_margin).toFixed(1)+' pts</span></div>'
+    +'<div class="fb-wr-w"><b>Why research it</b>'+fbEsc(x.why.text)+'</div>'
+    +'<div class="fb-wr-f"><span class="ts">'+fbEsc([c.sport==='cfb'?'CFB':'NFL',when,mAge].filter(Boolean).join(' · '))+'</span>'
+      +'<button class="fb-lnk" onclick="fbWrOpen(\''+edAttrJs(c.board)+'\',\''+edAttrJs(c.gid)+'\','+x.rank+')">Open research</button></div>'
+    +'</div>';
+}
+function fbWrInner(rows){
+  var P=window.EDResearchPriority,st=FB.ui.wrLayer||{};
+  function head(r){return '<div class="fb-sechd"><span>5 Games Worth Researching</span><span class="r">'+r+'</span></div>';}
+  var note='<p class="rs-pv-note">Reading order, not a ranking of bets. Research signals can be wrong.</p>';
+  if(!P)return head('not loaded')+'<div class="fb-quiet">The research-priority layer (lib/research_priority.js) did not load. Nothing is ranked rather than something invented.</div>';
+  if(!fbWrLayerReady())return head(st.err?'unavailable':'loading')+'<div class="fb-quiet">'+(st.err
+    ? 'The shared research layer did not load ('+fbEsc(st.err)+'), so there is no normalized gap or research flag to order by. Nothing is ranked rather than something invented.'
+    : 'Loading the shared research layer…')+'</div>';
+  var ix={};((FB.p4&&FB.p4.up)||[]).forEach(function(u){ix[String(u.g.game_id)]=u;});
+  var cands=(rows||[]).map(function(r){return fbWrCandidate(r,ix);});
+  var res=P.rank(cands,FB_WR_N),scope=fbEsc(fbScopeLabel());
+  if(!res.items.length){
+    var by={};res.excluded.forEach(function(e){by[e.reasons[0]]=(by[e.reasons[0]]||0)+1;});
+    var parts=Object.keys(P.REASONS).filter(function(k){return by[k];}).map(function(k){return by[k]+' '+(FB_WR_REASON[k]||k);});
+    return head('none clear the gates · '+scope)+'<div class="fb-quiet">'+(cands.length
+      ? 'No game on the board clears the research gates right now.<small>'+cands.length+' game'+(cands.length===1?'':'s')+' checked'
+        +(parts.length?(': '+fbEsc(parts.join(' · '))):'')+'. Nothing is forced onto this list.</small>'
+      : 'No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed.')+'</div>'+note;
+  }
+  var open=!!RS_TK_OPEN.fbWrHow;
+  return head(res.eligible+' of '+cands.length+' clear the gates · '+scope)
+    +'<div class="fb-card fb-wr">'+res.items.map(fbWrRowHTML).join('')
+    +(res.items.length<FB_WR_N?('<div class="fb-wr-few">Only '+res.items.length+' game'+(res.items.length===1?' clears':'s clear')
+      +' the gates right now. Nothing is added to fill the list.</div>'):'')
+    +note
+    +'<button class="fb-how" id="fbWrHowBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="fbWrHowCol" onclick="rsTkColToggle(\'fbWrHow\',\'Hide\',\'How this order is built →\')">'+(open?'Hide':'How this order is built →')+'</button>'
+    +'<div class="fb-col'+(open?' open':'')+'" id="fbWrHowCol"><div class="fb-howbody">'
+    +'<b>Gates.</b> A game is listed only with a PREDICTED projection and a current market quote, and never when it is DATA FAULT, THIN DATA, on a stale quote, or has nothing to explain. '
+    +'INVESTIGATE games appear only when they clear every gate, and are marked Higher uncertainty at a gap of 7+ pts, with incomplete inputs or with an unknown QB starter. '
+    +'<b>Order.</b> '+fbEsc(P.RULE)+'</div></div></div>';
+}
+window.fbWrOpen=function(sport,gid,rank){edEvent('research_game_open',{surface:'worth_researching',sport:sport,rank:rank});fbOpenGame(sport,gid);};
+/* The Today signals, folded under the reading order rather than repeated
+   beside it: the same cards from the same fbTodayItems, one tap away, with
+   the count of data warnings on the toggle so a fault is never out of sight. */
+function fbWrTodayFold(items,inner){
+  if(!items||!items.length)return inner;
+  var nw=items.filter(function(it){return it.pri==='neg'||it.pri==='warn';}).length;
+  var closed='Show '+items.length+' board signal'+(items.length===1?'':'s')+(nw?(' · '+nw+' data warning'+(nw===1?'':'s')):'');
+  var open=!!RS_TK_OPEN.fbTodayAll;
+  return '<div class="fb-col'+(open?' open':'')+'" id="fbTodayAllCol"><div>'+inner+'</div></div>'
+    +'<div class="fb-more"><button class="fb-tgl" id="fbTodayAllBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="fbTodayAllCol"'
+    +' onclick="rsTkColToggle(\'fbTodayAll\',\'Hide board signals\',\''+closed+'\')">'+(open?'Hide board signals':closed)+'</button></div>';
+}
 /* ---- model vs market: one reusable component ------------------------
    o = { title, game, when, rows:[{l,sub,v,c}], band:{lo,med,hi,mkt,loLabel,hiLabel,centre,bandLabel,medLabel}, foot } */
 function fbMvmHTML(o){return rsTkMvm(o);}
@@ -56976,8 +57179,10 @@ function fbOverviewHTML(){
     kpis:[{n:s.games,l:'Games'},{n:s.cand,l:'Review',c:s.cand?'':'mut'},{n:s.dis,l:'Disagree',c:s.dis?'warn':'mut'},{n:s.faults,l:'Faults',c:s.faults?'neg':'pos'}],
     how:'<b>Games</b> are the upcoming NFL games inside the next '+FB_LOOKAHEAD_D+' days, plus every game with an FBS team on the college slate once that board has been opened. <b>Review</b> requires a PREDICTED projection and a spread or total joined from captured quotes or the reference line. <b>Disagree</b> uses the engine’s own research-lean classification: 2+ pts of disagreement on the spread or total — research attention, unproven by the model’s own record. <b>Faults</b> add failed daily self-checks to games whose model–market gap exceeds the guard bound ('+FB_GUARD.nfl.game+' pts NFL, '+FB_GUARD.p4.game+' pts FBS).'+(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''),
     foot:fbStartHereHTML()});
+  /* where to start: the reading order first, the raw signals folded under it */
+  html+='<div id="fbWr">'+fbWrInner(rows)+'</div>';
   html+='<div class="fb-sechd"><span>Today in football</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+fbEsc(ago(FB.at))+'</span></div>';
-  html+=rsTkToday(items,'fbToday','<div class="fb-quiet">No major research changes since the last refresh.'+(s.games?'':'<small>No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed. Use the week selector on the NFL board to scan any week.</small>')+'</div>');
+  html+=fbWrTodayFold(items,rsTkToday(items,'fbToday','<div class="fb-quiet">No major research changes since the last refresh.'+(s.games?'':'<small>No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed. Use the week selector on the NFL board to scan any week.</small>')+'</div>'));
   html+='<div class="fb-sechd"><span>Research a game</span><span class="r">'+fbEsc(String(rows.length))+' on the board</span></div>'
     +'<div class="fb-card" id="fbFindCard">'+fbFinderHTML(rows,'')+'</div>';
   html+='<div class="fb-sechd"><span>EdgeDesk research</span><span class="r">built here, not bought in</span></div>'
@@ -57004,6 +57209,7 @@ function fbSigItem(it){
 function fbRenderOverview(){
   var el=$('fbOverview');if(el)el.innerHTML=fbOverviewHTML();
   fbLandingPreviews();
+  if(FB.at)fbWrEnsureLayer();
   if(!FB.ui._landSeen&&FB.at){FB.ui._landSeen=true;edEvent('research_landing_view',{module:'football'});}
 }
 /* ONE fetch each, both of committed artifacts, both shared with the segment
