@@ -156,6 +156,8 @@ function espnGame(id, comp, oddsList) {
     home: (home.team && (home.team.displayName || home.team.location)) || null,
     away: (away.team && (away.team.displayName || away.team.location)) || null,
     state, completed,
+    /* how many odds objects ESPN sent, parsed or not: the run log reports it */
+    odds_n: odds.length,
     market: state === 'pre' ? line : null,
     close: completed ? line : null,
     final: completed && hs != null && as != null ? { home_score: hs, away_score: as, source: 'espn' } : null,

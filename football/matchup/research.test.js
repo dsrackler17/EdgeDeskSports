@@ -488,6 +488,37 @@ const NOW = Date.parse('2026-09-15T18:00:00Z');
   chk('an adjustment that did not apply says why', ar.steps.filter(s => !s.applied).every(s => !!s.why_absent),
     ar.steps.filter(s => !s.applied).slice(0, 2));
   chk('the sign convention is stated on the object', /HOME MARGIN/.test(ar.convention), ar.convention);
+
+  /* A COMPREHENSIVE REPORT THAT NAMES NOBODY, with a starter on file whose
+     own record carries no explicit status. That is the one road to the
+     quarterback-availability row's COMPREHENSIVE_SILENCE branch, and it cited
+     a timestamp declared in the other side-loop: a ReferenceError that threw
+     the whole assembly. The first weekend a Big 12 report was on file, every
+     Big 12 game on the card published model_status THREW. */
+  const conf = ctx.slate.games.filter(g => g.model_status === 'PREDICTED' && g.is_conference_game
+    && ictx.starters && ictx.starters.teams && ictx.starters.teams[g.home_team_id] && ictx.starters.teams[g.away_team_id]
+    && !(ictx.starters.teams[g.home_team_id].availability && ictx.starters.teams[g.home_team_id].availability.evidence === 'EXPLICIT'))[0];
+  chk('a conference game with starters on file exists on the card', !!conf);
+  if (conf) {
+    const REPORT_AT = '2026-09-24T16:05:00Z';
+    ictx.availability_by_team[FBS.normKey(conf.home_team)] = {
+      team_name: conf.home_team, dataQuality: 'OFFICIAL', players: [],
+      official_report: { ok: true, game_id: String(conf.game_id), conference: conf.home_conference,
+        published_at: '2026-09-24T16:00:00Z', retrieved_at: REPORT_AT, comprehensive: true, report_of_no_absences: true } };
+    let silent = null, threw = null;
+    try {
+      silent = IN.buildRequest(ictx, {
+        game: { game_id: conf.game_id, season: conf.season, week: conf.week, start_date: conf.kickoff,
+          home_team: conf.home_team, away_team: conf.away_team, neutral_site: conf.neutral_site,
+          home_conference: conf.home_conference, away_conference: conf.away_conference },
+        meta: { home: { key: conf.home_team_id, is_fbs: true }, away: { key: conf.away_team_id, is_fbs: true } },
+        state, now: NOW });
+    } catch (e) { threw = String(e && e.message); }
+    chk('a comprehensive report naming nobody does not throw the assembly', !threw, threw);
+    const qa = silent && silent.contract.filter(r => r.field === 'qb_availability' && r.side === 'home')[0];
+    chk('and the QB row reads it as available, dated by that report', !!qa && qa.state === 'USABLE' && qa.as_of === REPORT_AT,
+      qa && { state: qa.state, as_of: qa.as_of });
+  }
 }
 
 /* ============================================= the shipped card, verified */

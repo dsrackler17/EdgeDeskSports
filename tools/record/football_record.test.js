@@ -127,6 +127,41 @@ chk('fillMarket gives a quote-less game its entry, pregame only', () => {
   return !late && ok && !again && e.entry.market.home_line === -4 && e.entry.market.at === '2026-09-25T09:00:00Z' && e.market_pick.home_line === -4;
 });
 
+/* ------------------------------------------- the last pregame quote */
+function espnGameLedger() {
+  const L = C.emptyLedger('cfb', 2026);
+  const p = C.projectionFromSlate('cfb', slateGame({ reference_market: null }), { season: 2026 });
+  C.recordProjection(L, p, { published_at: '2026-09-24T12:00:00Z', now: '2026-09-24T12:00:00Z' });
+  return L.games.G1;
+}
+chk('a quote is kept only inside the pre-close window, and only when it moves', () => {
+  const e = espnGameLedger();
+  const early = C.noteQuote(e, { home_line: -3, total: 45, source: 'espn', book: 'ESPN BET' }, '2026-09-25T12:00:00Z');   // 53h out
+  const a = C.noteQuote(e, { home_line: -3, total: 45, source: 'espn', book: 'ESPN BET' }, '2026-09-26T20:00:00Z');       // 21h out
+  const same = C.noteQuote(e, { home_line: -3, total: 45, source: 'espn', book: 'ESPN BET' }, '2026-09-27T10:00:00Z');
+  const moved = C.noteQuote(e, { home_line: -4, total: 45, source: 'espn', book: 'ESPN BET' }, '2026-09-27T16:00:00Z');
+  const late = C.noteQuote(e, { home_line: -9, total: 45, source: 'espn', book: 'ESPN BET' }, '2026-09-27T17:30:00Z');
+  return !early && a && !same && moved && !late && e.last_quote.home_line === -4 && e.last_quote.at === '2026-09-27T16:00:00Z';
+});
+chk('a finished game the source kept no close for is closed at its last pregame quote', () => {
+  const e = espnGameLedger();
+  C.fillMarket(e, { home_line: -2, total: 45, source: 'espn', book: 'ESPN BET' }, '2026-09-25T09:00:00Z');
+  C.noteQuote(e, { home_line: -4, total: 46, source: 'espn', book: 'ESPN BET' }, '2026-09-27T16:00:00Z');
+  const before = C.closeFromLastQuote(e, '2026-09-27T20:00:00Z');          // no final yet: waits for the source
+  C.setFinal(e, { home_score: 24, away_score: 17 }, '2026-09-27T21:00:00Z');
+  const after = C.closeFromLastQuote(e, '2026-09-27T21:00:00Z');
+  const g = C.gradeGame(e, 'cfb', '2026-09-28T00:00:00Z');
+  return !before && after && e.close.home_line === -4 && e.close.basis === 'last pregame capture'
+    && g.status === 'GRADED' && g.clv_entry.spread.pts === 2 && g.spread.result === 'win';
+});
+chk('a close the source did give is never replaced by the last quote', () => {
+  const e = espnGameLedger();
+  C.noteQuote(e, { home_line: -4, total: 46, source: 'espn' }, '2026-09-27T16:00:00Z');
+  C.setClose(e, { home_line: -5, total: 47, source: 'espn', book: 'ESPN BET' }, '2026-09-27T18:00:00Z');
+  C.setFinal(e, { home_score: 24, away_score: 17 }, '2026-09-27T21:00:00Z');
+  return !C.closeFromLastQuote(e, '2026-09-27T21:00:00Z') && e.close.home_line === -5 && !e.close.basis;
+});
+
 /* ------------------------------------------------------------ settle */
 chk('a close is set only after kickoff', () => {
   const { e } = ledgerWith();
@@ -289,6 +324,9 @@ chk('espn: the summary shape reads the same way', () => {
   const g = S.parseEspnSummary({ header: { id: '401', competitions: ev.competitions }, pickcenter: ev.competitions[0].odds }, '401');
   return g.close.home_line === -7.5 && g.final.away_score === 24;
 });
+chk('espn: the count of odds objects is carried for the run log', () =>
+  S.parseEspnScoreboard({ events: [espnEvent()] })['401'].odds_n === 1
+  && S.parseEspnScoreboard({ events: [espnEvent({ noOdds: true })] })['401'].odds_n === 0);
 chk('espn: scoreboard dates are Eastern calendar dates', () => S.etDate('2026-09-27T03:30:00Z') === '20260926' && S.etDate('2026-09-26T16:00:00Z') === '20260926');
 
 /* --------------------------------------------------------- end to end */
@@ -307,6 +345,13 @@ chk('espn: scoreboard dates are Eastern calendar dates', () => S.etDate('2026-09
     const L = JSON.parse(fs.readFileSync(path.join(tmp, 'nfl_' + w.season + '.json'), 'utf8'));
     chk('every recorded NFL number was published before its kickoff', Object.values(L.games).every((e) => Date.parse(e.pick.at) < Date.parse(e.kickoff) && Date.parse(e.first.at) < Date.parse(e.kickoff)));
     chk('the ledger is not the edges record: no signals fields', Object.values(L.games).every((e) => !('sig_key' in e) && !('flagged_at' in e)));
+    const now = Date.parse('2026-09-26T10:00:00Z'), k = (h) => new Date(now + h * 3600000).toISOString();
+    chk('ESPN is asked about a quoted game again only inside the pre-close window',
+      R.needsEspn({ kickoff: k(20), market_pick: {}, entry: {} }, now) === true
+      && R.needsEspn({ kickoff: k(80), market_pick: {}, entry: {} }, now) === false
+      && R.needsEspn({ kickoff: k(80), market_pick: null, entry: null }, now) === true
+      && R.needsEspn({ kickoff: k(-30), final: {}, close: { home_line: -3 } }, now) === false
+      && R.needsEspn({ kickoff: k(-30), final: {}, close: null }, now) === true);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 
   /* the committed record itself, when present, must obey the same rules */
