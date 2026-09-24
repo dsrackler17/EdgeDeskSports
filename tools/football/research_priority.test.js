@@ -243,13 +243,117 @@ eq('a duplicate game is read once', P.rank([game('d1', 3, 0.2), game('d1', 3, 0.
 eq('the caller may ask for fewer', P.rank(eight, 2).items.length, 2);
 
 /* ======================================================================== */
-/* 6. LANGUAGE                                                              */
+/* 6. WHY RESEARCH IT                                                       */
+/* ======================================================================== */
+function why(o, ctx) { return P.why(cand(o), ctx); }
+const SAME_FAV = { model_margin: 9.5, market_margin: 7 };   /* Florida by 9.5 vs 7: no flip */
+
+/* 1  favourite flip */
+let w = why();
+eq('a flip is explained as a flip', w.code, 'favorite_flip');
+eq('with both favourites and both numbers',
+  w.text, 'Model flips the market favorite: EdgeDesk has Ole Miss by 4.1, the market has Florida by 2.');
+eq('the flip outranks market movement',
+  why({ movement: { spread_toward_model: 2, spread_moved: 2 } }).code, 'favorite_flip');
+eq('and outranks multiple flags', why({ flags: ['LARGE_DISAGREEMENT', 'TOTAL_LEAN'], total_gap: 4 }).code, 'favorite_flip');
+eq('an elevated flip is still a flip (the card carries the uncertainty tag)',
+  why({ status: 'INVESTIGATE', model_margin: -6, market_margin: 3, qb_unknown: true }).code, 'favorite_flip');
+chk('a sub-threshold flip is not called one', why({ model_margin: -0.5, market_margin: 0.5, normalized_gap: 0.07 }).code !== 'favorite_flip');
+
+/* 2  market movement, only where it was measured */
+w = why(Object.assign({}, SAME_FAV, { normalized_gap: 0.17, flags: ['SPREAD_LEAN', 'MARKET_TOWARD_MODEL'],
+  movement: { spread_moved: 1.5, spread_toward_model: 1.5 } }));
+eq('spread movement toward the model is explained', w.code, 'market_movement');
+eq('with its size and direction', w.text, 'The market has moved 1.5 pts toward EdgeDesk’s number since the open.');
+w = why(Object.assign({}, SAME_FAV, { normalized_gap: 0.17, movement: { spread_moved: 1, spread_toward_model: -1 } }));
+eq('movement away from the model says so', w.text, 'The market has moved 1 pt away from EdgeDesk’s number since the open.');
+w = why(Object.assign({}, SAME_FAV, { normalized_gap: 0.17, movement: { h2h_pp: -3.4 } }));
+eq('a 3+ pp moneyline move is meaningful', w.code, 'market_movement');
+eq('and names the side the market moved toward',
+  w.text, 'The market has moved 3.4 pp toward Ole Miss on the moneyline since first capture; the model does not see news.');
+eq('a key-number crossing is movement', why(Object.assign({}, SAME_FAV, { normalized_gap: 0.17, flags: ['SPREAD_LEAN', 'KEY_NUMBER'] })).code, 'market_movement');
+chk('a 1.5 pp move is not "meaningful"', why(Object.assign({}, SAME_FAV, { normalized_gap: 0.17, movement: { h2h_pp: 1.5 } })).code !== 'market_movement');
+chk('a half-point spread drift is not "meaningful"',
+  why(Object.assign({}, SAME_FAV, { normalized_gap: 0.17, movement: { spread_moved: 0.5, spread_toward_model: 0.5 } })).code !== 'market_movement');
+/* no movement data: movement is never mentioned */
+const noMove = [cand(SAME_FAV), cand(Object.assign({}, SAME_FAV, { movement: null })), cand(Object.assign({}, SAME_FAV, { movement: {} })),
+  cand(Object.assign({}, SAME_FAV, { sport: 'nfl', status: 'INVESTIGATE', completeness: null, movement: { spread_moved: null, spread_toward_model: null, h2h_pp: null } }))];
+chk('with no movement on file, no explanation mentions movement',
+  noMove.every(c => !/moved|movement|since the open|first capture/.test(P.why(c).text)), noMove.map(c => P.why(c).text));
+
+/* 3  multiple independent flags */
+w = why(Object.assign({}, SAME_FAV, { normalized_gap: 0.17, flags: ['SPREAD_LEAN', 'TOTAL_LEAN'], total_gap: -4.5 }));
+eq('two independent families are explained together', w.code, 'multiple_flags');
+eq('in reading order', w.text, 'Multiple independent research flags are active: spread disagreement and total disagreement.');
+w = why(Object.assign({}, SAME_FAV, { normalized_gap: 0.17, flags: ['SPREAD_LEAN', 'TOTAL_LEAN'], movement: { h2h_pp: 1.5 } }));
+eq('three read as a list', w.text, 'Multiple independent research flags are active: spread disagreement, total disagreement and market movement.');
+eq('three names for one spread disagreement are not "multiple"',
+  why(Object.assign({}, SAME_FAV, { model_margin: 12, normalized_gap: 0.35, flags: ['LARGE_DISAGREEMENT', 'SPREAD_LEAN'] })).code !== 'multiple_flags', true);
+
+/* 4  large disagreement with good data */
+w = why(Object.assign({}, SAME_FAV, { model_margin: 13.7, normalized_gap: 0.45, flags: ['LARGE_DISAGREEMENT', 'SPREAD_LEAN'], completeness: 0.9 }));
+eq('a large normalized gap with good data', w.code, 'large_disagreement');
+eq('states the gap and the coverage behind it', w.text, 'Model and market disagree by 6.7 points with strong data coverage (90%).');
+eq('moderate coverage is stated as a number, not as "strong"',
+  why(Object.assign({}, SAME_FAV, { model_margin: 13.7, normalized_gap: 0.45, completeness: 0.74 })).text,
+  'Model and market disagree by 6.7 points with 74% data coverage.');
+eq('NFL publishes no coverage figure, so none is claimed',
+  why(Object.assign({}, SAME_FAV, { sport: 'nfl', status: 'INVESTIGATE', model_margin: 13.7, normalized_gap: 0.45, completeness: null })).text,
+  'Model and market disagree by 6.7 points with no data warnings open.');
+/* "one of the largest" is only said where it is true */
+const field = [6.7, 5.5, 4.0, 3.0, 2.5].map((d, i) => cand({ key: 'f' + i, model_margin: 7 + d, market_margin: 7, normalized_gap: d / 15,
+  flags: ['SPREAD_LEAN'] }));
+eq('a top-3 gap in a field of 5 is "one of the largest"', P.why(field[1], field).code, 'largest_disagreement');
+eq('and says so with its size', P.why(field[0], field).text, 'One of the largest research-grade spread disagreements on the board: 6.7 points.');
+chk('a gap outside the top 3 is not', P.why(field[3], field).code !== 'largest_disagreement');
+chk('nor is anything in a field of 4', P.why(field[0], field.slice(0, 4)).code !== 'largest_disagreement');
+chk('elevated games are not counted in that field',
+  P.why(field[0], field.slice(0, 4).concat([cand({ key: 'e', status: 'INVESTIGATE', model_margin: 16, market_margin: 7, normalized_gap: 0.6 })])).code !== 'largest_disagreement');
+
+/* 5  large disagreement with elevated uncertainty */
+w = why({ key: 'u', status: 'INVESTIGATE', model_margin: 15, market_margin: 7, normalized_gap: 0.55, flags: ['LARGE_DISAGREEMENT'] });
+eq('a large INVESTIGATE gap is explained as uncertain', w.code, 'large_uncertain');
+eq('in those words', w.text, 'Large disagreement, but uncertainty is elevated — inspect the inputs.');
+eq('an unknown QB is named', why(Object.assign({}, SAME_FAV, { model_margin: 13, normalized_gap: 0.4, qb_unknown: true })).text,
+  'Large disagreement, but a starting quarterback is unknown — inspect the inputs.');
+eq('high uncertainty is named', why(Object.assign({}, SAME_FAV, { model_margin: 13, normalized_gap: 0.4, qualifiers: ['HIGH_UNCERTAINTY'] })).text,
+  'Large disagreement, but its input data is incomplete or out of date — inspect the inputs.');
+chk('an elevated game is never described as having good data',
+  !/coverage|no data warnings/.test(why(Object.assign({}, SAME_FAV, { model_margin: 13, normalized_gap: 0.4, qb_unknown: true })).text));
+
+/* 6  the flag it carries */
+eq('a closer model is described as closer', why({ model_margin: 14, market_margin: 17.5, normalized_gap: 0.2, flags: ['SPREAD_LEAN'] }).text,
+  'Model sees this matchup much closer than the market does: EdgeDesk has Florida by 14, the market by 17.5.');
+eq('a more lopsided model as more lopsided', why({ model_margin: 10, market_margin: 7.5, normalized_gap: 0.15, flags: ['SPREAD_LEAN'] }).text,
+  'Model sees Florida winning by more than the market does: 10 points, not 7.5.');
+eq('a model pick\'em is "even"', why({ model_margin: 0, market_margin: 3, normalized_gap: 0.2, flags: ['SPREAD_LEAN'] }).text,
+  'Model sees this matchup much closer than the market does: EdgeDesk has it even, the market has Florida by 3.');
+eq('a total lean alone names the total', why({ model_margin: 3, market_margin: 2.5, normalized_gap: 0.03, flags: ['TOTAL_LEAN'], total_gap: 3.2 }).text,
+  'Model sees the total 3.2 points higher than the market.');
+eq('a smaller price move is still stated as measured', why({ model_margin: 3, market_margin: 2.5, normalized_gap: 0.03, flags: [], movement: { h2h_pp: 1.6 } }).text,
+  'The market has moved 1.6 pp toward Florida on the moneyline since first capture; the model does not see news.');
+eq('a Collective consensus is named', why({ model_margin: 3, market_margin: 2.5, normalized_gap: 0.03, flags: ['MODEL_CONSENSUS'] }).text,
+  'Most Collective models lean the same way as EdgeDesk here.');
+
+/* every ranked game carries one, and the same board always says the same thing */
+const ranked = P.rank(pool, 9).items;
+chk('every ranked game carries a why', ranked.every(x => x.why && x.why.code && x.why.text));
+same('explanations are deterministic', P.rank(pool.slice().reverse(), 9).items.map(x => x.why.text), ranked.map(x => x.why.text));
+const WHY_CANDS = [cand(), inv, res, huge, solid, nflBand, nflWide].concat(pool, field, noMove);
+const ALL_WHY = WHY_CANDS.map(c => P.why(c, WHY_CANDS).text);
+chk('every explanation is one sentence', ALL_WHY.every(t => /^[A-Z][^.]*(\.\d[^.]*)*\.$/.test(t) && t.length <= 140), ALL_WHY.filter(t => t.length > 140));
+chk('no explanation carries a number the candidate did not', ALL_WHY.every(t => !/NaN|undefined|null|Infinity/.test(t)));
+
+/* ======================================================================== */
+/* 7. LANGUAGE                                                              */
 /* ======================================================================== */
 const SRC = fs.readFileSync(path.join(ROOT, 'lib', 'research_priority.js'), 'utf8');
 chk('the rule says what the order is not', /not a ranking of bets/.test(P.RULE));
 chk('and that the score is not a probability', /not a probability/.test(P.RULE));
-[/best bets?/i, /top plays?/i, /\blocks?\b/i, /bet this/i, /edge of the day/i, /\bpicks\b/i].forEach(re =>
-  chk('no "' + re.source + '" anywhere in the module', !re.test(SRC)));
+const BANNED = [/best bets?/i, /top plays?/i, /\blocks?\b/i, /bet this/i, /edge of the day/i, /\bpicks?\b/i, /\bwager/i, /\bhammer\b/i];
+BANNED.forEach(re => chk('no "' + re.source + '" anywhere in the module', !re.test(SRC.replace(/pick’em|pick'em/g, ''))));
+BANNED.concat([/\bbet\b/i, /\bedge\b/i, /value/i]).forEach(re =>
+  chk('no "' + re.source + '" in any explanation', ALL_WHY.every(t => !re.test(t)), ALL_WHY.filter(t => re.test(t))));
 
 console.log('');
 failures.forEach(f => console.log('  FAIL  ' + f));
