@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_football_model_record_summary_v1",
- "generated_at": "2026-09-24T00:10:20.713Z",
+ "generated_at": "2026-09-24T00:49:18.023Z",
  "season": 2026,
  "what": "The football model’s own record: the number it published before kickoff, graded against the closing line and the final. Separate from the edges record, which grades flagged prices.",
  "rules": [
@@ -19,7 +19,7 @@
   "cfb": {
    "projection": "football/fbs/slate.json",
    "market": "ESPN scoreboard line (named book)",
-   "close": "ESPN line frozen at kickoff",
+   "close": "ESPN line frozen at kickoff; where ESPN keeps none for a finished game, the last ESPN line this record captured before kickoff",
    "final": "ESPN and cfbfastR, which must agree"
   }
  },
@@ -251,58 +251,58 @@
     "edgedesk_cfb_p4_v1.0.0"
    ],
    "counts": {
-    "recorded": 277,
-    "pregame": 117,
+    "recorded": 287,
+    "pregame": 127,
     "awaiting_final": 0,
-    "final_no_close": 160,
-    "graded": 0,
+    "final_no_close": 120,
+    "graded": 40,
     "revised": 168,
-    "beyond_guard": 0
+    "beyond_guard": 1
    },
    "ats": {
     "all": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
-     "p": 0,
-     "pct": null
+     "n": 40,
+     "w": 22,
+     "l": 17,
+     "p": 1,
+     "pct": 56.4
     },
     "lean": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 31,
+     "w": 18,
+     "l": 13,
      "p": 0,
-     "pct": null
+     "pct": 58.1
     },
     "big": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 22,
+     "w": 13,
+     "l": 9,
      "p": 0,
-     "pct": null
+     "pct": 59.1
     }
    },
    "ou": {
     "all": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 29,
+     "w": 14,
+     "l": 15,
      "p": 0,
-     "pct": null
+     "pct": 48.3
     },
     "lean": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 18,
+     "w": 8,
+     "l": 10,
      "p": 0,
-     "pct": null
+     "pct": 44.4
     },
     "big": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 8,
+     "w": 3,
+     "l": 5,
      "p": 0,
-     "pct": null
+     "pct": 37.5
     }
    },
    "su": {
@@ -360,13 +360,13 @@
     }
    },
    "error": {
-    "n": 0,
-    "model_mae": null,
-    "close_mae": null,
-    "model_closer_pct": null,
-    "total_n": 0,
-    "model_total_mae": null,
-    "close_total_mae": null
+    "n": 40,
+    "model_mae": 10.55,
+    "close_mae": 9.3,
+    "model_closer_pct": 47.5,
+    "total_n": 30,
+    "model_total_mae": 14.57,
+    "close_total_mae": 13.77
    },
    "brier": {
     "n": 75,
@@ -404,20 +404,20 @@
     {
      "week": 3,
      "recorded": 75,
-     "graded": 0,
+     "graded": 40,
      "ats": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null
+      "n": 40,
+      "w": 22,
+      "l": 17,
+      "p": 1,
+      "pct": 56.4
      },
      "ou": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
+      "n": 29,
+      "w": 14,
+      "l": 15,
       "p": 0,
-      "pct": null
+      "pct": 48.3
      },
      "clv": {
       "n": 0,
@@ -459,7 +459,7 @@
     },
     {
      "week": 5,
-     "recorded": 46,
+     "recorded": 56,
      "graded": 0,
      "ats": {
       "n": 0,
@@ -494,58 +494,58 @@
  "cfb_groups": {
   "p4": {
    "counts": {
-    "recorded": 132,
-    "pregame": 61,
+    "recorded": 135,
+    "pregame": 64,
     "awaiting_final": 0,
-    "final_no_close": 71,
-    "graded": 0,
+    "final_no_close": 54,
+    "graded": 17,
     "revised": 85,
     "beyond_guard": 0
    },
    "ats": {
     "all": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 17,
+     "w": 11,
+     "l": 6,
      "p": 0,
-     "pct": null
+     "pct": 64.7
     },
     "lean": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 14,
+     "w": 9,
+     "l": 5,
      "p": 0,
-     "pct": null
+     "pct": 64.3
     },
     "big": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 10,
+     "w": 8,
+     "l": 2,
      "p": 0,
-     "pct": null
+     "pct": 80
     }
    },
    "ou": {
     "all": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 16,
+     "w": 8,
+     "l": 8,
      "p": 0,
-     "pct": null
+     "pct": 50
     },
     "lean": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 8,
+     "w": 4,
+     "l": 4,
      "p": 0,
-     "pct": null
+     "pct": 50
     },
     "big": {
-     "n": 0,
+     "n": 2,
      "w": 0,
-     "l": 0,
+     "l": 2,
      "p": 0,
-     "pct": null
+     "pct": 0
     }
    },
    "su": {
@@ -567,69 +567,69 @@
     }
    },
    "error": {
-    "n": 0,
-    "model_mae": null,
-    "close_mae": null,
-    "model_closer_pct": null,
-    "total_n": 0,
-    "model_total_mae": null,
-    "close_total_mae": null
+    "n": 17,
+    "model_mae": 9.02,
+    "close_mae": 9.97,
+    "model_closer_pct": 58.8,
+    "total_n": 17,
+    "model_total_mae": 15.45,
+    "close_total_mae": 14.85
    }
   },
   "other_fbs": {
    "counts": {
-    "recorded": 78,
-    "pregame": 43,
+    "recorded": 82,
+    "pregame": 47,
     "awaiting_final": 0,
-    "final_no_close": 35,
-    "graded": 0,
+    "final_no_close": 22,
+    "graded": 13,
     "revised": 52,
     "beyond_guard": 0
    },
    "ats": {
     "all": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
-     "p": 0,
-     "pct": null
+     "n": 13,
+     "w": 8,
+     "l": 4,
+     "p": 1,
+     "pct": 66.7
     },
     "lean": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 8,
+     "w": 6,
+     "l": 2,
      "p": 0,
-     "pct": null
+     "pct": 75
     },
     "big": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 6,
+     "w": 5,
+     "l": 1,
      "p": 0,
-     "pct": null
+     "pct": 83.3
     }
    },
    "ou": {
     "all": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 13,
+     "w": 6,
+     "l": 7,
      "p": 0,
-     "pct": null
+     "pct": 46.2
     },
     "lean": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 10,
+     "w": 4,
+     "l": 6,
      "p": 0,
-     "pct": null
+     "pct": 40
     },
     "big": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 6,
+     "w": 3,
+     "l": 3,
      "p": 0,
-     "pct": null
+     "pct": 50
     }
    },
    "su": {
@@ -651,46 +651,46 @@
     }
    },
    "error": {
-    "n": 0,
-    "model_mae": null,
-    "close_mae": null,
-    "model_closer_pct": null,
-    "total_n": 0,
-    "model_total_mae": null,
-    "close_total_mae": null
+    "n": 13,
+    "model_mae": 6.95,
+    "close_mae": 7.08,
+    "model_closer_pct": 46.2,
+    "total_n": 13,
+    "model_total_mae": 13.42,
+    "close_total_mae": 12.35
    }
   },
   "fbs_fcs": {
    "counts": {
-    "recorded": 67,
-    "pregame": 13,
+    "recorded": 70,
+    "pregame": 16,
     "awaiting_final": 0,
-    "final_no_close": 54,
-    "graded": 0,
+    "final_no_close": 44,
+    "graded": 10,
     "revised": 31,
-    "beyond_guard": 0
+    "beyond_guard": 1
    },
    "ats": {
     "all": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 10,
+     "w": 3,
+     "l": 7,
      "p": 0,
-     "pct": null
+     "pct": 30
     },
     "lean": {
-     "n": 0,
-     "w": 0,
-     "l": 0,
+     "n": 9,
+     "w": 3,
+     "l": 6,
      "p": 0,
-     "pct": null
+     "pct": 33.3
     },
     "big": {
-     "n": 0,
+     "n": 6,
      "w": 0,
-     "l": 0,
+     "l": 6,
      "p": 0,
-     "pct": null
+     "pct": 0
     }
    },
    "ou": {
@@ -735,10 +735,10 @@
     }
    },
    "error": {
-    "n": 0,
-    "model_mae": null,
-    "close_mae": null,
-    "model_closer_pct": null,
+    "n": 10,
+    "model_mae": 17.81,
+    "close_mae": 11.05,
+    "model_closer_pct": 30,
     "total_n": 0,
     "model_total_mae": null,
     "close_total_mae": null
@@ -1047,17 +1047,17 @@
     "model_line": -10.76,
     "model_total": 54.3,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -13.5,
+    "close_total": 53.5,
     "final": [
      38,
      52
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
-    "ou": null,
-    "ou_side": null,
+    "status": "GRADED",
+    "ats": "loss",
+    "ats_side": "away",
+    "ou": "win",
+    "ou_side": "over",
     "clv": null
    },
    {
@@ -1070,15 +1070,15 @@
     "model_line": -21.35,
     "model_total": null,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -17.5,
+    "close_total": 55.5,
     "final": [
      17,
      52
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
+    "status": "GRADED",
+    "ats": "win",
+    "ats_side": "home",
     "ou": null,
     "ou_side": null,
     "clv": null
@@ -1093,17 +1093,17 @@
     "model_line": 7.23,
     "model_total": 51.2,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": 4,
+    "close_total": 47.5,
     "final": [
      26,
      10
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
-    "ou": null,
-    "ou_side": null,
+    "status": "GRADED",
+    "ats": "win",
+    "ats_side": "away",
+    "ou": "loss",
+    "ou_side": "over",
     "clv": null
    },
    {
@@ -1116,17 +1116,17 @@
     "model_line": -29.94,
     "model_total": 49,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -34.5,
+    "close_total": 50.5,
     "final": [
      17,
      42
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
-    "ou": null,
-    "ou_side": null,
+    "status": "GRADED",
+    "ats": "win",
+    "ats_side": "away",
+    "ou": "loss",
+    "ou_side": "under",
     "clv": null
    },
    {
@@ -1139,17 +1139,17 @@
     "model_line": 8.39,
     "model_total": 53.6,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": 26.5,
+    "close_total": 50.5,
     "final": [
      31,
      10
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
-    "ou": null,
-    "ou_side": null,
+    "status": "GRADED",
+    "ats": "win",
+    "ats_side": "home",
+    "ou": "loss",
+    "ou_side": "over",
     "clv": null
    },
    {
@@ -1162,15 +1162,15 @@
     "model_line": -35.67,
     "model_total": null,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -28.5,
+    "close_total": 61.5,
     "final": [
      24,
      38
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
+    "status": "GRADED",
+    "ats": "loss",
+    "ats_side": "home",
     "ou": null,
     "ou_side": null,
     "clv": null
@@ -1185,17 +1185,17 @@
     "model_line": 4.27,
     "model_total": 54.8,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -3,
+    "close_total": 46.5,
     "final": [
      26,
      13
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
-    "ou": null,
-    "ou_side": null,
+    "status": "GRADED",
+    "ats": "win",
+    "ats_side": "away",
+    "ou": "loss",
+    "ou_side": "over",
     "clv": null
    },
    {
@@ -1208,17 +1208,17 @@
     "model_line": -19.47,
     "model_total": 59.5,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -29.5,
+    "close_total": 58.5,
     "final": [
      6,
      30
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
-    "ou": null,
-    "ou_side": null,
+    "status": "GRADED",
+    "ats": "win",
+    "ats_side": "away",
+    "ou": "loss",
+    "ou_side": "over",
     "clv": null
    },
    {
@@ -1231,17 +1231,17 @@
     "model_line": -18.05,
     "model_total": 56.2,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -18.5,
+    "close_total": 56.5,
     "final": [
      7,
      31
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
-    "ou": null,
-    "ou_side": null,
+    "status": "GRADED",
+    "ats": "loss",
+    "ats_side": "away",
+    "ou": "win",
+    "ou_side": "under",
     "clv": null
    },
    {
@@ -1254,15 +1254,15 @@
     "model_line": -23.09,
     "model_total": null,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -41.5,
+    "close_total": 55.5,
     "final": [
      0,
      42
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
+    "status": "GRADED",
+    "ats": "loss",
+    "ats_side": "away",
     "ou": null,
     "ou_side": null,
     "clv": null
@@ -1277,17 +1277,17 @@
     "model_line": -5.79,
     "model_total": 59.7,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -7,
+    "close_total": 55.5,
     "final": [
      14,
      21
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
-    "ou": null,
-    "ou_side": null,
+    "status": "GRADED",
+    "ats": "push",
+    "ats_side": "away",
+    "ou": "loss",
+    "ou_side": "over",
     "clv": null
    },
    {
@@ -1300,17 +1300,17 @@
     "model_line": -30.64,
     "model_total": 59,
     "entry_line": null,
-    "close_line": null,
-    "close_total": null,
+    "close_line": -35.5,
+    "close_total": 60.5,
     "final": [
      9,
      42
     ],
-    "status": "FINAL_NO_CLOSE",
-    "ats": null,
-    "ats_side": null,
-    "ou": null,
-    "ou_side": null,
+    "status": "GRADED",
+    "ats": "win",
+    "ats_side": "away",
+    "ou": "win",
+    "ou_side": "under",
     "clv": null
    }
   ]
