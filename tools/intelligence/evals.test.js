@@ -446,7 +446,26 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
        filled. That is the claim the name makes, so that is what is asserted. */
     const sixOut = ['North Texas @ Texas State', 'Detroit Lions @ Buffalo Bills'];
     chk(F, 'games six days out are outside "today" and none is forced', sixOut.every((mu) => r.j.board.eligibility.dropped.some((d) => d.matchup === mu && d.why === 'AFTER_WINDOW')) && r.j.board.opportunities.length === 0, { dropped: r.j.board.eligibility.dropped.map((d) => d.why + ':' + d.matchup), opportunities: r.j.board.opportunities.length });
-    chk(F, 'coverage says which sports had games, which had none, which are out of season', r.j.board.coverage.some((c) => c.status === 'NO_ELIGIBLE_GAMES') && r.j.board.coverage.some((c) => c.status === 'NO_GAMES') && r.j.board.coverage.some((c) => c.status === 'OUT_OF_SEASON'), r.j.board.coverage.map((c) => c.sport + ':' + c.status));
+    /* ── AND A THIRD ─────────────────────────────────────────────────────
+       This asserted that some sport read NO_ELIGIBLE_GAMES, and rotted the
+       same way on 24 September 2026: a Thursday, the committed card had an
+       NFL game and college games kicking off that very day, both leagues
+       were EVALUATED, and the board had read the window perfectly correctly.
+       Whether a league with games has any of them TODAY is the calendar's.
+
+       What the claim needs is that a league with games says so honestly —
+       EVALUATED exactly when it has eligible games, NO_ELIGIBLE_GAMES exactly
+       when it has none — that a league the fixture gives no rows reads
+       NO_GAMES, and that every league the calendar puts out of season is
+       reported OUT_OF_SEASON rather than dropped. */
+    const cov = r.j.board.coverage;
+    const hadGames = ['americanfootball_nfl', 'americanfootball_ncaaf'].map((k) => cov.find((c) => c.sport === k));
+    chk(F, 'coverage says which sports had games, which had none, which are out of season',
+      hadGames.every((c) => c && c.scheduled > 0 && (c.status === 'EVALUATED' ? c.eligible > 0 : c.status === 'NO_ELIGIBLE_GAMES' && c.eligible === 0))
+        && cov.some((c) => c.status === 'NO_GAMES')
+        && r.j.board.scope.out_of_season.length > 0
+        && r.j.board.scope.out_of_season.every((k) => cov.some((c) => c.sport === k && c.status === 'OUT_OF_SEASON')),
+      cov.map((c) => c.sport + ':' + c.status + (c.eligible != null ? '(' + c.eligible + '/' + c.scheduled + ')' : '')));
     /* The board has two findings for an empty card and both are the finding:
        "no eligible games" when the window is empty, "nothing qualifies" when
        it is not and nothing cleared the rules. Which one appears depends on
