@@ -21,8 +21,8 @@
   "game_time": "2026-09-24T23:30:00.000Z",
   "game_when_label": "2026-09-24 23:30 UTC",
   "published_at": "2026-09-24T14:30:24.908Z",
-  "updated_at": "2026-09-24T21:50:22.540Z",
-  "generated_at": "2026-09-24T21:50:22.540Z",
+  "updated_at": "2026-09-24T22:40:21.575Z",
+  "generated_at": "2026-09-24T22:40:21.575Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1751,13 +1751,13 @@
   },
   "snapshot_id": "snap_c23198f19c679d17",
   "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-09-24T23:30:00.000Z",
-    "minutes_before_kickoff": 100,
+    "minutes_before_kickoff": 50,
     "published_at": "2026-09-24T14:30:24.908Z",
-    "refreshed": false,
-    "at": "2026-09-24T21:50:22.540Z"
+    "refreshed": true,
+    "at": "2026-09-24T22:40:21.575Z"
   },
   "featured": {
     "editorial_priority": 37.8,
@@ -2059,11 +2059,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-09-24T21:50:22.540Z"
+    "at": "2026-09-24T22:40:21.575Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-09-24T21:50:22.540Z",
+    "at": "2026-09-24T22:40:21.575Z",
     "blocking": [],
     "warnings": [],
     "hold_reason": null
@@ -2071,6 +2071,100 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-24T21:50:22.540Z"
+    "at": "2026-09-24T22:40:21.575Z"
+  },
+  "publication_snapshot_id": "snap_c23198f19c679d17",
+  "freshness": {
+    "at": "2026-09-24T22:40:21.575Z",
+    "fields": {
+      "market.line": {
+        "value": "Coastal Carolina +2.5",
+        "provider": "captured · Pinnacle",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.total": {
+        "value": 51.5,
+        "provider": "captured · Pinnacle",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.book": {
+        "value": "captured · Pinnacle",
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }
