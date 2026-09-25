@@ -200,6 +200,10 @@ try {
   chk('a reader with no partner account sees no stats', none.ok === true && none.account === null && !none.stats);
   err = db.mustFail(() => db.anon(`select public.affiliate_my_dashboard();`));
   chk('anon has no dashboard', !!err && /permission denied/.test(err));
+  err = db.mustFail(() => db.anon(`select public.affiliate_apply('ANONCODE', null, null);`));
+  chk('anon cannot apply to the program', !!err && /permission denied/.test(err));
+  err = db.mustFail(() => db.anon(`select public.affiliate_admin_overview();`));
+  chk('anon cannot reach an admin function', !!err && /permission denied/.test(err));
 
   /* ── admin overview ──────────────────────────────────────────────────── */
   err = db.mustFail(() => db.as(U.partner, `select public.affiliate_admin_overview();`));

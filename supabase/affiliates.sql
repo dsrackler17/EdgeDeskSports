@@ -110,7 +110,7 @@ create or replace function public.affiliate_is_admin()
 returns boolean language sql stable security definer set search_path = public, pg_temp as $$
   select auth.uid() is not null and exists (select 1 from public.affiliate_admins where user_id = auth.uid());
 $$;
-revoke all on function public.affiliate_is_admin() from public;
+revoke all on function public.affiliate_is_admin() from public, anon;
 grant execute on function public.affiliate_is_admin() to authenticated;
 
 -- ── affiliate accounts ──────────────────────────────────────────────────────
@@ -357,7 +357,7 @@ begin
   if not found then return jsonb_build_object('ok', false, 'reason', 'already_attributed'); end if;
   return jsonb_build_object('ok', true, 'code', v_aff.code);
 end $$;
-revoke all on function public.affiliate_claim(text, text) from public;
+revoke all on function public.affiliate_claim(text, text) from public, anon;
 grant execute on function public.affiliate_claim(text, text) to authenticated;
 
 -- ── clicks: callable without an account (it is a landing page) ──────────────
@@ -398,7 +398,7 @@ begin
   values (v_uid, v_code, nullif(left(btrim(coalesce(p_display_name, '')), 80), ''), nullif(btrim(coalesce(p_payout_email, '')), ''), 'pending');
   return jsonb_build_object('ok', true, 'code', v_code, 'status', 'pending');
 end $$;
-revoke all on function public.affiliate_apply(text, text, text) from public;
+revoke all on function public.affiliate_apply(text, text, text) from public, anon;
 grant execute on function public.affiliate_apply(text, text, text) to authenticated;
 
 -- ── processing one Stripe event into conversions and commissions ────────────
@@ -635,7 +635,7 @@ begin
       'terms_version', v_set.terms_version, 'auto_approve', v_set.auto_approve),
     'stats', public.affiliate_stats(v_aff.id));
 end $$;
-revoke all on function public.affiliate_my_dashboard() from public;
+revoke all on function public.affiliate_my_dashboard() from public, anon;
 grant execute on function public.affiliate_my_dashboard() to authenticated;
 
 -- ── admin doors. Every one checks affiliate_is_admin() first. ───────────────
@@ -663,7 +663,7 @@ begin
                               and not exists (select 1 from public.affiliate_conversions c where c.stripe_event_id = e.id)),
     'as_of', now());
 end $$;
-revoke all on function public.affiliate_admin_overview() from public;
+revoke all on function public.affiliate_admin_overview() from public, anon;
 grant execute on function public.affiliate_admin_overview() to authenticated;
 
 create or replace function public.affiliate_admin_upsert_account(p_email text, p_code text, p_status text default 'active',
@@ -685,7 +685,7 @@ begin
   returning id into v_id;
   return jsonb_build_object('ok', true, 'id', v_id, 'code', v_code);
 end $$;
-revoke all on function public.affiliate_admin_upsert_account(text, text, text, numeric, text, text) from public;
+revoke all on function public.affiliate_admin_upsert_account(text, text, text, numeric, text, text) from public, anon;
 grant execute on function public.affiliate_admin_upsert_account(text, text, text, numeric, text, text) to authenticated;
 
 create or replace function public.affiliate_admin_update_settings(p jsonb)
@@ -705,7 +705,7 @@ begin
   where id = 1;
   return (select to_jsonb(s) from public.affiliate_settings s where id = 1);
 end $$;
-revoke all on function public.affiliate_admin_update_settings(jsonb) from public;
+revoke all on function public.affiliate_admin_update_settings(jsonb) from public, anon;
 grant execute on function public.affiliate_admin_update_settings(jsonb) to authenticated;
 
 create or replace function public.affiliate_admin_commissions(p_ids bigint[], p_action text, p_reference text default null, p_reason text default null)
@@ -731,7 +731,7 @@ begin
   get diagnostics n = row_count;
   return jsonb_build_object('ok', true, 'changed', n);
 end $$;
-revoke all on function public.affiliate_admin_commissions(bigint[], text, text, text) from public;
+revoke all on function public.affiliate_admin_commissions(bigint[], text, text, text) from public, anon;
 grant execute on function public.affiliate_admin_commissions(bigint[], text, text, text) to authenticated;
 
 create or replace function public.affiliate_admin_reconcile()
@@ -740,7 +740,7 @@ begin
   if not public.affiliate_is_admin() then raise exception 'not an affiliate admin' using errcode = 'insufficient_privilege'; end if;
   return public.affiliate_reconcile(45);
 end $$;
-revoke all on function public.affiliate_admin_reconcile() from public;
+revoke all on function public.affiliate_admin_reconcile() from public, anon;
 grant execute on function public.affiliate_admin_reconcile() to authenticated;
 
 notify pgrst, 'reload schema';
@@ -784,4 +784,16 @@ union all
 select 9, 'the processing function is not callable by a client',
   case when not has_function_privilege('authenticated', 'public.affiliate_process_event(text)', 'execute')
         and not has_function_privilege('authenticated', 'public.affiliate_reconcile(int)', 'execute') then 'ok' else 'CHECK THIS' end
+union all
+-- Supabase grants EXECUTE on every new public function to anon directly, so
+-- revoking from PUBLIC alone would leave these open to a signed-out visitor.
+select 10, 'no signed-in-only function is callable by a signed-out visitor',
+  case when not exists (
+    select 1 from unnest(array[
+      'public.affiliate_is_admin()', 'public.affiliate_claim(text, text)', 'public.affiliate_apply(text, text, text)',
+      'public.affiliate_my_dashboard()', 'public.affiliate_admin_overview()',
+      'public.affiliate_admin_upsert_account(text, text, text, numeric, text, text)',
+      'public.affiliate_admin_update_settings(jsonb)', 'public.affiliate_admin_commissions(bigint[], text, text, text)',
+      'public.affiliate_admin_reconcile()', 'public.affiliate_stats(uuid)']) f
+    where has_function_privilege('anon', f, 'execute')) then 'ok' else 'CHECK THIS' end
 order by 1;

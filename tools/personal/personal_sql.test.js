@@ -74,6 +74,8 @@ try {
   chk('a reader cannot write the shared state', !!err && /permission denied|row-level security/.test(err), err && err.slice(0, 200));
   err = db.mustFail(() => db.anon(`select count(*) from public.game_research_state;`));
   chk('anon cannot read the shared state', !!err && /permission denied/.test(err));
+  err = db.mustFail(() => db.anon(`select public.edp_entitled('00000000-0000-0000-0000-000000000001');`));
+  chk('anon cannot ask whether an account is entitled', !!err && /permission denied/.test(err));
   chk('a signed-in reader reads it (no paywall function installed)', db.as(A, `select count(*) from public.game_research_state;`) === '1');
 
   /* ── preferences ──────────────────────────────────────────────────────── */

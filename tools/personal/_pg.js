@@ -98,6 +98,9 @@ function start(label) {
     'create extension if not exists pgcrypto;',
     'alter default privileges for role postgres in schema public grant select, insert, update, delete on tables to service_role;',
     'alter default privileges for role postgres in schema public grant usage, select on sequences to service_role;',
+    /* a Supabase project also grants EXECUTE on every new public function to
+       the client roles; revoking from PUBLIC alone leaves those grants in place */
+    'alter default privileges for role postgres in schema public grant execute on functions to anon, authenticated, service_role;',
     'grant usage on schema public to service_role;'
   ].join('\n'));
   return db;
