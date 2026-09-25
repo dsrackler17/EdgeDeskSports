@@ -190,6 +190,28 @@ function research() { return win.fbBriefGame({ home: HOME, away: AWAY, t: Date.p
 }
 
 /* ------------------------------------------------------------------------ */
+section('2b · the AI desk is handed the same read');
+{
+  const s = stage(-4.1, { market_spread: -1.5 });
+  const want = JSON.stringify(research().research_view);
+  eq(typeof win.fbP4ResearchBriefFor, 'function', 'the page exports the research read for one board game');
+  eq(JSON.stringify(win.fbP4ResearchBriefFor({ game_id: 'PB1' })), want, 'by game id: the brief’s own research view');
+  eq(JSON.stringify(win.fbP4ResearchBriefFor({ home: HOME, away: AWAY })), want, 'by the two team names');
+  eq(JSON.stringify(win.fbP4ResearchBriefFor({ home: AWAY, away: HOME })), want, 'and with the names the other way round');
+  eq(win.fbP4ResearchBriefFor({ game_id: 'NOT_ON_THE_BOARD' }), null, 'a game the board has not loaded has none');
+  void s;
+  /* the desk's two packets carry it (EDAI, a separate block of app.html) */
+  has(BOOT.app, "research_view:sk===EDINTEL.CFB_SPORT?cfbResearchView({game_id:res.game_id,home:res.home,away:res.away}):null",
+    'a named-matchup packet carries the research view');
+  has(BOOT.app, "?cfbResearchView({event:{home:e.home_team,away:e.away_team,t:e.commence_time}}):null",
+    'and so does a college signal’s packet');
+  has(BOOT.app, 'h+=deskBoardReadHTML(D.focus);', 'the desk’s short answer prints the board’s read of its focus game');
+  const TS = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'), 'utf8');
+  has(TS, 'use ONLY research_view.drivers.reasons', 'the server tells the model to give no reason the view does not');
+  has(TS, 'RESEARCH VIEW — on a college game', 'and its system prompt says what the view is');
+}
+
+/* ------------------------------------------------------------------------ */
 section('3 · the publisher brief: web, CMS and text');
 let RESEARCH = null;
 {

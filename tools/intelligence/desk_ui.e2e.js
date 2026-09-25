@@ -512,6 +512,57 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
       if (SHOTS) { fs.mkdirSync(SHOT_DIR, { recursive: true }); await page.screenshot({ path: path.join(SHOT_DIR, 'desk-short.png'), fullPage: false }); }
       await ctx.close();
     }
+    /* ══ 7. A COLLEGE ANSWER CARRIES THE BOARD'S RESEARCH READ ═══════════
+       The desk answers the value question from its own evidence; under it
+       the panel prints the board's one research label for the same game,
+       read off the page's research view (window.fbP4ResearchBriefFor, the
+       V.brief object tools/football/research_view_publish.test.js pins).
+       The board is not booted here, so the page's own export is stood in
+       for with that object's shape; what is under test is the rendering. */
+    {
+      const RV = { contract: 'cfb_research_brief/1', view: 'cfb_research_view/1', game_id: 'cfb-e2e', home: HOME, away: AWAY,
+        label: { key: 'WORTH_RESEARCHING', label: 'WORTH RESEARCHING', rule: 'research_gap', means: 'EdgeDesk differs from the market by 3.4 pts.' },
+        market_gap: { available: true, points: 3.4, toward_team: HOME, text: '3.4 pts toward ' + HOME },
+        confidence: { score: 66, tier: 'HIGH', label: 'High' }, reliability: { pct: 71, tier: 'ADEQUATE', text: '71%' },
+        drivers: { team: HOME, none: false, reasons: [{ kind: 'component', key: 'rating', points: 4.2, text: '+4.2 pts team-strength edge (opponent-adjusted results)' }] },
+        parity: { ok: true, gaps: [] } };
+      const EVC = { sport: 'americanfootball_ncaaf', game_id: 'cfb-e2e', matchup: MATCHUP, selection: HOME + ' -2.5', market: 'spread', side: 'home',
+        line: -2.5, odds: -110, book: 'FanDuel', verdict: 'WATCH', value_points: 1, tier: 'RESEARCH', market_state: 'CURRENT', current: true,
+        confidence: { grade: 'LOW', score: 0.3, rule: 'evidence quality x tier x freshness' }, reasons: { for: [], against: [] }, risks: [], missing: [] };
+      const CFB_DESK = { build: 'e2e', model: null, answer: HOME + ' -2.5 is close to EdgeDesk’s number; it is not value at this price.',
+        desk: { schema: 'edgedesk_desk_answer_v1', version: 1, intent: 'MARKET', evaluations: [EVC],
+          focus: { sport: 'americanfootball_ncaaf', game_id: 'cfb-e2e', market: 'spread', side: 'home', team: HOME, line: -2.5, odds: -110 },
+          narration: { prose: 'DETERMINISTIC' } },
+        desk_state: { schema: 'edgedesk_desk_state_v1', focus: { sport: 'americanfootball_ncaaf', game_id: 'cfb-e2e', market: 'spread', side: 'home', team: HOME, line: -2.5, odds: -110 },
+          compare: [], board: [], sports: [], sort: 'value', last_intent: 'MARKET', turns: 1 },
+        research: null };
+      for (const vp of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+        const { page, ctx, errors } = await openDesk(vp, CFB_DESK);
+        await page.evaluate((rv) => { window.fbP4ResearchBriefFor = (q) => (q && String(q.game_id) === 'cfb-e2e') ? rv : null; }, RV);
+        await ask(page, Q);
+        const got = await page.evaluate(() => {
+          const log = document.getElementById('edaiLog');
+          const line = [...log.querySelectorAll('.edai-src')].map((x) => x.innerText).filter((t) => /Board research read/.test(t))[0] || null;
+          return { line, wide: document.getElementById('edaiPanel').scrollWidth > document.getElementById('edaiPanel').clientWidth + 1 };
+        });
+        const w = vp.width + 'px';
+        chk('desk (' + w + '): a college answer prints the board’s research read', !!got.line && /Board research read: WORTH RESEARCHING/.test(got.line), got.line);
+        chk('desk (' + w + '): with the gap, confidence and reliability apart', got.line && /gap 3\.4 pts toward/.test(got.line) && /confidence high/.test(got.line) && /reliability 71%/.test(got.line), got.line);
+        chk('desk (' + w + '): and the board’s measured reasons, not the desk’s', got.line && /Why the board leans .*\+4\.2 pts team-strength edge/.test(got.line), got.line);
+        chk('desk (' + w + '): research, not picks', got.line && /Research, not picks/.test(got.line), got.line);
+        chk('desk (' + w + '): the panel does not scroll sideways', !got.wide);
+        chk('desk (' + w + '): no errors', errors.length === 0, errors);
+        if (SHOTS) { fs.mkdirSync(SHOT_DIR, { recursive: true }); await page.screenshot({ path: path.join(SHOT_DIR, 'desk-cfb-read-' + vp.width + '.png'), fullPage: false }); }
+        await ctx.close();
+      }
+      /* a game the board has not loaded: no line at all, rather than an invented one */
+      const { page, ctx } = await openDesk({ width: 1280, height: 900 }, CFB_DESK);
+      await page.evaluate(() => { window.fbP4ResearchBriefFor = () => null; });
+      await ask(page, Q);
+      chk('desk: with no research view for the game, no board line is printed',
+        await page.evaluate(() => !/Board research read/.test(document.getElementById('edaiLog').innerText)));
+      await ctx.close();
+    }
   } catch (e) {
     console.log('THREW: ' + String((e && e.stack) || e).slice(0, 900));
     fail++;

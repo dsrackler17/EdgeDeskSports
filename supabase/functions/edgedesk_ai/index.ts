@@ -30636,6 +30636,7 @@ EdgeDesk classified the question, built a research plan, and ran that plan again
 - THESIS ATTACK — the deterministic test of the focused signal against its own owned numbers.
 - MEMORY — verified facts, prior graded outcomes and discovered patterns from EdgeDesk's research history.
 - CLIENT PACKET / BOARD — when the user has a signal open or a scored board loaded, the deterministic engine's own output for it.
+- RESEARCH VIEW — on a college game, the packet's research_view (contract cfb_research_brief/1) is the board's own research read of it: one research label and what it means, the market gap measured from EdgeDesk's raw margin, confidence and reliability as two separate numbers, the reasons the engine measured, the projection's status against its published history and the best current quote. Quote them as given. If you say why EdgeDesk leans one way, use ONLY research_view.drivers.reasons; never supply a reason of your own. The label is research — which question is worth opening — never a pick.
 
 EVIDENCE STATUS — READ IT, IT IS NOT DECORATION
 VERIFIED = owned, current. PROBABLE = owned but not confirmed (probable starters are never confirmed lineups). PARTIAL = owned but incomplete (flagged bullpen arms are not full rest state). STALE = past its freshness window; an old price is not a current price. UNPROVEN = owned model output that is not CLV-validated and feeds no edge math. HISTORICAL = a sample, never proof about one game. UNAVAILABLE = not retrievable — say so.
@@ -36049,9 +36050,17 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
       || (packetSport === ctx0.sport
         && (!ctx0.single_game || matchesContext(ctx0, { matchup: (packet as any)?.game?.matchup })));
     if (Object.keys(clone).length && packetIsSubject) {
+      /* the board's research read rides in the packet for a college game; it
+         is named here so the model reads it as the board's words, not its own */
+      const rv = (clone as any).research_view;
+      const rvNote = rv && rv.contract === "cfb_research_brief/1"
+        ? " Its research_view is the board's own research read of this game (" + String(rv.label?.label ?? "no label")
+          + "): quote its label, market gap, confidence and reliability as given, and if you say why EdgeDesk leans one way use ONLY "
+          + "research_view.drivers.reasons — never a reason of your own. The label is research, never a pick."
+        : "";
       parts.push(
         "CLIENT PACKET — the deterministic engine's output for the signal the user has open. "
-        + "Its verdict, confidence, score and price sensitivity are authoritative:\n"
+        + "Its verdict, confidence, score and price sensitivity are authoritative." + rvNote + "\n"
         + JSON.stringify(clone),
       );
     } else if (Object.keys(clone).length) {

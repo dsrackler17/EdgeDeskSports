@@ -41818,6 +41818,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       chips.push(esc(String(e.market_state||'').toLowerCase().replace(/_/g,' ')));
       h+='<div class="edai-src" style="margin-top:6px">'+chips.join(' \u00b7 ')+'</div>';
     }
+    h+=deskBoardReadHTML(D.focus);
     var more='';
     (D.evaluations||[]).slice(0,4).forEach(function(x){
       var r=x.reasons||{}, lis=[];
@@ -41833,6 +41834,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(D.coverage&&D.coverage.length) more+='<div class="edai-src">'+D.coverage.map(function(c){ return esc(c.label)+': '+esc(c.games)+' games, '+esc(c.with_current_price)+' with a current price'; }).join(' \u00b7 ')+'</div>';
     if(more) h+='<details class="dk-more"><summary>The evidence</summary><div style="margin-top:6px">'+more+'</div></details>';
     return h;
+  }
+  /* THE BOARD'S RESEARCH READ OF THE SAME GAME, under the desk's price read.
+     The desk answers the value question from its own evidence; this line is
+     the board's one research label for that college game, with its gap,
+     confidence, reliability and measured reasons, read off the page's own
+     research view (cfb_research_brief/1) — the same words the board, the
+     brief and the article print. Absent when the board has not loaded it. */
+  function deskBoardReadHTML(F){
+    if(!F||F.sport!=='americanfootball_ncaaf'||F.game_id==null) return '';
+    var rv=cfbResearchView({game_id:F.game_id});
+    if(!rv||!rv.label||!rv.label.label) return '';
+    var bits=['<b>'+esc(rv.label.label)+'</b>'];
+    if(rv.market_gap&&rv.market_gap.available) bits.push('gap '+esc(rv.market_gap.text));
+    if(rv.confidence&&rv.confidence.label) bits.push('confidence '+esc(String(rv.confidence.label).toLowerCase()));
+    if(rv.reliability&&rv.reliability.text) bits.push('reliability '+esc(rv.reliability.text));
+    var D2=rv.drivers, why=(D2&&!D2.none&&D2.reasons&&D2.reasons.length)
+      ? '<br>Why the board leans '+esc(D2.team)+': '+D2.reasons.map(function(r){ return esc(r.text); }).join('; ')+'.' : '';
+    return '<div class="edai-src" style="margin-top:6px">Board research read: '+bits.join(' \u00b7 ')+why
+      +'<br><span class="m">Research, not picks — the label says which question is worth opening.</span></div>';
   }
   /* A short follow-up on the bet already under discussion goes straight to
      the desk with its state, instead of being resolved against whatever
@@ -42840,8 +42860,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         label:res.week!=null?('week '+res.week):null,
         scoped_to_matchup:res.game_id,
         note:'The reader named this matchup. Answer about it and nothing else; do not widen to a board.'},
-      research:R
+      research:R,
+      /* the board's own research read of this game (cfb_research_brief/1) —
+         one label, the gap, confidence and reliability apart, the measured
+         reasons — so the desk says what the board says */
+      research_view:sk===EDINTEL.CFB_SPORT?cfbResearchView({game_id:res.game_id,home:res.home,away:res.away}):null
     };
+  }
+  function cfbResearchView(q){
+    try{ return (typeof window.fbP4ResearchBriefFor==='function')?window.fbP4ResearchBriefFor(q):null; }catch(_){ return null; }
   }
 
   /* One turn about one resolved matchup. The card is rendered from the site's
@@ -43687,7 +43714,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       deterministic:{verdict:x.verdict,display_verdict:x.dverdict,is_wait:x.isWait,wait_reason:x.waitWhy,
         confidence:x.confidence,why:x.why,score:x.score,band:x.band,
         reasons_for:x.reasonsFor,reasons_against:x.reasonsAgainst,
-      checks_required:x.checksRequired||[],falsifiers:x.falsifiers}
+      checks_required:x.checksRequired||[],falsifiers:x.falsifiers},
+      /* a college signal carries the board's research read of its game */
+      research_view:(e.sport_key==='americanfootball_ncaaf')
+        ?cfbResearchView({event:{home:e.home_team,away:e.away_team,t:e.commence_time}}):null
     };
   }
   /* Four PRESENTATIONS of one research engine. The panel picks the shape the
@@ -52549,6 +52579,29 @@ window.fbP4LoadGuarded=fbP4LoadGuarded;
 /* the committed model record the research view's history reads, so a
    headless build can load it before it asks for a brief */
 window.fbP4RecordEnsure=fbP4RecordEnsure;
+/* THE PUBLISHED RESEARCH VIEW FOR ONE BOARD GAME — what the AI desk is handed
+   with a question about that game (EDAI matchupPacket and packetOf), so the
+   desk reads the same label, gap, confidence, reliability and measured
+   reasons as the board, the brief and the article. Found by game id, by the
+   two team names, or by a sportsbook event joined the way the market join
+   joins one (EDFbs.matchesEvent). Null when the board has not loaded it. */
+window.fbP4ResearchBriefFor=function(q){
+  try{
+    q=q||{};
+    var S=FB.p4;if(!S||!S.up||!S.up.length||!window.EDCfbResearchView)return null;
+    var hit=null;
+    if(q.game_id!=null)S.up.forEach(function(u){if(!hit&&String(u.g.game_id)===String(q.game_id))hit=u;});
+    if(!hit&&q.home&&q.away){var pr=fbBrProjection(q.home,q.away);if(pr)hit=pr.u;}
+    if(!hit&&q.event&&window.EDFbs){
+      var ix=null;try{ix=fbP4TeamIx();}catch(_){ix=null;}
+      if(ix)S.up.forEach(function(u){if(!hit&&window.EDFbs.matchesEvent(q.event,u,ix))hit=u;});
+    }
+    if(!hit)return null;
+    var p=S._proj&&S._proj[String(hit.g.game_id)];
+    if(!p)p=window.EDCfbP4.projectGame(fbP4Request(hit));
+    return fbP4BriefView(hit,p);
+  }catch(_){return null;}
+};
 
 /* Joins the FRESHEST real number, in this order: a live captured quote,
    the cfb.lines book consensus once the capture has gone stale (offseason
