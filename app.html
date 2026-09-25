@@ -52974,18 +52974,20 @@ function fbP4InjuryPlayerLoad(teamOf){
   return Promise.all(ps);
 }
 function fbP4OfficialForGame(t,gameId){
-  var r=t&&t.official_report;
-  if(!r||r.ok===false||r.game_id==null||gameId==null)return null;
-  return String(r.game_id)===String(gameId)?r:null;
+  if(!t||gameId==null)return null;
+  var r=(t.official_reports&&t.official_reports[String(gameId)])||null;
+  if(!r){r=t.official_report;if(!r||r.game_id==null||String(r.game_id)!==String(gameId))return null;}
+  return r&&r.ok!==false?r:null;
 }
-function fbP4Injuries(teamName,gameId){
+function fbP4Injuries(teamName,gameId,opts){
   /* THE SHARED LIST (football/matchup/contract.js injuriesFor), over the
-     same merged availability view and player files the build reads. What
-     follows it is the degraded path for a load whose shared layer or
-     availability artifacts did not arrive. */
+     same merged availability view and player files the build reads, dated
+     against the same kickoff (opts = {kickoff, now}). What follows it is
+     the degraded path for a load whose shared layer or availability
+     artifacts did not arrive. */
   var IC0=window.EDInputContract,OV0=window.EDAvailabilityOverlay;
   if(IC0&&OV0&&FB.p4&&FB.p4.art&&FB.p4.art.av_current)
-    return IC0.injuriesFor(fbP4InputCtx(),teamName,gameId,{AV_OVERLAY:OV0});
+    return IC0.injuriesFor(fbP4InputCtx(),teamName,gameId,{AV_OVERLAY:OV0},opts);
   var C=window.EDCARD;
   /* THE TEAM FROM THE SAME MERGED LAYER THE BUILD READS — the automated
      read, the operator corrections and the ingested conference reports
@@ -53002,11 +53004,20 @@ function fbP4Injuries(teamName,gameId){
   /* not in the dataset at all, or read with no verified coverage: the engine
      must hear "unknown", never "clean" */
   if(!t) return null;
-  var q=String(t.dataQuality||'NONE').toUpperCase();
+  /* this fixture's grade where the overlay loaded: a filing for another
+     game does not grade this one */
+  var q=(OV0&&OV0.gradeFor&&t.automated_grade!=null)
+    ?OV0.gradeFor(t,gameId,{now:(opts&&opts.now)||Date.now(),kickoff:opts&&opts.kickoff})
+    :String(t.dataQuality||'NONE').toUpperCase();
   if(q==='NONE'||q==='LIMITED') return null;
   var report=fbP4OfficialForGame(t,gameId);
+  /* the degraded path refuses what the shared list refuses: another
+     fixture's rows, and a team-scoped row historical against this kickoff */
   var scoped=(t.players||[]).filter(function(p){
-    return p.game_id==null||gameId==null||String(p.game_id)===String(gameId);
+    if(p.game_id!=null&&gameId!=null&&String(p.game_id)!==String(gameId))return false;
+    if(p.game_id==null&&OV0&&OV0.isHistorical&&OV0.isHistorical(p,{now:(opts&&opts.now)||Date.now(),kickoff:opts&&opts.kickoff}))return false;
+    if(p.game_id==null&&!OV0&&String(p.freshness||'').toUpperCase()==='HISTORICAL')return false;
+    return true;
   });
   var out=[];
   scoped.forEach(function(p){
@@ -53087,7 +53098,7 @@ window.fbWinText=fbWinText;
    Nothing here can reach a point: the engine reads these fields only in
    uncertainty.information.quarterback(), whose output only the confidence
    score consumes. `qb` — the PRICED input — stays null either way. */
-function fbP4QbContext(teamName){
+function fbP4QbContext(teamName,gameId){
   var rec=null;
   try{ rec=fbStarterFor(teamName); }catch(_){ return null; }
   if(!rec||!rec.player_id)return null;
@@ -53104,7 +53115,9 @@ function fbP4QbContext(teamName){
   return window.EDQbContext.build(rec,{
     persistence:FB.persistence.data,
     efficiency_history:epa,
-    availability_evidence:fbP4QbAvailEvidence(rec),
+    availability_evidence:fbP4QbAvailEvidence(rec,gameId),
+    /* what the evidence SAYS: an explicit OUT is not an explicit available */
+    availability_state:(rec.availability&&rec.availability.evidence==='EXPLICIT'&&rec.availability.state)||null,
     availability_why:(rec.availability&&rec.availability.why)||null
   });
 }
@@ -53125,9 +53138,11 @@ function fbP4QbEpaResolved(rec){
    point: NONE is not "available", and no path here turns silence into health.
    Only a report football/availability/policy.js calls COMPREHENSIVE, actually
    read, reaches COMPREHENSIVE_SILENCE. */
-function fbP4QbAvailEvidence(rec){
+function fbP4QbAvailEvidence(rec,gameId){
   var av=(rec&&rec.availability)||{};
-  if(av.evidence==='EXPLICIT')return 'EXPLICIT';
+  /* EXPLICIT only with a state: a record that names him and says nothing
+     about whether he plays is not evidence that he does */
+  if(av.evidence==='EXPLICIT'&&av.state&&av.state!=='UNKNOWN')return 'EXPLICIT';
   try{
     var C=window.EDCARD&&window.EDCARD.cfbAvailability&&window.EDCARD.cfbAvailability();
     var teams=(C&&C.data&&C.data.teams)||null;
@@ -53136,7 +53151,9 @@ function fbP4QbAvailEvidence(rec){
     for(var k in teams){ if(!Object.prototype.hasOwnProperty.call(teams,k))continue;
       var t=teams[k];
       if(window.EDCfbP4.normKey(t.team_name||t.team_display)!==key)continue;
-      if(t.official_report&&t.official_report.ok&&t.official_report.report_of_no_absences)return 'COMPREHENSIVE_SILENCE';
+      /* the filing for THIS game only */
+      var r=fbP4OfficialForGame(t,gameId);
+      if(r&&r.report_of_no_absences)return 'COMPREHENSIVE_SILENCE';
       return 'NONE';
     }
   }catch(_){ }
@@ -53341,8 +53358,10 @@ function fbP4InputCtx(){
    the board's own three joins, each keyed as the build keys it */
 function fbP4InputDeps(){
   return {POLICY:window.EDAvailabilityPolicy,QBC:window.EDQbContext,EPAMOD:window.EDFbsEpa,
-    /* the shared list whenever the availability layer loaded (fbP4Injuries) */
-    injuriesFor:function(ctx,name,gid){return fbP4Injuries(name,gid);},
+    AV_OVERLAY:window.EDAvailabilityOverlay,
+    /* the shared list whenever the availability layer loaded (fbP4Injuries),
+       dated against the kickoff the assembly passes */
+    injuriesFor:function(ctx,name,gid,o){return fbP4Injuries(name,gid,o);},
     availabilityTeam:function(ctx,name){return ctx.availability_by_team[window.EDInputContract.normKey(name)]||null;},
     schedCtx:function(si,g,side){return fbP4SchedCtx(g,side);}};
 }
@@ -53413,11 +53432,11 @@ function fbP4RequestBare(u,mkt,noMkt){
          priced as minimum stability and the card says which of those two
          sentences applies. */
       home:{conference:g.home_conference,roster:FB.p4.roster[hk]||null,
-        qb:null,qb_context:fbP4QbContext(g.home_team),
-        injuries:fbP4Injuries(g.home_team,g.game_id),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
+        qb:null,qb_context:fbP4QbContext(g.home_team,g.game_id),
+        injuries:fbP4Injuries(g.home_team,g.game_id,{kickoff:g.start_date,now:Date.now()}),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
       away:{conference:g.away_conference,roster:FB.p4.roster[ak]||null,
-        qb:null,qb_context:fbP4QbContext(g.away_team),
-        injuries:fbP4Injuries(g.away_team,g.game_id),news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
+        qb:null,qb_context:fbP4QbContext(g.away_team,g.game_id),
+        injuries:fbP4Injuries(g.away_team,g.game_id,{kickoff:g.start_date,now:Date.now()}),news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
     },
     venue:{home:V[hk]||null,away:V[ak]||null},
     weather:FB.p4.weather[g.game_id]||null,

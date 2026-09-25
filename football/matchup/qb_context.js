@@ -140,10 +140,13 @@
   }
 
   /* rec:  one team's record out of football/starters/cfb_<season>.json
-     opts: { persistence, efficiency_history, availability_evidence }
+     opts: { persistence, efficiency_history, availability_evidence, availability_state }
        persistence           the parsed calibration artifact
        efficiency_history    true when an EPA history resolved for THIS id
-       availability_evidence 'EXPLICIT' | 'COMPREHENSIVE_SILENCE' | 'NONE' */
+       availability_evidence 'EXPLICIT' | 'COMPREHENSIVE_SILENCE' | 'NONE'
+       availability_state    what that evidence SAYS (OUT, QUESTIONABLE,
+                             AVAILABLE, …). EXPLICIT is only that a source
+                             names him; OUT is explicit too. */
   function build(rec, opts) {
     opts = opts || {};
     if (!rec || !rec.player_id) return null;
@@ -201,6 +204,8 @@
          athlete id. What may be done with it is decided elsewhere. */
       efficiency_history: opts.efficiency_history === true,
       availability_evidence: av === 'EXPLICIT' || av === 'COMPREHENSIVE_SILENCE' ? av : 'NONE',
+      availability_state: av === 'COMPREHENSIVE_SILENCE' ? 'AVAILABLE'
+        : (av === 'EXPLICIT' && opts.availability_state ? String(opts.availability_state).toUpperCase() : null),
       availability_why: opts.availability_why || null,
       source: rec.source || null,
       as_of: rec.retrieved_at || null

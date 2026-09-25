@@ -573,6 +573,16 @@ jobs:
       - name: Conference availability listings (HD Intelligence)
         run: node football/availability/hdi.test.js
 
+      # THE ENGINE'S AVAILABILITY IS ABOUT THIS GAME, AND DATED. A 2020 ESPN
+      # note re-read this morning, last week's conference filing, and a QB
+      # "listed" with no designation all reached the priced injury list or the
+      # quarterback's confidence. Pinned case by case: historical rows refused
+      # against the kickoff, the collector's own status field read, OUT scored
+      # as OUT, silence on a comprehensive filing read as available, and one
+      # official report per fixture.
+      - name: Availability reaches a game only when it is about that game, and dated
+        run: node football/matchup/availability_fixture.test.js
+
       # THE STARTER CONTEXT. Same defect as the confidence layer above, one
       # directory over: the suite existed, package.json ran it, and the only
       # workflow that invoked it fires on workflow_dispatch and schedule alone.

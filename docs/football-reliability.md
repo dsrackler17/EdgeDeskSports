@@ -283,8 +283,7 @@ could not see.
 **What the package changes:**
 
 - **Availability is fixture-scoped.** A team's report for a *different* game
-  no longer marks this one USABLE. That was the overlay's one-report-per-team
-  slot, and it affected Florida and Illinois on the 2026-09-25 slate.
+  no longer marks this one USABLE.
 - **Comprehensive silence establishes QB status.** When the team's
   comprehensive official report for this game does not list the starter, he
   is available by the conference's own policy. The contract dropped this
@@ -322,6 +321,29 @@ could not see.
 `summary_without_evidence`, so the effect is measured on identical
 projections. The no-evidence path reproduces the pre-enrichment scorer
 exactly on all 129 games of the 2026-09-25 slate.
+
+**The contract now reads availability the same way.** The input contract
+(`football/matchup/contract.js`), which feeds the engine's injury list and
+its QB information term, now follows the same rules as the package:
+
+- one official report per fixture, and a grade for each fixture;
+- team-scoped rows dated against the kickoff, with HISTORICAL ones refused;
+- the collector's own status field read;
+- an explicit OUT scored as OUT;
+- silence on a fresh comprehensive filing for this game read as available,
+  whoever else it lists.
+
+It closed the historical ESPN rows that had reached the priced injury lists
+of Florida and Illinois. On the 2026-09-25 slate that change:
+
+- moved no fair spread, total or win probability;
+- raised engine information confidence on 24 games;
+- lowered priced confidence on 2.
+
+`football/validation/availability_contract_before_after.md` has the game by
+game record. Because the package already applied these rules, the
+evidence-scored reliability did not move. `reliability_without_evidence`,
+which reads the contract rows, now sits closer to it.
 
 ## Calibration: not validated
 
