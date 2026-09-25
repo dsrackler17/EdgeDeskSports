@@ -1,10 +1,10 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-25T14:42:28.218Z",
+  "generated_at": "2026-09-25T16:43:49.338Z",
   "ok": true,
-  "last_ok_at": "2026-09-25T14:42:28.218Z",
+  "last_ok_at": "2026-09-25T16:43:49.338Z",
   "run": {
-    "trigger": "schedule",
+    "trigger": "push",
     "runner": "github-actions",
     "params_built_at": {
       "football": "2026-08-21T19:18:15+00:00",
@@ -204,19 +204,19 @@
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-25T14:42:28.218Z",
+    "daily_check_last_run": "2026-09-25T16:43:49.338Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-25T14:42:28.218Z",
+    "engine_tests_last_run": "2026-09-25T16:43:49.338Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-25T14:42:28.218Z",
+    "nfl_ingest_last_run": "2026-09-25T16:43:49.338Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 33,
-    "p4_ingest_last_run": "2026-09-25T14:42:28.218Z",
+    "p4_ingest_last_run": "2026-09-25T16:43:49.338Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 260,
-    "projection_guard_last_run": "2026-09-25T14:42:28.218Z",
+    "projection_guard_last_run": "2026-09-25T16:43:49.338Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-25T14:42:28.218Z",
+    "line_guard_last_run": "2026-09-25T16:43:49.338Z",
     "line_guard_last_status": "ok",
     "row_count_line_guard": 30
   },
@@ -227,16 +227,16 @@
   "coverage": {
     "games": 129,
     "information_confidence": {
-      "mean": 80,
-      "median": 85,
+      "mean": 79.4,
+      "median": 84.8,
       "lower_decile": 56.7,
-      "at_90": 7,
+      "at_90": 0,
       "at_95": 0
     },
     "biggest_gaps": [
       {
         "field": "qb_availability",
-        "mean_points_lost": 7.26
+        "mean_points_lost": 7.93
       },
       {
         "field": "team_rating",
@@ -248,11 +248,11 @@
       },
       {
         "field": "roster",
-        "mean_points_lost": 2.01
+        "mean_points_lost": 2
       },
       {
         "field": "roster_talent",
-        "mean_points_lost": 1.92
+        "mean_points_lost": 1.91
       },
       {
         "field": "matchup_profile",
