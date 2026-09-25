@@ -243,7 +243,47 @@ async function show(label, r, depth) {
   return links;
 }
 
+/* THE PUBLISHED TABLE, as the public report screen fetches it
+   (PublishScreen: POST /api/get-publish-public {sport, organization,
+   conference}, no credentials). Printed as a structure, then a sample. */
+async function hdiPublished(conf) {
+  const body = { sport: 'Football', organization: conf, conference: conf };
+  let res;
+  try {
+    const x = await fetch('https://app.hdintelligence.com/api/get-publish-public', { method: 'POST',
+      signal: AbortSignal.timeout(25000),
+      headers: { 'user-agent': BROWSER_UA, accept: 'application/json', 'content-type': 'application/json',
+        origin: 'https://app.hdintelligence.com',
+        referer: 'https://app.hdintelligence.com/?source=' + conf + '&sport=Football&conf=' + conf + '&type=report' },
+      body: JSON.stringify(body) });
+    res = { status: x.status, type: x.headers.get('content-type'), text: await x.text() };
+  } catch (e) { res = { status: 'ERR ' + e.message, text: '' }; }
+  console.log('\n######## hdi published ' + conf + ' → ' + res.status + ' ' + res.type + ' · ' + res.text.length + ' chars');
+  let data = null;
+  try { data = JSON.parse(res.text); } catch (_) { console.log('  not JSON >>> ' + res.text.slice(0, 1500)); return; }
+  const shape = (v, d) => {
+    if (d > 4) return '…';
+    if (Array.isArray(v)) return '[' + v.length + ' × ' + (v.length ? shape(v[0], d + 1) : '') + ']';
+    if (v && typeof v === 'object') return '{' + Object.keys(v).slice(0, 25).map(k => k + ':' + shape(v[k], d + 1)).join(', ') + '}';
+    return typeof v;
+  };
+  const vals = Object.values(data || {});
+  console.log('  top-level: ' + (Array.isArray(data) ? 'array ' + data.length : 'object with ' + Object.keys(data).length + ' keys: ' + Object.keys(data).slice(0, 20).join(', ')));
+  console.log('  shape: ' + shape(vals[0], 0));
+  console.log('  first entry >>> ' + JSON.stringify(vals[0]).slice(0, 4000) + ' <<<');
+  if (vals[1]) console.log('  second entry >>> ' + JSON.stringify(vals[1]).slice(0, 2500) + ' <<<');
+  const text = res.text;
+  ['Lacy', 'Lopez', 'Ole Miss', 'Mississippi'].forEach(k => {
+    const at = text.indexOf(k);
+    if (at >= 0) console.log('  «' + k + '» >>> ' + text.slice(Math.max(0, at - 600), at + 600) + ' <<<');
+  });
+}
+
 (async function main() {
+  if (process.argv[2] === 'published') {
+    for (const c of ['SEC', 'ACC', 'B10', 'B12']) await hdiPublished(c);
+    return;
+  }
   const want = process.argv.slice(2);
   const keys = want.length ? want : Object.keys(CANDIDATES);
   for (const k of keys) {
