@@ -50559,6 +50559,8 @@ window.fbValidateQbRegistry=function(){
 function fbLoadNfl(signal){
   var E=window.EDFootball,S=FB.nfl;
   S.notes=[];
+  /* non-QB personnel availability: display only, moves no number */
+  try{ if(typeof fbPersonnelEnsure==='function')fbPersonnelEnsure(); }catch(_){}
   return fbFetchText(FB_URL_GAMES,signal).then(function(txt){
     var rows=fbCsv(txt),i,r;
     var maxSeason=0;
@@ -51014,10 +51016,11 @@ function fbGameCardNfl(u){
   var extra=[];
   if(src==='nflverse reference'&&(mkt.spread_line!=null||mkt.total_line!=null))extra.push('market numbers are nflverse consensus reference, not a live bettable quote');
   var qb='';try{qb=fbQbBlockHTML(g);}catch(_){qb='';}
+  var pa='';try{var paB=fbPersonnelHTML(g.game_id);if(paB)pa='<div class="gd-sec">Personnel availability</div>'+paB;}catch(_){pa='';}
   return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>'
-    +lines+qb+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
+    +lines+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -52268,6 +52271,8 @@ function fbP4Load(force,signal){
        promise, same rule: it feeds no number, and every card, brief and
        newsletter item built from this board reads it. */
     fbQbEpaEnsure(cur);
+    /* non-QB personnel availability: display only, moves no number */
+    try{ fbPersonnelEnsure(); }catch(_){}
     var st=E.newState();
     if(!st)throw new Error('parameters did not produce a rating state');
     /* the games whose play-level efficiency this replay absorbs, so the late
@@ -55601,7 +55606,7 @@ window.fbGxToggle=function(gid,id){
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
 var FB_GX_DEFAULT={why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
-  research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false};
+  research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false,personnel:true};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
    Plain text that stands alone away from this page. No ids, no JSON, no
@@ -56387,6 +56392,7 @@ function fbP4Card(u){
         'surface, roof, elevation, and the forecast for kickoff and the three hours after it')
     +fbGxSec(gid,'drivers','Why EdgeDesk prices it here',fbGxDrivers(p),true)
     +fbGxSec(gid,'wrong','Why this number could be wrong',fbGxWrong(p),true)
+    +fbGxSec(gid,'personnel','Personnel availability',fbPersonnelHTML(gid),true,fbPersonnelNote(gid))
     +fbGxSec(gid,'qb','The quarterbacks · measured',fbGxQb(u),true,
       'passing EPA per dropback, with the sample it came off — research context, not priced')
     +fbGxSec(gid,'cases','The case for each side',fbGxCases(u,p),true)
@@ -59278,6 +59284,90 @@ function fbPersistenceEnsure(){
    interpret: the quarterback block is absent and the card says the history
    could not be read, which is a different sentence from a quarterback with no
    history. */
+/* ═══ PERSONNEL AVAILABILITY — non-QB injury impact ═══════════════════════
+   football/personnel/current.json: how much worse each team is with the
+   expected replacement playing instead of every non-quarterback absence on
+   file, scored 0-100 from player quality, replacement quality, usage,
+   position and matchup leverage and unit concentration (football/personnel/).
+   It is a MEASUREMENT. It moves no number on this page and every card says
+   "Projection effect: not enabled". A file that did not load is a normal
+   state: the section is simply absent. */
+FB.personnel = { data:null, err:null, _p:null };
+function fbPersonnelEnsure(){
+  if(FB.personnel.data)return Promise.resolve(FB.personnel.data);
+  if(FB.personnel._p)return FB.personnel._p;
+  if(typeof fetch!=='function')return Promise.resolve(null);
+  FB.personnel._p=fetch('football/personnel/current.json',{cache:'no-cache'})
+    .then(function(r){ if(!r.ok)throw new Error('personnel '+r.status); return r.json(); })
+    .then(function(j){
+      if(!j||j.schema!=='edgedesk_personnel_impact_v1')throw new Error('personnel artifact has an unknown schema');
+      FB.personnel.data=j; FB.personnel.err=null; FB.personnel._p=null; return j; })
+    .catch(function(e){ FB.personnel.err=String(e&&e.message||e).slice(0,140); FB.personnel._p=null; return null; });
+  return FB.personnel._p;
+}
+function fbPersonnelFor(gid){
+  var D=FB.personnel&&FB.personnel.data;
+  return (D&&D.games&&gid!=null)?(D.games[String(gid)]||null):null;
+}
+function fbPersonnelImpactText(t){
+  if(!t)return 'not on file';
+  if(t.status==='NOT_ASSESSABLE')return 'not assessable — no graded availability read for this game';
+  if(t.status==='UNRATED_ABSENCES'){var n=(t.unrated||[]).length;return 'not rated — '+n+' absence'+(n===1?'':'s')+' on file, none with measured player quality';}
+  if(t.impact==null)return 'not stated — the rated absences carry no designation';
+  return t.classification+' — '+t.impact+'/100';
+}
+function fbPersonnelTeamHTML(t){
+  if(!t)return '';
+  var h='<div class="gd-line"><span class="l">'+fbEsc(t.team_name||'')+'</span><span class="v">Impact: '+fbEsc(fbPersonnelImpactText(t))
+    +(t.confidence!=null?' · confidence '+fbEsc(String(t.confidence))+'%':'')+'</span></div>';
+  var kl=t.key_losses||[];
+  if(kl.length)h+='<div class="gd-line"><span class="l">Key losses</span><span class="v">'
+    +kl.map(function(k){return fbEsc(k.label)+' — '+fbEsc(k.classification);}).join(' · ')+'</span></div>';
+  if(t.unit_concern)h+='<div class="gd-line"><span class="l">Unit concern</span><span class="v">'
+    +fbEsc(t.unit_concern.label)+' · '+fbEsc(String(t.unit_concern.concern_label||'').toLowerCase())+'</span></div>';
+  return h;
+}
+function fbPersonnelAbsenceHTML(a){
+  function v(x,suf){return x==null?'—':String(x)+(suf||'');}
+  var n=[a.status_label+(a.probability_of_absence!=null?' (p '+Math.round(a.probability_of_absence*100)+'%)':' (probability unknown)')];
+  n.push(a.impact_if_absent!=null?('if absent '+a.impact_if_absent+'/100 '+a.classification
+    +(a.expected_impact!=null?' · expected '+a.expected_impact:'')):'not rated');
+  n.push('quality '+v(a.player_quality));
+  n.push('replacement '+(a.replacement_player_name?(a.replacement_player_name+' '+(a.replacement_quality==null?'(unmeasured)':a.replacement_quality)):'unknown'));
+  if(a.replacement_gap!=null)n.push('gap '+a.replacement_gap);
+  n.push('usage '+(a.usage_factor==null?'—':Math.round(a.usage_factor*100)+'%'));
+  n.push('position ×'+v(a.position_leverage));
+  n.push('matchup ×'+v(a.matchup_leverage));
+  if(a.unit_concentration_multiplier>1)n.push('concentration ×'+a.unit_concentration_multiplier);
+  n.push('confidence '+a.confidence+'%');
+  return '<div class="gxl-r"><div><b>'+fbEsc(a.label||'')+' '+fbEsc(a.player_name||'')+'</b> · '+fbEsc(n.join(' · '))+'</div>'
+    +'<div class="gxl-why">'+fbEsc(a.drivers_text||'')+(a.source&&a.source.name?' Source: '+fbEsc(a.source.name)+'.':'')+'</div></div>';
+}
+function fbPersonnelHTML(gid){
+  var P=fbPersonnelFor(gid);
+  if(!P||!P.home||!P.away)return '';
+  var D=FB.personnel.data||{};
+  var h=fbPersonnelTeamHTML(P.away)+fbPersonnelTeamHTML(P.home);
+  if(P.comparison&&P.comparison.statement)h+='<div class="gd-line"><span class="l">Personnel edge</span><span class="v">'+fbEsc(P.comparison.statement)+'</span></div>';
+  h+='<div class="gd-line"><span class="l">Projection effect</span><span class="v mut">Not enabled · 0.0 points · '
+    +fbEsc((D.projection&&D.projection.statement)||'Measurement only — coefficient not trained')+'</span></div>';
+  var rows=[];
+  ['away','home'].forEach(function(s){var t=P[s];(t.absences||[]).concat(t.unrated||[]).forEach(function(a){rows.push(fbPersonnelAbsenceHTML(a));});});
+  if(rows.length)h+='<details class="gxl"><summary>Full evidence — every non-QB absence, its likely replacement and what drives the score</summary>'
+    +'<div class="gxl-b">'+rows.join('')
+    +'<div class="gxl-f mut" style="margin-top:9px">Impact = (player quality − replacement quality, in rating SDs) × usage × position leverage × matchup leverage × unit concentration, '
+    +'scaled 0-100. It is not points. Expected impact weights it by the probability of absence. Quarterbacks are priced by the QB layer and excluded here. '
+    +'A missing input is left blank and lowers confidence; it is never filled.</div></div></details>';
+  return h;
+}
+/* the one-line summary on the section header */
+function fbPersonnelNote(gid){
+  var P=fbPersonnelFor(gid);
+  if(!P||!P.home||!P.away)return '';
+  function s(t){return t.impact!=null?(t.classification+' '+t.impact):(t.status==='NOT_ASSESSABLE'?'not assessable':'not rated');}
+  return (P.away.team_name||'Away')+' '+s(P.away)+' · '+(P.home.team_name||'Home')+' '+s(P.home)+' · projection effect not enabled';
+}
+/* ═══ end PERSONNEL AVAILABILITY ═══ */
 FB.qbEpa = { data:null, err:null, _p:null, season:null };
 function fbQbEpaEnsure(season){
   if(FB.qbEpa.data&&FB.qbEpa.season===season)return Promise.resolve(FB.qbEpa.data);

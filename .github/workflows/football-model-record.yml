@@ -70,16 +70,30 @@ jobs:
           node-version: '22'
 
       - name: The record's rules must pass before it is allowed to write
-        run: node tools/record/football_record.test.js
+        run: |
+          node tools/record/football_record.test.js
+          node football/personnel/personnel.test.js
 
       - name: Record, close, settle and grade
         run: node tools/record/football_record.js --write ${{ inputs.backfill && '--backfill' || '' }}
+
+      # NON-QB PERSONNEL AVAILABILITY. The assessment is rebuilt from the
+      # committed inputs and frozen, write-once, beside every pregame
+      # projection the record now holds. Never on a backfill: the freeze only
+      # records what is known now, before kickoff, and replaying history
+      # would leak today's knowledge into yesterday's games.
+      - name: Assess personnel availability and freeze it beside the pregame projections
+        if: ${{ !inputs.backfill }}
+        run: |
+          node football/personnel/build_personnel.js --write
+          node football/personnel/freeze.js --write
+          node football/personnel/freeze.js --verify
 
       - name: Publish the record
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A -- record/football/
+          git add -A -- record/football/ football/personnel/current.json football/personnel/current.full.json
           if git diff --cached --quiet; then
             echo 'football model record unchanged — nothing to publish'
             exit 0
