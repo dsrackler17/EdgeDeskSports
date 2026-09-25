@@ -310,5 +310,65 @@ section('STEP 5 · why EdgeDesk leans: the largest measured reasons on its side'
   eq('and is flagged as a near pick’em', w.near_pickem, true);
 }
 
+/* ======================================================================== */
+section('STEP 6 · best available line: current, named, priced — or said to be unavailable');
+{
+  const Q = (side, book, line, dec, o) => Object.assign({ side, book, line, price_dec: dec, n_books: null,
+    captured_at: '2026-09-25T12:00:00Z', state: 'CURRENT', actionable: true }, o || {});
+  function best(quotes, raw, line) {
+    return V.build({ game: GAME, projection: proj(raw == null ? -1 : raw, { line: line == null ? 2.5 : line }),
+      market: { spread_line: line == null ? 2.5 : line, book: 'cfb.lines · consensus' }, quotes,
+      coverage: { input_coverage: 0.9 } }).best_available_line;
+  }
+  /* market Florida (home) -2.5; EdgeDesk Ole Miss -1: the gap points to Ole Miss */
+  let b = best([Q('away', 'DraftKings', 2.5, 1.91), Q('away', 'FanDuel', 3.0, 1.87), Q('away', 'BetMGM', 3.0, 1.83),
+    Q('home', 'DraftKings', -2.5, 1.91), Q('home', 'Caesars', -2.0, 1.83)]);
+  eq('multiple valid books: available', b.available, true);
+  eq('the focus side is the one EdgeDesk likes more than the market', b.focus_side, 'away');
+  eq('the most points for Ole Miss wins', b.focus.line, 3.0);
+  eq('a tie on the line goes to the better price', b.focus.book, 'FanDuel');
+  eq('stated with the book and the price', b.focus.text, AWAY + ' +3.0 (-115) at FanDuel');
+  eq('the other side is shopped too', b.home.text, HOME + ' -2.0 (-120) at Caesars');
+  eq('it counts the books', b.n_books, 4);
+  eq('it is not a single-book result', b.single_book, false);
+  eq('against the board’s own number for that side', b.board_line, 2.5);
+  eq('it is half a point better', b.improvement, 0.5);
+  eq('and the board number keeps its own source, never called consensus by this layer', b.board_source, 'cfb.lines · consensus');
+
+  b = best([Q('away', 'DraftKings', 3.0, 1.91), Q('home', 'DraftKings', -3.0, 1.91)]);
+  eq('one valid book: the quote is shown', b.available, true);
+  eq('but flagged as a single book', b.single_book, true);
+  chk('and says there is no line shopping to compare', /no line shopping/.test(b.note), b.note);
+  b = best([Q('away', 'DraftKings', 3.0, 1.91, { n_books: 6 })]);
+  eq('a quote the capture compared across six books is a multi-book best', b.single_book, false);
+
+  b = best([Q('away', 'FanDuel', 4.0, 1.91, { state: 'STALE', actionable: false }), Q('away', 'DraftKings', 3.0, 1.91)]);
+  eq('a stale book is excluded, however good its number', b.focus.book, 'DraftKings');
+  eq('and counted', b.excluded.stale, 1);
+  b = best([Q('away', 'FanDuel', 4.0, 1.91, { state: 'STALE', actionable: false })]);
+  eq('only stale quotes: nothing is available', b.available, false);
+  chk('and it says why', /freshness limit/.test(b.reason), b.reason);
+  b = best([Q('away', 'FanDuel', 4.0, 1.91, { state: 'UNKNOWN', actionable: false, captured_at: null })]);
+  eq('a quote with no verifiable capture time is not available', b.available, false);
+  chk('and says so', /capture time/.test(b.reason), b.reason);
+  b = best([Q('away', 'FanDuel', 3.5, null), Q('away', 'DraftKings', 3.0, 1.91)]);
+  eq('a missing price does not disqualify the better number', b.focus.book, 'FanDuel');
+  eq('it is printed as missing, never assumed', b.focus.text, AWAY + ' +3.5 (price not captured) at FanDuel');
+  eq('with no American price', b.focus.price_american, null);
+  b = best([Q('away', 'FanDuel', null, 1.91), Q('away', 'DraftKings', 3.0, 1.91)]);
+  eq('a quote with no line is excluded', b.focus.book, 'DraftKings');
+  eq('and counted', b.excluded.no_line, 1);
+  b = best([Q('away', null, 3.0, 1.91)]);
+  eq('a quote with no book named is never shown as available', b.available, false);
+  b = best(null);
+  eq('no captured quotes at all: unavailable', b.available, false);
+  chk('and says nothing was captured', /no sportsbook quote/.test(b.reason), b.reason);
+  const o1 = JSON.stringify(best([Q('away', 'B', 3, 1.9), Q('away', 'A', 3, 1.9)]).focus);
+  const o2 = JSON.stringify(best([Q('away', 'A', 3, 1.9), Q('away', 'B', 3, 1.9)]).focus);
+  eq('an exact tie is broken by book name, whatever order the quotes arrive in', o1, o2);
+  eq('decimal 1.91 is -110', V.american(1.91), -110);
+  eq('decimal 2.5 is +150', V.american(2.5), 150);
+}
+
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
 process.exit(failures ? 1 : 0);

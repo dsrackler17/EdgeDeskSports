@@ -29,7 +29,7 @@ function has(hay, needle, what) { ok(String(hay).indexOf(needle) >= 0, what, { m
 function lacks(hay, needle, what) { ok(String(hay).indexOf(needle) < 0, what, { present: needle }); }
 function section(t) { console.log('\n' + t); }
 
-const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
+const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxBest', 'fbP4QuotesFor', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 (function () {
@@ -57,7 +57,7 @@ function stageAt(target, o) {
   st.canonicalRatings = {}; st.canonicalRatings[HK] = { value: 0 }; st.canonicalRatings[AK] = { value: 0 };
   win.FB.p4.state = st;
   const stage = { home: HOME, away: AWAY, neutral_site: !!o.neutral, market_spread: o.market_spread,
-    home_conference: 'ACC', away_conference: 'ACC', game_id: o.game_id || 'RV1' };
+    home_conference: 'ACC', away_conference: 'ACC', game_id: o.game_id || 'RV1', start_date: o.start_date };
   let u = M.stageGame(win, stage);
   const rest = E.projectGame(T.fbP4Request(u)).model.fair_spread;
   st.canonicalRatings[HK].value = target == null ? 0 : target - rest;
@@ -247,6 +247,83 @@ section('STEP 5 · why EdgeDesk leans, on the card, from the engine’s own term
   const vn = T.fbP4ViewFor(n.u, n.p);
   if (vn.strongest_drivers.none) has(T.fbGxWhy(n.u, n.p), 'No single component is driving the projection.', 'an evenly matched game says no single component drives it');
   else ok(vn.strongest_drivers.reasons.every(r => r.points >= 0.5), 'any reason it does name is at least half a point', vn.strongest_drivers);
+}
+
+/* ------------------------------------------------------------------------ */
+section('STEP 6 · best available line, from captured quotes under the page’s own freshness policy');
+{
+  /* the REAL freshness policy: EDINTEL out of app.html, between its markers */
+  const a = BOOT.app.indexOf('/*__EDINTEL_START__*/'), b = BOOT.app.indexOf('/*__EDINTEL_END__*/');
+  ok(a > 0 && b > a, 'app.html carries the EDINTEL module the freshness verdict comes from');
+  vm.runInContext(BOOT.app.slice(a, b), win, { filename: 'app.html#EDINTEL' });
+  ok(!!(win.EDINTEL && win.EDINTEL.quoteState), 'EDINTEL.quoteState is on window, as the adapter reads it');
+  has(BOOT.module, "best_book,n_books,home_team", 'the capture select now carries n_books');
+
+  /* kickoff two days out: the policy's 180-minute "far" rung applies */
+  const s = stageAt(-1, { market_spread: 2.5, start_date: new Date(Date.now() + 48 * 3600e3).toISOString() });
+  withCoverage(s.u, WELL);
+  /* a captured event exactly as fbSignals() shapes it; kickoff is the unit's */
+  const now = Date.now(), ago = m => new Date(now - m * 60000).toISOString();
+  const kick = new Date(s.u.t).toISOString();
+  function ev(rows) { return { home: HOME, away: AWAY, t: kick, rows: rows }; }
+  function row(sel, point, book, dec, ageMin, nb) {
+    return { market: 'spreads', selection: sel, point: point, best_book: book, best_dec: dec, n_books: nb == null ? 5 : nb,
+      last_seen_at: ageMin == null ? null : ago(ageMin), first_seen_at: ago(600) };
+  }
+  /* the harness carries no FBS universe, so the team index and the event
+     match are supplied: the staged game matches its own two names. The
+     matching rule itself (EDFbs.matchesEvent) is pinned by football/fbs. */
+  const savedFbs = win.EDFbs, savedUni = win.FB.p4.uni;
+  win.EDFbs = Object.assign({}, win.EDFbs || {}, { teamIndex: () => ({}),
+    matchesEvent: (e, u) => e.home === u.g.home_team && e.away === u.g.away_team });
+  win.FB.p4.uni = { staged: true };
+  /* the market is Wake Forest -2.5 and EdgeDesk has Wake Forest by 1, so it
+     likes DUKE more than the market does: Duke is the side to shop */
+  win.FB.p4.sig = { EV1: ev([row(HOME, 3.0, 'FanDuel', 1.87, 10), row(HOME, 2.5, 'DraftKings', 1.91, 5),
+    row(HOME, 3.5, 'Bovada', 1.91, 60 * 24 * 3), row(AWAY, -2.5, 'DraftKings', 1.91, 5), row(HOME, 3.5, 'Mystery', 1.95, null)]) };
+  s.u._rv = null;
+  const q = T.fbP4QuotesFor(s.u);
+  eq(q.length, 5, 'every captured spread row reaches the adapter');
+  eq(q.filter(x => x.actionable).length, 3, 'the policy calls three of them current');
+  eq(q.find(x => x.book === 'Bovada').state, 'STALE', 'a three-day-old quote is STALE');
+  eq(q.find(x => x.book === 'Mystery').state, 'UNKNOWN', 'a quote with no capture time is UNKNOWN');
+  const v = T.fbP4ViewFor(s.u, s.p);
+  const B = v.best_available_line;
+  eq(B.available, true, 'a best available line is shown');
+  eq(B.focus_side, 'home', 'the side shopped is the one EdgeDesk likes more than the market (Duke)');
+  eq(B.focus.text, HOME + ' +3.0 (-115) at FanDuel', 'the best current Duke number, with book and price');
+  eq(B.away.text, AWAY + ' -2.5 (-110) at DraftKings', 'and the other side’s best');
+  eq(B.improvement, 0.5, 'half a point better than the board’s own Duke +2.5');
+  eq(B.excluded.stale, 1, 'the stale 3.5 is excluded, however good');
+  eq(B.excluded.unverified, 1, 'and so is the one with no capture time');
+  const html = T.fbGxBest(s.u, s.p);
+  has(html, 'Best available', 'the card names it');
+  has(html, 'FanDuel', 'with the book');
+  has(html, '1 stale', 'and says what it left out');
+  lacks(html, 'Bovada', 'a stale book is never printed as available');
+  has(T.fbP4Card(s.u), 'Best available line', 'the section is on the card');
+
+  /* one book only */
+  win.FB.p4.sig = { EV1: ev([row(HOME, 3.0, 'FanDuel', 1.87, 10, 1)]) };
+  s.u._rv = null;
+  const one = T.fbP4ViewFor(s.u, s.p).best_available_line;
+  eq(one.single_book, true, 'one book is not a line-shopping result');
+  has(T.fbGxBest(s.u, s.p), 'Current quote', 'and the card calls it the current quote, not the best');
+
+  /* nothing current */
+  win.FB.p4.sig = { EV1: ev([row(HOME, 3.0, 'FanDuel', 1.87, 60 * 24 * 3)]) };
+  s.u._rv = null;
+  has(T.fbGxBest(s.u, s.p), 'Best available line unavailable', 'with only stale quotes it is unavailable');
+  /* no policy loaded: nothing can be called current */
+  const saved = win.EDINTEL; win.EDINTEL = undefined;
+  win.FB.p4.sig = { EV1: ev([row(HOME, 3.0, 'FanDuel', 1.87, 1)]) };
+  s.u._rv = null;
+  eq(T.fbP4ViewFor(s.u, s.p).best_available_line.available, false, 'without the freshness policy nothing is called available');
+  win.EDINTEL = saved;
+  win.FB.p4.sig = {};
+  s.u._rv = null;
+  has(T.fbGxBest(s.u, s.p), 'no sportsbook quote has been captured', 'and with no captures it says so');
+  win.EDFbs = savedFbs; win.FB.p4.uni = savedUni;
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));

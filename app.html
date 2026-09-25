@@ -49801,15 +49801,46 @@ function fbP4ViewFor(u,p,mkt){
   mkt=mkt||(FB.p4._mkt&&FB.p4._mkt[String(g.game_id)])||null;
   var cov=null;try{cov=fbP4ContractFor(u);}catch(_){cov=null;}
   var cs=cov&&cov.summary||null;
-  var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage].join('|');
+  var quotes=null;try{quotes=fbP4QuotesFor(u);}catch(_){quotes=null;}
+  /* a quote's freshness is judged NOW, so the view is rebuilt every five
+     minutes even when nothing else about the game has changed */
+  var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,
+    quotes?quotes.length:0,Math.floor(Date.now()/3e5)].join('|');
   if(u._rv&&u._rv.p===p&&u._rv.key===key)return u._rv.v;
   var v=null;
   try{
     v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt,
-      coverage:cs},fbP4ViewCfg());
+      coverage:cs,quotes:quotes},fbP4ViewCfg());
   }catch(_){v=null;}
   u._rv={p:p,key:key,v:v};
   return v;
+}
+/* THE CAPTURED PER-BOOK SPREAD QUOTES for one board game, each with the
+   page's own freshness verdict: EDINTEL.quoteState, the same ladder capture
+   enforces when it writes a price. A signals row is one (selection, point)
+   with the best book and price seen at that point and how many books quoted
+   it. The game is matched by the same rule the market join uses
+   (EDFbs.matchesEvent: both teams resolved, kickoff inside 36 hours). With
+   no freshness policy loaded, every quote is UNKNOWN and none is available. */
+function fbP4QuotesFor(u){
+  var S=FB.p4,out=[],k,ix=null;
+  try{ix=fbP4TeamIx();}catch(_){ix=null;}
+  if(!ix||!S||!S.sig||!window.EDFbs)return out;
+  var ev=null;
+  for(k in S.sig)if(S.sig.hasOwnProperty(k)&&window.EDFbs.matchesEvent(S.sig[k],u,ix)){ev=S.sig[k];break;}
+  if(!ev||!ev.rows)return out;
+  var hN=fbNorm(ev.home),aN=fbNorm(ev.away),I=window.EDINTEL;
+  ev.rows.forEach(function(r){
+    if(r.market!=='spreads'||r.point==null)return;
+    var sel=fbNorm(r.selection),side=sel===hN?'home':(sel===aN?'away':null);
+    if(!side)return;
+    var q=null;
+    try{q=(I&&I.quoteState)?I.quoteState({captured_at:r.last_seen_at,market:'spreads',kickoff:u.t}):null;}catch(_){q=null;}
+    out.push({side:side,book:r.best_book||null,line:fbNum(r.point),price_dec:fbNum(r.best_dec),n_books:fbNum(r.n_books),
+      captured_at:r.last_seen_at||null,state:q?q.status:'UNKNOWN',actionable:!!(q&&q.actionable),
+      why:q?q.why:'the freshness policy did not load, so this quote cannot be called current'});
+  });
+  return out;
 }
 /* the view's thresholds ARE the engine's and the board's: the research gap
    and confidence floor from the shipped params, the guard from FB_GUARD */
@@ -49921,7 +49952,7 @@ function fbEnsureEngine(){
 function fbSignals(sportKey,signal){
   var nowIso=new Date().toISOString();
   var hiIso=new Date(Date.now()+FB_LOOKAHEAD_D*864e5).toISOString();
-  return sbGet('signals?select=event_id,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,home_team,away_team,commence_time,last_seen_at'
+  return sbGet('signals?select=event_id,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,n_books,home_team,away_team,commence_time,last_seen_at'
     +'&sport_key=eq.'+sportKey+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+hiIso+'&limit=900',signal)
   .then(function(rows){
     var ev={};
@@ -54865,6 +54896,35 @@ function fbGxWhy(u,p){
   +'The full breakdown, in both directions, is under “Why EdgeDesk prices it here”.</div>';
 }
 
+/* ── BEST AVAILABLE LINE ────────────────────────────────────────────────
+   The best current number a named book is offering on each side, from the
+   research view (bestAvailable): captured quotes only, stale or unverifiable
+   ones excluded and counted, a missing price printed as missing, and a
+   single book never presented as a line-shopping result. */
+function fbGxBest(u,p){
+  var v=fbP4ViewFor(u,p),B=v&&v.best_available_line;
+  if(!B)return '';
+  var ex=B.excluded||{},xs=[];
+  if(ex.stale)xs.push(ex.stale+' stale');
+  if(ex.unverified)xs.push(ex.unverified+' with no verifiable capture time');
+  if(ex.no_line||ex.no_book)xs.push((ex.no_line+ex.no_book)+' incomplete');
+  var exTxt=xs.length?('Excluded: '+xs.join(' · ')+'. A stale quote is the last price EdgeDesk saw, not a price on offer.'):'';
+  if(!B.available)return '<div class="gx-none">Best available line unavailable: '+fbEsc(B.reason)+'.</div>'
+    +(exTxt?'<div class="gx-foot">'+fbEsc(exTxt)+'</div>':'');
+  function row(q,lab){
+    if(!q)return '';
+    return '<div class="gd-line"><span class="l">'+fbEsc(lab)+'</span><span class="v">'+fbEsc(q.text)
+      +' <span class="mut">'+fbGxAgo(q.captured_at)+(q.state==='AGING'?' · aging — confirm it is still posted':'')+'</span></span></div>';
+  }
+  var other=B.focus&&B.focus.side==='home'?B.away:B.home;
+  var h=row(B.focus,B.single_book?'Current quote':'Best available')+row(other,B.single_book?'Other side':'Best, other side');
+  if(B.board_line!=null&&B.focus)h+='<div class="gd-line"><span class="l">Board line</span><span class="v mut">'
+    +fbEsc(B.focus.team)+' '+(B.board_line>0?'+':'')+B.board_line.toFixed(1)+' · '+fbEsc(B.board_source||'market')
+    +(B.improvement?(' · the best quote is '+Math.abs(B.improvement).toFixed(1)+' pts '+(B.improvement>0?'better':'worse')+' for '+fbEsc(B.focus.team)):'')+'</span></div>';
+  return h+'<div class="gx-foot">'+(B.single_book?fbEsc(B.note):('Across '+B.n_books+' books with a current quote. '))
+    +(exTxt?(' '+fbEsc(exTxt)):'')+' Research, not a recommendation to bet.</div>';
+}
+
 /* ── THE TWO CASES ──────────────────────────────────────────────────────
    Every bullet maps to a measured state on `p`: a driver the engine sized, a
    counterargument it raised, or a score it published. No narrative. */
@@ -55052,7 +55112,7 @@ window.fbGxToggle=function(gid,id){
     var b=el.querySelector('.gx-sec-h');if(b){b.setAttribute('aria-expanded',String(FB_GX_OPEN[k]));
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
-var FB_GX_DEFAULT={why:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
+var FB_GX_DEFAULT={why:true,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
   research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
@@ -55680,6 +55740,8 @@ function fbP4Card(u){
   var body=fbGxSummary(u,p,gid)
     +(rvC&&rvC.strongest_drivers?fbGxSec(gid,'why','Why EdgeDesk leans '+rvC.strongest_drivers.team,fbGxWhy(u,p),true,
       'the largest measured components on that side — research, not a pick'):'')
+    +(rvC&&rvC.best_available_line?fbGxSec(gid,'best','Best available line',fbGxBest(u,p),true,
+      'current captured quotes only · stale and unverified ones excluded'):'')
     +fbGxSec(gid,'matchup','Programs, conferences and the FBS rating',fbP4MatchupHTML(u,p),true,
       'who is playing, on one all-FBS scale')
     +fbGxSec(gid,'research','The research read',fbGxResearchRead(u,p),true,
