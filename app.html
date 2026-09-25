@@ -55790,7 +55790,7 @@ function fbP4DeskHTML(visible){
       +fbEsc(parts.join(' · '))+'</div>';
   }else if(C.basis==='update'){
     ch='<div class="rv-desk-c"><b>CHANGED SINCE LAST UPDATE</b> <span class="mut">latest published '+fbEsc(fbRvWhen(C.since_at))+'</span><br>'
-      +fbEsc([C.projections_changed?n(C.projections_changed,'projection differs from its latest published number','projections differ from their latest published numbers'):'every projection matches its latest published number',
+      +fbEsc([C.projections_changed?n(C.projections_changed,'projection has moved 0.75+ pts from its latest published number','projections have moved 0.75+ pts from their latest published numbers'):'every projection is within 0.75 pts of its latest published number',
         C.revised_24h?n(C.revised_24h,'projection revised in the last 24 hours','projections revised in the last 24 hours'):'no projection revised in the last 24 hours'].join(' · '))+'</div>';
   }
   return '<div class="rv-desk"><div class="rv-desk-h"><b>CFB RESEARCH DESK</b><span class="mut">'+D.total+' game'+(D.total===1?'':'s')
