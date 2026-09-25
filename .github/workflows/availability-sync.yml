@@ -16,7 +16,13 @@
 #   Sun 00-05 UTC  hourly            Saturday night ET games finishing
 #   Sun, Mon       every six hours   the week resets
 #   Tue-Thu        every three hours practice reports land
-#   Fri            every two hours   the report firms up
+#   Fri            hourly            the report firms up, and Friday games
+#   Tue-Thu evenings ET, hourly      a game-day-only report (the MAC files an
+#                                    hour before kickoff, the American two)
+#                                    for a weeknight game lands after a
+#                                    three-hourly run and before the next
+#                                    one, which is past kickoff
+# conferences.test.js holds this schedule to every game-day filing window.
 name: Availability sync
 
 on:
@@ -35,7 +41,9 @@ on:
     - cron: '5 0-5 * * 0'        # Saturday night ET, hourly
     - cron: '5 6,12,18 * * 0,1'  # Sunday and Monday, every six hours
     - cron: '5 */3 * * 2,3,4'    # Tuesday to Thursday, every three hours
-    - cron: '5 */2 * * 5'        # Friday, every two hours
+    - cron: '5 * * * 5'          # Friday, hourly (Friday games file on game day)
+    - cron: '5 22,23 * * 2,3,4'  # Tuesday to Thursday, 6-7pm ET: weeknight game-day reports
+    - cron: '5 1,2 * * 3,4,5'    # the same evenings, 9-10pm ET
 
 permissions:
   contents: write
@@ -58,7 +66,7 @@ jobs:
           node-version: '22'
 
       - name: The rules must pass before anything is allowed to write
-        run: node football/availability/availability.test.js && node football/availability/reports.test.js && node football/availability/hdi.test.js
+        run: node football/availability/availability.test.js && node football/availability/reports.test.js && node football/availability/hdi.test.js && node football/availability/conferences.test.js
 
       - name: Refresh the source registry
         run: |

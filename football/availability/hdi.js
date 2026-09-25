@@ -2,10 +2,10 @@
 /* ============================================================================
    THE CONFERENCE AVAILABILITY REPORTS, READ FROM WHERE THEY ARE PUBLISHED.
 
-   The SEC, the ACC, the Big Ten and the Big 12 do not publish their football
-   availability reports as documents. Each conference's report page embeds one
-   platform, HD Intelligence, and the table a reader sees is fetched by that
-   platform's public report screen from
+   The SEC, the ACC, the Big Ten, the Big 12, the American and the MAC do not
+   publish their football availability reports as documents. Each
+   conference's report page embeds one platform, HD Intelligence, and the
+   table a reader sees is fetched by that platform's public report screen from
 
      POST https://app.hdintelligence.com/api/get-publish-public
           { sport: 'Football', organization: <code>, conference: <code> }
@@ -19,9 +19,12 @@
    WHAT COMES BACK is structured, which is why no page is scraped: one entry
    per game, each with its report type ("Update 1"), the conference's own
    filing time (publishDate + postedTime, in the conference's time zone), the
-   game's date, time and site, and for BOTH teams the whole listed roster with
-   a status for every player — Out, Out (1st Half), Doubtful, Questionable,
-   Probable, Available, or Exempt (not required to be listed).
+   game's date, time and site, and for each team that files the whole listed
+   roster with a status for every player — Out, Out (1st Half), Doubtful,
+   Questionable, Probable, Available, or Exempt (not required to be listed).
+   Both teams file for a conference game. A MAC school files for its
+   non-conference games too (policy.js ALL_GAMES), and that entry carries the
+   MAC school alone.
 
    So a team with nobody designated is not silence here. The report lists
    every player and marks each one available, and that is an explicit
@@ -151,15 +154,20 @@ function nameKeys(s, normKey) {
   [s, String(s || '').replace(/\bSt\.?(?=\s|$)/g, 'State')].forEach(x => { const k = normKey(x); if (k) out.add(k); });
   return out;
 }
+/* A ONE-TEAM ENTRY (a MAC school's non-conference game) is matched on that
+   team and the date alone: a team plays once in a 36-hour window, and a
+   second hit makes the match ambiguous, which is reported, never forced. */
 function matchFixture(entry, games, normKey) {
   const day = Date.parse(String(entry.game_date || '') + 'T12:00:00Z');
-  if (!isFinite(day) || entry.teams.length !== 2) return null;
+  const n = (entry.teams || []).length;
+  if (!isFinite(day) || n < 1 || n > 2) return null;
   const keysOf = t => new Set([...nameKeys(t.team_display, normKey), ...nameKeys(t.team_name, normKey)]);
-  const a = keysOf(entry.teams[0]), b = keysOf(entry.teams[1]);
+  const a = keysOf(entry.teams[0]), b = n === 2 ? keysOf(entry.teams[1]) : null;
   const hits = (games || []).filter(g => {
     const t = Date.parse(g.kickoff || g.start_date || '');
     if (!isFinite(t) || Math.abs(t - day) > 36 * 3600e3) return false;
     const h = normKey(g.home_team), w = normKey(g.away_team);
+    if (!b) return a.has(h) || a.has(w);
     return (a.has(h) && b.has(w)) || (a.has(w) && b.has(h));
   });
   return hits.length === 1 ? hits[0] : null;

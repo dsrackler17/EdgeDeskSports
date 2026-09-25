@@ -21,7 +21,11 @@
                  four filings a week (Big Ten), two days out (Mountain West).
                  A report that is not due yet is not a report that is missing.
 
-   AND NOT EVERY CONFERENCE HAS ONE. Where no policy could be verified the
+   SCOPE HAS ONE EXCEPTION. The Mid-American Conference requires its schools to
+  file for EVERY game they play, conference or not (applies_to ALL_GAMES), and
+  its non-conference filings cover the MAC school's side only.
+
+  AND NOT EVERY CONFERENCE HAS ONE. Where no policy could be verified the
    entry says UNVERIFIED and carries no URL. That is deliberately NOT the same
    record as "this conference publishes nothing": one is a gap in EdgeDesk's
    research and the other is a fact about the conference, and collapsing them
@@ -183,35 +187,104 @@
       verified_at: VERIFIED_AT
     },
     {
-      id: 'american', name: 'American Athletic Conference', aliases: ['American', 'AAC', 'The American'],
-      state: 'UNVERIFIED',
-      report_url: null, archive_url: null, policy_url: null,
-      applies_to: null, comprehensive: false, statuses: [],
-      cadence: null,
-      why: 'no published football availability-reporting policy was found for this conference. That is a gap in '
-        + 'EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as '
-        + 'unverified so it is looked at again rather than treated as settled.',
-      verified_at: VERIFIED_AT
+      id: 'american', name: 'American Athletic Conference', aliases: ['American', 'AAC', 'The American', 'American Conference'],
+      state: 'PUBLISHED',
+      report_url: 'https://theamerican.org/sports/2026/8/6/football_player_availability.aspx',
+      archive_url: 'https://theamerican.org/sports/2026/9/3/football_player_availability_archive.aspx',
+      /* the page (linked as "Availability Reports" from the conference's
+         football navigation) embeds HD Intelligence's public report under
+         the code "American"; football/availability/probe_sources.js read it
+         from the page on 2026-09-25 */
+      platform: 'hdintelligence', platform_code: 'American',
+      policy_url: 'https://theamerican.org/sports/2026/8/6/football_player_availability.aspx',
+      /* the week's table and the season's archive carry conference games
+         only (Army-Temple, Navy-UAB; Army-USF, Navy-FAU) */
+      applies_to: 'CONFERENCE_GAMES',
+      /* COMPREHENSIVE, AS FILED: the Army-Temple game-day listing
+         (2026-09-25) designates every player on both rosters — Army 166
+         available, 14 exempt, 7 questionable, 4 out; Temple 106 available,
+         7 out, 3 questionable */
+      comprehensive: true,
+      statuses: ['AVAILABLE', 'QUESTIONABLE', 'OUT', 'OUT_FIRST_HALF'],
+      /* ONE filing, on game day: the archive's only report day is "Game
+         Day", and the listing is published two hours before kickoff (13:00
+         CT for Army-Temple's 15:00 CT kickoff) */
+      first_filing_hours_before_kickoff: 2,
+      final_filing_minutes_before_kickoff: 120,
+      cadence: 'a single game-day report for each conference game, published two hours before kickoff',
+      source: 'https://theamerican.org/sports/2026/8/6/football_player_availability.aspx',
+      verified_at: '2026-09-25'
     },
     {
       id: 'midamerican', name: 'Mid-American Conference', aliases: ['MAC', 'Mid-American'],
-      state: 'UNVERIFIED',
-      report_url: null, archive_url: null, policy_url: null,
-      applies_to: null, comprehensive: false, statuses: [],
-      cadence: null,
-      why: 'no published football availability-reporting policy was found for this conference. That is a gap in '
-        + 'EdgeDesk’s research, NOT a finding that the conference publishes nothing.',
-      verified_at: VERIFIED_AT
+      state: 'PUBLISHED',
+      /* linked exactly so, doubled extension and all, as "Student-Athlete
+         Availability Reports" from the conference's football navigation; the
+         single-".aspx" form answers HTTP 500 (probe, 2026-09-25) */
+      report_url: 'https://getsomemaction.com/sports/2026/7/28/FB_0728265050.aspx.aspx',
+      archive_url: 'https://getsomemaction.com/sports/2026/8/27/FB_0728265055.aspx.aspx',
+      platform: 'hdintelligence', platform_code: 'MAC',
+      policy_url: 'https://www.espn.com/college-football/story/_/id/40953213/mac-adopts-player-availability-report-football-games',
+      /* EVERY GAME A MEMBER PLAYS, not only conference games. The 2026
+         archive carries MAC schools' filings against Ohio State, Nebraska,
+         Holy Cross, Colgate and thirty other non-conference opponents, and
+         the week's table carries a one-team entry for each MAC school's
+         non-conference game (Toledo v San Diego State, Western Michigan v
+         Boise State, Central Michigan at Miami, ...). Only the MAC school's
+         side is filed: the opponent is covered by its own conference's policy
+         or not at all. */
+      applies_to: 'ALL_GAMES',
+      /* NOT CLAIMED. Every MAC listing on the table when this was checked was
+         still "Report Pending", and the archive keeps designated players
+         only, so EdgeDesk has not seen whether a MAC listing designates the
+         whole roster. A listing is judged on its own when it is read: one
+         that designates the roster is a comprehensive filing
+         (reports.js fromListing). The conference is not assumed to be. */
+      comprehensive: false,
+      /* the conference's own declared order on its published table */
+      statuses: ['AVAILABLE', 'QUESTIONABLE', 'OUT', 'OUT_FIRST_HALF'],
+      /* ONE filing, on game day (the archive's only report day), published
+         an hour before kickoff (the table's 11:00 ET entry for a noon ET
+         kickoff, and so on through the day) */
+      first_filing_hours_before_kickoff: 1,
+      final_filing_minutes_before_kickoff: 60,
+      cadence: 'a single game-day report for every game a MAC school plays, published an hour before kickoff',
+      source: 'https://getsomemaction.com/sports/2026/7/28/FB_0728265050.aspx.aspx',
+      verified_at: '2026-09-25'
     },
     {
       id: 'pac12', name: 'Pac-12 Conference', aliases: ['Pac-12', 'PAC-12', 'Pac 12'],
-      state: 'UNVERIFIED',
-      report_url: null, archive_url: null, policy_url: null,
-      applies_to: null, comprehensive: false, statuses: [],
-      cadence: null,
-      why: 'no published football availability-reporting policy was found for the rebuilt conference. That is a '
-        + 'gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing.',
-      verified_at: VERIFIED_AT
+      state: 'PUBLISHED',
+      report_url: 'https://pac-12.com/news/2026/9/11/2026-football-reports.aspx',
+      /* NOT A PLATFORM: the page's own script renders this file (read by the
+         probe, 2026-09-25) — games, each with an update time and the
+         reported players of each side (football/availability/pac12.js) */
+      platform: 'pac12-feed', platform_code: null,
+      data_url: 'https://sbcautostorage.blob.core.windows.net/availability-reports/pac12-football/prod/report.json',
+      archive_url: null,
+      policy_url: 'https://pac-12.com/news/2026/9/11/2026-football-reports.aspx',
+      /* The conference also reports a non-conference game "only when the
+         opponent and opponent's conference participate". It does not say
+         which opponents count, and on 2026-09-25 — the day before San Diego
+         State at Toledo and Boise State at Western Michigan, whose
+         conference files for every game — the feed carried no game at all.
+         So no non-conference game is taken to require a Pac-12 report until
+         one is seen in the feed. */
+      applies_to: 'CONFERENCE_GAMES',
+      /* SELECTED: the page lists reported players only, and prints "No
+         reported players." for a team with none. A player's absence from it
+         is not a statement that he is available. */
+      comprehensive: false,
+      /* No report had been filed when this was verified (conference play
+         begins 2026-10-03), so the words the feed uses are not known yet. A
+         word the reader does not map is quarantined, never guessed. */
+      statuses: [],
+      first_filing_hours_before_kickoff: 72,
+      final_filing_minutes_before_kickoff: 120,
+      cadence: 'filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two '
+        + 'hours before kickoff',
+      source: 'https://pac-12.com/news/2026/9/11/2026-football-reports.aspx',
+      verified_at: '2026-09-25'
     },
     {
       id: 'independent', name: 'FBS Independents', aliases: ['Independent', 'FBS Independents', 'Independents'],
@@ -279,6 +352,9 @@
     var conferenceGame = game.is_conference_game === true
       || (game.home_conference && game.away_conference
         && norm(game.home_conference) === norm(game.away_conference));
+    /* ALL_GAMES: the conference requires its members to file for every game
+       they play (the MAC), so a non-conference fixture is covered on the
+       member's side */
     if (pol.applies_to === 'CONFERENCE_GAMES' && !conferenceGame) {
       return { state: 'NOT_REQUIRED_FOR_THIS_GAME', conference: pol.name, policy: pol, required: false, due: null,
         why: pol.name + ' requires an availability report for CONFERENCE games only, and this is a non-conference '
