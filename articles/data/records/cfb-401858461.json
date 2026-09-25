@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Northwestern vs. Indiana: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Northwestern vs. Indiana 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Northwestern at Indiana at Indiana -25.9 with a 51.4 fair total. Indiana wins 96% of simulations. Data confidence 78%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices Northwestern at Indiana at Indiana -25.9 with a 51.4 fair total. Indiana wins 96% of simulations. Data confidence 87%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Indiana carries the stronger underlying team rating — +6.6 against -1.2, a 7.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Indiana -25.9 before any sportsbook number is consulted, with Indiana winning 96% of…",
   "home_team": "Indiana",
   "away_team": "Northwestern",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T00:00:00.000Z",
   "game_when_label": "2026-09-26 00:00 UTC",
   "published_at": "2026-09-25T14:00:21.299Z",
-  "updated_at": "2026-09-25T14:40:26.581Z",
-  "generated_at": "2026-09-25T14:40:26.581Z",
+  "updated_at": "2026-09-25T15:30:21.263Z",
+  "generated_at": "2026-09-25T15:30:21.263Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 78,
+  "confidence": 87,
   "priced": true,
   "fair_spread_text": "Indiana -25.9",
   "fair_total": "51.4",
@@ -65,7 +65,7 @@
     "lede": [
       "Indiana carries the stronger underlying team rating — +6.6 against -1.2, a 7.8-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Indiana -25.9 before any sportsbook number is consulted, with Indiana winning 96% of simulations.",
-      "Data confidence on this matchup is 78% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 87% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
@@ -113,65 +113,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from Indiana’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 78,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 87,
+      "inputs_reached_pct": 89,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 23,
+        "priced": 15,
+        "priced_coverage_pct": 58,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 15,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Indiana is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Northwestern is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -254,7 +232,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T14:55:48.886Z"
       },
       "home": {
         "team": "Indiana",
@@ -344,9 +322,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T20:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T14:55:48.886Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T14:56:34.269Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1374,7 +1352,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 70h old",
+          "text": "odds is 71h old",
           "widening": null
         },
         {
@@ -1436,18 +1414,6 @@
           "why": "starting QB not supplied for away"
         },
         {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
-        },
-        {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1485,7 +1451,7 @@
       "total_market": "49.5",
       "book": "captured · Hard Rock Bet",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "70 hours old",
+      "capture_age": "71 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1500,10 +1466,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "LOW_RELIABILITY",
-        "label": "LOW RELIABILITY",
-        "rule": "coverage",
-        "means": "Only 59% of this game’s applicable inputs are on file (10 of 17), under the 60% bar below which EdgeDesk argues against its own number."
+        "key": "WORTH_RESEARCHING",
+        "label": "WORTH RESEARCHING",
+        "rule": "research_gap",
+        "means": "EdgeDesk differs from the market by 4.4 pts toward Indiana, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
       },
       "fair": {
         "line_text": "Indiana -25.9",
@@ -1529,15 +1495,15 @@
         "note": null
       },
       "confidence": {
-        "score": 78,
+        "score": 87,
         "tier": "HIGH",
         "label": "High"
       },
       "reliability": {
-        "pct": 59,
-        "tier": "LOW",
-        "text": "59%",
-        "sub": "10 of 17 inputs on file"
+        "pct": 89,
+        "tier": "STRONG",
+        "text": "89%",
+        "sub": "23 of 26 inputs on file"
       },
       "drivers": {
         "team": "Indiana",
@@ -1799,15 +1765,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-25. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_6243a2addcce0f9c",
+  "snapshot_id": "snap_eb7d28569603797d",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-09-26T00:00:00.000Z",
-    "minutes_before_kickoff": 560,
+    "minutes_before_kickoff": 510,
     "published_at": "2026-09-25T14:00:21.299Z",
     "refreshed": false,
-    "at": "2026-09-25T14:40:26.581Z"
+    "at": "2026-09-25T15:30:21.263Z"
   },
   "featured": {
     "editorial_priority": 37.6,
@@ -2062,11 +2028,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-09-25T14:40:26.581Z"
+    "at": "2026-09-25T15:30:21.263Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-09-25T14:40:26.581Z",
+    "at": "2026-09-25T15:30:21.263Z",
     "blocking": [],
     "warnings": [],
     "hold_reason": null
@@ -2074,6 +2040,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T14:40:26.581Z"
+    "at": "2026-09-25T15:30:21.263Z"
   }
 }
