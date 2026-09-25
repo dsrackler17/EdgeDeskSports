@@ -211,7 +211,7 @@
       ? { k: 'Confidence', v: txt(C.label), sub: C.score != null ? C.score + '% information confidence' : null }
       : { k: 'Confidence', absent: true, why: 'The engine did not measure its own information confidence for this game.' });
     cards.push(R.tier
-      ? { k: 'Reliability', v: txt(R.text), sub: txt(R.sub) }
+      ? { k: 'Reliability', v: txt(R.text), sub: R.score != null ? txt('0-100, not a probability · ' + R.sub) : txt(R.sub) }
       : { k: 'Reliability', absent: true, why: 'Input coverage was not reported for this game.' });
     if (v.projection_status && v.projection_status.label) {
       cards.push({ k: 'Projection status', v: txt(v.projection_status.label), tone: 'status' });

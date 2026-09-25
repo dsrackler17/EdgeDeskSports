@@ -205,6 +205,7 @@ function compactRow(e) {
     status: g.status, ats: g.spread && g.spread.result, ats_side: g.spread && g.spread.side,
     ou: g.total && g.total.result, ou_side: g.total && g.total.side,
     clv: g.clv_entry && g.clv_entry.spread ? g.clv_entry.spread.pts : null,
+    reliability: e.pick && e.pick.reliability ? e.pick.reliability.score : null,
   };
 }
 

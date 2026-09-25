@@ -192,7 +192,9 @@
         ? fact('research.confidence', 'EdgeDesk’s confidence tier', txt(rv.confidence.label), TIER.MODEL, rsrc, 'research_view.confidence')
         : fact('research.confidence', 'EdgeDesk’s confidence tier', null, TIER.UNKNOWN, 'the engine did not measure it', 'research_view.confidence'));
       F.push(rv.reliability && rv.reliability.tier
-        ? fact('research.reliability', 'the share of this game’s inputs EdgeDesk has on file', txt(rv.reliability.text), TIER.MODEL, rsrc, 'research_view.reliability')
+        ? fact('research.reliability', rv.reliability.score != null
+            ? 'EdgeDesk’s reliability score: 0-100 data quality, freshness, source agreement and projection stability — not a probability'
+            : 'the share of this game’s inputs EdgeDesk has on file', txt(rv.reliability.text), TIER.MODEL, rsrc, 'research_view.reliability')
         : fact('research.reliability', 'the share of this game’s inputs EdgeDesk has on file', null, TIER.UNKNOWN, 'input coverage was not reported', 'research_view.reliability'));
       ((rv.drivers && !rv.drivers.none && rv.drivers.reasons) || []).forEach(function (d, i) {
         F.push(fact('research.lean.' + i, 'a measured reason EdgeDesk leans ' + txt(rv.drivers.team),
