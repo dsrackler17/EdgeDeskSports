@@ -2971,6 +2971,7 @@ body.focus .dk-focusnote{display:block}
 @media (prefers-reduced-motion:reduce){.dk-skel{animation:none}}
 </style>
 
+<link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260925p">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3970,6 +3971,13 @@ window.mcRefresh=function(){
      status; the SAME file is what tools/football/research_priority.test.js
      holds to its gates, its order and its explanations. -->
 <script src="/lib/research_priority.js?v=20260924a"></script>
+<!-- The personal research layer (watchlist, research alerts, Top 5 explanations,
+     the decision journal and its CLV grade) and the one written-down offer.
+     research_core.js is loaded eagerly here because the journal's CLV reads its
+     line convention; the football module still lazy-loads it for itself. -->
+<script src="/lib/research_core.js?v=20260925p"></script>
+<script src="/lib/edgedesk_personal.js?v=20260925p"></script>
+<script src="/lib/edgedesk_pricing.js?v=20260925p"></script>
 <!-- The CFB research view: what a reader sees first on the college board
      (the fair line with its side, the market gap, the research label, the
      reasons, the best available line, the projection's own history), read off
@@ -22090,10 +22098,11 @@ function renderSetNotif(){
 
   return out+
   setGate('No push or per-edge alerts',
-    'EdgeDesk has <b>no push service and no device tokens</b>, and does not email on individual edges. The weekly research editions above are the only email it sends; toggling anything else here would store a preference that nothing reads.',
+    'EdgeDesk has <b>no push service and no device tokens</b>, and does not email on individual edges. The weekly research editions above are the only email it sends. <b>Research alerts</b> for games you watch are delivered in the app, under the bell &mdash; set them in <a href="#" onclick="setGo(\'researchalerts\');return false">Research alerts</a>.',
     'NOT BUILT')+
   setCard('What you can rely on today',null,
     setRow('In-app refresh','<span class="set-val pos">Live</span>','Edges re-price on the capture cron and the tab refreshes every 60s')+
+    setRow('In-app research alerts','<span class="set-val pos">Live</span>','Fair-line moves, market moves, QB confirmations, reliability and research-grade changes on games you watch')+
     setRow('Weekly research email','<span class="set-val'+((cfb||nfl)?' pos':'')+'">'+((cfb||nfl)?'On':'Off')+'</span>','Monday college football, Tuesday NFL')+
     setRow('Push notifications','<span class="set-val">Not available</span>')+
     setRow('Per-edge alerts','<span class="set-val">Not available</span>'));
@@ -22113,7 +22122,8 @@ function renderSetPrivacy(){
   return setCard('Your data',null,
     setRow('Download account data','<button class="btn ghost sm" onclick="__exportData()">Export JSON</button>',
       'Your ledger and preferences are stored in this browser \u2014 this exports exactly what EdgeDesk holds locally')+
-    setRow('Ledger storage','<span class="set-val">This browser only</span>','Bets live in localStorage; clearing site data erases them'))+
+    setRow('Ledger storage','<span class="set-val">This browser only</span>','Bets live in localStorage; clearing site data erases them')+
+    setRow('Watchlist, research journal, research alerts','<span class="set-val">Your account</span>','Stored server-side under row level security: only your account can read them. Download the journal as CSV from My research.'))+
   setCard('Legal',null,
     '<div class="set-links"><a href="./terms.html">Terms of Service</a><a href="./privacy.html">Privacy Policy</a><a href="./disclaimer.html">Disclaimer</a></div>')+
   setGate('Login history','No auth event log is recorded, so there is no sign-in history to show.')+
@@ -22234,6 +22244,11 @@ var SETTINGS_SECTIONS=[
   {id:'subscription', label:'Subscription',      render:renderSetSub},
   {id:'edge',         label:'Edge Preferences',  render:renderSetEdge},
   {id:'notifications',label:'Notifications',     render:renderSetNotif},
+  /* the personal research layer (lib/edgedesk_personal_ui.js); each renders
+     a plain "not loaded" card if that file did not load */
+  {id:'research',     label:'Research preferences',render:function(){return window.EDMine?window.EDMine.settingsResearch():setCard('Research preferences','The personal research layer did not load.','');}},
+  {id:'researchalerts',label:'Research alerts',  render:function(){return window.EDMine?window.EDMine.settingsAlerts():setCard('Research alerts','The personal research layer did not load.','');}},
+  {id:'partner',      label:'Partner program',   render:function(){return window.EDMine?window.EDMine.settingsPartner():setCard('Partner program','The personal research layer did not load.','');}},
   {id:'display',      label:'Display',           render:renderSetDisplay},
   {id:'privacy',      label:'Privacy & Security',render:renderSetPrivacy},
   {id:'feedback',     label:'Report a problem',  render:renderSetFeedback},
@@ -24105,14 +24120,22 @@ function pgLockedHTML(note){
   return '<h1 class="pg-h">'+head+'</h1>'+
     '<p class="pg-p">'+body+'</p>'+
     (note?'<div class="pg-status">'+note+'</div>':'')+
-    '<div class="pg-price"><span class="n">'+SUB_PRICE_DISPLAY+'</span><span class="per">per month, cancel anytime</span></div>'+
+    /* THE WHOLE OFFER, BEFORE ANY CLICK. A reader who has never subscribed
+       is sent through the landing page's trial flow, which records the
+       auto-renewal consent before Stripe; a reader whose subscription lapsed
+       keeps the resubscribe link and is promised no trial it may not get.
+       The words come from lib/edgedesk_pricing.js. */
+    (function(){var X=window.EDPricing,fresh=!s;
+      return '<div class="pg-price"><span class="n">'+SUB_PRICE_DISPLAY+'</span><span class="per">per month, cancel anytime</span></div>'
+        +'<div class="pg-status" data-ed-price="'+(fresh?'cta':'resub')+'">'+stEsc(X?(fresh?X.CTA_LINE:X.RESUBSCRIBE_LINE):(SUB_PRICE_DISPLAY+'/month. Cancel anytime.'))+'</div>';})()+
     '<ul class="pg-list">'+
       '<li>Live edges priced against a de-vigged Pinnacle fair line</li>'+
       '<li>Full research receipt behind every signal</li>'+
       '<li>CLV grading on anything you log, entry price vs closing fair</li>'+
       '<li>MLB, WNBA, UFC and CFB boards</li>'+
     '</ul>'+
-    '<a class="pg-btn" href="'+pgCheckoutURL()+'">Subscribe \u2014 '+SUB_PRICE_DISPLAY+'/mo</a>'+
+    (!s?'<a class="pg-btn" href="./index.html#subscribe">Start 7-day free trial \u2014 then '+SUB_PRICE_DISPLAY+'/mo</a>'
+       :'<a class="pg-btn" href="'+pgCheckoutURL()+'">Subscribe \u2014 '+SUB_PRICE_DISPLAY+'/mo</a>')+
     '<button class="pg-btn ghost" onclick="pgRecheck()">I already paid \u2014 check again</button>'+
     /* THIS SCREEN USED TO BE A DEAD END. Three buttons — pay, re-check, sign
        out — for the one visitor most likely to have hit a bug: brand new,
@@ -26291,11 +26314,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       else if(!fbOn)opsHtml='<div class="empty" style="padding:16px"><b>No model read loaded yet.</b><br>Open Football to load the engine; the desk then lists the largest spread and total disagreements, QB uncertainty and data warnings here.<div style="margin-top:10px"><button class="rbtn" onclick="researchGo(\'football\')">Open Football</button></div></div>';
       else opsHtml='<div class="empty" style="padding:16px"><b>No research opportunity on the slate.</b><br>The model and the market agree within a point everywhere a market number exists, and no data warning is open. Nothing to force.</div>';
       var mods=[['football','Football','NFL + FBS model, rosters, FBS ratings'],['ufc','UFC','Fighter records, live fight center'],['tennis','Tennis','ATP/WTA record, WTA daily engine'],['stats','Stats','Teams, players, leaders, projections'],['lab','Lab','Model inspection, sensitivity, autopsy, calibration']];
+      /* THE DESK'S ORDER: the games worth researching first, then the
+         reader's own watchlist, then the board's live opportunities, then
+         what changed and how the reader's own decisions have held up. The
+         personal sections are EDMine's (lib/edgedesk_personal_ui.js) and
+         fill in after this renders; without it the desk is what it was. */
+      var mine=window.EDMine&&typeof window.EDMine.deskHTML==='function';
       host.innerHTML='<div class="rd-hero"><div class="dk-ey">Research desk <span class="st">experimental context, not edges</span></div><div class="t">Understand the matchup behind the number.</div><div class="s">Where should I research? The cards below are the largest live disagreements and the most important data warnings the modules already compute. Each one opens the module that owns it.</div></div>'
+        +(mine?window.EDMine.deskHTML('top'):'')
         +'<div class="dk-h">Active research opportunities'+(fbOn?' <span class="n">model '+esc(agoS(FB.at))+'</span>':'')+'</div>'+opsHtml
+        +(mine?window.EDMine.deskHTML('bottom'):'')
         +'<div class="dk-h">Modules</div><div class="rd-mods">'+mods.map(function(m){return '<button class="rd-mod" onclick="researchGo(\''+m[0]+'\')"><b>'+m[1]+'</b><small>'+esc(m[2])+'</small></button>';}).join('')+'</div>'
         +'<div class="flow-wrap"><div class="fw-h">Research process</div>'+window.flowHTML(false)+'</div>'
         +'<div class="dk-note">Every module here is research context: experimental models, published records, season stats. None of it is an edge. The edge, if there is one, still lives in CLV.</div>';
+      if(mine)try{window.EDMine.paintDesk();}catch(_){}
     }catch(err){host.innerHTML='<div class="empty">The research desk could not render: '+esc(err&&err.message||'')+'</div>';}
   };
   window.fbOpenGameFromDesk=function(sport,gid){researchGo('football');setTimeout(function(){try{window.fbOpenGame(sport,gid);}catch(_){}},80);};
@@ -41807,6 +41839,27 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      that answer rests on; then the evidence, folded. Every number is the
      server's. Nothing here computes anything. */
   function deskIsAnswer(d){ return !!(d&&d.desk&&d.desk.schema==='edgedesk_desk_answer_v1'); }
+  /* THE READER'S OWN RESEARCH (edgedesk_ai mineTurn, _mine.js): the headline
+     and a few lines first, the detail folded, what is missing said, and the
+     rows it came from named. Deterministic unless the server says a model
+     rephrased it under the critic. */
+  function mineIsAnswer(d){ return !!(d&&d.mine&&d.mine.schema==='edgedesk_mine_answer/1'); }
+  function mineAnswerHTML(d){
+    var M=d.mine, h='<div class="dk-read"><div class="lab">Your research</div>';
+    if(d.model&&d.answer) h+=mdToHtml(String(d.answer));
+    else h+='<p>'+esc(M.headline)+'</p>'+(M.lines&&M.lines.length?'<ul class="ed-wl">'+M.lines.map(function(l){return '<li>'+esc(l)+'</li>';}).join('')+'</ul>':'');
+    h+='</div>';
+    if(M.detail&&M.detail.length) h+='<details class="ed-more"><summary>More detail</summary><div class="bd">'+M.detail.map(function(l){return '<p>'+esc(l)+'</p>';}).join('')+'</div></details>';
+    if(M.missing&&M.missing.length) h+='<p style="font-size:11.5px;color:var(--warn);line-height:1.5;margin:7px 0 0">Not known: '+M.missing.map(esc).join('; ')+'.</p>';
+    var acts=(M.actions||[]).map(function(a){
+      var t={watchlist:['Open my watchlist',"EDMine.open('watchlist')"],alerts:['Open alerts',"EDMine.open('alerts')"],quality:['Decision quality',"EDMine.open('quality')"],
+        top5:['Top 5 on the desk',"researchGo('rdesk')"]}[a];
+      return t&&window.EDMine?'<button class="edai-qa" onclick="'+t[1]+'">'+t[0]+'</button>':'';
+    }).join('');
+    if(acts) h+='<div class="ed-acts">'+acts+'</div>';
+    if(M.sources&&M.sources.length) h+='<p style="font-size:10.5px;color:var(--faint);line-height:1.5;margin:7px 0 0">From '+M.sources.map(esc).join(' · ')+'. Research, not picks.</p>';
+    return h;
+  }
   function deskNum(v,sign){ if(v==null||!isFinite(+v)) return '\u2014'; v=+v; return (sign&&v>0?'+':'')+(Math.round(v*10)/10); }
   function deskPct(p){ return p==null||!isFinite(+p)?'\u2014':Math.round(+p*100)+'%'; }
   function deskShortHTML(d){
@@ -43841,6 +43894,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         LAST_CTX = (rc&&rc.game_id) ? {sport:rc.sport,game_id:rc.game_id,home:rc.home,away:rc.away,
           home_id:rc.home_id,away_id:rc.away_id,turns:rc.turns||1,
           state:(cs&&cs.game&&String(cs.game.game_id)===String(rc.game_id))?cs:null} : LAST_CTX; }catch(_){}
+      /* THE READER'S OWN RESEARCH, when the server answered from it. */
+      if(mineIsAnswer(d)){
+        var ansM=(d.answer&&String(d.answer).trim())||d.deterministic_mine_answer||'';
+        if(ansM){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:ansM}); }
+        LAST_ASK={mode:mode,question:question,x:x,extra:extra};
+        return {html:mineAnswerHTML(d), src:d.model?('Your research \u00b7 EdgeDesk\u2019s rows, written by '+d.model):'Your research \u00b7 EdgeDesk\u2019s rows and words, no model'};
+      }
       /* THE DESK'S SHORT ANSWER, when the server gave one. */
       if(deskIsAnswer(d)){
         try{ if(d.desk_state&&d.desk_state.schema==='edgedesk_desk_state_v1') LAST_DESK=d.desk_state; }catch(_){}
@@ -46932,6 +46992,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
            question about a team is never answered by whatever card happens to
            be loaded. Everything downstream is unchanged for every question
            that names nobody. */
+        /* A QUESTION ABOUT THE READER'S OWN RESEARCH — the watchlist, the
+           alerts, the journal, CLV, the games worth researching — goes to
+           the desk, which reads the reader's rows under their own token. It
+           is never answered from whatever card happens to be open. */
+        if(window.EDPersonal&&window.EDPersonal.PERSONAL_Q&&window.EDPersonal.PERSONAL_Q.test(t)){
+          thinking(true);
+          LAST_ASK={mode:'chat',question:t,x:null,extra:null};
+          var resP=await askAI('chat',t,null);
+          thinking(false);
+          if(resP&&!resP.failed){ var dP=push('a',resP.html); if(resP.src&&dP){ var sP=document.createElement('div'); sP.className='edai-src'; sP.textContent=resP.src; dP.appendChild(sP); } return; }
+        }
         if(deskStateFollowUp(t)){
           thinking(true);
           LAST_ASK={mode:'chat',question:t,x:null,extra:null};
@@ -51040,6 +51111,16 @@ function fbQualityLine(p,extra){
   if(!bits.length)return '';
   return '<div class="gd-modelnote">⚠ '+fbEsc(bits.join(' · '))+'</div>';
 }
+/* THE READER'S OWN ACTIONS on a game card: watch it, log a decision about
+   it. Rendered only when the personal layer (lib/edgedesk_personal_ui.js)
+   loaded, and never for a game that has kicked off. */
+function fbMineActs(sport,gid,home,away,t){
+  if(!window.EDMine||!window.EDPersonal)return '';
+  if(t!=null&&isFinite(t)&&t<=Date.now())return '';
+  var key=window.EDPersonal.gameKey(sport,gid);
+  return '<div class="edm-gxstar">'+window.EDMine.starHTML(sport,gid,{home:home,away:away,kickoff:t})
+    +'<button type="button" class="edm-btn ghost sm" onclick="event.stopPropagation();EDMine.journalOpen(\''+String(key).replace(/'/g,'')+'\')">Log decision</button></div>';
+}
 function fbGameCardNfl(u){
   var g=u.g;
   var M=fbNflMarketFor(g,u.t);
@@ -51070,7 +51151,8 @@ function fbGameCardNfl(u){
   var pa='';try{var paB=fbPersonnelHTML(g.game_id);if(paB)pa='<div class="gd-sec">Personnel availability</div>'+paB;}catch(_){pa='';}
   return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
-    +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>'
+    +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
+    +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
     +lines+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
@@ -56403,7 +56485,8 @@ function fbP4Card(u){
     : ((g.away_conference||'')+' at '+(g.home_conference||''));
   var head='<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(g.away_team)+' @ '+fbEsc(g.home_team)+'</div>'
     +'<div class="mdl-card-when">'+fbEsc(confLine)
-    +' · wk '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>';
+    +' · wk '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
+    +fbMineActs('p4',g.game_id,g.home_team,g.away_team,u.t)+'</div>';
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card">'+head+'<div class="gd-nodata">'+fbEsc(p.status)+': '
       +fbEsc(p.reason||(p.missing||[]).join(', '))+'</div></div>';
@@ -57796,7 +57879,8 @@ function fbWrRowHTML(x){
   var mk=c.market,mAge=mk.kind==='live'?(mk.at!=null?('market '+ago(mk.at)):'market on file'):'consensus line';
   return '<div class="fb-wr-r">'
     +'<div class="fb-wr-h"><span class="n">'+x.rank+'</span><span class="m">'+fbEsc(c.away+' @ '+c.home)+'</span>'
-      +'<span class="fb-wr-st '+stCls+'">'+fbEsc(c.status)+'</span></div>'
+      +'<span class="fb-wr-st '+stCls+'">'+fbEsc(c.status)+'</span>'
+      +(window.EDMine?window.EDMine.starHTML(c.board,c.gid,{home:c.home,away:c.away,kickoff:c.kickoff}):'')+'</div>'
     +(u.elevated?'<div class="fb-wr-u">Higher uncertainty · '+fbEsc(u.reasons.map(function(k){return FB_WR_UNC[k]||k;}).join(' · '))+'</div>':'')
     +(c.view&&c.view.market_gap&&c.view.market_gap.available
       ?('<div class="fb-wr-v"><span><i>Market</i>'+fbEsc(c.view.market_gap.market_line_text)+'</span>'
@@ -57873,6 +57957,153 @@ window.fbWrLoadCfb=function(){
   fbWrPaint();
 };
 window.fbWrOpen=function(sport,gid,rank){edEvent('research_game_open',{surface:'worth_researching',sport:sport,rank:rank});fbOpenGame(sport,gid);};
+/* ═══ THE RESEARCH STATE — one object per game for the personal layer ═════
+   The watchlist, the research-condition alerts, the journal's decision-time
+   snapshot, the "Top 5 games to research" list and the desk's personal
+   answers all read ONE object per game (lib/edgedesk_personal.js documents
+   it, schema edgedesk_research_state/1). It is built here, from the rows
+   fbGameRows() already made and the readers the board already runs:
+
+     status, gap, flags, movement, the research view   fbWrCandidate
+     the reading order and its sentence                lib/research_priority.js
+     quarterbacks                                      fbBrStarters (CFB),
+                                                       fbGameQbContext (NFL)
+     availability                                      fbP4Assembly injuries
+                                                       (CFB), EDCARD
+                                                       availabilityFor (NFL)
+
+   NOTHING HERE COMPUTES A NUMBER THE BOARD DOES NOT ALREADY HAVE. A value a
+   game does not carry is null. tools/personal/research_state.js runs this
+   same function headlessly (tools/articles/research_host.js) to fill the
+   shared game_research_state table, so the server and the page cannot
+   disagree about what a game's state is. */
+function fbRsNum(x){return (typeof x==='number'&&isFinite(x))?x:null;}
+function fbRsR2(x){return x==null?null:Math.round(x*100)/100;}
+function fbRsIso(t){try{return (t==null||!isFinite(t))?null:new Date(t).toISOString();}catch(_){return null;}}
+function fbRsInjCfb(u,side){
+  var A=null;try{A=fbP4Assembly(u);}catch(_){A=null;}
+  var list=A&&A.injuries?A.injuries[side]:null;
+  if(!Array.isArray(list))return {known:false,out:[],doubtful:[],questionable:[]};
+  var o={known:true,out:[],doubtful:[],questionable:[]};
+  list.forEach(function(p){
+    var s=String(p.status||'').toLowerCase(),n=String(p.player||'unnamed player')+(p.position?' ('+p.position+')':'');
+    if(s==='out')o.out.push(n);else if(s==='doubtful')o.doubtful.push(n);else if(s==='questionable')o.questionable.push(n);
+  });
+  return o;
+}
+function fbRsInjNfl(home,away){
+  var av=null;
+  try{av=window.EDCARD&&window.EDCARD.availabilityFor?window.EDCARD.availabilityFor({e:{sport_key:'americanfootball_nfl',home_team:home,away_team:away}}):null;}catch(_){av=null;}
+  function side(t){
+    if(!av||av.status!=='ON_FILE'||!t||!t.filed)return {known:false,out:[],doubtful:[],questionable:[]};
+    var o={known:true,out:[],doubtful:[],questionable:[]};
+    (t.players||[]).forEach(function(p){
+      var s=String(p.status||'').trim(),n=String(p.name||'unnamed player')+(p.position?' ('+p.position+')':'');
+      if(s==='Out')o.out.push(n);else if(s==='Doubtful')o.doubtful.push(n);else if(s==='Questionable')o.questionable.push(n);
+    });
+    return o;
+  }
+  return {home:side(av&&av.teams&&av.teams.home),away:side(av&&av.teams&&av.teams.away),
+    source:av&&av.status==='ON_FILE'?('NFL injury report'+(av.week!=null?(' · week '+av.week):'')):'NFL injury report not loaded in this session',as_of:null};
+}
+function fbRsQb(r){
+  var out={home:null,away:null,confirmed_both:null,unknown:null,source:null};
+  try{
+    if(r.sport==='p4'){
+      var B=window.fbBrStarters?window.fbBrStarters(r.away,r.home):null;
+      if(B){
+        ['home','away'].forEach(function(k){var x=B[k];if(x)out[k]={name:x.player||null,status:x.status||'UNKNOWN',confirmed:x.confirmed===true};});
+        out.source=B.source||'starter context not loaded';
+      }
+    }else{
+      var u=null;(FB.nfl.up||[]).forEach(function(x){if(String(x.g.game_id)===String(r.gid))u=x;});
+      var C=u&&window.fbGameQbContext?window.fbGameQbContext(u.g):null;
+      if(C){
+        ['home','away'].forEach(function(k){var x=C[k];if(x)out[k]={name:x.starter?x.starter.name:null,status:x.confirmed?'SCHEDULE_FEED':'NOT_CONFIRMED',confirmed:!!x.confirmed};});
+        out.source=C.source?('NFL schedule feed · QB rosters '+C.source):'NFL schedule feed';
+      }
+    }
+  }catch(_){}
+  if(out.home&&out.away)out.confirmed_both=!!(out.home.confirmed&&out.away.confirmed);
+  out.unknown=!!((r.warn||[]).some(function(w){return FB_WR_QB_UNKNOWN.test(String(w));})||(out.home&&!out.home.name)||(out.away&&!out.away.name));
+  return out;
+}
+function fbResearchStateOf(r,c,x,ix){
+  var cfb=r.sport==='p4',p=r.p,ok=!!(r.ok&&p&&p.model),mk=r.mkt||{},v=c&&c.view||null,R=window.EDResearch;
+  var fairHome=ok&&fbRsNum(p.model.fair_spread)!=null?(p.model.fair_spread===0?0:-p.model.fair_spread):null;
+  var mktHome=fbRsNum(mk.spread_line)!=null?(mk.spread_line===0?0:-mk.spread_line):null;
+  var q=mk.quotes_h2h&&mk.quotes_h2h[0],mlh=null,mla=null;
+  if(R&&q&&q[0]>1&&q[1]>1){try{mlh=R.decimalToAmerican(q[0]);mla=R.decimalToAmerican(q[1]);}catch(_){}}
+  var books=null;
+  if(cfb&&ix&&ix[r.gid]&&typeof fbP4QuotesFor==='function'){
+    try{var bs={};(fbP4QuotesFor(ix[r.gid])||[]).forEach(function(z){if(z&&z.actionable===true&&z.book)bs[z.book]=1;});books=Object.keys(bs).length||null;}catch(_){books=null;}
+  }
+  var rel={score:null,grade:null,tier:null,scored:false,main_deduction:null,stability:null,
+    note:cfb?'reliability was not measured for this game':'the NFL model publishes no reliability score'};
+  if(cfb&&v&&v.reliability){
+    var RV=v.reliability;
+    rel={score:RV.scored?fbRsNum(RV.score):null,grade:RV.grade_label||RV.tier||null,tier:RV.tier||null,scored:!!RV.scored,
+      main_deduction:RV.main_deduction||null,stability:RV.stability?{tier:RV.stability.tier||null}:null,note:RV.scored?null:'legacy input coverage only'};
+  }
+  var inj=cfb?(function(){var u=ix&&ix[r.gid];return u?{home:fbRsInjCfb(u,'home'),away:fbRsInjCfb(u,'away'),
+      source:'college availability reports (the board’s input contract)',as_of:(typeof fbP4AvailAsOf==='function'?fbP4AvailAsOf():null)}:{};})()
+    :fbRsInjNfl(r.home,r.away);
+  var pr={eligible:false,reasons:[],score:null,rank:null,why_code:null,why_text:null,uncertainty:[]};
+  if(x){
+    if(x.excluded){pr.reasons=(x.reasons||[]).map(function(k){return (window.EDResearchPriority&&EDResearchPriority.REASONS[k])||k;});}
+    else{pr.eligible=true;pr.score=fbRsNum(x.score);pr.rank=fbRsNum(x.rank);
+      pr.why_code=x.why?x.why.code:null;pr.why_text=x.why?x.why.text:null;
+      pr.uncertainty=(x.detail&&x.detail.uncertainty&&x.detail.uncertainty.reasons)||[];}
+  }
+  var gapPts=(fairHome!=null&&mktHome!=null)?fbRsR2(Math.abs(fairHome-mktHome)):null;
+  var s={schema:'edgedesk_research_state/1',game_key:(cfb?'cfb':'nfl')+'|'+r.gid,sport:cfb?'cfb':'nfl',game_id:String(r.gid),
+    season:(function(){var u=cfb?(ix&&ix[r.gid]):null;if(!cfb)(FB.nfl.up||[]).forEach(function(x){if(String(x.g.game_id)===String(r.gid))u=x;});return u&&u.g?fbRsNum(+u.g.season):null;})(),
+    week:fbRsNum(+r.week),home:r.home,away:r.away,kickoff_at:fbRsIso(r.t),status:c?c.status:null,projected:ok,
+    fair:{home_line:fbRsR2(fairHome),text:v&&v.fair?v.fair.fair_line_text:null,total:ok?fbRsNum(p.model.fair_total):null,
+      model_version:(p&&p.model_version)||null,projected_at:(p&&p.prediction_timestamp)||null},
+    market:{home_line:fbRsR2(mktHome),text:v&&v.market_gap&&v.market_gap.available?v.market_gap.market_line_text:null,total:fbRsNum(mk.total_line),
+      kind:c&&c.market?c.market.kind:null,book:r.book||mk.spread_book||null,
+      captured_at:c&&c.market&&c.market.at!=null?fbRsIso(c.market.at):(mk.as_of||null),stale:!!(c&&c.market&&c.market.stale),
+      books:books,age_h:c&&c.market?c.market.age_h:null,ml_home:mlh,ml_away:mla},
+    gap:{points:gapPts,normalized:c?fbRsNum(c.normalized_gap):null,
+      toward:(fairHome!=null&&mktHome!=null&&gapPts>0)?(fairHome<mktHome?'home':'away'):null},
+    win_prob_home:ok?fbRsNum(p.model.home_win_prob):null,
+    reliability:rel,research_label:v&&v.research_label?v.research_label.key:null,
+    qb:fbRsQb(r),injuries:inj,movement:c?c.movement:{},
+    drivers:((v&&v.strongest_drivers&&v.strongest_drivers.reasons)||[]).filter(function(d){return d.kind==='component';})
+      .map(function(d){return {text:String(d.text||'').replace(/^\+[0-9.]+ pts /,''),points:fbRsNum(d.points)};}),
+    flags:c?c.flags.slice():[],qualifiers:c?c.qualifiers.slice():[],warnings:(r.warn||[]).slice(0,6),
+    priority:pr,
+    key_reason:pr.why_text||(v&&v.research_label?v.research_label.means:null)||(c&&!cfb&&p?(function(){try{return fbNflResearchState(p,mk).note;}catch(_){return null;}})():null),
+    computed_at:new Date().toISOString()};
+  return window.EDPersonal?window.EDPersonal.normalizeState(s):s;
+}
+/* every board game's state, the reading order applied per league exactly as
+   the overview's "5 Games Worth Researching" applies it (fbWrPanel) */
+window.fbResearchStates=function(){
+  var P=window.EDResearchPriority;
+  if(!fbWrLayerReady()){fbWrEnsureLayer();}
+  var rows=fbGameRows(),ix={};
+  ((FB.p4&&FB.p4.up)||[]).forEach(function(u){ix[String(u.g.game_id)]=u;});
+  var cands=rows.map(function(r){try{return fbWrCandidate(r,ix);}catch(_){return null;}});
+  var byKey={};
+  if(P&&fbWrLayerReady()){
+    ['nfl','cfb'].forEach(function(lg){
+      var cs=cands.filter(function(c){return c&&c.sport===lg;});
+      var res=null;try{res=P.rank(cs,cs.length);}catch(_){res=null;}
+      if(!res)return;
+      res.items.forEach(function(it){byKey[it.key]=it;});
+      res.excluded.forEach(function(e){byKey[e.key]={excluded:true,reasons:e.reasons};});
+    });
+  }
+  var out=[];
+  rows.forEach(function(r,i){
+    var c=cands[i];if(!c)return;
+    try{out.push(fbResearchStateOf(r,c,byKey[c.key]||null,ix));}catch(_){}
+  });
+  return {states:out,layer_ready:fbWrLayerReady(),rule:P?P.RULE:null,at:new Date().toISOString(),
+    nfl_loaded:!!(FB.at&&FB.nfl.state),cfb_loaded:!!(FB.p4&&FB.p4.loadedAt)};
+};
 /* The Today signals, folded under the reading order rather than repeated
    beside it: the same cards from the same fbTodayItems, one tap away, with
    the count of data warnings on the toggle so a fault is never out of sight. */
@@ -62277,6 +62508,7 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20260925p"></script>
 <script>
 try{
   window.EDReport.configure({url:SB_URL,key:SB_KEY,

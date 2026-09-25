@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Partner program</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE PARTNER PROGRAM CONSOLE (supabase/affiliates.sql).
+
+     WHAT IT CAN DO
+       SEE        every partner account with its clicks, attributed signups,
+                  trials, paying customers, cancellations and commission split
+                  by status; every commission row with its invoice, basis, rate
+                  and eligibility date; how many recent Stripe events have not
+                  produced a conversion yet.
+       CONFIGURE  the commission rate, how many months a customer earns
+                  commission, the refund hold, the attribution window,
+                  auto-approval and whether the program takes applications.
+       ACCOUNTS   create or update a partner by the email on their EdgeDesk
+                  account: code, status, rate override, Stripe promotion code.
+       MONEY      approve commissions past their hold; record a MANUAL payout
+                  with its reference; void with a reason. Nothing on this page
+                  moves money — there is no payout provider here, and a payout
+                  is recorded after it was made elsewhere.
+       RECONCILE  replay the Stripe ledger into conversions, idempotently.
+
+     Every call is a security-definer function that checks
+     public.affiliate_is_admin() under the OPERATOR'S OWN token. The service role
+     never touches this page. Referred customers are counted, never listed.
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+      --accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark;accent-color:var(--accent)}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 40px}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0}
+.logo{font-weight:800;font-size:16px}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}.hide{display:none!important}
+.who{font-size:11px;color:var(--dim)}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:4px;min-width:150px;flex:1}
+label{font-size:11px;color:var(--dim);font-weight:600}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 13px Inter,system-ui,sans-serif}
+button{border:none;border-radius:8px;background:var(--accent);color:var(--on-accent);font:700 12.5px Inter,system-ui,sans-serif;padding:9px 13px;cursor:pointer}
+button.g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+button.d{color:var(--neg)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 7px;border-top:1px solid var(--border);white-space:nowrap}
+th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+.tw{overflow-x:auto}
+.msg{font-size:12px;margin-top:8px}.msg.err{color:var(--neg)}.msg.ok{color:var(--pos)}
+.pill{font-size:10px;font-weight:700;border:1px solid var(--border);border-radius:9px;padding:1px 7px;color:var(--dim)}
+.pill.pending{color:var(--warn)}.pill.approved{color:var(--accent)}.pill.paid{color:var(--pos)}.pill.void{color:var(--faint)}
+.note{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:6px}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">partner program</span><span class="sp"></span><span class="who" id="who"></span></div></header>
+<div class="wrap">
+  <div id="gate" class="card" style="max-width:420px;margin:40px auto">
+    <h2 style="margin-top:0">Operator sign-in</h2>
+    <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="username"></div>
+    <div class="f" style="margin-top:8px"><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password"></div>
+    <div class="row" style="margin-top:12px"><button id="gGo">Sign in</button></div>
+    <div class="msg" id="gMsg"></div>
+  </div>
+  <div id="app" class="hide">
+    <h2>Program settings</h2>
+    <div class="card">
+      <div class="row">
+        <div class="f"><label for="sRate">Default commission rate (%)</label><input id="sRate" type="number" min="0" max="90" step="0.5"></div>
+        <div class="f"><label for="sMonths">Commission months (blank = every paid invoice)</label><input id="sMonths" type="number" min="1" max="120" step="1"></div>
+        <div class="f"><label for="sHold">Refund hold (days)</label><input id="sHold" type="number" min="0" max="180" step="1"></div>
+        <div class="f"><label for="sWin">Attribution window (days)</label><input id="sWin" type="number" min="1" max="365" step="1"></div>
+        <div class="f"><label for="sMin">Minimum payout ($)</label><input id="sMin" type="number" min="0" step="1"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label><input type="checkbox" id="sAuto"> Auto-approve commissions once their hold has passed</label>
+        <label><input type="checkbox" id="sOpen"> Accept applications from signed-in readers</label>
+        <span class="sp"></span><button id="sSave">Save settings</button>
+      </div>
+      <div class="msg" id="sMsg"></div>
+      <div class="note">The rate applies to what Stripe actually collected, less tax, on each paid invoice of an attributed customer. A refund voids an unpaid commission and books a negative clawback against a paid one.</div>
+    </div>
+
+    <h2>Partners</h2>
+    <div class="card">
+      <div class="row">
+        <div class="f"><label for="aEmail">Partner's EdgeDesk account email</label><input id="aEmail" type="email"></div>
+        <div class="f"><label for="aCode">Code</label><input id="aCode" maxlength="32" placeholder="COACHBIGGS"></div>
+        <div class="f"><label for="aStatus">Status</label><select id="aStatus"><option>active</option><option>pending</option><option>paused</option><option>closed</option></select></div>
+        <div class="f"><label for="aRate">Rate override (%, blank = default)</label><input id="aRate" type="number" min="0" max="90" step="0.5"></div>
+        <div class="f"><label for="aPromo">Stripe promotion code (optional)</label><input id="aPromo" maxlength="64"></div>
+        <button id="aSave">Save partner</button>
+      </div>
+      <div class="msg" id="aMsg"></div>
+      <div class="tw" style="margin-top:12px"><table id="accTbl"></table></div>
+    </div>
+
+    <h2>Commissions</h2>
+    <div class="card">
+      <div class="row"><button class="g" id="cApprove">Approve selected</button><button class="g" id="cPay">Record payout for selected…</button><button class="g d" id="cVoid">Void selected…</button><span class="sp"></span><button class="g" id="cRecon">Reconcile with Stripe</button></div>
+      <div class="msg" id="cMsg"></div>
+      <div class="tw" style="margin-top:12px"><table id="comTbl"></table></div>
+    </div>
+  </div>
+</div>
+<script>
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+var KEY = 'edgedesk_aff_admin_session';
+var SESSION = null, OV = null;
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function say(id, kind, t) { var el = $(id); el.className = 'msg ' + kind; el.textContent = t; }
+function money(c) { if (c == null) return '—'; return (c < 0 ? '−$' : '$') + (Math.abs(c) / 100).toFixed(2); }
+function when(v) { return v ? String(v).replace('T', ' ').slice(0, 16) + 'Z' : '—'; }
+async function api(path, init) {
+  var t = (SESSION && SESSION.access_token) || SB_KEY;
+  var r = await fetch(SB_URL + '/rest/v1/' + path, Object.assign({}, init, { headers: { apikey: SB_KEY, authorization: 'Bearer ' + t, 'content-type': 'application/json' } }));
+  var txt = await r.text();
+  if (!r.ok) throw new Error(r.status + ': ' + txt.slice(0, 200));
+  return txt ? JSON.parse(txt) : null;
+}
+function rpc(n, b) { return api('rpc/' + n, { method: 'POST', body: JSON.stringify(b || {}) }); }
+
+$('gGo').onclick = async function () {
+  var email = $('gEmail').value.trim(), pass = $('gPass').value;
+  if (!email || !pass) return;
+  try {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ email: email, password: pass }) });
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error_description || j.msg || 'sign-in failed');
+    SESSION = j; try { localStorage.setItem(KEY, JSON.stringify(j)); } catch (e) {}
+    await boot();
+  } catch (e) { say('gMsg', 'err', String(e.message || e)); }
+};
+
+function renderSettings() {
+  var s = OV.settings || {};
+  $('sRate').value = s.default_commission_rate != null ? Math.round(s.default_commission_rate * 1000) / 10 : '';
+  $('sMonths').value = s.commission_duration_months == null ? '' : s.commission_duration_months;
+  $('sHold').value = s.hold_days; $('sWin').value = s.attribution_window_days;
+  $('sMin').value = s.min_payout_cents != null ? s.min_payout_cents / 100 : '';
+  $('sAuto').checked = !!s.auto_approve; $('sOpen').checked = !!s.program_open;
+}
+function renderAccounts() {
+  var rows = OV.accounts || [];
+  $('accTbl').innerHTML = '<tr><th>Code</th><th>Status</th><th>Partner</th><th>Rate</th><th>Promo</th><th>Clicks</th><th>Signups</th><th>Trials</th><th>Paid</th><th>Active</th><th>Pending</th><th>Approved</th><th>Paid out</th></tr>'
+    + (rows.length ? rows.map(function (a) {
+      var st = a.stats || {};
+      return '<tr><td class="mono">' + esc(a.code) + '</td><td><span class="pill">' + esc(a.status) + '</span></td><td>' + esc(a.display_name || a.email || '—') + '</td>'
+        + '<td>' + (a.commission_rate != null ? (a.commission_rate * 100).toFixed(1) + '%' : 'default') + '</td><td class="mono">' + esc(a.stripe_promo_code || '—') + '</td>'
+        + '<td>' + (st.clicks || 0) + '</td><td>' + (st.signups || 0) + '</td><td>' + (st.trials || 0) + '</td><td>' + (st.paid_customers || 0) + '</td><td>' + (st.active_paid || 0) + '</td>'
+        + '<td>' + money(st.pending_cents) + '</td><td>' + money(st.approved_cents) + '</td><td>' + money(st.paid_cents) + '</td></tr>';
+    }).join('') : '<tr><td colspan="13">No partners yet.</td></tr>');
+}
+function renderCommissions() {
+  var rows = OV.commissions || [];
+  $('comTbl').innerHTML = '<tr><th></th><th>Partner</th><th>Kind</th><th>Status</th><th>Amount</th><th>Basis</th><th>Rate</th><th>Eligible</th><th>Invoice</th><th>Payout ref</th></tr>'
+    + (rows.length ? rows.map(function (c) {
+      return '<tr><td><input type="checkbox" class="csel" value="' + c.id + '"></td><td class="mono">' + esc(c.code) + '</td><td>' + esc(c.kind) + '</td>'
+        + '<td><span class="pill ' + esc(c.status) + '">' + esc(c.status) + '</span></td><td>' + money(c.amount_cents) + '</td><td>' + money(c.basis_cents) + '</td>'
+        + '<td>' + (c.rate * 100).toFixed(1) + '%</td><td>' + when(c.eligible_at) + '</td><td class="mono">' + esc(c.invoice || '—') + '</td><td>' + esc(c.payout_reference || c.void_reason || '—') + '</td></tr>';
+    }).join('') : '<tr><td colspan="10">No commissions yet.</td></tr>');
+  say('cMsg', '', (OV.unprocessed_events ? OV.unprocessed_events + ' recent payment/refund event(s) have not produced a conversion — usually a customer with no partner, or one Reconcile will pick up.' : ''));
+}
+function selected() { return Array.prototype.map.call(document.querySelectorAll('.csel:checked'), function (x) { return +x.value; }); }
+async function commissions(action, ref, reason) {
+  var ids = selected(); if (!ids.length) { say('cMsg', 'err', 'Select at least one commission.'); return; }
+  try { var r = await rpc('affiliate_admin_commissions', { p_ids: ids, p_action: action, p_reference: ref || null, p_reason: reason || null });
+    if (r && r.ok === false) say('cMsg', 'err', r.reason); else { say('cMsg', 'ok', (r && r.changed) + ' changed.'); await reload(); }
+  } catch (e) { say('cMsg', 'err', String(e.message || e)); }
+}
+$('cApprove').onclick = function () { commissions('approve'); };
+$('cPay').onclick = function () { var ref = prompt('Payout reference (e.g. "PayPal 2026-10-01 #1182"). Record a payout only after it was actually made.'); if (ref) commissions('pay', ref); };
+$('cVoid').onclick = function () { var why = prompt('Reason for voiding:'); if (why) commissions('void', null, why); };
+$('cRecon').onclick = async function () { try { var r = await rpc('affiliate_admin_reconcile', {}); say('cMsg', 'ok', 'Replayed ' + r.events_replayed + ' events; ' + r.trials_from_state + ' trial(s) from subscription state; ' + r.auto_approved + ' auto-approved.'); await reload(); } catch (e) { say('cMsg', 'err', String(e.message || e)); } };
+$('sSave').onclick = async function () {
+  var p = { default_commission_rate: parseFloat($('sRate').value) / 100, commission_duration_months: $('sMonths').value === '' ? '' : parseInt($('sMonths').value, 10),
+    hold_days: parseInt($('sHold').value, 10), attribution_window_days: parseInt($('sWin').value, 10), min_payout_cents: Math.round(parseFloat($('sMin').value || '0') * 100),
+    auto_approve: $('sAuto').checked, program_open: $('sOpen').checked };
+  try { await rpc('affiliate_admin_update_settings', { p: p }); say('sMsg', 'ok', 'Saved.'); await reload(); } catch (e) { say('sMsg', 'err', String(e.message || e)); }
+};
+$('aSave').onclick = async function () {
+  var rate = $('aRate').value === '' ? null : parseFloat($('aRate').value) / 100;
+  try { var r = await rpc('affiliate_admin_upsert_account', { p_email: $('aEmail').value.trim(), p_code: $('aCode').value.trim(), p_status: $('aStatus').value, p_rate: rate, p_promo: $('aPromo').value.trim() || null, p_display_name: null });
+    if (r && r.ok === false) say('aMsg', 'err', r.reason === 'no_account_with_that_email' ? 'No EdgeDesk account uses that email. The partner signs up first.' : r.reason);
+    else { say('aMsg', 'ok', 'Saved ' + r.code + '. Their link: https://edgedesksports.com/?ref=' + r.code); await reload(); }
+  } catch (e) { say('aMsg', 'err', String(e.message || e)); }
+};
+async function reload() { OV = await rpc('affiliate_admin_overview', {}); renderSettings(); renderAccounts(); renderCommissions(); }
+async function boot() {
+  try { await reload(); }
+  catch (e) { say('gMsg', 'err', 'This account cannot open the partner console: an operator must add it to public.affiliate_admins. (' + String(e.message || e) + ')'); return; }
+  $('gate').classList.add('hide'); $('app').classList.remove('hide');
+  var u = null; try { u = JSON.parse(atob((SESSION.access_token.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/'))); } catch (e) {}
+  $('who').textContent = (u && u.email) || 'operator';
+}
+try { SESSION = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { SESSION = null; }
+if (SESSION && SESSION.access_token) boot();
+</script>
+</body>
+</html>
