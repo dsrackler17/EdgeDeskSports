@@ -144,8 +144,14 @@
 
   function snapshotHTML(s) {
     var h = '<section class="a-sec a-snap">' + secHead(s.title, null, anchorId(s.title));
-    h += '<div class="a-cards">';
-    s.cards.forEach(function (c) {
+    h += cardsHTML(s.cards);
+    (s.notes || []).forEach(function (n) { h += '<p class="a-note">' + esc(n) + '</p>'; });
+    if (s.note) h += '<p class="a-note">' + esc(s.note) + '</p>';
+    return h + '</section>';
+  }
+  function cardsHTML(cards) {
+    var h = '<div class="a-cards">';
+    (cards || []).forEach(function (c) {
       var cls = 'a-card' + (c.lead ? ' lead' : '') + (c.wide ? ' wide' : '') + (c.absent ? ' absent' : '')
         + (c.tone === 'status' ? ' status' : '');
       h += '<div class="' + cls + '"><div class="a-ck">' + esc(c.k) + '</div>';
@@ -167,9 +173,26 @@
       }
       h += '</div>';
     });
-    h += '</div>';
-    (s.notes || []).forEach(function (n) { h += '<p class="a-note">' + esc(n) + '</p>'; });
-    if (s.note) h += '<p class="a-note">' + esc(s.note) + '</p>';
+    return h + '</div>';
+  }
+
+  /* THE RESEARCH READ: the view's one label, its words, the same cards the
+     snapshot uses, and the engine's reasons as a list. Printed verbatim. */
+  function researchReadHTML(s) {
+    var h = '<section class="a-sec a-rread">' + secHead(s.title, null, anchorId(s.title));
+    h += '<p class="a-rlab"><span class="a-rchip k-' + esc(String(s.label_key || '').toLowerCase().replace(/[^a-z]+/g, '-'))
+      + '">' + esc(s.label) + '</span></p>';
+    if (s.means) h += '<p>' + esc(s.means) + '</p>';
+    h += cardsHTML(s.cards);
+    if ((s.lean || []).length) {
+      h += '<h3 class="a-h3">Why EdgeDesk leans ' + esc(s.lean_team) + '</h3><ul class="a-bul">'
+        + s.lean.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+    } else if (s.lean_none) {
+      h += '<p class="a-note">' + esc(s.lean_none) + '</p>';
+    }
+    [s.status_text, s.gap_note, s.best || s.best_absent, s.note].forEach(function (n) {
+      if (n) h += '<p class="a-note">' + esc(n) + '</p>';
+    });
     return h + '</section>';
   }
 
@@ -550,7 +573,7 @@
   }
 
   var SECTION_HTML = {
-    read: readHTML, snapshot: snapshotHTML, pricing: pricingHTML, breakdown: breakdownHTML,
+    read: readHTML, snapshot: snapshotHTML, research_read: researchReadHTML, pricing: pricingHTML, breakdown: breakdownHTML,
     edges: edgesHTML, matchups: matchupsHTML, panel: panelHTML, roster: rosterHTML,
     cases: casesHTML, uncertainty: uncertaintyHTML, market: marketHTML,
     /* postgame */

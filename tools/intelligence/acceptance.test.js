@@ -596,6 +596,42 @@ const MLB_PACKET = {
   }
 
   /* =====================================================================
+     9b. THE BOARD'S RESEARCH READ REACHES THE MODEL AS THE BOARD'S WORDS.
+     A college packet carries research_view (cfb_research_brief/1, built by
+     lib/cfb_research_view.js V.brief on the page). When the packet is the
+     subject it rides in the prompt with the rule that goes with it; when it
+     is another game it is withheld with everything else in the packet.
+     ===================================================================== */
+  {
+    const RV = { contract: 'cfb_research_brief/1', view: 'cfb_research_view/1', game_id: TXST.game_id,
+      home: 'Texas State', away: 'North Texas',
+      label: { key: 'WORTH_RESEARCHING', label: 'WORTH RESEARCHING', rule: 'research_gap',
+        means: 'EdgeDesk differs from the market by 3.4 pts toward Texas State, past the 2-point research threshold.' },
+      market_gap: { available: true, points: 3.4, toward_team: 'Texas State', text: '3.4 pts toward Texas State' },
+      confidence: { score: 66, tier: 'HIGH', label: 'High' }, reliability: { pct: 71, tier: 'ADEQUATE', text: '71%' },
+      drivers: { team: 'Texas State', none: false, reasons: [{ kind: 'component', key: 'rating', points: 4.2,
+        text: '+4.2 pts team-strength edge (opponent-adjusted results)' }] },
+      parity: { ok: true, gaps: [] } };
+    const CFB_PACKET = { game: { matchup: 'North Texas @ Texas State', sport: 'College Football',
+      sport_key: 'americanfootball_ncaaf', away: 'North Texas', home: 'Texas State', event_id: TXST.game_id },
+      research_view: RV };
+    const ask = conversation({ packet: CFB_PACKET });
+    const j = await ask('What do you think about North Texas vs Texas State?');
+    const pr = j.prompt || '';
+    chk('the college packet is the subject, so it rides in the prompt', /CLIENT PACKET/.test(pr));
+    chk('with its research view', pr.indexOf('"research_view":{"contract":"cfb_research_brief/1"') >= 0);
+    chk('named as the board’s own read, with its label',
+      /research_view is the board's own research read of this game \(WORTH RESEARCHING\)/.test(pr));
+    chk('and the rule: the measured reasons and no others',
+      /use ONLY research_view\.drivers\.reasons/.test(pr));
+    const other = conversation({ packet: Object.assign({}, CFB_PACKET, { game: Object.assign({}, CFB_PACKET.game, {
+      matchup: 'Miami @ Wake Forest', away: 'Miami', home: 'Wake Forest', event_id: 'X' }) }) });
+    const k = await other('What do you think about North Texas vs Texas State?');
+    chk('a research view for another game is withheld with the rest of its packet',
+      (k.prompt || '').indexOf('cfb_research_brief/1') < 0 || !/CLIENT PACKET —/.test(k.prompt || ''));
+  }
+
+  /* =====================================================================
      10. COUNTERARGUMENT, BLOCKER AND NEXT CHECK ARE THREE DIFFERENT THINGS.
      They were one list, so "last re-priced 446m ago — treat as stale until
      capture confirms it" was served as an ARGUMENT AGAINST the lean. It is a

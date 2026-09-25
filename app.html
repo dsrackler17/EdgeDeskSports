@@ -3975,7 +3975,7 @@ window.mcRefresh=function(){
      reasons, the best available line, the projection's own history), read off
      the engine's finished projection. It computes no projection; the SAME
      file is what tools/football/cfb_research_view.test.js holds to its rules. -->
-<script src="/lib/cfb_research_view.js?v=20260925a"></script>
+<script src="/lib/cfb_research_view.js?v=20260925b"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -30670,6 +30670,41 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       classification: txt(m.classification), classification_note: txt(m.classification_note),
       note: txt(m.note) };
   }
+  /* THE RESEARCH READ — the board's own read of a college game, as
+     lib/cfb_research_view.js V.brief() publishes it (research.research_view,
+     contract cfb_research_brief/1): one research label and what it means,
+     the market gap measured from EdgeDesk's raw margin, confidence and
+     reliability as two separate numbers, the reasons the engine measured,
+     the projection's status against its published history and the best
+     current quote. Carried through txt() like everything else here; nothing
+     is computed, and a payload without it renders exactly as before. */
+  function researchReadOf(v) {
+    if (!v || v.contract !== 'cfb_research_brief/1' || !v.label || !txt(v.label.label)) return null;
+    var F = v.fair || null, G = v.market_gap || {}, C = v.confidence || {}, R = v.reliability || {};
+    var D = v.drivers || null, B = v.best_available_line || null, S = v.projection_status || null;
+    return {
+      label: txt(v.label.label), label_key: txt(v.label.key), means: txt(v.label.means),
+      fair: F ? txt(F.line_text) : null, near_pickem: F && F.is_near_pickem ? txt(F.raw_line_text) : null,
+      gap: G.available ? txt(G.text) : null, gap_market: G.available ? txt(G.market_line_text) : null,
+      gap_source: G.available ? txt(G.source) : null, gap_stale: !!(G.available && G.stale),
+      gap_note: G.available ? txt(G.note) : null, gap_absent: G.available ? null : txt(G.reason),
+      confidence: C.tier ? txt(C.label) : null, confidence_score: C.tier ? num(C.score) : null,
+      reliability: R.tier ? txt(R.text) : null, reliability_sub: R.tier ? txt(R.sub) : null,
+      lean_team: D && !D.none ? txt(D.team) : null,
+      lean: D && !D.none ? txtList((Array.isArray(D.reasons) ? D.reasons : []).map(function (x) { return x && x.text; }), 3) : [],
+      lean_none: D && D.none ? txt(D.text) : null,
+      status: S ? txt(S.label) : null, status_text: S ? txt(S.text) : null,
+      best: B && B.available && B.focus ? txt(B.focus.text) : null, best_single: !!(B && B.available && B.single_book),
+      best_absent: B && !B.available ? txt(B.reason) : null,
+      note: txt(v.note)
+    };
+  }
+  /* the best-line sentence, said one way in every renderer */
+  function researchReadBest(rr) {
+    if (rr.best) return (rr.best_single ? 'Current quote: ' : 'Best available line: ') + rr.best
+      + (rr.best_single ? ' — one book quoting, so not a line-shopping result.' : '.');
+    return rr.best_absent ? 'Best available line unavailable: ' + rr.best_absent + '.' : null;
+  }
   function researchBlock(r) {
     if (!r) return null;
     var score = null;
@@ -30811,6 +30846,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       state: (r.state && txt(r.state.label)) ? { label: txt(r.state.label), note: txt(r.state.note), scope: txt(r.state.scope) } : null,
       score: score,
       projection: projectionOf(r.projection),
+      research_read: researchReadOf(r.research_view),
       drivers: drivers,
       compare: compare,
       advantages: advantages,
@@ -30829,7 +30865,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       source: txt(r.source)
     };
     return (out.headline || out.state || out.score || out.table || out.notes.length || out.missing.length
-      || out.lede.length || out.projection || out.compare || out.matchups.length || out.market) ? out : null;
+      || out.lede.length || out.projection || out.research_read || out.compare || out.matchups.length || out.market) ? out : null;
   }
   function rankingsBlock(r) {
     if (!r) return null;
@@ -30881,6 +30917,32 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }
     return '<tr><th scope="row">' + esc(x.k) + (x.note ? '<span class="n">' + esc(x.note) + '</span>' : '') + '</th>'
       + cell('a') + cell('h') + '</tr>';
+  }
+  function researchReadHTML(rr) {
+    if (!rr) return '';
+    var h = resSec('Research read', 'The one research label EdgeDesk’s board gives this game, and the numbers it reads. Research, not picks.');
+    h += '<p class="edb-resstate"><b>' + esc(rr.label) + '</b>' + (rr.means ? ' — ' + esc(rr.means) : '') + '</p>';
+    function tile(k, v, sub) {
+      return '<div class="edb-t"><div class="tk">' + esc(k) + '</div><div class="tv">' + v + '</div>'
+        + (sub ? '<div class="ts">' + esc(sub) + '</div>' : '') + '</div>';
+    }
+    var none = '<span class="edb-nodata">unavailable</span>';
+    h += '<div class="edb-proj"><div class="edb-projgrid">'
+      + tile('EdgeDesk fair line', rr.fair ? esc(rr.fair) : none, rr.near_pickem ? 'near pick’em — the raw margin under it is ' + rr.near_pickem : null)
+      + tile('Market gap', rr.gap ? esc(rr.gap) : none, rr.gap
+        ? ['market ' + (rr.gap_market || ''), rr.gap_source, rr.gap_stale ? 'stale capture' : null].filter(Boolean).join(' · ') : rr.gap_absent)
+      + tile('Confidence', rr.confidence ? esc(rr.confidence) : none,
+        rr.confidence_score != null ? rr.confidence_score + '% information confidence' : 'not measured for this game')
+      + tile('Reliability', rr.reliability ? esc(rr.reliability) : none, rr.reliability_sub || 'input coverage not reported')
+      + (rr.status ? tile('Projection status', esc(rr.status), null) : '')
+      + '</div></div>';
+    if (rr.lean.length) h += '<div class="edb-caseh">Why EdgeDesk leans ' + esc(rr.lean_team || '') + '</div><ul class="edb-why">'
+      + rr.lean.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+    else if (rr.lean_none) h += '<p class="edb-secnote">' + esc(rr.lean_none) + '</p>';
+    [rr.status_text, rr.gap_note, researchReadBest(rr), rr.note].forEach(function (n) {
+      if (n) h += '<p class="edb-secnote">' + esc(n) + '</p>';
+    });
+    return h;
   }
   function projectionHTML(p, gameTitle) {
     if (!p) return '';
@@ -30999,6 +31061,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         + '<span class="edb-sc"><i>' + esc(res.score.home.team) + '</i><b>' + esc(res.score.home.points) + '</b></span></div>'
         + (res.score.note ? '<p class="edb-projnote">' + esc(res.score.note) + '</p>' : '') + '</div>';
     }
+    /* ---- 1b. the research read: one label, the gap, confidence and reliability apart ---- */
+    if (res.research_read) h += researchReadHTML(res.research_read);
     /* ---- 2. why EdgeDesk prices it there ---- */
     if (res.drivers) {
       h += resSec('Why EdgeDesk prices it here', res.drivers.basis);
@@ -31712,6 +31776,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       h += '<p><strong>Projected score:</strong> ' + esc(res.score.away.team) + ' ' + esc(res.score.away.points)
         + ', ' + esc(res.score.home.team) + ' ' + esc(res.score.home.points) + '.' + (res.score.note ? ' ' + esc(res.score.note) : '') + '</p>';
     }
+    var rr = res.research_read;
+    if (rr) {
+      h += '<h3>Research read</h3><p><strong>' + esc(rr.label) + '</strong>' + (rr.means ? ' — ' + esc(rr.means) : '') + '</p>'
+        + '<p>EdgeDesk fair line: ' + esc(rr.fair || 'unavailable')
+        + ' · market gap: ' + esc(rr.gap ? rr.gap + ' (market ' + (rr.gap_market || '') + (rr.gap_source ? ', ' + rr.gap_source : '') + ')' : 'unavailable — ' + (rr.gap_absent || 'no market line'))
+        + ' · confidence: ' + esc(rr.confidence || 'unavailable')
+        + ' · reliability: ' + esc(rr.reliability ? rr.reliability + (rr.reliability_sub ? ' (' + rr.reliability_sub + ')' : '') : 'unavailable')
+        + (rr.status ? ' · projection status: ' + esc(rr.status) : '') + '.</p>';
+      if (rr.lean.length) h += '<p>Why EdgeDesk leans ' + esc(rr.lean_team || '') + ':</p><ul>'
+        + rr.lean.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+      else if (rr.lean_none) h += '<p>' + esc(rr.lean_none) + '</p>';
+      [rr.status_text, rr.gap_note, researchReadBest(rr), rr.note].forEach(function (n) { if (n) h += '<p>' + esc(n) + '</p>'; });
+    }
     if (res.drivers && res.drivers.rows.length) {
       h += '<h3>Why EdgeDesk prices it here</h3><ul>'
         + res.drivers.rows.map(function (d) { return '<li>' + esc(d.points || '') + ' — ' + esc(d.text) + '</li>'; }).join('') + '</ul>';
@@ -32029,6 +32106,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         if (rp.note) L.push('  ' + rp.note);
       } else if (res.score) {
         L.push('Projected score: ' + res.score.away.team + ' ' + res.score.away.points + ', ' + res.score.home.team + ' ' + res.score.home.points + '.' + (res.score.note ? ' ' + res.score.note : ''));
+      }
+      var rr = res.research_read;
+      if (rr) {
+        L.push(''); L.push('RESEARCH READ');
+        L.push('  ' + rr.label + (rr.means ? ' — ' + rr.means : ''));
+        L.push('  EdgeDesk fair line: ' + (rr.fair || 'unavailable') + (rr.near_pickem ? ' (near pick’em — raw margin ' + rr.near_pickem + ')' : ''));
+        L.push('  Market gap: ' + (rr.gap ? rr.gap + ' (market ' + (rr.gap_market || '') + (rr.gap_source ? ', ' + rr.gap_source : '') + ')'
+          : 'unavailable — ' + (rr.gap_absent || 'no market line')));
+        L.push('  Confidence: ' + (rr.confidence || 'unavailable') + (rr.confidence_score != null ? ' (' + rr.confidence_score + '% information confidence)' : ''));
+        L.push('  Reliability: ' + (rr.reliability || 'unavailable') + (rr.reliability_sub ? ' (' + rr.reliability_sub + ')' : ''));
+        if (rr.status) L.push('  Projection status: ' + rr.status + (rr.status_text ? ' — ' + rr.status_text : ''));
+        if (rr.lean.length) { L.push('  Why EdgeDesk leans ' + (rr.lean_team || '') + ':'); rr.lean.forEach(function (x) { L.push('    · ' + x); }); }
+        else if (rr.lean_none) L.push('  ' + rr.lean_none);
+        var bl = researchReadBest(rr); if (bl) L.push('  ' + bl);
+        if (rr.note) L.push('  ' + rr.note);
       }
       if (res.drivers && res.drivers.rows.length) {
         L.push(''); L.push('WHY EDGEDESK PRICES IT HERE');
@@ -41726,6 +41818,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       chips.push(esc(String(e.market_state||'').toLowerCase().replace(/_/g,' ')));
       h+='<div class="edai-src" style="margin-top:6px">'+chips.join(' \u00b7 ')+'</div>';
     }
+    h+=deskBoardReadHTML(D.focus);
     var more='';
     (D.evaluations||[]).slice(0,4).forEach(function(x){
       var r=x.reasons||{}, lis=[];
@@ -41741,6 +41834,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(D.coverage&&D.coverage.length) more+='<div class="edai-src">'+D.coverage.map(function(c){ return esc(c.label)+': '+esc(c.games)+' games, '+esc(c.with_current_price)+' with a current price'; }).join(' \u00b7 ')+'</div>';
     if(more) h+='<details class="dk-more"><summary>The evidence</summary><div style="margin-top:6px">'+more+'</div></details>';
     return h;
+  }
+  /* THE BOARD'S RESEARCH READ OF THE SAME GAME, under the desk's price read.
+     The desk answers the value question from its own evidence; this line is
+     the board's one research label for that college game, with its gap,
+     confidence, reliability and measured reasons, read off the page's own
+     research view (cfb_research_brief/1) — the same words the board, the
+     brief and the article print. Absent when the board has not loaded it. */
+  function deskBoardReadHTML(F){
+    if(!F||F.sport!=='americanfootball_ncaaf'||F.game_id==null) return '';
+    var rv=cfbResearchView({game_id:F.game_id});
+    if(!rv||!rv.label||!rv.label.label) return '';
+    var bits=['<b>'+esc(rv.label.label)+'</b>'];
+    if(rv.market_gap&&rv.market_gap.available) bits.push('gap '+esc(rv.market_gap.text));
+    if(rv.confidence&&rv.confidence.label) bits.push('confidence '+esc(String(rv.confidence.label).toLowerCase()));
+    if(rv.reliability&&rv.reliability.text) bits.push('reliability '+esc(rv.reliability.text));
+    var D2=rv.drivers, why=(D2&&!D2.none&&D2.reasons&&D2.reasons.length)
+      ? '<br>Why the board leans '+esc(D2.team)+': '+D2.reasons.map(function(r){ return esc(r.text); }).join('; ')+'.' : '';
+    return '<div class="edai-src" style="margin-top:6px">Board research read: '+bits.join(' \u00b7 ')+why
+      +'<br><span class="m">Research, not picks — the label says which question is worth opening.</span></div>';
   }
   /* A short follow-up on the bet already under discussion goes straight to
      the desk with its state, instead of being resolved against whatever
@@ -42748,8 +42860,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         label:res.week!=null?('week '+res.week):null,
         scoped_to_matchup:res.game_id,
         note:'The reader named this matchup. Answer about it and nothing else; do not widen to a board.'},
-      research:R
+      research:R,
+      /* the board's own research read of this game (cfb_research_brief/1) —
+         one label, the gap, confidence and reliability apart, the measured
+         reasons — so the desk says what the board says */
+      research_view:sk===EDINTEL.CFB_SPORT?cfbResearchView({game_id:res.game_id,home:res.home,away:res.away}):null
     };
+  }
+  function cfbResearchView(q){
+    try{ return (typeof window.fbP4ResearchBriefFor==='function')?window.fbP4ResearchBriefFor(q):null; }catch(_){ return null; }
   }
 
   /* One turn about one resolved matchup. The card is rendered from the site's
@@ -43595,7 +43714,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       deterministic:{verdict:x.verdict,display_verdict:x.dverdict,is_wait:x.isWait,wait_reason:x.waitWhy,
         confidence:x.confidence,why:x.why,score:x.score,band:x.band,
         reasons_for:x.reasonsFor,reasons_against:x.reasonsAgainst,
-      checks_required:x.checksRequired||[],falsifiers:x.falsifiers}
+      checks_required:x.checksRequired||[],falsifiers:x.falsifiers},
+      /* a college signal carries the board's research read of its game.
+         Reached through window, so this builder stays self-contained */
+      research_view:(e.sport_key==='americanfootball_ncaaf'&&typeof window.fbP4ResearchBriefFor==='function')
+        ?(function(){ try{ return window.fbP4ResearchBriefFor({event:{home:e.home_team,away:e.away_team,t:e.commence_time}}); }catch(_){ return null; } })():null
     };
   }
   /* Four PRESENTATIONS of one research engine. The panel picks the shape the
@@ -49818,29 +49941,69 @@ function fbRawMarginText(m){
    page assembles its input, and the board row, the card and the research
    desk all read the object it returns, so they cannot disagree. Absent the
    module, every caller renders exactly what it rendered before. */
-function fbP4ViewFor(u,p,mkt){
+/* WHETHER THIS LOAD PRICED FROM THE PUBLISHED BUILD'S INPUTS. The page and
+   football/fbs/build_coverage.js run the same engine over the same replay
+   and agree to 1e-9 pts when their inputs agree
+   (tools/football/page_build_parity.test.js). A load that could not read
+   one of those inputs, or had to take it from another source, prices a
+   different number for a reason that is not news about the game — so the
+   research view does not read its difference from the published number as
+   a move. Each gap is said in words. */
+function fbP4PricingParity(){
+  var S=FB.p4,gaps=[];
+  if(!S||!S.state)return {ok:false,gaps:['the board has not finished loading']};
+  if(S.schedFallback&&S.schedFallback.length)gaps.push('the '+S.schedFallback.join(', ')
+    +' schedule came from a fallback source, not the feed the published build replays');
+  var R=S.efficiencyReplay;
+  if(R&&R.error)gaps.push('the play-level efficiency the published build prices from did not load ('+R.error+')');
+  else if(!S.engineEfficiency)gaps.push('the play-level efficiency the published build prices from did not load');
+  if(R&&R.late_joined>0)gaps.push('play-level efficiency for '+R.late_joined+' game'+(R.late_joined===1?'':'s')
+    +' arrived after the replay and was joined late');
+  if(!S.state.canonicalRatingMeta)gaps.push('the canonical team rating the published build reads did not load');
+  return {ok:!gaps.length,gaps:gaps};
+}
+function fbP4ViewFor(u,p,mkt,opts){
   var V=window.EDCfbResearchView;
   if(!V||!u||!u.g||!p)return null;
   var g=u.g;
+  /* opts.published: the view a DOCUMENT may carry (V.brief) — built without
+     this browser's last visit, and cached apart from the board's own */
+  var pub=!!(opts&&opts.published),slot=pub?'_rvp':'_rv';
   mkt=mkt||(FB.p4._mkt&&FB.p4._mkt[String(g.game_id)])||null;
+  var par=null;try{par=fbP4PricingParity();}catch(_){par=null;}
   var cov=null;try{cov=fbP4ContractFor(u);}catch(_){cov=null;}
   var cs=cov&&cov.summary||null;
   var quotes=null;try{quotes=fbP4QuotesFor(u);}catch(_){quotes=null;}
   var rec=null;try{rec=fbP4RecordFor(u);}catch(_){rec=null;}
   var h2h=null;try{h2h=fbP4H2hMove(u);}catch(_){h2h=null;}
-  var visit=null;try{visit=fbP4VisitFor(u);}catch(_){visit=null;}
+  var visit=null;if(!pub)try{visit=fbP4VisitFor(u);}catch(_){visit=null;}
   /* a quote's freshness is judged NOW, so the view is rebuilt every five
      minutes even when nothing else about the game has changed */
   var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,
-    quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,visit?visit.t:'-',Math.floor(Date.now()/3e5)].join('|');
-  if(u._rv&&u._rv.p===p&&u._rv.key===key)return u._rv.v;
+    quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,visit?visit.t:'-',par?(par.ok+':'+par.gaps.length):'-',
+    Math.floor(Date.now()/3e5)].join('|');
+  if(u[slot]&&u[slot].p===p&&u[slot].key===key)return u[slot].v;
   var v=null;
   try{
     v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt,
-      coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,now:Date.now()},fbP4ViewCfg());
+      coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,parity:par,now:Date.now()},fbP4ViewCfg());
   }catch(_){v=null;}
-  u._rv={p:p,key:key,v:v};
+  u[slot]={p:p,key:key,v:v};
   return v;
+}
+/* THE RESEARCH VIEW AS A DOCUMENT CARRIES IT (lib V.brief,
+   cfb_research_brief/1): the label, the fair line, the gap, confidence and
+   reliability, the engine's reasons, the best current quote and the
+   published history — for the brief, articles, the editorial snapshot, the
+   newsletter and the AI desk. Null when the view is not loaded; the payload
+   then carries exactly what it carried before. */
+function fbP4BriefView(u,p){
+  var V=window.EDCfbResearchView;
+  if(!V||!V.brief||!u||!p)return null;
+  var mkt=null;
+  try{mkt=(FB.p4._mkt&&FB.p4._mkt[String(u.g.game_id)])||fbP4Market(u);}catch(_){mkt=null;}
+  var v=fbP4ViewFor(u,p,mkt,{published:true});
+  return v?V.brief(v):null;
 }
 /* THE CAPTURED PER-BOOK SPREAD QUOTES for one board game, each with the
    page's own freshness verdict: EDINTEL.quoteState, the same ladder capture
@@ -49927,12 +50090,17 @@ function fbP4RecordFor(u){
    and then overwritten with what is on screen now. It lives in this browser
    only; nothing is sent anywhere, and a browser that will not store it simply
    has no visit baseline. Its own key, so it can never collide with another
-   store the way the Desk watchlist and the follow list once did. */
-var FB_P4_SEEN_KEY='ed_cfb_seen_v1';
+   store the way the Desk watchlist and the follow list once did.
+   Payload v2: a snapshot says whether its load priced from the published
+   build's inputs (q). Every v1 snapshot was taken while the board absorbed
+   play-level efficiency twice, so its numbers are not comparable with a
+   correct load's; they are dropped, not compared, and the first visit after
+   the fix measures against the last published update instead. */
+var FB_P4_SEEN_KEY='ed_cfb_seen_v1',FB_P4_SEEN_V=2;
 FB.p4seen={base:null,read:false,wroteAt:0};
 function fbP4SeenLoad(){
   try{var s=localStorage.getItem(FB_P4_SEEN_KEY),o=s?JSON.parse(s):null;
-    return (o&&o.v===1&&o.games&&typeof o.games==='object'&&isFinite(o.at))?o:null;}catch(_){return null;}
+    return (o&&o.v===FB_P4_SEEN_V&&o.games&&typeof o.games==='object'&&isFinite(o.at))?o:null;}catch(_){return null;}
 }
 function fbP4SeenBase(){
   var S=FB.p4seen;
@@ -49956,7 +50124,7 @@ function fbP4SeenWrite(rows){
     if(sn)games[r.gid]=sn;
   });
   S.wroteAt=now;
-  try{localStorage.setItem(FB_P4_SEEN_KEY,JSON.stringify({v:1,at:now,games:games}));}catch(_){}
+  try{localStorage.setItem(FB_P4_SEEN_KEY,JSON.stringify({v:FB_P4_SEEN_V,at:now,games:games}));}catch(_){}
 }
 /* the view's thresholds ARE the engine's and the board's: the research gap
    and confidence floor from the shipped params, the guard from FB_GUARD */
@@ -52078,6 +52246,13 @@ function fbP4Load(force,signal){
     fbQbEpaEnsure(cur);
     var st=E.newState();
     if(!st)throw new Error('parameters did not produce a rating state');
+    /* the games whose play-level efficiency this replay absorbs, so the late
+       join (fbP4ApplyEngineEfficiency) can never absorb one a second time */
+    var effIds={};
+    FBP4_EFF_DONE.set(st,effIds);
+    /* seasons whose schedule came from a fallback source rather than the
+       feed the published build replays (see fbP4PricingParity) */
+    S.schedFallback=[];
     /* advance the seeded state season by season, absorbing real results */
     var seasons=[],y;
     for(y=P.trained_through_season+1;y<=cur;y++)seasons.push(y);
@@ -52086,18 +52261,22 @@ function fbP4Load(force,signal){
       chain=chain.then(function(){
         E.ingest.seasonBreak(st);
         return fbP4Schedule(yy,signal).then(function(res){
-          var rows=res.rows.slice().sort(function(a,b){return String(a.start_date).localeCompare(String(b.start_date));});
+          /* THE BUILD'S ORDER, tie-break included (football/fbs/build_coverage.js
+             buildState). The opponent adjustment is sequential, so two games
+             sharing a kickoff absorbed the other way round leave a slightly
+             different state, and the published number could not be reproduced */
+          var rows=res.rows.slice().sort(function(a,b){return String(a.start_date).localeCompare(String(b.start_date))
+            ||String(a.game_id).localeCompare(String(b.game_id));});
           var n=0,inferredDiv=0;
           rows.forEach(function(r){
             if(!r.completed||r.home_points==null||r.away_points==null)return;
-            var eg=S.engineEfficiency&&S.engineEfficiency.games
-              ?S.engineEfficiency.games[String(r.game_id)]:null;
-            var hk=fbP4Key(r.home_team),ak=fbP4Key(r.away_team);
+            var ts=fbP4EffForGame(S.engineEfficiency,r,yy);
+            if(ts)effIds[String(r.game_id)]=1;
             E.ingest.absorbGame(st,{home:r.home_team,away:r.away_team,
               home_fbs:fbP4IsFbs(r.home_division,r.home_team),
               away_fbs:fbP4IsFbs(r.away_division,r.away_team),
               neutral_site:r.neutral_site,home_points:r.home_points,away_points:r.away_points,
-              team_stats:eg&&eg.teams?{home:eg.teams[hk]||null,away:eg.teams[ak]||null}:null});
+              team_stats:ts});
             if(r.division_src)inferredDiv++;
             n++;
           });
@@ -52106,6 +52285,7 @@ function fbP4Load(force,signal){
             +'was resolved against the trained team list for '+inferredDiv+' game'
             +(inferredDiv===1?'':'s')+'. A team the model has never rated is treated as '
             +'a non-FBS opponent rather than absorbed as a rated one.');
+          if(!/^cfbfastR-data schedules/.test(String(res.src||'')))S.schedFallback.push(yy);
           if(yy===cur){S.sched=res;S.schedSrc=res.src;}
           if(!n&&yy===cur)S.notes.push('No completed '+yy+' games reached the production replay yet. '
             +'The engine therefore remains on its trained prior and learned offseason carry-over; ETSR is separate '
@@ -52268,6 +52448,21 @@ var FBP4_LOAD_TIMEOUT_MS=30000;
    neutral-field team mean; this artifact owns matchup identity, OL pressure,
    pace and the information-quality statement. */
 var FBP4_EFF={data:null,error:null,at:0,_p:null};
+/* per rating state, the games whose play-level rows its replay absorbed */
+var FBP4_EFF_DONE=new WeakMap();
+/* ONE GAME'S PLAY-LEVEL ROWS, joined exactly as the published build joins
+   them (football/fbs/build_coverage.js efficiencyForGame): the artifact's own
+   schema and season, the game id, the canonical team keys, and nothing at
+   all when neither side has a row. */
+function fbP4EffForGame(D,r,season){
+  if(!D||D.schema!=='edgedesk_cfb_engine_efficiency_v1'||+D.season!==+season||!D.games||r.game_id==null)return null;
+  var g=D.games[String(r.game_id)];
+  if(!g||!g.teams)return null;
+  var hk=fbP4Key(r.home_team),ak=fbP4Key(r.away_team);
+  var h=hk?(g.teams[hk]||null):null,a=ak?(g.teams[ak]||null):null;
+  if(!h&&!a)return null;
+  return {home:h,away:a};
+}
 function fbP4EngineEfficiencyLoad(){
   var R=FBP4_EFF;
   if(R.data&&Date.now()-R.at<15*60000)return Promise.resolve(R.data);
@@ -52308,7 +52503,17 @@ function fbP4ApplyEngineEfficiency(){
     return String(a.start_date).localeCompare(String(b.start_date))
       ||String(a.game_id).localeCompare(String(b.game_id));
   });
-  var games=0,teamRows=0,missing=0;
+  /* A LATE JOIN ONLY. fbP4Load's replay now waits for this artifact and
+     absorbs each game's play-level rows together with its score, exactly as
+     the published build does (football/fbs/build_coverage.js). Absorbing
+     them here as well counted every game twice in the efficiency state: the
+     board's matchup term drifted up to 1.6 pts from the published number on
+     the same inputs, and the research desk read that drift as projections
+     "moving" since the last update. So a game the replay already absorbed is
+     only counted here, and a game the build would not absorb (no final
+     score) is not absorbed either. */
+  var done=FBP4_EFF_DONE.get(S.state)||{};
+  var games=0,teamRows=0,missing=0,late=0;
   rows.forEach(function(r){
     if(!r.completed||r.game_id==null)return;
     var eg=D.games&&D.games[String(r.game_id)];
@@ -52316,14 +52521,17 @@ function fbP4ApplyEngineEfficiency(){
     var hk=fbP4Key(r.home_team),ak=fbP4Key(r.away_team);
     var h=hk&&eg.teams[hk]||null,a=ak&&eg.teams[ak]||null;
     if(!h&&!a){missing++;return;}
-    E.ingest.absorbEfficiencyGame(S.state,{
-      home:r.home_team,away:r.away_team,
-      team_stats:{home:h,away:a}
-    });
+    if(!done[String(r.game_id)]&&r.home_points!=null&&r.away_points!=null){
+      E.ingest.absorbEfficiencyGame(S.state,{
+        home:r.home_team,away:r.away_team,
+        team_stats:{home:h,away:a}
+      });
+      done[String(r.game_id)]=1;late++;
+    }
     games++;if(h)teamRows++;if(a)teamRows++;
   });
   S.efficiencyReplay={
-    games:games,team_rows:teamRows,missing:missing,error:null,
+    games:games,team_rows:teamRows,missing:missing,error:null,late_joined:late,
     artifact_games:D.games_with_stats||0,
     artifact_team_rows:D.team_game_rows||0,
     measured_features:D.measured_features||[],
@@ -52365,6 +52573,36 @@ function fbP4LoadGuarded(force,signal){
    changes no line of it: same feeds, same engine, same slate. */
 window.fbP4Load=fbP4Load;
 window.fbP4Ensure=fbP4Ensure;
+/* and the loader the terminal itself runs — the replay, then the late
+   efficiency join and the canonical rating — so a headless build prices a
+   game exactly the way the board beside it does */
+window.fbP4LoadGuarded=fbP4LoadGuarded;
+/* the committed model record the research view's history reads, so a
+   headless build can load it before it asks for a brief */
+window.fbP4RecordEnsure=fbP4RecordEnsure;
+/* THE PUBLISHED RESEARCH VIEW FOR ONE BOARD GAME — what the AI desk is handed
+   with a question about that game (EDAI matchupPacket and packetOf), so the
+   desk reads the same label, gap, confidence, reliability and measured
+   reasons as the board, the brief and the article. Found by game id, by the
+   two team names, or by a sportsbook event joined the way the market join
+   joins one (EDFbs.matchesEvent). Null when the board has not loaded it. */
+window.fbP4ResearchBriefFor=function(q){
+  try{
+    q=q||{};
+    var S=FB.p4;if(!S||!S.up||!S.up.length||!window.EDCfbResearchView)return null;
+    var hit=null;
+    if(q.game_id!=null)S.up.forEach(function(u){if(!hit&&String(u.g.game_id)===String(q.game_id))hit=u;});
+    if(!hit&&q.home&&q.away){var pr=fbBrProjection(q.home,q.away);if(pr)hit=pr.u;}
+    if(!hit&&q.event&&window.EDFbs){
+      var ix=null;try{ix=fbP4TeamIx();}catch(_){ix=null;}
+      if(ix)S.up.forEach(function(u){if(!hit&&window.EDFbs.matchesEvent(q.event,u,ix))hit=u;});
+    }
+    if(!hit)return null;
+    var p=S._proj&&S._proj[String(hit.g.game_id)];
+    if(!p)p=window.EDCfbP4.projectGame(fbP4Request(hit));
+    return fbP4BriefView(hit,p);
+  }catch(_){return null;}
+};
 
 /* Joins the FRESHEST real number, in this order: a live captured quote,
    the cfb.lines book consensus once the capture has gone stale (offseason
@@ -55045,6 +55283,8 @@ function fbRvWhen(iso){
 }
 function fbGxChanged(u,p){
   var v=fbP4ViewFor(u,p),W=v&&v.what_changed;
+  if(W&&!W.available&&W.comparable===false)return '<div class="gx-means mut"><b>What changed?</b>'+fbEsc(W.summary)+'</div>'
+    +'<div class="gx-foot">The board and the published build agree to the hundredth of a point when they price from the same inputs; on a load that did not, a difference is not a move.</div>';
   if(!W||!W.available)return '';
   var h='<div class="gx-means '+(W.change&&W.change.points>=0.75?'warn':'mut')+'"><b>What changed?</b>'+fbEsc(W.summary)+'</div>';
   var tl=(W.timeline||[]);
@@ -55805,17 +56045,21 @@ function fbP4DeskHTML(visible){
   }).join('');
   function n(x,one,many){return x+' '+(x===1?one:many);}
   var ch='';
+  /* games whose live number is not comparable with their baseline are
+     counted apart, with the reason, and never as moves (lib NOT COMPARED) */
+  var nc=C.not_compared?(n(C.not_compared,'game','games')+' not compared: '+C.not_compared_why.slice(0,2).join('; ')):null;
   if(C.basis==='visit'){
-    var parts=[C.projections_changed?n(C.projections_changed,'projection moved','projections moved'):'no projection moved',
+    var parts=(C.projections_changed==null?[]:[C.projections_changed?n(C.projections_changed,'projection moved','projections moved'):'no projection moved',
       C.gaps_widened?n(C.gaps_widened,'market gap widened','market gaps widened'):'no market gap widened',
-      C.into_worth?n(C.into_worth,'game moved into Worth Researching','games moved into Worth Researching'):null]
-      .concat(C.new_games?[n(C.new_games,'game new to the board','games new to the board')]:[]).filter(Boolean);
+      C.into_worth?n(C.into_worth,'game moved into Worth Researching','games moved into Worth Researching'):null])
+      .concat(C.new_games?[n(C.new_games,'game new to the board','games new to the board')]:[]).concat(nc?[nc]:[]).filter(Boolean);
     ch='<div class="rv-desk-c"><b>CHANGED SINCE YOUR LAST VISIT</b> <span class="mut">'+fbEsc(fbRvWhen(C.since_at))+' · this device</span><br>'
       +fbEsc(parts.join(' · '))+'</div>';
   }else if(C.basis==='update'){
     ch='<div class="rv-desk-c"><b>CHANGED SINCE LAST UPDATE</b> <span class="mut">latest published '+fbEsc(fbRvWhen(C.since_at))+'</span><br>'
-      +fbEsc([C.projections_changed?n(C.projections_changed,'projection has moved 0.75+ pts from its latest published number','projections have moved 0.75+ pts from their latest published numbers'):'every projection is within 0.75 pts of its latest published number',
-        C.revised_24h?n(C.revised_24h,'projection revised in the last 24 hours','projections revised in the last 24 hours'):'no projection revised in the last 24 hours'].join(' · '))+'</div>';
+      +fbEsc([C.projections_changed==null?null:(C.projections_changed?n(C.projections_changed,'projection has moved 0.75+ pts from its latest published number','projections have moved 0.75+ pts from their latest published numbers'):(C.not_compared?'every compared projection':'every projection')+' is within 0.75 pts of its latest published number'),
+        nc,
+        C.revised_24h?n(C.revised_24h,'projection revised in the last 24 hours','projections revised in the last 24 hours'):'no projection revised in the last 24 hours'].filter(Boolean).join(' · '))+'</div>';
   }
   return '<div class="rv-desk"><div class="rv-desk-h"><b>CFB RESEARCH DESK</b><span class="mut">'+D.total+' game'+(D.total===1?'':'s')
     +' shown · research, not picks</span></div>'
@@ -60161,6 +60405,14 @@ function fbBriefGame(q){
       }
     }
     var starters=fbBrStarters(awayName,homeName);
+    /* THE RESEARCH VIEW, AS PUBLISHED. The board's own read of this game —
+       one research label, the market gap from the raw margin, confidence and
+       reliability apart, the engine's reasons, the best current quote and the
+       published history — cut by lib/cfb_research_view.js V.brief() to what a
+       document may carry: nothing from this browser's last visit, nothing
+       that ages with the clock. Absent the view, the payload is unchanged. */
+    var researchView=null;
+    try{researchView=(pr&&p)?fbP4BriefView(pr.u,p):null;}catch(_){researchView=null;}
     /* THE ONE THING THE CARD COULD NOT SAY. Both sides' starter states go into
        `missing` when they are unresolved and into the payload either way, so a
        reader of the article and a reader of the terminal get the same sentence
@@ -60188,6 +60440,7 @@ function fbBriefGame(q){
       cases:cases,
       uncertainty:uncertainty,
       market:market,
+      research_view:researchView,
       /* the fields every existing renderer already consumes */
       headline:headline,state:state,score:score,
       table:{cols:[awayName||'Away',homeName||'Home'],rows:rows},

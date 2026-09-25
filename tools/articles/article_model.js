@@ -182,6 +182,57 @@
       note: txt(r.headline) } : null;
   }
 
+  /* ------------------------------------------------------ the research read */
+  /* THE BOARD'S OWN READ OF THIS GAME, as lib/cfb_research_view.js V.brief()
+     publishes it (research.research_view, contract cfb_research_brief/1):
+     one research label and what it means, the market gap measured from
+     EdgeDesk's raw margin, confidence and reliability as two separate
+     numbers, the reasons the engine measured on the side it names, the
+     projection's status against its published history and the best current
+     quote. Every word and figure is the view's; this only lays them out, and
+     a missing one says why in the view's own words. A payload without the
+     view (an older record, an NFL game) has no such section. */
+  var RESEARCH_BRIEF = 'cfb_research_brief/1';
+  function researchReadSection(r) {
+    var v = r && r.research_view;
+    if (!v || v.contract !== RESEARCH_BRIEF || !v.label || !v.label.key) return null;
+    var F = v.fair, G = v.market_gap || {}, C = v.confidence || {}, R = v.reliability || {};
+    var cards = [];
+    cards.push(F && F.line_text
+      ? { k: 'EdgeDesk fair line', v: txt(F.line_text), lead: true,
+        sub: F.is_near_pickem && F.raw_line_text ? 'near pick’em — the raw margin under it is ' + txt(F.raw_line_text) : null }
+      : { k: 'EdgeDesk fair line', absent: true, why: 'EdgeDesk has no valid projection for this game.' });
+    cards.push(G.available && num(G.points) != null
+      ? { k: 'Market gap', v: num(G.points).toFixed(1) + ' pts',
+        sub: [G.toward_team ? 'toward ' + txt(G.toward_team) : 'EdgeDesk matches the market',
+          'market ' + txt(G.market_line_text), txt(G.source), G.stale ? 'stale capture' : null].filter(Boolean).join(' · ') }
+      : { k: 'Market gap', absent: true, why: sentence(txt(G.reason) || 'no market line is joined to this game') });
+    cards.push(C.tier
+      ? { k: 'Confidence', v: txt(C.label), sub: C.score != null ? C.score + '% information confidence' : null }
+      : { k: 'Confidence', absent: true, why: 'The engine did not measure its own information confidence for this game.' });
+    cards.push(R.tier
+      ? { k: 'Reliability', v: txt(R.text), sub: txt(R.sub) }
+      : { k: 'Reliability', absent: true, why: 'Input coverage was not reported for this game.' });
+    if (v.projection_status && v.projection_status.label) {
+      cards.push({ k: 'Projection status', v: txt(v.projection_status.label), tone: 'status' });
+    }
+    var D = v.drivers || null, B = v.best_available_line || null;
+    return { kind: 'research_read', title: 'Research read',
+      label: txt(v.label.label), label_key: txt(v.label.key), means: txt(v.label.means),
+      cards: cards,
+      lean_team: D && !D.none ? txt(D.team) : null,
+      lean: D && !D.none ? (D.reasons || []).map(function (x) { return txt(x && x.text); }).filter(Boolean) : [],
+      lean_none: D && D.none ? sentence(D.text) : null,
+      status_text: v.projection_status ? txt(v.projection_status.text) : null,
+      gap_note: G.available ? txt(G.note) : null,
+      best: B && B.available && B.focus && B.focus.text
+        ? sentence((B.single_book ? 'Current quote: ' : 'Best available line: ') + txt(B.focus.text)
+          + (B.single_book ? ' — one book quoting, so not a line-shopping result' : ''))
+        : null,
+      best_absent: B && !B.available && B.reason ? sentence('Best available line unavailable: ' + txt(B.reason)) : null,
+      note: 'Research, not picks. A research label says which question is worth opening; it is never a recommendation to wager.' };
+  }
+
   /* ---------------------------------------------------------- the snapshot */
   /* Cards. A field with no value becomes a card that SAYS SO and says why —
      never a dash, never a zero, and never a number borrowed from elsewhere. */
@@ -602,6 +653,7 @@
     function push(s) { if (s) sections.push(s); }
     push(readSection(r));
     push(snapshotSection(r));
+    push(researchReadSection(r));
     push(pricingSection(r));
     push(breakdownSection(r));
     var edges = edgesSection(r, awayName, homeName);

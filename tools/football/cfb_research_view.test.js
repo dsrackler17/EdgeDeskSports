@@ -584,6 +584,85 @@ section('STEP 10 · the research desk: label counts and what changed since');
   eq('nor moves into worth researching', cu.into_worth, null);
   eq('with no history at all there is no baseline', V.changes([view('z', 5, 3)], { now: NOW }).basis, null);
   eq('a visit stamped in the future is not a baseline', V.changes(views, { visits, visit_at: NOW + 1000, now: NOW }).basis, null);
+  eq('a complete load compares every game with history', cu.not_compared, 0);
+  eq('and says how many it compared', cu.compared, 2);
+}
+
+/* ======================================================================== */
+section('PARITY · a live number is compared only with one it can be compared with');
+{
+  const NOW = Date.parse('2026-09-24T18:00:00Z');
+  const BAD = { ok: false, gaps: ['the play-level efficiency the published build prices from did not load'] };
+  const REC = (latest, o) => Object.assign({ first: { at: '2026-09-22T14:00:00Z', margin: latest },
+    latest: { at: '2026-09-24T09:00:00Z', margin: latest }, revisions: 0 }, o || {});
+  function view(id, raw, rec, parity, o) {
+    o = o || {};
+    const p = proj(raw, { line: 2.5, conf: 70 });
+    p.model_version = o.version || 'edgedesk_cfb_p4_v1.0.0';
+    return V.build({ game: { game_id: id, home: HOME, away: AWAY }, projection: p, market: { spread_line: 2.5 },
+      coverage: { input_coverage: 0.9 }, record: rec, now: NOW, parity: parity, visit: o.visit || null });
+  }
+  eq('no parity stated: the caller prices from the build’s own inputs', V.parityOf(null).ok, true);
+  eq('a failed parity keeps its reasons', V.parityOf(BAD).gaps[0], BAD.gaps[0]);
+  chk('a failed parity with no reason still says one', V.parityOf({ ok: false }).gaps.length === 1);
+
+  let v = view('a', -1.6, REC(-0.3));
+  eq('a complete load 1.3 off the published number is MOVING', v.projection_status.key, 'MOVING');
+  eq('and is comparable', v.history.comparable, true);
+  v = view('a', -1.6, REC(-0.3), BAD);
+  eq('the same numbers on a degraded load are NOT COMPARED', v.projection_status.key, 'NOT_COMPARED');
+  chk('with the load’s reason in words', v.projection_status.text.indexOf(BAD.gaps[0]) >= 0, v.projection_status.text);
+  eq('the change is still measured, and marked not comparable', v.projection_change.comparable, false);
+  eq('stability is read over the two published numbers alone', v.projection_stability.n, 2);
+  chk('and says they are the published ones', /^the published numbers span 0\.0 pts/.test(v.projection_stability.text), v.projection_stability.text);
+  const one = view('a', -1.6, { first: { at: '2026-09-24T09:00:00Z', margin: -0.3 }, latest: { at: '2026-09-24T09:00:00Z', margin: -0.3 }, revisions: 0 }, BAD);
+  eq('over one published number alone it is unavailable', one.projection_stability.tier, null);
+  eq('What changed? is not available', v.what_changed.available, false);
+  eq('and says it is not compared', v.what_changed.comparable, false);
+  eq('its snapshot is stored with q:0', V.snapshotOf(v, proj(-1.6), NOW).q, 0);
+  eq('a complete load’s snapshot is stored with q:1', V.snapshotOf(view('a', -1.6, null), proj(-1.6), NOW).q, 1);
+  /* low confidence and a supplied injury report still come first */
+  const low = V.build({ game: GAME, projection: proj(-1.6, { line: 2.5, conf: 20 }), market: { spread_line: 2.5 },
+    coverage: { input_coverage: 0.9 }, record: REC(-0.3), now: NOW, parity: BAD });
+  eq('below the confidence floor it is LIMITED DATA first', low.projection_status.key, 'LIMITED_DATA');
+
+  /* a published number from another model version */
+  v = view('a', -1.6, REC(-0.3, { model_version: 'edgedesk_cfb_p4_v0.9.0' }));
+  eq('a published number from another model version is NOT COMPARED', v.projection_status.key, 'NOT_COMPARED');
+  chk('and names both versions', /v0\.9\.0 and this page runs edgedesk_cfb_p4_v1\.0\.0/.test(v.projection_status.text), v.projection_status.text);
+  eq('the same version compares', view('a', -1.6, REC(-0.3, { model_version: 'edgedesk_cfb_p4_v1.0.0' })).projection_status.key, 'MOVING');
+
+  /* the desk, on the last published update */
+  const good = [view('p', 5, REC(3.9)), view('q', 5, REC(5.0))];
+  let c = V.changes(good, { now: NOW });
+  eq('a complete load: one projection moved', c.projections_changed, 1);
+  const bad = [view('p', 5, REC(3.9), BAD), view('q', 5, REC(5.0), BAD)];
+  c = V.changes(bad, { now: NOW });
+  eq('a degraded load counts no projection as moved — unavailable, not zero', c.projections_changed, null);
+  eq('both games are counted as not compared', c.not_compared, 2);
+  eq('with the reason', c.not_compared_why[0], BAD.gaps[0]);
+  const mixed = [view('p', 5, REC(3.9)), view('q', 5, REC(3.9, { model_version: 'edgedesk_cfb_p4_v0.9.0' }))];
+  c = V.changes(mixed, { now: NOW });
+  eq('a mixed board counts the comparable move', c.projections_changed, 1);
+  eq('and sets the other game apart', c.not_compared, 1);
+  eq('naming it', c.games.not_compared[0], 'q');
+  const revised = [view('r', 5, { first: { at: '2026-09-20T12:00:00Z', margin: 0 }, latest: { at: '2026-09-24T09:00:00Z', margin: 3.9 }, revisions: 2 }, BAD)];
+  eq('published revisions compare two published numbers, so a degraded load still counts them', V.changes(revised, { now: NOW }).revised_24h, 1);
+
+  /* the desk, since this device's last visit */
+  const snap = (m, q) => ({ t: NOW - 3600e3, m: m, g: 1.0, l: 'MARKET_ALIGNED', v: 'edgedesk_cfb_p4_v1.0.0', q: q });
+  const vv = [view('a', 5, null), view('b', 5, null)];
+  c = V.changes(vv, { visits: { a: snap(3.5, 1), b: snap(3.5, 0) }, visit_at: NOW - 3600e3, now: NOW });
+  eq('a move against a complete snapshot is counted', c.projections_changed, 1);
+  eq('a snapshot taken on a degraded load is not compared', c.not_compared, 1);
+  chk('and says so', /your last visit was on a load that did not price/.test(c.not_compared_why[0]), c.not_compared_why);
+  c = V.changes([view('a', 5, null, BAD)], { visits: { a: snap(3.5, 1) }, visit_at: NOW - 3600e3, now: NOW });
+  eq('a degraded load compares nothing with the last visit', c.projections_changed, null);
+  eq('and says why', c.not_compared_why[0], BAD.gaps[0]);
+  c = V.changes([view('a', 5, null, null, { version: 'edgedesk_cfb_p4_v2.0.0' })], { visits: { a: snap(3.5, 1) }, visit_at: NOW - 3600e3, now: NOW });
+  eq('a model version change since the last visit is not compared', c.not_compared, 1);
+  const wv = view('a', 5, null, null, { visit: snap(3.5, 0) });
+  chk('What changed? does not measure from a degraded snapshot', wv.what_changed.basis !== 'visit', wv.what_changed.basis);
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));

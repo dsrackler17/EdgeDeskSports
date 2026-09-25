@@ -10856,6 +10856,41 @@ export function deriveState(
       classification: txt(m.classification), classification_note: txt(m.classification_note),
       note: txt(m.note) };
   }
+  /* THE RESEARCH READ — the board's own read of a college game, as
+     lib/cfb_research_view.js V.brief() publishes it (research.research_view,
+     contract cfb_research_brief/1): one research label and what it means,
+     the market gap measured from EdgeDesk's raw margin, confidence and
+     reliability as two separate numbers, the reasons the engine measured,
+     the projection's status against its published history and the best
+     current quote. Carried through txt() like everything else here; nothing
+     is computed, and a payload without it renders exactly as before. */
+  function researchReadOf(v) {
+    if (!v || v.contract !== 'cfb_research_brief/1' || !v.label || !txt(v.label.label)) return null;
+    var F = v.fair || null, G = v.market_gap || {}, C = v.confidence || {}, R = v.reliability || {};
+    var D = v.drivers || null, B = v.best_available_line || null, S = v.projection_status || null;
+    return {
+      label: txt(v.label.label), label_key: txt(v.label.key), means: txt(v.label.means),
+      fair: F ? txt(F.line_text) : null, near_pickem: F && F.is_near_pickem ? txt(F.raw_line_text) : null,
+      gap: G.available ? txt(G.text) : null, gap_market: G.available ? txt(G.market_line_text) : null,
+      gap_source: G.available ? txt(G.source) : null, gap_stale: !!(G.available && G.stale),
+      gap_note: G.available ? txt(G.note) : null, gap_absent: G.available ? null : txt(G.reason),
+      confidence: C.tier ? txt(C.label) : null, confidence_score: C.tier ? num(C.score) : null,
+      reliability: R.tier ? txt(R.text) : null, reliability_sub: R.tier ? txt(R.sub) : null,
+      lean_team: D && !D.none ? txt(D.team) : null,
+      lean: D && !D.none ? txtList((Array.isArray(D.reasons) ? D.reasons : []).map(function (x) { return x && x.text; }), 3) : [],
+      lean_none: D && D.none ? txt(D.text) : null,
+      status: S ? txt(S.label) : null, status_text: S ? txt(S.text) : null,
+      best: B && B.available && B.focus ? txt(B.focus.text) : null, best_single: !!(B && B.available && B.single_book),
+      best_absent: B && !B.available ? txt(B.reason) : null,
+      note: txt(v.note)
+    };
+  }
+  /* the best-line sentence, said one way in every renderer */
+  function researchReadBest(rr) {
+    if (rr.best) return (rr.best_single ? 'Current quote: ' : 'Best available line: ') + rr.best
+      + (rr.best_single ? ' — one book quoting, so not a line-shopping result.' : '.');
+    return rr.best_absent ? 'Best available line unavailable: ' + rr.best_absent + '.' : null;
+  }
   function researchBlock(r) {
     if (!r) return null;
     var score = null;
@@ -10997,6 +11032,7 @@ export function deriveState(
       state: (r.state && txt(r.state.label)) ? { label: txt(r.state.label), note: txt(r.state.note), scope: txt(r.state.scope) } : null,
       score: score,
       projection: projectionOf(r.projection),
+      research_read: researchReadOf(r.research_view),
       drivers: drivers,
       compare: compare,
       advantages: advantages,
@@ -11015,7 +11051,7 @@ export function deriveState(
       source: txt(r.source)
     };
     return (out.headline || out.state || out.score || out.table || out.notes.length || out.missing.length
-      || out.lede.length || out.projection || out.compare || out.matchups.length || out.market) ? out : null;
+      || out.lede.length || out.projection || out.research_read || out.compare || out.matchups.length || out.market) ? out : null;
   }
   function rankingsBlock(r) {
     if (!r) return null;
@@ -11067,6 +11103,32 @@ export function deriveState(
     }
     return '<tr><th scope="row">' + esc(x.k) + (x.note ? '<span class="n">' + esc(x.note) + '</span>' : '') + '</th>'
       + cell('a') + cell('h') + '</tr>';
+  }
+  function researchReadHTML(rr) {
+    if (!rr) return '';
+    var h = resSec('Research read', 'The one research label EdgeDesk’s board gives this game, and the numbers it reads. Research, not picks.');
+    h += '<p class="edb-resstate"><b>' + esc(rr.label) + '</b>' + (rr.means ? ' — ' + esc(rr.means) : '') + '</p>';
+    function tile(k, v, sub) {
+      return '<div class="edb-t"><div class="tk">' + esc(k) + '</div><div class="tv">' + v + '</div>'
+        + (sub ? '<div class="ts">' + esc(sub) + '</div>' : '') + '</div>';
+    }
+    var none = '<span class="edb-nodata">unavailable</span>';
+    h += '<div class="edb-proj"><div class="edb-projgrid">'
+      + tile('EdgeDesk fair line', rr.fair ? esc(rr.fair) : none, rr.near_pickem ? 'near pick’em — the raw margin under it is ' + rr.near_pickem : null)
+      + tile('Market gap', rr.gap ? esc(rr.gap) : none, rr.gap
+        ? ['market ' + (rr.gap_market || ''), rr.gap_source, rr.gap_stale ? 'stale capture' : null].filter(Boolean).join(' · ') : rr.gap_absent)
+      + tile('Confidence', rr.confidence ? esc(rr.confidence) : none,
+        rr.confidence_score != null ? rr.confidence_score + '% information confidence' : 'not measured for this game')
+      + tile('Reliability', rr.reliability ? esc(rr.reliability) : none, rr.reliability_sub || 'input coverage not reported')
+      + (rr.status ? tile('Projection status', esc(rr.status), null) : '')
+      + '</div></div>';
+    if (rr.lean.length) h += '<div class="edb-caseh">Why EdgeDesk leans ' + esc(rr.lean_team || '') + '</div><ul class="edb-why">'
+      + rr.lean.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+    else if (rr.lean_none) h += '<p class="edb-secnote">' + esc(rr.lean_none) + '</p>';
+    [rr.status_text, rr.gap_note, researchReadBest(rr), rr.note].forEach(function (n) {
+      if (n) h += '<p class="edb-secnote">' + esc(n) + '</p>';
+    });
+    return h;
   }
   function projectionHTML(p, gameTitle) {
     if (!p) return '';
@@ -11185,6 +11247,8 @@ export function deriveState(
         + '<span class="edb-sc"><i>' + esc(res.score.home.team) + '</i><b>' + esc(res.score.home.points) + '</b></span></div>'
         + (res.score.note ? '<p class="edb-projnote">' + esc(res.score.note) + '</p>' : '') + '</div>';
     }
+    /* ---- 1b. the research read: one label, the gap, confidence and reliability apart ---- */
+    if (res.research_read) h += researchReadHTML(res.research_read);
     /* ---- 2. why EdgeDesk prices it there ---- */
     if (res.drivers) {
       h += resSec('Why EdgeDesk prices it here', res.drivers.basis);
@@ -11898,6 +11962,19 @@ export function deriveState(
       h += '<p><strong>Projected score:</strong> ' + esc(res.score.away.team) + ' ' + esc(res.score.away.points)
         + ', ' + esc(res.score.home.team) + ' ' + esc(res.score.home.points) + '.' + (res.score.note ? ' ' + esc(res.score.note) : '') + '</p>';
     }
+    var rr = res.research_read;
+    if (rr) {
+      h += '<h3>Research read</h3><p><strong>' + esc(rr.label) + '</strong>' + (rr.means ? ' — ' + esc(rr.means) : '') + '</p>'
+        + '<p>EdgeDesk fair line: ' + esc(rr.fair || 'unavailable')
+        + ' · market gap: ' + esc(rr.gap ? rr.gap + ' (market ' + (rr.gap_market || '') + (rr.gap_source ? ', ' + rr.gap_source : '') + ')' : 'unavailable — ' + (rr.gap_absent || 'no market line'))
+        + ' · confidence: ' + esc(rr.confidence || 'unavailable')
+        + ' · reliability: ' + esc(rr.reliability ? rr.reliability + (rr.reliability_sub ? ' (' + rr.reliability_sub + ')' : '') : 'unavailable')
+        + (rr.status ? ' · projection status: ' + esc(rr.status) : '') + '.</p>';
+      if (rr.lean.length) h += '<p>Why EdgeDesk leans ' + esc(rr.lean_team || '') + ':</p><ul>'
+        + rr.lean.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+      else if (rr.lean_none) h += '<p>' + esc(rr.lean_none) + '</p>';
+      [rr.status_text, rr.gap_note, researchReadBest(rr), rr.note].forEach(function (n) { if (n) h += '<p>' + esc(n) + '</p>'; });
+    }
     if (res.drivers && res.drivers.rows.length) {
       h += '<h3>Why EdgeDesk prices it here</h3><ul>'
         + res.drivers.rows.map(function (d) { return '<li>' + esc(d.points || '') + ' — ' + esc(d.text) + '</li>'; }).join('') + '</ul>';
@@ -12215,6 +12292,21 @@ export function deriveState(
         if (rp.note) L.push('  ' + rp.note);
       } else if (res.score) {
         L.push('Projected score: ' + res.score.away.team + ' ' + res.score.away.points + ', ' + res.score.home.team + ' ' + res.score.home.points + '.' + (res.score.note ? ' ' + res.score.note : ''));
+      }
+      var rr = res.research_read;
+      if (rr) {
+        L.push(''); L.push('RESEARCH READ');
+        L.push('  ' + rr.label + (rr.means ? ' — ' + rr.means : ''));
+        L.push('  EdgeDesk fair line: ' + (rr.fair || 'unavailable') + (rr.near_pickem ? ' (near pick’em — raw margin ' + rr.near_pickem + ')' : ''));
+        L.push('  Market gap: ' + (rr.gap ? rr.gap + ' (market ' + (rr.gap_market || '') + (rr.gap_source ? ', ' + rr.gap_source : '') + ')'
+          : 'unavailable — ' + (rr.gap_absent || 'no market line')));
+        L.push('  Confidence: ' + (rr.confidence || 'unavailable') + (rr.confidence_score != null ? ' (' + rr.confidence_score + '% information confidence)' : ''));
+        L.push('  Reliability: ' + (rr.reliability || 'unavailable') + (rr.reliability_sub ? ' (' + rr.reliability_sub + ')' : ''));
+        if (rr.status) L.push('  Projection status: ' + rr.status + (rr.status_text ? ' — ' + rr.status_text : ''));
+        if (rr.lean.length) { L.push('  Why EdgeDesk leans ' + (rr.lean_team || '') + ':'); rr.lean.forEach(function (x) { L.push('    · ' + x); }); }
+        else if (rr.lean_none) L.push('  ' + rr.lean_none);
+        var bl = researchReadBest(rr); if (bl) L.push('  ' + bl);
+        if (rr.note) L.push('  ' + rr.note);
       }
       if (res.drivers && res.drivers.rows.length) {
         L.push(''); L.push('WHY EDGEDESK PRICES IT HERE');
@@ -30544,6 +30636,7 @@ EdgeDesk classified the question, built a research plan, and ran that plan again
 - THESIS ATTACK — the deterministic test of the focused signal against its own owned numbers.
 - MEMORY — verified facts, prior graded outcomes and discovered patterns from EdgeDesk's research history.
 - CLIENT PACKET / BOARD — when the user has a signal open or a scored board loaded, the deterministic engine's own output for it.
+- RESEARCH VIEW — on a college game, the packet's research_view (contract cfb_research_brief/1) is the board's own research read of it: one research label and what it means, the market gap measured from EdgeDesk's raw margin, confidence and reliability as two separate numbers, the reasons the engine measured, the projection's status against its published history and the best current quote. Quote them as given. If you say why EdgeDesk leans one way, use ONLY research_view.drivers.reasons; never supply a reason of your own. The label is research — which question is worth opening — never a pick.
 
 EVIDENCE STATUS — READ IT, IT IS NOT DECORATION
 VERIFIED = owned, current. PROBABLE = owned but not confirmed (probable starters are never confirmed lineups). PARTIAL = owned but incomplete (flagged bullpen arms are not full rest state). STALE = past its freshness window; an old price is not a current price. UNPROVEN = owned model output that is not CLV-validated and feeds no edge math. HISTORICAL = a sample, never proof about one game. UNAVAILABLE = not retrievable — say so.
@@ -35957,9 +36050,17 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
       || (packetSport === ctx0.sport
         && (!ctx0.single_game || matchesContext(ctx0, { matchup: (packet as any)?.game?.matchup })));
     if (Object.keys(clone).length && packetIsSubject) {
+      /* the board's research read rides in the packet for a college game; it
+         is named here so the model reads it as the board's words, not its own */
+      const rv = (clone as any).research_view;
+      const rvNote = rv && rv.contract === "cfb_research_brief/1"
+        ? " Its research_view is the board's own research read of this game (" + String(rv.label?.label ?? "no label")
+          + "): quote its label, market gap, confidence and reliability as given, and if you say why EdgeDesk leans one way use ONLY "
+          + "research_view.drivers.reasons — never a reason of your own. The label is research, never a pick."
+        : "";
       parts.push(
         "CLIENT PACKET — the deterministic engine's output for the signal the user has open. "
-        + "Its verdict, confidence, score and price sensitivity are authoritative:\n"
+        + "Its verdict, confidence, score and price sensitivity are authoritative." + rvNote + "\n"
         + JSON.stringify(clone),
       );
     } else if (Object.keys(clone).length) {

@@ -75,6 +75,7 @@
         difference: snap.market.difference, classification: snap.market.classification
       } : { available: false, why: (snap.market && (snap.market.headline || snap.market.note)) || 'no sportsbook quote was captured' },
       edgedesk_model: snap.model || null,
+      research_read: researchReadFrom(snap, rec),
       matchup: (snap.matchups || []).slice(0, 4).map(function (m) { return { title: m.title, read: m.read }; }),
       injuries: injuriesFrom(snap),
       weather: weatherFrom(snap),
@@ -99,6 +100,28 @@
       variance_markers: (g.variance_markers || []).map(function (v) { return { label: v.label, text: v.text }; }),
       verified_sources: (res.agreed_by || []).concat(snap.sources || [])
         .filter(function (v, i, a) { return v && a.indexOf(v) === i; })
+    };
+  }
+  /* THE BOARD'S RESEARCH READ, as the snapshot published it
+     (cfb_research_brief/1): one label and what it means, the gap, confidence
+     and reliability apart, and the reasons the engine measured. It is here so
+     the model is handed the reasons rather than left to supply its own; the
+     prompt forbids it any other. Absent is absent. */
+  function researchReadFrom(snap, rec) {
+    var v = (snap && snap.research_view) || (rec && rec.research && rec.research.research_view) || null;
+    if (!v || v.contract !== 'cfb_research_brief/1' || !v.label || !v.label.key) {
+      return { available: false, why: 'no research read was published for this game' };
+    }
+    var D = v.drivers;
+    return {
+      label: txt(v.label.label), means: txt(v.label.means),
+      fair_line: v.fair ? txt(v.fair.line_text) : null,
+      market_gap: v.market_gap && v.market_gap.available ? txt(v.market_gap.text) : null,
+      confidence: v.confidence ? txt(v.confidence.label) : null,
+      reliability: v.reliability ? txt(v.reliability.text) : null,
+      measured_reasons: D && !D.none ? { team: txt(D.team), reasons: (D.reasons || []).map(function (x) { return txt(x && x.text); }).filter(Boolean) }
+        : { none: true, why: txt(D && D.text) || 'no single component is driving the projection' },
+      projection_status: v.projection_status ? txt(v.projection_status.label) : null
     };
   }
   /* The availability and weather EdgeDesk actually published, read off the
@@ -129,6 +152,7 @@
     '2. Do not state a number that is not in the payload. Do not compute, round, average or combine numbers.',
     '3. Do not change, soften or contradict a thesis_audit verdict. If the payload says NOT CONFIRMED, that claim did not hold.',
     '4. Never recommend a wager, never call anything a lock, a best bet or free money, and never imply a result was certain.',
+    '4a. research_read is EdgeDesk’s own deterministic research read. Its label is a research label (which question is worth opening), never a pick. If you say why EdgeDesk leaned one way, use ONLY research_read.measured_reasons; never supply a reason for the projection that is not listed there.',
     '5. No filler. No "delve into", no "in the ever-changing landscape", no "it is important to note", no "game-changer", no "only time will tell", no "whether you are a seasoned bettor", no "this thrilling matchup", no "at the end of the day".',
     '6. Few rhetorical questions. Do not open consecutive sentences the same way.',
     '',
@@ -287,7 +311,9 @@
       s.split(/[^A-Za-z']+/).forEach(function (tok) { if (tok) out[tok.toLowerCase()] = true; });
     });
     /* the vocabulary of the domain, which is not a name */
-    ['EdgeDesk Sports', 'Research Not', 'Not Confirmed', 'Partially Confirmed'].forEach(function (s) {
+    ['EdgeDesk Sports', 'Research Not', 'Not Confirmed', 'Partially Confirmed',
+      /* the research view's own labels, in title case */
+      'Worth Researching', 'Major Disagreement', 'Market Aligned', 'Low Reliability', 'Limited Data', 'Not Compared'].forEach(function (s) {
       out[s.toLowerCase()] = true;
       s.split(' ').forEach(function (t) { out[t.toLowerCase()] = true; });
     });

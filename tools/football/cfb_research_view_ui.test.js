@@ -56,11 +56,27 @@ ok(!!win.EDCfbResearchView, 'the research view is on window, as the page reads i
 const HOME = 'Duke', AWAY = 'Wake Forest';
 const HK = E.normKey(HOME), AK = E.normKey(AWAY);
 
+/* A STAGED BOARD STANDS FOR A COMPLETE LOAD. The page compares a live number
+   with a published one only when its load priced from the published build's
+   inputs (fbP4PricingParity): the play-level efficiency replayed with the
+   scores, the canonical rating installed, the primary schedule feed. The
+   harness replays nothing, so it records those three facts of a complete
+   load here — none of them moves a priced number (canonicalRatingMeta is
+   read by no pricing path) — and tools/football/page_build_parity.test.js
+   proves that a real complete load reproduces the build. The NOT COMPARED
+   section below takes them away again. */
+function markComplete(st) {
+  st.canonicalRatingMeta = { schema: 'staged', staged: true };
+  win.FB.p4.engineEfficiency = { schema: 'edgedesk_cfb_engine_efficiency_v1', staged: true };
+  win.FB.p4.efficiencyReplay = { games: 0, team_rows: 0, missing: 0, error: null, late_joined: 0 };
+  win.FB.p4.schedFallback = [];
+  return st;
+}
 /* stage the game with the home team's canonical rating set so the raw margin
    lands on `target`; returns the staged unit and its projection */
 function stageAt(target, o) {
   o = o || {};
-  const st = E.newState();
+  const st = markComplete(E.newState());
   st.canonicalRatings = {}; st.canonicalRatings[HK] = { value: 0 }; st.canonicalRatings[AK] = { value: 0 };
   win.FB.p4.state = st;
   const stage = { home: HOME, away: AWAY, neutral_site: !!o.neutral, market_spread: o.market_spread,
@@ -456,7 +472,7 @@ section('STEP 9 · top 5 worth researching, on the college board');
     ['G6', 'Clemson', 'Miami', 4.0, -3.5, 0.82],    /* 0.5 gap: aligned */
     ['G7', 'LSU', 'Tennessee', 5.0, null, 0.82]     /* no market */
   ];
-  const st = E.newState();
+  const st = markComplete(E.newState());
   st.canonicalRatings = {};
   GAMES.forEach(g => { st.canonicalRatings[E.normKey(g[1])] = { value: 0 }; st.canonicalRatings[E.normKey(g[2])] = { value: 0 }; });
   win.FB.p4.state = st;
@@ -548,6 +564,77 @@ section('STEP 9 · top 5 worth researching, on the college board');
   has(desk, 'this device', 'and says the baseline is this device');
   ok(!/\b(lock|best bet|guaranteed|hammer)\b/i.test(desk), 'no betting language on the desk');
   has(BOOT.module, 'fbP4DeskHTML(visible)', 'the board renders the desk above the rows');
+
+  section('NOT COMPARED · a load that did not price from the published inputs is never read as a move');
+  /* the committed record, as the desk reads it: every game's latest published
+     number 1.5 pts toward the away side of where the board has it now */
+  const pubAt = new Date(Date.now() - 30 * 3600e3).toISOString();
+  function recordFor(version) {
+    const games = {};
+    GAMES.forEach(g => {
+      const p = win.FB.p4._proj[g[0]];
+      games[g[0]] = { game_id: g[0], home: g[1], away: g[2], revisions: 0, model_version: version || p.model_version,
+        first: { at: pubAt, home_line: -(p.model.fair_spread - 1.5) }, pick: { at: pubAt, home_line: -(p.model.fair_spread - 1.5) } };
+    });
+    return { updated_at: pubAt, games };
+  }
+  function redraw() { rows.forEach(r => { r.u._rv = null; }); return T.fbP4DeskHTML(rows); }
+  win.FB.p4rec.data = recordFor();
+  win.FB.p4seen = { base: null, read: true, wroteAt: 0 };
+  desk = redraw();
+  has(desk, 'CHANGED SINCE LAST UPDATE', 'with no visit, the desk measures from the last published update');
+  has(desk, '7 projections have moved 0.75+ pts from their latest published numbers', 'a complete load that differs from the published numbers is a move');
+  lacks(desk, 'not compared', 'and every game is compared');
+
+  /* the same board, on a load whose efficiency artifact did not arrive */
+  win.FB.p4.efficiencyReplay = { games: 0, team_rows: 0, missing: null, error: 'engine efficiency 503' };
+  desk = redraw();
+  lacks(desk, 'have moved', 'a load missing a published input counts no move');
+  has(desk, '7 games not compared: the play-level efficiency the published build prices from did not load (engine efficiency 503)',
+    'it counts the games apart, with the reason in words');
+  has(desk, 'no projection revised in the last 24 hours', 'published-to-published revisions are still counted');
+  const g1 = units[0], v1 = T.fbP4ViewFor(g1, win.FB.p4._proj.G1, win.FB.p4._mkt.G1);
+  eq(v1.projection_status.key, 'NOT_COMPARED', 'the game reads NOT COMPARED, not MOVING');
+  has(v1.projection_status.text, 'A difference between them is not a move', 'and says why');
+  eq(v1.history.comparable, false, 'its history is marked not comparable');
+  eq(v1.projection_stability.tier, null, 'and one published number alone gives no stability tier');
+  lacks(T.fbRvRowCells(v1).fair, 'MOVED', 'the row marks no move');
+  has(T.fbGxChanged(g1, win.FB.p4._proj.G1), 'not compared with the published one', 'the card’s What changed? says it is not compared');
+  has(T.fbGxProjStatus(g1, win.FB.p4._proj.G1), 'NOT COMPARED', 'and the status line names it');
+  /* what this load shows is stored as a snapshot a later load will not compare against */
+  const mem2 = {};
+  win.localStorage = { getItem: k => (k in mem2 ? mem2[k] : null), setItem: (k, x) => { mem2[k] = String(x); }, removeItem: k => { delete mem2[k]; } };
+  win.FB.p4seen = { base: null, read: true, wroteAt: 0 };
+  T.fbP4SeenWrite(rows);
+  const bad = T.fbP4SeenLoad();
+  ok(bad && bad.v === 2 && bad.games.G1 && bad.games.G1.q === 0, 'its snapshot is stored with q:0', bad && bad.games.G1);
+
+  /* the next session loads completely; the degraded snapshot is its baseline */
+  win.FB.p4.efficiencyReplay = { games: 0, team_rows: 0, missing: 0, error: null, late_joined: 0 };
+  Object.keys(bad.games).forEach(k => { bad.games[k].t -= 3600e3; });
+  bad.at -= 3600e3;
+  win.FB.p4seen = { base: bad, read: true, wroteAt: 0 };
+  desk = redraw();
+  has(desk, 'CHANGED SINCE YOUR LAST VISIT', 'the next visit measures from this device’s snapshot');
+  lacks(desk, 'projection moved', 'but moves nothing against a degraded one');
+  has(desk, 'not compared: your last visit was on a load that did not price from the published build’s inputs',
+    'and says the last visit is the reason');
+  /* a visit snapshot from before the fix (payload v1) is not read at all */
+  mem2['ed_cfb_seen_v1'] = JSON.stringify({ v: 1, at: Date.now() - 3600e3, games: bad.games });
+  eq(T.fbP4SeenLoad(), null, 'a v1 snapshot, taken while the board double-counted efficiency, is dropped');
+
+  /* a published number from another model version is not compared either */
+  win.FB.p4rec.data = recordFor('edgedesk_cfb_p4_v0.9.0');
+  win.FB.p4seen = { base: null, read: true, wroteAt: 0 };
+  desk = redraw();
+  lacks(desk, 'have moved', 'a model version change counts no move');
+  has(desk, 'not compared: the published number came from edgedesk_cfb_p4_v0.9.0', 'and names the version change');
+  win.FB.p4rec.data = null;
+  win.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
+
+  /* the page's parity check reads the load itself */
+  has(BOOT.module, 'function fbP4PricingParity()', 'the page states whether its load priced from the published inputs');
+  has(BOOT.module, 'parity:par', 'and hands it to the research view');
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
