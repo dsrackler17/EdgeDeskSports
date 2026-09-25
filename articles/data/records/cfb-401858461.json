@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T00:00:00.000Z",
   "game_when_label": "2026-09-26 00:00 UTC",
   "published_at": "2026-09-25T14:00:21.299Z",
-  "updated_at": "2026-09-25T18:00:23.280Z",
-  "generated_at": "2026-09-25T18:00:23.280Z",
+  "updated_at": "2026-09-25T18:36:26.235Z",
+  "generated_at": "2026-09-25T18:36:26.235Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1512,10 +1512,77 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 81,
-        "tier": "ADEQUATE",
-        "text": "81%",
-        "sub": "21 of 26 inputs on file"
+        "pct": 82,
+        "tier": "STRONG",
+        "text": "82 · STRONG",
+        "sub": "main deduction: the projected spread moves ±3.01 pts (1 SD) across 64 perturbation scenarios (largest source",
+        "score": 82,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 17.7,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 14.1,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 14.3,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 14.7,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "the projected spread moves ±3.01 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±2.39 pts)",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Confirm Indiana’s QB availability",
+            "potential_gain": 3,
+            "text": "up to +3"
+          },
+          {
+            "action": "Confirm Northwestern’s QB availability",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
+        "stability": {
+          "tier": "MODERATE",
+          "sd": 3.01,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "Indiana",
@@ -1777,15 +1844,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-25. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_e60b8f67166f1c2e",
+  "snapshot_id": "snap_c32007c2eb6ba058",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-09-26T00:00:00.000Z",
-    "minutes_before_kickoff": 360,
+    "minutes_before_kickoff": 324,
     "published_at": "2026-09-25T14:00:21.299Z",
     "refreshed": false,
-    "at": "2026-09-25T18:00:23.280Z"
+    "at": "2026-09-25T18:36:26.235Z"
   },
   "featured": {
     "editorial_priority": 37.6,
@@ -2040,11 +2107,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-09-25T18:00:23.280Z"
+    "at": "2026-09-25T18:36:26.235Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-09-25T18:00:23.280Z",
+    "at": "2026-09-25T18:36:26.235Z",
     "blocking": [],
     "warnings": [],
     "hold_reason": null
@@ -2052,6 +2119,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T18:00:23.280Z"
+    "at": "2026-09-25T18:36:26.235Z"
   }
 }
