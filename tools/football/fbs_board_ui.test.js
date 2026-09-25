@@ -837,6 +837,70 @@ chk('the scope label follows the group control', () => {
   return c.fbP4ScopeLabel() === 'OTHER FBS';
 });
 
+/* ======================================================================== */
+/* 12. THE RESEARCH VIEW ON THE BOARD                                       */
+/* With lib/cfb_research_view.js loaded (the page's <script> tag) the row    */
+/* carries the favourite-named lines, the gap, confidence and reliability    */
+/* as separate columns and one research label; without it, the board above. */
+/* ======================================================================== */
+const RVLIB = require(path.join(ROOT, 'lib', 'cfb_research_view.js'));
+function rvCtx(o) {
+  const c = makeCtx(o);
+  c.window.EDCfbResearchView = RVLIB;
+  /* the input contract is its own suite's; a well-covered game is supplied */
+  c.fbP4ContractFor = () => ({ rows: [], summary: { input_coverage: 0.82, known: 14, applicable: 17 } });
+  return c;
+}
+lacks(BOARD, 'class="rv-lab', 'without the research view the board renders no research label');
+has(BOARD, '<span>STATUS</span>', 'and keeps its STATUS column');
+{
+  /* every game is joined at home -3 (margin +3) */
+  const c = rvCtx({ market: () => ({ spread_line: 3, total_line: null, quotes_h2h: null, book: 'cfb.lines · consensus',
+    as_of: null, stale: false, status: 'LIVE', age_hours: null }) });
+  const h = c.fbP4BoardHTML();
+  const CR = c.fbP4Visible(c.fbP4Rows());      /* THIS context's rows, with the market joined */
+  ['EDGEDESK FAIR', 'MARKET GAP', '>CONF<', '>REL<', 'RESEARCH LABEL'].forEach(l =>
+    has(h, l, 'with the research view the header carries ' + l));
+  /* a ROW's label sits in its own cell; the desk's count chips above the rows are not rows */
+  eq('every visible row carries exactly one research label', (h.match(/class="rv-cell"><span class="rv-lab /g) || []).length, VIS.length);
+  chk('every row still carries its conference badge', (h.match(/class="fbs-badge/g) || []).length >= VIS.length);
+  chk('every row still opens its card', CR.every(r => h.indexOf('fbP4Gate(\'' + esc(r.gid) + '\')') >= 0));
+  chk('confidence and reliability are separate cells on every projected row',
+    (h.match(/class="rv-t (hi|md|lo)"[^>]*>(HIGH|MOD|LOW)</g) || []).length >= VIS.filter(r => r.p && r.p.status === 'PREDICTED').length
+    && (h.match(/>82%</g) || []).length >= VIS.filter(r => r.p && r.p.status === 'PREDICTED').length);
+  lacks(h, 'rv-lab undefined', 'no label renders without a tone');
+  chk('no betting language appears on the board', !/\b(lock|best bet|guaranteed|hammer)\b/i.test(h));
+  /* the labels agree with the one classifier, row by row */
+  chk('the joined market reaches every projected row’s view', CR.filter(r => r.p && r.p.status === 'PREDICTED')
+    .every(r => c.fbP4ViewFor(r.u, r.p, r.mkt).market_gap.available));
+  /* the labels agree with the one classifier, row by row, in board order */
+  const shown = Array.from(h.matchAll(/class="rv-cell"><span class="rv-lab [a-z]+"[^>]*>([^<]+)</g)).map(x => x[1]);
+  const want = CR.map(r => c.fbP4ViewFor(r.u, r.p, r.mkt).research_label.label);
+  chk('each row’s label is the research view’s own, in board order', JSON.stringify(shown) === JSON.stringify(want),
+    { shown: shown.slice(0, 5), want: want.slice(0, 5) });
+  /* the research desk above the rows counts exactly these labels */
+  const tally = {};
+  want.forEach(l => { tally[l] = (tally[l] || 0) + 1; });
+  chk('the research desk’s counts are the rows’ own labels, counted', Object.keys(tally).every(l =>
+    new RegExp('<b>' + tally[l] + '</b> <span class="rv-lab [a-z]+">' + l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '</span>').test(h)), tally);
+  const kinds = {};
+  CR.forEach(r => { const k = c.fbP4ViewFor(r.u, r.p, r.mkt).research_label.key; kinds[k] = (kinds[k] || 0) + 1; });
+  chk('a real slate against one market line produces more than one kind of label', Object.keys(kinds).length >= 2, kinds);
+  const unprojected = CR.filter(r => !r.p || r.p.status !== 'PREDICTED');
+  chk('a game with no projection reads LIMITED DATA', unprojected.every(r => c.fbP4ViewFor(r.u, r.p, r.mkt).research_label.key === 'LIMITED_DATA'));
+}
+{
+  const c = rvCtx();
+  const h = c.fbP4BoardHTML();
+  chk('with no market anywhere, every projected row reads LIMITED DATA or LOW RELIABILITY, never a gap label',
+    c.fbP4Visible(c.fbP4Rows()).every(r => ['LIMITED_DATA', 'LOW_RELIABILITY'].indexOf(c.fbP4ViewFor(r.u, r.p, r.mkt).research_label.key) >= 0));
+  chk('and nothing is worth researching against a market that is not there: no row carries the label',
+    !/class="rv-cell"><span class="rv-lab accent"[^>]*>WORTH RESEARCHING/.test(h));
+  has(h, '<b>0</b> <span class="rv-lab accent">WORTH RESEARCHING</span>', 'and the research desk counts zero, rather than hiding the answer');
+  has(h, 'CFB RESEARCH DESK', 'the research desk sits above the rows');
+  chk('the desk comes before the first row', h.indexOf('CFB RESEARCH DESK') < h.indexOf('fbP4Gate('));
+}
+
 /* ---------------------------------------------------------------- report */
 if (fail) {
   console.log('FAIL | FBS board UI | ' + pass + ' passed, ' + fail + ' failed');

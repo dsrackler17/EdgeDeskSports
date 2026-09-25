@@ -260,6 +260,14 @@ jobs:
       - name: A near pick'em shows a side at one point, and nothing measured moves
         run: node football/cfb_p4/fair_line.test.js && node tools/football/fair_line_ui.test.js
 
+      # THE CFB RESEARCH VIEW. What a reader sees first on the college board --
+      # the side, the market gap, one research label, the reasons, the best
+      # available line, the projection's own history -- read off the finished
+      # projection by lib/cfb_research_view.js. The unit suite pins every rule
+      # and threshold; the page suite runs the real module out of app.html.
+      - name: The CFB research view reads the projection and never moves it
+        run: node tools/football/cfb_research_view.test.js && node tools/football/cfb_research_view_ui.test.js
+
       # The player quality + scheme matchup layer: the rules its ratings are
       # not allowed to break (a missing input never becoming a zero, no rating
       # ever knowing the future, a reproducible simulation, no model call
