@@ -44,6 +44,41 @@ deploy that worked and changed nothing.
 
 ## The files
 
+### `personal_research.sql` — the reader's watchlist, alerts, journal and preferences
+Everything personal used to live in one browser. This gives each reader rows on
+their account, under row level security on `auth.uid()`, and nothing takes a
+user id as an argument: `user_preferences` (onboarding answers, leagues checked
+against `research_leagues`), `alert_preferences` (every threshold, range-checked),
+`watchlist_games` (unique per reader and game, readers may update only the
+seen-state columns), `user_alerts` (the in-app notification centre, unique per
+reader and dedupe key, a check constraint refusing tout language, readers may
+only mark read or dismiss) and `research_journal` (the decision journal: the
+information set at decision time is **write-once for everybody** by trigger, the
+server stamps the time and copies the shared state beside the page's snapshot,
+and the close and grade are writable by the grading job only). Two SHARED tables,
+written by the service role and readable by entitled readers:
+`game_research_state` (the latest research state per upcoming game, computed by
+the football module itself through `tools/personal/research_state.js`) and
+`game_research_history` (every distinct state, appended by trigger). Plus the
+`my_watchlist` security-invoker view and `edgedesk_proof_metrics()` (anon-callable
+counts only — no user count, accuracy or profit). Report rows 1-14 should say
+`ok`. Tested against a real PostgreSQL by `tools/personal/personal_sql.test.js`;
+see `docs/personal-research-terminal.md`.
+
+### `affiliates.sql` — the partner program, tracked from Stripe's own records
+Run after `billing.sql`, `stripe_webhook.sql` and `referral_codes.sql`. Clicks
+(one per hashed visitor per day, anon-callable), one attribution per account
+(first valid wins; no self-referral; an existing customer cannot be claimed),
+conversions read from `stripe_events` **by trigger** — so the deployed webhook
+does not change, and an attribution error can never fail the ledger write —
+commissions at the rate in the one-row `affiliate_settings` (pending through the
+refund hold, approved by an admin or automatically if turned on, paid only with
+a manual payout reference; a refund voids or claws back, amounts are never
+edited or deleted). Partners read their own counts through
+`affiliate_my_dashboard()`; admins (`affiliate_admins`) use `/admin/affiliates/`.
+No money moves here. Add `charge.refunded` to the webhook endpoint's events in
+the Stripe dashboard. Tested by `tools/personal/affiliates_sql.test.js`.
+
 ### `bankroll_and_stakes.sql` — the risk policy and the stake audit trail
 `bankroll_settings` is one MUTABLE row per reader: the bankroll (deliberately
 nullable — EdgeDesk answers in units and refuses to assume one), the base unit,

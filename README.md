@@ -185,6 +185,20 @@ history". See `docs/intelligence-architecture.md` §15 and
 - `npm run intel:test` — the kernel, the evaluation harness, the migrations
 - `npm run intel:stake` · `npm run stake:validate` — the sizing rules, and whether they beat flat staking
 
+## The personal research terminal
+A reader's own research now lives on their account: a **watchlist** (the star on
+every game card and on the Top 5), **research-condition alerts** under the bell
+(a fair line moving, a quarterback confirmed, the market converging — never
+"bet" alerts), a **Top 5 Games to Research** list ordered by research-worthiness
+rather than by gap, a **decision journal** that freezes EdgeDesk's numbers at
+decision time and grades the reader's number against the close (process and
+result kept apart, no profit figure anywhere), first-run **onboarding**, live
+**activity counts** from real rows, a **partner program** tracked from Stripe's own
+events, and an AI desk that answers "what changed in my watchlist?" or "how has
+my CLV looked this month?" from those rows — and says so when a row is missing.
+No model methodology changed. See
+[`docs/personal-research-terminal.md`](docs/personal-research-terminal.md).
+
 ## The weekly research email
 Twice a week the same research goes out as an email nobody sends: **College
 Football Week Ahead** on Monday and **NFL Week Ahead** on Tuesday, both at 10:00

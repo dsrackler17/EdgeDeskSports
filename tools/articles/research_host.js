@@ -261,6 +261,11 @@ async function open(opts) {
   const win = boot.win;
 
   installPageGlobals(win);
+  /* A CALLER'S OWN PAGE GLOBALS, opt-in. The personal-research job
+     (tools/personal/research_state.js) supplies a read-only sbFetch/sbGet so
+     the board joins the same captured quotes a signed-in browser reads; the
+     article generator passes nothing and runs exactly as before. */
+  if (opts.globals) Object.keys(opts.globals).forEach(function (k) { win[k] = opts.globals[k]; });
   const [fetchImpl, seen] = makeFetch(opts, log);
   win.fetch = fetchImpl;
   installScriptLoader(win, seen);

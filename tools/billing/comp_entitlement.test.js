@@ -236,8 +236,21 @@ function appCtx(opts) {
     await c.pgCheck();
     c.pgShow(c.pgLockedHTML(''));
     eq('and it still opens for an account that really has not paid', c.GATE.on, true);
-    chk('which is the screen that carries the Stripe link',
-      /buy\.stripe\.com/.test(c.GATE.card.innerHTML), c.GATE.card.innerHTML.slice(0, 200));
+    /* A NEVER-SUBSCRIBED account is sent through the landing page's trial
+       flow, which records the auto-renewal consent and then opens the same
+       Stripe payment link — so the offer it is shown (7 days free, then the
+       monthly price) is the offer it consents to. A LAPSED account keeps the
+       direct Stripe link and is promised no trial. Either way the unpaid
+       screen is a way to pay, and a comp is never sent to either. */
+    chk('which is the screen that carries the way to pay: the consented trial flow for a new account',
+      /href="\.\/index\.html#subscribe"/.test(c.GATE.card.innerHTML) && /7-day free trial/.test(c.GATE.card.innerHTML), c.GATE.card.innerHTML.slice(0, 200));
+  }
+  {
+    const c = appCtx({ row: Object.assign({}, COMP, { status: 'canceled', price_id: 'price_live' }) });
+    await c.pgCheck();
+    c.pgShow(c.pgLockedHTML(''));
+    chk('and a lapsed account still gets the Stripe link, with no trial promised',
+      c.GATE.on === true && /buy\.stripe\.com/.test(c.GATE.card.innerHTML) && !/free trial/.test(c.GATE.card.innerHTML), c.GATE.card.innerHTML.slice(0, 300));
   }
 
   /* ====================================================================== */
