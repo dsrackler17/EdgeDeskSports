@@ -91,7 +91,7 @@ begin
   execute 'select public.community_is_entitled($1)' into v using p_user;
   return coalesce(v, false);
 end $$;
-revoke all on function public.edp_entitled(uuid) from public;
+revoke all on function public.edp_entitled(uuid) from public, anon;
 grant execute on function public.edp_entitled(uuid) to authenticated, service_role;
 
 -- ── 1. research_leagues ──────────────────────────────────────────────────────
@@ -817,4 +817,7 @@ select 13, 'the tout-language check is on alert copy',
 union all
 select 14, 'the proof metrics are callable without an account',
   case when has_function_privilege('anon', 'public.edgedesk_proof_metrics()', 'execute') then 'ok' else 'CHECK THIS' end
+union all
+select 15, 'the entitlement check is not callable without an account',
+  case when not has_function_privilege('anon', 'public.edp_entitled(uuid)', 'execute') then 'ok' else 'CHECK THIS' end
 order by 1;
