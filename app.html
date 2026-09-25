@@ -1884,6 +1884,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fbs-badge.g-independent{color:var(--warn);border-color:rgba(217,154,43,.4)}
 .fbs-badge.fcs{color:var(--faint)}
 /* the CFB research view (lib/cfb_research_view.js) */
+.rv-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .rv-np{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.05em;border:1px solid rgba(227,184,77,.45);border-radius:4px;padding:1px 4px;color:var(--gold);white-space:nowrap;vertical-align:middle;margin-left:4px}
 .fbs-confcell{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media(max-width:560px){
@@ -49782,7 +49783,7 @@ function fbP4ViewFor(u,p,mkt){
   if(u._rv&&u._rv.p===p&&u._rv.key===key)return u._rv.v;
   var v=null;
   try{
-    v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p});
+    v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt});
   }catch(_){v=null;}
   u._rv={p:p,key:key,v:v};
   return v;
@@ -49794,6 +49795,15 @@ function fbRvNearBadge(v){
   return '<span class="rv-np" title="'+fbEsc('Near pick’em: the raw projected margin is '
     +(v.fair.raw_line_text||'under one point')+'. The one-point line is a display floor; win probability, confidence, the market gap and every grade use the raw margin.')
     +'">NEAR PICK’EM</span>';
+}
+/* the board row's gap cell: the size of the disagreement and the team
+   EdgeDesk differs toward, from the RAW margin (never the display floor) */
+function fbRvGapCell(v,gap){
+  var G=v&&v.market_gap;
+  if(!G||!G.available)return gap==null?'—':gap.toFixed(1);
+  if(G.toward_team==null)return '0.0';
+  return '<span title="'+fbEsc('Market gap: '+G.text+(G.note?(' · '+G.note):''))+'">'+G.points.toFixed(1)
+    +' <span class="mut">→ '+fbEsc(G.toward_team)+'</span></span>';
 }
 
 /* tolerant CSV parser (quoted fields, embedded commas). Header row -> objects. */
@@ -54254,12 +54264,27 @@ function fbGxSummary(u,p,gid){
       +(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
   }
   var out='<div class="gx-grid">';
-  out+=cell('EdgeDesk',h+' '+fbPts(-fbFairDisp(m))+fbRvNearBadge(fbP4ViewFor(u,p)),'mdl',m.is_near_pickem?'model · near pick’em':'model');
+  /* THE RESEARCH VIEW, when it loaded: both lines named for their own
+     favourite ("Ole Miss -1.0", "Florida -2.5") and the gap stated as a size
+     and a direction, all from lib/cfb_research_view.js. Without it, the
+     home-line cells this card always printed. */
+  var rv=fbP4ViewFor(u,p),RG=rv&&rv.market_gap;
+  if(rv&&rv.fair){
+    out+=cell('EdgeDesk fair',fbEsc(rv.fair.fair_line_text)+fbRvNearBadge(rv),'mdl',
+      rv.is_near_pickem?('model · raw '+fbEsc(rv.fair.raw_line_text)):'model');
+    out+=cell('Market',RG.available?fbEsc(RG.market_line_text):'<span class="gx-miss">none joined</span>',
+      '',RG.available?fbEsc(mk.book||'reference'):'nothing to compare');
+    out+=cell('Market gap',RG.available?(RG.points.toFixed(1)+' pts'):'<span class="gx-miss">—</span>',
+      RG.available&&RG.points>=FB_GUARD.p4.game?'neg':(RG.available&&RG.points>=2?'warn':''),
+      RG.available?(RG.toward_team?('toward '+fbEsc(RG.toward_team)+' · from the raw margin'):'EdgeDesk matches the market'):'no market number');
+  }else{
+  out+=cell('EdgeDesk',h+' '+fbPts(-fbFairDisp(m)),'mdl',m.is_near_pickem?'model · near pick’em':'model');
   out+=cell('Market',mk&&mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)):'<span class="gx-miss">none joined</span>',
     '',mk&&mk.spread_line!=null?fbEsc(mk.book||'reference'):'nothing to compare');
   out+=cell('Difference',gap!=null?(gap.toFixed(1)+' pts'):'<span class="gx-miss">—</span>',
     gap!=null&&gap>=FB_GUARD.p4.game?'neg':(gap!=null&&gap>=2?'warn':''),
     gap!=null?'model minus market':'no market number');
+  }
   out+=cell('Projected score',
     sc?('<span class="gx-sc"><i>'+h+'</i><b>'+sc.home+'</b></span>'
        +'<span class="gx-sc"><i>'+a+'</i><b>'+sc.away+'</b></span>')
@@ -56408,13 +56433,13 @@ function fbP4BoardHTML(){
     +'<span><b style="color:var(--text)">EDGEDESK // FBS FOOTBALL OPERATIONS</b> · '+fbEsc(fbP4ScopeLabel())
     +' · WEEK '+fbEsc(String(wk))+' · '+c.visible+' OF '+c.total+' GAMES</span>'
     +'<span>LAST SYNC '+('0'+sync.getHours()).slice(-2)+':'+('0'+sync.getMinutes()).slice(-2)+'</span></div>';
-  var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 46px 100px;gap:2px 8px;align-items:center';
+  var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 112px 100px;gap:2px 8px;align-items:center';
   var html=head+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c);
   if(!visible.length)return html+fbP4EmptyHTML(rows,c);
   try{html+=fbP4QueueHTML(visible);}catch(_){}
   html+='<div style="overflow-x:auto"><div class="mono" style="font-size:11px;min-width:700px">'
     +'<div style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
-    +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>GAP</span><span>STATUS</span></div>';
+    +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>MARKET GAP</span><span>STATUS</span></div>';
   visible.forEach(function(r){
     var u=r.u,g=u.g,gid=r.gid,p=r.p,mkt=r.mkt,st=r.st,m=r.meta,rv=fbP4ViewFor(u,p,mkt);
     var model=(p&&p.status==='PREDICTED')?(p.model.is_near_pickem
@@ -56433,7 +56458,7 @@ function fbP4BoardHTML(){
       +'<span class="fbs-confcell">'+conf+'</span>'
       +'<span>'+model+'</span>'
       +'<span class="mut">'+market+'</span>'
-      +'<span>'+gap+'</span>'
+      +'<span class="rv-cell">'+fbRvGapCell(rv,r.gap)+'</span>'
       +'<span style="color:'+st.c+'">'+st.t+'</span></div>'
       +'<div id="p4gate-'+fbEsc(gid)+'"></div>';
   });

@@ -29,7 +29,7 @@ function has(hay, needle, what) { ok(String(hay).indexOf(needle) >= 0, what, { m
 function lacks(hay, needle, what) { ok(String(hay).indexOf(needle) < 0, what, { present: needle }); }
 function section(t) { console.log('\n' + t); }
 
-const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbGxSummary', 'fbP4Card', 'fbP4Request', 'fbP4Market'] });
+const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbGxSummary', 'fbP4Card', 'fbP4Request', 'fbP4Market'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 (function () {
@@ -88,6 +88,42 @@ section('STEP 1 · near pick’em: the side, the one-point floor and the badge')
   eq(vc.is_near_pickem, false, 'a 6.5-point game is not a near pick’em');
   lacks(T.fbGxSummary(c.u, c.p, 'RV1'), 'NEAR PICK’EM', 'and carries no badge');
   eq(T.fbRvNearBadge(null), '', 'no view, no badge (the page renders exactly as before)');
+}
+
+/* ------------------------------------------------------------------------ */
+section('STEP 2 · the market gap on the card and the board row');
+{
+  /* cfb.lines convention: a negative number is the home side laying points.
+     Duke (home) -2.5 in the market, EdgeDesk Wake Forest by 1.0 */
+  const s = stageAt(-1.0, { market_spread: -2.5 });
+  const v = T.fbP4ViewFor(s.u, s.p);
+  eq(v.market_gap.available, true, 'the joined line reaches the view');
+  eq(v.market_gap.market_line_text, HOME + ' -2.5', 'the market line is named for its favourite');
+  eq(Math.round(v.market_gap.points * 10) / 10, 3.5, 'the gap is 3.5 points');
+  eq(v.market_gap.toward_team, AWAY, 'toward Wake Forest');
+  ok(Math.abs(v.market_gap.signed - s.p.market.spread_gap) < 1e-9, 'and it is the engine’s own spread_gap');
+  const card = T.fbGxSummary(s.u, s.p, 'RV1');
+  has(card, '>Market gap<', 'the card labels it MARKET GAP');
+  has(card, '3.5 pts', 'with its size');
+  has(card, 'toward ' + AWAY, 'and its direction');
+  has(card, AWAY + ' -1.0', 'the EdgeDesk cell names the favourite it lays');
+  has(card, HOME + ' -2.5', 'and so does the market cell');
+  const cell = T.fbRvGapCell(v, 3.5);
+  has(cell, '3.5', 'the board row shows the size');
+  has(cell, '→ ' + AWAY, 'and the team EdgeDesk differs toward');
+  has(BOOT.module, 'fbRvGapCell(rv,r.gap)', 'the board row renders its gap through that cell');
+
+  /* the near pick'em floor never manufactures a gap */
+  const n = stageAt(-0.31, { market_spread: -2.5 });
+  const vn = T.fbP4ViewFor(n.u, n.p);
+  eq(Math.round(vn.market_gap.points * 100) / 100, 2.81, 'a near pick’em’s gap is its raw 2.81, not the 3.5 its display line implies');
+  has(T.fbGxSummary(n.u, n.p, 'RV1'), '2.8 pts', 'and the card prints 2.8');
+
+  const none = stageAt(-4);
+  const vx = T.fbP4ViewFor(none.u, none.p);
+  eq(vx.market_gap.available, false, 'no joined line: no gap');
+  has(T.fbGxSummary(none.u, none.p, 'RV1'), 'no market number', 'and the card says so rather than printing a zero');
+  eq(T.fbRvGapCell(vx, null), '—', 'the row prints a dash');
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));

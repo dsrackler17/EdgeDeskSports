@@ -99,5 +99,53 @@ section('STEP 1 · the fair line always names a side, with a one-point floor');
   eq('and no projection at all is not projected', V.build({ game: GAME }).projected, false);
 }
 
+/* ======================================================================== */
+section('STEP 2 · the market gap: magnitude, and which team EdgeDesk differs toward');
+{
+  function gapOf(raw, line) { return V.build({ game: GAME, projection: proj(raw, { line }) , market: { spread_line: line, book: 'consensus' } }).market_gap; }
+
+  /* the specified example: market Florida (home) -2.5, EdgeDesk Ole Miss -1.0 */
+  let g = gapOf(-1.0, 2.5);
+  eq('market Florida -2.5 vs EdgeDesk Ole Miss -1.0 is 3.5 points', Math.round(g.points * 10) / 10, 3.5);
+  eq('toward Ole Miss', g.toward_team, AWAY);
+  eq('and says so', g.text, '3.5 pts toward ' + AWAY);
+  eq('the market line is named for its own favourite', g.market_line_text, HOME + ' -2.5');
+  eq('the two numbers name different favourites', g.favorite_differs, true);
+
+  /* orientation, all four corners: a sign error would reverse every one */
+  g = gapOf(10, 7);    eq('home fav, EdgeDesk likes home MORE (10 vs 7): toward the home favourite', g.toward_team, HOME);
+  near('by 3', g.points, 3);
+  g = gapOf(3, 7);     eq('home fav, EdgeDesk likes home LESS (3 vs 7): toward the away underdog', g.toward_team, AWAY);
+  near('by 4', g.points, 4);
+  g = gapOf(-10, -7);  eq('away fav, EdgeDesk likes away MORE: toward the away favourite', g.toward_team, AWAY);
+  g = gapOf(-3, -7);   eq('away fav, EdgeDesk likes away LESS: toward the home underdog', g.toward_team, HOME);
+  eq('the same favourite on both sides is not a favourite flip', g.favorite_differs, false);
+
+  /* the gap IS the engine's own spread_gap, signed the same way */
+  [[-1, 2.5], [10, 7], [3, 7], [-10, -7], [-3, -7], [0.4, -3]].forEach(([raw, line]) => {
+    const p = proj(raw, { line });
+    const v = V.build({ game: GAME, projection: p, market: { spread_line: line } });
+    near('signed gap equals the engine’s spread_gap for raw ' + raw + ' vs line ' + line, v.market_gap.signed, p.market.spread_gap);
+  });
+
+  /* the display floor never manufactures a gap */
+  g = gapOf(-0.31, 2.5);
+  near('a near pick’em is measured from its RAW margin: 2.81, not 3.5', g.points, 2.81);
+  chk('and the note says the display line was not used', /raw margin/.test(g.note), g.note);
+  g = gapOf(0.2, 0.2);
+  eq('a near pick’em equal to the market is NO gap, though the display reads -1.0', g.text, '0.0 pts — EdgeDesk matches the market');
+  eq('with no direction', g.toward, null);
+
+  g = gapOf(-3, 0);
+  eq('a market pick’em is the market’s own number and is named as one', g.market_line_text, 'Pick’em');
+  eq('the gap toward the away favourite', g.toward_team, AWAY);
+
+  const none = V.build({ game: GAME, projection: proj(-3), market: { spread_line: null } }).market_gap;
+  eq('no market line means no gap, never a zero', none.available, false);
+  chk('and says why', /no market line/.test(none.reason), none.reason);
+  const dropped = V.build({ game: GAME, projection: proj(-3), market: { spread_line: null, spread_fault: { gap: 40 } } }).market_gap;
+  chk('a dropped line says it was dropped', /dropped/.test(dropped.reason), dropped.reason);
+}
+
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
 process.exit(failures ? 1 : 0);
