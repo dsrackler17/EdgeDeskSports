@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-09-25T03:10:18.503Z",
-  "open": 4,
-  "count": 4,
+  "generated_at": "2026-09-25T03:20:23.133Z",
+  "open": 5,
+  "count": 5,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -13,7 +13,7 @@
       "question": "Does EdgeDesk’s explosiveness handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-13T20:41:25.405Z",
-      "updated_at": "2026-09-21T04:00:22.158Z",
+      "updated_at": "2026-09-25T03:20:23.133Z",
       "evidence": [
         {
           "lesson_id": "2026_01_BUF_HOU:contradicted:explosiveness",
@@ -36,14 +36,27 @@
           "result": "Indianapolis Colts 5.22 yards per play against Kansas City Chiefs 6.71.",
           "severity": "high",
           "at": "2026-09-21T04:00:22.158Z"
+        },
+        {
+          "lesson_id": "2026_03_ATL_GB:contradicted:explosiveness",
+          "game_id": "2026_03_ATL_GB",
+          "season": 2026,
+          "week": 3,
+          "team": "Green Bay Packers",
+          "expectation": "Green Bay Packers holds the largest measured edge in this matchup: Green Bay Packers −2.3 pp (#1 of 32) vs Atlanta Falcons +0.6 pp (#23 of 32) — 22 places on the league board.",
+          "result": "Green Bay Packers 5.21 yards per play against Atlanta Falcons 7.55.",
+          "severity": "high",
+          "at": "2026-09-25T03:20:23.133Z"
         }
       ],
-      "occurrences": 2,
+      "occurrences": 3,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
@@ -123,6 +136,35 @@
           "result": "It graded a win. The reasoning behind it did not hold: 4 of 8 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
           "severity": "high",
           "at": "2026-09-21T04:00:22.158Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:market:price market_gap",
+      "sport": "NFL",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-25T03:20:23.133Z",
+      "updated_at": "2026-09-25T03:20:23.133Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_03_ATL_GB:contradicted:market",
+          "game_id": "2026_03_ATL_GB",
+          "season": 2026,
+          "week": 3,
+          "team": "Green Bay Packers",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Green Bay Packers -4.8 with a fair total of 44.0, which makes Green Bay Packers the better team here by that margin on this field. EdgeDesk makes it Green Bay Packers -4.8 where the market has Green Bay Packers -6.5 at Pinnacle — a 1.7 points disagreement.",
+          "result": "Green Bay Packers lost by 21 where EdgeDesk projected a 4.8-point edge. Green Bay Packers lost by 21.",
+          "severity": "high",
+          "at": "2026-09-25T03:20:23.133Z"
         }
       ],
       "occurrences": 1,
