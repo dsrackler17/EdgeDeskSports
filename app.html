@@ -52861,13 +52861,26 @@ function fbP4InjuryReplacement(teamName,athlete,scoped){
 }
 /* Load only player files that can affect a current injury row. */
 function fbP4InjuryPlayerEnsure(){
-  if(!FB.pq||typeof fbPqTeam!=='function'||!window.EDCARD||!window.EDCARD.cavTeam)
-    return Promise.resolve([]);
+  if(!FB.pq||typeof fbPqTeam!=='function')return Promise.resolve([]);
+  /* THE TEAMS A REPORT NAMES SOMEBODY ON, read from the merged view the
+     build reads — the conference filings included. Read from the automated
+     collector alone this never loaded the player file of a team only a
+     conference report named, so the board could not tell a starter from a
+     walk-on and priced neither. */
+  return fbP4InputArtifacts(FB.p4.season).then(function(){
+    var IC=window.EDInputContract,AV=(IC&&FB.p4.art&&FB.p4.art.av_current)?fbP4AvailabilityView():null;
+    if(!AV&&!(window.EDCARD&&window.EDCARD.cavTeam))return [];
+    return fbP4InjuryPlayerLoad(function(name){
+      if(AV)return AV.by_team[IC.normKey(name)]||null;
+      try{return window.EDCARD.cavTeam(name);}catch(_){return null;}
+    });
+  }).then(function(r){FB.p4._ictx=null;return r;});
+}
+function fbP4InjuryPlayerLoad(teamOf){
   var need={},ps=[];
   (FB.p4.up||[]).forEach(function(u){
     [[u.g.home_team,u.g.game_id],[u.g.away_team,u.g.game_id]].forEach(function(x){
-      var name=x[0],gid=x[1],t=null,q,has=false;
-      try{t=window.EDCARD.cavTeam(name);}catch(_){t=null;}
+      var name=x[0],gid=x[1],t=teamOf(name),q,has=false;
       if(!t)return;
       q=String(t.dataQuality||'NONE').toUpperCase();
       if(q==='NONE'||q==='LIMITED')return;
@@ -52888,6 +52901,13 @@ function fbP4OfficialForGame(t,gameId){
   return String(r.game_id)===String(gameId)?r:null;
 }
 function fbP4Injuries(teamName,gameId){
+  /* THE SHARED LIST (football/matchup/contract.js injuriesFor), over the
+     same merged availability view and player files the build reads. What
+     follows it is the degraded path for a load whose shared layer or
+     availability artifacts did not arrive. */
+  var IC0=window.EDInputContract,OV0=window.EDAvailabilityOverlay;
+  if(IC0&&OV0&&FB.p4&&FB.p4.art&&FB.p4.art.av_current)
+    return IC0.injuriesFor(fbP4InputCtx(),teamName,gameId,{AV_OVERLAY:OV0});
   var C=window.EDCARD;
   /* THE TEAM FROM THE SAME MERGED LAYER THE BUILD READS — the automated
      read, the operator corrections and the ingested conference reports
@@ -53194,8 +53214,10 @@ function fbP4AvailabilityView(){
    football/matchup/inputs.js load() gives the build, read off the board */
 function fbP4InputCtx(){
   var S=FB.p4,A=S.art||{},C=window.EDInputContract,P=window.EDCfbP4Params;
+  var pqTeams=(FB.pq&&FB.pq.teams)||{};
   var key=[S.loadedAt,A.at,S.rosterAsOf,S.talent&&S.talent.as_of,!!(FB.starters&&FB.starters.data),
-    !!(FB.qbEpa&&FB.qbEpa.data),!!(FB.persistence&&FB.persistence.data),S.weatherN||0].join('|');
+    !!(FB.qbEpa&&FB.qbEpa.data),!!(FB.persistence&&FB.persistence.data),S.weatherN||0,
+    Object.keys(pqTeams).filter(function(k){return pqTeams[k];}).length].join('|');
   if(S._ictx&&S._ictx.key===key)return S._ictx.v;
   var mv=fbP4Venues(),av=fbP4AvailabilityView();
   /* the recruiting composite's one bundle side effect, as the build applies it */
@@ -53208,6 +53230,13 @@ function fbP4InputCtx(){
   var epaSeason=ix?ix.season:(epaArt?epaArt.season:null);
   if(epaArt&&epaSeason!=null&&+epaSeason!==+S.season)epaArt=null;
   var fresh=null;try{fresh=(window.EDFbsEpa&&window.EDFbsEpa.freshness&&ix)?window.EDFbsEpa.freshness(ix,Date.now()):null;}catch(_){fresh=null;}
+  /* the player files the injury join reads (football/players/teams), as the
+     build indexes them — keyed by the build's team key */
+  var pdet={};
+  if(C)Object.keys(pqTeams).forEach(function(k){
+    var d=pqTeams[k],idx=d?C.playerDetailsFrom(d):null,tk=d?C.normKey(d.key||d.team||k):null;
+    if(idx&&tk)pdet[tk]=idx;
+  });
   var v={
     season:S.season,params:P,
     venues:mv.venues,venue_supplement:mv.supplement,venue_resolved:mv.resolved,
@@ -53216,6 +53245,7 @@ function fbP4InputCtx(){
     rosters:S.roster||{},roster_as_of:S.rosterAsOf||null,roster_note:S.rosterContractNote||S.rosterNote||null,
     roster_source:S.rosterSource||null,roster_quality:S.talent||null,
     availability_by_team:av.by_team,availability_as_of:av.as_of,availability_systematic:av.systematic,
+    player_details_by_team:pdet,
     starters:(FB.starters&&FB.starters.data)||null,
     fbs_epa:epaArt||null,fbs_epa_freshness:fresh,
     team_talent:tt,persistence:(FB.persistence&&FB.persistence.data)||null,
@@ -53233,6 +53263,7 @@ function fbP4InputCtx(){
    the board's own three joins, each keyed as the build keys it */
 function fbP4InputDeps(){
   return {POLICY:window.EDAvailabilityPolicy,QBC:window.EDQbContext,EPAMOD:window.EDFbsEpa,
+    /* the shared list whenever the availability layer loaded (fbP4Injuries) */
     injuriesFor:function(ctx,name,gid){return fbP4Injuries(name,gid);},
     availabilityTeam:function(ctx,name){return ctx.availability_by_team[window.EDInputContract.normKey(name)]||null;},
     schedCtx:function(si,g,side){return fbP4SchedCtx(g,side);}};

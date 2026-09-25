@@ -232,6 +232,113 @@ function ingest(o) {
   return base;
 }
 
+/* A PUBLISHED LISTING, already structured (football/availability/hdi.js):
+   every player the school listed, each with a status. Nothing is extracted
+   from text, so nothing is quarantined for looking like prose; what is
+   still checked is what ingest() checks — a filing time the conference
+   supplied and not in the future, a published policy, a vocabulary the
+   listing itself declares — and each name is matched to the current roster
+   for its id (a listed player the roster does not carry keeps his row: the
+   conference, not the roster sync, is the authority on who is listed).
+
+   o = { conference, team, roster, game_id, kickoff, source_url, published_at,
+         retrieved_at, listed: [hdi.readEntry(...).teams[i].listed],
+         vocabulary, report_type, report_id, platform, home_conference,
+         away_conference, now }                                            */
+function fromListing(o) {
+  o = o || {};
+  const pol = POLICY.forConference(o.conference);
+  const now = o.now || Date.now();
+  const applicability = POLICY.forGame({
+    home_conference: o.home_conference || o.conference, away_conference: o.away_conference || o.conference,
+    is_conference_game: o.is_conference_game !== false, kickoff: o.kickoff
+  }, 'home', now);
+  const base = {
+    schema: SCHEMA, version: 1,
+    conference: pol ? pol.name : (o.conference || null), conference_id: pol ? pol.id : null,
+    team: o.team || null, game_id: o.game_id == null ? null : String(o.game_id), kickoff: o.kickoff || null,
+    source_url: o.source_url || null,
+    published_at: o.published_at || null,
+    retrieved_at: o.retrieved_at || new Date(now).toISOString(),
+    scope: pol ? pol.applies_to : null,
+    comprehensive: POLICY.silenceMeansAvailable(pol),
+    vocabulary: pol ? (pol.statuses || []) : [],
+    applicability: { state: applicability.state, why: applicability.why },
+    format: 'published-listing', platform: o.platform || null,
+    report_type: o.report_type || null, report_id: o.report_id == null ? null : String(o.report_id)
+  };
+  const fail = why => Object.assign(base, { ok: false, rows: [], unparsed: [], why });
+  const pub = o.published_at ? Date.parse(o.published_at) : NaN;
+  if (!o.published_at || !isFinite(pub)) {
+    return fail('the published entry carries no filing time EdgeDesk can read, so it cannot be aged against its '
+      + 'deadline or ordered against another filing');
+  }
+  if (pub > now + 3600000) return fail('the entry is stamped ' + o.published_at + ', which is in the future');
+  if (pol && pol.state !== 'PUBLISHED') {
+    return fail('no published availability policy is registered for ' + (o.conference || 'this conference'));
+  }
+  const listed = o.listed || [];
+  if (!listed.length) return fail('the published entry lists nobody at all for ' + (o.team || 'this team')
+    + ', which is a missing listing, not a clean one');
+
+  const byNorm = {};
+  (o.roster || []).forEach(p => { const k = A.normName(p.name); if (k) (byNorm[k] = byNorm[k] || []).push(p); });
+  const declared = (o.vocabulary || []).map(v => String(v).trim().toLowerCase());
+  const rows = [], unparsed = [];
+  listed.forEach(l => {
+    if (!l.known) {
+      unparsed.push({ player: l.player_name, line: l.raw_text,
+        why: 'the status "' + l.status_raw + '" is not one EdgeDesk maps, so it is quarantined rather than guessed' });
+      return;
+    }
+    if (declared.length && l.status !== 'EXEMPT' && declared.indexOf(String(l.status_raw).trim().toLowerCase()) < 0) {
+      unparsed.push({ player: l.player_name, line: l.raw_text,
+        why: 'the status is not in the vocabulary this listing declares (' + o.vocabulary.join('/') + ')' });
+      return;
+    }
+    if (l.status === 'AVAILABLE' || l.status === 'EXEMPT') return;
+    const hits = byNorm[A.normName(l.player_name)] || [];
+    const p = hits.length === 1 ? hits[0] : null;
+    rows.push({
+      player_name: p ? p.name : l.player_name, player_id: p ? (p.player_id || p.espn_id || null) : null,
+      position: l.position || (p && p.position) || null, jersey: l.jersey || (p && p.jersey) || null,
+      status: l.status, practice_status: null, body_part: null, raw_text: l.raw_text,
+      on_roster: !!p
+    });
+  });
+  base.lines_read = listed.length;
+  base.listed_n = listed.length;
+  base.rows = rows;
+  base.unparsed = unparsed;
+  base.ok = true;
+  base.names_nobody = rows.length === 0;
+  /* EVERY PLAYER LISTED, NONE DESIGNATED, NOTHING QUARANTINED: an explicit
+     statement that the whole listed roster is available, which is what
+     overlay.js corroborate() accepts as a report of no absences */
+  base.explicit_none = rows.length === 0 && unparsed.length === 0;
+  base.silence_means_available = base.comprehensive && base.explicit_none;
+  base.why = rows.length
+    ? rows.length + ' player(s) designated on the published listing (' + (o.report_type || 'report') + ')'
+    : (base.explicit_none
+      ? 'the published listing marks all ' + listed.length + ' listed players available'
+      : 'the listing designates nobody, but ' + unparsed.length + ' status(es) were quarantined, so it is not read as whole');
+  return base;
+}
+
+/* WHEN WAS IT FILED? A server header can answer that for a FILE and never
+   for a PAGE. A PDF's Last-Modified is when the conference uploaded it. A
+   CMS page's Last-Modified is when its cache was last rebuilt — minutes
+   before the request, every time — so dating a web page from it made every
+   read "published" at the moment EdgeDesk happened to ask, which is exactly
+   the dating this file refuses. A web page's filing time has to come from
+   the page itself, supplied by the parser that read it. */
+function publishedFromHeaders(lastModified, contentType, body) {
+  const ct = String(contentType || '').toLowerCase();
+  const isPdf = ct.indexOf('pdf') >= 0
+    || (Buffer.isBuffer(body) && body.slice(0, 5).toString('latin1') === '%PDF-');
+  return isPdf ? (lastModified || null) : null;
+}
+
 /* TWO REPORTS, ONE PLAYER, ONE GAME. The later filing wins and the earlier one
    is KEPT beside it: a conference that moves a player from questionable to out
    on the morning of a game has told you something, and overwriting the first
@@ -299,7 +406,7 @@ function compactReport(r, file) {
     published_at: r.published_at || null, retrieved_at: r.retrieved_at || null,
     scope: r.scope || null, comprehensive: !!r.comprehensive, vocabulary: r.vocabulary || [],
     rows: r.rows || [], unparsed_n: (r.unparsed || []).length,
-    silence_means_available: !!r.silence_means_available };
+    silence_means_available: !!r.silence_means_available, explicit_none: r.explicit_none === true };
 }
 /* every ingested report in `dir`, in file-name order */
 function readAll(dir) {
@@ -330,5 +437,5 @@ function writeBundle(dir, dest) {
   return true;
 }
 
-module.exports = { ingest, reconcile, toLines, rowsFrom, stripHtml, DESIGNATIONS, SCHEMA,
+module.exports = { ingest, fromListing, reconcile, toLines, rowsFrom, stripHtml, DESIGNATIONS, SCHEMA, publishedFromHeaders,
   BUNDLE_SCHEMA, BUNDLE_FILE, compactReport, readAll, bundle, writeBundle };

@@ -17,8 +17,8 @@
 
    WHAT IT WILL NOT DO. It will not treat a page it could not read as a report
    naming nobody, it will not retry a fixture whose report is not due, and it
-   will not write a report without a publication time — the conference's own,
-   or the Last-Modified header, and nothing else.
+   will not write a report without a publication time — the conference's own
+   filing time, or a PDF's Last-Modified header, and nothing else.
 
      node football/availability/sync_reports.js [--season 2026] [--limit N]
           [--dry-run] [--now ISO]
@@ -31,7 +31,10 @@ const HERE = __dirname;
 const ROOT = path.join(HERE, '..', '..');
 const POLICY = require(path.join(HERE, 'policy.js'));
 const R = require(path.join(HERE, 'reports.js'));
+const OVERLAY = require(path.join(HERE, 'overlay.js'));
 const ING = require(path.join(HERE, 'ingest_report.js'));
+const HDI = require(path.join(HERE, 'hdi.js'));
+const FBS = require(path.join(ROOT, 'football', 'fbs', 'fbs.js'));
 
 function arg(name, fb) {
   const i = process.argv.indexOf('--' + name);
@@ -68,16 +71,81 @@ async function main() {
   console.error('[reports] ' + wanted.length + ' fixture-side(s) have a required report inside its filing window');
   if (!wanted.length) return 0;
 
+  const outDir = path.join(HERE, 'reports');
+  fs.mkdirSync(outDir, { recursive: true });
+  let ok = 0, failed = 0, skipped = 0;
+
+  function failedRead(w, url, why) {
+    const pol = POLICY.forConference(w.conference);
+    return { schema: R.SCHEMA, version: 1, conference: pol ? pol.name : w.conference,
+      conference_id: pol ? pol.id : null, team: w.team, game_id: w.game_id, kickoff: w.kickoff,
+      source_url: url, published_at: null, retrieved_at: new Date(now).toISOString(),
+      comprehensive: POLICY.silenceMeansAvailable(pol),
+      ok: false, rows: [], unparsed: [], why: why };
+  }
+  /* both sides of every fixture on a document are read first and written
+     together: whether a side's silence is a report of no absences depends on
+     what the same document said about the other side (overlay.js
+     corroborate) */
+  function judgeAndWrite(pending) {
+    const judged = OVERLAY.corroborate(pending.map(p => p.out));
+    pending.forEach((p, i) => {
+      const out = judged[i];
+      if (out.ok) ok++; else failed++;
+      const name = [season, slug(p.w.conference), slug(p.w.team), p.w.game_id].join('_') + '.json';
+      if (dry) console.error('[reports] --dry-run ' + name + ': ' + (out.ok ? 'ok' : 'FAILED') + ' — ' + out.why);
+      else fs.writeFileSync(path.join(outDir, name), JSON.stringify(out, null, 1) + '\n');
+    });
+  }
+
+  /* THE PLATFORM-PUBLISHED CONFERENCES. The SEC, ACC, Big Ten and Big 12
+     report pages embed one platform (football/availability/hdi.js), whose
+     public table carries every game's listing, structured and dated by the
+     conference. One request per conference; each fixture-side is matched to
+     its entry by both team names and the game date, and a fixture the table
+     does not carry yet is a failed read that says so. */
+  const byPlatform = new Map(), rest = [];
+  wanted.forEach(w => {
+    const pol = POLICY.forConference(w.conference);
+    if (pol && pol.platform === 'hdintelligence' && pol.platform_code) {
+      if (!byPlatform.has(pol.platform_code)) byPlatform.set(pol.platform_code, []);
+      byPlatform.get(pol.platform_code).push(w);
+    } else rest.push(w);
+  });
+  for (const [code, sides] of byPlatform) {
+    const view = HDI.publicViewUrl(code);
+    const got = await HDI.fetchPublished(code);
+    const entries = got.ok ? Object.keys(got.data).map(id => HDI.readEntry(id, got.data[id])) : [];
+    console.error('[reports] ' + code + ': ' + (got.ok ? entries.length + ' published game listing(s)' : 'refused — ' + got.why));
+    const pending = [];
+    for (const w of sides) {
+      if (ok + failed + pending.length >= limit) { skipped++; continue; }
+      const game = slate.games.find(g => String(g.game_id) === String(w.game_id)) || null;
+      const entry = got.ok && game ? entries.find(e => HDI.matchFixture(e, [game], FBS.normKey)) : null;
+      const side = entry ? HDI.sideOf(entry, w.team, FBS.normKey) : null;
+      let out;
+      if (!got.ok) out = failedRead(w, view, 'the report could not be read — ' + got.why);
+      else if (!entry || !side) {
+        out = failedRead(w, view, 'the conference’s published reports (' + entries.length + ' game listing(s)) '
+          + 'carry no entry for this fixture yet');
+      } else {
+        out = R.fromListing({ conference: w.conference, team: w.team, roster: ING.rosterFor(w.team, season) || [],
+          game_id: w.game_id, kickoff: w.kickoff, source_url: view, published_at: entry.published_at,
+          retrieved_at: new Date(now).toISOString(), listed: side.listed, vocabulary: entry.vocabulary,
+          report_type: entry.report_type, report_id: entry.report_id, platform: 'hdintelligence',
+          home_conference: w.home_conference, away_conference: w.away_conference, is_conference_game: true, now });
+      }
+      pending.push({ w, out });
+    }
+    judgeAndWrite(pending);
+  }
+
   /* ONE FETCH PER URL. A conference publishes one page for the week; asking
      for it twenty times to read twenty teams off it is twenty requests for one
      document, and every one of them is a chance to be rate-limited into a
      failure that looks like an absence. */
   const byUrl = new Map();
-  wanted.forEach(w => { if (!byUrl.has(w.url)) byUrl.set(w.url, []); byUrl.get(w.url).push(w); });
-
-  const outDir = path.join(HERE, 'reports');
-  fs.mkdirSync(outDir, { recursive: true });
-  let ok = 0, failed = 0, skipped = 0;
+  rest.forEach(w => { if (!byUrl.has(w.url)) byUrl.set(w.url, []); byUrl.get(w.url).push(w); });
   for (const [url, group] of byUrl) {
     if (ok + failed >= limit) { skipped += group.length; continue; }
     let doc = null, err = null, lastModified = null, contentType = null;
@@ -93,6 +161,11 @@ async function main() {
       }
     } catch (e) { err = String((e && e.message) || e).slice(0, 200); }
 
+    /* both sides of every fixture on this document are read first and
+       written together: whether a side's silence is a report of no absences
+       depends on what the same document said about the other side
+       (overlay.js corroborate) */
+    const pending = [];
     for (const w of group) {
       const roster = ING.rosterFor(w.team, season);
       if (!roster || !roster.length) {
@@ -100,26 +173,17 @@ async function main() {
         skipped++; continue;
       }
       let out;
-      if (err || !doc) {
-        const pol = POLICY.forConference(w.conference);
-        out = { schema: R.SCHEMA, version: 1, conference: pol ? pol.name : w.conference,
-          conference_id: pol ? pol.id : null, team: w.team, game_id: w.game_id, kickoff: w.kickoff,
-          source_url: url, published_at: null, retrieved_at: new Date(now).toISOString(),
-          comprehensive: POLICY.silenceMeansAvailable(pol),
-          ok: false, rows: [], unparsed: [],
-          why: 'the report could not be read — ' + (err || 'no document') };
-        failed++;
-      } else {
+      if (err || !doc) out = failedRead(w, url, 'the report could not be read — ' + (err || 'no document'));
+      else {
         out = R.ingest({ body: doc, content_type: contentType, conference: w.conference, team: w.team,
-          roster, source_url: url, published_at: lastModified, game_id: w.game_id, kickoff: w.kickoff,
+          roster, source_url: url, published_at: R.publishedFromHeaders(lastModified, contentType, doc),
+          game_id: w.game_id, kickoff: w.kickoff,
           home_conference: w.home_conference, away_conference: w.away_conference,
           is_conference_game: true, now });
-        if (out.ok) ok++; else failed++;
       }
-      const name = [season, slug(w.conference), slug(w.team), w.game_id].join('_') + '.json';
-      if (dry) console.error('[reports] --dry-run ' + name + ': ' + (out.ok ? 'ok' : 'FAILED') + ' — ' + out.why);
-      else fs.writeFileSync(path.join(outDir, name), JSON.stringify(out, null, 1) + '\n');
+      pending.push({ w, out });
     }
+    judgeAndWrite(pending);
   }
   console.error('[reports] ' + ok + ' ingested, ' + failed + ' recorded as failed reads, ' + skipped + ' skipped');
   /* the one-file copy the board reads (reports.js writeBundle) */

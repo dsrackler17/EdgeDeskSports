@@ -187,6 +187,7 @@ function stageNflGame(win, opts) {
    the assembly out, for a test of exactly that fallback. */
 const CONTRACT_FILES = [
   ['football', 'availability', 'policy.js'],
+  ['football', 'availability', 'overlay.js'],
   ['football', 'matchup', 'qb_context.js'],
   ['football', 'offfield', 'reader.js'],
   ['football', 'matchup', 'contract.js']

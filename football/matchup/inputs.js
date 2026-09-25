@@ -388,12 +388,7 @@ function normKey(s) {
   return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '') || null;
 }
 
-function normPersonName(s) {
-  if (s == null) return null;
-  let v = String(s).trim().toLowerCase();
-  try { v = v.normalize('NFKD').replace(/[\u0300-\u036f]/g, ''); } catch (_) {}
-  return v.replace(/[^a-z0-9]+/g, '') || null;
-}
+const normPersonName = CONTRACT.normPersonName;
 
 /* Build a compact individual-player index from football/players/teams/*.json.
    Availability sources rarely publish athlete ids, so the only safe bridge is
@@ -408,55 +403,16 @@ function loadPlayerDetails() {
     const d = readJson(path.join(dir, f), null);
     if (!d || !Array.isArray(d.players)) continue;
     const tk = normKey(d.key || d.team || f.replace(/\.json$/, ''));
-    if (!tk) continue;
-    const byName = {}, groups = {};
-    for (const p of d.players) {
-      if (!p || !p.n) continue;
-      const nk = normPersonName(p.n);
-      if (nk) {
-        if (!byName[nk]) byName[nk] = p;
-        else byName[nk] = null; /* ambiguous within this team: refuse the join */
-      }
-      const g = String(p.g || p.p || '').toUpperCase();
-      if (g) (groups[g] = groups[g] || []).push(p);
-    }
-    Object.keys(groups).forEach(g => groups[g].sort((a, b) =>
-      (isNum(b.e) ? b.e : -Infinity) - (isNum(a.e) ? a.e : -Infinity)
-      || (isNum(b.share) ? b.share : -1) - (isNum(a.share) ? a.share : -1)));
-    out[tk] = { team: d.team || null, generated_at: d.generated_at || null, by_name: byName, groups };
+    /* the one index the board builds too (football/matchup/contract.js) */
+    const idx = tk ? CONTRACT.playerDetailsFrom(d) : null;
+    if (idx) out[tk] = idx;
   }
   return out;
 }
 
-function playerIdentity(ctx, teamName, playerName) {
-  const t = ctx && ctx.player_details_by_team && ctx.player_details_by_team[normKey(teamName)];
-  const nk = normPersonName(playerName);
-  if (!t || !nk || !Object.prototype.hasOwnProperty.call(t.by_name || {}, nk)) return null;
-  return t.by_name[nk] || null;
-}
+function playerIdentity(ctx, teamName, playerName) { return CONTRACT.playerIdentity(ctx, teamName, playerName); }
 
-function replacementFor(ctx, teamName, athlete, scopedAvailability) {
-  if (!athlete) return null;
-  const t = ctx && ctx.player_details_by_team && ctx.player_details_by_team[normKey(teamName)];
-  if (!t) return null;
-  const g = String(athlete.g || athlete.p || '').toUpperCase();
-  const rows = (t.groups && t.groups[g]) || [];
-  const blocked = {};
-  (scopedAvailability || []).forEach(p => {
-    const st = String(p.status || p.availability_status || '').toUpperCase();
-    if (st === 'OUT' || st === 'DOUBTFUL' || st === 'OUT_FIRST_HALF') {
-      const k = normPersonName(p.player_name || p.name);
-      if (k) blocked[k] = true;
-    }
-  });
-  for (const p of rows) {
-    if (!p || String(p.id || '') === String(athlete.id || '')) continue;
-    if (blocked[normPersonName(p.n)]) continue;
-    if (!isNum(p.e)) continue;
-    return p;
-  }
-  return null;
-}
+function replacementFor(ctx, teamName, athlete, scoped) { return CONTRACT.replacementFor(ctx, teamName, athlete, scoped); }
 
 /* --------------------------------------------------------------- injuries */
 /* THE SAME CONTRACT THE TERMINAL USES, and the same distinction it protects:
@@ -464,99 +420,16 @@ function replacementFor(ctx, teamName, athlete, scopedAvailability) {
    injury uncertainty); a team it DID read and found nobody on returns [] (a
    real report saying everybody is available). Collapsing those two was never
    an option and is not one here. */
-const AVAIL_TO_ENGINE = { OUT: 'out', DOUBTFUL: 'doubtful', QUESTIONABLE: 'questionable',
-  GAME_TIME_DECISION: 'questionable', DAY_TO_DAY: 'questionable',
-  /* The pricing engine has no half-game designation. QUESTIONABLE is its
-     measured 0.50 status weight, so OUT_FIRST_HALF maps there: exactly half
-     the full-OUT status effect instead of disappearing or becoming four
-     quarters of absence. */
-  OUT_FIRST_HALF: 'questionable',
-  PROBABLE: 'probable', LIMITED: 'probable' };
+const AVAIL_TO_ENGINE = CONTRACT.AVAIL_TO_ENGINE;
 
 const officialReportForGame = CONTRACT.officialReportForGame;
 
+/* THE ENGINE'S INJURY LIST, from the one definition the board also loads
+   (football/matchup/contract.js injuriesFor): the grade gate, the fixture
+   scoping and the player-layer identity join that decides whether a listed
+   player is the starter the trained absence coefficient prices. */
 function injuriesFor(ctx, teamName, gameId) {
-  const t = ctx.availability_by_team[normKey(teamName)];
-  if (!t) return null;
-  /* THE GATE THIS FUNCTION WAS MISSING, and the reason football/fbs/slate.json
-     published a higher completeness than the board on screen for the same game
-     out of the same files.
-
-     The availability layer grades its own read: STRONG and PARTIAL mean
-     sources answered, LIMITED means EdgeDesk asked and got nothing usable
-     back, NONE means it could not ask. Returning [] for a LIMITED team hands
-     the engine "a report saying everybody is available" with confidence 0.6 —
-     and in the current dataset that statement would be made about all 138 FBS
-     programmes at once, on the strength of two sources returning 403/404 and a
-     third answering with an empty list. That is not a clean injury report. It
-     is no injury report, and the distinction this module's own comment calls
-     non-negotiable is only protected if the QUALITY of the read is honoured
-     and not just its presence.
-
-     So the same gate the terminal applies is applied here. It makes the
-     published completeness number smaller and makes it true, and it makes the
-     offline artifact agree with the screen instead of contradicting it. */
-  /* The grade vocabulary is the overlay's, not a copy: OFFICIAL, STRONG and
-     PARTIAL are reads that reached a report; LIMITED and NONE are not. */
-  const q = AV_OVERLAY.normGrade(t.dataQuality || t.data_quality);
-  if (!AV_OVERLAY.isGraded(q)) return null;
-
-  /* A conference filing is evidence about ONE fixture. Historical reports stay
-     on disk for audit/backtest purposes, so the consumer must scope them here.
-     Unscoped rows are the general automated/media evidence layer and may carry
-     forward while fresh; a row that names a game may not. */
-  const official = officialReportForGame(t, gameId);
-  const scoped = (t.players || []).filter(p =>
-    p.game_id == null || gameId == null || String(p.game_id) === String(gameId));
-  const out = [];
-  scoped.forEach(p => {
-    const st = AVAIL_TO_ENGINE[String(p.status || p.availability_status || '').toUpperCase()];
-    if (!st) return;
-    const playerName = p.player_name || p.name || null;
-    const athlete = playerIdentity(ctx, teamName, playerName);
-    const replacement = athlete ? replacementFor(ctx, teamName, athlete, scoped) : null;
-    const role = athlete && athlete.role != null ? athlete.role : p.depth_role;
-    const share = athlete && isNum(athlete.share) ? athlete.share : null;
-    /* Player quality is still research-only. Keep the resolved replacement
-       and his rating for audit/explanation, but do NOT feed that unpromoted
-       rating into the priced replacement_quality field. The engine therefore
-       retains its trained/default neutral replacement assumption until this
-       layer clears walk-forward validation. */
-    const replQualityResearch = replacement && isNum(replacement.e)
-      ? Math.max(0, Math.min(1, replacement.e / 100)) : null;
-    out.push({
-      player: playerName,
-      athlete_id: athlete ? String(athlete.id) : null,
-      identity_basis: athlete ? 'unique team/name -> player-layer athlete_id' : null,
-      identity_confidence: athlete && isNum(athlete.cf) ? athlete.cf : null,
-      player_rating: athlete && isNum(athlete.e) ? athlete.e : null,
-      position: (athlete && (athlete.p || athlete.g)) || p.position || null,
-      starter: role == null ? null : /(^|[^0-9])1($|[^0-9])|starter|^qb1|^rb1|^wr1|^lt$|^rt$/i.test(String(role)),
-      snap_share: share,
-      severity: null,
-      status: st,
-      replacement_quality: null,
-      replacement_quality_research: replQualityResearch,
-      replacement_player_id: replacement ? String(replacement.id) : null,
-      replacement_player: replacement ? replacement.n : null,
-      replacement_rating: replacement && isNum(replacement.e) ? replacement.e : null,
-      source: p.source_name || t.team_name || null,
-      as_of: p.observed_at || t.lastUpdated || ctx.availability_as_of
-    });
-  });
-  if (out.length) return out;
-
-  /* An empty array means a real clean report to the engine. Grant that meaning
-     only to a COMPREHENSIVE official filing for THIS game. A selected report
-     naming nobody, or an OFFICIAL grade inherited from last week's filing, is
-     still unknown for the mean and returns null. */
-  if (official && official.comprehensive) return [];
-
-  /* General unscoped evidence can still be a graded read that simply carries
-     no priced designation. Preserve the pre-existing contract for that case,
-     but never let an old fixture-scoped row create the empty array. */
-  if (scoped.some(p => p.game_id == null)) return out;
-  return null;
+  return CONTRACT.injuriesFor(ctx, teamName, gameId, { AV_OVERLAY });
 }
 
 /* --------------------------------------------------- schedule stress, offline */

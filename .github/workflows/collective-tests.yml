@@ -537,6 +537,8 @@ jobs:
       # request or a roster listing never becomes "everyone is available".
       - name: An unread availability report is never read as good news
         run: node football/availability/reports.test.js
+      - name: Conference availability listings (HD Intelligence)
+        run: node football/availability/hdi.test.js
 
       # THE STARTER CONTEXT. Same defect as the confidence layer above, one
       # directory over: the suite existed, package.json ran it, and the only

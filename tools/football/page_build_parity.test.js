@@ -44,11 +44,16 @@
      the request equal except where named below; and
      the same fair spread and the same confidence.
 
-   Two request differences predate the shared contract and are PINNED here
-   rather than hidden, because each moves a priced number on one side only:
-     - the build identity-enriches an injury row from the player layer
-       (football/players/teams: athlete id, starter, snap share); the board
-       does not read that layer;
+   AND THE SAME INJURY LIST. A listed player moves the number only when the
+   player layer identifies him as the starter (football/players/teams), and
+   the board used to load that layer only for teams the automated collector
+   named — never for one only a conference report named. Both now read the
+   one join in football/matchup/contract.js; the last section lists a real
+   starting quarterback out on both sides and requires the same identified
+   list and the same moved number.
+
+   One request difference predates the shared contract and is PINNED here
+   rather than hidden, because it moves a priced number on one side only:
      - the build's schedule index keys each opponent with
        football/matchup/inputs.js normKey, which drops an accent ("San José
        State" -> sanjosstate) while every rating is keyed by the engine's,
@@ -119,7 +124,7 @@ function waitFor(test, ms) {
   chk('the committed efficiency artifact is that season', +eff.season === SEASON, eff.season);
 
   /* ---- the page ------------------------------------------------------- */
-  const boot = M.boot({ probe: ['fbP4LoadGuarded', 'fbP4Request', 'fbP4Key', 'fbP4ContractFor'] });
+  const boot = M.boot({ probe: ['fbP4LoadGuarded', 'fbP4Request', 'fbP4Key', 'fbP4ContractFor', 'fbP4InjuryPlayerEnsure'] });
   if (boot.error) { chk('the football module boots', false, String(boot.error.message || boot.error)); return finish(); }
   const win = boot.win;
   /* the page's clock, pinned; everything else about Date is the real one */
@@ -262,9 +267,8 @@ function waitFor(test, ms) {
     { build: perGame.length, page: (S.up || []).length });
 
   const sumBad = [], rowBad = [], reqBad = [], pricedBad = [];
-  let enriched = 0, schedNull = 0, staleSeen = 0, usableWx = 0, failedWx = 0;
+  let schedNull = 0, staleSeen = 0, usableWx = 0, failedWx = 0;
   const strip = o => JSON.parse(JSON.stringify(o, (k, v) => (k === 'state' ? undefined : v)));
-  const ENRICH = /^\.teams\.(home|away)\.injuries\.\d+\.(athlete_id|identity_basis|identity_confidence|player_rating|starter|snap_share|replacement_quality_research|replacement_player_id|replacement_player|replacement_rating)$/;
   const SCHED = /^\.teams\.(home|away)\.schedule\.(prev|next)_opp_rating$/;
   perGame.forEach(({ u, build, ratingIndex }) => {
     const name = u.g.away_team + ' @ ' + u.g.home_team;
@@ -297,7 +301,6 @@ function waitFor(test, ms) {
         new Set(Object.keys(a).concat(Object.keys(b))).forEach(k => walk(a[k], b[k], at + '.' + k));
         return;
       }
-      if (ENRICH.test(at) && a == null) { known.push('enrich'); return; }
       if (SCHED.test(at) && b == null) {
         /* the same fixture, keyed by each side's own normaliser: the build
            found no rating because its key for the opponent is not the key
@@ -314,15 +317,13 @@ function waitFor(test, ms) {
       }
       reqBad.push({ game: name, at, page: JSON.stringify(a).slice(0, 120), build: JSON.stringify(b).slice(0, 120) });
     })(A1, B1, '');
-    if (known.indexOf('enrich') >= 0) enriched++;
     if (known.indexOf('sched') >= 0) schedNull++;
 
-    /* the number and the confidence, with those two pinned differences
-       reconciled so that what is compared is the shared assembly alone */
+    /* the number and the confidence, with the pinned difference reconciled
+       so that what is compared is the shared assembly alone */
     const same = JSON.parse(JSON.stringify(pr, (k, v) => (k === 'state' ? undefined : v)));
     same.state = S.state;
     ['home', 'away'].forEach(side => {
-      same.teams[side].injuries = build.baseline.teams[side].injuries;
       same.teams[side].schedule = build.baseline.teams[side].schedule;
     });
     const a = E.projectGame(same), b = E.projectGame(build.baseline);
@@ -340,8 +341,8 @@ function waitFor(test, ms) {
     usableWx >= 3 && staleSeen >= 1 && failedWx >= 1, { usableWx, staleSeen, failedWx });
   chk('the request differs from the build’s only where this suite names it', reqBad.length === 0,
     { differ: reqBad.length, first: reqBad.slice(0, 4) });
-  console.log('       (pinned, pre-existing: ' + enriched + ' game(s) with a build-only injury identity join, '
-    + schedNull + ' with a build-only null schedule rating from an accent-dropping key)');
+  console.log('       (pinned, pre-existing: ' + schedNull + ' game(s) with a build-only null schedule rating from an '
+    + 'accent-dropping key)');
   chk('on the same assembly, the same fair spread and the same confidence on every game', pricedBad.length === 0,
     { differ: pricedBad.length, first: pricedBad.slice(0, 3) });
 
@@ -351,6 +352,60 @@ function waitFor(test, ms) {
   chk('the shared contract is the build’s 24-plus rows, not the board’s former 17',
     any && win.__FBTEST.fbP4ContractFor(any.u).rows.length === any.build.contract.length && any.build.contract.length > 17,
     any && any.build.contract.length);
+
+  /* ==== THE SAME INJURY LIST ============================================ */
+  console.log('\n== the injury join: a starting quarterback listed out, on both sides ==');
+  const C = win.EDInputContract;
+  /* a fixture whose home side has a quarterback the player layer marks as
+     the starter */
+  let pick = null;
+  for (const g of perGame) {
+    const tk = C.normKey(g.u.g.home_team);
+    const det = ctx.player_details_by_team[tk];
+    const qb = det && (det.groups.QB || []).find(p => /starter/i.test(String(p.role)) && det.by_name[C.normPersonName(p.n)] === p);
+    if (qb) { pick = { g, qb }; break; }
+  }
+  chk('a fixture with an identified starting quarterback exists', !!pick);
+  if (pick) {
+    const { g, qb } = pick;
+    const name = g.u.g.home_team, gid = String(g.u.g.game_id);
+    /* one conference filing for this fixture, as the overlay merges it */
+    const filed = () => ({ team_name: name, team_display: name, dataQuality: 'OFFICIAL', lastUpdated: null,
+      players: [{ player_name: qb.n, name: qb.n, status: 'OUT', game_id: gid, source_name: 'staged availability report',
+        observed_at: new Date(NOW - 3600e3).toISOString() }],
+      official_report: { ok: true, game_id: gid, comprehensive: true, report_of_no_absences: false } });
+    ctx.availability_by_team[IN.normKey(name)] = filed();
+    const view = win.__FBTEST && S._av && S._av.v;
+    chk('the board holds its merged availability view', !!view);
+    view.by_team[C.normKey(name)] = filed();
+    /* the board decides for itself which player files to load, from that view */
+    delete (win.FB.pq.teams || {})[win.__FBTEST.fbP4Key(name)];
+    await win.__FBTEST.fbP4InjuryPlayerEnsure();
+    chk('the board loaded the named team’s player file because the filing named someone on it',
+      !!(win.FB.pq.teams || {})[win.__FBTEST.fbP4Key(name)]);
+    S._ictx = null; g.u._asm = null; g.u._contract = null;
+    Date.now = () => NOW;
+    let buildReq;
+    try { buildReq = IN.buildRequest(ctx, { game: g.row, meta: g.u.meta, state: S.state, schedule_index: si, now: NOW }); }
+    finally { Date.now = realNow; }
+    const pageReq = win.__FBTEST.fbP4Request(g.u, { noMarket: true });
+    const bi = buildReq.baseline.teams.home.injuries, pi = pageReq.teams.home.injuries;
+    chk('the board’s injury list is the build’s, field for field', JSON.stringify(pi) === JSON.stringify(bi),
+      { page: pi, build: bi });
+    chk('and it identifies the quarterback as the starter, with his snap share',
+      pi && pi[0] && pi[0].starter === true && pi[0].athlete_id === String(qb.id) && pi[0].snap_share === qb.share, pi && pi[0]);
+    const clear = JSON.parse(JSON.stringify(pageReq, (k, v) => (k === 'state' ? undefined : v)));
+    clear.state = S.state; clear.teams.home.injuries = null;
+    const withOut = JSON.parse(JSON.stringify(pageReq, (k, v) => (k === 'state' ? undefined : v)));
+    withOut.state = S.state; withOut.teams.home.schedule = buildReq.baseline.teams.home.schedule;
+    withOut.teams.away.schedule = buildReq.baseline.teams.away.schedule;
+    const a = E.projectGame(withOut), b = E.projectGame(buildReq.baseline), c = E.projectGame(clear);
+    chk('both price the same number with him out', a.status === 'PREDICTED' && Math.abs(a.model.fair_spread - b.model.fair_spread) < 1e-9,
+      { page: a.model && a.model.fair_spread, build: b.model && b.model.fair_spread });
+    const moved = a.model.fair_spread - c.model.fair_spread;
+    chk('and the absence moves it by the trained primary-quarterback effect', Math.abs(moved) > 2, moved);
+    console.log('       (' + qb.n + ', ' + name + ': ' + (Math.round(moved * 100) / 100) + ' pts)');
+  }
 
   try { fs.rmSync(CACHE, { recursive: true, force: true }); } catch (_) {}
   finish();

@@ -44,7 +44,8 @@
              POLICY  football/availability/policy.js
              QBC     football/matchup/qb_context.js
              EPAMOD  football/fbs_epa/fbs_epa.js (only when ctx.fbs_epa)
-             injuriesFor(ctx, teamName, gameId)  the engine's injury list
+             injuriesFor(ctx, teamName, gameId)  the engine's injury list —
+                   both callers pass this file's own injuriesFor
              availabilityTeam(ctx, teamName)     the availability record
              schedCtx(si, game, side)            the schedule context
    It reads no file, no clock but o.now, and no page.
@@ -112,6 +113,154 @@
     var r = team && team.official_report;
     if (!r || !r.ok || r.game_id == null || gameId == null) return null;
     return String(r.game_id) === String(gameId) ? r : null;
+  }
+
+  /* ==== WHO IS OUT, AND WHO THEY ARE ==================================
+     The availability layer names a player; the engine prices a player. The
+     bridge between them — which athlete this is, whether he starts, how
+     much of the unit he plays, who replaces him — is the one thing about an
+     injury that moves a number: context.injuryImpact prices a trained
+     position's absence only for a row flagged `starter`, and scales its
+     uncertainty by `snap_share`. The build had this bridge and the board had
+     a copy that was never handed the teams a conference report named, so a
+     starting quarterback listed out moved the published number and not the
+     board's. It is here once, for both.
+
+     ctx.player_details_by_team  { teamKey: playerDetailsFrom(teamFile) }
+     ctx.availability_by_team    the merged availability view, by team key
+     deps.AV_OVERLAY             football/availability/overlay.js (grades) */
+  function normPersonName(s) {
+    if (s == null) return null;
+    var v = String(s).trim().toLowerCase();
+    try { v = v.normalize('NFKD').replace(/[̀-ͯ]/g, ''); } catch (_) {}
+    return v.replace(/[^a-z0-9]+/g, '') || null;
+  }
+
+  var AVAIL_TO_ENGINE = { OUT: 'out', DOUBTFUL: 'doubtful', QUESTIONABLE: 'questionable',
+    GAME_TIME_DECISION: 'questionable', DAY_TO_DAY: 'questionable',
+    /* The pricing engine has no half-game designation. QUESTIONABLE is its
+       measured 0.50 status weight, so OUT_FIRST_HALF maps there: exactly half
+       the full-OUT status effect instead of disappearing or becoming four
+       quarters of absence. */
+    OUT_FIRST_HALF: 'questionable',
+    PROBABLE: 'probable', LIMITED: 'probable' };
+
+  /* One team's player file (football/players/teams/<key>.json) as the join
+     reads it. Availability sources rarely publish athlete ids, so the only
+     safe bridge is a UNIQUE name inside the already-known team: a name two
+     players share resolves to nothing, because a wrong athlete is worse than
+     an unknown one. */
+  function playerDetailsFrom(d) {
+    if (!d || !d.players || !d.players.length) return null;
+    var byName = {}, groups = {};
+    d.players.forEach(function (p) {
+      if (!p || !p.n) return;
+      var k = normPersonName(p.n);
+      if (k) byName[k] = Object.prototype.hasOwnProperty.call(byName, k) ? null : p;
+      var g = String(p.g || p.p || '').toUpperCase();
+      if (g) (groups[g] = groups[g] || []).push(p);
+    });
+    Object.keys(groups).forEach(function (g) {
+      groups[g].sort(function (a, b) {
+        return (isNum(b.e) ? b.e : -Infinity) - (isNum(a.e) ? a.e : -Infinity)
+          || (isNum(b.share) ? b.share : -1) - (isNum(a.share) ? a.share : -1);
+      });
+    });
+    return { team: d.team || null, generated_at: d.generated_at || null, by_name: byName, groups: groups };
+  }
+
+  function playerIdentity(ctx, teamName, playerName) {
+    var t = ctx && ctx.player_details_by_team && ctx.player_details_by_team[normKey(teamName)];
+    var k = normPersonName(playerName);
+    if (!t || !k || !Object.prototype.hasOwnProperty.call(t.by_name || {}, k)) return null;
+    return t.by_name[k] || null;
+  }
+
+  /* the next man up at the same position group, skipping anyone the same
+     report has out or doubtful */
+  function replacementFor(ctx, teamName, athlete, scoped) {
+    if (!athlete) return null;
+    var t = ctx && ctx.player_details_by_team && ctx.player_details_by_team[normKey(teamName)];
+    if (!t) return null;
+    var g = String(athlete.g || athlete.p || '').toUpperCase();
+    var rows = (t.groups && t.groups[g]) || [];
+    var blocked = {};
+    (scoped || []).forEach(function (p) {
+      var st = String(p.status || p.availability_status || '').toUpperCase();
+      if (st === 'OUT' || st === 'DOUBTFUL' || st === 'OUT_FIRST_HALF') {
+        var k = normPersonName(p.player_name || p.name);
+        if (k) blocked[k] = true;
+      }
+    });
+    for (var i = 0; i < rows.length; i++) {
+      var p = rows[i];
+      if (!p || String(p.id || '') === String(athlete.id || '')) continue;
+      if (blocked[normPersonName(p.n)]) continue;
+      if (!isNum(p.e)) continue;
+      return p;
+    }
+    return null;
+  }
+
+  /* THE ENGINE'S INJURY LIST for one side of one fixture.
+     NULL WHEN NOBODY KNOWS, [] ONLY FOR A KNOWN CLEAN REPORT: a team
+     EdgeDesk could not read returns null (maximum injury uncertainty); a
+     graded read returns its rows; an empty list — "everybody is available" —
+     is granted only by a comprehensive official filing for THIS game. */
+  function injuriesFor(ctx, teamName, gameId, deps) {
+    var AV = deps && deps.AV_OVERLAY;
+    var t = ctx && ctx.availability_by_team ? ctx.availability_by_team[normKey(teamName)] : null;
+    if (!t || !AV) return null;
+    /* LIMITED and NONE are not reads that reached a report; handing the
+       engine [] for them told it 138 programmes were healthy on the strength
+       of refusals */
+    if (!AV.isGraded(AV.normGrade(t.dataQuality || t.data_quality))) return null;
+    /* a conference filing is evidence about ONE fixture: historical rows stay
+       on disk for audit and are scoped out here */
+    var official = officialReportForGame(t, gameId);
+    var scoped = (t.players || []).filter(function (p) {
+      return p.game_id == null || gameId == null || String(p.game_id) === String(gameId);
+    });
+    var out = [];
+    scoped.forEach(function (p) {
+      var st = AVAIL_TO_ENGINE[String(p.status || p.availability_status || '').toUpperCase()];
+      if (!st) return;
+      var playerName = p.player_name || p.name || null;
+      var athlete = playerIdentity(ctx, teamName, playerName);
+      var replacement = athlete ? replacementFor(ctx, teamName, athlete, scoped) : null;
+      var role = athlete && athlete.role != null ? athlete.role : p.depth_role;
+      /* Player quality is still research-only: the resolved replacement and
+         his rating are kept for audit and explanation, and the priced
+         replacement_quality stays null, so the engine keeps its trained
+         neutral replacement assumption until this layer clears walk-forward
+         validation. */
+      out.push({
+        player: playerName,
+        athlete_id: athlete ? String(athlete.id) : null,
+        identity_basis: athlete ? 'unique team/name -> player-layer athlete_id' : null,
+        identity_confidence: athlete && isNum(athlete.cf) ? athlete.cf : null,
+        player_rating: athlete && isNum(athlete.e) ? athlete.e : null,
+        position: (athlete && (athlete.p || athlete.g)) || p.position || null,
+        starter: role == null ? null : /(^|[^0-9])1($|[^0-9])|starter|^qb1|^rb1|^wr1|^lt$|^rt$/i.test(String(role)),
+        snap_share: athlete && isNum(athlete.share) ? athlete.share : null,
+        severity: null,
+        status: st,
+        replacement_quality: null,
+        replacement_quality_research: replacement && isNum(replacement.e)
+          ? Math.max(0, Math.min(1, replacement.e / 100)) : null,
+        replacement_player_id: replacement ? String(replacement.id) : null,
+        replacement_player: replacement ? replacement.n : null,
+        replacement_rating: replacement && isNum(replacement.e) ? replacement.e : null,
+        source: p.source_name || t.team_name || null,
+        as_of: p.observed_at || t.lastUpdated || ctx.availability_as_of || null
+      });
+    });
+    if (out.length) return out;
+    if (official && official.comprehensive) return [];
+    /* general unscoped evidence can be a graded read carrying no priced
+       designation; an old fixture-scoped row never creates the empty list */
+    for (var i = 0; i < scoped.length; i++) if (scoped[i].game_id == null) return out;
+    return null;
   }
 
   /* WHO IS COACHING, AND SINCE WHEN, from football/coaching/continuity.json.
@@ -741,5 +890,7 @@
 
   return { STATES: STATES, row: row, summarise: summarise, officialReportForGame: officialReportForGame,
     coachingFor: coachingFor, mergeVenues: mergeVenues, assemble: assemble, request: request,
-    applyTeamTalent: applyTeamTalent, normKey: normKey };
+    applyTeamTalent: applyTeamTalent, normKey: normKey,
+    normPersonName: normPersonName, AVAIL_TO_ENGINE: AVAIL_TO_ENGINE, playerDetailsFrom: playerDetailsFrom,
+    playerIdentity: playerIdentity, replacementFor: replacementFor, injuriesFor: injuriesFor };
 });
