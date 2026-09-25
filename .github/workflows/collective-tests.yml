@@ -268,6 +268,15 @@ jobs:
       - name: The CFB research view reads the projection and never moves it
         run: node tools/football/cfb_research_view.test.js && node tools/football/cfb_research_view_ui.test.js
 
+      # THE BOARD REPRODUCES THE PUBLISHED NUMBER. The terminal's own loader
+      # and the published build's replay, over one committed input set, must
+      # price every game identically -- the research desk reads any difference
+      # between the live and published numbers as a projection moving. The
+      # board once absorbed play-level efficiency twice and drifted up to 1.6
+      # pts on the same inputs; this suite would have caught it.
+      - name: The board reproduces the published build's number
+        run: node tools/football/page_build_parity.test.js
+
       # The player quality + scheme matchup layer: the rules its ratings are
       # not allowed to break (a missing input never becoming a zero, no rating
       # ever knowing the future, a reproducible simulation, no model call

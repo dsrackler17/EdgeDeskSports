@@ -3975,7 +3975,7 @@ window.mcRefresh=function(){
      reasons, the best available line, the projection's own history), read off
      the engine's finished projection. It computes no projection; the SAME
      file is what tools/football/cfb_research_view.test.js holds to its rules. -->
-<script src="/lib/cfb_research_view.js?v=20260925a"></script>
+<script src="/lib/cfb_research_view.js?v=20260925b"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -49818,11 +49818,33 @@ function fbRawMarginText(m){
    page assembles its input, and the board row, the card and the research
    desk all read the object it returns, so they cannot disagree. Absent the
    module, every caller renders exactly what it rendered before. */
+/* WHETHER THIS LOAD PRICED FROM THE PUBLISHED BUILD'S INPUTS. The page and
+   football/fbs/build_coverage.js run the same engine over the same replay
+   and agree to 1e-9 pts when their inputs agree
+   (tools/football/page_build_parity.test.js). A load that could not read
+   one of those inputs, or had to take it from another source, prices a
+   different number for a reason that is not news about the game — so the
+   research view does not read its difference from the published number as
+   a move. Each gap is said in words. */
+function fbP4PricingParity(){
+  var S=FB.p4,gaps=[];
+  if(!S||!S.state)return {ok:false,gaps:['the board has not finished loading']};
+  if(S.schedFallback&&S.schedFallback.length)gaps.push('the '+S.schedFallback.join(', ')
+    +' schedule came from a fallback source, not the feed the published build replays');
+  var R=S.efficiencyReplay;
+  if(R&&R.error)gaps.push('the play-level efficiency the published build prices from did not load ('+R.error+')');
+  else if(!S.engineEfficiency)gaps.push('the play-level efficiency the published build prices from did not load');
+  if(R&&R.late_joined>0)gaps.push('play-level efficiency for '+R.late_joined+' game'+(R.late_joined===1?'':'s')
+    +' arrived after the replay and was joined late');
+  if(!S.state.canonicalRatingMeta)gaps.push('the canonical team rating the published build reads did not load');
+  return {ok:!gaps.length,gaps:gaps};
+}
 function fbP4ViewFor(u,p,mkt){
   var V=window.EDCfbResearchView;
   if(!V||!u||!u.g||!p)return null;
   var g=u.g;
   mkt=mkt||(FB.p4._mkt&&FB.p4._mkt[String(g.game_id)])||null;
+  var par=null;try{par=fbP4PricingParity();}catch(_){par=null;}
   var cov=null;try{cov=fbP4ContractFor(u);}catch(_){cov=null;}
   var cs=cov&&cov.summary||null;
   var quotes=null;try{quotes=fbP4QuotesFor(u);}catch(_){quotes=null;}
@@ -49832,12 +49854,13 @@ function fbP4ViewFor(u,p,mkt){
   /* a quote's freshness is judged NOW, so the view is rebuilt every five
      minutes even when nothing else about the game has changed */
   var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,
-    quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,visit?visit.t:'-',Math.floor(Date.now()/3e5)].join('|');
+    quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,visit?visit.t:'-',par?(par.ok+':'+par.gaps.length):'-',
+    Math.floor(Date.now()/3e5)].join('|');
   if(u._rv&&u._rv.p===p&&u._rv.key===key)return u._rv.v;
   var v=null;
   try{
     v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt,
-      coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,now:Date.now()},fbP4ViewCfg());
+      coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,parity:par,now:Date.now()},fbP4ViewCfg());
   }catch(_){v=null;}
   u._rv={p:p,key:key,v:v};
   return v;
@@ -49927,12 +49950,17 @@ function fbP4RecordFor(u){
    and then overwritten with what is on screen now. It lives in this browser
    only; nothing is sent anywhere, and a browser that will not store it simply
    has no visit baseline. Its own key, so it can never collide with another
-   store the way the Desk watchlist and the follow list once did. */
-var FB_P4_SEEN_KEY='ed_cfb_seen_v1';
+   store the way the Desk watchlist and the follow list once did.
+   Payload v2: a snapshot says whether its load priced from the published
+   build's inputs (q). Every v1 snapshot was taken while the board absorbed
+   play-level efficiency twice, so its numbers are not comparable with a
+   correct load's; they are dropped, not compared, and the first visit after
+   the fix measures against the last published update instead. */
+var FB_P4_SEEN_KEY='ed_cfb_seen_v1',FB_P4_SEEN_V=2;
 FB.p4seen={base:null,read:false,wroteAt:0};
 function fbP4SeenLoad(){
   try{var s=localStorage.getItem(FB_P4_SEEN_KEY),o=s?JSON.parse(s):null;
-    return (o&&o.v===1&&o.games&&typeof o.games==='object'&&isFinite(o.at))?o:null;}catch(_){return null;}
+    return (o&&o.v===FB_P4_SEEN_V&&o.games&&typeof o.games==='object'&&isFinite(o.at))?o:null;}catch(_){return null;}
 }
 function fbP4SeenBase(){
   var S=FB.p4seen;
@@ -49956,7 +49984,7 @@ function fbP4SeenWrite(rows){
     if(sn)games[r.gid]=sn;
   });
   S.wroteAt=now;
-  try{localStorage.setItem(FB_P4_SEEN_KEY,JSON.stringify({v:1,at:now,games:games}));}catch(_){}
+  try{localStorage.setItem(FB_P4_SEEN_KEY,JSON.stringify({v:FB_P4_SEEN_V,at:now,games:games}));}catch(_){}
 }
 /* the view's thresholds ARE the engine's and the board's: the research gap
    and confidence floor from the shipped params, the guard from FB_GUARD */
@@ -52078,6 +52106,13 @@ function fbP4Load(force,signal){
     fbQbEpaEnsure(cur);
     var st=E.newState();
     if(!st)throw new Error('parameters did not produce a rating state');
+    /* the games whose play-level efficiency this replay absorbs, so the late
+       join (fbP4ApplyEngineEfficiency) can never absorb one a second time */
+    var effIds={};
+    FBP4_EFF_DONE.set(st,effIds);
+    /* seasons whose schedule came from a fallback source rather than the
+       feed the published build replays (see fbP4PricingParity) */
+    S.schedFallback=[];
     /* advance the seeded state season by season, absorbing real results */
     var seasons=[],y;
     for(y=P.trained_through_season+1;y<=cur;y++)seasons.push(y);
@@ -52086,18 +52121,22 @@ function fbP4Load(force,signal){
       chain=chain.then(function(){
         E.ingest.seasonBreak(st);
         return fbP4Schedule(yy,signal).then(function(res){
-          var rows=res.rows.slice().sort(function(a,b){return String(a.start_date).localeCompare(String(b.start_date));});
+          /* THE BUILD'S ORDER, tie-break included (football/fbs/build_coverage.js
+             buildState). The opponent adjustment is sequential, so two games
+             sharing a kickoff absorbed the other way round leave a slightly
+             different state, and the published number could not be reproduced */
+          var rows=res.rows.slice().sort(function(a,b){return String(a.start_date).localeCompare(String(b.start_date))
+            ||String(a.game_id).localeCompare(String(b.game_id));});
           var n=0,inferredDiv=0;
           rows.forEach(function(r){
             if(!r.completed||r.home_points==null||r.away_points==null)return;
-            var eg=S.engineEfficiency&&S.engineEfficiency.games
-              ?S.engineEfficiency.games[String(r.game_id)]:null;
-            var hk=fbP4Key(r.home_team),ak=fbP4Key(r.away_team);
+            var ts=fbP4EffForGame(S.engineEfficiency,r,yy);
+            if(ts)effIds[String(r.game_id)]=1;
             E.ingest.absorbGame(st,{home:r.home_team,away:r.away_team,
               home_fbs:fbP4IsFbs(r.home_division,r.home_team),
               away_fbs:fbP4IsFbs(r.away_division,r.away_team),
               neutral_site:r.neutral_site,home_points:r.home_points,away_points:r.away_points,
-              team_stats:eg&&eg.teams?{home:eg.teams[hk]||null,away:eg.teams[ak]||null}:null});
+              team_stats:ts});
             if(r.division_src)inferredDiv++;
             n++;
           });
@@ -52106,6 +52145,7 @@ function fbP4Load(force,signal){
             +'was resolved against the trained team list for '+inferredDiv+' game'
             +(inferredDiv===1?'':'s')+'. A team the model has never rated is treated as '
             +'a non-FBS opponent rather than absorbed as a rated one.');
+          if(!/^cfbfastR-data schedules/.test(String(res.src||'')))S.schedFallback.push(yy);
           if(yy===cur){S.sched=res;S.schedSrc=res.src;}
           if(!n&&yy===cur)S.notes.push('No completed '+yy+' games reached the production replay yet. '
             +'The engine therefore remains on its trained prior and learned offseason carry-over; ETSR is separate '
@@ -52268,6 +52308,21 @@ var FBP4_LOAD_TIMEOUT_MS=30000;
    neutral-field team mean; this artifact owns matchup identity, OL pressure,
    pace and the information-quality statement. */
 var FBP4_EFF={data:null,error:null,at:0,_p:null};
+/* per rating state, the games whose play-level rows its replay absorbed */
+var FBP4_EFF_DONE=new WeakMap();
+/* ONE GAME'S PLAY-LEVEL ROWS, joined exactly as the published build joins
+   them (football/fbs/build_coverage.js efficiencyForGame): the artifact's own
+   schema and season, the game id, the canonical team keys, and nothing at
+   all when neither side has a row. */
+function fbP4EffForGame(D,r,season){
+  if(!D||D.schema!=='edgedesk_cfb_engine_efficiency_v1'||+D.season!==+season||!D.games||r.game_id==null)return null;
+  var g=D.games[String(r.game_id)];
+  if(!g||!g.teams)return null;
+  var hk=fbP4Key(r.home_team),ak=fbP4Key(r.away_team);
+  var h=hk?(g.teams[hk]||null):null,a=ak?(g.teams[ak]||null):null;
+  if(!h&&!a)return null;
+  return {home:h,away:a};
+}
 function fbP4EngineEfficiencyLoad(){
   var R=FBP4_EFF;
   if(R.data&&Date.now()-R.at<15*60000)return Promise.resolve(R.data);
@@ -52308,7 +52363,17 @@ function fbP4ApplyEngineEfficiency(){
     return String(a.start_date).localeCompare(String(b.start_date))
       ||String(a.game_id).localeCompare(String(b.game_id));
   });
-  var games=0,teamRows=0,missing=0;
+  /* A LATE JOIN ONLY. fbP4Load's replay now waits for this artifact and
+     absorbs each game's play-level rows together with its score, exactly as
+     the published build does (football/fbs/build_coverage.js). Absorbing
+     them here as well counted every game twice in the efficiency state: the
+     board's matchup term drifted up to 1.6 pts from the published number on
+     the same inputs, and the research desk read that drift as projections
+     "moving" since the last update. So a game the replay already absorbed is
+     only counted here, and a game the build would not absorb (no final
+     score) is not absorbed either. */
+  var done=FBP4_EFF_DONE.get(S.state)||{};
+  var games=0,teamRows=0,missing=0,late=0;
   rows.forEach(function(r){
     if(!r.completed||r.game_id==null)return;
     var eg=D.games&&D.games[String(r.game_id)];
@@ -52316,14 +52381,17 @@ function fbP4ApplyEngineEfficiency(){
     var hk=fbP4Key(r.home_team),ak=fbP4Key(r.away_team);
     var h=hk&&eg.teams[hk]||null,a=ak&&eg.teams[ak]||null;
     if(!h&&!a){missing++;return;}
-    E.ingest.absorbEfficiencyGame(S.state,{
-      home:r.home_team,away:r.away_team,
-      team_stats:{home:h,away:a}
-    });
+    if(!done[String(r.game_id)]&&r.home_points!=null&&r.away_points!=null){
+      E.ingest.absorbEfficiencyGame(S.state,{
+        home:r.home_team,away:r.away_team,
+        team_stats:{home:h,away:a}
+      });
+      done[String(r.game_id)]=1;late++;
+    }
     games++;if(h)teamRows++;if(a)teamRows++;
   });
   S.efficiencyReplay={
-    games:games,team_rows:teamRows,missing:missing,error:null,
+    games:games,team_rows:teamRows,missing:missing,error:null,late_joined:late,
     artifact_games:D.games_with_stats||0,
     artifact_team_rows:D.team_game_rows||0,
     measured_features:D.measured_features||[],
@@ -52365,6 +52433,10 @@ function fbP4LoadGuarded(force,signal){
    changes no line of it: same feeds, same engine, same slate. */
 window.fbP4Load=fbP4Load;
 window.fbP4Ensure=fbP4Ensure;
+/* and the loader the terminal itself runs — the replay, then the late
+   efficiency join and the canonical rating — so a headless build prices a
+   game exactly the way the board beside it does */
+window.fbP4LoadGuarded=fbP4LoadGuarded;
 
 /* Joins the FRESHEST real number, in this order: a live captured quote,
    the cfb.lines book consensus once the capture has gone stale (offseason
@@ -55045,6 +55117,8 @@ function fbRvWhen(iso){
 }
 function fbGxChanged(u,p){
   var v=fbP4ViewFor(u,p),W=v&&v.what_changed;
+  if(W&&!W.available&&W.comparable===false)return '<div class="gx-means mut"><b>What changed?</b>'+fbEsc(W.summary)+'</div>'
+    +'<div class="gx-foot">The board and the published build agree to the hundredth of a point when they price from the same inputs; on a load that did not, a difference is not a move.</div>';
   if(!W||!W.available)return '';
   var h='<div class="gx-means '+(W.change&&W.change.points>=0.75?'warn':'mut')+'"><b>What changed?</b>'+fbEsc(W.summary)+'</div>';
   var tl=(W.timeline||[]);
@@ -55805,17 +55879,21 @@ function fbP4DeskHTML(visible){
   }).join('');
   function n(x,one,many){return x+' '+(x===1?one:many);}
   var ch='';
+  /* games whose live number is not comparable with their baseline are
+     counted apart, with the reason, and never as moves (lib NOT COMPARED) */
+  var nc=C.not_compared?(n(C.not_compared,'game','games')+' not compared: '+C.not_compared_why.slice(0,2).join('; ')):null;
   if(C.basis==='visit'){
-    var parts=[C.projections_changed?n(C.projections_changed,'projection moved','projections moved'):'no projection moved',
+    var parts=(C.projections_changed==null?[]:[C.projections_changed?n(C.projections_changed,'projection moved','projections moved'):'no projection moved',
       C.gaps_widened?n(C.gaps_widened,'market gap widened','market gaps widened'):'no market gap widened',
-      C.into_worth?n(C.into_worth,'game moved into Worth Researching','games moved into Worth Researching'):null]
-      .concat(C.new_games?[n(C.new_games,'game new to the board','games new to the board')]:[]).filter(Boolean);
+      C.into_worth?n(C.into_worth,'game moved into Worth Researching','games moved into Worth Researching'):null])
+      .concat(C.new_games?[n(C.new_games,'game new to the board','games new to the board')]:[]).concat(nc?[nc]:[]).filter(Boolean);
     ch='<div class="rv-desk-c"><b>CHANGED SINCE YOUR LAST VISIT</b> <span class="mut">'+fbEsc(fbRvWhen(C.since_at))+' · this device</span><br>'
       +fbEsc(parts.join(' · '))+'</div>';
   }else if(C.basis==='update'){
     ch='<div class="rv-desk-c"><b>CHANGED SINCE LAST UPDATE</b> <span class="mut">latest published '+fbEsc(fbRvWhen(C.since_at))+'</span><br>'
-      +fbEsc([C.projections_changed?n(C.projections_changed,'projection has moved 0.75+ pts from its latest published number','projections have moved 0.75+ pts from their latest published numbers'):'every projection is within 0.75 pts of its latest published number',
-        C.revised_24h?n(C.revised_24h,'projection revised in the last 24 hours','projections revised in the last 24 hours'):'no projection revised in the last 24 hours'].join(' · '))+'</div>';
+      +fbEsc([C.projections_changed==null?null:(C.projections_changed?n(C.projections_changed,'projection has moved 0.75+ pts from its latest published number','projections have moved 0.75+ pts from their latest published numbers'):(C.not_compared?'every compared projection':'every projection')+' is within 0.75 pts of its latest published number'),
+        nc,
+        C.revised_24h?n(C.revised_24h,'projection revised in the last 24 hours','projections revised in the last 24 hours'):'no projection revised in the last 24 hours'].filter(Boolean).join(' · '))+'</div>';
   }
   return '<div class="rv-desk"><div class="rv-desk-h"><b>CFB RESEARCH DESK</b><span class="mut">'+D.total+' game'+(D.total===1?'':'s')
     +' shown · research, not picks</span></div>'

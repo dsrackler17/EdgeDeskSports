@@ -279,11 +279,18 @@ async function open(opts) {
   if (typeof win.fbP4Load !== 'function') {
     throw new Error('app.html does not export window.fbP4Load — the Power 4 board cannot be loaded headlessly');
   }
-  /* The P4 load ends in optional joins (rosters, book lines, weather). Any of
+  /* THE TERMINAL'S OWN LOADER when the page exports it: the replay, then the
+     efficiency late join and the canonical rating, exactly as the board runs
+     them — so an article prices a game the way the terminal and the published
+     build do (tools/football/page_build_parity.test.js), and its research
+     view can say it priced from the published inputs. The bare replay is the
+     fallback for an older page.
+     The P4 load ends in optional joins (rosters, book lines, weather). Any of
      them can be unreachable here, and the board is built to render without
      them, so the slate is awaited rather than the whole chain. */
+  const p4Loader = typeof win.fbP4LoadGuarded === 'function' ? win.fbP4LoadGuarded : win.fbP4Load;
   let p4Settled = false;
-  win.fbP4Load(false).then(() => { p4Settled = true; }, () => { p4Settled = true; });
+  p4Loader(false).then(() => { p4Settled = true; }, () => { p4Settled = true; });
   await waitFor(() => p4Settled || (win.FB.p4.up || []).length, LOAD_TIMEOUT_MS);
   if (!p4Settled) await waitFor(() => p4Settled, 15000);
   log('  Power 4 board: ' + (win.FB.p4.up || []).length + ' upcoming, season ' + win.FB.p4.season
@@ -385,4 +392,6 @@ async function open(opts) {
   };
 }
 
-module.exports = { open, installMarketSnapshot, FEEDS, CACHE_DIR, cacheNameFor, ROOT };
+module.exports = { open, installMarketSnapshot, FEEDS, CACHE_DIR, cacheNameFor, ROOT,
+  /* the stub browser, for suites that drive the page's own loaders */
+  makeFetch, installScriptLoader, installPageGlobals };
