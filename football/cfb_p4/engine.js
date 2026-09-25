@@ -2039,6 +2039,115 @@
     return ctx;
   }
 
+  /* =====================================================================
+     THE DISPLAY FAIR LINE — a presentation layer over a finished projection.
+
+     `model.fair_spread` IS the projection: full precision, and the only number
+     anything computes from — win probability, cover, the market gap, the edge
+     tier, confidence, the fingerprint, every stored record. This layer never
+     writes to it. It publishes a second number beside it, the line a reader
+     is shown, so that a near pick'em still names the side the model
+     measurably favours instead of reading "PK" or "-0.5".
+
+       |raw| >= 1      the raw number itself; renderers round it exactly as
+                       they always have
+       0 < |raw| < 1   the raw number's OWN side at a one-point floor. The
+                       sign is read off the unrounded value, so the floor can
+                       never hand the game to the other team
+       raw === 0       the first measurable separation, in this order:
+                         win probability, reliability-weighted priced
+                         components, team-strength (blended rating)
+                         differential, opponent-adjusted efficiency
+                         differential, coaching / program edge (only when a
+                         caller supplies it with positive reliability)
+                       None of them adds a point to the projection. They only
+                       decide which side the one-point floor is shown on.
+
+     `is_near_pickem` says the one point is a floor, not a projection: a
+     normalised -1 on a 0.18 margin is still a 0.18 margin to everything that
+     measures confidence, value or accuracy. */
+  var fairLine = {
+    FLOOR: 1,
+    /* below this a tiebreak input is not a measurable separation. The win
+       probability is the binding case: erf() above is only good to 1.5e-7, so
+       at a raw margin of exactly zero winProb() reads 0.5 + 5e-10 — the
+       approximation's residue, not an opinion about either team. */
+    MEASURABLE: 1e-6,
+    TIEBREAK_ORDER: ['win_probability', 'weighted_components', 'team_strength',
+      'efficiency', 'coaching_program'],
+    TIEBREAK_LABEL: {
+      projection_precision: 'the unrounded projected margin',
+      win_probability: 'the model win probability',
+      weighted_components: 'the reliability-weighted sum of the priced components',
+      team_strength: 'the blended team-strength rating differential',
+      efficiency: 'the opponent-adjusted efficiency differential',
+      coaching_program: 'the coaching / program edge'
+    },
+    /* every input is home-perspective: + favours home, - favours away */
+    tiebreak: function (inputs) {
+      inputs = inputs || {};
+      for (var i = 0; i < fairLine.TIEBREAK_ORDER.length; i++) {
+        var key = fairLine.TIEBREAK_ORDER[i], v = inputs[key];
+        if (isNum(v) && Math.abs(v) > fairLine.MEASURABLE) {
+          return { side: v > 0 ? 'home' : 'away', step: key, value: v };
+        }
+      }
+      return { side: 'home', step: 'none', value: null };
+    },
+    /* sum of points x confidence over the terms that actually priced the mean */
+    weightedComponents: function (terms) {
+      var s = 0, n = 0, i;
+      for (i = 0; i < (terms || []).length; i++) {
+        if (!avail(terms[i].m)) continue;
+        s += pts(terms[i].m) * (isNum(terms[i].m.confidence) ? terms[i].m.confidence : 0);
+        n++;
+      }
+      return n ? s : null;
+    },
+    /* net EPA per play (offence minus what the defence allows), home minus
+       away; success rate when EPA is not observed for both sides */
+    efficiencyGap: function (hProf, aProf) {
+      var pairs = [['epa_per_play', 'def_epa_per_play'], ['success_rate', 'def_success_rate']], i;
+      var he = (hProf && hProf.efficiency) || {}, ae = (aProf && aProf.efficiency) || {};
+      for (i = 0; i < pairs.length; i++) {
+        var o = pairs[i][0], d = pairs[i][1];
+        if (avail(he[o]) && avail(he[d]) && avail(ae[o]) && avail(ae[d])) {
+          return (he[o].value - he[d].value) - (ae[o].value - ae[d].value);
+        }
+      }
+      return null;
+    },
+    /* `teams.<side>.coaching_program = { rating, reliability }`, as the
+       rankings build publishes it. Absent or zero-reliability on either side
+       is not an edge. */
+    coachingGap: function (h, a) {
+      if (!h || !a || !isNum(h.rating) || !isNum(a.rating)) return null;
+      if (!(h.reliability > 0) || !(a.reliability > 0)) return null;
+      return h.rating - a.rating;
+    },
+    normalize: function (raw, tiebreakInputs) {
+      if (!isNum(raw)) return null;
+      var F = fairLine.FLOOR;
+      if (Math.abs(raw) >= F) {
+        return { display_fair_spread: raw, display_side: raw > 0 ? 'home' : 'away', is_near_pickem: false,
+          basis: { rule: 'projection', step: null, value: null,
+            why: 'the projected margin is at least ' + F + ' point, so the fair line is the projection itself' } };
+      }
+      var tb = raw !== 0
+        ? { side: raw > 0 ? 'home' : 'away', step: 'projection_precision', value: raw }
+        : fairLine.tiebreak(tiebreakInputs);
+      var why = tb.step === 'none'
+        ? 'the projection is an exact tie and no measured input separates the teams, so the home side is shown by convention'
+        : (raw !== 0
+          ? 'the projection favours the ' + tb.side + ' side by less than ' + F + ' point'
+          : 'the projection is an exact tie; ' + fairLine.TIEBREAK_LABEL[tb.step] + ' is the first input that separates the teams, and it favours the ' + tb.side + ' side');
+      return { display_fair_spread: tb.side === 'home' ? F : -F, display_side: tb.side, is_near_pickem: true,
+        basis: { rule: raw !== 0 ? 'near_pickem_floor' : 'tiebreak', step: tb.step, value: tb.value,
+          why: why + '. The ' + F + '-point line is a display floor: win probability, confidence and every '
+            + 'market comparison use the raw margin' } };
+    }
+  };
+
   function projectGame(req) {
     var P = params();
     var nowIso = new Date().toISOString();
@@ -2316,6 +2425,16 @@
       ? dist.coverProbTotal(fairTotal, mkt.total_line, 'over') : null;
     var confPct = avail(confMeasure) ? confMeasure.value : null;
 
+    /* the line a reader is shown — computed from, and never written back to,
+       fairSpread (see fairLine) */
+    var fl = fairLine.normalize(fairSpread, {
+      win_probability: isNum(pHome) ? pHome - 0.5 : null,
+      weighted_components: fairLine.weightedComponents(terms),
+      team_strength: avail(ratingGap) ? ratingGap.value : null,
+      efficiency: fairLine.efficiencyGap(H.strength, A.strength),
+      coaching_program: fairLine.coachingGap(H.supplied.coaching_program, A.supplied.coaching_program)
+    });
+
     var out = {
       status: 'PREDICTED',
       engine: ENGINE_ID,
@@ -2337,7 +2456,13 @@
         p10_margin: marginDist ? dist.quantile(marginDist, 0.10) : null,
         p90_margin: marginDist ? dist.quantile(marginDist, 0.90) : null,
         blend_spread: market.blend(fairSpread, mkt.spread_line, 'spread'),
-        blend_total: market.blend(fairTotal, mkt.total_line, 'total')
+        blend_total: market.blend(fairTotal, mkt.total_line, 'total'),
+        /* DISPLAY ONLY, same home-margin convention as fair_spread. Nothing in
+           this engine reads these four back. */
+        display_fair_spread: fl ? fl.display_fair_spread : null,
+        display_side: fl ? fl.display_side : null,
+        is_near_pickem: fl ? fl.is_near_pickem : null,
+        display_basis: fl ? fl.basis : null
       },
       scores: {
         confidence: confPct,
@@ -2604,7 +2729,9 @@
     /* ---- the headline paragraph ---- */
     var lead;
     if (drivers.length) {
-      var side = o.model.fair_spread > 0 ? home : away;
+      /* the side the published line names — the raw sign, except that an
+         exact tie takes the display tiebreak instead of defaulting away */
+      var side = (o.model.display_side || (o.model.fair_spread > 0 ? 'home' : 'away')) === 'home' ? home : away;
       lead = side + ' projects ' + Math.abs(o.model.fair_spread).toFixed(1) + ' points better'
         + (o.game.neutral_site ? ' on a neutral field' : ' at ' + home) + ' primarily because '
         + drivers.slice(0, 2).map(function (x) {
@@ -2785,7 +2912,7 @@
       POS_GROUPS: POS_GROUPS, sideBundle: sideBundle, volatilityContext: volatilityContext },
     odds: odds, dist: dist, strength: strength, talent: talent,
     situation: situation, matchup: matchup, uncertainty: uncertainty,
-    context: context, market: market, qb: qbEngine, ol: olEngine,
+    context: context, market: market, qb: qbEngine, ol: olEngine, fairLine: fairLine,
     normKey: normKey, dataQuality: dataQuality, fingerprint: fingerprint
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.EDCfbP4;

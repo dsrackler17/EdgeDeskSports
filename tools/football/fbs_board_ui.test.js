@@ -50,6 +50,7 @@ function lacks(hay, needle, name) { chk(name, String(hay).indexOf(needle) < 0, {
    few thousand lines of unrelated engine. Every marker is asserted, so a
    moved block fails loudly instead of quietly testing nothing. */
 const REGIONS = [
+  ['function fbFairDisp(m){', '/* tolerant CSV parser'],
   ["var FBP4_CSV_HEAD=['season'", 'function fbP4Basis(){'],
   ['var FBP4_FBS_TAIL_N=15;', 'function fbP4RowValues(u){'],
   ['function fbP4SideRating(side){', 'function fbP4Card(u){'],
