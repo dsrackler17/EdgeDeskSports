@@ -179,14 +179,31 @@ function stageNflGame(win, opts) {
 }
 
 /* The committed Power 4 engine and its trained parameters, into the same
-   context — the two files fbP4Ensure() fetches in a browser. */
-function loadEngine(win, root) {
+   context — the two files fbP4Ensure() fetches in a browser — and the
+   shared input assembly fbP4Ensure() loads after them: the board builds
+   its request and its input contract through football/matchup/contract.js,
+   the file the published build requires, so a harness without it would be
+   testing the fallback, not the board. `opts.contract === false` leaves
+   the assembly out, for a test of exactly that fallback. */
+const CONTRACT_FILES = [
+  ['football', 'availability', 'policy.js'],
+  ['football', 'matchup', 'qb_context.js'],
+  ['football', 'offfield', 'reader.js'],
+  ['football', 'matchup', 'contract.js']
+];
+function loadEngine(win, root, opts) {
   root = root || ROOT;
   vm.runInContext(fs.readFileSync(path.join(root, 'football', 'cfb_p4', 'params.js'), 'utf8'), win, { filename: 'params.js' });
   win.module = { exports: {} };
   vm.runInContext(fs.readFileSync(path.join(root, 'football', 'cfb_p4', 'engine.js'), 'utf8'), win, { filename: 'engine.js' });
   delete win.module;
   if (!win.EDCfbP4 || !win.EDCfbP4Params) throw new Error('the Power 4 engine loaded but its globals are missing');
+  if (!(opts && opts.contract === false)) {
+    CONTRACT_FILES.forEach(parts => {
+      vm.runInContext(fs.readFileSync(path.join(root, ...parts), 'utf8'), win, { filename: parts.join('/') });
+    });
+    if (!win.EDInputContract) throw new Error('the shared input contract loaded but EDInputContract is missing');
+  }
   return win.EDCfbP4;
 }
 

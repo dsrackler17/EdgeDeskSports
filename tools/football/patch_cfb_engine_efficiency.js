@@ -20,7 +20,14 @@ const FILE = path.join(ROOT, 'app.html');
 let s = fs.readFileSync(FILE, 'utf8');
 
 const MARK = 'function fbP4EngineEfficiencyLoad(season,signal){';
-if (s.includes(MARK) && s.includes('team_stats:eg&&eg.teams?{')) {
+/* THE REPLAY IS JOINED either by this patch's own inline join or by
+   fbP4EffForGame(), the join football/fbs/build_coverage.js makes, which
+   app.html now carries (tools/football/page_build_parity.test.js holds it to
+   the build). Either one is the patched state; re-applying over the second
+   would find none of the anchors below and fail the weekly build. */
+const JOINED = s.includes('team_stats:eg&&eg.teams?{')
+  || (s.includes('function fbP4EffForGame(') && s.includes('fbP4EffForGame(S.engineEfficiency,r,'));
+if (s.includes(MARK) && JOINED) {
   console.log('[cfb-browser-efficiency] already patched');
   process.exit(0);
 }

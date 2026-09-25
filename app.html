@@ -49960,6 +49960,9 @@ function fbP4PricingParity(){
   if(R&&R.late_joined>0)gaps.push('play-level efficiency for '+R.late_joined+' game'+(R.late_joined===1?'':'s')
     +' arrived after the replay and was joined late');
   if(!S.state.canonicalRatingMeta)gaps.push('the canonical team rating the published build reads did not load');
+  /* the availability layer the build merges feeds the priced injury input */
+  var A=S.art||{};
+  if(A.at&&(!A.av_current||!A.av_reports))gaps.push('the availability layer the published build merges (the automated read and the ingested conference reports) did not load');
   return {ok:!gaps.length,gaps:gaps};
 }
 function fbP4ViewFor(u,p,mkt,opts){
@@ -51782,6 +51785,11 @@ function fbP4Ensure(){
     .then(function(){return fbScript('football/availability/policy.js').catch(function(){});})
     .then(function(){return fbScript('football/availability/overlay.js').catch(function(){});})
     .then(function(){return fbScript('football/availability/operator.js').catch(function(){});})
+    /* THE INPUT CONTRACT AND THE REQUEST, from the one definition the
+       published build uses (football/matchup/contract.js), and the one
+       off-field register reader both share */
+    .then(function(){return fbScript('football/offfield/reader.js').catch(function(){});})
+    .then(function(){return fbScript('football/matchup/contract.js').catch(function(){});})
     .then(function(){ if(!window.EDCfbP4||!window.EDCfbP4Params)throw new Error('FBS engine loaded but globals missing');
       if(!window.EDFbs)throw new Error('the FBS universe (team identity + conferences) failed to load'); });
 }
@@ -51805,24 +51813,32 @@ var FBP4_POS={QB:'QB',RB:'RB',FB:'RB',WR:'WR',TE:'TE',OL:'OL',OT:'OL',OG:'OL',G:
 /* Build per-team roster bundles for `season`, using season-1 to observe
    continuity and the portal. If either season is unpublished the bundle is
    simply absent and the engine says the talent layer is blind. */
+/* THE PUBLISHED BUILD'S ROSTER SOURCE FIRST. football/matchup/inputs.js
+   prices every published number from the repo's own ESPN roster sync (the
+   only source a headless build reads without the network), so the board reads
+   it first too: the same bundles, the same talent merge, the same input
+   contract and the same information confidence for the same game. The
+   cfbfastR feed is the fallback when the sync has not published the season. */
 function fbP4LoadRosters(season,signal){
+  return fbP4EspnRosters(season,signal).then(function(){FB.p4.rosterSource='EdgeDesk ESPN roster sync';},
+    function(){return fbP4CfbfastrRosters(season,signal);});
+}
+function fbP4CfbfastrRosters(season,signal){
   var S=FB.p4;
+  S.rosterContractNote=null;
   return Promise.all([
     fbFetchText(FBP4_URL_ROSTER(season),signal).then(fbCsv).catch(function(){return null;}),
     fbFetchText(FBP4_URL_ROSTER(season-1),signal).then(fbCsv).catch(function(){return null;})
   ]).then(function(r){
     var cur=r[0],prev=r[1];
     if(!cur){
-      /* cfbfastR has not published this season — fall back to the repo's own
-         ESPN roster sync (football/rosters/, refreshed weekly by CI) rather
-         than running the talent layer blind. Only if THAT is also missing
-         does the layer stay dark, and it says so. */
-      return fbP4EspnRosters(season,signal).catch(function(){
-        S.roster={};S.rosterSeason=null;S.rosterAsOf=null;
-        S.rosterNote='The '+season+' roster file is not published yet, so talent, continuity, '
-          +'portal and youth are UNAVAILABLE for every team. The engine widens its uncertainty '
-          +'instead of assuming last year’s roster.';
-      });
+      /* neither the repo's ESPN sync nor cfbfastR has this season: the layer
+         stays dark, and it says so */
+      S.roster={};S.rosterSeason=null;S.rosterAsOf=null;S.rosterSource=null;
+      S.rosterNote='The '+season+' roster file is not published yet, so talent, continuity, '
+        +'portal and youth are UNAVAILABLE for every team. The engine widens its uncertainty '
+        +'instead of assuming last year’s roster.';
+      return;
     }
     var prevTeam={};
     if(prev)for(var i=0;i<prev.length;i++){if(prev[i].athlete_id)prevTeam[prev[i].athlete_id]=fbP4Key(prev[i].team);}
@@ -51860,6 +51876,7 @@ function fbP4LoadRosters(season,signal){
       out[k]=bundle;
     }
     S.roster=out;S.rosterSeason=season;S.rosterAsOf=new Date().toISOString();
+    S.rosterSource='cfbfastR-data rosters '+season+(prev?(' vs '+(season-1)):'');
     S.rosterNote=prev?null:('The '+(season-1)+' roster file is missing, so continuity and portal '
       +'flow could not be computed; class-mix experience is still real.');
   });
@@ -51922,7 +51939,10 @@ function fbP4EspnRosters(season,signal){
   return fbEspnData(signal).then(function(E){
     if(E.meta.season!==season)throw new Error('roster dataset season mismatch');
     S.roster=E.bundles;S.rosterSeason=season;S.rosterAsOf=E.meta.retrieved_at||null;
-    S.rosterNote='cfbfastR has not published '+season+' rosters, so rosters come from the repo’s ESPN sync: '
+    /* the contract row's detail, in the build's own words
+       (football/matchup/inputs.js load), from the same bundler's counts */
+    S.rosterContractNote=E.meta.teams+' teams, '+E.meta.with_continuity+' with continuity vs '+(season-1);
+    S.rosterNote='Rosters come from the repo’s ESPN sync, the source the published build prices from: '
       +E.meta.teams+' FBS teams fetched '+String(E.meta.retrieved_at).slice(0,10)
       +(E.meta.prev_season?(' · continuity and portal diffed against the '+E.meta.prev_season+' ESPN rosters ('+E.meta.with_continuity+' teams)')
         :(' · no previous-season dataset yet, so continuity and portal stay unavailable'))
@@ -52228,6 +52248,10 @@ function fbP4Load(force,signal){
     var P=window.EDCfbP4Params;
     var cur=fbP4Season();
     S.season=cur;
+    /* the committed artifacts the shared input assembly reads, in flight
+       beside the replay (fbP4InputArtifacts); the weather step waits for them */
+    S.weatherN=0;S.weatherAttempted=false;
+    fbP4InputArtifacts(cur);
     var effPromise=fbP4EngineEfficiencyLoad(cur,signal).catch(function(e){
       S.notes.push('Current team-game efficiency artifact did not load ('+((e&&e.message)||'fetch failed')
         +'). The neutral-field ETSR backbone still loads, but the engine efficiency layer remains explicitly stale rather than being called current.');
@@ -52393,9 +52417,13 @@ function fbP4Load(force,signal){
     return fbSignals('americanfootball_ncaaf',signal);
   }).then(function(sig){
     FB.p4.sig=sig||{};
+    /* the build's committed inputs, in flight since the load began; the
+       venue table the forecasts are located on is the build's merged one */
+    return fbP4InputArtifacts(S.season);
+  }).then(function(){
     /* weather is fetched for every game on the board (open-meteo is keyless
        and the forecast horizon covers the whole lookahead window) */
-    var P=window.EDCfbP4Params,V=(P.universe&&P.universe.venues)||{};
+    var V=fbP4Venues().venues;
     /* BOUNDED CONCURRENCY. The all-FBS slate is 150+ games where the Power 4
        one was 90, and firing every forecast at a keyless public API at once
        is how a rate limiter turns "weather" into "weather for the first
@@ -52416,11 +52444,12 @@ function fbP4Load(force,signal){
         +', so the weather layer is blind at those home games. The engine widens its outcome range instead of assuming a forecast.');
     }
     var next=0;
+    FB.p4.weatherAttempted=queue.length>0;
     function worker(){
       if(next>=queue.length)return Promise.resolve();
       var job=queue[next++];
       return fbP4Weather(job.ven,job.u.g.start_date).then(function(w){
-        if(w)FB.p4.weather[job.u.g.game_id]=w;
+        if(w){FB.p4.weather[job.u.g.game_id]=w;FB.p4.weatherN=(FB.p4.weatherN||0)+1;}
       }).then(worker,worker);
     }
     var lanes=[],li;
@@ -52557,10 +52586,17 @@ function fbP4LoadGuarded(force,signal){
   /* The rating rides along with the load rather than racing the render.
      It is now a REQUIRED pricing input. A missing or wrong-season artifact
      gates projections instead of quietly reviving the legacy score-only mean. */
-  var edr=Promise.resolve(null),eff=Promise.resolve(null);
+  var edr=Promise.resolve(null),eff=Promise.resolve(null),art=Promise.resolve(null),per=Promise.resolve(null);
   try{ edr=fbEdrLoad(); }catch(_){}
   try{ eff=fbP4EngineEfficiencyLoad(); }catch(_){}
-  return Promise.all([fbP4Load(force,signal),edr,eff]).then(function(v){
+  /* THE INPUTS THE PUBLISHED BUILD HANDS THE ENGINE, all of them in before
+     the first paint: the committed artifacts the shared assembly reads and
+     the starter persistence table the quarterback context reads. A board
+     painted before them priced the same number from thinner information and
+     changed its confidence under the reader a second later. */
+  try{ art=fbP4InputArtifacts(fbP4Season()); }catch(_){}
+  try{ per=fbPersistenceEnsure(); }catch(_){}
+  return Promise.all([fbP4Load(force,signal),edr,eff,art,per]).then(function(v){
     fbP4ApplyEngineEfficiency();fbP4ApplyCanonicalRating();done();return v;
   },function(e){done();throw e;});
 }
@@ -52853,8 +52889,18 @@ function fbP4OfficialForGame(t,gameId){
 }
 function fbP4Injuries(teamName,gameId){
   var C=window.EDCARD;
-  if(!C||!C.cavTeam) return null;
-  var t=null; try{ t=C.cavTeam(teamName); }catch(_){ return null; }
+  /* THE TEAM FROM THE SAME MERGED LAYER THE BUILD READS — the automated
+     read, the operator corrections and the ingested conference reports
+     (fbP4AvailabilityView), keyed by the build's own team key. The
+     terminal's availability card reads the automated read alone and matches
+     names loosely; that is its job, and it is kept only as the fallback for
+     a load whose availability artifacts did not arrive. */
+  var t=null,IC=window.EDInputContract,AV=(IC&&FB.p4&&FB.p4.art&&FB.p4.art.av_current)?fbP4AvailabilityView():null;
+  if(AV){ t=AV.by_team[IC.normKey(teamName)]||null; }
+  else{
+    if(!C||!C.cavTeam) return null;
+    try{ t=C.cavTeam(teamName); }catch(_){ return null; }
+  }
   /* not in the dataset at all, or read with no verified coverage: the engine
      must hear "unknown", never "clean" */
   if(!t) return null;
@@ -52970,8 +53016,10 @@ window.fbP4QbContext=fbP4QbContext;
    request on either path. */
 function fbP4QbEpaResolved(rec){
   try{
-    if(!window.EDFbsEpa||!FB.epa||!FB.epa.data)return false;
-    var pk=window.EDFbsEpa.quarterback({artifact:FB.epa.data,starter:rec,team_key:null,opponent_key:null,cutoff:Date.now()});
+    /* FB.qbEpa is the loaded history; this read FB.epa, which nothing ever
+       set, so every quarterback on the board read as unmeasured */
+    if(!window.EDFbsEpa||!FB.qbEpa||!FB.qbEpa.data)return false;
+    var pk=window.EDFbsEpa.quarterback({artifact:FB.qbEpa.data,starter:rec,team_key:null,opponent_key:null,cutoff:Date.now()});
     return !!(pk&&pk.state==='MEASURED'&&pk.career&&pk.career.state==='MEASURED');
   }catch(_){ return false; }
 }
@@ -53000,6 +53048,10 @@ function fbP4QbAvailEvidence(rec){
 /* The freshest thing the report is built from, so staleness is measured
    against when EdgeDesk actually read the sources — not against a date. */
 function fbP4AvailAsOf(){
+  /* the automated read the board's own availability view merges (the same
+     file the build reads), else the terminal's availability card's copy */
+  var A=FB.p4&&FB.p4.art;
+  if(A&&A.av_current)return A.av_current.generated_at||null;
   var C=window.EDCARD;
   if(!C||!C.cfbAvailability) return null;
   try{ var d=C.cfbAvailability(); return (d&&d.data&&(d.data.generated_at||null))||null; }catch(_){ return null; }
@@ -53048,14 +53100,184 @@ function fbP4TalentMerge(signal){
   });
 }
 
+/* ════ THE BOARD'S INPUTS ARE THE PUBLISHED BUILD'S INPUTS ════════════════
+   The request the engine is handed and the input contract the card prints
+   are assembled by football/matchup/contract.js — the SAME code the build
+   that publishes football/fbs/slate.json runs (football/matchup/inputs.js).
+   They used to be two copies here: a 17-row contract against the build's
+   26, and a request that handed the engine no coaching, no measured
+   quarterback history (it read FB.epa, which nothing set) and none of the
+   ingested conference availability reports. The number came out the same,
+   because none of those moves a point; the input coverage and the
+   information confidence did not — 59% against 77%, and six to eleven
+   points of confidence on every game — so the board, the published slate,
+   the AI desk and the article could give one game two research labels.
+
+   What is shared: the code, and every committed artifact the build reads.
+   What may still differ is only what is fetched live — the forecast, and a
+   source that answered one and refused the other — and the contract then
+   says so in its own rows. tools/football/page_build_parity.test.js holds
+   the board and the build to one contract, one confidence and one number
+   on the same inputs. */
+FB.p4.art={at:0,_p:null,season:null,errors:[]};
+/* THE COMMITTED ARTIFACTS THE BUILD'S ASSEMBLY READS that the board did not:
+   the venue supplement and the generated venue floor, the team recruiting
+   composite, the coaching table, the off-field register, the EPA index (its
+   freshness), and the three sources of the availability layer — the
+   automated read, the operator corrections and the ingested conference
+   reports (one file: football/availability/reports.bundle.json). Loaded once
+   per season, together; a file that will not load leaves its field null and
+   the contract reports the gap, exactly as the build would. */
+function fbP4InputArtifacts(season){
+  var A=FB.p4.art;
+  if(A.season===season&&A.at)return Promise.resolve(A);
+  if(A._p)return A._p;
+  function get(key,url,check){
+    return fetch(url,{cache:'no-cache'}).then(function(r){
+      if(!r.ok)throw new Error(url+' '+r.status);
+      return r.json();
+    }).then(function(j){
+      if(check&&!check(j))throw new Error(url+' is not for season '+season);
+      A[key]=j;return j;
+    }).catch(function(e){A[key]=null;A.errors.push(key+': '+String(e&&e.message||e).slice(0,120));return null;});
+  }
+  A.errors=[];
+  A._p=Promise.all([
+    get('supp','football/venues/supplement.json'),
+    get('gen','football/venues/resolved.json'),
+    get('team_talent','football/players/team_talent.json',function(j){return j&&+j.season===+season;}),
+    get('coaching','football/coaching/continuity.json'),
+    get('offfield_store','football/offfield/signals.json'),
+    get('offfield_reg','football/offfield/sources.json'),
+    get('epa_index','football/fbs_epa/index.json'),
+    get('av_current','football/availability/current.json'),
+    get('av_operator','football/availability/operator.json'),
+    get('av_reports','football/availability/reports.bundle.json',function(j){return j&&j.schema==='edgedesk_availability_reports_bundle_v1';})
+  ]).then(function(){A.season=season;A.at=Date.now();A._p=null;FB.p4._ictx=null;return A;});
+  return A._p;
+}
+/* the one venue table the build prices from, merged by the shared rule */
+function fbP4Venues(){
+  var P=window.EDCfbP4Params,C=window.EDInputContract,A=FB.p4.art||{};
+  var base=(P&&P.universe&&P.universe.venues)||{};
+  if(!C)return {venues:base,supplement:{entries:0},resolved:{entries:0}};
+  if(FB.p4._venues&&FB.p4._venues.at===A.at)return FB.p4._venues.v;
+  var v=C.mergeVenues(base,A.supp||null,A.gen||null);
+  FB.p4._venues={at:A.at,v:v};
+  return v;
+}
+/* THE AVAILABILITY LAYER, merged exactly as the build merges it
+   (football/availability/overlay.js over the automated read, the dated
+   operator corrections and every ingested conference report), keyed by the
+   same team key the build keys it by. */
+function fbP4AvailabilityView(){
+  var A=FB.p4.art||{},O=window.EDAvailabilityOverlay,OP=window.EDAvailabilityOperator,C=window.EDInputContract;
+  var cur=A.av_current||null;
+  if(FB.p4._av&&FB.p4._av.at===A.at)return FB.p4._av.v;
+  var out={by_team:{},as_of:cur?(cur.generated_at||null):null,systematic:[],loaded:!!(cur&&A.av_reports)};
+  if(O&&C){
+    var now=Date.now();
+    var op=OP&&OP.load?OP.load(A.av_operator||{entries:[]},now):{live:[]};
+    var merged=O.build({current:cur,operator:op,reports:(A.av_reports&&A.av_reports.reports)||[],now:now,normKey:C.normKey});
+    Object.keys(merged.teams).forEach(function(id){
+      var t=merged.teams[id],k=C.normKey(t.team_name||t.team_display);
+      if(k)out.by_team[k]=t;
+    });
+  }
+  out.systematic=(cur&&Array.isArray(cur.failure_groups))
+    ?cur.failure_groups.filter(function(f){return f&&f.systematic;})
+      .map(function(f){return {source:f.source,error:f.error,teams:f.teams,kind:f.kind};}):[];
+  FB.p4._av={at:A.at,v:out};
+  return out;
+}
+/* THE ASSEMBLY'S CONTEXT for this load: the same fields
+   football/matchup/inputs.js load() gives the build, read off the board */
+function fbP4InputCtx(){
+  var S=FB.p4,A=S.art||{},C=window.EDInputContract,P=window.EDCfbP4Params;
+  var key=[S.loadedAt,A.at,S.rosterAsOf,S.talent&&S.talent.as_of,!!(FB.starters&&FB.starters.data),
+    !!(FB.qbEpa&&FB.qbEpa.data),!!(FB.persistence&&FB.persistence.data),S.weatherN||0].join('|');
+  if(S._ictx&&S._ictx.key===key)return S._ictx.v;
+  var mv=fbP4Venues(),av=fbP4AvailabilityView();
+  /* the recruiting composite's one bundle side effect, as the build applies it */
+  var tt=A.team_talent||null;
+  if(C&&tt&&S.roster)C.applyTeamTalent(S.roster,tt);
+  var off=(window.EDOffFieldReader&&(A.offfield_store||A.offfield_reg))
+    ?window.EDOffFieldReader.read(A.offfield_store,A.offfield_reg,Date.now()):null;
+  var coach=A.coaching||null;
+  var epaArt=FB.qbEpa&&FB.qbEpa.data,ix=A.epa_index||null;
+  var epaSeason=ix?ix.season:(epaArt?epaArt.season:null);
+  if(epaArt&&epaSeason!=null&&+epaSeason!==+S.season)epaArt=null;
+  var fresh=null;try{fresh=(window.EDFbsEpa&&window.EDFbsEpa.freshness&&ix)?window.EDFbsEpa.freshness(ix,Date.now()):null;}catch(_){fresh=null;}
+  var v={
+    season:S.season,params:P,
+    venues:mv.venues,venue_supplement:mv.supplement,venue_resolved:mv.resolved,
+    weather:S.weather||{},weather_source:'open-meteo forecast',weather_read_at:null,
+    weather_attempted:!!S.weatherAttempted,weather_failure:null,
+    rosters:S.roster||{},roster_as_of:S.rosterAsOf||null,roster_note:S.rosterContractNote||S.rosterNote||null,
+    roster_source:S.rosterSource||null,roster_quality:S.talent||null,
+    availability_by_team:av.by_team,availability_as_of:av.as_of,availability_systematic:av.systematic,
+    starters:(FB.starters&&FB.starters.data)||null,
+    fbs_epa:epaArt||null,fbs_epa_freshness:fresh,
+    team_talent:tt,persistence:(FB.persistence&&FB.persistence.data)||null,
+    off_field_for:off?off.for:null,
+    off_field_source:off?'EdgeDesk off-field register (football/offfield/signals.json)':null,
+    off_field_as_of:off?(off.as_of||null):null,off_field_counts:off?off.counts:null,
+    coaching_for:coach?function(k){return C.coachingFor(coach.by_team||{},k);}:null,
+    coaching_source:coach?(coach.source||null):null,coaching_as_of:coach?(coach.generated_at||null):null,
+    coaching_season:coach?(coach.season||null):null
+  };
+  S._ictx={key:key,v:v};
+  return v;
+}
+/* what the shared assembly needs from the board: the shared modules, and
+   the board's own three joins, each keyed as the build keys it */
+function fbP4InputDeps(){
+  return {POLICY:window.EDAvailabilityPolicy,QBC:window.EDQbContext,EPAMOD:window.EDFbsEpa,
+    injuriesFor:function(ctx,name,gid){return fbP4Injuries(name,gid);},
+    availabilityTeam:function(ctx,name){return ctx.availability_by_team[window.EDInputContract.normKey(name)]||null;},
+    schedCtx:function(si,g,side){return fbP4SchedCtx(g,side);}};
+}
+/* one game's assembly — the contract rows and every fact behind them —
+   built once per load and reused by the request and the card */
+function fbP4Assembly(u){
+  var C=window.EDInputContract;
+  if(!C||!u||!u.g)return null;
+  var ctx=fbP4InputCtx(),S=FB.p4;
+  if(u._asm&&u._asm.ctx===ctx&&u._asm.state===S.state)return u._asm.v;
+  var g=u.g,v=null;
+  var game={game_id:g.game_id,season:g.season,week:g.week,home_team:g.home_team,away_team:g.away_team,
+    neutral_site:g.neutral_site,venue:g.venue,venue_id:g.venue_id,home_conference:g.home_conference,
+    away_conference:g.away_conference,start_date:g.start_date};
+  var meta=u.meta?{home:{key:u.meta.home.key||fbP4Key(g.home_team),is_fbs:u.meta.home.is_fbs},
+      away:{key:u.meta.away.key||fbP4Key(g.away_team),is_fbs:u.meta.away.is_fbs}}
+    :{home:{key:fbP4Key(g.home_team),is_fbs:fbP4IsFbs(g.home_division,g.home_team)},
+      away:{key:fbP4Key(g.away_team),is_fbs:fbP4IsFbs(g.away_division,g.away_team)}};
+  try{v=C.assemble(ctx,{game:game,meta:meta,now:Date.now(),state:S.state,schedule_index:null},fbP4InputDeps());}
+  catch(_){v=null;}
+  u._asm={ctx:ctx,state:S.state,v:v,game:game};
+  return v;
+}
+
 /* `opts.noMarket` builds the SAME request with no market number in it.
    The fair spread does not depend on the market (the market only feeds the
    gap, the cover and the blend), so this is how a model number is obtained
    that a suspect line cannot have touched — which is what fbP4Market needs
    to judge whether that line points the right way, without asking itself. */
 function fbP4Request(u,opts){
-  var g=u.g,P=window.EDCfbP4Params;
   var noMkt=!!(opts&&opts.noMarket);
+  var A=fbP4Assembly(u),C=window.EDInputContract;
+  var mkt=noMkt?{}:fbP4Market(u);
+  if(A&&C){
+    var ctx=fbP4InputCtx();
+    return C.request(A,ctx,{game:u._asm.game,state:FB.p4.state,market:mkt,
+      odds_as_of:noMkt?null:((mkt||{}).as_of||null)},fbP4InputDeps());
+  }
+  return fbP4RequestBare(u,mkt,noMkt);
+}
+/* THE FALLBACK when the shared assembly did not load: the request the board
+   built before it, so a missing file degrades the contract, never the board */
+function fbP4RequestBare(u,mkt,noMkt){
+  var g=u.g,P=window.EDCfbP4Params;
   var V=(P.universe&&P.universe.venues)||{};
   var hk=fbP4Key(g.home_team),ak=fbP4Key(g.away_team);
   return {
@@ -53090,12 +53312,12 @@ function fbP4Request(u,opts){
     },
     venue:{home:V[hk]||null,away:V[ak]||null},
     weather:FB.p4.weather[g.game_id]||null,
-    market:noMkt?{}:fbP4Market(u),
+    market:noMkt?{}:mkt,
     /* WHEN THE DATA WAS READ, not when the season started. The roster stamp
        used to be manufactured as <season>-08-01, which made a file fetched
        this week read as eight hundred hours stale and put a false "missing"
        on teams whose rosters were current. */
-    timestamps:{odds:noMkt?null:((fbP4Market(u)||{}).as_of||null),
+    timestamps:{odds:noMkt?null:((mkt||{}).as_of||null),
       roster:FB.p4.rosterAsOf||null,
       injuries:fbP4AvailAsOf(),
       weather:(FB.p4.weather[g.game_id]||{}).as_of||null}
@@ -53103,197 +53325,25 @@ function fbP4Request(u,opts){
 }
 
 /* ---- THE INPUT CONTRACT, ON SCREEN ------------------------------------
-   WHAT THIS REPLACED, and why the old number was not wrong by accident.
-
    The card used to print "<n>% of the model's inputs reached it" from the
-   engine's `information_missing` — a TEN-PROBE INTERNAL VOLATILITY DRIVER,
-   not an input contract. Three of those ten probes are things nobody can
-   deliver for college football: per-player recruiting pedigree (subscription
-   data), EPA per dropback for the QB layer (in no feed this repository
-   reads), and an injury report (the sport files none, and the two endpoints
-   that carry proxies for it are refusing). Counting a permanent structural
-   ceiling as a collection failure pins every game in the universe near 40%
-   whatever EdgeDesk actually retrieves, which makes the number useless as a
-   coverage signal and makes it a lie as a sentence.
-
-   football/matchup/inputs.js had already written the rule — "a completeness
-   percentage that counts NOT_APPLICABLE as missing is not a measure of what
-   EdgeDesk knows" — and shipped the seven-state contract that follows it. The
-   board never adopted it, so the screen and football/fbs/slate.json published
-   two different completeness numbers for the same game out of the same files.
-
-   This is that contract, emitted by the code that assembles the request, so
-   it cannot drift from what was actually handed to the engine. Same field
-   names, same states, same denominator rule as the offline assembly:
+   engine's ten-probe volatility driver, then from a 17-row copy of the
+   build's contract. It now prints the build's own contract, assembled by
+   football/matchup/contract.js for this game from what this load holds:
 
      USABLE         retrieved, current, fed to the model
      RESEARCH_ONLY  retrieved and trustworthy, deliberately not priced
      STALE          retrieved, older than this field's own floor
      NOT_APPLICABLE the question does not arise here
+     NOT_REQUIRED   no conference filing was required for this fixture
+     NOT_DUE_YET    a required filing is still hours away
      FETCH_FAILED   EdgeDesk tried and the source refused
      UNAVAILABLE    no source EdgeDesk can reach publishes it at all
 
    A REFUSED SOURCE STILL COUNTS AGAINST THE PERCENTAGE. Only NOT_APPLICABLE
-   leaves the denominator. That is the difference between excluding a question
-   that does not arise and excusing a gap. */
-var FBP4_STALE_H={roster:24*14,availability:48,weather:12};
-function fbP4CRow(field,side,state,o){
-  o=o||{};
-  return {field:field,side:side||null,state:state,source:o.source||null,as_of:o.as_of||null,
-    detail:o.detail||null,priced:state==='USABLE'};
-}
-function fbP4AgeH(t){var a=Date.parse(t);return isFinite(a)?(Date.now()-a)/36e5:null;}
+   leaves the denominator. */
 function fbP4Contract(u){
-  var g=u.g,P=window.EDCfbP4Params,C=window.EDCARD;
-  var V=(P.universe&&P.universe.venues)||{};
-  var hk=fbP4Key(g.home_team),ak=fbP4Key(g.away_team);
-  var homeFbs=u.meta?u.meta.home.is_fbs:fbP4IsFbs(g.home_division,g.home_team);
-  var awayFbs=u.meta?u.meta.away.is_fbs:fbP4IsFbs(g.away_division,g.away_team);
-  var vh=V[hk]||null,va=V[ak]||null,dome=!!(vh&&vh.dome);
-  var K=[];
-
-  /* venue geography */
-  K.push(vh?fbP4CRow('venue_geography','home','USABLE',{source:'trained venue table',detail:vh.name||null})
-    :fbP4CRow('venue_geography','home','UNAVAILABLE',{source:'trained venue table',
-      detail:'no coordinates for '+g.home_team+'\u2019s venue in the table the model was trained on'}));
-  /* the away venue exists to measure travel, and a neutral site has no travel
-     asymmetry to measure. That is not a missing field. */
-  K.push(g.neutral_site?fbP4CRow('venue_geography','away','NOT_APPLICABLE',
-      {detail:'neutral site \u2014 no travel asymmetry is modelled, so the away venue does not enter'})
-    :(va?fbP4CRow('venue_geography','away','USABLE',{source:'trained venue table',detail:va.name||null})
-      :fbP4CRow('venue_geography','away','UNAVAILABLE',{source:'trained venue table',
-        detail:'no coordinates for '+g.away_team+'\u2019s home venue, so travel distance cannot be computed'})));
-
-  /* weather */
-  var wx=FB.p4.weather[g.game_id]||null,wxAge=wx?fbP4AgeH(wx.as_of):null;
-  /* A FORECAST THAT ARRIVES IS NOT A FORECAST THE MODEL PRICES. params.js
-     ships unavailable_by_design.weather_coefficients — no historical weather
-     series exists in this corpus, so supplied weather narrows the uncertainty
-     term and moves no points. Marking it USABLE claimed otherwise, and USABLE
-     is what priced coverage counts. Read from the parameters, so the row
-     upgrades itself the day a coefficient is earned. */
-  var wxPriced=!!(P&&P.weather);
-  var wxWhy=(P&&P.unavailable_by_design&&P.unavailable_by_design.weather_coefficients)||null;
-  K.push(dome?fbP4CRow('weather',null,'NOT_APPLICABLE',
-      {detail:(vh.name||'an indoor venue')+' is a dome \u2014 weather is neutralised, not missing'})
-    :(wx?fbP4CRow('weather',null,
-        (wxAge!=null&&wxAge>FBP4_STALE_H.weather)?'STALE':(wxPriced?'USABLE':'RESEARCH_ONLY'),
-        {source:'open-meteo forecast',as_of:wx.as_of||null,
-         detail:wxPriced?null:('retrieved and shown, and it narrows the weather uncertainty term, but it '
-           +'moves no points: '+(wxWhy||'no weather coefficient was earned on this corpus'))})
-      :fbP4CRow('weather',null,'FETCH_FAILED',
-        {detail:vh?'the venue coordinates are known; no forecast reached this game'
-          :'the venue has no coordinates, so no forecast can be located for it'})));
-
-  /* rosters, and roster talent as its OWN field: who is on it and how good
-     they are are two questions, and collapsing them hid the second for as
-     long as it was always empty */
-  var rAge=fbP4AgeH(FB.p4.rosterAsOf);
-  [['home',hk,homeFbs,g.home_team],['away',ak,awayFbs,g.away_team]].forEach(function(x){
-    var side=x[0],key=x[1],isFbs=x[2],name=x[3],r=FB.p4.roster[key]||null;
-    if(r)K.push(fbP4CRow('roster',side,(rAge!=null&&rAge>FBP4_STALE_H.roster)?'STALE':'USABLE',
-      {source:'EdgeDesk roster sync',as_of:FB.p4.rosterAsOf||null,detail:FB.p4.rosterNote||null}));
-    else if(!isFbs)K.push(fbP4CRow('roster',side,'NOT_APPLICABLE',
-      {detail:name+' is outside the FBS universe EdgeDesk rates; the roster layer is not defined for it'}));
-    else K.push(fbP4CRow('roster',side,'UNAVAILABLE',{detail:'no roster bundle resolved for '+name}));
-
-    var t=FB.p4.talent||null;
-    if(r&&typeof r.overall_talent==='number'&&isFinite(r.overall_talent))
-      K.push(fbP4CRow('roster_talent',side,'USABLE',{source:(t&&t.source)||'EdgeDesk player layer',
-        as_of:(t&&t.as_of)||null,
-        detail:'composite '+(Math.round(r.overall_talent*10)/10)
-          +(typeof r.overall_talent_confidence==='number'?(' at confidence '+r.overall_talent_confidence):'')
-          +' \u2014 measured production, not recruiting pedigree'}));
-    else if(!isFbs)K.push(fbP4CRow('roster_talent',side,'NOT_APPLICABLE',
-      {detail:name+' is outside the FBS field the player layer rates'}));
-    else K.push(fbP4CRow('roster_talent',side,'UNAVAILABLE',
-      {detail:'no rated roster resolved for '+name+(t?'':'; the player layer did not load')}));
-  });
-
-  /* availability. A refused source is FETCH_FAILED and still counts against
-     the percentage: EdgeDesk tried and got nothing, which is a real hole. */
-  var avAge=fbP4AgeH(fbP4AvailAsOf());
-  [['home',homeFbs,g.home_team],['away',awayFbs,g.away_team]].forEach(function(x){
-    var side=x[0],isFbs=x[1],name=x[2],list=fbP4Injuries(name,g.game_id),t=null,report=null;
-    try{ t=C&&C.cavTeam?C.cavTeam(name):null; }catch(_){ t=null; }
-    report=fbP4OfficialForGame(t,g.game_id);
-    if(list&&list.length)K.push(fbP4CRow('availability',side,(avAge!=null&&avAge>FBP4_STALE_H.availability)?'STALE':'USABLE',
-      {source:'EdgeDesk college availability layer',as_of:fbP4AvailAsOf(),
-        detail:list.length+' absence report'+(list.length===1?'':'s')+' on file'}));
-    else if(list&&report&&report.comprehensive)K.push(fbP4CRow('availability',side,(avAge!=null&&avAge>FBP4_STALE_H.availability)?'STALE':'USABLE',
-      {source:'official conference availability report',as_of:report.retrieved_at||fbP4AvailAsOf(),
-        detail:'the comprehensive official report for THIS game was read and names nobody unavailable \u2014 '
-          +'a report of no absences, which is not the same as no report'}));
-    else if(list)K.push(fbP4CRow('availability',side,(avAge!=null&&avAge>FBP4_STALE_H.availability)?'STALE':'USABLE',
-      {source:'EdgeDesk college availability layer',as_of:fbP4AvailAsOf(),
-        detail:'the current unscoped sources were read and named nobody; no fixture-specific comprehensive '
-          +'filing establishes a clean roster, so this is not described as one'}));
-    else if(report)K.push(fbP4CRow('availability',side,'RESEARCH_ONLY',
-      {source:'official conference availability report',as_of:report.retrieved_at||fbP4AvailAsOf(),
-        detail:'the official report for THIS game was read, but its scope is not comprehensive and it names no '
-          +'priced absence. Silence therefore remains unknown rather than becoming a clean injury report'}));
-    else if(!isFbs)K.push(fbP4CRow('availability',side,'NOT_APPLICABLE',
-      {detail:name+' is outside the FBS availability registry'}));
-    else K.push(fbP4CRow('availability',side,t?'FETCH_FAILED':'UNAVAILABLE',
-      {source:'EdgeDesk college availability layer',as_of:fbP4AvailAsOf(),
-        detail:t?('EdgeDesk read '+(t.sources_checked||0)+' source'+((t.sources_checked||0)===1?'':'s')+' for '+name
-            +((t.sources_failed||0)?(' and '+t.sources_failed+' refused'):' and none carried a usable report')
-            +' \u2014 graded '+String(t.dataQuality||'NONE').toUpperCase())
-          :(name+' is not in the availability registry')}));
-  });
-
-  /* the starter: retrieved, published as research, priced nowhere */
-  [['home',homeFbs,g.home_team],['away',awayFbs,g.away_team]].forEach(function(x){
-    var side=x[0],isFbs=x[1],name=x[2],rec=null;
-    try{ rec=fbStarterFor(name); }catch(_){ rec=null; }
-    if(!rec){
-      K.push(fbP4CRow('qb_starter',side,isFbs?'UNAVAILABLE':'NOT_APPLICABLE',
-        {detail:isFbs?('no starter record was built for '+name)
-          :(name+' is outside the rated universe; no starter context is assembled for it')}));
-      K.push(fbP4CRow('qb_availability',side,isFbs?'UNAVAILABLE':'NOT_APPLICABLE',
-        {detail:isFbs?'no starter record, so no availability statement about one':null}));
-      return;
-    }
-    K.push(fbP4CRow('qb_starter',side,'RESEARCH_ONLY',{source:rec.source||null,as_of:rec.retrieved_at||null,
-      detail:(rec.label||rec.player_name||'starter resolved')
-        +' \u2014 retrieved and published as research; the priced QB layer is not fed from it'}));
-    var av=rec.availability||{};
-    K.push(fbP4CRow('qb_availability',side,av.evidence==='EXPLICIT'?'USABLE':'UNAVAILABLE',
-      {source:av.source||null,as_of:av.retrieved_at||null,detail:av.why||null}));
-  });
-
-  /* documented, permanent gaps. They count, because a reader deciding how
-     much to trust this number should see them. */
-  K.push(fbP4CRow('recruiting_talent',null,'UNAVAILABLE',
-    {detail:'per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted'}));
-  K.push(fbP4CRow('coaching_continuity',null,'UNAVAILABLE',
-    {detail:'no public, keyless feed carries coordinator or staff continuity'}));
-
-  /* schedule context */
-  [['home',fbP4SchedCtx(g,'home')],['away',fbP4SchedCtx(g,'away')]].forEach(function(x){
-    K.push(x[1]?fbP4CRow('schedule_context',x[0],'USABLE',{source:'season schedule feed',
-        detail:'rest '+(x[1].rest_days==null?'n/a':(x[1].rest_days+'d'))})
-      :fbP4CRow('schedule_context',x[0],'NOT_APPLICABLE',
-        {detail:'the first game of the season has no preceding rest interval to measure'}));
-  });
-
-  return {rows:K,summary:fbP4Summarise(K)};
-}
-/* The SAME arithmetic football/matchup/inputs.js summarise() does, so the
-   screen and the published artifact cannot report different coverage for the
-   same game. */
-function fbP4Summarise(rows){
-  var by={USABLE:0,RESEARCH_ONLY:0,STALE:0,CONFLICTING:0,NOT_APPLICABLE:0,FETCH_FAILED:0,UNAVAILABLE:0},i;
-  for(i=0;i<rows.length;i++)by[rows[i].state]=(by[rows[i].state]||0)+1;
-  var applicable=rows.length-by.NOT_APPLICABLE;
-  /* STALE IS NOT KNOWN. inputs.js summarise() counts USABLE + RESEARCH_ONLY
-     and nothing else; a field retrieved past its own freshness floor is a
-     field EdgeDesk cannot vouch for today. Mirrored exactly, because the
-     whole point of this function is that the two cannot disagree. */
-  var known=by.USABLE+by.RESEARCH_ONLY;
-  return {fields:rows.length,applicable:applicable,by_state:by,known:known,priced:by.USABLE,
-    input_coverage:applicable?(Math.round((known/applicable)*1000)/1000):null,
-    priced_coverage:applicable?(Math.round((by.USABLE/applicable)*1000)/1000):null};
+  var A=fbP4Assembly(u);
+  return A?{rows:A.contract,summary:A.summary}:null;
 }
 /* The contract for one board item, built once and reused: the summary tile,
    the research check and the copied brief must not each assemble their own. */
@@ -53303,7 +53353,8 @@ function fbP4ContractFor(u){
      that brings fresher rosters, a talent merge or a new forecast rebuilds it
      instead of serving a cached answer about data that has since changed */
   var key=String(FB.p4.rosterAsOf)+'|'+String(FB.p4.talent&&FB.p4.talent.as_of)
-    +'|'+String(fbP4AvailAsOf())+'|'+String((FB.p4.weather[u.g.game_id]||{}).as_of);
+    +'|'+String(fbP4AvailAsOf())+'|'+String((FB.p4.weather[u.g.game_id]||{}).as_of)
+    +'|'+String(FB.p4.art&&FB.p4.art.at)+'|'+String(FB.p4.loadedAt);
   if(u._contract&&u._contract.key===key)return u._contract.v;
   var c=null;
   try{ c=fbP4Contract(u); }catch(_){ c=null; }

@@ -51,69 +51,15 @@ function arg(name, fb) {
   const v = process.argv[i + 1];
   return (v == null || String(v).startsWith('--')) ? true : v;
 }
-function normKey(s) {
-  if (s == null) return null;
-  return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '') || null;
-}
 function readJson(p, fb) { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return fb; } }
 
-/* WHAT A SIGNAL MUST CARRY. Each rule is here because the engine reads that
-   exact field and does something specific with it. */
-const REQUIRED = [
-  ['team', 'which programme this is about'],
-  ['headline', 'what happened, in a sentence a reader could check against the source'],
-  ['source_name', 'who published it'],
-  ['source_url', 'where a reader opens it'],
-  ['published_at', 'when it was published — the engine decays on a 21-day half-life and an undated signal decays at a flat 0.5, which measures nothing'],
-  ['severity', 'how much this destabilises the team, 0 to 1, assigned deliberately'],
-  ['source_reliability', 'how much weight this publisher has earned, 0 to 1'],
-  ['recorded_by', 'who typed it, so a wrong entry has an author'],
-  ['recorded_at', 'when it was typed, which is not when it was published']
-];
-
-function validate(sig, now) {
-  const bad = [];
-  for (const [f, why] of REQUIRED) {
-    if (sig[f] === undefined || sig[f] === null || sig[f] === '') bad.push(f + ' — ' + why);
-  }
-  if (bad.length) return { ok: false, why: bad };
-  for (const f of ['severity', 'source_reliability']) {
-    const v = +sig[f];
-    if (!isFinite(v) || v < 0 || v > 1) bad.push(f + ' must be a number between 0 and 1, and a default is not a grade');
-  }
-  const t = Date.parse(sig.published_at);
-  if (!isFinite(t)) bad.push('published_at is not a date EdgeDesk can parse');
-  /* A SIGNAL PUBLISHED IN THE FUTURE IS A TYPO, and the decay would read it
-     as fresher than fresh. */
-  else if (t > (now || Date.now()) + 3600e3) bad.push('published_at is in the future');
-  if (!/^https?:\/\/.+\..+/.test(String(sig.source_url || ''))) {
-    bad.push('source_url is not a URL a reader could open');
-  }
-  /* A HEADLINE THAT SAYS NOTHING HAPPENED IS NOT A SIGNAL. The engine reads
-     an EMPTY LIST for that, and only a registered source may produce one. */
-  if (/^\s*(none|n\/?a|nothing|no news|all clear|everything.{0,4}fine|no issues)\s*\.?\s*$/i.test(String(sig.headline || ''))) {
-    bad.push('"nothing happened" is not a signal — an absence of reports is not evidence of calm. '
-      + 'Register a source in football/offfield/sources.json instead; a read of a registered source that '
-      + 'carries nothing is what produces the empty list the engine reads as "looked, found nothing"');
-  }
-  return bad.length ? { ok: false, why: bad } : { ok: true };
-}
-
-/* WHAT THE ENGINE READS, and nothing else. Keys are the engine's own. */
-function toEngine(sig) {
-  return {
-    headline: sig.headline,
-    severity: +sig.severity,
-    source_reliability: +sig.source_reliability,
-    date: sig.published_at,
-    source: sig.source_name,
-    source_url: sig.source_url,
-    team_key: sig.team_key,
-    recorded_by: sig.recorded_by,
-    recorded_at: sig.recorded_at,
-    expires_at: sig.expires_at || null
-  };
-}
+/* THE RULES AND THE READER live in football/offfield/reader.js, which the
+   board loads too, so the build and the board read one register one way. */
+const R = require(path.join(HERE, 'reader.js'));
+const REQUIRED = R.REQUIRED;
+const validate = R.validate;
+const toEngine = R.toEngine;
+const normKey = R.normKey;
 
 /* the reader every consumer uses. Returns a function key -> signals|null,
    where NULL MEANS NOBODY LOOKED and [] MEANS THE REGISTERED SOURCES WERE
@@ -121,41 +67,7 @@ function toEngine(sig) {
    already prices them differently. */
 function load(opts) {
   opts = opts || {};
-  const now = opts.now || Date.now();
-  const store = readJson(STORE, null);
-  const reg = readJson(SOURCES, null);
-  const configured = (reg && reg.teams) || {};
-  const byTeam = {};
-  const refused = [];
-  for (const s of ((store && store.signals) || [])) {
-    const v = validate(s, now);
-    if (!v.ok) { refused.push({ headline: s && s.headline, why: v.why }); continue; }
-    /* A SIGNAL PAST ITS OWN EXPIRY IS NOT DROPPED SILENTLY — it stops being
-       current, which is different from never having happened. */
-    if (s.expires_at && Date.parse(s.expires_at) < now) continue;
-    const k = s.team_key || normKey(s.team);
-    if (!k) { refused.push({ headline: s.headline, why: ['the team does not resolve to a key'] }); continue; }
-    (byTeam[k] = byTeam[k] || []).push(toEngine(Object.assign({}, s, { team_key: k })));
-  }
-  const readTeams = Object.keys(configured).filter(k => {
-    const e = configured[k];
-    return e && (Array.isArray(e) ? e.length : (e.sources || []).length);
-  });
-  return {
-    counts: { signals: Object.keys(byTeam).reduce((n, k) => n + byTeam[k].length, 0),
-      teams_with_signals: Object.keys(byTeam).length,
-      teams_with_a_registered_source: readTeams.length, refused: refused.length },
-    refused,
-    source_name: (reg && reg.schema) ? 'EdgeDesk off-field register' : null,
-    as_of: (store && store.generated_at) || null,
-    /* THE TWO ANSWERS, KEPT APART. */
-    for: function (key) {
-      if (!key) return null;
-      if (byTeam[key]) return byTeam[key];
-      if (readTeams.indexOf(key) >= 0) return [];   /* looked, found nothing */
-      return null;                                   /* nobody looked */
-    }
-  };
+  return R.read(readJson(STORE, null), readJson(SOURCES, null), opts.now || Date.now());
 }
 
 function main() {

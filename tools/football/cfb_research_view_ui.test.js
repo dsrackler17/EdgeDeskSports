@@ -91,7 +91,8 @@ function stageAt(target, o) {
   return { u: u, p: p };
 }
 
-/* the bare harness has no rosters, so its input contract is thin (2 of 15).
+/* the bare harness has no rosters, so its input contract — the build's own,
+   football/matchup/contract.js — is thin (5 of 22 applicable inputs).
    The contract is cached per unit under the stamps it reads; setting the
    cached summary is how a test puts a well-covered game on the board without
    editing the builder. */

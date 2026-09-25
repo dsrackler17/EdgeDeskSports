@@ -273,4 +273,62 @@ function newer(a, b) {
   return (isFinite(y) && y > x) ? b : a;
 }
 
-module.exports = { ingest, reconcile, toLines, rowsFrom, stripHtml, DESIGNATIONS, SCHEMA };
+/* ---------------------------------------------------------- the bundle
+   THE REPORTS ON FILE, AS ONE DOCUMENT THE BOARD CAN READ.
+
+   The published build reads every report in football/availability/reports/
+   and merges them into the availability layer (football/availability/
+   overlay.js). A browser cannot list a directory, so the board had no way to
+   find them: it read the automated collector alone, and for a conference
+   game whose filing EdgeDesk had ingested it reported "no report" while the
+   published slate reported the filing — a different input contract, and a
+   different confidence, for the same game out of the same files.
+
+   So the reports are also published here as ONE file, in the order the
+   build reads them (file name), carrying exactly the fields the overlay
+   reads. It is derived, never edited: every writer of a report rewrites it,
+   and football/availability/reports.test.js fails when it no longer matches
+   the directory. The unparsed lines are counted, not copied — the overlay
+   reads only how many there were, and the full text stays in each file. */
+const BUNDLE_SCHEMA = 'edgedesk_availability_reports_bundle_v1';
+const BUNDLE_FILE = path.join(__dirname, 'reports.bundle.json');
+function compactReport(r, file) {
+  return { file: file, team: r.team, team_id: r.team_id == null ? null : r.team_id,
+    conference: r.conference || null, game_id: r.game_id == null ? null : String(r.game_id),
+    kickoff: r.kickoff || null, ok: !!r.ok, why: r.why || null, source_url: r.source_url || null,
+    published_at: r.published_at || null, retrieved_at: r.retrieved_at || null,
+    scope: r.scope || null, comprehensive: !!r.comprehensive, vocabulary: r.vocabulary || [],
+    rows: r.rows || [], unparsed_n: (r.unparsed || []).length,
+    silence_means_available: !!r.silence_means_available };
+}
+/* every ingested report in `dir`, in file-name order */
+function readAll(dir) {
+  const fs = require('fs');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).filter(f => /\.json$/.test(f)).sort().map(f => {
+    let r = null;
+    try { r = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch (_) { r = null; }
+    return (r && r.schema === SCHEMA) ? { file: f, report: r } : null;
+  }).filter(Boolean);
+}
+function bundle(dir) {
+  return { schema: BUNDLE_SCHEMA,
+    why: 'Every ingested conference availability report in football/availability/reports/, in the order the '
+      + 'published build reads them, carrying the fields football/availability/overlay.js reads — so the board '
+      + 'merges the same filings the build does. Derived; rewritten by every report writer.',
+    reports: readAll(dir).map(x => compactReport(x.report, x.file)) };
+}
+/* rewrite the bundle when it no longer matches the directory */
+function writeBundle(dir, dest) {
+  const fs = require('fs');
+  dest = dest || BUNDLE_FILE;
+  const text = JSON.stringify(bundle(dir || path.join(__dirname, 'reports')), null, 1) + '\n';
+  let prev = null;
+  try { prev = fs.readFileSync(dest, 'utf8'); } catch (_) { prev = null; }
+  if (prev === text) return false;
+  fs.writeFileSync(dest, text);
+  return true;
+}
+
+module.exports = { ingest, reconcile, toLines, rowsFrom, stripHtml, DESIGNATIONS, SCHEMA,
+  BUNDLE_SCHEMA, BUNDLE_FILE, compactReport, readAll, bundle, writeBundle };

@@ -134,7 +134,9 @@
         published_at: r.published_at, retrieved_at: r.retrieved_at,
         scope: r.scope, comprehensive: !!r.comprehensive,
         vocabulary: r.vocabulary || [], game_id: r.game_id || null,
-        names: (r.rows || []).length, unparsed: (r.unparsed || []).length,
+        names: (r.rows || []).length,
+        /* a count: the bundle the board reads carries unparsed_n, not the lines */
+        unparsed: r.unparsed_n != null ? r.unparsed_n : (r.unparsed || []).length,
         ok: true,
         report_of_no_absences: !!r.silence_means_available
       };
