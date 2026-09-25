@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_rankings_health_v1",
- "generated_at": "2026-09-25T01:58:17.151Z",
+ "generated_at": "2026-09-25T08:42:36.476Z",
  "build_version": {
   "schema_version": "1.1.0",
   "versions": {
@@ -14,12 +14,12 @@
    "scheme_matchup": "scheme_matchup_v1",
    "simulation": "simulation_v1"
   },
-  "digest": "1c75bac9a297fb33"
+  "digest": "870c6e6e1c4a1c55"
  },
  "season": 2026,
- "week": 3,
- "week_ordinal": 3,
- "week_label": "Week 3",
+ "week": 4,
+ "week_ordinal": 4,
+ "week_label": "Week 4",
  "fbs_teams_expected": 138,
  "teams_processed": 138,
  "teams_missing_entirely": [],
@@ -331,26 +331,35 @@
   }
  ],
  "ingestion": {
-  "completed_games_in_schedule": 260,
-  "last_completed_kickoff": "2026-09-20T03:00:00.000Z",
-  "team_games_read": 945,
+  "completed_games_in_schedule": 261,
+  "last_completed_kickoff": "2026-09-24T23:30:00.000Z",
+  "team_games_read": 947,
   "teams_with_a_performance_rating": 138,
-  "special_teams_team_games_joined": 517,
-  "special_teams_coverage_joined": 489,
+  "special_teams_team_games_joined": 519,
+  "special_teams_coverage_joined": 491,
   "special_teams_box_available": true,
   "opponent_adjustment_converged": true
  },
  "source_freshness": {
-  "completed_games": 260,
-  "latest_completed_kickoff": "2026-09-20T03:00:00.000Z",
-  "completed_games_digest": "60f2131e23fb8bdd",
+  "completed_games": 261,
+  "latest_completed_kickoff": "2026-09-24T23:30:00.000Z",
+  "completed_games_digest": "f6beb2dbe873f60e",
   "finality": {
    "schedule_final": 260,
-   "confirmed_by_box_alone": 0,
-   "games": [],
+   "confirmed_by_box_alone": 1,
+   "games": [
+    {
+     "game_id": "401869941",
+     "home": "Coastal Carolina",
+     "away": "Liberty",
+     "week": 4,
+     "start_date": "2026-09-24T23:30:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    }
+   ],
    "basis": "a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was."
   },
-  "team_games_read": 945,
+  "team_games_read": 947,
   "teams_with_a_performance_rating": 138,
   "basis": "the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it."
  },
@@ -359,12 +368,12 @@
   "season": 2026,
   "reference_season": 2025,
   "per_team_game": {
-   "team_games": 518,
+   "team_games": 520,
    "fg_att": 1.37,
-   "xp_att": 3.3,
-   "punts": 4.29,
+   "xp_att": 3.29,
+   "punts": 4.28,
    "punts_in20": 1.25,
-   "kr": 1.45,
+   "kr": 1.46,
    "pr": 1.38
   },
   "reference_per_team_game": {
@@ -381,31 +390,32 @@
    "xp_att": 1.09,
    "punts": 1.04,
    "punts_in20": 0.95,
-   "kr": 0.86,
+   "kr": 0.87,
    "pr": 1.1
   },
   "mean_ratio": 0.99,
   "basis": "per-team-game kicking, punting and return volumes in this season’s box artifact against the most recent completed season this build read. A season in progress publishes in pieces — a game lands, then the punter’s line lands — so a ratio below one is the FEED still filling in, not football that did not happen. It moves no rating: it is why some teams have no special-teams number yet."
  },
  "history": {
-  "snapshots": 4,
+  "snapshots": 5,
   "weeks_on_file": [
    "2026 Preseason",
    "2026 Week 1",
    "2026 Week 2",
-   "2026 Week 3"
+   "2026 Week 3",
+   "2026 Week 4"
   ],
   "latest": {
    "season": 2026,
-   "week_ordinal": 3,
-   "week_label": "Week 3",
+   "week_ordinal": 4,
+   "week_label": "Week 4",
    "season_type": "regular",
-   "generated_at": "2026-09-25T01:58:17.151Z",
+   "generated_at": "2026-09-25T08:42:36.476Z",
    "team_count": 138,
    "rating_version": "team_rating_v1"
   }
  },
- "last_rankings_build": "2026-09-25T01:58:17.151Z",
+ "last_rankings_build": "2026-09-25T08:42:36.476Z",
  "notes": [
   "Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.",
   "A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null."
