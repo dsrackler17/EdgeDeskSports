@@ -52,6 +52,9 @@
       state: 'PUBLISHED',
       report_url: 'https://www.secsports.com/fbreports',
       archive_url: 'https://www.secsports.com/fbreports-archive',
+      /* the page embeds HD Intelligence's public report; the table is read
+         from there (football/availability/hdi.js) */
+      platform: 'hdintelligence', platform_code: 'SEC',
       policy_url: 'https://www.secsports.com/availability-reporting-policy',
       applies_to: 'CONFERENCE_GAMES',
       comprehensive: true,
@@ -65,16 +68,19 @@
     {
       id: 'bigten', name: 'Big Ten Conference', aliases: ['Big Ten', 'B1G'],
       state: 'PUBLISHED',
-      report_url: 'https://bigten.org/',
+      report_url: 'https://bigten.org/fb/availability-reports/',
       archive_url: null,
       policy_url: 'https://bigten.org/fb/article/60284/',
+      platform: 'hdintelligence', platform_code: 'B10',
       applies_to: 'CONFERENCE_GAMES',
       comprehensive: true,
       /* OUT_FIRST_HALF is new for 2026 and is NOT "out": it is a player who
          is unavailable for two quarters and available after them. Flattening
          it to OUT would over-price the absence; flattening it to available
          would under-price it. It is carried as its own designation. */
-      statuses: ['PROBABLE', 'QUESTIONABLE', 'DOUBTFUL', 'OUT', 'OUT_FIRST_HALF'],
+      /* game day swaps the midweek set for GAME-TIME DECISION, OUT and OUT
+         (1ST HALF) */
+      statuses: ['AVAILABLE', 'PROBABLE', 'QUESTIONABLE', 'DOUBTFUL', 'OUT', 'OUT_FIRST_HALF', 'GAME_TIME_DECISION'],
       first_filing_hours_before_kickoff: 72,
       final_filing_minutes_before_kickoff: 120,
       cadence: 'four filings a week for conference games — three days, two days and the night before at 8pm ET, '
@@ -90,11 +96,14 @@
       id: 'acc', name: 'Atlantic Coast Conference', aliases: ['ACC'],
       state: 'PUBLISHED',
       report_url: 'https://theacc.com/sports/2025/8/28/availability-reporting-football.aspx',
-      archive_url: 'https://theacc.com/sports/2025/8/28/availability-reporting.aspx',
+      archive_url: 'https://theacc.com/sports/2025/8/28/availability-reporting-football-archive.aspx',
+      platform: 'hdintelligence', platform_code: 'ACC',
       policy_url: 'https://theacc.com/sports/2025/8/28/availability-reporting.aspx',
       applies_to: 'CONFERENCE_GAMES',
       comprehensive: true,
-      statuses: ['AVAILABLE', 'QUESTIONABLE', 'DOUBTFUL', 'OUT'],
+      /* the ACC's own policy page lists five pre-game-day statuses:
+         available, probable, questionable, doubtful, out */
+      statuses: ['AVAILABLE', 'PROBABLE', 'QUESTIONABLE', 'DOUBTFUL', 'OUT'],
       first_filing_hours_before_kickoff: 48,
       final_filing_minutes_before_kickoff: 120,
       cadence: 'filed two nights before a conference game, again the night before, and two hours before kickoff',
@@ -104,9 +113,12 @@
     {
       id: 'big12', name: 'Big 12 Conference', aliases: ['Big 12', 'Big XII'],
       state: 'PUBLISHED',
-      report_url: 'https://big12sports.com/',
+      /* no conference page was found that embeds the report; the platform's
+         own public view is the page a reader can open */
+      report_url: 'https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report',
       archive_url: null,
       policy_url: 'https://big12sports.com/documents/2025/8/19/2025_Big_12_Conference_Player_Availability_Reporting_Policy.pdf',
+      platform: 'hdintelligence', platform_code: 'B12',
       applies_to: 'CONFERENCE_GAMES',
       comprehensive: true,
       statuses: ['AVAILABLE', 'PROBABLE', 'QUESTIONABLE', 'DOUBTFUL', 'OUT'],

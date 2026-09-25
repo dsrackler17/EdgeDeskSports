@@ -58,7 +58,7 @@ jobs:
           node-version: '22'
 
       - name: The rules must pass before anything is allowed to write
-        run: node football/availability/availability.test.js
+        run: node football/availability/availability.test.js && node football/availability/reports.test.js && node football/availability/hdi.test.js
 
       - name: Refresh the source registry
         run: |

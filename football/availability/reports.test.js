@@ -131,9 +131,11 @@ section('2. what a read produces, and what a failed read produces');
   chk('and it says why rather than leaving the reader to infer it',
     /not a statement that the roster is whole/.test(selective.why), selective.why);
 
-  /* a status outside the conference's published vocabulary */
-  const odd = R.ingest(Object.assign({}, BASE, { body: '<table><tr><td>Carson Beck</td><td>Probable</td></tr></table>',
-    content_type: 'text/html' }));
+  /* a status outside the conference's published vocabulary: the Mountain
+     West files only OUT and QUESTIONABLE (the ACC, whose example this once
+     was, lists PROBABLE in its own policy and files it) */
+  const odd = R.ingest(Object.assign({}, BASE, { conference: 'Mountain West',
+    body: '<table><tr><td>Carson Beck</td><td>Probable</td></tr></table>', content_type: 'text/html' }));
   chk('a designation the conference does not publish is quarantined, not mapped onto a neighbour',
     odd.rows.length === 0 && odd.unparsed.length === 1
       && /not in this conference/.test(odd.unparsed[0].why || ''), odd.unparsed);
