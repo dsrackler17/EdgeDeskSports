@@ -116,7 +116,13 @@
 .edm-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .edm-chip{border:1px solid var(--border);background:var(--bg);color:var(--dim);border-radius:999px;padding:7px 12px;font:600 12.5px Inter,system-ui,sans-serif;cursor:pointer;min-height:34px}
 .edm-chip.on{border-color:var(--accent);color:var(--text);background:rgba(47,167,154,.14)}
-.edm-cb{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);margin:7px 0}
+.edm-cbs{display:flex;flex-direction:column;gap:6px;margin:14px 0 4px}
+.edm-cbs-h{font-size:11.5px;font-weight:600;color:var(--dim);margin:0 0 2px}
+.edm-cb{display:flex;align-items:flex-start;gap:10px;margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:var(--bg);font-size:13px;line-height:1.4;color:var(--text);text-align:left;cursor:pointer}
+.edm-cb:hover{border-color:var(--accent)}
+.edm-cb small{color:var(--dim);font-size:12px}
+/* the page styles every input as a full-width field; a checkbox keeps its own size */
+.edm-cb input[type=checkbox]{flex:0 0 auto;width:16px;height:16px;min-height:0;margin:1px 0 0;padding:0;border:0;border-radius:4px;background:none;accent-color:var(--accent);cursor:pointer}
 .edm-snap{border:1px dashed var(--border);border-radius:10px;padding:9px 10px;margin:10px 0;font-size:12px;color:var(--dim)}
 .edm-snap>b{color:var(--text)}
 .edm-err{color:var(--neg);font-size:12px;min-height:1px;margin-top:4px}

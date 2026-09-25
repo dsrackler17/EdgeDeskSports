@@ -232,6 +232,14 @@ async function withPage(browser, site, viewport, db, init) {
       await page.click('#edmOnb .edm-chip:has-text("CLV tracking")');
       await page.click('#edmOnb button:has-text("Continue")');
       await page.fill('#onbGap', '2.5');
+      /* the page styles every input as a full-width field; the step-4
+         checkboxes must keep their own size and sit beside their words */
+      const cbs = await page.evaluate(() => [...document.querySelectorAll('#edmOnb .edm-cb')].map((l) => {
+        const i = l.querySelector('input').getBoundingClientRect(), t = l.querySelector('span').getBoundingClientRect(), r = l.getBoundingClientRect();
+        return { w: i.width, left: i.left - r.left, gap: t.left - i.right };
+      }));
+      chk('the alert checkboxes are box-sized, at the left, beside their text', cbs.length === 3 && cbs.every((c) => c.w <= 24 && c.left < 24 && c.gap >= 0 && c.gap < 24), cbs);
+      await shot(page, vp.name + '-1b-alerts-step');
       await page.click('#edmOnb button:has-text("Continue")');
       await page.click('#edmOnb button:has-text("Go to my research desk")');
       await page.waitForFunction(() => !document.getElementById('edmOnb').classList.contains('on'));
