@@ -1,10 +1,10 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-25T01:57:26.273Z",
+  "generated_at": "2026-09-25T14:42:28.218Z",
   "ok": true,
-  "last_ok_at": "2026-09-25T01:57:26.273Z",
+  "last_ok_at": "2026-09-25T14:42:28.218Z",
   "run": {
-    "trigger": "push",
+    "trigger": "schedule",
     "runner": "github-actions",
     "params_built_at": {
       "football": "2026-08-21T19:18:15+00:00",
@@ -21,10 +21,10 @@
   },
   "learning": {
     "nfl": {
-      "completed_in_feed": 32,
-      "absorbed": 32,
+      "completed_in_feed": 33,
+      "absorbed": 33,
       "join_missed": 0,
-      "data_through": "2026-09-21",
+      "data_through": "2026-09-24",
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
@@ -98,13 +98,13 @@
       "id": "nfl_ingest",
       "label": "NFL: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "32/32 absorbed, data through 2026-09-21"
+      "detail": "33/33 absorbed, data through 2026-09-24"
     },
     {
       "id": "nfl_projections",
       "label": "NFL: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "31/31 upcoming games PREDICTED, all inside bounds"
+      "detail": "30/30 upcoming games PREDICTED, all inside bounds"
     },
     {
       "id": "nfl_lines_market",
@@ -164,7 +164,7 @@
       "id": "p4_universe",
       "label": "CFB: the FBS universe resolves from this season’s own feed",
       "status": "pass",
-      "detail": "138 active FBS programs across 11 conferences · 130 game(s) on the slate, 60 sampled"
+      "detail": "138 active FBS programs across 11 conferences · 129 game(s) on the slate, 60 sampled"
     },
     {
       "id": "p4_lines_src",
@@ -176,7 +176,7 @@
       "id": "p4_projections",
       "label": "CFB: upcoming FBS slate projects to sane numbers",
       "status": "pass",
-      "detail": "60/60 sampled FBS games PREDICTED, all inside bounds · roster bundles joined on 54/60 · {\"non_conference\":20,\"fbs_fcs\":6,\"conference\":34}"
+      "detail": "60/60 sampled FBS games PREDICTED, all inside bounds · roster bundles joined on 49/60 · {\"conference\":35,\"non_conference\":14,\"fbs_fcs\":11}"
     },
     {
       "id": "p4_lines_market",
@@ -200,23 +200,23 @@
       "id": "p4_confidence_ledger",
       "label": "CFB P4: every published confidence ledger adds to 100",
       "status": "pass",
-      "detail": "130 games"
+      "detail": "129 games"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-25T01:57:26.273Z",
+    "daily_check_last_run": "2026-09-25T14:42:28.218Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-25T01:57:26.273Z",
+    "engine_tests_last_run": "2026-09-25T14:42:28.218Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-25T01:57:26.273Z",
+    "nfl_ingest_last_run": "2026-09-25T14:42:28.218Z",
     "nfl_ingest_last_status": "ok",
-    "row_count_nfl_ingest": 32,
-    "p4_ingest_last_run": "2026-09-25T01:57:26.273Z",
+    "row_count_nfl_ingest": 33,
+    "p4_ingest_last_run": "2026-09-25T14:42:28.218Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 260,
-    "projection_guard_last_run": "2026-09-25T01:57:26.273Z",
+    "projection_guard_last_run": "2026-09-25T14:42:28.218Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-25T01:57:26.273Z",
+    "line_guard_last_run": "2026-09-25T14:42:28.218Z",
     "line_guard_last_status": "ok",
     "row_count_line_guard": 30
   },
@@ -225,22 +225,22 @@
     "what_ok_does_not_mean": "it is NOT a statement about data coverage. A week where the conference availability reports are not due yet, no forecast provider was called and half the slate is non-conference is a perfectly healthy pipeline over thin inputs, and `coverage` below is where that shows."
   },
   "coverage": {
-    "games": 130,
+    "games": 129,
     "information_confidence": {
-      "mean": 79.7,
-      "median": 84.9,
+      "mean": 80,
+      "median": 85,
       "lower_decile": 56.7,
-      "at_90": 1,
+      "at_90": 7,
       "at_95": 0
     },
     "biggest_gaps": [
       {
         "field": "qb_availability",
-        "mean_points_lost": 7.72
+        "mean_points_lost": 7.26
       },
       {
         "field": "team_rating",
-        "mean_points_lost": 2.64
+        "mean_points_lost": 2.66
       },
       {
         "field": "off_field",
@@ -259,7 +259,7 @@
         "mean_points_lost": 0.53
       }
     ],
-    "ledgers_reconciling": 130,
+    "ledgers_reconciling": 129,
     "source": "football/fbs/slate.json — read, not recomputed, so this cannot disagree with the board"
   }
 }
