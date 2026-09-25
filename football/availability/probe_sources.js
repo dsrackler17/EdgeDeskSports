@@ -111,6 +111,39 @@ function show(label, r, depth) {
   if (apis.length) console.log(pad + '  api-looking: ' + apis.join(' , '));
   const dates = [...new Set((html.match(/(datetime|datePublished|dateModified|published_time|modified_time)["'=:\s]+["']?[^"'<>]{8,40}/gi) || []))].slice(0, 8);
   if (dates.length) console.log(pad + '  date markup: ' + dates.join(' | '));
+  /* WHERE A SCRIPT-FILLED PAGE GETS ITS TABLE: iframes and embeds, inline
+     scripts that carry a status word, the SEC's encoded page data, and the
+     raw markup under the page's own heading */
+  const frames = [...html.matchAll(/<(iframe|embed|object)\b[^>]*(src|data)=["']([^"']+)["']/gi)].map(x => x[3]);
+  if (frames.length) console.log(pad + '  frames: ' + frames.slice(0, 10).join(' , '));
+  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(x => x[1])
+    .filter(t => /questionable|probable|doubtful|availab|\.pdf|sheet|airtable|api\//i.test(t));
+  inline.slice(0, 6).forEach((t, i) => {
+    const at = t.search(/questionable|probable|doubtful|availab|\.pdf|sheet|airtable|api\//i);
+    console.log(pad + '  inline script ' + i + ' (' + t.length + ' chars) >>> ' + t.slice(Math.max(0, at - 300), at + 900).replace(/\s+/g, ' ') + ' <<<');
+  });
+  const dp = html.match(/data-page=["']([^"']+)["']/i);
+  if (dp) {
+    const json = dp[1].replace(/&quot;/g, '"').replace(/&#039;|&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    try {
+      const page = JSON.parse(json);
+      console.log(pad + '  data-page component=' + page.component + ' props=' + Object.keys(page.props || {}).join(','));
+      const hits = [];
+      (function walk(v, at) {
+        if (hits.length > 80) return;
+        if (v && typeof v === 'object') { Object.keys(v).forEach(k => walk(v[k], at + '.' + k)); return; }
+        if (typeof v === 'string' && /report|availab|\.pdf|questionable|probable|doubtful|\bout\b|updated|posted/i.test(v + at))
+          hits.push(at + ' = ' + v.slice(0, 200));
+      })(page.props, 'props');
+      hits.forEach(h => console.log(pad + '    ' + h));
+    } catch (e) { console.log(pad + '  data-page did not parse: ' + e.message + ' · ' + json.slice(0, 600)); }
+  }
+  const head = title ? strip(title).split(' - ')[0].trim() : null;
+  if (head) {
+    const first = html.indexOf(head), second = first >= 0 ? html.indexOf(head, first + head.length) : -1;
+    const at = second >= 0 ? second : first;
+    if (at >= 0) console.log(pad + '  RAW HTML after heading >>> ' + html.slice(at, at + 3500).replace(/\s+/g, ' ') + ' <<<');
+  }
   const links = linksOf(html, r.url);
   console.log(pad + '  report-looking links (' + links.length + '):');
   links.slice(0, 50).forEach(l => console.log(pad + '    ' + l.href + '  «' + l.text + '»'));
