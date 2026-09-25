@@ -395,8 +395,10 @@
       return { evidence: 'COMPREHENSIVE_SILENCE', state: 'AVAILABLE',
         source: (off.conference || '') + ' availability report',
         published_at: off.published_at || null, retrieved_at: off.retrieved_at || null,
+        /* "does not list him as out…", not "does not name him": a platform
+           listing names every player and marks this one available */
         why: 'the comprehensive ' + (off.conference || 'conference') + ' availability report for this game designates '
-          + 'every player and does not name ' + (rec.player_name || 'him')
+          + 'every player and does not list ' + (rec.player_name || 'him') + ' as out, doubtful or questionable'
           + ((off.names || 0) ? ' (it lists ' + off.names + ' other player(s))' : ' (it names nobody on this roster)')
           + ', which is a report that he is available' };
     }

@@ -572,6 +572,8 @@ jobs:
         run: node football/availability/reports.test.js
       - name: Conference availability listings (HD Intelligence)
         run: node football/availability/hdi.test.js
+      - name: The American, MAC and Pac-12 reports, held to what they file
+        run: node football/availability/conferences.test.js
 
       # THE ENGINE'S AVAILABILITY IS ABOUT THIS GAME, AND DATED. A 2020 ESPN
       # note re-read this morning, last week's conference filing, and a QB

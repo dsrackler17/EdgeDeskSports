@@ -34,6 +34,7 @@ const R = require(path.join(HERE, 'reports.js'));
 const OVERLAY = require(path.join(HERE, 'overlay.js'));
 const ING = require(path.join(HERE, 'ingest_report.js'));
 const HDI = require(path.join(HERE, 'hdi.js'));
+const P12 = require(path.join(HERE, 'pac12.js'));
 const FBS = require(path.join(ROOT, 'football', 'fbs', 'fbs.js'));
 
 function arg(name, fb) {
@@ -98,24 +99,30 @@ async function main() {
     });
   }
 
-  /* THE PLATFORM-PUBLISHED CONFERENCES. The SEC, ACC, Big Ten and Big 12
-     report pages embed one platform (football/availability/hdi.js), whose
-     public table carries every game's listing, structured and dated by the
-     conference. One request per conference; each fixture-side is matched to
-     its entry by both team names and the game date, and a fixture the table
-     does not carry yet is a failed read that says so. */
+  /* THE STRUCTURED CONFERENCES. The SEC, ACC, Big Ten, Big 12, American
+     and MAC report pages embed one platform (football/availability/hdi.js),
+     whose public table carries every game's listing, structured and dated by
+     the conference; the Pac-12's page renders its own file
+     (football/availability/pac12.js). One request per source; each
+     fixture-side is matched to its entry by the team names and the game
+     date, and a fixture the source does not carry yet is a failed read that
+     says so. */
   const byPlatform = new Map(), rest = [];
   wanted.forEach(w => {
     const pol = POLICY.forConference(w.conference);
-    if (pol && pol.platform === 'hdintelligence' && pol.platform_code) {
-      if (!byPlatform.has(pol.platform_code)) byPlatform.set(pol.platform_code, []);
-      byPlatform.get(pol.platform_code).push(w);
+    const key = pol && pol.platform === 'hdintelligence' && pol.platform_code ? pol.platform_code
+      : (pol && pol.platform === 'pac12-feed' ? 'pac12-feed' : null);
+    if (key) {
+      if (!byPlatform.has(key)) byPlatform.set(key, []);
+      byPlatform.get(key).push(w);
     } else rest.push(w);
   });
   for (const [code, sides] of byPlatform) {
-    const view = HDI.publicViewUrl(code);
-    const got = await HDI.fetchPublished(code);
-    const entries = got.ok ? Object.keys(got.data).map(id => HDI.readEntry(id, got.data[id])) : [];
+    const feed = code === 'pac12-feed';
+    const view = feed ? P12.PAGE_URL : HDI.publicViewUrl(code);
+    const got = feed ? await P12.fetchFeed(null, now) : await HDI.fetchPublished(code);
+    const entries = !got.ok ? [] : (feed ? P12.readFeed(got.data)
+      : Object.keys(got.data).map(id => HDI.readEntry(id, got.data[id])));
     console.error('[reports] ' + code + ': ' + (got.ok ? entries.length + ' published game listing(s)' : 'refused — ' + got.why));
     const pending = [];
     for (const w of sides) {
@@ -132,7 +139,9 @@ async function main() {
         out = R.fromListing({ conference: w.conference, team: w.team, roster: ING.rosterFor(w.team, season) || [],
           game_id: w.game_id, kickoff: w.kickoff, source_url: view, published_at: entry.published_at,
           retrieved_at: new Date(now).toISOString(), listed: side.listed, vocabulary: entry.vocabulary,
-          report_type: entry.report_type, report_id: entry.report_id, platform: 'hdintelligence',
+          report_type: entry.report_type, report_id: entry.report_id, platform: feed ? 'pac12-feed' : 'hdintelligence',
+          /* the Pac-12 lists reported players only (pac12.js) */
+          reported_only: feed,
           home_conference: w.home_conference, away_conference: w.away_conference, is_conference_game: true, now });
       }
       pending.push({ w, out });

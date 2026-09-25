@@ -32,6 +32,11 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      # what each conference has actually FILED this season (the platform's
+      # public archive) and the Pac-12's own report feed: the vocabulary and
+      # the listing behaviour a parser is written against
+      - name: Probe the filed archives and the Pac-12 feed
+        run: node football/availability/probe_sources.js archive
       - name: Probe the report sources
         run: node football/availability/probe_sources.js ${{ github.event.inputs.only }}
       # the sync itself, against what is published right now, writing
