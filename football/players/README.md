@@ -176,7 +176,11 @@ merges them.
 
 * **Availability.** It changes who plays, not how good a player is. It is
   applied in the unit aggregation, so PLAYER QUALITY and AVAILABILITY stay
-  separable and a player is never silently downgraded for being hurt.
+  separable and a player is never silently downgraded for being hurt. Each
+  unit publishes both: `rating`, the unit expected to take the field this
+  week, and `rating_ex_availability`, its ability with nobody removed. The
+  team talent rating reads the second, so a named absence is priced once, as
+  availability, and never again inside the unit.
 * **Scheme fit.** Published as its own measurement; it does not move EPIR until
   a walk-forward says it should.
 * **Transfer status.** A transfer's production is his own production. Changing

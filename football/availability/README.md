@@ -260,8 +260,10 @@ One dataset, one presentation path (`EDCARD.availabilityFor` → `EDPRES`):
    configured yet.
 4. **The sandbox cannot reach ESPN**, so the collectors are fixture-tested here
    and run for real in GitHub Actions, exactly like the roster sync.
-5. **Availability moves no model number.** It is context until a deterministic
-   player-value adjustment exists.
+5. **Availability moves no model number.** The deterministic measurement now
+   exists — `football/personnel/` scores each non-QB absence 0-100 against its
+   likely replacement — and it still moves nothing: its projection adjustment
+   is 0 until a coefficient is trained on the frozen pregame history it keeps.
 
 ## Tests
 

@@ -373,6 +373,95 @@ function fakeUnits(level, opts) {
   ok('talent availability: unknown is explicitly missing, not a clean zero',
     availBuilt.blind.missing.some(x => x.id === 'availability'));
 
+  /* A NAMED ABSENCE MUST NOT SURVIVE strip_availability.
+     The whole chain, from a roster to the number the engine would price:
+     players/units.js -> talent (league pass) -> ETSR -> the rating adapter's
+     signed availability contribution -> football/cfb_p4 strip. Rotation
+     quality used to read the availability-adjusted unit rating, so a named
+     OUT starter moved talent inside the unit where the strip, which removes
+     only the explicit availability component, could not reach it. */
+  (function namedAbsenceIsStripped() {
+    const UN = require('../players/units.js');
+    const SYNC = require('../rating/sync_rankings.js');
+    global.window = global.window || global;
+    require('../cfb_p4/params.js');
+    const ENG = require('../cfb_p4/engine.js');
+    const SHAPE = { QB: 3, RB: 4, WR: 7, TE: 3, OL: 8, DL: 6, LB: 5, CB: 5, S: 4, K: 1, P: 1 };
+    function roster(tk, lvl) {
+      const out = [];
+      Object.keys(SHAPE).forEach((g) => {
+        for (let i = 0; i < SHAPE[g]; i++) {
+          out.push({ key: tk + g + i, name: tk + ' ' + g + i, pos: g, group: g, epir: lvl + 14 - i * 2.5 + (tk.length % 3),
+            confidence: 0.6, sample_size: 20, seasons_observed: 2, status: 'returning', role: { expected_role: i < 2 ? 'STARTER' : 'ROTATION' } });
+        }
+      });
+      return out;
+    }
+    const TEAMS = []; for (let i = 0; i < 16; i++) TEAMS.push('team' + i);
+    /* avail(tk) -> the availability map one team's units are built with */
+    function league(avail) {
+      const L = {};
+      TEAMS.forEach((tk, i) => { L[tk] = UN.rateTeam(tk, tk, roster(tk, 44 + i), { availability: avail(tk) }); });
+      return L;
+    }
+    const OL0 = 'team7OL0';
+    function everyoneActive(tk) { const m = {}; roster(tk, 50).forEach((p) => { m[p.key] = { status: 'ACTIVE' }; }); return m; }
+
+    /* 1. partial evidence: one named OUT starter and nothing else on file */
+    const quiet = league(() => ({}));
+    const named = league((tk) => (tk === 'team7' ? { [OL0]: { status: 'OUT' } } : {}));
+    ok('the named absence is visible where it belongs: the unit EXPECTED to play is weaker',
+      named.team7.groups.OL.rating < quiet.team7.groups.OL.rating);
+    eq('but the unit’s ability is unchanged', named.team7.groups.OL.rating_ex_availability, quiet.team7.groups.OL.rating_ex_availability);
+    const tq = TAL.build(quiet, {}).teams, tn = TAL.build(named, {}).teams;
+    eq('rotation quality reads ability, so a named OUT starter does not move it', tn.team7.rotation_quality, tq.team7.rotation_quality);
+    ok('and it says so', /availability-free/.test(tn.team7.rotation_basis));
+    ok('partial evidence leaves the explicit availability component unscored', tn.team7.availability.rating === null
+      && !tn.team7.components.some((c) => c.id === 'availability'));
+    ok('so no team’s talent rating moves at all', TEAMS.every((tk) => tn[tk].rating === tq[tk].rating),
+      TEAMS.filter((tk) => tn[tk].rating !== tq[tk].rating));
+
+    /* 2. full coverage: every player on file, one team with one OUT starter.
+       The explicit component now scores both rosters; after the strip the
+       canonical ratings agree to the rating's own published precision. */
+    const covered = league((tk) => { const m = everyoneActive(tk); if (+tk.slice(4) % 3 === 0 && tk !== 'team7') m[tk + 'WR0'] = { status: 'OUT' }; return m; });
+    const coveredOut = league((tk) => { const m = everyoneActive(tk); if (+tk.slice(4) % 3 === 0 && tk !== 'team7') m[tk + 'WR0'] = { status: 'OUT' }; if (tk === 'team7') m[OL0] = { status: 'OUT' }; return m; });
+    function canonical(L) {
+      const talent = TAL.build(L, {}).teams;
+      const rows = TEAMS.map((tk) => {
+        const r = ETSR.rateTeam(tk, { talent: talent[tk], performance: null, continuity: null, prev_etsr: null, sample: { fbs_equivalent_games: 0 } }, {});
+        const row = Object.assign({}, r, { talent: talent[tk] });
+        return { canonical_key: tk, team: tk, rating: r.etsr_raw, confidence: 0.5,
+          components: { availability: { points: Math.min(0, SYNC.availabilityPoints(row) || 0), contribution: SYNC.availabilityContribution(row) || 0 } } };
+      });
+      const st = ENG.newState();
+      ENG.ingest.setCanonicalRatings(st, { source_schema: 'edgedesk_national_rankings_v1', season: 2026, calibration: { measured: true }, teams: rows }, { strip_availability: true });
+      return { talent, rows, st };
+    }
+    const A = canonical(covered), B = canonical(coveredOut);
+    ok('full coverage scores the explicit availability component', A.talent.team7.components.some((c) => c.id === 'availability')
+      && B.talent.team7.components.some((c) => c.id === 'availability'));
+    ok('before the strip the named absence moves the rating (it is priced as its own term)', B.rows[7].rating < A.rows[7].rating);
+    ok('a healthy covered roster carries a signed contribution, not just penalties', A.rows.some((r) => r.components.availability.contribution > 0));
+    const ppz = ETSR.rateTeam('x', { talent: A.talent.team7, sample: {} }, {}).scalars.talent_points_per_z;
+    /* the published precision: the talent rating AND the components the
+       strip is recomputed from are each published to 0.1 on the talent scale
+       (two half-steps), and talent points, ETSR and the contribution to 0.01 */
+    const tol = 2 * 0.05 / CFG.TALENT.scale.sd * ppz + 3 * 0.005 + 1e-9;
+    ok('after strip_availability the same roster rates the same with and without the named OUT starter',
+      Math.abs(B.st.canonicalRatings.team7.value - A.st.canonicalRatings.team7.value) <= tol,
+      { with_out: B.st.canonicalRatings.team7.value, without: A.st.canonicalRatings.team7.value, tol });
+    ok('and so does every other team in the league', TEAMS.every((tk) => Math.abs(B.st.canonicalRatings[tk].value - A.st.canonicalRatings[tk].value) <= tol),
+      TEAMS.map((tk) => [tk, A.st.canonicalRatings[tk].value, B.st.canonicalRatings[tk].value, A.rows[TEAMS.indexOf(tk)].components.availability.contribution, B.rows[TEAMS.indexOf(tk)].components.availability.contribution]).filter((x) => Math.abs(x[1] - x[2]) > tol).concat([['tol', tol]]));
+    ok('the strip removes a healthy bonus as well as a penalty', TEAMS.some((tk) => A.st.canonicalRatings[tk].availability_removed > 0));
+    /* and the stripped rating is the rating with NO availability evidence:
+       the same roster, built with nothing on file, unstripped */
+    const Q = canonical(quiet);
+    ok('the stripped rating equals the same roster’s rating with no availability evidence at all',
+      TEAMS.every((tk) => Math.abs(B.st.canonicalRatings[tk].value - Q.rows[TEAMS.indexOf(tk)].rating) <= tol),
+      TEAMS.map((tk) => [tk, B.st.canonicalRatings[tk].value, Q.rows[TEAMS.indexOf(tk)].rating]).filter((x) => Math.abs(x[1] - x[2]) > tol));
+  })();
+
   /* a unit a roster does not SPELL is not a missing unit */
   const noEdge = TAL.build({ a: fakeUnits(50) }, {}).teams.a;
   ok('talent: an unspelled EDGE is not reported missing', (noEdge.missing_units || []).indexOf('EDGE') < 0);

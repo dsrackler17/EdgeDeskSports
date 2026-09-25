@@ -2845,9 +2845,14 @@
         v = t.rating;
         if (!k || !isNum(v)) continue;
         removed = 0;
-        av = t.components && t.components.availability
-          ? t.components.availability.points : null;
-        if (opts.strip_availability === true && isNum(av) && av < 0) {
+        /* THE WHOLE AVAILABILITY CONTRIBUTION, EITHER SIGN. `contribution` is
+           the signed term the rating adapter publishes; `points` is its
+           penalty-only display, read only from an older artifact. Stripping
+           penalties alone left a fully covered healthy roster its bonus, so
+           the stripped rating still moved on a named absence. */
+        var avc = t.components && t.components.availability ? t.components.availability : null;
+        av = avc ? (isNum(avc.contribution) ? avc.contribution : avc.points) : null;
+        if (opts.strip_availability === true && isNum(av) && av !== 0) {
           removed = av;
           v -= av;
         }
@@ -2860,7 +2865,7 @@
           as_of: dataset.source_generated_at || dataset.generated_at || null,
           availability_removed: removed,
           basis: 'canonical ETSR backbone'
-            + (removed < 0 ? '; current availability contribution removed before game-specific injury pricing' : '')
+            + (removed !== 0 ? '; current availability contribution removed before game-specific injury pricing' : '')
         };
       }
       /* Always retain the canonical research map for display/audit. It becomes

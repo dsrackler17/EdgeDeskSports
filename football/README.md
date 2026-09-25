@@ -60,6 +60,14 @@ football/
                 beat the Power 4 rating core out of sample, so it ships with
                 `points_applied:false` and is published as research.
                 See players/README.md.
+
+  personnel/    NON-QB PERSONNEL AVAILABILITY — how much worse a team is with
+                the expected replacement playing instead of each non-QB
+                absence: player quality, replacement quality, usage, position
+                and matchup leverage and unit concentration, scored 0-100 with
+                its confidence and evidence, frozen write-once beside every
+                pregame projection. A measurement: projection adjustment 0
+                until a coefficient is trained. See personnel/README.md.
 ```
 
 ## The honesty contract

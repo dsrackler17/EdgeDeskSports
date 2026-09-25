@@ -851,7 +851,8 @@ function unitSummaries(teams) {
     const u = teams[k], g = {};
     for (const gk of Object.keys(u.groups)) {
       const x = u.groups[gk];
-      g[gk] = { r: x.rating, c: r2(x.confidence), sq: x.starter_quality, dq: x.depth_quality,
+      g[gk] = { r: x.rating, rx: x.rating_ex_availability == null ? null : x.rating_ex_availability,
+        c: r2(x.confidence), sq: x.starter_quality, dq: x.depth_quality,
         ct: x.continuity, ex: x.experience, n: x.roster_size,
         out: x.availability.starters_out,
         unav: x.availability.unavailable_share == null ? null : x.availability.unavailable_share,

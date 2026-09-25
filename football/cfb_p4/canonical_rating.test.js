@@ -76,5 +76,20 @@ E.ingest.setCanonicalRatings(st2,promotedData,{strip_availability:false});
 chk('availability stripping is explicit and reversible after promotion',
   near(E.strength.rating(st2,'texastech',true),9),E.strength.rating(st2,'texastech',true));
 
+/* THE SIGNED CONTRIBUTION, EITHER WAY. A fully covered healthy roster is
+   rated up by its availability component; stripping only penalties left that
+   bonus in, so one roster rated differently with and without a named OUT
+   starter after the strip. `contribution` wins over the display `points`. */
+const signed=JSON.parse(JSON.stringify(promotedData));
+signed.teams[0].components.availability={points:0,contribution:0.8};
+signed.teams[1].components.availability={points:-1.1,contribution:-1.1};
+const st3=state();
+E.ingest.setCanonicalRatings(st3,signed,{strip_availability:true});
+chk('a healthy-roster bonus is stripped too, not only a penalty',
+  near(E.strength.rating(st3,'texastech',true),8.2)&&near(st3.canonicalRatings.texastech.availability_removed,0.8),
+  st3.canonicalRatings.texastech);
+chk('the signed contribution is what is stripped when both are published',
+  near(E.strength.rating(st3,'lsu',true),-0.9),E.strength.rating(st3,'lsu',true));
+
 console.log((fail?'FAILED ':'ALL GREEN ')+pass+' passed, '+fail+' failed');
 process.exit(fail?1:0);

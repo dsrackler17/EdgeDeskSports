@@ -345,6 +345,10 @@ function router(fx, opts) {
     if (u.indexOf('api.open-meteo.com') >= 0) return opts.open_meteo === null ? null : (opts.open_meteo || fx.open_meteo);
     if (u.indexOf('api.search.brave.com') >= 0) return opts.search === undefined ? null : opts.search;
     if (u.indexOf('api.collegefootballdata.com') >= 0) return opts.cfbd === undefined ? null : opts.cfbd;
+    /* The non-QB personnel assessment (football/personnel/current.json):
+       404 unless a scenario supplies one, so every scenario written before
+       the layer existed reads exactly what it read then. */
+    if (u.indexOf('/football/personnel/current.json') >= 0) return opts.personnel === undefined ? null : opts.personnel;
     if (u.indexOf('/football/availability/current.json') >= 0) {
       return opts.avail === null ? null : (opts.avail || fx.avail);
     }

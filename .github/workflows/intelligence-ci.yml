@@ -140,6 +140,8 @@ jobs:
         run: node tools/intelligence/clv.test.js
       - name: The deployment doctor never mistakes refused for absent
         run: node tools/intelligence/deploy_doctor.test.js
+      - name: Non-QB personnel availability on the desk answers from the measurement and never prices an injury
+        run: node tools/intelligence/personnel_desk.test.js
 
   football-artifacts:
     runs-on: ubuntu-latest

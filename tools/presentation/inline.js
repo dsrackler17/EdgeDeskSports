@@ -159,6 +159,17 @@ const LIBS = [
     start: '/*__EDDESK_START__*/', end: '/*__EDDESK_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* Non-QB personnel availability for the desk: intent, the game and the
+     player a question names, the deterministic answer, the packet block and
+     the critic check that fails an injury turned into spread points. Its
+     canonical copy lives with the scoring core in football/personnel/.
+     Server-side only; the page reads the committed artifact directly. */
+  {
+    name: 'EDPERSONNEL',
+    src: path.join(ROOT, 'football', 'personnel', 'desk.js'),
+    start: '/*__EDPERSONNEL_START__*/', end: '/*__EDPERSONNEL_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The staking layer (Slice 8): the bankroll policy, the reliability score,
      the conservative probability, expected value at the executable price,
      Kelly under every exposure cap, the portfolio rules, the card and the
