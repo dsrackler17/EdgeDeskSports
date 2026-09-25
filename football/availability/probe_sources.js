@@ -299,9 +299,9 @@ async function hdiPublished(conf) {
 }
 
 (async function main() {
-  if (process.argv[2] === 'published') {
+  if (process.argv[2] === 'published' || !process.argv[2]) {
     for (const c of ['SEC', 'ACC', 'B10', 'B12']) await hdiPublished(c);
-    return;
+    if (process.argv[2] === 'published') return;
   }
   const want = process.argv.slice(2);
   const keys = want.length ? want : Object.keys(CANDIDATES);

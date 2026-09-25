@@ -1,9 +1,10 @@
 # WHAT EACH CONFERENCE ACTUALLY SERVES, looked at from the machine that
 # fetches it. Read-only: football/availability/probe_sources.js prints what
 # every candidate report URL returns (status, dates, links, embedded data,
-# readable text) to this job's log, and writes and commits nothing. Run it
-# before writing or changing a report parser, and whenever a conference moves
-# its reports.
+# readable text) to this job's log, then dry-runs the report sync against
+# what is published right now. It writes and commits nothing. Run it before
+# writing or changing a report parser, and whenever a conference moves its
+# reports.
 name: Availability source probe
 
 on:
@@ -15,6 +16,8 @@ on:
   push:
     paths:
       - 'football/availability/probe_sources.js'
+      - 'football/availability/hdi.js'
+      - 'football/availability/sync_reports.js'
       - '.github/workflows/availability-probe.yml'
 
 permissions:
@@ -30,4 +33,8 @@ jobs:
         with:
           node-version: 22
       - name: Probe the report sources
-        run: node football/availability/probe_sources.js ${{ github.event.inputs.only || 'published' }}
+        run: node football/availability/probe_sources.js ${{ github.event.inputs.only }}
+      # the sync itself, against what is published right now, writing
+      # nothing: every fixture-side it would write, with its outcome
+      - name: Dry-run the report sync
+        run: node football/availability/sync_reports.js --dry-run
