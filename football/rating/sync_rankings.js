@@ -86,6 +86,33 @@ function availabilityPoints(t) {
   return r2(deltaTalentPoints * talentShareOfPrior * priorWeight);
 }
 
+/* THE TERM strip_availability REMOVES: the whole availability effect on the
+   final ETSR, not its distance from a neutral 50. The talent rating is a
+   weighted mean renormalised over the components present, so scoring the
+   availability component also re-weights the other five; "with minus
+   without" removes both, which makes a stripped rating equal to the same
+   roster's rating with no availability evidence at all — whether the roster
+   was fully covered, healthy, or missing a named starter. Computed from the
+   published components so the two halves share their rounding. */
+function availabilityContribution(t) {
+  const a = component(t, 'availability');
+  if (!a || typeof a.value !== 'number' || typeof a.w !== 'number') return null;
+  const parts = (t.talent && t.talent.components) || [];
+  let ss = 0, ws = 0;
+  for (const x of parts) {
+    if (x && typeof x.value === 'number' && typeof x.w === 'number') { ss += x.value * x.w; ws += x.w; }
+  }
+  const wsOthers = ws - a.w;
+  if (!(ws > 0) || !(wsOthers > 0)) return null;
+  const deltaTalentRating = ss / ws - (ss - a.value * a.w) / wsOthers;
+  const ppz = t.scalars && t.scalars.talent_points_per_z;
+  if (!(typeof ppz === 'number' && isFinite(ppz))) return null;
+  const carried = t.prior && t.prior.parts && t.prior.parts.coefficient;
+  const talentShareOfPrior = (typeof carried === 'number' && isFinite(carried)) ? Math.max(0, 1 - carried) : 1;
+  const priorWeight = t.weights && typeof t.weights.prior === 'number' ? t.weights.prior : 1;
+  return r2(deltaTalentRating / 12 * ppz * talentShareOfPrior * priorWeight);
+}
+
 function rosterParts(t) {
   const out = [];
   const push = (name, value, rating) => {
@@ -129,6 +156,7 @@ function teamRow(t, src) {
   const priorParts = prior.parts || {};
   const av = t.availability || (t.talent && t.talent.availability) || {};
   const avPts = availabilityPoints(t);
+  const avContrib = availabilityContribution(t);
   const scalarsMeasured = !!(t.scalars && t.scalars.measured === true);
 
   const gates = (t.gates || []).map(g => {
@@ -179,6 +207,13 @@ function teamRow(t, src) {
       },
       availability: {
         points: avPts == null ? 0 : Math.min(0, avPts),
+        /* THE SIGNED CONTRIBUTION, which is what strip_availability removes
+           (availabilityContribution). `points` above is the display: this
+           week's absences as a penalty against a neutral roster, never a
+           bonus. A strip that removed only penalties, and only their distance
+           from neutral, left a fully covered roster rated differently with and
+           without a named OUT starter. */
+        contribution: avContrib == null ? 0 : avContrib,
         players: [],
         available: avPts != null && avPts < 0,
         out_share: av.out_share == null ? null : r3(av.out_share),
@@ -348,7 +383,7 @@ function main() {
   return 0;
 }
 
-module.exports = { buildCompatibility, availabilityPoints, rosterParts, addSubRanks };
+module.exports = { buildCompatibility, availabilityPoints, availabilityContribution, rosterParts, addSubRanks };
 
 if (require.main === module) {
   try { process.exit(main()); }

@@ -75,9 +75,13 @@
     if (!units || !units.groups || !units.groups[g]) return null;
     var x = units.groups[g];
     var r = num(x.r != null ? x.r : x.rating);
-    if (r == null) return null;
+    var rx = num(x.rx != null ? x.rx : x.rating_ex_availability);
+    /* a group whose every player is out has no EXPECTED rating but still has
+       an ability, and the talent rating reads ability */
+    if (r == null && rx == null) return null;
     return {
       rating: r,
+      rating_ex: rx,
       confidence: num(x.c != null ? x.c : x.confidence) || 0,
       starter: num(x.sq != null ? x.sq : x.starter_quality),
       depth: num(x.dq != null ? x.dq : x.depth_quality),
@@ -114,9 +118,18 @@
       }
       return ws > 0 ? s / ws : null;
     }
+    /* ABILITY for the talent rating: the player layer's availability-free
+       unit rating. An artifact written before that field existed has only the
+       expected rating, which a named absence moves; it is used then, and the
+       unit says so, so a rebuild is the fix and never a silent change. */
+    var ex = w('rating_ex'), exFallback = ex == null;
     return {
       available: true,
       rating: r1(w('rating')), confidence: r3(w('confidence')),
+      rating_ex_availability: r1(exFallback ? w('rating') : ex),
+      ability_basis: exFallback
+        ? 'expected unit rating (this player artifact publishes no availability-free rating, so a named absence can move it)'
+        : 'availability-free unit rating',
       starter_quality: r1(w('starter')), depth_quality: r1(w('depth')),
       continuity: r3(w('continuity')), experience: r3(w('experience')),
       roster_size: parts.reduce(function (a, b) { return a + b.g.roster_size; }, 0),
@@ -180,7 +193,13 @@
           cu.reason = 'this roster spells its ' + starter.covered[cv].unit + ' players as '
             + starter.covered[cv].by + ', which 123 of 138 FBS programmes do. They are rated inside that unit; nothing is missing.'; }
       }
-      var rotation = roll(units, all, 'rating');
+      /* ABILITY, NOT THIS WEEK'S AVAILABILITY. Rotation quality used to roll
+         the availability-adjusted unit rating, so a named absence moved
+         talent twice — inside the unit and again in the `availability`
+         component — and football/cfb_p4's strip_availability, which removes
+         only that component, left the first copy in the canonical rating. */
+      var rotation = roll(units, all, 'rating_ex_availability');
+      var fallbackUnits = all.filter(function (nm) { return units[nm] && units[nm].available && /^expected/.test(units[nm].ability_basis || ''); });
       var depth = roll(units, all, 'depth_quality');
 
       var ret = U.returning || null;
@@ -222,6 +241,9 @@
           ? unavailablePv / knownPv : null,
         availability_unknown_share: totPv > 0 ? unkPv / totPv : null,
         availability_records: records,
+        rotation_basis: fallbackUnits.length
+          ? 'expected unit ratings for ' + fallbackUnits.join(', ') + ' (the player artifact predates the availability-free rating; rebuild it)'
+          : 'availability-free unit ratings: a named absence does not move rotation quality',
         offense_units: roll(units, OFFENSE_UNITS, 'rating').value,
         defense_units: roll(units, DEFENSE_UNITS, 'rating').value,
         confidence: roll(units, all, 'confidence').value
@@ -279,6 +301,7 @@
         contract_covered: r3(ws),
         units: P.units,
         starter_quality: r1(P.starter_quality), rotation_quality: r1(P.rotation_quality),
+        rotation_basis: P.rotation_basis,
         depth_quality: r1(P.depth_quality), missing_units: P.missing_units,
         covered_units: P.covered_units,
         offense_units: r1(P.offense_units), defense_units: r1(P.defense_units),

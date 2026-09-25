@@ -196,15 +196,21 @@ and come after the pooled term.
 
 ## Double counting — what the audit found
 
-1. **ETSR talent already moves on named absences.** `football/players/run_build.js`
+1. **ETSR talent moved on named absences — fixed.** `football/players/run_build.js`
    feeds availability (including official next-game reports) into the unit
-   ratings; `football/rankings/talent.js` reads the availability-adjusted unit
-   `rating` into `rotation_quality` (weight 0.18) and also scores a separate
-   `availability` component (0.05). `football/cfb_p4` strips only the latter
-   (`strip_availability`) before game pricing. The canonical ETSR is not
-   promoted to pricing today (its calibration is unmeasured), so nothing is
-   counted twice now — but promoting ETSR and a personnel coefficient together
-   would count a named absence twice through rotation quality.
+   build, and `football/rankings/talent.js` used to roll the availability-
+   adjusted unit `rating` into `rotation_quality` (weight 0.18) on top of the
+   separate `availability` component (0.05). `football/cfb_p4`'s
+   `strip_availability` removed only that component, and only when it was a
+   penalty. Now the unit build also publishes `rating_ex_availability` (the
+   same depth curve with nobody removed), talent rolls rotation quality from
+   it, the rating adapter publishes the component's signed `contribution`,
+   and the engine strips it whichever way it points. The stripped canonical
+   rating no longer moves on a named absence
+   (`football/rankings/rankings.test.js`, end to end from a roster). What is
+   left is shared by every team: ETSR is re-centred on the league mean, so a
+   fully covered team's availability shifts every team by the same 1/N of it,
+   which moves no spread.
 2. **Non-QB injuries already widen the published distribution.**
    `football/cfb_p4` `context.injuryImpact` adds non-QB rows to injury
    uncertainty, which widens sigma (win and cover probabilities), not the mean.
