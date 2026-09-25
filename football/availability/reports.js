@@ -244,7 +244,20 @@ function ingest(o) {
    o = { conference, team, roster, game_id, kickoff, source_url, published_at,
          retrieved_at, listed: [hdi.readEntry(...).teams[i].listed],
          vocabulary, report_type, report_id, platform, home_conference,
-         away_conference, now }                                            */
+         away_conference, now, reported_only }
+
+   reported_only  the source lists REPORTED players only (the Pac-12's feed):
+                  a side it lists nobody for is a read that names nobody,
+                  never a clean bill of health and never a failed read.
+
+   A LISTING CAN SHOW ITS OWN SCOPE. One that designates the whole roster —
+   FULL_LISTING_MIN players or more, and at least half the roster EdgeDesk
+   holds for the team — lists every player with a status, so a player it
+   does not designate is designated available. That is a comprehensive
+   filing whatever the policy could claim in advance (the MAC's could not:
+   no MAC listing had been filed when it was verified). A short list proves
+   nothing and leaves the policy's word standing. */
+const FULL_LISTING_MIN = 50;
 function fromListing(o) {
   o = o || {};
   const pol = POLICY.forConference(o.conference);
@@ -278,8 +291,24 @@ function fromListing(o) {
     return fail('no published availability policy is registered for ' + (o.conference || 'this conference'));
   }
   const listed = o.listed || [];
+  if (!listed.length && o.reported_only === true) {
+    return Object.assign(base, { ok: true, rows: [], unparsed: [], lines_read: 0, listed_n: 0,
+      names_nobody: true, explicit_none: false, silence_means_available: false,
+      why: 'the report lists no player for ' + (o.team || 'this team') + '. This conference files reported '
+        + 'players only, so that is not a statement that the roster is whole' });
+  }
   if (!listed.length) return fail('the published entry lists nobody at all for ' + (o.team || 'this team')
     + ', which is a missing listing, not a clean one');
+  const rosterN = (o.roster || []).length;
+  const fullRoster = o.reported_only !== true && listed.length >= FULL_LISTING_MIN
+    && (!rosterN || listed.length >= 0.5 * rosterN);
+  if (fullRoster && !base.comprehensive) {
+    base.comprehensive = true;
+    base.comprehensive_basis = 'the listing designates ' + listed.length + ' players'
+      + (rosterN ? ' of the ' + rosterN + ' on the roster EdgeDesk holds' : '')
+      + ', each with a status, so a player it does not designate out, doubtful or questionable is marked available';
+  }
+  base.listing_scope = o.reported_only === true ? 'REPORTED_ONLY' : (fullRoster ? 'FULL_ROSTER' : 'PARTIAL');
 
   const byNorm = {};
   (o.roster || []).forEach(p => { const k = A.normName(p.name); if (k) (byNorm[k] = byNorm[k] || []).push(p); });
@@ -315,7 +344,9 @@ function fromListing(o) {
   /* EVERY PLAYER LISTED, NONE DESIGNATED, NOTHING QUARANTINED: an explicit
      statement that the whole listed roster is available, which is what
      overlay.js corroborate() accepts as a report of no absences */
-  base.explicit_none = rows.length === 0 && unparsed.length === 0;
+  /* a reported-players-only listing is never a statement about the players
+     it does not list, however it reads */
+  base.explicit_none = o.reported_only !== true && rows.length === 0 && unparsed.length === 0;
   base.silence_means_available = base.comprehensive && base.explicit_none;
   base.why = rows.length
     ? rows.length + ' player(s) designated on the published listing (' + (o.report_type || 'report') + ')'

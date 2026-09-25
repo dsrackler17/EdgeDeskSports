@@ -19,7 +19,9 @@ reason not to look, and the sentence survived the thing it described.
 | Mountain West | `themw.com` | 2 days out + 3h before kick | conference games | questionable / out **only** |
 | Conference USA | `conferenceusa.com` | per the conference policy | conference games | questionable / out **only** |
 | Sun Belt | `sunbeltsports.org` | not verified | conference games | not verified |
-| American, MAC, Pac-12 | — | — | — | **UNVERIFIED — a gap in EdgeDesk's research, not a finding that they publish nothing** |
+| American | `theamerican.org` (HD Intelligence, code `American`) | game day only, 2h before kick | conference games | available / questionable / out / out (1st half); the listing designates the whole roster |
+| MAC | `getsomemaction.com` (HD Intelligence, code `MAC`) | game day only, 1h before kick | **every game a MAC school plays**, its own side only | available / questionable / out / out (1st half); judged comprehensive per listing, not in advance |
+| Pac-12 | `pac-12.com` (its own JSON feed, `pac12.js`) | 3, 2 and 1 days out by 7pm PT + 2h before kick | conference games | reported players only; the vocabulary is unclaimed until the first filing |
 
 Three things follow from that table and all three are enforced in code:
 

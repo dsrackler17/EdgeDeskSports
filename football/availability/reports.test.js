@@ -51,8 +51,11 @@ section('1. the policy registry — scope, vocabulary, and what it has not check
   chk('every PUBLISHED conference carries a url and a source for the claim',
     POLICY.published().every(c => !!c.report_url && !!c.source),
     POLICY.published().filter(c => !c.report_url || !c.source).map(c => c.id));
-  chk('every PUBLISHED policy covers conference games only — none claims to cover a non-conference fixture',
-    POLICY.published().every(c => c.applies_to === 'CONFERENCE_GAMES'),
+  /* ONE EXCEPTION, ON THE CONFERENCE'S OWN FILINGS: the MAC's 2026 archive
+     carries its schools' reports for non-conference games too
+     (conferences.test.js). No other conference may claim it. */
+  chk('every PUBLISHED policy covers conference games only, except the MAC, whose filings cover every game',
+    POLICY.published().every(c => c.applies_to === 'CONFERENCE_GAMES' || (c.applies_to === 'ALL_GAMES' && c.id === 'midamerican')),
     POLICY.published().map(c => c.id + '=' + c.applies_to));
   /* THE THING THE TASK NAMES: not every conference publishes the same report */
   const comp = POLICY.published().filter(c => c.comprehensive).map(c => c.id);

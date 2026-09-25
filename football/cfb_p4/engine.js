@@ -1219,8 +1219,9 @@
              lists. Only a source the policy registry marks comprehensive,
              filed for THIS game, may reach this. */
           available = 1;
-          avWhy = 'a comprehensive availability report for this game designates every player and does not name '
-            + 'him, which is a report that he is available rather than an absence of a report';
+          avWhy = 'a comprehensive availability report for this game designates every player and does not list '
+            + 'him as out, doubtful or questionable, which is a report that he is available rather than an absence '
+            + 'of a report';
         } else {
           available = 0;
           avWhy = 'no source states whether he can play. Silence is not health and scores nothing here';
