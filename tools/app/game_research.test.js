@@ -67,7 +67,10 @@ function fnSrc(name) {
   return APP.slice(at, end + 3);
 }
 const HELPERS = fnSrc('fbWinPair') + '\n' + fnSrc('fbWinText') + '\n'
-  + fnSrc('fbFairDisp') + '\n' + fnSrc('fbRawMarginText') + '\n';
+  + fnSrc('fbFairDisp') + '\n' + fnSrc('fbRawMarginText') + '\n'
+  /* the research-view adapter the card reads; with lib/cfb_research_view.js
+     not loaded here it returns null and the card renders its fallback */
+  + fnSrc('fbP4ViewFor') + '\n' + fnSrc('fbRvNearBadge') + '\n';
 
 /* the engine's real thresholds, read from the shipped params */
 require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));

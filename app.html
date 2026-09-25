@@ -1883,6 +1883,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fbs-badge.g-p4{color:var(--accent);border-color:rgba(47,167,154,.4)}
 .fbs-badge.g-independent{color:var(--warn);border-color:rgba(217,154,43,.4)}
 .fbs-badge.fcs{color:var(--faint)}
+/* the CFB research view (lib/cfb_research_view.js) */
+.rv-np{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.05em;border:1px solid rgba(227,184,77,.45);border-radius:4px;padding:1px 4px;color:var(--gold);white-space:nowrap;vertical-align:middle;margin-left:4px}
 .fbs-confcell{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media(max-width:560px){
   .fbs-flab{width:auto;min-width:52px;font-size:8.5px;text-align:left}
@@ -3923,6 +3925,12 @@ window.mcRefresh=function(){
      status; the SAME file is what tools/football/research_priority.test.js
      holds to its gates, its order and its explanations. -->
 <script src="/lib/research_priority.js?v=20260924a"></script>
+<!-- The CFB research view: what a reader sees first on the college board
+     (the fair line with its side, the market gap, the research label, the
+     reasons, the best available line, the projection's own history), read off
+     the engine's finished projection. It computes no projection; the SAME
+     file is what tools/football/cfb_research_view.test.js holds to its rules. -->
+<script src="/lib/cfb_research_view.js?v=20260925a"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -49757,6 +49765,36 @@ function fbRawMarginText(m){
   var v=(m.display_side==='away'?-m.fair_spread:m.fair_spread);
   return fbPts(v===0?0:v,2);
 }
+/* ── THE CFB RESEARCH VIEW ──────────────────────────────────────────────
+   lib/cfb_research_view.js reads a finished projection and says what a
+   reader should see first: the fair line with its side, the market gap, one
+   research label, the reasons, the best available line and the projection's
+   own history. It computes no projection. This adapter is the ONLY place the
+   page assembles its input, and the board row, the card and the research
+   desk all read the object it returns, so they cannot disagree. Absent the
+   module, every caller renders exactly what it rendered before. */
+function fbP4ViewFor(u,p,mkt){
+  var V=window.EDCfbResearchView;
+  if(!V||!u||!u.g||!p)return null;
+  var g=u.g;
+  mkt=mkt||(FB.p4._mkt&&FB.p4._mkt[String(g.game_id)])||null;
+  var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of].join('|');
+  if(u._rv&&u._rv.p===p&&u._rv.key===key)return u._rv.v;
+  var v=null;
+  try{
+    v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p});
+  }catch(_){v=null;}
+  u._rv={p:p,key:key,v:v};
+  return v;
+}
+/* the NEAR PICK'EM badge: EdgeDesk has picked a side, but the raw margin
+   under it is less than a point */
+function fbRvNearBadge(v){
+  if(!v||!v.is_near_pickem||!v.fair)return '';
+  return '<span class="rv-np" title="'+fbEsc('Near pick’em: the raw projected margin is '
+    +(v.fair.raw_line_text||'under one point')+'. The one-point line is a display floor; win probability, confidence, the market gap and every grade use the raw margin.')
+    +'">NEAR PICK’EM</span>';
+}
 
 /* tolerant CSV parser (quoted fields, embedded commas). Header row -> objects. */
 function fbCsv(text){
@@ -54216,7 +54254,7 @@ function fbGxSummary(u,p,gid){
       +(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
   }
   var out='<div class="gx-grid">';
-  out+=cell('EdgeDesk',h+' '+fbPts(-fbFairDisp(m)),'mdl',m.is_near_pickem?'model · near pick’em':'model');
+  out+=cell('EdgeDesk',h+' '+fbPts(-fbFairDisp(m))+fbRvNearBadge(fbP4ViewFor(u,p)),'mdl',m.is_near_pickem?'model · near pick’em':'model');
   out+=cell('Market',mk&&mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)):'<span class="gx-miss">none joined</span>',
     '',mk&&mk.spread_line!=null?fbEsc(mk.book||'reference'):'nothing to compare');
   out+=cell('Difference',gap!=null?(gap.toFixed(1)+' pts'):'<span class="gx-miss">—</span>',
@@ -56378,9 +56416,9 @@ function fbP4BoardHTML(){
     +'<div style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
     +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>GAP</span><span>STATUS</span></div>';
   visible.forEach(function(r){
-    var u=r.u,g=u.g,gid=r.gid,p=r.p,mkt=r.mkt,st=r.st,m=r.meta;
+    var u=r.u,g=u.g,gid=r.gid,p=r.p,mkt=r.mkt,st=r.st,m=r.meta,rv=fbP4ViewFor(u,p,mkt);
     var model=(p&&p.status==='PREDICTED')?(p.model.is_near_pickem
-      ?('<span title="Near pick’em: the raw projected margin is under one point">'+fbP4Line(g.home_team,fbFairDisp(p.model))+'</span>')
+      ?('<span title="Near pick’em: the raw projected margin is under one point">'+fbP4Line(g.home_team,fbFairDisp(p.model))+'</span>'+fbRvNearBadge(rv))
       :fbP4Line(g.home_team,fbFairDisp(p.model))):'—';
     var market=(mkt.spread_line!=null)?fbP4Line(g.home_team,mkt.spread_line):'—';
     var gap=r.gap==null?'—':r.gap.toFixed(1);
