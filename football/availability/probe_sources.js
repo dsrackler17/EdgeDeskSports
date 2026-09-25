@@ -311,7 +311,89 @@ async function hdiPublished(conf) {
   });
 }
 
+/* THE PUBLISHED ARCHIVE, as the public archive screen fetches it
+   (ArchiveScreen: POST /api/get-archive-public, no credentials): every
+   filed report of the season, flattened. Printed as keys, the statuses the
+   conference has actually filed, and a sample — what a conference's own
+   filings show about its vocabulary and whether it lists every player. */
+async function hdiArchive(conf) {
+  let res;
+  try {
+    const x = await fetch('https://app.hdintelligence.com/api/get-archive-public', { method: 'POST',
+      signal: AbortSignal.timeout(25000),
+      headers: { 'user-agent': BROWSER_UA, accept: 'application/json', 'content-type': 'application/json',
+        origin: 'https://app.hdintelligence.com',
+        referer: 'https://app.hdintelligence.com/?source=' + conf + '&sport=Football&conf=' + conf + '&type=archive' },
+      body: JSON.stringify({ sport: 'Football', organization: conf, conference: conf }) });
+    res = { status: x.status, type: x.headers.get('content-type'), text: await x.text() };
+  } catch (e) { res = { status: 'ERR ' + e.message, text: '' }; }
+  console.log('\n######## hdi archive ' + conf + ' → ' + res.status + ' ' + res.type + ' · ' + res.text.length + ' chars');
+  let d = null;
+  try { d = JSON.parse(res.text); } catch (_) { console.log('  not JSON >>> ' + res.text.slice(0, 800)); return; }
+  const rows = Array.isArray(d.data) ? d.data : (Array.isArray(d) ? d : []);
+  console.log('  top-level keys: ' + Object.keys(d || {}).join(', ') + ' · rows ' + rows.length);
+  console.log('  report_days: ' + JSON.stringify(d.report_days).slice(0, 800));
+  if (!rows.length) return;
+  console.log('  row keys: ' + Object.keys(rows[0]).join(', '));
+  const vals = {};
+  rows.forEach(r => Object.keys(r).forEach(k => {
+    const v = r[k];
+    if (typeof v === 'string' && v.length <= 40 && !/player|name|team/i.test(k)) {
+      vals[k] = vals[k] || {}; vals[k][v] = (vals[k][v] || 0) + 1;
+    }
+  }));
+  Object.keys(vals).forEach(k => {
+    const top = Object.entries(vals[k]).sort((a, b) => b[1] - a[1]);
+    if (top.length <= 40) console.log('  values of ' + k + ' (' + top.length + '): ' + top.map(x => x[0] + '×' + x[1]).join(' | '));
+  });
+  const teams = {};
+  rows.forEach(r => { const t = r.TeamDisplay || r.Team || '?'; const w = r.Week == null ? '?' : r.Week; teams[t + ' wk' + w] = (teams[t + ' wk' + w] || 0) + 1; });
+  console.log('  rows per team-week (first 30): ' + Object.entries(teams).slice(0, 30).map(x => x[0] + '=' + x[1]).join(' , '));
+  console.log('  sample >>> ' + JSON.stringify(rows.slice(0, 6)).slice(0, 2500) + ' <<<');
+}
+
+/* THE PAC-12's OWN FEED: the reports page renders a JSON file from blob
+   storage (not a platform), so its structure, dates and status words are
+   printed, with the page's own rendering code around them */
+async function pac12Feed() {
+  const url = 'https://sbcautostorage.blob.core.windows.net/availability-reports/pac12-football/prod/report.json';
+  const r = await get(url + '?ts=' + Date.now(), BROWSER_UA);
+  console.log('\n######## pac12 feed → ' + r.status + ' · ' + (r.type || '') + ' · ' + (r.buf ? r.buf.length : 0)
+    + ' bytes · last-modified ' + r.lastModified);
+  if (!r.ok) return;
+  let d = null;
+  try { d = JSON.parse(r.buf.toString('utf8')); } catch (e) { console.log('  not JSON >>> ' + r.buf.toString('utf8').slice(0, 1500)); return; }
+  const shape = (v, dep) => {
+    if (dep > 5) return '…';
+    if (Array.isArray(v)) return '[' + v.length + ' × ' + (v.length ? shape(v[0], dep + 1) : '') + ']';
+    if (v && typeof v === 'object') return '{' + Object.keys(v).slice(0, 30).map(k => k + ':' + shape(v[k], dep + 1)).join(', ') + '}';
+    return typeof v + (typeof v === 'string' && v.length < 40 ? '(' + v + ')' : '');
+  };
+  console.log('  shape: ' + shape(d, 0).slice(0, 3000));
+  const words = {};
+  (function walk(v, k) {
+    if (Array.isArray(v)) v.forEach(x => walk(x, k));
+    else if (v && typeof v === 'object') Object.keys(v).forEach(kk => walk(v[kk], kk));
+    else if (typeof v === 'string' && /status|designation|avail|report|type|updated|date|time/i.test(k || '') && v.length < 60) {
+      const key = k + '=' + v; words[key] = (words[key] || 0) + 1;
+    }
+  })(d, null);
+  console.log('  status/date-like values: ' + Object.entries(words).sort((a, b) => b[1] - a[1]).slice(0, 80).map(x => x[0] + '×' + x[1]).join(' | '));
+  console.log('  body (first 4000) >>> ' + JSON.stringify(d).slice(0, 4000) + ' <<<');
+  const page = await get('https://pac-12.com/news/2026/9/11/2026-football-reports.aspx', BROWSER_UA);
+  if (page.ok) {
+    const html = page.buf.toString('utf8');
+    const at = html.indexOf('const DATA_URL');
+    if (at >= 0) console.log('  page render script >>> ' + html.slice(at - 200, at + 15000).replace(/\s+/g, ' ') + ' <<<');
+  }
+}
+
 (async function main() {
+  if (process.argv[2] === 'archive') {
+    for (const c of process.argv.slice(3).length ? process.argv.slice(3) : ['American', 'MAC']) await hdiArchive(c);
+    await pac12Feed();
+    return;
+  }
   if (process.argv[2] === 'published' || !process.argv[2]) {
     for (const c of ['SEC', 'ACC', 'B10', 'B12']) await hdiPublished(c);
     if (process.argv[2] === 'published') return;
