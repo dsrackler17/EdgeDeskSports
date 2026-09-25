@@ -38,6 +38,10 @@ const CANDIDATES = {
   sunbelt: ['https://sunbeltsports.org/news/2025/8/11/football-availability-report-new.aspx'],
   american: ['https://theamerican.org/sports/football'],
   mac: ['https://getsomemaction.com/sports/football'],
+  /* the platforms the conference pages embed (found by this probe) */
+  hdi: ['https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report',
+    'https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report'],
+  faktor: ['https://faktorsports.com/k/embed/player-availability/full/MountainWest/11/MFB/2026?signature=e098b656dbb0b78335ef78c8d9c68e2cceb940d4519d54f4c05aaaa48c62eef7'],
   espn: ['https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams/145/injuries',
     'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/145/injuries']
 };
@@ -80,7 +84,7 @@ function linksOf(html, base) {
   return out;
 }
 
-function show(label, r, depth) {
+async function show(label, r, depth) {
   const pad = depth ? '    ' : '';
   console.log(pad + '---- ' + label);
   if (!r.ok) { console.log(pad + '  status ' + r.status); return null; }
@@ -138,6 +142,30 @@ function show(label, r, depth) {
       hits.forEach(h => console.log(pad + '    ' + h));
     } catch (e) { console.log(pad + '  data-page did not parse: ' + e.message + ' · ' + json.slice(0, 600)); }
   }
+  const hosts = {};
+  (html.match(/https?:\/\/[a-z0-9.-]+\.[a-z]{2,}/gi) || []).forEach(h => { hosts[h.toLowerCase()] = (hosts[h.toLowerCase()] || 0) + 1; });
+  console.log(pad + '  hosts: ' + Object.keys(hosts).filter(h => !/google|doubleclick|facebook|twitter|cloudflare|gstatic|adsrvr|attn\.tv|blueconic|solarwinds|transcend|youtube|instagram|tiktok|onetrust|cookielaw|fonts/.test(h)).slice(0, 40).join(' '));
+  const body = html.slice(Math.max(0, html.search(/<body/i)));
+  const plat = /hdintelligence|faktor|availability[-_ ]?report|player[-_ ]availability|embed/gi;
+  let pm, pn = 0;
+  while ((pm = plat.exec(body)) && pn < 6) { pn++; console.log(pad + '  body@' + pm.index + ' >>> ' + body.slice(Math.max(0, pm.index - 250), pm.index + 450).replace(/\s+/g, ' ') + ' <<<'); }
+  /* a script-built app loads its table from somewhere: grep its own bundles */
+  if (depth === 0 && /hdintelligence|faktorsports/.test(r.url)) {
+    const own = scripts.map(u => { try { return new URL(u, r.url).toString(); } catch (_) { return null; } })
+      .filter(u => u && new URL(u).host === new URL(r.url).host).slice(0, 4);
+    for (const u of own) {
+      const js = await get(u, BROWSER_UA);
+      if (!js.ok) { console.log(pad + '  bundle ' + u + ' → ' + js.status); continue; }
+      const src = js.buf.toString('utf8');
+      const eps = [...new Set((src.match(/["'`](\/?(api|v\d|graphql|reports?|availability)[^"'`\s]{0,120})["'`]/gi) || []))].slice(0, 40);
+      const abs = [...new Set((src.match(/https?:\/\/[^"'`\s]{6,140}/g) || []))].filter(x => !/w3\.org|reactjs|mozilla|github|npmjs|sentry|google/.test(x)).slice(0, 30);
+      console.log(pad + '  bundle ' + u + ' (' + src.length + ' chars)\n' + pad + '    endpoints: ' + eps.join(' , ') + '\n' + pad + '    urls: ' + abs.join(' , '));
+      ['fetch(', 'axios', 'baseURL', 'source=', 'type=report', 'sport='].forEach(k => {
+        const at = src.indexOf(k);
+        if (at >= 0) console.log(pad + '    ctx[' + k + '] ' + src.slice(Math.max(0, at - 200), at + 300).replace(/\s+/g, ' '));
+      });
+    }
+  }
   const head = title ? strip(title).split(' - ')[0].trim() : null;
   if (head) {
     const first = html.indexOf(head), second = first >= 0 ? html.indexOf(head, first + head.length) : -1;
@@ -163,12 +191,12 @@ function show(label, r, depth) {
       const b = await get(url, BROWSER_UA);
       const e = await get(url, EDGE_UA);
       console.log('==== ' + url + '  [edgedesk UA: ' + e.status + ' · browser UA: ' + b.status + ']');
-      const links = show('browser UA', b.ok ? b : e, 0);
+      const links = await show('browser UA', b.ok ? b : e, 0);
       if (!links) continue;
       const host = new URL(b.url || url).host;
       const follow = links.filter(l => /availab/i.test(l.href + ' ' + l.text) && l.href !== (b.url || url)
         && (new URL(l.href).host === host || /\.pdf/i.test(l.href))).slice(0, 4);
-      for (const l of follow) show('follow ' + l.href, await get(l.href, BROWSER_UA), 1);
+      for (const l of follow) await show('follow ' + l.href, await get(l.href, BROWSER_UA), 1);
     }
   }
 })().catch(e => { console.error(e); process.exit(1); });
