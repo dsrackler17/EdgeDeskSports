@@ -203,7 +203,7 @@ section('2b · the AI desk is handed the same read');
   /* the desk's two packets carry it (EDAI, a separate block of app.html) */
   has(BOOT.app, "research_view:sk===EDINTEL.CFB_SPORT?cfbResearchView({game_id:res.game_id,home:res.home,away:res.away}):null",
     'a named-matchup packet carries the research view');
-  has(BOOT.app, "?cfbResearchView({event:{home:e.home_team,away:e.away_team,t:e.commence_time}}):null",
+  has(BOOT.app, "return window.fbP4ResearchBriefFor({event:{home:e.home_team,away:e.away_team,t:e.commence_time}});",
     'and so does a college signal’s packet');
   has(BOOT.app, 'h+=deskBoardReadHTML(D.focus);', 'the desk’s short answer prints the board’s read of its focus game');
   const TS = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'), 'utf8');

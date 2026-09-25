@@ -43715,9 +43715,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         confidence:x.confidence,why:x.why,score:x.score,band:x.band,
         reasons_for:x.reasonsFor,reasons_against:x.reasonsAgainst,
       checks_required:x.checksRequired||[],falsifiers:x.falsifiers},
-      /* a college signal carries the board's research read of its game */
-      research_view:(e.sport_key==='americanfootball_ncaaf')
-        ?cfbResearchView({event:{home:e.home_team,away:e.away_team,t:e.commence_time}}):null
+      /* a college signal carries the board's research read of its game.
+         Reached through window, so this builder stays self-contained */
+      research_view:(e.sport_key==='americanfootball_ncaaf'&&typeof window.fbP4ResearchBriefFor==='function')
+        ?(function(){ try{ return window.fbP4ResearchBriefFor({event:{home:e.home_team,away:e.away_team,t:e.commence_time}}); }catch(_){ return null; } })():null
     };
   }
   /* Four PRESENTATIONS of one research engine. The panel picks the shape the
