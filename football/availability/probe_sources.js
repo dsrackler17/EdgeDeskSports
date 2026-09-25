@@ -173,10 +173,23 @@ async function show(label, r, depth) {
          ones a public screen could make */
       const calls = [...new Set((src.match(/\.(post|get)\(\s*["'`]\/api\/[^"'`]+["'`]/g) || []))];
       console.log(pad + '    api calls (' + calls.length + '): ' + calls.join(' , '));
-      calls.filter(c => /public|publish|report|archive|availab|embed/i.test(c)).forEach(c => {
+      calls.filter(c => !/auth|getSelectOptions/i.test(c)).forEach(c => {
         const at = src.indexOf(c);
-        console.log(pad + '    call ' + c + ' >>> ' + src.slice(Math.max(0, at - 900), at + 900).replace(/\s+/g, ' ') + ' <<<');
+        console.log(pad + '    call ' + c + ' >>> ' + src.slice(Math.max(0, at - 700), at + 1100).replace(/\s+/g, ' ') + ' <<<');
       });
+      const tmpl = [...new Set((src.match(/`[^`]{0,40}\/api\/[^`]{0,80}`/g) || []))];
+      if (tmpl.length) console.log(pad + '    template api paths: ' + tmpl.join(' , '));
+      /* the lazily loaded screens: their own calls */
+      const chunks = [...new Set((src.match(/\.\/[A-Za-z]+-[A-Za-z0-9_]{6,10}\.js/g) || []))];
+      for (const ch of chunks.slice(0, 6)) {
+        const cu = new URL(ch, u).toString();
+        const cj = await get(cu, BROWSER_UA);
+        if (!cj.ok) { console.log(pad + '    chunk ' + cu + ' → ' + cj.status); continue; }
+        const cs = cj.buf.toString('utf8');
+        const cc = [...new Set((cs.match(/\.(post|get)\(\s*["'`][^"'`]+["'`]/g) || []))];
+        console.log(pad + '    chunk ' + ch + ' (' + cs.length + ' chars) calls: ' + cc.join(' , '));
+        cc.forEach(c => { const at = cs.indexOf(c); console.log(pad + '      ' + c + ' >>> ' + cs.slice(Math.max(0, at - 600), at + 900).replace(/\s+/g, ' ') + ' <<<'); });
+      }
       ['Published Report', 'isPublicReport', 'loadPublicReport'].forEach(k => {
         let at = -1, n = 0;
         while ((at = src.indexOf(k, at + 1)) >= 0 && n < 3) {
