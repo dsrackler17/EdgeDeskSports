@@ -268,6 +268,25 @@ async function hdiPublished(conf) {
     return typeof v;
   };
   const vals = Object.values(data || {});
+  /* compact: no images, no styling — what a parser reads */
+  const compact = v => ({ id: null, ReportType: v.ReportType, publishDate: v.publishDate, postedTime: v.postedTime,
+    publishDayOfWeek: v.publishDayOfWeek, conferenceTimeZone: v.conferenceTimeZone, gameNeutral: v.gameNeutral,
+    outCombined: v.outCombined, statusReportOrder: v.statusReportOrder,
+    footer: v.footer && { date: v.footer.date, time: v.footer.time, location: v.footer.location },
+    games: (v.games || []).map(g => ({ teamName: g.teamName, teamDisplayName: g.teamDisplayName,
+      rows: (g.rows || []).map(r => ({ name: r.name, status: r.status, exemptStatus: r.exemptStatus })) })) });
+  Object.keys(data || {}).forEach(id => {
+    const c = compact(data[id]);
+    const flags = c.games.map(g => g.teamName + '/' + g.teamDisplayName + ' (' + g.rows.length + ' rows): '
+      + g.rows.filter(r => r.status !== 'Available' && r.status !== 'Exempt').map(r => r.name + '=' + r.status).join('; '));
+    console.log('  entry ' + id + ' · ' + c.ReportType + ' · published ' + c.publishDate + ' ' + c.postedTime + ' ' + c.conferenceTimeZone
+      + ' (' + c.publishDayOfWeek + ') · game ' + JSON.stringify(c.footer) + ' neutral=' + c.gameNeutral + ' out=' + c.outCombined
+      + '\n      ' + flags.join('\n      '));
+  });
+  const ids = Object.keys(data || {});
+  if (ids.length) { const c = compact(data[ids[0]]); c.id = ids[0]; console.log('  FIXTURE ' + conf + ' >>> ' + JSON.stringify(c) + ' <<<'); }
+  console.log('  statusReportOrder: ' + JSON.stringify(vals[0] && vals[0].statusReportOrder));
+  return;
   console.log('  top-level: ' + (Array.isArray(data) ? 'array ' + data.length : 'object with ' + Object.keys(data).length + ' keys: ' + Object.keys(data).slice(0, 20).join(', ')));
   console.log('  shape: ' + shape(vals[0], 0));
   console.log('  first entry >>> ' + JSON.stringify(vals[0]).slice(0, 4000) + ' <<<');
