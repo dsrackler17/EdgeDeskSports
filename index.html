@@ -1065,7 +1065,7 @@ section.band.lp-quiet{padding:56px 0}
     <a class="nlink" href="/articles">Research</a>
     <a class="nlink" href="/games/">Games</a>
     <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
-    <span class="navprice">7 days free</span>
+    <span class="navprice" title="7-day free trial. $79.99/month after trial. Cancel anytime.">7 days free, then $79.99/mo</span>
     <button class="btn primary" id="navSignup" onclick="startSubscribe()">Start researching</button>
   </div>
 </nav>
@@ -1090,7 +1090,12 @@ section.band.lp-quiet{padding:56px 0}
         <button class="btn primary lg" id="heroStart" onclick="startSubscribe()">Start researching &#8594;</button>
         <a class="btn ghost lg" href="#getyou">See what is inside &#8594;</a>
       </div>
-      <p class="microcta"><b style="color:var(--val)">Research, not picks.</b> NFL + FBS &middot; 7-day free trial, then $79.99/month &middot; 21+</p>
+      <p class="microcta"><b style="color:var(--val)">Research, not picks.</b> NFL + FBS &middot; <span data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</span> &middot; 21+</p>
+      <!-- LIVE SYSTEM ACTIVITY: counts of what EdgeDesk is doing right now, read
+           from public.edgedesk_proof_metrics(). Real rows only; nothing here is
+           a user count, an accuracy or a profit, and it stays empty rather than
+           showing a number the database did not return. -->
+      <p class="microcta lp-live" id="lpLive" style="display:none"></p>
     </div>
 
     <!-- THE PRODUCT IS THE VISUAL. This is the matchup summary the app
@@ -1937,7 +1942,8 @@ section.band.lp-quiet{padding:56px 0}
           <li>NFL and FBS, one terminal</li>
         </ul>
         <button class="btn primary lg authbtn" id="subBtn" onclick="startSubscribe()">Start researching</button>
-        <p class="psub">No charge for 7 days &middot; cancel any time &middot; 21+ &middot; research tool, not betting advice &middot; 1-800-GAMBLER</p>
+        <p class="psub"><b data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</b></p>
+        <p class="psub" style="margin-top:4px">No charge for 7 days &middot; cancel any time &middot; 21+ &middot; research tool, not betting advice &middot; 1-800-GAMBLER</p>
       </div>
 
       <div>
@@ -2092,7 +2098,7 @@ section.band.lp-quiet{padding:56px 0}
     <button class="btn primary lg" id="btmLogin" onclick="startSubscribe()">Start 7 days free &#8594;</button>
     <a class="btn ghost lg" href="#steps">Walk through it again</a>
   </div>
-  <p class="microcta" style="margin-top:22px">7 days free, then $79.99/month &middot; cancel any time before it converts and you are not charged &middot; 21+ &middot; 1-800-GAMBLER</p>
+  <p class="microcta" style="margin-top:22px"><span data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</span> Cancel any time before it converts and you are not charged &middot; 21+ &middot; 1-800-GAMBLER</p>
 </section>
 
 <footer>
@@ -2147,7 +2153,7 @@ section.band.lp-quiet{padding:56px 0}
     </div>
     <button class="btn primary lg authbtn" id="arlSubmit" onclick="confirmArl()" disabled>Start free trial &mdash; $0 today</button>
     <div class="auth-msg" id="arlMsg"></div>
-    <p class="auth-legal">Stripe collects a card to hold the trial and charges nothing for 7 days. EdgeDesk never sees or stores your card details.</p>
+    <p class="auth-legal"><b data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</b> Stripe collects a card to hold the trial and charges nothing for 7 days. EdgeDesk never sees or stores your card details.</p>
   </div>
 </div>
 
@@ -2182,6 +2188,8 @@ section.band.lp-quiet{padding:56px 0}
      rather than duplicated inline so the landing page, the reset page and
      EdgeDesk Games cannot drift apart on any of the three. -->
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
+<script src="/lib/edgedesk_pricing.js?v=20260925p"></script>
+<script>try{window.EDPricing&&window.EDPricing.apply(document);}catch(e){}</script>
 <!-- The same "Report a problem" the terminal, Games and the 404 page use. It
      matters most HERE: somebody who cannot get past signup has no account, no
      terminal and, until now, nothing but a mailto in the footer. -->
@@ -2329,6 +2337,66 @@ function attrPayload(){
   };
 }
 function attrRef(){ var f=ED_ATTR.first||{}; return f.ref||null; }
+
+/* ==========================================================================
+   PARTNER CLICKS AND CLAIMS (supabase/affiliates.sql)
+   A visit that arrived on ?ref=CODE is counted once per visitor per day by
+   public.affiliate_track_click — anon, and only the hash of a random
+   first-party visitor id is kept. After signup the new account CLAIMS the
+   code (public.affiliate_claim): the server alone decides whether the claim
+   is valid — first attribution wins, no self-referral, no claiming an
+   existing customer. Both are fire-and-forget: a partner program must never
+   stand between a visitor and an account.
+   ========================================================================== */
+function affVisitor(){
+  try{
+    var v=localStorage.getItem('edgedesk_visitor');
+    if(v&&/^[A-Za-z0-9_-]{16,64}$/.test(v)) return v;
+    var a=new Uint8Array(18); (window.crypto||window.msCrypto).getRandomValues(a);
+    v=Array.prototype.map.call(a,function(b){return ('0'+b.toString(16)).slice(-2);}).join('');
+    localStorage.setItem('edgedesk_visitor',v); return v;
+  }catch(e){ return null; }
+}
+function affCode(r){ r=String(r||'').trim().toUpperCase(); return /^[A-Z0-9_-]{3,32}$/.test(r)?r:null; }
+function affTrackClick(){
+  var cur=ED_ATTR&&ED_ATTR.current, code=affCode(cur&&cur.ref), v=affVisitor();
+  if(!code||!v) return;
+  try{
+    fetch(SB_URL+'/rest/v1/rpc/affiliate_track_click',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({p_code:code,p_visitor:v,p_landing:(location.pathname||'/').slice(0,120),
+        p_referrer:(cur&&cur.referrer)||null})}).catch(function(){});
+  }catch(e){}
+}
+async function affClaim(token){
+  var code=affCode(attrRef()); if(!code||!token) return;
+  try{
+    var r=await fetch(SB_URL+'/rest/v1/rpc/affiliate_claim',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({p_code:code,p_visitor:affVisitor()})});
+    if(r.ok){ try{ localStorage.setItem('edgedesk_aff_claimed_v1',code); }catch(e){} }
+  }catch(e){}
+}
+/* the live-activity line in the hero: real counts or nothing */
+async function lpLiveLoad(){
+  var el=document.getElementById('lpLive'); if(!el) return;
+  try{
+    var r=await fetch(SB_URL+'/rest/v1/rpc/edgedesk_proof_metrics',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:'{}'});
+    if(!r.ok) return;
+    var m=await r.json(); if(!m) return;
+    var bits=[];
+    function add(v,l){ if(typeof v==='number'&&isFinite(v)&&v>0) bits.push('<b>'+v+'</b> '+l); }
+    add(m.games_analyzed,'games analyzed');
+    add(m.research_grade,'research-grade');
+    add(m.active_market_quotes,'live market quotes');
+    add(m.books_represented,'sportsbooks');
+    if(!bits.length) return;
+    var t=m.model_updated_at?Date.parse(m.model_updated_at):NaN, mins=isFinite(t)?Math.max(0,Math.round((Date.now()-t)/60000)):null;
+    el.innerHTML='Live now &middot; '+bits.join(' &middot; ')+(mins!=null?(' &middot; model updated '+(mins<60?mins+'m':Math.round(mins/60)+'h')+' ago'):'');
+    el.style.display='';
+  }catch(e){}
+}
 
 /* Keep attribution attached across internal pages and onto URLs the visitor
    copies to someone else. Done at click time by delegation rather than by
@@ -2486,6 +2554,7 @@ loadLiveProof();
 
 /* Audience + attribution run as soon as the DOM below them exists. */
 edAudience(); attrDecorateLinks();
+affTrackClick(); lpLiveLoad();
 
 /* ===== subscribe: signup/login -> SEPARATE ARL consent -> Stripe =====
    The 21+/Terms checkbox on signup does NOT cover auto-renewal. California's ARL
@@ -2867,6 +2936,7 @@ async function submitAuth(){
    ========================================================================== */
 async function attrRecord(u,token){
   if(!u||!u.id||!token) return;
+  affClaim(token);
   var body=Object.assign({user_id:u.id,user_email:u.email||null},attrPayload());
   try{
     await fetch(SB_URL+'/rest/v1/referrals?on_conflict=user_id',{method:'POST',

@@ -170,6 +170,24 @@ const LIBS = [
     start: '/*__EDPERSONNEL_START__*/', end: '/*__EDPERSONNEL_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The personal research layer: the research state, what changed, the
+     alert wording, the Top-5 explanations, the journal's grade and the
+     decision-quality analytics. The SAME file the terminal loads as
+     window.EDPersonal. ORDER MATTERS: it reads EDResearch (EDRCORE). */
+  {
+    name: 'EDPERSONAL',
+    src: path.join(ROOT, 'lib', 'edgedesk_personal.js'),
+    start: '/*__EDPERSONAL_START__*/', end: '/*__EDPERSONAL_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* The desk's answers over the reader's own rows (watchlist, alerts,
+     journal) and the shared slate research state. Server-side only. */
+  {
+    name: 'EDMINE',
+    src: path.join(FN, '_mine.js'),
+    start: '/*__EDMINE_START__*/', end: '/*__EDMINE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The staking layer (Slice 8): the bankroll policy, the reliability score,
      the conservative probability, expected value at the executable price,
      Kelly under every exposure cap, the portfolio rules, the card and the
