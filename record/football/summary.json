@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_football_model_record_summary_v1",
- "generated_at": "2026-09-25T06:37:05.243Z",
+ "generated_at": "2026-09-25T18:39:31.222Z",
  "season": 2026,
  "what": "The football model’s own record: the number it published before kickoff, graded against the closing line and the final. Separate from the edges record, which grades flagged prices.",
  "rules": [
@@ -488,7 +488,114 @@
    ],
    "break_even_pct": 52.38,
    "lean_threshold": 2,
-   "guard_points": 21
+   "guard_points": 21,
+   "by_reliability": {
+    "n": 0,
+    "min_bucket_n": 30,
+    "buckets": [
+     {
+      "bucket": "90-100",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "80-89",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "70-79",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "60-69",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "50-59",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "<50",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     }
+    ],
+    "monotone_vs_close": {
+     "testable": false,
+     "why": "fewer than three buckets hold 30+ games"
+    },
+    "monotone_vs_result": {
+     "testable": false,
+     "why": "fewer than three buckets hold 30+ games"
+    },
+    "validated": false,
+    "verdict": "NOT VALIDATED: too few graded games per reliability bucket to test the ordering",
+    "note": "Reliability is read as published before each game and was never fitted to these outcomes. ATS is research only."
+   }
   }
  },
  "cfb_groups": {
@@ -769,7 +876,8 @@
     "ats_side": "home",
     "ou": "win",
     "ou_side": "over",
-    "clv": 2
+    "clv": 2,
+    "reliability": null
    },
    {
     "game_id": "2026_02_NYG_LA",
@@ -793,7 +901,8 @@
     "ats_side": "home",
     "ou": "loss",
     "ou_side": "over",
-    "clv": 0.5
+    "clv": 0.5,
+    "reliability": null
    },
    {
     "game_id": "2026_02_IND_KC",
@@ -817,7 +926,8 @@
     "ats_side": "away",
     "ou": "loss",
     "ou_side": "under",
-    "clv": 0.5
+    "clv": 0.5,
+    "reliability": null
    },
    {
     "game_id": "2026_02_SEA_ARI",
@@ -841,7 +951,8 @@
     "ats_side": "away",
     "ou": "loss",
     "ou_side": "over",
-    "clv": 0
+    "clv": 0,
+    "reliability": null
    },
    {
     "game_id": "2026_02_WAS_DAL",
@@ -865,7 +976,8 @@
     "ats_side": "home",
     "ou": "loss",
     "ou_side": "under",
-    "clv": 1
+    "clv": 1,
+    "reliability": null
    },
    {
     "game_id": "2026_02_MIA_SF",
@@ -889,7 +1001,8 @@
     "ats_side": "away",
     "ou": "win",
     "ou_side": "over",
-    "clv": 1
+    "clv": 1,
+    "reliability": null
    },
    {
     "game_id": "2026_02_JAX_DEN",
@@ -913,7 +1026,8 @@
     "ats_side": "away",
     "ou": "win",
     "ou_side": "under",
-    "clv": 0.5
+    "clv": 0.5,
+    "reliability": null
    },
    {
     "game_id": "2026_02_LV_LAC",
@@ -937,7 +1051,8 @@
     "ats_side": "away",
     "ou": "win",
     "ou_side": "under",
-    "clv": 0
+    "clv": 0,
+    "reliability": null
    },
    {
     "game_id": "2026_02_CAR_ATL",
@@ -961,7 +1076,8 @@
     "ats_side": "home",
     "ou": null,
     "ou_side": null,
-    "clv": 0
+    "clv": 0,
+    "reliability": null
    },
    {
     "game_id": "2026_02_NO_BAL",
@@ -985,7 +1101,8 @@
     "ats_side": "away",
     "ou": "win",
     "ou_side": "under",
-    "clv": -1
+    "clv": -1,
+    "reliability": null
    },
    {
     "game_id": "2026_02_MIN_CHI",
@@ -1009,7 +1126,8 @@
     "ats_side": "away",
     "ou": "win",
     "ou_side": "under",
-    "clv": 1
+    "clv": 1,
+    "reliability": null
    },
    {
     "game_id": "2026_02_CIN_HOU",
@@ -1033,7 +1151,8 @@
     "ats_side": "home",
     "ou": "loss",
     "ou_side": "over",
-    "clv": 0.5
+    "clv": 0.5,
+    "reliability": null
    }
   ],
   "cfb": [
@@ -1058,7 +1177,8 @@
     "ats_side": "home",
     "ou": "win",
     "ou_side": "over",
-    "clv": 0
+    "clv": 0,
+    "reliability": null
    },
    {
     "game_id": "401858458",
@@ -1081,7 +1201,8 @@
     "ats_side": "away",
     "ou": "win",
     "ou_side": "over",
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401860886",
@@ -1104,7 +1225,8 @@
     "ats_side": "home",
     "ou": null,
     "ou_side": null,
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401860888",
@@ -1127,7 +1249,8 @@
     "ats_side": "away",
     "ou": "loss",
     "ou_side": "over",
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401856793",
@@ -1150,7 +1273,8 @@
     "ats_side": "away",
     "ou": "loss",
     "ou_side": "under",
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401864507",
@@ -1173,7 +1297,8 @@
     "ats_side": "home",
     "ou": "loss",
     "ou_side": "over",
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401860885",
@@ -1196,7 +1321,8 @@
     "ats_side": "home",
     "ou": null,
     "ou_side": null,
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401860887",
@@ -1219,7 +1345,8 @@
     "ats_side": "away",
     "ou": "loss",
     "ou_side": "over",
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401856693",
@@ -1242,7 +1369,8 @@
     "ats_side": "away",
     "ou": "loss",
     "ou_side": "over",
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401856799",
@@ -1265,7 +1393,8 @@
     "ats_side": "away",
     "ou": "win",
     "ou_side": "under",
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401862775",
@@ -1288,7 +1417,8 @@
     "ats_side": "away",
     "ou": null,
     "ou_side": null,
-    "clv": null
+    "clv": null,
+    "reliability": null
    },
    {
     "game_id": "401862776",
@@ -1311,7 +1441,8 @@
     "ats_side": "away",
     "ou": "loss",
     "ou_side": "over",
-    "clv": null
+    "clv": null,
+    "reliability": null
    }
   ]
  }
