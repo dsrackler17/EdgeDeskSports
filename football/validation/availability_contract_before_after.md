@@ -36,7 +36,7 @@ The injury term moves the mean only for an explicitly **primary quarterback** ab
 
 The quarterback availability term is part of the information layer (`uncertainty.information.quarterback`), which weights confidence and never the mean.
 
-So the three defects were live on this slate, but on this week's data they touched confidence and not price. The same code prices a historical or other-fixture starting-QB OUT as the 3.9-point swing it is. The tests pin that case so it cannot come back.
+So the three defects were live on this slate, but on this week's data they touched confidence and not price. A historical or other-fixture OUT on a starting quarterback would have moved the price, by the trained primary-QB effect (−3.9 points in the parity test). Test 1a pins its refusal with a QB1 row.
 
 ## Why confidence moved, by defect
 
