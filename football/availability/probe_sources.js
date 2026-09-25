@@ -36,8 +36,16 @@ const CANDIDATES = {
   mountainwest: ['https://themw.com/sports/2026/8/21/football_reports.aspx'],
   conferenceusa: ['https://conferenceusa.com/sports/2025/8/23/FB_0823254134.aspx'],
   sunbelt: ['https://sunbeltsports.org/news/2025/8/11/football-availability-report-new.aspx'],
-  american: ['https://theamerican.org/sports/football'],
-  mac: ['https://getsomemaction.com/sports/football'],
+  /* the conferences' own "Availability Reports" links, found in their
+     football navigation by this probe (2026-09-25), and the Pac-12's 2026
+     reports page */
+  american: ['https://theamerican.org/sports/2026/8/6/football_player_availability.aspx',
+    'https://theamerican.org/sports/football'],
+  mac: ['https://getsomemaction.com/sports/2026/7/28/FB_0728265050.aspx.aspx',
+    'https://getsomemaction.com/sports/2026/7/28/FB_0728265050.aspx',
+    'https://getsomemaction.com/sports/football'],
+  pac12: ['https://pac-12.com/news/2026/9/11/2026-football-reports.aspx',
+    'https://pac-12.com/sports/football'],
   /* the platforms the conference pages embed (found by this probe) */
   hdi: ['https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report'],
   hdi_more: ['https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report',
@@ -49,6 +57,8 @@ const CANDIDATES = {
 };
 
 const REPORTISH = /availab|injur|report|\.pdf(\?|$)/i;
+/* HD Intelligence codes named by any page probed this run */
+const HDI_SEEN = new Set();
 
 function strip(html) {
   return String(html)
@@ -109,7 +119,10 @@ async function show(label, r, depth) {
   const title = (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
   console.log(pad + '  title: ' + (title ? strip(title).slice(0, 160) : '(none)'));
   ['__NEXT_DATA__', '__NUXT__', 'window.__INITIAL_STATE__', 'application/ld+json', 'data-reactroot', 'ng-app',
-    'sidearm', 'wp-content'].forEach(k => { if (html.indexOf(k) >= 0) console.log(pad + '  contains ' + k); });
+    'sidearm', 'wp-content', 'hdintelligence', 'faktorsports'].forEach(k => { if (html.indexOf(k) >= 0) console.log(pad + '  contains ' + k); });
+  /* a report platform's code, wherever the page names it: the published
+     table is then read for that code below */
+  [...html.matchAll(/hdintelligence\.com\/[^"'\s<>]*[?&](?:source|conf)=([A-Za-z0-9_-]{2,12})/g)].forEach(x => HDI_SEEN.add(x[1]));
   const next = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
   if (next) console.log(pad + '  __NEXT_DATA__ >>> ' + next[1].slice(0, 3000) + '\n' + pad + '  <<<');
   const scripts = [...html.matchAll(/<script[^>]*src=["']([^"']+)["']/gi)].map(x => x[1]).slice(0, 12);
@@ -319,4 +332,7 @@ async function hdiPublished(conf) {
       for (const l of follow) await show('follow ' + l.href, await get(l.href, BROWSER_UA), 1);
     }
   }
+  /* a platform code a conference page embeds, read as the public screen
+     reads it (the four already wired were read above) */
+  for (const code of HDI_SEEN) if (['SEC', 'ACC', 'B10', 'B12'].indexOf(code) < 0) await hdiPublished(code);
 })().catch(e => { console.error(e); process.exit(1); });
