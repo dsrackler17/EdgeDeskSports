@@ -29,7 +29,7 @@ function has(hay, needle, what) { ok(String(hay).indexOf(needle) >= 0, what, { m
 function lacks(hay, needle, what) { ok(String(hay).indexOf(needle) < 0, what, { present: needle }); }
 function section(t) { console.log('\n' + t); }
 
-const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxBest', 'fbP4QuotesFor', 'fbP4RecordFor', 'fbGxProjStatus', 'fbGxChanged', 'fbP4SeenWrite', 'fbP4SeenLoad', 'fbP4VisitFor', 'fbP4TopItems', 'fbP4TopHTML', 'fbWrCandidate', 'fbWrRowHTML', 'fbGameRows', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
+const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxBest', 'fbP4QuotesFor', 'fbP4RecordFor', 'fbGxProjStatus', 'fbGxChanged', 'fbP4SeenWrite', 'fbP4SeenLoad', 'fbP4VisitFor', 'fbP4TopItems', 'fbP4TopHTML', 'fbWrCandidate', 'fbWrRowHTML', 'fbGameRows', 'fbP4DeskHTML', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 (function () {
@@ -365,7 +365,8 @@ section('STEP 7 · projection status and stability, from the committed model rec
   eq(v.projection_stability.tier, 'LOW', 'and 2.8 pts of stored range is LOW stability');
   const html = T.fbGxProjStatus(s.u, s.p);
   has(html, 'MOVING', 'the card shows the status');
-  has(html, 'LOW', 'and the stability');
+  has(html, '<b>Low</b>', 'and the stability');
+  lacks(html, 'LOW</b> <span class="mut">Low', 'with the tier named once, not twice');
   has(html, HOME + ' -1.2', 'and the path starts at the first published number');
   has(html, AWAY + ' -0.30', 'through the latest');
   has(html, AWAY + ' -1.6', 'to now');
@@ -516,6 +517,37 @@ section('STEP 9 · top 5 worth researching, on the college board');
   lacks(row, '<i>EdgeDesk</i>Oregon -0.3', 'never as the raw 0.3');
   lacks(row, '<i>EdgeDesk</i>Oregon +0.3', 'in either sign');
   has(row, 'NEAR PICK’EM', 'with its badge');
+
+  /* ---------------------------------------------------------------------- */
+  section('STEP 10 · the CFB research desk above the board');
+  const rows = units.map(u => ({ u, p: win.FB.p4._proj[u.g.game_id], mkt: win.FB.p4._mkt[u.g.game_id], gid: String(u.g.game_id) }));
+  const views = rows.map(r => T.fbP4ViewFor(r.u, r.p, r.mkt));
+  const tally = {};
+  views.forEach(v => { tally[v.research_label.key] = (tally[v.research_label.key] || 0) + 1; });
+  win.FB.p4seen = { base: null, read: true, wroteAt: 0 };
+  let desk = T.fbP4DeskHTML(rows);
+  has(desk, 'CFB RESEARCH DESK', 'the desk is rendered');
+  has(desk, '7 games shown', 'over the games the board shows');
+  Object.keys(tally).forEach(k => {
+    const L = win.EDCfbResearchView.LABELS[k];
+    has(desk, '<b>' + tally[k] + '</b> <span class="rv-lab ' + L.tone + '">' + L.label + '</span>', 'it counts ' + tally[k] + ' ' + L.label);
+  });
+  has(desk, 'TOP 5 WORTH RESEARCHING', 'and carries the Top 5');
+  ok(desk.indexOf('CFB RESEARCH DESK') < desk.indexOf('TOP 5 WORTH RESEARCHING'), 'the counts come first, then the Top 5');
+  lacks(desk, 'CHANGED SINCE', 'with no visit and no record loaded there is no change line, rather than an invented one');
+  /* a stored visit an hour ago, with G1 a point and a half away from now */
+  const snaps = {};
+  views.forEach(v => { snaps[v.game_id] = win.EDCfbResearchView.snapshotOf(v, win.FB.p4._proj[v.game_id], Date.now() - 3600e3); });
+  snaps.G1 = Object.assign({}, snaps.G1, { m: snaps.G1.m - 1.5, l: 'MARKET_ALIGNED' });
+  win.FB.p4seen = { base: { v: 1, at: Date.now() - 3600e3, games: snaps }, read: true, wroteAt: 0 };
+  rows.forEach(r => { r.u._rv = null; });
+  desk = T.fbP4DeskHTML(rows);
+  has(desk, 'CHANGED SINCE YOUR LAST VISIT', 'with a visit stored it says what changed since');
+  has(desk, '1 projection moved', 'one projection moved');
+  has(desk, '1 game moved into Worth Researching', 'and one game moved into Worth Researching');
+  has(desk, 'this device', 'and says the baseline is this device');
+  ok(!/\b(lock|best bet|guaranteed|hammer)\b/i.test(desk), 'no betting language on the desk');
+  has(BOOT.module, 'fbP4DeskHTML(visible)', 'the board renders the desk above the rows');
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));

@@ -1906,8 +1906,18 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   .rv-row .rv-conf{display:none}
 }
 .rv-mv{font-size:8.5px;font-weight:700;letter-spacing:.04em;white-space:nowrap}.rv-mv.warn{color:var(--warn)}.rv-mv.neg{color:var(--neg)}
-.rv-top{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:8px 10px;margin:8px 0 10px}
-.rv-top-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;margin-bottom:4px}
+.rv-desk{border:1px solid var(--border);border-radius:12px;background:var(--bg);padding:9px 10px;margin:8px 0 10px}
+.rv-desk-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font:600 11px 'JetBrains Mono',monospace;letter-spacing:.07em}
+.rv-desk-h b{color:var(--text)}
+.rv-desk-n{display:flex;flex-wrap:wrap;gap:5px 12px;margin:7px 0 2px}
+.rv-dc{font:11px 'JetBrains Mono',monospace;white-space:nowrap}.rv-dc b{color:var(--text);font-size:13px;margin-right:2px}
+.rv-desk-c{font-size:11.5px;color:var(--dim);line-height:1.5;margin:7px 0 0}
+.rv-desk-c b{font:600 10px 'JetBrains Mono',monospace;letter-spacing:.06em;color:var(--faint)}
+.rv-top{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:8px 10px;margin:8px 0 2px}
+.rv-top summary{cursor:pointer}
+.rv-top-h{display:inline-flex;justify-content:space-between;gap:8px;flex-wrap:wrap;width:calc(100% - 18px);font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;margin-bottom:4px;vertical-align:top}
+.rv-top-s{display:block;font-size:11.5px;color:var(--dim);margin:0 0 2px 16px}
+.rv-top[open] .rv-top-s{display:none}
 .rv-top-h b{color:var(--text)}
 .rv-top-r{border-top:1px solid var(--border);padding:7px 0;cursor:pointer}
 .rv-top-r:first-of-type{border-top:0}
@@ -55015,7 +55025,7 @@ function fbGxProjStatus(u,p){
   h+='<div class="gd-line"><span class="l">Status</span><span class="v"><span class="gx-st '+S.tone+'">'+fbEsc(S.label)+'</span> '
     +'<span class="mut">'+fbEsc(S.text)+'</span></span></div>';
   h+='<div class="gd-line"><span class="l">Stability</span><span class="v">'
-    +(st.tier?('<b>'+fbEsc(st.tier)+'</b> <span class="mut">'+fbEsc(st.text)+'</span>'):'<span class="mut">'+fbEsc(st.text)+'</span>')+'</span></div>';
+    +(st.tier?('<b>'+fbEsc(st.label)+'</b> <span class="mut">· '+fbEsc(st.text)+'</span>'):'<span class="mut">'+fbEsc(st.text)+'</span>')+'</span></div>';
   if(H.points&&H.points.length>1){
     h+='<div class="gd-line"><span class="l">EdgeDesk path</span><span class="v mono">'
       +H.points.map(function(x){return fbEsc(x.text)+' <span class="mut">('+(x.source==='current'?'now':fbEsc(x.source)+' '+fbGxAgo(x.at))+')</span>';}).join(' → ')
@@ -55751,6 +55761,43 @@ window.fbGxFollow=function(gid){
   if(el&&u&&p){var tmp=document.createElement('div');tmp.innerHTML=fbGxWatch(u,p);if(tmp.firstChild)el.replaceWith(tmp.firstChild);}
   else if(el)el.querySelector('button').textContent=w[gid]?'Unfollow this game':'Follow this game';
 };
+/* ── THE CFB RESEARCH DESK ──────────────────────────────────────────────
+   The first answer a returning reader needs — what matters on this board
+   today — above the rows: how many games carry each research label, what
+   changed since this device's last visit (or since the last published
+   update, when no visit is stored), then the Top 5. Everything is counted
+   off the same research views the rows below print; it computes nothing of
+   its own, and a count its baseline cannot support is not shown. */
+function fbP4DeskHTML(visible){
+  var V=window.EDCfbResearchView;
+  if(!V)return '';
+  var views=(visible||[]).map(function(r){try{return fbP4ViewFor(r.u,r.p,r.mkt);}catch(_){return null;}}).filter(Boolean);
+  if(!views.length)return '';
+  var D=V.deskSummary(views),base=null;
+  try{base=fbP4SeenBase();}catch(_){base=null;}
+  var C=V.changes(views,{visits:base&&base.games,visit_at:base&&base.at,now:Date.now()},V.config(fbP4ViewCfg()));
+  var chips=D.items.filter(function(i){return i.n>0||i.key==='WORTH_RESEARCHING';}).map(function(i){
+    return '<span class="rv-dc"><b>'+i.n+'</b> <span class="rv-lab '+i.tone+'">'+fbEsc(i.label)+'</span></span>';
+  }).join('');
+  function n(x,one,many){return x+' '+(x===1?one:many);}
+  var ch='';
+  if(C.basis==='visit'){
+    var parts=[C.projections_changed?n(C.projections_changed,'projection moved','projections moved'):'no projection moved',
+      C.gaps_widened?n(C.gaps_widened,'market gap widened','market gaps widened'):'no market gap widened',
+      C.into_worth?n(C.into_worth,'game moved into Worth Researching','games moved into Worth Researching'):null]
+      .concat(C.new_games?[n(C.new_games,'game new to the board','games new to the board')]:[]).filter(Boolean);
+    ch='<div class="rv-desk-c"><b>CHANGED SINCE YOUR LAST VISIT</b> <span class="mut">'+fbEsc(fbRvWhen(C.since_at))+' · this device</span><br>'
+      +fbEsc(parts.join(' · '))+'</div>';
+  }else if(C.basis==='update'){
+    ch='<div class="rv-desk-c"><b>CHANGED SINCE LAST UPDATE</b> <span class="mut">latest published '+fbEsc(fbRvWhen(C.since_at))+'</span><br>'
+      +fbEsc([C.projections_changed?n(C.projections_changed,'projection differs from its latest published number','projections differ from their latest published numbers'):'every projection matches its latest published number',
+        C.revised_24h?n(C.revised_24h,'projection revised in the last 24 hours','projections revised in the last 24 hours'):'no projection revised in the last 24 hours'].join(' · '))+'</div>';
+  }
+  return '<div class="rv-desk"><div class="rv-desk-h"><b>CFB RESEARCH DESK</b><span class="mut">'+D.total+' game'+(D.total===1?'':'s')
+    +' shown · research, not picks</span></div>'
+    +'<div class="rv-desk-n">'+chips+'</div>'+ch+fbP4TopHTML(visible)+'</div>';
+}
+
 /* ── TOP 5 WORTH RESEARCHING, ON THE COLLEGE BOARD ──────────────────────
    The SAME reading order as the Football overview's CFB list — the same
    rows (fbGameRows), the same candidates (fbWrCandidate, which carries the
@@ -55775,8 +55822,16 @@ function fbP4TopItems(visible){
 function fbP4TopHTML(visible){
   var P=window.EDResearchPriority;
   if(!P||!window.EDCfbResearchView)return '';
-  function card(right,body){
-    return '<div class="rv-top"><div class="rv-top-h"><b>TOP 5 WORTH RESEARCHING</b><span class="mut">'+right+'</span></div>'+body+'</div>';
+  /* open on a desktop; on a phone it starts folded to one line that still
+     names the games, so the answer is on the first screen and the rows are
+     not pushed off it. The reader's choice is kept across repaints. */
+  function card(right,body,names){
+    var narrow=false;
+    try{narrow=window.matchMedia?window.matchMedia('(max-width:560px)').matches:false;}catch(_){narrow=false;}
+    var open=FB.p4.topOpen!=null?FB.p4.topOpen:!narrow;
+    return '<details class="rv-top"'+(open?' open':'')+' ontoggle="FB.p4.topOpen=this.open">'
+      +'<summary><span class="rv-top-h"><b>TOP 5 WORTH RESEARCHING</b><span class="mut">'+right+'</span></span>'
+      +(names?'<span class="rv-top-s">'+names+'</span>':'')+'</summary>'+body+'</details>';
   }
   if(!fbWrLayerReady()){
     /* the shared research layer supplies the normalized gap the order needs;
@@ -55792,10 +55847,13 @@ function fbP4TopHTML(visible){
   if(!res)return '';
   if(!res.items.length)return card('none clear the gates','<div class="rv-top-q">No game on the board clears the research gates right now'
     +' ('+res.checked+' checked). Nothing is added to fill the list.</div>');
+  var names=res.items.slice(0,2).map(function(x){return fbEsc(x.candidate.away+' @ '+x.candidate.home);}).join(' · ')
+    +(res.items.length>2?(' · +'+(res.items.length-2)+' more'):'');
   return card(res.items.length+' of '+res.eligible+' eligible · '+res.checked+' checked',
     res.items.map(fbP4TopRowHTML).join('')
     +(res.items.length<FB_P4_TOP_N?('<div class="rv-top-q">Only '+res.items.length+' game'+(res.items.length===1?' clears':'s clear')+' the gates. Nothing is added to fill the list.</div>'):'')
-    +'<div class="rv-top-q">A reading order, not a ranking of bets: the score weighs the disagreement against how far the data under it can be trusted.</div>');
+    +'<div class="rv-top-q">A reading order, not a ranking of bets: the score weighs the disagreement against how far the data under it can be trusted.</div>',
+    names);
 }
 function fbP4TopRowHTML(x){
   var c=x.candidate,v=c.view;
@@ -56838,7 +56896,7 @@ function fbP4BoardHTML(){
   var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 112px 136px;gap:2px 8px;align-items:center';
   var html=head+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c);
   if(!visible.length)return html+fbP4EmptyHTML(rows,c);
-  try{html+=fbP4TopHTML(visible);}catch(_){}
+  try{html+=fbP4DeskHTML(visible);}catch(_){}
   try{html+=fbP4QueueHTML(visible);}catch(_){}
   /* WITH THE RESEARCH VIEW the row carries what a first glance needs, in this
      order: the teams, EdgeDesk's fair line and the market's (each named for

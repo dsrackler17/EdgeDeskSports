@@ -392,6 +392,11 @@ section('STEP 7 · projection status and stability, from stored EdgeDesk numbers
 
   h = hist(-1.6, REC(-1.4, -1.4));
   eq('within 0.75 of the stored number: STABLE', h.status.key, 'STABLE');
+  eq('and says it is inside the band, with the small move', h.status.text,
+    'EdgeDesk’s number is within 0.75 pts of the latest published number (0.2 toward Ole Miss).');
+  eq('an unmoved number says unchanged', hist(-1.4, REC(-1.4, -1.4)).status.text, 'EdgeDesk’s number is unchanged since the latest published number.');
+  eq('stability carries its label once, apart from its text', hist(-1.6, REC(-1.4, -1.4)).stability.label, 'High');
+  chk('and the text does not repeat it', !/^High/.test(hist(-1.6, REC(-1.4, -1.4)).stability.text));
   near('the change is measured from the latest stored number', h.change.signed, -0.2, 1e-9);
   eq('high stability', h.projection_stability === undefined ? h.stability.tier : h.stability.tier, 'HIGH');
 
@@ -526,6 +531,59 @@ section('STEP 8 · what changed: the size, the terms when stored, never a cause'
   eq('the market line and its source', snap.k + ' · ' + snap.s, '2.5 · cfb.lines · consensus');
   eq('the label', snap.l, v.research_label.key);
   eq('no projection, no snapshot', V.snapshotOf(V.build({ game: GAME }), null, NOW), null);
+}
+
+/* ======================================================================== */
+section('STEP 10 · the research desk: label counts and what changed since');
+{
+  const NOW = Date.parse('2026-09-24T18:00:00Z');
+  const FULL = { input_coverage: 0.9 };
+  function view(id, raw, line, o) {
+    o = o || {};
+    return V.build({ game: { game_id: id, home: HOME, away: AWAY }, projection: proj(raw, { line, conf: o.conf == null ? 70 : o.conf }),
+      market: { spread_line: line, book: 'cfb.lines · consensus' }, coverage: o.coverage || FULL, record: o.record || null, now: NOW });
+  }
+  const views = [view('a', 5, 3), view('b', 6, 3), view('c', 3.4, 3), view('d', 12, 3), view('e', 0.4, -0.5),
+    view('f', 5, null), view('g', 5, 3, { coverage: { input_coverage: 0.3 } })];
+  const d = V.deskSummary(views);
+  eq('every game is counted once', d.total, 7);
+  eq('two worth researching', d.counts.WORTH_RESEARCHING, 2);
+  eq('one market aligned', d.counts.MARKET_ALIGNED, 1);
+  eq('one major disagreement', d.counts.MAJOR_DISAGREEMENT, 1);
+  eq('one near pick’em', d.counts.NEAR_PICKEM, 1);
+  eq('one limited data (no market)', d.counts.LIMITED_DATA, 1);
+  eq('one low reliability', d.counts.LOW_RELIABILITY, 1);
+  eq('the desk lists every label, worth researching first', d.items.map(i => i.key)[0], 'WORTH_RESEARCHING');
+  eq('six labels, no more', d.items.length, 6);
+  chk('and the counts sum to the board', d.items.reduce((a, i) => a + i.n, 0) === d.total);
+
+  /* since this device's last visit */
+  const visits = {
+    a: { m: 3.5, g: 1.5, l: 'MARKET_ALIGNED' },    /* moved 1.5, gap widened 0.5 → not widened; moved INTO worth */
+    b: { m: 6.0, g: 3.0, l: 'WORTH_RESEARCHING' }, /* unchanged */
+    d: { m: 9.0, g: 6.0, l: 'WORTH_RESEARCHING' }  /* moved 3.0, gap widened 3.0 */
+  };
+  const ch = V.changes(views, { visits, visit_at: NOW - 86400e3, now: NOW });
+  eq('with a visit stored, the baseline is the visit', ch.basis, 'visit');
+  eq('two projections moved 0.75+', ch.projections_changed, 2);
+  eq('one market gap widened 0.75+', ch.gaps_widened, 1);
+  eq('one game moved into worth researching', ch.into_worth, 1);
+  eq('and those are the games', ch.games.into_worth.join(','), 'a');
+  eq('games not seen last time (c, e, f, g) are counted as new, not as changes', ch.new_games, 4);
+
+  /* no visit: the last published update */
+  const rec = (latestMargin, revs, at) => ({ first: { at: '2026-09-20T12:00:00Z', margin: 0 }, latest: { at, margin: latestMargin }, revisions: revs });
+  const vu = [view('p', 5, 3, { record: rec(3.9, 2, '2026-09-24T09:00:00Z') }),  /* 1.1 off the latest, revised 9h ago */
+    view('q', 5, 3, { record: rec(5.0, 1, '2026-09-21T09:00:00Z') }),             /* matches, revised days ago */
+    view('r', 5, 3)];                                                            /* no history */
+  const cu = V.changes(vu, { now: NOW });
+  eq('without a visit, the baseline is the last published update', cu.basis, 'update');
+  eq('one projection differs from its latest published number', cu.projections_changed, 1);
+  eq('one was revised in the last 24 hours', cu.revised_24h, 1);
+  eq('gap and label changes cannot be counted from the record, so they are unavailable, not zero', cu.gaps_widened, null);
+  eq('nor moves into worth researching', cu.into_worth, null);
+  eq('with no history at all there is no baseline', V.changes([view('z', 5, 3)], { now: NOW }).basis, null);
+  eq('a visit stamped in the future is not a baseline', V.changes(views, { visits, visit_at: NOW + 1000, now: NOW }).basis, null);
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
