@@ -271,6 +271,80 @@ needs a schema migration first.
 components, bottlenecks, caps, conferences, the 20 lowest and highest games,
 and calibration. `npm run cfb:reliability` prints the same.
 
+## Scored from the game evidence package
+
+Since the enrichment layer (`football/enrichment/`, `lib/game_evidence.js`),
+each game is scored from ONE normalized evidence package when one exists. The
+package **replaces the contract's interpretation of availability and QB
+status**. Weights, caps and grade bands are unchanged: identical evidence
+scores identically, and new points come only from evidence the contract
+could not see.
+
+**What the package changes:**
+
+- **Availability is fixture-scoped.** A team's report for a *different* game
+  no longer marks this one USABLE.
+- **Comprehensive silence establishes QB status.** When the team's
+  comprehensive official report for this game does not list the starter, he
+  is available by the conference's own policy. The contract dropped this
+  whenever the report listed anyone at all. That kept every SEC, Big Ten, ACC
+  and Big 12 game under the QB_STATUS_UNCONFIRMED cap (89), so no game could
+  be VERY STRONG.
+- **A historical feed row is not today's fitness.** ESPN's college endpoint
+  returns 2020–2022 rows. They are refused as HISTORICAL, where the contract
+  had read one as a 2026 QB being cleared.
+- **The QB resolver:**
+  - its confirmation level and conflict verdict drive the identity item, the
+    source-agreement item and the gates;
+  - a new gate, QB_CONFLICTED, applies when the hierarchy cannot settle a
+    conflict, at the existing contested cap (79);
+  - a job split by usage is scored once, as contested. The contract had also
+    counted it as contradictory sources and, through the efficiency identity,
+    a third time;
+  - source agreement is the tier-weighted share of current evidence naming the
+    starter. EdgeDesk's own quality ranking is weighed at half an observed
+    start, because it is not an independent source.
+- **Unrated absences are charged by role.** A CRITICAL or MAJOR absence costs
+  the rate an unrated "starter" always cost (0.5). The old test for a starter
+  was depth rank ≤ 2, which called three of five starting linemen reserves.
+  Unrated absences on a team the personnel layer rated are now charged too,
+  where they were dropped.
+- **The FCS bridge.**
+  - The floor-priced side's perturbation uses the floor's measured error,
+    √(gap² + sd²), in place of ±8.
+  - THIN DATA lifts only for a STRONG rating that corroborates the floor.
+- **Potential reliability.** Every result publishes `potential` and
+  `recoverable_by_family`: the score with every recoverable input resolved,
+  from the same simulator next actions use. It is not a probability.
+
+**Measuring the effect.** The build scores every game both ways and publishes
+`summary_without_evidence`, so the effect is measured on identical
+projections. The no-evidence path reproduces the pre-enrichment scorer
+exactly on all 129 games of the 2026-09-25 slate.
+
+**The contract now reads availability the same way.** The input contract
+(`football/matchup/contract.js`), which feeds the engine's injury list and
+its QB information term, now follows the same rules as the package:
+
+- one official report per fixture, and a grade for each fixture;
+- team-scoped rows dated against the kickoff, with HISTORICAL ones refused;
+- the collector's own status field read;
+- an explicit OUT scored as OUT;
+- silence on a fresh comprehensive filing for this game read as available,
+  whoever else it lists.
+
+It closed the historical ESPN rows that had reached the priced injury lists
+of Florida and Illinois. On the 2026-09-25 slate that change:
+
+- moved no fair spread, total or win probability;
+- raised engine information confidence on 24 games;
+- lowered priced confidence on 2.
+
+`football/validation/availability_contract_before_after.md` has the game by
+game record. Because the package already applied these rules, the
+evidence-scored reliability did not move. `reliability_without_evidence`,
+which reads the contract rows, now sits closer to it.
+
 ## Calibration: not validated
 
 **The question:** does a higher pregame reliability go with a smaller

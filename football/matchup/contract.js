@@ -108,11 +108,56 @@
     };
   }
 
-  /* a conference filing is evidence about ONE fixture */
+  /* a conference filing is evidence about ONE fixture. The merged view keeps
+     one filing per game it was read for (overlay.js official_reports), so a
+     team whose last-week filing sorts after this week's still answers for
+     this week. `official_report`, the legacy single slot, is read only when
+     it names this game. */
   function officialReportForGame(team, gameId) {
-    var r = team && team.official_report;
-    if (!r || !r.ok || r.game_id == null || gameId == null) return null;
-    return String(r.game_id) === String(gameId) ? r : null;
+    if (!team || gameId == null) return null;
+    var r = (team.official_reports && team.official_reports[String(gameId)]) || null;
+    if (!r) {
+      r = team.official_report;
+      if (!r || r.game_id == null || String(r.game_id) !== String(gameId)) return null;
+    }
+    return r && r.ok ? r : null;
+  }
+
+  /* ==== ONE FIXTURE'S AVAILABILITY, DATED ==============================
+     What the merged availability view knows about THIS game, and only this
+     game (football/availability/overlay.js does the judging):
+       grade      the grade of this fixture's evidence. A filing for another
+                  game does not make this one OFFICIAL.
+       rows       rows filed for this game, plus team-scoped rows the
+                  freshness ladder did not refuse as HISTORICAL against this
+                  kickoff
+       refused    how many rows were refused, and why
+       published  the freshest publication among those rows, which is the
+                  clock STALE is measured on. It is not the moment a sync
+                  re-read the page.
+     o = { now, kickoff }. With no overlay to judge, null: nothing is known. */
+  function fixtureAvailability(ctx, teamName, gameId, deps, o) {
+    var AV = deps && deps.AV_OVERLAY;
+    var t = ctx && ctx.availability_by_team ? ctx.availability_by_team[normKey(teamName)] : null;
+    if (!t || !AV) return null;
+    o = { now: o && o.now != null ? o.now : Date.now(), kickoff: (o && o.kickoff) || null };
+    var fr = AV.fixtureRows ? AV.fixtureRows(t, gameId, o) : {
+      rows: (t.players || []).filter(function (p) {
+        return p.game_id == null || gameId == null || String(p.game_id) === String(gameId);
+      }), refused: {} };
+    return {
+      team: t,
+      grade: AV.gradeFor ? AV.gradeFor(t, gameId, o) : AV.normGrade(t.dataQuality || t.data_quality),
+      rows: fr.rows, refused: fr.refused || {},
+      published: AV.publishedOf ? AV.publishedOf(fr.rows) : null,
+      official: officialReportForGame(t, gameId),
+      now: o.now, kickoff: o.kickoff
+    };
+  }
+  /* the one timestamp an injury row is dated by: when its source published
+     it. A re-read of an old page is not a new report */
+  function rowAsOf(p) {
+    return (p && (p.source_published_at || p.observed_at || p.retrieved_at)) || null;
   }
 
   /* ==== WHO IS OUT, AND WHO THEY ARE ==================================
@@ -207,20 +252,26 @@
      EdgeDesk could not read returns null (maximum injury uncertainty); a
      graded read returns its rows; an empty list — "everybody is available" —
      is granted only by a comprehensive official filing for THIS game. */
-  function injuriesFor(ctx, teamName, gameId, deps) {
+  /* opts = { kickoff, now }: the fixture's kickoff, against which a
+     team-scoped row is dated. Without it the row's own age is used. */
+  function injuriesFor(ctx, teamName, gameId, deps, opts) {
     var AV = deps && deps.AV_OVERLAY;
-    var t = ctx && ctx.availability_by_team ? ctx.availability_by_team[normKey(teamName)] : null;
-    if (!t || !AV) return null;
+    var fx = fixtureAvailability(ctx, teamName, gameId, deps, opts);
+    if (!fx) return null;
+    var t = fx.team;
     /* LIMITED and NONE are not reads that reached a report; handing the
        engine [] for them told it 138 programmes were healthy on the strength
-       of refusals */
-    if (!AV.isGraded(AV.normGrade(t.dataQuality || t.data_quality))) return null;
-    /* a conference filing is evidence about ONE fixture: historical rows stay
-       on disk for audit and are scoped out here */
-    var official = officialReportForGame(t, gameId);
-    var scoped = (t.players || []).filter(function (p) {
-      return p.game_id == null || gameId == null || String(p.game_id) === String(gameId);
-    });
+       of refusals. THE GRADE IS THIS FIXTURE'S: a conference filing for last
+       week's game made the whole team OFFICIAL, and that grade let this
+       week's ungraded read through. */
+    if (!AV.isGraded(fx.grade)) return null;
+    /* a conference filing is evidence about ONE fixture, and a team-scoped
+       row is evidence while it is dated inside this game's week. Historical
+       rows stay on disk for audit and are refused here: ESPN's injury page
+       still lists a 2020 designation, and a sync that re-reads it this
+       morning stamps it observed this morning */
+    var official = fx.official;
+    var scoped = fx.rows;
     var out = [];
     scoped.forEach(function (p) {
       var st = AVAIL_TO_ENGINE[String(p.status || p.availability_status || '').toUpperCase()];
@@ -252,7 +303,10 @@
         replacement_player: replacement ? replacement.n : null,
         replacement_rating: replacement && isNum(replacement.e) ? replacement.e : null,
         source: p.source_name || t.team_name || null,
-        as_of: p.observed_at || t.lastUpdated || ctx.availability_as_of || null
+        /* when the source PUBLISHED it. observed_at is when a sync re-read
+           the page, and dating a 2020 note by this morning's read is how it
+           passed for news */
+        as_of: rowAsOf(p) || t.lastUpdated || ctx.availability_as_of || null
       });
     });
     if (out.length) return out;
@@ -261,6 +315,114 @@
        designation; an old fixture-scoped row never creates the empty list */
     for (var i = 0; i < scoped.length; i++) if (scoped[i].game_id == null) return out;
     return null;
+  }
+
+  /* THE STATES AN AVAILABILITY ROW CAN GIVE A QUARTERBACK. Anything else,
+     UNKNOWN included, is not a statement about whether he plays. */
+  var QB_STATES = { OUT: 1, DOUBTFUL: 1, QUESTIONABLE: 1, GAME_TIME_DECISION: 1, DAY_TO_DAY: 1,
+    OUT_FIRST_HALF: 1, LIMITED: 1, PROBABLE: 1, EXPECTED: 1, AVAILABLE: 1 };
+  /* the enrichment aggregator's FIXTURE_FRESH_H: how long a filing for this
+     game stays its current word */
+  var QB_SILENCE_FRESH_H = 48;
+  function qbStateOf(p) {
+    var st = String((p && (p.status || p.availability_status)) || '').toUpperCase();
+    return QB_STATES[st] ? st : null;
+  }
+
+  /* CAN THE RESOLVED STARTER PLAY, from this fixture's dated evidence.
+     fx is fixtureAvailability() for his team and this game (or null). */
+  function qbAvailabilityFor(ctx, teamName, gameId, rec, fx, deps) {
+    var pid = rec && rec.player_id != null ? String(rec.player_id) : null;
+    var pname = normPersonName(rec && rec.player_name);
+    var hit = null, how = null, namedUnread = null;
+    ((fx && fx.rows) || []).forEach(function (p) {
+      var byId = pid && p.player_id != null && String(p.player_id) === pid;
+      var who = !byId && pid ? playerIdentity(ctx, teamName, p.player_name || p.name) : null;
+      var viaLayer = who && String(who.id) === pid;
+      var byName = !byId && !viaLayer && pname && normPersonName(p.player_name || p.name) === pname;
+      if (!byId && !viaLayer && !byName) return;
+      /* NAMED IS NOT SILENT. A row that names him with a designation this
+         layer cannot read is not evidence he plays, and it rules out
+         reading the filing's silence as his availability */
+      if (!qbStateOf(p)) { namedUnread = namedUnread || p; return; }
+      var basis = byId ? 'the athlete id on the row' : viaLayer
+        ? 'a unique team/name match to the same athlete id' : 'the same name on the same team';
+      /* one row per fixture decides: this game's filing outranks an
+         operator entry, which outranks a team-scoped read; within a kind the
+         later publication wins */
+      var rank = p.game_id != null && p.source_type === 'OFFICIAL' ? 3 : p.source_type === 'OPERATOR' ? 2 : 1;
+      var at = Date.parse(rowAsOf(p) || '') || 0;
+      if (!hit || rank > hit.rank || (rank === hit.rank && at > hit.at)) { hit = { p: p, rank: rank, at: at }; how = basis; }
+    });
+    if (hit) {
+      var p = hit.p, st = qbStateOf(p);
+      return { evidence: 'EXPLICIT', state: st,
+        source: p.source_name || null, published_at: p.source_published_at || null,
+        retrieved_at: p.retrieved_at || p.observed_at || null,
+        identity: 'matched on ' + how,
+        why: (p.source_name || 'an availability source') + ' lists ' + (rec.player_name || 'him') + ' '
+          + st.toLowerCase().replace(/_/g, ' ') + (p.game_id != null ? ' for this game' : '')
+          + (p.source_published_at ? ' (published ' + String(p.source_published_at).slice(0, 16) + ')' : '') };
+    }
+    if (namedUnread) {
+      return { evidence: 'NONE', state: null, source: namedUnread.source_name || null,
+        retrieved_at: namedUnread.retrieved_at || namedUnread.observed_at || null,
+        why: (namedUnread.source_name || 'an availability source') + ' names ' + (rec.player_name || 'him')
+          + ' with a designation EdgeDesk cannot read ('
+          + String(namedUnread.status || namedUnread.availability_status || 'none') + '), which is not evidence either way' };
+    }
+    var off = fx && fx.official;
+    /* SILENCE COUNTS ONLY ON A FRESH, FULLY READ FILING: a line the parser
+       could not read may be him, and a filing more than two days old is not
+       this game's last word (the enrichment aggregator's rule, the reference
+       for this one) */
+    var offAge = off ? hoursSince(off.published_at || off.retrieved_at, fx && fx.now != null ? fx.now : Date.now()) : null;
+    if (off && off.comprehensive && ((off.unparsed || 0) > 0 || offAge == null || offAge > QB_SILENCE_FRESH_H)) {
+      return { evidence: 'NONE', state: null, source: (off.conference || '') + ' availability report',
+        retrieved_at: off.retrieved_at || null,
+        why: 'the comprehensive ' + (off.conference || 'conference') + ' report for this game does not name '
+          + (rec.player_name || 'him') + ', but ' + ((off.unparsed || 0) > 0
+            ? off.unparsed + ' of its line(s) could not be read, and one of them may be him'
+            : (offAge == null ? 'it carries no date' : 'it is ' + Math.round(offAge) + ' hours old'))
+          + ', so its silence is not read as his availability' };
+    }
+    if (off && off.comprehensive) {
+      /* A COMPREHENSIVE filing designates everyone, so a name it leaves off
+         is a name it reports available. That holds whether or not it lists
+         other players: the old reading granted it only to a filing that
+         named nobody at all, which made every quarterback on a team with
+         one listed linebacker unknown */
+      return { evidence: 'COMPREHENSIVE_SILENCE', state: 'AVAILABLE',
+        source: (off.conference || '') + ' availability report',
+        published_at: off.published_at || null, retrieved_at: off.retrieved_at || null,
+        why: 'the comprehensive ' + (off.conference || 'conference') + ' availability report for this game designates '
+          + 'every player and does not name ' + (rec.player_name || 'him')
+          + ((off.names || 0) ? ' (it lists ' + off.names + ' other player(s))' : ' (it names nobody on this roster)')
+          + ', which is a report that he is available' };
+    }
+    /* the starter record's own read, dated against this kickoff */
+    var av = (rec && rec.availability) || {};
+    var AV = deps && deps.AV_OVERLAY;
+    var avSt = String(av.state || '').toUpperCase();
+    if (av.evidence === 'EXPLICIT' && QB_STATES[avSt]) {
+      /* dated by its publication, else its observation: the availability
+         layer's own ladder, against this kickoff */
+      var fr = AV && AV.freshness ? AV.freshness({ source_published_at: av.published_at || null,
+        observed_at: av.retrieved_at || null }, { now: fx ? fx.now : Date.now(), kickoff: fx ? fx.kickoff : null }) : null;
+      if (fr && fr.state !== 'HISTORICAL') {
+        return { evidence: 'EXPLICIT', state: avSt, source: av.source || null,
+          published_at: av.published_at || null, retrieved_at: av.retrieved_at || null,
+          identity: 'the same athlete id the starter record resolved',
+          why: av.why || ((av.source || 'an availability source') + ' lists him ' + avSt.toLowerCase().replace(/_/g, ' ')) };
+      }
+      return { evidence: 'NONE', state: null, source: av.source || null, retrieved_at: av.retrieved_at || null,
+        why: !fr ? 'a report names him but the availability layer that dates reports did not load, so it is not read'
+          : 'the only report naming him (' + (av.source || 'an availability source') + ', '
+          + (av.published_at ? 'published ' + String(av.published_at).slice(0, 10) : 'undated')
+          + ') is historical against this kickoff and says nothing about this game' };
+    }
+    return { evidence: 'NONE', state: null, source: av.source || null, retrieved_at: av.retrieved_at || null,
+      why: av.why || null };
   }
 
   /* WHO IS COACHING, AND SINCE WHEN, from football/coaching/continuity.json.
@@ -435,7 +597,9 @@
        None of the states below is health. A comprehensive report naming
        nobody is the ONLY thing that means nobody is out, and only the policy
        registry may say a source is comprehensive. */
-    var ih = deps.injuriesFor(ctx, g.home_team, g.game_id), ia = deps.injuriesFor(ctx, g.away_team, g.game_id);
+    var kickOpts = { kickoff: g.start_date || null, now: now };
+    var ih = deps.injuriesFor(ctx, g.home_team, g.game_id, kickOpts),
+      ia = deps.injuriesFor(ctx, g.away_team, g.game_id, kickOpts);
     var policyGame = { home_conference: g.home_conference, away_conference: g.away_conference,
       is_conference_game: g.home_conference != null && g.away_conference != null
         && POLICY.norm(g.home_conference) === POLICY.norm(g.away_conference),
@@ -443,14 +607,24 @@
     var avPolicy = { home: POLICY.forGame(policyGame, 'home', now), away: POLICY.forGame(policyGame, 'away', now) };
     var avEvidence = { home: 'NONE', away: 'NONE' };
     var avAsOf = { home: null, away: null };
+    var avFixture = { home: null, away: null };
     [['home', ih, homeFbs, g.home_team], ['away', ia, awayFbs, g.away_team]].forEach(function (x) {
       var side = x[0], list = x[1], isFbs = x[2], name = x[3];
       var pol = avPolicy[side];
       var t = deps.availabilityTeam(ctx, name) || null;
+      var fx = fixtureAvailability(ctx, name, g.game_id, deps, kickOpts);
+      avFixture[side] = fx;
       var report = officialReportForGame(t, g.game_id);
       var official = !!report;
       var comprehensive = !!(report && report.comprehensive);
-      var observedAt = report ? report.published_at : (t && t.observed_at) || ctx.availability_as_of;
+      /* THE CLOCK IS THE PUBLICATION: this game's filing, else the freshest
+         row this fixture kept. A sync that re-read an old page does not
+         make what it read current */
+      var observedAt = report ? (report.published_at || report.retrieved_at)
+        : (fx && fx.published) || (fx ? null : (t && t.observed_at)) || ctx.availability_as_of;
+      var hist = fx && fx.refused && fx.refused.HISTORICAL ? fx.refused.HISTORICAL : 0;
+      var histNote = hist ? ' ' + hist + ' older row(s) on file were refused as HISTORICAL against this kickoff '
+        + '(published more than a week before it, or undated), so they say nothing about this game.' : '';
       var evidenceAsOf = report ? (report.retrieved_at || report.published_at) : ctx.availability_as_of;
       avAsOf[side] = evidenceAsOf;
       var evidenceAge = hoursSince(observedAt || evidenceAsOf, now);
@@ -462,7 +636,7 @@
             as_of: evidenceAsOf, observed_at: observedAt || null,
             age_hours: evidenceAge, identity: 'resolved against the current-season roster by name; a name that is not on '
               + 'the roster is refused rather than invented',
-            detail: list.length + ' absence report(s) on file' + polNote,
+            detail: list.length + ' absence report(s) on file for this game' + polNote + histNote,
             fix: null }));
       } else if (list && comprehensive) {
         /* the one branch that may say nobody is out */
@@ -478,9 +652,10 @@
            this game, so this is not a clean bill of health for the roster */
         contract.push(row('availability', side, evidenceAge != null && evidenceAge > 48 ? 'STALE' : 'USABLE',
           { source: 'EdgeDesk college availability layer', as_of: evidenceAsOf, age_hours: evidenceAge,
+            observed_at: observedAt || null,
             detail: 'the sources EdgeDesk reads were read and named nobody. No COMPREHENSIVE report covers this '
               + 'fixture, so this is an absence of named absences and not a statement that the roster is whole'
-              + polNote,
+              + polNote + histNote,
             fix: pol && pol.report_url ? ('ingest the ' + pol.conference + ' report from ' + pol.report_url) : null }));
       } else if (official) {
         /* a selected/absence-only report for THIS game: silence is not health */
@@ -513,7 +688,9 @@
       } else {
         /* WHY THE READ FAILED, not just that it did. A failure on every team
            is one failure — a closed endpoint — and is said so. */
-        var q = t ? String(t.dataQuality || t.data_quality || 'NONE').toUpperCase() : null;
+        /* THIS FIXTURE'S grade, not the team's: a filing for another game
+           is not a read of this one */
+        var q = t ? (fx ? fx.grade : String(t.dataQuality || t.data_quality || 'NONE').toUpperCase()) : null;
         var failed = t && isNum(t.sources_failed) ? t.sources_failed : null;
         var checked = t && isNum(t.sources_checked) ? t.sources_checked : null;
         var sys = ctx.availability_systematic || [];
@@ -530,7 +707,7 @@
                       return f.source + ' refuses for all ' + f.teams + ' programmes (' + f.error + ')'; }).join('; ')
                     + ' — an endpoint the provider closed, not ' + sys[0].teams
                     + ' separate misses'
-                  : '') + polNote,
+                  : '') + polNote + histNote,
             fix: pol && pol.report_url
               ? ('ingest the ' + pol.conference + ' availability report for this game from ' + pol.report_url)
               : 'register an official source for this programme in football/availability/sources.overrides.json, or '
@@ -567,6 +744,7 @@
     var qbEvidenceClass = { home: null, away: null };
     var qbAvailEvidence = { home: 'NONE', away: 'NONE' };
     var qbAvailWhy = { home: null, away: null };
+    var qbAvailState = { home: null, away: null };
     [['home', sh, homeFbs, g.home_team], ['away', sa, awayFbs, g.away_team]].forEach(function (x) {
       var side = x[0], rec = x[1], isFbs = x[2], name = x[3];
       if (!rec) {
@@ -592,23 +770,39 @@
             + 'football/availability/sources.overrides.json or record it in football/starters/announcements.json'
       }));
       /* ---- can the resolved starter play ------------------------------- */
-      var av = rec.availability || {};
+      /* FROM THIS FIXTURE'S DATED EVIDENCE, in this order:
+           1  a row about this game (its filing, an operator entry for it, a
+              team-scoped row the freshness ladder kept) that names him:
+              EXPLICIT, with the STATE it gives. OUT is explicit evidence
+              that he cannot play, not that he can.
+           2  a COMPREHENSIVE filing for this game that does not name him:
+              silence on a report that designates everyone is a report that
+              he is available, whoever else it lists.
+           3  the starter record's own availability, only when it named a
+              state and its report is not historical against this kickoff.
+         Nothing else is evidence either way. */
       var pol = avPolicy[side];
-      if (av.evidence === 'EXPLICIT') {
+      var qa = qbAvailabilityFor(ctx, name, g.game_id, rec, avFixture[side], deps);
+      if (qa.evidence === 'EXPLICIT') {
         qbAvailEvidence[side] = 'EXPLICIT';
-        qbAvailWhy[side] = av.why || null;
-        contract.push(row('qb_availability', side, 'USABLE',
-          { source: av.source, as_of: av.retrieved_at, observed_at: av.published_at || null,
-            identity: 'the same athlete id the starter record resolved',
-            detail: av.why || 'an availability source names this player and states a status' }));
-      } else if (avEvidence[side] === 'COMPREHENSIVE_SILENCE') {
+        qbAvailWhy[side] = qa.why;
+        qbAvailState[side] = qa.state;
+        var qaAge = hoursSince(qa.published_at || qa.retrieved_at, now);
+        contract.push(row('qb_availability', side, qaAge != null && qaAge > 48 ? 'STALE' : 'USABLE',
+          { source: qa.source, as_of: qa.retrieved_at || qa.published_at, observed_at: qa.published_at || null,
+            age_hours: qaAge,
+            identity: qa.identity,
+            detail: qa.why }));
+      } else if (qa.evidence === 'COMPREHENSIVE_SILENCE') {
         /* the ONLY route from silence to available */
         qbAvailEvidence[side] = 'COMPREHENSIVE_SILENCE';
-        qbAvailWhy[side] = 'named nowhere on a comprehensive report for this game';
-        contract.push(row('qb_availability', side, 'USABLE',
-          { source: pol && pol.conference, as_of: avAsOf[side],
-            detail: 'the comprehensive ' + (pol && pol.conference) + ' availability report for this game designates '
-              + 'every player and does not name him, which is a report that he is available' }));
+        qbAvailWhy[side] = qa.why;
+        qbAvailState[side] = 'AVAILABLE';
+        var qsAge = hoursSince(qa.published_at || qa.retrieved_at, now);
+        contract.push(row('qb_availability', side, qsAge != null && qsAge > 48 ? 'STALE' : 'USABLE',
+          { source: (pol && pol.conference ? pol.conference + ' availability report' : qa.source),
+            as_of: qa.retrieved_at || avAsOf[side], observed_at: qa.published_at || null, age_hours: qsAge,
+            detail: qa.why }));
       } else if (pol && pol.state === 'NOT_REQUIRED_FOR_THIS_GAME') {
         contract.push(row('qb_availability', side, 'NOT_REQUIRED',
           { source: pol.conference, detail: pol.why,
@@ -621,8 +815,8 @@
             fix: 're-run the availability sync inside the filing window (' + pol.report_url + ')' }));
       } else {
         contract.push(row('qb_availability', side, 'UNAVAILABLE',
-          { source: av.source, as_of: av.retrieved_at,
-            detail: (av.why || 'no source states whether this quarterback can play')
+          { source: qa.source, as_of: qa.retrieved_at,
+            detail: (qa.why || 'no source states whether this quarterback can play')
               + (pol && pol.why ? '. ' + pol.why : ''),
             fix: pol && pol.report_url ? ('ingest the ' + pol.conference + ' availability report from ' + pol.report_url)
               : 'record a dated operator correction in football/availability/operator.json' }));
@@ -831,6 +1025,7 @@
       starters: starters, schedule: { home: ch, away: ca },
       qb_epa: qbEpa, qb_measured: qbMeasured,
       qb_availability_evidence: qbAvailEvidence, qb_availability_why: qbAvailWhy,
+      qb_availability_state: qbAvailState,
       qb_evidence_class: qbEvidenceClass, availability_evidence: avEvidence
     };
   }
@@ -849,7 +1044,8 @@
         persistence: ctx.persistence,
         efficiency_history: A.qb_measured[side] === true,
         availability_evidence: A.qb_availability_evidence[side] || 'NONE',
-        availability_why: A.qb_availability_why[side] || null
+        availability_why: A.qb_availability_why[side] || null,
+        availability_state: (A.qb_availability_state && A.qb_availability_state[side]) || null
       });
     }
     return {
@@ -892,5 +1088,6 @@
     coachingFor: coachingFor, mergeVenues: mergeVenues, assemble: assemble, request: request,
     applyTeamTalent: applyTeamTalent, normKey: normKey,
     normPersonName: normPersonName, AVAIL_TO_ENGINE: AVAIL_TO_ENGINE, playerDetailsFrom: playerDetailsFrom,
-    playerIdentity: playerIdentity, replacementFor: replacementFor, injuriesFor: injuriesFor };
+    playerIdentity: playerIdentity, replacementFor: replacementFor, injuriesFor: injuriesFor,
+    fixtureAvailability: fixtureAvailability, qbAvailabilityFor: qbAvailabilityFor, QB_STATES: QB_STATES };
 });

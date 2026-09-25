@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-25T18:38:36.575Z",
+ "generated_at": "2026-09-25T20:11:33.388Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -199,15 +199,18 @@
  },
  "weather": {
   "requested": 126,
-  "answered": 126,
+  "answered": 0,
   "dome": 3,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 126,
+  "carried": 126,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 403": 8,
+   "host circuit open: HTTP 403 x3": 118
+  },
   "host": "api.open-meteo.com",
-  "summary": "126 of 126 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "0 of 126 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 126 request(s) failed; 126 carried the last observed forecast forward at its real age (HTTP 403 x8, host circuit open: HTTP 403 x3 x118)"
  },
  "spread_recommendation": {
   "NO_MARKET": 129

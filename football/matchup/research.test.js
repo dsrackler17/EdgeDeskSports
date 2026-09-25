@@ -159,11 +159,21 @@ const NOW = Date.parse('2026-09-15T18:00:00Z');
     })());
   chk('the injury join itself is intact — a graded read with a listed player carries him through',
     (() => {
+      /* dated this week: a team-scoped row is evidence while it is dated
+         inside the game's week (availability.js getAvailabilityFreshness) */
       const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'PARTIAL',
-        players: [{ player_name: 'A Player', position: 'QB', status: 'OUT', depth_role: 'QB1' }] } },
+        players: [{ player_name: 'A Player', position: 'QB', status: 'OUT', depth_role: 'QB1',
+          source_published_at: new Date(Date.now() - 6 * 3600e3).toISOString() }] } },
         availability_as_of: null };
       const r = IN.injuriesFor(fake, 'Someteam');
       return Array.isArray(r) && r.length === 1 && r[0].status === 'out' && r[0].starter === true;
+    })());
+  chk('an UNDATED team-scoped row is historical and never reaches the engine',
+    (() => {
+      const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'PARTIAL',
+        players: [{ player_name: 'A Player', position: 'QB', status: 'OUT', depth_role: 'QB1' }] } },
+        availability_as_of: null };
+      return IN.injuriesFor(fake, 'Someteam') === null;
     })());
   chk('the venue reaches the engine request', !!asm.baseline.venue.home);
   chk('the timestamps travel with the request', !!asm.baseline.timestamps.roster);

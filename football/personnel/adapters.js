@@ -142,11 +142,16 @@ const TIER_BY_TYPE = { OFFICIAL: 1, OFFICIAL_TEAM: 1, OFFICIAL_CONFERENCE: 1, CO
   TEAM_REPORTER: 2, REPUTABLE_MEDIA: 2, GAME_PARTICIPATION: 3, OTHER: 3 };
 const DROP_FRESHNESS = { STALE: true, HISTORICAL: true };
 
-/* a conference filing is evidence about ONE fixture */
+/* a conference filing is evidence about ONE fixture: the merged view keeps
+   one per game it was read for (overlay.js official_reports) */
 function officialReportForGame(team, gameId) {
-  const r = team && team.official_report;
-  if (!r || !r.ok || r.game_id == null || gameId == null) return null;
-  return String(r.game_id) === String(gameId) ? r : null;
+  if (!team || gameId == null) return null;
+  let r = (team.official_reports && team.official_reports[String(gameId)]) || null;
+  if (!r) {
+    r = team.official_report;
+    if (!r || r.game_id == null || String(r.game_id) !== String(gameId)) return null;
+  }
+  return r && r.ok ? r : null;
 }
 
 /* One side of one college fixture.
@@ -160,12 +165,18 @@ function cfbTeam(o) {
   const gameId = o.game && o.game.game_id;
   const notes = [];
 
-  const grade = AV && t ? AV.normGrade(t.dataQuality || t.data_quality) : 'NONE';
+  /* THIS FIXTURE'S grade and rows, dated against its kickoff, by the same
+     overlay functions the engine's injury list uses */
+  const fxo = { now: Date.now(), kickoff: (o.game && o.game.start_date) || null };
+  const grade = AV && t ? (AV.gradeFor ? AV.gradeFor(t, gameId, fxo) : AV.normGrade(t.dataQuality || t.data_quality)) : 'NONE';
   const official = officialReportForGame(t, gameId);
   const scoped = t ? (t.players || []).filter(function (p) {
     return p.game_id == null || gameId == null || String(p.game_id) === String(gameId);
   }) : [];
-  const dropped = scoped.filter(function (p) { return p.freshness && DROP_FRESHNESS[String(p.freshness).toUpperCase()]; });
+  const dropped = scoped.filter(function (p) {
+    return (p.freshness && DROP_FRESHNESS[String(p.freshness).toUpperCase()])
+      || !!(AV && AV.isHistorical && AV.isHistorical(p, fxo));
+  });
   if (dropped.length) notes.push(dropped.length + ' stale or historical availability record(s) excluded: last week’s absence is not this week’s');
   const live = scoped.filter(function (p) { return dropped.indexOf(p) < 0; });
 

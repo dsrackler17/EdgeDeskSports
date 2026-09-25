@@ -428,8 +428,8 @@ const officialReportForGame = CONTRACT.officialReportForGame;
    (football/matchup/contract.js injuriesFor): the grade gate, the fixture
    scoping and the player-layer identity join that decides whether a listed
    player is the starter the trained absence coefficient prices. */
-function injuriesFor(ctx, teamName, gameId) {
-  return CONTRACT.injuriesFor(ctx, teamName, gameId, { AV_OVERLAY });
+function injuriesFor(ctx, teamName, gameId, opts) {
+  return CONTRACT.injuriesFor(ctx, teamName, gameId, { AV_OVERLAY }, opts);
 }
 
 /* --------------------------------------------------- schedule stress, offline */
@@ -473,7 +473,7 @@ function schedCtx(si, game, which) {
    the three joins that read this process's own artifacts */
 let EPAMOD_ = null;
 const CONTRACT_DEPS = {
-  POLICY, QBC,
+  POLICY, QBC, AV_OVERLAY,
   get EPAMOD() { return EPAMOD_ || (EPAMOD_ = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'))); },
   injuriesFor,
   availabilityTeam: (ctx, name) => ctx.availability_by_team[normKey(name)] || null,
