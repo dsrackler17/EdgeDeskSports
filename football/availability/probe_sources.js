@@ -41,7 +41,8 @@ const CANDIDATES = {
   /* the platforms the conference pages embed (found by this probe) */
   hdi: ['https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report',
     'https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report',
-    'https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report'],
+    'https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report',
+    'https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report'],
   faktor: ['https://faktorsports.com/k/embed/player-availability/full/MountainWest/11/MFB/2026?signature=e098b656dbb0b78335ef78c8d9c68e2cceb940d4519d54f4c05aaaa48c62eef7'],
   espn: ['https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams/145/injuries',
     'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/145/injuries']
@@ -168,13 +169,34 @@ async function show(label, r, depth) {
       const lits = [...new Set((src.match(/["'`][^"'`\n]{0,80}(public|embed|availabilit|reports?\b|archive|roster|injur)[^"'`\n]{0,80}["'`]/gi) || []))]
         .filter(x => !/descope|webauthn|oauth|otp|magiclink|enchanted|saml|totp|three|texture|shader/i.test(x)).slice(0, 80);
       console.log(pad + '    literals: ' + lits.join(' , '));
-      ['isPublicEmbedRequest', 'get("conf")', "get('conf')", 'VITE_', 'supabase', 'firebase', 'amazonaws', 'execute-api',
-        'api.hdintelligence', '/api/', 'type:"report"', 'type==="report"', '"report"'].forEach(k => {
+      ['public-load', 'fetchPublicInfo', 'PUBLIC_REPORT:'].forEach(k => {
         let at = -1, n = 0;
         while ((at = src.indexOf(k, at + 1)) >= 0 && n < 3) {
           n++; console.log(pad + '    ctx[' + k + '#' + n + '] ' + src.slice(Math.max(0, at - 350), at + 450).replace(/\s+/g, ' '));
         }
       });
+    }
+    /* THE PUBLIC VIEW'S OWN DATA CALL, made the way the public embed makes
+       it — the query-string contract the conference iframe carries, and no
+       key. The bundle also ships an admin key for its authenticated screens;
+       that is not a public interface and is never sent. */
+    const qs = new URL(r.url).searchParams;
+    const params = { source: qs.get('source'), conf: qs.get('conf'), sport: qs.get('sport'), type: qs.get('type') };
+    if (params.conf) {
+      const api = new URL('/api/public-load', r.url).toString();
+      for (const how of ['POST', 'GET']) {
+        let res;
+        try {
+          const u = how === 'GET' ? api + '?' + new URLSearchParams(params).toString() : api;
+          const x = await fetch(u, { method: how, redirect: 'follow', signal: AbortSignal.timeout(25000),
+            headers: Object.assign({ 'user-agent': BROWSER_UA, accept: 'application/json', origin: 'https://app.hdintelligence.com',
+              referer: r.url }, how === 'POST' ? { 'content-type': 'application/json' } : {}),
+            body: how === 'POST' ? JSON.stringify(params) : undefined });
+          res = { status: x.status, type: x.headers.get('content-type'), text: await x.text() };
+        } catch (e) { res = { status: 'ERR ' + e.message, text: '' }; }
+        console.log(pad + '  public-load ' + how + ' ' + JSON.stringify(params) + ' → ' + res.status + ' ' + res.type
+          + ' · ' + res.text.length + ' chars >>> ' + res.text.slice(0, 5000) + ' <<<');
+      }
     }
   }
   const head = title ? strip(title).split(' - ')[0].trim() : null;
