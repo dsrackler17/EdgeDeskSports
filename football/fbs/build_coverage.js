@@ -61,6 +61,9 @@ const WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js'));
 const RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
 const EPA = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
 const REL = require(path.join(ROOT, 'lib', 'cfb_reliability.js'));
+const GE = require(path.join(ROOT, 'lib', 'game_evidence.js'));
+const ROI = require(path.join(ROOT, 'football', 'enrichment', 'roi.js'));
+const AUDIT = require(path.join(ROOT, 'football', 'enrichment', 'audit.js'));
 const P = global.EDCfbP4Params;
 
 const SCHED = y => `https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_${y}.csv`;
@@ -688,7 +691,14 @@ async function main() {
   const rankByKey = {};
   ((ctx.rankings && ctx.rankings.teams) ? Object.values(ctx.rankings.teams) : []).forEach(t => { if (t && t.key) rankByKey[t.key] = t; });
   const relNow = Date.parse(report.generated_at);
-  const relOf = {}, relInputs = {};
+  const relOf = {}, relInputs = {}, relBaseOf = {}, pkgOf = {};
+  /* THE EVIDENCE PACKAGES (football/enrichment/build_enrichment.js, run
+     before this build): each game is scored from its package — the one
+     interpretation of availability, the quarterback, absences, the FCS
+     bridge — and ALSO without it, so the artifact carries the same-run
+     score the v2 inputs alone would give. Neither moves a projection. */
+  const enrichArt = readJson(path.join(ROOT, 'football', 'enrichment', 'current.json'), null);
+  const enrichOk = !!(enrichArt && enrichArt.schema === GE.ARTIFACT_SCHEMA);
   for (const it of slate) {
     const m = it.meta, g = it.g, p = projected[m.id];
     const asm = (p && p.assembly) || null;
@@ -696,19 +706,25 @@ async function main() {
     const pg = personnelArt && personnelArt.games ? personnelArt.games[String(m.id)] : null;
     const pers = pg ? { home: REL.compactPersonnel(pg.home), away: REL.compactPersonnel(pg.away) } : null;
     const tq = { home: REL.teamQuality(rankByKey[m.home.key]), away: REL.teamQuality(rankByKey[m.away.key]) };
-    let rel = null;
+    let rel = null, relBase = null;
+    const pkg0 = enrichOk ? GE.forGame(enrichArt, m.id) : null;
+    const pkg = pkg0 ? GE.complete(pkg0, { contract: asm ? asm.contract : [] }) : null;
     try {
-      rel = REL.score(REL.inputFor({
+      const inp = REL.inputFor({
         now: relNow, game: g, meta: m, projection: p && p.status ? p : null,
         contract: asm ? asm.contract : [], starters: asm ? asm.starters : {}, qb_epa: asm ? asm.qb_epa : {},
         injuries: base ? { home: base.teams.home.injuries, away: base.teams.away.injuries } : {},
         venues: base ? base.venue : null,
         rosters: base ? { home: base.teams.home.roster, away: base.teams.away.roster } : {},
         personnel: pers, team_quality: tq, market: null,
-        built_at: report.generated_at, engine: E, state: st, params: P
-      }));
+        built_at: report.generated_at, engine: E, state: st, params: P, evidence: pkg
+      });
+      rel = REL.score(inp);
+      relBase = pkg ? REL.score(Object.assign({}, inp, { evidence: null })) : rel;
     } catch (e) { rel = null; log('[fbs] reliability ' + m.id + ': ' + ((e && e.message) || e)); }
     relOf[m.id] = rel;
+    relBaseOf[m.id] = relBase;
+    pkgOf[m.id] = pkg;
     relInputs[m.id] = { personnel: pers, team_quality: tq };
   }
 
@@ -858,7 +874,15 @@ async function main() {
         projection_p10: rel.stability.projection_p10, projection_p50: rel.stability.projection_p50,
         projection_p90: rel.stability.projection_p90, favorite_flip_rate: rel.stability.favorite_flip_rate,
         tier: rel.stability.tier } : null,
-      reliability: rel ? REL.published(rel) : null
+      reliability: rel ? REL.published(rel) : null,
+      /* THE ENRICHMENT, appended: whether the score was calculated from an
+         evidence package, the score it could approximately reach with its
+         unresolved evidence resolved (not a probability), and the DATA
+         COVERAGE block the card prints */
+      evidence_used: !!pkgOf[m.id],
+      reliability_potential: rel && rel.potential ? rel.potential.score : null,
+      reliability_without_evidence: relBaseOf[m.id] && pkgOf[m.id] ? relBaseOf[m.id].score : null,
+      data_coverage: pkgOf[m.id] && rel ? GE.view(pkgOf[m.id], rel, { home: g.home_team, away: g.away_team }) : null
     };
   });
   const artifact = {
@@ -914,6 +938,13 @@ async function main() {
     weights: REL.CONFIG.weights, caps: REL.CONFIG.caps, grades: REL.CONFIG.grades,
     not_scored: (relRows.find(r => r.reliability) || {}).reliability ? relRows.find(r => r.reliability).reliability.not_scored : [],
     summary: REL.summarize(relRows),
+    /* the same games, the same run, scored WITHOUT the evidence packages:
+       what the v2 inputs alone would say, so the effect of the enrichment is
+       measured on identical projections */
+    summary_without_evidence: enrichOk ? REL.summarize(relRows.map(r => Object.assign({}, r, { reliability: relBaseOf[r.game_id] || null }))) : null,
+    enrichment: enrichOk ? { artifact_generated_at: enrichArt.generated_at, games_with_evidence: Object.keys(pkgOf).filter(k => pkgOf[k]).length,
+      summary: enrichArt.summary } : { state: 'ABSENT', why: 'football/enrichment/current.json is missing or has another schema: every game scored without an evidence package' },
+    roi: ROI.plan(relRows, { market: enrichOk && enrichArt.summary ? enrichArt.summary.market : null }),
     /* the ranking layer's team-data gates the score reads, by team key, so
        the board — which does not load the 6 MB rankings artifact — scores
        from the same facts */
@@ -934,14 +965,31 @@ async function main() {
           reason: p.reason, family: p.family || null, action_key: p.action_key || null })),
         gates: (r.reliability.gates || []).map(g => ({ id: g.id, cap: g.cap, binding: g.binding })),
         missing: r.reliability.missing,
-        next_actions: (r.reliability.next_actions || []).map(a => ({ action: a.action, key: a.key, potential_gain: a.potential_gain }))
-      }) : null };
+        next_actions: (r.reliability.next_actions || []).map(a => ({ action: a.action, key: a.key, potential_gain: a.potential_gain })),
+        recoverable_by_family: r.reliability.recoverable_by_family || null
+      }) : null,
+      reliability_without_evidence: relBaseOf[r.game_id] && pkgOf[r.game_id] ? { score: relBaseOf[r.game_id].score, grade: relBaseOf[r.game_id].grade } : null };
   });
 
   if (!a.check) {
     fs.writeFileSync(path.join(HERE, 'coverage.json'), JSON.stringify(report, null, 1) + '\n');
     fs.writeFileSync(path.join(HERE, 'slate.json'), JSON.stringify(artifact, null, 1) + '\n');
     fs.writeFileSync(path.join(HERE, 'reliability.json'), JSON.stringify(relArtifact, null, 1) + '\n');
+    /* THE SELF-AUDIT: what EdgeDesk knows now against the previous refresh */
+    try {
+      /* the baseline a first audit compares with: this slate, this run,
+         scored from the v2 inputs alone */
+      const baseArt = { generated_at: relArtifact.generated_at, games: {} };
+      Object.keys(relArtifact.games).forEach(k => {
+        const g = relArtifact.games[k], b = relBaseOf[k];
+        baseArt.games[k] = Object.assign({}, g, { reliability: b ? { score: b.score, grade: b.grade,
+          penalties: (b.penalties || []).map(p => ({ points: p.points, family: p.family || null, action_key: p.action_key || null, component: p.component })),
+          gates: (b.gates || []).map(x => ({ id: x.id, binding: x.binding })) } : null });
+      });
+      const au = AUDIT.run(relArtifact, enrichOk ? enrichArt : null, { at: report.generated_at,
+        baseline: AUDIT.snapshot(baseArt, null, { at: report.generated_at }), baseline_label: 'this slate scored without the evidence packages (v2 inputs only)' });
+      log('[fbs] audit: improved ' + au.what_improved.length + ', degraded ' + au.what_degraded.length);
+    } catch (e) { log('[fbs] self-audit not written: ' + ((e && e.message) || e)); }
   }
 
   log(`[fbs] ${a.season}: ${universe.counts.fbs_teams} active FBS programs, `

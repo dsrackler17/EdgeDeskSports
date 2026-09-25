@@ -1,0 +1,1088 @@
+{
+ "schema": "edgedesk_fcs_bridge_validation_v1",
+ "season": 2026,
+ "generated_at": "2026-09-25T20:15:37.822Z",
+ "method": "walk-forward over every completed 2026 FBS-vs-FCS game: the FCS side rated from the 2025 fit carried forward and only the 2026 results before kickoff; the FBS side at the rating EdgeDesk priced it at before the game (engine replay). Errors are against the final margin, capped at the engine’s own ±35 (and uncapped beside it).",
+ "n": 103,
+ "capped": {
+  "floor": {
+   "n": 103,
+   "mae": 9.9,
+   "rmse": 12.49,
+   "bias": 0.03
+  },
+  "bridge": {
+   "n": 103,
+   "mae": 9.49,
+   "rmse": 11.97,
+   "bias": -1.32
+  },
+  "prior_only": {
+   "n": 103,
+   "mae": 9.46,
+   "rmse": 12.02,
+   "bias": -2.02
+  }
+ },
+ "uncapped": {
+  "floor": {
+   "n": 103,
+   "mae": 17.61,
+   "rmse": 21.42,
+   "bias": -9.21
+  },
+  "bridge": {
+   "n": 103,
+   "mae": 16.41,
+   "rmse": 19.75,
+   "bias": -10.57
+  },
+  "prior_only": {
+   "n": 103,
+   "mae": 16.5,
+   "rmse": 20,
+   "bias": -11.27
+  }
+ },
+ "paired_abs_error_reduction": {
+  "mean": 0.4,
+  "se": 0.71,
+  "t": 0.57,
+  "bridge_closer": 52,
+  "of": 103
+ },
+ "floor_value": -28,
+ "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.57, n = 103).",
+ "rows": [
+  {
+   "game_id": "401856767",
+   "week": 1,
+   "fcs": "bethunecookman",
+   "fbs": "ucf",
+   "actual": 67,
+   "floor": 26.74,
+   "bridge": 29.88,
+   "bridge_sd": 8.7
+  },
+  {
+   "game_id": "401864424",
+   "week": 1,
+   "fcs": "merrimack",
+   "fbs": "delaware",
+   "actual": 35,
+   "floor": 22.68,
+   "bridge": 24.8,
+   "bridge_sd": 10.06
+  },
+  {
+   "game_id": "401864425",
+   "week": 1,
+   "fcs": "westgeorgia",
+   "fbs": "kennesawstate",
+   "actual": 47,
+   "floor": 24.59,
+   "bridge": 14.48,
+   "bridge_sd": 8.85
+  },
+  {
+   "game_id": "401866409",
+   "week": 1,
+   "fcs": "ualbany",
+   "fbs": "buffalo",
+   "actual": 4,
+   "floor": 22.18,
+   "bridge": 27.97,
+   "bridge_sd": 8.54
+  },
+  {
+   "game_id": "401856663",
+   "week": 1,
+   "fcs": "arkansaspinebluff",
+   "fbs": "missouri",
+   "actual": 40,
+   "floor": 36.35,
+   "bridge": 46.81,
+   "bridge_sd": 8.45
+  },
+  {
+   "game_id": "401858422",
+   "week": 1,
+   "fcs": "easternillinois",
+   "fbs": "minnesota",
+   "actual": 52,
+   "floor": 29.89,
+   "bridge": 34.68,
+   "bridge_sd": 8.7
+  },
+  {
+   "game_id": "401856768",
+   "week": 1,
+   "fcs": "idaho",
+   "fbs": "utah",
+   "actual": 52,
+   "floor": 43.52,
+   "bridge": 34.8,
+   "bridge_sd": 8.43
+  },
+  {
+   "game_id": "401858435",
+   "week": 1,
+   "fcs": "indianastate",
+   "fbs": "purdue",
+   "actual": 25,
+   "floor": 22.93,
+   "bridge": 17.98,
+   "bridge_sd": 8.56
+  },
+  {
+   "game_id": "401866623",
+   "week": 1,
+   "fcs": "northcarolinaat",
+   "fbs": "georgiastate",
+   "actual": 49,
+   "floor": 18.77,
+   "bridge": 26.74,
+   "bridge_sd": 8.26
+  },
+  {
+   "game_id": "401856769",
+   "week": 1,
+   "fcs": "longislanduniversity",
+   "fbs": "kansas",
+   "actual": 45,
+   "floor": 29.43,
+   "bridge": 31.39,
+   "bridge_sd": 8.59
+  },
+  {
+   "game_id": "401858208",
+   "week": 1,
+   "fcs": "newhampshire",
+   "fbs": "syracuse",
+   "actual": 63,
+   "floor": 20.79,
+   "bridge": 14.76,
+   "bridge_sd": 8.07
+  },
+  {
+   "game_id": "401861962",
+   "week": 1,
+   "fcs": "lafayette",
+   "fbs": "uconn",
+   "actual": 49,
+   "floor": 27.93,
+   "bridge": 23.58,
+   "bridge_sd": 8.51
+  },
+  {
+   "game_id": "401862701",
+   "week": 1,
+   "fcs": "bryant",
+   "fbs": "army",
+   "actual": 56,
+   "floor": 31.37,
+   "bridge": 36.04,
+   "bridge_sd": 8.11
+  },
+  {
+   "game_id": "401866410",
+   "week": 1,
+   "fcs": "tarletonstate",
+   "fbs": "bowlinggreen",
+   "actual": -7,
+   "floor": 21.14,
+   "bridge": 3.69,
+   "bridge_sd": 8.46
+  },
+  {
+   "game_id": "401856659",
+   "week": 1,
+   "fcs": "youngstownstate",
+   "fbs": "kentucky",
+   "actual": 32,
+   "floor": 28.09,
+   "bridge": 15.44,
+   "bridge_sd": 8.28
+  },
+  {
+   "game_id": "401856779",
+   "week": 1,
+   "fcs": "southeastmissouristate",
+   "fbs": "iowastate",
+   "actual": 28,
+   "floor": 33.4,
+   "bridge": 36.27,
+   "bridge_sd": 8.41
+  },
+  {
+   "game_id": "401864496",
+   "week": 1,
+   "fcs": "duquesne",
+   "fbs": "airforce",
+   "actual": 34,
+   "floor": 26.38,
+   "bridge": 27.86,
+   "bridge_sd": 8.38
+  },
+  {
+   "game_id": "401862698",
+   "week": 1,
+   "fcs": "rhodeisland",
+   "fbs": "temple",
+   "actual": 24,
+   "floor": 22.33,
+   "bridge": 14.8,
+   "bridge_sd": 7.81
+  },
+  {
+   "game_id": "401856658",
+   "week": 1,
+   "fcs": "tennesseestate",
+   "fbs": "georgia",
+   "actual": 60,
+   "floor": 42.37,
+   "bridge": 52.03,
+   "bridge_sd": 8.23
+  },
+  {
+   "game_id": "401856666",
+   "week": 1,
+   "fcs": "furman",
+   "fbs": "tennessee",
+   "actual": 47,
+   "floor": 35.78,
+   "bridge": 38.46,
+   "bridge_sd": 8.46
+  },
+  {
+   "game_id": "401862694",
+   "week": 1,
+   "fcs": "thecitadel",
+   "fbs": "charlotte",
+   "actual": -2,
+   "floor": 14.23,
+   "bridge": 15.41,
+   "bridge_sd": 8.49
+  },
+  {
+   "game_id": "401862696",
+   "week": 1,
+   "fcs": "towson",
+   "fbs": "navy",
+   "actual": 27,
+   "floor": 33.48,
+   "bridge": 33.4,
+   "bridge_sd": 7.76
+  },
+  {
+   "game_id": "401862700",
+   "week": 1,
+   "fcs": "utriograndevalley",
+   "fbs": "utsa",
+   "actual": 29,
+   "floor": 33.91,
+   "bridge": 26.53,
+   "bridge_sd": 8.57
+  },
+  {
+   "game_id": "401864499",
+   "week": 1,
+   "fcs": "fordham",
+   "fbs": "northdakotastate",
+   "actual": 38,
+   "floor": 23.41,
+   "bridge": 31.47,
+   "bridge_sd": 8.27
+  },
+  {
+   "game_id": "401866627",
+   "week": 1,
+   "fcs": "maine",
+   "fbs": "appstate",
+   "actual": 52,
+   "floor": 20.75,
+   "bridge": 20.59,
+   "bridge_sd": 7.76
+  },
+  {
+   "game_id": "401856635",
+   "week": 1,
+   "fcs": "northalabama",
+   "fbs": "arkansas",
+   "actual": 17,
+   "floor": 30.63,
+   "bridge": 30.86,
+   "bridge_sd": 8.28
+  },
+  {
+   "game_id": "401868356",
+   "week": 1,
+   "fcs": "alcornstate",
+   "fbs": "southernmiss",
+   "actual": 46,
+   "floor": 22.36,
+   "bridge": 27.11,
+   "bridge_sd": 8.14
+  },
+  {
+   "game_id": "401867973",
+   "week": 1,
+   "fcs": "norfolkstate",
+   "fbs": "olddominion",
+   "actual": 21,
+   "floor": 36.1,
+   "bridge": 45.8,
+   "bridge_sd": 8.71
+  },
+  {
+   "game_id": "401856669",
+   "week": 1,
+   "fcs": "austinpeay",
+   "fbs": "vanderbilt",
+   "actual": 19,
+   "floor": 41.44,
+   "bridge": 29.32,
+   "bridge_sd": 8.13
+  },
+  {
+   "game_id": "401856770",
+   "week": 1,
+   "fcs": "abilenechristian",
+   "fbs": "texastech",
+   "actual": 23,
+   "floor": 45.76,
+   "bridge": 33,
+   "bridge_sd": 8.09
+  },
+  {
+   "game_id": "401856771",
+   "week": 1,
+   "fcs": "nicholls",
+   "fbs": "kansasstate",
+   "actual": 68,
+   "floor": 33.78,
+   "bridge": 31.59,
+   "bridge_sd": 8.27
+  },
+  {
+   "game_id": "401860880",
+   "week": 1,
+   "fcs": "idahostate",
+   "fbs": "utahstate",
+   "actual": -12,
+   "floor": 28.36,
+   "bridge": 16.61,
+   "bridge_sd": 8.15
+  },
+  {
+   "game_id": "401862697",
+   "week": 1,
+   "fcs": "houstonchristian",
+   "fbs": "rice",
+   "actual": 28,
+   "floor": 17.39,
+   "bridge": 24.08,
+   "bridge_sd": 8.29
+  },
+  {
+   "game_id": "401867866",
+   "week": 1,
+   "fcs": "murraystate",
+   "fbs": "middletennessee",
+   "actual": 24,
+   "floor": 18.79,
+   "bridge": 20.7,
+   "bridge_sd": 8.1
+  },
+  {
+   "game_id": "401868140",
+   "week": 1,
+   "fcs": "easternkentucky",
+   "fbs": "jacksonvillestate",
+   "actual": 42,
+   "floor": 22.25,
+   "bridge": 16.03,
+   "bridge_sd": 8.13
+  },
+  {
+   "game_id": "401868170",
+   "week": 1,
+   "fcs": "charlestonsouthern",
+   "fbs": "georgiasouthern",
+   "actual": 31,
+   "floor": 25.24,
+   "bridge": 25.21,
+   "bridge_sd": 8.08
+  },
+  {
+   "game_id": "401868316",
+   "week": 1,
+   "fcs": "selouisiana",
+   "fbs": "southalabama",
+   "actual": 25,
+   "floor": 22.8,
+   "bridge": 12.29,
+   "bridge_sd": 8.25
+  },
+  {
+   "game_id": "401858211",
+   "week": 1,
+   "fcs": "vmi",
+   "fbs": "virginiatech",
+   "actual": 70,
+   "floor": 25.15,
+   "bridge": 35.17,
+   "bridge_sd": 8.12
+  },
+  {
+   "game_id": "401869129",
+   "week": 1,
+   "fcs": "northwesternstate",
+   "fbs": "louisianatech",
+   "actual": 74,
+   "floor": 27,
+   "bridge": 37.16,
+   "bridge_sd": 7.9
+  },
+  {
+   "game_id": "401856775",
+   "week": 1,
+   "fcs": "utahtech",
+   "fbs": "byu",
+   "actual": 56,
+   "floor": 37.78,
+   "bridge": 34.64,
+   "bridge_sd": 8.02
+  },
+  {
+   "game_id": "401858427",
+   "week": 1,
+   "fcs": "hampton",
+   "fbs": "maryland",
+   "actual": 62,
+   "floor": 24.05,
+   "bridge": 37.18,
+   "bridge_sd": 7.63
+  },
+  {
+   "game_id": "401858431",
+   "week": 1,
+   "fcs": "southdakotastate",
+   "fbs": "northwestern",
+   "actual": 16,
+   "floor": 33.26,
+   "bridge": 20.28,
+   "bridge_sd": 7.93
+  },
+  {
+   "game_id": "401869142",
+   "week": 1,
+   "fcs": "lamar",
+   "fbs": "louisiana",
+   "actual": 31,
+   "floor": 23.39,
+   "bridge": 18.37,
+   "bridge_sd": 7.79
+  },
+  {
+   "game_id": "401870790",
+   "week": 1,
+   "fcs": "mercyhurst",
+   "fbs": "newmexicostate",
+   "actual": 37,
+   "floor": 18.18,
+   "bridge": 22.65,
+   "bridge_sd": 8.13
+  },
+  {
+   "game_id": "401856773",
+   "week": 1,
+   "fcs": "northernarizona",
+   "fbs": "arizona",
+   "actual": 28,
+   "floor": 37.66,
+   "bridge": 26.01,
+   "bridge_sd": 7.86
+  },
+  {
+   "game_id": "401860879",
+   "week": 1,
+   "fcs": "portlandstate",
+   "fbs": "sandiegostate",
+   "actual": 33,
+   "floor": 31.06,
+   "bridge": 30.07,
+   "bridge_sd": 7.87
+  },
+  {
+   "game_id": "401856774",
+   "week": 1,
+   "fcs": "morganstate",
+   "fbs": "arizonastate",
+   "actual": 63,
+   "floor": 32.47,
+   "bridge": 33.08,
+   "bridge_sd": 8.52
+  },
+  {
+   "game_id": "401866411",
+   "week": 1,
+   "fcs": "mississippivalleystate",
+   "fbs": "sacramentostate",
+   "actual": 52,
+   "floor": 18.53,
+   "bridge": 33.26,
+   "bridge_sd": 7.98
+  },
+  {
+   "game_id": "401858213",
+   "week": 2,
+   "fcs": "floridaam",
+   "fbs": "miami",
+   "actual": 70,
+   "floor": 49.3,
+   "bridge": 59.87,
+   "bridge_sd": 7.89
+  },
+  {
+   "game_id": "401858215",
+   "week": 2,
+   "fcs": "villanova",
+   "fbs": "louisville",
+   "actual": 46,
+   "floor": 36.17,
+   "bridge": 26.29,
+   "bridge_sd": 8.04
+  },
+  {
+   "game_id": "401858220",
+   "week": 2,
+   "fcs": "norfolkstate",
+   "fbs": "virginia",
+   "actual": 56,
+   "floor": 37.65,
+   "bridge": 39.48,
+   "bridge_sd": 7.03
+  },
+  {
+   "game_id": "401858222",
+   "week": 2,
+   "fcs": "richmond",
+   "fbs": "ncstate",
+   "actual": 73,
+   "floor": 30.65,
+   "bridge": 31.03,
+   "bridge_sd": 8.06
+  },
+  {
+   "game_id": "401858218",
+   "week": 2,
+   "fcs": "easttennesseestate",
+   "fbs": "northcarolina",
+   "actual": 32,
+   "floor": 26.34,
+   "bridge": 19.49,
+   "bridge_sd": 7.96
+  },
+  {
+   "game_id": "401858439",
+   "week": 2,
+   "fcs": "howard",
+   "fbs": "indiana",
+   "actual": 55,
+   "floor": 54.88,
+   "bridge": 57.6,
+   "bridge_sd": 8.22
+  },
+  {
+   "game_id": "401866416",
+   "week": 2,
+   "fcs": "wofford",
+   "fbs": "kentstate",
+   "actual": 21,
+   "floor": 17.2,
+   "bridge": 12.04,
+   "bridge_sd": 7.96
+  },
+  {
+   "game_id": "401867929",
+   "week": 2,
+   "fcs": "wagner",
+   "fbs": "jamesmadison",
+   "actual": 84,
+   "floor": 37.76,
+   "bridge": 47.07,
+   "bridge_sd": 8
+  },
+  {
+   "game_id": "401868187",
+   "week": 2,
+   "fcs": "gardnerwebb",
+   "fbs": "liberty",
+   "actual": 1,
+   "floor": 25.74,
+   "bridge": 23.06,
+   "bridge_sd": 7.94
+  },
+  {
+   "game_id": "401856791",
+   "week": 2,
+   "fcs": "utmartin",
+   "fbs": "westvirginia",
+   "actual": 45,
+   "floor": 26.06,
+   "bridge": 22.92,
+   "bridge_sd": 7.85
+  },
+  {
+   "game_id": "401866415",
+   "week": 2,
+   "fcs": "colgate",
+   "fbs": "centralmichigan",
+   "actual": 3,
+   "floor": 21.16,
+   "bridge": 21.97,
+   "bridge_sd": 7.85
+  },
+  {
+   "game_id": "401866417",
+   "week": 2,
+   "fcs": "holycross",
+   "fbs": "miamioh",
+   "actual": 38,
+   "floor": 23.33,
+   "bridge": 23.76,
+   "bridge_sd": 7.85
+  },
+  {
+   "game_id": "401866413",
+   "week": 2,
+   "fcs": "stonybrook",
+   "fbs": "ballstate",
+   "actual": 24,
+   "floor": 16.59,
+   "bridge": 14.36,
+   "bridge_sd": 7.53
+  },
+  {
+   "game_id": "401856785",
+   "week": 2,
+   "fcs": "weberstate",
+   "fbs": "colorado",
+   "actual": 31,
+   "floor": 26.21,
+   "bridge": 20.04,
+   "bridge_sd": 7.69
+  },
+  {
+   "game_id": "401866412",
+   "week": 2,
+   "fcs": "robertmorris",
+   "fbs": "akron",
+   "actual": 35,
+   "floor": 20.22,
+   "bridge": 29.46,
+   "bridge_sd": 7.92
+  },
+  {
+   "game_id": "401866419",
+   "week": 2,
+   "fcs": "centralconnecticut",
+   "fbs": "toledo",
+   "actual": 53,
+   "floor": 33.24,
+   "bridge": 34.36,
+   "bridge_sd": 7.9
+  },
+  {
+   "game_id": "401866420",
+   "week": 2,
+   "fcs": "sacredheart",
+   "fbs": "massachusetts",
+   "actual": 27,
+   "floor": 11.55,
+   "bridge": 13.17,
+   "bridge_sd": 7.57
+  },
+  {
+   "game_id": "401858223",
+   "week": 2,
+   "fcs": "ucdavis",
+   "fbs": "smu",
+   "actual": 46,
+   "floor": 39.13,
+   "bridge": 24.05,
+   "bridge_sd": 7.59
+  },
+  {
+   "game_id": "401864506",
+   "week": 2,
+   "fcs": "northerncolorado",
+   "fbs": "wyoming",
+   "actual": 8,
+   "floor": 18.74,
+   "bridge": 13.61,
+   "bridge_sd": 7.65
+  },
+  {
+   "game_id": "401865252",
+   "week": 2,
+   "fcs": "mercyhurst",
+   "fbs": "newmexico",
+   "actual": 63,
+   "floor": 32.28,
+   "bridge": 39.92,
+   "bridge_sd": 6.64
+  },
+  {
+   "game_id": "401868326",
+   "week": 2,
+   "fcs": "alabamastate",
+   "fbs": "troy",
+   "actual": 17,
+   "floor": 24.55,
+   "bridge": 16.4,
+   "bridge_sd": 7.82
+  },
+  {
+   "game_id": "401856672",
+   "week": 2,
+   "fcs": "campbell",
+   "fbs": "florida",
+   "actual": 49,
+   "floor": 34.45,
+   "bridge": 39.53,
+   "bridge_sd": 7.45
+  },
+  {
+   "game_id": "401866421",
+   "week": 2,
+   "fcs": "monmouth",
+   "fbs": "westernmichigan",
+   "actual": 35,
+   "floor": 34.47,
+   "bridge": 29.79,
+   "bridge_sd": 7.41
+  },
+  {
+   "game_id": "401856680",
+   "week": 2,
+   "fcs": "towson",
+   "fbs": "southcarolina",
+   "actual": 36,
+   "floor": 36.55,
+   "bridge": 35.92,
+   "bridge_sd": 6.39
+  },
+  {
+   "game_id": "401856786",
+   "week": 2,
+   "fcs": "westerncarolina",
+   "fbs": "cincinnati",
+   "actual": 52,
+   "floor": 30.02,
+   "bridge": 26.35,
+   "bridge_sd": 7.78
+  },
+  {
+   "game_id": "401856787",
+   "week": 2,
+   "fcs": "southern",
+   "fbs": "houston",
+   "actual": 71,
+   "floor": 31.14,
+   "bridge": 42.34,
+   "bridge_sd": 7.69
+  },
+  {
+   "game_id": "401860882",
+   "week": 2,
+   "fcs": "southernutah",
+   "fbs": "coloradostate",
+   "actual": 34,
+   "floor": 20.04,
+   "bridge": 7.63,
+   "bridge_sd": 7.56
+  },
+  {
+   "game_id": "401864503",
+   "week": 2,
+   "fcs": "illinoisstate",
+   "fbs": "northernillinois",
+   "actual": -4,
+   "floor": 18.23,
+   "bridge": 4.41,
+   "bridge_sd": 7.76
+  },
+  {
+   "game_id": "401868241",
+   "week": 2,
+   "fcs": "westgeorgia",
+   "fbs": "arkansasstate",
+   "actual": 45,
+   "floor": 24.26,
+   "bridge": 19.01,
+   "bridge_sd": 6.71
+  },
+  {
+   "game_id": "401871046",
+   "week": 2,
+   "fcs": "lindenwood",
+   "fbs": "missouristate",
+   "actual": 34,
+   "floor": 20.93,
+   "bridge": 18.75,
+   "bridge_sd": 7.77
+  },
+  {
+   "game_id": "401858447",
+   "week": 2,
+   "fcs": "westernillinois",
+   "fbs": "wisconsin",
+   "actual": 27,
+   "floor": 28.03,
+   "bridge": 31.53,
+   "bridge_sd": 7.71
+  },
+  {
+   "game_id": "401868008",
+   "week": 2,
+   "fcs": "fordham",
+   "fbs": "coastalcarolina",
+   "actual": 38,
+   "floor": 21.37,
+   "bridge": 30.45,
+   "bridge_sd": 6.61
+  },
+  {
+   "game_id": "401856789",
+   "week": 2,
+   "fcs": "grambling",
+   "fbs": "tcu",
+   "actual": 56,
+   "floor": 32.55,
+   "bridge": 35.17,
+   "bridge_sd": 7.69
+  },
+  {
+   "game_id": "401856784",
+   "week": 2,
+   "fcs": "prairieviewam",
+   "fbs": "baylor",
+   "actual": 41,
+   "floor": 29.56,
+   "bridge": 25.53,
+   "bridge_sd": 7.55
+  },
+  {
+   "game_id": "401864504",
+   "week": 2,
+   "fcs": "calpoly",
+   "fbs": "sanjosestate",
+   "actual": 10,
+   "floor": 20.06,
+   "bridge": 12.1,
+   "bridge_sd": 7.5
+  },
+  {
+   "game_id": "401864505",
+   "week": 2,
+   "fcs": "texassouthern",
+   "fbs": "utep",
+   "actual": 41,
+   "floor": 15.26,
+   "bridge": 19.2,
+   "bridge_sd": 7.59
+  },
+  {
+   "game_id": "401864500",
+   "week": 2,
+   "fcs": "montanastate",
+   "fbs": "nevada",
+   "actual": -13,
+   "floor": 26.32,
+   "bridge": 4.83,
+   "bridge_sd": 7.35
+  },
+  {
+   "game_id": "401858455",
+   "week": 3,
+   "fcs": "portlandstate",
+   "fbs": "oregon",
+   "actual": 84,
+   "floor": 39.63,
+   "bridge": 40.74,
+   "bridge_sd": 6.4
+  },
+  {
+   "game_id": "401858228",
+   "week": 3,
+   "fcs": "mercer",
+   "fbs": "georgiatech",
+   "actual": 33,
+   "floor": 28.28,
+   "bridge": 21.27,
+   "bridge_sd": 7.7
+  },
+  {
+   "game_id": "401858227",
+   "week": 3,
+   "fcs": "maine",
+   "fbs": "bostoncollege",
+   "actual": 6,
+   "floor": 24.67,
+   "bridge": 28.66,
+   "bridge_sd": 6.37
+  },
+  {
+   "game_id": "401858448",
+   "week": 3,
+   "fcs": "southernillinois",
+   "fbs": "illinois",
+   "actual": 38,
+   "floor": 33.1,
+   "bridge": 19.47,
+   "bridge_sd": 7.79
+  },
+  {
+   "game_id": "401858233",
+   "week": 3,
+   "fcs": "wagner",
+   "fbs": "california",
+   "actual": 42,
+   "floor": 24.67,
+   "bridge": 30.94,
+   "bridge_sd": 6.61
+  },
+  {
+   "game_id": "401860890",
+   "week": 3,
+   "fcs": "duquesne",
+   "fbs": "washingtonstate",
+   "actual": 41,
+   "floor": 29.74,
+   "bridge": 33.05,
+   "bridge_sd": 6.62
+  },
+  {
+   "game_id": "401866424",
+   "week": 3,
+   "fcs": "stonehill",
+   "fbs": "massachusetts",
+   "actual": 22,
+   "floor": 13.72,
+   "bridge": 22.06,
+   "bridge_sd": 7.7
+  },
+  {
+   "game_id": "401858471",
+   "week": 3,
+   "fcs": "northerniowa",
+   "fbs": "iowa",
+   "actual": 55,
+   "floor": 41.1,
+   "bridge": 38.6,
+   "bridge_sd": 7.69
+  },
+  {
+   "game_id": "401868317",
+   "week": 3,
+   "fcs": "selouisiana",
+   "fbs": "ulmonroe",
+   "actual": -3,
+   "floor": 14.45,
+   "bridge": 8.69,
+   "bridge_sd": 6.61
+  },
+  {
+   "game_id": "401856803",
+   "week": 3,
+   "fcs": "murraystate",
+   "fbs": "oklahomastate",
+   "actual": 59,
+   "floor": 23.06,
+   "bridge": 26.08,
+   "bridge_sd": 6.57
+  },
+  {
+   "game_id": "401862772",
+   "week": 3,
+   "fcs": "utmartin",
+   "fbs": "memphis",
+   "actual": 24,
+   "floor": 30.24,
+   "bridge": 31.33,
+   "bridge_sd": 6.58
+  },
+  {
+   "game_id": "401862777",
+   "week": 3,
+   "fcs": "delawarestate",
+   "fbs": "southflorida",
+   "actual": 42,
+   "floor": 36.4,
+   "bridge": 31.32,
+   "bridge_sd": 8.12
+  },
+  {
+   "game_id": "401870764",
+   "week": 3,
+   "fcs": "nicholls",
+   "fbs": "samhouston",
+   "actual": 59,
+   "floor": 15.69,
+   "bridge": 15.71,
+   "bridge_sd": 6.59
+  },
+  {
+   "game_id": "401858452",
+   "week": 3,
+   "fcs": "northdakota",
+   "fbs": "nebraska",
+   "actual": 27,
+   "floor": 34.94,
+   "bridge": 18.68,
+   "bridge_sd": 7.56
+  },
+  {
+   "game_id": "401858459",
+   "week": 3,
+   "fcs": "easternwashington",
+   "fbs": "washington",
+   "actual": 32,
+   "floor": 38.52,
+   "bridge": 31.87,
+   "bridge_sd": 7.37
+  },
+  {
+   "game_id": "401862775",
+   "week": 3,
+   "fcs": "easttexasam",
+   "fbs": "tulsa",
+   "actual": 42,
+   "floor": 22.21,
+   "bridge": 25.29,
+   "bridge_sd": 7.63
+  },
+  {
+   "game_id": "401860885",
+   "week": 3,
+   "fcs": "southdakota",
+   "fbs": "boisestate",
+   "actual": 14,
+   "floor": 34.79,
+   "bridge": 25.74,
+   "bridge_sd": 7.5
+  },
+  {
+   "game_id": "401860886",
+   "week": 3,
+   "fcs": "montana",
+   "fbs": "oregonstate",
+   "actual": 35,
+   "floor": 20.47,
+   "bridge": 1.48,
+   "bridge_sd": 7.3
+  }
+ ]
+}

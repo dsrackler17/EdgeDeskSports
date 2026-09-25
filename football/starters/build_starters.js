@@ -291,12 +291,7 @@ async function buildCfb(sess, season, opts) {
       const t = av.teams[id];
       const k = S.normKey(t.team_name || t.team_display);
       if (!k) continue;
-      availByTeam[k] = (t.players || []).map(p => ({
-        player_id: p.player_id || null, player_name: p.player_name || p.name || null,
-        status: p.status || null, detail: p.injury_type || p.body_part || null,
-        source: p.source_name || null, source_url: p.source_url || null,
-        published_at: p.source_published_at || null, retrieved_at: p.observed_at || t.lastUpdated || availAsOf
-      }));
+      availByTeam[k] = (t.players || []).map(p => availabilityRow(p, t, availAsOf));
     }
   } else {
     notes.push('football/availability/current.json was not readable, so no college availability evidence was joined');
@@ -556,6 +551,22 @@ async function buildNfl(sess, season, opts) {
 
 /* ====================================================================== main */
 
+/* one automated availability row, as the starter resolver reads it
+   (football/starters/starters.js availabilityFor) */
+function availabilityRow(p, t, availAsOf) {
+  return {
+    player_id: p.player_id || null, player_name: p.player_name || p.name || null,
+    /* the collector writes `availability_status`; `status` is the overlay's
+       field. Reading only `status` made every automated row name its player
+       with no designation at all, and the resolver called that EXPLICIT */
+    status: p.availability_status || p.status || null, detail: p.injury_type || p.body_part || null,
+    source: p.source_name || null, source_url: p.source_url || null,
+    /* the PUBLICATION dates the report; observed_at is when the sync re-read it */
+    published_at: p.source_published_at || null,
+    retrieved_at: p.observed_at || (t && t.lastUpdated) || availAsOf || null
+  };
+}
+
 async function main() {
   const season = +(arg('season', defaultSeason()));
   const sport = String(arg('sport', 'both')).toLowerCase();
@@ -622,4 +633,4 @@ function writeSport(file, r, out, check) {
 if (require.main === module) {
   main().then(c => process.exit(c)).catch(e => { console.error('[starters] ' + ((e && e.stack) || e)); process.exit(2); });
 }
-module.exports = { buildCfb, buildNfl, cfbDropbackRows, playedOrder };
+module.exports = { buildCfb, buildNfl, cfbDropbackRows, playedOrder, availabilityRow };

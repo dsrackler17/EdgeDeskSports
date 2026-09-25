@@ -60,6 +60,11 @@
   function normGrade(q) { return String(q == null ? 'NONE' : q).toUpperCase(); }
   function isGraded(q) { return GRADED[normGrade(q)] === true; }
 
+  /* THE TEAM-LEVEL GRADE: what is on file for the team across every
+     fixture. It is the headline the terminal's availability card shows. It is
+     NOT the grade of any one game. A team whose conference filed for last
+     week is not OFFICIAL for this week. Anything that decides what reaches a
+     game's engine request reads gradeFor(t, gameId, …) below. */
   function gradeOf(t) {
     if (t.official_report && t.official_report.ok) return 'OFFICIAL';
     var n = (t.players || []).length;
@@ -69,6 +74,125 @@
     var had = String(t.dataQuality || t.data_quality || 'NONE').toUpperCase();
     if (n) return had === 'NONE' ? 'PARTIAL' : had;
     return had;
+  }
+
+  /* ==== ONE FIXTURE AT A TIME ========================================
+     Everything below answers a question about ONE game. The merged team
+     record holds every fixture's evidence side by side: an official filing
+     for each game it was read for, the operator's dated entries, and the
+     automated read's rows. It keeps all of them for audit. The engine may
+     only be handed what is about the game it is pricing.
+
+       official report   the filing for THIS game_id, or none. A filing for
+                         last week's game says nothing about this one, even
+                         when it is the only filing on file.
+       a row with a      evidence about that fixture. It counts for its own
+       game_id           game and for no other.
+       a row without     a team-scoped statement (the automated read, e.g.
+       one               ESPN's injury page). It is judged by the
+                         availability layer's own freshness ladder against
+                         this game's kickoff
+                         (availability.js getAvailabilityFreshness), and a
+                         HISTORICAL one is refused. A 2020 injury note is not
+                         this week's news. Retrieving it again this morning
+                         does not make it so.
+
+     The ladder is restated here, not required, because the board loads this
+     file without availability.js. availability.test's twin in
+     football/matchup/contract.test.js pins the two to the same answer. */
+  var H_WEEK = 168, H_GAME_WEEK = 96;
+  function tsOf(x) { if (x == null || x === '') return null; var v = Date.parse(String(x)); return isFinite(v) ? v : null; }
+  /* the one timestamp a row is judged on: when the source PUBLISHED it, else
+     when it was observed. availability.js reads the same two fields */
+  function publishedAt(p) { return p ? (p.source_published_at || p.observed_at || null) : null; }
+  function freshness(p, o) {
+    o = o || {};
+    var now = tsOf(o.now) != null ? tsOf(o.now) : (isNum(o.now) ? o.now : Date.now());
+    var seen = tsOf(publishedAt(p));
+    if (seen == null) return { state: 'HISTORICAL', age_hours: null, reason: 'the report carries no timestamp' };
+    var kick = tsOf(o.kickoff);
+    var ageH = (now - seen) / 3600000;
+    if (kick != null) {
+      var beforeKick = (kick - seen) / 3600000;
+      if (beforeKick > H_WEEK) return { state: 'HISTORICAL', age_hours: ageH, reason: 'filed more than a week before kickoff' };
+      if (beforeKick > H_GAME_WEEK) return { state: 'STALE', age_hours: ageH, reason: 'filed before this game week' };
+    }
+    if (ageH < 0) return { state: 'LIVE', age_hours: 0, reason: null };
+    if (ageH <= 6) return { state: 'LIVE', age_hours: ageH, reason: null };
+    if (ageH <= 48) return { state: 'CURRENT', age_hours: ageH, reason: null };
+    if (ageH <= 96) return { state: 'AGING', age_hours: ageH, reason: null };
+    if (ageH <= H_WEEK) return { state: 'STALE', age_hours: ageH, reason: null };
+    return { state: 'HISTORICAL', age_hours: ageH, reason: 'older than a week' };
+  }
+
+  /* the filing read for THIS game, or null */
+  function officialFor(t, gameId) {
+    if (!t || gameId == null) return null;
+    var r = t.official_reports && t.official_reports[String(gameId)];
+    if (!r && t.official_report && t.official_report.game_id != null
+      && String(t.official_report.game_id) === String(gameId)) r = t.official_report;
+    return r && r.ok ? r : null;
+  }
+
+  /* is this row usable for this fixture, and if not, why not.
+     o = { now, kickoff } */
+  function judgeRow(p, gameId, o) {
+    if (!p) return { use: false, why: 'EMPTY' };
+    if (p.game_id != null) {
+      if (gameId != null && String(p.game_id) !== String(gameId)) return { use: false, why: 'OTHER_FIXTURE' };
+      /* bound to this game by the source that filed it: about this game
+         whenever it was filed. How old it is, the contract states as STALE */
+      return { use: true, why: null, scope: 'FIXTURE' };
+    }
+    var f = freshness(p, o);
+    if (f.state === 'HISTORICAL') return { use: false, why: 'HISTORICAL', reason: f.reason, freshness: f.state };
+    return { use: true, why: null, scope: 'TEAM', freshness: f.state };
+  }
+  function isHistorical(p, o) { return !!p && p.game_id == null && freshness(p, o).state === 'HISTORICAL'; }
+
+  /* the rows about THIS fixture, and a count of what was refused */
+  function fixtureRows(t, gameId, o) {
+    var rows = [], refused = { OTHER_FIXTURE: 0, HISTORICAL: 0 };
+    ((t && t.players) || []).forEach(function (p) {
+      var j = judgeRow(p, gameId, o);
+      if (j.use) rows.push(p);
+      else if (refused[j.why] != null) refused[j.why]++;
+    });
+    return { rows: rows, refused: refused };
+  }
+
+  /* THE GRADE OF ONE FIXTURE, from what is on file for it. It uses the same
+     ladder as gradeOf, over this game's evidence only:
+       OFFICIAL  the conference filing for THIS game was read
+       STRONG    an operator correction for this game
+       …         otherwise the automated read's own grade, over rows that
+                 survived the freshness ladder. A read whose only rows were
+                 refused as historical grades as if it had named nobody. */
+  function gradeFor(t, gameId, o) {
+    if (!t) return 'NONE';
+    if (officialFor(t, gameId)) return 'OFFICIAL';
+    var fx = fixtureRows(t, gameId, o).rows;
+    var op = fx.filter(function (p) { return p.source_type === 'OPERATOR'; }).length;
+    if (op) return 'STRONG';
+    /* the automated read's own grade. A record not built by build() carries
+       only dataQuality; OFFICIAL there came from some filing, and a filing
+       counts only for its own game (checked above), never as a fallback */
+    var had = normGrade(t.automated_grade != null ? t.automated_grade : (t.dataQuality || t.data_quality));
+    if (had === 'OFFICIAL') had = 'NONE';
+    var auto = fx.filter(function (p) { return p.source_type !== 'OFFICIAL' && p.source_type !== 'OPERATOR'; }).length;
+    if (auto) return had === 'NONE' ? 'PARTIAL' : had;
+    return had;
+  }
+
+  /* the freshest publication among a fixture's rows (the clock the contract
+     measures STALE against), else null */
+  function publishedOf(rows) {
+    var newest = null;
+    (rows || []).forEach(function (p) {
+      var ts = tsOf(publishedAt(p)) != null ? tsOf(publishedAt(p)) : tsOf(p.retrieved_at);
+      if (ts != null && (newest == null || ts > newest)) newest = ts;
+    });
+    return newest == null ? null : new Date(newest).toISOString();
   }
 
   /* A DOCUMENT THAT NAMES NOBODY ON EITHER SIDE OF ITS FIXTURE IS NOT A
@@ -129,6 +253,11 @@
         copy.players = (t.players || []).slice();
         copy.operator_entries = [];
         copy.official_report = null;
+        copy.official_reports = {};
+        copy.official_reports_failed = {};
+        /* what the automated read itself graded, kept apart from the regrade
+           below: a fixture with no filing of its own falls back to it */
+        copy.automated_grade = normGrade(t.dataQuality || t.data_quality);
         copy.sources_merged = ['automated read'];
         teams[k] = copy;
       }
@@ -146,8 +275,9 @@
       /* a team the automated sync never covered still gets a slot: an
          ingested report about it is evidence whatever the sync did */
       var made = { team_id: id == null ? null : String(id), team_name: name || null, team_display: name || null,
-        conference: null, dataQuality: 'NONE', lastUpdated: null, players: [], operator_entries: [],
-        official_report: null, sources_merged: [], counts: { records: 0, flagged: 0, high: 0, cleared: 0, stale: 0, official: 0 } };
+        conference: null, dataQuality: 'NONE', automated_grade: 'NONE', lastUpdated: null, players: [], operator_entries: [],
+        official_report: null, official_reports: {}, official_reports_failed: {},
+        sources_merged: [], counts: { records: 0, flagged: 0, high: 0, cleared: 0, stale: 0, official: 0 } };
       teams[norm(name) || ('t' + Object.keys(teams).length)] = made;
       return made;
     }
@@ -162,10 +292,15 @@
            empty report, and it never raises the grade. */
         reportFailed++;
         t.official_report_failed = { source_url: r.source_url, why: r.why, retrieved_at: r.retrieved_at };
+        if (r.game_id != null) t.official_reports_failed[String(r.game_id)] = t.official_report_failed;
         t.sources_merged.push('official report (read failed)');
         return;
       }
       reportCount++;
+      /* ONE SLOT PER FIXTURE. A team with two filings on file (last week's
+         and this week's) keeps both, each keyed by the game it was read for.
+         `official_report` stays the legacy team-level slot (the last filing
+         in file order) for the headline grade and nothing else. */
       t.official_report = {
         conference: r.conference, source_url: r.source_url,
         published_at: r.published_at, retrieved_at: r.retrieved_at,
@@ -177,6 +312,7 @@
         ok: true,
         report_of_no_absences: !!r.silence_means_available
       };
+      if (r.game_id != null) t.official_reports[String(r.game_id)] = t.official_report;
       t.sources_merged.push('official report');
       (r.rows || []).forEach(function (row) {
         t.players.push({
@@ -187,6 +323,8 @@
           source_type: 'OFFICIAL', source_name: (r.conference || '') + ' availability report',
           source_url: r.source_url,
           source_published_at: r.published_at, observed_at: r.published_at,
+          /* an undated filing still has the moment EdgeDesk read it */
+          retrieved_at: r.retrieved_at || null,
           tier: 1, game_id: r.game_id || null
         });
       });
@@ -238,5 +376,7 @@
         + 'report_of_no_absences.' };
   }
 
-  return { build: build, corroborate: corroborate, gradeOf: gradeOf, normKey: nk, GRADES: GRADES, GRADED: GRADED, isGraded: isGraded, normGrade: normGrade };
+  return { build: build, corroborate: corroborate, gradeOf: gradeOf, normKey: nk, GRADES: GRADES, GRADED: GRADED, isGraded: isGraded, normGrade: normGrade,
+    gradeFor: gradeFor, officialFor: officialFor, fixtureRows: fixtureRows, judgeRow: judgeRow,
+    isHistorical: isHistorical, freshness: freshness, publishedAt: publishedAt, publishedOf: publishedOf };
 });

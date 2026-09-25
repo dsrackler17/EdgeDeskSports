@@ -22,8 +22,10 @@ const FILE = path.join(ROOT, 'app.html');
 let s = fs.readFileSync(FILE, 'utf8');
 
 const MARK = 'function fbP4OfficialForGame(t,gameId){';
+/* the fixture id reaches the list; the call may also carry the kickoff the
+   list is dated against ({kickoff, now}), which is the same contract, later */
 if (s.includes(MARK)
-    && s.includes("injuries:fbP4Injuries(g.home_team,g.game_id)")
+    && /injuries:fbP4Injuries\(g\.home_team,g\.game_id[,)]/.test(s)
     && s.includes("OUT_FIRST_HALF:'questionable'")) {
   console.log('[cfb-browser-availability] already patched');
   process.exit(0);

@@ -54,6 +54,13 @@
   }
 
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  /* an availability designation, as the key of the trained injury status
+     weights (params.injury.status_weight). The same reading the input
+     contract's AVAIL_TO_ENGINE gives an injury row, plus the two states
+     that say he plays */
+  var QB_AVAIL_TO_STATUS = { OUT: 'out', DOUBTFUL: 'doubtful', QUESTIONABLE: 'questionable',
+    GAME_TIME_DECISION: 'questionable', DAY_TO_DAY: 'questionable', OUT_FIRST_HALF: 'questionable',
+    PROBABLE: 'probable', LIMITED: 'probable', EXPECTED: 'active', AVAILABLE: 'active' };
   function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
   function clamp(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x); }
   function has(o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); }
@@ -1120,6 +1127,7 @@
       QB_EVIDENCE_WEIGHTS: { who_starts: 0.50, identity: 0.15, observed: 0.20, available: 0.15 },
       quarterback: function (ctx, which) {
         var I = uncertainty.information;
+        var P0 = params();
         if (!ctx) return M.missing('no starter context supplied for ' + which
           + ' — who is playing quarterback is unknown to this projection');
         var status = String(ctx.status || 'UNKNOWN').toUpperCase();
@@ -1177,17 +1185,42 @@
         } else { observed = 0; obWhy = 'nothing measured: no attributed dropback and no efficiency history'; }
 
         /* --- available: EXPLICIT evidence only --------------------------- */
+        /* EXPLICIT means a source NAMES him, and what it says is the point:
+           an explicit OUT is evidence that the resolved starter will not
+           play, and scored 1 here as if it were the opposite. The state is
+           read through the TRAINED injury status weights (params.injury.
+           status_weight), the same table that prices an absence, so this
+           term invents no probability of its own:
+             available = 1 − status_weight(state)
+           A source that names him with no state it can map says nothing
+           about whether he plays and scores 0. A caller that passes no
+           state at all (a legacy request) keeps the old reading. */
         var available = 0, avWhy;
         if (ctx.availability_evidence === 'EXPLICIT') {
-          available = 1;
-          avWhy = 'an availability source names him and states a status';
+          var avState = ctx.availability_state == null ? null : String(ctx.availability_state).toUpperCase();
+          var avKey = QB_AVAIL_TO_STATUS[avState] || null;
+          var avSw = avKey && P0 && P0.injury && P0.injury.status_weight ? P0.injury.status_weight[avKey] : null;
+          if (avState == null) {
+            available = 1;
+            avWhy = 'an availability source names him and states a status';
+          } else if (isNum(avSw)) {
+            available = clamp(1 - avSw, 0, 1);
+            avWhy = 'an availability source lists him ' + avState.toLowerCase().replace(/_/g, ' ')
+              + (available >= 1 ? '' : ' — the trained status weight for that designation is '
+                + avSw + ', so this counts ' + Math.round(available * 100) + '% toward knowing he plays');
+          } else {
+            available = 0;
+            avWhy = 'an availability source names him but gives no designation the engine can read ('
+              + avState + '), which is not evidence that he plays';
+          }
         } else if (ctx.availability_evidence === 'COMPREHENSIVE_SILENCE') {
           /* a report that covers every player on the roster and names him
-             nowhere IS a statement that he is available. Only a source the
-             policy registry marks comprehensive may reach this. */
+             nowhere IS a statement that he is available, whoever else it
+             lists. Only a source the policy registry marks comprehensive,
+             filed for THIS game, may reach this. */
           available = 1;
-          avWhy = 'a comprehensive availability report for this game names nobody on this roster, which is a '
-            + 'report of no absences rather than an absence of a report';
+          avWhy = 'a comprehensive availability report for this game designates every player and does not name '
+            + 'him, which is a report that he is available rather than an absence of a report';
         } else {
           available = 0;
           avWhy = 'no source states whether he can play. Silence is not health and scores nothing here';
