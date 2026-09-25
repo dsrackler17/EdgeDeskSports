@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-09-25T20:11:33.388Z",
+ "generated_at": "2026-09-25T20:15:48.023Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -755,7 +755,7 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-09-25T20:11:29.932Z",
+  "artifact_generated_at": "2026-09-25T20:15:38.703Z",
   "games_with_evidence": 129,
   "summary": {
    "games": 129,
@@ -864,17 +864,17 @@
      "provider": "capture_signals",
      "label": "EdgeDesk capture (signals: books per point)",
      "kind": "market",
-     "state": "DOWN",
-     "reason": "this run’s network policy refused every connection to the provider — not a finding about the provider",
-     "attributable_to": "run_environment"
+     "state": "HEALTHY",
+     "reason": "1 of 1 calls answered",
+     "attributable_to": "provider"
     },
     {
      "provider": "cfb_lines",
      "label": "CFBD lines via Supabase cfb.lines (every provider)",
      "kind": "market",
-     "state": "DOWN",
-     "reason": "this run’s network policy refused every connection to the provider — not a finding about the provider",
-     "attributable_to": "run_environment"
+     "state": "HEALTHY",
+     "reason": "3 of 3 calls answered",
+     "attributable_to": "provider"
     },
     {
      "provider": "cfbfastr_schedules",
@@ -889,7 +889,7 @@
      "label": "Official conference availability reports",
      "kind": "availability",
      "state": "DEGRADED",
-     "reason": "50 of 98 calls failed (bad content ×50); the live check from this run was refused by the run’s own network policy (not counted against the provider)",
+     "reason": "50 of 99 calls failed (bad content ×50)",
      "attributable_to": "provider"
     },
     {
@@ -905,7 +905,7 @@
      "label": "ESPN college injury endpoint",
      "kind": "availability",
      "state": "STALE",
-     "reason": "it answers, but every one of the 5 rows it returned was published no later than 2022-11-26 — historical rows, not this season’s injuries; the live check from this run was refused by the run’s own network policy (not counted against the provider)",
+     "reason": "it answers, but every one of the 5 rows it returned was published no later than 2022-11-26 — historical rows, not this season’s injuries",
      "attributable_to": "provider"
     },
     {
@@ -913,23 +913,23 @@
      "label": "ESPN college depth charts",
      "kind": "availability",
      "state": "AUTH_FAILURE",
-     "reason": "138 of 138 calls refused (401/403) by the provider; the live check from this run was refused by the run’s own network policy (not counted against the provider)",
+     "reason": "139 of 139 calls refused (401/403) by the provider",
      "attributable_to": "provider"
     },
     {
      "provider": "espn_fcs_scoreboard",
      "label": "ESPN FCS scoreboard (FCS-vs-FCS results)",
      "kind": "fcs_results",
-     "state": "DOWN",
-     "reason": "this run’s network policy refused every connection to the provider — not a finding about the provider",
-     "attributable_to": "run_environment"
+     "state": "AUTH_FAILURE",
+     "reason": "1 of 1 calls refused (401/403) by the provider",
+     "attributable_to": "provider"
     },
     {
      "provider": "espn_participation",
      "label": "ESPN game participation (who played)",
      "kind": "availability",
      "state": "AUTH_FAILURE",
-     "reason": "138 of 138 calls refused (401/403) by the provider; the live check from this run was refused by the run’s own network policy (not counted against the provider)",
+     "reason": "139 of 139 calls refused (401/403) by the provider",
      "attributable_to": "provider"
     },
     {
@@ -937,7 +937,7 @@
      "label": "FCS rating bridge build",
      "kind": "fcs_ratings",
      "state": "HEALTHY",
-     "reason": "built 1h ago",
+     "reason": "built 0h ago",
      "attributable_to": null
     },
     {
@@ -977,7 +977,7 @@
      "label": "ESPN college depth chart (QB1)",
      "kind": "qb",
      "state": "AUTH_FAILURE",
-     "reason": "138 of 138 calls refused (401/403) by the provider; the live check from this run was refused by the run’s own network policy (not counted against the provider)",
+     "reason": "139 of 139 calls refused (401/403) by the provider",
      "attributable_to": "provider"
     },
     {
@@ -1005,7 +1005,7 @@
      "attributable_to": "configuration"
     }
    ],
-   "provider_failures": 6,
+   "provider_failures": 4,
    "stale_evidence_records": 48,
    "conflicts": 33
   }
@@ -3682,7 +3682,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "McNeese’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "McNeese’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -7276,7 +7276,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Bucknell’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "Bucknell’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -7483,7 +7483,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Central Arkansas’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "Central Arkansas’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -8572,7 +8572,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "William & Mary’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "William & Mary’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -9098,7 +9098,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "UNLV’s starter record was re-read 1.6h ago and describes evidence from 13 days ago",
+      "reason": "UNLV’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -11368,7 +11368,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Howard’s starter record was re-read 1.6h ago and describes evidence from 13.2 days ago",
+      "reason": "Howard’s starter record was re-read 1 min ago and describes evidence from 13.2 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -13328,7 +13328,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Incarnate Word’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "Incarnate Word’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -15299,7 +15299,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Navy’s starter record was re-read 1.6h ago and describes evidence from 12.9 days ago",
+      "reason": "Navy’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -15494,7 +15494,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Army’s starter record was re-read 1.6h ago and describes evidence from 13.2 days ago",
+      "reason": "Army’s starter record was re-read 1 min ago and describes evidence from 13.2 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -15868,7 +15868,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "North Carolina Central’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "North Carolina Central’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -16265,7 +16265,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Houston Christian’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "Houston Christian’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -17643,14 +17643,14 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Navy’s starter record was re-read 1.6h ago and describes evidence from 12.9 days ago",
+      "reason": "Navy’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Air Force’s starter record was re-read 1.6h ago and describes evidence from 12.8 days ago",
+      "reason": "Air Force’s starter record was re-read 1 min ago and describes evidence from 12.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -18052,7 +18052,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Samford’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "Samford’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -18259,7 +18259,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Air Force’s starter record was re-read 1.6h ago and describes evidence from 12.8 days ago",
+      "reason": "Air Force’s starter record was re-read 1 min ago and describes evidence from 12.8 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -18424,7 +18424,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Hawai'i’s starter record was re-read 1.6h ago and describes evidence from 12.7 days ago",
+      "reason": "Hawai'i’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -18787,7 +18787,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "UNLV’s starter record was re-read 1.6h ago and describes evidence from 13 days ago",
+      "reason": "UNLV’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -18981,7 +18981,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Hawai'i’s starter record was re-read 1.6h ago and describes evidence from 12.7 days ago",
+      "reason": "Hawai'i’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -19845,7 +19845,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "New Mexico State’s starter record was re-read 1.6h ago and describes evidence from 12.7 days ago",
+      "reason": "New Mexico State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -20221,7 +20221,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Robert Morris’s starter record was re-read 1.6h ago and describes evidence from 13 days ago",
+      "reason": "Robert Morris’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -20423,7 +20423,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Lindenwood’s starter record was re-read 1.6h ago and describes evidence from 12.9 days ago",
+      "reason": "Lindenwood’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -22120,7 +22120,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Long Island University’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "Long Island University’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -22351,7 +22351,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Gardner-Webb’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "Gardner-Webb’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -22564,7 +22564,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Army’s starter record was re-read 1.6h ago and describes evidence from 13.2 days ago",
+      "reason": "Army’s starter record was re-read 1 min ago and describes evidence from 13.2 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -23850,7 +23850,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Mercyhurst’s starter record was re-read 1.6h ago and describes evidence from an unknown time ago",
+      "reason": "Mercyhurst’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -24222,7 +24222,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "New Mexico State’s starter record was re-read 1.6h ago and describes evidence from 12.7 days ago",
+      "reason": "New Mexico State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
