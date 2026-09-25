@@ -29,7 +29,7 @@ function has(hay, needle, what) { ok(String(hay).indexOf(needle) >= 0, what, { m
 function lacks(hay, needle, what) { ok(String(hay).indexOf(needle) < 0, what, { present: needle }); }
 function section(t) { console.log('\n' + t); }
 
-const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
+const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 (function () {
@@ -217,6 +217,36 @@ section('STEP 4 · the card and the row keep the gap, confidence and reliability
   const wc = T.fbGxSummary(w.u, w.p, 'RV1');
   const gapCell = wc.slice(wc.indexOf('>Market gap<'), wc.indexOf('>Market gap<') + 200);
   lacks(gapCell, 'v warn', 'the card does not colour a weak gap as a finding');
+}
+
+/* ------------------------------------------------------------------------ */
+section('STEP 5 · why EdgeDesk leans, on the card, from the engine’s own terms');
+{
+  /* the away side leads on rating; home field still favours Duke */
+  const s = stageAt(-6, { market_spread: 3.5 });
+  withCoverage(s.u, WELL);
+  const v = T.fbP4ViewFor(s.u, s.p);
+  const W = v.strongest_drivers;
+  eq(W.team, AWAY, 'the lean is the side the fair line names');
+  const rating = s.p.contributions.find(c => c.key === 'rating');
+  eq(W.reasons[0].key, 'rating', 'the largest term on that side comes first');
+  eq(W.reasons[0].text, '+' + Math.abs(rating.points).toFixed(1) + ' pts team-strength edge (opponent-adjusted results)',
+    'with the engine’s own points');
+  eq(W.reasons.some(r => r.key === 'hfa'), false, 'home field favours Duke, so it is not a reason Wake Forest leads');
+  const card = T.fbP4Card(s.u);
+  has(card, 'Why EdgeDesk leans ' + AWAY, 'the card carries the section, named for the lean');
+  has(card, W.reasons[0].text, 'with the reasons');
+  has(T.fbGxWhy(s.u, s.p), 'market context, not a model component', 'the market gap closes the list, marked as context');
+  ok(card.indexOf('Copy research brief') < card.indexOf('Why EdgeDesk leans')
+    && card.indexOf('Why EdgeDesk leans') < card.indexOf('Why EdgeDesk prices it here'),
+    'it sits under the summary, ahead of the full component breakdown');
+
+  /* equal teams at a neutral site: nothing is driving it */
+  const n = stageAt(0.0, { neutral: true });
+  withCoverage(n.u, WELL);
+  const vn = T.fbP4ViewFor(n.u, n.p);
+  if (vn.strongest_drivers.none) has(T.fbGxWhy(n.u, n.p), 'No single component is driving the projection.', 'an evenly matched game says no single component drives it');
+  else ok(vn.strongest_drivers.reasons.every(r => r.points >= 0.5), 'any reason it does name is at least half a point', vn.strongest_drivers);
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));

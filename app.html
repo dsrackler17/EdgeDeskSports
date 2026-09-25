@@ -54846,6 +54846,25 @@ function fbGxWrong(p){
   return h;
 }
 
+/* ── WHY EDGEDESK LEANS [TEAM] ──────────────────────────────────────────
+   The two or three largest terms the engine priced on the side the fair line
+   names, read from the research view (lib/cfb_research_view.js leanReasons).
+   Each line is one measured term with its points; the market gap may close
+   the list, marked as context rather than a reason. Nothing here is written
+   by a model — the words are fixed per term and the numbers are the engine's. */
+function fbGxWhy(u,p){
+  var v=fbP4ViewFor(u,p),W=v&&v.strongest_drivers;
+  if(!W)return '';
+  if(W.none)return '<div class="gx-none">'+fbEsc(W.text)+'</div>';
+  return '<ul class="gx-ul">'+W.reasons.map(function(r){
+    return '<li'+(r.detail?(' title="'+fbEsc(r.detail)+'"'):'')+'>'+fbEsc(r.text)
+      +(r.kind==='market'?' <span class="mut">· market context, not a model component</span>':'')+'</li>';
+  }).join('')+'</ul>'
+  +(W.near_pickem?'<div class="gx-foot">A near pick’em: the other side’s components nearly cancel these, which is why the raw margin is under a point.</div>':'')
+  +'<div class="gx-foot">Each line is one term the engine priced, on '+fbEsc(W.team)+'’s side of the fair line ('+fbEsc(W.rule)+'). '
+  +'The full breakdown, in both directions, is under “Why EdgeDesk prices it here”.</div>';
+}
+
 /* ── THE TWO CASES ──────────────────────────────────────────────────────
    Every bullet maps to a measured state on `p`: a driver the engine sized, a
    counterargument it raised, or a score it published. No narrative. */
@@ -55033,7 +55052,7 @@ window.fbGxToggle=function(gid,id){
     var b=el.querySelector('.gx-sec-h');if(b){b.setAttribute('aria-expanded',String(FB_GX_OPEN[k]));
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
-var FB_GX_DEFAULT={drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
+var FB_GX_DEFAULT={why:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
   research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
@@ -55657,7 +55676,10 @@ function fbP4Card(u){
   /* SUMMARY FIRST, THEN WHY, THEN WHAT COULD GO WRONG, THEN THE EVIDENCE.
      Every block below is the same data the flat list carried; what changed is
      the order a reader meets it in, and what is open by default. */
+  var rvC=fbP4ViewFor(u,p);
   var body=fbGxSummary(u,p,gid)
+    +(rvC&&rvC.strongest_drivers?fbGxSec(gid,'why','Why EdgeDesk leans '+rvC.strongest_drivers.team,fbGxWhy(u,p),true,
+      'the largest measured components on that side — research, not a pick'):'')
     +fbGxSec(gid,'matchup','Programs, conferences and the FBS rating',fbP4MatchupHTML(u,p),true,
       'who is playing, on one all-FBS scale')
     +fbGxSec(gid,'research','The research read',fbGxResearchRead(u,p),true,

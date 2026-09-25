@@ -247,5 +247,68 @@ section('STEP 4 · edge, confidence and reliability are three separate numbers')
   eq('a near pick’em’s confidence is the engine’s score, not boosted by the one-point floor', np.confidence.score, 50);
 }
 
+/* ======================================================================== */
+section('STEP 5 · why EdgeDesk leans: the largest measured reasons on its side');
+{
+  const C = (key, points, confidence, extra) => Object.assign({ key, label: key, points, available: true,
+    confidence: confidence == null ? 0.8 : confidence, source: 'engine' }, extra || {});
+  function why(raw, contributions, o) {
+    o = o || {};
+    const p = proj(raw, { line: o.line, contributions });
+    p.explanation.primary_drivers = o.drivers || [];
+    return V.build({ game: GAME, projection: p, market: { spread_line: o.line == null ? null : o.line },
+      coverage: { input_coverage: 0.9 } }).strongest_drivers;
+  }
+  /* EdgeDesk: Ole Miss (away) by 5.2 — away-side terms are negative */
+  let w = why(-5.2, [C('rating', -6.8), C('hfa', 2.6), C('matchup', -0.9), C('qb', -0.3), C('conference', 0.1)]);
+  eq('the lean is named for the side the fair line names', w.team, AWAY);
+  eq('the largest component on that side comes first', w.reasons[0].key, 'rating');
+  eq('stated with its points', w.reasons[0].text, '+6.8 pts team-strength edge (opponent-adjusted results)');
+  eq('home field, which favours the OTHER side, is not a reason for this one', w.reasons.some(r => r.key === 'hfa'), false);
+  eq('a term under half a point is not a reason', w.reasons.some(r => r.key === 'qb'), false);
+  eq('so two reasons are shown, not padded to three', w.reasons.length, 2);
+
+  w = why(8, [C('rating', 4), C('hfa', 3), C('matchup', 2), C('qb', 1.5)]);
+  eq('at most three reasons', w.reasons.length, 3);
+  eq('in size order', w.reasons.map(r => r.key).join(','), 'rating,hfa,matchup');
+
+  w = why(3, [C('rating', 3.2, 0.1), C('hfa', 2.0)]);
+  eq('a component measured with too little confidence is not a reliable reason', w.reasons.map(r => r.key).join(','), 'hfa');
+  eq('and if only one reliable reason exists, one is shown', w.reasons.length, 1);
+
+  w = why(3, [C('rating', 3, 0.8, { available: false }), C('hfa', 0.3)]);
+  eq('with no meaningful component, it says so', w.text, 'No single component is driving the projection.');
+  eq('and lists nothing', w.reasons.length, 0);
+
+  const dup = why(6, [C('rating', 4), C('rating', 3), C('hfa', 2)]);
+  eq('no term is repeated', dup.reasons.filter(r => r.key === 'rating').length, 1);
+
+  /* the market gap closes the list as context, only when it agrees */
+  w = why(-1.0, [C('rating', -2.5), C('matchup', -0.8)], { line: 2.5 });
+  eq('the market gap is added as context when it points the lean’s way', w.reasons[w.reasons.length - 1].kind, 'market');
+  chk('and names the market line', /Florida -2\.5/.test(w.reasons[w.reasons.length - 1].text), w.reasons);
+  w = why(-5.2, [C('rating', -5.2)], { line: -7 });
+  eq('a gap toward the OTHER side is not offered as a reason', w.reasons.some(r => r.kind === 'market'), false);
+  w = why(9, [C('rating', 4), C('hfa', 3), C('matchup', 2)], { line: 3 });
+  eq('components come before market context when there is room for only three', w.reasons.some(r => r.kind === 'market'), false);
+
+  /* the engine’s own sentence rides along, never a written one */
+  w = why(6, [C('matchup', 2.1)], { drivers: [{ key: 'matchup', points: 2.1, text: 'Stylistically the matchup favours Florida by 2.1 points: run game vs run defence' }] });
+  eq('the engine’s own sentence is carried as the detail', w.reasons[0].detail, 'Stylistically the matchup favours Florida by 2.1 points: run game vs run defence');
+  /* deterministic, and nothing invented */
+  const a1 = JSON.stringify(why(8, [C('hfa', 2), C('rating', 2), C('matchup', 2)]));
+  const a2 = JSON.stringify(why(8, [C('matchup', 2), C('rating', 2), C('hfa', 2)]));
+  eq('equal-sized reasons order by key, whatever order they arrive in', a1, a2);
+  chk('every reason names a term the engine priced, or the market', why(8, [C('hfa', 2), C('rating', 5)]).reasons.every(r =>
+    r.kind === 'market' || Object.prototype.hasOwnProperty.call(V.DRIVER_TEXT, r.key)));
+  const BANNED = /injur(y|ed)|coach(ing)? reputation|revenge|momentum|must[- ]win|lock/i;
+  chk('no reason text invents a narrative', Object.keys(V.DRIVER_TEXT).every(k => !BANNED.test(V.DRIVER_TEXT[k])));
+  eq('no projection, no reasons', V.build({ game: GAME, projection: null }).strongest_drivers, null);
+  /* a near pick'em still names its reasons, and flags the thinness */
+  w = why(0.4, [C('hfa', 2.6), C('rating', -2.2)]);
+  eq('a near pick’em lists what it has', w.reasons.map(r => r.key).join(','), 'hfa');
+  eq('and is flagged as a near pick’em', w.near_pickem, true);
+}
+
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
 process.exit(failures ? 1 : 0);
