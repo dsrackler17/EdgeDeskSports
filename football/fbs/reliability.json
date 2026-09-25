@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-09-25T20:42:52.044Z",
+ "generated_at": "2026-09-25T21:06:14.815Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -339,13 +339,13 @@
     "key": "availability",
     "label": "Injury/availability information incomplete",
     "games": 106,
-    "points": 527.2
+    "points": 528.6
    },
    {
     "key": "qb_status",
     "label": "QB status unconfirmed (can he play)",
     "games": 105,
-    "points": 286.5
+    "points": 288.5
    },
    {
     "key": "attribution",
@@ -369,7 +369,7 @@
     "key": "starters",
     "label": "Starter evidence stale",
     "games": 26,
-    "points": 19.2
+    "points": 19.4
    },
    {
     "key": "fcs_rating",
@@ -666,7 +666,7 @@
     "key": "availability",
     "label": "Injury/availability information incomplete",
     "games": 127,
-    "points": 536.2
+    "points": 537.6
    },
    {
     "key": "rating_sample",
@@ -684,7 +684,7 @@
     "key": "qb_status",
     "label": "QB status unconfirmed (can he play)",
     "games": 105,
-    "points": 286.5
+    "points": 288.5
    },
    {
     "key": "qb_conflict",
@@ -702,7 +702,7 @@
     "key": "starters",
     "label": "Starter evidence stale",
     "games": 26,
-    "points": 19.2
+    "points": 19.4
    },
    {
     "key": "attribution",
@@ -755,7 +755,7 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-09-25T20:42:43.757Z",
+  "artifact_generated_at": "2026-09-25T21:06:04.610Z",
   "games_with_evidence": 129,
   "summary": {
    "games": 129,
@@ -777,15 +777,15 @@
     "by_class": {
      "COMPREHENSIVE_OFFICIAL": 48,
      "NOT_REQUIRED": 65,
-     "NOT_DUE_YET": 101,
+     "NOT_DUE_YET": 99,
      "NO_SOURCE": 16,
-     "PROVIDER_FAILED": 28
+     "PROVIDER_FAILED": 30
     },
     "fbs_teams_on_slate": 138,
     "teams_covered": 48,
     "fresh": 48,
     "stale": 0,
-    "unavailable": 24,
+    "unavailable": 26,
     "starters_known_pct": 19.8,
     "starters_known": 1151,
     "starters_total": 5805,
@@ -1017,7 +1017,7 @@
     "key": "availability",
     "label": "Availability feed",
     "games_affected": 106,
-    "current_points_lost": 813.7,
+    "current_points_lost": 817.1,
     "maximum_recoverable_points": 537,
     "games_recoverable": 75,
     "cost": 3,
@@ -1048,14 +1048,14 @@
     "label": "QB confirmation",
     "games_affected": 129,
     "current_points_lost": 211,
-    "maximum_recoverable_points": 170,
+    "maximum_recoverable_points": 166,
     "games_recoverable": 93,
     "cost": 3,
     "feasible": 0.5,
     "how": "official announcements, a provider depth chart, or trusted beat reporting above the observed previous start",
     "recover": "starters resolved only from the previous game",
-    "estimated_recoverable_points": 85,
-    "enrichment_roi": 28.33,
+    "estimated_recoverable_points": 83,
+    "enrichment_roi": 27.67,
     "engineering_priority": 3
    },
    {
@@ -1077,7 +1077,7 @@
     "key": "starters",
     "label": "Starter evidence staleness",
     "games_affected": 26,
-    "current_points_lost": 19.2,
+    "current_points_lost": 19.4,
     "maximum_recoverable_points": 4,
     "games_recoverable": 4,
     "cost": 1,
@@ -9121,7 +9121,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "UNLV’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
+      "reason": "UNLV’s starter record was re-read 1 min ago and describes evidence from 13.1 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -15148,7 +15148,7 @@
     "grade": "ADEQUATE",
     "grade_label": "ADEQUATE",
     "tier": "ADEQUATE",
-    "raw": 82.9,
+    "raw": 79.3,
     "capped_by": [
      "QB_CONTESTED"
     ],
@@ -15159,7 +15159,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 10.1,
+      "score": 6.6,
       "max": 20
      },
      "projection_stability": {
@@ -15167,7 +15167,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 14.4,
+      "score": 14.3,
       "max": 15
      },
      "source_integrity": {
@@ -15193,6 +15193,20 @@
     "penalties": [
      {
       "component": "roster_availability",
+      "points": 3,
+      "reason": "every source that covers Navy failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Navy’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 3,
+      "reason": "every source that covers UAB failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of UAB’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "roster_availability",
       "points": 2.5,
       "reason": "Braxton Woodson — uncertain; the job is split by usage; measured: a last-game opener in the split cell opened the next game 50.9% of the time (743 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
@@ -15206,20 +15220,6 @@
       "action_key": null
      },
      {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "American Athletic Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Navy’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "American Athletic Conference’s report for this game is not due yet — nobody is assumed fit; the impact of UAB’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
       "component": "team_data",
       "points": 2.3,
       "reason": "Navy: 2 of 6 games for a full in-season sample; its rating sample is dominated by FCS opponents",
@@ -15227,25 +15227,25 @@
       "action_key": null
      },
      {
-      "component": "source_integrity",
-      "points": 1,
-      "reason": "the efficiency history could not resolve the same athlete",
-      "family": "qb_conflict",
-      "action_key": "qb_conflict:away"
-     },
-     {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Navy’s availability report is not due yet — nobody is assumed fit",
+      "points": 2,
+      "reason": "no source states whether Braxton Woodson can play — silence is not health",
       "family": "qb_status",
       "action_key": "availability:away"
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "UAB’s availability report is not due yet — nobody is assumed fit",
+      "points": 2,
+      "reason": "no source states whether Ryder Burton can play — silence is not health",
       "family": "qb_status",
       "action_key": "availability:home"
+     },
+     {
+      "component": "source_integrity",
+      "points": 1,
+      "reason": "the efficiency history could not resolve the same athlete",
+      "family": "qb_conflict",
+      "action_key": "qb_conflict:away"
      },
      {
       "component": "team_data",
@@ -15256,7 +15256,7 @@
      },
      {
       "component": "freshness",
-      "points": 0.6,
+      "points": 0.8,
       "reason": "Navy’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
@@ -15295,31 +15295,31 @@
       "binding": true
      }
     ],
-    "missing": [],
+    "missing": [
+     "qb_availability:home",
+     "availability:home",
+     "qb_availability:away",
+     "availability:away"
+    ],
     "next_actions": [
      {
       "action": "Confirm Navy’s starting QB (Braxton Woodson)",
       "key": "qb_identity:away",
-      "potential_gain": 6
+      "potential_gain": 3
      },
      {
-      "action": "Re-read availability inside the filing window (Navy)",
+      "action": "Restore an injury/availability source for Navy",
       "key": "availability:away",
-      "potential_gain": 4
+      "potential_gain": 5
      },
      {
-      "action": "Re-read availability inside the filing window (UAB)",
+      "action": "Restore an injury/availability source for UAB",
       "key": "availability:home",
-      "potential_gain": 4
+      "potential_gain": 5
      },
      {
       "action": "Resolve Navy’s starter conflict",
       "key": "qb_conflict:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm UAB’s starting QB (Ryder Burton)",
-      "key": "qb_identity:home",
       "potential_gain": 1
      },
      {
@@ -15329,7 +15329,7 @@
      }
     ],
     "recoverable_by_family": {
-     "qb_identity": 7
+     "qb_identity": 3
     }
    },
    "reliability_without_evidence": {
@@ -18707,7 +18707,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "UNLV’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
+      "reason": "UNLV’s starter record was re-read 1 min ago and describes evidence from 13.1 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
