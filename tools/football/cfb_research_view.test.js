@@ -147,5 +147,79 @@ section('STEP 2 · the market gap: magnitude, and which team EdgeDesk differs to
   chk('a dropped line says it was dropped', /dropped/.test(dropped.reason), dropped.reason);
 }
 
+/* ======================================================================== */
+section('STEP 3 · one research label, by rule and in order');
+{
+  const C = V.CONFIG;
+  const FULL = { input_coverage: 0.9, known: 18, applicable: 20 };
+  function label(raw, line, o) {
+    o = o || {};
+    const market = o.market || { spread_line: line, stale: !!o.stale };
+    return V.build({ game: GAME, projection: o.projection || proj(raw, { line, conf: o.conf === undefined ? 62 : o.conf }),
+      market, coverage: o.coverage === undefined ? FULL : o.coverage }).research_label;
+  }
+  /* the thresholds are the existing ones, named */
+  const P = global.EDCfbP4Params;
+  eq('the research threshold is the engine’s min_research_gap', C.research_gap, (P.market && P.market.min_research_gap) || 2);
+  eq('the confidence floor is the engine’s min_confidence', C.min_confidence, (P.market && P.market.min_confidence) || 35);
+  eq('the guard is the board’s FB_GUARD.p4.game', C.guard_gap, 21);
+  eq('major is the board’s INVESTIGATE size', C.major_gap, 7);
+
+  /* each threshold, at its edge (the market sits at home -3, i.e. margin +3) */
+  eq('a 1.9-pt gap is MARKET ALIGNED', label(4.9, 3).key, 'MARKET_ALIGNED');
+  eq('a 2.0-pt gap is WORTH RESEARCHING', label(5.0, 3).key, 'WORTH_RESEARCHING');
+  eq('a 6.9-pt gap is WORTH RESEARCHING', label(9.9, 3).key, 'WORTH_RESEARCHING');
+  eq('a 7.0-pt gap is a MAJOR DISAGREEMENT', label(10.0, 3).key, 'MAJOR_DISAGREEMENT');
+  eq('a 21.0-pt gap is still a MAJOR DISAGREEMENT', label(24.0, 3).key, 'MAJOR_DISAGREEMENT');
+  eq('past the 21-pt guard it is LOW RELIABILITY', label(24.1, 3).key, 'LOW_RELIABILITY');
+  eq('confidence 35 is enough to read the gap', label(5, 3, { conf: 35 }).key, 'WORTH_RESEARCHING');
+  eq('confidence 34.9 is LIMITED DATA', label(5, 3, { conf: 34.9 }).key, 'LIMITED_DATA');
+  eq('an unmeasured confidence is LIMITED DATA, never healthy', label(5, 3, { conf: null }).key, 'LIMITED_DATA');
+  eq('reliability 60% is enough', label(5, 3, { coverage: { input_coverage: 0.6 } }).key, 'WORTH_RESEARCHING');
+  eq('reliability 59% is LOW RELIABILITY', label(5, 3, { coverage: { input_coverage: 0.59 } }).key, 'LOW_RELIABILITY');
+  eq('an unmeasured reliability is LOW RELIABILITY', label(5, 3, { coverage: null }).key, 'LOW_RELIABILITY');
+  eq('no market line is LIMITED DATA', label(5, null).key, 'LIMITED_DATA');
+  eq('a stale-only market is LIMITED DATA', label(5, 3, { stale: true }).key, 'LIMITED_DATA');
+  eq('a near pick’em is NEAR PICK’EM', label(0.4, -0.5).key, 'NEAR_PICKEM');
+  eq('no projection is LIMITED DATA', label(0, 3, { projection: { status: 'INSUFFICIENT_DATA' } }).key, 'LIMITED_DATA');
+
+  /* the priority order, where two rules both hold */
+  eq('data problems outrank a near pick’em (low confidence)', label(0.4, 3, { conf: 20 }).key, 'LIMITED_DATA');
+  eq('data problems outrank a near pick’em (low reliability)', label(0.4, 3, { coverage: { input_coverage: 0.4 } }).key, 'LOW_RELIABILITY');
+  eq('no market outranks a near pick’em', label(0.4, null).key, 'LIMITED_DATA');
+  eq('a near pick’em outranks a major disagreement', label(-0.4, 9).key, 'NEAR_PICKEM');
+  eq('a near pick’em outranks worth researching', label(0.5, 3).key, 'NEAR_PICKEM');
+  eq('the guard outranks thin data (a fault is named as a fault)', label(30, 3, { conf: 10 }).key, 'LOW_RELIABILITY');
+  eq('low confidence outranks a major disagreement', label(12, 3, { conf: 20 }).key, 'LIMITED_DATA');
+  eq('low reliability outranks a major disagreement', label(12, 3, { coverage: { input_coverage: 0.3 } }).key, 'LOW_RELIABILITY');
+  eq('the major threshold outranks the research one', label(12, 3).key, 'MAJOR_DISAGREEMENT');
+
+  /* the gap under the label is the raw one: a near pick'em against a
+     1.2-pt market is aligned by value but named NEAR PICK'EM, and its sentence
+     carries the raw gap, not one computed from the display line */
+  const np = label(0.2, 1.2);
+  chk('the near pick’em sentence quotes the raw gap', /1\.0 pts toward/.test(np.means), np.means);
+
+  /* every label is one of the six, and none is a pick */
+  const all = [label(4.9, 3), label(5, 3), label(10, 3), label(30, 3), label(5, 3, { conf: 10 }), label(5, null), label(0.4, 0)];
+  chk('every result is one of the six supported labels', all.every(l => C && V.LABEL_KEYS.indexOf(l.key) >= 0 && V.LABELS[l.key].label === l.label));
+  const BET = /\b(lock|best bet|guarantee|guaranteed|hammer|bet this|sure thing|play of the day)\b/i;
+  chk('no label or sentence uses betting language', all.every(l => !BET.test(l.label) && !BET.test(l.means)), all.map(l => l.label));
+  chk('every label explains itself in a written sentence', all.every(l => l.means && l.means.length > 60));
+  chk('WORTH RESEARCHING says it is not a validated edge', /not a validated edge/.test(label(5, 3).means));
+  chk('the labels carry no tone that reads as a recommendation', Object.keys(V.LABELS).every(k => !/buy|sell|take|fade/i.test(V.LABELS[k].label)));
+
+  /* confidence and reliability, as numbers the engine and contract produced */
+  const cf = V.build({ game: GAME, projection: proj(5, { line: 3, conf: 52.4 }), coverage: FULL });
+  eq('confidence keeps the engine’s own score', cf.confidence.score, 52.4);
+  eq('and reads Moderate between the floor and 60', cf.confidence.label, 'Moderate');
+  eq('reliability is the input coverage', cf.reliability.pct, 90);
+  eq('with the count behind it', cf.reliability.sub, '18 of 20 inputs on file');
+  eq('High at 60+', V.confidence({ scores: { confidence: 60 } }).tier, 'HIGH');
+  eq('Low under 35', V.confidence({ scores: { confidence: 34 } }).tier, 'LOW');
+  eq('a thresholds override is honoured (the page passes the engine’s own)', V.build({ game: GAME,
+    projection: proj(5, { line: 3 }), market: { spread_line: 3 }, coverage: FULL }, { research_gap: 2.5 }).research_label.key, 'MARKET_ALIGNED');
+}
+
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
 process.exit(failures ? 1 : 0);

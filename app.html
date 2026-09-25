@@ -171,9 +171,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .gx-st.warn{color:var(--warn);border-color:rgba(214,158,60,.45)}
 .gx-st.neg{color:var(--neg);border-color:rgba(226,96,68,.45)}
 .gx-st.mut{color:var(--faint)}
+.gx-st.accent{color:var(--accent);border-color:rgba(47,167,154,.45)}
+.gx-st.gold{color:var(--gold);border-color:rgba(227,184,77,.45)}
 .gx-means{font-size:12.5px;line-height:1.55;color:var(--text);margin-top:9px;padding:9px 11px;border-radius:9px;border:1px solid var(--border);border-left-width:3px;background:var(--bg)}
 .gx-means.ok{border-left-color:var(--pos)}.gx-means.warn{border-left-color:var(--warn)}
 .gx-means.neg{border-left-color:var(--neg)}.gx-means.mut{border-left-color:var(--border)}
+.gx-means.accent{border-left-color:var(--accent)}.gx-means.gold{border-left-color:var(--gold)}
 .gx-means b{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:3px}
 /* THE VENUE AND THE GAME-TIME FORECAST. A projection reads one hour; a
    person reads the game, so the strip carries the hour of kickoff and the
@@ -1885,6 +1888,13 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fbs-badge.fcs{color:var(--faint)}
 /* the CFB research view (lib/cfb_research_view.js) */
 .rv-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rv-lab{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.05em;border:1px solid var(--border);border-radius:5px;padding:1px 5px;white-space:nowrap;color:var(--dim)}
+.rv-lab.accent{color:var(--accent);border-color:rgba(47,167,154,.45)}
+.rv-lab.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.rv-lab.neg{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.rv-lab.ok{color:var(--pos);border-color:rgba(118,189,62,.45)}
+.rv-lab.gold{color:var(--gold);border-color:rgba(227,184,77,.45)}
+.rv-lab.mut{color:var(--faint)}
 .rv-np{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.05em;border:1px solid rgba(227,184,77,.45);border-radius:4px;padding:1px 4px;color:var(--gold);white-space:nowrap;vertical-align:middle;margin-left:4px}
 .fbs-confcell{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media(max-width:560px){
@@ -49779,14 +49789,31 @@ function fbP4ViewFor(u,p,mkt){
   if(!V||!u||!u.g||!p)return null;
   var g=u.g;
   mkt=mkt||(FB.p4._mkt&&FB.p4._mkt[String(g.game_id)])||null;
-  var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of].join('|');
+  var cov=null;try{cov=fbP4ContractFor(u);}catch(_){cov=null;}
+  var cs=cov&&cov.summary||null;
+  var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage].join('|');
   if(u._rv&&u._rv.p===p&&u._rv.key===key)return u._rv.v;
   var v=null;
   try{
-    v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt});
+    v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt,
+      coverage:cs},fbP4ViewCfg());
   }catch(_){v=null;}
   u._rv={p:p,key:key,v:v};
   return v;
+}
+/* the view's thresholds ARE the engine's and the board's: the research gap
+   and confidence floor from the shipped params, the guard from FB_GUARD */
+function fbP4ViewCfg(){
+  var P=window.EDCfbP4Params||{},MP=P.market||{};
+  return {research_gap:MP.min_research_gap,min_confidence:MP.min_confidence,
+    guard_gap:(typeof FB_GUARD!=='undefined'&&FB_GUARD.p4)?FB_GUARD.p4.game:null};
+}
+/* the one research label as a chip. Without the view the row prints the
+   board's operational status, exactly as it always has */
+function fbRvLabelChip(v,st){
+  var L=v&&v.research_label;
+  if(!L)return st?('<span style="color:'+st.c+'">'+st.t+'</span>'):'';
+  return '<span class="rv-lab '+L.tone+'" title="'+fbEsc(L.label+': '+L.means+(st?(' · Board status: '+st.t):''))+'">'+fbEsc(L.label)+'</span>';
 }
 /* the NEAR PICK'EM badge: EdgeDesk has picked a side, but the raw margin
    under it is less than a point */
@@ -54237,6 +54264,16 @@ function fbGxState(p){
       +minGap+'-point research threshold. There is not enough pricing disagreement to treat this game as a research edge.'};
 }
 
+/* THE LABEL THE CARD, THE BRIEF AND THE SHARE TEXT PRINT: the research
+   view's one research label when it loaded, the card's own research state
+   when it did not. One call site, so the three can never disagree. */
+function fbRvState(u,p){
+  var v=null;try{v=fbP4ViewFor(u,p);}catch(_){v=null;}
+  var L=v&&v.research_label;
+  if(L)return {key:L.key,label:L.label,cls:L.tone,means:L.means,view:true};
+  return fbGxState(p);
+}
+
 /* the projected score line, split from the model's OWN spread and total.
    Where the model published no total there is no score line, and the card
    says so rather than halving a number it does not have. */
@@ -54256,7 +54293,7 @@ function fbGxScore(m){
 /* ── THE SUMMARY ────────────────────────────────────────────────────────
    Everything the first thirty seconds needs, in one block. */
 function fbGxSummary(u,p,gid){
-  var g=u.g,m=p.model,mk=p.market,st=fbGxState(p),sc=fbGxScore(m);
+  var g=u.g,m=p.model,mk=p.market,st=fbRvState(u,p),sc=fbGxScore(m);
   var h=fbEsc(g.home_team),a=fbEsc(g.away_team);
   var gap=mk&&mk.spread_gap!=null?Math.abs(mk.spread_gap):null;
   function cell(l,v,cls,sub){
@@ -54296,7 +54333,7 @@ function fbGxSummary(u,p,gid){
   var wp=fbWinPair(m.home_win_prob);
   out+=cell('Win probability',h+' '+(wp?wp.home.text:'—'),'',
     a+' '+(wp?wp.away.text:'—')+(wp&&(wp.home.bounded||wp.away.bounded)?' · bounded, never certain':''));
-  out+=cell('Research state','<span class="gx-st '+st.cls+'">'+fbEsc(st.label)+'</span>','',
+  out+=cell(st.view?'Research label':'Research state','<span class="gx-st '+st.cls+'">'+fbEsc(st.label)+'</span>','',
     'EdgeDesk’s own read, not advice');
   var conf=p.scores&&p.scores.confidence!=null?Math.round(p.scores.confidence):null;
   /* COVERAGE COMES FROM THE INPUT CONTRACT, not from the engine's internal
@@ -54951,7 +54988,7 @@ var FB_GX_DEFAULT={drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:
    Plain text that stands alone away from this page. No ids, no JSON, no
    secrets — only what a reader could already see. */
 function fbGxBriefText(u,p){
-  var g=u.g,m=p.model,mk=p.market||{},st=fbGxState(p),sc=fbGxScore(m),ex=p.explanation||{};
+  var g=u.g,m=p.model,mk=p.market||{},st=fbRvState(u,p),sc=fbGxScore(m),ex=p.explanation||{};
   var L=[],h=g.home_team,a=g.away_team;
   function line(k,v){L.push(k+': '+v);}
   L.push('EDGEDESK RESEARCH BRIEF');
@@ -54962,10 +54999,12 @@ function fbGxBriefText(u,p){
   line('Model spread',h+' '+fbPts(-fbFairDisp(m))
     +(m.is_near_pickem?(' (near pick’em · raw margin '+(m.display_side==='away'?a:h)+' '+fbRawMarginText(m)+')'):''));
   line('Market spread',mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)+' ('+(mk.book||'reference')+')'):'none joined');
-  line('Difference',mk.spread_gap!=null?(Math.abs(mk.spread_gap).toFixed(1)+' pts'):'no market number to compare');
+  var rvB=st.view?fbP4ViewFor(u,p):null;
+  if(rvB&&rvB.market_gap&&rvB.market_gap.available)line('Market gap',rvB.market_gap.text+' (from the raw margin)');
+  else line('Difference',mk.spread_gap!=null?(Math.abs(mk.spread_gap).toFixed(1)+' pts'):'no market number to compare');
   line('Projected score',sc?(h+' '+sc.home+', '+a+' '+sc.away+' (from the model spread and total)'):'not available — the model published no total');
   line('Win probability',h+' '+fbWinText(m.home_win_prob)+', '+a+' '+fbWinText(m.home_win_prob==null?null:1-m.home_win_prob));
-  line('Research state',st.label.toUpperCase());
+  line(st.view?'Research label':'Research state',st.label.toUpperCase());
   line('What this means',st.means);
   var P=window.EDCfbP4Params||{},minGap=(P.market&&P.market.min_research_gap)||2;
   line('Research bands','agreement inside '+minGap+' pts; data fault beyond '+FB_GUARD.p4.game+' pts. These are decision boundaries, not a confidence interval.');
@@ -55024,7 +55063,7 @@ window.fbGxCopy=function(gid){
 window.fbGxShare=function(gid){
   var u=fbGxUnit(gid);if(!u)return;
   var p=FB.p4._proj&&FB.p4._proj[String(gid)];if(!p||p.status!=='PREDICTED')return;
-  var st=fbGxState(p),m=p.model,mk=p.market||{},sc=fbGxScore(m);
+  var st=fbRvState(u,p),m=p.model,mk=p.market||{},sc=fbGxScore(m);
   var txt=(u.g.away_team+' @ '+u.g.home_team)
     +' — EdgeDesk '+u.g.home_team+' '+fbPts(-fbFairDisp(m))+(m.is_near_pickem?' (near pick’em)':'')
     +(mk.spread_line!=null?(', market '+u.g.home_team+' '+fbPts(-mk.spread_line)):', no market joined')
@@ -56433,13 +56472,13 @@ function fbP4BoardHTML(){
     +'<span><b style="color:var(--text)">EDGEDESK // FBS FOOTBALL OPERATIONS</b> · '+fbEsc(fbP4ScopeLabel())
     +' · WEEK '+fbEsc(String(wk))+' · '+c.visible+' OF '+c.total+' GAMES</span>'
     +'<span>LAST SYNC '+('0'+sync.getHours()).slice(-2)+':'+('0'+sync.getMinutes()).slice(-2)+'</span></div>';
-  var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 112px 100px;gap:2px 8px;align-items:center';
+  var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 112px 136px;gap:2px 8px;align-items:center';
   var html=head+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c);
   if(!visible.length)return html+fbP4EmptyHTML(rows,c);
   try{html+=fbP4QueueHTML(visible);}catch(_){}
   html+='<div style="overflow-x:auto"><div class="mono" style="font-size:11px;min-width:700px">'
     +'<div style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
-    +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>MARKET GAP</span><span>STATUS</span></div>';
+    +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>MARKET GAP</span><span>'+(window.EDCfbResearchView?'RESEARCH LABEL':'STATUS')+'</span></div>';
   visible.forEach(function(r){
     var u=r.u,g=u.g,gid=r.gid,p=r.p,mkt=r.mkt,st=r.st,m=r.meta,rv=fbP4ViewFor(u,p,mkt);
     var model=(p&&p.status==='PREDICTED')?(p.model.is_near_pickem
@@ -56459,7 +56498,7 @@ function fbP4BoardHTML(){
       +'<span>'+model+'</span>'
       +'<span class="mut">'+market+'</span>'
       +'<span class="rv-cell">'+fbRvGapCell(rv,r.gap)+'</span>'
-      +'<span style="color:'+st.c+'">'+st.t+'</span></div>'
+      +'<span class="rv-cell">'+fbRvLabelChip(rv,st)+'</span></div>'
       +'<div id="p4gate-'+fbEsc(gid)+'"></div>';
   });
   html+='</div></div>';
@@ -56472,6 +56511,11 @@ function fbP4BoardHTML(){
     var rec=c1?fbP4ConfRecordHTML(c1.id,c1.label):'';
     if(rec)html+='<div style="margin-top:6px">'+rec+'</div>';
   }
+  if(window.EDCfbResearchView)html+='<div class="gd-modelnote" style="margin-top:8px"><b>Research labels are research reads, never picks.</b> '
+    +'WORTH RESEARCHING: EdgeDesk and the market differ by the research threshold or more, with usable confidence and reliability. '
+    +'MAJOR DISAGREEMENT: a gap of 7+ points — more often missing information than an edge. MARKET ALIGNED: inside the research threshold. '
+    +'NEAR PICK’EM: EdgeDesk names a side with under a point of separation. LIMITED DATA and LOW RELIABILITY: too little on file to read the gap. '
+    +'Hover a label for its reason and the board status the filters below still read.</div>';
   html+='<div class="gd-modelnote" style="margin-top:8px">Statuses are operational reads, never picks. '
     +'DATA FAULT and INVESTIGATE mean “find out why the model and the market disagree” — with this model’s record, a big gap is more often missing information than an edge, '
     +'and that is most true in the smaller-market games this board now carries, where fewer books post a number and less enrichment data exists. '

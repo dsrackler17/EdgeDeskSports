@@ -29,7 +29,7 @@ function has(hay, needle, what) { ok(String(hay).indexOf(needle) >= 0, what, { m
 function lacks(hay, needle, what) { ok(String(hay).indexOf(needle) < 0, what, { present: needle }); }
 function section(t) { console.log('\n' + t); }
 
-const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbGxSummary', 'fbP4Card', 'fbP4Request', 'fbP4Market'] });
+const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 (function () {
@@ -67,6 +67,18 @@ function stageAt(target, o) {
   win.FB.p4._mkt = {}; win.FB.p4._mkt[String(u.g.game_id)] = T.fbP4Market(u);
   return { u: u, p: p };
 }
+
+/* the bare harness has no rosters, so its input contract is thin (2 of 15).
+   The contract is cached per unit under the stamps it reads; setting the
+   cached summary is how a test puts a well-covered game on the board without
+   editing the builder. */
+function withCoverage(u, summary) {
+  T.fbP4ContractFor(u);
+  u._contract.v = { rows: [], summary: summary };
+  u._rv = null;
+  return u;
+}
+const WELL = { input_coverage: 0.82, known: 14, applicable: 17 };
 
 /* ------------------------------------------------------------------------ */
 section('STEP 1 · near pick’em: the side, the one-point floor and the badge');
@@ -124,6 +136,54 @@ section('STEP 2 · the market gap on the card and the board row');
   eq(vx.market_gap.available, false, 'no joined line: no gap');
   has(T.fbGxSummary(none.u, none.p, 'RV1'), 'no market number', 'and the card says so rather than printing a zero');
   eq(T.fbRvGapCell(vx, null), '—', 'the row prints a dash');
+}
+
+/* ------------------------------------------------------------------------ */
+section('STEP 3 · one research label on the row, the card, the brief and the share');
+{
+  /* Duke (home) -2.5, EdgeDesk Duke by 7.6: a 5.1-point gap toward Duke */
+  const s = stageAt(7.61, { market_spread: -2.5 });
+  withCoverage(s.u, WELL);
+  const v = T.fbP4ViewFor(s.u, s.p);
+  eq(v.research_label.key, 'WORTH_RESEARCHING', 'a 5.1-pt gap with usable confidence and 82% reliability is WORTH RESEARCHING');
+  eq(v.reliability.pct, 82, 'reliability is the contract’s input coverage');
+  eq(v.confidence.score, s.p.scores.confidence, 'confidence is the engine’s own score, unchanged');
+
+  const st = T.fbRvState(s.u, s.p);
+  eq(st.label, 'WORTH RESEARCHING', 'the card’s state IS the research label');
+  const card = T.fbGxSummary(s.u, s.p, 'RV1');
+  has(card, '>Research label<', 'the card names the cell Research label');
+  has(card, 'WORTH RESEARCHING', 'and prints the label');
+  has(card, v.research_label.means, 'and the "What this means" sentence is the label’s own');
+  lacks(card, '>Research state<', 'the old research state is not printed beside it');
+  const brief = T.fbGxBriefText(s.u, s.p);
+  has(brief, 'Research label: WORTH RESEARCHING', 'the copied brief carries the same label');
+  has(brief, 'Market gap: 5.1 pts toward ' + HOME, 'and the gap with its direction');
+
+  const chip = T.fbRvLabelChip(v, T.fbP4StatusFor(s.p, T.fbP4Market(s.u)));
+  has(chip, 'WORTH RESEARCHING', 'the board row prints the label');
+  has(chip, 'Board status: RESEARCH', 'and keeps the operational status the filters read, in its tooltip');
+  has(BOOT.module, 'fbRvLabelChip(rv,st)', 'the board row renders its label through that chip');
+  eq(T.fbRvLabelChip(null, { t: 'NO MARKET', c: 'x' }), '<span style="color:x">NO MARKET</span>', 'without the view the row prints the status exactly as before');
+
+  /* the thin harness contract, unstubbed: LOW RELIABILITY, and it says why */
+  const t = stageAt(7.61, { market_spread: -2.5 });
+  const vt = T.fbP4ViewFor(t.u, t.p);
+  eq(vt.research_label.key, 'LOW_RELIABILITY', 'a thin input contract is LOW RELIABILITY, whatever the gap');
+  has(vt.research_label.means, vt.reliability.known + ' of ' + vt.reliability.applicable, 'and the reason counts the inputs');
+
+  const n = stageAt(0.3, { market_spread: -0.5 });
+  withCoverage(n.u, WELL);
+  eq(T.fbP4ViewFor(n.u, n.p).research_label.key, 'NEAR_PICKEM', 'a well-covered near pick’em is NEAR PICK’EM');
+  const nm = stageAt(4);
+  withCoverage(nm.u, WELL);
+  eq(T.fbP4ViewFor(nm.u, nm.p).research_label.key, 'LIMITED_DATA', 'no market line is LIMITED DATA');
+  const mj = stageAt(12, { market_spread: -2.5 });
+  withCoverage(mj.u, WELL);
+  eq(T.fbP4ViewFor(mj.u, mj.p).research_label.key, 'MAJOR_DISAGREEMENT', 'a 9.5-pt gap is MAJOR DISAGREEMENT');
+  const al = stageAt(3.1, { market_spread: -2.5 });
+  withCoverage(al.u, WELL);
+  eq(T.fbP4ViewFor(al.u, al.p).research_label.key, 'MARKET_ALIGNED', 'a 0.6-pt gap is MARKET ALIGNED');
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
