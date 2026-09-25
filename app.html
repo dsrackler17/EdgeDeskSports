@@ -49805,15 +49805,16 @@ function fbP4ViewFor(u,p,mkt){
   var quotes=null;try{quotes=fbP4QuotesFor(u);}catch(_){quotes=null;}
   var rec=null;try{rec=fbP4RecordFor(u);}catch(_){rec=null;}
   var h2h=null;try{h2h=fbP4H2hMove(u);}catch(_){h2h=null;}
+  var visit=null;try{visit=fbP4VisitFor(u);}catch(_){visit=null;}
   /* a quote's freshness is judged NOW, so the view is rebuilt every five
      minutes even when nothing else about the game has changed */
   var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,
-    quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,Math.floor(Date.now()/3e5)].join('|');
+    quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,visit?visit.t:'-',Math.floor(Date.now()/3e5)].join('|');
   if(u._rv&&u._rv.p===p&&u._rv.key===key)return u._rv.v;
   var v=null;
   try{
     v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt,
-      coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,now:Date.now()},fbP4ViewCfg());
+      coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,now:Date.now()},fbP4ViewCfg());
   }catch(_){v=null;}
   u._rv={p:p,key:key,v:v};
   return v;
@@ -49893,6 +49894,46 @@ function fbP4RecordFor(u){
     source:[x.source,x.book].filter(Boolean).join(' · ')||null}:null;}
   return {first:pt(e.first),latest:pt(e.pick),revisions:e.revisions||0,model_version:e.model_version||null,
     market_entry:mk(e.entry&&e.entry.market),market_latest:mk(e.market_pick),updated_at:d.updated_at||null};
+}
+/* ── THIS DEVICE'S LAST VISIT ───────────────────────────────────────────
+   What the board showed in this browser the last time it was open, one
+   snapshot per game in the shape lib/cfb_research_view.js defines
+   (snapshotOf: the raw margin, the engine's terms, the market line and its
+   source, the label). It is read ONCE per page session — that is the
+   baseline "what changed" and "since your last visit" are measured against —
+   and then overwritten with what is on screen now. It lives in this browser
+   only; nothing is sent anywhere, and a browser that will not store it simply
+   has no visit baseline. Its own key: ed_research_watch_v1 is already shared
+   by two stores of different shapes. */
+var FB_P4_SEEN_KEY='ed_cfb_seen_v1';
+FB.p4seen={base:null,read:false,wroteAt:0};
+function fbP4SeenLoad(){
+  try{var s=localStorage.getItem(FB_P4_SEEN_KEY),o=s?JSON.parse(s):null;
+    return (o&&o.v===1&&o.games&&typeof o.games==='object'&&isFinite(o.at))?o:null;}catch(_){return null;}
+}
+function fbP4SeenBase(){
+  var S=FB.p4seen;
+  if(!S.read){S.read=true;S.base=fbP4SeenLoad();}
+  return S.base;
+}
+function fbP4VisitFor(u){
+  var b=fbP4SeenBase();
+  return (b&&u&&u.g&&b.games[String(u.g.game_id)])||null;
+}
+/* after a render: what is on screen becomes the next visit's baseline. At
+   most once a minute, and never before this session's baseline was read. */
+function fbP4SeenWrite(rows){
+  var V=window.EDCfbResearchView,S=FB.p4seen,now=Date.now();
+  if(!V||!rows||!rows.length||(S.wroteAt&&now-S.wroteAt<6e4))return;
+  fbP4SeenBase();
+  var games={};
+  rows.forEach(function(r){
+    var v=null;try{v=fbP4ViewFor(r.u,r.p,r.mkt);}catch(_){v=null;}
+    var sn=v?V.snapshotOf(v,r.p,now):null;
+    if(sn)games[r.gid]=sn;
+  });
+  S.wroteAt=now;
+  try{localStorage.setItem(FB_P4_SEEN_KEY,JSON.stringify({v:1,at:now,games:games}));}catch(_){}
 }
 /* the view's thresholds ARE the engine's and the board's: the research gap
    and confidence floor from the shipped params, the guard from FB_GUARD */
@@ -54971,6 +55012,33 @@ function fbGxProjStatus(u,p){
   return h+'<div class="gx-foot">Measured against EdgeDesk’s own published numbers (the model record, written hourly from the slate), never an estimate of one. Raw margins, not the one-point display line.</div>';
 }
 
+/* ── WHAT CHANGED? ──────────────────────────────────────────────────────
+   From the research view (whatChanged): how far EdgeDesk's number moved
+   since an earlier snapshot, the engine's terms that moved it when the
+   snapshot kept them, and a market move only between quotes of one source.
+   It says what moved, never why. */
+function fbRvWhen(iso){
+  try{return new Date(iso).toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'});}catch(_){return String(iso);}
+}
+function fbGxChanged(u,p){
+  var v=fbP4ViewFor(u,p),W=v&&v.what_changed;
+  if(!W||!W.available)return '';
+  var h='<div class="gx-means '+(W.change&&W.change.points>=0.75?'warn':'mut')+'"><b>What changed?</b>'+fbEsc(W.summary)+'</div>';
+  var tl=(W.timeline||[]);
+  if(tl.length>1)h+='<div class="gd-line"><span class="l">Published path</span><span class="v mono">'
+    +tl.map(function(x){return (x.source==='current'?'Now':fbEsc(fbRvWhen(x.at)))+': '+fbEsc(x.text);}).join(' → ')+'</span></div>';
+  if(W.basis==='visit')h+='<div class="gd-line"><span class="l">Since your last visit</span><span class="v mono">'
+    +fbEsc(fbRvWhen(W.since_at))+': '+fbEsc(W.change.from_text)+' → now: '+fbEsc(W.change.to_text)+'</span></div>';
+  var items=[];
+  (W.components||[]).forEach(function(c){items.push(fbEsc(c.text));});
+  if(W.market)items.push(fbEsc(W.market.text));
+  if(W.model_version)items.push(fbEsc(W.model_version.text));
+  if(items.length)h+='<div class="gx-case-h" style="margin-top:8px">Primary changes</div><ul class="gx-ul">'
+    +items.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>';
+  if(W.attribution_text)h+='<div class="gx-foot">'+fbEsc(W.attribution_text)+'</div>';
+  return h+'<div class="gx-foot">Raw margins, not the one-point display line. “Your last visit” is what this browser showed; it is stored on this device only.</div>';
+}
+
 /* ── BEST AVAILABLE LINE ────────────────────────────────────────────────
    The best current number a named book is offering on each side, from the
    research view (bestAvailable): captured quotes only, stale or unverifiable
@@ -55187,7 +55255,7 @@ window.fbGxToggle=function(gid,id){
     var b=el.querySelector('.gx-sec-h');if(b){b.setAttribute('aria-expanded',String(FB_GX_OPEN[k]));
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
-var FB_GX_DEFAULT={why:true,proj:true,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
+var FB_GX_DEFAULT={why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
   research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
@@ -55817,6 +55885,8 @@ function fbP4Card(u){
       'the largest measured components on that side — research, not a pick'):'')
     +(rvC&&rvC.history?fbGxSec(gid,'proj','Projection status',fbGxProjStatus(u,p),true,
       'EdgeDesk’s own number over time · stable, moving or changed'):'')
+    +(rvC&&rvC.what_changed&&rvC.what_changed.available?fbGxSec(gid,'changed','What changed?',fbGxChanged(u,p),false,
+      rvC.what_changed.basis==='visit'?'since your last visit on this device':'since EdgeDesk first published this game'):'')
     +(rvC&&rvC.best_available_line?fbGxSec(gid,'best','Best available line',fbGxBest(u,p),true,
       'current captured quotes only · stale and unverified ones excluded'):'')
     +fbGxSec(gid,'matchup','Programs, conferences and the FBS rating',fbP4MatchupHTML(u,p),true,
@@ -56820,6 +56890,7 @@ function fbP4Render(host){
   /* the stored history the research view measures movement against; it
      arrives after the board and repaints it once */
   if(window.EDCfbResearchView)try{fbP4RecordEnsure(S.season);}catch(_){}
+  if(window.EDCfbResearchView)try{fbP4SeenWrite(fbP4Rows());}catch(_){}
 }
 /* ================= end CFB POWER 4 board ================= */
 

@@ -29,7 +29,7 @@ function has(hay, needle, what) { ok(String(hay).indexOf(needle) >= 0, what, { m
 function lacks(hay, needle, what) { ok(String(hay).indexOf(needle) < 0, what, { present: needle }); }
 function section(t) { console.log('\n' + t); }
 
-const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxBest', 'fbP4QuotesFor', 'fbP4RecordFor', 'fbGxProjStatus', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
+const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxBest', 'fbP4QuotesFor', 'fbP4RecordFor', 'fbGxProjStatus', 'fbGxChanged', 'fbP4SeenWrite', 'fbP4SeenLoad', 'fbP4VisitFor', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 (function () {
@@ -372,6 +372,61 @@ section('STEP 7 · projection status and stability, from the committed model rec
   has(T.fbGxProjStatus(s.u, s.p), 'No earlier EdgeDesk number is stored', 'and the card says so');
   lacks(T.fbRvRowCells(v0).fair, 'MOVED', 'and the row marks nothing');
   has(BOOT.module, "fetch('record/football/cfb_'+season+'.json'", 'the page reads the committed record');
+}
+
+/* ------------------------------------------------------------------------ */
+section('STEP 8 · what changed?, from the record and from this device’s last visit');
+{
+  const s = stageAt(-1.6, { market_spread: 2.5 });
+  withCoverage(s.u, WELL);
+  /* 1. the record only: a size, a path, and no invented attribution */
+  win.FB.p4rec.data = { updated_at: '2026-09-24T12:00:00Z', games: { RV1: { game_id: 'RV1', home: HOME, away: AWAY, revisions: 1,
+    first: { at: '2026-09-22T14:00:00.000Z', home_line: -1.2 }, pick: { at: '2026-09-24T09:00:00.000Z', home_line: 0.8 } } } };
+  win.FB.p4seen = { base: null, read: true, wroteAt: 0 };
+  s.u._rv = null;
+  let v = T.fbP4ViewFor(s.u, s.p);
+  eq(v.what_changed.basis, 'record', 'with no visit stored, the record is the baseline');
+  let html = T.fbGxChanged(s.u, s.p);
+  has(html, 'EdgeDesk moved 2.8 points toward ' + AWAY + ' since the first published number.', 'the summary gives the size and the side');
+  has(html, 'Component-level attribution is unavailable', 'and says it cannot attribute the change');
+  has(html, 'Published path', 'the stored path is shown');
+  has(T.fbP4Card(s.u), 'What changed?', 'the card carries the expandable section');
+
+  /* 2. a visit stored by the page itself, then read back as the baseline */
+  const mem = {};
+  win.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, x) => { mem[k] = String(x); }, removeItem: k => { delete mem[k]; } };
+  const old = stageAt(-0.4, { market_spread: 2.5 });
+  withCoverage(old.u, WELL);
+  win.FB.p4seen = { base: null, read: true, wroteAt: 0 };
+  T.fbP4SeenWrite([{ u: old.u, p: old.p, mkt: win.FB.p4._mkt.RV1, gid: 'RV1' }]);
+  const stored = T.fbP4SeenLoad();
+  ok(stored && stored.games.RV1, 'the page stores a snapshot of what it showed');
+  ok(Math.abs(stored.games.RV1.m - (-0.4)) < 0.01, 'with the raw margin it showed');
+  ok(stored.games.RV1.c && stored.games.RV1.c.rating != null, 'and the engine terms behind it');
+  T.fbP4SeenWrite([{ u: old.u, p: old.p, mkt: win.FB.p4._mkt.RV1, gid: 'RV1' }]);
+  eq(T.fbP4SeenLoad().at, stored.at, 'a second render inside a minute does not rewrite it');
+  /* a new session: the stored snapshot, back-dated an hour, is the baseline */
+  stored.games.RV1.t -= 3600e3; stored.at -= 3600e3;
+  mem['ed_cfb_seen_v1'] = JSON.stringify(stored);
+  win.FB.p4seen = { base: null, read: false, wroteAt: 0 };
+  const now = stageAt(-1.6, { market_spread: 2.5 });
+  withCoverage(now.u, WELL);
+  ok(T.fbP4VisitFor(now.u) !== null, 'the next session reads that snapshot as its baseline');
+  now.u._rv = null;
+  v = T.fbP4ViewFor(now.u, now.p);
+  eq(v.what_changed.basis, 'visit', 'and What changed measures from it');
+  eq(v.what_changed.attribution, 'exact', 'term by term, because the snapshot kept the terms');
+  eq(v.what_changed.components[0].key, 'rating', 'the rating is the term that moved');
+  html = T.fbGxChanged(now.u, now.p);
+  has(html, 'since your last visit', 'the card says the baseline is this device’s last visit');
+  has(html, 'Opponent-adjusted team rating moved 1.2 pts toward ' + AWAY, 'and lists the term that moved');
+  has(html, 'not why', 'and that it is arithmetic, not a cause');
+  win.FB.p4rec.data = null;
+  win.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
+  win.FB.p4seen = { base: null, read: true, wroteAt: 0 };
+  const none = stageAt(-1.6, { market_spread: 2.5 });
+  withCoverage(none.u, WELL);
+  eq(T.fbGxChanged(none.u, none.p), '', 'with no stored snapshot of any kind the section is not shown');
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));

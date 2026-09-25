@@ -460,5 +460,73 @@ section('STEP 7 · projection status and stability, from stored EdgeDesk numbers
     'INJURY_UNCERTAINTY', 'LINE_MOVING'].every(k => V.STATUS[k]));
 }
 
+/* ======================================================================== */
+section('STEP 8 · what changed: the size, the terms when stored, never a cause');
+{
+  const NOW = Date.parse('2026-09-24T18:00:00Z');
+  const T = (key, points) => ({ key, label: key, points, available: true, confidence: 0.8 });
+  function changed(raw, contributions, o) {
+    o = o || {};
+    const p = proj(raw, { line: o.line == null ? 2.5 : o.line, contributions, conf: 70 });
+    p.model_version = o.version || 'edgedesk_cfb_p4_v1.0.0';
+    return V.build({ game: GAME, projection: p, market: { spread_line: o.line == null ? 2.5 : o.line, book: o.book || 'cfb.lines · consensus' },
+      coverage: { input_coverage: 0.9 }, record: o.record || null, visit: o.visit || null, now: NOW }).what_changed;
+  }
+  let w = changed(-1.6, [T('rating', -1.6)]);
+  eq('no stored snapshot: nothing to show', w.available, false);
+  chk('and it says so', /No earlier EdgeDesk snapshot/.test(w.summary), w.summary);
+
+  /* the record: first Tue (Florida by 1.2), latest Thu (Ole Miss by 0.8), now Ole Miss by 1.6 */
+  const rec = { first: { at: '2026-09-22T14:00:00Z', margin: 1.2 }, latest: { at: '2026-09-24T09:00:00Z', margin: -0.8 }, revisions: 1 };
+  w = changed(-1.6, [T('rating', -1.6)], { record: rec });
+  eq('from the record: available', w.available, true);
+  eq('measured from the first published number', w.basis, 'record');
+  near('2.8 points', w.change.points, 2.8, 1e-9);
+  eq('toward Ole Miss', w.change.toward_team, AWAY);
+  eq('the timeline is first, latest, now', w.timeline.map(x => x.text).join(' → '), HOME + ' -1.2 → ' + AWAY + ' -0.80 → ' + AWAY + ' -1.6');
+  eq('the record keeps no terms, so none are listed', w.components, null);
+  chk('and it says attribution is unavailable', /Component-level attribution is unavailable/.test(w.attribution_text), w.attribution_text);
+  chk('in the specified words', /Projection changed 2\.8 points since the first published number\./.test(w.attribution_text), w.attribution_text);
+
+  /* this device's last visit, which carried the terms */
+  const visit = { t: Date.parse('2026-09-23T20:00:00Z'), m: -0.4, c: { rating: -1.5, hfa: 2.6, matchup: -1.5 }, k: 1.0,
+    s: 'cfb.lines · consensus', l: 'WORTH_RESEARCHING', g: 1.4, v: 'edgedesk_cfb_p4_v1.0.0' };
+  w = changed(-1.6, [T('rating', -2.7), T('hfa', 2.6), T('matchup', -1.5)], { visit, record: rec });
+  eq('a stored visit is the richer baseline', w.basis, 'visit');
+  near('1.2 points since the visit', w.change.points, 1.2, 1e-9);
+  eq('attributed term by term', w.attribution, 'exact');
+  eq('the term that moved is listed', w.components.map(c => c.key).join(','), 'rating');
+  chk('with its size and direction', /Opponent-adjusted team rating moved 1\.2 pts toward Ole Miss/.test(w.components[0].text), w.components[0].text);
+  eq('an unchanged term is not listed', w.components.some(c => c.key === 'hfa'), false);
+  chk('the attribution says it is arithmetic, not a cause', /not why/.test(w.attribution_text), w.attribution_text);
+  chk('the terms account for the whole change', Math.abs(w.components.reduce((a, c) => a + c.delta, 0) - w.change.signed) < 0.01);
+  chk('the market moved 1.5 pts toward Florida, from the same source', /Market moved 1\.5 pts toward Florida \(cfb\.lines · consensus\)/.test(w.market && w.market.text), w.market);
+  w = changed(-1.6, [T('rating', -2.7), T('hfa', 2.6), T('matchup', -1.5)], { visit, book: 'captured · DraftKings' });
+  eq('a market quote from a different source is never differenced', w.market, null);
+  w = changed(-1.6, [T('rating', -2.7), T('hfa', 2.6), T('matchup', -1.5)], { visit, version: 'edgedesk_cfb_p4_v1.1.0' });
+  chk('a model-version change is reported as a fact', /model version changed/.test(w.model_version && w.model_version.text), w.model_version);
+  w = changed(-0.4, [T('rating', -1.5), T('hfa', 2.6), T('matchup', -1.5)], { visit });
+  chk('no change says so', /has not moved since your last visit/.test(w.summary), w.summary);
+  eq('and lists nothing', w.components.length, 0);
+  const small = changed(-0.7, [T('rating', -1.6), T('hfa', 2.5), T('matchup', -1.6)], { visit });
+  eq('moves under a quarter point are not listed', small.components.length, 0);
+  chk('and the spread-out change is said to be spread out', /spread across several small ones/.test(small.attribution_text), small.attribution_text);
+  const future = changed(-1.6, [T('rating', -2.7)], { visit: Object.assign({}, visit, { t: NOW + 60000 }) });
+  eq('a visit stamped after now is not a baseline', future.available, false);
+  const CAUSE = /\bbecause\b|\bdue to\b|\bcaused\b|\binjur/i;
+  chk('no sentence asserts a cause', [changed(-1.6, [T('rating', -2.7), T('hfa', 2.6), T('matchup', -1.5)], { visit })]
+    .every(x => !CAUSE.test(x.summary) && !CAUSE.test(x.attribution_text || '') && (x.components || []).every(c => !CAUSE.test(c.text))));
+
+  /* the snapshot a device stores is exactly what was shown */
+  const v = V.build({ game: GAME, projection: proj(-1.6, { line: 2.5, contributions: [T('rating', -2.7), T('hfa', 2.6), T('qb', 0)] }),
+    market: { spread_line: 2.5, book: 'cfb.lines · consensus' }, coverage: { input_coverage: 0.9 } });
+  const snap = V.snapshotOf(v, { contributions: [T('rating', -2.7), T('hfa', 2.6), T('qb', 0)], model_version: 'x' }, NOW);
+  eq('the snapshot keeps the raw margin', snap.m, -1.6);
+  eq('and the non-zero terms', JSON.stringify(snap.c), JSON.stringify({ rating: -2.7, hfa: 2.6 }));
+  eq('the market line and its source', snap.k + ' · ' + snap.s, '2.5 · cfb.lines · consensus');
+  eq('the label', snap.l, v.research_label.key);
+  eq('no projection, no snapshot', V.snapshotOf(V.build({ game: GAME }), null, NOW), null);
+}
+
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
 process.exit(failures ? 1 : 0);
