@@ -30,4 +30,4 @@ jobs:
         with:
           node-version: 22
       - name: Probe the report sources
-        run: node football/availability/probe_sources.js ${{ github.event.inputs.only }}
+        run: node football/availability/probe_sources.js ${{ github.event.inputs.only || 'hdi' }}

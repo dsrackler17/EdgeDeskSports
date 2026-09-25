@@ -39,8 +39,8 @@ const CANDIDATES = {
   american: ['https://theamerican.org/sports/football'],
   mac: ['https://getsomemaction.com/sports/football'],
   /* the platforms the conference pages embed (found by this probe) */
-  hdi: ['https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report',
-    'https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report',
+  hdi: ['https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report'],
+  hdi_more: ['https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report',
     'https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report',
     'https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report'],
   faktor: ['https://faktorsports.com/k/embed/player-availability/full/MountainWest/11/MFB/2026?signature=e098b656dbb0b78335ef78c8d9c68e2cceb940d4519d54f4c05aaaa48c62eef7'],
@@ -181,13 +181,20 @@ async function show(label, r, depth) {
       if (tmpl.length) console.log(pad + '    template api paths: ' + tmpl.join(' , '));
       /* the lazily loaded screens: their own calls */
       const chunks = [...new Set((src.match(/\.\/[A-Za-z]+-[A-Za-z0-9_]{6,10}\.js/g) || []))];
-      for (const ch of chunks.slice(0, 6)) {
+      for (let ci = 0; ci < chunks.length && ci < 14; ci++) { const ch = chunks[ci];
         const cu = new URL(ch, u).toString();
         const cj = await get(cu, BROWSER_UA);
         if (!cj.ok) { console.log(pad + '    chunk ' + cu + ' → ' + cj.status); continue; }
         const cs = cj.buf.toString('utf8');
         const cc = [...new Set((cs.match(/\.(post|get)\(\s*["'`][^"'`]+["'`]/g) || []))];
         console.log(pad + '    chunk ' + ch + ' (' + cs.length + ' chars) calls: ' + cc.join(' , '));
+        if (cs.length < 3000) console.log(pad + '    chunk ' + ch + ' SOURCE >>> ' + cs + ' <<<');
+        let ai = -1, an = 0;
+        while ((ai = cs.indexOf('/api/', ai + 1)) >= 0 && an < 12) {
+          an++; console.log(pad + '    chunk ' + ch + ' /api/#' + an + ' >>> ' + cs.slice(Math.max(0, ai - 500), ai + 700).replace(/\s+/g, ' ') + ' <<<');
+        }
+        /* and the chunks it imports in turn */
+        (cs.match(/\.\/[A-Za-z]+-[A-Za-z0-9_]{6,10}\.js/g) || []).forEach(x => { if (chunks.indexOf(x) < 0) chunks.push(x); });
         cc.forEach(c => { const at = cs.indexOf(c); console.log(pad + '      ' + c + ' >>> ' + cs.slice(Math.max(0, at - 600), at + 900).replace(/\s+/g, ' ') + ' <<<'); });
       }
       ['Published Report', 'isPublicReport', 'loadPublicReport'].forEach(k => {
