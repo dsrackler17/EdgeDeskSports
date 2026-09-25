@@ -169,7 +169,15 @@ async function show(label, r, depth) {
       const lits = [...new Set((src.match(/["'`][^"'`\n]{0,80}(public|embed|availabilit|reports?\b|archive|roster|injur)[^"'`\n]{0,80}["'`]/gi) || []))]
         .filter(x => !/descope|webauthn|oauth|otp|magiclink|enchanted|saml|totp|three|texture|shader/i.test(x)).slice(0, 80);
       console.log(pad + '    literals: ' + lits.join(' , '));
-      ['public-load', 'fetchPublicInfo', 'PUBLIC_REPORT:'].forEach(k => {
+      /* every API call the bundle makes, by name, and the context of the
+         ones a public screen could make */
+      const calls = [...new Set((src.match(/\.(post|get)\(\s*["'`]\/api\/[^"'`]+["'`]/g) || []))];
+      console.log(pad + '    api calls (' + calls.length + '): ' + calls.join(' , '));
+      calls.filter(c => /public|publish|report|archive|availab|embed/i.test(c)).forEach(c => {
+        const at = src.indexOf(c);
+        console.log(pad + '    call ' + c + ' >>> ' + src.slice(Math.max(0, at - 900), at + 900).replace(/\s+/g, ' ') + ' <<<');
+      });
+      ['Published Report', 'isPublicReport', 'loadPublicReport'].forEach(k => {
         let at = -1, n = 0;
         while ((at = src.indexOf(k, at + 1)) >= 0 && n < 3) {
           n++; console.log(pad + '    ctx[' + k + '#' + n + '] ' + src.slice(Math.max(0, at - 350), at + 450).replace(/\s+/g, ' '));
