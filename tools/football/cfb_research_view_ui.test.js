@@ -29,7 +29,7 @@ function has(hay, needle, what) { ok(String(hay).indexOf(needle) >= 0, what, { m
 function lacks(hay, needle, what) { ok(String(hay).indexOf(needle) < 0, what, { present: needle }); }
 function section(t) { console.log('\n' + t); }
 
-const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxBest', 'fbP4QuotesFor', 'fbP4RecordFor', 'fbGxProjStatus', 'fbGxChanged', 'fbP4SeenWrite', 'fbP4SeenLoad', 'fbP4VisitFor', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
+const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxBest', 'fbP4QuotesFor', 'fbP4RecordFor', 'fbGxProjStatus', 'fbGxChanged', 'fbP4SeenWrite', 'fbP4SeenLoad', 'fbP4VisitFor', 'fbP4TopItems', 'fbP4TopHTML', 'fbWrCandidate', 'fbWrRowHTML', 'fbGameRows', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 (function () {
@@ -38,6 +38,13 @@ const win = BOOT.win, T = win.__FBTEST;
   vm.runInContext(BOOT.app.slice(at, BOOT.app.indexOf('\n', at)), win);
 })();
 win.whenLabel = win.whenLabel || (iso => String(iso));
+/* two more page-level one-liners from earlier script blocks, loaded for real */
+['function edEsc(', 'function edAttrJs('].forEach(sig => {
+  const at = BOOT.app.indexOf(sig);
+  if (at < 0) { console.error('app.html no longer defines ' + sig); process.exit(1); }
+  vm.runInContext(BOOT.app.slice(at, BOOT.app.indexOf('\n', at)), win);
+});
+win.edEvent = win.edEvent || (() => {});
 const E = M.loadEngine(win, ROOT);
 
 /* the page loads the research view with a plain <script> tag */
@@ -427,6 +434,88 @@ section('STEP 8 · what changed?, from the record and from this device’s last 
   const none = stageAt(-1.6, { market_spread: 2.5 });
   withCoverage(none.u, WELL);
   eq(T.fbGxChanged(none.u, none.p), '', 'with no stored snapshot of any kind the section is not shown');
+}
+
+/* ------------------------------------------------------------------------ */
+section('STEP 9 · top 5 worth researching, on the college board');
+{
+  /* the shared research layer and the reading order, as the page loads them */
+  ['lib/research_core.js', 'lib/research_eval.js', 'lib/game_research.js', 'lib/research_priority.js'].forEach(f =>
+    vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), win, { filename: f }));
+  ok(!!(win.EDGameResearch && win.EDResearchPriority), 'the shared research layer and the reading order are loaded');
+
+  /* seven games on one board, each steered to a margin and joined to a line
+     (cfb.lines convention: negative = the home side laying points) */
+  const GAMES = [
+    ['G1', 'Alabama', 'Auburn', 8.0, -3.5, 0.82],   /* 4.5 gap, good data */
+    ['G2', 'Georgia', 'Florida', 6.0, -3.0, 0.82],  /* 3.0 gap, good data */
+    ['G3', 'Texas', 'Oklahoma', 14.0, -3.0, 0.40],  /* 11.0 gap on 40% reliability */
+    ['G4', 'Michigan', 'Ohio State', -3.0, 0.5, 0.82], /* 2.5 gap */
+    ['G5', 'Oregon', 'Washington', 0.3, -3.0, 0.82],   /* near pick'em, 2.7 gap */
+    ['G6', 'Clemson', 'Miami', 4.0, -3.5, 0.82],    /* 0.5 gap: aligned */
+    ['G7', 'LSU', 'Tennessee', 5.0, null, 0.82]     /* no market */
+  ];
+  const st = E.newState();
+  st.canonicalRatings = {};
+  GAMES.forEach(g => { st.canonicalRatings[E.normKey(g[1])] = { value: 0 }; st.canonicalRatings[E.normKey(g[2])] = { value: 0 }; });
+  win.FB.p4.state = st;
+  const kick = new Date(Date.now() + 48 * 3600e3).toISOString();
+  const units = GAMES.map(g => {
+    const stage = { home: g[1], away: g[2], game_id: g[0], market_spread: g[4], start_date: kick, home_conference: 'SEC', away_conference: 'SEC' };
+    let u = M.stageGame(win, stage);
+    const rest = E.projectGame(T.fbP4Request(u)).model.fair_spread;
+    st.canonicalRatings[E.normKey(g[1])].value = g[3] - rest;
+    return u;
+  });
+  /* one board: every unit up, every line joined, every projection fresh */
+  win.FB.p4.up = units;
+  win.FB.p4.lines = {};
+  GAMES.forEach(g => { if (g[4] != null) win.FB.p4.lines[g[0]] = { game_id: g[0], provider: 'consensus', spread: g[4] }; });
+  win.FB.p4.loadedAt = Date.now();
+  win.FB.p4._pc = null;
+  win.FB.p4._proj = {}; win.FB.p4._mkt = {};
+  units.forEach((u, i) => {
+    win.FB.p4._mkt[u.g.game_id] = T.fbP4Market(u);
+    win.FB.p4._proj[u.g.game_id] = E.projectGame(T.fbP4Request(u));
+    withCoverage(u, { input_coverage: GAMES[i][5], known: Math.round(GAMES[i][5] * 17), applicable: 17 });
+  });
+  win.FB.p4rec.data = null;
+  const visible = units.map(u => ({ gid: String(u.g.game_id) }));
+  const res = T.fbP4TopItems(visible);
+  ok(res && res.items.length > 0, 'the college board produces a reading order', res && res.excluded);
+  ok(res.items.length <= 5, 'never more than five games', res.items.length);
+  const keys = res.items.map(x => x.candidate.gid);
+  ok(keys.indexOf('G7') < 0, 'a game with no market never appears');
+  ok(keys[0] !== 'G3', 'the 11-point gap on 40% reliability is not #1', keys);
+  const g3 = res.items.find(x => x.candidate.gid === 'G3');
+  if (g3) ok(g3.detail.trust.parts.reliability === 0.7, 'and where it does appear, low reliability is what scaled it', g3.detail.trust);
+  const c1 = res.items[0].candidate;
+  eq(c1.reliability_tier, 'ADEQUATE', 'the candidates carry the research view’s reliability tier');
+  ok(!!c1.confidence_tier, 'and its confidence tier');
+  const again = T.fbP4TopItems(visible.slice().reverse()).items.map(x => x.candidate.gid);
+  eq(JSON.stringify(again), JSON.stringify(keys), 'the order is deterministic, whatever order the board lists the games');
+  const onlyTwo = T.fbP4TopItems([{ gid: 'G1' }, { gid: 'G2' }]).items.map(x => x.candidate.gid);
+  ok(onlyTwo.every(k => k === 'G1' || k === 'G2'), 'the board’s filters limit the list to the games shown', onlyTwo);
+
+  const html = T.fbP4TopHTML(visible);
+  has(html, 'TOP 5 WORTH RESEARCHING', 'the board shows the section');
+  has(html, 'Why it made the list', 'every entry says why it made the list');
+  has(html, '<i>Confidence</i>', 'and carries confidence');
+  has(html, '<i>Reliability</i>', 'and reliability');
+  has(html, res.items[0].candidate.view.fair.fair_line_text, 'its EdgeDesk line is the research view’s fair line');
+  has(html, 'not a ranking of bets', 'and it says it is a reading order, not a ranking of bets');
+  ok(!/\b(lock|best bet|guaranteed|hammer|top plays?)\b/i.test(html), 'no betting language appears');
+  has(BOOT.module, 'fbP4TopHTML(visible)', 'the board renders it above the rows');
+
+  /* the overview row, for a near pick'em: never the raw 0.3 */
+  const npRow = T.fbGameRows().find(r => r.sport === 'p4' && r.gid === 'G5');
+  const ix = {}; units.forEach(u => { ix[String(u.g.game_id)] = u; });
+  const npc = T.fbWrCandidate(npRow, ix);
+  const row = T.fbWrRowHTML({ rank: 1, candidate: npc, why: { text: 'x' }, detail: { uncertainty: { elevated: false, reasons: [] } } });
+  has(row, '<i>EdgeDesk</i>Oregon -1.0', 'the overview list prints the near pick’em at its one-point display line');
+  lacks(row, '<i>EdgeDesk</i>Oregon -0.3', 'never as the raw 0.3');
+  lacks(row, '<i>EdgeDesk</i>Oregon +0.3', 'in either sign');
+  has(row, 'NEAR PICK’EM', 'with its badge');
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));

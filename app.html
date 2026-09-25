@@ -1906,6 +1906,19 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   .rv-row .rv-conf{display:none}
 }
 .rv-mv{font-size:8.5px;font-weight:700;letter-spacing:.04em;white-space:nowrap}.rv-mv.warn{color:var(--warn)}.rv-mv.neg{color:var(--neg)}
+.rv-top{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:8px 10px;margin:8px 0 10px}
+.rv-top-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;margin-bottom:4px}
+.rv-top-h b{color:var(--text)}
+.rv-top-r{border-top:1px solid var(--border);padding:7px 0;cursor:pointer}
+.rv-top-r:first-of-type{border-top:0}
+.rv-top-m{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rv-top-m .n{font:700 12px 'JetBrains Mono',monospace;color:var(--accent);min-width:14px}
+.rv-top-m .t{font-weight:700;font-size:13px}
+.rv-top-v{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 0 22px;font:11px 'JetBrains Mono',monospace}
+.rv-top-v i{font-style:normal;color:var(--faint);margin-right:5px}
+.rv-top-w{margin:4px 0 0 22px;font-size:11.5px;color:var(--dim);line-height:1.45}
+.rv-top-w b{color:var(--faint);font-weight:600;margin-right:4px}
+.rv-top-q{font-size:11px;color:var(--faint);line-height:1.5;padding:4px 0}
 .rv-np{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.05em;border:1px solid rgba(227,184,77,.45);border-radius:4px;padding:1px 4px;color:var(--gold);white-space:nowrap;vertical-align:middle;margin-left:4px}
 .fbs-confcell{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media(max-width:560px){
@@ -55738,6 +55751,72 @@ window.fbGxFollow=function(gid){
   if(el&&u&&p){var tmp=document.createElement('div');tmp.innerHTML=fbGxWatch(u,p);if(tmp.firstChild)el.replaceWith(tmp.firstChild);}
   else if(el)el.querySelector('button').textContent=w[gid]?'Unfollow this game':'Follow this game';
 };
+/* ── TOP 5 WORTH RESEARCHING, ON THE COLLEGE BOARD ──────────────────────
+   The SAME reading order as the Football overview's CFB list — the same
+   rows (fbGameRows), the same candidates (fbWrCandidate, which carries the
+   research view's confidence, reliability and stability tiers) and the same
+   ranking (lib/research_priority.js) — restricted to the games the board's
+   filters show. It answers "what is most worth opening right now", not "what
+   are the strongest bets": a big gap on thin data is scaled down, a DATA
+   FAULT, THIN DATA, stale or unpriced game never appears, and fewer than
+   five is a normal answer. Each entry reads off the research view. */
+var FB_P4_TOP_N=5;
+function fbP4TopItems(visible){
+  var P=window.EDResearchPriority;
+  if(!P||!window.EDCfbResearchView||!fbWrLayerReady())return null;
+  var show={};(visible||[]).forEach(function(r){show[r.gid]=1;});
+  var ix={};((FB.p4&&FB.p4.up)||[]).forEach(function(u){ix[String(u.g.game_id)]=u;});
+  var cands=fbGameRows().filter(function(r){return r.sport==='p4'&&show[r.gid];})
+    .map(function(r){return fbWrCandidate(r,ix);});
+  var res=P.rank(cands,FB_P4_TOP_N);
+  res.checked=cands.length;
+  return res;
+}
+function fbP4TopHTML(visible){
+  var P=window.EDResearchPriority;
+  if(!P||!window.EDCfbResearchView)return '';
+  function card(right,body){
+    return '<div class="rv-top"><div class="rv-top-h"><b>TOP 5 WORTH RESEARCHING</b><span class="mut">'+right+'</span></div>'+body+'</div>';
+  }
+  if(!fbWrLayerReady()){
+    /* the shared research layer supplies the normalized gap the order needs;
+       start its load and repaint the board when it lands */
+    try{fbWrEnsureLayer();}catch(_){}
+    var st=FB.ui.wrLayer||{};
+    if(st.p&&!st._boardHook){st._boardHook=1;st.p.then(function(){try{if(FB.sport==='p4')window.renderFootball();}catch(_){}});}
+    return card(st.err?'unavailable':'loading','<div class="rv-top-q">'+(st.err
+      ?'The shared research layer did not load, so there is no reading order. Nothing is ranked rather than something invented.'
+      :'Loading the shared research layer…')+'</div>');
+  }
+  var res=fbP4TopItems(visible);
+  if(!res)return '';
+  if(!res.items.length)return card('none clear the gates','<div class="rv-top-q">No game on the board clears the research gates right now'
+    +' ('+res.checked+' checked). Nothing is added to fill the list.</div>');
+  return card(res.items.length+' of '+res.eligible+' eligible · '+res.checked+' checked',
+    res.items.map(fbP4TopRowHTML).join('')
+    +(res.items.length<FB_P4_TOP_N?('<div class="rv-top-q">Only '+res.items.length+' game'+(res.items.length===1?' clears':'s clear')+' the gates. Nothing is added to fill the list.</div>'):'')
+    +'<div class="rv-top-q">A reading order, not a ranking of bets: the score weighs the disagreement against how far the data under it can be trusted.</div>');
+}
+function fbP4TopRowHTML(x){
+  var c=x.candidate,v=c.view;
+  if(!v)return '';
+  var G=v.market_gap,L=v.research_label;
+  return '<div class="rv-top-r" onclick="fbP4TopOpen(\''+edAttrJs(c.gid)+'\','+x.rank+')">'
+    +'<div class="rv-top-m"><span class="n">'+x.rank+'</span><span class="t">'+fbEsc(c.away+' @ '+c.home)+'</span>'
+      +'<span class="rv-lab '+L.tone+'">'+fbEsc(L.label)+'</span></div>'
+    +'<div class="rv-top-v">'
+      +'<span><i>EdgeDesk</i>'+fbEsc(v.fair.fair_line_text)+'</span>'
+      +'<span><i>Market</i>'+fbEsc(G.market_line_text)+'</span>'
+      +'<span><i>Gap</i>'+fbEsc(G.points.toFixed(1))+' pts'+(G.toward_team?(' → '+fbEsc(G.toward_team)):'')+'</span>'
+      +'<span><i>Confidence</i>'+fbEsc(v.confidence.label)+'</span>'
+      +'<span><i>Reliability</i>'+fbEsc(v.reliability.text)+'</span></div>'
+    +'<div class="rv-top-w"><b>Why it made the list</b> '+fbEsc(x.why.text)+'</div></div>';
+}
+window.fbP4TopOpen=function(gid,rank){
+  try{edEvent('research_game_open',{surface:'cfb_top5',sport:'p4',rank:rank});}catch(_){}
+  window.fbOpenGame('p4',gid);
+};
+
 /* ── THE RESEARCH QUEUE ─────────────────────────────────────────────────
    The board's games that raised at least one research flag, ordered by how
    many flags they raised and then by normalized gap. The order is a reading
@@ -55765,7 +55844,8 @@ function fbP4QueueHTML(visible){
       +'<span>'+x.flags.map(function(f){return '<span class="ec mut" title="'+fbEsc(f.rule)+'">'+fbEsc(f.key.replace(/_/g,' ').toLowerCase())+'</span>';}).join(' ')+'</span></div>';
   }).join('');
   return '<details class="gx-queue" style="margin:8px 0 10px"'+(FB.p4.queueOpen?' open':'')+' ontoggle="FB.p4.queueOpen=this.open">'
-    +'<summary class="mono" style="cursor:pointer;font-size:11px;color:var(--dim)"><b style="color:var(--text)">WORTH RESEARCHING</b> · '
+    +'<summary class="mono" style="cursor:pointer;font-size:11px;color:var(--dim)"><b style="color:var(--text)">'
+      +(window.EDCfbResearchView?'RESEARCH FLAGS':'WORTH RESEARCHING')+'</b> · '
     +items.length+' game'+(items.length===1?'':'s')+' raised a research flag</summary>'
     +'<div class="mono" style="font-size:11.5px;margin-top:4px">'+rows+'</div>'
     +'<div class="gd-modelnote" style="margin-top:6px">Ordered by the number of research flags raised, then by normalized gap. '
@@ -56758,6 +56838,7 @@ function fbP4BoardHTML(){
   var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 112px 136px;gap:2px 8px;align-items:center';
   var html=head+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c);
   if(!visible.length)return html+fbP4EmptyHTML(rows,c);
+  try{html+=fbP4TopHTML(visible);}catch(_){}
   try{html+=fbP4QueueHTML(visible);}catch(_){}
   /* WITH THE RESEARCH VIEW the row carries what a first glance needs, in this
      order: the teams, EdgeDesk's fair line and the market's (each named for
@@ -57152,6 +57233,19 @@ function fbWrCandidate(r,ix){
     movement:{spread_moved:null,spread_toward_model:null,h2h_pp:fbWrNum(r.move)},
     qb_unknown:(r.warn||[]).some(function(w){return FB_WR_QB_UNKNOWN.test(String(w));})};
   if(!ok)return c;
+  /* A COLLEGE GAME READS THROUGH THE RESEARCH VIEW: its confidence,
+     reliability and stability tiers scale the reading order
+     (lib/research_priority.js P.TRUST), and its lines are the view's own —
+     the fair line with its side and one-point floor, never a raw 0.3. */
+  if(cfb&&typeof fbP4ViewFor==='function'){
+    var rvu=ix&&ix[r.gid],rv=null;
+    try{rv=rvu?fbP4ViewFor(rvu,p,mk):null;}catch(_){rv=null;}
+    if(rv&&rv.fair){
+      c.confidence_tier=rv.confidence.tier;c.reliability_tier=rv.reliability.tier;
+      c.stability_tier=rv.projection_stability?rv.projection_stability.tier:null;
+      c.research_label=rv.research_label.key;c.view=rv;
+    }
+  }
   if(fbRecDisagrees(p.edge&&p.edge.spread))c.flags.push('SPREAD_LEAN');
   if(fbRecDisagrees(p.edge&&p.edge.total))c.flags.push('TOTAL_LEAN');
   var o=cfb?fbWrCfbObj(r,ix):fbWrNflObj(r);
@@ -57184,9 +57278,13 @@ function fbWrRowHTML(x){
     +'<div class="fb-wr-h"><span class="n">'+x.rank+'</span><span class="m">'+fbEsc(c.away+' @ '+c.home)+'</span>'
       +'<span class="fb-wr-st '+stCls+'">'+fbEsc(c.status)+'</span></div>'
     +(u.elevated?'<div class="fb-wr-u">Higher uncertainty · '+fbEsc(u.reasons.map(function(k){return FB_WR_UNC[k]||k;}).join(' · '))+'</div>':'')
-    +'<div class="fb-wr-v"><span><i>Market</i>'+fbEsc(c.home+' '+fbHomeLine(c.market_margin))+'</span>'
+    +(c.view&&c.view.market_gap&&c.view.market_gap.available
+      ?('<div class="fb-wr-v"><span><i>Market</i>'+fbEsc(c.view.market_gap.market_line_text)+'</span>'
+        +'<span class="mdl"><i>EdgeDesk</i>'+fbEsc(c.view.fair.fair_line_text)+fbRvNearBadge(c.view)+'</span>'
+        +'<span><i>Gap</i>'+fbEsc(c.view.market_gap.text)+'</span></div>')
+      :('<div class="fb-wr-v"><span><i>Market</i>'+fbEsc(c.home+' '+fbHomeLine(c.market_margin))+'</span>'
       +'<span class="mdl"><i>EdgeDesk</i>'+fbEsc(c.home+' '+fbHomeLine(c.model_margin))+'</span>'
-      +'<span><i>Difference</i>'+Math.abs(c.model_margin-c.market_margin).toFixed(1)+' pts</span></div>'
+      +'<span><i>Difference</i>'+Math.abs(c.model_margin-c.market_margin).toFixed(1)+' pts</span></div>'))
     +'<div class="fb-wr-w"><b>Why research it</b>'+fbEsc(x.why.text)+'</div>'
     +'<div class="fb-wr-f"><span class="ts">'+fbEsc([c.sport==='cfb'?'CFB':'NFL',when,mAge].filter(Boolean).join(' · '))+'</span>'
       +'<button class="fb-lnk" onclick="fbWrOpen(\''+edAttrJs(c.board)+'\',\''+edAttrJs(c.gid)+'\','+x.rank+')">Open research</button></div>'

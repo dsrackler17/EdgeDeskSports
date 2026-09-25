@@ -355,6 +355,43 @@ BANNED.forEach(re => chk('no "' + re.source + '" anywhere in the module', !re.te
 BANNED.concat([/\bbet\b/i, /\bedge\b/i, /value/i]).forEach(re =>
   chk('no "' + re.source + '" in any explanation', ALL_WHY.every(t => !re.test(t)), ALL_WHY.filter(t => re.test(t))));
 
+/* ======================================================================== */
+/* 8. TRUST: THE TOP 5 IS NOT THE FIVE BIGGEST GAPS                         */
+/* The CFB research view's tiers scale the score. A large gap on thin data   */
+/* cannot outrank a smaller gap on good data by size alone.                 */
+/* ======================================================================== */
+{
+  const GOOD = { confidence_tier: 'HIGH', reliability_tier: 'STRONG', stability_tier: 'HIGH' };
+  const POOR = { confidence_tier: 'LOW', reliability_tier: 'LOW', stability_tier: 'LOW' };
+  eq('a game with no tiers is scored exactly as before', P.score(cand()).score, P.score(cand({})).score);
+  eq('and its trust factor is 1', P.trust(cand()).factor, 1);
+  eq('all-good tiers leave the score where it was', P.score(cand(GOOD)).score, P.score(cand()).score);
+  eq('the factor multiplies: 0.6 x 0.7 x 0.85', P.trust(cand(POOR)).factor, 0.357);
+  chk('low reliability is penalised', P.score(cand({ reliability_tier: 'LOW' })).score < P.score(cand()).score);
+  chk('low confidence is penalised', P.score(cand({ confidence_tier: 'LOW' })).score < P.score(cand({ confidence_tier: 'MODERATE' })).score);
+  chk('an unstable projection is penalised', P.score(cand({ stability_tier: 'LOW' })).score < P.score(cand()).score);
+  /* a huge gap on poor data vs a moderate gap on good data */
+  const huge = game('cfb|huge', 6.8, 2.4, Object.assign({ completeness: 0.85 }, POOR));
+  const mid = game('cfb|mid', 3.0, 0.3, Object.assign({ completeness: 0.85 }, GOOD));
+  eq('a massive gap with terrible reliability does not rank #1', P.rank([huge, mid]).items[0].key, 'cfb|mid');
+  /* the list */
+  const pool = [];
+  for (let i = 0; i < 12; i++) pool.push(game('cfb|g' + String(i).padStart(2, '0'), 2 + (i % 5), 0.2 + (i % 4) * 0.1,
+    i % 3 === 0 ? POOR : GOOD));
+  const r1 = P.rank(pool);
+  eq('never more than five games', r1.items.length, 5);
+  chk('no poor-data game makes the five while five good-data games are eligible',
+    r1.items.every(x => x.candidate.reliability_tier !== 'LOW'), r1.items.map(x => x.key));
+  const r2 = P.rank(pool.slice().reverse());
+  same('the order is deterministic, whatever order the games arrive in', r2.items.map(x => x.key), r1.items.map(x => x.key));
+  const blocked = [cand({ key: 'cfb|nm', market_margin: null }), cand({ key: 'cfb|st', status: 'STALE QUOTE' }),
+    cand({ key: 'cfb|th', status: 'THIN DATA' }), cand({ key: 'cfb|df', status: 'DATA FAULT' }), cand({ key: 'cfb|np', projected: false })];
+  eq('unavailable games never rank at all', P.rank(blocked.concat([cand({ key: 'cfb|ok' })])).items.map(x => x.key).join(','), 'cfb|ok');
+  chk('the trust parts are carried with the score, so the reason is inspectable', P.score(cand(POOR)).trust.parts.reliability === 0.7);
+  chk('the rule names the trust factors', /confidence \(High 1/.test(P.RULE) && /reliability \(Strong 1/.test(P.RULE));
+  eq('an NFL game (no tiers) is untouched by any of this', P.score(cand({ sport: 'nfl', completeness: null })).trust.factor, 1);
+}
+
 console.log('');
 failures.forEach(f => console.log('  FAIL  ' + f));
 console.log('\nresearch priority: ' + pass + ' passed, ' + fail + ' failed');
