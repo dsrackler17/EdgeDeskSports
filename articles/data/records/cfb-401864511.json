@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Northern Illinois vs. Georgia State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Northern Illinois vs. Georgia State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Northern Illinois at Georgia State at Georgia State -12.6 with a 54.5 fair total. Georgia State wins 80% of simulations. Data confidence 79%. Model status RESEARCH. Research, not picks.",
-  "excerpt": "Georgia State carries the stronger underlying team rating — -1.5 against -7.1, a 5.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Georgia State -12.6 before any sportsbook number is consulted, with Georgia…",
+  "seo_description": "EdgeDesk prices Northern Illinois at Georgia State at Georgia State -12.7 with a 54.5 fair total. Georgia State wins 80% of simulations. Data confidence 84%. Model status RESEARCH. Research, not picks.",
+  "excerpt": "Georgia State carries the stronger underlying team rating — -1.5 against -7.1, a 5.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Georgia State -12.7 before any sportsbook number is consulted, with Georgia…",
   "home_team": "Georgia State",
   "away_team": "Northern Illinois",
   "venue": "Center Parc Stadium",
@@ -21,14 +21,14 @@
   "game_time": "2026-09-26T18:00:00.000Z",
   "game_when_label": "2026-09-26 18:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 79,
+  "confidence": 84,
   "priced": true,
-  "fair_spread_text": "Georgia State -12.6",
+  "fair_spread_text": "Georgia State -12.7",
   "fair_total": "54.5",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/northern-illinois-vs-georgia-state-2026",
@@ -64,20 +64,20 @@
     },
     "lede": [
       "Georgia State carries the stronger underlying team rating — -1.5 against -7.1, a 5.6-point separation on a neutral field before home advantage, travel or rest.",
-      "EdgeDesk makes it Georgia State -12.6 before any sportsbook number is consulted, with Georgia State winning 80% of simulations.",
+      "EdgeDesk makes it Georgia State -12.7 before any sportsbook number is consulted, with Georgia State winning 80% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is scheme fit, where Georgia State leads Northern Illinois by 102 places nationally.",
-      "Data confidence on this matchup is 79% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 12.6497120301776,
-      "fair_spread_text": "Georgia State -12.6",
-      "fair_spread_raw_text": "Georgia State -12.6",
+      "fair_spread": 12.656026525606714,
+      "fair_spread_text": "Georgia State -12.7",
+      "fair_spread_raw_text": "Georgia State -12.7",
       "near_pickem": false,
       "raw_margin_text": null,
       "favourite": "Georgia State",
       "underdog": "Northern Illinois",
-      "margin": "12.6",
+      "margin": "12.7",
       "total": "54.5",
       "score": {
         "away": {
@@ -106,73 +106,51 @@
       },
       "outcome_range": {
         "basis_team": "Georgia State",
-        "p10": "-10.4",
-        "median": "+11.6",
-        "p90": "+33.6",
+        "p10": "-10.3",
+        "median": "+11.7",
+        "p90": "+33.7",
         "sigma": "15.1",
         "volatility": "40.04",
         "volatility_discriminates": false,
         "note": "Quoted from Georgia State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 79,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 4,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Georgia State is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Northern Illinois is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -265,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T02:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Georgia State",
@@ -355,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -377,7 +355,7 @@
         },
         {
           "points": "+1.9",
-          "points_n": 1.8912182629775984,
+          "points_n": 1.8975327584067132,
           "text": "Stylistically the matchup favours Georgia State by 1.9 points: ball control vs front disruption",
           "favours": "Georgia State"
         },
@@ -430,8 +408,8 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "33.4",
-                "n": 33.4,
+                "v": "33.3",
+                "n": 33.3,
                 "rank": "#131 of 133",
                 "rank_n": 131,
                 "note": null
@@ -439,14 +417,14 @@
               "h": {
                 "v": "45.4",
                 "n": 45.4,
-                "rank": "#92 of 133",
-                "rank_n": 92,
+                "rank": "#93 of 133",
+                "rank_n": 93,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 12,
-                "rank_gap": 39
+                "gap": 12.1,
+                "rank_gap": 38
               }
             },
             {
@@ -737,14 +715,14 @@
               "h": {
                 "v": "54.8",
                 "n": 54.8,
-                "rank": "#84 of 133",
-                "rank_n": 84,
+                "rank": "#82 of 133",
+                "rank_n": 82,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.8,
-                "rank_gap": 35
+                "rank_gap": 37
               }
             },
             {
@@ -826,8 +804,8 @@
               "a": {
                 "v": "48.9",
                 "n": 48.9,
-                "rank": "#120 of 133",
-                "rank_n": 120,
+                "rank": "#119 of 133",
+                "rank_n": 119,
                 "note": null
               },
               "h": {
@@ -840,7 +818,7 @@
               "edge": {
                 "side": "a",
                 "gap": 1.9,
-                "rank_gap": 11
+                "rank_gap": 12
               }
             },
             {
@@ -984,13 +962,13 @@
         },
         {
           "k": "Linebackers",
-          "rank_gap": 11,
+          "rank_gap": 12,
           "gap": 1.9,
           "lead": "Northern Illinois",
           "trail": "Georgia State",
-          "lead_cell": "48.9 · #120 of 133",
+          "lead_cell": "48.9 · #119 of 133",
           "trail_cell": "47.0 · #131 of 133",
-          "text": "Northern Illinois 48.9 (#120 of 133) vs Georgia State 47.0 (#131 of 133) — 11 places on the national board."
+          "text": "Northern Illinois 48.9 (#119 of 133) vs Georgia State 47.0 (#131 of 133) — 12 places on the national board."
         },
         {
           "k": "Run defense",
@@ -1245,11 +1223,11 @@
           "team": "Northern Illinois",
           "label": "linebackers",
           "v": "48.9",
-          "rank": "#120 of 133",
+          "rank": "#119 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Georgia State’s running backs rates 55.1 (#111 of 133) against Northern Illinois’s linebackers at 48.9 (#120 of 133). Georgia State’s unit stands higher among its own position group, by 9 places."
+        "read": "Georgia State’s running backs rates 55.1 (#111 of 133) against Northern Illinois’s linebackers at 48.9 (#119 of 133). Georgia State’s unit stands higher among its own position group, by 8 places."
       },
       {
         "title": "Northern Illinois receivers vs Georgia State secondary",
@@ -1276,7 +1254,7 @@
           "team": "Georgia State",
           "label": "receivers",
           "v": "54.8",
-          "rank": "#84 of 133",
+          "rank": "#82 of 133",
           "note": null
         },
         "def": {
@@ -1287,7 +1265,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Georgia State’s receivers rates 54.8 (#84 of 133) against Northern Illinois’s secondary at 54.0 (#62 of 133). Northern Illinois’s unit stands higher among its own position group, by 22 places."
+        "read": "Georgia State’s receivers rates 54.8 (#82 of 133) against Northern Illinois’s secondary at 54.0 (#62 of 133). Northern Illinois’s unit stands higher among its own position group, by 20 places."
       }
     ],
     "roster": {
@@ -1457,7 +1435,7 @@
           "Secondary: Northern Illinois 54.0 (#62 of 133) vs Georgia State 45.4 (#127 of 133) — 65 places on the national board.",
           "Kicking: Northern Illinois 55.0 (#106 of 133) vs Georgia State 54.0 (#124 of 133) — 18 places on the national board.",
           "Defensive line: Northern Illinois 48.5 (#115 of 133) vs Georgia State 45.1 (#131 of 133) — 16 places on the national board.",
-          "The outcome range is 15.1 points wide at one sigma — p10 -10.4 to p90 +33.6 for Georgia State, so a projection of +12.6 still produces results a long way either side of it."
+          "The outcome range is 15.1 points wide at one sigma — p10 -10.3 to p90 +33.7 for Georgia State, so a projection of +12.7 still produces results a long way either side of it."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
@@ -1485,7 +1463,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1567,10 +1545,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1597,26 +1571,152 @@
         {
           "item": "Georgia State — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Georgia State — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
       "available": true,
-      "model": "Georgia State -12.6",
-      "model_raw": "Georgia State -12.6",
+      "model": "Georgia State -12.7",
+      "model_raw": "Georgia State -12.7",
       "market": "Georgia State -10.0",
-      "difference": "2.6 points",
-      "difference_n": 2.6497120301776,
+      "difference": "2.7 points",
+      "difference_n": 2.6560265256067144,
       "total_model": "54.5",
       "total_market": "56.5",
-      "book": "captured · Pinnacle",
+      "book": "captured (stale 73h) · Pinnacle",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401864511",
+      "home": "Georgia State",
+      "away": "Northern Illinois",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Georgia State -12.7",
+        "favorite_team": "Georgia State",
+        "underdog_team": "Northern Illinois",
+        "display_fair_spread": 12.7,
+        "raw_home_margin": 12.66,
+        "raw_line_text": "Georgia State -12.66",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 2.66,
+        "toward_team": "Georgia State",
+        "text": "2.7 pts toward Georgia State",
+        "market_line_text": "Georgia State -10.0",
+        "market_home_margin": 10,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · Pinnacle",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Georgia State",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 8.39,
+            "text": "+8.4 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.9,
+            "text": "+1.9 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.7 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T12:00:40.648Z",
+          "source": "first published",
+          "home_margin": 11.93,
+          "text": "Georgia State -11.9"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 12.66,
+          "text": "Georgia State -12.7"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Northern Illinois",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 0.7 points toward Georgia State since the first published number.",
+        "attribution_text": "Projection changed 0.7 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Georgia State 34, Northern Illinois 21.",
     "state": {
@@ -1649,8 +1749,8 @@
         },
         {
           "k": "Talent",
-          "a": "33.4  #131",
-          "h": "45.4  #92",
+          "a": "33.3  #131",
+          "h": "45.4  #93",
           "note": null
         },
         {
@@ -1716,7 +1816,7 @@
         {
           "k": "Receivers",
           "a": "54.0  #119",
-          "h": "54.8  #84",
+          "h": "54.8  #82",
           "note": null
         },
         {
@@ -1733,7 +1833,7 @@
         },
         {
           "k": "Linebackers",
-          "a": "48.9  #120",
+          "a": "48.9  #119",
           "h": "47.0  #131",
           "note": null
         },
@@ -1770,10 +1870,10 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Georgia State -12.6 on a neutral read of the two teams, before any book is consulted. Projected total 54.5.",
+      "EdgeDesk’s line is Georgia State -12.7 on a neutral read of the two teams, before any book is consulted. Projected total 54.5.",
       "Georgia State wins 80% of the time in EdgeDesk’s simulation, Northern Illinois 20%.",
-      "Eight games in ten land between -10.4 and +33.6 for Georgia State. A single result inside that band tells you nothing new about either team.",
-      "The market has Georgia State -10.0 at captured · Pinnacle, 2.6 points from EdgeDesk’s number.",
+      "Eight games in ten land between -10.3 and +33.7 for Georgia State. A single result inside that band tells you nothing new about either team.",
+      "The market has Georgia State -10.0 at captured (stale 73h) · Pinnacle, 2.7 points from EdgeDesk’s number.",
       "Northern Illinois quarterback: Taron Dickens — started the last game; no announcement for this one.",
       "Georgia State quarterback: Cameran Brown — started the last game; no announcement for this one."
     ],
@@ -1788,6 +1888,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

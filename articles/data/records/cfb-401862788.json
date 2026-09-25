@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UTSA vs. Rice: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UTSA vs. Rice 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices UTSA at Rice at Rice +10.0 with a 56.3 fair total. UTSA wins 75% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices UTSA at Rice at Rice +10.0 with a 56.3 fair total. UTSA wins 75% of simulations. Data confidence 84%. Model status NO MARKET. Research, not picks.",
   "excerpt": "UTSA carries the stronger underlying team rating — +3.6 against -6.2, a 9.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Rice +10.0 before any sportsbook number is consulted, with UTSA winning 75% of simulations.",
   "home_team": "Rice",
   "away_team": "UTSA",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "Rice +10.0",
   "fair_total": "56.3",
@@ -66,11 +66,11 @@
       "UTSA carries the stronger underlying team rating — +3.6 against -6.2, a 9.8-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Rice +10.0 before any sportsbook number is consulted, with UTSA winning 75% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is running backs, where UTSA leads Rice by 89 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -10.0032228518011,
+      "fair_spread": -10.009326047406592,
       "fair_spread_text": "Rice +10.0",
       "fair_spread_raw_text": "Rice +10.0",
       "near_pickem": false,
@@ -114,65 +114,67 @@
         "volatility_discriminates": false,
         "note": "Quoted from Rice’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "Rice is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for Rice and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "availability",
             "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "UTSA is not in the availability registry"
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for UTSA and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Rice",
@@ -337,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -359,7 +361,7 @@
         },
         {
           "points": "-1.3",
-          "points_n": -1.2572295778011031,
+          "points_n": -1.2633327734065964,
           "text": "Stylistically the matchup favours UTSA by 1.3 points: ball control vs front disruption",
           "favours": "UTSA"
         }
@@ -391,14 +393,14 @@
               "h": {
                 "v": "-6.2",
                 "n": -6.15,
-                "rank": "#113 of 133",
-                "rank_n": 113,
+                "rank": "#112 of 133",
+                "rank_n": 112,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 9.8,
-                "rank_gap": 78
+                "rank_gap": 77
               }
             },
             {
@@ -408,8 +410,8 @@
               "a": {
                 "v": "57.8",
                 "n": 57.8,
-                "rank": "#26 of 133",
-                "rank_n": 26,
+                "rank": "#25 of 133",
+                "rank_n": 25,
                 "note": null
               },
               "h": {
@@ -422,7 +424,7 @@
               "edge": {
                 "side": "a",
                 "gap": 11.8,
-                "rank_gap": 63
+                "rank_gap": 64
               }
             },
             {
@@ -661,14 +663,14 @@
               "h": {
                 "v": "57.1",
                 "n": 57.1,
-                "rank": "#67 of 133",
-                "rank_n": 67,
+                "rank": "#66 of 133",
+                "rank_n": 66,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 1.9,
-                "rank_gap": 28
+                "rank_gap": 27
               }
             },
             {
@@ -702,21 +704,21 @@
               "a": {
                 "v": "54.6",
                 "n": 54.6,
-                "rank": "#95 of 133",
-                "rank_n": 95,
+                "rank": "#94 of 133",
+                "rank_n": 94,
                 "note": null
               },
               "h": {
                 "v": "54.9",
                 "n": 54.9,
-                "rank": "#81 of 133",
-                "rank_n": 81,
+                "rank": "#79 of 133",
+                "rank_n": 79,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.3,
-                "rank_gap": 14
+                "rank_gap": 15
               }
             },
             {
@@ -774,8 +776,8 @@
               "a": {
                 "v": "51.4",
                 "n": 51.4,
-                "rank": "#82 of 133",
-                "rank_n": 82,
+                "rank": "#83 of 133",
+                "rank_n": 83,
                 "note": null
               },
               "h": {
@@ -788,7 +790,7 @@
               "edge": {
                 "side": "a",
                 "gap": 0.7,
-                "rank_gap": 10
+                "rank_gap": 9
               }
             },
             {
@@ -935,16 +937,6 @@
           "text": "UTSA 57.4 (#25 of 133) vs Rice 54.9 (#114 of 133) — 89 places on the national board."
         },
         {
-          "k": "ETSR (overall)",
-          "rank_gap": 78,
-          "gap": 9.8,
-          "lead": "UTSA",
-          "trail": "Rice",
-          "lead_cell": "+3.6 · #35 of 133",
-          "trail_cell": "-6.2 · #113 of 133",
-          "text": "UTSA +3.6 (#35 of 133) vs Rice -6.2 (#113 of 133) — 78 places on the national board."
-        },
-        {
           "k": "Secondary",
           "rank_gap": 78,
           "gap": 7.2,
@@ -953,6 +945,16 @@
           "lead_cell": "55.7 · #38 of 133",
           "trail_cell": "48.5 · #116 of 133",
           "text": "UTSA 55.7 (#38 of 133) vs Rice 48.5 (#116 of 133) — 78 places on the national board."
+        },
+        {
+          "k": "ETSR (overall)",
+          "rank_gap": 77,
+          "gap": 9.8,
+          "lead": "UTSA",
+          "trail": "Rice",
+          "lead_cell": "+3.6 · #35 of 133",
+          "trail_cell": "-6.2 · #112 of 133",
+          "text": "UTSA +3.6 (#35 of 133) vs Rice -6.2 (#112 of 133) — 77 places on the national board."
         },
         {
           "k": "Defense",
@@ -978,13 +980,13 @@
       "home": [
         {
           "k": "Receivers",
-          "rank_gap": 14,
+          "rank_gap": 15,
           "gap": 0.3,
           "lead": "Rice",
           "trail": "UTSA",
-          "lead_cell": "54.9 · #81 of 133",
-          "trail_cell": "54.6 · #95 of 133",
-          "text": "Rice 54.9 (#81 of 133) vs UTSA 54.6 (#95 of 133) — 14 places on the national board."
+          "lead_cell": "54.9 · #79 of 133",
+          "trail_cell": "54.6 · #94 of 133",
+          "text": "Rice 54.9 (#79 of 133) vs UTSA 54.6 (#94 of 133) — 15 places on the national board."
         },
         {
           "k": "Pass offense",
@@ -1104,7 +1106,7 @@
           "team": "Rice",
           "label": "QB room",
           "v": "57.1",
-          "rank": "#67 of 133",
+          "rank": "#66 of 133",
           "note": null
         },
         "def": {
@@ -1115,7 +1117,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Rice’s QB room rates 57.1 (#67 of 133) against UTSA’s secondary at 55.7 (#38 of 133). UTSA’s unit stands higher among its own position group, by 29 places."
+        "read": "Rice’s QB room rates 57.1 (#66 of 133) against UTSA’s secondary at 55.7 (#38 of 133). UTSA’s unit stands higher among its own position group, by 28 places."
       },
       {
         "title": "UTSA offensive line vs Rice defensive line",
@@ -1149,11 +1151,11 @@
           "team": "UTSA",
           "label": "defensive line",
           "v": "51.4",
-          "rank": "#82 of 133",
+          "rank": "#83 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Rice’s offensive line rates 47.7 (#97 of 133) against UTSA’s defensive line at 51.4 (#82 of 133). UTSA’s unit stands higher among its own position group, by 15 places."
+        "read": "Rice’s offensive line rates 47.7 (#97 of 133) against UTSA’s defensive line at 51.4 (#83 of 133). UTSA’s unit stands higher among its own position group, by 14 places."
       },
       {
         "title": "UTSA running backs vs Rice linebackers",
@@ -1199,7 +1201,7 @@
           "team": "UTSA",
           "label": "receivers",
           "v": "54.6",
-          "rank": "#95 of 133",
+          "rank": "#94 of 133",
           "note": null
         },
         "def": {
@@ -1210,7 +1212,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UTSA’s receivers rates 54.6 (#95 of 133) against Rice’s secondary at 48.5 (#116 of 133). UTSA’s unit stands higher among its own position group, by 21 places."
+        "read": "UTSA’s receivers rates 54.6 (#94 of 133) against Rice’s secondary at 48.5 (#116 of 133). UTSA’s unit stands higher among its own position group, by 22 places."
       },
       {
         "title": "Rice receivers vs UTSA secondary",
@@ -1218,7 +1220,7 @@
           "team": "Rice",
           "label": "receivers",
           "v": "54.9",
-          "rank": "#81 of 133",
+          "rank": "#79 of 133",
           "note": null
         },
         "def": {
@@ -1229,7 +1231,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Rice’s receivers rates 54.9 (#81 of 133) against UTSA’s secondary at 55.7 (#38 of 133). UTSA’s unit stands higher among its own position group, by 43 places."
+        "read": "Rice’s receivers rates 54.9 (#79 of 133) against UTSA’s secondary at 55.7 (#38 of 133). UTSA’s unit stands higher among its own position group, by 41 places."
       }
     ],
     "roster": {
@@ -1387,8 +1389,8 @@
           "UTSA is the better football team by 12.8 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-12.8 pts).",
           "Stylistically the matchup favours UTSA by 1.3 points: ball control vs front disruption (-1.3 pts).",
           "Running backs: UTSA 57.4 (#25 of 133) vs Rice 54.9 (#114 of 133) — 89 places on the national board.",
-          "ETSR (overall): UTSA +3.6 (#35 of 133) vs Rice -6.2 (#113 of 133) — 78 places on the national board.",
-          "Secondary: UTSA 55.7 (#38 of 133) vs Rice 48.5 (#116 of 133) — 78 places on the national board."
+          "Secondary: UTSA 55.7 (#38 of 133) vs Rice 48.5 (#116 of 133) — 78 places on the national board.",
+          "ETSR (overall): UTSA +3.6 (#35 of 133) vs Rice -6.2 (#112 of 133) — 77 places on the national board."
         ]
       },
       "underdog": {
@@ -1396,7 +1398,7 @@
         "heading": "Why Rice can keep it close",
         "bullets": [
           "Playing at Rice is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
-          "Receivers: Rice 54.9 (#81 of 133) vs UTSA 54.6 (#95 of 133) — 14 places on the national board.",
+          "Receivers: Rice 54.9 (#79 of 133) vs UTSA 54.6 (#94 of 133) — 15 places on the national board.",
           "Pass offense: Rice 46.6 (#87 of 132) vs UTSA 45.9 (#91 of 132) — 4 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -33.0 to p90 +11.0 for Rice, so a projection of -10.0 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%."
@@ -1509,10 +1511,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1539,6 +1537,10 @@
         {
           "item": "Rice — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Rice — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1549,6 +1551,106 @@
       "model_raw": "Rice +10.0",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401862788",
+      "home": "Rice",
+      "away": "UTSA",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "UTSA -10.0",
+        "favorite_team": "UTSA",
+        "underdog_team": "Rice",
+        "display_fair_spread": -10,
+        "raw_home_margin": -10.01,
+        "raw_line_text": "UTSA -10.01",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "UTSA",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 12.83,
+            "text": "+12.8 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.26,
+            "text": "+1.3 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": -10.01,
+          "text": "UTSA -10.0"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Rice",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects UTSA 33, Rice 23.",
     "state": {
@@ -1576,12 +1678,12 @@
         {
           "k": "ETSR (overall)",
           "a": "+3.6  #35",
-          "h": "-6.2  #113",
+          "h": "-6.2  #112",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
-          "a": "57.8  #26",
+          "a": "57.8  #25",
           "h": "46.0  #89",
           "note": null
         },
@@ -1636,7 +1738,7 @@
         {
           "k": "QB room",
           "a": "59.0  #39",
-          "h": "57.1  #67",
+          "h": "57.1  #66",
           "note": null
         },
         {
@@ -1647,8 +1749,8 @@
         },
         {
           "k": "Receivers",
-          "a": "54.6  #95",
-          "h": "54.9  #81",
+          "a": "54.6  #94",
+          "h": "54.9  #79",
           "note": null
         },
         {
@@ -1659,7 +1761,7 @@
         },
         {
           "k": "Defensive line",
-          "a": "51.4  #82",
+          "a": "51.4  #83",
           "h": "50.7  #92",
           "note": null
         },
@@ -1696,7 +1798,7 @@
         {
           "k": "Δ national rank, this week",
           "a": "no change",
-          "h": "no change",
+          "h": "up 1",
           "note": "differenced from last week’s committed snapshot"
         }
       ]
@@ -1721,6 +1823,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

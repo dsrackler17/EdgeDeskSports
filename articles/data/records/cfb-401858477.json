@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Indiana vs. Rutgers: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Indiana vs. Rutgers 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Indiana at Rutgers at Rutgers +26.8 with a 57.7 fair total. Indiana wins 96% of simulations. Data confidence 76%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "Indiana carries the stronger underlying team rating — +6.6 against +0.9, a 5.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Rutgers +26.8 before any sportsbook number is consulted, with Indiana winning 96% of…",
+  "seo_description": "EdgeDesk prices Indiana at Rutgers at Rutgers +26.8 with a 57.6 fair total. Indiana wins 96% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "Indiana carries the stronger underlying team rating — +6.5 against +0.9, a 5.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Rutgers +26.8 before any sportsbook number is consulted, with Indiana winning 96% of…",
   "home_team": "Rutgers",
   "away_team": "Indiana",
   "venue": "SHI Stadium",
@@ -21,15 +21,15 @@
   "game_time": "2026-10-04T00:00:00.000Z",
   "game_when_label": "2026-10-04 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 76,
+  "confidence": 80,
   "priced": true,
   "fair_spread_text": "Rutgers +26.8",
-  "fair_total": "57.7",
+  "fair_total": "57.6",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/indiana-vs-rutgers-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
@@ -63,14 +63,14 @@
       "home_conference": "Big Ten"
     },
     "lede": [
-      "Indiana carries the stronger underlying team rating — +6.6 against +0.9, a 5.6-point separation on a neutral field before home advantage, travel or rest.",
+      "Indiana carries the stronger underlying team rating — +6.5 against +0.9, a 5.6-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Rutgers +26.8 before any sportsbook number is consulted, with Indiana winning 96% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is defensive line, where Indiana leads Rutgers by 132 places nationally.",
-      "Data confidence on this matchup is 76% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -26.808666035066707,
+      "fair_spread": -26.820652105412755,
       "fair_spread_text": "Rutgers +26.8",
       "fair_spread_raw_text": "Rutgers +26.8",
       "near_pickem": false,
@@ -78,7 +78,7 @@
       "favourite": "Indiana",
       "underdog": "Rutgers",
       "margin": "26.8",
-      "total": "57.7",
+      "total": "57.6",
       "score": {
         "away": {
           "team": "Indiana",
@@ -114,65 +114,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from Rutgers’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 76,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 80,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Rutgers is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Indiana is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -271,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T20:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Rutgers",
@@ -361,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -383,7 +361,7 @@
         },
         {
           "points": "-2.8",
-          "points_n": -2.767823960357747,
+          "points_n": -2.7798100307037936,
           "text": "Stylistically the matchup favours Indiana by 2.8 points: ball control vs front disruption",
           "favours": "Indiana"
         }
@@ -406,8 +384,8 @@
               "k": "ETSR (overall)",
               "note": "points vs an average FBS team, neutral field",
               "a": {
-                "v": "+6.6",
-                "n": 6.57,
+                "v": "+6.5",
+                "n": 6.54,
                 "rank": "#19 of 133",
                 "rank_n": 19,
                 "note": null
@@ -430,8 +408,8 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "65.1",
-                "n": 65.1,
+                "v": "64.6",
+                "n": 64.6,
                 "rank": "#11 of 133",
                 "rank_n": 11,
                 "note": null
@@ -439,14 +417,14 @@
               "h": {
                 "v": "52.1",
                 "n": 52.1,
-                "rank": "#55 of 133",
-                "rank_n": 55,
+                "rank": "#54 of 133",
+                "rank_n": 54,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 13,
-                "rank_gap": 44
+                "gap": 12.5,
+                "rank_gap": 43
               }
             },
             {
@@ -478,10 +456,10 @@
               "k": "Scheme fit",
               "note": "personnel against this team’s own tendencies",
               "a": {
-                "v": "50.2",
-                "n": 50.2,
-                "rank": "#72 of 133",
-                "rank_n": 72,
+                "v": "50.3",
+                "n": 50.3,
+                "rank": "#68 of 133",
+                "rank_n": 68,
                 "note": null
               },
               "h": {
@@ -493,8 +471,8 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 1.9,
-                "rank_gap": 44
+                "gap": 2,
+                "rank_gap": 48
               }
             }
           ]
@@ -728,23 +706,23 @@
               "k": "Receivers",
               "note": null,
               "a": {
-                "v": "55.5",
-                "n": 55.5,
-                "rank": "#43 of 133",
-                "rank_n": 43,
+                "v": "55.8",
+                "n": 55.8,
+                "rank": "#32 of 133",
+                "rank_n": 32,
                 "note": null
               },
               "h": {
                 "v": "55.9",
                 "n": 55.9,
-                "rank": "#28 of 133",
-                "rank_n": 28,
+                "rank": "#30 of 133",
+                "rank_n": 30,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 0.4,
-                "rank_gap": 15
+                "gap": 0.1,
+                "rank_gap": 2
               }
             },
             {
@@ -776,10 +754,10 @@
               "k": "Running backs",
               "note": null,
               "a": {
-                "v": "57.6",
-                "n": 57.6,
-                "rank": "#19 of 133",
-                "rank_n": 19,
+                "v": "57.7",
+                "n": 57.7,
+                "rank": "#16 of 133",
+                "rank_n": 16,
                 "note": null
               },
               "h": {
@@ -791,8 +769,8 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 0.5,
-                "rank_gap": 10
+                "gap": 0.6,
+                "rank_gap": 13
               }
             },
             {
@@ -848,8 +826,8 @@
               "k": "Secondary",
               "note": null,
               "a": {
-                "v": "55.4",
-                "n": 55.4,
+                "v": "55.5",
+                "n": 55.5,
                 "rank": "#40 of 133",
                 "rank_n": 40,
                 "note": null
@@ -863,7 +841,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 4.6,
+                "gap": 4.7,
                 "rank_gap": 54
               }
             },
@@ -1045,14 +1023,14 @@
           "text": "Rutgers 56.7 (#17 of 133) vs Indiana 52.9 (#54 of 133) — 37 places on the national board."
         },
         {
-          "k": "Receivers",
-          "rank_gap": 15,
-          "gap": 0.4,
+          "k": "Offense",
+          "rank_gap": 7,
+          "gap": 1.9,
           "lead": "Rutgers",
           "trail": "Indiana",
-          "lead_cell": "55.9 · #28 of 133",
-          "trail_cell": "55.5 · #43 of 133",
-          "text": "Rutgers 55.9 (#28 of 133) vs Indiana 55.5 (#43 of 133) — 15 places on the national board."
+          "lead_cell": "54.5 · #36 of 133",
+          "trail_cell": "52.6 · #43 of 133",
+          "text": "Rutgers 54.5 (#36 of 133) vs Indiana 52.6 (#43 of 133) — 7 places on the national board."
         }
       ],
       "measured": [],
@@ -1168,12 +1146,12 @@
         "def": {
           "team": "Indiana",
           "label": "secondary",
-          "v": "55.4",
+          "v": "55.5",
           "rank": "#40 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Rutgers’s QB room rates 58.1 (#49 of 133) against Indiana’s secondary at 55.4 (#40 of 133). Indiana’s unit stands higher among its own position group, by 9 places."
+        "read": "Rutgers’s QB room rates 58.1 (#49 of 133) against Indiana’s secondary at 55.5 (#40 of 133). Indiana’s unit stands higher among its own position group, by 9 places."
       },
       {
         "title": "Indiana offensive line vs Rutgers defensive line",
@@ -1218,8 +1196,8 @@
         "att": {
           "team": "Indiana",
           "label": "running backs",
-          "v": "57.6",
-          "rank": "#19 of 133",
+          "v": "57.7",
+          "rank": "#16 of 133",
           "note": null
         },
         "def": {
@@ -1230,7 +1208,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Indiana’s running backs rates 57.6 (#19 of 133) against Rutgers’s linebackers at 44.8 (#133 of 133). Indiana’s unit stands higher among its own position group, by 114 places."
+        "read": "Indiana’s running backs rates 57.7 (#16 of 133) against Rutgers’s linebackers at 44.8 (#133 of 133). Indiana’s unit stands higher among its own position group, by 117 places."
       },
       {
         "title": "Rutgers running backs vs Indiana linebackers",
@@ -1256,8 +1234,8 @@
         "att": {
           "team": "Indiana",
           "label": "receivers",
-          "v": "55.5",
-          "rank": "#43 of 133",
+          "v": "55.8",
+          "rank": "#32 of 133",
           "note": null
         },
         "def": {
@@ -1268,7 +1246,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Indiana’s receivers rates 55.5 (#43 of 133) against Rutgers’s secondary at 50.8 (#94 of 133). Indiana’s unit stands higher among its own position group, by 51 places."
+        "read": "Indiana’s receivers rates 55.8 (#32 of 133) against Rutgers’s secondary at 50.8 (#94 of 133). Indiana’s unit stands higher among its own position group, by 62 places."
       },
       {
         "title": "Rutgers receivers vs Indiana secondary",
@@ -1276,18 +1254,18 @@
           "team": "Rutgers",
           "label": "receivers",
           "v": "55.9",
-          "rank": "#28 of 133",
+          "rank": "#30 of 133",
           "note": null
         },
         "def": {
           "team": "Indiana",
           "label": "secondary",
-          "v": "55.4",
+          "v": "55.5",
           "rank": "#40 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Rutgers’s receivers rates 55.9 (#28 of 133) against Indiana’s secondary at 55.4 (#40 of 133). Rutgers’s unit stands higher among its own position group, by 12 places."
+        "read": "Rutgers’s receivers rates 55.9 (#30 of 133) against Indiana’s secondary at 55.5 (#40 of 133). Rutgers’s unit stands higher among its own position group, by 10 places."
       }
     ],
     "roster": {
@@ -1393,7 +1371,7 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "8 on file, 0% of starter value out",
+          "a": "8 on file, 3% of starter value out",
           "h": "none on file — 100% unknown",
           "edge": null
         },
@@ -1567,10 +1545,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1608,6 +1582,106 @@
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858477",
+      "home": "Rutgers",
+      "away": "Indiana",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Indiana -26.8",
+        "favorite_team": "Indiana",
+        "underdog_team": "Rutgers",
+        "display_fair_spread": -26.8,
+        "raw_home_margin": -26.82,
+        "raw_line_text": "Indiana -26.82",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 80,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Indiana",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 28.13,
+            "text": "+28.1 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 2.78,
+            "text": "+2.8 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-24T00:48:32.681Z",
+          "source": "first published",
+          "home_margin": -26.82,
+          "text": "Indiana -26.8"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Indiana",
+        "since_at": "2026-09-24T00:48:32.681Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
     "headline": "EdgeDesk projects Indiana 42, Rutgers 15.",
     "state": {
       "label": "NO MARKET",
@@ -1633,14 +1707,14 @@
       "rows": [
         {
           "k": "ETSR (overall)",
-          "a": "+6.6  #19",
+          "a": "+6.5  #19",
           "h": "+0.9  #60",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
-          "a": "65.1  #11",
-          "h": "52.1  #55",
+          "a": "64.6  #11",
+          "h": "52.1  #54",
           "note": null
         },
         {
@@ -1705,13 +1779,13 @@
         },
         {
           "k": "Receivers",
-          "a": "55.5  #43",
-          "h": "55.9  #28",
+          "a": "55.8  #32",
+          "h": "55.9  #30",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "57.6  #19",
+          "a": "57.7  #16",
           "h": "57.1  #29",
           "note": null
         },
@@ -1729,7 +1803,7 @@
         },
         {
           "k": "Secondary",
-          "a": "55.4  #40",
+          "a": "55.5  #40",
           "h": "50.8  #94",
           "note": null
         },
@@ -1760,7 +1834,7 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Rutgers +26.8 on a neutral read of the two teams, before any book is consulted. Projected total 57.7.",
+      "EdgeDesk’s line is Rutgers +26.8 on a neutral read of the two teams, before any book is consulted. Projected total 57.6.",
       "Rutgers wins 4% of the time in EdgeDesk’s simulation, Indiana 96%.",
       "Eight games in ten land between -49.8 and -5.8 for Rutgers. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
@@ -1778,6 +1852,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

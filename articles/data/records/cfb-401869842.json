@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Army vs. Louisiana Tech: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Army vs. Louisiana Tech 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Army at Louisiana Tech at Louisiana Tech +7.1 with a 53.1 fair total. Army wins 68% of simulations. Data confidence 78%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Army at Louisiana Tech at Louisiana Tech +7.1 with a 53.0 fair total. Army wins 68% of simulations. Data confidence 83%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Louisiana Tech carries the stronger underlying team rating — -2.3 against -4.3, a 2.0-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Louisiana Tech +7.1 before any sportsbook number is consulted, with Army…",
   "home_team": "Louisiana Tech",
   "away_team": "Army",
@@ -21,15 +21,15 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 78,
+  "confidence": 83,
   "priced": true,
   "fair_spread_text": "Louisiana Tech +7.1",
-  "fair_total": "53.1",
+  "fair_total": "53.0",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/army-vs-louisiana-tech-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
@@ -65,11 +65,11 @@
     "lede": [
       "Louisiana Tech carries the stronger underlying team rating — -2.3 against -4.3, a 2.0-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Louisiana Tech +7.1 before any sportsbook number is consulted, with Army winning 68% of simulations.",
-      "Data confidence on this matchup is 78% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 83% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -7.058633875243151,
+      "fair_spread": -7.0529747346383385,
       "fair_spread_text": "Louisiana Tech +7.1",
       "fair_spread_raw_text": "Louisiana Tech +7.1",
       "near_pickem": false,
@@ -77,7 +77,7 @@
       "favourite": "Army",
       "underdog": "Louisiana Tech",
       "margin": "7.1",
-      "total": "53.1",
+      "total": "53.0",
       "score": {
         "away": {
           "team": "Army",
@@ -113,65 +113,55 @@
         "volatility_discriminates": false,
         "note": "Quoted from Louisiana Tech’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 78,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 83,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
+          "NOT_REQUIRED": 2,
+          "NOT_DUE_YET": 0,
           "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "UNAVAILABLE": 4
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "away",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "Louisiana Tech is not in the availability registry"
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Army is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "EdgeDesk read 3 source(s) for Army and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -270,7 +260,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-12T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Louisiana Tech",
@@ -354,9 +344,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T20:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -382,7 +372,7 @@
         },
         {
           "points": "-1.3",
-          "points_n": -1.3118742175764848,
+          "points_n": -1.3062150769716714,
           "text": "Stylistically the matchup favours Army by 1.3 points: ball control vs front disruption",
           "favours": "Army"
         }
@@ -413,14 +403,14 @@
               },
               "h": {
                 "v": "-2.3",
-                "n": -2.29,
+                "n": -2.3,
                 "rank": "#90 of 133",
                 "rank_n": 90,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 2.1,
+                "gap": 2,
                 "rank_gap": null
               }
             },
@@ -436,15 +426,15 @@
                 "note": "confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
               },
               "h": {
-                "v": "47.8",
-                "n": 47.8,
-                "rank": "#77 of 133",
-                "rank_n": 77,
+                "v": "47.7",
+                "n": 47.7,
+                "rank": "#76 of 133",
+                "rank_n": 76,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 3,
+                "gap": 2.9,
                 "rank_gap": null
               }
             },
@@ -688,8 +678,8 @@
               "h": {
                 "v": "56.1",
                 "n": 56.1,
-                "rank": "#86 of 133",
-                "rank_n": 86,
+                "rank": "#85 of 133",
+                "rank_n": 85,
                 "note": null
               },
               "edge": {
@@ -736,8 +726,8 @@
               "h": {
                 "v": "54.6",
                 "n": 54.6,
-                "rank": "#93 of 133",
-                "rank_n": 93,
+                "rank": "#92 of 133",
+                "rank_n": 92,
                 "note": null
               },
               "edge": {
@@ -784,8 +774,8 @@
               "h": {
                 "v": "54.0",
                 "n": 54,
-                "rank": "#129 of 133",
-                "rank_n": 129,
+                "rank": "#130 of 133",
+                "rank_n": 130,
                 "note": null
               },
               "edge": {
@@ -856,8 +846,8 @@
               "h": {
                 "v": "52.1",
                 "n": 52.1,
-                "rank": "#80 of 133",
-                "rank_n": 80,
+                "rank": "#79 of 133",
+                "rank_n": 79,
                 "note": null
               },
               "edge": {
@@ -1047,11 +1037,11 @@
           "team": "Louisiana Tech",
           "label": "secondary",
           "v": "52.1",
-          "rank": "#80 of 133",
+          "rank": "#79 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Army’s QB room rates 57.3 against Louisiana Tech’s secondary at 52.1 (#80 of 133). Army’s unit carries the higher rating."
+        "read": "Army’s QB room rates 57.3 against Louisiana Tech’s secondary at 52.1 (#79 of 133). Army’s unit carries the higher rating."
       },
       {
         "title": "Louisiana Tech QB room vs Army secondary",
@@ -1059,7 +1049,7 @@
           "team": "Louisiana Tech",
           "label": "QB room",
           "v": "56.1",
-          "rank": "#86 of 133",
+          "rank": "#85 of 133",
           "note": null
         },
         "def": {
@@ -1070,7 +1060,7 @@
           "note": "confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
         },
         "complete": true,
-        "read": "Louisiana Tech’s QB room rates 56.1 (#86 of 133) against Army’s secondary at 48.3. Louisiana Tech’s unit carries the higher rating."
+        "read": "Louisiana Tech’s QB room rates 56.1 (#85 of 133) against Army’s secondary at 48.3. Louisiana Tech’s unit carries the higher rating."
       },
       {
         "title": "Army offensive line vs Louisiana Tech defensive line",
@@ -1135,7 +1125,7 @@
           "team": "Louisiana Tech",
           "label": "running backs",
           "v": "54.0",
-          "rank": "#129 of 133",
+          "rank": "#130 of 133",
           "note": null
         },
         "def": {
@@ -1146,7 +1136,7 @@
           "note": "confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
         },
         "complete": true,
-        "read": "Louisiana Tech’s running backs rates 54.0 (#129 of 133) against Army’s linebackers at 49.6. Louisiana Tech’s unit carries the higher rating."
+        "read": "Louisiana Tech’s running backs rates 54.0 (#130 of 133) against Army’s linebackers at 49.6. Louisiana Tech’s unit carries the higher rating."
       },
       {
         "title": "Army receivers vs Louisiana Tech secondary",
@@ -1161,11 +1151,11 @@
           "team": "Louisiana Tech",
           "label": "secondary",
           "v": "52.1",
-          "rank": "#80 of 133",
+          "rank": "#79 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Army’s receivers rates 54.3 against Louisiana Tech’s secondary at 52.1 (#80 of 133). Army’s unit carries the higher rating."
+        "read": "Army’s receivers rates 54.3 against Louisiana Tech’s secondary at 52.1 (#79 of 133). Army’s unit carries the higher rating."
       },
       {
         "title": "Louisiana Tech receivers vs Army secondary",
@@ -1173,7 +1163,7 @@
           "team": "Louisiana Tech",
           "label": "receivers",
           "v": "54.6",
-          "rank": "#93 of 133",
+          "rank": "#92 of 133",
           "note": null
         },
         "def": {
@@ -1184,7 +1174,7 @@
           "note": "confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
         },
         "complete": true,
-        "read": "Louisiana Tech’s receivers rates 54.6 (#93 of 133) against Army’s secondary at 48.3. Louisiana Tech’s unit carries the higher rating."
+        "read": "Louisiana Tech’s receivers rates 54.6 (#92 of 133) against Army’s secondary at 48.3. Louisiana Tech’s unit carries the higher rating."
       }
     ],
     "roster": {
@@ -1461,10 +1451,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1491,6 +1477,10 @@
         {
           "item": "Louisiana Tech — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Louisiana Tech — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1501,6 +1491,112 @@
       "model_raw": "Louisiana Tech +7.1",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401869842",
+      "home": "Louisiana Tech",
+      "away": "Army",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Army -7.1",
+        "favorite_team": "Army",
+        "underdog_team": "Louisiana Tech",
+        "display_fair_spread": -7.1,
+        "raw_home_margin": -7.05,
+        "raw_line_text": "Army -7.05",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 83,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Army",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 7.1,
+            "text": "+7.1 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "conference",
+            "points": 2.73,
+            "text": "+2.7 pts conference-strength edge"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.31,
+            "text": "+1.3 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": -7.05,
+          "text": "Army -7.0"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Army",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Army 30, Louisiana Tech 23.",
     "state": {
@@ -1534,7 +1630,7 @@
         {
           "k": "Talent",
           "a": "44.8  unranked",
-          "h": "47.8  #77",
+          "h": "47.7  #76",
           "note": null
         },
         {
@@ -1588,7 +1684,7 @@
         {
           "k": "QB room",
           "a": "57.3  unranked",
-          "h": "56.1  #86",
+          "h": "56.1  #85",
           "note": null
         },
         {
@@ -1600,13 +1696,13 @@
         {
           "k": "Receivers",
           "a": "54.3  unranked",
-          "h": "54.6  #93",
+          "h": "54.6  #92",
           "note": null
         },
         {
           "k": "Running backs",
           "a": "54.4  unranked",
-          "h": "54.0  #129",
+          "h": "54.0  #130",
           "note": null
         },
         {
@@ -1624,7 +1720,7 @@
         {
           "k": "Secondary",
           "a": "48.3  unranked",
-          "h": "52.1  #80",
+          "h": "52.1  #79",
           "note": null
         },
         {
@@ -1654,7 +1750,7 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Louisiana Tech +7.1 on a neutral read of the two teams, before any book is consulted. Projected total 53.1.",
+      "EdgeDesk’s line is Louisiana Tech +7.1 on a neutral read of the two teams, before any book is consulted. Projected total 53.0.",
       "Louisiana Tech wins 32% of the time in EdgeDesk’s simulation, Army 68%.",
       "Eight games in ten land between -30.1 and +13.9 for Louisiana Tech. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
@@ -1691,6 +1787,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

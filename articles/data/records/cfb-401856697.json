@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Tulsa vs. Arkansas: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Tulsa vs. Arkansas 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Tulsa at Arkansas at Arkansas -9.7 with a 56.8 fair total. Arkansas wins 74% of simulations. Data confidence 72%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices Tulsa at Arkansas at Arkansas -9.7 with a 56.8 fair total. Arkansas wins 74% of simulations. Data confidence 75%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Tulsa carries the stronger underlying team rating — +1.5 against -1.1, a 2.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Arkansas -9.7 before any sportsbook number is consulted, with Arkansas winning 74% of…",
   "home_team": "Arkansas",
   "away_team": "Tulsa",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-27T00:00:00.000Z",
   "game_when_label": "2026-09-27 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 72,
+  "confidence": 75,
   "priced": true,
   "fair_spread_text": "Arkansas -9.7",
   "fair_total": "56.8",
@@ -65,12 +65,12 @@
     "lede": [
       "Tulsa carries the stronger underlying team rating — +1.5 against -1.1, a 2.6-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Arkansas -9.7 before any sportsbook number is consulted, with Arkansas winning 74% of simulations.",
-      "The position-group comparison shows where the separation comes from: the widest measured gap is receivers, where Arkansas leads Tulsa by 124 places nationally.",
-      "Data confidence on this matchup is 72% — high by this board’s standards, so the margin is the strongest part of the read."
+      "The position-group comparison shows where the separation comes from: the widest measured gap is receivers, where Arkansas leads Tulsa by 125 places nationally.",
+      "Data confidence on this matchup is 75% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 9.721582092291701,
+      "fair_spread": 9.674889917808876,
       "fair_spread_text": "Arkansas -9.7",
       "fair_spread_raw_text": "Arkansas -9.7",
       "near_pickem": false,
@@ -114,65 +114,61 @@
         "volatility_discriminates": false,
         "note": "Quoted from Arkansas’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 72,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 75,
+      "inputs_reached_pct": 65,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 17,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 6,
           "STALE": 0,
-          "CONFLICTING": 0,
+          "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
+          "NOT_REQUIRED": 2,
+          "NOT_DUE_YET": 0,
           "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "away",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "Arkansas is not in the availability registry"
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Tulsa is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "EdgeDesk read 3 source(s) for Tulsa and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
             "field": "coaching_continuity",
-            "side": null,
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "Arkansas has no prior season in the coach table to compare against, so whether this staff is new is unknown rather than continuous — a programme with no history is not a programme that kept its coach"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -271,7 +267,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Arkansas",
@@ -361,9 +357,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -382,9 +378,9 @@
           "favours": "Arkansas"
         },
         {
-          "points": "+1.3",
-          "points_n": 1.2896079636621547,
-          "text": "Stylistically the matchup favours Arkansas by 1.3 points: ball control vs front disruption",
+          "points": "+1.2",
+          "points_n": 1.2429157891793299,
+          "text": "Stylistically the matchup favours Arkansas by 1.2 points: ball control vs front disruption",
           "favours": "Arkansas"
         },
         {
@@ -421,14 +417,14 @@
               "h": {
                 "v": "-1.1",
                 "n": -1.07,
-                "rank": "#80 of 133",
-                "rank_n": 80,
+                "rank": "#79 of 133",
+                "rank_n": 79,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 2.6,
-                "rank_gap": 24
+                "rank_gap": 23
               }
             },
             {
@@ -438,21 +434,21 @@
               "a": {
                 "v": "52.4",
                 "n": 52.4,
-                "rank": "#53 of 133",
-                "rank_n": 53,
+                "rank": "#51 of 133",
+                "rank_n": 51,
                 "note": null
               },
               "h": {
                 "v": "51.5",
                 "n": 51.5,
-                "rank": "#57 of 133",
-                "rank_n": 57,
+                "rank": "#56 of 133",
+                "rank_n": 56,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.9,
-                "rank_gap": 4
+                "rank_gap": 5
               }
             },
             {
@@ -493,14 +489,14 @@
               "h": {
                 "v": "53.4",
                 "n": 53.4,
-                "rank": "#11 of 133",
-                "rank_n": 11,
+                "rank": "#10 of 133",
+                "rank_n": 10,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 2.3,
-                "rank_gap": 33
+                "rank_gap": 34
               }
             }
           ]
@@ -688,8 +684,8 @@
               "a": {
                 "v": "55.6",
                 "n": 55.6,
-                "rank": "#95 of 133",
-                "rank_n": 95,
+                "rank": "#94 of 133",
+                "rank_n": 94,
                 "note": null
               },
               "h": {
@@ -702,7 +698,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.7,
-                "rank_gap": 37
+                "rank_gap": 36
               }
             },
             {
@@ -743,14 +739,14 @@
               "h": {
                 "v": "56.5",
                 "n": 56.5,
-                "rank": "#8 of 133",
-                "rank_n": 8,
+                "rank": "#7 of 133",
+                "rank_n": 7,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 3.9,
-                "rank_gap": 124
+                "rank_gap": 125
               }
             },
             {
@@ -1012,33 +1008,33 @@
       "home": [
         {
           "k": "Receivers",
-          "rank_gap": 124,
+          "rank_gap": 125,
           "gap": 3.9,
           "lead": "Arkansas",
           "trail": "Tulsa",
-          "lead_cell": "56.5 · #8 of 133",
+          "lead_cell": "56.5 · #7 of 133",
           "trail_cell": "52.6 · #132 of 133",
-          "text": "Arkansas 56.5 (#8 of 133) vs Tulsa 52.6 (#132 of 133) — 124 places on the national board."
+          "text": "Arkansas 56.5 (#7 of 133) vs Tulsa 52.6 (#132 of 133) — 125 places on the national board."
         },
         {
           "k": "QB room",
-          "rank_gap": 37,
+          "rank_gap": 36,
           "gap": 1.7,
           "lead": "Arkansas",
           "trail": "Tulsa",
           "lead_cell": "57.3 · #58 of 133",
-          "trail_cell": "55.6 · #95 of 133",
-          "text": "Arkansas 57.3 (#58 of 133) vs Tulsa 55.6 (#95 of 133) — 37 places on the national board."
+          "trail_cell": "55.6 · #94 of 133",
+          "text": "Arkansas 57.3 (#58 of 133) vs Tulsa 55.6 (#94 of 133) — 36 places on the national board."
         },
         {
           "k": "Scheme fit",
-          "rank_gap": 33,
+          "rank_gap": 34,
           "gap": 2.3,
           "lead": "Arkansas",
           "trail": "Tulsa",
-          "lead_cell": "53.4 · #11 of 133",
+          "lead_cell": "53.4 · #10 of 133",
           "trail_cell": "51.1 · #44 of 133",
-          "text": "Arkansas 53.4 (#11 of 133) vs Tulsa 51.1 (#44 of 133) — 33 places on the national board."
+          "text": "Arkansas 53.4 (#10 of 133) vs Tulsa 51.1 (#44 of 133) — 34 places on the national board."
         },
         {
           "k": "Kicking",
@@ -1139,7 +1135,7 @@
           "team": "Tulsa",
           "label": "QB room",
           "v": "55.6",
-          "rank": "#95 of 133",
+          "rank": "#94 of 133",
           "note": null
         },
         "def": {
@@ -1150,7 +1146,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Tulsa’s QB room rates 55.6 (#95 of 133) against Arkansas’s secondary at 43.8 (#129 of 133). Tulsa’s unit stands higher among its own position group, by 34 places."
+        "read": "Tulsa’s QB room rates 55.6 (#94 of 133) against Arkansas’s secondary at 43.8 (#129 of 133). Tulsa’s unit stands higher among its own position group, by 35 places."
       },
       {
         "title": "Arkansas QB room vs Tulsa secondary",
@@ -1272,7 +1268,7 @@
           "team": "Arkansas",
           "label": "receivers",
           "v": "56.5",
-          "rank": "#8 of 133",
+          "rank": "#7 of 133",
           "note": null
         },
         "def": {
@@ -1283,7 +1279,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Arkansas’s receivers rates 56.5 (#8 of 133) against Tulsa’s secondary at 58.8 (#13 of 133). Arkansas’s unit stands higher among its own position group, by 5 places."
+        "read": "Arkansas’s receivers rates 56.5 (#7 of 133) against Tulsa’s secondary at 58.8 (#13 of 133). Arkansas’s unit stands higher among its own position group, by 6 places."
       }
     ],
     "roster": {
@@ -1440,9 +1436,9 @@
         "bullets": [
           "Playing at Arkansas is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Conference strength differs and the in-season sample is still thin, worth 3.9 points to Arkansas (+3.9 pts).",
-          "Stylistically the matchup favours Arkansas by 1.3 points: ball control vs front disruption (+1.3 pts).",
+          "Stylistically the matchup favours Arkansas by 1.2 points: ball control vs front disruption (+1.2 pts).",
           "Arkansas is the better football team by 0.4 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (+0.4 pts).",
-          "Receivers: Arkansas 56.5 (#8 of 133) vs Tulsa 52.6 (#132 of 133) — 124 places on the national board."
+          "Receivers: Arkansas 56.5 (#7 of 133) vs Tulsa 52.6 (#132 of 133) — 125 places on the national board."
         ]
       },
       "underdog": {
@@ -1481,7 +1477,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1563,10 +1559,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1593,6 +1585,10 @@
         {
           "item": "Arkansas — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Arkansas — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1603,16 +1599,138 @@
       "model_raw": "Arkansas -9.7",
       "market": "Arkansas -7.0",
       "difference": "2.7 points",
-      "difference_n": 2.721582092291701,
+      "difference_n": 2.6748899178088763,
       "total_model": "56.8",
       "total_market": "51.0",
-      "book": "captured · BetOnline.ag",
+      "book": "captured (stale 73h) · BetOnline.ag",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401856697",
+      "home": "Arkansas",
+      "away": "Tulsa",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Arkansas -9.7",
+        "favorite_team": "Arkansas",
+        "underdog_team": "Tulsa",
+        "display_fair_spread": 9.7,
+        "raw_home_margin": 9.67,
+        "raw_line_text": "Arkansas -9.67",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 2.67,
+        "toward_team": "Arkansas",
+        "text": "2.7 pts toward Arkansas",
+        "market_line_text": "Arkansas -7.0",
+        "market_home_margin": 7,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · BetOnline.ag",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 75,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 65,
+        "tier": "ADEQUATE",
+        "text": "65%",
+        "sub": "17 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Arkansas",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "conference",
+            "points": 3.93,
+            "text": "+3.9 pts conference-strength edge"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.24,
+            "text": "+1.2 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "LOW",
+        "label": "Low",
+        "text": "the stored numbers span 5.3 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-17T14:28:00.021Z",
+          "source": "first published",
+          "home_margin": 15,
+          "text": "Arkansas -15.0"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 9.67,
+          "text": "Arkansas -9.7"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Arkansas",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 5.3 points toward Tulsa since the first published number.",
+        "attribution_text": "Projection changed 5.3 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Arkansas 33, Tulsa 24.",
     "state": {
@@ -1640,13 +1758,13 @@
         {
           "k": "ETSR (overall)",
           "a": "+1.5  #56",
-          "h": "-1.1  #80",
+          "h": "-1.1  #79",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
-          "a": "52.4  #53",
-          "h": "51.5  #57",
+          "a": "52.4  #51",
+          "h": "51.5  #56",
           "note": null
         },
         {
@@ -1699,7 +1817,7 @@
         },
         {
           "k": "QB room",
-          "a": "55.6  #95",
+          "a": "55.6  #94",
           "h": "57.3  #58",
           "note": null
         },
@@ -1712,7 +1830,7 @@
         {
           "k": "Receivers",
           "a": "52.6  #132",
-          "h": "56.5  #8",
+          "h": "56.5  #7",
           "note": null
         },
         {
@@ -1760,7 +1878,7 @@
         {
           "k": "Δ national rank, this week",
           "a": "no change",
-          "h": "no change",
+          "h": "up 1",
           "note": "differenced from last week’s committed snapshot"
         }
       ]
@@ -1769,7 +1887,7 @@
       "EdgeDesk’s line is Arkansas -9.7 on a neutral read of the two teams, before any book is consulted. Projected total 56.8.",
       "Arkansas wins 74% of the time in EdgeDesk’s simulation, Tulsa 26%.",
       "Eight games in ten land between -13.3 and +30.7 for Arkansas. A single result inside that band tells you nothing new about either team.",
-      "The market has Arkansas -7.0 at captured · BetOnline.ag, 2.7 points from EdgeDesk’s number.",
+      "The market has Arkansas -7.0 at captured (stale 73h) · BetOnline.ag, 2.7 points from EdgeDesk’s number.",
       "Arkansas quarterback: KJ Jackson — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1784,6 +1902,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

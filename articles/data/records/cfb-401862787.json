@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Memphis vs. Charlotte: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Memphis vs. Charlotte 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Memphis at Charlotte at Charlotte +13.8 with a 57.2 fair total. Memphis wins 82% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "Memphis carries the stronger underlying team rating — -3.6 against -10.7, a 7.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Charlotte +13.8 before any sportsbook number is consulted, with Memphis winning 82%…",
+  "seo_description": "EdgeDesk prices Memphis at Charlotte at Charlotte +13.7 with a 57.3 fair total. Memphis wins 82% of simulations. Data confidence 84%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "Memphis carries the stronger underlying team rating — -3.6 against -10.7, a 7.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Charlotte +13.7 before any sportsbook number is consulted, with Memphis winning 82%…",
   "home_team": "Charlotte",
   "away_team": "Memphis",
   "venue": "Jerry Richardson Stadium",
@@ -21,15 +21,15 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
-  "fair_spread_text": "Charlotte +13.8",
-  "fair_total": "57.2",
+  "fair_spread_text": "Charlotte +13.7",
+  "fair_total": "57.3",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/memphis-vs-charlotte-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
@@ -64,25 +64,25 @@
     },
     "lede": [
       "Memphis carries the stronger underlying team rating — -3.6 against -10.7, a 7.1-point separation on a neutral field before home advantage, travel or rest.",
-      "EdgeDesk makes it Charlotte +13.8 before any sportsbook number is consulted, with Memphis winning 82% of simulations.",
+      "EdgeDesk makes it Charlotte +13.7 before any sportsbook number is consulted, with Memphis winning 82% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is continuity, where Charlotte leads Memphis by 73 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -13.762664529596128,
-      "fair_spread_text": "Charlotte +13.8",
-      "fair_spread_raw_text": "Charlotte +13.8",
+      "fair_spread": -13.734610948262304,
+      "fair_spread_text": "Charlotte +13.7",
+      "fair_spread_raw_text": "Charlotte +13.7",
       "near_pickem": false,
       "raw_margin_text": null,
       "favourite": "Memphis",
       "underdog": "Charlotte",
-      "margin": "13.8",
-      "total": "57.2",
+      "margin": "13.7",
+      "total": "57.3",
       "score": {
         "away": {
           "team": "Memphis",
-          "points": "36"
+          "points": "35"
         },
         "home": {
           "team": "Charlotte",
@@ -106,73 +106,75 @@
       },
       "outcome_range": {
         "basis_team": "Charlotte",
-        "p10": "-36.8",
-        "median": "-14.8",
-        "p90": "+7.2",
+        "p10": "-36.7",
+        "median": "-14.7",
+        "p90": "+7.3",
         "sigma": "15.1",
         "volatility": "40.04",
         "volatility_discriminates": false,
         "note": "Quoted from Charlotte’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "Charlotte is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for Charlotte and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "availability",
             "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Memphis is not in the availability registry"
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Memphis and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -265,7 +267,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Charlotte",
@@ -355,9 +357,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T22:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -377,7 +379,7 @@
         },
         {
           "points": "-3.9",
-          "points_n": -3.882082922497796,
+          "points_n": -3.8540293411639714,
           "text": "Stylistically the matchup favours Memphis by 3.9 points: ball control vs front disruption",
           "favours": "Memphis"
         }
@@ -426,15 +428,15 @@
               "a": {
                 "v": "41.4",
                 "n": 41.4,
-                "rank": "#113 of 133",
-                "rank_n": 113,
+                "rank": "#112 of 133",
+                "rank_n": 112,
                 "note": null
               },
               "h": {
                 "v": "42.3",
                 "n": 42.3,
-                "rank": "#107 of 133",
-                "rank_n": 107,
+                "rank": "#106 of 133",
+                "rank_n": 106,
                 "note": null
               },
               "edge": {
@@ -474,8 +476,8 @@
               "a": {
                 "v": "49.8",
                 "n": 49.8,
-                "rank": "#84 of 133",
-                "rank_n": 84,
+                "rank": "#83 of 133",
+                "rank_n": 83,
                 "note": null
               },
               "h": {
@@ -488,7 +490,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.7,
-                "rank_gap": 50
+                "rank_gap": 49
               }
             }
           ]
@@ -724,8 +726,8 @@
               "a": {
                 "v": "54.9",
                 "n": 54.9,
-                "rank": "#78 of 133",
-                "rank_n": 78,
+                "rank": "#76 of 133",
+                "rank_n": 76,
                 "note": null
               },
               "h": {
@@ -738,7 +740,7 @@
               "edge": {
                 "side": "a",
                 "gap": 1.1,
-                "rank_gap": 46
+                "rank_gap": 48
               }
             },
             {
@@ -772,8 +774,8 @@
               "a": {
                 "v": "56.0",
                 "n": 56,
-                "rank": "#67 of 133",
-                "rank_n": 67,
+                "rank": "#68 of 133",
+                "rank_n": 68,
                 "note": null
               },
               "h": {
@@ -786,7 +788,7 @@
               "edge": {
                 "side": "a",
                 "gap": 0.6,
-                "rank_gap": 29
+                "rank_gap": 28
               }
             },
             {
@@ -968,13 +970,13 @@
         },
         {
           "k": "Receivers",
-          "rank_gap": 46,
+          "rank_gap": 48,
           "gap": 1.1,
           "lead": "Memphis",
           "trail": "Charlotte",
-          "lead_cell": "54.9 · #78 of 133",
+          "lead_cell": "54.9 · #76 of 133",
           "trail_cell": "53.8 · #124 of 133",
-          "text": "Memphis 54.9 (#78 of 133) vs Charlotte 53.8 (#124 of 133) — 46 places on the national board."
+          "text": "Memphis 54.9 (#76 of 133) vs Charlotte 53.8 (#124 of 133) — 48 places on the national board."
         },
         {
           "k": "Pass offense",
@@ -1010,13 +1012,13 @@
         },
         {
           "k": "Scheme fit",
-          "rank_gap": 50,
+          "rank_gap": 49,
           "gap": 1.7,
           "lead": "Charlotte",
           "trail": "Memphis",
           "lead_cell": "51.5 · #34 of 133",
-          "trail_cell": "49.8 · #84 of 133",
-          "text": "Charlotte 51.5 (#34 of 133) vs Memphis 49.8 (#84 of 133) — 50 places on the national board."
+          "trail_cell": "49.8 · #83 of 133",
+          "text": "Charlotte 51.5 (#34 of 133) vs Memphis 49.8 (#83 of 133) — 49 places on the national board."
         },
         {
           "k": "Pass defense",
@@ -1213,7 +1215,7 @@
           "team": "Memphis",
           "label": "running backs",
           "v": "56.0",
-          "rank": "#67 of 133",
+          "rank": "#68 of 133",
           "note": null
         },
         "def": {
@@ -1224,7 +1226,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Memphis’s running backs rates 56.0 (#67 of 133) against Charlotte’s linebackers at 50.6 (#97 of 133). Memphis’s unit stands higher among its own position group, by 30 places."
+        "read": "Memphis’s running backs rates 56.0 (#68 of 133) against Charlotte’s linebackers at 50.6 (#97 of 133). Memphis’s unit stands higher among its own position group, by 29 places."
       },
       {
         "title": "Charlotte running backs vs Memphis linebackers",
@@ -1251,7 +1253,7 @@
           "team": "Memphis",
           "label": "receivers",
           "v": "54.9",
-          "rank": "#78 of 133",
+          "rank": "#76 of 133",
           "note": null
         },
         "def": {
@@ -1262,7 +1264,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Memphis’s receivers rates 54.9 (#78 of 133) against Charlotte’s secondary at 43.0 (#131 of 133). Memphis’s unit stands higher among its own position group, by 53 places."
+        "read": "Memphis’s receivers rates 54.9 (#76 of 133) against Charlotte’s secondary at 43.0 (#131 of 133). Memphis’s unit stands higher among its own position group, by 55 places."
       },
       {
         "title": "Charlotte receivers vs Memphis secondary",
@@ -1440,7 +1442,7 @@
           "Stylistically the matchup favours Memphis by 3.9 points: ball control vs front disruption (-3.9 pts).",
           "Run offense: Memphis 53.1 (#46 of 133) vs Charlotte 39.9 (#119 of 133) — 73 places on the national board.",
           "Offense: Memphis 54.0 (#37 of 133) vs Charlotte 45.3 (#101 of 133) — 64 places on the national board.",
-          "Receivers: Memphis 54.9 (#78 of 133) vs Charlotte 53.8 (#124 of 133) — 46 places on the national board."
+          "Receivers: Memphis 54.9 (#76 of 133) vs Charlotte 53.8 (#124 of 133) — 48 places on the national board."
         ]
       },
       "underdog": {
@@ -1449,9 +1451,9 @@
         "bullets": [
           "Playing at Charlotte is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Continuity: Charlotte 45.8 (#59 of 133) vs Memphis 23.8 (#132 of 133) — 73 places on the national board.",
-          "Scheme fit: Charlotte 51.5 (#34 of 133) vs Memphis 49.8 (#84 of 133) — 50 places on the national board.",
+          "Scheme fit: Charlotte 51.5 (#34 of 133) vs Memphis 49.8 (#83 of 133) — 49 places on the national board.",
           "Pass defense: Charlotte 46.4 (#92 of 133) vs Memphis 38.4 (#123 of 133) — 31 places on the national board.",
-          "The outcome range is 15.1 points wide at one sigma — p10 -36.8 to p90 +7.2 for Charlotte, so a projection of -13.8 still produces results a long way either side of it."
+          "The outcome range is 15.1 points wide at one sigma — p10 -36.7 to p90 +7.3 for Charlotte, so a projection of -13.7 still produces results a long way either side of it."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
@@ -1561,10 +1563,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1591,18 +1589,122 @@
         {
           "item": "Charlotte — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Charlotte — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
       "available": false,
-      "model": "Charlotte +13.8",
-      "model_raw": "Charlotte +13.8",
+      "model": "Charlotte +13.7",
+      "model_raw": "Charlotte +13.7",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
-    "headline": "EdgeDesk projects Memphis 36, Charlotte 22.",
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401862787",
+      "home": "Charlotte",
+      "away": "Memphis",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Memphis -13.7",
+        "favorite_team": "Memphis",
+        "underdog_team": "Charlotte",
+        "display_fair_spread": -13.7,
+        "raw_home_margin": -13.73,
+        "raw_line_text": "Memphis -13.73",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Memphis",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 13.96,
+            "text": "+14.0 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 3.85,
+            "text": "+3.9 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": -13.73,
+          "text": "Memphis -13.7"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Memphis",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
+    "headline": "EdgeDesk projects Memphis 35, Charlotte 22.",
     "state": {
       "label": "NO MARKET",
       "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1611,7 +1713,7 @@
     "score": {
       "away": {
         "team": "Memphis",
-        "points": "36"
+        "points": "35"
       },
       "home": {
         "team": "Charlotte",
@@ -1633,8 +1735,8 @@
         },
         {
           "k": "Talent",
-          "a": "41.4  #113",
-          "h": "42.3  #107",
+          "a": "41.4  #112",
+          "h": "42.3  #106",
           "note": null
         },
         {
@@ -1699,13 +1801,13 @@
         },
         {
           "k": "Receivers",
-          "a": "54.9  #78",
+          "a": "54.9  #76",
           "h": "53.8  #124",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "56.0  #67",
+          "a": "56.0  #68",
           "h": "55.4  #96",
           "note": null
         },
@@ -1754,9 +1856,9 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Charlotte +13.8 on a neutral read of the two teams, before any book is consulted. Projected total 57.2.",
+      "EdgeDesk’s line is Charlotte +13.7 on a neutral read of the two teams, before any book is consulted. Projected total 57.3.",
       "Charlotte wins 18% of the time in EdgeDesk’s simulation, Memphis 82%.",
-      "Eight games in ten land between -36.8 and +7.2 for Charlotte. A single result inside that band tells you nothing new about either team.",
+      "Eight games in ten land between -36.7 and +7.3 for Charlotte. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
       "Memphis quarterback: Marcus Stokes — started the last game; no announcement for this one.",
       "Charlotte quarterback: Cole Gonzales — started the last game; no announcement for this one."
@@ -1772,6 +1874,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

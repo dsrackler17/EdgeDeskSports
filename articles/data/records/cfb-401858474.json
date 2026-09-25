@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Michigan vs. Minnesota: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Michigan vs. Minnesota 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Michigan at Minnesota at Minnesota +3.5 with a 49.1 fair total. Michigan wins 59% of simulations. Data confidence 76%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Michigan at Minnesota at Minnesota +3.5 with a 49.1 fair total. Michigan wins 59% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Michigan carries the stronger underlying team rating — +5.4 against +0.3, a 5.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Minnesota +3.5 before any sportsbook number is consulted, with Michigan winning 59%…",
   "home_team": "Minnesota",
   "away_team": "Michigan",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 76,
+  "confidence": 80,
   "priced": true,
   "fair_spread_text": "Minnesota +3.5",
   "fair_total": "49.1",
@@ -66,11 +66,11 @@
       "Michigan carries the stronger underlying team rating — +5.4 against +0.3, a 5.1-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Minnesota +3.5 before any sportsbook number is consulted, with Michigan winning 59% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is kicking, where Minnesota leads Michigan by 76 places nationally.",
-      "Data confidence on this matchup is 76% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -3.5103298047463967,
+      "fair_spread": -3.512156560966458,
       "fair_spread_text": "Minnesota +3.5",
       "fair_spread_raw_text": "Minnesota +3.5",
       "near_pickem": false,
@@ -114,65 +114,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from Minnesota’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 76,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 80,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Minnesota is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Michigan is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -267,7 +245,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Minnesota",
@@ -339,9 +317,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -361,7 +339,7 @@
         },
         {
           "points": "-0.2",
-          "points_n": -0.2061394484941284,
+          "points_n": -0.20796620471418947,
           "text": "Stylistically the matchup favours Michigan by 0.2 points: field position",
           "favours": "Michigan"
         }
@@ -385,7 +363,7 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "+5.4",
-                "n": 5.38,
+                "n": 5.39,
                 "rank": "#27 of 133",
                 "rank_n": 27,
                 "note": null
@@ -408,8 +386,8 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "55.4",
-                "n": 55.4,
+                "v": "55.6",
+                "n": 55.6,
                 "rank": "#38 of 133",
                 "rank_n": 38,
                 "note": null
@@ -417,14 +395,14 @@
               "h": {
                 "v": "56.4",
                 "n": 56.4,
-                "rank": "#35 of 133",
-                "rank_n": 35,
+                "rank": "#33 of 133",
+                "rank_n": 33,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 1,
-                "rank_gap": 3
+                "gap": 0.8,
+                "rank_gap": 5
               }
             },
             {
@@ -667,14 +645,14 @@
               "h": {
                 "v": "57.3",
                 "n": 57.3,
-                "rank": "#61 of 133",
-                "rank_n": 61,
+                "rank": "#60 of 133",
+                "rank_n": 60,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.9,
-                "rank_gap": 15
+                "rank_gap": 14
               }
             },
             {
@@ -689,16 +667,16 @@
                 "note": null
               },
               "h": {
-                "v": "47.4",
-                "n": 47.4,
-                "rank": "#100 of 133",
-                "rank_n": 100,
+                "v": "47.3",
+                "n": 47.3,
+                "rank": "#102 of 133",
+                "rank_n": 102,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 3.8,
-                "rank_gap": 27
+                "gap": 3.9,
+                "rank_gap": 29
               }
             },
             {
@@ -708,21 +686,21 @@
               "a": {
                 "v": "55.5",
                 "n": 55.5,
-                "rank": "#45 of 133",
-                "rank_n": 45,
+                "rank": "#43 of 133",
+                "rank_n": 43,
                 "note": null
               },
               "h": {
                 "v": "55.6",
                 "n": 55.6,
-                "rank": "#38 of 133",
-                "rank_n": 38,
+                "rank": "#39 of 133",
+                "rank_n": 39,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.1,
-                "rank_gap": 7
+                "rank_gap": 4
               }
             },
             {
@@ -780,8 +758,8 @@
               "a": {
                 "v": "57.6",
                 "n": 57.6,
-                "rank": "#22 of 133",
-                "rank_n": 22,
+                "rank": "#23 of 133",
+                "rank_n": 23,
                 "note": null
               },
               "h": {
@@ -794,7 +772,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.3,
-                "rank_gap": 3
+                "rank_gap": 4
               }
             },
             {
@@ -826,10 +804,10 @@
               "k": "Secondary",
               "note": null,
               "a": {
-                "v": "51.1",
-                "n": 51.1,
-                "rank": "#90 of 133",
-                "rank_n": 90,
+                "v": "51.2",
+                "n": 51.2,
+                "rank": "#89 of 133",
+                "rank_n": 89,
                 "note": null
               },
               "h": {
@@ -841,8 +819,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 0.9,
-                "rank_gap": 8
+                "gap": 0.8,
+                "rank_gap": 7
               }
             },
             {
@@ -952,13 +930,13 @@
         },
         {
           "k": "Offensive line",
-          "rank_gap": 27,
-          "gap": 3.8,
+          "rank_gap": 29,
+          "gap": 3.9,
           "lead": "Michigan",
           "trail": "Minnesota",
           "lead_cell": "51.2 · #73 of 133",
-          "trail_cell": "47.4 · #100 of 133",
-          "text": "Michigan 51.2 (#73 of 133) vs Minnesota 47.4 (#100 of 133) — 27 places on the national board."
+          "trail_cell": "47.3 · #102 of 133",
+          "text": "Michigan 51.2 (#73 of 133) vs Minnesota 47.3 (#102 of 133) — 29 places on the national board."
         },
         {
           "k": "Defense",
@@ -1140,18 +1118,18 @@
           "team": "Minnesota",
           "label": "QB room",
           "v": "57.3",
-          "rank": "#61 of 133",
+          "rank": "#60 of 133",
           "note": null
         },
         "def": {
           "team": "Michigan",
           "label": "secondary",
-          "v": "51.1",
-          "rank": "#90 of 133",
+          "v": "51.2",
+          "rank": "#89 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Minnesota’s QB room rates 57.3 (#61 of 133) against Michigan’s secondary at 51.1 (#90 of 133). Minnesota’s unit stands higher among its own position group, by 29 places."
+        "read": "Minnesota’s QB room rates 57.3 (#60 of 133) against Michigan’s secondary at 51.2 (#89 of 133). Minnesota’s unit stands higher among its own position group, by 29 places."
       },
       {
         "title": "Michigan offensive line vs Minnesota defensive line",
@@ -1177,19 +1155,19 @@
         "att": {
           "team": "Minnesota",
           "label": "offensive line",
-          "v": "47.4",
-          "rank": "#100 of 133",
+          "v": "47.3",
+          "rank": "#102 of 133",
           "note": null
         },
         "def": {
           "team": "Michigan",
           "label": "defensive line",
           "v": "57.6",
-          "rank": "#22 of 133",
+          "rank": "#23 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Minnesota’s offensive line rates 47.4 (#100 of 133) against Michigan’s defensive line at 57.6 (#22 of 133). Michigan’s unit stands higher among its own position group, by 78 places."
+        "read": "Minnesota’s offensive line rates 47.3 (#102 of 133) against Michigan’s defensive line at 57.6 (#23 of 133). Michigan’s unit stands higher among its own position group, by 79 places."
       },
       {
         "title": "Michigan running backs vs Minnesota linebackers",
@@ -1235,7 +1213,7 @@
           "team": "Michigan",
           "label": "receivers",
           "v": "55.5",
-          "rank": "#45 of 133",
+          "rank": "#43 of 133",
           "note": null
         },
         "def": {
@@ -1246,7 +1224,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Michigan’s receivers rates 55.5 (#45 of 133) against Minnesota’s secondary at 52.0 (#82 of 133). Michigan’s unit stands higher among its own position group, by 37 places."
+        "read": "Michigan’s receivers rates 55.5 (#43 of 133) against Minnesota’s secondary at 52.0 (#82 of 133). Michigan’s unit stands higher among its own position group, by 39 places."
       },
       {
         "title": "Minnesota receivers vs Michigan secondary",
@@ -1254,18 +1232,18 @@
           "team": "Minnesota",
           "label": "receivers",
           "v": "55.6",
-          "rank": "#38 of 133",
+          "rank": "#39 of 133",
           "note": null
         },
         "def": {
           "team": "Michigan",
           "label": "secondary",
-          "v": "51.1",
-          "rank": "#90 of 133",
+          "v": "51.2",
+          "rank": "#89 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Minnesota’s receivers rates 55.6 (#38 of 133) against Michigan’s secondary at 51.1 (#90 of 133). Minnesota’s unit stands higher among its own position group, by 52 places."
+        "read": "Minnesota’s receivers rates 55.6 (#39 of 133) against Michigan’s secondary at 51.2 (#89 of 133). Minnesota’s unit stands higher among its own position group, by 50 places."
       }
     ],
     "roster": {
@@ -1371,8 +1349,8 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "8 on file, 0% of starter value out",
-          "h": "8 on file, 0% of starter value out",
+          "a": "8 on file, 1% of starter value out",
+          "h": "8 on file, 3% of starter value out",
           "edge": null
         },
         {
@@ -1424,7 +1402,7 @@
           "Stylistically the matchup favours Michigan by 0.2 points: field position (-0.2 pts).",
           "ETSR (overall): Michigan +5.4 (#27 of 133) vs Minnesota +0.3 (#66 of 133) — 39 places on the national board.",
           "Pass defense: Michigan 63.9 (#10 of 133) vs Minnesota 54.2 (#41 of 133) — 31 places on the national board.",
-          "Offensive line: Michigan 51.2 (#73 of 133) vs Minnesota 47.4 (#100 of 133) — 27 places on the national board."
+          "Offensive line: Michigan 51.2 (#73 of 133) vs Minnesota 47.3 (#102 of 133) — 29 places on the national board."
         ]
       },
       "underdog": {
@@ -1539,10 +1517,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1576,6 +1550,100 @@
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858474",
+      "home": "Minnesota",
+      "away": "Michigan",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Michigan -3.5",
+        "favorite_team": "Michigan",
+        "underdog_team": "Minnesota",
+        "display_fair_spread": -3.5,
+        "raw_home_margin": -3.51,
+        "raw_line_text": "Michigan -3.51",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 80,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Michigan",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 7.39,
+            "text": "+7.4 pts team-strength edge (opponent-adjusted results)"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": -3.51,
+          "text": "Michigan -3.5"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Michigan",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
     "headline": "EdgeDesk projects Michigan 26, Minnesota 23.",
     "state": {
       "label": "NO MARKET",
@@ -1607,8 +1675,8 @@
         },
         {
           "k": "Talent",
-          "a": "55.4  #38",
-          "h": "56.4  #35",
+          "a": "55.6  #38",
+          "h": "56.4  #33",
           "note": null
         },
         {
@@ -1662,19 +1730,19 @@
         {
           "k": "QB room",
           "a": "58.2  #46",
-          "h": "57.3  #61",
+          "h": "57.3  #60",
           "note": null
         },
         {
           "k": "Offensive line",
           "a": "51.2  #73",
-          "h": "47.4  #100",
+          "h": "47.3  #102",
           "note": null
         },
         {
           "k": "Receivers",
-          "a": "55.5  #45",
-          "h": "55.6  #38",
+          "a": "55.5  #43",
+          "h": "55.6  #39",
           "note": null
         },
         {
@@ -1685,7 +1753,7 @@
         },
         {
           "k": "Defensive line",
-          "a": "57.6  #22",
+          "a": "57.6  #23",
           "h": "57.9  #19",
           "note": null
         },
@@ -1697,7 +1765,7 @@
         },
         {
           "k": "Secondary",
-          "a": "51.1  #90",
+          "a": "51.2  #89",
           "h": "52.0  #82",
           "note": null
         },
@@ -1746,6 +1814,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

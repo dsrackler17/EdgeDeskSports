@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Washington vs. USC: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Washington vs. USC 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Washington at USC at USC -4.9 with a 56.3 fair total. USC wins 63% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Washington at USC at USC -4.9 with a 56.4 fair total. USC wins 63% of simulations. Data confidence 85%. Model status NO MARKET. Research, not picks.",
   "excerpt": "USC carries the stronger underlying team rating — +6.3 against +6.1, a 0.2-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it USC -4.9 before any sportsbook number is consulted, with USC winning 63% of simulations.",
   "home_team": "USC",
   "away_team": "Washington",
@@ -21,15 +21,15 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 80,
+  "confidence": 85,
   "priced": true,
   "fair_spread_text": "USC -4.9",
-  "fair_total": "56.3",
+  "fair_total": "56.4",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/washington-vs-usc-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
@@ -66,11 +66,11 @@
       "USC carries the stronger underlying team rating — +6.3 against +6.1, a 0.2-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it USC -4.9 before any sportsbook number is consulted, with USC winning 63% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is linebackers, where Washington leads USC by 92 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 85% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 4.933814884221543,
+      "fair_spread": 4.929504421381455,
       "fair_spread_text": "USC -4.9",
       "fair_spread_raw_text": "USC -4.9",
       "near_pickem": false,
@@ -78,7 +78,7 @@
       "favourite": "USC",
       "underdog": "Washington",
       "margin": "4.9",
-      "total": "56.3",
+      "total": "56.4",
       "score": {
         "away": {
           "team": "Washington",
@@ -114,65 +114,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from USC’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 85,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "USC is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Washington is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:15:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "USC",
@@ -337,9 +315,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -353,7 +331,7 @@
         },
         {
           "points": "+1.2",
-          "points_n": 1.2093192869556044,
+          "points_n": 1.2050088241155166,
           "text": "Stylistically the matchup favours USC by 1.2 points: ball control vs front disruption",
           "favours": "USC"
         },
@@ -383,14 +361,14 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "+6.1",
-                "n": 6.14,
+                "n": 6.12,
                 "rank": "#24 of 133",
                 "rank_n": 24,
                 "note": null
               },
               "h": {
                 "v": "+6.3",
-                "n": 6.35,
+                "n": 6.33,
                 "rank": "#22 of 133",
                 "rank_n": 22,
                 "note": null
@@ -406,23 +384,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "64.7",
-                "n": 64.7,
-                "rank": "#12 of 133",
-                "rank_n": 12,
+                "v": "64.2",
+                "n": 64.2,
+                "rank": "#14 of 133",
+                "rank_n": 14,
                 "note": null
               },
               "h": {
-                "v": "67.2",
-                "n": 67.2,
+                "v": "66.5",
+                "n": 66.5,
                 "rank": "#8 of 133",
                 "rank_n": 8,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 2.5,
-                "rank_gap": 4
+                "gap": 2.3,
+                "rank_gap": 6
               }
             },
             {
@@ -463,14 +441,14 @@
               "h": {
                 "v": "53.1",
                 "n": 53.1,
-                "rank": "#17 of 133",
-                "rank_n": 17,
+                "rank": "#18 of 133",
+                "rank_n": 18,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.9,
-                "rank_gap": 13
+                "rank_gap": 14
               }
             }
           ]
@@ -706,21 +684,21 @@
               "a": {
                 "v": "55.7",
                 "n": 55.7,
-                "rank": "#36 of 133",
-                "rank_n": 36,
+                "rank": "#37 of 133",
+                "rank_n": 37,
                 "note": null
               },
               "h": {
-                "v": "55.0",
-                "n": 55,
-                "rank": "#72 of 133",
-                "rank_n": 72,
+                "v": "55.1",
+                "n": 55.1,
+                "rank": "#67 of 133",
+                "rank_n": 67,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 0.7,
-                "rank_gap": 36
+                "gap": 0.6,
+                "rank_gap": 30
               }
             },
             {
@@ -752,23 +730,23 @@
               "k": "Running backs",
               "note": null,
               "a": {
-                "v": "55.5",
-                "n": 55.5,
-                "rank": "#93 of 133",
-                "rank_n": 93,
+                "v": "56.3",
+                "n": 56.3,
+                "rank": "#62 of 133",
+                "rank_n": 62,
                 "note": null
               },
               "h": {
                 "v": "56.7",
                 "n": 56.7,
-                "rank": "#42 of 133",
-                "rank_n": 42,
+                "rank": "#43 of 133",
+                "rank_n": 43,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 1.2,
-                "rank_gap": 51
+                "gap": 0.4,
+                "rank_gap": 19
               }
             },
             {
@@ -844,23 +822,23 @@
               "k": "Secondary",
               "note": null,
               "a": {
-                "v": "56.4",
-                "n": 56.4,
-                "rank": "#33 of 133",
-                "rank_n": 33,
+                "v": "56.7",
+                "n": 56.7,
+                "rank": "#32 of 133",
+                "rank_n": 32,
                 "note": null
               },
               "h": {
-                "v": "55.4",
-                "n": 55.4,
-                "rank": "#42 of 133",
-                "rank_n": 42,
+                "v": "55.6",
+                "n": 55.6,
+                "rank": "#39 of 133",
+                "rank_n": 39,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 1,
-                "rank_gap": 9
+                "gap": 1.1,
+                "rank_gap": 7
               }
             },
             {
@@ -970,13 +948,13 @@
         },
         {
           "k": "Receivers",
-          "rank_gap": 36,
-          "gap": 0.7,
+          "rank_gap": 30,
+          "gap": 0.6,
           "lead": "Washington",
           "trail": "USC",
-          "lead_cell": "55.7 · #36 of 133",
-          "trail_cell": "55.0 · #72 of 133",
-          "text": "Washington 55.7 (#36 of 133) vs USC 55.0 (#72 of 133) — 36 places on the national board."
+          "lead_cell": "55.7 · #37 of 133",
+          "trail_cell": "55.1 · #67 of 133",
+          "text": "Washington 55.7 (#37 of 133) vs USC 55.1 (#67 of 133) — 30 places on the national board."
         },
         {
           "k": "Kicking",
@@ -1000,16 +978,6 @@
         }
       ],
       "home": [
-        {
-          "k": "Running backs",
-          "rank_gap": 51,
-          "gap": 1.2,
-          "lead": "USC",
-          "trail": "Washington",
-          "lead_cell": "56.7 · #42 of 133",
-          "trail_cell": "55.5 · #93 of 133",
-          "text": "USC 56.7 (#42 of 133) vs Washington 55.5 (#93 of 133) — 51 places on the national board."
-        },
         {
           "k": "Run offense",
           "rank_gap": 44,
@@ -1049,6 +1017,16 @@
           "lead_cell": "58.4 · #17 of 133",
           "trail_cell": "52.4 · #45 of 133",
           "text": "USC 58.4 (#17 of 133) vs Washington 52.4 (#45 of 133) — 28 places on the national board."
+        },
+        {
+          "k": "Offensive line",
+          "rank_gap": 24,
+          "gap": 5.2,
+          "lead": "USC",
+          "trail": "Washington",
+          "lead_cell": "60.1 · #4 of 133",
+          "trail_cell": "54.9 · #28 of 133",
+          "text": "USC 60.1 (#4 of 133) vs Washington 54.9 (#28 of 133) — 24 places on the national board."
         }
       ],
       "measured": [],
@@ -1145,12 +1123,12 @@
         "def": {
           "team": "USC",
           "label": "secondary",
-          "v": "55.4",
-          "rank": "#42 of 133",
+          "v": "55.6",
+          "rank": "#39 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Washington’s QB room rates 62.5 (#9 of 133) against USC’s secondary at 55.4 (#42 of 133). Washington’s unit stands higher among its own position group, by 33 places."
+        "read": "Washington’s QB room rates 62.5 (#9 of 133) against USC’s secondary at 55.6 (#39 of 133). Washington’s unit stands higher among its own position group, by 30 places."
       },
       {
         "title": "USC QB room vs Washington secondary",
@@ -1164,12 +1142,12 @@
         "def": {
           "team": "Washington",
           "label": "secondary",
-          "v": "56.4",
-          "rank": "#33 of 133",
+          "v": "56.7",
+          "rank": "#32 of 133",
           "note": null
         },
         "complete": true,
-        "read": "USC’s QB room rates 65.8 (#1 of 133) against Washington’s secondary at 56.4 (#33 of 133). USC’s unit stands higher among its own position group, by 32 places."
+        "read": "USC’s QB room rates 65.8 (#1 of 133) against Washington’s secondary at 56.7 (#32 of 133). USC’s unit stands higher among its own position group, by 31 places."
       },
       {
         "title": "Washington offensive line vs USC defensive line",
@@ -1214,8 +1192,8 @@
         "att": {
           "team": "Washington",
           "label": "running backs",
-          "v": "55.5",
-          "rank": "#93 of 133",
+          "v": "56.3",
+          "rank": "#62 of 133",
           "note": null
         },
         "def": {
@@ -1226,7 +1204,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Washington’s running backs rates 55.5 (#93 of 133) against USC’s linebackers at 50.5 (#99 of 133). Washington’s unit stands higher among its own position group, by 6 places."
+        "read": "Washington’s running backs rates 56.3 (#62 of 133) against USC’s linebackers at 50.5 (#99 of 133). Washington’s unit stands higher among its own position group, by 37 places."
       },
       {
         "title": "USC running backs vs Washington linebackers",
@@ -1234,7 +1212,7 @@
           "team": "USC",
           "label": "running backs",
           "v": "56.7",
-          "rank": "#42 of 133",
+          "rank": "#43 of 133",
           "note": null
         },
         "def": {
@@ -1245,7 +1223,7 @@
           "note": null
         },
         "complete": true,
-        "read": "USC’s running backs rates 56.7 (#42 of 133) against Washington’s linebackers at 59.4 (#7 of 133). Washington’s unit stands higher among its own position group, by 35 places."
+        "read": "USC’s running backs rates 56.7 (#43 of 133) against Washington’s linebackers at 59.4 (#7 of 133). Washington’s unit stands higher among its own position group, by 36 places."
       },
       {
         "title": "Washington receivers vs USC secondary",
@@ -1253,37 +1231,37 @@
           "team": "Washington",
           "label": "receivers",
           "v": "55.7",
-          "rank": "#36 of 133",
+          "rank": "#37 of 133",
           "note": null
         },
         "def": {
           "team": "USC",
           "label": "secondary",
-          "v": "55.4",
-          "rank": "#42 of 133",
+          "v": "55.6",
+          "rank": "#39 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Washington’s receivers rates 55.7 (#36 of 133) against USC’s secondary at 55.4 (#42 of 133). Washington’s unit stands higher among its own position group, by 6 places."
+        "read": "Washington’s receivers rates 55.7 (#37 of 133) against USC’s secondary at 55.6 (#39 of 133). Washington’s unit stands higher among its own position group, by 2 places."
       },
       {
         "title": "USC receivers vs Washington secondary",
         "att": {
           "team": "USC",
           "label": "receivers",
-          "v": "55.0",
-          "rank": "#72 of 133",
+          "v": "55.1",
+          "rank": "#67 of 133",
           "note": null
         },
         "def": {
           "team": "Washington",
           "label": "secondary",
-          "v": "56.4",
-          "rank": "#33 of 133",
+          "v": "56.7",
+          "rank": "#32 of 133",
           "note": null
         },
         "complete": true,
-        "read": "USC’s receivers rates 55.0 (#72 of 133) against Washington’s secondary at 56.4 (#33 of 133). Washington’s unit stands higher among its own position group, by 39 places."
+        "read": "USC’s receivers rates 55.1 (#67 of 133) against Washington’s secondary at 56.7 (#32 of 133). Washington’s unit stands higher among its own position group, by 35 places."
       }
     ],
     "roster": {
@@ -1389,8 +1367,8 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "9 on file, 0% of starter value out",
-          "h": "8 on file, 0% of starter value out",
+          "a": "9 on file, 3% of starter value out",
+          "h": "8 on file, 4% of starter value out",
           "edge": null
         },
         {
@@ -1400,7 +1378,7 @@
           "h": "57%",
           "edge": {
             "side": "h",
-            "gap": 0.061999999999999944
+            "gap": 0.06399999999999995
           }
         }
       ],
@@ -1440,9 +1418,9 @@
         "bullets": [
           "Playing at USC is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Stylistically the matchup favours USC by 1.2 points: ball control vs front disruption (+1.2 pts).",
-          "Running backs: USC 56.7 (#42 of 133) vs Washington 55.5 (#93 of 133) — 51 places on the national board.",
           "Run offense: USC 49.6 (#66 of 133) vs Washington 42.5 (#110 of 133) — 44 places on the national board.",
-          "Special teams: USC 51.1 (#24 of 126) vs Washington 50.1 (#62 of 126) — 38 places on the national board."
+          "Special teams: USC 51.1 (#24 of 126) vs Washington 50.1 (#62 of 126) — 38 places on the national board.",
+          "Performance: USC 56.0 (#41 of 133) vs Washington 49.9 (#72 of 133) — 31 places on the national board."
         ]
       },
       "underdog": {
@@ -1452,7 +1430,7 @@
           "Washington is the better football team by 0.4 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team (-0.4 pts).",
           "Linebackers: Washington 59.4 (#7 of 133) vs USC 50.5 (#99 of 133) — 92 places on the national board.",
           "Defensive line: Washington 57.7 (#21 of 133) vs USC 49.9 (#103 of 133) — 82 places on the national board.",
-          "Receivers: Washington 55.7 (#36 of 133) vs USC 55.0 (#72 of 133) — 36 places on the national board.",
+          "Receivers: Washington 55.7 (#37 of 133) vs USC 55.1 (#67 of 133) — 30 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -18.1 to p90 +25.9 for USC, so a projection of +4.9 still produces results a long way either side of it."
         ]
       },
@@ -1557,10 +1535,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1594,6 +1568,106 @@
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858478",
+      "home": "USC",
+      "away": "Washington",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "USC -4.9",
+        "favorite_team": "USC",
+        "underdog_team": "Washington",
+        "display_fair_spread": 4.9,
+        "raw_home_margin": 4.93,
+        "raw_line_text": "USC -4.93",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 85,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "USC",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.21,
+            "text": "+1.2 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": 4.93,
+          "text": "USC -4.9"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Washington",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
     "headline": "EdgeDesk projects USC 31, Washington 26.",
     "state": {
       "label": "NO MARKET",
@@ -1625,8 +1699,8 @@
         },
         {
           "k": "Talent",
-          "a": "64.7  #12",
-          "h": "67.2  #8",
+          "a": "64.2  #14",
+          "h": "66.5  #8",
           "note": null
         },
         {
@@ -1691,14 +1765,14 @@
         },
         {
           "k": "Receivers",
-          "a": "55.7  #36",
-          "h": "55.0  #72",
+          "a": "55.7  #37",
+          "h": "55.1  #67",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "55.5  #93",
-          "h": "56.7  #42",
+          "a": "56.3  #62",
+          "h": "56.7  #43",
           "note": null
         },
         {
@@ -1715,8 +1789,8 @@
         },
         {
           "k": "Secondary",
-          "a": "56.4  #33",
-          "h": "55.4  #42",
+          "a": "56.7  #32",
+          "h": "55.6  #39",
           "note": null
         },
         {
@@ -1746,7 +1820,7 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is USC -4.9 on a neutral read of the two teams, before any book is consulted. Projected total 56.3.",
+      "EdgeDesk’s line is USC -4.9 on a neutral read of the two teams, before any book is consulted. Projected total 56.4.",
       "USC wins 63% of the time in EdgeDesk’s simulation, Washington 37%.",
       "Eight games in ten land between -18.1 and +25.9 for USC. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
@@ -1764,6 +1838,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

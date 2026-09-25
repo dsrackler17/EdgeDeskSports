@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Marshall vs. James Madison: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Marshall vs. James Madison 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Marshall at James Madison at James Madison -21.0 with a 57.3 fair total. James Madison wins 92% of simulations. Data confidence 68%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "James Madison carries the stronger underlying team rating — +1.7 against -4.9, a 6.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it James Madison -21.0 before any sportsbook number is consulted, with James…",
+  "seo_description": "EdgeDesk prices Marshall at James Madison at James Madison -20.9 with a 57.3 fair total. James Madison wins 92% of simulations. Data confidence 72%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "James Madison carries the stronger underlying team rating — +1.7 against -4.9, a 6.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it James Madison -20.9 before any sportsbook number is consulted, with James…",
   "home_team": "James Madison",
   "away_team": "Marshall",
   "venue": "Bridgeforth Stadium",
@@ -21,14 +21,14 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 68,
+  "confidence": 72,
   "priced": true,
-  "fair_spread_text": "James Madison -21.0",
+  "fair_spread_text": "James Madison -20.9",
   "fair_total": "57.3",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/marshall-vs-james-madison-2026",
@@ -64,20 +64,20 @@
     },
     "lede": [
       "James Madison carries the stronger underlying team rating — +1.7 against -4.9, a 6.6-point separation on a neutral field before home advantage, travel or rest.",
-      "EdgeDesk makes it James Madison -21.0 before any sportsbook number is consulted, with James Madison winning 92% of simulations.",
-      "The position-group comparison shows where the separation comes from: the widest measured gap is secondary, where James Madison leads Marshall by 105 places nationally.",
-      "Data confidence on this matchup is 68% — high by this board’s standards, so the margin is the strongest part of the read."
+      "EdgeDesk makes it James Madison -20.9 before any sportsbook number is consulted, with James Madison winning 92% of simulations.",
+      "The position-group comparison shows where the separation comes from: the widest measured gap is secondary, where James Madison leads Marshall by 103 places nationally.",
+      "Data confidence on this matchup is 72% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 20.978984355025943,
-      "fair_spread_text": "James Madison -21.0",
-      "fair_spread_raw_text": "James Madison -21.0",
+      "fair_spread": 20.93926485044101,
+      "fair_spread_text": "James Madison -20.9",
+      "fair_spread_raw_text": "James Madison -20.9",
       "near_pickem": false,
       "raw_margin_text": null,
       "favourite": "James Madison",
       "underdog": "Marshall",
-      "margin": "21.0",
+      "margin": "20.9",
       "total": "57.3",
       "score": {
         "away": {
@@ -106,73 +106,75 @@
       },
       "outcome_range": {
         "basis_team": "James Madison",
-        "p10": "-2.0",
-        "median": "+20.0",
-        "p90": "+42.0",
+        "p10": "-2.1",
+        "median": "+19.9",
+        "p90": "+41.9",
         "sigma": "15.1",
         "volatility": "40.04",
         "volatility_discriminates": false,
         "note": "Quoted from James Madison’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 68,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 72,
+      "inputs_reached_pct": 69,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 18,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
-          "CONFLICTING": 0,
+          "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "James Madison is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for James Madison and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Sun Belt Conference requires an availability report for this game: a weekly football availability report is published; the filing schedule has not been verified."
           },
           {
             "field": "availability",
             "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Marshall is not in the availability registry"
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Marshall and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Sun Belt Conference requires an availability report for this game: a weekly football availability report is published; the filing schedule has not been verified."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Sun Belt Conference requires an availability report for this game: a weekly football availability report is published; the filing schedule has not been verified"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Sun Belt Conference requires an availability report for this game: a weekly football availability report is published; the filing schedule has not been verified"
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -271,7 +273,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T22:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "James Madison",
@@ -361,9 +363,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T02:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -383,7 +385,7 @@
         },
         {
           "points": "+2.6",
-          "points_n": 2.61210766682594,
+          "points_n": 2.572388162241009,
           "text": "Stylistically the matchup favours James Madison by 2.6 points: ball control vs front disruption",
           "favours": "James Madison"
         }
@@ -730,8 +732,8 @@
               "a": {
                 "v": "55.8",
                 "n": 55.8,
-                "rank": "#31 of 133",
-                "rank_n": 31,
+                "rank": "#33 of 133",
+                "rank_n": 33,
                 "note": null
               },
               "h": {
@@ -744,7 +746,7 @@
               "edge": {
                 "side": "a",
                 "gap": 1.7,
-                "rank_gap": 83
+                "rank_gap": 81
               }
             },
             {
@@ -785,14 +787,14 @@
               "h": {
                 "v": "55.7",
                 "n": 55.7,
-                "rank": "#78 of 133",
-                "rank_n": 78,
+                "rank": "#79 of 133",
+                "rank_n": 79,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 1,
-                "rank_gap": 39
+                "rank_gap": 38
               }
             },
             {
@@ -881,14 +883,14 @@
               "h": {
                 "v": "57.9",
                 "n": 57.9,
-                "rank": "#17 of 133",
-                "rank_n": 17,
+                "rank": "#19 of 133",
+                "rank_n": 19,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 11.2,
-                "rank_gap": 105
+                "rank_gap": 103
               }
             },
             {
@@ -977,16 +979,6 @@
     "advantages": {
       "away": [
         {
-          "k": "Receivers",
-          "rank_gap": 83,
-          "gap": 1.7,
-          "lead": "Marshall",
-          "trail": "James Madison",
-          "lead_cell": "55.8 · #31 of 133",
-          "trail_cell": "54.1 · #114 of 133",
-          "text": "Marshall 55.8 (#31 of 133) vs James Madison 54.1 (#114 of 133) — 83 places on the national board."
-        },
-        {
           "k": "Continuity",
           "rank_gap": 82,
           "gap": 18.6,
@@ -995,6 +987,16 @@
           "lead_cell": "54.8 · #21 of 133",
           "trail_cell": "36.2 · #103 of 133",
           "text": "Marshall 54.8 (#21 of 133) vs James Madison 36.2 (#103 of 133) — 82 places on the national board."
+        },
+        {
+          "k": "Receivers",
+          "rank_gap": 81,
+          "gap": 1.7,
+          "lead": "Marshall",
+          "trail": "James Madison",
+          "lead_cell": "55.8 · #33 of 133",
+          "trail_cell": "54.1 · #114 of 133",
+          "text": "Marshall 55.8 (#33 of 133) vs James Madison 54.1 (#114 of 133) — 81 places on the national board."
         },
         {
           "k": "Talent",
@@ -1030,13 +1032,13 @@
       "home": [
         {
           "k": "Secondary",
-          "rank_gap": 105,
+          "rank_gap": 103,
           "gap": 11.2,
           "lead": "James Madison",
           "trail": "Marshall",
-          "lead_cell": "57.9 · #17 of 133",
+          "lead_cell": "57.9 · #19 of 133",
           "trail_cell": "46.7 · #122 of 133",
-          "text": "James Madison 57.9 (#17 of 133) vs Marshall 46.7 (#122 of 133) — 105 places on the national board."
+          "text": "James Madison 57.9 (#19 of 133) vs Marshall 46.7 (#122 of 133) — 103 places on the national board."
         },
         {
           "k": "Run defense",
@@ -1174,11 +1176,11 @@
           "team": "James Madison",
           "label": "secondary",
           "v": "57.9",
-          "rank": "#17 of 133",
+          "rank": "#19 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Marshall’s QB room rates 59.1 (#37 of 133) against James Madison’s secondary at 57.9 (#17 of 133). James Madison’s unit stands higher among its own position group, by 20 places."
+        "read": "Marshall’s QB room rates 59.1 (#37 of 133) against James Madison’s secondary at 57.9 (#19 of 133). James Madison’s unit stands higher among its own position group, by 18 places."
       },
       {
         "title": "James Madison QB room vs Marshall secondary",
@@ -1262,7 +1264,7 @@
           "team": "James Madison",
           "label": "running backs",
           "v": "55.7",
-          "rank": "#78 of 133",
+          "rank": "#79 of 133",
           "note": null
         },
         "def": {
@@ -1273,7 +1275,7 @@
           "note": null
         },
         "complete": true,
-        "read": "James Madison’s running backs rates 55.7 (#78 of 133) against Marshall’s linebackers at 53.8 (#55 of 133). Marshall’s unit stands higher among its own position group, by 23 places."
+        "read": "James Madison’s running backs rates 55.7 (#79 of 133) against Marshall’s linebackers at 53.8 (#55 of 133). Marshall’s unit stands higher among its own position group, by 24 places."
       },
       {
         "title": "Marshall receivers vs James Madison secondary",
@@ -1281,18 +1283,18 @@
           "team": "Marshall",
           "label": "receivers",
           "v": "55.8",
-          "rank": "#31 of 133",
+          "rank": "#33 of 133",
           "note": null
         },
         "def": {
           "team": "James Madison",
           "label": "secondary",
           "v": "57.9",
-          "rank": "#17 of 133",
+          "rank": "#19 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Marshall’s receivers rates 55.8 (#31 of 133) against James Madison’s secondary at 57.9 (#17 of 133). James Madison’s unit stands higher among its own position group, by 14 places."
+        "read": "Marshall’s receivers rates 55.8 (#33 of 133) against James Madison’s secondary at 57.9 (#19 of 133). James Madison’s unit stands higher among its own position group, by 14 places."
       },
       {
         "title": "James Madison receivers vs Marshall secondary",
@@ -1469,7 +1471,7 @@
           "James Madison is the better football team by 14.3 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (+14.3 pts).",
           "Playing at James Madison is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Stylistically the matchup favours James Madison by 2.6 points: ball control vs front disruption (+2.6 pts).",
-          "Secondary: James Madison 57.9 (#17 of 133) vs Marshall 46.7 (#122 of 133) — 105 places on the national board.",
+          "Secondary: James Madison 57.9 (#19 of 133) vs Marshall 46.7 (#122 of 133) — 103 places on the national board.",
           "Run defense: James Madison 61.5 (#30 of 133) vs Marshall 34.4 (#120 of 133) — 90 places on the national board."
         ]
       },
@@ -1477,10 +1479,10 @@
         "team": "Marshall",
         "heading": "Why Marshall can keep it close",
         "bullets": [
-          "Receivers: Marshall 55.8 (#31 of 133) vs James Madison 54.1 (#114 of 133) — 83 places on the national board.",
           "Continuity: Marshall 54.8 (#21 of 133) vs James Madison 36.2 (#103 of 133) — 82 places on the national board.",
+          "Receivers: Marshall 55.8 (#33 of 133) vs James Madison 54.1 (#114 of 133) — 81 places on the national board.",
           "Talent: Marshall 55.2 (#39 of 133) vs James Madison 41.5 (#111 of 133) — 72 places on the national board.",
-          "The outcome range is 15.1 points wide at one sigma — p10 -2.0 to p90 +42.0 for James Madison, so a projection of +21.0 still produces results a long way either side of it.",
+          "The outcome range is 15.1 points wide at one sigma — p10 -2.1 to p90 +41.9 for James Madison, so a projection of +20.9 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%."
         ]
       },
@@ -1591,10 +1593,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1621,16 +1619,126 @@
         {
           "item": "James Madison — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "James Madison — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
       "available": false,
-      "model": "James Madison -21.0",
-      "model_raw": "James Madison -21.0",
+      "model": "James Madison -20.9",
+      "model_raw": "James Madison -20.9",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401869962",
+      "home": "James Madison",
+      "away": "Marshall",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "James Madison -20.9",
+        "favorite_team": "James Madison",
+        "underdog_team": "Marshall",
+        "display_fair_spread": 20.9,
+        "raw_home_margin": 20.94,
+        "raw_line_text": "James Madison -20.94",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 72,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 69,
+        "tier": "ADEQUATE",
+        "text": "69%",
+        "sub": "18 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "James Madison",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 14.28,
+            "text": "+14.3 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 2.57,
+            "text": "+2.6 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": 20.94,
+          "text": "James Madison -20.9"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Marshall",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects James Madison 39, Marshall 18.",
     "state": {
@@ -1729,14 +1837,14 @@
         },
         {
           "k": "Receivers",
-          "a": "55.8  #31",
+          "a": "55.8  #33",
           "h": "54.1  #114",
           "note": null
         },
         {
           "k": "Running backs",
           "a": "54.7  #117",
-          "h": "55.7  #78",
+          "h": "55.7  #79",
           "note": null
         },
         {
@@ -1754,7 +1862,7 @@
         {
           "k": "Secondary",
           "a": "46.7  #122",
-          "h": "57.9  #17",
+          "h": "57.9  #19",
           "note": null
         },
         {
@@ -1784,9 +1892,9 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is James Madison -21.0 on a neutral read of the two teams, before any book is consulted. Projected total 57.3.",
+      "EdgeDesk’s line is James Madison -20.9 on a neutral read of the two teams, before any book is consulted. Projected total 57.3.",
       "James Madison wins 92% of the time in EdgeDesk’s simulation, Marshall 8%.",
-      "Eight games in ten land between -2.0 and +42.0 for James Madison. A single result inside that band tells you nothing new about either team.",
+      "Eight games in ten land between -2.1 and +41.9 for James Madison. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
       "James Madison quarterback: Camden Coleman — started the last game; no announcement for this one."
     ],
@@ -1802,6 +1910,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

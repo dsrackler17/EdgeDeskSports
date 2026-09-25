@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "North Texas vs. Tulsa: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "North Texas vs. Tulsa 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices North Texas at Tulsa at Tulsa +7.6 with a 61.9 fair total. North Texas wins 69% of simulations. Data confidence 72%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices North Texas at Tulsa at Tulsa +7.6 with a 61.8 fair total. North Texas wins 69% of simulations. Data confidence 75%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Tulsa carries the stronger underlying team rating — +1.5 against +1.5, a 0.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Tulsa +7.6 before any sportsbook number is consulted, with North Texas winning 69% of…",
   "home_team": "Tulsa",
   "away_team": "North Texas",
@@ -21,15 +21,15 @@
   "game_time": "2026-10-02T01:00:00.000Z",
   "game_when_label": "2026-10-02 01:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 72,
+  "confidence": 75,
   "priced": true,
   "fair_spread_text": "Tulsa +7.6",
-  "fair_total": "61.9",
+  "fair_total": "61.8",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/north-texas-vs-tulsa-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
@@ -66,11 +66,11 @@
       "Tulsa carries the stronger underlying team rating — +1.5 against +1.5, a 0.1-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Tulsa +7.6 before any sportsbook number is consulted, with North Texas winning 69% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is pass defense, where Tulsa leads North Texas by 95 places nationally.",
-      "Data confidence on this matchup is 72% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 75% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -7.591197624366464,
+      "fair_spread": -7.623568144161078,
       "fair_spread_text": "Tulsa +7.6",
       "fair_spread_raw_text": "Tulsa +7.6",
       "near_pickem": false,
@@ -78,7 +78,7 @@
       "favourite": "North Texas",
       "underdog": "Tulsa",
       "margin": "7.6",
-      "total": "61.9",
+      "total": "61.8",
       "score": {
         "away": {
           "team": "North Texas",
@@ -114,65 +114,67 @@
         "volatility_discriminates": false,
         "note": "Quoted from Tulsa’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 72,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 75,
+      "inputs_reached_pct": 69,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 18,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
-          "CONFLICTING": 0,
+          "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "Tulsa is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for Tulsa and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "availability",
             "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "North Texas is not in the availability registry"
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for North Texas and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -271,7 +273,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Tulsa",
@@ -361,9 +363,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -382,9 +384,9 @@
           "favours": "Tulsa"
         },
         {
-          "points": "-0.6",
-          "points_n": -0.6204719680264658,
-          "text": "Stylistically the matchup favours North Texas by 0.6 points: ball control vs front disruption",
+          "points": "-0.7",
+          "points_n": -0.6528424878210801,
+          "text": "Stylistically the matchup favours North Texas by 0.7 points: ball control vs front disruption",
           "favours": "North Texas"
         }
       ],
@@ -439,14 +441,14 @@
               "h": {
                 "v": "52.4",
                 "n": 52.4,
-                "rank": "#53 of 133",
-                "rank_n": 53,
+                "rank": "#51 of 133",
+                "rank_n": 51,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 3.6,
-                "rank_gap": 18
+                "rank_gap": 20
               }
             },
             {
@@ -480,8 +482,8 @@
               "a": {
                 "v": "52.4",
                 "n": 52.4,
-                "rank": "#24 of 133",
-                "rank_n": 24,
+                "rank": "#23 of 133",
+                "rank_n": 23,
                 "note": null
               },
               "h": {
@@ -494,7 +496,7 @@
               "edge": {
                 "side": "a",
                 "gap": 1.3,
-                "rank_gap": 20
+                "rank_gap": 21
               }
             }
           ]
@@ -689,14 +691,14 @@
               "h": {
                 "v": "55.6",
                 "n": 55.6,
-                "rank": "#95 of 133",
-                "rank_n": 95,
+                "rank": "#94 of 133",
+                "rank_n": 94,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 4.3,
-                "rank_gap": 66
+                "rank_gap": 65
               }
             },
             {
@@ -730,8 +732,8 @@
               "a": {
                 "v": "55.4",
                 "n": 55.4,
-                "rank": "#49 of 133",
-                "rank_n": 49,
+                "rank": "#47 of 133",
+                "rank_n": 47,
                 "note": null
               },
               "h": {
@@ -744,7 +746,7 @@
               "edge": {
                 "side": "a",
                 "gap": 2.8,
-                "rank_gap": 83
+                "rank_gap": 85
               }
             },
             {
@@ -778,8 +780,8 @@
               "a": {
                 "v": "56.2",
                 "n": 56.2,
-                "rank": "#62 of 133",
-                "rank_n": 62,
+                "rank": "#64 of 133",
+                "rank_n": 64,
                 "note": null
               },
               "h": {
@@ -792,7 +794,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.3,
-                "rank_gap": 41
+                "rank_gap": 43
               }
             },
             {
@@ -954,23 +956,23 @@
       "away": [
         {
           "k": "Receivers",
-          "rank_gap": 83,
+          "rank_gap": 85,
           "gap": 2.8,
           "lead": "North Texas",
           "trail": "Tulsa",
-          "lead_cell": "55.4 · #49 of 133",
+          "lead_cell": "55.4 · #47 of 133",
           "trail_cell": "52.6 · #132 of 133",
-          "text": "North Texas 55.4 (#49 of 133) vs Tulsa 52.6 (#132 of 133) — 83 places on the national board."
+          "text": "North Texas 55.4 (#47 of 133) vs Tulsa 52.6 (#132 of 133) — 85 places on the national board."
         },
         {
           "k": "QB room",
-          "rank_gap": 66,
+          "rank_gap": 65,
           "gap": 4.3,
           "lead": "North Texas",
           "trail": "Tulsa",
           "lead_cell": "59.9 · #29 of 133",
-          "trail_cell": "55.6 · #95 of 133",
-          "text": "North Texas 59.9 (#29 of 133) vs Tulsa 55.6 (#95 of 133) — 66 places on the national board."
+          "trail_cell": "55.6 · #94 of 133",
+          "text": "North Texas 59.9 (#29 of 133) vs Tulsa 55.6 (#94 of 133) — 65 places on the national board."
         },
         {
           "k": "Pass offense",
@@ -1162,7 +1164,7 @@
           "team": "Tulsa",
           "label": "QB room",
           "v": "55.6",
-          "rank": "#95 of 133",
+          "rank": "#94 of 133",
           "note": null
         },
         "def": {
@@ -1173,7 +1175,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Tulsa’s QB room rates 55.6 (#95 of 133) against North Texas’s secondary at 53.9 (#64 of 133). North Texas’s unit stands higher among its own position group, by 31 places."
+        "read": "Tulsa’s QB room rates 55.6 (#94 of 133) against North Texas’s secondary at 53.9 (#64 of 133). North Texas’s unit stands higher among its own position group, by 30 places."
       },
       {
         "title": "North Texas offensive line vs Tulsa defensive line",
@@ -1219,7 +1221,7 @@
           "team": "North Texas",
           "label": "running backs",
           "v": "56.2",
-          "rank": "#62 of 133",
+          "rank": "#64 of 133",
           "note": null
         },
         "def": {
@@ -1230,7 +1232,7 @@
           "note": null
         },
         "complete": true,
-        "read": "North Texas’s running backs rates 56.2 (#62 of 133) against Tulsa’s linebackers at 54.4 (#47 of 133). Tulsa’s unit stands higher among its own position group, by 15 places."
+        "read": "North Texas’s running backs rates 56.2 (#64 of 133) against Tulsa’s linebackers at 54.4 (#47 of 133). Tulsa’s unit stands higher among its own position group, by 17 places."
       },
       {
         "title": "Tulsa running backs vs North Texas linebackers",
@@ -1257,7 +1259,7 @@
           "team": "North Texas",
           "label": "receivers",
           "v": "55.4",
-          "rank": "#49 of 133",
+          "rank": "#47 of 133",
           "note": null
         },
         "def": {
@@ -1268,7 +1270,7 @@
           "note": null
         },
         "complete": true,
-        "read": "North Texas’s receivers rates 55.4 (#49 of 133) against Tulsa’s secondary at 58.8 (#13 of 133). Tulsa’s unit stands higher among its own position group, by 36 places."
+        "read": "North Texas’s receivers rates 55.4 (#47 of 133) against Tulsa’s secondary at 58.8 (#13 of 133). Tulsa’s unit stands higher among its own position group, by 34 places."
       },
       {
         "title": "Tulsa receivers vs North Texas secondary",
@@ -1443,9 +1445,9 @@
         "heading": "Why North Texas can pull away",
         "bullets": [
           "North Texas is the better football team by 11.1 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-11.1 pts).",
-          "Stylistically the matchup favours North Texas by 0.6 points: ball control vs front disruption (-0.6 pts).",
-          "Receivers: North Texas 55.4 (#49 of 133) vs Tulsa 52.6 (#132 of 133) — 83 places on the national board.",
-          "QB room: North Texas 59.9 (#29 of 133) vs Tulsa 55.6 (#95 of 133) — 66 places on the national board.",
+          "Stylistically the matchup favours North Texas by 0.7 points: ball control vs front disruption (-0.7 pts).",
+          "Receivers: North Texas 55.4 (#47 of 133) vs Tulsa 52.6 (#132 of 133) — 85 places on the national board.",
+          "QB room: North Texas 59.9 (#29 of 133) vs Tulsa 55.6 (#94 of 133) — 65 places on the national board.",
           "Pass offense: North Texas 62.5 (#11 of 132) vs Tulsa 50.2 (#61 of 132) — 50 places on the national board."
         ]
       },
@@ -1567,10 +1569,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1597,6 +1595,10 @@
         {
           "item": "Tulsa — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Tulsa — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1607,6 +1609,112 @@
       "model_raw": "Tulsa +7.6",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401862786",
+      "home": "Tulsa",
+      "away": "North Texas",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "North Texas -7.6",
+        "favorite_team": "North Texas",
+        "underdog_team": "Tulsa",
+        "display_fair_spread": -7.6,
+        "raw_home_margin": -7.62,
+        "raw_line_text": "North Texas -7.62",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 75,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 69,
+        "tier": "ADEQUATE",
+        "text": "69%",
+        "sub": "18 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "North Texas",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 11.05,
+            "text": "+11.1 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 0.65,
+            "text": "+0.7 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.3 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-22T01:27:23.785Z",
+          "source": "first published",
+          "home_margin": -7.35,
+          "text": "North Texas -7.3"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": -7.62,
+          "text": "North Texas -7.6"
+        }
+      ],
+      "revisions": 4,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "North Texas",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 0.3 points toward North Texas since the first published number.",
+        "attribution_text": "Projection changed 0.3 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects North Texas 35, Tulsa 27.",
     "state": {
@@ -1640,7 +1748,7 @@
         {
           "k": "Talent",
           "a": "48.8  #71",
-          "h": "52.4  #53",
+          "h": "52.4  #51",
           "note": null
         },
         {
@@ -1694,7 +1802,7 @@
         {
           "k": "QB room",
           "a": "59.9  #29",
-          "h": "55.6  #95",
+          "h": "55.6  #94",
           "note": null
         },
         {
@@ -1705,13 +1813,13 @@
         },
         {
           "k": "Receivers",
-          "a": "55.4  #49",
+          "a": "55.4  #47",
           "h": "52.6  #132",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "56.2  #62",
+          "a": "56.2  #64",
           "h": "57.5  #21",
           "note": null
         },
@@ -1760,7 +1868,7 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Tulsa +7.6 on a neutral read of the two teams, before any book is consulted. Projected total 61.9.",
+      "EdgeDesk’s line is Tulsa +7.6 on a neutral read of the two teams, before any book is consulted. Projected total 61.8.",
       "Tulsa wins 31% of the time in EdgeDesk’s simulation, North Texas 69%.",
       "Eight games in ten land between -30.6 and +13.4 for Tulsa. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
@@ -1778,6 +1886,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

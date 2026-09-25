@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Texas vs. Tennessee: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Texas vs. Tennessee 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Texas at Tennessee at Tennessee -1.0 with a 58.6 fair total. Tennessee wins 50% of simulations. Data confidence 80%. Model status RESEARCH. Research, not picks.",
-  "excerpt": "Texas carries the stronger underlying team rating — +10.5 against +4.1, a 6.4-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Tennessee -1.0 before any sportsbook number is consulted, with Tennessee winning 50%…",
+  "seo_description": "EdgeDesk prices Texas at Tennessee at Tennessee -1.0 with a 58.6 fair total. Tennessee wins 51% of simulations. Data confidence 84%. Model status RESEARCH. Research, not picks.",
+  "excerpt": "Texas carries the stronger underlying team rating — +10.5 against +4.0, a 6.5-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Tennessee -1.0 before any sportsbook number is consulted, with Tennessee winning 51%…",
   "home_team": "Tennessee",
   "away_team": "Texas",
   "venue": "Neyland Stadium",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T16:00:00.000Z",
   "game_when_label": "2026-09-26 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "Tennessee -1.0",
   "fair_total": "58.6",
@@ -63,18 +63,18 @@
       "home_conference": "SEC"
     },
     "lede": [
-      "Texas carries the stronger underlying team rating — +10.5 against +4.1, a 6.4-point separation on a neutral field before home advantage, travel or rest.",
-      "EdgeDesk makes it Tennessee -1.0 before any sportsbook number is consulted, with Tennessee winning 50% of simulations.",
+      "Texas carries the stronger underlying team rating — +10.5 against +4.0, a 6.5-point separation on a neutral field before home advantage, travel or rest.",
+      "EdgeDesk makes it Tennessee -1.0 before any sportsbook number is consulted, with Tennessee winning 51% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is linebackers, where Texas leads Tennessee by 110 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 0.15204129815682887,
+      "fair_spread": 0.19203548950957927,
       "fair_spread_text": "Tennessee -1.0",
       "fair_spread_raw_text": "Tennessee -0.2",
       "near_pickem": true,
-      "raw_margin_text": "Tennessee +0.15",
+      "raw_margin_text": "Tennessee +0.19",
       "favourite": "Tennessee",
       "underdog": "Texas",
       "margin": "0.2",
@@ -94,15 +94,15 @@
       "win_prob": {
         "home": "Tennessee",
         "away": "Texas",
-        "home_pct": 50,
-        "away_pct": 50,
-        "home_text": "50%",
-        "away_text": "50%",
+        "home_pct": 51,
+        "away_pct": 49,
+        "home_text": "51%",
+        "away_text": "49%",
         "bounded": false,
         "bounded_note": null,
         "favourite": "Tennessee",
-        "favourite_pct": 50,
-        "favourite_text": "50%"
+        "favourite_pct": 51,
+        "favourite_text": "51%"
       },
       "outcome_range": {
         "basis_team": "Tennessee",
@@ -114,65 +114,55 @@
         "volatility_discriminates": false,
         "note": "Quoted from Tennessee’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 81,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 21,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 13,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Tennessee is not in the availability registry"
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Texas is not in the availability registry"
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff"
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -265,7 +255,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Tennessee",
@@ -337,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:45:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -359,7 +349,7 @@
         },
         {
           "points": "+0.9",
-          "points_n": 0.8500350220136076,
+          "points_n": 0.890029213366358,
           "text": "Stylistically the matchup favours Tennessee by 0.9 points: ball control vs front disruption",
           "favours": "Tennessee"
         }
@@ -383,22 +373,22 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "+10.5",
-                "n": 10.5,
+                "n": 10.47,
                 "rank": "#3 of 133",
                 "rank_n": 3,
                 "note": null
               },
               "h": {
-                "v": "+4.1",
-                "n": 4.06,
-                "rank": "#32 of 133",
-                "rank_n": 32,
+                "v": "+4.0",
+                "n": 3.98,
+                "rank": "#33 of 133",
+                "rank_n": 33,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 6.4,
-                "rank_gap": 29
+                "gap": 6.5,
+                "rank_gap": 30
               }
             },
             {
@@ -406,23 +396,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "66.1",
-                "n": 66.1,
+                "v": "65.5",
+                "n": 65.5,
                 "rank": "#10 of 133",
                 "rank_n": 10,
                 "note": null
               },
               "h": {
-                "v": "48.0",
-                "n": 48,
-                "rank": "#74 of 133",
-                "rank_n": 74,
+                "v": "46.9",
+                "n": 46.9,
+                "rank": "#81 of 133",
+                "rank_n": 81,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 18.1,
-                "rank_gap": 64
+                "gap": 18.6,
+                "rank_gap": 71
               }
             },
             {
@@ -456,21 +446,21 @@
               "a": {
                 "v": "50.7",
                 "n": 50.7,
+                "rank": "#55 of 133",
+                "rank_n": 55,
+                "note": null
+              },
+              "h": {
+                "v": "50.7",
+                "n": 50.7,
                 "rank": "#54 of 133",
                 "rank_n": 54,
                 "note": null
               },
-              "h": {
-                "v": "50.6",
-                "n": 50.6,
-                "rank": "#57 of 133",
-                "rank_n": 57,
-                "note": null
-              },
               "edge": {
-                "side": "a",
-                "gap": 0.1,
-                "rank_gap": 3
+                "side": "even",
+                "gap": 0,
+                "rank_gap": 1
               }
             }
           ]
@@ -603,23 +593,23 @@
               "k": "Run defense",
               "note": null,
               "a": {
-                "v": "69.6",
-                "n": 69.6,
+                "v": "69.7",
+                "n": 69.7,
                 "rank": "#6 of 133",
                 "rank_n": 6,
                 "note": null
               },
               "h": {
-                "v": "36.4",
-                "n": 36.4,
-                "rank": "#114 of 133",
-                "rank_n": 114,
+                "v": "36.5",
+                "n": 36.5,
+                "rank": "#113 of 133",
+                "rank_n": 113,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 33.2,
-                "rank_gap": 108
+                "rank_gap": 107
               }
             },
             {
@@ -658,8 +648,8 @@
               "a": {
                 "v": "60.8",
                 "n": 60.8,
-                "rank": "#16 of 133",
-                "rank_n": 16,
+                "rank": "#17 of 133",
+                "rank_n": 17,
                 "note": null
               },
               "h": {
@@ -672,7 +662,7 @@
               "edge": {
                 "side": "a",
                 "gap": 6,
-                "rank_gap": 96
+                "rank_gap": 95
               }
             },
             {
@@ -704,23 +694,23 @@
               "k": "Receivers",
               "note": null,
               "a": {
-                "v": "56.5",
-                "n": 56.5,
-                "rank": "#10 of 133",
-                "rank_n": 10,
+                "v": "56.7",
+                "n": 56.7,
+                "rank": "#6 of 133",
+                "rank_n": 6,
                 "note": null
               },
               "h": {
-                "v": "55.1",
-                "n": 55.1,
-                "rank": "#66 of 133",
-                "rank_n": 66,
+                "v": "54.7",
+                "n": 54.7,
+                "rank": "#88 of 133",
+                "rank_n": 88,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 1.4,
-                "rank_gap": 56
+                "gap": 2,
+                "rank_gap": 82
               }
             },
             {
@@ -728,22 +718,22 @@
               "k": "Tight ends",
               "note": "rated by the player layer; the board publishes no national TE rank",
               "a": {
-                "v": "57.1",
-                "n": 57.1,
+                "v": "57.6",
+                "n": 57.6,
                 "rank": null,
                 "rank_n": null,
                 "note": "rated, held out of the national rank by the confidence gate"
               },
               "h": {
-                "v": "55.7",
-                "n": 55.7,
+                "v": "54.2",
+                "n": 54.2,
                 "rank": null,
                 "rank_n": null,
                 "note": "rated, held out of the national rank by the confidence gate"
               },
               "edge": {
                 "side": "a",
-                "gap": 1.4,
+                "gap": 3.4,
                 "rank_gap": null
               }
             },
@@ -752,23 +742,23 @@
               "k": "Running backs",
               "note": null,
               "a": {
+                "v": "58.3",
+                "n": 58.3,
+                "rank": "#8 of 133",
+                "rank_n": 8,
+                "note": null
+              },
+              "h": {
                 "v": "58.7",
                 "n": 58.7,
                 "rank": "#5 of 133",
                 "rank_n": 5,
                 "note": null
               },
-              "h": {
-                "v": "58.2",
-                "n": 58.2,
-                "rank": "#10 of 133",
-                "rank_n": 10,
-                "note": null
-              },
               "edge": {
-                "side": "a",
-                "gap": 0.5,
-                "rank_gap": 5
+                "side": "h",
+                "gap": 0.4,
+                "rank_gap": 3
               }
             },
             {
@@ -776,17 +766,17 @@
               "k": "Defensive line",
               "note": null,
               "a": {
-                "v": "59.2",
-                "n": 59.2,
-                "rank": "#12 of 133",
-                "rank_n": 12,
+                "v": "59.3",
+                "n": 59.3,
+                "rank": "#11 of 133",
+                "rank_n": 11,
                 "note": null
               },
               "h": {
-                "v": "50.0",
-                "n": 50,
-                "rank": "#100 of 133",
-                "rank_n": 100,
+                "v": "50.1",
+                "n": 50.1,
+                "rank": "#99 of 133",
+                "rank_n": 99,
                 "note": null
               },
               "edge": {
@@ -851,15 +841,15 @@
                 "note": null
               },
               "h": {
-                "v": "56.7",
-                "n": 56.7,
+                "v": "56.8",
+                "n": 56.8,
                 "rank": "#31 of 133",
                 "rank_n": 31,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 0.9,
+                "gap": 0.8,
                 "rank_gap": 10
               }
             },
@@ -960,23 +950,23 @@
         },
         {
           "k": "Run defense",
-          "rank_gap": 108,
+          "rank_gap": 107,
           "gap": 33.2,
           "lead": "Texas",
           "trail": "Tennessee",
-          "lead_cell": "69.6 · #6 of 133",
-          "trail_cell": "36.4 · #114 of 133",
-          "text": "Texas 69.6 (#6 of 133) vs Tennessee 36.4 (#114 of 133) — 108 places on the national board."
+          "lead_cell": "69.7 · #6 of 133",
+          "trail_cell": "36.5 · #113 of 133",
+          "text": "Texas 69.7 (#6 of 133) vs Tennessee 36.5 (#113 of 133) — 107 places on the national board."
         },
         {
           "k": "QB room",
-          "rank_gap": 96,
+          "rank_gap": 95,
           "gap": 6,
           "lead": "Texas",
           "trail": "Tennessee",
-          "lead_cell": "60.8 · #16 of 133",
+          "lead_cell": "60.8 · #17 of 133",
           "trail_cell": "54.8 · #112 of 133",
-          "text": "Texas 60.8 (#16 of 133) vs Tennessee 54.8 (#112 of 133) — 96 places on the national board."
+          "text": "Texas 60.8 (#17 of 133) vs Tennessee 54.8 (#112 of 133) — 95 places on the national board."
         },
         {
           "k": "Defensive line",
@@ -984,19 +974,19 @@
           "gap": 9.2,
           "lead": "Texas",
           "trail": "Tennessee",
-          "lead_cell": "59.2 · #12 of 133",
-          "trail_cell": "50.0 · #100 of 133",
-          "text": "Texas 59.2 (#12 of 133) vs Tennessee 50.0 (#100 of 133) — 88 places on the national board."
+          "lead_cell": "59.3 · #11 of 133",
+          "trail_cell": "50.1 · #99 of 133",
+          "text": "Texas 59.3 (#11 of 133) vs Tennessee 50.1 (#99 of 133) — 88 places on the national board."
         },
         {
-          "k": "Depth",
-          "rank_gap": 71,
-          "gap": 1,
+          "k": "Receivers",
+          "rank_gap": 82,
+          "gap": 2,
           "lead": "Texas",
           "trail": "Tennessee",
-          "lead_cell": "54.6 · #8 of 133",
-          "trail_cell": "53.6 · #79 of 133",
-          "text": "Texas 54.6 (#8 of 133) vs Tennessee 53.6 (#79 of 133) — 71 places on the national board."
+          "lead_cell": "56.7 · #6 of 133",
+          "trail_cell": "54.7 · #88 of 133",
+          "text": "Texas 56.7 (#6 of 133) vs Tennessee 54.7 (#88 of 133) — 82 places on the national board."
         }
       ],
       "home": [
@@ -1029,6 +1019,16 @@
           "lead_cell": "72.0 · #1 of 133",
           "trail_cell": "66.4 · #6 of 133",
           "text": "Tennessee 72.0 (#1 of 133) vs Texas 66.4 (#6 of 133) — 5 places on the national board."
+        },
+        {
+          "k": "Running backs",
+          "rank_gap": 3,
+          "gap": 0.4,
+          "lead": "Tennessee",
+          "trail": "Texas",
+          "lead_cell": "58.7 · #5 of 133",
+          "trail_cell": "58.3 · #8 of 133",
+          "text": "Tennessee 58.7 (#5 of 133) vs Texas 58.3 (#8 of 133) — 3 places on the national board."
         }
       ],
       "measured": [],
@@ -1068,12 +1068,12 @@
         "def": {
           "team": "Tennessee",
           "label": "run defense",
-          "v": "36.4",
-          "rank": "#114 of 133",
+          "v": "36.5",
+          "rank": "#113 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Texas’s run offense rates 55.5 (#33 of 133) against Tennessee’s run defense at 36.4 (#114 of 133). Texas’s unit stands higher among its own position group, by 81 places."
+        "read": "Texas’s run offense rates 55.5 (#33 of 133) against Tennessee’s run defense at 36.5 (#113 of 133). Texas’s unit stands higher among its own position group, by 80 places."
       },
       {
         "title": "Tennessee pass offense vs Texas pass defense",
@@ -1106,12 +1106,12 @@
         "def": {
           "team": "Texas",
           "label": "run defense",
-          "v": "69.6",
+          "v": "69.7",
           "rank": "#6 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Tennessee’s run offense rates 52.1 (#55 of 133) against Texas’s run defense at 69.6 (#6 of 133). Texas’s unit stands higher among its own position group, by 49 places."
+        "read": "Tennessee’s run offense rates 52.1 (#55 of 133) against Texas’s run defense at 69.7 (#6 of 133). Texas’s unit stands higher among its own position group, by 49 places."
       },
       {
         "title": "Texas QB room vs Tennessee secondary",
@@ -1119,18 +1119,18 @@
           "team": "Texas",
           "label": "QB room",
           "v": "60.8",
-          "rank": "#16 of 133",
+          "rank": "#17 of 133",
           "note": null
         },
         "def": {
           "team": "Tennessee",
           "label": "secondary",
-          "v": "56.7",
+          "v": "56.8",
           "rank": "#31 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Texas’s QB room rates 60.8 (#16 of 133) against Tennessee’s secondary at 56.7 (#31 of 133). Texas’s unit stands higher among its own position group, by 15 places."
+        "read": "Texas’s QB room rates 60.8 (#17 of 133) against Tennessee’s secondary at 56.8 (#31 of 133). Texas’s unit stands higher among its own position group, by 14 places."
       },
       {
         "title": "Tennessee QB room vs Texas secondary",
@@ -1163,12 +1163,12 @@
         "def": {
           "team": "Tennessee",
           "label": "defensive line",
-          "v": "50.0",
-          "rank": "#100 of 133",
+          "v": "50.1",
+          "rank": "#99 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Texas’s offensive line rates 50.1 (#79 of 133) against Tennessee’s defensive line at 50.0 (#100 of 133). Texas’s unit stands higher among its own position group, by 21 places."
+        "read": "Texas’s offensive line rates 50.1 (#79 of 133) against Tennessee’s defensive line at 50.1 (#99 of 133). Texas’s unit stands higher among its own position group, by 20 places."
       },
       {
         "title": "Tennessee offensive line vs Texas defensive line",
@@ -1182,20 +1182,20 @@
         "def": {
           "team": "Texas",
           "label": "defensive line",
-          "v": "59.2",
-          "rank": "#12 of 133",
+          "v": "59.3",
+          "rank": "#11 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Tennessee’s offensive line rates 61.1 (#1 of 133) against Texas’s defensive line at 59.2 (#12 of 133). Tennessee’s unit stands higher among its own position group, by 11 places."
+        "read": "Tennessee’s offensive line rates 61.1 (#1 of 133) against Texas’s defensive line at 59.3 (#11 of 133). Tennessee’s unit stands higher among its own position group, by 10 places."
       },
       {
         "title": "Texas running backs vs Tennessee linebackers",
         "att": {
           "team": "Texas",
           "label": "running backs",
-          "v": "58.7",
-          "rank": "#5 of 133",
+          "v": "58.3",
+          "rank": "#8 of 133",
           "note": null
         },
         "def": {
@@ -1206,15 +1206,15 @@
           "note": null
         },
         "complete": true,
-        "read": "Texas’s running backs rates 58.7 (#5 of 133) against Tennessee’s linebackers at 48.8 (#121 of 133). Texas’s unit stands higher among its own position group, by 116 places."
+        "read": "Texas’s running backs rates 58.3 (#8 of 133) against Tennessee’s linebackers at 48.8 (#121 of 133). Texas’s unit stands higher among its own position group, by 113 places."
       },
       {
         "title": "Tennessee running backs vs Texas linebackers",
         "att": {
           "team": "Tennessee",
           "label": "running backs",
-          "v": "58.2",
-          "rank": "#10 of 133",
+          "v": "58.7",
+          "rank": "#5 of 133",
           "note": null
         },
         "def": {
@@ -1225,34 +1225,34 @@
           "note": null
         },
         "complete": true,
-        "read": "Tennessee’s running backs rates 58.2 (#10 of 133) against Texas’s linebackers at 59.0 (#11 of 133). Tennessee’s unit stands higher among its own position group, by 1 place."
+        "read": "Tennessee’s running backs rates 58.7 (#5 of 133) against Texas’s linebackers at 59.0 (#11 of 133). Tennessee’s unit stands higher among its own position group, by 6 places."
       },
       {
         "title": "Texas receivers vs Tennessee secondary",
         "att": {
           "team": "Texas",
           "label": "receivers",
-          "v": "56.5",
-          "rank": "#10 of 133",
+          "v": "56.7",
+          "rank": "#6 of 133",
           "note": null
         },
         "def": {
           "team": "Tennessee",
           "label": "secondary",
-          "v": "56.7",
+          "v": "56.8",
           "rank": "#31 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Texas’s receivers rates 56.5 (#10 of 133) against Tennessee’s secondary at 56.7 (#31 of 133). Texas’s unit stands higher among its own position group, by 21 places."
+        "read": "Texas’s receivers rates 56.7 (#6 of 133) against Tennessee’s secondary at 56.8 (#31 of 133). Texas’s unit stands higher among its own position group, by 25 places."
       },
       {
         "title": "Tennessee receivers vs Texas secondary",
         "att": {
           "team": "Tennessee",
           "label": "receivers",
-          "v": "55.1",
-          "rank": "#66 of 133",
+          "v": "54.7",
+          "rank": "#88 of 133",
           "note": null
         },
         "def": {
@@ -1263,7 +1263,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Tennessee’s receivers rates 55.1 (#66 of 133) against Texas’s secondary at 57.6 (#21 of 133). Texas’s unit stands higher among its own position group, by 45 places."
+        "read": "Tennessee’s receivers rates 54.7 (#88 of 133) against Texas’s secondary at 57.6 (#21 of 133). Texas’s unit stands higher among its own position group, by 67 places."
       }
     ],
     "roster": {
@@ -1369,18 +1369,18 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "none on file — 100% unknown",
-          "h": "none on file — 100% unknown",
+          "a": "9 on file, 4% of starter value out",
+          "h": "8 on file, 17% of starter value out",
           "edge": null
         },
         {
           "k": "Data confidence",
           "note": "how much EdgeDesk knows about this roster, not how good it is",
-          "a": "44%",
-          "h": "29%",
+          "a": "54%",
+          "h": "39%",
           "edge": {
             "side": "a",
-            "gap": 0.15000000000000002
+            "gap": 0.15300000000000002
           }
         }
       ],
@@ -1408,7 +1408,7 @@
         {
           "k": "Data confidence",
           "lead": "Texas",
-          "text": "Texas leads on data confidence — Texas 44%, Tennessee 29%."
+          "text": "Texas leads on data confidence — Texas 54%, Tennessee 39%."
         }
       ],
       "note": "Roster construction from the committed rankings build. No recruiting star and no NIL figure appears here: no public feed this repo reads carries either, and a number nobody published is not estimated in its place."
@@ -1431,8 +1431,8 @@
         "bullets": [
           "Texas is the better football team by 4.8 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-4.8 pts).",
           "Linebackers: Texas 59.0 (#11 of 133) vs Tennessee 48.8 (#121 of 133) — 110 places on the national board.",
-          "Run defense: Texas 69.6 (#6 of 133) vs Tennessee 36.4 (#114 of 133) — 108 places on the national board.",
-          "QB room: Texas 60.8 (#16 of 133) vs Tennessee 54.8 (#112 of 133) — 96 places on the national board.",
+          "Run defense: Texas 69.7 (#6 of 133) vs Tennessee 36.5 (#113 of 133) — 107 places on the national board.",
+          "QB room: Texas 60.8 (#17 of 133) vs Tennessee 54.8 (#112 of 133) — 95 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -22.8 to p90 +21.2 for Tennessee, so a projection of +0.2 still produces results a long way either side of it."
         ]
       },
@@ -1461,13 +1461,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "Texas — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1480,12 +1474,6 @@
           "sev": "MEDIUM",
           "label": "Texas — thin defensive data",
           "text": "151 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "Tennessee — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
           "widening": null
         },
         {
@@ -1517,12 +1505,6 @@
           "label": "missing",
           "text": "weather not supplied",
           "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1533,18 +1515,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
-        },
-        {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
         },
         {
           "item": "Weather at kickoff",
@@ -1567,10 +1537,6 @@
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
         },
         {
-          "item": "Texas — availability and injuries",
-          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
-        },
-        {
           "item": "Tennessee — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
         }
@@ -1583,16 +1549,138 @@
       "model_raw": "Tennessee -0.2",
       "market": "Tennessee +5.5",
       "difference": "5.7 points",
-      "difference_n": 5.652041298156829,
+      "difference_n": 5.692035489509579,
       "total_model": "58.6",
       "total_market": "56.5",
-      "book": "captured · theScore Bet",
+      "book": "captured (stale 73h) · theScore Bet",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401856704",
+      "home": "Tennessee",
+      "away": "Texas",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Tennessee -1.0",
+        "favorite_team": "Tennessee",
+        "underdog_team": "Texas",
+        "display_fair_spread": 1,
+        "raw_home_margin": 0.19,
+        "raw_line_text": "Tennessee -0.19",
+        "is_near_pickem": true
+      },
+      "market_gap": {
+        "available": true,
+        "points": 5.69,
+        "toward_team": "Tennessee",
+        "text": "5.7 pts toward Tennessee",
+        "market_line_text": "Texas -5.5",
+        "market_home_margin": -5.5,
+        "favorite_differs": true,
+        "source": "captured (stale 73h) · theScore Bet",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": "Measured from the raw margin (Tennessee -0.19), not from the one-point display line."
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 81,
+        "tier": "ADEQUATE",
+        "text": "81%",
+        "sub": "21 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Tennessee",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 0.89,
+            "text": "+0.9 pts stylistic matchup"
+          },
+          {
+            "kind": "market",
+            "key": "market_gap",
+            "points": 5.69,
+            "text": "The market is 5.7 pts away from EdgeDesk’s number, toward Tennessee (market: Texas -5.5)"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 7 players with an unresolved status; the engine widens this game’s range for it."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.5 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T16:04:45.973Z",
+          "source": "first published",
+          "home_margin": -0.29,
+          "text": "Texas -0.29"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 0.19,
+          "text": "Tennessee -0.19"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Tennessee",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 0.5 points toward Tennessee since the first published number.",
+        "attribution_text": "Projection changed 0.5 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Tennessee 29, Texas 29.",
     "state": {
@@ -1620,13 +1708,13 @@
         {
           "k": "ETSR (overall)",
           "a": "+10.5  #3",
-          "h": "+4.1  #32",
+          "h": "+4.0  #33",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
-          "a": "66.1  #10",
-          "h": "48.0  #74",
+          "a": "65.5  #10",
+          "h": "46.9  #81",
           "note": null
         },
         {
@@ -1667,8 +1755,8 @@
         },
         {
           "k": "Run defense",
-          "a": "69.6  #6",
-          "h": "36.4  #114",
+          "a": "69.7  #6",
+          "h": "36.5  #113",
           "note": null
         },
         {
@@ -1679,7 +1767,7 @@
         },
         {
           "k": "QB room",
-          "a": "60.8  #16",
+          "a": "60.8  #17",
           "h": "54.8  #112",
           "note": null
         },
@@ -1691,20 +1779,20 @@
         },
         {
           "k": "Receivers",
-          "a": "56.5  #10",
-          "h": "55.1  #66",
+          "a": "56.7  #6",
+          "h": "54.7  #88",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "58.7  #5",
-          "h": "58.2  #10",
+          "a": "58.3  #8",
+          "h": "58.7  #5",
           "note": null
         },
         {
           "k": "Defensive line",
-          "a": "59.2  #12",
-          "h": "50.0  #100",
+          "a": "59.3  #11",
+          "h": "50.1  #99",
           "note": null
         },
         {
@@ -1716,7 +1804,7 @@
         {
           "k": "Secondary",
           "a": "57.6  #21",
-          "h": "56.7  #31",
+          "h": "56.8  #31",
           "note": null
         },
         {
@@ -1733,23 +1821,23 @@
         },
         {
           "k": "Confidence",
-          "a": "44%",
-          "h": "29%",
+          "a": "54%",
+          "h": "39%",
           "note": "how much EdgeDesk knows, not how good the team is"
         },
         {
           "k": "Δ national rank, this week",
           "a": "no change",
-          "h": "no change",
+          "h": "down 1",
           "note": "differenced from last week’s committed snapshot"
         }
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Tennessee -1.0 on a neutral read of the two teams, before any book is consulted. It is a near pick’em: the raw projected margin is Tennessee +0.15, and the one-point line is a display floor. Projected total 58.6.",
-      "Tennessee wins 50% of the time in EdgeDesk’s simulation, Texas 50%.",
+      "EdgeDesk’s line is Tennessee -1.0 on a neutral read of the two teams, before any book is consulted. It is a near pick’em: the raw projected margin is Tennessee +0.19, and the one-point line is a display floor. Projected total 58.6.",
+      "Tennessee wins 51% of the time in EdgeDesk’s simulation, Texas 49%.",
       "Eight games in ten land between -22.8 and +21.2 for Tennessee. A single result inside that band tells you nothing new about either team.",
-      "The market has Tennessee +5.5 at captured · theScore Bet, 5.7 points from EdgeDesk’s number.",
+      "The market has Tennessee +5.5 at captured (stale 73h) · theScore Bet, 5.7 points from EdgeDesk’s number.",
       "Texas quarterback: Arch Manning — started the last game; no announcement for this one.",
       "Tennessee quarterback: Faizon Brandon — started the last game; no announcement for this one."
     ],
@@ -1764,6 +1852,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

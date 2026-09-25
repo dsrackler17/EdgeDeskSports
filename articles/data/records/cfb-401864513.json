@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "San José State vs. Hawai'i: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "San José State vs. Hawai'i 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices San José State at Hawai'i at Hawai'i -13.1 with a 53.8 fair total. Hawai'i wins 81% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices San José State at Hawai'i at Hawai'i -13.1 with a 53.8 fair total. Hawai'i wins 81% of simulations. Data confidence 84%. Model status NO MARKET. Research, not picks.",
   "excerpt": "San José State carries the stronger underlying team rating — -6.9 against -9.4, a 2.5-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Hawai'i -13.1 before any sportsbook number is consulted, with Hawai'i winning…",
   "home_team": "Hawai'i",
   "away_team": "San José State",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-04T03:59:00.000Z",
   "game_when_label": "2026-10-04 03:59 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "Hawai'i -13.1",
   "fair_total": "53.8",
@@ -66,11 +66,11 @@
       "San José State carries the stronger underlying team rating — -6.9 against -9.4, a 2.5-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Hawai'i -13.1 before any sportsbook number is consulted, with Hawai'i winning 81% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is continuity, where Hawai'i leads San José State by 70 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 13.101013632904966,
+      "fair_spread": 13.100324428828445,
       "fair_spread_text": "Hawai'i -13.1",
       "fair_spread_raw_text": "Hawai'i -13.1",
       "near_pickem": false,
@@ -114,65 +114,55 @@
         "volatility_discriminates": false,
         "note": "Quoted from Hawai'i’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 65,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 17,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 6,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Hawai'i is not in the availability registry"
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "San José State is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
             "field": "recruiting_talent",
-            "side": null,
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "the provider’s 2026 team-talent table does not carry Hawai'i — a publication gap in the source, not an unresolved identity here"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "recruiting_talent",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "the provider’s 2026 team-talent table does not carry San José State — a publication gap in the source, not an unresolved identity here"
+          },
+          {
+            "field": "off_field",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -253,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T03:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Hawai'i",
@@ -343,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-13T03:59:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -365,7 +355,7 @@
         },
         {
           "points": "+0.3",
-          "points_n": 0.2598680166697661,
+          "points_n": 0.2591788125932471,
           "text": "Stylistically the matchup favours Hawai'i by 0.3 points: early-down offence vs early-down defence",
           "favours": "Hawai'i"
         }
@@ -421,14 +411,14 @@
               "h": {
                 "v": "47.8",
                 "n": 47.8,
-                "rank": "#76 of 133",
-                "rank_n": 76,
+                "rank": "#75 of 133",
+                "rank_n": 75,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 13.3,
-                "rank_gap": 52
+                "rank_gap": 53
               }
             },
             {
@@ -667,14 +657,14 @@
               "h": {
                 "v": "56.3",
                 "n": 56.3,
-                "rank": "#81 of 133",
-                "rank_n": 81,
+                "rank": "#80 of 133",
+                "rank_n": 80,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 4.2,
-                "rank_gap": 50
+                "rank_gap": 51
               }
             },
             {
@@ -708,15 +698,15 @@
               "a": {
                 "v": "54.6",
                 "n": 54.6,
-                "rank": "#94 of 133",
-                "rank_n": 94,
+                "rank": "#93 of 133",
+                "rank_n": 93,
                 "note": null
               },
               "h": {
                 "v": "55.2",
                 "n": 55.2,
-                "rank": "#59 of 133",
-                "rank_n": 59,
+                "rank": "#58 of 133",
+                "rank_n": 58,
                 "note": null
               },
               "edge": {
@@ -756,8 +746,8 @@
               "a": {
                 "v": "55.7",
                 "n": 55.7,
-                "rank": "#82 of 133",
-                "rank_n": 82,
+                "rank": "#83 of 133",
+                "rank_n": 83,
                 "note": null
               },
               "h": {
@@ -770,7 +760,7 @@
               "edge": {
                 "side": "a",
                 "gap": 1.3,
-                "rank_gap": 40
+                "rank_gap": 39
               }
             },
             {
@@ -952,13 +942,13 @@
         },
         {
           "k": "Running backs",
-          "rank_gap": 40,
+          "rank_gap": 39,
           "gap": 1.3,
           "lead": "San José State",
           "trail": "Hawai'i",
-          "lead_cell": "55.7 · #82 of 133",
+          "lead_cell": "55.7 · #83 of 133",
           "trail_cell": "54.4 · #122 of 133",
-          "text": "San José State 55.7 (#82 of 133) vs Hawai'i 54.4 (#122 of 133) — 40 places on the national board."
+          "text": "San José State 55.7 (#83 of 133) vs Hawai'i 54.4 (#122 of 133) — 39 places on the national board."
         },
         {
           "k": "Offensive line",
@@ -994,23 +984,23 @@
         },
         {
           "k": "Talent",
-          "rank_gap": 52,
+          "rank_gap": 53,
           "gap": 13.3,
           "lead": "Hawai'i",
           "trail": "San José State",
-          "lead_cell": "47.8 · #76 of 133",
+          "lead_cell": "47.8 · #75 of 133",
           "trail_cell": "34.5 · #128 of 133",
-          "text": "Hawai'i 47.8 (#76 of 133) vs San José State 34.5 (#128 of 133) — 52 places on the national board."
+          "text": "Hawai'i 47.8 (#75 of 133) vs San José State 34.5 (#128 of 133) — 53 places on the national board."
         },
         {
           "k": "QB room",
-          "rank_gap": 50,
+          "rank_gap": 51,
           "gap": 4.2,
           "lead": "Hawai'i",
           "trail": "San José State",
-          "lead_cell": "56.3 · #81 of 133",
+          "lead_cell": "56.3 · #80 of 133",
           "trail_cell": "52.1 · #131 of 133",
-          "text": "Hawai'i 56.3 (#81 of 133) vs San José State 52.1 (#131 of 133) — 50 places on the national board."
+          "text": "Hawai'i 56.3 (#80 of 133) vs San José State 52.1 (#131 of 133) — 51 places on the national board."
         },
         {
           "k": "Receivers",
@@ -1018,9 +1008,9 @@
           "gap": 0.6,
           "lead": "Hawai'i",
           "trail": "San José State",
-          "lead_cell": "55.2 · #59 of 133",
-          "trail_cell": "54.6 · #94 of 133",
-          "text": "Hawai'i 55.2 (#59 of 133) vs San José State 54.6 (#94 of 133) — 35 places on the national board."
+          "lead_cell": "55.2 · #58 of 133",
+          "trail_cell": "54.6 · #93 of 133",
+          "text": "Hawai'i 55.2 (#58 of 133) vs San José State 54.6 (#93 of 133) — 35 places on the national board."
         },
         {
           "k": "Depth",
@@ -1140,7 +1130,7 @@
           "team": "Hawai'i",
           "label": "QB room",
           "v": "56.3",
-          "rank": "#81 of 133",
+          "rank": "#80 of 133",
           "note": null
         },
         "def": {
@@ -1151,7 +1141,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Hawai'i’s QB room rates 56.3 (#81 of 133) against San José State’s secondary at 53.5 (#67 of 133). San José State’s unit stands higher among its own position group, by 14 places."
+        "read": "Hawai'i’s QB room rates 56.3 (#80 of 133) against San José State’s secondary at 53.5 (#67 of 133). San José State’s unit stands higher among its own position group, by 13 places."
       },
       {
         "title": "San José State offensive line vs Hawai'i defensive line",
@@ -1197,7 +1187,7 @@
           "team": "San José State",
           "label": "running backs",
           "v": "55.7",
-          "rank": "#82 of 133",
+          "rank": "#83 of 133",
           "note": null
         },
         "def": {
@@ -1208,7 +1198,7 @@
           "note": null
         },
         "complete": true,
-        "read": "San José State’s running backs rates 55.7 (#82 of 133) against Hawai'i’s linebackers at 49.7 (#107 of 133). San José State’s unit stands higher among its own position group, by 25 places."
+        "read": "San José State’s running backs rates 55.7 (#83 of 133) against Hawai'i’s linebackers at 49.7 (#107 of 133). San José State’s unit stands higher among its own position group, by 24 places."
       },
       {
         "title": "Hawai'i running backs vs San José State linebackers",
@@ -1235,7 +1225,7 @@
           "team": "San José State",
           "label": "receivers",
           "v": "54.6",
-          "rank": "#94 of 133",
+          "rank": "#93 of 133",
           "note": null
         },
         "def": {
@@ -1246,7 +1236,7 @@
           "note": null
         },
         "complete": true,
-        "read": "San José State’s receivers rates 54.6 (#94 of 133) against Hawai'i’s secondary at 48.9 (#110 of 133). San José State’s unit stands higher among its own position group, by 16 places."
+        "read": "San José State’s receivers rates 54.6 (#93 of 133) against Hawai'i’s secondary at 48.9 (#110 of 133). San José State’s unit stands higher among its own position group, by 17 places."
       },
       {
         "title": "Hawai'i receivers vs San José State secondary",
@@ -1254,7 +1244,7 @@
           "team": "Hawai'i",
           "label": "receivers",
           "v": "55.2",
-          "rank": "#59 of 133",
+          "rank": "#58 of 133",
           "note": null
         },
         "def": {
@@ -1265,7 +1255,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Hawai'i’s receivers rates 55.2 (#59 of 133) against San José State’s secondary at 53.5 (#67 of 133). Hawai'i’s unit stands higher among its own position group, by 8 places."
+        "read": "Hawai'i’s receivers rates 55.2 (#58 of 133) against San José State’s secondary at 53.5 (#67 of 133). Hawai'i’s unit stands higher among its own position group, by 9 places."
       }
     ],
     "roster": {
@@ -1424,7 +1414,7 @@
           "Playing at Hawai'i is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Stylistically the matchup favours Hawai'i by 0.3 points: early-down offence vs early-down defence (+0.3 pts).",
           "Continuity: Hawai'i 50.2 (#38 of 133) vs San José State 35.9 (#108 of 133) — 70 places on the national board.",
-          "Talent: Hawai'i 47.8 (#76 of 133) vs San José State 34.5 (#128 of 133) — 52 places on the national board."
+          "Talent: Hawai'i 47.8 (#75 of 133) vs San José State 34.5 (#128 of 133) — 53 places on the national board."
         ]
       },
       "underdog": {
@@ -1433,7 +1423,7 @@
         "bullets": [
           "Secondary: San José State 53.5 (#67 of 133) vs Hawai'i 48.9 (#110 of 133) — 43 places on the national board.",
           "Pass defense: San José State 49.2 (#77 of 133) vs Hawai'i 40.1 (#118 of 133) — 41 places on the national board.",
-          "Running backs: San José State 55.7 (#82 of 133) vs Hawai'i 54.4 (#122 of 133) — 40 places on the national board.",
+          "Running backs: San José State 55.7 (#83 of 133) vs Hawai'i 54.4 (#122 of 133) — 39 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -9.9 to p90 +34.1 for Hawai'i, so a projection of +13.1 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%."
         ]
@@ -1586,6 +1576,106 @@
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401864513",
+      "home": "Hawai'i",
+      "away": "San José State",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Hawai'i -13.1",
+        "favorite_team": "Hawai'i",
+        "underdog_team": "San José State",
+        "display_fair_spread": 13.1,
+        "raw_home_margin": 13.1,
+        "raw_line_text": "Hawai'i -13.10",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 65,
+        "tier": "ADEQUATE",
+        "text": "65%",
+        "sub": "17 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Hawai'i",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 8.76,
+            "text": "+8.8 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-24T14:27:41.864Z",
+          "source": "first published",
+          "home_margin": 13.1,
+          "text": "Hawai'i -13.1"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Hawai'i",
+        "since_at": "2026-09-24T14:27:41.864Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
     "headline": "EdgeDesk projects Hawai'i 33, San José State 20.",
     "state": {
       "label": "NO MARKET",
@@ -1618,7 +1708,7 @@
         {
           "k": "Talent",
           "a": "34.5  #128",
-          "h": "47.8  #76",
+          "h": "47.8  #75",
           "note": null
         },
         {
@@ -1672,7 +1762,7 @@
         {
           "k": "QB room",
           "a": "52.1  #131",
-          "h": "56.3  #81",
+          "h": "56.3  #80",
           "note": null
         },
         {
@@ -1683,13 +1773,13 @@
         },
         {
           "k": "Receivers",
-          "a": "54.6  #94",
-          "h": "55.2  #59",
+          "a": "54.6  #93",
+          "h": "55.2  #58",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "55.7  #82",
+          "a": "55.7  #83",
           "h": "54.4  #122",
           "note": null
         },
@@ -1757,6 +1847,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

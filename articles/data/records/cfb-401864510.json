@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Hawai'i vs. Wyoming: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Hawai'i vs. Wyoming 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Hawai'i at Wyoming at Wyoming +5.9 with a 46.9 fair total. Hawai'i wins 65% of simulations. Data confidence 80%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices Hawai'i at Wyoming at Wyoming +5.9 with a 46.9 fair total. Hawai'i wins 65% of simulations. Data confidence 84%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Wyoming carries the stronger underlying team rating — -6.3 against -9.4, a 3.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Wyoming +5.9 before any sportsbook number is consulted, with Hawai'i winning 65% of…",
   "home_team": "Wyoming",
   "away_team": "Hawai'i",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T19:00:00.000Z",
   "game_when_label": "2026-09-26 19:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "Wyoming +5.9",
   "fair_total": "46.9",
@@ -66,11 +66,11 @@
       "Wyoming carries the stronger underlying team rating — -6.3 against -9.4, a 3.1-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Wyoming +5.9 before any sportsbook number is consulted, with Hawai'i winning 65% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is secondary, where Wyoming leads Hawai'i by 98 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -5.883492587595846,
+      "fair_spread": -5.872926054278553,
       "fair_spread_text": "Wyoming +5.9",
       "fair_spread_raw_text": "Wyoming +5.9",
       "near_pickem": false,
@@ -114,65 +114,73 @@
         "volatility_discriminates": false,
         "note": "Quoted from Wyoming’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 69,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 18,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
           "UNAVAILABLE": 6
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "Wyoming is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for Wyoming and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
           },
           {
             "field": "availability",
             "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Hawai'i is not in the availability registry"
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Hawai'i and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
           },
           {
             "field": "recruiting_talent",
-            "side": null,
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "the provider’s 2026 team-talent table does not carry Hawai'i — a publication gap in the source, not an unresolved identity here"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -271,7 +279,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-13T03:59:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Wyoming",
@@ -343,9 +351,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T17:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -365,7 +373,7 @@
         },
         {
           "points": "-0.2",
-          "points_n": -0.1809121861180343,
+          "points_n": -0.1703456528007404,
           "text": "Stylistically the matchup favours Hawai'i by 0.2 points: early-down offence vs early-down defence",
           "favours": "Hawai'i"
         }
@@ -396,7 +404,7 @@
               },
               "h": {
                 "v": "-6.3",
-                "n": -6.32,
+                "n": -6.33,
                 "rank": "#117 of 133",
                 "rank_n": 117,
                 "note": null
@@ -414,21 +422,21 @@
               "a": {
                 "v": "47.8",
                 "n": 47.8,
-                "rank": "#76 of 133",
-                "rank_n": 76,
+                "rank": "#75 of 133",
+                "rank_n": 75,
                 "note": null
               },
               "h": {
-                "v": "37.2",
-                "n": 37.2,
+                "v": "37.1",
+                "n": 37.1,
                 "rank": "#121 of 133",
                 "rank_n": 121,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 10.6,
-                "rank_gap": 45
+                "gap": 10.7,
+                "rank_gap": 46
               }
             },
             {
@@ -664,8 +672,8 @@
               "a": {
                 "v": "56.3",
                 "n": 56.3,
-                "rank": "#81 of 133",
-                "rank_n": 81,
+                "rank": "#80 of 133",
+                "rank_n": 80,
                 "note": null
               },
               "h": {
@@ -678,7 +686,7 @@
               "edge": {
                 "side": "a",
                 "gap": 4.8,
-                "rank_gap": 51
+                "rank_gap": 52
               }
             },
             {
@@ -695,14 +703,14 @@
               "h": {
                 "v": "53.7",
                 "n": 53.7,
-                "rank": "#42 of 133",
-                "rank_n": 42,
+                "rank": "#43 of 133",
+                "rank_n": 43,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 4,
-                "rank_gap": 40
+                "rank_gap": 39
               }
             },
             {
@@ -712,8 +720,8 @@
               "a": {
                 "v": "55.2",
                 "n": 55.2,
-                "rank": "#59 of 133",
-                "rank_n": 59,
+                "rank": "#58 of 133",
+                "rank_n": 58,
                 "note": null
               },
               "h": {
@@ -726,7 +734,7 @@
               "edge": {
                 "side": "a",
                 "gap": 1,
-                "rank_gap": 53
+                "rank_gap": 54
               }
             },
             {
@@ -936,33 +944,33 @@
       "away": [
         {
           "k": "Receivers",
-          "rank_gap": 53,
+          "rank_gap": 54,
           "gap": 1,
           "lead": "Hawai'i",
           "trail": "Wyoming",
-          "lead_cell": "55.2 · #59 of 133",
+          "lead_cell": "55.2 · #58 of 133",
           "trail_cell": "54.2 · #112 of 133",
-          "text": "Hawai'i 55.2 (#59 of 133) vs Wyoming 54.2 (#112 of 133) — 53 places on the national board."
+          "text": "Hawai'i 55.2 (#58 of 133) vs Wyoming 54.2 (#112 of 133) — 54 places on the national board."
         },
         {
           "k": "QB room",
-          "rank_gap": 51,
+          "rank_gap": 52,
           "gap": 4.8,
           "lead": "Hawai'i",
           "trail": "Wyoming",
-          "lead_cell": "56.3 · #81 of 133",
+          "lead_cell": "56.3 · #80 of 133",
           "trail_cell": "51.5 · #132 of 133",
-          "text": "Hawai'i 56.3 (#81 of 133) vs Wyoming 51.5 (#132 of 133) — 51 places on the national board."
+          "text": "Hawai'i 56.3 (#80 of 133) vs Wyoming 51.5 (#132 of 133) — 52 places on the national board."
         },
         {
           "k": "Talent",
-          "rank_gap": 45,
-          "gap": 10.6,
+          "rank_gap": 46,
+          "gap": 10.7,
           "lead": "Hawai'i",
           "trail": "Wyoming",
-          "lead_cell": "47.8 · #76 of 133",
-          "trail_cell": "37.2 · #121 of 133",
-          "text": "Hawai'i 47.8 (#76 of 133) vs Wyoming 37.2 (#121 of 133) — 45 places on the national board."
+          "lead_cell": "47.8 · #75 of 133",
+          "trail_cell": "37.1 · #121 of 133",
+          "text": "Hawai'i 47.8 (#75 of 133) vs Wyoming 37.1 (#121 of 133) — 46 places on the national board."
         },
         {
           "k": "Continuity",
@@ -998,13 +1006,13 @@
         },
         {
           "k": "Offensive line",
-          "rank_gap": 40,
+          "rank_gap": 39,
           "gap": 4,
           "lead": "Wyoming",
           "trail": "Hawai'i",
-          "lead_cell": "53.7 · #42 of 133",
+          "lead_cell": "53.7 · #43 of 133",
           "trail_cell": "49.7 · #82 of 133",
-          "text": "Wyoming 53.7 (#42 of 133) vs Hawai'i 49.7 (#82 of 133) — 40 places on the national board."
+          "text": "Wyoming 53.7 (#43 of 133) vs Hawai'i 49.7 (#82 of 133) — 39 places on the national board."
         },
         {
           "k": "Kicking",
@@ -1125,7 +1133,7 @@
           "team": "Hawai'i",
           "label": "QB room",
           "v": "56.3",
-          "rank": "#81 of 133",
+          "rank": "#80 of 133",
           "note": null
         },
         "def": {
@@ -1136,7 +1144,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Hawai'i’s QB room rates 56.3 (#81 of 133) against Wyoming’s secondary at 59.2 (#12 of 133). Wyoming’s unit stands higher among its own position group, by 69 places."
+        "read": "Hawai'i’s QB room rates 56.3 (#80 of 133) against Wyoming’s secondary at 59.2 (#12 of 133). Wyoming’s unit stands higher among its own position group, by 68 places."
       },
       {
         "title": "Wyoming QB room vs Hawai'i secondary",
@@ -1182,7 +1190,7 @@
           "team": "Wyoming",
           "label": "offensive line",
           "v": "53.7",
-          "rank": "#42 of 133",
+          "rank": "#43 of 133",
           "note": null
         },
         "def": {
@@ -1193,7 +1201,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Wyoming’s offensive line rates 53.7 (#42 of 133) against Hawai'i’s defensive line at 49.1 (#109 of 133). Wyoming’s unit stands higher among its own position group, by 67 places."
+        "read": "Wyoming’s offensive line rates 53.7 (#43 of 133) against Hawai'i’s defensive line at 49.1 (#109 of 133). Wyoming’s unit stands higher among its own position group, by 66 places."
       },
       {
         "title": "Hawai'i running backs vs Wyoming linebackers",
@@ -1239,7 +1247,7 @@
           "team": "Hawai'i",
           "label": "receivers",
           "v": "55.2",
-          "rank": "#59 of 133",
+          "rank": "#58 of 133",
           "note": null
         },
         "def": {
@@ -1250,7 +1258,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Hawai'i’s receivers rates 55.2 (#59 of 133) against Wyoming’s secondary at 59.2 (#12 of 133). Wyoming’s unit stands higher among its own position group, by 47 places."
+        "read": "Hawai'i’s receivers rates 55.2 (#58 of 133) against Wyoming’s secondary at 59.2 (#12 of 133). Wyoming’s unit stands higher among its own position group, by 46 places."
       },
       {
         "title": "Wyoming receivers vs Hawai'i secondary",
@@ -1425,9 +1433,9 @@
         "heading": "Why Hawai'i can pull away",
         "bullets": [
           "Hawai'i is the better football team by 9.8 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-9.8 pts).",
-          "Receivers: Hawai'i 55.2 (#59 of 133) vs Wyoming 54.2 (#112 of 133) — 53 places on the national board.",
-          "QB room: Hawai'i 56.3 (#81 of 133) vs Wyoming 51.5 (#132 of 133) — 51 places on the national board.",
-          "Talent: Hawai'i 47.8 (#76 of 133) vs Wyoming 37.2 (#121 of 133) — 45 places on the national board."
+          "Receivers: Hawai'i 55.2 (#58 of 133) vs Wyoming 54.2 (#112 of 133) — 54 places on the national board.",
+          "QB room: Hawai'i 56.3 (#80 of 133) vs Wyoming 51.5 (#132 of 133) — 52 places on the national board.",
+          "Talent: Hawai'i 47.8 (#75 of 133) vs Wyoming 37.1 (#121 of 133) — 46 places on the national board."
         ]
       },
       "underdog": {
@@ -1436,7 +1444,7 @@
         "bullets": [
           "Playing at Wyoming is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Secondary: Wyoming 59.2 (#12 of 133) vs Hawai'i 48.9 (#110 of 133) — 98 places on the national board.",
-          "Offensive line: Wyoming 53.7 (#42 of 133) vs Hawai'i 49.7 (#82 of 133) — 40 places on the national board.",
+          "Offensive line: Wyoming 53.7 (#43 of 133) vs Hawai'i 49.7 (#82 of 133) — 39 places on the national board.",
           "Kicking: Wyoming 56.2 (#64 of 133) vs Hawai'i 55.0 (#98 of 133) — 34 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -28.9 to p90 +15.1 for Wyoming, so a projection of -5.9 still produces results a long way either side of it."
         ]
@@ -1466,7 +1474,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1548,10 +1556,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1578,6 +1582,10 @@
         {
           "item": "Wyoming — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Wyoming — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1588,16 +1596,132 @@
       "model_raw": "Wyoming +5.9",
       "market": "Wyoming +2.5",
       "difference": "3.4 points",
-      "difference_n": 3.383492587595846,
+      "difference_n": 3.372926054278553,
       "total_model": "46.9",
       "total_market": "45.0",
-      "book": "captured · Hard Rock Bet",
+      "book": "captured (stale 73h) · Hard Rock Bet",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401864510",
+      "home": "Wyoming",
+      "away": "Hawai'i",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Hawai'i -5.9",
+        "favorite_team": "Hawai'i",
+        "underdog_team": "Wyoming",
+        "display_fair_spread": -5.9,
+        "raw_home_margin": -5.87,
+        "raw_line_text": "Hawai'i -5.87",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 3.37,
+        "toward_team": "Hawai'i",
+        "text": "3.4 pts toward Hawai'i",
+        "market_line_text": "Hawai'i -2.5",
+        "market_home_margin": -2.5,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · Hard Rock Bet",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 69,
+        "tier": "ADEQUATE",
+        "text": "69%",
+        "sub": "18 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Hawai'i",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 9.78,
+            "text": "+9.8 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "market",
+            "key": "market_gap",
+            "points": 3.37,
+            "text": "The market is 3.4 pts away from EdgeDesk’s number, toward Hawai'i (market: Hawai'i -2.5)"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "MEDIUM",
+        "label": "Medium",
+        "text": "the stored numbers span 1.0 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-17T14:28:00.021Z",
+          "source": "first published",
+          "home_margin": -4.91,
+          "text": "Hawai'i -4.9"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": -5.87,
+          "text": "Hawai'i -5.9"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Hawai'i",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 1.0 points toward Hawai'i since the first published number.",
+        "attribution_text": "Projection changed 1.0 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Hawai'i 26, Wyoming 21.",
     "state": {
@@ -1630,8 +1754,8 @@
         },
         {
           "k": "Talent",
-          "a": "47.8  #76",
-          "h": "37.2  #121",
+          "a": "47.8  #75",
+          "h": "37.1  #121",
           "note": null
         },
         {
@@ -1684,19 +1808,19 @@
         },
         {
           "k": "QB room",
-          "a": "56.3  #81",
+          "a": "56.3  #80",
           "h": "51.5  #132",
           "note": null
         },
         {
           "k": "Offensive line",
           "a": "49.7  #82",
-          "h": "53.7  #42",
+          "h": "53.7  #43",
           "note": null
         },
         {
           "k": "Receivers",
-          "a": "55.2  #59",
+          "a": "55.2  #58",
           "h": "54.2  #112",
           "note": null
         },
@@ -1754,7 +1878,7 @@
       "EdgeDesk’s line is Wyoming +5.9 on a neutral read of the two teams, before any book is consulted. Projected total 46.9.",
       "Wyoming wins 35% of the time in EdgeDesk’s simulation, Hawai'i 65%.",
       "Eight games in ten land between -28.9 and +15.1 for Wyoming. A single result inside that band tells you nothing new about either team.",
-      "The market has Wyoming +2.5 at captured · Hard Rock Bet, 3.4 points from EdgeDesk’s number.",
+      "The market has Wyoming +2.5 at captured (stale 73h) · Hard Rock Bet, 3.4 points from EdgeDesk’s number.",
       "Hawai'i quarterback: Micah Alejado — started the last game; no announcement for this one.",
       "Wyoming quarterback: Tyler Hughes — started the last game; no announcement for this one."
     ],
@@ -1769,6 +1893,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

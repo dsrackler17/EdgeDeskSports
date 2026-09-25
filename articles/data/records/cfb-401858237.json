@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Central Arkansas vs. Florida State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Central Arkansas vs. Florida State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Central Arkansas at Florida State at Florida State -31.7. Florida State wins 98% of simulations. Data confidence 45%. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices Central Arkansas at Florida State at Florida State -31.7. Florida State wins 98% of simulations. Data confidence 47%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Florida State carries a full EdgeDesk team rating at +1.6; Central Arkansas is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Florida State -31.7 before any…",
   "home_team": "Florida State",
   "away_team": "Central Arkansas",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T19:00:00.000Z",
   "game_when_label": "2026-09-26 19:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 45,
+  "confidence": 47,
   "priced": true,
   "fair_spread_text": "Florida State -31.7",
   "fair_total": null,
@@ -66,7 +66,7 @@
       "Florida State carries a full EdgeDesk team rating at +1.6; Central Arkansas is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
       "EdgeDesk makes it Florida State -31.7 before any sportsbook number is consulted, with Florida State winning 98% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; Central Arkansas is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 45% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 47% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -104,65 +104,91 @@
         "volatility_discriminates": false,
         "note": "Quoted from Florida State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 45,
-      "inputs_reached_pct": 50,
+      "confidence_pct": 47,
+      "inputs_reached_pct": 46,
       "input_contract": {
-        "fields": 17,
-        "applicable": 14,
-        "known": 7,
-        "priced": 5,
-        "priced_coverage_pct": 36,
+        "fields": 26,
+        "applicable": 24,
+        "known": 11,
+        "priced": 6,
+        "priced_coverage_pct": 25,
         "by_state": {
-          "USABLE": 5,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 6,
+          "RESEARCH_ONLY": 5,
           "STALE": 0,
           "CONFLICTING": 0,
-          "NOT_APPLICABLE": 3,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_APPLICABLE": 2,
+          "NOT_REQUIRED": 2,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 11
         },
         "absent": [
           {
-            "field": "venue_geography",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "no coordinates for Central Arkansas’s home venue, so travel distance cannot be computed"
-          },
-          {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "roster",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Central Arkansas is outside the 2026 FBS universe EdgeDesk rates, so no roster is retrieved for it. The engine prices the side from a shared FCS floor and charges the full weight of its roster term, so this is counted as the gap it is rather than excused as inapplicable"
           },
           {
             "field": "availability",
-            "side": "home",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Florida State is not in the availability registry"
+            "why": "Central Arkansas is outside the FBS availability registry, so no availability read covers it. The engine prices maximum injury uncertainty for this side and charges for the gap, so the contract counts it as a gap rather than excusing it as inapplicable"
           },
           {
-            "field": "qb_availability",
-            "side": "home",
+            "field": "roster_talent",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "Central Arkansas is outside the FBS field the player layer rates, so no composite is measured for it. The engine charges for the gap, so the contract counts it as one"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. EdgeDesk has not researched an availability-reporting policy for UAC; that is an open question, not a finding that none exists"
           },
           {
-            "field": "recruiting_talent",
+            "field": "qb_efficiency_history",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Donovyn Omolo has thrown no FBS pass inside this history — an empty sample, never an average one"
+          },
+          {
+            "field": "team_rating",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Central Arkansas is outside the rated FBS field, so the projection uses params.rating.fcs_rating — ONE floor number shared by every FCS programme. That is not a rating of this team, and the engine charges the full weight of the rating input for it. This row exists so that charge lands on a named field instead of on nothing"
+          },
+          {
+            "field": "matchup_profile",
             "side": null,
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "the stylistic pairing needs a measured profile for BOTH sides and Central Arkansas is outside the FBS field the profiles cover"
+          },
+          {
+            "field": "off_field",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
             "field": "coaching_continuity",
-            "side": null,
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "Central Arkansas has no prior season in the coach table to compare against, so whether this staff is new is unknown rather than continuous — a programme with no history is not a programme that kept its coach"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -261,7 +287,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": null,
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Florida State",
@@ -339,9 +365,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -447,8 +473,8 @@
               "h": {
                 "v": "53.1",
                 "n": 53.1,
-                "rank": "#15 of 133",
-                "rank_n": 15,
+                "rank": "#16 of 133",
+                "rank_n": 16,
                 "note": null
               },
               "edge": null
@@ -617,8 +643,8 @@
               "h": {
                 "v": "56.9",
                 "n": 56.9,
-                "rank": "#71 of 133",
-                "rank_n": 71,
+                "rank": "#70 of 133",
+                "rank_n": 70,
                 "note": null
               },
               "edge": null
@@ -637,8 +663,8 @@
               "h": {
                 "v": "53.6",
                 "n": 53.6,
-                "rank": "#43 of 133",
-                "rank_n": 43,
+                "rank": "#44 of 133",
+                "rank_n": 44,
                 "note": null
               },
               "edge": null
@@ -657,8 +683,8 @@
               "h": {
                 "v": "56.0",
                 "n": 56,
-                "rank": "#19 of 133",
-                "rank_n": 19,
+                "rank": "#22 of 133",
+                "rank_n": 22,
                 "note": null
               },
               "edge": null
@@ -717,8 +743,8 @@
               "h": {
                 "v": "51.6",
                 "n": 51.6,
-                "rank": "#77 of 133",
-                "rank_n": 77,
+                "rank": "#78 of 133",
+                "rank_n": 78,
                 "note": null
               },
               "edge": null
@@ -947,7 +973,7 @@
           "team": "Florida State",
           "label": "QB room",
           "v": "56.9",
-          "rank": "#71 of 133",
+          "rank": "#70 of 133",
           "note": null
         },
         "def": {
@@ -958,7 +984,7 @@
           "note": null
         },
         "complete": false,
-        "read": "Florida State’s QB room is measurable at 56.9 (#71 of 133). Central Arkansas’s secondary is not, so the pairing cannot be scored."
+        "read": "Florida State’s QB room is measurable at 56.9 (#70 of 133). Central Arkansas’s secondary is not, so the pairing cannot be scored."
       },
       {
         "title": "Central Arkansas offensive line vs Florida State defensive line",
@@ -973,11 +999,11 @@
           "team": "Florida State",
           "label": "defensive line",
           "v": "51.6",
-          "rank": "#77 of 133",
+          "rank": "#78 of 133",
           "note": null
         },
         "complete": false,
-        "read": "Florida State’s defensive line is measurable at 51.6 (#77 of 133). Central Arkansas’s offensive line is not, so the pairing cannot be scored."
+        "read": "Florida State’s defensive line is measurable at 51.6 (#78 of 133). Central Arkansas’s offensive line is not, so the pairing cannot be scored."
       },
       {
         "title": "Florida State offensive line vs Central Arkansas defensive line",
@@ -985,7 +1011,7 @@
           "team": "Florida State",
           "label": "offensive line",
           "v": "53.6",
-          "rank": "#43 of 133",
+          "rank": "#44 of 133",
           "note": null
         },
         "def": {
@@ -996,7 +1022,7 @@
           "note": null
         },
         "complete": false,
-        "read": "Florida State’s offensive line is measurable at 53.6 (#43 of 133). Central Arkansas’s defensive line is not, so the pairing cannot be scored."
+        "read": "Florida State’s offensive line is measurable at 53.6 (#44 of 133). Central Arkansas’s defensive line is not, so the pairing cannot be scored."
       },
       {
         "title": "Central Arkansas running backs vs Florida State linebackers",
@@ -1061,7 +1087,7 @@
           "team": "Florida State",
           "label": "receivers",
           "v": "56.0",
-          "rank": "#19 of 133",
+          "rank": "#22 of 133",
           "note": null
         },
         "def": {
@@ -1072,7 +1098,7 @@
           "note": null
         },
         "complete": false,
-        "read": "Florida State’s receivers is measurable at 56.0 (#19 of 133). Central Arkansas’s secondary is not, so the pairing cannot be scored."
+        "read": "Florida State’s receivers is measurable at 56.0 (#22 of 133). Central Arkansas’s secondary is not, so the pairing cannot be scored."
       }
     ],
     "roster": {
@@ -1184,7 +1210,7 @@
         "bullets": [
           "The outcome range is 15.1 points wide at one sigma — p10 +8.7 to p90 +52.7 for Florida State, so a projection of +31.7 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury, schedule or per-player talent context reached it, so the number leans on team strength more than it should.",
+          "70% of the model’s own input contract was empty for this game — no roster, starter, injury, schedule or per-player talent context reached it, so the number leans on team strength more than it should.",
           "Central Arkansas is not in the FBS rating set, so EdgeDesk cannot measure what it does well. An unmeasured opponent is an unknown, not a weak one, and the size of the gap is not established."
         ]
       },
@@ -1195,7 +1221,7 @@
         {
           "sev": "HIGH",
           "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury, schedule or per-player talent context reached it, so the number leans on team strength more than it should.",
+          "text": "The projection could be wrong because 70% of the model’s own input contract was empty for this game — no roster, starter, injury, schedule or per-player talent context reached it, so the number leans on team strength more than it should.",
           "widening": null
         },
         {
@@ -1207,7 +1233,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1239,6 +1265,12 @@
           "label": "early season",
           "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
           "widening": "3%"
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "away roster not supplied — talent, continuity and youth layers are blind",
+          "widening": null
         },
         {
           "sev": "LOW",
@@ -1283,10 +1315,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1326,13 +1354,123 @@
       "difference_n": 12.760639522399998,
       "total_model": null,
       "total_market": "59.5",
-      "book": "captured · FanDuel",
+      "book": "captured (stale 73h) · FanDuel",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858237",
+      "home": "Florida State",
+      "away": "Central Arkansas",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LOW_RELIABILITY",
+        "label": "LOW RELIABILITY",
+        "rule": "coverage",
+        "means": "Only 46% of this game’s applicable inputs are on file (11 of 24), under the 60% bar below which EdgeDesk argues against its own number."
+      },
+      "fair": {
+        "line_text": "Florida State -31.7",
+        "favorite_team": "Florida State",
+        "underdog_team": "Central Arkansas",
+        "display_fair_spread": 31.7,
+        "raw_home_margin": 31.74,
+        "raw_line_text": "Florida State -31.74",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 12.76,
+        "toward_team": "Central Arkansas",
+        "text": "12.8 pts toward Central Arkansas",
+        "market_line_text": "Florida State -44.5",
+        "market_home_margin": 44.5,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · FanDuel",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 47,
+        "tier": "MODERATE",
+        "label": "Moderate"
+      },
+      "reliability": {
+        "pct": 46,
+        "tier": "LOW",
+        "text": "46%",
+        "sub": "11 of 24 inputs on file"
+      },
+      "drivers": {
+        "team": "Florida State",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.3 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T12:00:40.648Z",
+          "source": "first published",
+          "home_margin": 31.47,
+          "text": "Florida State -31.5"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 31.74,
+          "text": "Florida State -31.7"
+        }
+      ],
+      "revisions": 3,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Central Arkansas",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 0.3 points toward Florida State since the first published number.",
+        "attribution_text": "Projection changed 0.3 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk rates one side of this game and not the other. What it has is below; what it does not have is named.",
     "state": {
@@ -1410,19 +1548,19 @@
         {
           "k": "QB room",
           "a": null,
-          "h": "56.9  #71",
+          "h": "56.9  #70",
           "note": null
         },
         {
           "k": "Offensive line",
           "a": null,
-          "h": "53.6  #43",
+          "h": "53.6  #44",
           "note": null
         },
         {
           "k": "Receivers",
           "a": null,
-          "h": "56.0  #19",
+          "h": "56.0  #22",
           "note": null
         },
         {
@@ -1434,7 +1572,7 @@
         {
           "k": "Defensive line",
           "a": null,
-          "h": "51.6  #77",
+          "h": "51.6  #78",
           "note": null
         },
         {
@@ -1479,7 +1617,7 @@
       "EdgeDesk’s line is Florida State -31.7 on a neutral read of the two teams, before any book is consulted.",
       "Florida State wins 98% of the time in EdgeDesk’s simulation, Central Arkansas 2%.",
       "Eight games in ten land between +8.7 and +52.7 for Florida State. A single result inside that band tells you nothing new about either team.",
-      "The market has Florida State -44.5 at captured · FanDuel, 12.8 points from EdgeDesk’s number.",
+      "The market has Florida State -44.5 at captured (stale 73h) · FanDuel, 12.8 points from EdgeDesk’s number.",
       "Central Arkansas quarterback: Donovyn Omolo — started the last game; no announcement for this one.",
       "Florida State quarterback: Ashton Daniels — started the last game; no announcement for this one."
     ],
@@ -1496,6 +1634,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

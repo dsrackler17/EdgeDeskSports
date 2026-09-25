@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Kentucky vs. South Carolina: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Kentucky vs. South Carolina 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Kentucky at South Carolina at South Carolina -8.3 with a 53.4 fair total. South Carolina wins 71% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "South Carolina carries the stronger underlying team rating — +6.2 against +1.6, a 4.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it South Carolina -8.3 before any sportsbook number is consulted, with South…",
+  "seo_description": "EdgeDesk prices Kentucky at South Carolina at South Carolina -8.3 with a 53.4 fair total. South Carolina wins 71% of simulations. Data confidence 85%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "South Carolina carries the stronger underlying team rating — +6.1 against +1.6, a 4.5-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it South Carolina -8.3 before any sportsbook number is consulted, with South…",
   "home_team": "South Carolina",
   "away_team": "Kentucky",
   "venue": "Williams-Brice Stadium",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 80,
+  "confidence": 85,
   "priced": true,
   "fair_spread_text": "South Carolina -8.3",
   "fair_total": "53.4",
@@ -63,14 +63,14 @@
       "home_conference": "SEC"
     },
     "lede": [
-      "South Carolina carries the stronger underlying team rating — +6.2 against +1.6, a 4.6-point separation on a neutral field before home advantage, travel or rest.",
+      "South Carolina carries the stronger underlying team rating — +6.1 against +1.6, a 4.5-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it South Carolina -8.3 before any sportsbook number is consulted, with South Carolina winning 71% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is continuity, where South Carolina leads Kentucky by 84 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 85% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 8.282378982861676,
+      "fair_spread": 8.288618016917468,
       "fair_spread_text": "South Carolina -8.3",
       "fair_spread_raw_text": "South Carolina -8.3",
       "near_pickem": false,
@@ -114,65 +114,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from South Carolina’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 85,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "South Carolina is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Kentucky is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "South Carolina",
@@ -349,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T20:15:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -371,7 +349,7 @@
         },
         {
           "points": "-0.1",
-          "points_n": -0.12001032212070117,
+          "points_n": -0.11377128806490888,
           "text": "Stylistically the matchup favours Kentucky by 0.1 points: ball control vs front disruption",
           "favours": "Kentucky"
         }
@@ -401,15 +379,15 @@
                 "note": null
               },
               "h": {
-                "v": "+6.2",
-                "n": 6.15,
+                "v": "+6.1",
+                "n": 6.13,
                 "rank": "#23 of 133",
                 "rank_n": 23,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 4.6,
+                "gap": 4.5,
                 "rank_gap": 32
               }
             },
@@ -425,16 +403,16 @@
                 "note": null
               },
               "h": {
-                "v": "56.6",
-                "n": 56.6,
-                "rank": "#33 of 133",
-                "rank_n": 33,
+                "v": "56.2",
+                "n": 56.2,
+                "rank": "#36 of 133",
+                "rank_n": 36,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 7.9,
-                "rank_gap": 40
+                "gap": 7.5,
+                "rank_gap": 37
               }
             },
             {
@@ -468,21 +446,21 @@
               "a": {
                 "v": "49.6",
                 "n": 49.6,
-                "rank": "#92 of 133",
-                "rank_n": 92,
+                "rank": "#91 of 133",
+                "rank_n": 91,
                 "note": null
               },
               "h": {
-                "v": "51.6",
-                "n": 51.6,
-                "rank": "#33 of 133",
-                "rank_n": 33,
+                "v": "51.7",
+                "n": 51.7,
+                "rank": "#31 of 133",
+                "rank_n": 31,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 2,
-                "rank_gap": 59
+                "gap": 2.1,
+                "rank_gap": 60
               }
             }
           ]
@@ -670,8 +648,8 @@
               "a": {
                 "v": "57.0",
                 "n": 57,
-                "rank": "#69 of 133",
-                "rank_n": 69,
+                "rank": "#68 of 133",
+                "rank_n": 68,
                 "note": null
               },
               "h": {
@@ -684,7 +662,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.6,
-                "rank_gap": 27
+                "rank_gap": 26
               }
             },
             {
@@ -699,16 +677,16 @@
                 "note": null
               },
               "h": {
-                "v": "53.6",
-                "n": 53.6,
-                "rank": "#45 of 133",
-                "rank_n": 45,
+                "v": "53.7",
+                "n": 53.7,
+                "rank": "#41 of 133",
+                "rank_n": 41,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 3.2,
-                "rank_gap": 31
+                "gap": 3.3,
+                "rank_gap": 35
               }
             },
             {
@@ -718,21 +696,21 @@
               "a": {
                 "v": "55.5",
                 "n": 55.5,
-                "rank": "#44 of 133",
-                "rank_n": 44,
+                "rank": "#42 of 133",
+                "rank_n": 42,
                 "note": null
               },
               "h": {
-                "v": "55.6",
-                "n": 55.6,
-                "rank": "#40 of 133",
-                "rank_n": 40,
+                "v": "56.1",
+                "n": 56.1,
+                "rank": "#19 of 133",
+                "rank_n": 19,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 0.1,
-                "rank_gap": 4
+                "gap": 0.6,
+                "rank_gap": 23
               }
             },
             {
@@ -747,15 +725,15 @@
                 "note": "rated, held out of the national rank by the confidence gate"
               },
               "h": {
-                "v": "54.6",
-                "n": 54.6,
+                "v": "54.7",
+                "n": 54.7,
                 "rank": null,
                 "rank_n": null,
                 "note": "rated, held out of the national rank by the confidence gate"
               },
               "edge": {
                 "side": "a",
-                "gap": 1.9,
+                "gap": 1.8,
                 "rank_gap": null
               }
             },
@@ -766,8 +744,8 @@
               "a": {
                 "v": "56.4",
                 "n": 56.4,
-                "rank": "#56 of 133",
-                "rank_n": 56,
+                "rank": "#57 of 133",
+                "rank_n": 57,
                 "note": null
               },
               "h": {
@@ -780,7 +758,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.2,
-                "rank_gap": 6
+                "rank_gap": 7
               }
             },
             {
@@ -795,15 +773,15 @@
                 "note": null
               },
               "h": {
-                "v": "54.1",
-                "n": 54.1,
+                "v": "54.2",
+                "n": 54.2,
                 "rank": "#55 of 133",
                 "rank_n": 55,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 1.1,
+                "gap": 1.2,
                 "rank_gap": 12
               }
             },
@@ -974,13 +952,13 @@
         },
         {
           "k": "Scheme fit",
-          "rank_gap": 59,
-          "gap": 2,
+          "rank_gap": 60,
+          "gap": 2.1,
           "lead": "South Carolina",
           "trail": "Kentucky",
-          "lead_cell": "51.6 · #33 of 133",
-          "trail_cell": "49.6 · #92 of 133",
-          "text": "South Carolina 51.6 (#33 of 133) vs Kentucky 49.6 (#92 of 133) — 59 places on the national board."
+          "lead_cell": "51.7 · #31 of 133",
+          "trail_cell": "49.6 · #91 of 133",
+          "text": "South Carolina 51.7 (#31 of 133) vs Kentucky 49.6 (#91 of 133) — 60 places on the national board."
         },
         {
           "k": "Special teams",
@@ -1091,7 +1069,7 @@
           "team": "Kentucky",
           "label": "QB room",
           "v": "57.0",
-          "rank": "#69 of 133",
+          "rank": "#68 of 133",
           "note": null
         },
         "def": {
@@ -1102,7 +1080,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Kentucky’s QB room rates 57.0 (#69 of 133) against South Carolina’s secondary at 55.2 (#48 of 133). South Carolina’s unit stands higher among its own position group, by 21 places."
+        "read": "Kentucky’s QB room rates 57.0 (#68 of 133) against South Carolina’s secondary at 55.2 (#48 of 133). South Carolina’s unit stands higher among its own position group, by 20 places."
       },
       {
         "title": "South Carolina QB room vs Kentucky secondary",
@@ -1135,20 +1113,20 @@
         "def": {
           "team": "South Carolina",
           "label": "defensive line",
-          "v": "54.1",
+          "v": "54.2",
           "rank": "#55 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Kentucky’s offensive line rates 50.4 (#76 of 133) against South Carolina’s defensive line at 54.1 (#55 of 133). South Carolina’s unit stands higher among its own position group, by 21 places."
+        "read": "Kentucky’s offensive line rates 50.4 (#76 of 133) against South Carolina’s defensive line at 54.2 (#55 of 133). South Carolina’s unit stands higher among its own position group, by 21 places."
       },
       {
         "title": "South Carolina offensive line vs Kentucky defensive line",
         "att": {
           "team": "South Carolina",
           "label": "offensive line",
-          "v": "53.6",
-          "rank": "#45 of 133",
+          "v": "53.7",
+          "rank": "#41 of 133",
           "note": null
         },
         "def": {
@@ -1159,7 +1137,7 @@
           "note": null
         },
         "complete": true,
-        "read": "South Carolina’s offensive line rates 53.6 (#45 of 133) against Kentucky’s defensive line at 53.0 (#67 of 133). South Carolina’s unit stands higher among its own position group, by 22 places."
+        "read": "South Carolina’s offensive line rates 53.7 (#41 of 133) against Kentucky’s defensive line at 53.0 (#67 of 133). South Carolina’s unit stands higher among its own position group, by 26 places."
       },
       {
         "title": "Kentucky running backs vs South Carolina linebackers",
@@ -1167,7 +1145,7 @@
           "team": "Kentucky",
           "label": "running backs",
           "v": "56.4",
-          "rank": "#56 of 133",
+          "rank": "#57 of 133",
           "note": null
         },
         "def": {
@@ -1178,7 +1156,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Kentucky’s running backs rates 56.4 (#56 of 133) against South Carolina’s linebackers at 52.7 (#67 of 133). Kentucky’s unit stands higher among its own position group, by 11 places."
+        "read": "Kentucky’s running backs rates 56.4 (#57 of 133) against South Carolina’s linebackers at 52.7 (#67 of 133). Kentucky’s unit stands higher among its own position group, by 10 places."
       },
       {
         "title": "South Carolina running backs vs Kentucky linebackers",
@@ -1205,7 +1183,7 @@
           "team": "Kentucky",
           "label": "receivers",
           "v": "55.5",
-          "rank": "#44 of 133",
+          "rank": "#42 of 133",
           "note": null
         },
         "def": {
@@ -1216,15 +1194,15 @@
           "note": null
         },
         "complete": true,
-        "read": "Kentucky’s receivers rates 55.5 (#44 of 133) against South Carolina’s secondary at 55.2 (#48 of 133). Kentucky’s unit stands higher among its own position group, by 4 places."
+        "read": "Kentucky’s receivers rates 55.5 (#42 of 133) against South Carolina’s secondary at 55.2 (#48 of 133). Kentucky’s unit stands higher among its own position group, by 6 places."
       },
       {
         "title": "South Carolina receivers vs Kentucky secondary",
         "att": {
           "team": "South Carolina",
           "label": "receivers",
-          "v": "55.6",
-          "rank": "#40 of 133",
+          "v": "56.1",
+          "rank": "#19 of 133",
           "note": null
         },
         "def": {
@@ -1235,7 +1213,7 @@
           "note": null
         },
         "complete": true,
-        "read": "South Carolina’s receivers rates 55.6 (#40 of 133) against Kentucky’s secondary at 48.9 (#111 of 133). South Carolina’s unit stands higher among its own position group, by 71 places."
+        "read": "South Carolina’s receivers rates 56.1 (#19 of 133) against Kentucky’s secondary at 48.9 (#111 of 133). South Carolina’s unit stands higher among its own position group, by 92 places."
       }
     ],
     "roster": {
@@ -1342,17 +1320,17 @@
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
           "a": "none on file — 100% unknown",
-          "h": "none on file — 100% unknown",
+          "h": "8 on file, 5% of starter value out",
           "edge": null
         },
         {
           "k": "Data confidence",
           "note": "how much EdgeDesk knows about this roster, not how good it is",
           "a": "28%",
-          "h": "41%",
+          "h": "51%",
           "edge": {
             "side": "h",
-            "gap": 0.13599999999999995
+            "gap": 0.236
           }
         }
       ],
@@ -1394,7 +1372,7 @@
           "Playing at South Carolina is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Continuity: South Carolina 51.3 (#34 of 133) vs Kentucky 32.7 (#118 of 133) — 84 places on the national board.",
           "Secondary: South Carolina 55.2 (#48 of 133) vs Kentucky 48.9 (#111 of 133) — 63 places on the national board.",
-          "Scheme fit: South Carolina 51.6 (#33 of 133) vs Kentucky 49.6 (#92 of 133) — 59 places on the national board."
+          "Scheme fit: South Carolina 51.7 (#31 of 133) vs Kentucky 49.6 (#91 of 133) — 60 places on the national board."
         ]
       },
       "underdog": {
@@ -1455,12 +1433,6 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "South Carolina — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
           "label": "South Carolina — thin offensive data",
           "text": "171 offensive plays observed. Too few offensive snaps to score the offensive contract",
           "widening": null
@@ -1494,6 +1466,12 @@
           "label": "missing",
           "text": "away injury report not supplied",
           "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "no book spread joined to this game — no edge is claimed",
+          "widening": null
         }
       ],
       "unmeasured": [
@@ -1512,10 +1490,6 @@
         {
           "item": "Away availability / injuries",
           "why": "no injury report supplied for away"
-        },
-        {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
         },
         {
           "item": "Weather at kickoff",
@@ -1555,6 +1529,106 @@
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401856709",
+      "home": "South Carolina",
+      "away": "Kentucky",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "South Carolina -8.3",
+        "favorite_team": "South Carolina",
+        "underdog_team": "Kentucky",
+        "display_fair_spread": 8.3,
+        "raw_home_margin": 8.29,
+        "raw_line_text": "South Carolina -8.29",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 85,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "South Carolina",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 4.32,
+            "text": "+4.3 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": 8.29,
+          "text": "South Carolina -8.3"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Kentucky",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
     "headline": "EdgeDesk projects South Carolina 31, Kentucky 23.",
     "state": {
       "label": "NO MARKET",
@@ -1581,13 +1655,13 @@
         {
           "k": "ETSR (overall)",
           "a": "+1.6  #55",
-          "h": "+6.2  #23",
+          "h": "+6.1  #23",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
           "a": "48.7  #73",
-          "h": "56.6  #33",
+          "h": "56.2  #36",
           "note": null
         },
         {
@@ -1640,32 +1714,32 @@
         },
         {
           "k": "QB room",
-          "a": "57.0  #69",
+          "a": "57.0  #68",
           "h": "58.6  #42",
           "note": null
         },
         {
           "k": "Offensive line",
           "a": "50.4  #76",
-          "h": "53.6  #45",
+          "h": "53.7  #41",
           "note": null
         },
         {
           "k": "Receivers",
-          "a": "55.5  #44",
-          "h": "55.6  #40",
+          "a": "55.5  #42",
+          "h": "56.1  #19",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "56.4  #56",
+          "a": "56.4  #57",
           "h": "56.6  #50",
           "note": null
         },
         {
           "k": "Defensive line",
           "a": "53.0  #67",
-          "h": "54.1  #55",
+          "h": "54.2  #55",
           "note": null
         },
         {
@@ -1695,7 +1769,7 @@
         {
           "k": "Confidence",
           "a": "28%",
-          "h": "41%",
+          "h": "51%",
           "note": "how much EdgeDesk knows, not how good the team is"
         },
         {
@@ -1725,6 +1799,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

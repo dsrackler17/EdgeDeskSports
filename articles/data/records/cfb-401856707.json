@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Alabama vs. Mississippi State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Alabama vs. Mississippi State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Alabama at Mississippi State at Mississippi State +3.4 with a 61.0 fair total. Alabama wins 59% of simulations. Data confidence 76%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "Mississippi State carries the stronger underlying team rating — +8.0 against +4.0, a 3.9-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Mississippi State +3.4 before any sportsbook number is consulted, with…",
+  "seo_description": "EdgeDesk prices Alabama at Mississippi State at Mississippi State +3.4 with a 61.0 fair total. Alabama wins 59% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "Mississippi State carries the stronger underlying team rating — +8.0 against +4.1, a 3.9-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Mississippi State +3.4 before any sportsbook number is consulted, with…",
   "home_team": "Mississippi State",
   "away_team": "Alabama",
   "venue": "Davis Wade Stadium",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 76,
+  "confidence": 80,
   "priced": true,
   "fair_spread_text": "Mississippi State +3.4",
   "fair_total": "61.0",
@@ -63,14 +63,14 @@
       "home_conference": "SEC"
     },
     "lede": [
-      "Mississippi State carries the stronger underlying team rating — +8.0 against +4.0, a 3.9-point separation on a neutral field before home advantage, travel or rest.",
+      "Mississippi State carries the stronger underlying team rating — +8.0 against +4.1, a 3.9-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Mississippi State +3.4 before any sportsbook number is consulted, with Alabama winning 59% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is pass offense, where Mississippi State leads Alabama by 70 places nationally.",
-      "Data confidence on this matchup is 76% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -3.406631622727783,
+      "fair_spread": -3.414973116989959,
       "fair_spread_text": "Mississippi State +3.4",
       "fair_spread_raw_text": "Mississippi State +3.4",
       "near_pickem": false,
@@ -114,65 +114,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from Mississippi State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 76,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 80,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Mississippi State is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Alabama is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -261,7 +239,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Mississippi State",
@@ -341,9 +319,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T20:15:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -363,7 +341,7 @@
         },
         {
           "points": "-0.4",
-          "points_n": -0.3656028919595945,
+          "points_n": -0.3739443862217703,
           "text": "Stylistically the matchup favours Alabama by 0.4 points: ball control vs front disruption",
           "favours": "Alabama"
         }
@@ -386,15 +364,15 @@
               "k": "ETSR (overall)",
               "note": "points vs an average FBS team, neutral field",
               "a": {
-                "v": "+4.0",
-                "n": 4.04,
-                "rank": "#33 of 133",
-                "rank_n": 33,
+                "v": "+4.1",
+                "n": 4.08,
+                "rank": "#32 of 133",
+                "rank_n": 32,
                 "note": null
               },
               "h": {
                 "v": "+8.0",
-                "n": 7.97,
+                "n": 7.99,
                 "rank": "#11 of 133",
                 "rank_n": 11,
                 "note": null
@@ -402,7 +380,7 @@
               "edge": {
                 "side": "h",
                 "gap": 3.9,
-                "rank_gap": 22
+                "rank_gap": 21
               }
             },
             {
@@ -410,22 +388,22 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "49.0",
-                "n": 49,
-                "rank": "#69 of 133",
-                "rank_n": 69,
+                "v": "49.6",
+                "n": 49.6,
+                "rank": "#67 of 133",
+                "rank_n": 67,
                 "note": null
               },
               "h": {
-                "v": "50.7",
-                "n": 50.7,
-                "rank": "#60 of 133",
-                "rank_n": 60,
+                "v": "51.0",
+                "n": 51,
+                "rank": "#58 of 133",
+                "rank_n": 58,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 1.7,
+                "gap": 1.4,
                 "rank_gap": 9
               }
             },
@@ -607,8 +585,8 @@
               "k": "Run defense",
               "note": null,
               "a": {
-                "v": "76.1",
-                "n": 76.1,
+                "v": "76.2",
+                "n": 76.2,
                 "rank": "#2 of 133",
                 "rank_n": 2,
                 "note": null
@@ -622,7 +600,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 6,
+                "gap": 6.1,
                 "rank_gap": 3
               }
             },
@@ -662,8 +640,8 @@
               "a": {
                 "v": "56.5",
                 "n": 56.5,
-                "rank": "#78 of 133",
-                "rank_n": 78,
+                "rank": "#77 of 133",
+                "rank_n": 77,
                 "note": null
               },
               "h": {
@@ -676,7 +654,7 @@
               "edge": {
                 "side": "h",
                 "gap": 2.1,
-                "rank_gap": 37
+                "rank_gap": 36
               }
             },
             {
@@ -710,21 +688,21 @@
               "a": {
                 "v": "55.8",
                 "n": 55.8,
-                "rank": "#29 of 133",
-                "rank_n": 29,
+                "rank": "#31 of 133",
+                "rank_n": 31,
                 "note": null
               },
               "h": {
-                "v": "56.1",
-                "n": 56.1,
-                "rank": "#17 of 133",
-                "rank_n": 17,
+                "v": "56.2",
+                "n": 56.2,
+                "rank": "#13 of 133",
+                "rank_n": 13,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 0.3,
-                "rank_gap": 12
+                "gap": 0.4,
+                "rank_gap": 18
               }
             },
             {
@@ -758,8 +736,8 @@
               "a": {
                 "v": "55.9",
                 "n": 55.9,
-                "rank": "#68 of 133",
-                "rank_n": 68,
+                "rank": "#69 of 133",
+                "rank_n": 69,
                 "note": null
               },
               "h": {
@@ -772,7 +750,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.6,
-                "rank_gap": 48
+                "rank_gap": 49
               }
             },
             {
@@ -780,23 +758,23 @@
               "k": "Defensive line",
               "note": null,
               "a": {
-                "v": "57.5",
-                "n": 57.5,
-                "rank": "#24 of 133",
-                "rank_n": 24,
+                "v": "57.6",
+                "n": 57.6,
+                "rank": "#22 of 133",
+                "rank_n": 22,
                 "note": null
               },
               "h": {
-                "v": "51.3",
-                "n": 51.3,
-                "rank": "#85 of 133",
-                "rank_n": 85,
+                "v": "51.4",
+                "n": 51.4,
+                "rank": "#81 of 133",
+                "rank_n": 81,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 6.2,
-                "rank_gap": 61
+                "rank_gap": 59
               }
             },
             {
@@ -824,8 +802,8 @@
               "k": "Linebackers",
               "note": null,
               "a": {
-                "v": "56.4",
-                "n": 56.4,
+                "v": "56.5",
+                "n": 56.5,
                 "rank": "#26 of 133",
                 "rank_n": 26,
                 "note": null
@@ -833,14 +811,14 @@
               "h": {
                 "v": "50.8",
                 "n": 50.8,
-                "rank": "#94 of 133",
-                "rank_n": 94,
+                "rank": "#93 of 133",
+                "rank_n": 93,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 5.6,
-                "rank_gap": 68
+                "gap": 5.7,
+                "rank_gap": 67
               }
             },
             {
@@ -850,8 +828,8 @@
               "a": {
                 "v": "51.1",
                 "n": 51.1,
-                "rank": "#89 of 133",
-                "rank_n": 89,
+                "rank": "#90 of 133",
+                "rank_n": 90,
                 "note": null
               },
               "h": {
@@ -864,7 +842,7 @@
               "edge": {
                 "side": "h",
                 "gap": 2.4,
-                "rank_gap": 23
+                "rank_gap": 24
               }
             },
             {
@@ -954,23 +932,23 @@
       "away": [
         {
           "k": "Linebackers",
-          "rank_gap": 68,
-          "gap": 5.6,
+          "rank_gap": 67,
+          "gap": 5.7,
           "lead": "Alabama",
           "trail": "Mississippi State",
-          "lead_cell": "56.4 · #26 of 133",
-          "trail_cell": "50.8 · #94 of 133",
-          "text": "Alabama 56.4 (#26 of 133) vs Mississippi State 50.8 (#94 of 133) — 68 places on the national board."
+          "lead_cell": "56.5 · #26 of 133",
+          "trail_cell": "50.8 · #93 of 133",
+          "text": "Alabama 56.5 (#26 of 133) vs Mississippi State 50.8 (#93 of 133) — 67 places on the national board."
         },
         {
           "k": "Defensive line",
-          "rank_gap": 61,
+          "rank_gap": 59,
           "gap": 6.2,
           "lead": "Alabama",
           "trail": "Mississippi State",
-          "lead_cell": "57.5 · #24 of 133",
-          "trail_cell": "51.3 · #85 of 133",
-          "text": "Alabama 57.5 (#24 of 133) vs Mississippi State 51.3 (#85 of 133) — 61 places on the national board."
+          "lead_cell": "57.6 · #22 of 133",
+          "trail_cell": "51.4 · #81 of 133",
+          "text": "Alabama 57.6 (#22 of 133) vs Mississippi State 51.4 (#81 of 133) — 59 places on the national board."
         },
         {
           "k": "Special teams",
@@ -995,12 +973,12 @@
         {
           "k": "Run defense",
           "rank_gap": 3,
-          "gap": 6,
+          "gap": 6.1,
           "lead": "Alabama",
           "trail": "Mississippi State",
-          "lead_cell": "76.1 · #2 of 133",
+          "lead_cell": "76.2 · #2 of 133",
           "trail_cell": "70.1 · #5 of 133",
-          "text": "Alabama 76.1 (#2 of 133) vs Mississippi State 70.1 (#5 of 133) — 3 places on the national board."
+          "text": "Alabama 76.2 (#2 of 133) vs Mississippi State 70.1 (#5 of 133) — 3 places on the national board."
         }
       ],
       "home": [
@@ -1036,23 +1014,23 @@
         },
         {
           "k": "Running backs",
-          "rank_gap": 48,
+          "rank_gap": 49,
           "gap": 1.6,
           "lead": "Mississippi State",
           "trail": "Alabama",
           "lead_cell": "57.5 · #20 of 133",
-          "trail_cell": "55.9 · #68 of 133",
-          "text": "Mississippi State 57.5 (#20 of 133) vs Alabama 55.9 (#68 of 133) — 48 places on the national board."
+          "trail_cell": "55.9 · #69 of 133",
+          "text": "Mississippi State 57.5 (#20 of 133) vs Alabama 55.9 (#69 of 133) — 49 places on the national board."
         },
         {
-          "k": "QB room",
-          "rank_gap": 37,
-          "gap": 2.1,
+          "k": "Offense",
+          "rank_gap": 36,
+          "gap": 10.4,
           "lead": "Mississippi State",
           "trail": "Alabama",
-          "lead_cell": "58.6 · #41 of 133",
-          "trail_cell": "56.5 · #78 of 133",
-          "text": "Mississippi State 58.6 (#41 of 133) vs Alabama 56.5 (#78 of 133) — 37 places on the national board."
+          "lead_cell": "64.1 · #4 of 133",
+          "trail_cell": "53.7 · #40 of 133",
+          "text": "Mississippi State 64.1 (#4 of 133) vs Alabama 53.7 (#40 of 133) — 36 places on the national board."
         }
       ],
       "measured": [],
@@ -1130,12 +1108,12 @@
         "def": {
           "team": "Alabama",
           "label": "run defense",
-          "v": "76.1",
+          "v": "76.2",
           "rank": "#2 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Mississippi State’s run offense rates 70.4 (#4 of 133) against Alabama’s run defense at 76.1 (#2 of 133). Alabama’s unit stands higher among its own position group, by 2 places."
+        "read": "Mississippi State’s run offense rates 70.4 (#4 of 133) against Alabama’s run defense at 76.2 (#2 of 133). Alabama’s unit stands higher among its own position group, by 2 places."
       },
       {
         "title": "Alabama QB room vs Mississippi State secondary",
@@ -1143,7 +1121,7 @@
           "team": "Alabama",
           "label": "QB room",
           "v": "56.5",
-          "rank": "#78 of 133",
+          "rank": "#77 of 133",
           "note": null
         },
         "def": {
@@ -1154,7 +1132,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Alabama’s QB room rates 56.5 (#78 of 133) against Mississippi State’s secondary at 53.5 (#66 of 133). Mississippi State’s unit stands higher among its own position group, by 12 places."
+        "read": "Alabama’s QB room rates 56.5 (#77 of 133) against Mississippi State’s secondary at 53.5 (#66 of 133). Mississippi State’s unit stands higher among its own position group, by 11 places."
       },
       {
         "title": "Mississippi State QB room vs Alabama secondary",
@@ -1169,11 +1147,11 @@
           "team": "Alabama",
           "label": "secondary",
           "v": "51.1",
-          "rank": "#89 of 133",
+          "rank": "#90 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Mississippi State’s QB room rates 58.6 (#41 of 133) against Alabama’s secondary at 51.1 (#89 of 133). Mississippi State’s unit stands higher among its own position group, by 48 places."
+        "read": "Mississippi State’s QB room rates 58.6 (#41 of 133) against Alabama’s secondary at 51.1 (#90 of 133). Mississippi State’s unit stands higher among its own position group, by 49 places."
       },
       {
         "title": "Alabama offensive line vs Mississippi State defensive line",
@@ -1187,12 +1165,12 @@
         "def": {
           "team": "Mississippi State",
           "label": "defensive line",
-          "v": "51.3",
-          "rank": "#85 of 133",
+          "v": "51.4",
+          "rank": "#81 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Alabama’s offensive line rates 45.0 (#117 of 133) against Mississippi State’s defensive line at 51.3 (#85 of 133). Mississippi State’s unit stands higher among its own position group, by 32 places."
+        "read": "Alabama’s offensive line rates 45.0 (#117 of 133) against Mississippi State’s defensive line at 51.4 (#81 of 133). Mississippi State’s unit stands higher among its own position group, by 36 places."
       },
       {
         "title": "Mississippi State offensive line vs Alabama defensive line",
@@ -1206,12 +1184,12 @@
         "def": {
           "team": "Alabama",
           "label": "defensive line",
-          "v": "57.5",
-          "rank": "#24 of 133",
+          "v": "57.6",
+          "rank": "#22 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Mississippi State’s offensive line rates 45.6 (#112 of 133) against Alabama’s defensive line at 57.5 (#24 of 133). Alabama’s unit stands higher among its own position group, by 88 places."
+        "read": "Mississippi State’s offensive line rates 45.6 (#112 of 133) against Alabama’s defensive line at 57.6 (#22 of 133). Alabama’s unit stands higher among its own position group, by 90 places."
       },
       {
         "title": "Alabama running backs vs Mississippi State linebackers",
@@ -1219,18 +1197,18 @@
           "team": "Alabama",
           "label": "running backs",
           "v": "55.9",
-          "rank": "#68 of 133",
+          "rank": "#69 of 133",
           "note": null
         },
         "def": {
           "team": "Mississippi State",
           "label": "linebackers",
           "v": "50.8",
-          "rank": "#94 of 133",
+          "rank": "#93 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Alabama’s running backs rates 55.9 (#68 of 133) against Mississippi State’s linebackers at 50.8 (#94 of 133). Alabama’s unit stands higher among its own position group, by 26 places."
+        "read": "Alabama’s running backs rates 55.9 (#69 of 133) against Mississippi State’s linebackers at 50.8 (#93 of 133). Alabama’s unit stands higher among its own position group, by 24 places."
       },
       {
         "title": "Mississippi State running backs vs Alabama linebackers",
@@ -1244,12 +1222,12 @@
         "def": {
           "team": "Alabama",
           "label": "linebackers",
-          "v": "56.4",
+          "v": "56.5",
           "rank": "#26 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Mississippi State’s running backs rates 57.5 (#20 of 133) against Alabama’s linebackers at 56.4 (#26 of 133). Mississippi State’s unit stands higher among its own position group, by 6 places."
+        "read": "Mississippi State’s running backs rates 57.5 (#20 of 133) against Alabama’s linebackers at 56.5 (#26 of 133). Mississippi State’s unit stands higher among its own position group, by 6 places."
       },
       {
         "title": "Alabama receivers vs Mississippi State secondary",
@@ -1257,7 +1235,7 @@
           "team": "Alabama",
           "label": "receivers",
           "v": "55.8",
-          "rank": "#29 of 133",
+          "rank": "#31 of 133",
           "note": null
         },
         "def": {
@@ -1268,26 +1246,26 @@
           "note": null
         },
         "complete": true,
-        "read": "Alabama’s receivers rates 55.8 (#29 of 133) against Mississippi State’s secondary at 53.5 (#66 of 133). Alabama’s unit stands higher among its own position group, by 37 places."
+        "read": "Alabama’s receivers rates 55.8 (#31 of 133) against Mississippi State’s secondary at 53.5 (#66 of 133). Alabama’s unit stands higher among its own position group, by 35 places."
       },
       {
         "title": "Mississippi State receivers vs Alabama secondary",
         "att": {
           "team": "Mississippi State",
           "label": "receivers",
-          "v": "56.1",
-          "rank": "#17 of 133",
+          "v": "56.2",
+          "rank": "#13 of 133",
           "note": null
         },
         "def": {
           "team": "Alabama",
           "label": "secondary",
           "v": "51.1",
-          "rank": "#89 of 133",
+          "rank": "#90 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Mississippi State’s receivers rates 56.1 (#17 of 133) against Alabama’s secondary at 51.1 (#89 of 133). Mississippi State’s unit stands higher among its own position group, by 72 places."
+        "read": "Mississippi State’s receivers rates 56.2 (#13 of 133) against Alabama’s secondary at 51.1 (#90 of 133). Mississippi State’s unit stands higher among its own position group, by 77 places."
       }
     ],
     "roster": {
@@ -1393,18 +1371,18 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "none on file — 100% unknown",
-          "h": "none on file — 100% unknown",
+          "a": "8 on file, 0% of starter value out",
+          "h": "9 on file, 2% of starter value out",
           "edge": null
         },
         {
           "k": "Data confidence",
           "note": "how much EdgeDesk knows about this roster, not how good it is",
-          "a": "33%",
-          "h": "33%",
+          "a": "43%",
+          "h": "43%",
           "edge": {
             "side": "h",
-            "gap": 0.0050000000000000044
+            "gap": 0.0040000000000000036
           }
         }
       ],
@@ -1444,8 +1422,8 @@
         "bullets": [
           "Alabama is the better football team by 7.1 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-7.1 pts).",
           "Stylistically the matchup favours Alabama by 0.4 points: ball control vs front disruption (-0.4 pts).",
-          "Linebackers: Alabama 56.4 (#26 of 133) vs Mississippi State 50.8 (#94 of 133) — 68 places on the national board.",
-          "Defensive line: Alabama 57.5 (#24 of 133) vs Mississippi State 51.3 (#85 of 133) — 61 places on the national board.",
+          "Linebackers: Alabama 56.5 (#26 of 133) vs Mississippi State 50.8 (#93 of 133) — 67 places on the national board.",
+          "Defensive line: Alabama 57.6 (#22 of 133) vs Mississippi State 51.4 (#81 of 133) — 59 places on the national board.",
           "Special teams: Alabama 50.9 (#28 of 126) vs Mississippi State 50.0 (#66 of 126) — 38 places on the national board."
         ]
       },
@@ -1472,12 +1450,6 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "Alabama — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
           "label": "Alabama — extreme transfer turnover",
           "text": "73% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
           "widening": null
@@ -1492,12 +1464,6 @@
           "sev": "MEDIUM",
           "label": "Alabama — thin defensive data",
           "text": "131 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "Mississippi State — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
           "widening": null
         },
         {
@@ -1547,6 +1513,18 @@
           "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
           "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "no book total joined to this game",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "low confidence",
+          "text": "rivalry situational effect is in the number but rests on a thin sample",
+          "widening": null
         }
       ],
       "unmeasured": [
@@ -1565,10 +1543,6 @@
         {
           "item": "Away availability / injuries",
           "why": "no injury report supplied for away"
-        },
-        {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
         },
         {
           "item": "Weather at kickoff",
@@ -1591,10 +1565,6 @@
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
         },
         {
-          "item": "Alabama — availability and injuries",
-          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
-        },
-        {
           "item": "Mississippi State — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
         }
@@ -1607,6 +1577,100 @@
       "model_raw": "Mississippi State +3.4",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401856707",
+      "home": "Mississippi State",
+      "away": "Alabama",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Alabama -3.4",
+        "favorite_team": "Alabama",
+        "underdog_team": "Mississippi State",
+        "display_fair_spread": -3.4,
+        "raw_home_margin": -3.41,
+        "raw_line_text": "Alabama -3.41",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 80,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Alabama",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 7.12,
+            "text": "+7.1 pts team-strength edge (opponent-adjusted results)"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": -3.41,
+          "text": "Alabama -3.4"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Alabama",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Alabama 32, Mississippi State 29.",
     "state": {
@@ -1633,14 +1697,14 @@
       "rows": [
         {
           "k": "ETSR (overall)",
-          "a": "+4.0  #33",
+          "a": "+4.1  #32",
           "h": "+8.0  #11",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
-          "a": "49.0  #69",
-          "h": "50.7  #60",
+          "a": "49.6  #67",
+          "h": "51.0  #58",
           "note": null
         },
         {
@@ -1681,7 +1745,7 @@
         },
         {
           "k": "Run defense",
-          "a": "76.1  #2",
+          "a": "76.2  #2",
           "h": "70.1  #5",
           "note": null
         },
@@ -1693,7 +1757,7 @@
         },
         {
           "k": "QB room",
-          "a": "56.5  #78",
+          "a": "56.5  #77",
           "h": "58.6  #41",
           "note": null
         },
@@ -1705,31 +1769,31 @@
         },
         {
           "k": "Receivers",
-          "a": "55.8  #29",
-          "h": "56.1  #17",
+          "a": "55.8  #31",
+          "h": "56.2  #13",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "55.9  #68",
+          "a": "55.9  #69",
           "h": "57.5  #20",
           "note": null
         },
         {
           "k": "Defensive line",
-          "a": "57.5  #24",
-          "h": "51.3  #85",
+          "a": "57.6  #22",
+          "h": "51.4  #81",
           "note": null
         },
         {
           "k": "Linebackers",
-          "a": "56.4  #26",
-          "h": "50.8  #94",
+          "a": "56.5  #26",
+          "h": "50.8  #93",
           "note": null
         },
         {
           "k": "Secondary",
-          "a": "51.1  #89",
+          "a": "51.1  #90",
           "h": "53.5  #66",
           "note": null
         },
@@ -1747,13 +1811,13 @@
         },
         {
           "k": "Confidence",
-          "a": "33%",
-          "h": "33%",
+          "a": "43%",
+          "h": "43%",
           "note": "how much EdgeDesk knows, not how good the team is"
         },
         {
           "k": "Δ national rank, this week",
-          "a": "no change",
+          "a": "up 1",
           "h": "no change",
           "note": "differenced from last week’s committed snapshot"
         }
@@ -1778,6 +1842,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

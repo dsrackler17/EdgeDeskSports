@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "South Florida vs. Bowling Green: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "South Florida vs. Bowling Green 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices South Florida at Bowling Green at Bowling Green +27.4 with a 55.2 fair total. South Florida wins 97% of simulations. Data confidence 78%. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices South Florida at Bowling Green at Bowling Green +27.4 with a 55.2 fair total. South Florida wins 97% of simulations. Data confidence 82%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "South Florida carries the stronger underlying team rating — +0.3 against -10.1, a 10.4-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Bowling Green +27.4 before any sportsbook number is consulted, with South…",
   "home_team": "Bowling Green",
   "away_team": "South Florida",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T21:00:00.000Z",
   "game_when_label": "2026-09-26 21:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 78,
+  "confidence": 82,
   "priced": true,
   "fair_spread_text": "Bowling Green +27.4",
   "fair_total": "55.2",
@@ -66,11 +66,11 @@
       "South Florida carries the stronger underlying team rating — +0.3 against -10.1, a 10.4-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Bowling Green +27.4 before any sportsbook number is consulted, with South Florida winning 97% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is offensive line, where South Florida leads Bowling Green by 109 places nationally.",
-      "Data confidence on this matchup is 78% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 82% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -27.35446770460814,
+      "fair_spread": -27.428457906855922,
       "fair_spread_text": "Bowling Green +27.4",
       "fair_spread_raw_text": "Bowling Green +27.4",
       "near_pickem": false,
@@ -114,65 +114,67 @@
         "volatility_discriminates": false,
         "note": "Quoted from Bowling Green’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 78,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 82,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "Bowling Green is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for Bowling Green and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing.."
           },
           {
             "field": "availability",
             "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "South Florida is not in the availability registry"
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for South Florida and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing."
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Bowling Green",
@@ -349,9 +351,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -364,9 +366,9 @@
           "favours": "South Florida"
         },
         {
-          "points": "-4.9",
-          "points_n": -4.94120311760814,
-          "text": "Stylistically the matchup favours South Florida by 4.9 points: ball control vs front disruption",
+          "points": "-5.0",
+          "points_n": -5.015193319855921,
+          "text": "Stylistically the matchup favours South Florida by 5.0 points: ball control vs front disruption",
           "favours": "South Florida"
         },
         {
@@ -426,21 +428,21 @@
               "a": {
                 "v": "43.6",
                 "n": 43.6,
-                "rank": "#99 of 133",
-                "rank_n": 99,
+                "rank": "#100 of 133",
+                "rank_n": 100,
                 "note": null
               },
               "h": {
-                "v": "34.3",
-                "n": 34.3,
-                "rank": "#130 of 133",
-                "rank_n": 130,
+                "v": "34.2",
+                "n": 34.2,
+                "rank": "#129 of 133",
+                "rank_n": 129,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 9.3,
-                "rank_gap": 31
+                "gap": 9.4,
+                "rank_gap": 29
               }
             },
             {
@@ -481,14 +483,14 @@
               "h": {
                 "v": "48.6",
                 "n": 48.6,
-                "rank": "#111 of 133",
-                "rank_n": 111,
+                "rank": "#110 of 133",
+                "rank_n": 110,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 3.3,
-                "rank_gap": 82
+                "rank_gap": 81
               }
             }
           ]
@@ -775,14 +777,14 @@
               "h": {
                 "v": "55.3",
                 "n": 55.3,
-                "rank": "#99 of 133",
-                "rank_n": 99,
+                "rank": "#100 of 133",
+                "rank_n": 100,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 1.7,
-                "rank_gap": 33
+                "rank_gap": 32
               }
             },
             {
@@ -799,14 +801,14 @@
               "h": {
                 "v": "51.3",
                 "n": 51.3,
-                "rank": "#84 of 133",
-                "rank_n": 84,
+                "rank": "#85 of 133",
+                "rank_n": 85,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 6.7,
-                "rank_gap": 67
+                "rank_gap": 68
               }
             },
             {
@@ -996,13 +998,13 @@
       "home": [
         {
           "k": "Running backs",
-          "rank_gap": 33,
+          "rank_gap": 32,
           "gap": 1.7,
           "lead": "Bowling Green",
           "trail": "South Florida",
-          "lead_cell": "55.3 · #99 of 133",
+          "lead_cell": "55.3 · #100 of 133",
           "trail_cell": "53.6 · #132 of 133",
-          "text": "Bowling Green 55.3 (#99 of 133) vs South Florida 53.6 (#132 of 133) — 33 places on the national board."
+          "text": "Bowling Green 55.3 (#100 of 133) vs South Florida 53.6 (#132 of 133) — 32 places on the national board."
         },
         {
           "k": "Continuity",
@@ -1158,11 +1160,11 @@
           "team": "Bowling Green",
           "label": "defensive line",
           "v": "51.3",
-          "rank": "#84 of 133",
+          "rank": "#85 of 133",
           "note": null
         },
         "complete": true,
-        "read": "South Florida’s offensive line rates 57.6 (#13 of 133) against Bowling Green’s defensive line at 51.3 (#84 of 133). South Florida’s unit stands higher among its own position group, by 71 places."
+        "read": "South Florida’s offensive line rates 57.6 (#13 of 133) against Bowling Green’s defensive line at 51.3 (#85 of 133). South Florida’s unit stands higher among its own position group, by 72 places."
       },
       {
         "title": "Bowling Green offensive line vs South Florida defensive line",
@@ -1208,7 +1210,7 @@
           "team": "Bowling Green",
           "label": "running backs",
           "v": "55.3",
-          "rank": "#99 of 133",
+          "rank": "#100 of 133",
           "note": null
         },
         "def": {
@@ -1219,7 +1221,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Bowling Green’s running backs rates 55.3 (#99 of 133) against South Florida’s linebackers at 56.9 (#20 of 133). South Florida’s unit stands higher among its own position group, by 79 places."
+        "read": "Bowling Green’s running backs rates 55.3 (#100 of 133) against South Florida’s linebackers at 56.9 (#20 of 133). South Florida’s unit stands higher among its own position group, by 80 places."
       },
       {
         "title": "South Florida receivers vs Bowling Green secondary",
@@ -1413,7 +1415,7 @@
         "heading": "Why South Florida can pull away",
         "bullets": [
           "South Florida is the better football team by 23.1 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-23.1 pts).",
-          "Stylistically the matchup favours South Florida by 4.9 points: ball control vs front disruption (-4.9 pts).",
+          "Stylistically the matchup favours South Florida by 5.0 points: ball control vs front disruption (-5.0 pts).",
           "Conference strength differs and the in-season sample is still thin, worth 3.4 points to South Florida (-3.4 pts).",
           "Offensive line: South Florida 57.6 (#13 of 133) vs Bowling Green 44.4 (#122 of 133) — 109 places on the national board.",
           "Special teams: South Florida 51.2 (#18 of 126) vs Bowling Green 46.7 (#123 of 126) — 105 places on the national board."
@@ -1424,7 +1426,7 @@
         "heading": "Why Bowling Green can keep it close",
         "bullets": [
           "Playing at Bowling Green is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
-          "Running backs: Bowling Green 55.3 (#99 of 133) vs South Florida 53.6 (#132 of 133) — 33 places on the national board.",
+          "Running backs: Bowling Green 55.3 (#100 of 133) vs South Florida 53.6 (#132 of 133) — 32 places on the national board.",
           "Continuity: Bowling Green 33.4 (#115 of 133) vs South Florida 28.4 (#129 of 133) — 14 places on the national board.",
           "Kicking: Bowling Green 56.0 (#68 of 133) vs South Florida 55.9 (#77 of 133) — 9 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -50.4 to p90 -6.4 for Bowling Green, so a projection of -27.4 still produces results a long way either side of it."
@@ -1461,7 +1463,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1537,10 +1539,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1567,6 +1565,10 @@
         {
           "item": "Bowling Green — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Bowling Green — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1577,16 +1579,138 @@
       "model_raw": "Bowling Green +27.4",
       "market": "Bowling Green +17.5",
       "difference": "9.9 points",
-      "difference_n": 9.85446770460814,
+      "difference_n": 9.928457906855922,
       "total_model": "55.2",
       "total_market": "48.5",
-      "book": "captured · Hard Rock Bet",
+      "book": "captured (stale 73h) · Hard Rock Bet",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401862785",
+      "home": "Bowling Green",
+      "away": "South Florida",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "South Florida -27.4",
+        "favorite_team": "South Florida",
+        "underdog_team": "Bowling Green",
+        "display_fair_spread": -27.4,
+        "raw_home_margin": -27.43,
+        "raw_line_text": "South Florida -27.43",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 9.93,
+        "toward_team": "South Florida",
+        "text": "9.9 pts toward South Florida",
+        "market_line_text": "South Florida -17.5",
+        "market_home_margin": -17.5,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · Hard Rock Bet",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 82,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "South Florida",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 23.07,
+            "text": "+23.1 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 5.02,
+            "text": "+5.0 pts stylistic matchup"
+          },
+          {
+            "kind": "component",
+            "key": "conference",
+            "points": 3.43,
+            "text": "+3.4 pts conference-strength edge"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "LOW",
+        "label": "Low",
+        "text": "the stored numbers span 2.5 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T12:00:40.648Z",
+          "source": "first published",
+          "home_margin": -24.93,
+          "text": "South Florida -24.9"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": -27.43,
+          "text": "South Florida -27.4"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Bowling Green",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 2.5 points toward South Florida since the first published number.",
+        "attribution_text": "Projection changed 2.5 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects South Florida 41, Bowling Green 14.",
     "state": {
@@ -1619,8 +1743,8 @@
         },
         {
           "k": "Talent",
-          "a": "43.6  #99",
-          "h": "34.3  #130",
+          "a": "43.6  #100",
+          "h": "34.2  #129",
           "note": null
         },
         {
@@ -1692,13 +1816,13 @@
         {
           "k": "Running backs",
           "a": "53.6  #132",
-          "h": "55.3  #99",
+          "h": "55.3  #100",
           "note": null
         },
         {
           "k": "Defensive line",
           "a": "58.0  #17",
-          "h": "51.3  #84",
+          "h": "51.3  #85",
           "note": null
         },
         {
@@ -1743,7 +1867,7 @@
       "EdgeDesk’s line is Bowling Green +27.4 on a neutral read of the two teams, before any book is consulted. Projected total 55.2.",
       "Bowling Green wins 3% of the time in EdgeDesk’s simulation, South Florida 97%.",
       "Eight games in ten land between -50.4 and -6.4 for Bowling Green. A single result inside that band tells you nothing new about either team.",
-      "The market has Bowling Green +17.5 at captured · Hard Rock Bet, 9.9 points from EdgeDesk’s number.",
+      "The market has Bowling Green +17.5 at captured (stale 73h) · Hard Rock Bet, 9.9 points from EdgeDesk’s number.",
       "South Florida quarterback: Luke Kromenhoek — started the last game; no announcement for this one.",
       "Bowling Green quarterback: Jay Kastantin — started the last game; no announcement for this one."
     ],
@@ -1759,6 +1883,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

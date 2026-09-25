@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UTEP vs. New Mexico: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UTEP vs. New Mexico 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices UTEP at New Mexico at New Mexico -22.6 with a 54.9 fair total. New Mexico wins 93% of simulations. Data confidence 69%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices UTEP at New Mexico at New Mexico -22.6 with a 54.9 fair total. New Mexico wins 93% of simulations. Data confidence 72%. Model status NO MARKET. Research, not picks.",
   "excerpt": "New Mexico carries the stronger underlying team rating — +0.5 against -2.5, a 3.0-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it New Mexico -22.6 before any sportsbook number is consulted, with New Mexico…",
   "home_team": "New Mexico",
   "away_team": "UTEP",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 69,
+  "confidence": 72,
   "priced": true,
   "fair_spread_text": "New Mexico -22.6",
   "fair_total": "54.9",
@@ -66,11 +66,11 @@
       "New Mexico carries the stronger underlying team rating — +0.5 against -2.5, a 3.0-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it New Mexico -22.6 before any sportsbook number is consulted, with New Mexico winning 93% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is continuity, where New Mexico leads UTEP by 95 places nationally.",
-      "Data confidence on this matchup is 69% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 72% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 22.57574455742383,
+      "fair_spread": 22.562227832698902,
       "fair_spread_text": "New Mexico -22.6",
       "fair_spread_raw_text": "New Mexico -22.6",
       "near_pickem": false,
@@ -114,65 +114,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from New Mexico’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 69,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 72,
+      "inputs_reached_pct": 69,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 18,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
-          "CONFLICTING": 0,
+          "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "New Mexico is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "UTEP is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "New Mexico",
@@ -345,9 +323,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -367,7 +345,7 @@
         },
         {
           "points": "+1.9",
-          "points_n": 1.8857968372238247,
+          "points_n": 1.8722801124988977,
           "text": "Stylistically the matchup favours New Mexico by 1.9 points: ball control vs front disruption",
           "favours": "New Mexico"
         }
@@ -464,15 +442,15 @@
               "a": {
                 "v": "52.8",
                 "n": 52.8,
-                "rank": "#19 of 133",
-                "rank_n": 19,
+                "rank": "#20 of 133",
+                "rank_n": 20,
                 "note": null
               },
               "h": {
                 "v": "52.7",
                 "n": 52.7,
-                "rank": "#20 of 133",
-                "rank_n": 20,
+                "rank": "#21 of 133",
+                "rank_n": 21,
                 "note": null
               },
               "edge": {
@@ -673,14 +651,14 @@
               "h": {
                 "v": "57.1",
                 "n": 57.1,
-                "rank": "#66 of 133",
-                "rank_n": 66,
+                "rank": "#65 of 133",
+                "rank_n": 65,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 2.7,
-                "rank_gap": 51
+                "rank_gap": 52
               }
             },
             {
@@ -721,14 +699,14 @@
               "h": {
                 "v": "54.9",
                 "n": 54.9,
-                "rank": "#79 of 133",
-                "rank_n": 79,
+                "rank": "#77 of 133",
+                "rank_n": 77,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 1.3,
-                "rank_gap": 48
+                "rank_gap": 50
               }
             },
             {
@@ -762,15 +740,15 @@
               "a": {
                 "v": "56.5",
                 "n": 56.5,
-                "rank": "#55 of 133",
-                "rank_n": 55,
+                "rank": "#56 of 133",
+                "rank_n": 56,
                 "note": null
               },
               "h": {
                 "v": "55.3",
                 "n": 55.3,
-                "rank": "#102 of 133",
-                "rank_n": 102,
+                "rank": "#103 of 133",
+                "rank_n": 103,
                 "note": null
               },
               "edge": {
@@ -786,8 +764,8 @@
               "a": {
                 "v": "57.6",
                 "n": 57.6,
-                "rank": "#23 of 133",
-                "rank_n": 23,
+                "rank": "#25 of 133",
+                "rank_n": 25,
                 "note": null
               },
               "h": {
@@ -800,7 +778,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.5,
-                "rank_gap": 9
+                "rank_gap": 11
               }
             },
             {
@@ -810,8 +788,8 @@
               "a": {
                 "v": "56.3",
                 "n": 56.3,
-                "rank": "#29 of 133",
-                "rank_n": 29,
+                "rank": "#30 of 133",
+                "rank_n": 30,
                 "note": null
               },
               "h": {
@@ -824,7 +802,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.3,
-                "rank_gap": 12
+                "rank_gap": 13
               }
             },
             {
@@ -952,9 +930,9 @@
           "gap": 1.2,
           "lead": "UTEP",
           "trail": "New Mexico",
-          "lead_cell": "56.5 · #55 of 133",
-          "trail_cell": "55.3 · #102 of 133",
-          "text": "UTEP 56.5 (#55 of 133) vs New Mexico 55.3 (#102 of 133) — 47 places on the national board."
+          "lead_cell": "56.5 · #56 of 133",
+          "trail_cell": "55.3 · #103 of 133",
+          "text": "UTEP 56.5 (#56 of 133) vs New Mexico 55.3 (#103 of 133) — 47 places on the national board."
         },
         {
           "k": "Offense",
@@ -982,9 +960,9 @@
           "gap": 0.1,
           "lead": "UTEP",
           "trail": "New Mexico",
-          "lead_cell": "52.8 · #19 of 133",
-          "trail_cell": "52.7 · #20 of 133",
-          "text": "UTEP 52.8 (#19 of 133) vs New Mexico 52.7 (#20 of 133) — 1 place on the national board."
+          "lead_cell": "52.8 · #20 of 133",
+          "trail_cell": "52.7 · #21 of 133",
+          "text": "UTEP 52.8 (#20 of 133) vs New Mexico 52.7 (#21 of 133) — 1 place on the national board."
         }
       ],
       "home": [
@@ -1146,7 +1124,7 @@
           "team": "New Mexico",
           "label": "QB room",
           "v": "57.1",
-          "rank": "#66 of 133",
+          "rank": "#65 of 133",
           "note": null
         },
         "def": {
@@ -1157,7 +1135,7 @@
           "note": null
         },
         "complete": true,
-        "read": "New Mexico’s QB room rates 57.1 (#66 of 133) against UTEP’s secondary at 55.3 (#47 of 133). UTEP’s unit stands higher among its own position group, by 19 places."
+        "read": "New Mexico’s QB room rates 57.1 (#65 of 133) against UTEP’s secondary at 55.3 (#47 of 133). UTEP’s unit stands higher among its own position group, by 18 places."
       },
       {
         "title": "UTEP offensive line vs New Mexico defensive line",
@@ -1191,11 +1169,11 @@
           "team": "UTEP",
           "label": "defensive line",
           "v": "57.6",
-          "rank": "#23 of 133",
+          "rank": "#25 of 133",
           "note": null
         },
         "complete": true,
-        "read": "New Mexico’s offensive line rates 51.0 (#74 of 133) against UTEP’s defensive line at 57.6 (#23 of 133). UTEP’s unit stands higher among its own position group, by 51 places."
+        "read": "New Mexico’s offensive line rates 51.0 (#74 of 133) against UTEP’s defensive line at 57.6 (#25 of 133). UTEP’s unit stands higher among its own position group, by 49 places."
       },
       {
         "title": "UTEP running backs vs New Mexico linebackers",
@@ -1203,7 +1181,7 @@
           "team": "UTEP",
           "label": "running backs",
           "v": "56.5",
-          "rank": "#55 of 133",
+          "rank": "#56 of 133",
           "note": null
         },
         "def": {
@@ -1214,7 +1192,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UTEP’s running backs rates 56.5 (#55 of 133) against New Mexico’s linebackers at 57.6 (#17 of 133). New Mexico’s unit stands higher among its own position group, by 38 places."
+        "read": "UTEP’s running backs rates 56.5 (#56 of 133) against New Mexico’s linebackers at 57.6 (#17 of 133). New Mexico’s unit stands higher among its own position group, by 39 places."
       },
       {
         "title": "New Mexico running backs vs UTEP linebackers",
@@ -1222,18 +1200,18 @@
           "team": "New Mexico",
           "label": "running backs",
           "v": "55.3",
-          "rank": "#102 of 133",
+          "rank": "#103 of 133",
           "note": null
         },
         "def": {
           "team": "UTEP",
           "label": "linebackers",
           "v": "56.3",
-          "rank": "#29 of 133",
+          "rank": "#30 of 133",
           "note": null
         },
         "complete": true,
-        "read": "New Mexico’s running backs rates 55.3 (#102 of 133) against UTEP’s linebackers at 56.3 (#29 of 133). UTEP’s unit stands higher among its own position group, by 73 places."
+        "read": "New Mexico’s running backs rates 55.3 (#103 of 133) against UTEP’s linebackers at 56.3 (#30 of 133). UTEP’s unit stands higher among its own position group, by 73 places."
       },
       {
         "title": "UTEP receivers vs New Mexico secondary",
@@ -1260,7 +1238,7 @@
           "team": "New Mexico",
           "label": "receivers",
           "v": "54.9",
-          "rank": "#79 of 133",
+          "rank": "#77 of 133",
           "note": null
         },
         "def": {
@@ -1271,7 +1249,7 @@
           "note": null
         },
         "complete": true,
-        "read": "New Mexico’s receivers rates 54.9 (#79 of 133) against UTEP’s secondary at 55.3 (#47 of 133). UTEP’s unit stands higher among its own position group, by 32 places."
+        "read": "New Mexico’s receivers rates 54.9 (#77 of 133) against UTEP’s secondary at 55.3 (#47 of 133). UTEP’s unit stands higher among its own position group, by 30 places."
       }
     ],
     "roster": {
@@ -1438,7 +1416,7 @@
         "heading": "Why UTEP can keep it close",
         "bullets": [
           "Pass offense: UTEP 57.0 (#28 of 132) vs New Mexico 44.9 (#98 of 132) — 70 places on the national board.",
-          "Running backs: UTEP 56.5 (#55 of 133) vs New Mexico 55.3 (#102 of 133) — 47 places on the national board.",
+          "Running backs: UTEP 56.5 (#56 of 133) vs New Mexico 55.3 (#103 of 133) — 47 places on the national board.",
           "Offense: UTEP 50.3 (#67 of 133) vs New Mexico 45.3 (#102 of 133) — 35 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -0.4 to p90 +43.6 for New Mexico, so a projection of +22.6 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%."
@@ -1551,10 +1529,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1581,6 +1555,10 @@
         {
           "item": "New Mexico — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "New Mexico — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1591,6 +1569,112 @@
       "model_raw": "New Mexico -22.6",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401864514",
+      "home": "New Mexico",
+      "away": "UTEP",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "New Mexico -22.6",
+        "favorite_team": "New Mexico",
+        "underdog_team": "UTEP",
+        "display_fair_spread": 22.6,
+        "raw_home_margin": 22.56,
+        "raw_line_text": "New Mexico -22.56",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 72,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 69,
+        "tier": "ADEQUATE",
+        "text": "69%",
+        "sub": "18 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "New Mexico",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 16.61,
+            "text": "+16.6 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.87,
+            "text": "+1.9 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": 22.56,
+          "text": "New Mexico -22.6"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "New Mexico",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects New Mexico 39, UTEP 16.",
     "state": {
@@ -1678,7 +1762,7 @@
         {
           "k": "QB room",
           "a": "54.4  #117",
-          "h": "57.1  #66",
+          "h": "57.1  #65",
           "note": null
         },
         {
@@ -1690,24 +1774,24 @@
         {
           "k": "Receivers",
           "a": "53.6  #127",
-          "h": "54.9  #79",
+          "h": "54.9  #77",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "56.5  #55",
-          "h": "55.3  #102",
+          "a": "56.5  #56",
+          "h": "55.3  #103",
           "note": null
         },
         {
           "k": "Defensive line",
-          "a": "57.6  #23",
+          "a": "57.6  #25",
           "h": "59.1  #14",
           "note": null
         },
         {
           "k": "Linebackers",
-          "a": "56.3  #29",
+          "a": "56.3  #30",
           "h": "57.6  #17",
           "note": null
         },
@@ -1762,6 +1846,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

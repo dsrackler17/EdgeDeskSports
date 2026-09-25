@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Vanderbilt vs. Georgia: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Vanderbilt vs. Georgia 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Vanderbilt at Georgia at Georgia -13.7 with a 59.3 fair total. Georgia wins 82% of simulations. Data confidence 74%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "Vanderbilt carries the stronger underlying team rating — +6.8 against +6.1, a 0.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Georgia -13.7 before any sportsbook number is consulted, with Georgia winning 82%…",
+  "seo_description": "EdgeDesk prices Vanderbilt at Georgia at Georgia -13.6 with a 59.3 fair total. Georgia wins 82% of simulations. Data confidence 78%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "Vanderbilt carries the stronger underlying team rating — +6.8 against +6.1, a 0.7-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Georgia -13.6 before any sportsbook number is consulted, with Georgia winning 82%…",
   "home_team": "Georgia",
   "away_team": "Vanderbilt",
   "venue": "Sanford Stadium",
@@ -21,14 +21,14 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 74,
+  "confidence": 78,
   "priced": true,
-  "fair_spread_text": "Georgia -13.7",
+  "fair_spread_text": "Georgia -13.6",
   "fair_total": "59.3",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/vanderbilt-vs-georgia-2026",
@@ -63,21 +63,21 @@
       "home_conference": "SEC"
     },
     "lede": [
-      "Vanderbilt carries the stronger underlying team rating — +6.8 against +6.1, a 0.6-point separation on a neutral field before home advantage, travel or rest.",
-      "EdgeDesk makes it Georgia -13.7 before any sportsbook number is consulted, with Georgia winning 82% of simulations.",
+      "Vanderbilt carries the stronger underlying team rating — +6.8 against +6.1, a 0.7-point separation on a neutral field before home advantage, travel or rest.",
+      "EdgeDesk makes it Georgia -13.6 before any sportsbook number is consulted, with Georgia winning 82% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is qb room, where Georgia leads Vanderbilt by 102 places nationally.",
-      "Data confidence on this matchup is 74% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 78% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 13.6832602867211,
-      "fair_spread_text": "Georgia -13.7",
-      "fair_spread_raw_text": "Georgia -13.7",
+      "fair_spread": 13.626224889080824,
+      "fair_spread_text": "Georgia -13.6",
+      "fair_spread_raw_text": "Georgia -13.6",
       "near_pickem": false,
       "raw_margin_text": null,
       "favourite": "Georgia",
       "underdog": "Vanderbilt",
-      "margin": "13.7",
+      "margin": "13.6",
       "total": "59.3",
       "score": {
         "away": {
@@ -106,73 +106,51 @@
       },
       "outcome_range": {
         "basis_team": "Georgia",
-        "p10": "-9.3",
-        "median": "+12.7",
-        "p90": "+34.7",
+        "p10": "-9.4",
+        "median": "+12.6",
+        "p90": "+34.6",
         "sigma": "15.1",
         "volatility": "40.04",
         "volatility_discriminates": false,
         "note": "Quoted from Georgia’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 74,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 78,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Georgia is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Vanderbilt is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:45:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Georgia",
@@ -349,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -370,9 +348,9 @@
           "favours": "Georgia"
         },
         {
-          "points": "+0.9",
-          "points_n": 0.9035696421231167,
-          "text": "Stylistically the matchup favours Georgia by 0.9 points: ball control vs front disruption",
+          "points": "+0.8",
+          "points_n": 0.8465342444828399,
+          "text": "Stylistically the matchup favours Georgia by 0.8 points: ball control vs front disruption",
           "favours": "Georgia"
         }
       ],
@@ -395,21 +373,21 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "+6.8",
-                "n": 6.76,
+                "n": 6.78,
                 "rank": "#17 of 133",
                 "rank_n": 17,
                 "note": null
               },
               "h": {
                 "v": "+6.1",
-                "n": 6.13,
+                "n": 6.1,
                 "rank": "#25 of 133",
                 "rank_n": 25,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 0.6,
+                "gap": 0.7,
                 "rank_gap": 8
               }
             },
@@ -418,23 +396,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "54.5",
-                "n": 54.5,
-                "rank": "#43 of 133",
-                "rank_n": 43,
+                "v": "54.8",
+                "n": 54.8,
+                "rank": "#40 of 133",
+                "rank_n": 40,
                 "note": null
               },
               "h": {
-                "v": "68.9",
-                "n": 68.9,
-                "rank": "#3 of 133",
-                "rank_n": 3,
+                "v": "68.0",
+                "n": 68,
+                "rank": "#4 of 133",
+                "rank_n": 4,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 14.4,
-                "rank_gap": 40
+                "gap": 13.2,
+                "rank_gap": 36
               }
             },
             {
@@ -473,16 +451,16 @@
                 "note": null
               },
               "h": {
-                "v": "49.2",
-                "n": 49.2,
-                "rank": "#98 of 133",
-                "rank_n": 98,
+                "v": "49.1",
+                "n": 49.1,
+                "rank": "#100 of 133",
+                "rank_n": 100,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 5.5,
-                "rank_gap": 96
+                "gap": 5.6,
+                "rank_gap": 98
               }
             }
           ]
@@ -716,23 +694,23 @@
               "k": "Receivers",
               "note": null,
               "a": {
-                "v": "56.6",
-                "n": 56.6,
-                "rank": "#6 of 133",
-                "rank_n": 6,
+                "v": "56.5",
+                "n": 56.5,
+                "rank": "#8 of 133",
+                "rank_n": 8,
                 "note": null
               },
               "h": {
-                "v": "55.8",
-                "n": 55.8,
-                "rank": "#30 of 133",
-                "rank_n": 30,
+                "v": "55.7",
+                "n": 55.7,
+                "rank": "#35 of 133",
+                "rank_n": 35,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.8,
-                "rank_gap": 24
+                "rank_gap": 27
               }
             },
             {
@@ -740,8 +718,8 @@
               "k": "Tight ends",
               "note": "rated by the player layer; the board publishes no national TE rank",
               "a": {
-                "v": "56.5",
-                "n": 56.5,
+                "v": "56.3",
+                "n": 56.3,
                 "rank": null,
                 "rank_n": null,
                 "note": "rated, held out of the national rank by the confidence gate"
@@ -754,7 +732,7 @@
                 "note": "rated, held out of the national rank by the confidence gate"
               },
               "edge": {
-                "side": "a",
+                "side": "h",
                 "gap": 0.1,
                 "rank_gap": null
               }
@@ -771,16 +749,16 @@
                 "note": null
               },
               "h": {
-                "v": "58.2",
-                "n": 58.2,
-                "rank": "#8 of 133",
-                "rank_n": 8,
+                "v": "57.9",
+                "n": 57.9,
+                "rank": "#11 of 133",
+                "rank_n": 11,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 0.7,
-                "rank_gap": 14
+                "gap": 0.4,
+                "rank_gap": 11
               }
             },
             {
@@ -788,8 +766,8 @@
               "k": "Defensive line",
               "note": null,
               "a": {
-                "v": "52.5",
-                "n": 52.5,
+                "v": "52.6",
+                "n": 52.6,
                 "rank": "#70 of 133",
                 "rank_n": 70,
                 "note": null
@@ -803,7 +781,7 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 7.8,
+                "gap": 7.7,
                 "rank_gap": 60
               }
             },
@@ -834,8 +812,8 @@
               "a": {
                 "v": "52.2",
                 "n": 52.2,
-                "rank": "#74 of 133",
-                "rank_n": 74,
+                "rank": "#75 of 133",
+                "rank_n": 75,
                 "note": null
               },
               "h": {
@@ -848,7 +826,7 @@
               "edge": {
                 "side": "h",
                 "gap": 7.1,
-                "rank_gap": 66
+                "rank_gap": 67
               }
             },
             {
@@ -856,10 +834,10 @@
               "k": "Secondary",
               "note": null,
               "a": {
-                "v": "57.9",
-                "n": 57.9,
-                "rank": "#18 of 133",
-                "rank_n": 18,
+                "v": "58.1",
+                "n": 58.1,
+                "rank": "#17 of 133",
+                "rank_n": 17,
                 "note": null
               },
               "h": {
@@ -871,8 +849,8 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 2.6,
-                "rank_gap": 25
+                "gap": 2.8,
+                "rank_gap": 26
               }
             },
             {
@@ -962,13 +940,13 @@
       "away": [
         {
           "k": "Scheme fit",
-          "rank_gap": 96,
-          "gap": 5.5,
+          "rank_gap": 98,
+          "gap": 5.6,
           "lead": "Vanderbilt",
           "trail": "Georgia",
           "lead_cell": "54.7 · #2 of 133",
-          "trail_cell": "49.2 · #98 of 133",
-          "text": "Vanderbilt 54.7 (#2 of 133) vs Georgia 49.2 (#98 of 133) — 96 places on the national board."
+          "trail_cell": "49.1 · #100 of 133",
+          "text": "Vanderbilt 54.7 (#2 of 133) vs Georgia 49.1 (#100 of 133) — 98 places on the national board."
         },
         {
           "k": "Offensive line",
@@ -981,24 +959,24 @@
           "text": "Vanderbilt 60.2 (#3 of 133) vs Georgia 52.2 (#62 of 133) — 59 places on the national board."
         },
         {
-          "k": "Secondary",
-          "rank_gap": 25,
-          "gap": 2.6,
-          "lead": "Vanderbilt",
-          "trail": "Georgia",
-          "lead_cell": "57.9 · #18 of 133",
-          "trail_cell": "55.3 · #43 of 133",
-          "text": "Vanderbilt 57.9 (#18 of 133) vs Georgia 55.3 (#43 of 133) — 25 places on the national board."
-        },
-        {
           "k": "Receivers",
-          "rank_gap": 24,
+          "rank_gap": 27,
           "gap": 0.8,
           "lead": "Vanderbilt",
           "trail": "Georgia",
-          "lead_cell": "56.6 · #6 of 133",
-          "trail_cell": "55.8 · #30 of 133",
-          "text": "Vanderbilt 56.6 (#6 of 133) vs Georgia 55.8 (#30 of 133) — 24 places on the national board."
+          "lead_cell": "56.5 · #8 of 133",
+          "trail_cell": "55.7 · #35 of 133",
+          "text": "Vanderbilt 56.5 (#8 of 133) vs Georgia 55.7 (#35 of 133) — 27 places on the national board."
+        },
+        {
+          "k": "Secondary",
+          "rank_gap": 26,
+          "gap": 2.8,
+          "lead": "Vanderbilt",
+          "trail": "Georgia",
+          "lead_cell": "58.1 · #17 of 133",
+          "trail_cell": "55.3 · #43 of 133",
+          "text": "Vanderbilt 58.1 (#17 of 133) vs Georgia 55.3 (#43 of 133) — 26 places on the national board."
         },
         {
           "k": "Special teams",
@@ -1034,23 +1012,23 @@
         },
         {
           "k": "Linebackers",
-          "rank_gap": 66,
+          "rank_gap": 67,
           "gap": 7.1,
           "lead": "Georgia",
           "trail": "Vanderbilt",
           "lead_cell": "59.3 · #8 of 133",
-          "trail_cell": "52.2 · #74 of 133",
-          "text": "Georgia 59.3 (#8 of 133) vs Vanderbilt 52.2 (#74 of 133) — 66 places on the national board."
+          "trail_cell": "52.2 · #75 of 133",
+          "text": "Georgia 59.3 (#8 of 133) vs Vanderbilt 52.2 (#75 of 133) — 67 places on the national board."
         },
         {
           "k": "Defensive line",
           "rank_gap": 60,
-          "gap": 7.8,
+          "gap": 7.7,
           "lead": "Georgia",
           "trail": "Vanderbilt",
           "lead_cell": "60.3 · #10 of 133",
-          "trail_cell": "52.5 · #70 of 133",
-          "text": "Georgia 60.3 (#10 of 133) vs Vanderbilt 52.5 (#70 of 133) — 60 places on the national board."
+          "trail_cell": "52.6 · #70 of 133",
+          "text": "Georgia 60.3 (#10 of 133) vs Vanderbilt 52.6 (#70 of 133) — 60 places on the national board."
         },
         {
           "k": "Continuity",
@@ -1176,12 +1154,12 @@
         "def": {
           "team": "Vanderbilt",
           "label": "secondary",
-          "v": "57.9",
-          "rank": "#18 of 133",
+          "v": "58.1",
+          "rank": "#17 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Georgia’s QB room rates 62.9 (#6 of 133) against Vanderbilt’s secondary at 57.9 (#18 of 133). Georgia’s unit stands higher among its own position group, by 12 places."
+        "read": "Georgia’s QB room rates 62.9 (#6 of 133) against Vanderbilt’s secondary at 58.1 (#17 of 133). Georgia’s unit stands higher among its own position group, by 11 places."
       },
       {
         "title": "Vanderbilt offensive line vs Georgia defensive line",
@@ -1214,12 +1192,12 @@
         "def": {
           "team": "Vanderbilt",
           "label": "defensive line",
-          "v": "52.5",
+          "v": "52.6",
           "rank": "#70 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Georgia’s offensive line rates 52.2 (#62 of 133) against Vanderbilt’s defensive line at 52.5 (#70 of 133). Georgia’s unit stands higher among its own position group, by 8 places."
+        "read": "Georgia’s offensive line rates 52.2 (#62 of 133) against Vanderbilt’s defensive line at 52.6 (#70 of 133). Georgia’s unit stands higher among its own position group, by 8 places."
       },
       {
         "title": "Vanderbilt running backs vs Georgia linebackers",
@@ -1245,27 +1223,27 @@
         "att": {
           "team": "Georgia",
           "label": "running backs",
-          "v": "58.2",
-          "rank": "#8 of 133",
+          "v": "57.9",
+          "rank": "#11 of 133",
           "note": null
         },
         "def": {
           "team": "Vanderbilt",
           "label": "linebackers",
           "v": "52.2",
-          "rank": "#74 of 133",
+          "rank": "#75 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Georgia’s running backs rates 58.2 (#8 of 133) against Vanderbilt’s linebackers at 52.2 (#74 of 133). Georgia’s unit stands higher among its own position group, by 66 places."
+        "read": "Georgia’s running backs rates 57.9 (#11 of 133) against Vanderbilt’s linebackers at 52.2 (#75 of 133). Georgia’s unit stands higher among its own position group, by 64 places."
       },
       {
         "title": "Vanderbilt receivers vs Georgia secondary",
         "att": {
           "team": "Vanderbilt",
           "label": "receivers",
-          "v": "56.6",
-          "rank": "#6 of 133",
+          "v": "56.5",
+          "rank": "#8 of 133",
           "note": null
         },
         "def": {
@@ -1276,26 +1254,26 @@
           "note": null
         },
         "complete": true,
-        "read": "Vanderbilt’s receivers rates 56.6 (#6 of 133) against Georgia’s secondary at 55.3 (#43 of 133). Vanderbilt’s unit stands higher among its own position group, by 37 places."
+        "read": "Vanderbilt’s receivers rates 56.5 (#8 of 133) against Georgia’s secondary at 55.3 (#43 of 133). Vanderbilt’s unit stands higher among its own position group, by 35 places."
       },
       {
         "title": "Georgia receivers vs Vanderbilt secondary",
         "att": {
           "team": "Georgia",
           "label": "receivers",
-          "v": "55.8",
-          "rank": "#30 of 133",
+          "v": "55.7",
+          "rank": "#35 of 133",
           "note": null
         },
         "def": {
           "team": "Vanderbilt",
           "label": "secondary",
-          "v": "57.9",
-          "rank": "#18 of 133",
+          "v": "58.1",
+          "rank": "#17 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Georgia’s receivers rates 55.8 (#30 of 133) against Vanderbilt’s secondary at 57.9 (#18 of 133). Vanderbilt’s unit stands higher among its own position group, by 12 places."
+        "read": "Georgia’s receivers rates 55.7 (#35 of 133) against Vanderbilt’s secondary at 58.1 (#17 of 133). Vanderbilt’s unit stands higher among its own position group, by 18 places."
       }
     ],
     "roster": {
@@ -1401,18 +1379,18 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "none on file — 100% unknown",
-          "h": "none on file — 100% unknown",
+          "a": "9 on file, 0% of starter value out",
+          "h": "8 on file, 5% of starter value out",
           "edge": null
         },
         {
           "k": "Data confidence",
           "note": "how much EdgeDesk knows about this roster, not how good it is",
-          "a": "29%",
-          "h": "40%",
+          "a": "39%",
+          "h": "50%",
           "edge": {
             "side": "h",
-            "gap": 0.11300000000000004
+            "gap": 0.11399999999999999
           }
         }
       ],
@@ -1452,7 +1430,7 @@
         "bullets": [
           "Georgia is the better football team by 8.7 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (+8.7 pts).",
           "Playing at Georgia is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
-          "Stylistically the matchup favours Georgia by 0.9 points: ball control vs front disruption (+0.9 pts).",
+          "Stylistically the matchup favours Georgia by 0.8 points: ball control vs front disruption (+0.8 pts).",
           "QB room: Georgia 62.9 (#6 of 133) vs Vanderbilt 55.0 (#108 of 133) — 102 places on the national board.",
           "Run defense: Georgia 64.6 (#17 of 133) vs Vanderbilt 43.6 (#92 of 133) — 75 places on the national board."
         ]
@@ -1461,10 +1439,10 @@
         "team": "Vanderbilt",
         "heading": "Why Vanderbilt can keep it close",
         "bullets": [
-          "Scheme fit: Vanderbilt 54.7 (#2 of 133) vs Georgia 49.2 (#98 of 133) — 96 places on the national board.",
+          "Scheme fit: Vanderbilt 54.7 (#2 of 133) vs Georgia 49.1 (#100 of 133) — 98 places on the national board.",
           "Offensive line: Vanderbilt 60.2 (#3 of 133) vs Georgia 52.2 (#62 of 133) — 59 places on the national board.",
-          "Secondary: Vanderbilt 57.9 (#18 of 133) vs Georgia 55.3 (#43 of 133) — 25 places on the national board.",
-          "The outcome range is 15.1 points wide at one sigma — p10 -9.3 to p90 +34.7 for Georgia, so a projection of +13.7 still produces results a long way either side of it.",
+          "Receivers: Vanderbilt 56.5 (#8 of 133) vs Georgia 55.7 (#35 of 133) — 27 places on the national board.",
+          "The outcome range is 15.1 points wide at one sigma — p10 -9.4 to p90 +34.6 for Georgia, so a projection of +13.6 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%."
         ]
       },
@@ -1492,12 +1470,6 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "Vanderbilt — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
           "label": "Vanderbilt — extreme transfer turnover",
           "text": "65% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
           "widening": null
@@ -1512,12 +1484,6 @@
           "sev": "MEDIUM",
           "label": "Vanderbilt — thin defensive data",
           "text": "182 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "Georgia — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
           "widening": null
         },
         {
@@ -1555,6 +1521,18 @@
           "label": "missing",
           "text": "away injury report not supplied",
           "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "no book spread joined to this game — no edge is claimed",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "no book total joined to this game",
+          "widening": null
         }
       ],
       "unmeasured": [
@@ -1573,10 +1551,6 @@
         {
           "item": "Away availability / injuries",
           "why": "no injury report supplied for away"
-        },
-        {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
         },
         {
           "item": "Weather at kickoff",
@@ -1599,10 +1573,6 @@
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
         },
         {
-          "item": "Vanderbilt — availability and injuries",
-          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
-        },
-        {
           "item": "Georgia — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
         }
@@ -1611,10 +1581,116 @@
     },
     "market": {
       "available": false,
-      "model": "Georgia -13.7",
-      "model_raw": "Georgia -13.7",
+      "model": "Georgia -13.6",
+      "model_raw": "Georgia -13.6",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401856705",
+      "home": "Georgia",
+      "away": "Vanderbilt",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Georgia -13.6",
+        "favorite_team": "Georgia",
+        "underdog_team": "Vanderbilt",
+        "display_fair_spread": 13.6,
+        "raw_home_margin": 13.63,
+        "raw_line_text": "Georgia -13.63",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 78,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Georgia",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 8.7,
+            "text": "+8.7 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 0.85,
+            "text": "+0.8 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": 13.63,
+          "text": "Georgia -13.6"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Vanderbilt",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Georgia 36, Vanderbilt 23.",
     "state": {
@@ -1647,8 +1723,8 @@
         },
         {
           "k": "Talent",
-          "a": "54.5  #43",
-          "h": "68.9  #3",
+          "a": "54.8  #40",
+          "h": "68.0  #4",
           "note": null
         },
         {
@@ -1713,31 +1789,31 @@
         },
         {
           "k": "Receivers",
-          "a": "56.6  #6",
-          "h": "55.8  #30",
+          "a": "56.5  #8",
+          "h": "55.7  #35",
           "note": null
         },
         {
           "k": "Running backs",
           "a": "57.5  #22",
-          "h": "58.2  #8",
+          "h": "57.9  #11",
           "note": null
         },
         {
           "k": "Defensive line",
-          "a": "52.5  #70",
+          "a": "52.6  #70",
           "h": "60.3  #10",
           "note": null
         },
         {
           "k": "Linebackers",
-          "a": "52.2  #74",
+          "a": "52.2  #75",
           "h": "59.3  #8",
           "note": null
         },
         {
           "k": "Secondary",
-          "a": "57.9  #18",
+          "a": "58.1  #17",
           "h": "55.3  #43",
           "note": null
         },
@@ -1755,8 +1831,8 @@
         },
         {
           "k": "Confidence",
-          "a": "29%",
-          "h": "40%",
+          "a": "39%",
+          "h": "50%",
           "note": "how much EdgeDesk knows, not how good the team is"
         },
         {
@@ -1768,9 +1844,9 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Georgia -13.7 on a neutral read of the two teams, before any book is consulted. Projected total 59.3.",
+      "EdgeDesk’s line is Georgia -13.6 on a neutral read of the two teams, before any book is consulted. Projected total 59.3.",
       "Georgia wins 82% of the time in EdgeDesk’s simulation, Vanderbilt 18%.",
-      "Eight games in ten land between -9.3 and +34.7 for Georgia. A single result inside that band tells you nothing new about either team.",
+      "Eight games in ten land between -9.4 and +34.6 for Georgia. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
       "Vanderbilt quarterback: Jared Curtis — started the last game; no announcement for this one.",
       "Georgia quarterback: Gunner Stockton — started the last game; no announcement for this one."
@@ -1786,6 +1862,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

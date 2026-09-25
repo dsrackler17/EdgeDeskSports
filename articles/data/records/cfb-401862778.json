@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Navy vs. UAB: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Navy vs. UAB 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Navy at UAB at UAB +8.6 with a 58.0 fair total. Navy wins 71% of simulations. Data confidence 72%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices Navy at UAB at UAB +8.6 with a 58.1 fair total. Navy wins 71% of simulations. Data confidence 76%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Navy carries the stronger underlying team rating — +0.4 against -2.5, a 2.9-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it UAB +8.6 before any sportsbook number is consulted, with Navy winning 71% of simulations.",
   "home_team": "UAB",
   "away_team": "Navy",
@@ -21,15 +21,15 @@
   "game_time": "2026-09-25T23:00:00.000Z",
   "game_when_label": "2026-09-25 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 72,
+  "confidence": 76,
   "priced": true,
   "fair_spread_text": "UAB +8.6",
-  "fair_total": "58.0",
+  "fair_total": "58.1",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/navy-vs-uab-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
@@ -65,11 +65,11 @@
     "lede": [
       "Navy carries the stronger underlying team rating — +0.4 against -2.5, a 2.9-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it UAB +8.6 before any sportsbook number is consulted, with Navy winning 71% of simulations.",
-      "Data confidence on this matchup is 72% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 76% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -8.607120790738733,
+      "fair_spread": -8.581057743079873,
       "fair_spread_text": "UAB +8.6",
       "fair_spread_raw_text": "UAB +8.6",
       "near_pickem": false,
@@ -77,7 +77,7 @@
       "favourite": "Navy",
       "underdog": "UAB",
       "margin": "8.6",
-      "total": "58.0",
+      "total": "58.1",
       "score": {
         "away": {
           "team": "Navy",
@@ -113,65 +113,73 @@
         "volatility_discriminates": false,
         "note": "Quoted from UAB’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 72,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 76,
+      "inputs_reached_pct": 69,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 18,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
           "UNAVAILABLE": 6
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "UAB is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for UAB and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "availability",
             "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Navy is not in the availability registry"
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Navy and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
             "field": "coaching_continuity",
-            "side": null,
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "UAB has no prior season in the coach table to compare against, so whether this staff is new is unknown rather than continuous — a programme with no history is not a programme that kept its coach"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -270,7 +278,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-12T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "UAB",
@@ -354,9 +362,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -376,7 +384,7 @@
         },
         {
           "points": "-2.3",
-          "points_n": -2.338181862651189,
+          "points_n": -2.312118814992328,
           "text": "Stylistically the matchup favours Navy by 2.3 points: ball control vs front disruption",
           "favours": "Navy"
         }
@@ -730,8 +738,8 @@
               "h": {
                 "v": "54.8",
                 "n": 54.8,
-                "rank": "#88 of 133",
-                "rank_n": 88,
+                "rank": "#85 of 133",
+                "rank_n": 85,
                 "note": null
               },
               "edge": {
@@ -778,8 +786,8 @@
               "h": {
                 "v": "55.9",
                 "n": 55.9,
-                "rank": "#73 of 133",
-                "rank_n": 73,
+                "rank": "#74 of 133",
+                "rank_n": 74,
                 "note": null
               },
               "edge": {
@@ -1129,7 +1137,7 @@
           "team": "UAB",
           "label": "running backs",
           "v": "55.9",
-          "rank": "#73 of 133",
+          "rank": "#74 of 133",
           "note": null
         },
         "def": {
@@ -1140,7 +1148,7 @@
           "note": "confidence 9% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
         },
         "complete": true,
-        "read": "UAB’s running backs rates 55.9 (#73 of 133) against Navy’s linebackers at 52.4. UAB’s unit carries the higher rating."
+        "read": "UAB’s running backs rates 55.9 (#74 of 133) against Navy’s linebackers at 52.4. UAB’s unit carries the higher rating."
       },
       {
         "title": "Navy receivers vs UAB secondary",
@@ -1167,7 +1175,7 @@
           "team": "UAB",
           "label": "receivers",
           "v": "54.8",
-          "rank": "#88 of 133",
+          "rank": "#85 of 133",
           "note": null
         },
         "def": {
@@ -1178,7 +1186,7 @@
           "note": "confidence 9% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
         },
         "complete": true,
-        "read": "UAB’s receivers rates 54.8 (#88 of 133) against Navy’s secondary at 45.2. UAB’s unit carries the higher rating."
+        "read": "UAB’s receivers rates 54.8 (#85 of 133) against Navy’s secondary at 45.2. UAB’s unit carries the higher rating."
       }
     ],
     "roster": {
@@ -1372,7 +1380,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1454,10 +1462,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1484,6 +1488,10 @@
         {
           "item": "UAB — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "UAB — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1494,16 +1502,132 @@
       "model_raw": "UAB +8.6",
       "market": "UAB +7.5",
       "difference": "1.1 points",
-      "difference_n": 1.1071207907387333,
-      "total_model": "58.0",
+      "difference_n": 1.0810577430798727,
+      "total_model": "58.1",
       "total_market": "51.5",
-      "book": "captured · FanDuel",
+      "book": "captured (stale 73h) · FanDuel",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401862778",
+      "home": "UAB",
+      "away": "Navy",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Navy -8.6",
+        "favorite_team": "Navy",
+        "underdog_team": "UAB",
+        "display_fair_spread": -8.6,
+        "raw_home_margin": -8.58,
+        "raw_line_text": "Navy -8.58",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 1.08,
+        "toward_team": "Navy",
+        "text": "1.1 pts toward Navy",
+        "market_line_text": "Navy -7.5",
+        "market_home_margin": -7.5,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · FanDuel",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 76,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 69,
+        "tier": "ADEQUATE",
+        "text": "69%",
+        "sub": "18 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Navy",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 10.35,
+            "text": "+10.4 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 2.31,
+            "text": "+2.3 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.1 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T01:39:46.233Z",
+          "source": "first published",
+          "home_margin": -8.53,
+          "text": "Navy -8.5"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": -8.58,
+          "text": "Navy -8.6"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Navy",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 0.1 points toward Navy since the first published number.",
+        "attribution_text": "Projection changed 0.1 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Navy 33, UAB 25.",
     "state": {
@@ -1603,13 +1727,13 @@
         {
           "k": "Receivers",
           "a": "53.8  unranked",
-          "h": "54.8  #88",
+          "h": "54.8  #85",
           "note": null
         },
         {
           "k": "Running backs",
           "a": "54.5  unranked",
-          "h": "55.9  #73",
+          "h": "55.9  #74",
           "note": null
         },
         {
@@ -1657,10 +1781,10 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is UAB +8.6 on a neutral read of the two teams, before any book is consulted. Projected total 58.0.",
+      "EdgeDesk’s line is UAB +8.6 on a neutral read of the two teams, before any book is consulted. Projected total 58.1.",
       "UAB wins 29% of the time in EdgeDesk’s simulation, Navy 71%.",
       "Eight games in ten land between -31.6 and +12.4 for UAB. A single result inside that band tells you nothing new about either team.",
-      "The market has UAB +7.5 at captured · FanDuel, 1.1 points from EdgeDesk’s number.",
+      "The market has UAB +7.5 at captured (stale 73h) · FanDuel, 1.1 points from EdgeDesk’s number.",
       "UAB quarterback: Ryder Burton — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1694,6 +1818,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

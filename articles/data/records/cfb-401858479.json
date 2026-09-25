@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Michigan State vs. Wisconsin: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Michigan State vs. Wisconsin 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Michigan State at Wisconsin at Wisconsin -1.5 with a 47.3 fair total. Wisconsin wins 54% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "Wisconsin carries the stronger underlying team rating — +2.2 against -0.7, a 2.9-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Wisconsin -1.5 before any sportsbook number is consulted, with Wisconsin winning…",
+  "seo_description": "EdgeDesk prices Michigan State at Wisconsin at Wisconsin -1.4 with a 47.3 fair total. Wisconsin wins 54% of simulations. Data confidence 84%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "Wisconsin carries the stronger underlying team rating — +2.2 against -0.7, a 2.9-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Wisconsin -1.4 before any sportsbook number is consulted, with Wisconsin winning…",
   "home_team": "Wisconsin",
   "away_team": "Michigan State",
   "venue": "Camp Randall Stadium",
@@ -21,14 +21,14 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
-  "fair_spread_text": "Wisconsin -1.5",
+  "fair_spread_text": "Wisconsin -1.4",
   "fair_total": "47.3",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/michigan-state-vs-wisconsin-2026",
@@ -64,20 +64,20 @@
     },
     "lede": [
       "Wisconsin carries the stronger underlying team rating — +2.2 against -0.7, a 2.9-point separation on a neutral field before home advantage, travel or rest.",
-      "EdgeDesk makes it Wisconsin -1.5 before any sportsbook number is consulted, with Wisconsin winning 54% of simulations.",
+      "EdgeDesk makes it Wisconsin -1.4 before any sportsbook number is consulted, with Wisconsin winning 54% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is offensive line, where Wisconsin leads Michigan State by 119 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 1.4514294853070813,
-      "fair_spread_text": "Wisconsin -1.5",
-      "fair_spread_raw_text": "Wisconsin -1.5",
+      "fair_spread": 1.4405031159395634,
+      "fair_spread_text": "Wisconsin -1.4",
+      "fair_spread_raw_text": "Wisconsin -1.4",
       "near_pickem": false,
       "raw_margin_text": null,
       "favourite": "Wisconsin",
       "underdog": "Michigan State",
-      "margin": "1.5",
+      "margin": "1.4",
       "total": "47.3",
       "score": {
         "away": {
@@ -106,73 +106,51 @@
       },
       "outcome_range": {
         "basis_team": "Wisconsin",
-        "p10": "-21.5",
-        "median": "+0.5",
-        "p90": "+22.5",
+        "p10": "-21.6",
+        "median": "+0.4",
+        "p90": "+22.4",
         "sigma": "15.1",
         "volatility": "40.04",
         "volatility_discriminates": false,
         "note": "Quoted from Wisconsin’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Wisconsin is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Michigan State is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -265,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Wisconsin",
@@ -337,9 +315,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -359,7 +337,7 @@
         },
         {
           "points": "-1.2",
-          "points_n": -1.2178184444929179,
+          "points_n": -1.2287448138604358,
           "text": "Stylistically the matchup favours Michigan State by 1.2 points: early-down offence vs early-down defence",
           "favours": "Michigan State"
         }
@@ -383,7 +361,7 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "-0.7",
-                "n": -0.72,
+                "n": -0.68,
                 "rank": "#78 of 133",
                 "rank_n": 78,
                 "note": null
@@ -406,23 +384,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "46.4",
-                "n": 46.4,
-                "rank": "#85 of 133",
-                "rank_n": 85,
+                "v": "46.9",
+                "n": 46.9,
+                "rank": "#80 of 133",
+                "rank_n": 80,
                 "note": null
               },
               "h": {
                 "v": "57.1",
                 "n": 57.1,
-                "rank": "#32 of 133",
-                "rank_n": 32,
+                "rank": "#30 of 133",
+                "rank_n": 30,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 10.7,
-                "rank_gap": 53
+                "gap": 10.2,
+                "rank_gap": 50
               }
             },
             {
@@ -456,21 +434,21 @@
               "a": {
                 "v": "49.2",
                 "n": 49.2,
-                "rank": "#99 of 133",
-                "rank_n": 99,
+                "rank": "#98 of 133",
+                "rank_n": 98,
                 "note": null
               },
               "h": {
-                "v": "50.8",
-                "n": 50.8,
-                "rank": "#50 of 133",
-                "rank_n": 50,
+                "v": "50.9",
+                "n": 50.9,
+                "rank": "#47 of 133",
+                "rank_n": 47,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 1.6,
-                "rank_gap": 49
+                "gap": 1.7,
+                "rank_gap": 51
               }
             }
           ]
@@ -610,15 +588,15 @@
                 "note": null
               },
               "h": {
-                "v": "41.1",
-                "n": 41.1,
+                "v": "41.2",
+                "n": 41.2,
                 "rank": "#97 of 133",
                 "rank_n": 97,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 1.9,
+                "gap": 2,
                 "rank_gap": 9
               }
             },
@@ -663,16 +641,16 @@
                 "note": null
               },
               "h": {
-                "v": "60.0",
-                "n": 60,
-                "rank": "#26 of 133",
-                "rank_n": 26,
+                "v": "60.1",
+                "n": 60.1,
+                "rank": "#24 of 133",
+                "rank_n": 24,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 2.6,
-                "rank_gap": 31
+                "gap": 2.7,
+                "rank_gap": 33
               }
             },
             {
@@ -706,15 +684,15 @@
               "a": {
                 "v": "54.3",
                 "n": 54.3,
-                "rank": "#108 of 133",
-                "rank_n": 108,
+                "rank": "#107 of 133",
+                "rank_n": 107,
                 "note": null
               },
               "h": {
                 "v": "54.5",
                 "n": 54.5,
-                "rank": "#103 of 133",
-                "rank_n": 103,
+                "rank": "#102 of 133",
+                "rank_n": 102,
                 "note": null
               },
               "edge": {
@@ -754,21 +732,21 @@
               "a": {
                 "v": "57.8",
                 "n": 57.8,
-                "rank": "#15 of 133",
-                "rank_n": 15,
+                "rank": "#14 of 133",
+                "rank_n": 14,
                 "note": null
               },
               "h": {
                 "v": "55.7",
                 "n": 55.7,
-                "rank": "#84 of 133",
-                "rank_n": 84,
+                "rank": "#85 of 133",
+                "rank_n": 85,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 2.1,
-                "rank_gap": 69
+                "rank_gap": 71
               }
             },
             {
@@ -776,22 +754,22 @@
               "k": "Defensive line",
               "note": null,
               "a": {
-                "v": "49.2",
-                "n": 49.2,
-                "rank": "#108 of 133",
-                "rank_n": 108,
+                "v": "49.3",
+                "n": 49.3,
+                "rank": "#107 of 133",
+                "rank_n": 107,
                 "note": null
               },
               "h": {
-                "v": "53.5",
-                "n": 53.5,
-                "rank": "#61 of 133",
-                "rank_n": 61,
+                "v": "53.7",
+                "n": 53.7,
+                "rank": "#60 of 133",
+                "rank_n": 60,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 4.3,
+                "gap": 4.4,
                 "rank_gap": 47
               }
             },
@@ -820,10 +798,10 @@
               "k": "Linebackers",
               "note": null,
               "a": {
-                "v": "49.7",
-                "n": 49.7,
-                "rank": "#108 of 133",
-                "rank_n": 108,
+                "v": "49.4",
+                "n": 49.4,
+                "rank": "#110 of 133",
+                "rank_n": 110,
                 "note": null
               },
               "h": {
@@ -835,8 +813,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 4,
-                "rank_gap": 51
+                "gap": 4.3,
+                "rank_gap": 53
               }
             },
             {
@@ -844,10 +822,10 @@
               "k": "Secondary",
               "note": null,
               "a": {
-                "v": "51.9",
-                "n": 51.9,
-                "rank": "#83 of 133",
-                "rank_n": 83,
+                "v": "52.0",
+                "n": 52,
+                "rank": "#81 of 133",
+                "rank_n": 81,
                 "note": null
               },
               "h": {
@@ -859,8 +837,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 5,
-                "rank_gap": 54
+                "gap": 4.9,
+                "rank_gap": 52
               }
             },
             {
@@ -950,13 +928,13 @@
       "away": [
         {
           "k": "Running backs",
-          "rank_gap": 69,
+          "rank_gap": 71,
           "gap": 2.1,
           "lead": "Michigan State",
           "trail": "Wisconsin",
-          "lead_cell": "57.8 · #15 of 133",
-          "trail_cell": "55.7 · #84 of 133",
-          "text": "Michigan State 57.8 (#15 of 133) vs Wisconsin 55.7 (#84 of 133) — 69 places on the national board."
+          "lead_cell": "57.8 · #14 of 133",
+          "trail_cell": "55.7 · #85 of 133",
+          "text": "Michigan State 57.8 (#14 of 133) vs Wisconsin 55.7 (#85 of 133) — 71 places on the national board."
         },
         {
           "k": "Run offense",
@@ -1011,34 +989,34 @@
           "text": "Wisconsin 60.4 (#17 of 132) vs Michigan State 48.0 (#73 of 132) — 56 places on the national board."
         },
         {
-          "k": "Secondary",
-          "rank_gap": 54,
-          "gap": 5,
-          "lead": "Wisconsin",
-          "trail": "Michigan State",
-          "lead_cell": "56.9 · #29 of 133",
-          "trail_cell": "51.9 · #83 of 133",
-          "text": "Wisconsin 56.9 (#29 of 133) vs Michigan State 51.9 (#83 of 133) — 54 places on the national board."
-        },
-        {
-          "k": "Talent",
-          "rank_gap": 53,
-          "gap": 10.7,
-          "lead": "Wisconsin",
-          "trail": "Michigan State",
-          "lead_cell": "57.1 · #32 of 133",
-          "trail_cell": "46.4 · #85 of 133",
-          "text": "Wisconsin 57.1 (#32 of 133) vs Michigan State 46.4 (#85 of 133) — 53 places on the national board."
-        },
-        {
           "k": "Linebackers",
-          "rank_gap": 51,
-          "gap": 4,
+          "rank_gap": 53,
+          "gap": 4.3,
           "lead": "Wisconsin",
           "trail": "Michigan State",
           "lead_cell": "53.7 · #57 of 133",
-          "trail_cell": "49.7 · #108 of 133",
-          "text": "Wisconsin 53.7 (#57 of 133) vs Michigan State 49.7 (#108 of 133) — 51 places on the national board."
+          "trail_cell": "49.4 · #110 of 133",
+          "text": "Wisconsin 53.7 (#57 of 133) vs Michigan State 49.4 (#110 of 133) — 53 places on the national board."
+        },
+        {
+          "k": "Secondary",
+          "rank_gap": 52,
+          "gap": 4.9,
+          "lead": "Wisconsin",
+          "trail": "Michigan State",
+          "lead_cell": "56.9 · #29 of 133",
+          "trail_cell": "52.0 · #81 of 133",
+          "text": "Wisconsin 56.9 (#29 of 133) vs Michigan State 52.0 (#81 of 133) — 52 places on the national board."
+        },
+        {
+          "k": "Scheme fit",
+          "rank_gap": 51,
+          "gap": 1.7,
+          "lead": "Wisconsin",
+          "trail": "Michigan State",
+          "lead_cell": "50.9 · #47 of 133",
+          "trail_cell": "49.2 · #98 of 133",
+          "text": "Wisconsin 50.9 (#47 of 133) vs Michigan State 49.2 (#98 of 133) — 51 places on the national board."
         }
       ],
       "measured": [],
@@ -1078,12 +1056,12 @@
         "def": {
           "team": "Wisconsin",
           "label": "run defense",
-          "v": "41.1",
+          "v": "41.2",
           "rank": "#97 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Michigan State’s run offense rates 56.5 (#27 of 133) against Wisconsin’s run defense at 41.1 (#97 of 133). Michigan State’s unit stands higher among its own position group, by 70 places."
+        "read": "Michigan State’s run offense rates 56.5 (#27 of 133) against Wisconsin’s run defense at 41.2 (#97 of 133). Michigan State’s unit stands higher among its own position group, by 70 places."
       },
       {
         "title": "Wisconsin pass offense vs Michigan State pass defense",
@@ -1147,19 +1125,19 @@
         "att": {
           "team": "Wisconsin",
           "label": "QB room",
-          "v": "60.0",
-          "rank": "#26 of 133",
+          "v": "60.1",
+          "rank": "#24 of 133",
           "note": null
         },
         "def": {
           "team": "Michigan State",
           "label": "secondary",
-          "v": "51.9",
-          "rank": "#83 of 133",
+          "v": "52.0",
+          "rank": "#81 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Wisconsin’s QB room rates 60.0 (#26 of 133) against Michigan State’s secondary at 51.9 (#83 of 133). Wisconsin’s unit stands higher among its own position group, by 57 places."
+        "read": "Wisconsin’s QB room rates 60.1 (#24 of 133) against Michigan State’s secondary at 52.0 (#81 of 133). Wisconsin’s unit stands higher among its own position group, by 57 places."
       },
       {
         "title": "Michigan State offensive line vs Wisconsin defensive line",
@@ -1173,12 +1151,12 @@
         "def": {
           "team": "Wisconsin",
           "label": "defensive line",
-          "v": "53.5",
-          "rank": "#61 of 133",
+          "v": "53.7",
+          "rank": "#60 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Michigan State’s offensive line rates 41.3 (#130 of 133) against Wisconsin’s defensive line at 53.5 (#61 of 133). Wisconsin’s unit stands higher among its own position group, by 69 places."
+        "read": "Michigan State’s offensive line rates 41.3 (#130 of 133) against Wisconsin’s defensive line at 53.7 (#60 of 133). Wisconsin’s unit stands higher among its own position group, by 70 places."
       },
       {
         "title": "Wisconsin offensive line vs Michigan State defensive line",
@@ -1192,12 +1170,12 @@
         "def": {
           "team": "Michigan State",
           "label": "defensive line",
-          "v": "49.2",
-          "rank": "#108 of 133",
+          "v": "49.3",
+          "rank": "#107 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Wisconsin’s offensive line rates 58.0 (#11 of 133) against Michigan State’s defensive line at 49.2 (#108 of 133). Wisconsin’s unit stands higher among its own position group, by 97 places."
+        "read": "Wisconsin’s offensive line rates 58.0 (#11 of 133) against Michigan State’s defensive line at 49.3 (#107 of 133). Wisconsin’s unit stands higher among its own position group, by 96 places."
       },
       {
         "title": "Michigan State running backs vs Wisconsin linebackers",
@@ -1205,7 +1183,7 @@
           "team": "Michigan State",
           "label": "running backs",
           "v": "57.8",
-          "rank": "#15 of 133",
+          "rank": "#14 of 133",
           "note": null
         },
         "def": {
@@ -1216,7 +1194,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Michigan State’s running backs rates 57.8 (#15 of 133) against Wisconsin’s linebackers at 53.7 (#57 of 133). Michigan State’s unit stands higher among its own position group, by 42 places."
+        "read": "Michigan State’s running backs rates 57.8 (#14 of 133) against Wisconsin’s linebackers at 53.7 (#57 of 133). Michigan State’s unit stands higher among its own position group, by 43 places."
       },
       {
         "title": "Wisconsin running backs vs Michigan State linebackers",
@@ -1224,18 +1202,18 @@
           "team": "Wisconsin",
           "label": "running backs",
           "v": "55.7",
-          "rank": "#84 of 133",
+          "rank": "#85 of 133",
           "note": null
         },
         "def": {
           "team": "Michigan State",
           "label": "linebackers",
-          "v": "49.7",
-          "rank": "#108 of 133",
+          "v": "49.4",
+          "rank": "#110 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Wisconsin’s running backs rates 55.7 (#84 of 133) against Michigan State’s linebackers at 49.7 (#108 of 133). Wisconsin’s unit stands higher among its own position group, by 24 places."
+        "read": "Wisconsin’s running backs rates 55.7 (#85 of 133) against Michigan State’s linebackers at 49.4 (#110 of 133). Wisconsin’s unit stands higher among its own position group, by 25 places."
       },
       {
         "title": "Michigan State receivers vs Wisconsin secondary",
@@ -1243,7 +1221,7 @@
           "team": "Michigan State",
           "label": "receivers",
           "v": "54.3",
-          "rank": "#108 of 133",
+          "rank": "#107 of 133",
           "note": null
         },
         "def": {
@@ -1254,7 +1232,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Michigan State’s receivers rates 54.3 (#108 of 133) against Wisconsin’s secondary at 56.9 (#29 of 133). Wisconsin’s unit stands higher among its own position group, by 79 places."
+        "read": "Michigan State’s receivers rates 54.3 (#107 of 133) against Wisconsin’s secondary at 56.9 (#29 of 133). Wisconsin’s unit stands higher among its own position group, by 78 places."
       },
       {
         "title": "Wisconsin receivers vs Michigan State secondary",
@@ -1262,18 +1240,18 @@
           "team": "Wisconsin",
           "label": "receivers",
           "v": "54.5",
-          "rank": "#103 of 133",
+          "rank": "#102 of 133",
           "note": null
         },
         "def": {
           "team": "Michigan State",
           "label": "secondary",
-          "v": "51.9",
-          "rank": "#83 of 133",
+          "v": "52.0",
+          "rank": "#81 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Wisconsin’s receivers rates 54.5 (#103 of 133) against Michigan State’s secondary at 51.9 (#83 of 133). Michigan State’s unit stands higher among its own position group, by 20 places."
+        "read": "Wisconsin’s receivers rates 54.5 (#102 of 133) against Michigan State’s secondary at 52.0 (#81 of 133). Michigan State’s unit stands higher among its own position group, by 21 places."
       }
     ],
     "roster": {
@@ -1379,8 +1357,8 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "9 on file, 0% of starter value out",
-          "h": "8 on file, 0% of starter value out",
+          "a": "9 on file, 3% of starter value out",
+          "h": "8 on file, 2% of starter value out",
           "edge": null
         },
         {
@@ -1390,7 +1368,7 @@
           "h": "40%",
           "edge": {
             "side": "a",
-            "gap": 0.032999999999999974
+            "gap": 0.033999999999999975
           }
         }
       ],
@@ -1431,7 +1409,7 @@
           "Playing at Wisconsin is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Offensive line: Wisconsin 58.0 (#11 of 133) vs Michigan State 41.3 (#130 of 133) — 119 places on the national board.",
           "Pass offense: Wisconsin 60.4 (#17 of 132) vs Michigan State 48.0 (#73 of 132) — 56 places on the national board.",
-          "Secondary: Wisconsin 56.9 (#29 of 133) vs Michigan State 51.9 (#83 of 133) — 54 places on the national board."
+          "Linebackers: Wisconsin 53.7 (#57 of 133) vs Michigan State 49.4 (#110 of 133) — 53 places on the national board."
         ]
       },
       "underdog": {
@@ -1440,7 +1418,7 @@
         "bullets": [
           "Michigan State is the better football team by 1.4 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-1.4 pts).",
           "Stylistically the matchup favours Michigan State by 1.2 points: early-down offence vs early-down defence (-1.2 pts).",
-          "Running backs: Michigan State 57.8 (#15 of 133) vs Wisconsin 55.7 (#84 of 133) — 69 places on the national board.",
+          "Running backs: Michigan State 57.8 (#14 of 133) vs Wisconsin 55.7 (#85 of 133) — 71 places on the national board.",
           "Run offense: Michigan State 56.5 (#27 of 133) vs Wisconsin 48.0 (#78 of 133) — 51 places on the national board.",
           "Special teams: Michigan State 52.5 (#4 of 126) vs Wisconsin 51.4 (#13 of 126) — 9 places on the national board."
         ]
@@ -1552,10 +1530,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1584,10 +1558,104 @@
     },
     "market": {
       "available": false,
-      "model": "Wisconsin -1.5",
-      "model_raw": "Wisconsin -1.5",
+      "model": "Wisconsin -1.4",
+      "model_raw": "Wisconsin -1.4",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858479",
+      "home": "Wisconsin",
+      "away": "Michigan State",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Wisconsin -1.4",
+        "favorite_team": "Wisconsin",
+        "underdog_team": "Michigan State",
+        "display_fair_spread": 1.4,
+        "raw_home_margin": 1.44,
+        "raw_line_text": "Wisconsin -1.44",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Wisconsin",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": 1.44,
+          "text": "Wisconsin -1.4"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Wisconsin",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Wisconsin 24, Michigan State 23.",
     "state": {
@@ -1620,8 +1688,8 @@
         },
         {
           "k": "Talent",
-          "a": "46.4  #85",
-          "h": "57.1  #32",
+          "a": "46.9  #80",
+          "h": "57.1  #30",
           "note": null
         },
         {
@@ -1663,7 +1731,7 @@
         {
           "k": "Run defense",
           "a": "39.2  #106",
-          "h": "41.1  #97",
+          "h": "41.2  #97",
           "note": null
         },
         {
@@ -1675,7 +1743,7 @@
         {
           "k": "QB room",
           "a": "57.4  #57",
-          "h": "60.0  #26",
+          "h": "60.1  #24",
           "note": null
         },
         {
@@ -1686,31 +1754,31 @@
         },
         {
           "k": "Receivers",
-          "a": "54.3  #108",
-          "h": "54.5  #103",
+          "a": "54.3  #107",
+          "h": "54.5  #102",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "57.8  #15",
-          "h": "55.7  #84",
+          "a": "57.8  #14",
+          "h": "55.7  #85",
           "note": null
         },
         {
           "k": "Defensive line",
-          "a": "49.2  #108",
-          "h": "53.5  #61",
+          "a": "49.3  #107",
+          "h": "53.7  #60",
           "note": null
         },
         {
           "k": "Linebackers",
-          "a": "49.7  #108",
+          "a": "49.4  #110",
           "h": "53.7  #57",
           "note": null
         },
         {
           "k": "Secondary",
-          "a": "51.9  #83",
+          "a": "52.0  #81",
           "h": "56.9  #29",
           "note": null
         },
@@ -1741,9 +1809,9 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Wisconsin -1.5 on a neutral read of the two teams, before any book is consulted. Projected total 47.3.",
+      "EdgeDesk’s line is Wisconsin -1.4 on a neutral read of the two teams, before any book is consulted. Projected total 47.3.",
       "Wisconsin wins 54% of the time in EdgeDesk’s simulation, Michigan State 46%.",
-      "Eight games in ten land between -21.5 and +22.5 for Wisconsin. A single result inside that band tells you nothing new about either team.",
+      "Eight games in ten land between -21.6 and +22.4 for Wisconsin. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
       "Michigan State quarterback: Alessio Milivojevic — started the last game; no announcement for this one.",
       "Wisconsin quarterback: Colton Joseph — started the last game; no announcement for this one."
@@ -1759,6 +1827,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

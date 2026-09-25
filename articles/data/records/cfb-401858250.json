@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Notre Dame vs. North Carolina: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Notre Dame vs. North Carolina 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Notre Dame at North Carolina at North Carolina +22.9 with a 50.8 fair total. Notre Dame wins 94% of simulations. Data confidence 80%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Notre Dame at North Carolina at North Carolina +22.9 with a 50.8 fair total. Notre Dame wins 94% of simulations. Data confidence 84%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Notre Dame carries the stronger underlying team rating — +10.3 against +0.9, a 9.4-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it North Carolina +22.9 before any sportsbook number is consulted, with Notre Dame…",
   "home_team": "North Carolina",
   "away_team": "Notre Dame",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "North Carolina +22.9",
   "fair_total": "50.8",
@@ -66,11 +66,11 @@
       "Notre Dame carries the stronger underlying team rating — +10.3 against +0.9, a 9.4-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it North Carolina +22.9 before any sportsbook number is consulted, with Notre Dame winning 94% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is run defense, where Notre Dame leads North Carolina by 115 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -22.865559735586373,
+      "fair_spread": -22.881880038934554,
       "fair_spread_text": "North Carolina +22.9",
       "fair_spread_raw_text": "North Carolina +22.9",
       "near_pickem": false,
@@ -114,65 +114,55 @@
         "volatility_discriminates": false,
         "note": "Quoted from North Carolina’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
+          "NOT_REQUIRED": 2,
+          "NOT_DUE_YET": 0,
           "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "UNAVAILABLE": 4
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "away",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "North Carolina is not in the availability registry"
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Notre Dame is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "EdgeDesk read 3 source(s) for Notre Dame and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses an independent has no conference to file with. Any availability report for one of these programmes comes from the school itself and is registered per school, never inherited from a conference.."
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. an independent has no conference to file with. Any availability report for one of these programmes comes from the school itself and is registered per school, never inherited from a conference."
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -271,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "North Carolina",
@@ -349,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -377,7 +367,7 @@
         },
         {
           "points": "-1.9",
-          "points_n": -1.8701962377718715,
+          "points_n": -1.8865165411200535,
           "text": "Stylistically the matchup favours Notre Dame by 1.9 points: ball control vs front disruption",
           "favours": "Notre Dame"
         }
@@ -424,10 +414,10 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "64.5",
-                "n": 64.5,
-                "rank": "#13 of 133",
-                "rank_n": 13,
+                "v": "64.6",
+                "n": 64.6,
+                "rank": "#12 of 133",
+                "rank_n": 12,
                 "note": null
               },
               "h": {
@@ -439,8 +429,8 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 14.6,
-                "rank_gap": 51
+                "gap": 14.7,
+                "rank_gap": 52
               }
             },
             {
@@ -474,8 +464,8 @@
               "a": {
                 "v": "53.4",
                 "n": 53.4,
-                "rank": "#12 of 133",
-                "rank_n": 12,
+                "rank": "#11 of 133",
+                "rank_n": 11,
                 "note": null
               },
               "h": {
@@ -488,7 +478,7 @@
               "edge": {
                 "side": "a",
                 "gap": 4.3,
-                "rank_gap": 89
+                "rank_gap": 90
               }
             }
           ]
@@ -724,15 +714,15 @@
               "a": {
                 "v": "55.5",
                 "n": 55.5,
-                "rank": "#46 of 133",
-                "rank_n": 46,
+                "rank": "#44 of 133",
+                "rank_n": 44,
                 "note": null
               },
               "h": {
                 "v": "54.9",
                 "n": 54.9,
-                "rank": "#80 of 133",
-                "rank_n": 80,
+                "rank": "#78 of 133",
+                "rank_n": 78,
                 "note": null
               },
               "edge": {
@@ -772,8 +762,8 @@
               "a": {
                 "v": "55.3",
                 "n": 55.3,
-                "rank": "#103 of 133",
-                "rank_n": 103,
+                "rank": "#104 of 133",
+                "rank_n": 104,
                 "note": null
               },
               "h": {
@@ -786,7 +776,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.3,
-                "rank_gap": 54
+                "rank_gap": 55
               }
             },
             {
@@ -827,14 +817,14 @@
               "h": {
                 "v": "51.9",
                 "n": 51.9,
-                "rank": "#76 of 133",
-                "rank_n": 76,
+                "rank": "#77 of 133",
+                "rank_n": 77,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 6.7,
-                "rank_gap": 63
+                "rank_gap": 64
               }
             },
             {
@@ -844,21 +834,21 @@
               "a": {
                 "v": "57.7",
                 "n": 57.7,
-                "rank": "#19 of 133",
-                "rank_n": 19,
+                "rank": "#20 of 133",
+                "rank_n": 20,
                 "note": null
               },
               "h": {
                 "v": "56.4",
                 "n": 56.4,
-                "rank": "#32 of 133",
-                "rank_n": 32,
+                "rank": "#34 of 133",
+                "rank_n": 34,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 1.3,
-                "rank_gap": 13
+                "rank_gap": 14
               }
             },
             {
@@ -958,13 +948,13 @@
         },
         {
           "k": "Scheme fit",
-          "rank_gap": 89,
+          "rank_gap": 90,
           "gap": 4.3,
           "lead": "Notre Dame",
           "trail": "North Carolina",
-          "lead_cell": "53.4 · #12 of 133",
+          "lead_cell": "53.4 · #11 of 133",
           "trail_cell": "49.1 · #101 of 133",
-          "text": "Notre Dame 53.4 (#12 of 133) vs North Carolina 49.1 (#101 of 133) — 89 places on the national board."
+          "text": "Notre Dame 53.4 (#11 of 133) vs North Carolina 49.1 (#101 of 133) — 90 places on the national board."
         },
         {
           "k": "Continuity",
@@ -1010,13 +1000,13 @@
         },
         {
           "k": "Running backs",
-          "rank_gap": 54,
+          "rank_gap": 55,
           "gap": 1.3,
           "lead": "North Carolina",
           "trail": "Notre Dame",
           "lead_cell": "56.6 · #49 of 133",
-          "trail_cell": "55.3 · #103 of 133",
-          "text": "North Carolina 56.6 (#49 of 133) vs Notre Dame 55.3 (#103 of 133) — 54 places on the national board."
+          "trail_cell": "55.3 · #104 of 133",
+          "text": "North Carolina 56.6 (#49 of 133) vs Notre Dame 55.3 (#104 of 133) — 55 places on the national board."
         },
         {
           "k": "Kicking",
@@ -1144,11 +1134,11 @@
           "team": "North Carolina",
           "label": "secondary",
           "v": "56.4",
-          "rank": "#32 of 133",
+          "rank": "#34 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Notre Dame’s QB room rates 61.8 (#11 of 133) against North Carolina’s secondary at 56.4 (#32 of 133). Notre Dame’s unit stands higher among its own position group, by 21 places."
+        "read": "Notre Dame’s QB room rates 61.8 (#11 of 133) against North Carolina’s secondary at 56.4 (#34 of 133). Notre Dame’s unit stands higher among its own position group, by 23 places."
       },
       {
         "title": "North Carolina QB room vs Notre Dame secondary",
@@ -1163,11 +1153,11 @@
           "team": "Notre Dame",
           "label": "secondary",
           "v": "57.7",
-          "rank": "#19 of 133",
+          "rank": "#20 of 133",
           "note": null
         },
         "complete": true,
-        "read": "North Carolina’s QB room rates 58.1 (#48 of 133) against Notre Dame’s secondary at 57.7 (#19 of 133). Notre Dame’s unit stands higher among its own position group, by 29 places."
+        "read": "North Carolina’s QB room rates 58.1 (#48 of 133) against Notre Dame’s secondary at 57.7 (#20 of 133). Notre Dame’s unit stands higher among its own position group, by 28 places."
       },
       {
         "title": "Notre Dame offensive line vs North Carolina defensive line",
@@ -1213,18 +1203,18 @@
           "team": "Notre Dame",
           "label": "running backs",
           "v": "55.3",
-          "rank": "#103 of 133",
+          "rank": "#104 of 133",
           "note": null
         },
         "def": {
           "team": "North Carolina",
           "label": "linebackers",
           "v": "51.9",
-          "rank": "#76 of 133",
+          "rank": "#77 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Notre Dame’s running backs rates 55.3 (#103 of 133) against North Carolina’s linebackers at 51.9 (#76 of 133). North Carolina’s unit stands higher among its own position group, by 27 places."
+        "read": "Notre Dame’s running backs rates 55.3 (#104 of 133) against North Carolina’s linebackers at 51.9 (#77 of 133). North Carolina’s unit stands higher among its own position group, by 27 places."
       },
       {
         "title": "North Carolina running backs vs Notre Dame linebackers",
@@ -1251,18 +1241,18 @@
           "team": "Notre Dame",
           "label": "receivers",
           "v": "55.5",
-          "rank": "#46 of 133",
+          "rank": "#44 of 133",
           "note": null
         },
         "def": {
           "team": "North Carolina",
           "label": "secondary",
           "v": "56.4",
-          "rank": "#32 of 133",
+          "rank": "#34 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Notre Dame’s receivers rates 55.5 (#46 of 133) against North Carolina’s secondary at 56.4 (#32 of 133). North Carolina’s unit stands higher among its own position group, by 14 places."
+        "read": "Notre Dame’s receivers rates 55.5 (#44 of 133) against North Carolina’s secondary at 56.4 (#34 of 133). North Carolina’s unit stands higher among its own position group, by 10 places."
       },
       {
         "title": "North Carolina receivers vs Notre Dame secondary",
@@ -1270,18 +1260,18 @@
           "team": "North Carolina",
           "label": "receivers",
           "v": "54.9",
-          "rank": "#80 of 133",
+          "rank": "#78 of 133",
           "note": null
         },
         "def": {
           "team": "Notre Dame",
           "label": "secondary",
           "v": "57.7",
-          "rank": "#19 of 133",
+          "rank": "#20 of 133",
           "note": null
         },
         "complete": true,
-        "read": "North Carolina’s receivers rates 54.9 (#80 of 133) against Notre Dame’s secondary at 57.7 (#19 of 133). Notre Dame’s unit stands higher among its own position group, by 61 places."
+        "read": "North Carolina’s receivers rates 54.9 (#78 of 133) against Notre Dame’s secondary at 57.7 (#20 of 133). Notre Dame’s unit stands higher among its own position group, by 58 places."
       }
     ],
     "roster": {
@@ -1440,7 +1430,7 @@
           "Conference strength differs and the in-season sample is still thin, worth 3.8 points to Notre Dame (-3.8 pts).",
           "Stylistically the matchup favours Notre Dame by 1.9 points: ball control vs front disruption (-1.9 pts).",
           "Run defense: Notre Dame 79.1 (#1 of 133) vs North Carolina 35.2 (#116 of 133) — 115 places on the national board.",
-          "Scheme fit: Notre Dame 53.4 (#12 of 133) vs North Carolina 49.1 (#101 of 133) — 89 places on the national board."
+          "Scheme fit: Notre Dame 53.4 (#11 of 133) vs North Carolina 49.1 (#101 of 133) — 90 places on the national board."
         ]
       },
       "underdog": {
@@ -1449,7 +1439,7 @@
         "bullets": [
           "Playing at North Carolina is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Run offense: North Carolina 64.7 (#8 of 133) vs Notre Dame 41.8 (#113 of 133) — 105 places on the national board.",
-          "Running backs: North Carolina 56.6 (#49 of 133) vs Notre Dame 55.3 (#103 of 133) — 54 places on the national board.",
+          "Running backs: North Carolina 56.6 (#49 of 133) vs Notre Dame 55.3 (#104 of 133) — 55 places on the national board.",
           "Kicking: North Carolina 57.3 (#16 of 133) vs Notre Dame 56.3 (#57 of 133) — 41 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -45.9 to p90 -1.9 for North Carolina, so a projection of -22.9 still produces results a long way either side of it."
         ]
@@ -1561,10 +1551,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1591,6 +1577,10 @@
         {
           "item": "North Carolina — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "North Carolina — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1601,6 +1591,112 @@
       "model_raw": "North Carolina +22.9",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858250",
+      "home": "North Carolina",
+      "away": "Notre Dame",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Notre Dame -22.9",
+        "favorite_team": "Notre Dame",
+        "underdog_team": "North Carolina",
+        "display_fair_spread": -22.9,
+        "raw_home_margin": -22.88,
+        "raw_line_text": "Notre Dame -22.88",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Notre Dame",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 21.29,
+            "text": "+21.3 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "conference",
+            "points": 3.79,
+            "text": "+3.8 pts conference-strength edge"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.89,
+            "text": "+1.9 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": -22.88,
+          "text": "Notre Dame -22.9"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Notre Dame",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Notre Dame 37, North Carolina 14.",
     "state": {
@@ -1633,7 +1729,7 @@
         },
         {
           "k": "Talent",
-          "a": "64.5  #13",
+          "a": "64.6  #12",
           "h": "49.9  #64",
           "note": null
         },
@@ -1699,13 +1795,13 @@
         },
         {
           "k": "Receivers",
-          "a": "55.5  #46",
-          "h": "54.9  #80",
+          "a": "55.5  #44",
+          "h": "54.9  #78",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "55.3  #103",
+          "a": "55.3  #104",
           "h": "56.6  #49",
           "note": null
         },
@@ -1718,13 +1814,13 @@
         {
           "k": "Linebackers",
           "a": "58.6  #13",
-          "h": "51.9  #76",
+          "h": "51.9  #77",
           "note": null
         },
         {
           "k": "Secondary",
-          "a": "57.7  #19",
-          "h": "56.4  #32",
+          "a": "57.7  #20",
+          "h": "56.4  #34",
           "note": null
         },
         {
@@ -1772,6 +1868,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

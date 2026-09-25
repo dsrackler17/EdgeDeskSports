@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "California vs. UNLV: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "California vs. UNLV 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices California at UNLV at UNLV -5.6 with a 55.3 fair total. UNLV wins 65% of simulations. Data confidence 79%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "California carries the stronger underlying team rating — -1.4 against -2.2, a 0.9-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it UNLV -5.6 before any sportsbook number is consulted, with UNLV winning 65% of…",
+  "seo_description": "EdgeDesk prices California at UNLV at UNLV -5.6 with a 55.3 fair total. UNLV wins 64% of simulations. Data confidence 83%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "California carries the stronger underlying team rating — -1.4 against -2.2, a 0.9-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it UNLV -5.6 before any sportsbook number is consulted, with UNLV winning 64% of…",
   "home_team": "UNLV",
   "away_team": "California",
   "venue": "Allegiant Stadium",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T19:30:00.000Z",
   "game_when_label": "2026-10-03 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 79,
+  "confidence": 83,
   "priced": true,
   "fair_spread_text": "UNLV -5.6",
   "fair_total": "55.3",
@@ -64,13 +64,13 @@
     },
     "lede": [
       "California carries the stronger underlying team rating — -1.4 against -2.2, a 0.9-point separation on a neutral field before home advantage, travel or rest.",
-      "EdgeDesk makes it UNLV -5.6 before any sportsbook number is consulted, with UNLV winning 65% of simulations.",
-      "The position-group comparison shows where the separation comes from: the widest measured gap is pass offense, where California leads UNLV by 78 places nationally.",
-      "Data confidence on this matchup is 79% — high by this board’s standards, so the margin is the strongest part of the read."
+      "EdgeDesk makes it UNLV -5.6 before any sportsbook number is consulted, with UNLV winning 64% of simulations.",
+      "The position-group comparison shows where the separation comes from: the widest measured gap is scheme fit, where California leads UNLV by 78 places nationally.",
+      "Data confidence on this matchup is 83% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 5.599023166592933,
+      "fair_spread": 5.567061879463218,
       "fair_spread_text": "UNLV -5.6",
       "fair_spread_raw_text": "UNLV -5.6",
       "near_pickem": false,
@@ -94,15 +94,15 @@
       "win_prob": {
         "home": "UNLV",
         "away": "California",
-        "home_pct": 65,
-        "away_pct": 35,
-        "home_text": "65%",
-        "away_text": "35%",
+        "home_pct": 64,
+        "away_pct": 36,
+        "home_text": "64%",
+        "away_text": "36%",
         "bounded": false,
         "bounded_note": null,
         "favourite": "UNLV",
-        "favourite_pct": 65,
-        "favourite_text": "65%"
+        "favourite_pct": 64,
+        "favourite_text": "64%"
       },
       "outcome_range": {
         "basis_team": "UNLV",
@@ -114,59 +114,37 @@
         "volatility_discriminates": false,
         "note": "Quoted from UNLV’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 79,
-      "inputs_reached_pct": 63,
+      "confidence_pct": 83,
+      "inputs_reached_pct": 76,
       "input_contract": {
-        "fields": 17,
-        "applicable": 16,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 50,
+        "fields": 26,
+        "applicable": 25,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 44,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 1,
+          "NOT_REQUIRED": 4,
+          "NOT_DUE_YET": 0,
           "FETCH_FAILED": 0,
-          "UNAVAILABLE": 6
+          "UNAVAILABLE": 2
         },
         "absent": [
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "UNLV is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "California is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -265,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "UNLV",
@@ -343,9 +321,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-12T19:45:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -371,7 +349,7 @@
         },
         {
           "points": "+0.6",
-          "points_n": 0.6177347765760285,
+          "points_n": 0.5857734894463134,
           "text": "Stylistically the matchup favours UNLV by 0.6 points: ball control vs front disruption",
           "favours": "UNLV"
         }
@@ -395,7 +373,7 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "-1.4",
-                "n": -1.36,
+                "n": -1.38,
                 "rank": "#83 of 133",
                 "rank_n": 83,
                 "note": null
@@ -409,7 +387,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 0.9,
+                "gap": 0.8,
                 "rank_gap": 6
               }
             },
@@ -418,23 +396,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "51.3",
-                "n": 51.3,
-                "rank": "#58 of 133",
-                "rank_n": 58,
+                "v": "50.9",
+                "n": 50.9,
+                "rank": "#59 of 133",
+                "rank_n": 59,
                 "note": null
               },
               "h": {
                 "v": "47.3",
                 "n": 47.3,
-                "rank": "#80 of 133",
-                "rank_n": 80,
+                "rank": "#79 of 133",
+                "rank_n": 79,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 4,
-                "rank_gap": 22
+                "gap": 3.6,
+                "rank_gap": 20
               }
             },
             {
@@ -466,10 +444,10 @@
               "k": "Scheme fit",
               "note": "personnel against this team’s own tendencies",
               "a": {
-                "v": "53.2",
-                "n": 53.2,
-                "rank": "#13 of 133",
-                "rank_n": 13,
+                "v": "53.3",
+                "n": 53.3,
+                "rank": "#12 of 133",
+                "rank_n": 12,
                 "note": null
               },
               "h": {
@@ -481,8 +459,8 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 3.5,
-                "rank_gap": 77
+                "gap": 3.6,
+                "rank_gap": 78
               }
             }
           ]
@@ -670,15 +648,15 @@
               "a": {
                 "v": "57.6",
                 "n": 57.6,
-                "rank": "#55 of 133",
-                "rank_n": 55,
+                "rank": "#54 of 133",
+                "rank_n": 54,
                 "note": null
               },
               "h": {
                 "v": "55.9",
                 "n": 55.9,
-                "rank": "#90 of 133",
-                "rank_n": 90,
+                "rank": "#89 of 133",
+                "rank_n": 89,
                 "note": null
               },
               "edge": {
@@ -766,8 +744,8 @@
               "a": {
                 "v": "55.5",
                 "n": 55.5,
-                "rank": "#89 of 133",
-                "rank_n": 89,
+                "rank": "#90 of 133",
+                "rank_n": 90,
                 "note": null
               },
               "h": {
@@ -780,7 +758,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.9,
-                "rank_gap": 65
+                "rank_gap": 66
               }
             },
             {
@@ -788,8 +766,8 @@
               "k": "Defensive line",
               "note": null,
               "a": {
-                "v": "47.5",
-                "n": 47.5,
+                "v": "47.4",
+                "n": 47.4,
                 "rank": "#125 of 133",
                 "rank_n": 125,
                 "note": null
@@ -803,7 +781,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 0.8,
+                "gap": 0.7,
                 "rank_gap": 3
               }
             },
@@ -941,6 +919,16 @@
     "advantages": {
       "away": [
         {
+          "k": "Scheme fit",
+          "rank_gap": 78,
+          "gap": 3.6,
+          "lead": "California",
+          "trail": "UNLV",
+          "lead_cell": "53.3 · #12 of 133",
+          "trail_cell": "49.7 · #90 of 133",
+          "text": "California 53.3 (#12 of 133) vs UNLV 49.7 (#90 of 133) — 78 places on the national board."
+        },
+        {
           "k": "Pass offense",
           "rank_gap": 78,
           "gap": 14,
@@ -949,16 +937,6 @@
           "lead_cell": "54.2 · #41 of 132",
           "trail_cell": "40.2 · #119 of 132",
           "text": "California 54.2 (#41 of 132) vs UNLV 40.2 (#119 of 132) — 78 places on the national board."
-        },
-        {
-          "k": "Scheme fit",
-          "rank_gap": 77,
-          "gap": 3.5,
-          "lead": "California",
-          "trail": "UNLV",
-          "lead_cell": "53.2 · #13 of 133",
-          "trail_cell": "49.7 · #90 of 133",
-          "text": "California 53.2 (#13 of 133) vs UNLV 49.7 (#90 of 133) — 77 places on the national board."
         },
         {
           "k": "Receivers",
@@ -986,21 +964,21 @@
           "gap": 1.7,
           "lead": "California",
           "trail": "UNLV",
-          "lead_cell": "57.6 · #55 of 133",
-          "trail_cell": "55.9 · #90 of 133",
-          "text": "California 57.6 (#55 of 133) vs UNLV 55.9 (#90 of 133) — 35 places on the national board."
+          "lead_cell": "57.6 · #54 of 133",
+          "trail_cell": "55.9 · #89 of 133",
+          "text": "California 57.6 (#54 of 133) vs UNLV 55.9 (#89 of 133) — 35 places on the national board."
         }
       ],
       "home": [
         {
           "k": "Running backs",
-          "rank_gap": 65,
+          "rank_gap": 66,
           "gap": 1.9,
           "lead": "UNLV",
           "trail": "California",
           "lead_cell": "57.4 · #24 of 133",
-          "trail_cell": "55.5 · #89 of 133",
-          "text": "UNLV 57.4 (#24 of 133) vs California 55.5 (#89 of 133) — 65 places on the national board."
+          "trail_cell": "55.5 · #90 of 133",
+          "text": "UNLV 57.4 (#24 of 133) vs California 55.5 (#90 of 133) — 66 places on the national board."
         },
         {
           "k": "Kicking",
@@ -1131,7 +1109,7 @@
           "team": "California",
           "label": "QB room",
           "v": "57.6",
-          "rank": "#55 of 133",
+          "rank": "#54 of 133",
           "note": null
         },
         "def": {
@@ -1142,7 +1120,7 @@
           "note": null
         },
         "complete": true,
-        "read": "California’s QB room rates 57.6 (#55 of 133) against UNLV’s secondary at 54.0 (#63 of 133). California’s unit stands higher among its own position group, by 8 places."
+        "read": "California’s QB room rates 57.6 (#54 of 133) against UNLV’s secondary at 54.0 (#63 of 133). California’s unit stands higher among its own position group, by 9 places."
       },
       {
         "title": "UNLV QB room vs California secondary",
@@ -1150,7 +1128,7 @@
           "team": "UNLV",
           "label": "QB room",
           "v": "55.9",
-          "rank": "#90 of 133",
+          "rank": "#89 of 133",
           "note": null
         },
         "def": {
@@ -1161,7 +1139,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UNLV’s QB room rates 55.9 (#90 of 133) against California’s secondary at 53.0 (#72 of 133). California’s unit stands higher among its own position group, by 18 places."
+        "read": "UNLV’s QB room rates 55.9 (#89 of 133) against California’s secondary at 53.0 (#72 of 133). California’s unit stands higher among its own position group, by 17 places."
       },
       {
         "title": "California offensive line vs UNLV defensive line",
@@ -1194,12 +1172,12 @@
         "def": {
           "team": "California",
           "label": "defensive line",
-          "v": "47.5",
+          "v": "47.4",
           "rank": "#125 of 133",
           "note": null
         },
         "complete": true,
-        "read": "UNLV’s offensive line rates 54.3 (#36 of 133) against California’s defensive line at 47.5 (#125 of 133). UNLV’s unit stands higher among its own position group, by 89 places."
+        "read": "UNLV’s offensive line rates 54.3 (#36 of 133) against California’s defensive line at 47.4 (#125 of 133). UNLV’s unit stands higher among its own position group, by 89 places."
       },
       {
         "title": "California running backs vs UNLV linebackers",
@@ -1207,7 +1185,7 @@
           "team": "California",
           "label": "running backs",
           "v": "55.5",
-          "rank": "#89 of 133",
+          "rank": "#90 of 133",
           "note": null
         },
         "def": {
@@ -1218,7 +1196,7 @@
           "note": null
         },
         "complete": true,
-        "read": "California’s running backs rates 55.5 (#89 of 133) against UNLV’s linebackers at 48.4 (#126 of 133). California’s unit stands higher among its own position group, by 37 places."
+        "read": "California’s running backs rates 55.5 (#90 of 133) against UNLV’s linebackers at 48.4 (#126 of 133). California’s unit stands higher among its own position group, by 36 places."
       },
       {
         "title": "UNLV running backs vs California linebackers",
@@ -1381,7 +1359,7 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "8 on file, 0% of starter value out",
+          "a": "8 on file, 8% of starter value out",
           "h": "none on file — 100% unknown",
           "edge": null
         },
@@ -1392,7 +1370,7 @@
           "h": "33%",
           "edge": {
             "side": "a",
-            "gap": 0.183
+            "gap": 0.182
           }
         }
       ],
@@ -1433,7 +1411,7 @@
           "Playing at UNLV is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "UNLV is the better football team by 1.8 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (+1.8 pts).",
           "Stylistically the matchup favours UNLV by 0.6 points: ball control vs front disruption (+0.6 pts).",
-          "Running backs: UNLV 57.4 (#24 of 133) vs California 55.5 (#89 of 133) — 65 places on the national board.",
+          "Running backs: UNLV 57.4 (#24 of 133) vs California 55.5 (#90 of 133) — 66 places on the national board.",
           "Kicking: UNLV 56.8 (#47 of 133) vs California 54.9 (#109 of 133) — 62 places on the national board."
         ]
       },
@@ -1442,8 +1420,8 @@
         "heading": "Why California can keep it close",
         "bullets": [
           "Conference strength differs and the in-season sample is still thin, worth 0.9 points to California (-0.9 pts).",
+          "Scheme fit: California 53.3 (#12 of 133) vs UNLV 49.7 (#90 of 133) — 78 places on the national board.",
           "Pass offense: California 54.2 (#41 of 132) vs UNLV 40.2 (#119 of 132) — 78 places on the national board.",
-          "Scheme fit: California 53.2 (#13 of 133) vs UNLV 49.7 (#90 of 133) — 77 places on the national board.",
           "Receivers: California 56.1 (#16 of 133) vs UNLV 55.3 (#55 of 133) — 39 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -17.4 to p90 +26.6 for UNLV, so a projection of +5.6 still produces results a long way either side of it."
         ]
@@ -1555,10 +1533,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1596,6 +1570,112 @@
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858247",
+      "home": "UNLV",
+      "away": "California",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "UNLV -5.6",
+        "favorite_team": "UNLV",
+        "underdog_team": "California",
+        "display_fair_spread": 5.6,
+        "raw_home_margin": 5.57,
+        "raw_line_text": "UNLV -5.57",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 83,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 76,
+        "tier": "ADEQUATE",
+        "text": "76%",
+        "sub": "19 of 25 inputs on file"
+      },
+      "drivers": {
+        "team": "UNLV",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 1.83,
+            "text": "+1.8 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 0.59,
+            "text": "+0.6 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-24T00:48:32.681Z",
+          "source": "first published",
+          "home_margin": 5.57,
+          "text": "UNLV -5.6"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "California",
+        "since_at": "2026-09-24T00:48:32.681Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
     "headline": "EdgeDesk projects UNLV 30, California 25.",
     "state": {
       "label": "NO MARKET",
@@ -1627,8 +1707,8 @@
         },
         {
           "k": "Talent",
-          "a": "51.3  #58",
-          "h": "47.3  #80",
+          "a": "50.9  #59",
+          "h": "47.3  #79",
           "note": null
         },
         {
@@ -1681,8 +1761,8 @@
         },
         {
           "k": "QB room",
-          "a": "57.6  #55",
-          "h": "55.9  #90",
+          "a": "57.6  #54",
+          "h": "55.9  #89",
           "note": null
         },
         {
@@ -1699,13 +1779,13 @@
         },
         {
           "k": "Running backs",
-          "a": "55.5  #89",
+          "a": "55.5  #90",
           "h": "57.4  #24",
           "note": null
         },
         {
           "k": "Defensive line",
-          "a": "47.5  #125",
+          "a": "47.4  #125",
           "h": "46.7  #128",
           "note": null
         },
@@ -1749,7 +1829,7 @@
     },
     "notes": [
       "EdgeDesk’s line is UNLV -5.6 on a neutral read of the two teams, before any book is consulted. Projected total 55.3.",
-      "UNLV wins 65% of the time in EdgeDesk’s simulation, California 35%.",
+      "UNLV wins 64% of the time in EdgeDesk’s simulation, California 36%.",
       "Eight games in ten land between -17.4 and +26.6 for UNLV. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
       "California quarterback: Jaron-Keawe Sagapolutele — started the last game; no announcement for this one.",
@@ -1766,6 +1846,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

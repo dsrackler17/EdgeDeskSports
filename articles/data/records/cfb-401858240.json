@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Georgia Tech vs. Stanford: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Georgia Tech vs. Stanford 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Georgia Tech at Stanford at Stanford +4.0 with a 54.4 fair total. Georgia Tech wins 60% of simulations. Data confidence 80%. Model status RESEARCH. Research, not picks.",
-  "excerpt": "Georgia Tech carries the stronger underlying team rating — -1.0 against -1.2, a 0.2-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Stanford +4.0 before any sportsbook number is consulted, with Georgia Tech…",
+  "seo_description": "EdgeDesk prices Georgia Tech at Stanford at Stanford +4.0 with a 54.4 fair total. Georgia Tech wins 60% of simulations. Data confidence 84%. Model status RESEARCH. Research, not picks.",
+  "excerpt": "Georgia Tech carries the stronger underlying team rating — -1.1 against -1.2, a 0.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Stanford +4.0 before any sportsbook number is consulted, with Georgia Tech…",
   "home_team": "Stanford",
   "away_team": "Georgia Tech",
   "venue": "Stanford Stadium",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-27T02:30:00.000Z",
   "game_when_label": "2026-09-27 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "Stanford +4.0",
   "fair_total": "54.4",
@@ -63,14 +63,14 @@
       "home_conference": "ACC"
     },
     "lede": [
-      "Georgia Tech carries the stronger underlying team rating — -1.0 against -1.2, a 0.2-point separation on a neutral field before home advantage, travel or rest.",
+      "Georgia Tech carries the stronger underlying team rating — -1.1 against -1.2, a 0.1-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Stanford +4.0 before any sportsbook number is consulted, with Georgia Tech winning 60% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is pass offense, where Georgia Tech leads Stanford by 66 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -3.977940359117558,
+      "fair_spread": -3.9767070834949068,
       "fair_spread_text": "Stanford +4.0",
       "fair_spread_raw_text": "Stanford +4.0",
       "near_pickem": false,
@@ -114,65 +114,55 @@
         "volatility_discriminates": false,
         "note": "Quoted from Stanford’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 81,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 21,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 13,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Stanford is not in the availability registry"
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Georgia Tech is not in the availability registry"
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -271,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Stanford",
@@ -349,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T20:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -371,7 +361,7 @@
         },
         {
           "points": "-1.6",
-          "points_n": -1.6267635009011467,
+          "points_n": -1.6255302252784953,
           "text": "Stylistically the matchup favours Georgia Tech by 1.6 points: ball control vs front disruption",
           "favours": "Georgia Tech"
         }
@@ -394,23 +384,23 @@
               "k": "ETSR (overall)",
               "note": "points vs an average FBS team, neutral field",
               "a": {
-                "v": "-1.0",
-                "n": -1.04,
-                "rank": "#79 of 133",
-                "rank_n": 79,
+                "v": "-1.1",
+                "n": -1.11,
+                "rank": "#80 of 133",
+                "rank_n": 80,
                 "note": null
               },
               "h": {
                 "v": "-1.2",
-                "n": -1.2,
+                "n": -1.18,
                 "rank": "#82 of 133",
                 "rank_n": 82,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 0.2,
-                "rank_gap": 3
+                "gap": 0.1,
+                "rank_gap": 2
               }
             },
             {
@@ -418,23 +408,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "47.7",
-                "n": 47.7,
-                "rank": "#78 of 133",
-                "rank_n": 78,
+                "v": "46.7",
+                "n": 46.7,
+                "rank": "#82 of 133",
+                "rank_n": 82,
                 "note": null
               },
               "h": {
-                "v": "50.1",
-                "n": 50.1,
-                "rank": "#63 of 133",
-                "rank_n": 63,
+                "v": "50.4",
+                "n": 50.4,
+                "rank": "#61 of 133",
+                "rank_n": 61,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 2.4,
-                "rank_gap": 15
+                "gap": 3.7,
+                "rank_gap": 21
               }
             },
             {
@@ -468,8 +458,8 @@
               "a": {
                 "v": "51.6",
                 "n": 51.6,
-                "rank": "#31 of 133",
-                "rank_n": 31,
+                "rank": "#32 of 133",
+                "rank_n": 32,
                 "note": null
               },
               "h": {
@@ -482,7 +472,7 @@
               "edge": {
                 "side": "a",
                 "gap": 1.5,
-                "rank_gap": 43
+                "rank_gap": 42
               }
             }
           ]
@@ -670,21 +660,21 @@
               "a": {
                 "v": "56.6",
                 "n": 56.6,
-                "rank": "#77 of 133",
-                "rank_n": 77,
+                "rank": "#76 of 133",
+                "rank_n": 76,
                 "note": null
               },
               "h": {
                 "v": "56.7",
                 "n": 56.7,
-                "rank": "#75 of 133",
-                "rank_n": 75,
+                "rank": "#73 of 133",
+                "rank_n": 73,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.1,
-                "rank_gap": 2
+                "rank_gap": 3
               }
             },
             {
@@ -692,10 +682,10 @@
               "k": "Offensive line",
               "note": null,
               "a": {
-                "v": "53.0",
-                "n": 53,
-                "rank": "#52 of 133",
-                "rank_n": 52,
+                "v": "52.9",
+                "n": 52.9,
+                "rank": "#53 of 133",
+                "rank_n": 53,
                 "note": null
               },
               "h": {
@@ -707,8 +697,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 1.4,
-                "rank_gap": 18
+                "gap": 1.5,
+                "rank_gap": 19
               }
             },
             {
@@ -716,23 +706,23 @@
               "k": "Receivers",
               "note": null,
               "a": {
-                "v": "54.4",
-                "n": 54.4,
-                "rank": "#105 of 133",
-                "rank_n": 105,
+                "v": "54.3",
+                "n": 54.3,
+                "rank": "#106 of 133",
+                "rank_n": 106,
                 "note": null
               },
               "h": {
                 "v": "54.4",
                 "n": 54.4,
-                "rank": "#106 of 133",
-                "rank_n": 106,
+                "rank": "#104 of 133",
+                "rank_n": 104,
                 "note": null
               },
               "edge": {
-                "side": "even",
-                "gap": 0,
-                "rank_gap": 1
+                "side": "h",
+                "gap": 0.1,
+                "rank_gap": 2
               }
             },
             {
@@ -740,8 +730,8 @@
               "k": "Tight ends",
               "note": "rated by the player layer; the board publishes no national TE rank",
               "a": {
-                "v": "54.7",
-                "n": 54.7,
+                "v": "54.6",
+                "n": 54.6,
                 "rank": null,
                 "rank_n": null,
                 "note": "rated, held out of the national rank by the confidence gate"
@@ -755,7 +745,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 0.5,
+                "gap": 0.4,
                 "rank_gap": null
               }
             },
@@ -764,8 +754,8 @@
               "k": "Running backs",
               "note": null,
               "a": {
-                "v": "58.1",
-                "n": 58.1,
+                "v": "57.9",
+                "n": 57.9,
                 "rank": "#12 of 133",
                 "rank_n": 12,
                 "note": null
@@ -779,7 +769,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 1.6,
+                "gap": 1.4,
                 "rank_gap": 42
               }
             },
@@ -788,8 +778,8 @@
               "k": "Defensive line",
               "note": null,
               "a": {
-                "v": "48.5",
-                "n": 48.5,
+                "v": "48.6",
+                "n": 48.6,
                 "rank": "#114 of 133",
                 "rank_n": 114,
                 "note": null
@@ -803,7 +793,7 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 3.9,
+                "gap": 3.8,
                 "rank_gap": 42
               }
             },
@@ -812,10 +802,10 @@
               "k": "Linebackers",
               "note": null,
               "a": {
-                "v": "48.9",
-                "n": 48.9,
-                "rank": "#119 of 133",
-                "rank_n": 119,
+                "v": "48.8",
+                "n": 48.8,
+                "rank": "#120 of 133",
+                "rank_n": 120,
                 "note": null
               },
               "h": {
@@ -827,8 +817,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 3.7,
-                "rank_gap": 50
+                "gap": 3.8,
+                "rank_gap": 51
               }
             },
             {
@@ -836,23 +826,23 @@
               "k": "Secondary",
               "note": null,
               "a": {
-                "v": "50.4",
-                "n": 50.4,
-                "rank": "#96 of 133",
-                "rank_n": 96,
+                "v": "50.3",
+                "n": 50.3,
+                "rank": "#99 of 133",
+                "rank_n": 99,
                 "note": null
               },
               "h": {
-                "v": "50.9",
-                "n": 50.9,
+                "v": "51.1",
+                "n": 51.1,
                 "rank": "#92 of 133",
                 "rank_n": 92,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 0.5,
-                "rank_gap": 4
+                "gap": 0.8,
+                "rank_gap": 7
               }
             },
             {
@@ -952,23 +942,23 @@
         },
         {
           "k": "Scheme fit",
-          "rank_gap": 43,
+          "rank_gap": 42,
           "gap": 1.5,
           "lead": "Georgia Tech",
           "trail": "Stanford",
-          "lead_cell": "51.6 · #31 of 133",
+          "lead_cell": "51.6 · #32 of 133",
           "trail_cell": "50.1 · #74 of 133",
-          "text": "Georgia Tech 51.6 (#31 of 133) vs Stanford 50.1 (#74 of 133) — 43 places on the national board."
+          "text": "Georgia Tech 51.6 (#32 of 133) vs Stanford 50.1 (#74 of 133) — 42 places on the national board."
         },
         {
           "k": "Running backs",
           "rank_gap": 42,
-          "gap": 1.6,
+          "gap": 1.4,
           "lead": "Georgia Tech",
           "trail": "Stanford",
-          "lead_cell": "58.1 · #12 of 133",
+          "lead_cell": "57.9 · #12 of 133",
           "trail_cell": "56.5 · #54 of 133",
-          "text": "Georgia Tech 58.1 (#12 of 133) vs Stanford 56.5 (#54 of 133) — 42 places on the national board."
+          "text": "Georgia Tech 57.9 (#12 of 133) vs Stanford 56.5 (#54 of 133) — 42 places on the national board."
         },
         {
           "k": "Offense",
@@ -994,13 +984,13 @@
       "home": [
         {
           "k": "Linebackers",
-          "rank_gap": 50,
-          "gap": 3.7,
+          "rank_gap": 51,
+          "gap": 3.8,
           "lead": "Stanford",
           "trail": "Georgia Tech",
           "lead_cell": "52.6 · #69 of 133",
-          "trail_cell": "48.9 · #119 of 133",
-          "text": "Stanford 52.6 (#69 of 133) vs Georgia Tech 48.9 (#119 of 133) — 50 places on the national board."
+          "trail_cell": "48.8 · #120 of 133",
+          "text": "Stanford 52.6 (#69 of 133) vs Georgia Tech 48.8 (#120 of 133) — 51 places on the national board."
         },
         {
           "k": "Special teams",
@@ -1035,12 +1025,12 @@
         {
           "k": "Defensive line",
           "rank_gap": 42,
-          "gap": 3.9,
+          "gap": 3.8,
           "lead": "Stanford",
           "trail": "Georgia Tech",
           "lead_cell": "52.4 · #72 of 133",
-          "trail_cell": "48.5 · #114 of 133",
-          "text": "Stanford 52.4 (#72 of 133) vs Georgia Tech 48.5 (#114 of 133) — 42 places on the national board."
+          "trail_cell": "48.6 · #114 of 133",
+          "text": "Stanford 52.4 (#72 of 133) vs Georgia Tech 48.6 (#114 of 133) — 42 places on the national board."
         }
       ],
       "measured": [],
@@ -1131,18 +1121,18 @@
           "team": "Georgia Tech",
           "label": "QB room",
           "v": "56.6",
-          "rank": "#77 of 133",
+          "rank": "#76 of 133",
           "note": null
         },
         "def": {
           "team": "Stanford",
           "label": "secondary",
-          "v": "50.9",
+          "v": "51.1",
           "rank": "#92 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Georgia Tech’s QB room rates 56.6 (#77 of 133) against Stanford’s secondary at 50.9 (#92 of 133). Georgia Tech’s unit stands higher among its own position group, by 15 places."
+        "read": "Georgia Tech’s QB room rates 56.6 (#76 of 133) against Stanford’s secondary at 51.1 (#92 of 133). Georgia Tech’s unit stands higher among its own position group, by 16 places."
       },
       {
         "title": "Stanford QB room vs Georgia Tech secondary",
@@ -1150,26 +1140,26 @@
           "team": "Stanford",
           "label": "QB room",
           "v": "56.7",
-          "rank": "#75 of 133",
+          "rank": "#73 of 133",
           "note": null
         },
         "def": {
           "team": "Georgia Tech",
           "label": "secondary",
-          "v": "50.4",
-          "rank": "#96 of 133",
+          "v": "50.3",
+          "rank": "#99 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Stanford’s QB room rates 56.7 (#75 of 133) against Georgia Tech’s secondary at 50.4 (#96 of 133). Stanford’s unit stands higher among its own position group, by 21 places."
+        "read": "Stanford’s QB room rates 56.7 (#73 of 133) against Georgia Tech’s secondary at 50.3 (#99 of 133). Stanford’s unit stands higher among its own position group, by 26 places."
       },
       {
         "title": "Georgia Tech offensive line vs Stanford defensive line",
         "att": {
           "team": "Georgia Tech",
           "label": "offensive line",
-          "v": "53.0",
-          "rank": "#52 of 133",
+          "v": "52.9",
+          "rank": "#53 of 133",
           "note": null
         },
         "def": {
@@ -1180,7 +1170,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Georgia Tech’s offensive line rates 53.0 (#52 of 133) against Stanford’s defensive line at 52.4 (#72 of 133). Georgia Tech’s unit stands higher among its own position group, by 20 places."
+        "read": "Georgia Tech’s offensive line rates 52.9 (#53 of 133) against Stanford’s defensive line at 52.4 (#72 of 133). Georgia Tech’s unit stands higher among its own position group, by 19 places."
       },
       {
         "title": "Stanford offensive line vs Georgia Tech defensive line",
@@ -1194,19 +1184,19 @@
         "def": {
           "team": "Georgia Tech",
           "label": "defensive line",
-          "v": "48.5",
+          "v": "48.6",
           "rank": "#114 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Stanford’s offensive line rates 54.4 (#34 of 133) against Georgia Tech’s defensive line at 48.5 (#114 of 133). Stanford’s unit stands higher among its own position group, by 80 places."
+        "read": "Stanford’s offensive line rates 54.4 (#34 of 133) against Georgia Tech’s defensive line at 48.6 (#114 of 133). Stanford’s unit stands higher among its own position group, by 80 places."
       },
       {
         "title": "Georgia Tech running backs vs Stanford linebackers",
         "att": {
           "team": "Georgia Tech",
           "label": "running backs",
-          "v": "58.1",
+          "v": "57.9",
           "rank": "#12 of 133",
           "note": null
         },
@@ -1218,7 +1208,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Georgia Tech’s running backs rates 58.1 (#12 of 133) against Stanford’s linebackers at 52.6 (#69 of 133). Georgia Tech’s unit stands higher among its own position group, by 57 places."
+        "read": "Georgia Tech’s running backs rates 57.9 (#12 of 133) against Stanford’s linebackers at 52.6 (#69 of 133). Georgia Tech’s unit stands higher among its own position group, by 57 places."
       },
       {
         "title": "Stanford running backs vs Georgia Tech linebackers",
@@ -1232,31 +1222,31 @@
         "def": {
           "team": "Georgia Tech",
           "label": "linebackers",
-          "v": "48.9",
-          "rank": "#119 of 133",
+          "v": "48.8",
+          "rank": "#120 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Stanford’s running backs rates 56.5 (#54 of 133) against Georgia Tech’s linebackers at 48.9 (#119 of 133). Stanford’s unit stands higher among its own position group, by 65 places."
+        "read": "Stanford’s running backs rates 56.5 (#54 of 133) against Georgia Tech’s linebackers at 48.8 (#120 of 133). Stanford’s unit stands higher among its own position group, by 66 places."
       },
       {
         "title": "Georgia Tech receivers vs Stanford secondary",
         "att": {
           "team": "Georgia Tech",
           "label": "receivers",
-          "v": "54.4",
-          "rank": "#105 of 133",
+          "v": "54.3",
+          "rank": "#106 of 133",
           "note": null
         },
         "def": {
           "team": "Stanford",
           "label": "secondary",
-          "v": "50.9",
+          "v": "51.1",
           "rank": "#92 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Georgia Tech’s receivers rates 54.4 (#105 of 133) against Stanford’s secondary at 50.9 (#92 of 133). Stanford’s unit stands higher among its own position group, by 13 places."
+        "read": "Georgia Tech’s receivers rates 54.3 (#106 of 133) against Stanford’s secondary at 51.1 (#92 of 133). Stanford’s unit stands higher among its own position group, by 14 places."
       },
       {
         "title": "Stanford receivers vs Georgia Tech secondary",
@@ -1264,18 +1254,18 @@
           "team": "Stanford",
           "label": "receivers",
           "v": "54.4",
-          "rank": "#106 of 133",
+          "rank": "#104 of 133",
           "note": null
         },
         "def": {
           "team": "Georgia Tech",
           "label": "secondary",
-          "v": "50.4",
-          "rank": "#96 of 133",
+          "v": "50.3",
+          "rank": "#99 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Stanford’s receivers rates 54.4 (#106 of 133) against Georgia Tech’s secondary at 50.4 (#96 of 133). Georgia Tech’s unit stands higher among its own position group, by 10 places."
+        "read": "Stanford’s receivers rates 54.4 (#104 of 133) against Georgia Tech’s secondary at 50.3 (#99 of 133). Georgia Tech’s unit stands higher among its own position group, by 5 places."
       }
     ],
     "roster": {
@@ -1381,8 +1371,8 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "8 on file, 0% of starter value out",
-          "h": "8 on file, 0% of starter value out",
+          "a": "8 on file, 17% of starter value out",
+          "h": "8 on file, 3% of starter value out",
           "edge": null
         },
         {
@@ -1433,8 +1423,8 @@
           "Georgia Tech is the better football team by 6.4 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-6.4 pts).",
           "Stylistically the matchup favours Georgia Tech by 1.6 points: ball control vs front disruption (-1.6 pts).",
           "Pass offense: Georgia Tech 58.5 (#22 of 132) vs Stanford 46.4 (#88 of 132) — 66 places on the national board.",
-          "Scheme fit: Georgia Tech 51.6 (#31 of 133) vs Stanford 50.1 (#74 of 133) — 43 places on the national board.",
-          "Running backs: Georgia Tech 58.1 (#12 of 133) vs Stanford 56.5 (#54 of 133) — 42 places on the national board."
+          "Scheme fit: Georgia Tech 51.6 (#32 of 133) vs Stanford 50.1 (#74 of 133) — 42 places on the national board.",
+          "Running backs: Georgia Tech 57.9 (#12 of 133) vs Stanford 56.5 (#54 of 133) — 42 places on the national board."
         ]
       },
       "underdog": {
@@ -1442,7 +1432,7 @@
         "heading": "Why Stanford can keep it close",
         "bullets": [
           "Playing at Stanford is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
-          "Linebackers: Stanford 52.6 (#69 of 133) vs Georgia Tech 48.9 (#119 of 133) — 50 places on the national board.",
+          "Linebackers: Stanford 52.6 (#69 of 133) vs Georgia Tech 48.8 (#120 of 133) — 51 places on the national board.",
           "Special teams: Stanford 51.2 (#19 of 126) vs Georgia Tech 50.0 (#65 of 126) — 46 places on the national board.",
           "Run offense: Stanford 49.2 (#71 of 133) vs Georgia Tech 40.7 (#116 of 133) — 45 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -27.0 to p90 +17.0 for Stanford, so a projection of -4.0 still produces results a long way either side of it."
@@ -1467,7 +1457,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1517,18 +1507,6 @@
           "label": "missing",
           "text": "weather not supplied",
           "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1539,18 +1517,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
-        },
-        {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
         },
         {
           "item": "Weather at kickoff",
@@ -1585,16 +1551,132 @@
       "model_raw": "Stanford +4.0",
       "market": "Stanford +3.5",
       "difference": "0.5 points",
-      "difference_n": 0.47794035911755817,
+      "difference_n": 0.47670708349490676,
       "total_model": "54.4",
       "total_market": "48.5",
-      "book": "captured · FanDuel",
+      "book": "captured (stale 73h) · FanDuel",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858240",
+      "home": "Stanford",
+      "away": "Georgia Tech",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Georgia Tech -4.0",
+        "favorite_team": "Georgia Tech",
+        "underdog_team": "Stanford",
+        "display_fair_spread": -4,
+        "raw_home_margin": -3.98,
+        "raw_line_text": "Georgia Tech -3.98",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 0.48,
+        "toward_team": "Georgia Tech",
+        "text": "0.5 pts toward Georgia Tech",
+        "market_line_text": "Georgia Tech -3.5",
+        "market_home_margin": -3.5,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · FanDuel",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 81,
+        "tier": "ADEQUATE",
+        "text": "81%",
+        "sub": "21 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Georgia Tech",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 6.44,
+            "text": "+6.4 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.63,
+            "text": "+1.6 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 38 players with an unresolved status; the engine widens this game’s range for it."
+      },
+      "stability": {
+        "tier": "LOW",
+        "label": "Low",
+        "text": "the stored numbers span 2.6 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-17T14:28:00.021Z",
+          "source": "first published",
+          "home_margin": -1.39,
+          "text": "Georgia Tech -1.4"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": -3.98,
+          "text": "Georgia Tech -4.0"
+        }
+      ],
+      "revisions": 5,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Stanford",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 2.6 points toward Georgia Tech since the first published number.",
+        "attribution_text": "Projection changed 2.6 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Georgia Tech 29, Stanford 25.",
     "state": {
@@ -1621,14 +1703,14 @@
       "rows": [
         {
           "k": "ETSR (overall)",
-          "a": "-1.0  #79",
+          "a": "-1.1  #80",
           "h": "-1.2  #82",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
-          "a": "47.7  #78",
-          "h": "50.1  #63",
+          "a": "46.7  #82",
+          "h": "50.4  #61",
           "note": null
         },
         {
@@ -1681,44 +1763,44 @@
         },
         {
           "k": "QB room",
-          "a": "56.6  #77",
-          "h": "56.7  #75",
+          "a": "56.6  #76",
+          "h": "56.7  #73",
           "note": null
         },
         {
           "k": "Offensive line",
-          "a": "53.0  #52",
+          "a": "52.9  #53",
           "h": "54.4  #34",
           "note": null
         },
         {
           "k": "Receivers",
-          "a": "54.4  #105",
-          "h": "54.4  #106",
+          "a": "54.3  #106",
+          "h": "54.4  #104",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "58.1  #12",
+          "a": "57.9  #12",
           "h": "56.5  #54",
           "note": null
         },
         {
           "k": "Defensive line",
-          "a": "48.5  #114",
+          "a": "48.6  #114",
           "h": "52.4  #72",
           "note": null
         },
         {
           "k": "Linebackers",
-          "a": "48.9  #119",
+          "a": "48.8  #120",
           "h": "52.6  #69",
           "note": null
         },
         {
           "k": "Secondary",
-          "a": "50.4  #96",
-          "h": "50.9  #92",
+          "a": "50.3  #99",
+          "h": "51.1  #92",
           "note": null
         },
         {
@@ -1741,7 +1823,7 @@
         },
         {
           "k": "Δ national rank, this week",
-          "a": "no change",
+          "a": "down 1",
           "h": "no change",
           "note": "differenced from last week’s committed snapshot"
         }
@@ -1751,7 +1833,7 @@
       "EdgeDesk’s line is Stanford +4.0 on a neutral read of the two teams, before any book is consulted. Projected total 54.4.",
       "Stanford wins 40% of the time in EdgeDesk’s simulation, Georgia Tech 60%.",
       "Eight games in ten land between -27.0 and +17.0 for Stanford. A single result inside that band tells you nothing new about either team.",
-      "The market has Stanford +3.5 at captured · FanDuel, 0.5 points from EdgeDesk’s number.",
+      "The market has Stanford +3.5 at captured (stale 73h) · FanDuel, 0.5 points from EdgeDesk’s number.",
       "Georgia Tech quarterback: Alberto Mendoza — started the last game; no announcement for this one.",
       "Stanford quarterback: Davis Warren — started the last game; no announcement for this one."
     ],
@@ -1766,6 +1848,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

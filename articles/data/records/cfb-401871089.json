@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UL Monroe vs. South Alabama: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UL Monroe vs. South Alabama 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices UL Monroe at South Alabama at South Alabama -17.0 with a 58.3 fair total. South Alabama wins 87% of simulations. Data confidence 72%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices UL Monroe at South Alabama at South Alabama -17.0 with a 58.3 fair total. South Alabama wins 87% of simulations. Data confidence 75%. Model status NO MARKET. Research, not picks.",
   "excerpt": "UL Monroe carries the stronger underlying team rating — -2.7 against -4.8, a 2.0-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it South Alabama -17.0 before any sportsbook number is consulted, with South Alabama…",
   "home_team": "South Alabama",
   "away_team": "UL Monroe",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 72,
+  "confidence": 75,
   "priced": true,
   "fair_spread_text": "South Alabama -17.0",
   "fair_total": "58.3",
@@ -66,11 +66,11 @@
       "UL Monroe carries the stronger underlying team rating — -2.7 against -4.8, a 2.0-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it South Alabama -17.0 before any sportsbook number is consulted, with South Alabama winning 87% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is pass defense, where UL Monroe leads South Alabama by 67 places nationally.",
-      "Data confidence on this matchup is 72% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 75% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 17.01461548260005,
+      "fair_spread": 16.978465963007753,
       "fair_spread_text": "South Alabama -17.0",
       "fair_spread_raw_text": "South Alabama -17.0",
       "near_pickem": false,
@@ -114,65 +114,67 @@
         "volatility_discriminates": false,
         "note": "Quoted from South Alabama’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 72,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 75,
+      "inputs_reached_pct": 69,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 18,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
-          "CONFLICTING": 0,
+          "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "South Alabama is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for South Alabama and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Sun Belt Conference requires an availability report for this game: a weekly football availability report is published; the filing schedule has not been verified."
           },
           {
             "field": "availability",
             "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "UL Monroe is not in the availability registry"
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for UL Monroe and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Sun Belt Conference requires an availability report for this game: a weekly football availability report is published; the filing schedule has not been verified."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Sun Belt Conference requires an availability report for this game: a weekly football availability report is published; the filing schedule has not been verified"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Sun Belt Conference requires an availability report for this game: a weekly football availability report is published; the filing schedule has not been verified"
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T20:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "South Alabama",
@@ -337,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -358,9 +360,9 @@
           "favours": "South Alabama"
         },
         {
-          "points": "+0.3",
-          "points_n": 0.25404235390404856,
-          "text": "Stylistically the matchup favours South Alabama by 0.3 points: early-down offence vs early-down defence",
+          "points": "+0.2",
+          "points_n": 0.21789283431175108,
+          "text": "Stylistically the matchup favours South Alabama by 0.2 points: early-down offence vs early-down defence",
           "favours": "South Alabama"
         }
       ],
@@ -406,8 +408,8 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "42.6",
-                "n": 42.6,
+                "v": "42.5",
+                "n": 42.5,
                 "rank": "#105 of 133",
                 "rank_n": 105,
                 "note": null
@@ -415,14 +417,14 @@
               "h": {
                 "v": "46.6",
                 "n": 46.6,
-                "rank": "#83 of 133",
-                "rank_n": 83,
+                "rank": "#84 of 133",
+                "rank_n": 84,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 4,
-                "rank_gap": 22
+                "gap": 4.1,
+                "rank_gap": 21
               }
             },
             {
@@ -463,14 +465,14 @@
               "h": {
                 "v": "49.8",
                 "n": 49.8,
-                "rank": "#85 of 133",
-                "rank_n": 85,
+                "rank": "#84 of 133",
+                "rank_n": 84,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 1.8,
-                "rank_gap": 37
+                "rank_gap": 38
               }
             }
           ]
@@ -661,14 +663,14 @@
               "h": {
                 "v": "56.8",
                 "n": 56.8,
-                "rank": "#72 of 133",
-                "rank_n": 72,
+                "rank": "#71 of 133",
+                "rank_n": 71,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 2.4,
-                "rank_gap": 44
+                "rank_gap": 45
               }
             },
             {
@@ -702,8 +704,8 @@
               "a": {
                 "v": "54.5",
                 "n": 54.5,
-                "rank": "#102 of 133",
-                "rank_n": 102,
+                "rank": "#101 of 133",
+                "rank_n": 101,
                 "note": null
               },
               "h": {
@@ -716,7 +718,7 @@
               "edge": {
                 "side": "a",
                 "gap": 0.6,
-                "rank_gap": 21
+                "rank_gap": 22
               }
             },
             {
@@ -750,15 +752,15 @@
               "a": {
                 "v": "54.3",
                 "n": 54.3,
-                "rank": "#125 of 133",
-                "rank_n": 125,
+                "rank": "#126 of 133",
+                "rank_n": 126,
                 "note": null
               },
               "h": {
                 "v": "55.3",
                 "n": 55.3,
-                "rank": "#104 of 133",
-                "rank_n": 104,
+                "rank": "#105 of 133",
+                "rank_n": 105,
                 "note": null
               },
               "edge": {
@@ -798,8 +800,8 @@
               "a": {
                 "v": "49.5",
                 "n": 49.5,
-                "rank": "#110 of 133",
-                "rank_n": 110,
+                "rank": "#109 of 133",
+                "rank_n": 109,
                 "note": null
               },
               "h": {
@@ -812,7 +814,7 @@
               "edge": {
                 "side": "a",
                 "gap": 0.4,
-                "rank_gap": 5
+                "rank_gap": 6
               }
             },
             {
@@ -966,13 +968,13 @@
         },
         {
           "k": "Receivers",
-          "rank_gap": 21,
+          "rank_gap": 22,
           "gap": 0.6,
           "lead": "UL Monroe",
           "trail": "South Alabama",
-          "lead_cell": "54.5 · #102 of 133",
+          "lead_cell": "54.5 · #101 of 133",
           "trail_cell": "53.9 · #123 of 133",
-          "text": "UL Monroe 54.5 (#102 of 133) vs South Alabama 53.9 (#123 of 133) — 21 places on the national board."
+          "text": "UL Monroe 54.5 (#101 of 133) vs South Alabama 53.9 (#123 of 133) — 22 places on the national board."
         }
       ],
       "home": [
@@ -1008,23 +1010,23 @@
         },
         {
           "k": "QB room",
-          "rank_gap": 44,
+          "rank_gap": 45,
           "gap": 2.4,
           "lead": "South Alabama",
           "trail": "UL Monroe",
-          "lead_cell": "56.8 · #72 of 133",
+          "lead_cell": "56.8 · #71 of 133",
           "trail_cell": "54.4 · #116 of 133",
-          "text": "South Alabama 56.8 (#72 of 133) vs UL Monroe 54.4 (#116 of 133) — 44 places on the national board."
+          "text": "South Alabama 56.8 (#71 of 133) vs UL Monroe 54.4 (#116 of 133) — 45 places on the national board."
         },
         {
           "k": "Scheme fit",
-          "rank_gap": 37,
+          "rank_gap": 38,
           "gap": 1.8,
           "lead": "South Alabama",
           "trail": "UL Monroe",
-          "lead_cell": "49.8 · #85 of 133",
+          "lead_cell": "49.8 · #84 of 133",
           "trail_cell": "48.0 · #122 of 133",
-          "text": "South Alabama 49.8 (#85 of 133) vs UL Monroe 48.0 (#122 of 133) — 37 places on the national board."
+          "text": "South Alabama 49.8 (#84 of 133) vs UL Monroe 48.0 (#122 of 133) — 38 places on the national board."
         }
       ],
       "measured": [],
@@ -1134,7 +1136,7 @@
           "team": "South Alabama",
           "label": "QB room",
           "v": "56.8",
-          "rank": "#72 of 133",
+          "rank": "#71 of 133",
           "note": null
         },
         "def": {
@@ -1145,7 +1147,7 @@
           "note": null
         },
         "complete": true,
-        "read": "South Alabama’s QB room rates 56.8 (#72 of 133) against UL Monroe’s secondary at 52.5 (#77 of 133). South Alabama’s unit stands higher among its own position group, by 5 places."
+        "read": "South Alabama’s QB room rates 56.8 (#71 of 133) against UL Monroe’s secondary at 52.5 (#77 of 133). South Alabama’s unit stands higher among its own position group, by 6 places."
       },
       {
         "title": "UL Monroe offensive line vs South Alabama defensive line",
@@ -1191,7 +1193,7 @@
           "team": "UL Monroe",
           "label": "running backs",
           "v": "54.3",
-          "rank": "#125 of 133",
+          "rank": "#126 of 133",
           "note": null
         },
         "def": {
@@ -1202,7 +1204,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UL Monroe’s running backs rates 54.3 (#125 of 133) against South Alabama’s linebackers at 49.1 (#115 of 133). South Alabama’s unit stands higher among its own position group, by 10 places."
+        "read": "UL Monroe’s running backs rates 54.3 (#126 of 133) against South Alabama’s linebackers at 49.1 (#115 of 133). South Alabama’s unit stands higher among its own position group, by 11 places."
       },
       {
         "title": "South Alabama running backs vs UL Monroe linebackers",
@@ -1210,18 +1212,18 @@
           "team": "South Alabama",
           "label": "running backs",
           "v": "55.3",
-          "rank": "#104 of 133",
+          "rank": "#105 of 133",
           "note": null
         },
         "def": {
           "team": "UL Monroe",
           "label": "linebackers",
           "v": "49.5",
-          "rank": "#110 of 133",
+          "rank": "#109 of 133",
           "note": null
         },
         "complete": true,
-        "read": "South Alabama’s running backs rates 55.3 (#104 of 133) against UL Monroe’s linebackers at 49.5 (#110 of 133). South Alabama’s unit stands higher among its own position group, by 6 places."
+        "read": "South Alabama’s running backs rates 55.3 (#105 of 133) against UL Monroe’s linebackers at 49.5 (#109 of 133). South Alabama’s unit stands higher among its own position group, by 4 places."
       },
       {
         "title": "UL Monroe receivers vs South Alabama secondary",
@@ -1229,7 +1231,7 @@
           "team": "UL Monroe",
           "label": "receivers",
           "v": "54.5",
-          "rank": "#102 of 133",
+          "rank": "#101 of 133",
           "note": null
         },
         "def": {
@@ -1240,7 +1242,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UL Monroe’s receivers rates 54.5 (#102 of 133) against South Alabama’s secondary at 51.1 (#91 of 133). South Alabama’s unit stands higher among its own position group, by 11 places."
+        "read": "UL Monroe’s receivers rates 54.5 (#101 of 133) against South Alabama’s secondary at 51.1 (#91 of 133). South Alabama’s unit stands higher among its own position group, by 10 places."
       },
       {
         "title": "South Alabama receivers vs UL Monroe secondary",
@@ -1416,7 +1418,7 @@
         "bullets": [
           "South Alabama is the better football team by 12.7 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (+12.7 pts).",
           "Playing at South Alabama is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
-          "Stylistically the matchup favours South Alabama by 0.3 points: early-down offence vs early-down defence (+0.3 pts).",
+          "Stylistically the matchup favours South Alabama by 0.2 points: early-down offence vs early-down defence (+0.2 pts).",
           "Pass offense: South Alabama 55.3 (#36 of 132) vs UL Monroe 44.2 (#102 of 132) — 66 places on the national board.",
           "Kicking: South Alabama 56.0 (#75 of 133) vs UL Monroe 53.1 (#129 of 133) — 54 places on the national board."
         ]
@@ -1539,10 +1541,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1569,6 +1567,10 @@
         {
           "item": "South Alabama — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "South Alabama — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1579,6 +1581,106 @@
       "model_raw": "South Alabama -17.0",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401871089",
+      "home": "South Alabama",
+      "away": "UL Monroe",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "South Alabama -17.0",
+        "favorite_team": "South Alabama",
+        "underdog_team": "UL Monroe",
+        "display_fair_spread": 17,
+        "raw_home_margin": 16.98,
+        "raw_line_text": "South Alabama -16.98",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 75,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 69,
+        "tier": "ADEQUATE",
+        "text": "69%",
+        "sub": "18 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "South Alabama",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 12.68,
+            "text": "+12.7 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": 16.98,
+          "text": "South Alabama -17.0"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "UL Monroe",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects South Alabama 38, UL Monroe 21.",
     "state": {
@@ -1611,8 +1713,8 @@
         },
         {
           "k": "Talent",
-          "a": "42.6  #105",
-          "h": "46.6  #83",
+          "a": "42.5  #105",
+          "h": "46.6  #84",
           "note": null
         },
         {
@@ -1666,7 +1768,7 @@
         {
           "k": "QB room",
           "a": "54.4  #116",
-          "h": "56.8  #72",
+          "h": "56.8  #71",
           "note": null
         },
         {
@@ -1677,14 +1779,14 @@
         },
         {
           "k": "Receivers",
-          "a": "54.5  #102",
+          "a": "54.5  #101",
           "h": "53.9  #123",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "54.3  #125",
-          "h": "55.3  #104",
+          "a": "54.3  #126",
+          "h": "55.3  #105",
           "note": null
         },
         {
@@ -1695,7 +1797,7 @@
         },
         {
           "k": "Linebackers",
-          "a": "49.5  #110",
+          "a": "49.5  #109",
           "h": "49.1  #115",
           "note": null
         },
@@ -1751,6 +1853,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

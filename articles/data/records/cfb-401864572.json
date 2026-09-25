@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "App State vs. NC State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "App State vs. NC State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices App State at NC State at NC State -16.9 with a 57.4 fair total. NC State wins 87% of simulations. Data confidence 80%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices App State at NC State at NC State -16.9 with a 57.4 fair total. NC State wins 87% of simulations. Data confidence 84%. Model status RESEARCH. Research, not picks.",
   "excerpt": "NC State carries the stronger underlying team rating — +0.9 against -3.3, a 4.2-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it NC State -16.9 before any sportsbook number is consulted, with NC State winning 87%…",
   "home_team": "NC State",
   "away_team": "App State",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T23:30:00.000Z",
   "game_when_label": "2026-09-26 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "NC State -16.9",
   "fair_total": "57.4",
@@ -66,11 +66,11 @@
       "NC State carries the stronger underlying team rating — +0.9 against -3.3, a 4.2-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it NC State -16.9 before any sportsbook number is consulted, with NC State winning 87% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is kicking, where NC State leads App State by 86 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 16.90180255053422,
+      "fair_spread": 16.894536488051017,
       "fair_spread_text": "NC State -16.9",
       "fair_spread_raw_text": "NC State -16.9",
       "near_pickem": false,
@@ -114,65 +114,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from NC State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 4,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "NC State is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "App State is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -271,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T22:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "NC State",
@@ -361,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:45:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -389,7 +367,7 @@
         },
         {
           "points": "+1.3",
-          "points_n": 1.279594337462113,
+          "points_n": 1.2723282749789107,
           "text": "Stylistically the matchup favours NC State by 1.3 points: ball control vs front disruption",
           "favours": "NC State"
         }
@@ -438,8 +416,8 @@
               "a": {
                 "v": "54.6",
                 "n": 54.6,
-                "rank": "#41 of 133",
-                "rank_n": 41,
+                "rank": "#43 of 133",
+                "rank_n": 43,
                 "note": null
               },
               "h": {
@@ -452,7 +430,7 @@
               "edge": {
                 "side": "h",
                 "gap": 5.5,
-                "rank_gap": 21
+                "rank_gap": 23
               }
             },
             {
@@ -486,21 +464,21 @@
               "a": {
                 "v": "50.5",
                 "n": 50.5,
-                "rank": "#58 of 133",
-                "rank_n": 58,
+                "rank": "#57 of 133",
+                "rank_n": 57,
                 "note": null
               },
               "h": {
                 "v": "50.5",
                 "n": 50.5,
-                "rank": "#61 of 133",
-                "rank_n": 61,
+                "rank": "#62 of 133",
+                "rank_n": 62,
                 "note": null
               },
               "edge": {
                 "side": "even",
                 "gap": 0,
-                "rank_gap": 3
+                "rank_gap": 5
               }
             }
           ]
@@ -684,8 +662,8 @@
               "a": {
                 "v": "60.1",
                 "n": 60.1,
-                "rank": "#21 of 133",
-                "rank_n": 21,
+                "rank": "#22 of 133",
+                "rank_n": 22,
                 "note": null
               },
               "h": {
@@ -698,7 +676,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1,
-                "rank_gap": 8
+                "rank_gap": 9
               }
             },
             {
@@ -732,21 +710,21 @@
               "a": {
                 "v": "54.6",
                 "n": 54.6,
-                "rank": "#91 of 133",
-                "rank_n": 91,
+                "rank": "#89 of 133",
+                "rank_n": 89,
                 "note": null
               },
               "h": {
                 "v": "55.9",
                 "n": 55.9,
-                "rank": "#27 of 133",
-                "rank_n": 27,
+                "rank": "#28 of 133",
+                "rank_n": 28,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 1.3,
-                "rank_gap": 64
+                "rank_gap": 61
               }
             },
             {
@@ -787,14 +765,14 @@
               "h": {
                 "v": "55.7",
                 "n": 55.7,
-                "rank": "#79 of 133",
-                "rank_n": 79,
+                "rank": "#80 of 133",
+                "rank_n": 80,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.3,
-                "rank_gap": 15
+                "rank_gap": 14
               }
             },
             {
@@ -1028,13 +1006,13 @@
         },
         {
           "k": "Receivers",
-          "rank_gap": 64,
+          "rank_gap": 61,
           "gap": 1.3,
           "lead": "NC State",
           "trail": "App State",
-          "lead_cell": "55.9 · #27 of 133",
-          "trail_cell": "54.6 · #91 of 133",
-          "text": "NC State 55.9 (#27 of 133) vs App State 54.6 (#91 of 133) — 64 places on the national board."
+          "lead_cell": "55.9 · #28 of 133",
+          "trail_cell": "54.6 · #89 of 133",
+          "text": "NC State 55.9 (#28 of 133) vs App State 54.6 (#89 of 133) — 61 places on the national board."
         },
         {
           "k": "Depth",
@@ -1145,7 +1123,7 @@
           "team": "App State",
           "label": "QB room",
           "v": "60.1",
-          "rank": "#21 of 133",
+          "rank": "#22 of 133",
           "note": null
         },
         "def": {
@@ -1156,7 +1134,7 @@
           "note": null
         },
         "complete": true,
-        "read": "App State’s QB room rates 60.1 (#21 of 133) against NC State’s secondary at 53.2 (#70 of 133). App State’s unit stands higher among its own position group, by 49 places."
+        "read": "App State’s QB room rates 60.1 (#22 of 133) against NC State’s secondary at 53.2 (#70 of 133). App State’s unit stands higher among its own position group, by 48 places."
       },
       {
         "title": "NC State QB room vs App State secondary",
@@ -1240,7 +1218,7 @@
           "team": "NC State",
           "label": "running backs",
           "v": "55.7",
-          "rank": "#79 of 133",
+          "rank": "#80 of 133",
           "note": null
         },
         "def": {
@@ -1251,7 +1229,7 @@
           "note": null
         },
         "complete": true,
-        "read": "NC State’s running backs rates 55.7 (#79 of 133) against App State’s linebackers at 56.3 (#28 of 133). App State’s unit stands higher among its own position group, by 51 places."
+        "read": "NC State’s running backs rates 55.7 (#80 of 133) against App State’s linebackers at 56.3 (#28 of 133). App State’s unit stands higher among its own position group, by 52 places."
       },
       {
         "title": "App State receivers vs NC State secondary",
@@ -1259,7 +1237,7 @@
           "team": "App State",
           "label": "receivers",
           "v": "54.6",
-          "rank": "#91 of 133",
+          "rank": "#89 of 133",
           "note": null
         },
         "def": {
@@ -1270,7 +1248,7 @@
           "note": null
         },
         "complete": true,
-        "read": "App State’s receivers rates 54.6 (#91 of 133) against NC State’s secondary at 53.2 (#70 of 133). NC State’s unit stands higher among its own position group, by 21 places."
+        "read": "App State’s receivers rates 54.6 (#89 of 133) against NC State’s secondary at 53.2 (#70 of 133). NC State’s unit stands higher among its own position group, by 19 places."
       },
       {
         "title": "NC State receivers vs App State secondary",
@@ -1278,7 +1256,7 @@
           "team": "NC State",
           "label": "receivers",
           "v": "55.9",
-          "rank": "#27 of 133",
+          "rank": "#28 of 133",
           "note": null
         },
         "def": {
@@ -1289,7 +1267,7 @@
           "note": null
         },
         "complete": true,
-        "read": "NC State’s receivers rates 55.9 (#27 of 133) against App State’s secondary at 50.8 (#93 of 133). NC State’s unit stands higher among its own position group, by 66 places."
+        "read": "NC State’s receivers rates 55.9 (#28 of 133) against App State’s secondary at 50.8 (#93 of 133). NC State’s unit stands higher among its own position group, by 65 places."
       }
     ],
     "roster": {
@@ -1487,7 +1465,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1569,10 +1547,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1599,6 +1573,10 @@
         {
           "item": "NC State — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "NC State — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1609,16 +1587,138 @@
       "model_raw": "NC State -16.9",
       "market": "NC State -14.5",
       "difference": "2.4 points",
-      "difference_n": 2.401802550534221,
+      "difference_n": 2.394536488051017,
       "total_model": "57.4",
       "total_market": "55.0",
-      "book": "captured · FanDuel",
+      "book": "captured (stale 73h) · FanDuel",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401864572",
+      "home": "NC State",
+      "away": "App State",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "NC State -16.9",
+        "favorite_team": "NC State",
+        "underdog_team": "App State",
+        "display_fair_spread": 16.9,
+        "raw_home_margin": 16.89,
+        "raw_line_text": "NC State -16.89",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 2.39,
+        "toward_team": "NC State",
+        "text": "2.4 pts toward NC State",
+        "market_line_text": "NC State -14.5",
+        "market_home_margin": 14.5,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · FanDuel",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "NC State",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 8.9,
+            "text": "+8.9 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "conference",
+            "points": 2.64,
+            "text": "+2.6 pts conference-strength edge"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "MEDIUM",
+        "label": "Medium",
+        "text": "the stored numbers span 1.4 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T12:00:40.648Z",
+          "source": "first published",
+          "home_margin": 15.49,
+          "text": "NC State -15.5"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 16.89,
+          "text": "NC State -16.9"
+        }
+      ],
+      "revisions": 7,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "NC State",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 1.4 points toward NC State since the first published number.",
+        "attribution_text": "Projection changed 1.4 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects NC State 37, App State 20.",
     "state": {
@@ -1651,7 +1751,7 @@
         },
         {
           "k": "Talent",
-          "a": "54.6  #41",
+          "a": "54.6  #43",
           "h": "60.1  #20",
           "note": null
         },
@@ -1705,7 +1805,7 @@
         },
         {
           "k": "QB room",
-          "a": "60.1  #21",
+          "a": "60.1  #22",
           "h": "61.1  #13",
           "note": null
         },
@@ -1717,14 +1817,14 @@
         },
         {
           "k": "Receivers",
-          "a": "54.6  #91",
-          "h": "55.9  #27",
+          "a": "54.6  #89",
+          "h": "55.9  #28",
           "note": null
         },
         {
           "k": "Running backs",
           "a": "55.4  #94",
-          "h": "55.7  #79",
+          "h": "55.7  #80",
           "note": null
         },
         {
@@ -1775,7 +1875,7 @@
       "EdgeDesk’s line is NC State -16.9 on a neutral read of the two teams, before any book is consulted. Projected total 57.4.",
       "NC State wins 87% of the time in EdgeDesk’s simulation, App State 13%.",
       "Eight games in ten land between -6.1 and +37.9 for NC State. A single result inside that band tells you nothing new about either team.",
-      "The market has NC State -14.5 at captured · FanDuel, 2.4 points from EdgeDesk’s number.",
+      "The market has NC State -14.5 at captured (stale 73h) · FanDuel, 2.4 points from EdgeDesk’s number.",
       "App State quarterback: Malachi Singleton — started the last game; no announcement for this one.",
       "NC State quarterback: CJ Bailey — started the last game; no announcement for this one."
     ],
@@ -1791,6 +1891,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

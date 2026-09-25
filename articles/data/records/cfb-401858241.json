@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Missouri State vs. SMU: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Missouri State vs. SMU 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Missouri State at SMU at SMU -25.3 with a 57.5 fair total. SMU wins 95% of simulations. Data confidence 78%. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices Missouri State at SMU at SMU -25.3 with a 57.5 fair total. SMU wins 95% of simulations. Data confidence 84%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "SMU carries the stronger underlying team rating — +10.2 against -4.5, a 14.7-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it SMU -25.3 before any sportsbook number is consulted, with SMU winning 95% of simulations.",
   "home_team": "SMU",
   "away_team": "Missouri State",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-27T01:00:00.000Z",
   "game_when_label": "2026-09-27 01:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 78,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "SMU -25.3",
   "fair_total": "57.5",
@@ -65,12 +65,12 @@
     "lede": [
       "SMU carries the stronger underlying team rating — +10.2 against -4.5, a 14.7-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it SMU -25.3 before any sportsbook number is consulted, with SMU winning 95% of simulations.",
-      "The position-group comparison shows where the separation comes from: the widest measured gap is qb room, where SMU leads Missouri State by 122 places nationally.",
-      "Data confidence on this matchup is 78% — high by this board’s standards, so the margin is the strongest part of the read."
+      "The position-group comparison shows where the separation comes from: the widest measured gap is talent, where SMU leads Missouri State by 122 places nationally.",
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 25.31429494639398,
+      "fair_spread": 25.301095695298756,
       "fair_spread_text": "SMU -25.3",
       "fair_spread_raw_text": "SMU -25.3",
       "near_pickem": false,
@@ -114,65 +114,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from SMU’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 78,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 77,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 20,
+        "priced": 12,
+        "priced_coverage_pct": 46,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 12,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 3,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
-            "field": "venue_geography",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "no coordinates for Missouri State’s home venue, so travel distance cannot be computed"
-          },
-          {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "SMU is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Missouri State is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -265,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T22:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "SMU",
@@ -355,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -383,7 +361,7 @@
         },
         {
           "points": "+2.5",
-          "points_n": 2.5460954244499803,
+          "points_n": 2.5328961733547573,
           "text": "Stylistically the matchup favours SMU by 2.5 points: ball control vs front disruption",
           "favours": "SMU"
         }
@@ -407,22 +385,22 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "-4.5",
-                "n": -4.52,
+                "n": -4.53,
                 "rank": "#101 of 133",
                 "rank_n": 101,
                 "note": null
               },
               "h": {
                 "v": "+10.2",
-                "n": 10.18,
-                "rank": "#7 of 133",
-                "rank_n": 7,
+                "n": 10.19,
+                "rank": "#6 of 133",
+                "rank_n": 6,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 14.7,
-                "rank_gap": 94
+                "rank_gap": 95
               }
             },
             {
@@ -430,23 +408,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "35.8",
-                "n": 35.8,
+                "v": "35.7",
+                "n": 35.7,
                 "rank": "#125 of 133",
                 "rank_n": 125,
                 "note": null
               },
               "h": {
-                "v": "68.3",
-                "n": 68.3,
-                "rank": "#5 of 133",
-                "rank_n": 5,
+                "v": "68.4",
+                "n": 68.4,
+                "rank": "#3 of 133",
+                "rank_n": 3,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 32.5,
-                "rank_gap": 120
+                "gap": 32.7,
+                "rank_gap": 122
               }
             },
             {
@@ -480,8 +458,8 @@
               "a": {
                 "v": "51.6",
                 "n": 51.6,
-                "rank": "#32 of 133",
-                "rank_n": 32,
+                "rank": "#33 of 133",
+                "rank_n": 33,
                 "note": null
               },
               "h": {
@@ -494,7 +472,7 @@
               "edge": {
                 "side": "h",
                 "gap": 2.2,
-                "rank_gap": 26
+                "rank_gap": 27
               }
             }
           ]
@@ -778,8 +756,8 @@
               "a": {
                 "v": "55.9",
                 "n": 55.9,
-                "rank": "#70 of 133",
-                "rank_n": 70,
+                "rank": "#71 of 133",
+                "rank_n": 71,
                 "note": null
               },
               "h": {
@@ -792,7 +770,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.5,
-                "rank_gap": 12
+                "rank_gap": 13
               }
             },
             {
@@ -975,6 +953,16 @@
       ],
       "home": [
         {
+          "k": "Talent",
+          "rank_gap": 122,
+          "gap": 32.7,
+          "lead": "SMU",
+          "trail": "Missouri State",
+          "lead_cell": "68.4 · #3 of 133",
+          "trail_cell": "35.7 · #125 of 133",
+          "text": "SMU 68.4 (#3 of 133) vs Missouri State 35.7 (#125 of 133) — 122 places on the national board."
+        },
+        {
           "k": "QB room",
           "rank_gap": 122,
           "gap": 10,
@@ -983,16 +971,6 @@
           "lead_cell": "62.8 · #7 of 133",
           "trail_cell": "52.8 · #129 of 133",
           "text": "SMU 62.8 (#7 of 133) vs Missouri State 52.8 (#129 of 133) — 122 places on the national board."
-        },
-        {
-          "k": "Talent",
-          "rank_gap": 120,
-          "gap": 32.5,
-          "lead": "SMU",
-          "trail": "Missouri State",
-          "lead_cell": "68.3 · #5 of 133",
-          "trail_cell": "35.8 · #125 of 133",
-          "text": "SMU 68.3 (#5 of 133) vs Missouri State 35.8 (#125 of 133) — 120 places on the national board."
         },
         {
           "k": "Defense",
@@ -1189,7 +1167,7 @@
           "team": "Missouri State",
           "label": "running backs",
           "v": "55.9",
-          "rank": "#70 of 133",
+          "rank": "#71 of 133",
           "note": null
         },
         "def": {
@@ -1200,7 +1178,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Missouri State’s running backs rates 55.9 (#70 of 133) against SMU’s linebackers at 56.7 (#23 of 133). SMU’s unit stands higher among its own position group, by 47 places."
+        "read": "Missouri State’s running backs rates 55.9 (#71 of 133) against SMU’s linebackers at 56.7 (#23 of 133). SMU’s unit stands higher among its own position group, by 48 places."
       },
       {
         "title": "SMU running backs vs Missouri State linebackers",
@@ -1416,7 +1394,7 @@
           "Playing at SMU is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Conference strength differs and the in-season sample is still thin, worth 2.9 points to SMU (+2.9 pts).",
           "Stylistically the matchup favours SMU by 2.5 points: ball control vs front disruption (+2.5 pts).",
-          "QB room: SMU 62.8 (#7 of 133) vs Missouri State 52.8 (#129 of 133) — 122 places on the national board."
+          "Talent: SMU 68.4 (#3 of 133) vs Missouri State 35.7 (#125 of 133) — 122 places on the national board."
         ]
       },
       "underdog": {
@@ -1461,7 +1439,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1537,10 +1515,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1567,6 +1541,10 @@
         {
           "item": "SMU — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "SMU — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1577,16 +1555,138 @@
       "model_raw": "SMU -25.3",
       "market": "SMU -35.0",
       "difference": "9.7 points",
-      "difference_n": 9.685705053606021,
+      "difference_n": 9.698904304701244,
       "total_model": "57.5",
       "total_market": "60.0",
-      "book": "captured · Pinnacle",
+      "book": "captured (stale 73h) · Pinnacle",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858241",
+      "home": "SMU",
+      "away": "Missouri State",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "SMU -25.3",
+        "favorite_team": "SMU",
+        "underdog_team": "Missouri State",
+        "display_fair_spread": 25.3,
+        "raw_home_margin": 25.3,
+        "raw_line_text": "SMU -25.30",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 9.7,
+        "toward_team": "Missouri State",
+        "text": "9.7 pts toward Missouri State",
+        "market_line_text": "SMU -35.0",
+        "market_home_margin": 35,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · Pinnacle",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 77,
+        "tier": "ADEQUATE",
+        "text": "77%",
+        "sub": "20 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "SMU",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 15.75,
+            "text": "+15.8 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "conference",
+            "points": 2.93,
+            "text": "+2.9 pts conference-strength edge"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.7 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T12:00:40.648Z",
+          "source": "first published",
+          "home_margin": 24.6,
+          "text": "SMU -24.6"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 25.3,
+          "text": "SMU -25.3"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "SMU",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 0.7 points toward SMU since the first published number.",
+        "attribution_text": "Projection changed 0.7 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects SMU 41, Missouri State 16.",
     "state": {
@@ -1614,13 +1714,13 @@
         {
           "k": "ETSR (overall)",
           "a": "-4.5  #101",
-          "h": "+10.2  #7",
+          "h": "+10.2  #6",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
-          "a": "35.8  #125",
-          "h": "68.3  #5",
+          "a": "35.7  #125",
+          "h": "68.4  #3",
           "note": null
         },
         {
@@ -1691,7 +1791,7 @@
         },
         {
           "k": "Running backs",
-          "a": "55.9  #70",
+          "a": "55.9  #71",
           "h": "56.4  #58",
           "note": null
         },
@@ -1734,7 +1834,7 @@
         {
           "k": "Δ national rank, this week",
           "a": "no change",
-          "h": "no change",
+          "h": "up 1",
           "note": "differenced from last week’s committed snapshot"
         }
       ]
@@ -1743,7 +1843,7 @@
       "EdgeDesk’s line is SMU -25.3 on a neutral read of the two teams, before any book is consulted. Projected total 57.5.",
       "SMU wins 95% of the time in EdgeDesk’s simulation, Missouri State 5%.",
       "Eight games in ten land between +2.3 and +46.3 for SMU. A single result inside that band tells you nothing new about either team.",
-      "The market has SMU -35.0 at captured · Pinnacle, 9.7 points from EdgeDesk’s number.",
+      "The market has SMU -35.0 at captured (stale 73h) · Pinnacle, 9.7 points from EdgeDesk’s number.",
       "Missouri State quarterback: Skyler Locklear — started the last game; no announcement for this one.",
       "SMU quarterback: Kevin Jennings — started the last game; no announcement for this one."
     ],
@@ -1757,6 +1857,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

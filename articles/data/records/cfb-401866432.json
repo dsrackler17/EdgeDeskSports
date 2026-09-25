@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Western Michigan vs. Buffalo: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Western Michigan vs. Buffalo 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Western Michigan at Buffalo at Buffalo +13.6 with a 50.3 fair total. Western Michigan wins 82% of simulations. Data confidence 78%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Western Michigan at Buffalo at Buffalo +13.6 with a 50.3 fair total. Western Michigan wins 82% of simulations. Data confidence 82%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Western Michigan carries the stronger underlying team rating — -1.6 against -9.6, a 8.0-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Buffalo +13.6 before any sportsbook number is consulted, with Western…",
   "home_team": "Buffalo",
   "away_team": "Western Michigan",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 78,
+  "confidence": 82,
   "priced": true,
   "fair_spread_text": "Buffalo +13.6",
   "fair_total": "50.3",
@@ -66,11 +66,11 @@
       "Western Michigan carries the stronger underlying team rating — -1.6 against -9.6, a 8.0-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Buffalo +13.6 before any sportsbook number is consulted, with Western Michigan winning 82% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is offensive line, where Western Michigan leads Buffalo by 99 places nationally.",
-      "Data confidence on this matchup is 78% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 82% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -13.596260377481688,
+      "fair_spread": -13.582172541452477,
       "fair_spread_text": "Buffalo +13.6",
       "fair_spread_raw_text": "Buffalo +13.6",
       "near_pickem": false,
@@ -114,65 +114,67 @@
         "volatility_discriminates": false,
         "note": "Quoted from Buffalo’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 78,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 82,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "Buffalo is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for Buffalo and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing.."
           },
           {
             "field": "availability",
             "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Western Michigan is not in the availability registry"
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Western Michigan and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing.."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing."
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing."
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "coaching_continuity",
-            "side": null,
+            "field": "off_field",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Buffalo",
@@ -343,9 +345,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -364,9 +366,9 @@
           "favours": "Buffalo"
         },
         {
-          "points": "-1.9",
-          "points_n": -1.8526594866816881,
-          "text": "Stylistically the matchup favours Western Michigan by 1.9 points: field position",
+          "points": "-1.8",
+          "points_n": -1.838571650652478,
+          "text": "Stylistically the matchup favours Western Michigan by 1.8 points: field position",
           "favours": "Western Michigan"
         }
       ],
@@ -414,8 +416,8 @@
               "a": {
                 "v": "51.8",
                 "n": 51.8,
-                "rank": "#56 of 133",
-                "rank_n": 56,
+                "rank": "#55 of 133",
+                "rank_n": 55,
                 "note": null
               },
               "h": {
@@ -428,7 +430,7 @@
               "edge": {
                 "side": "a",
                 "gap": 16.9,
-                "rank_gap": 70
+                "rank_gap": 71
               }
             },
             {
@@ -664,8 +666,8 @@
               "a": {
                 "v": "57.0",
                 "n": 57,
-                "rank": "#70 of 133",
-                "rank_n": 70,
+                "rank": "#69 of 133",
+                "rank_n": 69,
                 "note": null
               },
               "h": {
@@ -678,7 +680,7 @@
               "edge": {
                 "side": "a",
                 "gap": 4.1,
-                "rank_gap": 56
+                "rank_gap": 57
               }
             },
             {
@@ -712,8 +714,8 @@
               "a": {
                 "v": "55.2",
                 "n": 55.2,
-                "rank": "#64 of 133",
-                "rank_n": 64,
+                "rank": "#63 of 133",
+                "rank_n": 63,
                 "note": null
               },
               "h": {
@@ -726,7 +728,7 @@
               "edge": {
                 "side": "a",
                 "gap": 2.4,
-                "rank_gap": 66
+                "rank_gap": 67
               }
             },
             {
@@ -767,14 +769,14 @@
               "h": {
                 "v": "56.0",
                 "n": 56,
-                "rank": "#66 of 133",
-                "rank_n": 66,
+                "rank": "#67 of 133",
+                "rank_n": 67,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.4,
-                "rank_gap": 7
+                "rank_gap": 8
               }
             },
             {
@@ -828,8 +830,8 @@
               "a": {
                 "v": "50.8",
                 "n": 50.8,
-                "rank": "#96 of 133",
-                "rank_n": 96,
+                "rank": "#95 of 133",
+                "rank_n": 95,
                 "note": null
               },
               "h": {
@@ -842,7 +844,7 @@
               "edge": {
                 "side": "h",
                 "gap": 3.9,
-                "rank_gap": 53
+                "rank_gap": 52
               }
             },
             {
@@ -976,23 +978,23 @@
         },
         {
           "k": "Talent",
-          "rank_gap": 70,
+          "rank_gap": 71,
           "gap": 16.9,
           "lead": "Western Michigan",
           "trail": "Buffalo",
-          "lead_cell": "51.8 · #56 of 133",
+          "lead_cell": "51.8 · #55 of 133",
           "trail_cell": "34.9 · #126 of 133",
-          "text": "Western Michigan 51.8 (#56 of 133) vs Buffalo 34.9 (#126 of 133) — 70 places on the national board."
+          "text": "Western Michigan 51.8 (#55 of 133) vs Buffalo 34.9 (#126 of 133) — 71 places on the national board."
         },
         {
           "k": "Receivers",
-          "rank_gap": 66,
+          "rank_gap": 67,
           "gap": 2.4,
           "lead": "Western Michigan",
           "trail": "Buffalo",
-          "lead_cell": "55.2 · #64 of 133",
+          "lead_cell": "55.2 · #63 of 133",
           "trail_cell": "52.8 · #130 of 133",
-          "text": "Western Michigan 55.2 (#64 of 133) vs Buffalo 52.8 (#130 of 133) — 66 places on the national board."
+          "text": "Western Michigan 55.2 (#63 of 133) vs Buffalo 52.8 (#130 of 133) — 67 places on the national board."
         },
         {
           "k": "Secondary",
@@ -1018,13 +1020,13 @@
         },
         {
           "k": "Linebackers",
-          "rank_gap": 53,
+          "rank_gap": 52,
           "gap": 3.9,
           "lead": "Buffalo",
           "trail": "Western Michigan",
           "lead_cell": "54.7 · #43 of 133",
-          "trail_cell": "50.8 · #96 of 133",
-          "text": "Buffalo 54.7 (#43 of 133) vs Western Michigan 50.8 (#96 of 133) — 53 places on the national board."
+          "trail_cell": "50.8 · #95 of 133",
+          "text": "Buffalo 54.7 (#43 of 133) vs Western Michigan 50.8 (#95 of 133) — 52 places on the national board."
         },
         {
           "k": "Defensive line",
@@ -1135,7 +1137,7 @@
           "team": "Western Michigan",
           "label": "QB room",
           "v": "57.0",
-          "rank": "#70 of 133",
+          "rank": "#69 of 133",
           "note": null
         },
         "def": {
@@ -1146,7 +1148,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Western Michigan’s QB room rates 57.0 (#70 of 133) against Buffalo’s secondary at 51.2 (#87 of 133). Western Michigan’s unit stands higher among its own position group, by 17 places."
+        "read": "Western Michigan’s QB room rates 57.0 (#69 of 133) against Buffalo’s secondary at 51.2 (#87 of 133). Western Michigan’s unit stands higher among its own position group, by 18 places."
       },
       {
         "title": "Buffalo QB room vs Western Michigan secondary",
@@ -1230,18 +1232,18 @@
           "team": "Buffalo",
           "label": "running backs",
           "v": "56.0",
-          "rank": "#66 of 133",
+          "rank": "#67 of 133",
           "note": null
         },
         "def": {
           "team": "Western Michigan",
           "label": "linebackers",
           "v": "50.8",
-          "rank": "#96 of 133",
+          "rank": "#95 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Buffalo’s running backs rates 56.0 (#66 of 133) against Western Michigan’s linebackers at 50.8 (#96 of 133). Buffalo’s unit stands higher among its own position group, by 30 places."
+        "read": "Buffalo’s running backs rates 56.0 (#67 of 133) against Western Michigan’s linebackers at 50.8 (#95 of 133). Buffalo’s unit stands higher among its own position group, by 28 places."
       },
       {
         "title": "Western Michigan receivers vs Buffalo secondary",
@@ -1249,7 +1251,7 @@
           "team": "Western Michigan",
           "label": "receivers",
           "v": "55.2",
-          "rank": "#64 of 133",
+          "rank": "#63 of 133",
           "note": null
         },
         "def": {
@@ -1260,7 +1262,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Western Michigan’s receivers rates 55.2 (#64 of 133) against Buffalo’s secondary at 51.2 (#87 of 133). Western Michigan’s unit stands higher among its own position group, by 23 places."
+        "read": "Western Michigan’s receivers rates 55.2 (#63 of 133) against Buffalo’s secondary at 51.2 (#87 of 133). Western Michigan’s unit stands higher among its own position group, by 24 places."
       },
       {
         "title": "Buffalo receivers vs Western Michigan secondary",
@@ -1435,10 +1437,10 @@
         "heading": "Why Western Michigan can pull away",
         "bullets": [
           "Western Michigan is the better football team by 15.8 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-15.8 pts).",
-          "Stylistically the matchup favours Western Michigan by 1.9 points: field position (-1.9 pts).",
+          "Stylistically the matchup favours Western Michigan by 1.8 points: field position (-1.8 pts).",
           "Offensive line: Western Michigan 59.9 (#5 of 133) vs Buffalo 46.8 (#104 of 133) — 99 places on the national board.",
           "Continuity: Western Michigan 55.4 (#17 of 133) vs Buffalo 38.9 (#90 of 133) — 73 places on the national board.",
-          "Talent: Western Michigan 51.8 (#56 of 133) vs Buffalo 34.9 (#126 of 133) — 70 places on the national board."
+          "Talent: Western Michigan 51.8 (#55 of 133) vs Buffalo 34.9 (#126 of 133) — 71 places on the national board."
         ]
       },
       "underdog": {
@@ -1447,7 +1449,7 @@
         "bullets": [
           "Playing at Buffalo is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Special teams: Buffalo 50.5 (#41 of 126) vs Western Michigan 49.3 (#106 of 126) — 65 places on the national board.",
-          "Linebackers: Buffalo 54.7 (#43 of 133) vs Western Michigan 50.8 (#96 of 133) — 53 places on the national board.",
+          "Linebackers: Buffalo 54.7 (#43 of 133) vs Western Michigan 50.8 (#95 of 133) — 52 places on the national board.",
           "Defensive line: Buffalo 54.2 (#53 of 133) vs Western Michigan 50.4 (#95 of 133) — 42 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -36.6 to p90 +7.4 for Buffalo, so a projection of -13.6 still produces results a long way either side of it."
         ]
@@ -1559,10 +1561,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1589,6 +1587,10 @@
         {
           "item": "Buffalo — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Buffalo — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1599,6 +1601,106 @@
       "model_raw": "Buffalo +13.6",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401866432",
+      "home": "Buffalo",
+      "away": "Western Michigan",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Western Michigan -13.6",
+        "favorite_team": "Western Michigan",
+        "underdog_team": "Buffalo",
+        "display_fair_spread": -13.6,
+        "raw_home_margin": -13.58,
+        "raw_line_text": "Western Michigan -13.58",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 82,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Western Michigan",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 15.83,
+            "text": "+15.8 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.84,
+            "text": "+1.8 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": -13.58,
+          "text": "Western Michigan -13.6"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Western Michigan",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Western Michigan 32, Buffalo 18.",
     "state": {
@@ -1631,7 +1733,7 @@
         },
         {
           "k": "Talent",
-          "a": "51.8  #56",
+          "a": "51.8  #55",
           "h": "34.9  #126",
           "note": null
         },
@@ -1685,7 +1787,7 @@
         },
         {
           "k": "QB room",
-          "a": "57.0  #70",
+          "a": "57.0  #69",
           "h": "52.9  #126",
           "note": null
         },
@@ -1697,14 +1799,14 @@
         },
         {
           "k": "Receivers",
-          "a": "55.2  #64",
+          "a": "55.2  #63",
           "h": "52.8  #130",
           "note": null
         },
         {
           "k": "Running backs",
           "a": "56.4  #59",
-          "h": "56.0  #66",
+          "h": "56.0  #67",
           "note": null
         },
         {
@@ -1715,7 +1817,7 @@
         },
         {
           "k": "Linebackers",
-          "a": "50.8  #96",
+          "a": "50.8  #95",
           "h": "54.7  #43",
           "note": null
         },
@@ -1770,6 +1872,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

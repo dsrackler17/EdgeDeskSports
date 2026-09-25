@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UCLA vs. Maryland: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UCLA vs. Maryland 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices UCLA at Maryland at Maryland -1.0 with a 56.6 fair total. Maryland wins 50% of simulations. Data confidence 80%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices UCLA at Maryland at Maryland -1.0 with a 56.6 fair total. Maryland wins 50% of simulations. Data confidence 84%. Model status RESEARCH. Research, not picks.",
   "excerpt": "UCLA carries the stronger underlying team rating — +8.2 against +1.1, a 7.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Maryland -1.0 before any sportsbook number is consulted, with Maryland winning 50% of…",
   "home_team": "Maryland",
   "away_team": "UCLA",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T17:30:00.000Z",
   "game_when_label": "2026-09-26 17:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "Maryland -1.0",
   "fair_total": "56.6",
@@ -65,16 +65,16 @@
     "lede": [
       "UCLA carries the stronger underlying team rating — +8.2 against +1.1, a 7.1-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Maryland -1.0 before any sportsbook number is consulted, with Maryland winning 50% of simulations.",
-      "The position-group comparison shows where the separation comes from: the widest measured gap is running backs, where UCLA leads Maryland by 127 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "The position-group comparison shows where the separation comes from: the widest measured gap is running backs, where UCLA leads Maryland by 121 places nationally.",
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 0.10922183335655594,
+      "fair_spread": 0.13517884505073513,
       "fair_spread_text": "Maryland -1.0",
       "fair_spread_raw_text": "Maryland -0.1",
       "near_pickem": true,
-      "raw_margin_text": "Maryland +0.11",
+      "raw_margin_text": "Maryland +0.14",
       "favourite": "Maryland",
       "underdog": "UCLA",
       "margin": "0.1",
@@ -114,65 +114,61 @@
         "volatility_discriminates": false,
         "note": "Quoted from Maryland’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 77,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 20,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 13,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
           "UNAVAILABLE": 6
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Maryland is not in the availability registry"
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "UCLA is not in the availability registry"
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
             "field": "coaching_continuity",
-            "side": null,
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "UCLA has no prior season in the coach table to compare against, so whether this staff is new is unknown rather than continuous — a programme with no history is not a programme that kept its coach"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +255,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T03:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Maryland",
@@ -349,9 +345,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -371,7 +367,7 @@
         },
         {
           "points": "-0.4",
-          "points_n": -0.42410304280804456,
+          "points_n": -0.3981460311138654,
           "text": "Stylistically the matchup favours UCLA by 0.4 points: ball control vs front disruption",
           "favours": "UCLA"
         }
@@ -395,7 +391,7 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "+8.2",
-                "n": 8.16,
+                "n": 8.15,
                 "rank": "#10 of 133",
                 "rank_n": 10,
                 "note": null
@@ -418,23 +414,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "56.5",
-                "n": 56.5,
-                "rank": "#34 of 133",
-                "rank_n": 34,
+                "v": "56.2",
+                "n": 56.2,
+                "rank": "#37 of 133",
+                "rank_n": 37,
                 "note": null
               },
               "h": {
-                "v": "50.8",
-                "n": 50.8,
-                "rank": "#59 of 133",
-                "rank_n": 59,
+                "v": "50.7",
+                "n": 50.7,
+                "rank": "#60 of 133",
+                "rank_n": 60,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 5.7,
-                "rank_gap": 25
+                "gap": 5.5,
+                "rank_gap": 23
               }
             },
             {
@@ -466,23 +462,23 @@
               "k": "Scheme fit",
               "note": "personnel against this team’s own tendencies",
               "a": {
-                "v": "48.7",
-                "n": 48.7,
-                "rank": "#110 of 133",
-                "rank_n": 110,
+                "v": "48.6",
+                "n": 48.6,
+                "rank": "#112 of 133",
+                "rank_n": 112,
                 "note": null
               },
               "h": {
-                "v": "50.3",
-                "n": 50.3,
-                "rank": "#68 of 133",
-                "rank_n": 68,
+                "v": "50.1",
+                "n": 50.1,
+                "rank": "#73 of 133",
+                "rank_n": 73,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 1.6,
-                "rank_gap": 42
+                "gap": 1.5,
+                "rank_gap": 39
               }
             }
           ]
@@ -675,16 +671,16 @@
                 "note": null
               },
               "h": {
-                "v": "57.3",
-                "n": 57.3,
-                "rank": "#60 of 133",
-                "rank_n": 60,
+                "v": "57.5",
+                "n": 57.5,
+                "rank": "#56 of 133",
+                "rank_n": 56,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 0.8,
-                "rank_gap": 10
+                "gap": 0.6,
+                "rank_gap": 6
               }
             },
             {
@@ -716,23 +712,23 @@
               "k": "Receivers",
               "note": null,
               "a": {
-                "v": "55.0",
-                "n": 55,
-                "rank": "#71 of 133",
-                "rank_n": 71,
+                "v": "55.4",
+                "n": 55.4,
+                "rank": "#50 of 133",
+                "rank_n": 50,
                 "note": null
               },
               "h": {
-                "v": "55.8",
-                "n": 55.8,
-                "rank": "#32 of 133",
-                "rank_n": 32,
+                "v": "56.1",
+                "n": 56.1,
+                "rank": "#17 of 133",
+                "rank_n": 17,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 0.8,
-                "rank_gap": 39
+                "gap": 0.7,
+                "rank_gap": 33
               }
             },
             {
@@ -740,22 +736,22 @@
               "k": "Tight ends",
               "note": "rated by the player layer; the board publishes no national TE rank",
               "a": {
-                "v": "55.5",
-                "n": 55.5,
+                "v": "55.6",
+                "n": 55.6,
                 "rank": null,
                 "rank_n": null,
                 "note": "rated, held out of the national rank by the confidence gate"
               },
               "h": {
-                "v": "55.5",
-                "n": 55.5,
+                "v": "56.2",
+                "n": 56.2,
                 "rank": null,
                 "rank_n": null,
                 "note": "rated, held out of the national rank by the confidence gate"
               },
               "edge": {
-                "side": "even",
-                "gap": 0,
+                "side": "h",
+                "gap": 0.6,
                 "rank_gap": null
               }
             },
@@ -771,16 +767,16 @@
                 "note": null
               },
               "h": {
-                "v": "53.6",
-                "n": 53.6,
-                "rank": "#131 of 133",
-                "rank_n": 131,
+                "v": "54.3",
+                "n": 54.3,
+                "rank": "#125 of 133",
+                "rank_n": 125,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 5.4,
-                "rank_gap": 127
+                "gap": 4.7,
+                "rank_gap": 121
               }
             },
             {
@@ -795,16 +791,16 @@
                 "note": null
               },
               "h": {
-                "v": "51.6",
-                "n": 51.6,
-                "rank": "#79 of 133",
-                "rank_n": 79,
+                "v": "51.7",
+                "n": 51.7,
+                "rank": "#77 of 133",
+                "rank_n": 77,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 3.7,
-                "rank_gap": 41
+                "gap": 3.8,
+                "rank_gap": 43
               }
             },
             {
@@ -843,16 +839,16 @@
                 "note": null
               },
               "h": {
-                "v": "52.2",
-                "n": 52.2,
-                "rank": "#78 of 133",
-                "rank_n": 78,
+                "v": "51.9",
+                "n": 51.9,
+                "rank": "#83 of 133",
+                "rank_n": 83,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 0.8,
-                "rank_gap": 5
+                "gap": 1.1,
+                "rank_gap": 10
               }
             },
             {
@@ -942,13 +938,13 @@
       "away": [
         {
           "k": "Running backs",
-          "rank_gap": 127,
-          "gap": 5.4,
+          "rank_gap": 121,
+          "gap": 4.7,
           "lead": "UCLA",
           "trail": "Maryland",
           "lead_cell": "59.0 · #4 of 133",
-          "trail_cell": "53.6 · #131 of 133",
-          "text": "UCLA 59.0 (#4 of 133) vs Maryland 53.6 (#131 of 133) — 127 places on the national board."
+          "trail_cell": "54.3 · #125 of 133",
+          "text": "UCLA 59.0 (#4 of 133) vs Maryland 54.3 (#125 of 133) — 121 places on the national board."
         },
         {
           "k": "Special teams",
@@ -1003,6 +999,16 @@
           "text": "Maryland 58.3 (#37 of 133) vs UCLA 46.4 (#81 of 133) — 44 places on the national board."
         },
         {
+          "k": "Defensive line",
+          "rank_gap": 43,
+          "gap": 3.8,
+          "lead": "Maryland",
+          "trail": "UCLA",
+          "lead_cell": "51.7 · #77 of 133",
+          "trail_cell": "47.9 · #120 of 133",
+          "text": "Maryland 51.7 (#77 of 133) vs UCLA 47.9 (#120 of 133) — 43 places on the national board."
+        },
+        {
           "k": "Continuity",
           "rank_gap": 43,
           "gap": 10.1,
@@ -1014,33 +1020,23 @@
         },
         {
           "k": "Scheme fit",
-          "rank_gap": 42,
-          "gap": 1.6,
-          "lead": "Maryland",
-          "trail": "UCLA",
-          "lead_cell": "50.3 · #68 of 133",
-          "trail_cell": "48.7 · #110 of 133",
-          "text": "Maryland 50.3 (#68 of 133) vs UCLA 48.7 (#110 of 133) — 42 places on the national board."
-        },
-        {
-          "k": "Defensive line",
-          "rank_gap": 41,
-          "gap": 3.7,
-          "lead": "Maryland",
-          "trail": "UCLA",
-          "lead_cell": "51.6 · #79 of 133",
-          "trail_cell": "47.9 · #120 of 133",
-          "text": "Maryland 51.6 (#79 of 133) vs UCLA 47.9 (#120 of 133) — 41 places on the national board."
-        },
-        {
-          "k": "Receivers",
           "rank_gap": 39,
-          "gap": 0.8,
+          "gap": 1.5,
           "lead": "Maryland",
           "trail": "UCLA",
-          "lead_cell": "55.8 · #32 of 133",
-          "trail_cell": "55.0 · #71 of 133",
-          "text": "Maryland 55.8 (#32 of 133) vs UCLA 55.0 (#71 of 133) — 39 places on the national board."
+          "lead_cell": "50.1 · #73 of 133",
+          "trail_cell": "48.6 · #112 of 133",
+          "text": "Maryland 50.1 (#73 of 133) vs UCLA 48.6 (#112 of 133) — 39 places on the national board."
+        },
+        {
+          "k": "Linebackers",
+          "rank_gap": 37,
+          "gap": 2.4,
+          "lead": "Maryland",
+          "trail": "UCLA",
+          "lead_cell": "51.4 · #81 of 133",
+          "trail_cell": "49.0 · #118 of 133",
+          "text": "Maryland 51.4 (#81 of 133) vs UCLA 49.0 (#118 of 133) — 37 places on the national board."
         }
       ],
       "measured": [],
@@ -1137,20 +1133,20 @@
         "def": {
           "team": "Maryland",
           "label": "secondary",
-          "v": "52.2",
-          "rank": "#78 of 133",
+          "v": "51.9",
+          "rank": "#83 of 133",
           "note": null
         },
         "complete": true,
-        "read": "UCLA’s QB room rates 58.1 (#50 of 133) against Maryland’s secondary at 52.2 (#78 of 133). UCLA’s unit stands higher among its own position group, by 28 places."
+        "read": "UCLA’s QB room rates 58.1 (#50 of 133) against Maryland’s secondary at 51.9 (#83 of 133). UCLA’s unit stands higher among its own position group, by 33 places."
       },
       {
         "title": "Maryland QB room vs UCLA secondary",
         "att": {
           "team": "Maryland",
           "label": "QB room",
-          "v": "57.3",
-          "rank": "#60 of 133",
+          "v": "57.5",
+          "rank": "#56 of 133",
           "note": null
         },
         "def": {
@@ -1161,7 +1157,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Maryland’s QB room rates 57.3 (#60 of 133) against UCLA’s secondary at 53.0 (#73 of 133). Maryland’s unit stands higher among its own position group, by 13 places."
+        "read": "Maryland’s QB room rates 57.5 (#56 of 133) against UCLA’s secondary at 53.0 (#73 of 133). Maryland’s unit stands higher among its own position group, by 17 places."
       },
       {
         "title": "UCLA offensive line vs Maryland defensive line",
@@ -1175,12 +1171,12 @@
         "def": {
           "team": "Maryland",
           "label": "defensive line",
-          "v": "51.6",
-          "rank": "#79 of 133",
+          "v": "51.7",
+          "rank": "#77 of 133",
           "note": null
         },
         "complete": true,
-        "read": "UCLA’s offensive line rates 56.4 (#19 of 133) against Maryland’s defensive line at 51.6 (#79 of 133). UCLA’s unit stands higher among its own position group, by 60 places."
+        "read": "UCLA’s offensive line rates 56.4 (#19 of 133) against Maryland’s defensive line at 51.7 (#77 of 133). UCLA’s unit stands higher among its own position group, by 58 places."
       },
       {
         "title": "Maryland offensive line vs UCLA defensive line",
@@ -1225,8 +1221,8 @@
         "att": {
           "team": "Maryland",
           "label": "running backs",
-          "v": "53.6",
-          "rank": "#131 of 133",
+          "v": "54.3",
+          "rank": "#125 of 133",
           "note": null
         },
         "def": {
@@ -1237,34 +1233,34 @@
           "note": null
         },
         "complete": true,
-        "read": "Maryland’s running backs rates 53.6 (#131 of 133) against UCLA’s linebackers at 49.0 (#118 of 133). UCLA’s unit stands higher among its own position group, by 13 places."
+        "read": "Maryland’s running backs rates 54.3 (#125 of 133) against UCLA’s linebackers at 49.0 (#118 of 133). UCLA’s unit stands higher among its own position group, by 7 places."
       },
       {
         "title": "UCLA receivers vs Maryland secondary",
         "att": {
           "team": "UCLA",
           "label": "receivers",
-          "v": "55.0",
-          "rank": "#71 of 133",
+          "v": "55.4",
+          "rank": "#50 of 133",
           "note": null
         },
         "def": {
           "team": "Maryland",
           "label": "secondary",
-          "v": "52.2",
-          "rank": "#78 of 133",
+          "v": "51.9",
+          "rank": "#83 of 133",
           "note": null
         },
         "complete": true,
-        "read": "UCLA’s receivers rates 55.0 (#71 of 133) against Maryland’s secondary at 52.2 (#78 of 133). UCLA’s unit stands higher among its own position group, by 7 places."
+        "read": "UCLA’s receivers rates 55.4 (#50 of 133) against Maryland’s secondary at 51.9 (#83 of 133). UCLA’s unit stands higher among its own position group, by 33 places."
       },
       {
         "title": "Maryland receivers vs UCLA secondary",
         "att": {
           "team": "Maryland",
           "label": "receivers",
-          "v": "55.8",
-          "rank": "#32 of 133",
+          "v": "56.1",
+          "rank": "#17 of 133",
           "note": null
         },
         "def": {
@@ -1275,7 +1271,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Maryland’s receivers rates 55.8 (#32 of 133) against UCLA’s secondary at 53.0 (#73 of 133). Maryland’s unit stands higher among its own position group, by 41 places."
+        "read": "Maryland’s receivers rates 56.1 (#17 of 133) against UCLA’s secondary at 53.0 (#73 of 133). Maryland’s unit stands higher among its own position group, by 56 places."
       }
     ],
     "roster": {
@@ -1381,18 +1377,18 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "8 on file, 0% of starter value out",
-          "h": "8 on file, 0% of starter value out",
+          "a": "8 on file, 5% of starter value out",
+          "h": "8 on file, 7% of starter value out",
           "edge": null
         },
         {
           "k": "Data confidence",
           "note": "how much EdgeDesk knows about this roster, not how good it is",
           "a": "54%",
-          "h": "51%",
+          "h": "52%",
           "edge": {
             "side": "a",
-            "gap": 0.030000000000000027
+            "gap": 0.02300000000000002
           }
         }
       ],
@@ -1432,8 +1428,8 @@
         "bullets": [
           "Playing at Maryland is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Run defense: Maryland 58.3 (#37 of 133) vs UCLA 46.4 (#81 of 133) — 44 places on the national board.",
-          "Continuity: Maryland 54.7 (#22 of 133) vs UCLA 44.6 (#65 of 133) — 43 places on the national board.",
-          "Scheme fit: Maryland 50.3 (#68 of 133) vs UCLA 48.7 (#110 of 133) — 42 places on the national board."
+          "Defensive line: Maryland 51.7 (#77 of 133) vs UCLA 47.9 (#120 of 133) — 43 places on the national board.",
+          "Continuity: Maryland 54.7 (#22 of 133) vs UCLA 44.6 (#65 of 133) — 43 places on the national board."
         ]
       },
       "underdog": {
@@ -1442,7 +1438,7 @@
         "bullets": [
           "UCLA is the better football team by 3.5 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-3.5 pts).",
           "Stylistically the matchup favours UCLA by 0.4 points: ball control vs front disruption (-0.4 pts).",
-          "Running backs: UCLA 59.0 (#4 of 133) vs Maryland 53.6 (#131 of 133) — 127 places on the national board.",
+          "Running backs: UCLA 59.0 (#4 of 133) vs Maryland 54.3 (#125 of 133) — 121 places on the national board.",
           "Special teams: UCLA 51.4 (#12 of 126) vs Maryland 49.7 (#85 of 126) — 73 places on the national board.",
           "Offensive line: UCLA 56.4 (#19 of 133) vs Maryland 49.5 (#84 of 133) — 65 places on the national board."
         ]
@@ -1466,7 +1462,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1504,18 +1500,6 @@
           "label": "missing",
           "text": "weather not supplied",
           "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1526,18 +1510,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
-        },
-        {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
         },
         {
           "item": "Weather at kickoff",
@@ -1572,16 +1544,126 @@
       "model_raw": "Maryland -0.1",
       "market": "Maryland +1.5",
       "difference": "1.6 points",
-      "difference_n": 1.609221833356556,
+      "difference_n": 1.6351788450507352,
       "total_model": "56.6",
       "total_market": "56.5",
-      "book": "captured · theScore Bet",
+      "book": "captured (stale 73h) · theScore Bet",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858462",
+      "home": "Maryland",
+      "away": "UCLA",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Maryland -1.0",
+        "favorite_team": "Maryland",
+        "underdog_team": "UCLA",
+        "display_fair_spread": 1,
+        "raw_home_margin": 0.14,
+        "raw_line_text": "Maryland -0.14",
+        "is_near_pickem": true
+      },
+      "market_gap": {
+        "available": true,
+        "points": 1.64,
+        "toward_team": "Maryland",
+        "text": "1.6 pts toward Maryland",
+        "market_line_text": "UCLA -1.5",
+        "market_home_margin": -1.5,
+        "favorite_differs": true,
+        "source": "captured (stale 73h) · theScore Bet",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": "Measured from the raw margin (Maryland -0.14), not from the one-point display line."
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 77,
+        "tier": "ADEQUATE",
+        "text": "77%",
+        "sub": "20 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Maryland",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 33 players with an unresolved status; the engine widens this game’s range for it."
+      },
+      "stability": {
+        "tier": "LOW",
+        "label": "Low",
+        "text": "the stored numbers span 2.6 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T12:00:40.648Z",
+          "source": "first published",
+          "home_margin": 2.69,
+          "text": "Maryland -2.7"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 0.14,
+          "text": "Maryland -0.14"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "UCLA",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 2.6 points toward UCLA since the first published number.",
+        "attribution_text": "Projection changed 2.6 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Maryland 28, UCLA 28.",
     "state": {
@@ -1614,8 +1696,8 @@
         },
         {
           "k": "Talent",
-          "a": "56.5  #34",
-          "h": "50.8  #59",
+          "a": "56.2  #37",
+          "h": "50.7  #60",
           "note": null
         },
         {
@@ -1669,7 +1751,7 @@
         {
           "k": "QB room",
           "a": "58.1  #50",
-          "h": "57.3  #60",
+          "h": "57.5  #56",
           "note": null
         },
         {
@@ -1680,20 +1762,20 @@
         },
         {
           "k": "Receivers",
-          "a": "55.0  #71",
-          "h": "55.8  #32",
+          "a": "55.4  #50",
+          "h": "56.1  #17",
           "note": null
         },
         {
           "k": "Running backs",
           "a": "59.0  #4",
-          "h": "53.6  #131",
+          "h": "54.3  #125",
           "note": null
         },
         {
           "k": "Defensive line",
           "a": "47.9  #120",
-          "h": "51.6  #79",
+          "h": "51.7  #77",
           "note": null
         },
         {
@@ -1705,7 +1787,7 @@
         {
           "k": "Secondary",
           "a": "53.0  #73",
-          "h": "52.2  #78",
+          "h": "51.9  #83",
           "note": null
         },
         {
@@ -1723,7 +1805,7 @@
         {
           "k": "Confidence",
           "a": "54%",
-          "h": "51%",
+          "h": "52%",
           "note": "how much EdgeDesk knows, not how good the team is"
         },
         {
@@ -1735,10 +1817,10 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Maryland -1.0 on a neutral read of the two teams, before any book is consulted. It is a near pick’em: the raw projected margin is Maryland +0.11, and the one-point line is a display floor. Projected total 56.6.",
+      "EdgeDesk’s line is Maryland -1.0 on a neutral read of the two teams, before any book is consulted. It is a near pick’em: the raw projected margin is Maryland +0.14, and the one-point line is a display floor. Projected total 56.6.",
       "Maryland wins 50% of the time in EdgeDesk’s simulation, UCLA 50%.",
       "Eight games in ten land between -22.9 and +21.1 for Maryland. A single result inside that band tells you nothing new about either team.",
-      "The market has Maryland +1.5 at captured · theScore Bet, 1.6 points from EdgeDesk’s number.",
+      "The market has Maryland +1.5 at captured (stale 73h) · theScore Bet, 1.6 points from EdgeDesk’s number.",
       "UCLA quarterback: Nico Iamaleava — started the last game; no announcement for this one.",
       "Maryland quarterback: Malik Washington — started the last game; no announcement for this one."
     ],
@@ -1753,6 +1835,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

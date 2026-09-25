@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Howard vs. Rutgers: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Howard vs. Rutgers 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Howard at Rutgers at Rutgers -26.3. Rutgers wins 96% of simulations. Data confidence 51%. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices Howard at Rutgers at Rutgers -26.3. Rutgers wins 96% of simulations. Data confidence 55%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Rutgers carries a full EdgeDesk team rating at +0.9; Howard is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Rutgers -26.3 before any sportsbook number is…",
   "home_team": "Rutgers",
   "away_team": "Howard",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-25T23:00:00.000Z",
   "game_when_label": "2026-09-25 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 51,
+  "confidence": 55,
   "priced": true,
   "fair_spread_text": "Rutgers -26.3",
   "fair_total": null,
@@ -66,11 +66,11 @@
       "Rutgers carries a full EdgeDesk team rating at +0.9; Howard is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
       "EdgeDesk makes it Rutgers -26.3 before any sportsbook number is consulted, with Rutgers winning 96% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; Howard is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 51% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 55% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 26.339832203680864,
+      "fair_spread": 26.343400069804947,
       "fair_spread_text": "Rutgers -26.3",
       "fair_spread_raw_text": "Rutgers -26.3",
       "near_pickem": false,
@@ -104,65 +104,85 @@
         "volatility_discriminates": false,
         "note": "Quoted from Rutgers’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 51,
-      "inputs_reached_pct": 53,
+      "confidence_pct": 55,
+      "inputs_reached_pct": 52,
       "input_contract": {
-        "fields": 17,
-        "applicable": 15,
-        "known": 8,
-        "priced": 6,
-        "priced_coverage_pct": 40,
+        "fields": 26,
+        "applicable": 25,
+        "known": 13,
+        "priced": 7,
+        "priced_coverage_pct": 28,
         "by_state": {
-          "USABLE": 6,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 7,
+          "RESEARCH_ONLY": 6,
           "STALE": 0,
           "CONFLICTING": 0,
-          "NOT_APPLICABLE": 2,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_APPLICABLE": 1,
+          "NOT_REQUIRED": 2,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 10
         },
         "absent": [
           {
-            "field": "venue_geography",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "no coordinates for Howard’s home venue, so travel distance cannot be computed"
-          },
-          {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "roster",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Howard is outside the 2026 FBS universe EdgeDesk rates, so no roster is retrieved for it. The engine prices the side from a shared FCS floor and charges the full weight of its roster term, so this is counted as the gap it is rather than excused as inapplicable"
           },
           {
             "field": "availability",
-            "side": "home",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Rutgers is not in the availability registry"
+            "why": "Howard is outside the FBS availability registry, so no availability read covers it. The engine prices maximum injury uncertainty for this side and charges for the gap, so the contract counts it as a gap rather than excusing it as inapplicable"
           },
           {
-            "field": "qb_availability",
-            "side": "home",
+            "field": "roster_talent",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "Howard is outside the FBS field the player layer rates, so no composite is measured for it. The engine charges for the gap, so the contract counts it as one"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. EdgeDesk has not researched an availability-reporting policy for MEAC; that is an open question, not a finding that none exists"
           },
           {
-            "field": "recruiting_talent",
+            "field": "team_rating",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Howard is outside the rated FBS field, so the projection uses params.rating.fcs_rating — ONE floor number shared by every FCS programme. That is not a rating of this team, and the engine charges the full weight of the rating input for it. This row exists so that charge lands on a named field instead of on nothing"
+          },
+          {
+            "field": "matchup_profile",
             "side": null,
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "the stylistic pairing needs a measured profile for BOTH sides and Howard is outside the FBS field the profiles cover"
+          },
+          {
+            "field": "off_field",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
             "field": "coaching_continuity",
-            "side": null,
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "Howard has no prior season in the coach table to compare against, so whether this staff is new is unknown rather than continuous — a programme with no history is not a programme that kept its coach"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -261,7 +281,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-12T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Rutgers",
@@ -351,9 +371,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -373,7 +393,7 @@
         },
         {
           "points": "+1.5",
-          "points_n": 1.4634359157598176,
+          "points_n": 1.4670037818839,
           "text": "Stylistically the matchup favours Rutgers by 1.5 points: ball control vs front disruption",
           "favours": "Rutgers"
         }
@@ -425,8 +445,8 @@
               "h": {
                 "v": "52.1",
                 "n": 52.1,
-                "rank": "#55 of 133",
-                "rank_n": 55,
+                "rank": "#54 of 133",
+                "rank_n": 54,
                 "note": null
               },
               "edge": null
@@ -675,8 +695,8 @@
               "h": {
                 "v": "55.9",
                 "n": 55.9,
-                "rank": "#28 of 133",
-                "rank_n": 28,
+                "rank": "#30 of 133",
+                "rank_n": 30,
                 "note": null
               },
               "edge": null
@@ -1079,7 +1099,7 @@
           "team": "Rutgers",
           "label": "receivers",
           "v": "55.9",
-          "rank": "#28 of 133",
+          "rank": "#30 of 133",
           "note": null
         },
         "def": {
@@ -1090,7 +1110,7 @@
           "note": null
         },
         "complete": false,
-        "read": "Rutgers’s receivers is measurable at 55.9 (#28 of 133). Howard’s secondary is not, so the pairing cannot be scored."
+        "read": "Rutgers’s receivers is measurable at 55.9 (#30 of 133). Howard’s secondary is not, so the pairing cannot be scored."
       }
     ],
     "roster": {
@@ -1203,7 +1223,7 @@
         "bullets": [
           "The outcome range is 15.1 points wide at one sigma — p10 +3.3 to p90 +47.3 for Rutgers, so a projection of +26.3 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
-          "50% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
+          "60% of the model’s own input contract was empty for this game — no roster, starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
           "Howard is not in the FBS rating set, so EdgeDesk cannot measure what it does well. An unmeasured opponent is an unknown, not a weak one, and the size of the gap is not established."
         ]
       },
@@ -1214,7 +1234,7 @@
         {
           "sev": "HIGH",
           "label": "information missing",
-          "text": "The projection could be wrong because 50% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
+          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no roster, starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
           "widening": null
         },
         {
@@ -1226,7 +1246,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1258,6 +1278,12 @@
           "label": "early season",
           "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
           "widening": "3%"
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "away roster not supplied — talent, continuity and youth layers are blind",
+          "widening": null
         },
         {
           "sev": "LOW",
@@ -1308,10 +1334,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1348,16 +1370,132 @@
       "model_raw": "Rutgers -26.3",
       "market": "Rutgers -42.5",
       "difference": "16.2 points",
-      "difference_n": 16.160167796319136,
+      "difference_n": 16.156599930195053,
       "total_model": null,
       "total_market": "53.5",
-      "book": "captured · FanDuel",
+      "book": "captured (stale 73h) · FanDuel",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401858468",
+      "home": "Rutgers",
+      "away": "Howard",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LOW_RELIABILITY",
+        "label": "LOW RELIABILITY",
+        "rule": "coverage",
+        "means": "Only 52% of this game’s applicable inputs are on file (13 of 25), under the 60% bar below which EdgeDesk argues against its own number."
+      },
+      "fair": {
+        "line_text": "Rutgers -26.3",
+        "favorite_team": "Rutgers",
+        "underdog_team": "Howard",
+        "display_fair_spread": 26.3,
+        "raw_home_margin": 26.34,
+        "raw_line_text": "Rutgers -26.34",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 16.16,
+        "toward_team": "Howard",
+        "text": "16.2 pts toward Howard",
+        "market_line_text": "Rutgers -42.5",
+        "market_home_margin": 42.5,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · FanDuel",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 55,
+        "tier": "MODERATE",
+        "label": "Moderate"
+      },
+      "reliability": {
+        "pct": 52,
+        "tier": "LOW",
+        "text": "52%",
+        "sub": "13 of 25 inputs on file"
+      },
+      "drivers": {
+        "team": "Rutgers",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.47,
+            "text": "+1.5 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "LOW",
+        "label": "Low",
+        "text": "the stored numbers span 2.5 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T01:39:46.233Z",
+          "source": "first published",
+          "home_margin": 23.89,
+          "text": "Rutgers -23.9"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 26.34,
+          "text": "Rutgers -26.3"
+        }
+      ],
+      "revisions": 4,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Rutgers",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 2.5 points toward Rutgers since the first published number.",
+        "attribution_text": "Projection changed 2.5 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk rates one side of this game and not the other. What it has is below; what it does not have is named.",
     "state": {
@@ -1381,7 +1519,7 @@
         {
           "k": "Talent",
           "a": null,
-          "h": "52.1  #55",
+          "h": "52.1  #54",
           "note": null
         },
         {
@@ -1447,7 +1585,7 @@
         {
           "k": "Receivers",
           "a": null,
-          "h": "55.9  #28",
+          "h": "55.9  #30",
           "note": null
         },
         {
@@ -1504,7 +1642,7 @@
       "EdgeDesk’s line is Rutgers -26.3 on a neutral read of the two teams, before any book is consulted.",
       "Rutgers wins 96% of the time in EdgeDesk’s simulation, Howard 4%.",
       "Eight games in ten land between +3.3 and +47.3 for Rutgers. A single result inside that band tells you nothing new about either team.",
-      "The market has Rutgers -42.5 at captured · FanDuel, 16.2 points from EdgeDesk’s number.",
+      "The market has Rutgers -42.5 at captured (stale 73h) · FanDuel, 16.2 points from EdgeDesk’s number.",
       "Howard quarterback: Ja'Shawn Scroggins — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1521,6 +1659,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

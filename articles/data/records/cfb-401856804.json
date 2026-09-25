@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Arizona vs. Washington State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Arizona vs. Washington State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Arizona at Washington State at Washington State +5.1 with a 49.9 fair total. Arizona wins 63% of simulations. Data confidence 80%. Model status RESEARCH. Research, not picks.",
-  "excerpt": "Washington State carries the stronger underlying team rating — +1.6 against -1.1, a 2.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Washington State +5.1 before any sportsbook number is consulted, with…",
+  "seo_description": "EdgeDesk prices Arizona at Washington State at Washington State +5.0 with a 49.9 fair total. Arizona wins 63% of simulations. Data confidence 84%. Model status RESEARCH. Research, not picks.",
+  "excerpt": "Washington State carries the stronger underlying team rating — +1.6 against -1.1, a 2.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Washington State +5.0 before any sportsbook number is consulted, with…",
   "home_team": "Washington State",
   "away_team": "Arizona",
   "venue": "Gesa Field",
@@ -21,14 +21,14 @@
   "game_time": "2026-09-26T23:30:00.000Z",
   "game_when_label": "2026-09-26 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
-  "fair_spread_text": "Washington State +5.1",
+  "fair_spread_text": "Washington State +5.0",
   "fair_total": "49.9",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/arizona-vs-washington-state-2026",
@@ -64,20 +64,20 @@
     },
     "lede": [
       "Washington State carries the stronger underlying team rating — +1.6 against -1.1, a 2.8-point separation on a neutral field before home advantage, travel or rest.",
-      "EdgeDesk makes it Washington State +5.1 before any sportsbook number is consulted, with Arizona winning 63% of simulations.",
-      "The position-group comparison shows where the separation comes from: the widest measured gap is qb room, where Arizona leads Washington State by 102 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "EdgeDesk makes it Washington State +5.0 before any sportsbook number is consulted, with Arizona winning 63% of simulations.",
+      "The position-group comparison shows where the separation comes from: the widest measured gap is qb room, where Arizona leads Washington State by 100 places nationally.",
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -5.05198263661287,
-      "fair_spread_text": "Washington State +5.1",
-      "fair_spread_raw_text": "Washington State +5.1",
+      "fair_spread": -5.025373452226718,
+      "fair_spread_text": "Washington State +5.0",
+      "fair_spread_raw_text": "Washington State +5.0",
       "near_pickem": false,
       "raw_margin_text": null,
       "favourite": "Arizona",
       "underdog": "Washington State",
-      "margin": "5.1",
+      "margin": "5.0",
       "total": "49.9",
       "score": {
         "away": {
@@ -106,73 +106,63 @@
       },
       "outcome_range": {
         "basis_team": "Washington State",
-        "p10": "-28.1",
-        "median": "-6.1",
-        "p90": "+15.9",
+        "p10": "-28.0",
+        "median": "-6.0",
+        "p90": "+16.0",
         "sigma": "15.1",
         "volatility": "40.04",
         "volatility_discriminates": false,
         "note": "Quoted from Washington State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
+          "NOT_REQUIRED": 2,
+          "NOT_DUE_YET": 0,
           "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "UNAVAILABLE": 4
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
             "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "Washington State is not in the availability registry"
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Arizona is not in the availability registry"
+            "why": "EdgeDesk read 3 source(s) for Washington State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for the rebuilt conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing.."
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for the rebuilt conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing."
           },
           {
-            "field": "qb_availability",
+            "field": "off_field",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -271,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T02:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Washington State",
@@ -343,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -371,7 +361,7 @@
         },
         {
           "points": "-0.5",
-          "points_n": -0.5073855878922414,
+          "points_n": -0.4807764035060905,
           "text": "Stylistically the matchup favours Arizona by 0.5 points: ball control vs front disruption",
           "favours": "Arizona"
         }
@@ -425,16 +415,16 @@
                 "note": null
               },
               "h": {
-                "v": "41.5",
-                "n": 41.5,
-                "rank": "#112 of 133",
-                "rank_n": 112,
+                "v": "41.4",
+                "n": 41.4,
+                "rank": "#113 of 133",
+                "rank_n": 113,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 17.3,
-                "rank_gap": 89
+                "gap": 17.4,
+                "rank_gap": 90
               }
             },
             {
@@ -468,8 +458,8 @@
               "a": {
                 "v": "49.1",
                 "n": 49.1,
-                "rank": "#100 of 133",
-                "rank_n": 100,
+                "rank": "#99 of 133",
+                "rank_n": 99,
                 "note": null
               },
               "h": {
@@ -482,7 +472,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.3,
-                "rank_gap": 6
+                "rank_gap": 5
               }
             }
           ]
@@ -670,8 +660,8 @@
               "a": {
                 "v": "60.0",
                 "n": 60,
-                "rank": "#23 of 133",
-                "rank_n": 23,
+                "rank": "#25 of 133",
+                "rank_n": 25,
                 "note": null
               },
               "h": {
@@ -684,7 +674,7 @@
               "edge": {
                 "side": "a",
                 "gap": 7,
-                "rank_gap": 102
+                "rank_gap": 100
               }
             },
             {
@@ -718,21 +708,21 @@
               "a": {
                 "v": "55.6",
                 "n": 55.6,
-                "rank": "#37 of 133",
-                "rank_n": 37,
+                "rank": "#38 of 133",
+                "rank_n": 38,
                 "note": null
               },
               "h": {
                 "v": "55.0",
                 "n": 55,
-                "rank": "#73 of 133",
-                "rank_n": 73,
+                "rank": "#71 of 133",
+                "rank_n": 71,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.6,
-                "rank_gap": 36
+                "rank_gap": 33
               }
             },
             {
@@ -773,14 +763,14 @@
               "h": {
                 "v": "55.9",
                 "n": 55.9,
-                "rank": "#74 of 133",
-                "rank_n": 74,
+                "rank": "#75 of 133",
+                "rank_n": 75,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 1.1,
-                "rank_gap": 44
+                "rank_gap": 45
               }
             },
             {
@@ -797,14 +787,14 @@
               "h": {
                 "v": "51.4",
                 "n": 51.4,
-                "rank": "#83 of 133",
-                "rank_n": 83,
+                "rank": "#84 of 133",
+                "rank_n": 84,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 2.4,
-                "rank_gap": 26
+                "rank_gap": 27
               }
             },
             {
@@ -942,23 +932,23 @@
       "away": [
         {
           "k": "QB room",
-          "rank_gap": 102,
+          "rank_gap": 100,
           "gap": 7,
           "lead": "Arizona",
           "trail": "Washington State",
-          "lead_cell": "60.0 · #23 of 133",
+          "lead_cell": "60.0 · #25 of 133",
           "trail_cell": "53.0 · #125 of 133",
-          "text": "Arizona 60.0 (#23 of 133) vs Washington State 53.0 (#125 of 133) — 102 places on the national board."
+          "text": "Arizona 60.0 (#25 of 133) vs Washington State 53.0 (#125 of 133) — 100 places on the national board."
         },
         {
           "k": "Talent",
-          "rank_gap": 89,
-          "gap": 17.3,
+          "rank_gap": 90,
+          "gap": 17.4,
           "lead": "Arizona",
           "trail": "Washington State",
           "lead_cell": "58.8 · #23 of 133",
-          "trail_cell": "41.5 · #112 of 133",
-          "text": "Arizona 58.8 (#23 of 133) vs Washington State 41.5 (#112 of 133) — 89 places on the national board."
+          "trail_cell": "41.4 · #113 of 133",
+          "text": "Arizona 58.8 (#23 of 133) vs Washington State 41.4 (#113 of 133) — 90 places on the national board."
         },
         {
           "k": "Continuity",
@@ -1131,7 +1121,7 @@
           "team": "Arizona",
           "label": "QB room",
           "v": "60.0",
-          "rank": "#23 of 133",
+          "rank": "#25 of 133",
           "note": null
         },
         "def": {
@@ -1142,7 +1132,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Arizona’s QB room rates 60.0 (#23 of 133) against Washington State’s secondary at 58.2 (#16 of 133). Washington State’s unit stands higher among its own position group, by 7 places."
+        "read": "Arizona’s QB room rates 60.0 (#25 of 133) against Washington State’s secondary at 58.2 (#16 of 133). Washington State’s unit stands higher among its own position group, by 9 places."
       },
       {
         "title": "Washington State QB room vs Arizona secondary",
@@ -1176,11 +1166,11 @@
           "team": "Washington State",
           "label": "defensive line",
           "v": "51.4",
-          "rank": "#83 of 133",
+          "rank": "#84 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Arizona’s offensive line rates 47.8 (#94 of 133) against Washington State’s defensive line at 51.4 (#83 of 133). Washington State’s unit stands higher among its own position group, by 11 places."
+        "read": "Arizona’s offensive line rates 47.8 (#94 of 133) against Washington State’s defensive line at 51.4 (#84 of 133). Washington State’s unit stands higher among its own position group, by 10 places."
       },
       {
         "title": "Washington State offensive line vs Arizona defensive line",
@@ -1226,7 +1216,7 @@
           "team": "Washington State",
           "label": "running backs",
           "v": "55.9",
-          "rank": "#74 of 133",
+          "rank": "#75 of 133",
           "note": null
         },
         "def": {
@@ -1237,7 +1227,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Washington State’s running backs rates 55.9 (#74 of 133) against Arizona’s linebackers at 52.9 (#65 of 133). Arizona’s unit stands higher among its own position group, by 9 places."
+        "read": "Washington State’s running backs rates 55.9 (#75 of 133) against Arizona’s linebackers at 52.9 (#65 of 133). Arizona’s unit stands higher among its own position group, by 10 places."
       },
       {
         "title": "Arizona receivers vs Washington State secondary",
@@ -1245,7 +1235,7 @@
           "team": "Arizona",
           "label": "receivers",
           "v": "55.6",
-          "rank": "#37 of 133",
+          "rank": "#38 of 133",
           "note": null
         },
         "def": {
@@ -1256,7 +1246,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Arizona’s receivers rates 55.6 (#37 of 133) against Washington State’s secondary at 58.2 (#16 of 133). Washington State’s unit stands higher among its own position group, by 21 places."
+        "read": "Arizona’s receivers rates 55.6 (#38 of 133) against Washington State’s secondary at 58.2 (#16 of 133). Washington State’s unit stands higher among its own position group, by 22 places."
       },
       {
         "title": "Washington State receivers vs Arizona secondary",
@@ -1264,7 +1254,7 @@
           "team": "Washington State",
           "label": "receivers",
           "v": "55.0",
-          "rank": "#73 of 133",
+          "rank": "#71 of 133",
           "note": null
         },
         "def": {
@@ -1275,7 +1265,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Washington State’s receivers rates 55.0 (#73 of 133) against Arizona’s secondary at 54.2 (#58 of 133). Arizona’s unit stands higher among its own position group, by 15 places."
+        "read": "Washington State’s receivers rates 55.0 (#71 of 133) against Arizona’s secondary at 54.2 (#58 of 133). Arizona’s unit stands higher among its own position group, by 13 places."
       }
     ],
     "roster": {
@@ -1433,8 +1423,8 @@
           "Arizona is the better football team by 5.1 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (-5.1 pts).",
           "Conference strength differs and the in-season sample is still thin, worth 3.5 points to Arizona (-3.5 pts).",
           "Stylistically the matchup favours Arizona by 0.5 points: ball control vs front disruption (-0.5 pts).",
-          "QB room: Arizona 60.0 (#23 of 133) vs Washington State 53.0 (#125 of 133) — 102 places on the national board.",
-          "Talent: Arizona 58.8 (#23 of 133) vs Washington State 41.5 (#112 of 133) — 89 places on the national board."
+          "QB room: Arizona 60.0 (#25 of 133) vs Washington State 53.0 (#125 of 133) — 100 places on the national board.",
+          "Talent: Arizona 58.8 (#23 of 133) vs Washington State 41.4 (#113 of 133) — 90 places on the national board."
         ]
       },
       "underdog": {
@@ -1445,7 +1435,7 @@
           "Pass defense: Washington State 60.5 (#19 of 133) vs Arizona 42.6 (#110 of 133) — 91 places on the national board.",
           "Offensive line: Washington State 53.9 (#38 of 133) vs Arizona 47.8 (#94 of 133) — 56 places on the national board.",
           "Secondary: Washington State 58.2 (#16 of 133) vs Arizona 54.2 (#58 of 133) — 42 places on the national board.",
-          "The outcome range is 15.1 points wide at one sigma — p10 -28.1 to p90 +15.9 for Washington State, so a projection of -5.1 still produces results a long way either side of it."
+          "The outcome range is 15.1 points wide at one sigma — p10 -28.0 to p90 +16.0 for Washington State, so a projection of -5.0 still produces results a long way either side of it."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
@@ -1467,7 +1457,7 @@
         {
           "sev": "MEDIUM",
           "label": "market disagreement",
-          "text": "The market disagrees by 5.4 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "text": "The market disagrees by 5.5 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
           "widening": null
         },
         {
@@ -1479,7 +1469,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1555,10 +1545,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1585,26 +1571,146 @@
         {
           "item": "Washington State — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Washington State — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
       "available": true,
-      "model": "Washington State +5.1",
-      "model_raw": "Washington State +5.1",
+      "model": "Washington State +5.0",
+      "model_raw": "Washington State +5.0",
       "market": "Washington State +10.5",
-      "difference": "5.4 points",
-      "difference_n": 5.44801736338713,
+      "difference": "5.5 points",
+      "difference_n": 5.474626547773282,
       "total_model": "49.9",
       "total_market": "48.5",
-      "book": "captured · theScore Bet",
+      "book": "captured (stale 73h) · theScore Bet",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401856804",
+      "home": "Washington State",
+      "away": "Arizona",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Arizona -5.0",
+        "favorite_team": "Arizona",
+        "underdog_team": "Washington State",
+        "display_fair_spread": -5,
+        "raw_home_margin": -5.03,
+        "raw_line_text": "Arizona -5.03",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 5.47,
+        "toward_team": "Washington State",
+        "text": "5.5 pts toward Washington State",
+        "market_line_text": "Arizona -10.5",
+        "market_home_margin": -10.5,
+        "favorite_differs": false,
+        "source": "captured (stale 73h) · theScore Bet",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Arizona",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 5.12,
+            "text": "+5.1 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "conference",
+            "points": 3.51,
+            "text": "+3.5 pts conference-strength edge"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.6 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-17T14:28:00.021Z",
+          "source": "first published",
+          "home_margin": -5.61,
+          "text": "Arizona -5.6"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": -5.03,
+          "text": "Arizona -5.0"
+        }
+      ],
+      "revisions": 7,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Washington State",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 0.6 points toward Washington State since the first published number.",
+        "attribution_text": "Projection changed 0.6 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Arizona 27, Washington State 22.",
     "state": {
@@ -1638,7 +1744,7 @@
         {
           "k": "Talent",
           "a": "58.8  #23",
-          "h": "41.5  #112",
+          "h": "41.4  #113",
           "note": null
         },
         {
@@ -1691,7 +1797,7 @@
         },
         {
           "k": "QB room",
-          "a": "60.0  #23",
+          "a": "60.0  #25",
           "h": "53.0  #125",
           "note": null
         },
@@ -1703,20 +1809,20 @@
         },
         {
           "k": "Receivers",
-          "a": "55.6  #37",
-          "h": "55.0  #73",
+          "a": "55.6  #38",
+          "h": "55.0  #71",
           "note": null
         },
         {
           "k": "Running backs",
           "a": "57.0  #30",
-          "h": "55.9  #74",
+          "h": "55.9  #75",
           "note": null
         },
         {
           "k": "Defensive line",
           "a": "53.8  #57",
-          "h": "51.4  #83",
+          "h": "51.4  #84",
           "note": null
         },
         {
@@ -1758,10 +1864,10 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Washington State +5.1 on a neutral read of the two teams, before any book is consulted. Projected total 49.9.",
+      "EdgeDesk’s line is Washington State +5.0 on a neutral read of the two teams, before any book is consulted. Projected total 49.9.",
       "Washington State wins 37% of the time in EdgeDesk’s simulation, Arizona 63%.",
-      "Eight games in ten land between -28.1 and +15.9 for Washington State. A single result inside that band tells you nothing new about either team.",
-      "The market has Washington State +10.5 at captured · theScore Bet, 5.4 points from EdgeDesk’s number.",
+      "Eight games in ten land between -28.0 and +16.0 for Washington State. A single result inside that band tells you nothing new about either team.",
+      "The market has Washington State +10.5 at captured (stale 73h) · theScore Bet, 5.5 points from EdgeDesk’s number.",
       "Arizona quarterback: Noah Fifita — started the last game; no announcement for this one.",
       "Washington State quarterback: Caden Pinnick — started the last game; no announcement for this one."
     ],
@@ -1776,6 +1882,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

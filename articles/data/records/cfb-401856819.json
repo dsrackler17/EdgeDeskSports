@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "UCF vs. Houston: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UCF vs. Houston 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices UCF at Houston at Houston -9.8 with a 55.9 fair total. Houston wins 74% of simulations. Data confidence 78%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "UCF carries the stronger underlying team rating — +5.2 against +1.8, a 3.4-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Houston -9.8 before any sportsbook number is consulted, with Houston winning 74% of…",
+  "seo_description": "EdgeDesk prices UCF at Houston at Houston -9.8 with a 55.9 fair total. Houston wins 74% of simulations. Data confidence 82%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "UCF carries the stronger underlying team rating — +4.9 against +1.8, a 3.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Houston -9.8 before any sportsbook number is consulted, with Houston winning 74% of…",
   "home_team": "Houston",
   "away_team": "UCF",
   "venue": "TDECU Stadium",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 78,
+  "confidence": 82,
   "priced": true,
   "fair_spread_text": "Houston -9.8",
   "fair_total": "55.9",
@@ -63,14 +63,14 @@
       "home_conference": "Big 12"
     },
     "lede": [
-      "UCF carries the stronger underlying team rating — +5.2 against +1.8, a 3.4-point separation on a neutral field before home advantage, travel or rest.",
+      "UCF carries the stronger underlying team rating — +4.9 against +1.8, a 3.1-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Houston -9.8 before any sportsbook number is consulted, with Houston winning 74% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is defense, where UCF leads Houston by 86 places nationally.",
-      "Data confidence on this matchup is 78% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 82% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 9.789930174266598,
+      "fair_spread": 9.803036462798048,
       "fair_spread_text": "Houston -9.8",
       "fair_spread_raw_text": "Houston -9.8",
       "near_pickem": false,
@@ -114,65 +114,43 @@
         "volatility_discriminates": false,
         "note": "Quoted from Houston’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 78,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 82,
+      "inputs_reached_pct": 73,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Houston is not in the availability registry"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
-            "field": "availability",
+            "field": "off_field",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "UCF is not in the availability registry"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
-          },
-          {
-            "field": "recruiting_talent",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
-          },
-          {
-            "field": "coaching_continuity",
-            "side": null,
-            "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Houston",
@@ -349,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -371,7 +349,7 @@
         },
         {
           "points": "+2.2",
-          "points_n": 2.2073884350665978,
+          "points_n": 2.220494723598047,
           "text": "Stylistically the matchup favours Houston by 2.2 points: ball control vs front disruption",
           "favours": "Houston"
         }
@@ -394,8 +372,8 @@
               "k": "ETSR (overall)",
               "note": "points vs an average FBS team, neutral field",
               "a": {
-                "v": "+5.2",
-                "n": 5.16,
+                "v": "+4.9",
+                "n": 4.93,
                 "rank": "#28 of 133",
                 "rank_n": 28,
                 "note": null
@@ -409,7 +387,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 3.4,
+                "gap": 3.1,
                 "rank_gap": 21
               }
             },
@@ -418,10 +396,10 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "54.1",
-                "n": 54.1,
-                "rank": "#48 of 133",
-                "rank_n": 48,
+                "v": "51.5",
+                "n": 51.5,
+                "rank": "#57 of 133",
+                "rank_n": 57,
                 "note": null
               },
               "h": {
@@ -433,8 +411,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 5.6,
-                "rank_gap": 27
+                "gap": 8.2,
+                "rank_gap": 36
               }
             },
             {
@@ -466,8 +444,8 @@
               "k": "Scheme fit",
               "note": "personnel against this team’s own tendencies",
               "a": {
-                "v": "50.9",
-                "n": 50.9,
+                "v": "51.0",
+                "n": 51,
                 "rank": "#46 of 133",
                 "rank_n": 46,
                 "note": null
@@ -481,7 +459,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 2.1,
+                "gap": 2.2,
                 "rank_gap": 60
               }
             }
@@ -668,10 +646,10 @@
               "k": "QB room",
               "note": null,
               "a": {
-                "v": "57.9",
-                "n": 57.9,
-                "rank": "#53 of 133",
-                "rank_n": 53,
+                "v": "55.5",
+                "n": 55.5,
+                "rank": "#96 of 133",
+                "rank_n": 96,
                 "note": null
               },
               "h": {
@@ -683,8 +661,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 1.8,
-                "rank_gap": 21
+                "gap": 4.2,
+                "rank_gap": 64
               }
             },
             {
@@ -716,23 +694,23 @@
               "k": "Receivers",
               "note": null,
               "a": {
-                "v": "54.5",
-                "n": 54.5,
-                "rank": "#101 of 133",
-                "rank_n": 101,
+                "v": "54.3",
+                "n": 54.3,
+                "rank": "#109 of 133",
+                "rank_n": 109,
                 "note": null
               },
               "h": {
                 "v": "55.2",
                 "n": 55.2,
-                "rank": "#60 of 133",
-                "rank_n": 60,
+                "rank": "#59 of 133",
+                "rank_n": 59,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 0.7,
-                "rank_gap": 41
+                "gap": 0.9,
+                "rank_gap": 50
               }
             },
             {
@@ -766,21 +744,21 @@
               "a": {
                 "v": "55.7",
                 "n": 55.7,
-                "rank": "#83 of 133",
-                "rank_n": 83,
+                "rank": "#84 of 133",
+                "rank_n": 84,
                 "note": null
               },
               "h": {
                 "v": "58.0",
                 "n": 58,
-                "rank": "#13 of 133",
-                "rank_n": 13,
+                "rank": "#10 of 133",
+                "rank_n": 10,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 2.3,
-                "rank_gap": 70
+                "rank_gap": 74
               }
             },
             {
@@ -788,10 +766,10 @@
               "k": "Defensive line",
               "note": null,
               "a": {
-                "v": "54.3",
-                "n": 54.3,
-                "rank": "#52 of 133",
-                "rank_n": 52,
+                "v": "54.4",
+                "n": 54.4,
+                "rank": "#50 of 133",
+                "rank_n": 50,
                 "note": null
               },
               "h": {
@@ -803,8 +781,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 0.5,
-                "rank_gap": 6
+                "gap": 0.4,
+                "rank_gap": 4
               }
             },
             {
@@ -832,10 +810,10 @@
               "k": "Linebackers",
               "note": null,
               "a": {
-                "v": "54.4",
-                "n": 54.4,
-                "rank": "#48 of 133",
-                "rank_n": 48,
+                "v": "54.2",
+                "n": 54.2,
+                "rank": "#51 of 133",
+                "rank_n": 51,
                 "note": null
               },
               "h": {
@@ -847,8 +825,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 0.2,
-                "rank_gap": 4
+                "gap": 0.4,
+                "rank_gap": 7
               }
             },
             {
@@ -1003,12 +981,12 @@
         {
           "k": "Scheme fit",
           "rank_gap": 60,
-          "gap": 2.1,
+          "gap": 2.2,
           "lead": "UCF",
           "trail": "Houston",
-          "lead_cell": "50.9 · #46 of 133",
+          "lead_cell": "51.0 · #46 of 133",
           "trail_cell": "48.8 · #106 of 133",
-          "text": "UCF 50.9 (#46 of 133) vs Houston 48.8 (#106 of 133) — 60 places on the national board."
+          "text": "UCF 51.0 (#46 of 133) vs Houston 48.8 (#106 of 133) — 60 places on the national board."
         }
       ],
       "home": [
@@ -1024,13 +1002,23 @@
         },
         {
           "k": "Running backs",
-          "rank_gap": 70,
+          "rank_gap": 74,
           "gap": 2.3,
           "lead": "Houston",
           "trail": "UCF",
-          "lead_cell": "58.0 · #13 of 133",
-          "trail_cell": "55.7 · #83 of 133",
-          "text": "Houston 58.0 (#13 of 133) vs UCF 55.7 (#83 of 133) — 70 places on the national board."
+          "lead_cell": "58.0 · #10 of 133",
+          "trail_cell": "55.7 · #84 of 133",
+          "text": "Houston 58.0 (#10 of 133) vs UCF 55.7 (#84 of 133) — 74 places on the national board."
+        },
+        {
+          "k": "QB room",
+          "rank_gap": 64,
+          "gap": 4.2,
+          "lead": "Houston",
+          "trail": "UCF",
+          "lead_cell": "59.7 · #32 of 133",
+          "trail_cell": "55.5 · #96 of 133",
+          "text": "Houston 59.7 (#32 of 133) vs UCF 55.5 (#96 of 133) — 64 places on the national board."
         },
         {
           "k": "Offense",
@@ -1044,23 +1032,13 @@
         },
         {
           "k": "Receivers",
-          "rank_gap": 41,
-          "gap": 0.7,
+          "rank_gap": 50,
+          "gap": 0.9,
           "lead": "Houston",
           "trail": "UCF",
-          "lead_cell": "55.2 · #60 of 133",
-          "trail_cell": "54.5 · #101 of 133",
-          "text": "Houston 55.2 (#60 of 133) vs UCF 54.5 (#101 of 133) — 41 places on the national board."
-        },
-        {
-          "k": "Pass offense",
-          "rank_gap": 32,
-          "gap": 6.6,
-          "lead": "Houston",
-          "trail": "UCF",
-          "lead_cell": "55.7 · #33 of 132",
-          "trail_cell": "49.1 · #65 of 132",
-          "text": "Houston 55.7 (#33 of 132) vs UCF 49.1 (#65 of 132) — 32 places on the national board."
+          "lead_cell": "55.2 · #59 of 133",
+          "trail_cell": "54.3 · #109 of 133",
+          "text": "Houston 55.2 (#59 of 133) vs UCF 54.3 (#109 of 133) — 50 places on the national board."
         }
       ],
       "measured": [],
@@ -1150,8 +1128,8 @@
         "att": {
           "team": "UCF",
           "label": "QB room",
-          "v": "57.9",
-          "rank": "#53 of 133",
+          "v": "55.5",
+          "rank": "#96 of 133",
           "note": null
         },
         "def": {
@@ -1162,7 +1140,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UCF’s QB room rates 57.9 (#53 of 133) against Houston’s secondary at 51.5 (#85 of 133). UCF’s unit stands higher among its own position group, by 32 places."
+        "read": "UCF’s QB room rates 55.5 (#96 of 133) against Houston’s secondary at 51.5 (#85 of 133). Houston’s unit stands higher among its own position group, by 11 places."
       },
       {
         "title": "Houston QB room vs UCF secondary",
@@ -1214,12 +1192,12 @@
         "def": {
           "team": "UCF",
           "label": "defensive line",
-          "v": "54.3",
-          "rank": "#52 of 133",
+          "v": "54.4",
+          "rank": "#50 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Houston’s offensive line rates 52.3 (#60 of 133) against UCF’s defensive line at 54.3 (#52 of 133). UCF’s unit stands higher among its own position group, by 8 places."
+        "read": "Houston’s offensive line rates 52.3 (#60 of 133) against UCF’s defensive line at 54.4 (#50 of 133). UCF’s unit stands higher among its own position group, by 10 places."
       },
       {
         "title": "UCF running backs vs Houston linebackers",
@@ -1227,7 +1205,7 @@
           "team": "UCF",
           "label": "running backs",
           "v": "55.7",
-          "rank": "#83 of 133",
+          "rank": "#84 of 133",
           "note": null
         },
         "def": {
@@ -1238,7 +1216,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UCF’s running backs rates 55.7 (#83 of 133) against Houston’s linebackers at 54.6 (#44 of 133). Houston’s unit stands higher among its own position group, by 39 places."
+        "read": "UCF’s running backs rates 55.7 (#84 of 133) against Houston’s linebackers at 54.6 (#44 of 133). Houston’s unit stands higher among its own position group, by 40 places."
       },
       {
         "title": "Houston running backs vs UCF linebackers",
@@ -1246,26 +1224,26 @@
           "team": "Houston",
           "label": "running backs",
           "v": "58.0",
-          "rank": "#13 of 133",
+          "rank": "#10 of 133",
           "note": null
         },
         "def": {
           "team": "UCF",
           "label": "linebackers",
-          "v": "54.4",
-          "rank": "#48 of 133",
+          "v": "54.2",
+          "rank": "#51 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Houston’s running backs rates 58.0 (#13 of 133) against UCF’s linebackers at 54.4 (#48 of 133). Houston’s unit stands higher among its own position group, by 35 places."
+        "read": "Houston’s running backs rates 58.0 (#10 of 133) against UCF’s linebackers at 54.2 (#51 of 133). Houston’s unit stands higher among its own position group, by 41 places."
       },
       {
         "title": "UCF receivers vs Houston secondary",
         "att": {
           "team": "UCF",
           "label": "receivers",
-          "v": "54.5",
-          "rank": "#101 of 133",
+          "v": "54.3",
+          "rank": "#109 of 133",
           "note": null
         },
         "def": {
@@ -1276,7 +1254,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UCF’s receivers rates 54.5 (#101 of 133) against Houston’s secondary at 51.5 (#85 of 133). Houston’s unit stands higher among its own position group, by 16 places."
+        "read": "UCF’s receivers rates 54.3 (#109 of 133) against Houston’s secondary at 51.5 (#85 of 133). Houston’s unit stands higher among its own position group, by 24 places."
       },
       {
         "title": "Houston receivers vs UCF secondary",
@@ -1284,7 +1262,7 @@
           "team": "Houston",
           "label": "receivers",
           "v": "55.2",
-          "rank": "#60 of 133",
+          "rank": "#59 of 133",
           "note": null
         },
         "def": {
@@ -1295,7 +1273,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Houston’s receivers rates 55.2 (#60 of 133) against UCF’s secondary at 59.8 (#9 of 133). UCF’s unit stands higher among its own position group, by 51 places."
+        "read": "Houston’s receivers rates 55.2 (#59 of 133) against UCF’s secondary at 59.8 (#9 of 133). UCF’s unit stands higher among its own position group, by 50 places."
       }
     ],
     "roster": {
@@ -1401,18 +1379,18 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "9 on file, 0% of starter value out",
+          "a": "9 on file, 30% of starter value out",
           "h": "none on file — 100% unknown",
           "edge": null
         },
         {
           "k": "Data confidence",
           "note": "how much EdgeDesk knows about this roster, not how good it is",
-          "a": "39%",
+          "a": "38%",
           "h": "41%",
           "edge": {
             "side": "h",
-            "gap": 0.01599999999999996
+            "gap": 0.02799999999999997
           }
         }
       ],
@@ -1454,7 +1432,7 @@
           "Houston is the better football team by 3.5 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team (+3.5 pts).",
           "Stylistically the matchup favours Houston by 2.2 points: ball control vs front disruption (+2.2 pts).",
           "Continuity: Houston 48.9 (#43 of 133) vs UCF 32.6 (#120 of 133) — 77 places on the national board.",
-          "Running backs: Houston 58.0 (#13 of 133) vs UCF 55.7 (#83 of 133) — 70 places on the national board."
+          "Running backs: Houston 58.0 (#10 of 133) vs UCF 55.7 (#84 of 133) — 74 places on the national board."
         ]
       },
       "underdog": {
@@ -1575,10 +1553,6 @@
           "why": "no injury report supplied for away"
         },
         {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1616,6 +1590,112 @@
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401856819",
+      "home": "Houston",
+      "away": "UCF",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+      },
+      "fair": {
+        "line_text": "Houston -9.8",
+        "favorite_team": "Houston",
+        "underdog_team": "UCF",
+        "display_fair_spread": 9.8,
+        "raw_home_margin": 9.8,
+        "raw_line_text": "Houston -9.80",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": false,
+        "reason": "no market line is joined to this game"
+      },
+      "confidence": {
+        "score": 82,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 73,
+        "tier": "ADEQUATE",
+        "text": "73%",
+        "sub": "19 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Houston",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 3.5,
+            "text": "+3.5 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 2.22,
+            "text": "+2.2 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "no sportsbook quote has been captured for this game"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
+      },
+      "stability": {
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": 9.8,
+          "text": "Houston -9.8"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Houston",
+        "since_at": "2026-09-23T14:27:27.019Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
     "headline": "EdgeDesk projects Houston 33, UCF 23.",
     "state": {
       "label": "NO MARKET",
@@ -1641,13 +1721,13 @@
       "rows": [
         {
           "k": "ETSR (overall)",
-          "a": "+5.2  #28",
+          "a": "+4.9  #28",
           "h": "+1.8  #49",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
-          "a": "54.1  #48",
+          "a": "51.5  #57",
           "h": "59.7  #21",
           "note": null
         },
@@ -1701,7 +1781,7 @@
         },
         {
           "k": "QB room",
-          "a": "57.9  #53",
+          "a": "55.5  #96",
           "h": "59.7  #32",
           "note": null
         },
@@ -1713,25 +1793,25 @@
         },
         {
           "k": "Receivers",
-          "a": "54.5  #101",
-          "h": "55.2  #60",
+          "a": "54.3  #109",
+          "h": "55.2  #59",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "55.7  #83",
-          "h": "58.0  #13",
+          "a": "55.7  #84",
+          "h": "58.0  #10",
           "note": null
         },
         {
           "k": "Defensive line",
-          "a": "54.3  #52",
+          "a": "54.4  #50",
           "h": "54.8  #46",
           "note": null
         },
         {
           "k": "Linebackers",
-          "a": "54.4  #48",
+          "a": "54.2  #51",
           "h": "54.6  #44",
           "note": null
         },
@@ -1755,7 +1835,7 @@
         },
         {
           "k": "Confidence",
-          "a": "39%",
+          "a": "38%",
           "h": "41%",
           "note": "how much EdgeDesk knows, not how good the team is"
         },
@@ -1786,6 +1866,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }

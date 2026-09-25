@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Ole Miss vs. Florida: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Ole Miss vs. Florida 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Ole Miss at Florida at Florida +4.3 with a 59.3 fair total. Ole Miss wins 61% of simulations. Data confidence 80%. Model status INVESTIGATE. Research, not picks.",
-  "excerpt": "Ole Miss carries the stronger underlying team rating — +12.2 against +2.7, a 9.5-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Florida +4.3 before any sportsbook number is consulted, with Ole Miss winning 61%…",
+  "seo_description": "EdgeDesk prices Ole Miss at Florida at Florida +4.3 with a 59.3 fair total. Ole Miss wins 61% of simulations. Data confidence 84%. Model status INVESTIGATE. Research, not picks.",
+  "excerpt": "Ole Miss carries the stronger underlying team rating — +12.2 against +2.7, a 9.4-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Florida +4.3 before any sportsbook number is consulted, with Ole Miss winning 61%…",
   "home_team": "Florida",
   "away_team": "Ole Miss",
   "venue": "Ben Hill Griffin Stadium",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T19:30:00.000Z",
   "game_when_label": "2026-09-26 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T11:43:09.860Z",
-  "generated_at": "2026-09-25T11:43:09.860Z",
+  "updated_at": "2026-09-25T17:04:09.589Z",
+  "generated_at": "2026-09-25T17:04:09.589Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 80,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "Florida +4.3",
   "fair_total": "59.3",
@@ -63,14 +63,14 @@
       "home_conference": "SEC"
     },
     "lede": [
-      "Ole Miss carries the stronger underlying team rating — +12.2 against +2.7, a 9.5-point separation on a neutral field before home advantage, travel or rest.",
+      "Ole Miss carries the stronger underlying team rating — +12.2 against +2.7, a 9.4-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Florida +4.3 before any sportsbook number is consulted, with Ole Miss winning 61% of simulations.",
-      "The position-group comparison shows where the separation comes from: the widest measured gap is special teams, where Florida leads Ole Miss by 95 places nationally.",
-      "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
+      "The position-group comparison shows where the separation comes from: the widest measured gap is running backs, where Florida leads Ole Miss by 96 places nationally.",
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -4.2946200755899,
+      "fair_spread": -4.291538433480515,
       "fair_spread_text": "Florida +4.3",
       "fair_spread_raw_text": "Florida +4.3",
       "near_pickem": false,
@@ -114,65 +114,61 @@
         "volatility_discriminates": false,
         "note": "Quoted from Florida’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 80,
-      "inputs_reached_pct": 59,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 77,
       "input_contract": {
-        "fields": 17,
-        "applicable": 17,
-        "known": 10,
-        "priced": 8,
-        "priced_coverage_pct": 47,
+        "fields": 26,
+        "applicable": 26,
+        "known": 20,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 8,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 13,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "FETCH_FAILED": 1,
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
           "UNAVAILABLE": 6
         },
         "absent": [
           {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
-          },
-          {
-            "field": "availability",
-            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "Florida is not in the availability registry"
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Ole Miss is not in the availability registry"
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
           },
           {
             "field": "qb_availability",
             "side": "home",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff"
           },
           {
-            "field": "recruiting_talent",
-            "side": null,
+            "field": "off_field",
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
             "field": "coaching_continuity",
-            "side": null,
+            "side": "home",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "Florida has no prior season in the coach table to compare against, so whether this staff is new is unknown rather than continuous — a programme with no history is not a programme that kept its coach"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
@@ -259,7 +255,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
       "home": {
         "team": "Florida",
@@ -343,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T08:42:13.833Z"
+        "retrieved_at": "2026-09-25T16:44:28.744Z"
       },
-      "generated_at": "2026-09-25T08:42:56.224Z",
+      "generated_at": "2026-09-25T16:45:12.440Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -365,7 +361,7 @@
         },
         {
           "points": "-1.9",
-          "points_n": -1.8738814092406983,
+          "points_n": -1.870799767131313,
           "text": "Stylistically the matchup favours Ole Miss by 1.9 points: ball control vs front disruption",
           "favours": "Ole Miss"
         }
@@ -389,21 +385,21 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "+12.2",
-                "n": 12.22,
+                "n": 12.19,
                 "rank": "#1 of 133",
                 "rank_n": 1,
                 "note": null
               },
               "h": {
                 "v": "+2.7",
-                "n": 2.73,
+                "n": 2.74,
                 "rank": "#41 of 133",
                 "rank_n": 41,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 9.5,
+                "gap": 9.4,
                 "rank_gap": 40
               }
             },
@@ -412,23 +408,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "59.7",
-                "n": 59.7,
+                "v": "59.2",
+                "n": 59.2,
                 "rank": "#22 of 133",
                 "rank_n": 22,
                 "note": null
               },
               "h": {
-                "v": "54.5",
-                "n": 54.5,
-                "rank": "#42 of 133",
-                "rank_n": 42,
+                "v": "54.7",
+                "n": 54.7,
+                "rank": "#41 of 133",
+                "rank_n": 41,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 5.2,
-                "rank_gap": 20
+                "gap": 4.5,
+                "rank_gap": 19
               }
             },
             {
@@ -462,8 +458,8 @@
               "a": {
                 "v": "53.1",
                 "n": 53.1,
-                "rank": "#16 of 133",
-                "rank_n": 16,
+                "rank": "#17 of 133",
+                "rank_n": 17,
                 "note": null
               },
               "h": {
@@ -476,7 +472,7 @@
               "edge": {
                 "side": "a",
                 "gap": 2.6,
-                "rank_gap": 44
+                "rank_gap": 43
               }
             }
           ]
@@ -719,14 +715,14 @@
               "h": {
                 "v": "56.2",
                 "n": 56.2,
-                "rank": "#13 of 133",
-                "rank_n": 13,
+                "rank": "#12 of 133",
+                "rank_n": 12,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.5,
-                "rank_gap": 8
+                "rank_gap": 7
               }
             },
             {
@@ -758,10 +754,10 @@
               "k": "Running backs",
               "note": null,
               "a": {
-                "v": "56.4",
-                "n": 56.4,
-                "rank": "#57 of 133",
-                "rank_n": 57,
+                "v": "55.4",
+                "n": 55.4,
+                "rank": "#98 of 133",
+                "rank_n": 98,
                 "note": null
               },
               "h": {
@@ -773,8 +769,8 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 3.2,
-                "rank_gap": 55
+                "gap": 4.2,
+                "rank_gap": 96
               }
             },
             {
@@ -784,8 +780,8 @@
               "a": {
                 "v": "54.3",
                 "n": 54.3,
-                "rank": "#50 of 133",
-                "rank_n": 50,
+                "rank": "#51 of 133",
+                "rank_n": 51,
                 "note": null
               },
               "h": {
@@ -798,7 +794,7 @@
               "edge": {
                 "side": "a",
                 "gap": 2.8,
-                "rank_gap": 30
+                "rank_gap": 29
               }
             },
             {
@@ -815,14 +811,14 @@
               "h": {
                 "v": "50.8",
                 "n": 50.8,
-                "rank": "#93 of 133",
-                "rank_n": 93,
+                "rank": "#92 of 133",
+                "rank_n": 92,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.5,
-                "rank_gap": 10
+                "rank_gap": 9
               }
             },
             {
@@ -830,10 +826,10 @@
               "k": "Secondary",
               "note": null,
               "a": {
-                "v": "56.3",
-                "n": 56.3,
-                "rank": "#34 of 133",
-                "rank_n": 34,
+                "v": "56.5",
+                "n": 56.5,
+                "rank": "#33 of 133",
+                "rank_n": 33,
                 "note": null
               },
               "h": {
@@ -845,8 +841,8 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 5.1,
-                "rank_gap": 54
+                "gap": 5.3,
+                "rank_gap": 55
               }
             },
             {
@@ -956,23 +952,13 @@
         },
         {
           "k": "Secondary",
-          "rank_gap": 54,
-          "gap": 5.1,
+          "rank_gap": 55,
+          "gap": 5.3,
           "lead": "Ole Miss",
           "trail": "Florida",
-          "lead_cell": "56.3 · #34 of 133",
+          "lead_cell": "56.5 · #33 of 133",
           "trail_cell": "51.2 · #88 of 133",
-          "text": "Ole Miss 56.3 (#34 of 133) vs Florida 51.2 (#88 of 133) — 54 places on the national board."
-        },
-        {
-          "k": "Scheme fit",
-          "rank_gap": 44,
-          "gap": 2.6,
-          "lead": "Ole Miss",
-          "trail": "Florida",
-          "lead_cell": "53.1 · #16 of 133",
-          "trail_cell": "50.5 · #60 of 133",
-          "text": "Ole Miss 53.1 (#16 of 133) vs Florida 50.5 (#60 of 133) — 44 places on the national board."
+          "text": "Ole Miss 56.5 (#33 of 133) vs Florida 51.2 (#88 of 133) — 55 places on the national board."
         },
         {
           "k": "QB room",
@@ -983,9 +969,29 @@
           "lead_cell": "62.6 · #8 of 133",
           "trail_cell": "57.9 · #52 of 133",
           "text": "Ole Miss 62.6 (#8 of 133) vs Florida 57.9 (#52 of 133) — 44 places on the national board."
+        },
+        {
+          "k": "Scheme fit",
+          "rank_gap": 43,
+          "gap": 2.6,
+          "lead": "Ole Miss",
+          "trail": "Florida",
+          "lead_cell": "53.1 · #17 of 133",
+          "trail_cell": "50.5 · #60 of 133",
+          "text": "Ole Miss 53.1 (#17 of 133) vs Florida 50.5 (#60 of 133) — 43 places on the national board."
         }
       ],
       "home": [
+        {
+          "k": "Running backs",
+          "rank_gap": 96,
+          "gap": 4.2,
+          "lead": "Florida",
+          "trail": "Ole Miss",
+          "lead_cell": "59.6 · #2 of 133",
+          "trail_cell": "55.4 · #98 of 133",
+          "text": "Florida 59.6 (#2 of 133) vs Ole Miss 55.4 (#98 of 133) — 96 places on the national board."
+        },
         {
           "k": "Special teams",
           "rank_gap": 95,
@@ -995,16 +1001,6 @@
           "lead_cell": "51.6 · #8 of 126",
           "trail_cell": "49.3 · #103 of 126",
           "text": "Florida 51.6 (#8 of 126) vs Ole Miss 49.3 (#103 of 126) — 95 places on the national board."
-        },
-        {
-          "k": "Running backs",
-          "rank_gap": 55,
-          "gap": 3.2,
-          "lead": "Florida",
-          "trail": "Ole Miss",
-          "lead_cell": "59.6 · #2 of 133",
-          "trail_cell": "56.4 · #57 of 133",
-          "text": "Florida 59.6 (#2 of 133) vs Ole Miss 56.4 (#57 of 133) — 55 places on the national board."
         },
         {
           "k": "Run offense",
@@ -1140,12 +1136,12 @@
         "def": {
           "team": "Ole Miss",
           "label": "secondary",
-          "v": "56.3",
-          "rank": "#34 of 133",
+          "v": "56.5",
+          "rank": "#33 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Florida’s QB room rates 57.9 (#52 of 133) against Ole Miss’s secondary at 56.3 (#34 of 133). Ole Miss’s unit stands higher among its own position group, by 18 places."
+        "read": "Florida’s QB room rates 57.9 (#52 of 133) against Ole Miss’s secondary at 56.5 (#33 of 133). Ole Miss’s unit stands higher among its own position group, by 19 places."
       },
       {
         "title": "Ole Miss offensive line vs Florida defensive line",
@@ -1179,30 +1175,30 @@
           "team": "Ole Miss",
           "label": "defensive line",
           "v": "54.3",
-          "rank": "#50 of 133",
+          "rank": "#51 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Florida’s offensive line rates 52.3 (#59 of 133) against Ole Miss’s defensive line at 54.3 (#50 of 133). Ole Miss’s unit stands higher among its own position group, by 9 places."
+        "read": "Florida’s offensive line rates 52.3 (#59 of 133) against Ole Miss’s defensive line at 54.3 (#51 of 133). Ole Miss’s unit stands higher among its own position group, by 8 places."
       },
       {
         "title": "Ole Miss running backs vs Florida linebackers",
         "att": {
           "team": "Ole Miss",
           "label": "running backs",
-          "v": "56.4",
-          "rank": "#57 of 133",
+          "v": "55.4",
+          "rank": "#98 of 133",
           "note": null
         },
         "def": {
           "team": "Florida",
           "label": "linebackers",
           "v": "50.8",
-          "rank": "#93 of 133",
+          "rank": "#92 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Ole Miss’s running backs rates 56.4 (#57 of 133) against Florida’s linebackers at 50.8 (#93 of 133). Ole Miss’s unit stands higher among its own position group, by 36 places."
+        "read": "Ole Miss’s running backs rates 55.4 (#98 of 133) against Florida’s linebackers at 50.8 (#92 of 133). Florida’s unit stands higher among its own position group, by 6 places."
       },
       {
         "title": "Florida running backs vs Ole Miss linebackers",
@@ -1248,18 +1244,18 @@
           "team": "Florida",
           "label": "receivers",
           "v": "56.2",
-          "rank": "#13 of 133",
+          "rank": "#12 of 133",
           "note": null
         },
         "def": {
           "team": "Ole Miss",
           "label": "secondary",
-          "v": "56.3",
-          "rank": "#34 of 133",
+          "v": "56.5",
+          "rank": "#33 of 133",
           "note": null
         },
         "complete": true,
-        "read": "Florida’s receivers rates 56.2 (#13 of 133) against Ole Miss’s secondary at 56.3 (#34 of 133). Florida’s unit stands higher among its own position group, by 21 places."
+        "read": "Florida’s receivers rates 56.2 (#12 of 133) against Ole Miss’s secondary at 56.5 (#33 of 133). Florida’s unit stands higher among its own position group, by 21 places."
       }
     ],
     "roster": {
@@ -1365,18 +1361,18 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "none on file — 100% unknown",
-          "h": "none on file — 100% unknown",
+          "a": "8 on file, 6% of starter value out",
+          "h": "8 on file, 1% of starter value out",
           "edge": null
         },
         {
           "k": "Data confidence",
           "note": "how much EdgeDesk knows about this roster, not how good it is",
-          "a": "45%",
-          "h": "28%",
+          "a": "55%",
+          "h": "39%",
           "edge": {
             "side": "a",
-            "gap": 0.16400000000000003
+            "gap": 0.16300000000000003
           }
         }
       ],
@@ -1399,7 +1395,7 @@
         {
           "k": "Data confidence",
           "lead": "Ole Miss",
-          "text": "Ole Miss leads on data confidence — Ole Miss 45%, Florida 28%."
+          "text": "Ole Miss leads on data confidence — Ole Miss 55%, Florida 39%."
         },
         {
           "k": "Returning starters",
@@ -1418,7 +1414,7 @@
           "Stylistically the matchup favours Ole Miss by 1.9 points: ball control vs front disruption (-1.9 pts).",
           "Pass defense: Ole Miss 59.6 (#20 of 133) vs Florida 47.5 (#86 of 133) — 66 places on the national board.",
           "Defense: Ole Miss 61.1 (#7 of 133) vs Florida 50.8 (#69 of 133) — 62 places on the national board.",
-          "Secondary: Ole Miss 56.3 (#34 of 133) vs Florida 51.2 (#88 of 133) — 54 places on the national board."
+          "Secondary: Ole Miss 56.5 (#33 of 133) vs Florida 51.2 (#88 of 133) — 55 places on the national board."
         ]
       },
       "underdog": {
@@ -1426,8 +1422,8 @@
         "heading": "Why Florida can keep it close",
         "bullets": [
           "Playing at Florida is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
+          "Running backs: Florida 59.6 (#2 of 133) vs Ole Miss 55.4 (#98 of 133) — 96 places on the national board.",
           "Special teams: Florida 51.6 (#8 of 126) vs Ole Miss 49.3 (#103 of 126) — 95 places on the national board.",
-          "Running backs: Florida 59.6 (#2 of 133) vs Ole Miss 56.4 (#57 of 133) — 55 places on the national board.",
           "Run offense: Florida 61.5 (#15 of 133) vs Ole Miss 58.5 (#22 of 133) — 7 places on the national board.",
           "The outcome range is 15.1 points wide at one sigma — p10 -27.3 to p90 +16.7 for Florida, so a projection of -4.3 still produces results a long way either side of it."
         ]
@@ -1457,13 +1453,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 67h old",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "Ole Miss — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1476,12 +1466,6 @@
           "sev": "MEDIUM",
           "label": "Ole Miss — thin defensive data",
           "text": "179 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "Florida — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
           "widening": null
         },
         {
@@ -1513,12 +1497,6 @@
           "label": "missing",
           "text": "weather not supplied",
           "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1529,18 +1507,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
-        },
-        {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
         },
         {
           "item": "Weather at kickoff",
@@ -1563,10 +1529,6 @@
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
         },
         {
-          "item": "Ole Miss — availability and injuries",
-          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
-        },
-        {
           "item": "Florida — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
         }
@@ -1579,16 +1541,138 @@
       "model_raw": "Florida +4.3",
       "market": "Florida -3.0",
       "difference": "7.3 points",
-      "difference_n": 7.2946200755899,
+      "difference_n": 7.291538433480515,
       "total_model": "59.3",
       "total_market": "58.5",
-      "book": "captured · Pinnacle",
+      "book": "captured (stale 73h) · Pinnacle",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "67 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401856699",
+      "home": "Florida",
+      "away": "Ole Miss",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Ole Miss -4.3",
+        "favorite_team": "Ole Miss",
+        "underdog_team": "Florida",
+        "display_fair_spread": -4.3,
+        "raw_home_margin": -4.29,
+        "raw_line_text": "Ole Miss -4.29",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 7.29,
+        "toward_team": "Ole Miss",
+        "text": "7.3 pts toward Ole Miss",
+        "market_line_text": "Florida -3.0",
+        "market_home_margin": 3,
+        "favorite_differs": true,
+        "source": "captured (stale 73h) · Pinnacle",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 84,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 77,
+        "tier": "ADEQUATE",
+        "text": "77%",
+        "sub": "20 of 26 inputs on file"
+      },
+      "drivers": {
+        "team": "Ole Miss",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 6.51,
+            "text": "+6.5 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 1.87,
+            "text": "+1.9 pts stylistic matchup"
+          },
+          {
+            "kind": "market",
+            "key": "market_gap",
+            "points": 7.29,
+            "text": "The market is 7.3 pts away from EdgeDesk’s number, toward Ole Miss (market: Florida -3.0)"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 10 players with an unresolved status; the engine widens this game’s range for it."
+      },
+      "stability": {
+        "tier": "MEDIUM",
+        "label": "Medium",
+        "text": "the stored numbers span 1.4 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T12:00:40.648Z",
+          "source": "first published",
+          "home_margin": -5.7,
+          "text": "Ole Miss -5.7"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": -4.29,
+          "text": "Ole Miss -4.3"
+        }
+      ],
+      "revisions": 5,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Ole Miss",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 1.4 points toward Florida since the first published number.",
+        "attribution_text": "Projection changed 1.4 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk projects Ole Miss 32, Florida 28.",
     "state": {
@@ -1621,8 +1705,8 @@
         },
         {
           "k": "Talent",
-          "a": "59.7  #22",
-          "h": "54.5  #42",
+          "a": "59.2  #22",
+          "h": "54.7  #41",
           "note": null
         },
         {
@@ -1688,30 +1772,30 @@
         {
           "k": "Receivers",
           "a": "56.7  #5",
-          "h": "56.2  #13",
+          "h": "56.2  #12",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "56.4  #57",
+          "a": "55.4  #98",
           "h": "59.6  #2",
           "note": null
         },
         {
           "k": "Defensive line",
-          "a": "54.3  #50",
+          "a": "54.3  #51",
           "h": "51.5  #80",
           "note": null
         },
         {
           "k": "Linebackers",
           "a": "51.3  #83",
-          "h": "50.8  #93",
+          "h": "50.8  #92",
           "note": null
         },
         {
           "k": "Secondary",
-          "a": "56.3  #34",
+          "a": "56.5  #33",
           "h": "51.2  #88",
           "note": null
         },
@@ -1729,8 +1813,8 @@
         },
         {
           "k": "Confidence",
-          "a": "45%",
-          "h": "28%",
+          "a": "55%",
+          "h": "39%",
           "note": "how much EdgeDesk knows, not how good the team is"
         },
         {
@@ -1745,7 +1829,7 @@
       "EdgeDesk’s line is Florida +4.3 on a neutral read of the two teams, before any book is consulted. Projected total 59.3.",
       "Florida wins 39% of the time in EdgeDesk’s simulation, Ole Miss 61%.",
       "Eight games in ten land between -27.3 and +16.7 for Florida. A single result inside that band tells you nothing new about either team.",
-      "The market has Florida -3.0 at captured · Pinnacle, 7.3 points from EdgeDesk’s number.",
+      "The market has Florida -3.0 at captured (stale 73h) · Pinnacle, 7.3 points from EdgeDesk’s number.",
       "Ole Miss quarterback: Trinidad Chambliss — started the last game; no announcement for this one.",
       "Florida quarterback: Aaron Philo — started the last game; no announcement for this one."
     ],
@@ -1760,6 +1844,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T11:43:09.860Z"
+    "at": "2026-09-25T17:04:09.589Z"
   }
 }
