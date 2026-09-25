@@ -71,6 +71,43 @@
     return had;
   }
 
+  /* A DOCUMENT THAT NAMES NOBODY ON EITHER SIDE OF ITS FIXTURE IS NOT A
+     REPORT OF NO ABSENCES. The ingester reads a document against one team's
+     roster; a page that is not the report at all — a conference homepage, a
+     policy announcement, an availability page whose table the browser fills
+     in by script — names nobody on it too, and for a conference whose policy
+     makes silence mean "available" that became a clean bill of health. It
+     did, on every ACC, Big 12 and Big Ten fixture the sync read this season.
+
+     So silence has to be CORROBORATED. A report that names nobody stands
+     only when the same document, read for the other side of the same
+     fixture, named someone — the document demonstrably lists this game's
+     players and simply lists none of ours — or when the parser that read it
+     found an explicit statement that this team lists nobody
+     (`explicit_none`). Otherwise it becomes what it is: a failed read.
+     Applied here, at read time, so it holds for every file already on disk
+     as well as every file written from now on, in the build and the board
+     alike. */
+  function corroborate(reports) {
+    var named = {};
+    (reports || []).forEach(function (r) {
+      if (r && r.ok && (r.rows || []).length) named[String(r.game_id) + '|' + String(r.source_url)] = true;
+    });
+    return (reports || []).map(function (r) {
+      if (!r || !r.ok || (r.rows || []).length || r.explicit_none === true) return r;
+      if (named[String(r.game_id) + '|' + String(r.source_url)]) return r;
+      var copy = {}, f;
+      for (f in r) if (Object.prototype.hasOwnProperty.call(r, f)) copy[f] = r[f];
+      copy.ok = false;
+      copy.silence_means_available = false;
+      copy.uncorroborated = true;
+      copy.why = 'the document named nobody on either side of this fixture, so EdgeDesk cannot tell it from a page '
+        + 'that is not the report (a homepage, a policy announcement, a table the page fills in by script). It is '
+        + 'a failed read, not a report of no absences' + (r.why ? ' — the ingester had said: ' + r.why : '');
+      return copy;
+    });
+  }
+
   /* o = { current, operator, reports, now, normKey }
        current   the parsed football/availability/current.json (may be null)
        operator  the result of EDAvailabilityOperator.load(store, now)
@@ -117,7 +154,7 @@
 
     /* ---- 1. ingested official reports ------------------------------- */
     var reportCount = 0, reportFailed = 0;
-    (o.reports || []).forEach(function (r) {
+    corroborate(o.reports).forEach(function (r) {
       if (!r || !r.team) return;
       var t = slot(r.team, r.team_id);
       if (!r.ok) {
@@ -201,5 +238,5 @@
         + 'report_of_no_absences.' };
   }
 
-  return { build: build, gradeOf: gradeOf, normKey: nk, GRADES: GRADES, GRADED: GRADED, isGraded: isGraded, normGrade: normGrade };
+  return { build: build, corroborate: corroborate, gradeOf: gradeOf, normKey: nk, GRADES: GRADES, GRADED: GRADED, isGraded: isGraded, normGrade: normGrade };
 });

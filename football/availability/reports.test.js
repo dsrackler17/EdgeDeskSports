@@ -245,11 +245,60 @@ section('6. the merged view never grades a failed read as a clean one');
   chk('the observation time is the report’s publication, not the sync’s run time',
     Date.parse(b.teams.m.observed_at) === Date.parse('2026-09-17T02:00:00Z'), b.teams.m.observed_at);
 
-  const quiet = Object.assign({}, real, { rows: [], silence_means_available: true });
-  const c = OVERLAY.build({ current, operator: { live: [] }, reports: [quiet], now: NOW });
-  chk('a comprehensive report naming nobody sets report_of_no_absences rather than inventing records',
-    c.teams.m.official_report.report_of_no_absences === true && c.teams.m.players.length === 0,
+  /* SILENCE HAS TO BE CORROBORATED. A document read for one side that names
+     nobody is indistinguishable from a page that is not the report; the same
+     document naming the OTHER side's players is what shows it is this game's
+     report and that it simply lists none of ours. */
+  const quiet = Object.assign({}, real, { rows: [], silence_means_available: true, game_id: 'G1' });
+  const alone = OVERLAY.build({ current, operator: { live: [] }, reports: [quiet], now: NOW });
+  chk('a report naming nobody on EITHER side of its fixture is a failed read, not a clean bill of health',
+    alone.teams.m.official_report === null && !!alone.teams.m.official_report_failed
+      && /named nobody on either side/.test(alone.teams.m.official_report_failed.why), alone.teams.m);
+  chk('and it does not raise the grade', alone.teams.m.dataQuality === 'LIMITED', alone.teams.m.dataQuality);
+  const other = Object.assign({}, real, { team: 'Florida State', game_id: 'G1',
+    rows: [{ player_name: 'Some One', player_id: '9', position: 'WR', status: 'QUESTIONABLE' }] });
+  const c = OVERLAY.build({ current, operator: { live: [] }, reports: [quiet, other], now: NOW });
+  chk('the same document naming the other side’s players corroborates it: report_of_no_absences, no invented records',
+    c.teams.m.official_report && c.teams.m.official_report.report_of_no_absences === true && c.teams.m.players.length === 0,
     c.teams.m.official_report);
+  const elsewhere = Object.assign({}, other, { source_url: 'another-document' });
+  const d = OVERLAY.build({ current, operator: { live: [] }, reports: [quiet, elsewhere], now: NOW });
+  chk('a different document does not corroborate it', d.teams.m.official_report === null, d.teams.m.official_report);
+  const said = Object.assign({}, quiet, { explicit_none: true });
+  const e = OVERLAY.build({ current, operator: { live: [] }, reports: [said], now: NOW });
+  chk('a parser that read an explicit "none listed" for this team makes it a report of no absences',
+    e.teams.m.official_report && e.teams.m.official_report.report_of_no_absences === true, e.teams.m.official_report);
+  const judged = OVERLAY.corroborate([quiet]);
+  chk('corroborate never edits the report it was handed', quiet.ok === true && judged[0] !== quiet && judged[0].ok === false);
+}
+
+section('7. a web page is never dated from its server header');
+{
+  const html = Buffer.from('<html><body>report</body></html>');
+  const pdf = Buffer.from('%PDF-1.4 ...');
+  const LM = 'Fri, 25 Sep 2026 14:59:23 GMT';
+  chk('a CMS page’s Last-Modified is its cache rebuild, not a filing time', R.publishedFromHeaders(LM, 'text/html; charset=utf-8', html) === null);
+  chk('a PDF’s Last-Modified is when it was uploaded', R.publishedFromHeaders(LM, 'application/pdf', pdf) === LM);
+  chk('a PDF is recognised by its bytes when the server mislabels it', R.publishedFromHeaders(LM, 'application/octet-stream', pdf) === LM);
+  chk('no header, no date', R.publishedFromHeaders(null, 'application/pdf', pdf) === null);
+}
+
+section('8. the reports already on file');
+{
+  /* every committed file that names nobody on either side of its fixture —
+     this season, every ACC, Big 12 and Big Ten read, taken from a homepage
+     or a policy page — is read as the failed read it was */
+  const fs = require('fs');
+  const all = R.readAll(path.join(__dirname, 'reports')).map(x => x.report);
+  const merged = OVERLAY.build({ current: null, operator: { live: [] }, reports: all, now: NOW });
+  const clean = Object.keys(merged.teams).map(k => merged.teams[k])
+    .filter(t => t.official_report && t.official_report.report_of_no_absences && !t.official_report.names);
+  const uncorroborated = OVERLAY.corroborate(all).filter(r => r.uncorroborated).length;
+  chk('no committed file becomes a report of no absences without corroboration',
+    clean.every(t => all.some(r => r.ok && (r.rows || []).length && String(r.game_id) === String(t.official_report.game_id)
+      && r.source_url === t.official_report.source_url) || all.some(r => r.explicit_none && r.team === t.team_name)),
+    clean.map(t => t.team_name));
+  console.log('       (' + uncorroborated + ' committed read(s) named nobody on either side and are read as failed reads)');
 }
 
 /* THE BUNDLE THE BOARD READS IS THE DIRECTORY THE BUILD READS. The board

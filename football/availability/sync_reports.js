@@ -31,6 +31,7 @@ const HERE = __dirname;
 const ROOT = path.join(HERE, '..', '..');
 const POLICY = require(path.join(HERE, 'policy.js'));
 const R = require(path.join(HERE, 'reports.js'));
+const OVERLAY = require(path.join(HERE, 'overlay.js'));
 const ING = require(path.join(HERE, 'ingest_report.js'));
 
 function arg(name, fb) {
@@ -93,6 +94,11 @@ async function main() {
       }
     } catch (e) { err = String((e && e.message) || e).slice(0, 200); }
 
+    /* both sides of every fixture on this document are read first and
+       written together: whether a side's silence is a report of no absences
+       depends on what the same document said about the other side
+       (overlay.js corroborate) */
+    const pending = [];
     for (const w of group) {
       const roster = ING.rosterFor(w.team, season);
       if (!roster || !roster.length) {
@@ -108,18 +114,23 @@ async function main() {
           comprehensive: POLICY.silenceMeansAvailable(pol),
           ok: false, rows: [], unparsed: [],
           why: 'the report could not be read — ' + (err || 'no document') };
-        failed++;
       } else {
         out = R.ingest({ body: doc, content_type: contentType, conference: w.conference, team: w.team,
-          roster, source_url: url, published_at: lastModified, game_id: w.game_id, kickoff: w.kickoff,
+          roster, source_url: url, published_at: R.publishedFromHeaders(lastModified, contentType, doc),
+          game_id: w.game_id, kickoff: w.kickoff,
           home_conference: w.home_conference, away_conference: w.away_conference,
           is_conference_game: true, now });
-        if (out.ok) ok++; else failed++;
       }
-      const name = [season, slug(w.conference), slug(w.team), w.game_id].join('_') + '.json';
+      pending.push({ w, out });
+    }
+    const judged = OVERLAY.corroborate(pending.map(p => p.out));
+    pending.forEach((p, i) => {
+      const out = judged[i];
+      if (out.ok) ok++; else failed++;
+      const name = [season, slug(p.w.conference), slug(p.w.team), p.w.game_id].join('_') + '.json';
       if (dry) console.error('[reports] --dry-run ' + name + ': ' + (out.ok ? 'ok' : 'FAILED') + ' — ' + out.why);
       else fs.writeFileSync(path.join(outDir, name), JSON.stringify(out, null, 1) + '\n');
-    }
+    });
   }
   console.error('[reports] ' + ok + ' ingested, ' + failed + ' recorded as failed reads, ' + skipped + ' skipped');
   /* the one-file copy the board reads (reports.js writeBundle) */

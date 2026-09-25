@@ -232,6 +232,20 @@ function ingest(o) {
   return base;
 }
 
+/* WHEN WAS IT FILED? A server header can answer that for a FILE and never
+   for a PAGE. A PDF's Last-Modified is when the conference uploaded it. A
+   CMS page's Last-Modified is when its cache was last rebuilt — minutes
+   before the request, every time — so dating a web page from it made every
+   read "published" at the moment EdgeDesk happened to ask, which is exactly
+   the dating this file refuses. A web page's filing time has to come from
+   the page itself, supplied by the parser that read it. */
+function publishedFromHeaders(lastModified, contentType, body) {
+  const ct = String(contentType || '').toLowerCase();
+  const isPdf = ct.indexOf('pdf') >= 0
+    || (Buffer.isBuffer(body) && body.slice(0, 5).toString('latin1') === '%PDF-');
+  return isPdf ? (lastModified || null) : null;
+}
+
 /* TWO REPORTS, ONE PLAYER, ONE GAME. The later filing wins and the earlier one
    is KEPT beside it: a conference that moves a player from questionable to out
    on the morning of a game has told you something, and overwriting the first
@@ -299,7 +313,7 @@ function compactReport(r, file) {
     published_at: r.published_at || null, retrieved_at: r.retrieved_at || null,
     scope: r.scope || null, comprehensive: !!r.comprehensive, vocabulary: r.vocabulary || [],
     rows: r.rows || [], unparsed_n: (r.unparsed || []).length,
-    silence_means_available: !!r.silence_means_available };
+    silence_means_available: !!r.silence_means_available, explicit_none: r.explicit_none === true };
 }
 /* every ingested report in `dir`, in file-name order */
 function readAll(dir) {
@@ -330,5 +344,5 @@ function writeBundle(dir, dest) {
   return true;
 }
 
-module.exports = { ingest, reconcile, toLines, rowsFrom, stripHtml, DESIGNATIONS, SCHEMA,
+module.exports = { ingest, reconcile, toLines, rowsFrom, stripHtml, DESIGNATIONS, SCHEMA, publishedFromHeaders,
   BUNDLE_SCHEMA, BUNDLE_FILE, compactReport, readAll, bundle, writeBundle };

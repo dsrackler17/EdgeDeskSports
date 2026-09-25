@@ -69,8 +69,9 @@ async function fetchDoc(url) {
     signal: AbortSignal.timeout(30000) });
   const ct = r.headers.get('content-type') || '';
   const body = Buffer.from(await r.arrayBuffer());
-  /* the LAST-MODIFIED header is the closest thing to a publication time a
-     page gives us, and it is only used when the caller supplied none */
+  /* the LAST-MODIFIED header dates a FILE (a PDF upload) and never a page
+     (reports.js publishedFromHeaders); used only when the caller supplied
+     no --published-at */
   return { ok: r.ok, status: r.status, content_type: ct, body,
     last_modified: r.headers.get('last-modified') || null };
 }
@@ -144,7 +145,7 @@ async function main() {
 
   const meta = {
     conference, team, source_url: url || ('file://' + file),
-    published_at: arg('published-at', null) || lastModified || null,
+    published_at: arg('published-at', null) || R.publishedFromHeaders(lastModified, contentType, body) || null,
     retrieved_at: new Date(now).toISOString(),
     game_id: arg('game-id', null) ? String(arg('game-id')) : null,
     kickoff: arg('kickoff', null) || null,
