@@ -66,7 +66,8 @@ function fnSrc(name) {
   const end = APP.indexOf('\n}\n', at);
   return APP.slice(at, end + 3);
 }
-const HELPERS = fnSrc('fbWinPair') + '\n' + fnSrc('fbWinText') + '\n';
+const HELPERS = fnSrc('fbWinPair') + '\n' + fnSrc('fbWinText') + '\n'
+  + fnSrc('fbFairDisp') + '\n' + fnSrc('fbRawMarginText') + '\n';
 
 /* the engine's real thresholds, read from the shipped params */
 require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));

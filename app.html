@@ -49740,6 +49740,23 @@ function fbNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
    (0°F, a pick'em line) that the engine will believe. */
 function fbNum(x){if(x==null||x==='')return null;var v=+x;return isFinite(v)?v:null;}
 function fbPts(v,dp){return v==null?'—':((v>0?'+':'')+v.toFixed(dp==null?1:dp));}
+/* THE FAIR LINE AS SHOWN. football/cfb_p4/engine.js publishes the projection
+   as model.fair_spread and, beside it, model.display_fair_spread: the same
+   number, except that a near pick'em (|margin| < 1) is shown at a one-point
+   floor on the side the model measurably favours. Display only — every gap,
+   cover probability, EV, grade and stored number keeps reading fair_spread.
+   A model that publishes no display line (the NFL engine) shows its raw
+   number exactly as before. */
+function fbFairDisp(m){
+  if(m&&m.display_fair_spread!=null&&isFinite(m.display_fair_spread))return m.display_fair_spread;
+  return m?m.fair_spread:null;
+}
+/* the raw margin, stated for the side the display line names: "+0.37" */
+function fbRawMarginText(m){
+  if(!m||m.fair_spread==null||!isFinite(m.fair_spread))return null;
+  var v=(m.display_side==='away'?-m.fair_spread:m.fair_spread);
+  return fbPts(v===0?0:v,2);
+}
 
 /* tolerant CSV parser (quoted fields, embedded commas). Header row -> objects. */
 function fbCsv(text){
@@ -54199,7 +54216,7 @@ function fbGxSummary(u,p,gid){
       +(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
   }
   var out='<div class="gx-grid">';
-  out+=cell('EdgeDesk',h+' '+fbPts(-m.fair_spread),'mdl','model');
+  out+=cell('EdgeDesk',h+' '+fbPts(-fbFairDisp(m)),'mdl',m.is_near_pickem?'model · near pick’em':'model');
   out+=cell('Market',mk&&mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)):'<span class="gx-miss">none joined</span>',
     '',mk&&mk.spread_line!=null?fbEsc(mk.book||'reference'):'nothing to compare');
   out+=cell('Difference',gap!=null?(gap.toFixed(1)+' pts'):'<span class="gx-miss">—</span>',
@@ -54682,7 +54699,7 @@ function fbGxWrong(p){
    counterargument it raised, or a score it published. No narrative. */
 function fbGxCases(u,p){
   var g=u.g,m=p.model,ex=p.explanation||{},sc=p.scores||{};
-  var favHome=m.fair_spread>=0,fav=favHome?g.home_team:g.away_team,dog=favHome?g.away_team:g.home_team;
+  var favHome=fbFairDisp(m)>=0,fav=favHome?g.home_team:g.away_team,dog=favHome?g.away_team:g.home_team;
   var forFav=[],forDog=[];
   (ex.primary_drivers||[]).forEach(function(d){
     var pts=d.points||0;
@@ -54879,7 +54896,8 @@ function fbGxBriefText(u,p){
   line('Game',a+' @ '+h);
   var when='';try{when=whenLabel(new Date(u.t).toISOString());}catch(_){}
   line('Kickoff',when||'unknown');
-  line('Model spread',h+' '+fbPts(-m.fair_spread));
+  line('Model spread',h+' '+fbPts(-fbFairDisp(m))
+    +(m.is_near_pickem?(' (near pick’em · raw margin '+(m.display_side==='away'?a:h)+' '+fbRawMarginText(m)+')'):''));
   line('Market spread',mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)+' ('+(mk.book||'reference')+')'):'none joined');
   line('Difference',mk.spread_gap!=null?(Math.abs(mk.spread_gap).toFixed(1)+' pts'):'no market number to compare');
   line('Projected score',sc?(h+' '+sc.home+', '+a+' '+sc.away+' (from the model spread and total)'):'not available — the model published no total');
@@ -54945,7 +54963,7 @@ window.fbGxShare=function(gid){
   var p=FB.p4._proj&&FB.p4._proj[String(gid)];if(!p||p.status!=='PREDICTED')return;
   var st=fbGxState(p),m=p.model,mk=p.market||{},sc=fbGxScore(m);
   var txt=(u.g.away_team+' @ '+u.g.home_team)
-    +' — EdgeDesk '+u.g.home_team+' '+fbPts(-m.fair_spread)
+    +' — EdgeDesk '+u.g.home_team+' '+fbPts(-fbFairDisp(m))+(m.is_near_pickem?' (near pick’em)':'')
     +(mk.spread_line!=null?(', market '+u.g.home_team+' '+fbPts(-mk.spread_line)):', no market joined')
     +(sc?('. Projected '+u.g.home_team+' '+sc.home+'–'+sc.away):'')
     +'. '+st.label.toUpperCase()+': '+st.means
@@ -55418,7 +55436,9 @@ function fbP4Card(u){
   var h=fbEsc(g.home_team),a=fbEsc(g.away_team);
   var L='';
   L+='<div class="gd-sec model">Model <span class="unproven">UNPROVEN</span></div>';
-  L+='<div class="gd-line"><span class="l">Model spread</span><span class="v mdl">'+h+' '+fbPts(-m.fair_spread)+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Model spread</span><span class="v mdl">'+h+' '+fbPts(-fbFairDisp(m))+'</span></div>';
+  if(m.is_near_pickem)L+='<div class="gd-line"><span class="l">Raw margin</span><span class="v mut">'
+    +(m.display_side==='away'?a:h)+' '+fbRawMarginText(m)+' · near pick’em — the one-point line is a display floor; win probability, confidence and edge use the raw margin</span></div>';
   L+='<div class="gd-line"><span class="l">Market spread</span><span class="v">'
     +(mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)+' <span class="mut">'+fbEsc(mk.book||'')+'</span>'):'<span class="mut">none joined</span>')+'</span></div>';
   L+='<div class="gd-line"><span class="l">Model total</span><span class="v mdl">'+(m.fair_total!=null?m.fair_total.toFixed(1):'—')+'</span></div>';
@@ -56359,7 +56379,9 @@ function fbP4BoardHTML(){
     +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>GAP</span><span>STATUS</span></div>';
   visible.forEach(function(r){
     var u=r.u,g=u.g,gid=r.gid,p=r.p,mkt=r.mkt,st=r.st,m=r.meta;
-    var model=(p&&p.status==='PREDICTED')?fbP4Line(g.home_team,p.model.fair_spread):'—';
+    var model=(p&&p.status==='PREDICTED')?(p.model.is_near_pickem
+      ?('<span title="Near pick’em: the raw projected margin is under one point">'+fbP4Line(g.home_team,fbFairDisp(p.model))+'</span>')
+      :fbP4Line(g.home_team,fbFairDisp(p.model))):'—';
     var market=(mkt.spread_line!=null)?fbP4Line(g.home_team,mkt.spread_line):'—';
     var gap=r.gap==null?'—':r.gap.toFixed(1);
     var conf=(m.away.conference===m.home.conference&&m.away.conference)
@@ -56556,7 +56578,7 @@ function fbTodayItems(rows){
   if(sp.length&&Math.abs(sp[0].gapS)>=1){
     r=sp[0];
     items.push({k:'Largest spread disagreement',pri:Math.abs(r.gapS)>=2?'major':'notable',r:r,
-      cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Difference',v:Math.abs(r.gapS).toFixed(1)+' pts',p:true}],
+      cells:[{l:'Model',v:fbHomeLine(fbFairDisp(r.p.model)),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Difference',v:Math.abs(r.gapS).toFixed(1)+' pts',p:true}],
       note:'Home line. Model leans '+fbEsc(fbSideOf(r,r.gapS))+' relative to the market'+(Math.abs(r.gapS)>=7?' — at this size, missing information is the likelier explanation':'')+'.',
       why:Math.abs(r.gapS)>=7
         ? 'This is the widest gap on the board, and a gap this size is far more often the model missing something — an injury, a starter, a suspension — than the market being wrong. Open it to find what the model has not been told.'
@@ -56592,7 +56614,7 @@ function fbTodayItems(rows){
   if(ft.length){
     r=ft[0];var lim=r.sport==='p4'?FB_GUARD.p4.game:FB_GUARD.nfl.game;
     items.push({k:'Data-quality warning',pri:'neg',cls:'neg',r:r,
-      cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Gap',v:Math.abs(r.gapS).toFixed(1)+' pts',c:'neg',p:true}],
+      cells:[{l:'Model',v:fbHomeLine(fbFairDisp(r.p.model)),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Gap',v:Math.abs(r.gapS).toFixed(1)+' pts',c:'neg',p:true}],
       note:'Home line. Beyond the '+lim+'-pt guard bound: treat as a data fault, not an edge'+(ft.length>1?(' · '+(ft.length-1)+' more game'+(ft.length===2?'':'s')+' flagged on the board'):'')+'.',
       why:'A disagreement this far past the guard bound is EdgeDesk telling you its own number is unsafe here. It is shown so it cannot be mistaken for an opportunity — inspect the inputs, do not price it.'});
   }
@@ -56600,7 +56622,7 @@ function fbTodayItems(rows){
   if(qb.length){
     r=qb[0];var flags=r.warn.filter(function(w){return /qb/i.test(w);});
     items.push({k:'QB adjustment pending',pri:'warn',cls:'warn',r:r,
-      cells:[{l:'Games flagged',v:String(qb.length),c:'warn',p:true},{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)}],
+      cells:[{l:'Games flagged',v:String(qb.length),c:'warn',p:true},{l:'Model',v:fbHomeLine(fbFairDisp(r.p.model)),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)}],
       note:'Home line. '+fbEsc(flags.join(' · '))+'. The feed has not published the starter; the QB layer carries the last known value, never a guess.',
       why:'Quarterback is the largest single input the model has, and for '+qb.length+' game'+(qb.length===1?'':'s')+' it does not know who is playing. Unknown is not healthy: read this number as provisional until the starter is published.'});
   }
@@ -56608,7 +56630,7 @@ function fbTodayItems(rows){
   if(st.length&&!ft.length){
     r=st[0];
     items.push({k:'Stale market quote',pri:'warn',cls:'warn',r:r,
-      cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Captured',v:fbHomeLine(r.mkt.spread_line),c:'mut'},{l:'Games affected',v:String(st.length),c:'warn',p:true}],
+      cells:[{l:'Model',v:fbHomeLine(fbFairDisp(r.p.model)),c:'mdl'},{l:'Captured',v:fbHomeLine(r.mkt.spread_line),c:'mut'},{l:'Games affected',v:String(st.length),c:'warn',p:true}],
       note:'Home line. The only market number on file is an old capture; nothing is compared until a fresh quote joins.',
       why:'There is no live market number to disagree with, so any gap shown here is measured against a price that may no longer exist. Missing is not zero — nothing is compared until a fresh quote lands.'});
   }
@@ -56845,7 +56867,7 @@ function fbFocusRow(rows){
 function fbMvmForRow(r){
   var p=r.p,m=p.model,mk=r.mkt,rows=[],band=null;
   var when='';try{when=whenLabel(new Date(r.t).toISOString());}catch(_){}
-  rows.push({l:'EdgeDesk fair spread',sub:'model · home line · '+fbSportTag(r),v:fbEsc(r.hc)+' '+fbHomeLine(m.fair_spread),c:'mdl'});
+  rows.push({l:'EdgeDesk fair spread',sub:'model · home line · '+fbSportTag(r)+(m.is_near_pickem?' · near pick’em':''),v:fbEsc(r.hc)+' '+fbHomeLine(fbFairDisp(m)),c:'mdl'});
   if(mk.spread_line!=null){
     rows.push({l:'Market spread',sub:(r.book||r.src||'market')+(r.at?(' · '+ago(r.at)):(r.ref?' · nflverse consensus reference':'')),v:fbEsc(r.hc)+' '+fbHomeLine(mk.spread_line)});
     rows.push({l:'Difference',sub:'toward '+fbSideOf(r,r.gapS),v:Math.abs(r.gapS).toFixed(1)+' pts',c:'diff',p:true});
@@ -59325,7 +59347,9 @@ function fbBriefGame(q){
     if(hasProj){
       var schedHome=pr.u.g.home_team, schedAway=pr.u.g.away_team;
       var sc=fbGxScore(m);
-      var favHome=m.fair_spread>=0;
+      /* the side the published line names: the raw sign, or the engine's
+         display tiebreak when the projection is an exact tie */
+      var favHome=fbFairDisp(m)>=0;
       /* A PROBABILITY IS NEVER RENDERED AS A CERTAINTY. Math.round() printed
          100% / 0% on a projection whose own numbers were 0.9977 and 0.0023 —
          two values a continuous margin distribution cannot mean. fbWinPair()
@@ -59355,7 +59379,13 @@ function fbBriefGame(q){
       projection={
         priced:true,
         fair_spread:m.fair_spread,
-        fair_spread_text:fbBrLine(schedHome,m.fair_spread),
+        fair_spread_text:fbBrLine(schedHome,fbFairDisp(m)),
+        /* the RAW projection in the same "Team ±x.x" form. Differs from the
+           text above only on a near pick'em, and it is what grading reads —
+           a one-point display floor is never scored as the model's number. */
+        fair_spread_raw_text:fbBrLine(schedHome,m.fair_spread),
+        near_pickem:!!m.is_near_pickem,
+        raw_margin_text:m.is_near_pickem?((favHome?schedHome:schedAway)+' '+fbRawMarginText(m)):null,
         favourite:favHome?schedHome:schedAway,
         underdog:favHome?schedAway:schedHome,
         margin:Math.abs(m.fair_spread).toFixed(1),
@@ -59473,7 +59503,8 @@ function fbBriefGame(q){
       var ageH=null;
       if(mk.as_of){ var ms=Date.parse(mk.as_of); if(isFinite(ms)) ageH=Math.max(0,Math.round((Date.now()-ms)/3600e3)); }
       market={available:true,
-        model:fbBrLine(pr.u.g.home_team,m.fair_spread),
+        model:fbBrLine(pr.u.g.home_team,fbFairDisp(m)),
+        model_raw:fbBrLine(pr.u.g.home_team,m.fair_spread),
         market:fbBrLine(pr.u.g.home_team,mk.spread_line),
         difference:mk.spread_gap==null?null:(Math.abs(mk.spread_gap).toFixed(1)+' points'),
         difference_n:mk.spread_gap==null?null:Math.abs(mk.spread_gap),
@@ -59488,7 +59519,8 @@ function fbBriefGame(q){
         note:'EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet.'};
     } else {
       market={available:false,
-        model:hasProj?fbBrLine(pr.u.g.home_team,m.fair_spread):null,
+        model:hasProj?fbBrLine(pr.u.g.home_team,fbFairDisp(m)):null,
+        model_raw:hasProj?fbBrLine(pr.u.g.home_team,m.fair_spread):null,
         headline:'No sportsbook spread is currently joined to this game.',
         note:hasProj
           ? 'There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else.'
@@ -59514,6 +59546,7 @@ function fbBriefGame(q){
         headline='EdgeDesk projects '+(hp>=ap?homeName+' '+hp+', '+awayName+' '+ap:awayName+' '+ap+', '+homeName+' '+hp)+'.';
       }
       notes.push('EdgeDesk’s line is '+projection.fair_spread_text+' on a neutral read of the two teams, before any book is consulted.'
+        +(projection.near_pickem?(' It is a near pick’em: the raw projected margin is '+projection.raw_margin_text+', and the one-point line is a display floor.'):'')
         +(projection.total?(' Projected total '+projection.total+'.'):''));
       if(projection.win_prob) notes.push(homeName+' wins '+(projection.win_prob.home_text||projection.win_prob.home_pct+'%')+' of the time in EdgeDesk’s simulation, '+awayName+' '+(projection.win_prob.away_text||projection.win_prob.away_pct+'%')+'.'+(projection.win_prob.bounded?' Neither side is certain: '+projection.win_prob.bounded_note:''));
       if(projection.outcome_range) notes.push('Eight games in ten land between '+projection.outcome_range.p10+' and '+projection.outcome_range.p90+' for '+projection.outcome_range.basis_team+'. A single result inside that band tells you nothing new about either team.');

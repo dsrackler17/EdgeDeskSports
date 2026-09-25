@@ -307,6 +307,10 @@
         engine: modelSource(r),
         fair_spread: num(p.fair_spread),
         fair_spread_text: txt(p.fair_spread_text),
+        /* the raw projection as "Team ±x.x"; differs from the display text
+           only on a near pick'em, and it is the one grading reads */
+        fair_spread_raw_text: txt(p.fair_spread_raw_text),
+        near_pickem: typeof p.near_pickem === 'boolean' ? p.near_pickem : null,
         favourite: txt(p.favourite), underdog: txt(p.underdog),
         margin: txt(p.margin),
         total: txt(p.total), total_n: num(p.total),

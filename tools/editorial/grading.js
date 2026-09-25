@@ -116,7 +116,10 @@
     if (!m || !m.available) {
       return { available: false, why: 'No sportsbook quote was captured before kickoff, so there is no market number for EdgeDesk’s to be measured against. The model’s own projection is still graded below; the bet columns are not.' };
     }
-    var mk = parseLine(m.market), md = parseLine(m.model);
+    /* the RAW model line when the snapshot carries one: a near pick'em is
+       displayed at a one-point floor, and the floor must not manufacture a
+       lean or a gap. Older snapshots only carry `model`, which was raw. */
+    var mk = parseLine(m.market), md = parseLine(m.model_raw || m.model);
     if (!mk || !md) {
       return { available: false, why: 'The captured quote could not be read as a team and a number, so no implied side is claimed.' };
     }
@@ -306,8 +309,9 @@
     if (!model.priced || hs == null || as == null) {
       return { available: false, why: model.priced ? 'no final score' : 'EdgeDesk did not price this game' };
     }
-    /* the model's fair spread, expressed as the home margin it projected */
-    var md = parseLine(model.fair_spread_text);
+    /* the model's fair spread, expressed as the home margin it projected —
+       from the raw text, never the near-pick'em display floor */
+    var md = parseLine(model.fair_spread_raw_text || model.fair_spread_text);
     var home = snapshot.game && snapshot.game.home, away = snapshot.game && snapshot.game.away;
     var mdSide = md ? sideOf(md.team, home, away) : null;
     var projHome = (md && mdSide) ? (mdSide === 'home' ? -md.point : md.point) : null;

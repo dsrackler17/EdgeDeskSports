@@ -252,6 +252,14 @@ jobs:
       - name: The FBS board covers every conference and its filters compose
         run: node tools/football/fbs_board_ui.test.js
 
+      # THE NEAR-PICK'EM DISPLAY LINE. A projected margin under one point is
+      # shown at a one-point floor on the side the model measurably favours;
+      # the raw margin stays what win probability, confidence, cover, EV, the
+      # market gap and grading are computed from. The engine suite pins the
+      # arithmetic, the page suite runs the real module out of app.html.
+      - name: A near pick'em shows a side at one point, and nothing measured moves
+        run: node football/cfb_p4/fair_line.test.js && node tools/football/fair_line_ui.test.js
+
       # The player quality + scheme matchup layer: the rules its ratings are
       # not allowed to break (a missing input never becoming a zero, no rating
       # ever knowing the future, a reproducible simulation, no model call
