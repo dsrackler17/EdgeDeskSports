@@ -40,6 +40,7 @@ const CANDIDATES = {
   mac: ['https://getsomemaction.com/sports/football'],
   /* the platforms the conference pages embed (found by this probe) */
   hdi: ['https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report',
+    'https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report',
     'https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report'],
   faktor: ['https://faktorsports.com/k/embed/player-availability/full/MountainWest/11/MFB/2026?signature=e098b656dbb0b78335ef78c8d9c68e2cceb940d4519d54f4c05aaaa48c62eef7'],
   espn: ['https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams/145/injuries',
@@ -99,6 +100,7 @@ async function show(label, r, depth) {
     return null;
   }
   const html = r.buf.toString('utf8');
+  if (r.buf.length < 2000) console.log(pad + '  BODY (' + r.buf.length + ' bytes) >>> ' + html + ' <<<');
   if (/json/i.test(r.type) || /^\s*[\[{]/.test(html)) {
     console.log(pad + '  JSON >>> ' + html.slice(0, 2500) + '\n' + pad + '  <<<');
     return null;
@@ -160,9 +162,18 @@ async function show(label, r, depth) {
       const eps = [...new Set((src.match(/["'`](\/?(api|v\d|graphql|reports?|availability)[^"'`\s]{0,120})["'`]/gi) || []))].slice(0, 40);
       const abs = [...new Set((src.match(/https?:\/\/[^"'`\s]{6,140}/g) || []))].filter(x => !/w3\.org|reactjs|mozilla|github|npmjs|sentry|google/.test(x)).slice(0, 30);
       console.log(pad + '  bundle ' + u + ' (' + src.length + ' chars)\n' + pad + '    endpoints: ' + eps.join(' , ') + '\n' + pad + '    urls: ' + abs.join(' , '));
-      ['fetch(', 'axios', 'baseURL', 'source=', 'type=report', 'sport='].forEach(k => {
-        const at = src.indexOf(k);
-        if (at >= 0) console.log(pad + '    ctx[' + k + '] ' + src.slice(Math.max(0, at - 200), at + 300).replace(/\s+/g, ' '));
+      /* the public embed's data call: every string literal that names a
+         public/embed/report/availability path, and where the app reads
+         its query-string contract */
+      const lits = [...new Set((src.match(/["'`][^"'`\n]{0,80}(public|embed|availabilit|reports?\b|archive|roster|injur)[^"'`\n]{0,80}["'`]/gi) || []))]
+        .filter(x => !/descope|webauthn|oauth|otp|magiclink|enchanted|saml|totp|three|texture|shader/i.test(x)).slice(0, 80);
+      console.log(pad + '    literals: ' + lits.join(' , '));
+      ['isPublicEmbedRequest', 'get("conf")', "get('conf')", 'VITE_', 'supabase', 'firebase', 'amazonaws', 'execute-api',
+        'api.hdintelligence', '/api/', 'type:"report"', 'type==="report"', '"report"'].forEach(k => {
+        let at = -1, n = 0;
+        while ((at = src.indexOf(k, at + 1)) >= 0 && n < 3) {
+          n++; console.log(pad + '    ctx[' + k + '#' + n + '] ' + src.slice(Math.max(0, at - 350), at + 450).replace(/\s+/g, ' '));
+        }
       });
     }
   }
