@@ -178,6 +178,8 @@ async function main() {
     return out.ok ? 0 : 1;
   }
   fs.writeFileSync(dest, JSON.stringify(out, null, 1) + '\n');
+  /* the one-file copy the board reads (reports.js writeBundle) */
+  R.writeBundle(OUT_DIR);
   console.log('[report] ' + (out.ok ? 'ingested' : 'RECORDED A FAILED READ') + ': ' + path.relative(ROOT, dest)
     + ' — ' + (out.why || ''));
   if (out.unparsed && out.unparsed.length) {

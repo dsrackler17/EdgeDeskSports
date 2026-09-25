@@ -252,5 +252,30 @@ section('6. the merged view never grades a failed read as a clean one');
     c.teams.m.official_report);
 }
 
+/* THE BUNDLE THE BOARD READS IS THE DIRECTORY THE BUILD READS. The board
+   cannot list football/availability/reports/, so it reads the one-file copy;
+   a report written without rewriting the copy would put the board back to
+   reporting "no report" for a filing the published slate has. */
+{
+  const fs = require('fs');
+  const dir = path.join(__dirname, 'reports');
+  const committed = JSON.parse(fs.readFileSync(R.BUNDLE_FILE, 'utf8'));
+  const fresh = R.bundle(dir);
+  chk('the committed reports bundle carries every report in the directory, in file-name order',
+    JSON.stringify(committed) === JSON.stringify(fresh),
+    { committed: (committed.reports || []).length, directory: fresh.reports.length });
+  chk('the bundle is the schema the board reads', committed.schema === R.BUNDLE_SCHEMA);
+  /* the overlay reads a bundled report exactly as it reads the file */
+  const files = R.readAll(dir);
+  if (files.length) {
+    const fromFiles = OVERLAY.build({ current: null, operator: { live: [] }, reports: files.map(x => x.report), now: NOW });
+    const fromBundle = OVERLAY.build({ current: null, operator: { live: [] }, reports: committed.reports, now: NOW });
+    chk('the overlay merges the bundle to the same teams, grades and official reports as the files',
+      JSON.stringify(fromFiles.teams) === JSON.stringify(fromBundle.teams));
+  }
+  const src = fs.readFileSync(path.join(__dirname, 'sync_reports.js'), 'utf8') + fs.readFileSync(path.join(__dirname, 'ingest_report.js'), 'utf8');
+  chk('both report writers rewrite the bundle', (src.match(/R\.writeBundle\(/g) || []).length >= 2);
+}
+
 console.log('\navailability reports: ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

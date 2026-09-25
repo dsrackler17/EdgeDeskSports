@@ -122,6 +122,8 @@ async function main() {
     }
   }
   console.error('[reports] ' + ok + ' ingested, ' + failed + ' recorded as failed reads, ' + skipped + ' skipped');
+  /* the one-file copy the board reads (reports.js writeBundle) */
+  if (!dry && R.writeBundle(outDir)) console.error('[reports] rewrote football/availability/reports.bundle.json');
   /* A FAILED READ IS NOT A FAILED RUN. The artifact records it and the
      contract reports FETCH_FAILED; exiting non-zero here would turn a source
      refusing into a broken pipeline. */
