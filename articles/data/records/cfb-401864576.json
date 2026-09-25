@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T16:45:00.000Z",
   "game_when_label": "2026-09-26 16:45 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -237,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "Kentucky",
@@ -315,9 +315,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1445,7 +1445,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 73h old",
+          "text": "odds is 77h old",
           "widening": null
         },
         {
@@ -1570,9 +1570,9 @@
       "difference_n": 1.5275660683008176,
       "total_model": "56.8",
       "total_market": "54.5",
-      "book": "captured (stale 73h) · BetMGM",
+      "book": "captured (stale 77h) · BetMGM",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "73 hours old",
+      "capture_age": "77 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1609,7 +1609,7 @@
         "market_line_text": "Kentucky -20.0",
         "market_home_margin": 20,
         "favorite_differs": false,
-        "source": "captured (stale 73h) · BetMGM",
+        "source": "captured (stale 77h) · BetMGM",
         "as_of": "2026-09-22T16:18:01.053+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1623,8 +1623,77 @@
       "reliability": {
         "pct": 69,
         "tier": "ADEQUATE",
-        "text": "69%",
-        "sub": "18 of 26 inputs on file"
+        "text": "69 · CAUTION",
+        "sub": "main deduction: unresolved roster conflict",
+        "score": 69,
+        "grade": "CAUTION",
+        "grade_label": "CAUTION",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 9.9,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 14.8,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 11.3,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "unresolved roster conflict: starter sources and the athlete identity disagree for South Alabama",
+        "capped_by": [
+          "ROSTER_CONFLICT"
+        ],
+        "next_actions": [
+          {
+            "action": "Resolve South Alabama’s starter conflict",
+            "potential_gain": 9,
+            "text": "up to +9"
+          },
+          {
+            "action": "Register a school availability release for South Alabama",
+            "potential_gain": 1,
+            "text": "up to +1 once resolve South Alabama’s starter conflict is done"
+          },
+          {
+            "action": "Register a school availability release for Kentucky",
+            "potential_gain": 1,
+            "text": "up to +1 once resolve South Alabama’s starter conflict is done"
+          }
+        ],
+        "stability": {
+          "tier": "MODERATE",
+          "sd": 2.89,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "Kentucky",
@@ -1855,7 +1924,7 @@
       "EdgeDesk’s line is Kentucky -18.5 on a neutral read of the two teams, before any book is consulted. Projected total 56.8.",
       "Kentucky wins 89% of the time in EdgeDesk’s simulation, South Alabama 11%.",
       "Eight games in ten land between -4.5 and +39.5 for Kentucky. A single result inside that band tells you nothing new about either team.",
-      "The market has Kentucky -20.0 at captured (stale 73h) · BetMGM, 1.5 points from EdgeDesk’s number.",
+      "The market has Kentucky -20.0 at captured (stale 77h) · BetMGM, 1.5 points from EdgeDesk’s number.",
       "Kentucky quarterback: Kenny Minchey — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1870,6 +1939,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

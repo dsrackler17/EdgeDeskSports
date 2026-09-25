@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T21:00:00.000Z",
   "game_when_label": "2026-09-26 21:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -128,10 +128,10 @@
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 2,
-          "UNAVAILABLE": 5
+          "NOT_REQUIRED": 2,
+          "NOT_DUE_YET": 2,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
@@ -139,30 +139,6 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Bowling Green and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing.."
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for South Florida and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing."
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
             "field": "off_field",
@@ -261,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "Bowling Green",
@@ -351,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1463,7 +1439,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 73h old",
+          "text": "odds is 77h old",
           "widening": null
         },
         {
@@ -1582,9 +1558,9 @@
       "difference_n": 9.928457906855922,
       "total_model": "55.2",
       "total_market": "48.5",
-      "book": "captured (stale 73h) · Hard Rock Bet",
+      "book": "captured (stale 77h) · Hard Rock Bet",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "73 hours old",
+      "capture_age": "77 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1621,7 +1597,7 @@
         "market_line_text": "South Florida -17.5",
         "market_home_margin": -17.5,
         "favorite_differs": false,
-        "source": "captured (stale 73h) · Hard Rock Bet",
+        "source": "captured (stale 77h) · Hard Rock Bet",
         "as_of": "2026-09-22T16:18:01.053+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1633,10 +1609,77 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 73,
-        "tier": "ADEQUATE",
-        "text": "73%",
-        "sub": "19 of 26 inputs on file"
+        "pct": 80,
+        "tier": "STRONG",
+        "text": "80 · STRONG",
+        "sub": "main deduction: the projected spread moves ±2.57 pts (1 SD) across 64 perturbation scenarios (largest source",
+        "score": 80,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 11.1,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 16.2,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 13.3,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "the projected spread moves ±2.57 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.5 pts)",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Register a school availability release for South Florida",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Bowling Green)",
+            "potential_gain": 3,
+            "text": "up to +3"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
+        "stability": {
+          "tier": "MODERATE",
+          "sd": 2.57,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "South Florida",
@@ -1867,7 +1910,7 @@
       "EdgeDesk’s line is Bowling Green +27.4 on a neutral read of the two teams, before any book is consulted. Projected total 55.2.",
       "Bowling Green wins 3% of the time in EdgeDesk’s simulation, South Florida 97%.",
       "Eight games in ten land between -50.4 and -6.4 for Bowling Green. A single result inside that band tells you nothing new about either team.",
-      "The market has Bowling Green +17.5 at captured (stale 73h) · Hard Rock Bet, 9.9 points from EdgeDesk’s number.",
+      "The market has Bowling Green +17.5 at captured (stale 77h) · Hard Rock Bet, 9.9 points from EdgeDesk’s number.",
       "South Florida quarterback: Luke Kromenhoek — started the last game; no announcement for this one.",
       "Bowling Green quarterback: Jay Kastantin — started the last game; no announcement for this one."
     ],
@@ -1883,6 +1926,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

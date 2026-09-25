@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T23:45:00.000Z",
   "game_when_label": "2026-10-03 23:45 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -293,7 +293,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": null,
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "LSU",
@@ -377,9 +377,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1397,8 +1397,8 @@
       "label": {
         "key": "LOW_RELIABILITY",
         "label": "LOW RELIABILITY",
-        "rule": "coverage",
-        "means": "Only 42% of this game’s applicable inputs are on file (10 of 24), under the 60% bar below which EdgeDesk argues against its own number."
+        "rule": "reliability",
+        "means": "Reliability is 59 (LOW), THIN DATA, under the 60 bar below which EdgeDesk argues against its own number. Why: McNeese is not rated by the model (priced from a shared floor): THIN DATA, not research-grade; the projected spread moves ±8 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±8 pts); McNeese is priced from the shared FCS floor rating — one number for every FCS programme, not a rating of this team. A large gap on low reliability is more suspicious, not less."
       },
       "fair": {
         "line_text": "LSU -40.9",
@@ -1419,10 +1419,79 @@
         "label": "Moderate"
       },
       "reliability": {
-        "pct": 42,
+        "pct": 59,
         "tier": "LOW",
-        "text": "42%",
-        "sub": "10 of 24 inputs on file"
+        "text": "59 · LOW",
+        "sub": "main deduction: McNeese is not rated by the model (priced from a shared floor)",
+        "score": 59,
+        "grade": "LOW",
+        "grade_label": "LOW",
+        "gate_label": "THIN DATA",
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 8.4,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 9,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 6,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 10,
+            "max": 10
+          }
+        ],
+        "main_deduction": "McNeese is not rated by the model (priced from a shared floor): THIN DATA, not research-grade",
+        "capped_by": [
+          "THIN_DATA"
+        ],
+        "next_actions": [
+          {
+            "action": "Wire an FCS team-rating source (McNeese)",
+            "potential_gain": 8,
+            "text": "up to +8"
+          },
+          {
+            "action": "Restore an injury/availability source for McNeese",
+            "potential_gain": 2,
+            "text": "up to +2 once wire an FCS team-rating source (McNeese) is done"
+          },
+          {
+            "action": "Register a school availability release for LSU",
+            "potential_gain": 2,
+            "text": "up to +2 once wire an FCS team-rating source (McNeese) is done"
+          }
+        ],
+        "stability": {
+          "tier": "UNSTABLE",
+          "sd": 8,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "LSU",
@@ -1642,6 +1711,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

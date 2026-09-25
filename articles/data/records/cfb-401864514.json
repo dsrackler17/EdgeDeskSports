@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -237,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "New Mexico",
@@ -323,9 +323,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1605,8 +1605,72 @@
       "reliability": {
         "pct": 69,
         "tier": "ADEQUATE",
-        "text": "69%",
-        "sub": "18 of 26 inputs on file"
+        "text": "69 · CAUTION",
+        "sub": "main deduction: unresolved roster conflict",
+        "score": 69,
+        "grade": "CAUTION",
+        "grade_label": "CAUTION",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 9,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 10.9,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 10,
+            "max": 10
+          }
+        ],
+        "main_deduction": "unresolved roster conflict: starter sources and the athlete identity disagree for New Mexico",
+        "capped_by": [
+          "ROSTER_CONFLICT"
+        ],
+        "next_actions": [
+          {
+            "action": "Resolve New Mexico’s starter conflict",
+            "potential_gain": 10,
+            "text": "up to +10"
+          },
+          {
+            "action": "Confirm New Mexico’s starting QB (Toa Fa'avae)",
+            "potential_gain": 5,
+            "text": "up to +5 once resolve New Mexico’s starter conflict is done"
+          }
+        ],
+        "stability": {
+          "tier": "STABLE",
+          "sd": 2.08,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "New Mexico",
@@ -1846,6 +1910,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

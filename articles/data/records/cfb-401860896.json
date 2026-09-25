@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T16:00:00.000Z",
   "game_when_label": "2026-09-26 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -128,36 +128,12 @@
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 1,
-          "NOT_REQUIRED": 0,
+          "NOT_REQUIRED": 4,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 2,
-          "UNAVAILABLE": 5
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for UTSA and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Colorado State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for the rebuilt conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing.."
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for the rebuilt conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing."
-          },
           {
             "field": "off_field",
             "side": "home",
@@ -273,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "UTSA",
@@ -351,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1463,7 +1439,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 73h old",
+          "text": "odds is 77h old",
           "widening": null
         },
         {
@@ -1582,9 +1558,9 @@
       "difference_n": 4.198834156358497,
       "total_model": "58.7",
       "total_market": "58.5",
-      "book": "captured (stale 73h) · FanDuel",
+      "book": "captured (stale 77h) · FanDuel",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "73 hours old",
+      "capture_age": "77 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1621,7 +1597,7 @@
         "market_line_text": "UTSA -13.5",
         "market_home_margin": 13.5,
         "favorite_differs": false,
-        "source": "captured (stale 73h) · FanDuel",
+        "source": "captured (stale 77h) · FanDuel",
         "as_of": "2026-09-22T16:18:01.053+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1633,10 +1609,79 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 72,
+        "pct": 79,
         "tier": "ADEQUATE",
-        "text": "72%",
-        "sub": "18 of 25 inputs on file"
+        "text": "79 · ADEQUATE",
+        "sub": "main deduction: the quarterback job is contested for Colorado State",
+        "score": 79,
+        "grade": "ADEQUATE",
+        "grade_label": "ADEQUATE",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 7.9,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 16.9,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 13.8,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 10,
+            "max": 10
+          }
+        ],
+        "main_deduction": "the quarterback job is contested for Colorado State",
+        "capped_by": [
+          "QB_CONTESTED"
+        ],
+        "next_actions": [
+          {
+            "action": "Confirm Colorado State’s starting QB (Hauss Hejny)",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Register a school availability release for Colorado State",
+            "potential_gain": 4,
+            "text": "up to +4 once confirm Colorado State’s starting QB (Hauss Hejny) is done"
+          },
+          {
+            "action": "Register a school availability release for UTSA",
+            "potential_gain": 4,
+            "text": "up to +4 once confirm Colorado State’s starting QB (Hauss Hejny) is done"
+          }
+        ],
+        "stability": {
+          "tier": "STABLE",
+          "sd": 2.38,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "UTSA",
@@ -1867,7 +1912,7 @@
       "EdgeDesk’s line is UTSA -17.7 on a neutral read of the two teams, before any book is consulted. Projected total 58.7.",
       "UTSA wins 88% of the time in EdgeDesk’s simulation, Colorado State 12%.",
       "Eight games in ten land between -5.3 and +38.7 for UTSA. A single result inside that band tells you nothing new about either team.",
-      "The market has UTSA -13.5 at captured (stale 73h) · FanDuel, 4.2 points from EdgeDesk’s number.",
+      "The market has UTSA -13.5 at captured (stale 77h) · FanDuel, 4.2 points from EdgeDesk’s number.",
       "UTSA quarterback: Owen McCown — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1883,6 +1928,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

@@ -21,8 +21,8 @@
   "game_time": "2026-09-27T01:00:00.000Z",
   "game_when_label": "2026-09-27 01:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -115,20 +115,20 @@
         "note": "Quoted from SMU’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 84,
-      "inputs_reached_pct": 77,
+      "inputs_reached_pct": 73,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 20,
-        "priced": 12,
-        "priced_coverage_pct": 46,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 12,
+          "USABLE": 11,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "NOT_REQUIRED": 3,
+          "NOT_REQUIRED": 4,
           "NOT_DUE_YET": 0,
           "FETCH_FAILED": 0,
           "UNAVAILABLE": 3
@@ -243,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T22:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "SMU",
@@ -256,8 +256,8 @@
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
           "state": "UNKNOWN",
-          "evidence": "EXPLICIT",
-          "why": "INJURY_STATUS_ACTIVE",
+          "evidence": "NONE",
+          "why": "ESPN injuries has a report on this player, but it was published 2022-10-30, more than a week ago, so it says nothing about this week. No current report is not the same as healthy",
           "source_url": "https://www.espn.com/college-football/team/injuries/_/id/2567"
         },
         "experience": {
@@ -333,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1439,7 +1439,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 73h old",
+          "text": "odds is 77h old",
           "widening": null
         },
         {
@@ -1558,9 +1558,9 @@
       "difference_n": 9.698904304701244,
       "total_model": "57.5",
       "total_market": "60.0",
-      "book": "captured (stale 73h) · Pinnacle",
+      "book": "captured (stale 77h) · Pinnacle",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "73 hours old",
+      "capture_age": "77 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1597,7 +1597,7 @@
         "market_line_text": "SMU -35.0",
         "market_home_margin": 35,
         "favorite_differs": false,
-        "source": "captured (stale 73h) · Pinnacle",
+        "source": "captured (stale 77h) · Pinnacle",
         "as_of": "2026-09-22T16:18:01.053+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1609,10 +1609,77 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 77,
-        "tier": "ADEQUATE",
-        "text": "77%",
-        "sub": "20 of 26 inputs on file"
+        "pct": 81,
+        "tier": "STRONG",
+        "text": "81 · STRONG",
+        "sub": "main deduction: the projected spread moves ±2.65 pts (1 SD) across 64 perturbation scenarios (largest source",
+        "score": 81,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 11.3,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 15.9,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 14.7,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "the projected spread moves ±2.65 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.82 pts)",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Register a school availability release for Missouri State",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Register a school availability release for SMU",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
+        "stability": {
+          "tier": "MODERATE",
+          "sd": 2.65,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "SMU",
@@ -1843,12 +1910,13 @@
       "EdgeDesk’s line is SMU -25.3 on a neutral read of the two teams, before any book is consulted. Projected total 57.5.",
       "SMU wins 95% of the time in EdgeDesk’s simulation, Missouri State 5%.",
       "Eight games in ten land between +2.3 and +46.3 for SMU. A single result inside that band tells you nothing new about either team.",
-      "The market has SMU -35.0 at captured (stale 73h) · Pinnacle, 9.7 points from EdgeDesk’s number.",
+      "The market has SMU -35.0 at captured (stale 77h) · Pinnacle, 9.7 points from EdgeDesk’s number.",
       "Missouri State quarterback: Skyler Locklear — started the last game; no announcement for this one.",
       "SMU quarterback: Kevin Jennings — started the last game; no announcement for this one."
     ],
     "missing": [
-      "No availability report reached Skyler Locklear — unknown is carried as unknown, never as healthy."
+      "No availability report reached Skyler Locklear — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Kevin Jennings — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
@@ -1857,6 +1925,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

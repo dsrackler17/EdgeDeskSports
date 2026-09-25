@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T19:30:00.000Z",
   "game_when_label": "2026-09-26 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 2,
-          "UNAVAILABLE": 5
+          "NOT_DUE_YET": 2,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 4
         },
         "absent": [
           {
@@ -142,21 +142,9 @@
           },
           {
             "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Miami (OH) and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing.."
-          },
-          {
-            "field": "availability",
             "side": "away",
             "state": "FETCH_FAILED",
             "why": "EdgeDesk read 3 source(s) for UConn and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses an independent has no conference to file with. Any availability report for one of these programmes comes from the school itself and is registered per school, never inherited from a conference.."
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing."
           },
           {
             "field": "qb_availability",
@@ -261,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "Miami (OH)",
@@ -339,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1491,7 +1479,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 73h old",
+          "text": "odds is 77h old",
           "widening": null
         },
         {
@@ -1610,9 +1598,9 @@
       "difference_n": 9.884542727878479,
       "total_model": "57.1",
       "total_market": "51.5",
-      "book": "captured (stale 73h) · Pinnacle",
+      "book": "captured (stale 77h) · Pinnacle",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "73 hours old",
+      "capture_age": "77 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1649,7 +1637,7 @@
         "market_line_text": "Miami (OH) -3.5",
         "market_home_margin": 3.5,
         "favorite_differs": true,
-        "source": "captured (stale 73h) · Pinnacle",
+        "source": "captured (stale 77h) · Pinnacle",
         "as_of": "2026-09-22T16:18:01.053+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1661,10 +1649,77 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 73,
+        "pct": 77,
         "tier": "ADEQUATE",
-        "text": "73%",
-        "sub": "19 of 26 inputs on file"
+        "text": "77 · ADEQUATE",
+        "sub": "main deduction: the projected spread moves ±3.33 pts (1 SD) across 64 perturbation scenarios (largest source",
+        "score": 77,
+        "grade": "ADEQUATE",
+        "grade_label": "ADEQUATE",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 11,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 12.5,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.6,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 14.7,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "the projected spread moves ±3.33 pts (1 SD) across 64 perturbation scenarios (largest source: conference strength, ±3.13 pts)",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Restore an injury/availability source for UConn",
+            "potential_gain": 5,
+            "text": "up to +5"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Miami (OH))",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
+          }
+        ],
+        "stability": {
+          "tier": "MODERATE",
+          "sd": 3.33,
+          "favorite_flip_rate": 0.016
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "UConn",
@@ -1895,7 +1950,7 @@
       "EdgeDesk’s line is Miami (OH) +6.4 on a neutral read of the two teams, before any book is consulted. Projected total 57.1.",
       "Miami (OH) wins 34% of the time in EdgeDesk’s simulation, UConn 66%.",
       "Eight games in ten land between -29.4 and +14.6 for Miami (OH). A single result inside that band tells you nothing new about either team.",
-      "The market has Miami (OH) -3.5 at captured (stale 73h) · Pinnacle, 9.9 points from EdgeDesk’s number.",
+      "The market has Miami (OH) -3.5 at captured (stale 77h) · Pinnacle, 9.9 points from EdgeDesk’s number.",
       "UConn quarterback: Kalieb Osborne — started the last game; no announcement for this one.",
       "Miami (OH) quarterback: David McComb — started the last game; no announcement for this one."
     ],
@@ -1911,6 +1966,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

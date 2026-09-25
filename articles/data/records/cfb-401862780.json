@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T22:30:00.000Z",
   "game_when_label": "2026-09-26 22:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -128,10 +128,10 @@
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
-          "NOT_REQUIRED": 2,
+          "NOT_REQUIRED": 4,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 4
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
@@ -139,18 +139,6 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Charlotte and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
             "field": "off_field",
@@ -255,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "Charlotte",
@@ -345,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T22:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1481,7 +1469,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 73h old",
+          "text": "odds is 77h old",
           "widening": null
         },
         {
@@ -1600,9 +1588,9 @@
       "difference_n": 3.9568217011793525,
       "total_model": "55.4",
       "total_market": "49.5",
-      "book": "captured (stale 73h) · Pinnacle",
+      "book": "captured (stale 77h) · Pinnacle",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "73 hours old",
+      "capture_age": "77 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1639,7 +1627,7 @@
         "market_line_text": "Louisiana -10.0",
         "market_home_margin": -10,
         "favorite_differs": false,
-        "source": "captured (stale 73h) · Pinnacle",
+        "source": "captured (stale 77h) · Pinnacle",
         "as_of": "2026-09-22T16:18:01.053+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1651,10 +1639,77 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 73,
-        "tier": "ADEQUATE",
-        "text": "73%",
-        "sub": "19 of 26 inputs on file"
+        "pct": 82,
+        "tier": "STRONG",
+        "text": "82 · STRONG",
+        "sub": "main deduction: no conference availability report is required for Louisiana in this fixture",
+        "score": 82,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 11,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 18.1,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 13.3,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "no conference availability report is required for Louisiana in this fixture; the impact of Louisiana’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Register a school availability release for Louisiana",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Register a school availability release for Charlotte",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
+        "stability": {
+          "tier": "STABLE",
+          "sd": 2.03,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "Louisiana",
@@ -1879,7 +1934,7 @@
       "EdgeDesk’s line is Charlotte +6.0 on a neutral read of the two teams, before any book is consulted. Projected total 55.4.",
       "Charlotte wins 34% of the time in EdgeDesk’s simulation, Louisiana 66%.",
       "Eight games in ten land between -29.0 and +15.0 for Charlotte. A single result inside that band tells you nothing new about either team.",
-      "The market has Charlotte +10.0 at captured (stale 73h) · Pinnacle, 4.0 points from EdgeDesk’s number.",
+      "The market has Charlotte +10.0 at captured (stale 77h) · Pinnacle, 4.0 points from EdgeDesk’s number.",
       "Louisiana quarterback: Lunch Winfield — started the last game; no announcement for this one.",
       "Charlotte quarterback: Cole Gonzales — started the last game; no announcement for this one."
     ],
@@ -1894,6 +1949,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T22:00:00.000Z",
   "game_when_label": "2026-09-26 22:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -243,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T15:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "Virginia",
@@ -333,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1453,7 +1453,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 73h old",
+          "text": "odds is 77h old",
           "widening": null
         },
         {
@@ -1578,9 +1578,9 @@
       "difference_n": 2.058536428827537,
       "total_model": "54.6",
       "total_market": "52.5",
-      "book": "captured (stale 73h) · BetMGM",
+      "book": "captured (stale 77h) · BetMGM",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "73 hours old",
+      "capture_age": "77 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1617,7 +1617,7 @@
         "market_line_text": "Virginia -19.5",
         "market_home_margin": 19.5,
         "favorite_differs": false,
-        "source": "captured (stale 73h) · BetMGM",
+        "source": "captured (stale 77h) · BetMGM",
         "as_of": "2026-09-22T16:18:01.053+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1629,10 +1629,77 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 73,
-        "tier": "ADEQUATE",
-        "text": "73%",
-        "sub": "19 of 26 inputs on file"
+        "pct": 82,
+        "tier": "STRONG",
+        "text": "82 · STRONG",
+        "sub": "main deduction: the projected spread moves ±2.36 pts (1 SD) across 64 perturbation scenarios (largest source",
+        "score": 82,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 11.1,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 17,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 14.7,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "the projected spread moves ±2.36 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.51 pts)",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Register a school availability release for Delaware",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Register a school availability release for Virginia",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
+        "stability": {
+          "tier": "STABLE",
+          "sd": 2.36,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "Virginia",
@@ -1863,7 +1930,7 @@
       "EdgeDesk’s line is Virginia -17.4 on a neutral read of the two teams, before any book is consulted. Projected total 54.6.",
       "Virginia wins 88% of the time in EdgeDesk’s simulation, Delaware 12%.",
       "Eight games in ten land between -5.6 and +38.4 for Virginia. A single result inside that band tells you nothing new about either team.",
-      "The market has Virginia -19.5 at captured (stale 73h) · BetMGM, 2.1 points from EdgeDesk’s number.",
+      "The market has Virginia -19.5 at captured (stale 77h) · BetMGM, 2.1 points from EdgeDesk’s number.",
       "Delaware quarterback: Nick Minicucci — started the last game; no announcement for this one.",
       "Virginia quarterback: Beau Pribula — started the last game; no announcement for this one."
     ],
@@ -1878,6 +1945,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

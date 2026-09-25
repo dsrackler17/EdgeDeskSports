@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T16:00:00.000Z",
   "game_when_label": "2026-09-26 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -249,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T23:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "Texas Tech",
@@ -327,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1433,7 +1433,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 73h old",
+          "text": "odds is 77h old",
           "widening": null
         },
         {
@@ -1558,9 +1558,9 @@
       "difference_n": 1.9738568697237469,
       "total_model": "53.2",
       "total_market": "55.0",
-      "book": "captured (stale 73h) · BetOnline.ag",
+      "book": "captured (stale 77h) · BetOnline.ag",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "73 hours old",
+      "capture_age": "77 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1597,7 +1597,7 @@
         "market_line_text": "Texas Tech -34.5",
         "market_home_margin": 34.5,
         "favorite_differs": false,
-        "source": "captured (stale 73h) · BetOnline.ag",
+        "source": "captured (stale 77h) · BetOnline.ag",
         "as_of": "2026-09-22T16:18:01.053+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1609,10 +1609,77 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 73,
+        "pct": 79,
         "tier": "ADEQUATE",
-        "text": "73%",
-        "sub": "19 of 26 inputs on file"
+        "text": "79 · ADEQUATE",
+        "sub": "main deduction: the projected spread moves ±2.91 pts (1 SD) across 64 perturbation scenarios (largest source",
+        "score": 79,
+        "grade": "ADEQUATE",
+        "grade_label": "ADEQUATE",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 11.3,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 14.7,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 13.3,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "the projected spread moves ±2.91 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±2.01 pts)",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Register a school availability release for Sam Houston",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Register a school availability release for Texas Tech",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
+        "stability": {
+          "tier": "MODERATE",
+          "sd": 2.91,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "Texas Tech",
@@ -1843,7 +1910,7 @@
       "EdgeDesk’s line is Texas Tech -32.5 on a neutral read of the two teams, before any book is consulted. Projected total 53.2.",
       "Texas Tech wins 98% of the time in EdgeDesk’s simulation, Sam Houston 2%.",
       "Eight games in ten land between +9.5 and +53.5 for Texas Tech. A single result inside that band tells you nothing new about either team.",
-      "The market has Texas Tech -34.5 at captured (stale 73h) · BetOnline.ag, 2.0 points from EdgeDesk’s number.",
+      "The market has Texas Tech -34.5 at captured (stale 77h) · BetOnline.ag, 2.0 points from EdgeDesk’s number.",
       "Sam Houston quarterback: Landyn Locke — started the last game; no announcement for this one.",
       "Texas Tech quarterback: Will Hammond — started the last game; no announcement for this one."
     ],
@@ -1859,6 +1926,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }

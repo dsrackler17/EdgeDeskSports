@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T19:30:00.000Z",
   "game_when_label": "2026-10-03 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-25T17:04:09.589Z",
-  "generated_at": "2026-09-25T17:04:09.589Z",
+  "updated_at": "2026-09-25T21:29:39.219Z",
+  "generated_at": "2026-09-25T21:29:39.219Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -118,10 +118,10 @@
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 1,
-          "NOT_REQUIRED": 0,
+          "NOT_REQUIRED": 2,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 13
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 12
         },
         "absent": [
           {
@@ -138,12 +138,6 @@
           },
           {
             "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for UAB and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled.."
-          },
-          {
-            "field": "availability",
             "side": "away",
             "state": "UNAVAILABLE",
             "why": "Samford is outside the FBS availability registry, so no availability read covers it. The engine prices maximum injury uncertainty for this side and charges for the gap, so the contract counts it as a gap rather than excusing it as inapplicable"
@@ -153,12 +147,6 @@
             "side": "away",
             "state": "UNAVAILABLE",
             "why": "Samford is outside the FBS field the player layer rates, so no composite is measured for it. The engine charges for the gap, so the contract counts it as one"
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. no published football availability-reporting policy was found for this conference. That is a gap in EdgeDesk’s research, NOT a finding that the conference publishes nothing, and it is recorded as unverified so it is looked at again rather than treated as settled."
           },
           {
             "field": "qb_availability",
@@ -299,7 +287,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": null,
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
       "home": {
         "team": "UAB",
@@ -383,9 +371,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T00:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T21:04:50.810Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T21:05:35.129Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1387,8 +1375,8 @@
       "label": {
         "key": "LOW_RELIABILITY",
         "label": "LOW RELIABILITY",
-        "rule": "coverage",
-        "means": "Only 44% of this game’s applicable inputs are on file (11 of 25), under the 60% bar below which EdgeDesk argues against its own number."
+        "rule": "reliability",
+        "means": "Reliability is 59 (LOW), THIN DATA, under the 60 bar below which EdgeDesk argues against its own number. Why: Samford is not rated by the model (priced from a shared floor): THIN DATA, not research-grade; the projected spread moves ±7.88 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±8 pts); Samford is priced from the shared FCS floor rating — one number for every FCS programme, not a rating of this team. A large gap on low reliability is more suspicious, not less."
       },
       "fair": {
         "line_text": "UAB -20.4",
@@ -1409,10 +1397,79 @@
         "label": "Moderate"
       },
       "reliability": {
-        "pct": 44,
+        "pct": 59,
         "tier": "LOW",
-        "text": "44%",
-        "sub": "11 of 25 inputs on file"
+        "text": "59 · LOW",
+        "sub": "main deduction: Samford is not rated by the model (priced from a shared floor)",
+        "score": 59,
+        "grade": "LOW",
+        "grade_label": "LOW",
+        "gate_label": "THIN DATA",
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 9,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 8.3,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 6,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 10,
+            "max": 10
+          }
+        ],
+        "main_deduction": "Samford is not rated by the model (priced from a shared floor): THIN DATA, not research-grade",
+        "capped_by": [
+          "THIN_DATA"
+        ],
+        "next_actions": [
+          {
+            "action": "Wire an FCS team-rating source (Samford)",
+            "potential_gain": 7,
+            "text": "up to +7"
+          },
+          {
+            "action": "Restore an injury/availability source for Samford",
+            "potential_gain": 3,
+            "text": "up to +3 once wire an FCS team-rating source (Samford) is done"
+          },
+          {
+            "action": "Register a school availability release for UAB",
+            "potential_gain": 3,
+            "text": "up to +3 once wire an FCS team-rating source (Samford) is done"
+          }
+        ],
+        "stability": {
+          "tier": "UNSTABLE",
+          "sd": 7.88,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "UAB",
@@ -1632,6 +1689,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T17:04:09.589Z"
+    "at": "2026-09-25T21:29:39.219Z"
   }
 }
