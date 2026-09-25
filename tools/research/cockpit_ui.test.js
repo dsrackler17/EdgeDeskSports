@@ -130,7 +130,8 @@ chk('without the shared layer the cockpit renders nothing rather than a differen
   const store = {};
   c.localStorage = { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); } };
   const uu = unit('77');
-  chk('an unfollowed game offers Follow and records nothing', /Follow this game/.test(c.fbGxWatch(uu, p)) && !store.ed_research_watch_v1);
+  chk('an unfollowed game offers Follow and records nothing', /Follow this game/.test(c.fbGxWatch(uu, p))
+    && !store.ed_research_follow_v1 && !store.ed_research_watch_v1);
   c.fbWatchSave({ '77': { since: '2025-10-01T00:00:00Z', events: [], last: null } });
   setMarket({ spread_line: 3.5, total_line: 52.5, quotes_h2h: null, book: 'consensus', as_of: recent, stale: false });
   uu._gr = null;
@@ -142,6 +143,64 @@ chk('without the shared layer the cockpit renders nothing rather than a differen
   chk('a captured market move becomes a timeline row with from and to', /Market spread/.test(second) && second.indexOf(HOME + ' -3.5') >= 0 && second.indexOf(HOME + ' -5.0') >= 0, second.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 900));
   chk('without storage the page still renders', (() => { c.localStorage = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
     return /Follow this game/.test(c.fbGxWatch(unit('78'), p)); })());
+})();
+
+/* ---- the follow list and the Desk watchlist no longer share a key ----
+   Both used ed_research_watch_v1: the Desk stores an ARRAY there, the follow
+   list an object keyed by game id, and whichever wrote last destroyed the
+   other. The follow list now has its own key and carries over what it left
+   under the old one; an array there is the Desk's and is never touched. */
+(function () {
+  const DESK_KEY = (APP.match(/var DESK_WATCH_KEY='([^']+)'/) || [])[1];
+  const FOLLOW_KEY = c.FB_WATCH_KEY;
+  chk('the Desk watchlist keeps ed_research_watch_v1', DESK_KEY === 'ed_research_watch_v1', DESK_KEY);
+  chk('the follow list has a key of its own', FOLLOW_KEY === 'ed_research_follow_v1' && FOLLOW_KEY !== DESK_KEY, FOLLOW_KEY);
+  function mem(init) {
+    const store = Object.assign({}, init || {});
+    c.localStorage = { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; } };
+    return store;
+  }
+  const follow = (since) => ({ since, events: [], last: null });
+  const deskList = [{ game_id: 'd1', sport: 'CFB', matchup: 'A @ B', added_at: '2025-10-01T00:00:00Z', open_questions: [] }];
+
+  /* follows left under the old key by the old page move across, once */
+  let store = mem({ ed_research_watch_v1: JSON.stringify({ '77': follow('2025-10-01T00:00:00Z'), '78': follow('2025-10-02T00:00:00Z') }) });
+  const w = c.fbWatchLoad();
+  chk('follows stored under the old key are carried over', () => !!(w['77'] && w['78']) && w['78'].since === '2025-10-02T00:00:00Z', w);
+  chk('onto the follow list’s own key', () => JSON.parse(store.ed_research_follow_v1)['77'].since === '2025-10-01T00:00:00Z');
+  chk('and cleared from the old key, so the Desk reads an empty list rather than a follow object', !('ed_research_watch_v1' in store));
+  c.fbWatchLoad();
+  chk('the carry-over happens once: a second load changes nothing', () => Object.keys(JSON.parse(store.ed_research_follow_v1)).join(',') === '77,78');
+
+  /* the Desk's array under the old key is never touched */
+  store = mem({ ed_research_watch_v1: JSON.stringify(deskList) });
+  const w2 = c.fbWatchLoad();
+  chk('with the Desk’s list under the old key, the follow list reads empty, never the array', !Array.isArray(w2) && Object.keys(w2).length === 0);
+  chk('and the Desk’s list is left exactly as it was', store.ed_research_watch_v1 === JSON.stringify(deskList));
+  /* the bug itself: a follow saved while the Desk's list is present */
+  w2['91'] = follow('2025-10-03T00:00:00Z');
+  c.fbWatchSave(w2);
+  chk('a follow saved beside the Desk’s list survives the save (it used to vanish from an array)', () => JSON.parse(store.ed_research_follow_v1)['91'].since === '2025-10-03T00:00:00Z');
+  chk('and the Desk’s list is still intact', () => JSON.parse(store.ed_research_watch_v1)[0].game_id === 'd1');
+  /* the other direction: the Desk saving its list no longer touches a follow */
+  store[DESK_KEY] = JSON.stringify(deskList.concat([{ game_id: 'd2', matchup: 'C @ D' }]));
+  chk('the Desk writing its list leaves every follow in place', () => !!c.fbWatchLoad()['91'] && JSON.parse(store.ed_research_watch_v1).length === 2);
+
+  /* both keys populated (an old tab wrote to the old key after the move) */
+  store = mem({ ed_research_follow_v1: JSON.stringify({ '77': follow('NEW') }),
+    ed_research_watch_v1: JSON.stringify({ '77': follow('OLD'), '80': follow('2025-10-04T00:00:00Z') }) });
+  const w3 = c.fbWatchLoad();
+  chk('a follow already on the new key is never overwritten by the old copy', () => w3['77'].since === 'NEW');
+  chk('and one only on the old key is added', () => !!w3['80'] && w3['80'].since === '2025-10-04T00:00:00Z');
+
+  /* bad data under the old key is left alone, never thrown on */
+  store = mem({ ed_research_watch_v1: '{not json' });
+  chk('unreadable data under the old key does not break the follow list', () => Object.keys(c.fbWatchLoad()).length === 0 && store.ed_research_watch_v1 === '{not json');
+  /* a browser whose storage refuses writes keeps the old data where it was */
+  store = mem({ ed_research_watch_v1: JSON.stringify({ '77': follow('X') }) });
+  c.localStorage.setItem = () => { throw new Error('quota'); };
+  chk('if the new key cannot be written, the old copy is not deleted', () => { c.fbWatchMigrate(); return 'ed_research_watch_v1' in store; });
 })();
 
 /* ---- explain ---- */

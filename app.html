@@ -42940,7 +42940,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      nine seconds since the last question. */
   var DESK={res:null,research:null,brief:null,board:null,at:0,quote:null,snapshot:null};
   var DESK_SNAP_KEY='ed_research_snapshots_v1';
-  var DESK_WATCH_KEY='ed_research_watch_v1';
+  var DESK_WATCH_KEY='ed_research_watch_v1';   /* the Desk's alone: the board's follow list is ed_research_follow_v1 */
   var DESK_PRICE_TTL=90*1000;          /* a price older than this is re-read on a follow-up */
 
   function deskSnapsAll(){
@@ -49926,8 +49926,8 @@ function fbP4RecordFor(u){
    baseline "what changed" and "since your last visit" are measured against —
    and then overwritten with what is on screen now. It lives in this browser
    only; nothing is sent anywhere, and a browser that will not store it simply
-   has no visit baseline. Its own key: ed_research_watch_v1 is already shared
-   by two stores of different shapes. */
+   has no visit baseline. Its own key, so it can never collide with another
+   store the way the Desk watchlist and the follow list once did. */
 var FB_P4_SEEN_KEY='ed_cfb_seen_v1';
 FB.p4seen={base:null,read:false,wroteAt:0};
 function fbP4SeenLoad(){
@@ -55705,9 +55705,33 @@ function fbGxScenarios(u,p){
    stamped with the capture time of the fact that changed (the market's own
    capture time, the model's own projection time). Nothing is back-filled:
    the timeline starts when the game is followed, and says so. */
-var FB_WATCH_KEY='ed_research_watch_v1',FB_WATCH_MAX_EVENTS=60;
-function fbWatchLoad(){try{var s=localStorage.getItem(FB_WATCH_KEY);var o=s?JSON.parse(s):{};return (o&&typeof o==='object')?o:{};}catch(_){return {};}}
+/* THE FOLLOW LIST HAS ITS OWN KEY. It used to share ed_research_watch_v1
+   with the Desk's watchlist (DESK_WATCH_KEY), which stores an ARRAY there,
+   and whichever store wrote last destroyed the other's data: on an array a
+   follow was set as a keyed property that JSON.stringify drops, so it
+   vanished on save; on this store's object the Desk read an empty watchlist
+   and its next save wrote over every follow. The Desk keeps the old key.
+   Follows still sitting under it are carried over here once, merged without
+   overwriting a follow already on the new key, and only then cleared from
+   the old key; an array there is the Desk's and is never touched. */
+var FB_WATCH_KEY='ed_research_follow_v1',FB_WATCH_LEGACY_KEY='ed_research_watch_v1',FB_WATCH_MAX_EVENTS=60;
+function fbWatchMigrate(){
+  try{
+    var s=localStorage.getItem(FB_WATCH_LEGACY_KEY);if(!s)return;
+    var old=JSON.parse(s);
+    if(!old||typeof old!=='object'||Array.isArray(old))return;
+    var cur={};
+    try{var c=JSON.parse(localStorage.getItem(FB_WATCH_KEY)||'{}');if(c&&typeof c==='object'&&!Array.isArray(c))cur=c;}catch(_){}
+    Object.keys(old).forEach(function(k){if(!cur.hasOwnProperty(k)&&old[k]&&typeof old[k]==='object')cur[k]=old[k];});
+    localStorage.setItem(FB_WATCH_KEY,JSON.stringify(cur));
+    localStorage.removeItem(FB_WATCH_LEGACY_KEY);
+  }catch(_){}
+}
+function fbWatchLoad(){fbWatchMigrate();try{var s=localStorage.getItem(FB_WATCH_KEY);var o=s?JSON.parse(s):{};return (o&&typeof o==='object'&&!Array.isArray(o))?o:{};}catch(_){return {};}}
 function fbWatchSave(w){try{localStorage.setItem(FB_WATCH_KEY,JSON.stringify(w));return true;}catch(_){return false;}}
+/* at page load: this module runs before anyone can press a button, so the
+   Desk can never save its list over follows still under the old key */
+try{fbWatchMigrate();}catch(_){}
 function fbWatchRecord(gid,label,o){
   var GR=window.EDGameResearch;if(!GR||!o)return null;
   var w=fbWatchLoad(),e=w[gid];if(!e)return null;
