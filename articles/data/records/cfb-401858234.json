@@ -21,8 +21,8 @@
   "game_time": "2026-09-26T02:30:00.000Z",
   "game_when_label": "2026-09-26 02:30 UTC",
   "published_at": "2026-09-25T16:30:20.186Z",
-  "updated_at": "2026-09-25T18:20:22.586Z",
-  "generated_at": "2026-09-25T18:20:22.586Z",
+  "updated_at": "2026-09-25T19:40:18.816Z",
+  "generated_at": "2026-09-25T19:40:18.816Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -257,7 +257,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T18:37:19.279Z"
       },
       "home": {
         "team": "California",
@@ -347,9 +347,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T19:30:00.000Z",
-        "retrieved_at": "2026-09-25T16:44:28.744Z"
+        "retrieved_at": "2026-09-25T18:37:19.279Z"
       },
-      "generated_at": "2026-09-25T16:45:12.440Z",
+      "generated_at": "2026-09-25T18:38:02.397Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1464,7 +1464,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 74h old",
+          "text": "odds is 75h old",
           "widening": null
         },
         {
@@ -1555,9 +1555,9 @@
       "difference_n": 0.367135445885977,
       "total_model": "53.1",
       "total_market": "50.0",
-      "book": "captured (stale 74h) · theScore Bet",
+      "book": "captured (stale 75h) · theScore Bet",
       "captured": "2026-09-22T16:18:01.053+00:00",
-      "capture_age": "74 hours old",
+      "capture_age": "75 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1594,7 +1594,7 @@
         "market_line_text": "Clemson -1.5",
         "market_home_margin": -1.5,
         "favorite_differs": false,
-        "source": "captured (stale 74h) · theScore Bet",
+        "source": "captured (stale 75h) · theScore Bet",
         "as_of": "2026-09-22T16:18:01.053+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1606,10 +1606,77 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 81,
+        "pct": 79,
         "tier": "ADEQUATE",
-        "text": "81%",
-        "sub": "21 of 26 inputs on file"
+        "text": "79 · ADEQUATE",
+        "sub": "main deduction: the projection flips favorite in 17% of sensitivity runs",
+        "score": 79,
+        "grade": "ADEQUATE",
+        "grade_label": "ADEQUATE",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 13.5,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 12.9,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 13.4,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "the projection flips favorite in 17% of sensitivity runs",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Confirm Clemson’s QB availability",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Confirm California’s QB availability",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
+        "stability": {
+          "tier": "MODERATE",
+          "sd": 2.37,
+          "favorite_flip_rate": 0.172
+        },
+        "scale": "0-100 reliability score, not a probability"
       },
       "drivers": {
         "team": "Clemson",
@@ -1828,7 +1895,7 @@
       "EdgeDesk’s line is California +1.9 on a neutral read of the two teams, before any book is consulted. Projected total 53.1.",
       "California wins 45% of the time in EdgeDesk’s simulation, Clemson 55%.",
       "Eight games in ten land between -24.9 and +19.1 for California. A single result inside that band tells you nothing new about either team.",
-      "The market has California +1.5 at captured (stale 74h) · theScore Bet, 0.4 points from EdgeDesk’s number.",
+      "The market has California +1.5 at captured (stale 75h) · theScore Bet, 0.4 points from EdgeDesk’s number.",
       "Clemson quarterback: Tait Reynolds — started the last game; no announcement for this one.",
       "California quarterback: Jaron-Keawe Sagapolutele — started the last game; no announcement for this one."
     ],
@@ -1840,15 +1907,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-25. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_deb1781d03714cb3",
+  "snapshot_id": "snap_4d4cfc0bba6b2636",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-09-26T02:30:00.000Z",
-    "minutes_before_kickoff": 490,
+    "minutes_before_kickoff": 410,
     "published_at": "2026-09-25T16:30:20.186Z",
     "refreshed": false,
-    "at": "2026-09-25T18:20:22.586Z"
+    "at": "2026-09-25T19:40:18.816Z"
   },
   "featured": {
     "editorial_priority": 39.5,
@@ -1891,7 +1958,7 @@
         "label": "EdgeDesk differs from the market by 0.4 points",
         "points": 0.5,
         "tier": "EDGEDESK_MODEL",
-        "detail": "California +1.9 against California +1.5 at captured (stale 74h) · theScore Bet — RESEARCH · the gap earns 0.5 of a possible 1.3 because the price is current. A gap alone orders no research and implies no expected value."
+        "detail": "California +1.9 against California +1.5 at captured (stale 75h) · theScore Bet — RESEARCH · the gap earns 0.5 of a possible 1.3 because the price is current. A gap alone orders no research and implies no expected value."
       }
     ]
   },
@@ -1927,7 +1994,7 @@
       "schema": "edgedesk_thesis_v1",
       "thesis_id": "market_gap",
       "kind": "market",
-      "claim": "EdgeDesk makes it California +1.9 where the market has California +1.5 at captured (stale 74h) · theScore Bet — a 0.4 points disagreement.",
+      "claim": "EdgeDesk makes it California +1.9 where the market has California +1.5 at captured (stale 75h) · theScore Bet — a 0.4 points disagreement.",
       "basis": "EdgeDesk’s own number against a captured sportsbook quote",
       "source_path": "market.difference",
       "category": "market",
@@ -2149,11 +2216,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-09-25T18:20:22.586Z"
+    "at": "2026-09-25T19:40:18.816Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-09-25T18:20:22.586Z",
+    "at": "2026-09-25T19:40:18.816Z",
     "blocking": [],
     "warnings": [],
     "hold_reason": null
@@ -2161,6 +2228,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-25T18:20:22.586Z"
+    "at": "2026-09-25T19:40:18.816Z"
   }
 }
