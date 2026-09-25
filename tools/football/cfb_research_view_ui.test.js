@@ -29,7 +29,7 @@ function has(hay, needle, what) { ok(String(hay).indexOf(needle) >= 0, what, { m
 function lacks(hay, needle, what) { ok(String(hay).indexOf(needle) < 0, what, { present: needle }); }
 function section(t) { console.log('\n' + t); }
 
-const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
+const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 (function () {
@@ -184,6 +184,39 @@ section('STEP 3 · one research label on the row, the card, the brief and the sh
   const al = stageAt(3.1, { market_spread: -2.5 });
   withCoverage(al.u, WELL);
   eq(T.fbP4ViewFor(al.u, al.p).research_label.key, 'MARKET_ALIGNED', 'a 0.6-pt gap is MARKET ALIGNED');
+}
+
+/* ------------------------------------------------------------------------ */
+section('STEP 4 · the card and the row keep the gap, confidence and reliability apart');
+{
+  const s = stageAt(12, { market_spread: -2.5 });
+  withCoverage(s.u, WELL);
+  const v = T.fbP4ViewFor(s.u, s.p);
+  const card = T.fbGxSummary(s.u, s.p, 'RV1');
+  has(card, '>Market gap<', 'the card has a Market gap cell');
+  has(card, '>Confidence<', 'a separate Confidence cell');
+  has(card, '>Reliability<', 'and a separate Reliability cell');
+  lacks(card, '>Data confidence<', 'instead of one number standing in for both');
+  has(card, v.confidence.label, 'confidence reads as its tier');
+  has(card, v.confidence.pct_text + ' information confidence', 'with the engine’s score beside it');
+  has(card, '82%', 'reliability reads as the input coverage');
+  has(card, '14 of 17 inputs on file', 'with the count behind it');
+  const rc = T.fbRvRowCells(v);
+  has(rc.conf, 'class="rv-t', 'the row prints confidence in its own cell');
+  has(rc.rel, '82%', 'and reliability in another');
+  has(rc.fair, HOME + ' -12.0', 'the row’s fair line is named for its favourite');
+  has(rc.market, HOME + ' -2.5', 'and so is its market line');
+  lacks(T.fbRvGapCell(v, v.market_gap.points), 'rv-dim', 'a gap on good data is not dimmed');
+
+  /* the same size of gap on weak data looks different */
+  const w = stageAt(12, { market_spread: -2.5 });
+  const vw = T.fbP4ViewFor(w.u, w.p);
+  eq(T.fbRvWeak(vw), true, 'the thin harness contract makes this gap weak');
+  has(T.fbRvGapCell(vw, vw.market_gap.points), 'rv-dim', 'and the row dims it');
+  has(T.fbRvGapCell(vw, vw.market_gap.points), 'read with caution', 'and says why on hover');
+  const wc = T.fbGxSummary(w.u, w.p, 'RV1');
+  const gapCell = wc.slice(wc.indexOf('>Market gap<'), wc.indexOf('>Market gap<') + 200);
+  lacks(gapCell, 'v warn', 'the card does not colour a weak gap as a finding');
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));

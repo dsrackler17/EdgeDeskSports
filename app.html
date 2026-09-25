@@ -1895,6 +1895,16 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .rv-lab.ok{color:var(--pos);border-color:rgba(118,189,62,.45)}
 .rv-lab.gold{color:var(--gold);border-color:rgba(227,184,77,.45)}
 .rv-lab.mut{color:var(--faint)}
+.rv-t{font-weight:700}.rv-t.hi{color:var(--pos)}.rv-t.md{color:var(--text)}.rv-t.lo{color:var(--neg)}
+.rv-dim{opacity:.5}
+.rv-fair{color:var(--accent)}
+/* on a phone the research columns come first: the conference column (its
+   badges are on the card) steps aside so the fair line, the gap and the label
+   are on the first screen */
+@media(max-width:560px){
+  .rv-row{grid-template-columns:12px 56px minmax(104px,1fr) 108px 94px 90px 32px 32px 120px!important}
+  .rv-row .rv-conf{display:none}
+}
 .rv-np{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.05em;border:1px solid rgba(227,184,77,.45);border-radius:4px;padding:1px 4px;color:var(--gold);white-space:nowrap;vertical-align:middle;margin-left:4px}
 .fbs-confcell{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media(max-width:560px){
@@ -49829,8 +49839,36 @@ function fbRvGapCell(v,gap){
   var G=v&&v.market_gap;
   if(!G||!G.available)return gap==null?'—':gap.toFixed(1);
   if(G.toward_team==null)return '0.0';
-  return '<span title="'+fbEsc('Market gap: '+G.text+(G.note?(' · '+G.note):''))+'">'+G.points.toFixed(1)
+  /* a gap the data cannot support is shown, and shown dimmed: the size of a
+     disagreement is never allowed to read as confidence in it */
+  var weak=fbRvWeak(v);
+  return '<span'+(weak?' class="rv-dim"':'')+' title="'+fbEsc('Market gap: '+G.text+(G.note?(' · '+G.note):'')
+      +(weak?(' · read with caution: '+v.research_label.label):''))+'">'+G.points.toFixed(1)
     +' <span class="mut">→ '+fbEsc(G.toward_team)+'</span></span>';
+}
+/* the labels under which a gap is not a reading of the market */
+function fbRvWeak(v){
+  var k=v&&v.research_label&&v.research_label.key;
+  return k==='LIMITED_DATA'||k==='LOW_RELIABILITY';
+}
+var FB_RV_TIER={HIGH:['HIGH','hi'],MODERATE:['MOD','md'],LOW:['LOW','lo']};
+var FB_RV_REL={STRONG:'hi',ADEQUATE:'md',LOW:'lo'};
+/* the row's fair, market, confidence and reliability cells */
+function fbRvRowCells(v){
+  var F=v.fair,G=v.market_gap,C=v.confidence,R=v.reliability,out={};
+  out.fair=F?('<span class="rv-fair" title="'+fbEsc('EdgeDesk fair: '+F.fair_line_text+(v.is_near_pickem?(' · raw '+F.raw_line_text):''))+'">'
+      +fbEsc(F.fair_line_text)+'</span>'+(v.is_near_pickem?('<br>'+fbRvNearBadge(v)):''))
+    :'<span class="mut">—</span>';
+  out.market=G&&G.available
+    ?('<span class="mut" title="'+fbEsc('Market: '+G.market_line_text+(G.source?(' · '+G.source):'')+(G.stale?' · stale capture':''))+'">'
+      +fbEsc(G.market_line_text)+(G.stale?' · stale':'')+'</span>')
+    :'<span class="mut">—</span>';
+  var t=C&&C.tier&&FB_RV_TIER[C.tier];
+  out.conf=t?('<span class="rv-t '+t[1]+'" title="'+fbEsc('Confidence '+C.label+' · '+C.pct_text+' information confidence')+'">'+t[0]+'</span>')
+    :'<span class="mut" title="confidence not measured">—</span>';
+  out.rel=(R&&R.pct!=null)?('<span class="rv-t '+FB_RV_REL[R.tier]+'" title="'+fbEsc('Reliability '+R.text+' · '+R.sub)+'">'+R.pct+'%</span>')
+    :'<span class="mut" title="reliability not measured">—</span>';
+  return out;
 }
 
 /* tolerant CSV parser (quoted fields, embedded commas). Header row -> objects. */
@@ -54311,8 +54349,9 @@ function fbGxSummary(u,p,gid){
       rv.is_near_pickem?('model · raw '+fbEsc(rv.fair.raw_line_text)):'model');
     out+=cell('Market',RG.available?fbEsc(RG.market_line_text):'<span class="gx-miss">none joined</span>',
       '',RG.available?fbEsc(mk.book||'reference'):'nothing to compare');
+    /* a gap the data cannot support is not coloured as a finding */
     out+=cell('Market gap',RG.available?(RG.points.toFixed(1)+' pts'):'<span class="gx-miss">—</span>',
-      RG.available&&RG.points>=FB_GUARD.p4.game?'neg':(RG.available&&RG.points>=2?'warn':''),
+      RG.available&&RG.points>FB_GUARD.p4.game?'neg':(fbRvWeak(rv)?'':(RG.available&&RG.points>=2?'warn':'')),
       RG.available?(RG.toward_team?('toward '+fbEsc(RG.toward_team)+' · from the raw margin'):'EdgeDesk matches the market'):'no market number');
   }else{
   out+=cell('EdgeDesk',h+' '+fbPts(-fbFairDisp(m)),'mdl',m.is_near_pickem?'model · near pick’em':'model');
@@ -54357,6 +54396,19 @@ function fbGxSummary(u,p,gid){
   var sub=[];
   if(priced!=null)sub.push(priced+'% of it priced');
   if(covPct!=null)sub.push(cs.known+' of '+cs.applicable+' contract fields');
+  if(rv&&rv.fair){
+    /* EDGE, CONFIDENCE AND RELIABILITY ARE THREE CELLS, NOT ONE. The market
+       gap above is the size of a disagreement; these say how far the data
+       under it can be trusted, and neither is allowed to stand in for the
+       other. Both come from the research view, which reads them unchanged. */
+    var RC=rv.confidence,RR=rv.reliability;
+    out+=cell('Confidence',RC.tier?fbEsc(RC.label):'<span class="gx-miss">unknown</span>',
+      RC.tier==='HIGH'?'ok':(RC.tier==='MODERATE'?'warn':(RC.tier==='LOW'?'neg':'')),
+      RC.pct_text?(RC.pct_text+' information confidence'+(priced!=null?(' · '+priced+'% of it priced'):'')):'not measured');
+    out+=cell('Reliability',RR.pct!=null?(RR.pct+'%'):'<span class="gx-miss">unknown</span>',
+      RR.tier==='STRONG'?'ok':(RR.tier==='ADEQUATE'?'':(RR.tier==='LOW'?'neg':'')),
+      RR.sub);
+  }else
   out+=cell('Data confidence',conf!=null?(conf+'%'):'<span class="gx-miss">unknown</span>',
     conf==null?'':(conf>=60?'ok':(conf>=35?'warn':'neg')),
     sub.length?sub.join(' · '):'input coverage not reported');
@@ -56476,29 +56528,51 @@ function fbP4BoardHTML(){
   var html=head+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c);
   if(!visible.length)return html+fbP4EmptyHTML(rows,c);
   try{html+=fbP4QueueHTML(visible);}catch(_){}
+  /* WITH THE RESEARCH VIEW the row carries what a first glance needs, in this
+     order: the teams, EdgeDesk's fair line and the market's (each named for
+     its own favourite), the market gap with its direction, confidence and
+     reliability in two separate columns — so a big gap on thin data can never
+     read like a big gap on good data — and the one research label. Without
+     the view, the columns this board always had. */
+  var RV=!!window.EDCfbResearchView;
+  if(RV)grid='display:grid;grid-template-columns:14px 72px minmax(128px,1fr) 96px 118px 104px 100px 34px 34px 126px;gap:2px 6px;align-items:center';
   html+='<div style="overflow-x:auto"><div class="mono" style="font-size:11px;min-width:700px">'
-    +'<div style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
-    +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>MARKET GAP</span><span>'+(window.EDCfbResearchView?'RESEARCH LABEL':'STATUS')+'</span></div>';
+    +'<div'+(RV?' class="rv-row"':'')+' style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
+    +(RV
+      ?'<span></span><span>KICK</span><span>GAME</span><span class="rv-conf">CONFERENCE</span><span>EDGEDESK FAIR</span><span>MARKET</span><span>MARKET GAP</span>'
+        +'<span title="Confidence: the engine’s information confidence, as a tier">CONF</span><span title="Reliability: the share of this game’s inputs on file">REL</span><span>RESEARCH LABEL</span></div>'
+      :'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>MARKET GAP</span><span>STATUS</span></div>');
   visible.forEach(function(r){
-    var u=r.u,g=u.g,gid=r.gid,p=r.p,mkt=r.mkt,st=r.st,m=r.meta,rv=fbP4ViewFor(u,p,mkt);
-    var model=(p&&p.status==='PREDICTED')?(p.model.is_near_pickem
-      ?('<span title="Near pick’em: the raw projected margin is under one point">'+fbP4Line(g.home_team,fbFairDisp(p.model))+'</span>'+fbRvNearBadge(rv))
-      :fbP4Line(g.home_team,fbFairDisp(p.model))):'—';
-    var market=(mkt.spread_line!=null)?fbP4Line(g.home_team,mkt.spread_line):'—';
-    var gap=r.gap==null?'—':r.gap.toFixed(1);
+    var u=r.u,g=u.g,gid=r.gid,p=r.p,mkt=r.mkt,st=r.st,m=r.meta,rv=RV?fbP4ViewFor(u,p,mkt):null;
     var conf=(m.away.conference===m.home.conference&&m.away.conference)
       ? fbP4ConfBadge(m.home)
       : (fbP4ConfBadge(m.away)+fbP4ConfBadge(m.home));
-    html+='<div onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="'+grid+';cursor:pointer;border-bottom:1px solid var(--border);padding:7px 2px;color:var(--text)">'
+    var cells;
+    if(rv){
+      var rc=fbRvRowCells(rv);
+      cells='<span>'+rc.fair+'</span>'
+        +'<span class="rv-cell">'+rc.market+'</span>'
+        +'<span class="rv-cell">'+fbRvGapCell(rv,r.gap)+'</span>'
+        +'<span>'+rc.conf+'</span>'
+        +'<span>'+rc.rel+'</span>'
+        +'<span class="rv-cell">'+fbRvLabelChip(rv,st)+'</span>';
+    }else{
+      var model=(p&&p.status==='PREDICTED')?(p.model.is_near_pickem
+        ?('<span title="Near pick’em: the raw projected margin is under one point">'+fbP4Line(g.home_team,fbFairDisp(p.model))+'</span>')
+        :fbP4Line(g.home_team,fbFairDisp(p.model))):'—';
+      var market=(mkt.spread_line!=null)?fbP4Line(g.home_team,mkt.spread_line):'—';
+      cells='<span>'+model+'</span>'
+        +'<span class="mut">'+market+'</span>'
+        +'<span>'+(r.gap==null?'—':r.gap.toFixed(1))+'</span>'
+        +'<span style="color:'+st.c+'">'+st.t+'</span>';
+    }
+    html+='<div'+(RV?' class="rv-row"':'')+' onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="'+grid+';cursor:pointer;border-bottom:1px solid var(--border);padding:7px 2px;color:var(--text)">'
       +'<span id="p4arr-'+fbEsc(gid)+'" style="color:var(--faint)">▸</span>'
       +'<span class="mut">'+fbP4KickLabel(u.t)+'</span>'
       +'<span>'+fbEsc(g.away_team)+' <span class="mut">→</span> '+fbEsc(g.home_team)
       +(m.matchup_type==='fbs_fcs'?' <span class="fbs-badge fcs">FCS</span>':'')+'</span>'
-      +'<span class="fbs-confcell">'+conf+'</span>'
-      +'<span>'+model+'</span>'
-      +'<span class="mut">'+market+'</span>'
-      +'<span class="rv-cell">'+fbRvGapCell(rv,r.gap)+'</span>'
-      +'<span class="rv-cell">'+fbRvLabelChip(rv,st)+'</span></div>'
+      +'<span class="fbs-confcell'+(RV?' rv-conf':'')+'">'+conf+'</span>'
+      +cells+'</div>'
       +'<div id="p4gate-'+fbEsc(gid)+'"></div>';
   });
   html+='</div></div>';

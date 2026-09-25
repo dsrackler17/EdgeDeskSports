@@ -221,5 +221,31 @@ section('STEP 3 · one research label, by rule and in order');
     projection: proj(5, { line: 3 }), market: { spread_line: 3 }, coverage: FULL }, { research_gap: 2.5 }).research_label.key, 'MARKET_ALIGNED');
 }
 
+/* ======================================================================== */
+section('STEP 4 · edge, confidence and reliability are three separate numbers');
+{
+  const good = V.build({ game: GAME, projection: proj(12, { line: 3, conf: 84 }), market: { spread_line: 3 },
+    coverage: { input_coverage: 0.9, known: 18, applicable: 20 } });
+  const weak = V.build({ game: GAME, projection: proj(12, { line: 3, conf: 84 }), market: { spread_line: 3 },
+    coverage: { input_coverage: 0.4, known: 8, applicable: 20 } });
+  const thin = V.build({ game: GAME, projection: proj(12, { line: 3, conf: 22 }), market: { spread_line: 3 },
+    coverage: { input_coverage: 0.9, known: 18, applicable: 20 } });
+  near('the same 9-pt gap on good data', good.market_gap.points, 9);
+  near('on weak data', weak.market_gap.points, 9);
+  near('and on thin data', thin.market_gap.points, 9);
+  eq('good data reads MAJOR DISAGREEMENT', good.research_label.key, 'MAJOR_DISAGREEMENT');
+  eq('the same gap on 40% reliability reads LOW RELIABILITY', weak.research_label.key, 'LOW_RELIABILITY');
+  eq('the same gap on 22% confidence reads LIMITED DATA', thin.research_label.key, 'LIMITED_DATA');
+  eq('confidence does not move with reliability', weak.confidence.score, good.confidence.score);
+  eq('reliability does not move with confidence', thin.reliability.value, good.reliability.value);
+  const smallGap = V.build({ game: GAME, projection: proj(3.5, { line: 3, conf: 84 }), market: { spread_line: 3 },
+    coverage: { input_coverage: 0.9 } });
+  eq('a small gap does not lower confidence', smallGap.confidence.score, good.confidence.score);
+  eq('and a large one does not raise it', good.confidence.tier, 'HIGH');
+  /* the normalised display line never touches confidence */
+  const np = V.build({ game: GAME, projection: proj(0.2, { line: 3, conf: 50 }), market: { spread_line: 3 } });
+  eq('a near pick’em’s confidence is the engine’s score, not boosted by the one-point floor', np.confidence.score, 50);
+}
+
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
 process.exit(failures ? 1 : 0);
