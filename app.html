@@ -3975,7 +3975,13 @@ window.mcRefresh=function(){
      reasons, the best available line, the projection's own history), read off
      the engine's finished projection. It computes no projection; the SAME
      file is what tools/football/cfb_research_view.test.js holds to its rules. -->
-<script src="/lib/cfb_research_view.js?v=20260925b"></script>
+<!-- CFB RELIABILITY: how much EdgeDesk trusts the completeness, freshness,
+     consistency and stability of the inputs under each college projection,
+     0-100 from six components with hard gates — NOT a probability. The SAME
+     file scores the published slate (football/fbs/build_coverage.js) and is
+     what tools/football/reliability.test.js holds to its rules. -->
+<script src="/lib/cfb_reliability.js?v=20260925r"></script>
+<script src="/lib/cfb_research_view.js?v=20260925r"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -49965,6 +49971,47 @@ function fbP4PricingParity(){
   if(A.at&&(!A.av_current||!A.av_reports))gaps.push('the availability layer the published build merges (the automated read and the ingested conference reports) did not load');
   return {ok:!gaps.length,gaps:gaps};
 }
+/* ---- RELIABILITY, SCORED LIVE (lib/cfb_reliability.js) -------------------
+   From exactly what this load priced from — the projection, the assembly
+   (contract rows, starters, injuries, venues, rosters), the market join and
+   the per-book quotes — plus the personnel measurement this board already
+   loads and the published team-data gates. The SAME library scores the
+   published slate, so a difference between the two is a difference in data
+   (this board joins a live market; the build joins none), never in code. */
+function fbP4ReliabilityFor(u,p,mkt,quotes){
+  var RL=window.EDCfbReliability;
+  if(!RL||!u||!u.g||!p)return null;
+  var A=null;try{A=fbP4Assembly(u);}catch(_){A=null;}
+  var g=u.g,mt=u.meta||null;
+  var meta=mt?{home:{key:mt.home.key||fbP4Key(g.home_team),is_fbs:mt.home.is_fbs,conference_id:mt.home.conference_id,conference:mt.home.conference},
+    away:{key:mt.away.key||fbP4Key(g.away_team),is_fbs:mt.away.is_fbs,conference_id:mt.away.conference_id,conference:mt.away.conference},
+    matchup_type:mt.matchup_type}:null;
+  var RA=FB.relArt&&FB.relArt.data,tq=null;
+  if(RA&&RA.team_quality&&meta)tq={home:RA.team_quality[meta.home.key]||null,away:RA.team_quality[meta.away.key]||null};
+  var books={},nb=null;
+  (quotes||[]).forEach(function(q){ if(q&&q.actionable===true&&q.book)books[q.book]=1;
+    if(q&&q.actionable===true&&typeof q.n_books==='number'&&(nb==null||q.n_books>nb))nb=q.n_books; });
+  var nq=Object.keys(books).length; if(nq&&(nb==null||nq>nb))nb=nq;
+  var market=mkt?{joined:true,spread_line:(typeof mkt.spread_line==='number')?mkt.spread_line:null,as_of:mkt.as_of||null,
+    stale:!!mkt.stale,spread_fault:!!mkt.spread_fault,n_books:nb}:{joined:true,spread_line:null};
+  try{
+    return RL.score(RL.inputFor({now:Date.now(),game:g,meta:meta,projection:p,
+      contract:A?A.contract:[],starters:A?A.starters:{},qb_epa:A?A.qb_epa:{},
+      injuries:A?A.injuries:{},venues:A?A.venue:null,rosters:A?A.rosters:{},
+      personnel:(typeof fbPersonnelFor==='function')?fbPersonnelFor(g.game_id):null,
+      team_quality:tq,market:market,
+      built_at:FB.p4.loadedAt?new Date(FB.p4.loadedAt).toISOString():null,
+      engine:window.EDCfbP4,state:FB.p4.state,params:window.EDCfbP4Params}));
+  }catch(_){ return null; }
+}
+/* the hover text of a reliability cell: the score, each component, the
+   main deduction or why it is low, and what would raise it — never a
+   generic "input data incomplete" */
+function fbRvRelTitle(R){
+  if(!R)return 'reliability not measured';
+  if(R.scored&&R.lines&&R.lines.length)return R.lines.join('\n');
+  return 'Reliability '+R.text+' · '+R.sub+(R.legacy?' (input coverage — the pre-v2 measure)':'');
+}
 function fbP4ViewFor(u,p,mkt,opts){
   var V=window.EDCfbResearchView;
   if(!V||!u||!u.g||!p)return null;
@@ -49984,12 +50031,14 @@ function fbP4ViewFor(u,p,mkt,opts){
      minutes even when nothing else about the game has changed */
   var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,
     quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,visit?visit.t:'-',par?(par.ok+':'+par.gaps.length):'-',
+    !!(FB.personnel&&FB.personnel.data),!!(FB.relArt&&FB.relArt.data),
     Math.floor(Date.now()/3e5)].join('|');
   if(u[slot]&&u[slot].p===p&&u[slot].key===key)return u[slot].v;
-  var v=null;
+  var v=null,rel=null;
+  try{ rel=fbP4ReliabilityFor(u,p,mkt,quotes); }catch(_){ rel=null; }
   try{
     v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt,
-      coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,parity:par,now:Date.now()},fbP4ViewCfg());
+      reliability:rel,coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,parity:par,now:Date.now()},fbP4ViewCfg());
   }catch(_){v=null;}
   u[slot]={p:p,key:key,v:v};
   return v;
@@ -50186,7 +50235,9 @@ function fbRvRowCells(v){
   var t=C&&C.tier&&FB_RV_TIER[C.tier];
   out.conf=t?('<span class="rv-t '+t[1]+'" title="'+fbEsc('Confidence '+C.label+' · '+C.pct_text+' information confidence')+'">'+t[0]+'</span>')
     :'<span class="mut" title="confidence not measured">—</span>';
-  out.rel=(R&&R.pct!=null)?('<span class="rv-t '+FB_RV_REL[R.tier]+'" title="'+fbEsc('Reliability '+R.text+' · '+R.sub)+'">'+R.pct+'%</span>')
+  /* a scored reliability is a 0-100 SCORE, printed without a percent sign
+     so it can never read as a probability; the legacy coverage keeps its % */
+  out.rel=(R&&R.pct!=null)?('<span class="rv-t '+FB_RV_REL[R.tier]+'" title="'+fbEsc(fbRvRelTitle(R))+'">'+(R.scored?R.score:(R.pct+'%'))+'</span>')
     :'<span class="mut" title="reliability not measured">—</span>';
   return out;
 }
@@ -52463,6 +52514,10 @@ function fbP4Load(force,signal){
        what stops a brief built the instant the board resolves from racing it */
     lanes.push(fbStartersEnsure(S.season));
     lanes.push(fbQbEpaEnsure(S.season));
+    /* reliability reads the personnel measurement and the published team-data
+       gates; both are joined here so the first render scores from them */
+    try{ lanes.push(fbPersonnelEnsure()); }catch(_){}
+    try{ lanes.push(fbRelArtEnsure()); }catch(_){}
     return Promise.all(lanes);
   }).then(function(){
     FB.p4.loadedAt=Date.now();
@@ -53433,7 +53488,11 @@ var FBP4_CSV_HEAD=['season','week','game_id','kickoff_local','away_team','home_t
 'home_team_id','away_team_id','home_conference_id','away_conference_id',
 'home_fbs_group','away_fbs_group','home_division','away_division',
 'matchup_type','is_conference_game','model_status','data_completeness',
-'market_status','quote_timestamp','board_status'];
+'market_status','quote_timestamp','board_status',
+/* RELIABILITY, appended last: the 0-100 score (not a probability), its
+   grade, and the projection's dispersion and favorite-flip rate under
+   perturbation (lib/cfb_reliability.js) */
+'reliability_score','reliability_grade','projection_stability_sd','favorite_flip_rate'];
 
 function fbP4Basis(){
   var m=window.EDCfbP4Params.validation_summary&&window.EDCfbP4Params.validation_summary.market;
@@ -53455,7 +53514,7 @@ function fbP4Contrib(p,key){
    game the model refused still exports its identity, its conferences and its
    market state — the rows the site shows and the rows a consumer downloads
    reconcile under the same filters. */
-var FBP4_FBS_TAIL_N=15;
+var FBP4_FBS_TAIL_N=19;
 function fbP4FbsTail(u,p,mkt){
   var g=u.g,m=u.meta||(window.EDFbs&&FB.p4.uni?window.EDFbs.classifyGame(g,FB.p4.uni):null);
   var st=fbP4StatusFor(p,mkt||{});
@@ -53482,7 +53541,14 @@ function fbP4FbsTail(u,p,mkt){
     (mkt&&mkt.status)||'NO MARKET',
     (mkt&&mkt.as_of)||'',
     st.t
-  ];
+  ].concat(fbP4RelTail(u,p,mkt));
+}
+/* the four reliability columns: the same score the REL cell shows */
+function fbP4RelTail(u,p,mkt){
+  var r=null;
+  try{ if(p&&p.status==='PREDICTED'){ var q=null; try{q=fbP4QuotesFor(u);}catch(_){q=null;} r=fbP4ReliabilityFor(u,p,mkt,q); } }catch(_){ r=null; }
+  var s=r&&r.stability&&r.stability.tier?r.stability:null;
+  return [r?r.score:'',r?r.grade:'',s?s.projection_stability_sd:'',s?s.favorite_flip_rate:''];
 }
 function fbP4RowValues(u){
   var g=u.g;
@@ -54879,9 +54945,9 @@ function fbGxSummary(u,p,gid){
     out+=cell('Confidence',RC.tier?fbEsc(RC.label):'<span class="gx-miss">unknown</span>',
       RC.tier==='HIGH'?'ok':(RC.tier==='MODERATE'?'warn':(RC.tier==='LOW'?'neg':'')),
       RC.pct_text?(RC.pct_text+' information confidence'+(priced!=null?(' · '+priced+'% of it priced'):'')):'not measured');
-    out+=cell('Reliability',RR.pct!=null?(RR.pct+'%'):'<span class="gx-miss">unknown</span>',
+    out+=cell('Reliability',RR.pct!=null?(RR.scored?(RR.score+' <span style="font-size:11px">'+fbEsc(RR.grade_label||'')+'</span>'):(RR.pct+'%')):'<span class="gx-miss">unknown</span>',
       RR.tier==='STRONG'?'ok':(RR.tier==='ADEQUATE'?'':(RR.tier==='LOW'?'neg':'')),
-      RR.sub);
+      RR.scored?('0-100, not a probability · '+RR.sub):RR.sub);
   }else
   out+=cell('Data confidence',conf!=null?(conf+'%'):'<span class="gx-miss">unknown</span>',
     conf==null?'':(conf>=60?'ok':(conf>=35?'warn':'neg')),
@@ -54895,6 +54961,7 @@ function fbGxSummary(u,p,gid){
      point to a named field with the fix beside it. One module computes it and
      the committed artifact carries the same object. */
   out+=fbGxLedger(u,p,cov);
+  out+=fbGxReliability(rv);
   out+='<div class="gx-means '+st.cls+'"><b>What this means</b> '+fbEsc(st.means)+'</div>';
   out+=fbGxCheck(u,p);
   out+='<div class="gx-acts">'
@@ -54905,6 +54972,45 @@ function fbGxSummary(u,p,gid){
   return out;
 }
 
+/* ── RELIABILITY, OPENED UP ────────────────────────────────────────────────
+   The six components with their points, the gates that cap the score, every
+   deduction with its specific reason, the projection's stability under
+   perturbation, and what would raise it. Read off the research view, which
+   reads lib/cfb_reliability.js unchanged. */
+function fbGxReliability(rv){
+  var R=rv&&rv.reliability;
+  if(!R||!R.scored)return '';
+  var comps=(R.components||[]).map(function(c){
+    var pc=c.max?Math.round(100*c.score/c.max):0;
+    return '<tr><td class="gxl-n">'+fbEsc(c.label)+'</td><td class="gxl-v">'+fbEsc(String(Math.round(c.score*10)/10))+'/'+c.max+'</td>'
+      +'<td class="gxl-m"><span style="display:inline-block;height:6px;border-radius:3px;background:var(--accent);opacity:.7;width:'+pc+'%;max-width:100%"></span></td></tr>';
+  }).join('');
+  var gates=(R.gates||[]).filter(function(g){return g.binding;}).map(function(g){
+    return '<li><b>'+fbEsc(g.id.replace(/_/g,' '))+'</b> <span class="gxl-pts">capped at '+g.cap+'</span><div class="gxl-e">'+fbEsc(g.reason)+'</div></li>';
+  }).join('');
+  var why=(R.penalties||[]).map(function(x){
+    return '<li><span class="gxl-pts">\u2212'+x.points+'</span> <span class="gxl-st">'+fbEsc((R.components||[]).filter(function(c){return c.key===x.component;}).map(function(c){return c.label;})[0]||x.component)+'</span>'
+      +'<div class="gxl-e">'+fbEsc(x.reason)+'</div></li>';
+  }).join('');
+  var S=R.stability;
+  var stab=S?('<div class="gxl-why">Projection stability: <b>'+fbEsc(S.label||S.tier)+'</b> — the spread moves \u00b1'+S.sd
+    +' pts (1 SD) across the perturbation scenarios, P10 '+S.p10+' / P50 '+S.p50+' / P90 '+S.p90+' (home margin), and flips favorite in '
+    +Math.round((S.favorite_flip_rate||0)*100)+'% of runs.</div>'):'';
+  var acts=(R.next_actions||[]).map(function(a){
+    return '<li><b>'+fbEsc(a.action)+'</b> <span class="gxl-pts">'+fbEsc(a.potential_gain_text||('up to +'+a.potential_gain))+'</span></li>';
+  }).join('');
+  return '<details class="gxl"><summary>Reliability '+R.score+' — '+fbEsc(R.grade_label||'')+(R.gate_label?(' · '+fbEsc(R.gate_label)):'')
+    +': what it is built from</summary><div class="gxl-b">'
+    +'<table class="gxl-t"><tbody>'+comps+'</tbody></table>'
+    +(gates?'<ul class="gxl-g">'+gates+'</ul>':'')
+    +stab
+    +(why?'<div class="gxl-why">Every point it lost:</div><ul class="gxl-g">'+why+'</ul>':'')
+    +(acts?'<div class="gxl-why">What would raise it (upper bounds, other inputs held):</div><ul class="gxl-g">'+acts+'</ul>':'')
+    +'<div class="gxl-r">Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the '
+    +'information under this projection. It is not a probability: '+R.score+' does not mean a '+R.score
+    +'% chance the number is right, and it is not a reason to bet. A large model–market gap on low reliability is more suspicious, not less.</div>'
+    +'</div></details>';
+}
 /* ── THE CONFIDENCE LEDGER, on screen ───────────────────────────────────
    Reads football/matchup/confidence.js, the same module the offline builder
    uses, so the board and football/fbs/slate.json cannot describe the same
@@ -57266,7 +57372,7 @@ function fbP4BoardHTML(){
     +'<div'+(RV?' class="rv-row"':'')+' style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
     +(RV
       ?'<span></span><span>KICK</span><span>GAME</span><span class="rv-conf">CONFERENCE</span><span>EDGEDESK FAIR</span><span>MARKET</span><span>MARKET GAP</span>'
-        +'<span title="Confidence: the engine’s information confidence, as a tier">CONF</span><span title="Reliability: the share of this game’s inputs on file">REL</span><span>RESEARCH LABEL</span></div>'
+        +'<span title="Confidence: the engine’s information confidence, as a tier">CONF</span><span title="Reliability 0-100: how much EdgeDesk trusts the completeness, freshness, consistency and stability of the inputs under this projection. Not a probability that it is right.">REL</span><span>RESEARCH LABEL</span></div>'
       :'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>MARKET GAP</span><span>STATUS</span></div>');
   visible.forEach(function(r){
     var u=r.u,g=u.g,gid=r.gid,p=r.p,mkt=r.mkt,st=r.st,m=r.meta,rv=RV?fbP4ViewFor(u,p,mkt):null;
@@ -57314,7 +57420,7 @@ function fbP4BoardHTML(){
   if(window.EDCfbResearchView)html+='<div class="gd-modelnote" style="margin-top:8px"><b>Research labels are research reads, never picks.</b> '
     +'WORTH RESEARCHING: EdgeDesk and the market differ by the research threshold or more, with usable confidence and reliability. '
     +'MAJOR DISAGREEMENT: a gap of 7+ points — more often missing information than an edge. MARKET ALIGNED: inside the research threshold. '
-    +'NEAR PICK’EM: EdgeDesk names a side with under a point of separation. LIMITED DATA and LOW RELIABILITY: too little on file to read the gap. '
+    +'NEAR PICK’EM: EdgeDesk names a side with under a point of separation. LIMITED DATA and LOW RELIABILITY: too little on file to read the gap. REL is a 0-100 reliability score (data quality, freshness, source agreement and projection stability), not a probability. '
     +'Hover a label for its reason and the board status the filters below still read.</div>';
   html+='<div class="gd-modelnote" style="margin-top:8px">Statuses are operational reads, never picks. '
     +'DATA FAULT and INVESTIGATE mean “find out why the model and the market disagree” — with this model’s record, a big gap is more often missing information than an edge, '
@@ -59308,6 +59414,27 @@ function fbPersonnelEnsure(){
 function fbPersonnelFor(gid){
   var D=FB.personnel&&FB.personnel.data;
   return (D&&D.games&&gid!=null)?(D.games[String(gid)]||null):null;
+}
+/* ═══ RELIABILITY INPUTS — football/fbs/reliability.json ═══════════════════
+   The published build's reliability artifact. The board reads ONE thing from
+   it: the ranking layer's team-data gates (a sample dominated by FCS
+   opponents, no prior-season rating, extreme transfer turnover), so it
+   scores reliability from the same facts as the build without loading the
+   6 MB rankings file. Every other input is this load's own. A file that did
+   not load is a normal state: those gates are simply not applied, and the
+   score says nothing it cannot see. */
+FB.relArt = { data:null, err:null, _p:null };
+function fbRelArtEnsure(){
+  if(FB.relArt.data)return Promise.resolve(FB.relArt.data);
+  if(FB.relArt._p)return FB.relArt._p;
+  if(typeof fetch!=='function')return Promise.resolve(null);
+  FB.relArt._p=fetch('football/fbs/reliability.json',{cache:'no-cache'})
+    .then(function(r){ if(!r.ok)throw new Error('reliability '+r.status); return r.json(); })
+    .then(function(j){
+      if(!j||j.schema!=='edgedesk_cfb_reliability_v1')throw new Error('reliability artifact has an unknown schema');
+      FB.relArt.data=j; FB.relArt.err=null; FB.relArt._p=null; return j; })
+    .catch(function(e){ FB.relArt.err=String(e&&e.message||e).slice(0,140); FB.relArt._p=null; return null; });
+  return FB.relArt._p;
 }
 function fbPersonnelImpactText(t){
   if(!t)return 'not on file';

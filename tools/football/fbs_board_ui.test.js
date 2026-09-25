@@ -52,7 +52,7 @@ function lacks(hay, needle, name) { chk(name, String(hay).indexOf(needle) < 0, {
 const REGIONS = [
   ['function fbFairDisp(m){', '/* tolerant CSV parser'],
   ["var FBP4_CSV_HEAD=['season'", 'function fbP4Basis(){'],
-  ['var FBP4_FBS_TAIL_N=15;', 'function fbP4RowValues(u){'],
+  ['var FBP4_FBS_TAIL_N=19;', 'function fbP4RowValues(u){'],
   ['function fbP4SideRating(side){', 'function fbP4Card(u){'],
   ['function fbEdrFor(name){', 'function fbP4Ratings(){'],
   ['function fbP4Ratings(){', 'function fbP4StatusFor(p,mkt){'],

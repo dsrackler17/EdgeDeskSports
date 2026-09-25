@@ -41,6 +41,7 @@
      (tools/record/football_record.js) supplies all three.
    =========================================================================== */
 'use strict';
+const REL = require('../../lib/cfb_reliability.js');
 
 const SCHEMA = 'edgedesk_football_model_record_v1';
 const SUMMARY_SCHEMA = 'edgedesk_football_model_record_summary_v1';
@@ -135,8 +136,27 @@ function projectionFromSlate(sport, g, meta) {
     p.matchup_type = g.matchup_type || null;
     p.group = groupOf(g);
     p.neutral_site = g.neutral_site === true;
+    /* THE PREGAME RELIABILITY the slate published beside this number
+       (lib/cfb_reliability.js). Carried into the pick, so it is frozen by the
+       same publication-time rule as the number and can never be read after
+       kickoff. Absent on a slate that predates it: null, never a guess. */
+    p.reliability = reliabilityOf(g);
   }
   return p;
+}
+function reliabilityOf(g) {
+  const s = num(g.reliability_score);
+  if (s == null) return null;
+  const st = g.projection_stability || null;
+  const comp = {};
+  const c = g.reliability_components || {};
+  Object.keys(c).forEach((k) => { if (c[k] && num(c[k].score) != null) comp[k] = c[k].score; });
+  return { version: (g.reliability && g.reliability.contract) || null, score: s, grade: g.reliability_grade || null,
+    components: comp,
+    capped_by: (g.reliability && Array.isArray(g.reliability.capped_by)) ? g.reliability.capped_by.slice() : [],
+    stability_sd: st ? num(st.projection_stability_sd) : null,
+    favorite_flip_rate: st ? num(st.favorite_flip_rate) : null,
+    stability_tier: st ? st.tier || null : null };
 }
 
 /* One label per college game, so the record can be read by the same split
@@ -183,6 +203,7 @@ function recordProjection(ledger, proj, ctx) {
   const mkt = ctx.market && (ms(ctx.market.at) == null || ms(ctx.market.at) < kick) ? quote(ctx.market) : null;
   const pick = { at: new Date(pub).toISOString(), home_line: proj.home_line, total: proj.total,
     home_win_prob: proj.home_win_prob, model_version: proj.model_version };
+  if (proj.reliability) pick.reliability = Object.assign({ at: pick.at }, proj.reliability);
 
   if (!g) {
     const e = Object.assign({}, proj);
@@ -211,6 +232,11 @@ function recordProjection(ledger, proj, ctx) {
   /* schedule facts can move before kickoff (a flexed kickoff, a week label) */
   ['kickoff', 'week', 'home', 'away'].forEach((k) => { if (proj[k] != null) g[k] = proj[k]; });
   if (same(g.pick.home_line, pick.home_line) && same(g.pick.total, pick.total) && same(g.pick.home_win_prob, pick.home_win_prob)) {
+    /* the number held, but a LATER PREGAME read of the information under it
+       is the truer description of what stood behind the pick at kickoff: its
+       reliability is refreshed, stamped with its own time, and it is not a
+       revision of the number */
+    if (pick.reliability) g.pick.reliability = pick.reliability;
     return 'unchanged';
   }
   g.pick = pick;
@@ -348,7 +374,8 @@ function clvRead(read, market, close) {
 /** Everything the record says about one game, derived from its facts. */
 function gradeGame(e, sport, nowIso) {
   const now = ms(nowIso), kick = ms(e.kickoff);
-  const g = { status: null, spread: null, total: null, su: null, clv_entry: null, clv_pick: null, error: null, brier: null, beyond_guard: false };
+  const g = { status: null, spread: null, total: null, su: null, clv_entry: null, clv_pick: null, error: null, brier: null, beyond_guard: false,
+    reliability: null };
   const f = e.final, c = e.close, p = e.pick;
   if (now != null && kick != null && now < kick) g.status = 'PREGAME';
   else if (!f) g.status = 'AWAITING_FINAL';
@@ -382,6 +409,12 @@ function gradeGame(e, sport, nowIso) {
       const y = margin > 0 ? 1 : margin < 0 ? 0 : 0.5;
       g.brier = r4((p.home_win_prob - y) * (p.home_win_prob - y));
     }
+  }
+  /* the pregame reliability the pick was published under, in its bucket */
+  if (p && p.reliability && num(p.reliability.score) != null) {
+    const sc = p.reliability.score;
+    const b = REL.BUCKETS.filter((x) => Math.round(sc) >= x.min && Math.round(sc) <= x.max)[0];
+    g.reliability = { score: sc, bucket: b ? b.key : null, at: p.reliability.at || null };
   }
   if (c && kick != null && (now == null || now >= kick)) {
     g.clv_entry = e.entry ? clvRead(e.entry, e.entry.market, c) : { spread: null, total: null };
@@ -475,6 +508,20 @@ function summarize(ledger, gradesById, opts) {
   }
   if (out.error.total_n) { out.error.model_total_mae = r2(mt / out.error.total_n); out.error.close_total_mae = r2(ct / out.error.total_n); }
   if (out.brier.n) out.brier.model = r4(bs / out.brier.n);
+  /* DOES A HIGHER PREGAME RELIABILITY GO WITH A SMALLER ERROR? Grouped by the
+     reliability each pick was published under, never re-scored after the
+     game; the verdict stays NOT VALIDATED until every bucket that can be
+     tested holds enough games and the ordering is monotone. */
+  if (ledger.sport !== 'nfl') {
+    const rows = [];
+    games.forEach(({ e, g }) => {
+      if (!g || g.status !== 'GRADED' || !e.pick || !e.pick.reliability || num(e.pick.reliability.score) == null) return;
+      rows.push({ reliability: e.pick.reliability.score, model_margin: -e.pick.home_line,
+        close_margin: e.close && e.close.home_line != null ? -e.close.home_line : null,
+        final_margin: e.final ? e.final.home_score - e.final.away_score : null });
+    });
+    out.by_reliability = REL.calibrate(rows);
+  }
   Object.keys(out.clv).forEach((k) => { out.clv[k] = finishClv(out.clv[k]); });
   out.weeks = Object.keys(weeks).map(Number).sort((a, b) => a - b).map((k) => {
     const W = weeks[k]; W.clv = finishClv(W.clv); return W;

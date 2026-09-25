@@ -276,6 +276,13 @@ async function open(opts) {
      current or stale — is another block of app.html. The brief's research
      view is built by the page's own adapter; without these it is simply
      absent, never approximated. */
+  /* reliability (lib/cfb_reliability.js) first, as the page's script tags
+     order them: the view reads the scored reliability the adapter builds with
+     it, and without it a document would fall back to the legacy coverage */
+  try {
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_reliability.js'), 'utf8'), win,
+      { filename: 'lib/cfb_reliability.js' });
+  } catch (e) { log('  reliability: ' + (e && e.message)); }
   try {
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_research_view.js'), 'utf8'), win,
       { filename: 'lib/cfb_research_view.js' });
