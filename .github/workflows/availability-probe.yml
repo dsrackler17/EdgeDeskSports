@@ -1,0 +1,33 @@
+# WHAT EACH CONFERENCE ACTUALLY SERVES, looked at from the machine that
+# fetches it. Read-only: football/availability/probe_sources.js prints what
+# every candidate report URL returns (status, dates, links, embedded data,
+# readable text) to this job's log, and writes and commits nothing. Run it
+# before writing or changing a report parser, and whenever a conference moves
+# its reports.
+name: Availability source probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'space-separated conference keys (sec bigten acc big12 ...); empty = all'
+        required: false
+  push:
+    paths:
+      - 'football/availability/probe_sources.js'
+      - '.github/workflows/availability-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Probe the report sources
+        run: node football/availability/probe_sources.js ${{ github.event.inputs.only }}
