@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T04:00:00.000Z",
   "game_when_label": "2026-10-03 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-24T17:03:41.724Z",
-  "generated_at": "2026-09-24T21:27:03.781Z",
+  "updated_at": "2026-09-25T04:46:59.570Z",
+  "generated_at": "2026-09-25T04:46:59.570Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-25. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -72,6 +72,9 @@
       "priced": true,
       "fair_spread": 14.964742659910705,
       "fair_spread_text": "Wake Forest -15.0",
+      "fair_spread_raw_text": "Wake Forest -15.0",
+      "near_pickem": false,
+      "raw_margin_text": null,
       "favourite": "Wake Forest",
       "underdog": "Stanford",
       "margin": "15.0",
@@ -256,7 +259,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T20:00:00.000Z",
-        "retrieved_at": "2026-09-24T16:20:06.462Z"
+        "retrieved_at": "2026-09-25T01:57:58.679Z"
       },
       "home": {
         "team": "Wake Forest",
@@ -328,9 +331,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-18T23:30:00.000Z",
-        "retrieved_at": "2026-09-24T16:20:06.462Z"
+        "retrieved_at": "2026-09-25T01:57:58.679Z"
       },
-      "generated_at": "2026-09-24T16:20:49.884Z",
+      "generated_at": "2026-09-25T01:58:36.863Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1361,17 +1364,17 @@
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
           "a": "none on file — 100% unknown",
-          "h": "none on file — 100% unknown",
+          "h": "8 on file, 0% of starter value out",
           "edge": null
         },
         {
           "k": "Data confidence",
           "note": "how much EdgeDesk knows about this roster, not how good it is",
           "a": "32%",
-          "h": "33%",
+          "h": "43%",
           "edge": {
             "side": "h",
-            "gap": 0.0050000000000000044
+            "gap": 0.10499999999999998
           }
         }
       ],
@@ -1397,9 +1400,9 @@
           "text": "Stanford leads on offensive-line continuity — Stanford 72%, Wake Forest 57%."
         },
         {
-          "k": "QB-room continuity",
+          "k": "Data confidence",
           "lead": "Wake Forest",
-          "text": "Wake Forest leads on qb-room continuity — Stanford 33%, Wake Forest 40%."
+          "text": "Wake Forest leads on data confidence — Stanford 32%, Wake Forest 43%."
         }
       ],
       "note": "Roster construction from the committed rankings build. No recruiting star and no NIL figure appears here: no public feed this repo reads carries either, and a number nobody published is not estimated in its place."
@@ -1463,12 +1466,6 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "Wake Forest — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
           "label": "Wake Forest — extreme transfer turnover",
           "text": "69% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
           "widening": null
@@ -1513,6 +1510,12 @@
           "sev": "LOW",
           "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "no book total joined to this game",
           "widening": null
         }
       ],
@@ -1571,6 +1574,7 @@
     "market": {
       "available": false,
       "model": "Wake Forest -15.0",
+      "model_raw": "Wake Forest -15.0",
       "headline": "No sportsbook spread is currently joined to this game.",
       "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
@@ -1714,7 +1718,7 @@
         {
           "k": "Confidence",
           "a": "32%",
-          "h": "33%",
+          "h": "43%",
           "note": "how much EdgeDesk knows, not how good the team is"
         },
         {
@@ -1739,11 +1743,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-25. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-24T21:27:03.781Z"
+    "at": "2026-09-25T04:46:59.570Z"
   }
 }
