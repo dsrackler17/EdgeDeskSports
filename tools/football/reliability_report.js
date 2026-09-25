@@ -89,6 +89,22 @@ function dashboard() {
   Object.keys(S.flags).forEach((k) => console.log('  ' + pad(k.replace(/_/g, ' '), 30) + lpad(S.flags[k], 4)));
   console.log('\nTOP RELIABILITY BOTTLENECKS (games carrying the deduction, points lost across the slate)');
   S.bottlenecks.slice(0, 15).forEach((b, i) => console.log('  ' + lpad(i + 1, 2) + '. ' + pad(b.label, 52) + lpad(b.games, 4) + ' games  ' + lpad(b.points, 7) + ' pts'));
+  /* THE ENRICHMENT (football/enrichment/): the same slate scored without the
+     evidence packages, and the data bottlenecks ranked by ENRICHMENT ROI */
+  if (A.summary_without_evidence) {
+    const W = A.summary_without_evidence;
+    console.log('\nWITH vs WITHOUT THE EVIDENCE PACKAGES (same games, same run, same projections)');
+    console.log('  mean ' + W.mean + ' -> ' + S.mean + '   median ' + W.median + ' -> ' + S.median);
+    S.by_grade.forEach((g, i) => console.log('  ' + pad(g.label, 12) + lpad(W.by_grade[i].n, 4) + ' -> ' + lpad(g.n, 4)));
+  }
+  if (A.roi && A.roi.families) {
+    console.log('\nDATA BOTTLENECKS \u2014 ENRICHMENT ROI (estimated recoverable points / cost; an engineering diagnostic)');
+    console.log('   #  ' + pad('bottleneck', 30) + lpad('games', 6) + lpad('lost', 8) + lpad('max rec', 9) + lpad('est', 7) + lpad('cost', 6) + lpad('ROI', 8));
+    A.roi.families.forEach((b) => console.log('  ' + lpad(b.engineering_priority == null ? '-' : b.engineering_priority, 2) + '  ' + pad(b.label, 30)
+      + lpad(b.games_affected, 6) + lpad(b.current_points_lost == null ? '-' : b.current_points_lost, 8) + lpad(b.maximum_recoverable_points == null ? '-' : b.maximum_recoverable_points, 9)
+      + lpad(b.estimated_recoverable_points == null ? '-' : b.estimated_recoverable_points, 7) + lpad(b.cost, 6) + lpad(b.enrichment_roi == null ? '-' : b.enrichment_roi, 8)));
+    if (A.roi.potential) console.log('  potential reliability (mean): ' + A.roi.potential.mean_potential + ' against ' + A.roi.potential.mean_score + ' now \u2014 ' + A.roi.potential.basis);
+  }
   const sorted = games.slice().sort((a, b) => a.reliability.score - b.reliability.score || String(a.game_id).localeCompare(String(b.game_id)));
   const line = (g) => lpad(g.reliability.score, 3) + ' ' + pad(g.reliability.grade_label, 11) + ' ' + pad(g.away + ' @ ' + g.home, 44);
   console.log('\n20 LOWEST');

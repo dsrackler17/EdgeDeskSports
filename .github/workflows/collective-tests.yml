@@ -33,6 +33,9 @@ on:
       # the college research view and the reliability score it reads
       - 'lib/cfb_research_view.js'
       - 'lib/cfb_reliability.js'
+      - 'lib/game_evidence.js'
+      - 'lib/market_consensus.js'
+      - 'football/enrichment/**'
       - 'lib/research_priority.js'
       - 'tools/research/**'
       - 'tools/collective/**'
@@ -117,6 +120,9 @@ on:
       # the college research view and the reliability score it reads
       - 'lib/cfb_research_view.js'
       - 'lib/cfb_reliability.js'
+      - 'lib/game_evidence.js'
+      - 'lib/market_consensus.js'
+      - 'football/enrichment/**'
       - 'lib/research_priority.js'
       - 'tools/research/**'
       - 'tools/collective/**'
@@ -289,6 +295,15 @@ jobs:
       # time — no result, no close — can inform a pregame score.
       - name: Reliability is earned from the inputs, never from the outcome
         run: node tools/football/reliability.test.js
+
+      # THE ENRICHMENT LAYER (football/enrichment/): every "never fake
+      # coverage" rule on fixtures — a provider failure is not a healthy
+      # roster, a missing record is not an available player, one quote is not
+      # a consensus, an unrated player is not replacement level, UNKNOWN stays
+      # UNKNOWN — plus the QB hierarchy, the FCS bridge on a known truth, and
+      # reliability read from an evidence package.
+      - name: The enrichment layer never fakes coverage
+        run: node football/enrichment/enrichment.test.js
 
       # THE RESEARCH VIEW, PUBLISHED. The same read, cut by V.brief() to what a
       # document may carry (nothing device-local, nothing that ages with the

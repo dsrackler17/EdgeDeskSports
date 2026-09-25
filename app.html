@@ -3980,8 +3980,10 @@ window.mcRefresh=function(){
      0-100 from six components with hard gates — NOT a probability. The SAME
      file scores the published slate (football/fbs/build_coverage.js) and is
      what tools/football/reliability.test.js holds to its rules. -->
-<script src="/lib/cfb_reliability.js?v=20260925r"></script>
-<script src="/lib/cfb_research_view.js?v=20260925r"></script>
+<script src="/lib/cfb_reliability.js?v=20260925e"></script>
+<script src="/lib/market_consensus.js?v=20260925e"></script>
+<script src="/lib/game_evidence.js?v=20260925e"></script>
+<script src="/lib/cfb_research_view.js?v=20260925e"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -49992,16 +49994,26 @@ function fbP4ReliabilityFor(u,p,mkt,quotes){
   (quotes||[]).forEach(function(q){ if(q&&q.actionable===true&&q.book)books[q.book]=1;
     if(q&&q.actionable===true&&typeof q.n_books==='number'&&(nb==null||q.n_books>nb))nb=q.n_books; });
   var nq=Object.keys(books).length; if(nq&&(nb==null||nq>nb))nb=nq;
+  /* the books behind the market are COUNTED by the consensus (every
+     provider row, or every book per captured point), not read off the one
+     row the join kept */
+  var cons=null;try{cons=fbMarketConsensusFor(u,quotes);}catch(_){cons=null;}
+  if(cons&&cons.books_reporting)nb=cons.books_reporting;
   var market=mkt?{joined:true,spread_line:(typeof mkt.spread_line==='number')?mkt.spread_line:null,as_of:mkt.as_of||null,
     stale:!!mkt.stale,spread_fault:!!mkt.spread_fault,n_books:nb}:{joined:true,spread_line:null};
+  var GE=window.EDGameEvidence,pkg=null;
+  try{ pkg=GE&&FB.enrich&&FB.enrich.data?GE.forGame(FB.enrich.data,g.game_id):null;
+    if(pkg)pkg=GE.complete(pkg,{contract:A?A.contract:[],market:cons}); }catch(_){ pkg=null; }
   try{
-    return RL.score(RL.inputFor({now:Date.now(),game:g,meta:meta,projection:p,
+    var rel=RL.score(RL.inputFor({now:Date.now(),game:g,meta:meta,projection:p,
       contract:A?A.contract:[],starters:A?A.starters:{},qb_epa:A?A.qb_epa:{},
       injuries:A?A.injuries:{},venues:A?A.venue:null,rosters:A?A.rosters:{},
       personnel:(typeof fbPersonnelFor==='function')?fbPersonnelFor(g.game_id):null,
       team_quality:tq,market:market,
       built_at:FB.p4.loadedAt?new Date(FB.p4.loadedAt).toISOString():null,
-      engine:window.EDCfbP4,state:FB.p4.state,params:window.EDCfbP4Params}));
+      engine:window.EDCfbP4,state:FB.p4.state,params:window.EDCfbP4Params,evidence:pkg}));
+    if(rel&&GE){ try{ rel.data_coverage=pkg?GE.view(pkg,rel,{home:g.home_team,away:g.away_team}):null; }catch(_){ rel.data_coverage=null; } }
+    return rel;
   }catch(_){ return null; }
 }
 /* the hover text of a reliability cell: the score, each component, the
@@ -52465,11 +52477,16 @@ function fbP4Load(force,signal){
       return [].concat.apply([],parts);
     });
   }).then(function(lines){
-    var by={};(lines||[]).forEach(function(l){
+    var by={},all={};(lines||[]).forEach(function(l){
       var c=by[l.game_id];
       if(!c||String(l.provider||'').toLowerCase().indexOf('consensus')>=0)by[l.game_id]=l;
+      /* EVERY provider row is kept as well: the market consensus
+         (lib/market_consensus.js) reads all of them, where the join above
+         still reads one */
+      (all[l.game_id]=all[l.game_id]||[]).push(l);
     });
     FB.p4.lines=by;
+    FB.p4.linesAll=all;
     return fbSignals('americanfootball_ncaaf',signal);
   }).then(function(sig){
     FB.p4.sig=sig||{};
@@ -52518,6 +52535,7 @@ function fbP4Load(force,signal){
        gates; both are joined here so the first render scores from them */
     try{ lanes.push(fbPersonnelEnsure()); }catch(_){}
     try{ lanes.push(fbRelArtEnsure()); }catch(_){}
+    try{ lanes.push(fbEnrichEnsure()); }catch(_){}
     return Promise.all(lanes);
   }).then(function(){
     FB.p4.loadedAt=Date.now();
@@ -54999,8 +55017,22 @@ function fbGxReliability(rv){
   var acts=(R.next_actions||[]).map(function(a){
     return '<li><b>'+fbEsc(a.action)+'</b> <span class="gxl-pts">'+fbEsc(a.potential_gain_text||('up to +'+a.potential_gain))+'</span></li>';
   }).join('');
+  /* DATA COVERAGE (lib/game_evidence.js view): what is known over what is
+     asked, the quarterback's confirmation, what remains uncertain and the
+     score the game could reach if it were resolved — none of it a probability */
+  var DC=R.data_coverage,dc='';
+  if(DC&&DC.rows){
+    dc='<div class="gxl-why"><b>DATA COVERAGE</b></div><table class="gxl-t"><tbody>'+DC.rows.map(function(r){
+      return '<tr><td class="gxl-n">'+fbEsc(r.label)+'</td><td class="gxl-v">'+fbEsc(r.value==null?'\u2014':String(r.value)+(r.unit||''))+'</td>'
+        +'<td class="gxl-m">'+fbEsc(r.detail||'')+'</td></tr>';}).join('')+'</tbody></table>'
+      +(DC.uncertainty&&DC.uncertainty.length?'<div class="gxl-why">Remaining uncertainty:</div><ul class="gxl-g">'
+        +DC.uncertainty.map(function(t){return '<li>'+fbEsc(t)+'</li>';}).join('')+'</ul>':'')
+      +(DC.potential&&DC.potential.score!=null?'<div class="gxl-why">Potential reliability: <b>'+DC.potential.score
+        +'</b> — the score this game could approximately reach if its unresolved evidence were resolved. Not a probability.</div>':'');
+  }
   return '<details class="gxl"><summary>Reliability '+R.score+' — '+fbEsc(R.grade_label||'')+(R.gate_label?(' · '+fbEsc(R.gate_label)):'')
     +': what it is built from</summary><div class="gxl-b">'
+    +dc
     +'<table class="gxl-t"><tbody>'+comps+'</tbody></table>'
     +(gates?'<ul class="gxl-g">'+gates+'</ul>':'')
     +stab
@@ -59435,6 +59467,41 @@ function fbRelArtEnsure(){
       FB.relArt.data=j; FB.relArt.err=null; FB.relArt._p=null; return j; })
     .catch(function(e){ FB.relArt.err=String(e&&e.message||e).slice(0,140); FB.relArt._p=null; return null; });
   return FB.relArt._p;
+}
+/* ═══ THE EVIDENCE PACKAGES — football/enrichment/current.json ═════════════
+   The enrichment build's one interpretation of each game's availability,
+   quarterback, absences, FCS bridge and provider health (lib/game_evidence.js).
+   The board scores reliability from the same package the published build
+   used, completed with this load's own contract and live market consensus.
+   A file that did not load is a normal state: the game is scored from the
+   contract alone, exactly as before, and nothing is invented in its place. */
+FB.enrich = { data:null, err:null, _p:null };
+function fbEnrichEnsure(){
+  if(FB.enrich.data)return Promise.resolve(FB.enrich.data);
+  if(FB.enrich._p)return FB.enrich._p;
+  if(typeof fetch!=='function')return Promise.resolve(null);
+  FB.enrich._p=fetch('football/enrichment/current.json',{cache:'no-cache'})
+    .then(function(r){ if(!r.ok)throw new Error('enrichment '+r.status); return r.json(); })
+    .then(function(j){
+      if(!j||j.schema!=='edgedesk_enrichment_v1')throw new Error('enrichment artifact has an unknown schema');
+      FB.enrich.data=j; FB.enrich.err=null; FB.enrich._p=null; return j; })
+    .catch(function(e){ FB.enrich.err=String(e&&e.message||e).slice(0,140); FB.enrich._p=null; return null; });
+  return FB.enrich._p;
+}
+/* the live market consensus for one game: every cfb.lines provider row, else
+   the captured points. Comparison evidence only — never an engine input */
+function fbMarketConsensusFor(u,quotes){
+  var MC=window.EDMarketConsensus;if(!MC||!u||!u.g)return null;
+  var rows=(FB.p4&&FB.p4.linesAll&&FB.p4.linesAll[u.g.game_id])||[];
+  var books=rows.filter(function(l){return String(l.provider||'').toLowerCase().indexOf('consensus')<0&&l.spread!=null;})
+    .map(function(l){return {book:l.provider,spread:+l.spread,total:l.over_under!=null?+l.over_under:null,
+      ml_home:l.home_moneyline!=null?+l.home_moneyline:null,ml_away:l.away_moneyline!=null?+l.away_moneyline:null};});
+  try{
+    if(books.length)return MC.consensus({books:books},Date.now());
+    var pts=(quotes||[]).filter(function(q){return q&&q.actionable===true&&typeof q.line==='number';})
+      .map(function(q){return {side:q.side,line:q.line,n_books:q.n_books,best_book:q.book,price_dec:q.price_dec,captured_at:q.captured_at};});
+    return pts.length?MC.consensus({points:pts},Date.now()):null;
+  }catch(_){ return null; }
 }
 function fbPersonnelImpactText(t){
   if(!t)return 'not on file';
