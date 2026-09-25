@@ -370,5 +370,95 @@ section('STEP 6 · best available line: current, named, priced — or said to be
   eq('decimal 2.5 is +150', V.american(2.5), 150);
 }
 
+/* ======================================================================== */
+section('STEP 7 · projection status and stability, from stored EdgeDesk numbers only');
+{
+  const NOW = Date.parse('2026-09-24T18:00:00Z');
+  const REC = (first, latest, o) => Object.assign({
+    first: first == null ? null : { at: '2026-09-22T14:00:00Z', margin: first },
+    latest: latest == null ? null : { at: '2026-09-24T09:00:00Z', margin: latest },
+    revisions: first === latest ? 0 : 1 }, o || {});
+  function hist(raw, rec, o) {
+    o = o || {};
+    const p = proj(raw, { line: 2.5, conf: o.conf === undefined ? 70 : o.conf, layers: o.layers });
+    return V.build({ game: GAME, projection: p, market: { spread_line: 2.5 }, coverage: { input_coverage: 0.9 },
+      record: rec, now: NOW, h2h_pp: o.h2h }).history;
+  }
+  let h = hist(-1.6, null);
+  eq('no stored history: NO HISTORY', h.status.key, 'NO_HISTORY');
+  eq('and no stability, never a guess', h.stability.tier, null);
+  eq('no previous projection is invented', h.previous, null);
+  chk('it says nothing is stored', /No earlier EdgeDesk number/.test(h.status.text), h.status.text);
+
+  h = hist(-1.6, REC(-1.4, -1.4));
+  eq('within 0.75 of the stored number: STABLE', h.status.key, 'STABLE');
+  near('the change is measured from the latest stored number', h.change.signed, -0.2, 1e-9);
+  eq('high stability', h.projection_stability === undefined ? h.stability.tier : h.stability.tier, 'HIGH');
+
+  h = hist(-1.6, REC(1.2, -0.3));
+  eq('1.3 pts off the latest stored number: MOVING', h.status.key, 'MOVING');
+  eq('toward the away side', h.change.toward_team, AWAY);
+  chk('it says how far and toward whom', /1\.3 pts toward Ole Miss since the latest published number/.test(h.status.text), h.status.text);
+  near('and since the first published number', h.since_first.signed, -2.8, 1e-9);
+  eq('stability spans the whole stored range: 2.8 pts is LOW', h.stability.tier, 'LOW');
+  eq('the timeline is first, latest, current', h.points.map(x => x.source).join(','), 'first published,latest published,current');
+  eq('each written as a side line off the RAW margin', h.points.map(x => x.text).join(' | '), HOME + ' -1.2 | ' + AWAY + ' -0.30 | ' + AWAY + ' -1.6');
+
+  h = hist(-3.0, REC(0, 0.5));
+  eq('3.5 pts off the latest stored number: SIGNIFICANT CHANGE', h.status.key, 'SIGNIFICANT_CHANGE');
+  h = hist(-1.6, REC(1.4, -1.6));
+  eq('a projection that swung earlier and has held since is STABLE…', h.status.key, 'STABLE');
+  eq('…with LOW stability — both true, and both shown', h.stability.tier, 'LOW');
+  h = hist(-1.6, REC(-1.9, -1.9));
+  eq('0.3 pts of range is HIGH stability', h.stability.tier, 'HIGH');
+  h = hist(-1.6, REC(-0.4, -0.4));
+  eq('1.2 pts of range is MEDIUM stability', h.stability.tier, 'MEDIUM');
+
+  /* thresholds sit where CONFIG says */
+  eq('exactly 0.75 is MOVING', hist(-1.0, REC(-0.25, -0.25)).status.key, 'MOVING');
+  eq('0.74 is STABLE', hist(-0.99, REC(-0.25, -0.25)).status.key, 'STABLE');
+  eq('exactly 2.0 is still MOVING', hist(-2.0, REC(0, 0)).status.key, 'MOVING');
+  eq('2.01 is SIGNIFICANT CHANGE', hist(-2.01, REC(0, 0)).status.key, 'SIGNIFICANT_CHANGE');
+
+  /* nothing from the future, nothing invented in between */
+  h = hist(-1.6, { first: { at: '2026-09-30T00:00:00Z', margin: 3 }, latest: null, revisions: 0 });
+  eq('a stored number stamped after now is ignored', h.status.key, 'NO_HISTORY');
+  h = hist(-1.6, REC(1.2, -0.3, { revisions: 4 }));
+  eq('four revisions are reported as a count, not as invented points', h.points.length, 3);
+  eq('and the count is kept', h.revisions, 4);
+  const stale = hist(-1.6, REC(-1.4, -1.4));
+  eq('stability never moves the raw projection', V.build({ game: GAME, projection: proj(-1.6, { line: 2.5 }) }).raw_projected_margin, -1.6);
+  chk('(and the history object carries no margin of its own to substitute)', !('raw_projected_margin' in stale));
+
+  /* limited data outranks movement */
+  eq('under the confidence floor the status is LIMITED DATA', hist(-3, REC(0, 0), { conf: 20 }).status.key, 'LIMITED_DATA');
+
+  /* injury uncertainty: only from a SUPPLIED report */
+  const absent = { injuries: { home: { uncertainty: { available: true, value: 1, source: 'declared missing' }, detail: [] },
+    away: { uncertainty: { available: true, value: 1, source: 'declared missing' }, detail: [] } } };
+  eq('an absent report is not INJURY UNCERTAINTY, even at the maximum value', hist(-1.6, REC(-1.4, -1.4), { layers: absent }).status.key, 'STABLE');
+  const gtd = { injuries: { home: { uncertainty: { available: true, value: 0.28, source: 'injury status ambiguity' },
+    detail: [{ player: 'J. Doe', position: 'QB', status: 'questionable' }] }, away: absent.injuries.away } };
+  h = hist(-1.6, REC(-1.4, -1.4), { layers: gtd });
+  eq('a supplied report with a game-time decision on a starter is INJURY UNCERTAINTY', h.status.key, 'INJURY_UNCERTAINTY');
+  eq('it names who, from the report', h.injury.players[0].player, 'J. Doe');
+  const mild = { injuries: { home: { uncertainty: { available: true, value: 0.08, source: 'injury status ambiguity' }, detail: [] }, away: absent.injuries.away } };
+  eq('a supplied report with little ambiguity is not', hist(-1.6, REC(-1.4, -1.4), { layers: mild }).status.key, 'STABLE');
+
+  /* the market moving, from the same record and the same source */
+  const mm = REC(-1.4, -1.4, { market_entry: { at: '2026-09-22T14:00:00Z', margin: 1.0, source: 'ESPN · DraftKings' },
+    market_latest: { at: '2026-09-24T09:00:00Z', margin: 2.5, source: 'ESPN · DraftKings' } });
+  h = hist(-1.6, mm);
+  eq('a steady EdgeDesk number with a market that moved 1.5 is LINE MOVING', h.status.key, 'LINE_MOVING');
+  chk('and says toward whom', /1\.5 pts toward Florida/.test(h.status.text), h.status.text);
+  const mixed = REC(-1.4, -1.4, { market_entry: { at: '2026-09-22T14:00:00Z', margin: 1.0, source: 'ESPN · DraftKings' },
+    market_latest: { at: '2026-09-24T09:00:00Z', margin: 2.5, source: 'ESPN · FanDuel' } });
+  eq('two different sources are never differenced into a move', hist(-1.6, mixed).status.key, 'STABLE');
+  eq('a 3.5 pp moneyline move is LINE MOVING', hist(-1.6, REC(-1.4, -1.4), { h2h: 3.5 }).status.key, 'LINE_MOVING');
+  eq('EdgeDesk moving (1.6 pts) outranks the market moving', hist(-3, mm).status.key, 'MOVING');
+  chk('every status is one of the supported ones', ['NO_HISTORY', 'STABLE', 'MOVING', 'SIGNIFICANT_CHANGE', 'LIMITED_DATA',
+    'INJURY_UNCERTAINTY', 'LINE_MOVING'].every(k => V.STATUS[k]));
+}
+
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));
 process.exit(failures ? 1 : 0);

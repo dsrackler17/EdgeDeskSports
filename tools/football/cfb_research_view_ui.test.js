@@ -29,7 +29,7 @@ function has(hay, needle, what) { ok(String(hay).indexOf(needle) >= 0, what, { m
 function lacks(hay, needle, what) { ok(String(hay).indexOf(needle) < 0, what, { present: needle }); }
 function section(t) { console.log('\n' + t); }
 
-const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxBest', 'fbP4QuotesFor', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
+const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbRvNearBadge', 'fbRvGapCell', 'fbRvLabelChip', 'fbRvState', 'fbRvRowCells', 'fbRvWeak', 'fbGxWhy', 'fbGxBest', 'fbP4QuotesFor', 'fbP4RecordFor', 'fbGxProjStatus', 'fbGxSummary', 'fbGxBriefText', 'fbP4Card', 'fbP4Request', 'fbP4Market', 'fbP4ContractFor', 'fbP4StatusFor'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 (function () {
@@ -324,6 +324,54 @@ section('STEP 6 · best available line, from captured quotes under the page’s 
   s.u._rv = null;
   has(T.fbGxBest(s.u, s.p), 'no sportsbook quote has been captured', 'and with no captures it says so');
   win.EDFbs = savedFbs; win.FB.p4.uni = savedUni;
+}
+
+/* ------------------------------------------------------------------------ */
+section('STEP 7 · projection status and stability, from the committed model record');
+{
+  /* the REAL record file, read through the page's own reader */
+  const REC = JSON.parse(fs.readFileSync(path.join(ROOT, 'record', 'football', 'cfb_2026.json'), 'utf8'));
+  win.FB.p4rec.data = REC;
+  const ids = Object.keys(REC.games).filter(k => REC.games[k].first && REC.games[k].pick);
+  ok(ids.length > 0, 'the committed record carries games with a first and a latest number');
+  const e = REC.games[ids.find(k => REC.games[k].revisions > 0) || ids[0]];
+  const ru = { g: { game_id: e.game_id, home_team: e.home, away_team: e.away } };
+  const r = T.fbP4RecordFor(ru);
+  eq(r.first.margin, -e.first.home_line, 'the first number is read in the engine’s margin convention');
+  eq(r.latest.margin, -e.pick.home_line, 'and so is the latest');
+  eq(r.latest.at, e.pick.at, 'with its own publication time');
+  eq(r.revisions, e.revisions, 'and the revision count');
+  eq(T.fbP4RecordFor({ g: { game_id: e.game_id, home_team: e.away, away_team: e.home } }), null,
+    'an entry whose teams do not line up home-for-home is refused, never flipped');
+  eq(T.fbP4RecordFor({ g: { game_id: 'NOT_A_GAME', home_team: e.home, away_team: e.away } }), null, 'a game the record never saw has no history');
+
+  /* a staged game with a stored history: Wake Forest by 1.2 on Tuesday, by
+     0.3 on Thursday, and the page now projects Wake Forest by 1.6 */
+  const s = stageAt(-1.6, { market_spread: 2.5 });
+  withCoverage(s.u, WELL);
+  win.FB.p4rec.data = { updated_at: '2026-09-24T12:00:00Z', games: { RV1: { game_id: 'RV1', home: HOME, away: AWAY, revisions: 1,
+    first: { at: '2026-09-22T14:00:00.000Z', home_line: -1.2 }, pick: { at: '2026-09-24T09:00:00.000Z', home_line: 0.3 } } } };
+  s.u._rv = null;
+  const v = T.fbP4ViewFor(s.u, s.p);
+  eq(v.projection_status.key, 'MOVING', '1.3 pts off the latest published number is MOVING');
+  eq(v.projection_change.toward_team, AWAY, 'toward Wake Forest');
+  eq(v.projection_stability.tier, 'LOW', 'and 2.8 pts of stored range is LOW stability');
+  const html = T.fbGxProjStatus(s.u, s.p);
+  has(html, 'MOVING', 'the card shows the status');
+  has(html, 'LOW', 'and the stability');
+  has(html, HOME + ' -1.2', 'and the path starts at the first published number');
+  has(html, AWAY + ' -0.30', 'through the latest');
+  has(html, AWAY + ' -1.6', 'to now');
+  has(T.fbP4Card(s.u), 'Projection status', 'the section is on the card');
+  has(T.fbRvRowCells(v).fair, 'MOVED 1.3', 'and the row marks the move');
+
+  win.FB.p4rec.data = null;
+  s.u._rv = null;
+  const v0 = T.fbP4ViewFor(s.u, s.p);
+  eq(v0.projection_status.key, 'NO_HISTORY', 'with no record loaded: NO HISTORY');
+  has(T.fbGxProjStatus(s.u, s.p), 'No earlier EdgeDesk number is stored', 'and the card says so');
+  lacks(T.fbRvRowCells(v0).fair, 'MOVED', 'and the row marks nothing');
+  has(BOOT.module, "fetch('record/football/cfb_'+season+'.json'", 'the page reads the committed record');
 }
 
 console.log('\n' + (failures ? failures + ' of ' + checks + ' checks FAILED' : 'all ' + checks + ' checks passed'));

@@ -1905,6 +1905,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   .rv-row{grid-template-columns:12px 56px minmax(104px,1fr) 108px 94px 90px 32px 32px 120px!important}
   .rv-row .rv-conf{display:none}
 }
+.rv-mv{font-size:8.5px;font-weight:700;letter-spacing:.04em;white-space:nowrap}.rv-mv.warn{color:var(--warn)}.rv-mv.neg{color:var(--neg)}
 .rv-np{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.05em;border:1px solid rgba(227,184,77,.45);border-radius:4px;padding:1px 4px;color:var(--gold);white-space:nowrap;vertical-align:middle;margin-left:4px}
 .fbs-confcell{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media(max-width:560px){
@@ -49802,15 +49803,17 @@ function fbP4ViewFor(u,p,mkt){
   var cov=null;try{cov=fbP4ContractFor(u);}catch(_){cov=null;}
   var cs=cov&&cov.summary||null;
   var quotes=null;try{quotes=fbP4QuotesFor(u);}catch(_){quotes=null;}
+  var rec=null;try{rec=fbP4RecordFor(u);}catch(_){rec=null;}
+  var h2h=null;try{h2h=fbP4H2hMove(u);}catch(_){h2h=null;}
   /* a quote's freshness is judged NOW, so the view is rebuilt every five
      minutes even when nothing else about the game has changed */
   var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,
-    quotes?quotes.length:0,Math.floor(Date.now()/3e5)].join('|');
+    quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,Math.floor(Date.now()/3e5)].join('|');
   if(u._rv&&u._rv.p===p&&u._rv.key===key)return u._rv.v;
   var v=null;
   try{
     v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt,
-      coverage:cs,quotes:quotes},fbP4ViewCfg());
+      coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,now:Date.now()},fbP4ViewCfg());
   }catch(_){v=null;}
   u._rv={p:p,key:key,v:v};
   return v;
@@ -49822,12 +49825,15 @@ function fbP4ViewFor(u,p,mkt){
    it. The game is matched by the same rule the market join uses
    (EDFbs.matchesEvent: both teams resolved, kickoff inside 36 hours). With
    no freshness policy loaded, every quote is UNKNOWN and none is available. */
-function fbP4QuotesFor(u){
-  var S=FB.p4,out=[],k,ix=null;
+function fbP4EventFor(u){
+  var S=FB.p4,k,ix=null;
   try{ix=fbP4TeamIx();}catch(_){ix=null;}
-  if(!ix||!S||!S.sig||!window.EDFbs)return out;
-  var ev=null;
-  for(k in S.sig)if(S.sig.hasOwnProperty(k)&&window.EDFbs.matchesEvent(S.sig[k],u,ix)){ev=S.sig[k];break;}
+  if(!ix||!S||!S.sig||!window.EDFbs)return null;
+  for(k in S.sig)if(S.sig.hasOwnProperty(k)&&window.EDFbs.matchesEvent(S.sig[k],u,ix))return S.sig[k];
+  return null;
+}
+function fbP4QuotesFor(u){
+  var out=[],ev=fbP4EventFor(u);
   if(!ev||!ev.rows)return out;
   var hN=fbNorm(ev.home),aN=fbNorm(ev.away),I=window.EDINTEL;
   ev.rows.forEach(function(r){
@@ -49841,6 +49847,52 @@ function fbP4QuotesFor(u){
       why:q?q.why:'the freshness policy did not load, so this quote cannot be called current'});
   });
   return out;
+}
+/* the home moneyline's implied-probability move since first capture, in
+   points — a market fact, and only while the capture is still current */
+function fbP4H2hMove(u){
+  var ev=fbP4EventFor(u);if(!ev)return null;
+  var m=fbMarketFromEvent(ev,ev.home);
+  if(!m||!m.h2h_move||!m.at)return null;
+  var I=window.EDINTEL,q=null;
+  try{q=(I&&I.quoteState)?I.quoteState({captured_at:m.at,market:'h2h',kickoff:u.t}):null;}catch(_){q=null;}
+  if(!q||!q.actionable)return null;
+  return Math.round((m.h2h_move.now-m.h2h_move.open)*1000)/10;
+}
+/* ── THE MODEL RECORD, AS HISTORY ───────────────────────────────────────
+   record/football/cfb_<season>.json is written hourly by
+   tools/record/football_record.js from the published slate: per game, the
+   FIRST pregame number and the LATEST changed one (each with the time it was
+   published), how many revisions lie between, and the market at entry and
+   now. It is the only store of EdgeDesk's own earlier numbers the page can
+   read, so it is what "moved since" is measured against. Loaded once per
+   season, lazily; a failure leaves every game at NO HISTORY and the board
+   exactly as it was. */
+FB.p4rec={data:null,err:null,season:null,_p:null};
+function fbP4RecordEnsure(season){
+  var R=FB.p4rec;
+  if(!season||(R.season===season&&(R.data||R.err))||R._p)return R._p||Promise.resolve(R.data);
+  R._p=fetch('record/football/cfb_'+season+'.json',{cache:'no-cache'})
+    .then(function(r){if(!r.ok)throw new Error('record '+r.status);return r.json();})
+    .then(function(j){R.data=j;R.season=season;R.err=null;R._p=null;
+      try{if(FB.at&&FB.sport==='p4'&&typeof window.renderFootball==='function')window.renderFootball();}catch(_){}
+      return j;})
+    .catch(function(e){R.err=String(e&&e.message||e).slice(0,140);R.season=season;R._p=null;return null;});
+  return R._p;
+}
+/* one game's stored history in the engine's margin convention, or null. An
+   entry whose teams do not line up with this board game home-for-home is
+   not used: a flipped entry would read as a swing of twice the number. */
+function fbP4RecordFor(u){
+  var d=FB.p4rec&&FB.p4rec.data,g=u&&u.g;
+  if(!d||!d.games||!g)return null;
+  var e=d.games[String(g.game_id)];
+  if(!e||fbP4Key(e.home)!==fbP4Key(g.home_team)||fbP4Key(e.away)!==fbP4Key(g.away_team))return null;
+  function pt(x){return (x&&x.home_line!=null&&isFinite(x.home_line))?{at:x.at,margin:-x.home_line}:null;}
+  function mk(x){return (x&&x.home_line!=null&&isFinite(x.home_line))?{at:x.at,margin:-x.home_line,
+    source:[x.source,x.book].filter(Boolean).join(' · ')||null}:null;}
+  return {first:pt(e.first),latest:pt(e.pick),revisions:e.revisions||0,model_version:e.model_version||null,
+    market_entry:mk(e.entry&&e.entry.market),market_latest:mk(e.market_pick),updated_at:d.updated_at||null};
 }
 /* the view's thresholds ARE the engine's and the board's: the research gap
    and confidence floor from the shipped params, the guard from FB_GUARD */
@@ -49887,8 +49939,10 @@ var FB_RV_REL={STRONG:'hi',ADEQUATE:'md',LOW:'lo'};
 /* the row's fair, market, confidence and reliability cells */
 function fbRvRowCells(v){
   var F=v.fair,G=v.market_gap,C=v.confidence,R=v.reliability,out={};
+  var PS=v.projection_status,mv=PS&&(PS.key==='MOVING'||PS.key==='SIGNIFICANT_CHANGE');
   out.fair=F?('<span class="rv-fair" title="'+fbEsc('EdgeDesk fair: '+F.fair_line_text+(v.is_near_pickem?(' · raw '+F.raw_line_text):''))+'">'
-      +fbEsc(F.fair_line_text)+'</span>'+(v.is_near_pickem?('<br>'+fbRvNearBadge(v)):''))
+      +fbEsc(F.fair_line_text)+'</span>'+(v.is_near_pickem?('<br>'+fbRvNearBadge(v)):'')
+      +(mv?(' <span class="rv-mv '+PS.tone+'" title="'+fbEsc(PS.label+': '+PS.text)+'">'+(PS.key==='MOVING'?'MOVED':'CHANGED')+' '+v.projection_change.points.toFixed(1)+'</span>'):''))
     :'<span class="mut">—</span>';
   out.market=G&&G.available
     ?('<span class="mut" title="'+fbEsc('Market: '+G.market_line_text+(G.source?(' · '+G.source):'')+(G.stale?' · stale capture':''))+'">'
@@ -54896,6 +54950,27 @@ function fbGxWhy(u,p){
   +'The full breakdown, in both directions, is under “Why EdgeDesk prices it here”.</div>';
 }
 
+/* ── PROJECTION STATUS AND STABILITY ────────────────────────────────────
+   From the research view's history (lib/cfb_research_view.js
+   projectionHistory): EdgeDesk's own stored numbers and the current one.
+   Stability is metadata — it moves no projection. */
+function fbGxProjStatus(u,p){
+  var v=fbP4ViewFor(u,p),H=v&&v.history;
+  if(!H||!H.status)return '';
+  var S=H.status,st=H.stability,h='';
+  h+='<div class="gd-line"><span class="l">Status</span><span class="v"><span class="gx-st '+S.tone+'">'+fbEsc(S.label)+'</span> '
+    +'<span class="mut">'+fbEsc(S.text)+'</span></span></div>';
+  h+='<div class="gd-line"><span class="l">Stability</span><span class="v">'
+    +(st.tier?('<b>'+fbEsc(st.tier)+'</b> <span class="mut">'+fbEsc(st.text)+'</span>'):'<span class="mut">'+fbEsc(st.text)+'</span>')+'</span></div>';
+  if(H.points&&H.points.length>1){
+    h+='<div class="gd-line"><span class="l">EdgeDesk path</span><span class="v mono">'
+      +H.points.map(function(x){return fbEsc(x.text)+' <span class="mut">('+(x.source==='current'?'now':fbEsc(x.source)+' '+fbGxAgo(x.at))+')</span>';}).join(' → ')
+      +'</span></div>';
+  }
+  if(H.revisions!=null&&H.revisions>1)h+='<div class="gx-foot">Revised '+H.revisions+' times between the first and latest published numbers; the record keeps those two, so only they are shown.</div>';
+  return h+'<div class="gx-foot">Measured against EdgeDesk’s own published numbers (the model record, written hourly from the slate), never an estimate of one. Raw margins, not the one-point display line.</div>';
+}
+
 /* ── BEST AVAILABLE LINE ────────────────────────────────────────────────
    The best current number a named book is offering on each side, from the
    research view (bestAvailable): captured quotes only, stale or unverifiable
@@ -55112,7 +55187,7 @@ window.fbGxToggle=function(gid,id){
     var b=el.querySelector('.gx-sec-h');if(b){b.setAttribute('aria-expanded',String(FB_GX_OPEN[k]));
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
-var FB_GX_DEFAULT={why:true,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
+var FB_GX_DEFAULT={why:true,proj:true,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
   research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
@@ -55740,6 +55815,8 @@ function fbP4Card(u){
   var body=fbGxSummary(u,p,gid)
     +(rvC&&rvC.strongest_drivers?fbGxSec(gid,'why','Why EdgeDesk leans '+rvC.strongest_drivers.team,fbGxWhy(u,p),true,
       'the largest measured components on that side — research, not a pick'):'')
+    +(rvC&&rvC.history?fbGxSec(gid,'proj','Projection status',fbGxProjStatus(u,p),true,
+      'EdgeDesk’s own number over time · stable, moving or changed'):'')
     +(rvC&&rvC.best_available_line?fbGxSec(gid,'best','Best available line',fbGxBest(u,p),true,
       'current captured quotes only · stale and unverified ones excluded'):'')
     +fbGxSec(gid,'matchup','Programs, conferences and the FBS rating',fbP4MatchupHTML(u,p),true,
@@ -56740,6 +56817,9 @@ function fbP4Render(host){
   });
   html+=fbP4BoardHTML()+fbP4Ratings();
   host.innerHTML=html;
+  /* the stored history the research view measures movement against; it
+     arrives after the board and repaints it once */
+  if(window.EDCfbResearchView)try{fbP4RecordEnsure(S.season);}catch(_){}
 }
 /* ================= end CFB POWER 4 board ================= */
 
