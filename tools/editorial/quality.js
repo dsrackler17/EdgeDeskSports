@@ -253,6 +253,7 @@
     deepAdd(rec.snapshot && rec.snapshot.compare, add);
     deepAdd(rec.snapshot && rec.snapshot.uncertainty, add);
     deepAdd(rec.snapshot && rec.snapshot.game, add);
+    deepAdd(rec.snapshot && rec.snapshot.research_view, add);
     /* the result record */
     deepAdd(rec.result, add);
     /* the computed grading and audit: every figure in them was produced by

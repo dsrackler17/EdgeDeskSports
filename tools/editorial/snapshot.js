@@ -176,6 +176,34 @@
         txt(m && (m.headline || m.note)) || 'no sportsbook quote was captured for this game', 'market'));
     }
 
+    /* --- the research read (lib/cfb_research_view.js V.brief) -----------
+       The board's one research label, the market gap measured from the raw
+       margin, confidence and reliability apart, and the reasons the engine
+       measured — each a fact an article may cite, in the view's own words.
+       Absent the view (an NFL game, an older payload), nothing is added. */
+    var rv = r && r.research_view;
+    if (rv && rv.contract === 'cfb_research_brief/1' && rv.label && rv.label.key) {
+      var rsrc = 'the EdgeDesk research view (' + (txt(rv.view) || 'cfb_research_view') + ')';
+      F.push(fact('research.label', 'EdgeDesk’s research label for this game', txt(rv.label.label), TIER.INTERPRETATION, rsrc, 'research_view.label'));
+      F.push(rv.market_gap && rv.market_gap.available
+        ? fact('research.gap', 'the market gap, measured from EdgeDesk’s raw margin', txt(rv.market_gap.text), TIER.CALCULATED, rsrc, 'research_view.market_gap')
+        : fact('research.gap', 'the market gap', null, TIER.UNKNOWN, txt(rv.market_gap && rv.market_gap.reason) || 'no market line was joined', 'research_view.market_gap'));
+      F.push(rv.confidence && rv.confidence.tier
+        ? fact('research.confidence', 'EdgeDesk’s confidence tier', txt(rv.confidence.label), TIER.MODEL, rsrc, 'research_view.confidence')
+        : fact('research.confidence', 'EdgeDesk’s confidence tier', null, TIER.UNKNOWN, 'the engine did not measure it', 'research_view.confidence'));
+      F.push(rv.reliability && rv.reliability.tier
+        ? fact('research.reliability', 'the share of this game’s inputs EdgeDesk has on file', txt(rv.reliability.text), TIER.MODEL, rsrc, 'research_view.reliability')
+        : fact('research.reliability', 'the share of this game’s inputs EdgeDesk has on file', null, TIER.UNKNOWN, 'input coverage was not reported', 'research_view.reliability'));
+      ((rv.drivers && !rv.drivers.none && rv.drivers.reasons) || []).forEach(function (d, i) {
+        F.push(fact('research.lean.' + i, 'a measured reason EdgeDesk leans ' + txt(rv.drivers.team),
+          txt(d.text), d.kind === 'market' ? TIER.CALCULATED : TIER.MODEL, rsrc, 'research_view.drivers.reasons[' + i + ']'));
+      });
+      if (rv.projection_status && rv.projection_status.label) {
+        F.push(fact('research.status', 'the projection’s status against its own published history',
+          txt(rv.projection_status.label), TIER.MODEL, rsrc, 'research_view.projection_status'));
+      }
+    }
+
     /* --- drivers, matchups, edges: the model's own published reasoning --- */
     ((r.drivers && r.drivers.rows) || []).forEach(function (d, i) {
       F.push(fact('driver.' + i, 'a published driver of the EdgeDesk number',
@@ -327,6 +355,8 @@
       },
       market: r.market ? JSON.parse(JSON.stringify(r.market)) : null,
       market_source: txt(opts.market_source),
+      /* the board's research read (cfb_research_brief/1), or null */
+      research_view: r.research_view ? JSON.parse(JSON.stringify(r.research_view)) : null,
       drivers: r.drivers || null,
       matchups: r.matchups || [],
       advantages: r.advantages || null,

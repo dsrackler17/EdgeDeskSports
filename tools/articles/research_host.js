@@ -270,6 +270,20 @@ async function open(opts) {
      a script tag for it */
   M.loadEngine(win, ROOT);
   M.loadNflEngine(win, ROOT);
+  /* THE RESEARCH VIEW AND ITS FRESHNESS POLICY, as the page loads them. The
+     view (lib/cfb_research_view.js) is a plain <script src> outside the
+     football module, and EDINTEL — whose quoteState judges a captured quote
+     current or stale — is another block of app.html. The brief's research
+     view is built by the page's own adapter; without these it is simply
+     absent, never approximated. */
+  try {
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_research_view.js'), 'utf8'), win,
+      { filename: 'lib/cfb_research_view.js' });
+  } catch (e) { log('  research view: ' + (e && e.message)); }
+  try {
+    const a = boot.app.indexOf('/*__EDINTEL_START__*/'), b = boot.app.indexOf('/*__EDINTEL_END__*/');
+    if (a > 0 && b > a) vm.runInContext(boot.app.slice(a, b), win, { filename: 'app.html#EDINTEL' });
+  } catch (e) { log('  freshness policy: ' + (e && e.message)); }
 
   log('booting the EdgeDesk football module…');
   try { await win.loadFootball(false); } catch (e) { log('  NFL board: ' + (e && e.message)); }
@@ -295,6 +309,12 @@ async function open(opts) {
   if (!p4Settled) await waitFor(() => p4Settled, 15000);
   log('  Power 4 board: ' + (win.FB.p4.up || []).length + ' upcoming, season ' + win.FB.p4.season
     + (win.FB.p4.gate ? ' — GATE: ' + win.FB.p4.gate : ''));
+  /* the committed model record, so the research view's history — the
+     published path, the projection status, what changed — is the one the
+     terminal shows. A record that will not load leaves NO HISTORY. */
+  if (typeof win.fbP4RecordEnsure === 'function' && win.FB.p4.season) {
+    try { await win.fbP4RecordEnsure(win.FB.p4.season); } catch (_) {}
+  }
 
   /* ---- captured book quotes, replayed --------------------------------- */
   /* The live capture (Supabase `signals`) is behind an account and a build
