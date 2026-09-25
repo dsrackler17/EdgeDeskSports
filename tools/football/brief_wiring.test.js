@@ -74,7 +74,7 @@ section('1b. the board explains its confidence from the shared module, not from 
   ok(/football\/matchup\/qb_context\.js/.test(SRC.module + SRC.rest),
     'and football/matchup/qb_context.js, so the starter is flattened once');
   /* the browser's starter flattening must delegate too */
-  const qb = (MODULE.match(/function fbP4QbContext\(teamName\)\{[\s\S]*?\n\}/) || [''])[0];
+  const qb = (MODULE.match(/function fbP4QbContext\([^)]*\)\{[\s\S]*?\n\}/) || [''])[0];
   ok(/window\.EDQbContext\.build\(/.test(qb), 'the browser flattens the starter through the shared module');
   ok(/if\(!window\.EDQbContext\)return null/.test(qb),
     'and keeps no fallback copy: with the module absent the board reports the starter unknown, which is true');
