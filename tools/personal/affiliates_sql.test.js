@@ -228,6 +228,127 @@ try {
   err = db.mustFail(() => db.as(U.admin, `select public.affiliate_reconcile(45);`));
   chk('the raw reconcile is not callable by a client, even an admin (the admin door wraps it)', !!err && /permission denied/.test(err));
   chk('the admin door runs it', JSON.parse(db.as(U.admin, `select public.affiliate_admin_reconcile();`)).events_replayed > 0);
+
+  /* ── CAMPAIGNS: per-code terms the admin sets without a deploy ─────────── */
+  const C = { a: '00000000-0000-0000-0000-0000000000c1', b: '00000000-0000-0000-0000-0000000000c2', c: '00000000-0000-0000-0000-0000000000c3',
+    d: '00000000-0000-0000-0000-0000000000c4', e: '00000000-0000-0000-0000-0000000000c5' };
+  const VC = 'visitor_campaign_abcdefgh', VD = 'visitor_campaign_zyxwvuts';
+  db.sql(`insert into auth.users (id, email, created_at) values ('${C.a}','ca@example.com', now()), ('${C.b}','cb@example.com', now()),
+    ('${C.c}','cc@example.com', now()), ('${C.d}','cd@example.com', now()), ('${C.e}','ce@example.com', now());`);
+  err = db.mustFail(() => db.as(U.partner, `select public.affiliate_admin_upsert_campaign('{"partner_code":"COACHBIGGS","code":"BIGGSFALL","commission_rate":0.4}'::jsonb);`));
+  chk('campaigns: only an admin creates one', !!err && /not an affiliate admin/.test(err));
+  let cp = JSON.parse(db.as(U.admin, `select public.affiliate_admin_upsert_campaign('${JSON.stringify({ partner_code: 'coachbiggs', code: 'biggsfall', name: 'Fall launch',
+    discount_type: 'percent', discount_amount: 20, discount_duration: 'repeating', discount_duration_months: 3, stripe_promo_code: 'biggsfall',
+    commission_rate: 0.4, commission_type: 'one_time', commission_duration_months: 6 })}'::jsonb);`));
+  chk('campaigns: an admin creates one, code normalised to upper case', cp.ok && cp.code === 'BIGGSFALL', cp);
+  const campId = cp.id;
+  chk('campaigns: a one-time commission carries no month count', cp.campaign.commission_type === 'one_time' && cp.campaign.commission_duration_months === null, cp.campaign);
+  chk('campaigns: the discount is NOT shown before Stripe confirms it', cp.campaign.stripe_state === 'unverified' && cp.campaign.discount === null, cp.campaign);
+  let bad = JSON.parse(db.as(U.admin, `select public.affiliate_admin_upsert_campaign('{"partner_code":"COACHBIGGS","code":"BADPCT","discount_type":"percent","discount_amount":140,"discount_duration":"once","commission_rate":0.2}'::jsonb);`));
+  chk('campaigns: an impossible discount is refused', bad.ok === false && bad.reason === 'invalid_campaign', bad);
+  bad = JSON.parse(db.as(U.admin, `select public.affiliate_admin_upsert_campaign('{"partner_code":"COACHBIGGS","code":"RIVAL","commission_rate":0.2}'::jsonb);`));
+  chk('campaigns: a code that is another creator\'s base code is refused', bad.ok === false, bad);
+  bad = JSON.parse(db.as(U.admin, `select public.affiliate_admin_upsert_campaign('{"partner_code":"COACHBIGGS","code":"LATER","commission_rate":0.2,"starts_at":"2030-01-02T00:00:00Z","expires_at":"2030-01-01T00:00:00Z"}'::jsonb);`));
+  chk('campaigns: an end before the start is refused', bad.ok === false, bad);
+
+  /* the visitor's offer: the code to carry to checkout, never the commission */
+  let offer = JSON.parse(db.anon(`select public.affiliate_offer('biggsfall');`));
+  chk('campaigns: a visitor reads the offer without an account', offer.ok === true && offer.campaign === true, offer);
+  chk('campaigns: no code is sent to checkout before Stripe has it', offer.checkout_code === null, offer);
+  chk('campaigns: the offer never carries the creator\'s economics', !/commission|0\.4|rate/.test(JSON.stringify(offer)), offer);
+  chk('campaigns: and no discount until Stripe records it', offer.discount === null, offer);
+  /* Stripe's own record arrives through the ledger */
+  event('promotion_code.created', { id: 'promo_BIGGSFALL1', object: 'promotion_code', code: 'BIGGSFALL', active: true,
+    coupon: { id: 'co_fall', object: 'coupon', percent_off: 20, duration: 'repeating', duration_in_months: 3, valid: true } }, null, 30);
+  offer = JSON.parse(db.anon(`select public.affiliate_offer('BIGGSFALL');`));
+  chk('campaigns: Stripe\'s promotion code is copied onto the campaign', db.sql(`select stripe_promotion_code_id || '|' || stripe_coupon_id from public.affiliate_campaigns where id = '${campId}';`) === 'promo_BIGGSFALL1|co_fall');
+  chk('campaigns: once Stripe has the promotion code, checkout carries it', offer.checkout_code === 'BIGGSFALL', offer);
+  chk('campaigns: once Stripe matches the terms, the visitor sees Stripe\'s discount', offer.discount && offer.discount.percent_off === 20
+    && offer.discount.duration === 'repeating' && offer.discount.duration_in_months === 3 && offer.discount.source === 'stripe', offer);
+  event('coupon.updated', { id: 'co_fall', object: 'coupon', percent_off: 25, duration: 'repeating', duration_in_months: 3, valid: true }, null, 20);
+  let ovc = JSON.parse(db.as(U.admin, `select public.affiliate_admin_overview();`)).campaigns.find((x) => x.code === 'BIGGSFALL');
+  chk('campaigns: when Stripe and the admin disagree, the admin sees a mismatch and the visitor sees no amount',
+    ovc.stripe_state === 'mismatch' && JSON.parse(db.anon(`select public.affiliate_offer('BIGGSFALL');`)).discount === null, ovc && ovc.stripe_state);
+  event('coupon.updated', { id: 'co_fall', object: 'coupon', percent_off: 20, duration: 'repeating', duration_in_months: 3, valid: true }, null, 15);
+  chk('campaigns: Stripe stays the source of truth as it changes', JSON.parse(db.anon(`select public.affiliate_offer('BIGGSFALL');`)).discount.percent_off === 20);
+
+  /* click + claim through the campaign: the terms are snapshotted */
+  chk('campaigns: a click through the campaign code is recorded against the campaign',
+    JSON.parse(db.anon(`select public.affiliate_track_click('BIGGSFALL','${VC}','/','x.com');`)).ok === true
+    && db.sql(`select count(*) from public.affiliate_clicks where campaign_id = '${campId}';`) === '1');
+  const cc = JSON.parse(db.as(C.a, `select public.affiliate_claim('BIGGSFALL','${VC}');`));
+  chk('campaigns: the account is attributed to the creator through the campaign', cc.ok === true && cc.code === 'BIGGSFALL', cc);
+  chk('campaigns: the campaign terms are snapshotted onto the attribution',
+    db.sql(`select campaign_id || '|' || term_rate || '|' || term_type || '|' || coalesce(term_months::text, 'null') from public.affiliate_attributions where user_id = '${C.a}';`) === campId + '|0.4|one_time|null');
+  err = db.mustFail(() => db.service(`update public.affiliate_attributions set term_rate = 0.9 where user_id = '${C.a}';`));
+  chk('campaigns: an attribution\'s terms cannot be rewritten, even by the service role', !!err && /never rewritten/.test(err));
+  err = db.mustFail(() => db.service(`update public.affiliate_attributions set affiliate_id = (select id from public.affiliate_accounts where code = 'RIVAL') where user_id = '${C.a}';`));
+  chk('campaigns: nor its creator', !!err && /never rewritten/.test(err));
+  /* editing the campaign later changes nothing already attributed */
+  db.as(U.admin, `select public.affiliate_admin_upsert_campaign('${JSON.stringify({ id: campId, partner_code: 'COACHBIGGS', code: 'BIGGSFALL', name: 'Fall launch',
+    discount_type: 'percent', discount_amount: 20, discount_duration: 'repeating', discount_duration_months: 3, stripe_promo_code: 'BIGGSFALL',
+    commission_rate: 0.1, commission_type: 'recurring' })}'::jsonb);`);
+  chk('campaigns: an edit applies to the next attribution, not the last one', db.sql(`select term_rate::text from public.affiliate_attributions where user_id = '${C.a}';`) === '0.4');
+  /* one-time: the first paid invoice earns at the snapshotted rate, the next earns nothing */
+  db.service(`insert into public.subscriptions (user_id, status, stripe_customer_id, stripe_subscription_id) values ('${C.a}','active','cus_ca','sub_ca');`);
+  event('invoice.payment_succeeded', { id: 'in_ca1', object: 'invoice', customer: 'cus_ca', subscription: 'sub_ca', amount_paid: 6399, currency: 'usd' }, C.a, 9);
+  event('invoice.payment_succeeded', { id: 'in_ca2', object: 'invoice', customer: 'cus_ca', subscription: 'sub_ca', amount_paid: 6399, currency: 'usd' }, C.a, 8);
+  chk('campaigns: one-time earns on the first paid invoice at the campaign rate (of what Stripe collected)',
+    db.sql(`select rate || '|' || amount_cents from public.affiliate_commissions where stripe_invoice_id = 'in_ca1';`) === '0.4|2560');
+  chk('campaigns: and nothing on the renewal', db.sql(`select count(*) from public.affiliate_commissions where stripe_invoice_id = 'in_ca2';`) === '0'
+    && db.sql(`select kind from public.affiliate_conversions where stripe_invoice_id = 'in_ca2';`) === 'renewal');
+
+  /* disabling: no new attributions through the code; existing ones keep earning */
+  db.as(U.admin, `select public.affiliate_admin_upsert_campaign('{"partner_code":"COACHBIGGS","code":"BIGGSREC","commission_rate":0.3,"commission_type":"recurring","commission_duration_months":2}'::jsonb);`);
+  const recId = db.sql(`select id from public.affiliate_campaigns where code = 'BIGGSREC';`);
+  chk('campaigns: a recurring campaign attributes', JSON.parse(db.as(C.b, `select public.affiliate_claim('BIGGSREC', null);`)).ok === true
+    && db.sql(`select term_type || '|' || term_months from public.affiliate_attributions where user_id = '${C.b}';`) === 'recurring|2');
+  const off = JSON.parse(db.as(U.admin, `select public.affiliate_admin_set_campaign_active('${recId}', false);`));
+  chk('campaigns: an admin disables one in a call', off.ok === true && db.sql(`select active || '|' || (disabled_at is not null) from public.affiliate_campaigns where id = '${recId}';`) === 'false|true');
+  const cd = JSON.parse(db.as(C.c, `select public.affiliate_claim('BIGGSREC', null);`));
+  chk('campaigns: a disabled campaign attributes nobody new', cd.ok === false && cd.reason === 'campaign_not_active', cd);
+  chk('campaigns: and its click door records nothing', JSON.parse(db.anon(`select public.affiliate_track_click('BIGGSREC','${VD}','/',null);`)).ok === false);
+  db.service(`insert into public.subscriptions (user_id, status, stripe_customer_id, stripe_subscription_id) values ('${C.b}','active','cus_cb','sub_cb');`);
+  event('invoice.payment_succeeded', { id: 'in_cb1', object: 'invoice', customer: 'cus_cb', subscription: 'sub_cb', amount_paid: 7999, currency: 'usd' }, C.b, 7);
+  chk('campaigns: an account attributed before the switch-off still earns on its own terms',
+    db.sql(`select rate || '|' || amount_cents from public.affiliate_commissions where stripe_invoice_id = 'in_cb1';`) === '0.3|2400');
+  err = db.mustFail(() => db.service(`delete from public.affiliate_campaigns where id = '${recId}';`));
+  chk('campaigns: a campaign is never deleted', !!err && /never deleted/.test(err));
+
+  /* expiry: an ended campaign still credits a visitor who clicked while it ran */
+  db.as(U.admin, `select public.affiliate_admin_upsert_campaign('{"partner_code":"COACHBIGGS","code":"BIGGSWEEK","commission_rate":0.35}'::jsonb);`);
+  db.anon(`select public.affiliate_track_click('BIGGSWEEK','${VD}','/',null);`);
+  db.service(`update public.affiliate_campaigns set starts_at = now() - interval '10 days', expires_at = now() - interval '1 minute' where code = 'BIGGSWEEK';
+              update public.affiliate_clicks set created_at = now() - interval '2 days' where visitor_hash = md5('edgedesk-affiliate:${VD}');`);
+  const late = JSON.parse(db.as(C.d, `select public.affiliate_claim('BIGGSWEEK','${VD}');`));
+  chk('campaigns: an ended campaign honours a click made while it ran', late.ok === true
+    && db.sql(`select term_rate::text from public.affiliate_attributions where user_id = '${C.d}';`) === '0.35', late);
+  const nolate = JSON.parse(db.as(C.e, `select public.affiliate_claim('BIGGSWEEK', null);`));
+  chk('campaigns: but attributes nobody who never clicked it', nolate.ok === false && nolate.reason === 'campaign_not_active', nolate);
+
+  /* a promo code typed at checkout, no link: the campaign in force at the sale */
+  const PU = '00000000-0000-0000-0000-0000000000c6';
+  db.sql(`insert into auth.users (id, email, created_at) values ('${PU}','cp@example.com', now());`);
+  db.service(`insert into public.subscriptions (user_id, status, stripe_customer_id, stripe_subscription_id, referral_code) values ('${PU}','active','cus_cp','sub_cp','BIGGSFALL');`);
+  event('invoice.payment_succeeded', { id: 'in_cp1', object: 'invoice', customer: 'cus_cp', subscription: 'sub_cp', amount_paid: 6399, currency: 'usd' }, PU, 6);
+  chk('campaigns: a checkout promo code attributes through the campaign in force, with its current terms',
+    db.sql(`select source || '|' || term_type || '|' || term_rate from public.affiliate_attributions where user_id = '${PU}';`) === 'promo_code|recurring|0.1');
+  /* a customer already credited to one creator is never taken by another's campaign code */
+  db.as(U.admin, `select public.affiliate_admin_upsert_campaign('{"partner_code":"RIVAL","code":"RIVALFALL","commission_rate":0.5}'::jsonb);`);
+  chk('campaigns: another creator\'s campaign cannot take an attributed customer', JSON.parse(db.as(C.a, `select public.affiliate_claim('RIVALFALL', null);`)).reason === 'already_attributed'
+    && db.sql(`select code from public.affiliate_attributions where user_id = '${C.a}';`) === 'BIGGSFALL');
+
+  /* the creator and the admin read their campaigns */
+  const pd = JSON.parse(db.as(U.partner, `select public.affiliate_my_dashboard();`));
+  const pc = (pd.campaigns || []).find((x) => x.code === 'BIGGSFALL');
+  chk('campaigns: the creator sees their own campaigns, terms and counts', pc && pc.stats.signups === 2 && pc.stats.clicks === 1 && pc.id === null, pc);
+  chk('campaigns: and never another creator\'s', !(pd.campaigns || []).some((x) => x.code === 'RIVALFALL'));
+  ovc = JSON.parse(db.as(U.admin, `select public.affiliate_admin_overview();`)).campaigns;
+  chk('campaigns: the admin sees every campaign with its partner, state and Stripe check', ovc.length === 4 && ovc.every((x) => x.partner_code && x.stripe_state && x.stats), ovc.map((x) => x.code));
+  err = db.mustFail(() => db.as(U.partner, `select count(*) from public.affiliate_campaigns;`));
+  chk('campaigns: a reader cannot read the campaign table directly', !!err && /permission denied/.test(err));
+  err = db.mustFail(() => db.anon(`select public.affiliate_admin_set_campaign_active('${recId}', true);`));
+  chk('campaigns: anon cannot switch one', !!err && /permission denied/.test(err));
 } catch (e) {
   chk('the live suite ran without an unexpected error', false, String(e.message).slice(0, 900));
 } finally {

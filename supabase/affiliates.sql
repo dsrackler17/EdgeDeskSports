@@ -27,10 +27,32 @@
 --                            can never cost a customer their access.
 --   public.subscriptions     the webhook-maintained subscription state.
 --
+-- CAMPAIGNS (per creator, per code)
+--   A creator can run any number of CAMPAIGNS, each its own code with its own
+--   terms: the customer's discount (type, amount, duration — a DESCRIPTION of
+--   the Stripe coupon behind the Stripe promotion code, which is what actually
+--   applies it), the creator's commission (rate, recurring or one-time, how
+--   many months), a start, an end and an on/off switch. The admin creates and
+--   disables campaigns from /admin/affiliates/; nothing is deployed.
+--   * The creator's terms are SNAPSHOTTED onto the attribution the moment an
+--     account is attributed. Editing or disabling a campaign later changes
+--     who it can attribute next, never what an attributed customer already
+--     earns — and never who they are attributed to.
+--   * STRIPE IS THE SOURCE OF TRUTH FOR THE DISCOUNT. Promotion-code and coupon
+--     events that reach the webhook's ledger are copied onto the campaign
+--     (stripe_snapshot). A discount is shown to a visitor only when Stripe's
+--     own record of it exists, is active, and matches what the admin entered;
+--     otherwise the checkout still receives the code and Stripe decides.
+--   * A campaign that is not in force (inactive, not started, ended, or its
+--     creator not active) attributes nobody new through its code — except
+--     that a visitor who clicked it while it WAS in force keeps it. A code
+--     that is also the creator's own base code falls back to the creator's
+--     default terms.
+--
 -- MONEY RULES
 --   * Commission percentage, duration, hold period and attribution window live
---     in ONE settings row the admin edits. Nothing in the application hard-codes
---     the economics.
+--     in ONE settings row the admin edits, and per-campaign terms live in
+--     affiliate_campaigns. Nothing in the application hard-codes the economics.
 --   * A commission is PENDING until its hold (the refund window) has passed,
 --     APPROVED by an admin (or automatically when the admin turns that on),
 --     and PAID only when an admin records the payout reference. There is no
@@ -81,7 +103,8 @@ begin
     'public.affiliate_clicks',
     'public.affiliate_attributions',
     'public.affiliate_conversions',
-    'public.affiliate_commissions']) t
+    'public.affiliate_commissions',
+    'public.affiliate_campaigns']) t
   where to_regclass(t) is not null;
   if v_list is null then return; end if;
   loop
@@ -339,6 +362,221 @@ do $g$ begin
   end if;
 end $g$;
 
+-- ── campaigns: per creator, per code, configurable terms ────────────────────
+create table if not exists public.affiliate_campaigns (
+  id                        uuid primary key default gen_random_uuid(),
+  affiliate_id              uuid not null references public.affiliate_accounts(id),
+  code                      text not null,
+  name                      text,
+  -- THE CUSTOMER'S DISCOUNT, as the admin describes it. Stripe applies it
+  -- (the promotion code behind stripe_promo_code); this is checked against
+  -- Stripe's own record (stripe_snapshot) before a visitor is ever shown it.
+  -- discount_amount is PERCENT for 'percent' (e.g. 20 = 20% off) and US
+  -- DOLLARS for 'amount' (e.g. 10 = $10.00 off). discount_duration uses
+  -- Stripe's own words: once | repeating (for discount_duration_months) | forever.
+  discount_type             text not null default 'none',
+  discount_amount           numeric,
+  discount_duration         text,
+  discount_duration_months  int,
+  stripe_promo_code         text,
+  stripe_promotion_code_id  text,
+  stripe_coupon_id          text,
+  stripe_snapshot           jsonb,
+  stripe_verified_at        timestamptz,
+  -- THE CREATOR'S TERMS. rate is a fraction of what Stripe collected, less
+  -- tax. recurring earns on every paid invoice for commission_duration_months
+  -- after the first (null = the program setting); one_time earns on the first
+  -- paid invoice only.
+  commission_rate           numeric not null,
+  commission_type           text not null default 'recurring',
+  commission_duration_months int,
+  starts_at                 timestamptz not null default now(),
+  expires_at                timestamptz,
+  active                    boolean not null default true,
+  admin_note                text,
+  created_at                timestamptz not null default now(),
+  created_by                uuid,
+  updated_at                timestamptz not null default now(),
+  updated_by                uuid,
+  disabled_at               timestamptz,
+  disabled_by               uuid
+);
+do $c$ begin
+  if not exists (select 1 from pg_constraint where conname = 'affiliate_campaigns_shape') then
+    alter table public.affiliate_campaigns add constraint affiliate_campaigns_shape check (
+          code ~ '^[A-Z0-9_-]{3,32}$'
+      and (name is null or length(name) <= 80)
+      and discount_type in ('none', 'percent', 'amount')
+      and ((discount_type = 'none' and discount_amount is null and discount_duration is null and discount_duration_months is null)
+        or (discount_type = 'percent' and discount_amount > 0 and discount_amount <= 100)
+        or (discount_type = 'amount' and discount_amount > 0 and discount_amount <= 10000))
+      and (discount_type = 'none' or discount_duration in ('once', 'repeating', 'forever'))
+      and ((discount_duration = 'repeating') = (discount_duration_months is not null))
+      and (discount_duration_months is null or discount_duration_months between 1 and 36)
+      and (stripe_promo_code is null or stripe_promo_code ~ '^[A-Z0-9_.-]{1,64}$')
+      and (stripe_promotion_code_id is null or stripe_promotion_code_id ~ '^promo_[A-Za-z0-9]{1,64}$')
+      and (stripe_coupon_id is null or length(stripe_coupon_id) <= 80)
+      and commission_rate >= 0 and commission_rate <= 0.9
+      and commission_type in ('recurring', 'one_time')
+      and (commission_duration_months is null or commission_duration_months between 1 and 120)
+      and (commission_type = 'recurring' or commission_duration_months is null)
+      and (expires_at is null or expires_at > starts_at)
+      and (admin_note is null or length(admin_note) <= 1000)
+      and (stripe_snapshot is null or pg_column_size(stripe_snapshot) <= 8000));
+  end if;
+end $c$;
+create unique index if not exists affiliate_campaigns_code_ci on public.affiliate_campaigns (upper(code));
+create unique index if not exists affiliate_campaigns_promo_id on public.affiliate_campaigns (stripe_promotion_code_id) where stripe_promotion_code_id is not null;
+create index if not exists affiliate_campaigns_affiliate_idx on public.affiliate_campaigns (affiliate_id);
+
+-- One code, one creator: a campaign code may be its own creator's base code,
+-- never another creator's.
+create or replace function public.affiliate_campaigns_guard()
+returns trigger language plpgsql set search_path = public, pg_temp as $$
+begin
+  new.code := upper(btrim(new.code));
+  new.stripe_promo_code := nullif(upper(btrim(coalesce(new.stripe_promo_code, ''))), '');
+  if exists (select 1 from public.affiliate_accounts a where upper(a.code) = new.code and a.id <> new.affiliate_id) then
+    raise exception 'affiliate_campaigns: % is another creator''s code', new.code using errcode = 'unique_violation';
+  end if;
+  if new.discount_type = 'none' then
+    new.discount_amount := null; new.discount_duration := null; new.discount_duration_months := null;
+  elsif new.discount_duration is distinct from 'repeating' then
+    new.discount_duration_months := null;
+  end if;
+  if new.commission_type = 'one_time' then new.commission_duration_months := null; end if;
+  new.updated_at := now();
+  return new;
+end $$;
+drop trigger if exists affiliate_campaigns_guard_trg on public.affiliate_campaigns;
+create trigger affiliate_campaigns_guard_trg before insert or update on public.affiliate_campaigns
+  for each row execute function public.affiliate_campaigns_guard();
+-- a campaign is disabled, never deleted: every attribution it made names it
+create or replace function public.affiliate_campaigns_no_delete()
+returns trigger language plpgsql as $$
+begin
+  raise exception 'affiliate_campaigns rows are never deleted; set active = false (campaign %)', old.code using errcode = 'restrict_violation';
+end $$;
+drop trigger if exists affiliate_campaigns_no_delete_trg on public.affiliate_campaigns;
+create trigger affiliate_campaigns_no_delete_trg before delete on public.affiliate_campaigns
+  for each row execute function public.affiliate_campaigns_no_delete();
+alter table public.affiliate_campaigns enable row level security;
+revoke all on public.affiliate_campaigns from anon, authenticated;
+
+-- which campaign a click came through, and the terms an attribution was made on
+alter table public.affiliate_clicks add column if not exists campaign_id uuid references public.affiliate_campaigns(id);
+alter table public.affiliate_attributions add column if not exists campaign_id uuid references public.affiliate_campaigns(id);
+alter table public.affiliate_attributions add column if not exists term_rate numeric;
+alter table public.affiliate_attributions add column if not exists term_type text;
+alter table public.affiliate_attributions add column if not exists term_months int;
+alter table public.affiliate_attributions add column if not exists terms_at timestamptz;
+do $c$ begin
+  if not exists (select 1 from pg_constraint where conname = 'affiliate_attributions_terms') then
+    alter table public.affiliate_attributions add constraint affiliate_attributions_terms check (
+          (term_type is null or term_type in ('recurring', 'one_time'))
+      and (term_rate is null or (term_rate >= 0 and term_rate <= 0.9))
+      and ((term_type is null) = (term_rate is null)));
+  end if;
+end $c$;
+create index if not exists affiliate_attributions_campaign_idx on public.affiliate_attributions (campaign_id) where campaign_id is not null;
+create index if not exists affiliate_clicks_campaign_idx on public.affiliate_clicks (campaign_id) where campaign_id is not null;
+
+-- The snapshot never changes once written: the terms a customer was
+-- attributed on are the terms they earn on.
+create or replace function public.affiliate_attributions_guard()
+returns trigger language plpgsql as $$
+begin
+  if (new.user_id, new.affiliate_id, new.code, new.campaign_id, new.term_rate, new.term_type, new.term_months, new.terms_at, new.attributed_at)
+     is distinct from
+     (old.user_id, old.affiliate_id, old.code, old.campaign_id, old.term_rate, old.term_type, old.term_months, old.terms_at, old.attributed_at) then
+    raise exception 'affiliate_attributions: who a customer is attributed to, and on what terms, is never rewritten; void the row instead'
+      using errcode = 'restrict_violation';
+  end if;
+  return new;
+end $$;
+drop trigger if exists affiliate_attributions_guard_trg on public.affiliate_attributions;
+create trigger affiliate_attributions_guard_trg before update on public.affiliate_attributions
+  for each row execute function public.affiliate_attributions_guard();
+
+do $g$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant select, insert, update on public.affiliate_campaigns to service_role';
+  end if;
+end $g$;
+
+-- IN FORCE: active, started, not ended, and its creator active.
+create or replace function public.affiliate_campaign_in_force(p_campaign uuid, p_at timestamptz default now())
+returns boolean language sql stable security definer set search_path = public, pg_temp as $$
+  select coalesce((select c.active and c.starts_at <= p_at and (c.expires_at is null or p_at < c.expires_at) and a.status = 'active'
+                     from public.affiliate_campaigns c join public.affiliate_accounts a on a.id = c.affiliate_id
+                    where c.id = p_campaign), false);
+$$;
+revoke all on function public.affiliate_campaign_in_force(uuid, timestamptz) from public, anon, authenticated;
+
+-- A code, resolved: a campaign code first, then a creator's base code.
+--   {ok, affiliate_id, campaign_id|null, campaign_code|null, in_force, reason}
+-- campaign_id is returned even when the campaign is not in force, so a claim
+-- can honour a click made while it was.
+create or replace function public.affiliate_resolve_code(p_code text, p_at timestamptz default now())
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare v text := upper(btrim(coalesce(p_code, ''))); c public.affiliate_campaigns%rowtype; a public.affiliate_accounts%rowtype;
+begin
+  if v !~ '^[A-Z0-9_-]{3,32}$' then return jsonb_build_object('ok', false, 'reason', 'invalid_code'); end if;
+  select * into c from public.affiliate_campaigns where upper(code) = v;
+  if found then
+    if public.affiliate_campaign_in_force(c.id, p_at) then
+      return jsonb_build_object('ok', true, 'affiliate_id', c.affiliate_id, 'campaign_id', c.id, 'campaign_code', c.code, 'in_force', true);
+    end if;
+    select * into a from public.affiliate_accounts where id = c.affiliate_id;
+    if upper(a.code) = v and a.status = 'active' then
+      return jsonb_build_object('ok', true, 'affiliate_id', a.id, 'campaign_id', null, 'campaign_code', c.code, 'in_force', false,
+        'stale_campaign_id', c.id, 'reason', 'campaign_not_in_force_base_code');
+    end if;
+    return jsonb_build_object('ok', false, 'affiliate_id', c.affiliate_id, 'stale_campaign_id', c.id, 'reason', 'campaign_not_active');
+  end if;
+  select * into a from public.affiliate_accounts where upper(code) = v;
+  if found and a.status = 'active' then
+    return jsonb_build_object('ok', true, 'affiliate_id', a.id, 'campaign_id', null, 'campaign_code', null, 'in_force', false);
+  end if;
+  return jsonb_build_object('ok', false, 'reason', 'unknown_or_inactive_code');
+end $$;
+revoke all on function public.affiliate_resolve_code(text, timestamptz) from public, anon, authenticated;
+
+-- The terms to snapshot onto a new attribution through a campaign.
+create or replace function public.affiliate_campaign_terms(p_campaign uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object('rate', c.commission_rate, 'type', c.commission_type,
+           'months', case when c.commission_type = 'one_time' then null
+                          else coalesce(c.commission_duration_months, s.commission_duration_months) end)
+    from public.affiliate_campaigns c cross join public.affiliate_settings s
+   where c.id = p_campaign and s.id = 1;
+$$;
+revoke all on function public.affiliate_campaign_terms(uuid) from public, anon, authenticated;
+
+-- Stripe's record of the discount against what the admin entered:
+--   no_discount | unverified | partial | verified | mismatch | inactive_in_stripe
+create or replace function public.affiliate_campaign_stripe_state(c public.affiliate_campaigns)
+returns text language plpgsql stable set search_path = public, pg_temp as $$
+declare sn jsonb := c.stripe_snapshot; pct numeric; amt numeric; dur text; mo int;
+begin
+  if c.discount_type = 'none' and c.stripe_promo_code is null and c.stripe_promotion_code_id is null then return 'no_discount'; end if;
+  if sn is null then return 'unverified'; end if;
+  if (sn ->> 'active') = 'false' or (sn ->> 'coupon_valid') = 'false'
+     or ((sn ->> 'expires_at') is not null and (sn ->> 'expires_at')::timestamptz <= now()) then
+    return 'inactive_in_stripe';
+  end if;
+  pct := nullif(sn ->> 'percent_off', '')::numeric; amt := nullif(sn ->> 'amount_off_cents', '')::numeric;
+  dur := sn ->> 'duration'; mo := nullif(sn ->> 'duration_in_months', '')::int;
+  if pct is null and amt is null then return 'partial'; end if;
+  if pct is not null and not (c.discount_type = 'percent' and c.discount_amount = pct) then return 'mismatch'; end if;
+  if amt is not null and not (c.discount_type = 'amount' and round(c.discount_amount * 100) = amt
+                              and upper(coalesce(sn ->> 'currency', 'USD')) = 'USD') then return 'mismatch'; end if;
+  if dur is distinct from c.discount_duration then return 'mismatch'; end if;
+  if dur = 'repeating' and mo is distinct from c.discount_duration_months then return 'mismatch'; end if;
+  return 'verified';
+end $$;
+revoke all on function public.affiliate_campaign_stripe_state(public.affiliate_campaigns) from public, anon, authenticated;
+
 -- ── reading a Stripe payload, whichever shape it was stored in ──────────────
 -- The webhook stores the WHOLE event (payload = {id, type, data:{object}}).
 -- Fixtures and hand-pasted rows sometimes hold the bare object. Both are read.
@@ -364,6 +602,7 @@ declare
   v_aff public.affiliate_accounts%rowtype;
   v_set public.affiliate_settings%rowtype;
   v_hash text; v_click timestamptz; v_created timestamptz; v_sub record;
+  r jsonb; v_campaign uuid; v_terms jsonb;
 begin
   if v_uid is null then return jsonb_build_object('ok', false, 'reason', 'not_signed_in'); end if;
   if p_code is null or upper(btrim(p_code)) !~ '^[A-Z0-9_-]{3,32}$' then
@@ -372,12 +611,30 @@ begin
   if exists (select 1 from public.affiliate_attributions where user_id = v_uid) then
     return jsonb_build_object('ok', false, 'reason', 'already_attributed');
   end if;
-  select * into v_aff from public.affiliate_accounts where upper(code) = upper(btrim(p_code));
+  if p_visitor is not null and p_visitor ~ '^[A-Za-z0-9_-]{16,64}$' then
+    v_hash := md5('edgedesk-affiliate:' || p_visitor);
+  end if;
+  r := public.affiliate_resolve_code(p_code);
+  v_campaign := nullif(r ->> 'campaign_id', '')::uuid;
+  -- a campaign that has since ended or been switched off still credits a
+  -- visitor who clicked it while it was in force
+  if v_campaign is null and r ? 'stale_campaign_id' and v_hash is not null then
+    select c.campaign_id into v_campaign from public.affiliate_clicks c
+     where c.campaign_id = (r ->> 'stale_campaign_id')::uuid and c.visitor_hash = v_hash
+       and public.affiliate_campaign_in_force(c.campaign_id, c.created_at)
+     order by c.created_at limit 1;
+    if v_campaign is not null then r := jsonb_set(r, '{ok}', 'true'::jsonb); end if;
+  end if;
+  if not coalesce((r ->> 'ok')::boolean, false) then
+    return jsonb_build_object('ok', false, 'reason', case when r ->> 'reason' = 'invalid_code' then 'invalid_code'
+                                                          when r ->> 'reason' = 'campaign_not_active' then 'campaign_not_active'
+                                                          else 'unknown_or_inactive_code' end);
+  end if;
+  select * into v_aff from public.affiliate_accounts where id = (r ->> 'affiliate_id')::uuid;
   if not found or v_aff.status <> 'active' then return jsonb_build_object('ok', false, 'reason', 'unknown_or_inactive_code'); end if;
   if v_aff.user_id = v_uid then return jsonb_build_object('ok', false, 'reason', 'self_referral'); end if;
   select * into v_set from public.affiliate_settings where id = 1;
-  if p_visitor is not null and p_visitor ~ '^[A-Za-z0-9_-]{16,64}$' then
-    v_hash := md5('edgedesk-affiliate:' || p_visitor);
+  if v_hash is not null then
     select min(created_at) into v_click from public.affiliate_clicks where affiliate_id = v_aff.id and visitor_hash = v_hash;
   end if;
   select created_at into v_created from auth.users where id = v_uid;
@@ -391,11 +648,15 @@ begin
   if found and (v_click is null or v_sub.created_at < v_click) then
     return jsonb_build_object('ok', false, 'reason', 'existing_customer');
   end if;
-  insert into public.affiliate_attributions (user_id, affiliate_id, code, source, visitor_hash, first_click_at)
-  values (v_uid, v_aff.id, v_aff.code, 'link', v_hash, v_click)
+  if v_campaign is not null then v_terms := public.affiliate_campaign_terms(v_campaign); end if;
+  insert into public.affiliate_attributions (user_id, affiliate_id, code, source, visitor_hash, first_click_at,
+                                             campaign_id, term_rate, term_type, term_months, terms_at)
+  values (v_uid, v_aff.id, coalesce(r ->> 'campaign_code', v_aff.code), 'link', v_hash, v_click,
+          v_campaign, (v_terms ->> 'rate')::numeric, v_terms ->> 'type', (v_terms ->> 'months')::int,
+          case when v_campaign is not null then now() end)
   on conflict (user_id) do nothing;
   if not found then return jsonb_build_object('ok', false, 'reason', 'already_attributed'); end if;
-  return jsonb_build_object('ok', true, 'code', v_aff.code);
+  return jsonb_build_object('ok', true, 'code', coalesce(r ->> 'campaign_code', v_aff.code));
 end $$;
 revoke all on function public.affiliate_claim(text, text) from public, anon;
 grant execute on function public.affiliate_claim(text, text) to authenticated;
@@ -403,20 +664,22 @@ grant execute on function public.affiliate_claim(text, text) to authenticated;
 -- ── clicks: callable without an account (it is a landing page) ──────────────
 create or replace function public.affiliate_track_click(p_code text, p_visitor text, p_landing text default null, p_referrer text default null)
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
-declare v_aff public.affiliate_accounts%rowtype; v_hash text; v_today int;
+declare r jsonb; v_aff uuid; v_hash text; v_today int;
 begin
   if p_code is null or upper(btrim(p_code)) !~ '^[A-Z0-9_-]{3,32}$' then return jsonb_build_object('ok', false); end if;
   if p_visitor is null or p_visitor !~ '^[A-Za-z0-9_-]{16,64}$' then return jsonb_build_object('ok', false); end if;
-  select * into v_aff from public.affiliate_accounts where upper(code) = upper(btrim(p_code)) and status = 'active';
-  if not found then return jsonb_build_object('ok', false); end if;
+  r := public.affiliate_resolve_code(p_code);
+  if not coalesce((r ->> 'ok')::boolean, false) then return jsonb_build_object('ok', false); end if;
+  v_aff := (r ->> 'affiliate_id')::uuid;
   -- a flood from one partner's link is capped rather than stored without limit
   select count(*) into v_today from public.affiliate_clicks
-   where affiliate_id = v_aff.id and click_day = (now() at time zone 'utc')::date;
+   where affiliate_id = v_aff and click_day = (now() at time zone 'utc')::date;
   if v_today >= 20000 then return jsonb_build_object('ok', true, 'capped', true); end if;
   v_hash := md5('edgedesk-affiliate:' || p_visitor);
-  insert into public.affiliate_clicks (affiliate_id, visitor_hash, landing_path, referrer_host)
-  values (v_aff.id, v_hash, left(regexp_replace(coalesce(p_landing, ''), '[^A-Za-z0-9/_.-]', '', 'g'), 120),
-          left(regexp_replace(coalesce(p_referrer, ''), '[^A-Za-z0-9._-]', '', 'g'), 120))
+  insert into public.affiliate_clicks (affiliate_id, visitor_hash, landing_path, referrer_host, campaign_id)
+  values (v_aff, v_hash, left(regexp_replace(coalesce(p_landing, ''), '[^A-Za-z0-9/_.-]', '', 'g'), 120),
+          left(regexp_replace(coalesce(p_referrer, ''), '[^A-Za-z0-9._-]', '', 'g'), 120),
+          nullif(r ->> 'campaign_id', '')::uuid)
   on conflict on constraint affiliate_clicks_once_a_day do nothing;
   return jsonb_build_object('ok', true);
 end $$;
@@ -433,13 +696,81 @@ begin
   if not coalesce(v_open, false) then return jsonb_build_object('ok', false, 'reason', 'program_by_invitation'); end if;
   if v_code !~ '^[A-Z0-9_-]{3,32}$' then return jsonb_build_object('ok', false, 'reason', 'invalid_code'); end if;
   if exists (select 1 from public.affiliate_accounts where user_id = v_uid) then return jsonb_build_object('ok', false, 'reason', 'already_applied'); end if;
-  if exists (select 1 from public.affiliate_accounts where upper(code) = v_code) then return jsonb_build_object('ok', false, 'reason', 'code_taken'); end if;
+  if exists (select 1 from public.affiliate_accounts where upper(code) = v_code)
+     or exists (select 1 from public.affiliate_campaigns where upper(code) = v_code) then return jsonb_build_object('ok', false, 'reason', 'code_taken'); end if;
   insert into public.affiliate_accounts (user_id, code, display_name, payout_email, status)
   values (v_uid, v_code, nullif(left(btrim(coalesce(p_display_name, '')), 80), ''), nullif(btrim(coalesce(p_payout_email, '')), ''), 'pending');
   return jsonb_build_object('ok', true, 'code', v_code, 'status', 'pending');
 end $$;
 revoke all on function public.affiliate_apply(text, text, text) from public, anon;
 grant execute on function public.affiliate_apply(text, text, text) to authenticated;
+
+-- ── Stripe's own record of a campaign's discount ────────────────────────────
+-- promotion_code.* and coupon.* events that reach the webhook's ledger (add
+-- them to the endpoint's events in the Stripe dashboard) are copied onto the
+-- campaign they describe: by promotion-code id, else by the code itself. Out-
+-- of-order delivery keeps the newest. Nothing here writes to Stripe.
+create or replace function public.affiliate_campaign_apply_stripe(p_event_id text)
+returns text language plpgsql security definer set search_path = public, pg_temp as $$
+declare e record; o jsonb; cp jsonb; v_at timestamptz; snap jsonb; v_code text; v_promo text; v_coupon text; n int := 0;
+begin
+  select * into e from public.stripe_events where id = p_event_id;
+  if not found then return 'no_event'; end if;
+  o := public.affiliate_stripe_object(e.payload);
+  v_at := coalesce(e.stripe_created, e.created_at);
+  if o ->> 'object' = 'promotion_code' or e.type like 'promotion_code.%' then
+    v_promo := o ->> 'id'; v_code := upper(nullif(btrim(coalesce(o ->> 'code', '')), ''));
+    cp := case when jsonb_typeof(o -> 'coupon') = 'object' then o -> 'coupon'
+               when jsonb_typeof(o -> 'promotion' -> 'coupon') = 'object' then o -> 'promotion' -> 'coupon' end;
+    v_coupon := coalesce(public.affiliate_stripe_id(o -> 'coupon'), public.affiliate_stripe_id(o -> 'promotion' -> 'coupon'));
+    snap := jsonb_strip_nulls(jsonb_build_object(
+      'promotion_code_id', v_promo, 'code', v_code, 'active', o -> 'active',
+      'expires_at', case when (o ->> 'expires_at') ~ '^[0-9]+$' then to_jsonb(to_timestamp((o ->> 'expires_at')::bigint)) end,
+      'coupon_id', v_coupon, 'percent_off', cp -> 'percent_off', 'amount_off_cents', cp -> 'amount_off',
+      'currency', upper(cp ->> 'currency'), 'duration', cp -> 'duration', 'duration_in_months', cp -> 'duration_in_months',
+      'coupon_valid', cp -> 'valid', 'event_id', e.id, 'event_type', e.type, 'event_at', v_at));
+    update public.affiliate_campaigns c
+       set stripe_snapshot = coalesce(c.stripe_snapshot, '{}'::jsonb) || snap,
+           stripe_promotion_code_id = coalesce(c.stripe_promotion_code_id, v_promo),
+           stripe_coupon_id = coalesce(c.stripe_coupon_id, v_coupon),
+           stripe_verified_at = v_at
+     where (c.stripe_promotion_code_id = v_promo
+            or (c.stripe_promotion_code_id is null and v_code is not null and upper(coalesce(c.stripe_promo_code, c.code)) = v_code))
+       and (c.stripe_verified_at is null or c.stripe_verified_at <= v_at);
+    get diagnostics n = row_count;
+    return 'promotion_code:' || n;
+  end if;
+  if o ->> 'object' = 'coupon' or e.type like 'coupon.%' then
+    v_coupon := o ->> 'id';
+    snap := jsonb_strip_nulls(jsonb_build_object(
+      'coupon_id', v_coupon, 'percent_off', o -> 'percent_off', 'amount_off_cents', o -> 'amount_off',
+      'currency', upper(o ->> 'currency'), 'duration', o -> 'duration', 'duration_in_months', o -> 'duration_in_months',
+      'coupon_valid', case when e.type = 'coupon.deleted' then 'false'::jsonb else o -> 'valid' end,
+      'event_id', e.id, 'event_type', e.type, 'event_at', v_at));
+    update public.affiliate_campaigns c
+       set stripe_snapshot = coalesce(c.stripe_snapshot, '{}'::jsonb) || snap, stripe_verified_at = v_at
+     where c.stripe_coupon_id = v_coupon and (c.stripe_verified_at is null or c.stripe_verified_at <= v_at);
+    get diagnostics n = row_count;
+    return 'coupon:' || n;
+  end if;
+  return 'ignored:' || e.type;
+end $$;
+revoke all on function public.affiliate_campaign_apply_stripe(text) from public, anon, authenticated;
+
+-- replay every promotion-code and coupon event, oldest first (a campaign
+-- created after its promotion code reached the ledger picks it up here)
+create or replace function public.affiliate_campaign_stripe_sync()
+returns int language plpgsql security definer set search_path = public, pg_temp as $$
+declare r record; n int := 0;
+begin
+  for r in select id from public.stripe_events
+            where type like 'promotion_code.%' or type like 'coupon.%'
+            order by coalesce(stripe_created, created_at), id loop
+    perform public.affiliate_campaign_apply_stripe(r.id); n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.affiliate_campaign_stripe_sync() from public, anon, authenticated;
 
 -- ── processing one Stripe event into conversions and commissions ────────────
 create or replace function public.affiliate_process_event(p_event_id text)
@@ -449,9 +780,13 @@ declare
   v_set public.affiliate_settings%rowtype; v_sub_id text; v_cust text; v_inv text; v_status text;
   v_amt bigint; v_tax bigint; v_basis bigint; v_rate numeric; v_conv bigint; v_first timestamptz;
   v_at timestamptz; v_kind text; v_charge_amt bigint; v_refunded bigint; v_com record; v_promo text; v_has boolean;
+  v_camp public.affiliate_campaigns%rowtype; v_sub_created timestamptz; v_terms jsonb; v_months int;
 begin
   select * into e from public.stripe_events where id = p_event_id;
   if not found then return 'no_event'; end if;
+  if e.type like 'promotion_code.%' or e.type like 'coupon.%' then
+    return public.affiliate_campaign_apply_stripe(e.id);
+  end if;
   o := public.affiliate_stripe_object(e.payload);
   if o is null then return 'no_payload'; end if;
   v_at := coalesce(e.stripe_created, e.created_at);
@@ -474,16 +809,31 @@ begin
   v_has := found;
   if not v_has then
     -- a sale made with a partner's promotion code, and no link, is still theirs
-    select upper(nullif(btrim(referral_code), '')) into v_promo from public.subscriptions where user_id = v_user;
+    select upper(nullif(btrim(referral_code), '')), created_at into v_promo, v_sub_created from public.subscriptions where user_id = v_user;
     if v_promo is not null then
-      select * into v_aff from public.affiliate_accounts
-       where status in ('active','paused') and (upper(code) = v_promo or upper(stripe_promo_code) = v_promo) limit 1;
-      if found and v_aff.user_id is distinct from v_user then
-        insert into public.affiliate_attributions (user_id, affiliate_id, code, source)
-        values (v_user, v_aff.id, v_aff.code, 'promo_code') on conflict (user_id) do nothing;
-        select * into v_attr from public.affiliate_attributions where user_id = v_user and status = 'active';
-        v_has := found;
+      -- a campaign's code, in force when the subscription was bought, first
+      select * into v_camp from public.affiliate_campaigns
+       where (upper(code) = v_promo or upper(stripe_promo_code) = v_promo)
+         and public.affiliate_campaign_in_force(id, coalesce(v_sub_created, v_at)) limit 1;
+      if found then
+        select * into v_aff from public.affiliate_accounts where id = v_camp.affiliate_id;
+        if v_aff.user_id is distinct from v_user then
+          v_terms := public.affiliate_campaign_terms(v_camp.id);
+          insert into public.affiliate_attributions (user_id, affiliate_id, code, source, campaign_id, term_rate, term_type, term_months, terms_at)
+          values (v_user, v_aff.id, v_camp.code, 'promo_code', v_camp.id, (v_terms ->> 'rate')::numeric, v_terms ->> 'type',
+                  (v_terms ->> 'months')::int, now())
+          on conflict (user_id) do nothing;
+        end if;
+      else
+        select * into v_aff from public.affiliate_accounts
+         where status in ('active','paused') and (upper(code) = v_promo or upper(stripe_promo_code) = v_promo) limit 1;
+        if found and v_aff.user_id is distinct from v_user then
+          insert into public.affiliate_attributions (user_id, affiliate_id, code, source)
+          values (v_user, v_aff.id, v_aff.code, 'promo_code') on conflict (user_id) do nothing;
+        end if;
       end if;
+      select * into v_attr from public.affiliate_attributions where user_id = v_user and status = 'active';
+      v_has := found;
     end if;
     if not v_has then return 'unattributed'; end if;
   end if;
@@ -522,13 +872,20 @@ begin
     on conflict (dedupe_key) do nothing
     returning id into v_conv;
     if v_conv is null then return 'invoice:already_recorded'; end if;
-    -- inside the commission duration, for an active partner only
+    -- inside the commission duration, for an active partner only. An
+    -- attribution made through a campaign carries its own terms, snapshotted
+    -- when it was made; any other uses the partner's rate and the program's.
     if v_aff.status <> 'active' then return 'invoice:partner_not_active'; end if;
-    if v_first is not null and v_set.commission_duration_months is not null
-       and v_at > v_first + make_interval(months => v_set.commission_duration_months) then
+    if v_attr.term_type is not null then
+      if v_attr.term_type = 'one_time' and v_kind <> 'paid' then return 'invoice:one_time_commission_already_earned'; end if;
+      v_rate := v_attr.term_rate; v_months := v_attr.term_months;
+    else
+      v_rate := coalesce(v_aff.commission_rate, v_set.default_commission_rate); v_months := v_set.commission_duration_months;
+    end if;
+    if v_first is not null and v_months is not null
+       and v_at > v_first + make_interval(months => v_months) then
       return 'invoice:past_commission_duration';
     end if;
-    v_rate := coalesce(v_aff.commission_rate, v_set.default_commission_rate);
     insert into public.affiliate_commissions (affiliate_id, user_id, conversion_id, stripe_invoice_id, kind, basis_cents, rate,
                                               amount_cents, currency, status, eligible_at)
     values (v_aff.id, v_user, v_conv, v_inv, 'accrual', v_basis, v_rate, round(v_basis * v_rate)::bigint,
@@ -607,6 +964,7 @@ begin
    where at.status = 'active' and s.status = 'trialing' and ac.user_id is distinct from at.user_id
   on conflict (dedupe_key) do nothing;
   get diagnostics t = row_count;
+  perform public.affiliate_campaign_stripe_sync();
   -- auto-approval, only when the admin has turned it on, only past the hold
   if (select auto_approve from public.affiliate_settings where id = 1) then
     update public.affiliate_commissions set status = 'approved', approved_at = now()
@@ -654,6 +1012,74 @@ returns jsonb language sql stable security definer set search_path = public, pg_
 $$;
 revoke all on function public.affiliate_stats(uuid) from public, anon, authenticated;
 
+-- One campaign's counts, and its terms as the creator and the admin see them.
+create or replace function public.affiliate_campaign_stats(p_campaign uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  with attr as (select user_id from public.affiliate_attributions where campaign_id = p_campaign and status = 'active'),
+  c as (select * from public.affiliate_campaigns where id = p_campaign)
+  select jsonb_build_object(
+    'clicks', (select count(*) from public.affiliate_clicks where campaign_id = p_campaign),
+    'signups', (select count(*) from attr),
+    'trials', (select count(distinct v.user_id) from public.affiliate_conversions v where v.kind = 'trial_started' and v.user_id in (select user_id from attr)),
+    'paid_customers', (select count(distinct v.user_id) from public.affiliate_conversions v where v.kind = 'paid' and v.user_id in (select user_id from attr)),
+    'pending_cents', (select coalesce(sum(m.amount_cents), 0) from public.affiliate_commissions m, c where m.affiliate_id = c.affiliate_id and m.user_id in (select user_id from attr) and m.status = 'pending'),
+    'approved_cents', (select coalesce(sum(m.amount_cents), 0) from public.affiliate_commissions m, c where m.affiliate_id = c.affiliate_id and m.user_id in (select user_id from attr) and m.status = 'approved'),
+    'paid_cents', (select coalesce(sum(m.amount_cents), 0) from public.affiliate_commissions m, c where m.affiliate_id = c.affiliate_id and m.user_id in (select user_id from attr) and m.status = 'paid'));
+$$;
+revoke all on function public.affiliate_campaign_stats(uuid) from public, anon, authenticated;
+
+-- The customer's discount AS STRIPE RECORDS IT — only when Stripe's record
+-- exists, is live, and matches what the admin entered. Otherwise null, and
+-- nothing about a discount is shown.
+create or replace function public.affiliate_campaign_discount(c public.affiliate_campaigns)
+returns jsonb language sql stable set search_path = public, pg_temp as $$
+  select case when public.affiliate_campaign_stripe_state(c) = 'verified' then jsonb_strip_nulls(jsonb_build_object(
+           'type', case when c.stripe_snapshot ? 'percent_off' then 'percent' else 'amount' end,
+           'percent_off', c.stripe_snapshot -> 'percent_off', 'amount_off_cents', c.stripe_snapshot -> 'amount_off_cents',
+           'currency', c.stripe_snapshot ->> 'currency', 'duration', c.stripe_snapshot ->> 'duration',
+           'duration_in_months', c.stripe_snapshot -> 'duration_in_months', 'source', 'stripe'))
+         end;
+$$;
+revoke all on function public.affiliate_campaign_discount(public.affiliate_campaigns) from public, anon, authenticated;
+
+create or replace function public.affiliate_campaign_json(c public.affiliate_campaigns, p_admin boolean)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object('id', case when p_admin then c.id end, 'code', c.code, 'name', c.name, 'active', c.active,
+      'in_force', public.affiliate_campaign_in_force(c.id), 'starts_at', c.starts_at, 'expires_at', c.expires_at,
+      'commission_rate', c.commission_rate, 'commission_type', c.commission_type,
+      'commission_duration_months', c.commission_duration_months,
+      'discount', public.affiliate_campaign_discount(c), 'stripe_state', public.affiliate_campaign_stripe_state(c),
+      'stripe_promo_code', c.stripe_promo_code, 'stats', public.affiliate_campaign_stats(c.id))
+    || case when p_admin then jsonb_build_object('affiliate_id', c.affiliate_id,
+         'discount_type', c.discount_type, 'discount_amount', c.discount_amount, 'discount_duration', c.discount_duration,
+         'discount_duration_months', c.discount_duration_months, 'stripe_promotion_code_id', c.stripe_promotion_code_id,
+         'stripe_coupon_id', c.stripe_coupon_id, 'stripe_snapshot', c.stripe_snapshot, 'stripe_verified_at', c.stripe_verified_at,
+         'admin_note', c.admin_note, 'created_at', c.created_at, 'updated_at', c.updated_at, 'disabled_at', c.disabled_at)
+       else '{}'::jsonb end;
+$$;
+revoke all on function public.affiliate_campaign_json(public.affiliate_campaigns, boolean) from public, anon, authenticated;
+
+-- THE OFFER A VISITOR SEES for a code, callable without an account. No
+-- creator, no commission, no counts: whether the code is live, the code to
+-- carry to checkout, and the discount only as Stripe records it.
+create or replace function public.affiliate_offer(p_code text)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare r jsonb; c public.affiliate_campaigns%rowtype;
+begin
+  r := public.affiliate_resolve_code(p_code);
+  if not coalesce((r ->> 'ok')::boolean, false) then return jsonb_build_object('ok', false); end if;
+  if r ->> 'campaign_id' is null then return jsonb_build_object('ok', true, 'code', upper(btrim(p_code)), 'campaign', false); end if;
+  select * into c from public.affiliate_campaigns where id = (r ->> 'campaign_id')::uuid;
+  return jsonb_build_object('ok', true, 'code', c.code, 'campaign', true, 'ends_at', c.expires_at,
+    -- the code goes to checkout only once Stripe's own record of it exists and
+    -- is live; Stripe then applies whatever it holds
+    'checkout_code', case when public.affiliate_campaign_stripe_state(c) in ('verified', 'partial', 'mismatch')
+                          then coalesce(c.stripe_snapshot ->> 'code', c.stripe_promo_code, c.code) end,
+    'discount', public.affiliate_campaign_discount(c));
+end $$;
+revoke all on function public.affiliate_offer(text) from public;
+grant execute on function public.affiliate_offer(text) to anon, authenticated;
+
 create or replace function public.affiliate_my_dashboard()
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
 declare v_aff public.affiliate_accounts%rowtype; v_set public.affiliate_settings%rowtype;
@@ -673,7 +1099,9 @@ begin
     'settings', jsonb_build_object('hold_days', v_set.hold_days, 'commission_duration_months', v_set.commission_duration_months,
       'attribution_window_days', v_set.attribution_window_days, 'min_payout_cents', v_set.min_payout_cents,
       'terms_version', v_set.terms_version, 'auto_approve', v_set.auto_approve),
-    'stats', public.affiliate_stats(v_aff.id));
+    'stats', public.affiliate_stats(v_aff.id),
+    'campaigns', (select coalesce(jsonb_agg(public.affiliate_campaign_json(c, false) order by c.created_at desc), '[]'::jsonb)
+                    from public.affiliate_campaigns c where c.affiliate_id = v_aff.id));
 end $$;
 revoke all on function public.affiliate_my_dashboard() from public, anon;
 grant execute on function public.affiliate_my_dashboard() to authenticated;
@@ -697,6 +1125,9 @@ begin
                     order by c.created_at desc), '[]'::jsonb)
                    from (select * from public.affiliate_commissions order by created_at desc limit 500) c
                    join public.affiliate_accounts a on a.id = c.affiliate_id),
+    'campaigns', (select coalesce(jsonb_agg(public.affiliate_campaign_json(c, true) || jsonb_build_object('partner_code', a.code)
+                    order by c.created_at desc), '[]'::jsonb)
+                   from public.affiliate_campaigns c join public.affiliate_accounts a on a.id = c.affiliate_id),
     'unprocessed_events', (select count(*) from public.stripe_events e
                             where e.type in ('invoice.payment_succeeded','invoice.paid','charge.refunded')
                               and e.created_at > now() - interval '45 days'
@@ -715,6 +1146,10 @@ begin
   select id into v_user from auth.users where lower(email) = lower(btrim(p_email)) order by created_at limit 1;
   if v_user is null then return jsonb_build_object('ok', false, 'reason', 'no_account_with_that_email'); end if;
   if p_status not in ('pending','active','paused','closed') then return jsonb_build_object('ok', false, 'reason', 'bad_status'); end if;
+  if exists (select 1 from public.affiliate_campaigns c join public.affiliate_accounts a on a.id = c.affiliate_id
+              where upper(c.code) = v_code and a.user_id is distinct from v_user) then
+    return jsonb_build_object('ok', false, 'reason', 'code_is_another_creators_campaign');
+  end if;
   insert into public.affiliate_accounts (user_id, code, status, commission_rate, stripe_promo_code, display_name, approved_at, approved_by)
   values (v_user, v_code, p_status, p_rate, nullif(upper(btrim(coalesce(p_promo, ''))), ''), p_display_name,
           case when p_status = 'active' then now() end, case when p_status = 'active' then auth.uid() end)
@@ -773,6 +1208,78 @@ begin
 end $$;
 revoke all on function public.affiliate_admin_commissions(bigint[], text, text, text) from public, anon;
 grant execute on function public.affiliate_admin_commissions(bigint[], text, text, text) to authenticated;
+
+-- create or edit a campaign. p: {id?, partner_code, code, name, discount_type,
+-- discount_amount, discount_duration, discount_duration_months, stripe_promo_code,
+-- stripe_promotion_code_id, stripe_coupon_id, commission_rate (fraction),
+-- commission_type, commission_duration_months, starts_at, expires_at, active,
+-- admin_note}. Editing a campaign never touches an attribution already made.
+create or replace function public.affiliate_admin_upsert_campaign(p jsonb)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_aff uuid; v_id uuid := nullif(p ->> 'id', '')::uuid; v_code text := upper(btrim(coalesce(p ->> 'code', '')));
+  v_rate numeric; v_msg text;
+begin
+  if not public.affiliate_is_admin() then raise exception 'not an affiliate admin' using errcode = 'insufficient_privilege'; end if;
+  select id into v_aff from public.affiliate_accounts where upper(code) = upper(btrim(coalesce(p ->> 'partner_code', '')));
+  if v_aff is null and v_id is not null then select affiliate_id into v_aff from public.affiliate_campaigns where id = v_id; end if;
+  if v_aff is null then return jsonb_build_object('ok', false, 'reason', 'unknown_partner_code'); end if;
+  if v_code !~ '^[A-Z0-9_-]{3,32}$' then return jsonb_build_object('ok', false, 'reason', 'invalid_code'); end if;
+  if exists (select 1 from public.affiliate_campaigns where upper(code) = v_code and id is distinct from v_id) then
+    return jsonb_build_object('ok', false, 'reason', 'code_taken');
+  end if;
+  v_rate := nullif(p ->> 'commission_rate', '')::numeric;
+  if v_rate is null then return jsonb_build_object('ok', false, 'reason', 'commission_rate_required'); end if;
+  begin
+    if v_id is null then
+      insert into public.affiliate_campaigns (affiliate_id, code, name, discount_type, discount_amount, discount_duration, discount_duration_months,
+        stripe_promo_code, stripe_promotion_code_id, stripe_coupon_id, commission_rate, commission_type, commission_duration_months,
+        starts_at, expires_at, active, admin_note, created_by, updated_by)
+      values (v_aff, v_code, nullif(p ->> 'name', ''), coalesce(nullif(p ->> 'discount_type', ''), 'none'),
+        nullif(p ->> 'discount_amount', '')::numeric, nullif(p ->> 'discount_duration', ''), nullif(p ->> 'discount_duration_months', '')::int,
+        nullif(p ->> 'stripe_promo_code', ''), nullif(p ->> 'stripe_promotion_code_id', ''), nullif(p ->> 'stripe_coupon_id', ''),
+        v_rate, coalesce(nullif(p ->> 'commission_type', ''), 'recurring'), nullif(p ->> 'commission_duration_months', '')::int,
+        coalesce(nullif(p ->> 'starts_at', '')::timestamptz, now()), nullif(p ->> 'expires_at', '')::timestamptz,
+        coalesce((p ->> 'active')::boolean, true), nullif(p ->> 'admin_note', ''), auth.uid(), auth.uid())
+      returning id into v_id;
+    else
+      update public.affiliate_campaigns set affiliate_id = v_aff, code = v_code, name = nullif(p ->> 'name', ''),
+        discount_type = coalesce(nullif(p ->> 'discount_type', ''), 'none'), discount_amount = nullif(p ->> 'discount_amount', '')::numeric,
+        discount_duration = nullif(p ->> 'discount_duration', ''), discount_duration_months = nullif(p ->> 'discount_duration_months', '')::int,
+        stripe_promo_code = nullif(p ->> 'stripe_promo_code', ''), stripe_promotion_code_id = nullif(p ->> 'stripe_promotion_code_id', ''),
+        stripe_coupon_id = nullif(p ->> 'stripe_coupon_id', ''), commission_rate = v_rate,
+        commission_type = coalesce(nullif(p ->> 'commission_type', ''), 'recurring'),
+        commission_duration_months = nullif(p ->> 'commission_duration_months', '')::int,
+        starts_at = coalesce(nullif(p ->> 'starts_at', '')::timestamptz, starts_at), expires_at = nullif(p ->> 'expires_at', '')::timestamptz,
+        active = coalesce((p ->> 'active')::boolean, active), admin_note = nullif(p ->> 'admin_note', ''), updated_by = auth.uid(),
+        disabled_at = case when coalesce((p ->> 'active')::boolean, active) then null else coalesce(disabled_at, now()) end,
+        disabled_by = case when coalesce((p ->> 'active')::boolean, active) then null else coalesce(disabled_by, auth.uid()) end
+       where id = v_id;
+      if not found then return jsonb_build_object('ok', false, 'reason', 'unknown_campaign'); end if;
+    end if;
+  exception when check_violation or unique_violation or invalid_text_representation or invalid_datetime_format or datetime_field_overflow then
+    get stacked diagnostics v_msg = message_text;
+    return jsonb_build_object('ok', false, 'reason', 'invalid_campaign', 'detail', left(v_msg, 300));
+  end;
+  perform public.affiliate_campaign_stripe_sync();
+  return jsonb_build_object('ok', true, 'id', v_id, 'code', v_code,
+    'campaign', (select public.affiliate_campaign_json(c, true) from public.affiliate_campaigns c where c.id = v_id));
+end $$;
+revoke all on function public.affiliate_admin_upsert_campaign(jsonb) from public, anon;
+grant execute on function public.affiliate_admin_upsert_campaign(jsonb) to authenticated;
+
+-- switch a campaign off (or back on) without touching anything it attributed
+create or replace function public.affiliate_admin_set_campaign_active(p_id uuid, p_active boolean)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if not public.affiliate_is_admin() then raise exception 'not an affiliate admin' using errcode = 'insufficient_privilege'; end if;
+  update public.affiliate_campaigns set active = p_active, updated_by = auth.uid(),
+         disabled_at = case when p_active then null else now() end, disabled_by = case when p_active then null else auth.uid() end
+   where id = p_id;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'unknown_campaign'); end if;
+  return jsonb_build_object('ok', true, 'active', p_active);
+end $$;
+revoke all on function public.affiliate_admin_set_campaign_active(uuid, boolean) from public, anon;
+grant execute on function public.affiliate_admin_set_campaign_active(uuid, boolean) to authenticated;
 
 create or replace function public.affiliate_admin_reconcile()
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
@@ -834,6 +1341,22 @@ select 10, 'no signed-in-only function is callable by a signed-out visitor',
       'public.affiliate_my_dashboard()', 'public.affiliate_admin_overview()',
       'public.affiliate_admin_upsert_account(text, text, text, numeric, text, text)',
       'public.affiliate_admin_update_settings(jsonb)', 'public.affiliate_admin_commissions(bigint[], text, text, text)',
-      'public.affiliate_admin_reconcile()', 'public.affiliate_stats(uuid)']) f
+      'public.affiliate_admin_reconcile()', 'public.affiliate_stats(uuid)',
+      'public.affiliate_admin_upsert_campaign(jsonb)', 'public.affiliate_admin_set_campaign_active(uuid, boolean)',
+      'public.affiliate_campaign_stats(uuid)', 'public.affiliate_resolve_code(text, timestamp with time zone)']) f
     where has_function_privilege('anon', f, 'execute')) then 'ok' else 'CHECK THIS' end
+union all
+select 11, 'campaigns: per-code terms, never deleted, no client reads them directly',
+  case when exists (select 1 from pg_tables where schemaname = 'public' and tablename = 'affiliate_campaigns' and rowsecurity)
+        and not has_table_privilege('authenticated', 'public.affiliate_campaigns', 'select')
+        and exists (select 1 from pg_trigger where tgname = 'affiliate_campaigns_no_delete_trg' and not tgisinternal) then 'ok' else 'CHECK THIS' end
+union all
+select 12, 'an attribution''s creator and terms are snapshotted and never rewritten',
+  case when exists (select 1 from pg_trigger where tgname = 'affiliate_attributions_guard_trg' and not tgisinternal)
+        and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'affiliate_attributions' and column_name = 'term_type')
+       then 'ok' else 'CHECK THIS' end
+union all
+select 13, 'a visitor can read a code''s offer (discount as Stripe records it), never its commission',
+  case when has_function_privilege('anon', 'public.affiliate_offer(text)', 'execute')
+        and position('commission' in pg_get_functiondef('public.affiliate_offer(text)'::regprocedure)) = 0 then 'ok' else 'CHECK THIS' end
 order by 1;

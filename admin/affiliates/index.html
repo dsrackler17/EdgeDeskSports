@@ -25,6 +25,15 @@
                   moves money — there is no payout provider here, and a payout
                   is recorded after it was made elsewhere.
        RECONCILE  replay the Stripe ledger into conversions, idempotently.
+       CAMPAIGNS  per creator, per code: the customer's discount (type, amount,
+                  duration — a description of the Stripe coupon behind the
+                  Stripe promotion code), the creator's commission (rate,
+                  recurring or one-time, months), start, end, on/off. Stripe's
+                  own record of the promotion code is shown beside what was
+                  entered, and a mismatch is flagged; a visitor is shown a
+                  discount only when the two agree. Editing or switching off a
+                  campaign never changes an account already attributed through
+                  it. No deploy is needed for any of it.
 
      Every call is a security-definer function that checks
      public.affiliate_is_admin() under the OPERATOR'S OWN token. The service role
@@ -103,6 +112,39 @@ th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;
       </div>
       <div class="msg" id="aMsg"></div>
       <div class="tw" style="margin-top:12px"><table id="accTbl"></table></div>
+    </div>
+
+    <h2>Campaigns</h2>
+    <div class="card">
+      <input type="hidden" id="kId">
+      <div class="row">
+        <div class="f"><label for="kPartner">Partner's code</label><input id="kPartner" maxlength="32" placeholder="COACHBIGGS"></div>
+        <div class="f"><label for="kCode">Campaign code</label><input id="kCode" maxlength="32" placeholder="BIGGSFALL"></div>
+        <div class="f"><label for="kName">Name</label><input id="kName" maxlength="80" placeholder="Fall launch"></div>
+        <div class="f"><label for="kActive">State</label><select id="kActive"><option value="true">active</option><option value="false">switched off</option></select></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="f"><label for="kDType">Customer discount</label><select id="kDType"><option value="none">none</option><option value="percent">percent off</option><option value="amount">dollars off</option></select></div>
+        <div class="f"><label for="kDAmt">Amount (% or $)</label><input id="kDAmt" type="number" min="0" step="0.01"></div>
+        <div class="f"><label for="kDDur">Duration (Stripe's)</label><select id="kDDur"><option value="">—</option><option value="once">once</option><option value="repeating">repeating</option><option value="forever">forever</option></select></div>
+        <div class="f"><label for="kDMo">Months (repeating)</label><input id="kDMo" type="number" min="1" max="36"></div>
+        <div class="f"><label for="kPromo">Stripe promotion code</label><input id="kPromo" maxlength="64" placeholder="BIGGSFALL"></div>
+        <div class="f"><label for="kPromoId">Stripe promotion code id (optional)</label><input id="kPromoId" maxlength="70" placeholder="promo_…"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="f"><label for="kRate">Commission (%)</label><input id="kRate" type="number" min="0" max="90" step="0.5"></div>
+        <div class="f"><label for="kCType">Commission</label><select id="kCType"><option value="recurring">recurring</option><option value="one_time">one-time (first payment)</option></select></div>
+        <div class="f"><label for="kCMo">Months (recurring; blank = program setting)</label><input id="kCMo" type="number" min="1" max="120"></div>
+        <div class="f"><label for="kStart">Starts</label><input id="kStart" type="datetime-local"></div>
+        <div class="f"><label for="kEnd">Ends (blank = no end)</label><input id="kEnd" type="datetime-local"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="f"><label for="kNote">Admin note</label><input id="kNote" maxlength="1000"></div>
+        <button class="g" id="kClear">New campaign</button><button id="kSave">Save campaign</button>
+      </div>
+      <div class="msg" id="kMsg"></div>
+      <div class="tw" style="margin-top:12px"><table id="campTbl"></table></div>
+      <div class="note"><b>Stripe is the source of truth for the discount.</b> Create the coupon and promotion code in Stripe first, and add <span class="mono">promotion_code.created</span>, <span class="mono">promotion_code.updated</span> and <span class="mono">coupon.updated</span> to the webhook endpoint's events: each one is copied onto the matching campaign. Until Stripe's record arrives the campaign reads <i>unverified</i> and visitors see no discount; checkout carries the code once Stripe has it. The commission is paid on what Stripe actually collected, less tax. A customer keeps the terms they were attributed on.</div>
     </div>
 
     <h2>Commissions</h2>
@@ -197,7 +239,71 @@ $('aSave').onclick = async function () {
     else { say('aMsg', 'ok', 'Saved ' + r.code + '. Their link: https://edgedesksports.com/?ref=' + r.code); await reload(); }
   } catch (e) { say('aMsg', 'err', String(e.message || e)); }
 };
-async function reload() { OV = await rpc('affiliate_admin_overview', {}); renderSettings(); renderAccounts(); renderCommissions(); }
+function dt(v) { if (!v) return ''; var d = new Date(v); if (isNaN(d)) return ''; return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
+function discText(c) {
+  if (c.discount_type === 'none') return 'none';
+  var a = c.discount_type === 'percent' ? c.discount_amount + '% off' : '$' + Number(c.discount_amount).toFixed(2) + ' off';
+  return a + ' · ' + (c.discount_duration === 'repeating' ? c.discount_duration_months + ' months' : c.discount_duration);
+}
+function stripeText(c) {
+  var sn = c.stripe_snapshot;
+  if (!sn) return '—';
+  var a = sn.percent_off != null ? sn.percent_off + '% off' : (sn.amount_off_cents != null ? money(sn.amount_off_cents) + ' off' : 'coupon not seen yet');
+  return a + (sn.duration ? ' · ' + (sn.duration === 'repeating' ? sn.duration_in_months + ' months' : sn.duration) : '') + (sn.active === false ? ' · promo inactive' : '');
+}
+var STRIPE_STATE = { verified: 'matches Stripe', mismatch: 'MISMATCH', unverified: 'unverified', partial: 'partial', inactive_in_stripe: 'inactive in Stripe', no_discount: 'no discount' };
+function renderCampaigns() {
+  var rows = OV.campaigns || [];
+  $('campTbl').innerHTML = '<tr><th>Code</th><th>Partner</th><th>State</th><th>Window</th><th>Commission</th><th>Discount entered</th><th>Stripe says</th><th>Check</th><th>Clicks</th><th>Signups</th><th>Trials</th><th>Paid</th><th>Pending</th><th></th></tr>'
+    + (rows.length ? rows.map(function (c, i) {
+      var st = c.stats || {};
+      return '<tr><td class="mono">' + esc(c.code) + (c.name ? ' <span class="who">' + esc(c.name) + '</span>' : '') + '</td><td class="mono">' + esc(c.partner_code) + '</td>'
+        + '<td><span class="pill ' + (c.in_force ? 'approved' : (c.active ? 'pending' : 'void')) + '">' + (c.in_force ? 'live' : (c.active ? 'not in force' : 'off')) + '</span></td>'
+        + '<td>' + when(c.starts_at) + ' → ' + (c.expires_at ? when(c.expires_at) : 'no end') + '</td>'
+        + '<td>' + (c.commission_rate * 100).toFixed(1) + '% ' + (c.commission_type === 'one_time' ? 'one-time' : 'recurring' + (c.commission_duration_months ? ' · ' + c.commission_duration_months + ' mo' : '')) + '</td>'
+        + '<td>' + esc(discText(c)) + '</td><td>' + esc(stripeText(c)) + '</td>'
+        + '<td><span class="pill ' + (c.stripe_state === 'verified' ? 'paid' : (c.stripe_state === 'mismatch' || c.stripe_state === 'inactive_in_stripe' ? 'pending' : '')) + '">' + esc(STRIPE_STATE[c.stripe_state] || c.stripe_state) + '</span></td>'
+        + '<td>' + (st.clicks || 0) + '</td><td>' + (st.signups || 0) + '</td><td>' + (st.trials || 0) + '</td><td>' + (st.paid_customers || 0) + '</td><td>' + money(st.pending_cents) + '</td>'
+        + '<td><button class="g" data-edit="' + i + '">Edit</button> <button class="g' + (c.active ? ' d' : '') + '" data-toggle="' + i + '">' + (c.active ? 'Switch off' : 'Switch on') + '</button></td></tr>';
+    }).join('') : '<tr><td colspan="14">No campaigns yet.</td></tr>');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-edit]'), function (b) { b.onclick = function () { editCampaign(rows[+b.getAttribute('data-edit')]); }; });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-toggle]'), function (b) {
+    b.onclick = async function () {
+      var c = rows[+b.getAttribute('data-toggle')];
+      if (c.active && !confirm('Switch off ' + c.code + '? It attributes nobody new; accounts already attributed through it keep their terms.')) return;
+      try { var r = await rpc('affiliate_admin_set_campaign_active', { p_id: c.id, p_active: !c.active }); say('kMsg', r.ok ? 'ok' : 'err', r.ok ? c.code + (r.active ? ' is on.' : ' is off.') : r.reason); await reload(); }
+      catch (e) { say('kMsg', 'err', String(e.message || e)); }
+    };
+  });
+}
+function editCampaign(c) {
+  $('kId').value = c ? c.id : ''; $('kPartner').value = c ? c.partner_code : ''; $('kCode').value = c ? c.code : ''; $('kName').value = c ? (c.name || '') : '';
+  $('kActive').value = c ? String(!!c.active) : 'true'; $('kDType').value = c ? c.discount_type : 'none'; $('kDAmt').value = c && c.discount_amount != null ? c.discount_amount : '';
+  $('kDDur').value = c ? (c.discount_duration || '') : ''; $('kDMo').value = c && c.discount_duration_months != null ? c.discount_duration_months : '';
+  $('kPromo').value = c ? (c.stripe_promo_code || '') : ''; $('kPromoId').value = c ? (c.stripe_promotion_code_id || '') : '';
+  $('kRate').value = c ? Math.round(c.commission_rate * 1000) / 10 : ''; $('kCType').value = c ? c.commission_type : 'recurring';
+  $('kCMo').value = c && c.commission_duration_months != null ? c.commission_duration_months : ''; $('kStart').value = c ? dt(c.starts_at) : ''; $('kEnd').value = c ? dt(c.expires_at) : '';
+  $('kNote').value = c ? (c.admin_note || '') : '';
+  say('kMsg', '', c ? 'Editing ' + c.code + '. Changes apply to the next attribution, never to accounts already attributed.' : '');
+}
+$('kClear').onclick = function () { editCampaign(null); };
+$('kSave').onclick = async function () {
+  var p = { id: $('kId').value || null, partner_code: $('kPartner').value.trim(), code: $('kCode').value.trim(), name: $('kName').value.trim(),
+    active: $('kActive').value === 'true', discount_type: $('kDType').value, discount_amount: $('kDType').value === 'none' ? '' : $('kDAmt').value,
+    discount_duration: $('kDType').value === 'none' ? '' : $('kDDur').value, discount_duration_months: $('kDDur').value === 'repeating' ? $('kDMo').value : '',
+    stripe_promo_code: $('kPromo').value.trim().toUpperCase(), stripe_promotion_code_id: $('kPromoId').value.trim(),
+    commission_rate: $('kRate').value === '' ? '' : String(parseFloat($('kRate').value) / 100), commission_type: $('kCType').value,
+    commission_duration_months: $('kCType').value === 'one_time' ? '' : $('kCMo').value,
+    starts_at: $('kStart').value ? new Date($('kStart').value).toISOString() : '', expires_at: $('kEnd').value ? new Date($('kEnd').value).toISOString() : '',
+    admin_note: $('kNote').value.trim() };
+  try {
+    var r = await rpc('affiliate_admin_upsert_campaign', { p: p });
+    if (r && r.ok === false) say('kMsg', 'err', ({ unknown_partner_code: 'No partner has that code.', code_taken: 'Another campaign uses that code.', commission_rate_required: 'Set the commission rate.',
+      invalid_code: 'A code is 3-32 letters, numbers, dashes or underscores.' })[r.reason] || ('Not saved: ' + (r.detail || r.reason)));
+    else { say('kMsg', 'ok', 'Saved ' + r.code + ' (' + (STRIPE_STATE[r.campaign.stripe_state] || r.campaign.stripe_state) + '). Link: https://edgedesksports.com/?ref=' + r.code); editCampaign(null); await reload(); }
+  } catch (e) { say('kMsg', 'err', String(e.message || e)); }
+};
+async function reload() { OV = await rpc('affiliate_admin_overview', {}); renderSettings(); renderAccounts(); renderCampaigns(); renderCommissions(); }
 async function boot() {
   try { await reload(); }
   catch (e) { say('gMsg', 'err', 'This account cannot open the partner console: an operator must add it to public.affiliate_admins. (' + String(e.message || e) + ')'); return; }

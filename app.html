@@ -2971,7 +2971,7 @@ body.focus .dk-focusnote{display:block}
 @media (prefers-reduced-motion:reduce){.dk-skel{animation:none}}
 </style>
 
-<link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260925p">
+<link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260926g">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3976,8 +3976,9 @@ window.mcRefresh=function(){
      research_core.js is loaded eagerly here because the journal's CLV reads its
      line convention; the football module still lazy-loads it for itself. -->
 <script src="/lib/research_core.js?v=20260925p"></script>
-<script src="/lib/edgedesk_personal.js?v=20260925p"></script>
-<script src="/lib/edgedesk_pricing.js?v=20260925p"></script>
+<script src="/lib/edgedesk_personal.js?v=20260926g"></script>
+<script src="/lib/edgedesk_share_card.js?v=20260926g"></script>
+<script src="/lib/edgedesk_pricing.js?v=20260926g"></script>
 <!-- The CFB research view: what a reader sees first on the college board
      (the fair line with its side, the market gap, the research label, the
      reasons, the best available line, the projection's own history), read off
@@ -46948,6 +46949,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     },
 
     action:function(mode){
+      try{if(window.EDMine&&window.EDMine.track)window.EDMine.track('ai_research_used');}catch(_){}
       if(mode==='todaysresearch')return window.EDAI.todaysResearch();
       if(mode==='reevaluate')return window.EDAI.reevaluate();
       if(mode==='packetpostmortem')return window.EDAI.packetPostmortem();
@@ -46982,6 +46984,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var t=($id('edaiText').value||'').trim(); if(!t||BUSY)return;
       $id('edaiText').value=''; $id('edaiText').style.height='auto';
       push('u',t); BUSY=true; $id('edaiSend').disabled=true;
+      try{if(window.EDMine&&window.EDMine.track)window.EDMine.track('ai_research_used');}catch(_){}
       try{
         // native DAILY_SCAN: build the packet ourselves, never require an attached signal
         if(isDailyScan(t)){ await dailyScanCore(); return; }
@@ -51124,14 +51127,17 @@ function fbQualityLine(p,extra){
   return '<div class="gd-modelnote">⚠ '+fbEsc(bits.join(' · '))+'</div>';
 }
 /* THE READER'S OWN ACTIONS on a game card: watch it, log a decision about
-   it. Rendered only when the personal layer (lib/edgedesk_personal_ui.js)
+   it, compare their own number with EdgeDesk's, make a research card.
+   Rendered only when the personal layer (lib/edgedesk_personal_ui.js)
    loaded, and never for a game that has kicked off. */
 function fbMineActs(sport,gid,home,away,t){
   if(!window.EDMine||!window.EDPersonal)return '';
   if(t!=null&&isFinite(t)&&t<=Date.now())return '';
-  var key=window.EDPersonal.gameKey(sport,gid);
+  var key=String(window.EDPersonal.gameKey(sport,gid)).replace(/'/g,'');
   return '<div class="edm-gxstar">'+window.EDMine.starHTML(sport,gid,{home:home,away:away,kickoff:t})
-    +'<button type="button" class="edm-btn ghost sm" onclick="event.stopPropagation();EDMine.journalOpen(\''+String(key).replace(/'/g,'')+'\')">Log decision</button></div>';
+    +'<button type="button" class="edm-btn ghost sm" onclick="event.stopPropagation();EDMine.journalOpen(\''+key+'\')">Log decision</button>'
+    +'<button type="button" class="edm-btn ghost sm" onclick="event.stopPropagation();EDMine.compareOpen(\''+key+'\')">Compare my number</button>'
+    +'<button type="button" class="edm-btn ghost sm" onclick="event.stopPropagation();EDMine.shareOpen(\''+key+'\')">Share card</button></div>';
 }
 function fbGameCardNfl(u){
   var g=u.g;
@@ -57109,6 +57115,7 @@ window.fbP4Gate=function(gid){
   var ar=document.getElementById('p4arr-'+gid);
   if(el.getAttribute('data-open')){el.innerHTML='';el.removeAttribute('data-open');if(ar)ar.textContent='▸';return;}
   el.setAttribute('data-open','1');if(ar)ar.textContent='▾';
+  try{if(window.EDMine&&window.EDMine.trackGame)window.EDMine.trackGame('p4',gid);}catch(_){}
   var u=null;FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
   el.innerHTML=u?('<div style="margin:8px 0 12px">'+fbP4Card(u)+(window.fbBriefBtn?fbBriefBtn('cfb',u.g,u):'')+'</div>'):'';
 };
@@ -58614,6 +58621,7 @@ window.fbFocusGame=function(sport,gid){
 };
 window.fbOpenGame=function(sport,gid){
   gid=String(gid);
+  try{if(window.EDMine&&window.EDMine.trackGame)window.EDMine.trackGame(sport,gid);}catch(_){}
   FB.ui.focus={sport:sport,gid:gid};
   FB.ui.pendingOpen={sport:sport,gid:gid};
   if(sport==='nfl'){
@@ -62594,7 +62602,7 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
-<script src="/lib/edgedesk_personal_ui.js?v=20260925p"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20260926g"></script>
 <script>
 try{
   window.EDReport.configure({url:SB_URL,key:SB_KEY,

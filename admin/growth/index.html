@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Growth console</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE GROWTH CONSOLE (supabase/growth.sql).
+
+     ACTIVATION   trials started in the window, how many reached ACTIVATED
+                  inside the trial, the activation rate, paid conversions,
+                  activated-to-paid beside not-activated-to-paid, time to
+                  activation (median, p75), the state mix, how many trials took
+                  each action, and weekly cohorts. Counts of rows: a trial is
+                  what Stripe's own events say, a payment is a real charge.
+     THRESHOLDS   the weight of every action and the bar for EXPLORING,
+                  ACTIVATED and POWER_USER. Saving recomputes every reader's
+                  state from their events, in order — history included.
+     FUNNEL       source → visitor → account → trial → activated trial → paid
+                  → retained, by first touch or last touch, with the accounts
+                  the partner program credits to a creator counted beside it.
+     SAMPLES      which games a signed-out visitor may read at
+                  /research/sample/ — switch one on or off, set an end.
+
+     Creator campaigns (codes, discounts, commission terms) live in the
+     partner console, /admin/affiliates/, beside the rest of the program.
+
+     Every call is a security-definer function that checks the operator list
+     (public.affiliate_admins) under the OPERATOR'S OWN token. No reader is
+     named anywhere on this page; activation is internal and never shown to
+     the reader it describes.
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+      --accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark;accent-color:var(--accent)}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 40px}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0;flex-wrap:wrap}
+.logo{font-weight:800;font-size:16px}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}.hide{display:none!important}
+.who{font-size:11px;color:var(--dim)}
+nav a{font-size:12px;color:var(--dim);text-decoration:none;margin-left:10px}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:4px;min-width:120px;flex:1}
+label{font-size:11px;color:var(--dim);font-weight:600}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 13px Inter,system-ui,sans-serif}
+button{border:none;border-radius:8px;background:var(--accent);color:var(--on-accent);font:700 12.5px Inter,system-ui,sans-serif;padding:9px 13px;cursor:pointer}
+button.g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+button.sm{padding:5px 9px;font-size:11.5px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 7px;border-top:1px solid var(--border);white-space:nowrap}
+th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+td.r,th.r{text-align:right}
+.tw{overflow-x:auto}
+.msg{font-size:12px;margin-top:8px}.msg.err{color:var(--neg)}.msg.ok{color:var(--pos)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.kpi i{display:block;font-style:normal;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.kpi b{display:block;font-size:22px;margin-top:4px}
+.kpi small{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.pill{font-size:10px;font-weight:700;border:1px solid var(--border);border-radius:9px;padding:1px 7px;color:var(--dim)}
+.pill.on{color:var(--pos);border-color:rgba(118,189,62,.5)}
+.note{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:8px}
+.seg{display:inline-flex;gap:4px;border:1px solid var(--border);border-radius:9px;padding:3px}
+.seg button{background:none;color:var(--dim);padding:5px 10px}
+.seg button.on{background:var(--surface2);color:var(--text)}
+.cbs{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
+.cbs label{display:flex;gap:6px;align-items:center;font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">growth</span><nav><a href="/admin/affiliates/">Partner program &amp; campaigns</a><a href="/research/sample/" target="_blank" rel="noopener">Public samples ↗</a></nav><span class="sp"></span><span class="who" id="who"></span></div></header>
+<div class="wrap">
+  <div id="gate" class="card" style="max-width:420px;margin:40px auto">
+    <h2 style="margin-top:0">Operator sign-in</h2>
+    <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="username"></div>
+    <div class="f" style="margin-top:8px"><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password"></div>
+    <div class="row" style="margin-top:12px"><button id="gGo">Sign in</button></div>
+    <div class="msg" id="gMsg"></div>
+  </div>
+  <div id="app" class="hide">
+    <div class="row" style="margin-top:16px"><div class="f" style="max-width:220px"><label for="win">Window</label>
+      <select id="win"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="180">Last 180 days</option><option value="365">Last 365 days</option></select></div>
+      <span class="sp"></span><button class="g" id="reload">Refresh</button></div>
+
+    <h2>Trial activation</h2>
+    <div class="card"><div class="kpis" id="actKpis"></div>
+      <div class="note" id="actNote"></div>
+      <div class="tw" style="margin-top:12px"><table id="actStates"></table></div>
+      <div class="tw" style="margin-top:12px"><table id="actActions"></table></div>
+      <div class="tw" style="margin-top:12px"><table id="actCohorts"></table></div>
+    </div>
+
+    <h2>Activation thresholds</h2>
+    <div class="card">
+      <div class="row" id="wRow"></div>
+      <div class="row" style="margin-top:10px">
+        <div class="f"><label for="tCap">Count each action at most (times)</label><input id="tCap" type="number" min="1" max="100"></div>
+        <div class="f"><label for="tExp">EXPLORING at (points)</label><input id="tExp" type="number" min="0.5" step="0.5"></div>
+        <div class="f"><label for="tActP">ACTIVATED at (points)</label><input id="tActP" type="number" min="1" step="0.5"></div>
+        <div class="f"><label for="tActK">…and kinds of action</label><input id="tActK" type="number" min="1" max="9"></div>
+        <div class="f"><label for="tActD">…and active days</label><input id="tActD" type="number" min="1" max="60"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="f"><label for="tPowP">POWER_USER at (points)</label><input id="tPowP" type="number" min="1" step="0.5"></div>
+        <div class="f"><label for="tPowK">…and kinds of action</label><input id="tPowK" type="number" min="1" max="9"></div>
+        <div class="f"><label for="tPowD">…and active days</label><input id="tPowD" type="number" min="1" max="120"></div>
+        <div class="f"><label for="tTrial">Trial length (days)</label><input id="tTrial" type="number" min="1" max="60"></div>
+        <div class="f"><label for="tRet">Retained at (paid invoices)</label><input id="tRet" type="number" min="2" max="24"></div>
+      </div>
+      <div style="margin-top:10px"><label><input type="checkbox" id="tCore"> ACTIVATED requires at least one core action:</label><div class="cbs" id="coreRow"></div></div>
+      <div class="row" style="margin-top:12px"><span class="sp"></span><button id="tSave">Save and recompute</button></div>
+      <div class="msg" id="tMsg"></div>
+      <div class="note">Saving replays every reader's events under the new bars, so the report above re-reads history honestly. Nothing here is visible to a reader.</div>
+    </div>
+
+    <h2>Acquisition funnel</h2>
+    <div class="card">
+      <div class="row"><div class="seg" id="touch"><button data-t="first" class="on">First touch</button><button data-t="last">Last touch</button></div><span class="sp"></span></div>
+      <div class="tw" style="margin-top:12px"><table id="funnel"></table></div>
+      <div class="note" id="funNote"></div>
+    </div>
+
+    <h2>Public sample research</h2>
+    <div class="card">
+      <div class="tw"><table id="samples"></table></div>
+      <div class="row" style="margin-top:12px">
+        <div class="f"><label for="sKey">Game key</label><input id="sKey" class="mono" placeholder="cfb|401862779"></div>
+        <div class="f"><label for="sNote">Note (optional)</label><input id="sNote" maxlength="300"></div>
+        <div class="f" style="max-width:220px"><label for="sEnd">Public until (optional)</label><input id="sEnd" type="datetime-local"></div>
+        <button id="sAdd">Make public</button>
+      </div>
+      <div class="msg" id="sMsg"></div>
+      <h2 style="margin-top:16px">Upcoming games you can make public</h2>
+      <div class="tw"><table id="cands"></table></div>
+      <div class="note">A public game shows EdgeDesk's fair line, the market, the gap, reliability, the key reason, up to three measured drivers, quarterback confirmation and availability counts. Win probability, the research ranking, the full breakdown, line movement and everything personal stay behind the account.</div>
+    </div>
+  </div>
+</div>
+<script>
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+var KEY = 'edgedesk_growth_admin_session';
+var SESSION = null, TOUCH = 'first', ACT = null;
+var KINDS = [['matchup_viewed', 'Matchup viewed'], ['repeat_visit', 'Repeat visit'], ['top5_opened', 'Top 5 Research opened'], ['watchlist_save', 'Watchlist save'],
+  ['alert_configured', 'Alert configured'], ['ai_research_used', 'AI research used'], ['compare_my_number', 'Compare My Number used'],
+  ['journal_entry_created', 'Journal entry created'], ['share_card_generated', 'Share card generated']];
+var SOURCES = { organic_x: 'Organic X', x_dm: 'X DM', creator_affiliate: 'Creator / affiliate', linkedin: 'LinkedIn', search: 'Search', direct: 'Direct', referral: 'Referral', other: 'Other', '(untracked)': 'No record' };
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function say(id, kind, t) { var el = $(id); el.className = 'msg ' + kind; el.textContent = t; }
+function pct(x) { return x == null ? '—' : (Math.round(x * 1000) / 10) + '%'; }
+function rate(a, b) { return b ? pct(a / b) : '—'; }
+function when(v) { return v ? String(v).replace('T', ' ').slice(0, 16) + 'Z' : '—'; }
+async function api(path, init) {
+  var t = (SESSION && SESSION.access_token) || SB_KEY;
+  var r = await fetch(SB_URL + '/rest/v1/' + path, Object.assign({}, init, { headers: { apikey: SB_KEY, authorization: 'Bearer ' + t, 'content-type': 'application/json' } }));
+  var txt = await r.text();
+  if (!r.ok) throw new Error(r.status + ': ' + txt.slice(0, 200));
+  return txt ? JSON.parse(txt) : null;
+}
+function rpc(n, b) { return api('rpc/' + n, { method: 'POST', body: JSON.stringify(b || {}) }); }
+function days() { return parseInt($('win').value, 10) || 90; }
+function kpi(label, v, sub) { return '<div class="kpi"><i>' + esc(label) + '</i><b>' + esc(v) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>'; }
+
+$('gGo').onclick = async function () {
+  var email = $('gEmail').value.trim(), pass = $('gPass').value;
+  if (!email || !pass) return;
+  try {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ email: email, password: pass }) });
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error_description || j.msg || 'sign-in failed');
+    SESSION = j; try { localStorage.setItem(KEY, JSON.stringify(j)); } catch (e) {}
+    await boot();
+  } catch (e) { say('gMsg', 'err', String(e.message || e)); }
+};
+
+function renderActivation(a) {
+  ACT = a;
+  var t = a.time_to_activation_hours || {};
+  $('actKpis').innerHTML = kpi('Trials', a.trials, 'started in the last ' + a.window_days + ' days')
+    + kpi('Activated trials', a.activated_trials, 'reached ACTIVATED inside the trial')
+    + kpi('Activation rate', pct(a.activation_rate))
+    + kpi('Paid conversions', a.paid_conversions, 'trial to paid ' + pct(a.trial_to_paid_rate))
+    + kpi('Activated → paid', pct(a.activated_to_paid_rate), a.activated_paid + ' of ' + a.activated_trials)
+    + kpi('Not activated → paid', pct(a.not_activated_to_paid_rate), a.not_activated_paid + ' of ' + (a.trials - a.activated_trials))
+    + kpi('Time to activation', t.median == null ? '—' : t.median + ' h', 'median · p75 ' + (t.p75 == null ? '—' : t.p75 + ' h') + ' · n ' + (t.n || 0));
+  $('actNote').textContent = a.trials < 30 ? 'Small sample: ' + a.trials + ' trials. Rates on a few dozen trials move a lot from one account to the next.' : '';
+  var st = a.states || {};
+  $('actStates').innerHTML = '<tr><th>State (trials in window)</th><th class="r">Trials</th><th class="r">Share</th></tr>'
+    + ['NOT_ACTIVATED', 'EXPLORING', 'ACTIVATED', 'POWER_USER'].map(function (k) { return '<tr><td class="mono">' + k + '</td><td class="r">' + (st[k] || 0) + '</td><td class="r">' + rate(st[k] || 0, a.trials) + '</td></tr>'; }).join('');
+  var ac = a.actions || {};
+  $('actActions').innerHTML = '<tr><th>Action</th><th class="r">Trials that did it</th><th class="r">Share of trials</th></tr>'
+    + KINDS.map(function (k) { return '<tr><td>' + esc(k[1]) + '</td><td class="r">' + (ac[k[0]] || 0) + '</td><td class="r">' + rate(ac[k[0]] || 0, a.trials) + '</td></tr>'; }).join('');
+  var co = a.cohorts || [];
+  $('actCohorts').innerHTML = '<tr><th>Trial week</th><th class="r">Trials</th><th class="r">Activated</th><th class="r">Rate</th><th class="r">Paid</th></tr>'
+    + (co.length ? co.map(function (c) { return '<tr><td class="mono">' + esc(c.week) + '</td><td class="r">' + c.trials + '</td><td class="r">' + c.activated + '</td><td class="r">' + rate(c.activated, c.trials) + '</td><td class="r">' + c.paid + '</td></tr>'; }).join('')
+      : '<tr><td colspan="5">No trials in this window.</td></tr>');
+  renderSettings(a.settings || {});
+}
+function renderSettings(s) {
+  var w = s.weights || {};
+  $('wRow').innerHTML = KINDS.map(function (k) { return '<div class="f"><label for="w_' + k[0] + '">' + esc(k[1]) + ' (points)</label><input id="w_' + k[0] + '" type="number" min="0" max="100" step="0.5" value="' + (w[k[0]] != null ? w[k[0]] : 0) + '"></div>'; }).join('');
+  $('tCap').value = s.per_kind_cap; $('tExp').value = s.exploring_min_points; $('tActP').value = s.activated_min_points; $('tActK').value = s.activated_min_kinds;
+  $('tActD').value = s.activated_min_active_days; $('tPowP').value = s.power_min_points; $('tPowK').value = s.power_min_kinds; $('tPowD').value = s.power_min_active_days;
+  $('tTrial').value = s.trial_days; $('tRet').value = s.retained_min_paid_invoices; $('tCore').checked = !!s.activated_requires_core;
+  var core = s.core_kinds || [];
+  $('coreRow').innerHTML = KINDS.map(function (k) { return '<label><input type="checkbox" class="core" value="' + k[0] + '"' + (core.indexOf(k[0]) >= 0 ? ' checked' : '') + '> ' + esc(k[1]) + '</label>'; }).join('');
+}
+$('tSave').onclick = async function () {
+  var w = {}; KINDS.forEach(function (k) { w[k[0]] = parseFloat($('w_' + k[0]).value || '0'); });
+  var p = { weights: w, per_kind_cap: +$('tCap').value, exploring_min_points: +$('tExp').value, activated_min_points: +$('tActP').value,
+    activated_min_kinds: +$('tActK').value, activated_min_active_days: +$('tActD').value, power_min_points: +$('tPowP').value,
+    power_min_kinds: +$('tPowK').value, power_min_active_days: +$('tPowD').value, trial_days: +$('tTrial').value,
+    retained_min_paid_invoices: +$('tRet').value, activated_requires_core: $('tCore').checked,
+    core_kinds: Array.prototype.map.call(document.querySelectorAll('.core:checked'), function (x) { return x.value; }) };
+  try {
+    var r = await rpc('growth_admin_update_activation_settings', { p: p });
+    if (r && r.ok === false) say('tMsg', 'err', 'Not saved: ' + (r.detail || r.reason));
+    else { say('tMsg', 'ok', 'Saved. ' + r.recomputed + ' reader(s) recomputed.'); await loadActivation(); }
+  } catch (e) { say('tMsg', 'err', String(e.message || e)); }
+};
+
+function renderFunnel(f) {
+  var rows = f.rows || [], T = f.totals || {};
+  function r(x) {
+    return '<tr><td>' + esc(SOURCES[x.source] || x.source) + '</td><td class="r">' + (x.visitors || 0) + '</td><td class="r">' + x.signups + '</td>'
+      + '<td class="r">' + x.trials + ' <span class="who">' + rate(x.trials, x.signups) + '</span></td>'
+      + '<td class="r">' + x.activated_trials + ' <span class="who">' + rate(x.activated_trials, x.trials) + '</span></td>'
+      + '<td class="r">' + x.paid + ' <span class="who">' + rate(x.paid, x.trials) + '</span></td>'
+      + '<td class="r">' + x.retained + ' <span class="who">' + rate(x.retained, x.paid) + '</span></td>'
+      + '<td class="r">' + x.creator_credited + '</td></tr>';
+  }
+  $('funnel').innerHTML = '<tr><th>Source (' + esc(f.touch) + ' touch)</th><th class="r">Visitors</th><th class="r">Accounts</th><th class="r">Trials</th><th class="r">Activated trials</th><th class="r">Paid</th><th class="r">Retained</th><th class="r">Creator-credited</th></tr>'
+    + rows.map(r).join('') + '<tr><th>Total</th><th class="r">' + (T.visitors || 0) + '</th><th class="r">' + (T.signups || 0) + '</th><th class="r">' + (T.trials || 0) + '</th><th class="r">' + (T.activated_trials || 0) + '</th><th class="r">' + (T.paid || 0) + '</th><th class="r">' + (T.retained || 0) + '</th><th class="r">' + (T.creator_credited || 0) + '</th></tr>';
+  $('funNote').textContent = 'Visitors: first seen in the window, on the landing page or a public sample. Accounts: created in the window. Retained: ' + f.retained_rule
+    + '. Creator-credited counts the accounts the partner program pays a creator for — that ledger is never changed by acquisition tracking, and the two can disagree (an account can arrive from search and still be credited to the creator whose link it clicked first).';
+}
+function renderSamples(d) {
+  var s = d.samples || [], c = d.candidates || [];
+  $('samples').innerHTML = '<tr><th>Game</th><th>Kickoff</th><th>EdgeDesk</th><th>Market</th><th>Public</th><th>Until</th><th></th></tr>'
+    + (s.length ? s.map(function (x) {
+      var link = '/research/sample/?game=' + encodeURIComponent(x.game_key);
+      return '<tr><td>' + esc(x.home ? x.away + ' @ ' + x.home : x.game_key) + ' <span class="mono who">' + esc(x.game_key) + '</span>' + (x.has_state ? '' : ' <span class="pill">no state</span>') + '</td>'
+        + '<td>' + when(x.kickoff_at) + '</td><td>' + esc(x.fair_text || '—') + '</td><td>' + esc(x.market_text || '—') + '</td>'
+        + '<td><span class="pill' + (x.enabled ? ' on' : '') + '">' + (x.enabled ? 'public' : 'off') + '</span></td><td>' + when(x.expires_at) + '</td>'
+        + '<td><a class="who" href="' + link + '" target="_blank" rel="noopener">view ↗</a> <button class="g sm" data-k="' + esc(x.game_key) + '" data-on="' + (!x.enabled) + '">' + (x.enabled ? 'Switch off' : 'Make public') + '</button></td></tr>';
+    }).join('') : '<tr><td colspan="7">No public samples yet.</td></tr>');
+  $('cands').innerHTML = '<tr><th>Game</th><th>Kickoff</th><th>EdgeDesk</th><th>Market</th><th class="r">Gap</th><th class="r">Reliability</th><th>Research-grade</th><th></th></tr>'
+    + (c.length ? c.map(function (x) {
+      return '<tr><td>' + esc(x.away + ' @ ' + x.home) + ' <span class="mono who">' + esc(x.game_key) + '</span></td><td>' + when(x.kickoff_at) + '</td><td>' + esc(x.fair_text || '—') + '</td><td>' + esc(x.market_text || '—') + '</td>'
+        + '<td class="r">' + (x.gap_pts == null ? '—' : x.gap_pts) + '</td><td class="r">' + (x.reliability_score == null ? '—' : Math.round(x.reliability_score)) + '</td><td>' + (x.research_grade ? 'yes' : '') + '</td>'
+        + '<td><button class="sm" data-k="' + esc(x.game_key) + '" data-on="true">Make public</button></td></tr>';
+    }).join('') : '<tr><td colspan="8">No upcoming projected games in the shared research state.</td></tr>');
+  Array.prototype.forEach.call(document.querySelectorAll('#samples button,#cands button'), function (b) {
+    b.onclick = function () { setSample(b.getAttribute('data-k'), b.getAttribute('data-on') === 'true', null, null); };
+  });
+}
+async function setSample(key, on, note, end) {
+  try {
+    var r = await rpc('growth_admin_sample_set', { p_game_key: key, p_enabled: on, p_note: note, p_expires_at: end });
+    if (r && r.ok === false) say('sMsg', 'err', r.reason === 'no_research_state_for_that_game' ? 'EdgeDesk has no research state for that game yet.' : r.reason);
+    else { say('sMsg', 'ok', key + (on ? ' is public.' : ' is no longer public.')); await loadSamples(); }
+  } catch (e) { say('sMsg', 'err', String(e.message || e)); }
+}
+$('sAdd').onclick = function () {
+  var end = $('sEnd').value ? new Date($('sEnd').value).toISOString() : null;
+  setSample($('sKey').value.trim(), true, $('sNote').value.trim() || null, end);
+};
+Array.prototype.forEach.call(document.querySelectorAll('#touch button'), function (b) {
+  b.onclick = function () {
+    TOUCH = b.getAttribute('data-t');
+    Array.prototype.forEach.call(document.querySelectorAll('#touch button'), function (x) { x.classList.toggle('on', x === b); });
+    loadFunnel();
+  };
+});
+async function loadActivation() { renderActivation(await rpc('growth_admin_activation', { p_days: days() })); }
+async function loadFunnel() { renderFunnel(await rpc('growth_admin_funnel', { p_days: days(), p_touch: TOUCH })); }
+async function loadSamples() { renderSamples(await rpc('growth_admin_samples', {})); }
+async function reload() { await Promise.all([loadActivation(), loadFunnel(), loadSamples()]); }
+$('reload').onclick = reload;
+$('win').onchange = reload;
+async function boot() {
+  try { await reload(); }
+  catch (e) { say('gMsg', 'err', 'This account cannot open the growth console: an operator must add it to public.affiliate_admins, and supabase/growth.sql must be installed. (' + String(e.message || e) + ')'); return; }
+  $('gate').classList.add('hide'); $('app').classList.remove('hide');
+  var u = null; try { u = JSON.parse(atob((SESSION.access_token.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/'))); } catch (e) {}
+  $('who').textContent = (u && u.email) || 'operator';
+}
+try { SESSION = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { SESSION = null; }
+if (SESSION && SESSION.access_token) boot();
+</script>
+</body>
+</html>
