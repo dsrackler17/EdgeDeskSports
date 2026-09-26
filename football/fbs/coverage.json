@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-26T23:44:12.791Z",
+ "generated_at": "2026-09-26T23:45:05.701Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -164,33 +164,12 @@
   "efficiency_replay": {
    "source_schema": "edgedesk_cfb_engine_efficiency_v1",
    "season": 2026,
-   "artifact_games_with_stats": 475,
-   "artifact_team_game_rows": 938,
-   "games_absorbed_with_stats": 269,
-   "team_rows_absorbed": 434,
-   "final_games_without_play_stats": 24,
-   "missing_game_ids": [
-    "401856704",
-    "401856805",
-    "401856813",
-    "401858236",
-    "401858242",
-    "401858243",
-    "401858465",
-    "401860896",
-    "401864576",
-    "401866427",
-    "401858462",
-    "401858467",
-    "401864511",
-    "401858237",
-    "401864510",
-    "401856700",
-    "401856815",
-    "401858244",
-    "401858463",
-    "401860897"
-   ],
+   "artifact_games_with_stats": 518,
+   "artifact_team_game_rows": 1024,
+   "games_absorbed_with_stats": 293,
+   "team_rows_absorbed": 476,
+   "final_games_without_play_stats": 0,
+   "missing_game_ids": [],
    "measured_features": [
     "success_rate",
     "early_down_success",
@@ -220,15 +199,17 @@
  },
  "weather": {
   "requested": 95,
-  "answered": 95,
+  "answered": 93,
   "dome": 2,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 2,
+  "carried": 2,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 429": 2
+  },
   "host": "api.open-meteo.com",
-  "summary": "95 of 95 outdoor game(s) got a forecast; 2 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "93 of 95 outdoor game(s) got a forecast; 2 indoor venue(s) needed none; 0 had no coordinates to locate one; 2 request(s) failed; 2 carried the last observed forecast forward at its real age (HTTP 429 x2)"
  },
  "spread_recommendation": {
   "NO_MARKET": 97
@@ -236,10 +217,10 @@
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
-  "games_in_artifact": 475,
+  "games_in_artifact": 518,
   "completed_games_replayed": 293,
-  "completed_games_with_both_team_efficiency": 165,
-  "missing_count": 128,
+  "completed_games_with_both_team_efficiency": 183,
+  "missing_count": 110,
   "problem": null
  },
  "checks": [
@@ -433,7 +414,7 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 128,
+   "count": 110,
    "detail": [
     {
      "game_id": "401864424",
