@@ -76,6 +76,28 @@ function start(label) {
     home: HOME, port: PORT, bin: BIN,
     sql(text) { return psqlFile(file(text)); },
     applyFile(p) { return psqlFile(file(fs.readFileSync(p, 'utf8'))); },
+    /* the Supabase SQL editor runs a pasted file as ONE transaction, so every
+       lock a statement takes is held until the whole file ends */
+    applyFileAtomic(p) { return psqlFile(file(fs.readFileSync(p, 'utf8')), '-1'); },
+    /* a second session running on its own while the test carries on — what a
+       webhook or the hourly job is doing when someone re-runs a file */
+    background(text) {
+      const f = file(text), out = f + '.out', code = f + '.code', sh = f + '.sh';
+      /* a script file, so $? is the psql exit status and not the outer shell's */
+      fs.writeFileSync(sh, BIN + '/psql -h ' + HOME + ' -p ' + PORT + ' -U postgres -d postgres -v ON_ERROR_STOP=1 -X -q -t -A -f ' + f
+        + ' > ' + out + ' 2>&1\necho $? > ' + code + '\n');
+      if (asRoot) cp.execSync('chown postgres ' + sh + ' && chmod 755 ' + sh);
+      cp.spawn('sh', ['-c', asRoot ? 'su postgres -c "sh ' + sh + '"' : 'sh ' + sh], { detached: true, stdio: 'ignore' }).unref();
+      return {
+        wait(ms) {
+          const until = Date.now() + (ms || 30000);
+          while (!fs.existsSync(code) && Date.now() < until) cp.spawnSync('sleep', ['0.1']);
+          const c = fs.existsSync(code) ? +fs.readFileSync(code, 'utf8').trim() : null;
+          return { code: c, out: fs.existsSync(out) ? fs.readFileSync(out, 'utf8') : '' };
+        }
+      };
+    },
+    sleep(sec) { cp.spawnSync('sleep', [String(sec)]); },
     applyText(text) { return psqlFile(file(text)); },
     as(uid, text) {
       return psqlFile(file('begin;\n' + claim(uid) + 'set local role authenticated;\n' + text + '\ncommit;\n'));

@@ -55,11 +55,20 @@ function upsertState(hash, fair, rel, computedAt) {
 }
 
 try {
-  let out = db.applyFile(FILE);
+  let out = db.applyFileAtomic(FILE);
   chk('the migration applies to a clean database', true);
   chk('every report row says ok', !/CHECK THIS/.test(out), out.slice(-600));
-  out = db.applyFile(FILE);
+  out = db.applyFileAtomic(FILE);
   chk('and applies a second time without error, still all ok', !/CHECK THIS/.test(out));
+  /* re-running it on a live site: saving a journal entry holds research_journal
+     and then reads game_research_state (the insert trigger copies the state).
+     Run as the SQL editor runs it — one transaction — it must not deadlock. */
+  const saver = db.background('begin;\nselect count(*) from public.research_journal;\nselect pg_sleep(2);\nselect count(*) from public.game_research_state;\ncommit;\n');
+  db.sleep(0.4);
+  const rerun = db.mustFail(() => db.applyFileAtomic(FILE));
+  const sv = saver.wait(30000);
+  chk('re-running it while a reader saves a journal entry deadlocks neither side', rerun === null && sv.code === 0,
+    { rerun: rerun && rerun.slice(0, 400), saver: sv });
 
   db.sql(`insert into auth.users (id, email) values ('${A}','a@example.com'), ('${B}','b@example.com');`);
 
