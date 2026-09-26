@@ -1,0 +1,4032 @@
+{
+  "schema": "edgedesk_pregame_snapshot_v1",
+  "snapshot_id": "snap_6bbfc863276be96b",
+  "article_id": "cfb-401866429",
+  "key": "CFB:401866429",
+  "game_id": "401866429",
+  "sport": "CFB",
+  "season": 2026,
+  "week": 4,
+  "captured_at": "2026-09-26T17:58:59.893Z",
+  "kickoff": "2026-09-27T01:00:00.000Z",
+  "generation_version": "editorial_v1",
+  "game": {
+    "sport": "CFB",
+    "game_id": "401866429",
+    "home": "Sacramento State",
+    "away": "Massachusetts",
+    "home_short": null,
+    "away_short": null,
+    "kickoff": "2026-09-27T01:00:00.000Z",
+    "when_label": "2026-09-27 01:00 UTC",
+    "venue": "Hornet Stadium",
+    "neutral_site": false,
+    "conference_line": "Mid-American conference game",
+    "week": 4,
+    "season": 2026,
+    "network": null
+  },
+  "featured": {
+    "editorial_priority": 36.6,
+    "status": "featured",
+    "window_label": "Saturday night",
+    "window_key": "saturday_night",
+    "national_window": true,
+    "stage": "regular",
+    "stage_label": null,
+    "rivalry_label": null,
+    "home_rank": 133,
+    "away_rank": null,
+    "rank_pool": 136,
+    "model_disagreement": 8.3,
+    "manual_override": null,
+    "components": [
+      {
+        "key": "national_window",
+        "label": "Saturday night kickoff",
+        "points": 22,
+        "tier": "VERIFIED_FACT",
+        "detail": "kickoff 21:00 ET on Sat — converted from the kickoff timestamp"
+      },
+      {
+        "key": "ranking_weight",
+        "label": "Team ranks not available for both sides",
+        "points": 0,
+        "tier": "EDGEDESK_MODEL",
+        "detail": "no editorial credit is given for a rank EdgeDesk could not read"
+      },
+      {
+        "key": "familiarity",
+        "label": "Conference game",
+        "points": 5,
+        "tier": "VERIFIED_FACT",
+        "detail": null
+      },
+      {
+        "key": "model_disagreement",
+        "label": "EdgeDesk differs from the market by 8.3 points",
+        "points": 9.6,
+        "tier": "EDGEDESK_MODEL",
+        "detail": "Sacramento State -3.8 against Sacramento State +4.5 at captured (stale 98h) · FanDuel — INVESTIGATE · the gap earns 9.6 of a possible 24 because the price is current. A gap alone orders no research and implies no expected value."
+      }
+    ]
+  },
+  "model": {
+    "priced": true,
+    "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+    "fair_spread": 3.830325822124861,
+    "fair_spread_text": "Sacramento State -3.8",
+    "fair_spread_raw_text": "Sacramento State -3.8",
+    "near_pickem": false,
+    "favourite": "Sacramento State",
+    "underdog": "Massachusetts",
+    "margin": "3.8",
+    "total": "52.9",
+    "total_n": 52.9,
+    "score": {
+      "away": {
+        "team": "Massachusetts",
+        "points": "25"
+      },
+      "home": {
+        "team": "Sacramento State",
+        "points": "28"
+      },
+      "note": "Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
+    },
+    "win_prob": {
+      "home": "Sacramento State",
+      "away": "Massachusetts",
+      "home_pct": 60,
+      "away_pct": 40,
+      "home_text": "60%",
+      "away_text": "40%",
+      "bounded": false,
+      "bounded_note": null,
+      "favourite": "Sacramento State",
+      "favourite_pct": 60,
+      "favourite_text": "60%"
+    },
+    "moneyline": null,
+    "outcome_range": {
+      "basis_team": "Sacramento State",
+      "p10": "-19.2",
+      "median": "+2.8",
+      "p90": "+24.8",
+      "sigma": "15.1",
+      "volatility": "40.04",
+      "volatility_discriminates": false,
+      "note": "Quoted from Sacramento State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
+    },
+    "confidence_pct": 77,
+    "confidence_absent_reason": null,
+    "status": "INVESTIGATE",
+    "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+    "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet.",
+    "absent_reason": null
+  },
+  "market": {
+    "available": true,
+    "model": "Sacramento State -3.8",
+    "model_raw": "Sacramento State -3.8",
+    "market": "Sacramento State +4.5",
+    "difference": "8.3 points",
+    "difference_n": 8.33032582212486,
+    "total_model": "52.9",
+    "total_market": "48.5",
+    "book": "captured (stale 98h) · FanDuel",
+    "captured": "2026-09-22T16:18:01.053+00:00",
+    "capture_age": "98 hours old",
+    "stale": false,
+    "classification": "INVESTIGATE",
+    "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+    "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+  },
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel and theScore Bet on 2026-09-22, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "research_view": {
+    "contract": "cfb_research_brief/1",
+    "view": "cfb_research_view/1",
+    "game_id": "401866429",
+    "home": "Sacramento State",
+    "away": "Massachusetts",
+    "projected": true,
+    "engine_status": "PREDICTED",
+    "label": {
+      "key": "LIMITED_DATA",
+      "label": "LIMITED DATA",
+      "rule": "stale_market",
+      "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+    },
+    "fair": {
+      "line_text": "Sacramento State -3.8",
+      "favorite_team": "Sacramento State",
+      "underdog_team": "Massachusetts",
+      "display_fair_spread": 3.8,
+      "raw_home_margin": 3.83,
+      "raw_line_text": "Sacramento State -3.83",
+      "is_near_pickem": false
+    },
+    "market_gap": {
+      "available": true,
+      "points": 8.33,
+      "toward_team": "Sacramento State",
+      "text": "8.3 pts toward Sacramento State",
+      "market_line_text": "Massachusetts -4.5",
+      "market_home_margin": -4.5,
+      "favorite_differs": true,
+      "source": "captured (stale 98h) · FanDuel",
+      "as_of": "2026-09-22T16:18:01.053+00:00",
+      "stale": true,
+      "measured_from": "raw",
+      "note": null
+    },
+    "confidence": {
+      "score": 77,
+      "tier": "HIGH",
+      "label": "High"
+    },
+    "reliability": {
+      "pct": 85,
+      "tier": "STRONG",
+      "text": "85 · STRONG",
+      "sub": "main deduction: Massachusetts’s availability report is not due yet",
+      "score": 85,
+      "grade": "STRONG",
+      "grade_label": "STRONG",
+      "gate_label": null,
+      "components": [
+        {
+          "key": "team_data",
+          "label": "Team data",
+          "score": 18.3,
+          "max": 20
+        },
+        {
+          "key": "roster_availability",
+          "label": "Roster/status",
+          "score": 12.7,
+          "max": 20
+        },
+        {
+          "key": "projection_stability",
+          "label": "Stability",
+          "score": 18.1,
+          "max": 20
+        },
+        {
+          "key": "freshness",
+          "label": "Freshness",
+          "score": 12.9,
+          "max": 15
+        },
+        {
+          "key": "source_integrity",
+          "label": "Source integrity",
+          "score": 14.7,
+          "max": 15
+        },
+        {
+          "key": "environment",
+          "label": "Environment",
+          "score": 8.5,
+          "max": 10
+        }
+      ],
+      "main_deduction": "Massachusetts’s availability report is not due yet; the impact of Massachusetts’s absences cannot be assessed: no graded availability read",
+      "capped_by": [],
+      "next_actions": [
+        {
+          "action": "Re-read availability inside the filing window (Massachusetts)",
+          "potential_gain": 3,
+          "text": "up to +3"
+        },
+        {
+          "action": "Re-read availability inside the filing window (Sacramento State)",
+          "potential_gain": 3,
+          "text": "up to +3"
+        },
+        {
+          "action": "Refresh the market quote",
+          "potential_gain": 2,
+          "text": "up to +2"
+        }
+      ],
+      "stability": {
+        "tier": "STABLE",
+        "sd": 2.03,
+        "favorite_flip_rate": 0
+      },
+      "scale": "0-100 reliability score, not a probability"
+    },
+    "drivers": {
+      "team": "Sacramento State",
+      "none": false,
+      "text": null,
+      "reasons": [
+        {
+          "kind": "component",
+          "key": "hfa",
+          "points": 4.08,
+          "text": "+4.1 pts home-field advantage"
+        },
+        {
+          "kind": "market",
+          "key": "market_gap",
+          "points": 8.33,
+          "text": "The market is 8.3 pts away from EdgeDesk’s number, toward Sacramento State (market: Massachusetts -4.5)"
+        }
+      ]
+    },
+    "best_available_line": {
+      "available": false,
+      "reason": "every captured quote is past its freshness limit, so none is shown as available"
+    },
+    "projection_status": {
+      "key": "STABLE",
+      "label": "STABLE",
+      "text": "EdgeDesk’s number is unchanged since the latest published number."
+    },
+    "stability": {
+      "tier": "LOW",
+      "label": "Low",
+      "text": "the stored numbers span 3.8 pts across 3 readings"
+    },
+    "published": [
+      {
+        "at": "2026-09-16T12:00:40.648Z",
+        "source": "first published",
+        "home_margin": 7.65,
+        "text": "Sacramento State -7.7"
+      },
+      {
+        "at": "2026-09-22T02:54:11.006Z",
+        "source": "latest published",
+        "home_margin": 3.83,
+        "text": "Sacramento State -3.8"
+      }
+    ],
+    "revisions": 6,
+    "change_since_published": {
+      "comparable": true,
+      "points": 0,
+      "toward_team": "Sacramento State",
+      "since_at": "2026-09-22T02:54:11.006Z",
+      "text": "unchanged since the latest published number"
+    },
+    "what_changed": {
+      "available": true,
+      "summary": "EdgeDesk moved 3.8 points toward Massachusetts since the first published number.",
+      "attribution_text": "Projection changed 3.8 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+      "market": null,
+      "model_version": null
+    },
+    "parity": {
+      "ok": true,
+      "gaps": []
+    },
+    "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+  },
+  "drivers": {
+    "rows": [
+      {
+        "points": "+4.1",
+        "points_n": 4.082,
+        "text": "Playing at Sacramento State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality",
+        "favours": "Sacramento State"
+      },
+      {
+        "points": "-0.6",
+        "points_n": -0.609889291974401,
+        "text": "Massachusetts is the better football team by 0.6 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team",
+        "favours": "Massachusetts"
+      },
+      {
+        "points": "+0.4",
+        "points_n": 0.358215114099262,
+        "text": "Stylistically the matchup favours Sacramento State by 0.4 points: field position",
+        "favours": "Sacramento State"
+      }
+    ],
+    "basis": "Points are the engine’s own contributions to the projected spread, from Sacramento State’s perspective, and they sum toward it.",
+    "excluded": "Player quality, position-group ratings and scheme fit are NOT in this number. Neither has cleared walk-forward validation, so neither is allowed to move a priced figure — they appear below as research context and nowhere else.",
+    "empty": null
+  },
+  "matchups": [
+    {
+      "title": "Massachusetts pass offense vs Sacramento State pass defense",
+      "att": {
+        "team": "Massachusetts",
+        "label": "pass offense",
+        "v": "46.2",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "def": {
+        "team": "Sacramento State",
+        "label": "pass defense",
+        "v": "29.2",
+        "rank": "#132 of 133",
+        "note": null
+      },
+      "complete": true,
+      "read": "Massachusetts’s pass offense rates 46.2 against Sacramento State’s pass defense at 29.2 (#132 of 133). Massachusetts’s unit carries the higher rating."
+    },
+    {
+      "title": "Massachusetts run offense vs Sacramento State run defense",
+      "att": {
+        "team": "Massachusetts",
+        "label": "run offense",
+        "v": "46.6",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "def": {
+        "team": "Sacramento State",
+        "label": "run defense",
+        "v": "45.3",
+        "rank": "#86 of 133",
+        "note": null
+      },
+      "complete": true,
+      "read": "Massachusetts’s run offense rates 46.6 against Sacramento State’s run defense at 45.3 (#86 of 133). Massachusetts’s unit carries the higher rating."
+    },
+    {
+      "title": "Sacramento State pass offense vs Massachusetts pass defense",
+      "att": {
+        "team": "Sacramento State",
+        "label": "pass offense",
+        "v": "35.8",
+        "rank": "#129 of 132",
+        "note": null
+      },
+      "def": {
+        "team": "Massachusetts",
+        "label": "pass defense",
+        "v": "45.6",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "complete": true,
+      "read": "Sacramento State’s pass offense rates 35.8 (#129 of 132) against Massachusetts’s pass defense at 45.6. Massachusetts’s unit carries the higher rating."
+    },
+    {
+      "title": "Sacramento State run offense vs Massachusetts run defense",
+      "att": {
+        "team": "Sacramento State",
+        "label": "run offense",
+        "v": "41.6",
+        "rank": "#115 of 133",
+        "note": null
+      },
+      "def": {
+        "team": "Massachusetts",
+        "label": "run defense",
+        "v": "61.9",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "complete": true,
+      "read": "Sacramento State’s run offense rates 41.6 (#115 of 133) against Massachusetts’s run defense at 61.9. Massachusetts’s unit carries the higher rating."
+    },
+    {
+      "title": "Massachusetts QB room vs Sacramento State secondary",
+      "att": {
+        "team": "Massachusetts",
+        "label": "QB room",
+        "v": "56.5",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "def": {
+        "team": "Sacramento State",
+        "label": "secondary",
+        "v": "40.1",
+        "rank": "#133 of 133",
+        "note": null
+      },
+      "complete": true,
+      "read": "Massachusetts’s QB room rates 56.5 against Sacramento State’s secondary at 40.1 (#133 of 133). Massachusetts’s unit carries the higher rating."
+    },
+    {
+      "title": "Sacramento State QB room vs Massachusetts secondary",
+      "att": {
+        "team": "Sacramento State",
+        "label": "QB room",
+        "v": "51.4",
+        "rank": "#133 of 133",
+        "note": null
+      },
+      "def": {
+        "team": "Massachusetts",
+        "label": "secondary",
+        "v": "51.8",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "complete": true,
+      "read": "Sacramento State’s QB room rates 51.4 (#133 of 133) against Massachusetts’s secondary at 51.8. Massachusetts’s unit carries the higher rating."
+    },
+    {
+      "title": "Massachusetts offensive line vs Sacramento State defensive line",
+      "att": {
+        "team": "Massachusetts",
+        "label": "offensive line",
+        "v": "45.0",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "def": {
+        "team": "Sacramento State",
+        "label": "defensive line",
+        "v": "57.0",
+        "rank": "#28 of 133",
+        "note": null
+      },
+      "complete": true,
+      "read": "Massachusetts’s offensive line rates 45.0 against Sacramento State’s defensive line at 57.0 (#28 of 133). Sacramento State’s unit carries the higher rating."
+    },
+    {
+      "title": "Sacramento State offensive line vs Massachusetts defensive line",
+      "att": {
+        "team": "Sacramento State",
+        "label": "offensive line",
+        "v": "43.4",
+        "rank": "#128 of 133",
+        "note": null
+      },
+      "def": {
+        "team": "Massachusetts",
+        "label": "defensive line",
+        "v": "50.6",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "complete": true,
+      "read": "Sacramento State’s offensive line rates 43.4 (#128 of 133) against Massachusetts’s defensive line at 50.6. Massachusetts’s unit carries the higher rating."
+    },
+    {
+      "title": "Massachusetts running backs vs Sacramento State linebackers",
+      "att": {
+        "team": "Massachusetts",
+        "label": "running backs",
+        "v": "53.3",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "def": {
+        "team": "Sacramento State",
+        "label": "linebackers",
+        "v": "55.7",
+        "rank": "#34 of 133",
+        "note": null
+      },
+      "complete": true,
+      "read": "Massachusetts’s running backs rates 53.3 against Sacramento State’s linebackers at 55.7 (#34 of 133). Sacramento State’s unit carries the higher rating."
+    },
+    {
+      "title": "Sacramento State running backs vs Massachusetts linebackers",
+      "att": {
+        "team": "Sacramento State",
+        "label": "running backs",
+        "v": "54.0",
+        "rank": "#131 of 133",
+        "note": null
+      },
+      "def": {
+        "team": "Massachusetts",
+        "label": "linebackers",
+        "v": "49.9",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "complete": true,
+      "read": "Sacramento State’s running backs rates 54.0 (#131 of 133) against Massachusetts’s linebackers at 49.9. Sacramento State’s unit carries the higher rating."
+    },
+    {
+      "title": "Massachusetts receivers vs Sacramento State secondary",
+      "att": {
+        "team": "Massachusetts",
+        "label": "receivers",
+        "v": "54.6",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "def": {
+        "team": "Sacramento State",
+        "label": "secondary",
+        "v": "40.1",
+        "rank": "#133 of 133",
+        "note": null
+      },
+      "complete": true,
+      "read": "Massachusetts’s receivers rates 54.6 against Sacramento State’s secondary at 40.1 (#133 of 133). Massachusetts’s unit carries the higher rating."
+    },
+    {
+      "title": "Sacramento State receivers vs Massachusetts secondary",
+      "att": {
+        "team": "Sacramento State",
+        "label": "receivers",
+        "v": "52.5",
+        "rank": "#133 of 133",
+        "note": null
+      },
+      "def": {
+        "team": "Massachusetts",
+        "label": "secondary",
+        "v": "51.8",
+        "rank": null,
+        "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      },
+      "complete": true,
+      "read": "Sacramento State’s receivers rates 52.5 (#133 of 133) against Massachusetts’s secondary at 51.8. Sacramento State’s unit carries the higher rating."
+    }
+  ],
+  "advantages": {
+    "away": [],
+    "home": [],
+    "measured": [],
+    "measured_note": null,
+    "unproven": [],
+    "note": "An advantage is only claimed where BOTH teams carry a national rank in that category — the national rank is the one scale on which a QB room and a run defence are comparable. A category where one side is unrated appears here as a measurement and as uncertainty, never as an edge."
+  },
+  "compare": {
+    "cols": [
+      "Massachusetts",
+      "Sacramento State"
+    ],
+    "groups": [
+      {
+        "title": "Team rating",
+        "rows": [
+          {
+            "cat": "overall",
+            "k": "ETSR (overall)",
+            "note": "points vs an average FBS team, neutral field",
+            "a": {
+              "v": "-5.4",
+              "n": -5.4,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "-11.4",
+              "n": -11.43,
+              "rank": "#133 of 133",
+              "rank_n": 133,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 6,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "talent",
+            "k": "Talent",
+            "note": null,
+            "a": {
+              "v": "40.2",
+              "n": 40.2,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "27.9",
+              "n": 27.9,
+              "rank": "#133 of 133",
+              "rank_n": 133,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 12.3,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "performance",
+            "k": "Performance",
+            "note": null,
+            "a": {
+              "v": "50.4",
+              "n": 50.4,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "25.9",
+              "n": 25.9,
+              "rank": "#133 of 133",
+              "rank_n": 133,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 24.5,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "scheme_fit",
+            "k": "Scheme fit",
+            "note": "personnel against this team’s own tendencies",
+            "a": {
+              "v": "47.6",
+              "n": 47.6,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "47.7",
+              "n": 47.7,
+              "rank": "#125 of 133",
+              "rank_n": 125,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.1,
+              "rank_gap": null
+            }
+          }
+        ]
+      },
+      {
+        "title": "Units",
+        "rows": [
+          {
+            "cat": "offense",
+            "k": "Offense",
+            "note": null,
+            "a": {
+              "v": "46.9",
+              "n": 46.9,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "39.5",
+              "n": 39.5,
+              "rank": "#124 of 133",
+              "rank_n": 124,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 7.4,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "defense",
+            "k": "Defense",
+            "note": null,
+            "a": {
+              "v": "53.7",
+              "n": 53.7,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "35.9",
+              "n": 35.9,
+              "rank": "#130 of 133",
+              "rank_n": 130,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 17.8,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "special_teams",
+            "k": "Special teams",
+            "note": null,
+            "a": {
+              "v": null,
+              "n": null,
+              "rank": null,
+              "rank_n": null,
+              "note": null
+            },
+            "h": {
+              "v": "51.4",
+              "n": 51.4,
+              "rank": "#12 of 126",
+              "rank_n": 12,
+              "note": null
+            },
+            "edge": null
+          },
+          {
+            "cat": "run_offense",
+            "k": "Run offense",
+            "note": null,
+            "a": {
+              "v": "46.6",
+              "n": 46.6,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "41.6",
+              "n": 41.6,
+              "rank": "#115 of 133",
+              "rank_n": 115,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 5,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "pass_offense",
+            "k": "Pass offense",
+            "note": null,
+            "a": {
+              "v": "46.2",
+              "n": 46.2,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "35.8",
+              "n": 35.8,
+              "rank": "#129 of 132",
+              "rank_n": 129,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 10.4,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "run_defense",
+            "k": "Run defense",
+            "note": null,
+            "a": {
+              "v": "61.9",
+              "n": 61.9,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "45.3",
+              "n": 45.3,
+              "rank": "#86 of 133",
+              "rank_n": 86,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 16.6,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "pass_defense",
+            "k": "Pass defense",
+            "note": null,
+            "a": {
+              "v": "45.6",
+              "n": 45.6,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "29.2",
+              "n": 29.2,
+              "rank": "#132 of 133",
+              "rank_n": 132,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 16.4,
+              "rank_gap": null
+            }
+          }
+        ]
+      },
+      {
+        "title": "Position groups",
+        "rows": [
+          {
+            "cat": "qb",
+            "k": "QB room",
+            "note": null,
+            "a": {
+              "v": "56.5",
+              "n": 56.5,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "51.4",
+              "n": 51.4,
+              "rank": "#133 of 133",
+              "rank_n": 133,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 5.1,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "ol",
+            "k": "Offensive line",
+            "note": null,
+            "a": {
+              "v": "45.0",
+              "n": 45,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "43.4",
+              "n": 43.4,
+              "rank": "#128 of 133",
+              "rank_n": 128,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 1.6,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "wr",
+            "k": "Receivers",
+            "note": null,
+            "a": {
+              "v": "54.6",
+              "n": 54.6,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "52.5",
+              "n": 52.5,
+              "rank": "#133 of 133",
+              "rank_n": 133,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 2.1,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "te",
+            "k": "Tight ends",
+            "note": "rated by the player layer; the board publishes no national TE rank",
+            "a": {
+              "v": "53.2",
+              "n": 53.2,
+              "rank": null,
+              "rank_n": null,
+              "note": "rated, held out of the national rank by the confidence gate"
+            },
+            "h": {
+              "v": "51.8",
+              "n": 51.8,
+              "rank": null,
+              "rank_n": null,
+              "note": "rated, held out of the national rank by the confidence gate"
+            },
+            "edge": {
+              "side": "a",
+              "gap": 1.4,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "rb",
+            "k": "Running backs",
+            "note": null,
+            "a": {
+              "v": "53.3",
+              "n": 53.3,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "54.0",
+              "n": 54,
+              "rank": "#131 of 133",
+              "rank_n": 131,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.7,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "dl",
+            "k": "Defensive line",
+            "note": null,
+            "a": {
+              "v": "50.6",
+              "n": 50.6,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "57.0",
+              "n": 57,
+              "rank": "#28 of 133",
+              "rank_n": 28,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 6.4,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "lb",
+            "k": "Linebackers",
+            "note": null,
+            "a": {
+              "v": "49.9",
+              "n": 49.9,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "55.7",
+              "n": 55.7,
+              "rank": "#34 of 133",
+              "rank_n": 34,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 5.8,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "secondary",
+            "k": "Secondary",
+            "note": null,
+            "a": {
+              "v": "51.8",
+              "n": 51.8,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "40.1",
+              "n": 40.1,
+              "rank": "#133 of 133",
+              "rank_n": 133,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 11.7,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "k_room",
+            "k": "Kicking",
+            "note": null,
+            "a": {
+              "v": "55.2",
+              "n": 55.2,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "56.0",
+              "n": 56,
+              "rank": "#75 of 133",
+              "rank_n": 75,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.8,
+              "rank_gap": null
+            }
+          }
+        ]
+      },
+      {
+        "title": "Roster shape",
+        "rows": [
+          {
+            "cat": "depth",
+            "k": "Depth",
+            "note": "quality behind the projected starters",
+            "a": {
+              "v": "53.0",
+              "n": 53,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "52.2",
+              "n": 52.2,
+              "rank": "#132 of 133",
+              "rank_n": 132,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 0.8,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "continuity",
+            "k": "Continuity",
+            "note": "how much of last season is still here",
+            "a": {
+              "v": "38.6",
+              "n": 38.6,
+              "rank": null,
+              "rank_n": null,
+              "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+            },
+            "h": {
+              "v": "35.1",
+              "n": 35.1,
+              "rank": "#109 of 133",
+              "rank_n": 109,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 3.5,
+              "rank_gap": null
+            }
+          }
+        ]
+      }
+    ],
+    "one_sided_team": null,
+    "one_sided_note": null
+  },
+  "uncertainty": {
+    "items": [
+      {
+        "sev": "HIGH",
+        "label": "information missing",
+        "text": "The projection could be wrong because 50% of the model’s own input contract was empty for this game — no roster, starter or injury context reached it, so the number leans on team strength more than it should.",
+        "widening": null
+      },
+      {
+        "sev": "HIGH",
+        "label": "Massachusetts — low sample size",
+        "text": "1.9 FBS-equivalent games played.",
+        "widening": null
+      },
+      {
+        "sev": "HIGH",
+        "label": "Massachusetts — fcs dominated sample",
+        "text": "67% of games were against a pooled non-FBS opponent. Most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "market disagreement",
+        "text": "The market disagrees by 8.3 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "stale",
+        "text": "odds is 98h old",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Massachusetts — injury uncertainty",
+        "text": "100% of projected starter value has no availability record.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Massachusetts — extreme transfer turnover",
+        "text": "80% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Massachusetts — thin offensive data",
+        "text": "143 offensive plays observed. Too few offensive snaps to score the offensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Massachusetts — thin defensive data",
+        "text": "133 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Sacramento State — injury uncertainty",
+        "text": "100% of projected starter value has no availability record.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Sacramento State — thin offensive data",
+        "text": "180 offensive plays observed. Too few offensive snaps to score the offensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Sacramento State — thin defensive data",
+        "text": "169 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Sacramento State — prior season missing",
+        "text": "no prior-season rating on file, so the prior term rests on talent alone. No prior-season rating exists (an FBS newcomer, or a season the feed never published), so the PRIOR term rests on talent alone",
+        "widening": null
+      },
+      {
+        "sev": "LOW",
+        "label": "early season",
+        "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
+        "widening": "3%"
+      }
+    ],
+    "unmeasured": [
+      {
+        "item": "Home starting quarterback",
+        "why": "starting QB not supplied for home"
+      },
+      {
+        "item": "Away starting quarterback",
+        "why": "starting QB not supplied for away"
+      },
+      {
+        "item": "Home availability / injuries",
+        "why": "no injury report supplied for home"
+      },
+      {
+        "item": "Away availability / injuries",
+        "why": "no injury report supplied for away"
+      },
+      {
+        "item": "Weather at kickoff",
+        "why": "no weather supplied"
+      },
+      {
+        "item": "Off-field, culture and NIL situation",
+        "why": "no public feed for NIL figures, locker-room reporting or discipline exists that this engine reads; nothing is inferred and the gap is carried as uncertainty"
+      },
+      {
+        "item": "Coaching and coordinator continuity",
+        "why": "no public coaching-tenure feed is wired; a new coordinator changes a team’s identity in ways the ratings only learn after the fact"
+      },
+      {
+        "item": "Motivation, lookahead and locker-room state",
+        "why": "not measurable from any public source; treated as variance, never as a point adjustment"
+      },
+      {
+        "item": "Massachusetts — recruiting ratings",
+        "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+      },
+      {
+        "item": "Massachusetts — availability and injuries",
+        "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+      },
+      {
+        "item": "Sacramento State — recruiting ratings",
+        "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+      },
+      {
+        "item": "Sacramento State — availability and injuries",
+        "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+      }
+    ],
+    "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
+  },
+  "missing": [
+    "Massachusetts — etsr (overall): confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — talent: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — performance: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — offense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — defense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — special teams: no rating was published for this category.",
+    "Massachusetts — run offense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — pass offense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — run defense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — pass defense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — qb room: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — offensive line: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — receivers: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — running backs: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — defensive line: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — linebackers: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — secondary: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — depth: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "Massachusetts — continuity: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+    "No availability report reached William Watson III — unknown is carried as unknown, never as healthy.",
+    "No availability report reached Jackson Sharman — unknown is carried as unknown, never as healthy."
+  ],
+  "panels": [],
+  "roster": {
+    "cols": [
+      "Massachusetts",
+      "Sacramento State"
+    ],
+    "rows": [
+      {
+        "k": "Returning production value",
+        "note": "share of last season’s production value still on the roster",
+        "a": "21%",
+        "h": null,
+        "edge": null
+      },
+      {
+        "k": "Returning headcount",
+        "note": "share of the roster that was here last season",
+        "a": "31%",
+        "h": null,
+        "edge": null
+      },
+      {
+        "k": "QB-room continuity",
+        "note": "is the projected starter last season’s player",
+        "a": "20%",
+        "h": "0%",
+        "edge": {
+          "side": "a",
+          "gap": 0.2
+        }
+      },
+      {
+        "k": "Offensive-line continuity",
+        "note": null,
+        "a": "56%",
+        "h": "50%",
+        "edge": {
+          "side": "a",
+          "gap": 0.05600000000000005
+        }
+      },
+      {
+        "k": "Returning starters",
+        "note": null,
+        "a": "50%",
+        "h": null,
+        "edge": null
+      },
+      {
+        "k": "Transfers in / out",
+        "note": "portal movement counted from the roster feed",
+        "a": "26 in / 8 out",
+        "h": "28 in / 0 out",
+        "edge": null
+      },
+      {
+        "k": "Transfer starters in / out",
+        "note": null,
+        "a": "1 in / 1 out",
+        "h": "2 in / 0 out",
+        "edge": null
+      },
+      {
+        "k": "Starter quality",
+        "note": "projected starters, weighted by position value",
+        "a": "55.0",
+        "h": "53.2",
+        "edge": {
+          "side": "a",
+          "gap": 1.7999999999999972
+        }
+      },
+      {
+        "k": "Rotation quality",
+        "note": null,
+        "a": "52.1",
+        "h": "50.5",
+        "edge": {
+          "side": "a",
+          "gap": 1.6000000000000014
+        }
+      },
+      {
+        "k": "Depth quality",
+        "note": "behind the projected starters",
+        "a": "53.0",
+        "h": "52.2",
+        "edge": {
+          "side": "a",
+          "gap": 0.7999999999999972
+        }
+      },
+      {
+        "k": "Availability records",
+        "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
+        "a": "none on file — 100% unknown",
+        "h": "none on file — 100% unknown",
+        "edge": null
+      },
+      {
+        "k": "Data confidence",
+        "note": "how much EdgeDesk knows about this roster, not how good it is",
+        "a": "7%",
+        "h": "25%",
+        "edge": {
+          "side": "h",
+          "gap": 0.173
+        }
+      }
+    ],
+    "highlights": [
+      {
+        "k": "Starter quality",
+        "lead": "Massachusetts",
+        "text": "Massachusetts leads on starter quality — Massachusetts 55.0, Sacramento State 53.2."
+      },
+      {
+        "k": "Rotation quality",
+        "lead": "Massachusetts",
+        "text": "Massachusetts leads on rotation quality — Massachusetts 52.1, Sacramento State 50.5."
+      },
+      {
+        "k": "Depth quality",
+        "lead": "Massachusetts",
+        "text": "Massachusetts leads on depth quality — Massachusetts 53.0, Sacramento State 52.2."
+      },
+      {
+        "k": "QB-room continuity",
+        "lead": "Massachusetts",
+        "text": "Massachusetts leads on qb-room continuity — Massachusetts 20%, Sacramento State 0%."
+      },
+      {
+        "k": "Data confidence",
+        "lead": "Sacramento State",
+        "text": "Sacramento State leads on data confidence — Massachusetts 7%, Sacramento State 25%."
+      }
+    ],
+    "note": "Roster construction from the committed rankings build. No recruiting star and no NIL figure appears here: no public feed this repo reads carries either, and a number nobody published is not estimated in its place."
+  },
+  "lede": [
+    "Massachusetts carries the stronger underlying team rating — -5.4 against -11.4, a 6.0-point separation on a neutral field before home advantage, travel or rest.",
+    "EdgeDesk makes it Sacramento State -3.8 before any sportsbook number is consulted, with Sacramento State winning 60% of simulations.",
+    "Data confidence on this matchup is 77% — high by this board’s standards, so the margin is the strongest part of the read."
+  ],
+  "headline": "EdgeDesk projects Sacramento State 28, Massachusetts 25.",
+  "state": {
+    "label": "INVESTIGATE",
+    "note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+    "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
+  },
+  "facts": [
+    {
+      "id": "game.away",
+      "claim": "the away team",
+      "value": "Massachusetts",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.away"
+    },
+    {
+      "id": "game.home",
+      "claim": "the home team",
+      "value": "Sacramento State",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.home"
+    },
+    {
+      "id": "game.kickoff",
+      "claim": "the kickoff time",
+      "value": "2026-09-27T01:00:00.000Z",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.kickoff"
+    },
+    {
+      "id": "game.venue",
+      "claim": "the venue",
+      "value": "Hornet Stadium",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.venue"
+    },
+    {
+      "id": "game.neutral_site",
+      "claim": "whether the game is at a neutral site",
+      "value": false,
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.neutral_site"
+    },
+    {
+      "id": "game.week",
+      "claim": "the week",
+      "value": 4,
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.week"
+    },
+    {
+      "id": "game.season",
+      "claim": "the season",
+      "value": 2026,
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.season"
+    },
+    {
+      "id": "game.network",
+      "claim": "the television network",
+      "value": null,
+      "tier": "UNKNOWN",
+      "source": "no broadcast-rights feed is held by this repository",
+      "path": null
+    },
+    {
+      "id": "model.fair_spread",
+      "claim": "the EdgeDesk fair spread",
+      "value": "Sacramento State -3.8",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.fair_spread_text"
+    },
+    {
+      "id": "model.fair_spread_n",
+      "claim": "the EdgeDesk fair spread, numerically",
+      "value": 3.830325822124861,
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.fair_spread"
+    },
+    {
+      "id": "model.favourite",
+      "claim": "the team EdgeDesk makes the favourite",
+      "value": "Sacramento State",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.favourite"
+    },
+    {
+      "id": "model.underdog",
+      "claim": "the team EdgeDesk makes the underdog",
+      "value": "Massachusetts",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.underdog"
+    },
+    {
+      "id": "model.total",
+      "claim": "the EdgeDesk fair total",
+      "value": "52.9",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.total"
+    },
+    {
+      "id": "model.score",
+      "claim": "the EdgeDesk projected score",
+      "value": "25-28",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.score"
+    },
+    {
+      "id": "model.win_prob",
+      "claim": "the EdgeDesk win probability",
+      "value": "Sacramento State 60%",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.win_prob"
+    },
+    {
+      "id": "model.range",
+      "claim": "the EdgeDesk outcome range",
+      "value": "-19.2 to +24.8 from Sacramento State’s perspective",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.outcome_range"
+    },
+    {
+      "id": "model.confidence",
+      "claim": "EdgeDesk’s data confidence",
+      "value": "77%",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.confidence_pct"
+    },
+    {
+      "id": "model.status",
+      "claim": "EdgeDesk’s research state on this game",
+      "value": "INVESTIGATE",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.status"
+    },
+    {
+      "id": "model.validation",
+      "claim": "what EdgeDesk has proved about this model out of sample",
+      "value": "UNPROVEN — research only. Nothing on this page is graded as a bet.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.validation"
+    },
+    {
+      "id": "model.engine",
+      "claim": "the model version behind these numbers",
+      "value": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.engine"
+    },
+    {
+      "id": "market.spread",
+      "claim": "the sportsbook spread EdgeDesk compared against",
+      "value": "Sacramento State +4.5",
+      "tier": "VERIFIED_FACT",
+      "source": "a captured sportsbook quote at captured (stale 98h) · FanDuel",
+      "path": "market.market"
+    },
+    {
+      "id": "market.book",
+      "claim": "the book the quote came from",
+      "value": "captured (stale 98h) · FanDuel",
+      "tier": "VERIFIED_FACT",
+      "source": "the capture record",
+      "path": "market.book"
+    },
+    {
+      "id": "market.difference",
+      "claim": "the gap between EdgeDesk and the market",
+      "value": "8.3 points",
+      "tier": "CALCULATED_METRIC",
+      "source": "EdgeDesk’s own number minus the captured price",
+      "path": "market.difference"
+    },
+    {
+      "id": "market.total",
+      "claim": "the sportsbook total",
+      "value": "48.5",
+      "tier": "VERIFIED_FACT",
+      "source": "a captured sportsbook quote",
+      "path": "market.total_market"
+    },
+    {
+      "id": "market.capture_age",
+      "claim": "how old the captured quote was at capture",
+      "value": "98 hours old",
+      "tier": "CALCULATED_METRIC",
+      "source": "the capture record",
+      "path": "market.capture_age"
+    },
+    {
+      "id": "market.classification",
+      "claim": "how EdgeDesk classifies the gap",
+      "value": "INVESTIGATE",
+      "tier": "INTERPRETATION",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "market.classification"
+    },
+    {
+      "id": "research.label",
+      "claim": "EdgeDesk’s research label for this game",
+      "value": "LIMITED DATA",
+      "tier": "INTERPRETATION",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.label"
+    },
+    {
+      "id": "research.gap",
+      "claim": "the market gap, measured from EdgeDesk’s raw margin",
+      "value": "8.3 pts toward Sacramento State",
+      "tier": "CALCULATED_METRIC",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.market_gap"
+    },
+    {
+      "id": "research.confidence",
+      "claim": "EdgeDesk’s confidence tier",
+      "value": "High",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.confidence"
+    },
+    {
+      "id": "research.reliability",
+      "claim": "EdgeDesk’s reliability score: 0-100 data quality, freshness, source agreement and projection stability — not a probability",
+      "value": "85 · STRONG",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.reliability"
+    },
+    {
+      "id": "research.lean.0",
+      "claim": "a measured reason EdgeDesk leans Sacramento State",
+      "value": "+4.1 pts home-field advantage",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.drivers.reasons[0]"
+    },
+    {
+      "id": "research.lean.1",
+      "claim": "a measured reason EdgeDesk leans Sacramento State",
+      "value": "The market is 8.3 pts away from EdgeDesk’s number, toward Sacramento State (market: Massachusetts -4.5)",
+      "tier": "CALCULATED_METRIC",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.drivers.reasons[1]"
+    },
+    {
+      "id": "research.status",
+      "claim": "the projection’s status against its own published history",
+      "value": "STABLE",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.projection_status"
+    },
+    {
+      "id": "driver.0",
+      "claim": "a published driver of the EdgeDesk number",
+      "value": "Playing at Sacramento State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "drivers.rows[0]"
+    },
+    {
+      "id": "driver.1",
+      "claim": "a published driver of the EdgeDesk number",
+      "value": "Massachusetts is the better football team by 0.6 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team (-0.6)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "drivers.rows[1]"
+    },
+    {
+      "id": "driver.2",
+      "claim": "a published driver of the EdgeDesk number",
+      "value": "Stylistically the matchup favours Sacramento State by 0.4 points: field position (+0.4)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "drivers.rows[2]"
+    },
+    {
+      "id": "matchup.0",
+      "claim": "a published matchup read",
+      "value": "Massachusetts’s pass offense rates 46.2 against Sacramento State’s pass defense at 29.2 (#132 of 133). Massachusetts’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[0]"
+    },
+    {
+      "id": "matchup.1",
+      "claim": "a published matchup read",
+      "value": "Massachusetts’s run offense rates 46.6 against Sacramento State’s run defense at 45.3 (#86 of 133). Massachusetts’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[1]"
+    },
+    {
+      "id": "matchup.2",
+      "claim": "a published matchup read",
+      "value": "Sacramento State’s pass offense rates 35.8 (#129 of 132) against Massachusetts’s pass defense at 45.6. Massachusetts’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[2]"
+    },
+    {
+      "id": "matchup.3",
+      "claim": "a published matchup read",
+      "value": "Sacramento State’s run offense rates 41.6 (#115 of 133) against Massachusetts’s run defense at 61.9. Massachusetts’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[3]"
+    },
+    {
+      "id": "matchup.4",
+      "claim": "a published matchup read",
+      "value": "Massachusetts’s QB room rates 56.5 against Sacramento State’s secondary at 40.1 (#133 of 133). Massachusetts’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[4]"
+    },
+    {
+      "id": "matchup.5",
+      "claim": "a published matchup read",
+      "value": "Sacramento State’s QB room rates 51.4 (#133 of 133) against Massachusetts’s secondary at 51.8. Massachusetts’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[5]"
+    },
+    {
+      "id": "matchup.6",
+      "claim": "a published matchup read",
+      "value": "Massachusetts’s offensive line rates 45.0 against Sacramento State’s defensive line at 57.0 (#28 of 133). Sacramento State’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[6]"
+    },
+    {
+      "id": "matchup.7",
+      "claim": "a published matchup read",
+      "value": "Sacramento State’s offensive line rates 43.4 (#128 of 133) against Massachusetts’s defensive line at 50.6. Massachusetts’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[7]"
+    },
+    {
+      "id": "matchup.8",
+      "claim": "a published matchup read",
+      "value": "Massachusetts’s running backs rates 53.3 against Sacramento State’s linebackers at 55.7 (#34 of 133). Sacramento State’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[8]"
+    },
+    {
+      "id": "matchup.9",
+      "claim": "a published matchup read",
+      "value": "Sacramento State’s running backs rates 54.0 (#131 of 133) against Massachusetts’s linebackers at 49.9. Sacramento State’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[9]"
+    },
+    {
+      "id": "matchup.10",
+      "claim": "a published matchup read",
+      "value": "Massachusetts’s receivers rates 54.6 against Sacramento State’s secondary at 40.1 (#133 of 133). Massachusetts’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[10]"
+    },
+    {
+      "id": "matchup.11",
+      "claim": "a published matchup read",
+      "value": "Sacramento State’s receivers rates 52.5 (#133 of 133) against Massachusetts’s secondary at 51.8. Sacramento State’s unit carries the higher rating.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[11]"
+    },
+    {
+      "id": "uncertainty.0",
+      "claim": "a published reason the number could move",
+      "value": "The projection could be wrong because 50% of the model’s own input contract was empty for this game — no roster, starter or injury context reached it, so the number leans on team strength more than it should.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[0]"
+    },
+    {
+      "id": "uncertainty.1",
+      "claim": "a published reason the number could move",
+      "value": "1.9 FBS-equivalent games played.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[1]"
+    },
+    {
+      "id": "uncertainty.2",
+      "claim": "a published reason the number could move",
+      "value": "67% of games were against a pooled non-FBS opponent. Most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[2]"
+    },
+    {
+      "id": "uncertainty.3",
+      "claim": "a published reason the number could move",
+      "value": "The market disagrees by 8.3 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[3]"
+    },
+    {
+      "id": "uncertainty.4",
+      "claim": "a published reason the number could move",
+      "value": "odds is 98h old",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[4]"
+    },
+    {
+      "id": "uncertainty.5",
+      "claim": "a published reason the number could move",
+      "value": "100% of projected starter value has no availability record.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[5]"
+    },
+    {
+      "id": "uncertainty.6",
+      "claim": "a published reason the number could move",
+      "value": "80% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[6]"
+    },
+    {
+      "id": "uncertainty.7",
+      "claim": "a published reason the number could move",
+      "value": "143 offensive plays observed. Too few offensive snaps to score the offensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[7]"
+    },
+    {
+      "id": "uncertainty.8",
+      "claim": "a published reason the number could move",
+      "value": "133 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[8]"
+    },
+    {
+      "id": "uncertainty.9",
+      "claim": "a published reason the number could move",
+      "value": "100% of projected starter value has no availability record.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[9]"
+    },
+    {
+      "id": "uncertainty.10",
+      "claim": "a published reason the number could move",
+      "value": "180 offensive plays observed. Too few offensive snaps to score the offensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[10]"
+    },
+    {
+      "id": "uncertainty.11",
+      "claim": "a published reason the number could move",
+      "value": "169 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[11]"
+    },
+    {
+      "id": "uncertainty.12",
+      "claim": "a published reason the number could move",
+      "value": "no prior-season rating on file, so the prior term rests on talent alone. No prior-season rating exists (an FBS newcomer, or a season the feed never published), so the PRIOR term rests on talent alone",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[12]"
+    },
+    {
+      "id": "uncertainty.13",
+      "claim": "a published reason the number could move",
+      "value": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[13]"
+    },
+    {
+      "id": "unmeasured.0",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Home starting quarterback — starting QB not supplied for home",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[0]"
+    },
+    {
+      "id": "unmeasured.1",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Away starting quarterback — starting QB not supplied for away",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[1]"
+    },
+    {
+      "id": "unmeasured.2",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Home availability / injuries — no injury report supplied for home",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[2]"
+    },
+    {
+      "id": "unmeasured.3",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Away availability / injuries — no injury report supplied for away",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[3]"
+    },
+    {
+      "id": "unmeasured.4",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Weather at kickoff — no weather supplied",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[4]"
+    },
+    {
+      "id": "unmeasured.5",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Off-field, culture and NIL situation — no public feed for NIL figures, locker-room reporting or discipline exists that this engine reads; nothing is inferred and the gap is carried as uncertainty",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[5]"
+    },
+    {
+      "id": "unmeasured.6",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Coaching and coordinator continuity — no public coaching-tenure feed is wired; a new coordinator changes a team’s identity in ways the ratings only learn after the fact",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[6]"
+    },
+    {
+      "id": "unmeasured.7",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Motivation, lookahead and locker-room state — not measurable from any public source; treated as variance, never as a point adjustment",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[7]"
+    },
+    {
+      "id": "unmeasured.8",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Massachusetts — recruiting ratings — no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[8]"
+    },
+    {
+      "id": "unmeasured.9",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Massachusetts — availability and injuries — no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[9]"
+    },
+    {
+      "id": "unmeasured.10",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Sacramento State — recruiting ratings — no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[10]"
+    },
+    {
+      "id": "unmeasured.11",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Sacramento State — availability and injuries — no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[11]"
+    },
+    {
+      "id": "missing.0",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — etsr (overall): confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[0]"
+    },
+    {
+      "id": "missing.1",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — talent: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[1]"
+    },
+    {
+      "id": "missing.2",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — performance: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[2]"
+    },
+    {
+      "id": "missing.3",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — offense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[3]"
+    },
+    {
+      "id": "missing.4",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — defense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[4]"
+    },
+    {
+      "id": "missing.5",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — special teams: no rating was published for this category.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[5]"
+    },
+    {
+      "id": "missing.6",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — run offense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[6]"
+    },
+    {
+      "id": "missing.7",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — pass offense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[7]"
+    },
+    {
+      "id": "missing.8",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — run defense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[8]"
+    },
+    {
+      "id": "missing.9",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — pass defense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[9]"
+    },
+    {
+      "id": "missing.10",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — qb room: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[10]"
+    },
+    {
+      "id": "missing.11",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — offensive line: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[11]"
+    },
+    {
+      "id": "missing.12",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — receivers: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[12]"
+    },
+    {
+      "id": "missing.13",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — running backs: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[13]"
+    },
+    {
+      "id": "missing.14",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — defensive line: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[14]"
+    },
+    {
+      "id": "missing.15",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — linebackers: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[15]"
+    },
+    {
+      "id": "missing.16",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — secondary: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[16]"
+    },
+    {
+      "id": "missing.17",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — depth: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[17]"
+    },
+    {
+      "id": "missing.18",
+      "claim": "an input missing from this build",
+      "value": "Massachusetts — continuity: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[18]"
+    },
+    {
+      "id": "missing.19",
+      "claim": "an input missing from this build",
+      "value": "No availability report reached William Watson III — unknown is carried as unknown, never as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[19]"
+    },
+    {
+      "id": "missing.20",
+      "claim": "an input missing from this build",
+      "value": "No availability report reached Jackson Sharman — unknown is carried as unknown, never as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[20]"
+    }
+  ],
+  "coverage": {
+    "wanted": 11,
+    "present": 11,
+    "present_ids": [
+      "model.fair_spread",
+      "model.total",
+      "model.score",
+      "model.win_prob",
+      "model.range",
+      "model.confidence",
+      "market.spread",
+      "market.total",
+      "driver.0",
+      "matchup.0",
+      "uncertainty.0"
+    ],
+    "absent": [],
+    "priced": true,
+    "market_available": true,
+    "model_confidence_pct": 77,
+    "model_inputs_reached_pct": 69,
+    "model_status": "INVESTIGATE"
+  },
+  "sources": [
+    "cfbfastR schedules (public, keyless)",
+    "EdgeDesk rankings build 2026 Week 4",
+    "a committed sportsbook-quote snapshot"
+  ],
+  "research": {
+    "kind": "CFB_GAME",
+    "game": {
+      "away": "Massachusetts",
+      "home": "Sacramento State",
+      "title": "Massachusetts at Sacramento State",
+      "when": "2026-09-27 01:00 UTC",
+      "kickoff": "2026-09-27T01:00:00.000Z",
+      "venue": "Hornet Stadium",
+      "neutral": false,
+      "week": "Week 4",
+      "season": "2026",
+      "game_id": "401866429",
+      "week_no": 4,
+      "season_no": 2026,
+      "conference_line": "Mid-American conference game",
+      "away_conference": "Mid-American",
+      "home_conference": "Mid-American"
+    },
+    "lede": [
+      "Massachusetts carries the stronger underlying team rating — -5.4 against -11.4, a 6.0-point separation on a neutral field before home advantage, travel or rest.",
+      "EdgeDesk makes it Sacramento State -3.8 before any sportsbook number is consulted, with Sacramento State winning 60% of simulations.",
+      "Data confidence on this matchup is 77% — high by this board’s standards, so the margin is the strongest part of the read."
+    ],
+    "projection": {
+      "priced": true,
+      "fair_spread": 3.830325822124861,
+      "fair_spread_text": "Sacramento State -3.8",
+      "fair_spread_raw_text": "Sacramento State -3.8",
+      "near_pickem": false,
+      "raw_margin_text": null,
+      "favourite": "Sacramento State",
+      "underdog": "Massachusetts",
+      "margin": "3.8",
+      "total": "52.9",
+      "score": {
+        "away": {
+          "team": "Massachusetts",
+          "points": "25"
+        },
+        "home": {
+          "team": "Sacramento State",
+          "points": "28"
+        },
+        "note": "Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
+      },
+      "score_absent_reason": null,
+      "win_prob": {
+        "home": "Sacramento State",
+        "away": "Massachusetts",
+        "home_pct": 60,
+        "away_pct": 40,
+        "home_text": "60%",
+        "away_text": "40%",
+        "bounded": false,
+        "bounded_note": null,
+        "favourite": "Sacramento State",
+        "favourite_pct": 60,
+        "favourite_text": "60%"
+      },
+      "outcome_range": {
+        "basis_team": "Sacramento State",
+        "p10": "-19.2",
+        "median": "+2.8",
+        "p90": "+24.8",
+        "sigma": "15.1",
+        "volatility": "40.04",
+        "volatility_discriminates": false,
+        "note": "Quoted from Sacramento State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
+      },
+      "confidence_pct": 77,
+      "inputs_reached_pct": 69,
+      "input_contract": {
+        "fields": 26,
+        "applicable": 26,
+        "known": 18,
+        "priced": 11,
+        "priced_coverage_pct": 42,
+        "by_state": {
+          "USABLE": 11,
+          "RESEARCH_ONLY": 7,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 4
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "off_field",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Sacramento State has no prior season in the coach table to compare against, so whether this staff is new is unknown rather than continuous — a programme with no history is not a programme that kept its coach"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
+      "status": "INVESTIGATE",
+      "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+      "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Massachusetts",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "William Watson III",
+        "player_id": "4920153",
+        "label": "William Watson III — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 3,
+          "dropbacks": 66,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "4920153",
+              "player_name": "William Watson III",
+              "dropbacks": 37,
+              "share": 0.86
+            },
+            {
+              "player_id": "5327585",
+              "player_name": "Aedan McCarthy",
+              "dropbacks": 4,
+              "share": 0.093
+            },
+            {
+              "player_id": "5106897",
+              "player_name": "Jack O'Connell",
+              "dropbacks": 2,
+              "share": 0.047
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 2,
+            "game_id": "401866420",
+            "opponent": "Sacred Heart",
+            "dropbacks": 14,
+            "starter": {
+              "player_id": "4920153",
+              "player_name": "William Watson III",
+              "share": 0.714
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 3,
+            "game_id": "401866424",
+            "opponent": "Stonehill",
+            "dropbacks": 29,
+            "starter": {
+              "player_id": "4920153",
+              "player_name": "William Watson III",
+              "share": 0.931
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-19T19:30:00.000Z",
+        "retrieved_at": "2026-09-26T13:53:31.599Z"
+      },
+      "home": {
+        "team": "Sacramento State",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Jackson Sharman",
+        "player_id": "5158748",
+        "label": "Jackson Sharman — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 4,
+          "dropbacks": 114,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5158748",
+              "player_name": "Jackson Sharman",
+              "dropbacks": 70,
+              "share": 1
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 2,
+            "game_id": "401860883",
+            "opponent": "Fresno State",
+            "dropbacks": 31,
+            "starter": {
+              "player_id": "5158748",
+              "player_name": "Jackson Sharman",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 3,
+            "game_id": "401864507",
+            "opponent": "North Dakota State",
+            "dropbacks": 39,
+            "starter": {
+              "player_id": "5158748",
+              "player_name": "Jackson Sharman",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-20T02:30:00.000Z",
+        "retrieved_at": "2026-09-26T13:53:31.599Z"
+      },
+      "generated_at": "2026-09-26T13:54:16.166Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
+    },
+    "drivers": {
+      "rows": [
+        {
+          "points": "+4.1",
+          "points_n": 4.082,
+          "text": "Playing at Sacramento State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality",
+          "favours": "Sacramento State"
+        },
+        {
+          "points": "-0.6",
+          "points_n": -0.609889291974401,
+          "text": "Massachusetts is the better football team by 0.6 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team",
+          "favours": "Massachusetts"
+        },
+        {
+          "points": "+0.4",
+          "points_n": 0.358215114099262,
+          "text": "Stylistically the matchup favours Sacramento State by 0.4 points: field position",
+          "favours": "Sacramento State"
+        }
+      ],
+      "basis": "Points are the engine’s own contributions to the projected spread, from Sacramento State’s perspective, and they sum toward it.",
+      "excluded": "Player quality, position-group ratings and scheme fit are NOT in this number. Neither has cleared walk-forward validation, so neither is allowed to move a priced figure — they appear below as research context and nowhere else.",
+      "empty": null
+    },
+    "compare": {
+      "cols": [
+        "Massachusetts",
+        "Sacramento State"
+      ],
+      "groups": [
+        {
+          "title": "Team rating",
+          "rows": [
+            {
+              "cat": "overall",
+              "k": "ETSR (overall)",
+              "note": "points vs an average FBS team, neutral field",
+              "a": {
+                "v": "-5.4",
+                "n": -5.4,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "-11.4",
+                "n": -11.43,
+                "rank": "#133 of 133",
+                "rank_n": 133,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 6,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "talent",
+              "k": "Talent",
+              "note": null,
+              "a": {
+                "v": "40.2",
+                "n": 40.2,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "27.9",
+                "n": 27.9,
+                "rank": "#133 of 133",
+                "rank_n": 133,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 12.3,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "performance",
+              "k": "Performance",
+              "note": null,
+              "a": {
+                "v": "50.4",
+                "n": 50.4,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "25.9",
+                "n": 25.9,
+                "rank": "#133 of 133",
+                "rank_n": 133,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 24.5,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "scheme_fit",
+              "k": "Scheme fit",
+              "note": "personnel against this team’s own tendencies",
+              "a": {
+                "v": "47.6",
+                "n": 47.6,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "47.7",
+                "n": 47.7,
+                "rank": "#125 of 133",
+                "rank_n": 125,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.1,
+                "rank_gap": null
+              }
+            }
+          ]
+        },
+        {
+          "title": "Units",
+          "rows": [
+            {
+              "cat": "offense",
+              "k": "Offense",
+              "note": null,
+              "a": {
+                "v": "46.9",
+                "n": 46.9,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "39.5",
+                "n": 39.5,
+                "rank": "#124 of 133",
+                "rank_n": 124,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 7.4,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "defense",
+              "k": "Defense",
+              "note": null,
+              "a": {
+                "v": "53.7",
+                "n": 53.7,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "35.9",
+                "n": 35.9,
+                "rank": "#130 of 133",
+                "rank_n": 130,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 17.8,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "special_teams",
+              "k": "Special teams",
+              "note": null,
+              "a": {
+                "v": null,
+                "n": null,
+                "rank": null,
+                "rank_n": null,
+                "note": null
+              },
+              "h": {
+                "v": "51.4",
+                "n": 51.4,
+                "rank": "#12 of 126",
+                "rank_n": 12,
+                "note": null
+              },
+              "edge": null
+            },
+            {
+              "cat": "run_offense",
+              "k": "Run offense",
+              "note": null,
+              "a": {
+                "v": "46.6",
+                "n": 46.6,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "41.6",
+                "n": 41.6,
+                "rank": "#115 of 133",
+                "rank_n": 115,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 5,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "pass_offense",
+              "k": "Pass offense",
+              "note": null,
+              "a": {
+                "v": "46.2",
+                "n": 46.2,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "35.8",
+                "n": 35.8,
+                "rank": "#129 of 132",
+                "rank_n": 129,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 10.4,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "run_defense",
+              "k": "Run defense",
+              "note": null,
+              "a": {
+                "v": "61.9",
+                "n": 61.9,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "45.3",
+                "n": 45.3,
+                "rank": "#86 of 133",
+                "rank_n": 86,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 16.6,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "pass_defense",
+              "k": "Pass defense",
+              "note": null,
+              "a": {
+                "v": "45.6",
+                "n": 45.6,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "29.2",
+                "n": 29.2,
+                "rank": "#132 of 133",
+                "rank_n": 132,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 16.4,
+                "rank_gap": null
+              }
+            }
+          ]
+        },
+        {
+          "title": "Position groups",
+          "rows": [
+            {
+              "cat": "qb",
+              "k": "QB room",
+              "note": null,
+              "a": {
+                "v": "56.5",
+                "n": 56.5,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "51.4",
+                "n": 51.4,
+                "rank": "#133 of 133",
+                "rank_n": 133,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 5.1,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "ol",
+              "k": "Offensive line",
+              "note": null,
+              "a": {
+                "v": "45.0",
+                "n": 45,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "43.4",
+                "n": 43.4,
+                "rank": "#128 of 133",
+                "rank_n": 128,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 1.6,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "wr",
+              "k": "Receivers",
+              "note": null,
+              "a": {
+                "v": "54.6",
+                "n": 54.6,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "52.5",
+                "n": 52.5,
+                "rank": "#133 of 133",
+                "rank_n": 133,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 2.1,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "te",
+              "k": "Tight ends",
+              "note": "rated by the player layer; the board publishes no national TE rank",
+              "a": {
+                "v": "53.2",
+                "n": 53.2,
+                "rank": null,
+                "rank_n": null,
+                "note": "rated, held out of the national rank by the confidence gate"
+              },
+              "h": {
+                "v": "51.8",
+                "n": 51.8,
+                "rank": null,
+                "rank_n": null,
+                "note": "rated, held out of the national rank by the confidence gate"
+              },
+              "edge": {
+                "side": "a",
+                "gap": 1.4,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "rb",
+              "k": "Running backs",
+              "note": null,
+              "a": {
+                "v": "53.3",
+                "n": 53.3,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "54.0",
+                "n": 54,
+                "rank": "#131 of 133",
+                "rank_n": 131,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.7,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "dl",
+              "k": "Defensive line",
+              "note": null,
+              "a": {
+                "v": "50.6",
+                "n": 50.6,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "57.0",
+                "n": 57,
+                "rank": "#28 of 133",
+                "rank_n": 28,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 6.4,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "lb",
+              "k": "Linebackers",
+              "note": null,
+              "a": {
+                "v": "49.9",
+                "n": 49.9,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "55.7",
+                "n": 55.7,
+                "rank": "#34 of 133",
+                "rank_n": 34,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 5.8,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "secondary",
+              "k": "Secondary",
+              "note": null,
+              "a": {
+                "v": "51.8",
+                "n": 51.8,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "40.1",
+                "n": 40.1,
+                "rank": "#133 of 133",
+                "rank_n": 133,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 11.7,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "k_room",
+              "k": "Kicking",
+              "note": null,
+              "a": {
+                "v": "55.2",
+                "n": 55.2,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "56.0",
+                "n": 56,
+                "rank": "#75 of 133",
+                "rank_n": 75,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.8,
+                "rank_gap": null
+              }
+            }
+          ]
+        },
+        {
+          "title": "Roster shape",
+          "rows": [
+            {
+              "cat": "depth",
+              "k": "Depth",
+              "note": "quality behind the projected starters",
+              "a": {
+                "v": "53.0",
+                "n": 53,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "52.2",
+                "n": 52.2,
+                "rank": "#132 of 133",
+                "rank_n": 132,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 0.8,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "continuity",
+              "k": "Continuity",
+              "note": "how much of last season is still here",
+              "a": {
+                "v": "38.6",
+                "n": 38.6,
+                "rank": null,
+                "rank_n": null,
+                "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+              },
+              "h": {
+                "v": "35.1",
+                "n": 35.1,
+                "rank": "#109 of 133",
+                "rank_n": 109,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 3.5,
+                "rank_gap": null
+              }
+            }
+          ]
+        }
+      ],
+      "one_sided_team": null,
+      "one_sided_note": null
+    },
+    "advantages": {
+      "away": [],
+      "home": [],
+      "measured": [],
+      "measured_note": null,
+      "unproven": [],
+      "note": "An advantage is only claimed where BOTH teams carry a national rank in that category — the national rank is the one scale on which a QB room and a run defence are comparable. A category where one side is unrated appears here as a measurement and as uncertainty, never as an edge."
+    },
+    "matchups": [
+      {
+        "title": "Massachusetts pass offense vs Sacramento State pass defense",
+        "att": {
+          "team": "Massachusetts",
+          "label": "pass offense",
+          "v": "46.2",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "def": {
+          "team": "Sacramento State",
+          "label": "pass defense",
+          "v": "29.2",
+          "rank": "#132 of 133",
+          "note": null
+        },
+        "complete": true,
+        "read": "Massachusetts’s pass offense rates 46.2 against Sacramento State’s pass defense at 29.2 (#132 of 133). Massachusetts’s unit carries the higher rating."
+      },
+      {
+        "title": "Massachusetts run offense vs Sacramento State run defense",
+        "att": {
+          "team": "Massachusetts",
+          "label": "run offense",
+          "v": "46.6",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "def": {
+          "team": "Sacramento State",
+          "label": "run defense",
+          "v": "45.3",
+          "rank": "#86 of 133",
+          "note": null
+        },
+        "complete": true,
+        "read": "Massachusetts’s run offense rates 46.6 against Sacramento State’s run defense at 45.3 (#86 of 133). Massachusetts’s unit carries the higher rating."
+      },
+      {
+        "title": "Sacramento State pass offense vs Massachusetts pass defense",
+        "att": {
+          "team": "Sacramento State",
+          "label": "pass offense",
+          "v": "35.8",
+          "rank": "#129 of 132",
+          "note": null
+        },
+        "def": {
+          "team": "Massachusetts",
+          "label": "pass defense",
+          "v": "45.6",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "complete": true,
+        "read": "Sacramento State’s pass offense rates 35.8 (#129 of 132) against Massachusetts’s pass defense at 45.6. Massachusetts’s unit carries the higher rating."
+      },
+      {
+        "title": "Sacramento State run offense vs Massachusetts run defense",
+        "att": {
+          "team": "Sacramento State",
+          "label": "run offense",
+          "v": "41.6",
+          "rank": "#115 of 133",
+          "note": null
+        },
+        "def": {
+          "team": "Massachusetts",
+          "label": "run defense",
+          "v": "61.9",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "complete": true,
+        "read": "Sacramento State’s run offense rates 41.6 (#115 of 133) against Massachusetts’s run defense at 61.9. Massachusetts’s unit carries the higher rating."
+      },
+      {
+        "title": "Massachusetts QB room vs Sacramento State secondary",
+        "att": {
+          "team": "Massachusetts",
+          "label": "QB room",
+          "v": "56.5",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "def": {
+          "team": "Sacramento State",
+          "label": "secondary",
+          "v": "40.1",
+          "rank": "#133 of 133",
+          "note": null
+        },
+        "complete": true,
+        "read": "Massachusetts’s QB room rates 56.5 against Sacramento State’s secondary at 40.1 (#133 of 133). Massachusetts’s unit carries the higher rating."
+      },
+      {
+        "title": "Sacramento State QB room vs Massachusetts secondary",
+        "att": {
+          "team": "Sacramento State",
+          "label": "QB room",
+          "v": "51.4",
+          "rank": "#133 of 133",
+          "note": null
+        },
+        "def": {
+          "team": "Massachusetts",
+          "label": "secondary",
+          "v": "51.8",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "complete": true,
+        "read": "Sacramento State’s QB room rates 51.4 (#133 of 133) against Massachusetts’s secondary at 51.8. Massachusetts’s unit carries the higher rating."
+      },
+      {
+        "title": "Massachusetts offensive line vs Sacramento State defensive line",
+        "att": {
+          "team": "Massachusetts",
+          "label": "offensive line",
+          "v": "45.0",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "def": {
+          "team": "Sacramento State",
+          "label": "defensive line",
+          "v": "57.0",
+          "rank": "#28 of 133",
+          "note": null
+        },
+        "complete": true,
+        "read": "Massachusetts’s offensive line rates 45.0 against Sacramento State’s defensive line at 57.0 (#28 of 133). Sacramento State’s unit carries the higher rating."
+      },
+      {
+        "title": "Sacramento State offensive line vs Massachusetts defensive line",
+        "att": {
+          "team": "Sacramento State",
+          "label": "offensive line",
+          "v": "43.4",
+          "rank": "#128 of 133",
+          "note": null
+        },
+        "def": {
+          "team": "Massachusetts",
+          "label": "defensive line",
+          "v": "50.6",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "complete": true,
+        "read": "Sacramento State’s offensive line rates 43.4 (#128 of 133) against Massachusetts’s defensive line at 50.6. Massachusetts’s unit carries the higher rating."
+      },
+      {
+        "title": "Massachusetts running backs vs Sacramento State linebackers",
+        "att": {
+          "team": "Massachusetts",
+          "label": "running backs",
+          "v": "53.3",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "def": {
+          "team": "Sacramento State",
+          "label": "linebackers",
+          "v": "55.7",
+          "rank": "#34 of 133",
+          "note": null
+        },
+        "complete": true,
+        "read": "Massachusetts’s running backs rates 53.3 against Sacramento State’s linebackers at 55.7 (#34 of 133). Sacramento State’s unit carries the higher rating."
+      },
+      {
+        "title": "Sacramento State running backs vs Massachusetts linebackers",
+        "att": {
+          "team": "Sacramento State",
+          "label": "running backs",
+          "v": "54.0",
+          "rank": "#131 of 133",
+          "note": null
+        },
+        "def": {
+          "team": "Massachusetts",
+          "label": "linebackers",
+          "v": "49.9",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "complete": true,
+        "read": "Sacramento State’s running backs rates 54.0 (#131 of 133) against Massachusetts’s linebackers at 49.9. Sacramento State’s unit carries the higher rating."
+      },
+      {
+        "title": "Massachusetts receivers vs Sacramento State secondary",
+        "att": {
+          "team": "Massachusetts",
+          "label": "receivers",
+          "v": "54.6",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "def": {
+          "team": "Sacramento State",
+          "label": "secondary",
+          "v": "40.1",
+          "rank": "#133 of 133",
+          "note": null
+        },
+        "complete": true,
+        "read": "Massachusetts’s receivers rates 54.6 against Sacramento State’s secondary at 40.1 (#133 of 133). Massachusetts’s unit carries the higher rating."
+      },
+      {
+        "title": "Sacramento State receivers vs Massachusetts secondary",
+        "att": {
+          "team": "Sacramento State",
+          "label": "receivers",
+          "v": "52.5",
+          "rank": "#133 of 133",
+          "note": null
+        },
+        "def": {
+          "team": "Massachusetts",
+          "label": "secondary",
+          "v": "51.8",
+          "rank": null,
+          "note": "confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+        },
+        "complete": true,
+        "read": "Sacramento State’s receivers rates 52.5 (#133 of 133) against Massachusetts’s secondary at 51.8. Sacramento State’s unit carries the higher rating."
+      }
+    ],
+    "roster": {
+      "cols": [
+        "Massachusetts",
+        "Sacramento State"
+      ],
+      "rows": [
+        {
+          "k": "Returning production value",
+          "note": "share of last season’s production value still on the roster",
+          "a": "21%",
+          "h": null,
+          "edge": null
+        },
+        {
+          "k": "Returning headcount",
+          "note": "share of the roster that was here last season",
+          "a": "31%",
+          "h": null,
+          "edge": null
+        },
+        {
+          "k": "QB-room continuity",
+          "note": "is the projected starter last season’s player",
+          "a": "20%",
+          "h": "0%",
+          "edge": {
+            "side": "a",
+            "gap": 0.2
+          }
+        },
+        {
+          "k": "Offensive-line continuity",
+          "note": null,
+          "a": "56%",
+          "h": "50%",
+          "edge": {
+            "side": "a",
+            "gap": 0.05600000000000005
+          }
+        },
+        {
+          "k": "Returning starters",
+          "note": null,
+          "a": "50%",
+          "h": null,
+          "edge": null
+        },
+        {
+          "k": "Transfers in / out",
+          "note": "portal movement counted from the roster feed",
+          "a": "26 in / 8 out",
+          "h": "28 in / 0 out",
+          "edge": null
+        },
+        {
+          "k": "Transfer starters in / out",
+          "note": null,
+          "a": "1 in / 1 out",
+          "h": "2 in / 0 out",
+          "edge": null
+        },
+        {
+          "k": "Starter quality",
+          "note": "projected starters, weighted by position value",
+          "a": "55.0",
+          "h": "53.2",
+          "edge": {
+            "side": "a",
+            "gap": 1.7999999999999972
+          }
+        },
+        {
+          "k": "Rotation quality",
+          "note": null,
+          "a": "52.1",
+          "h": "50.5",
+          "edge": {
+            "side": "a",
+            "gap": 1.6000000000000014
+          }
+        },
+        {
+          "k": "Depth quality",
+          "note": "behind the projected starters",
+          "a": "53.0",
+          "h": "52.2",
+          "edge": {
+            "side": "a",
+            "gap": 0.7999999999999972
+          }
+        },
+        {
+          "k": "Availability records",
+          "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
+          "a": "none on file — 100% unknown",
+          "h": "none on file — 100% unknown",
+          "edge": null
+        },
+        {
+          "k": "Data confidence",
+          "note": "how much EdgeDesk knows about this roster, not how good it is",
+          "a": "7%",
+          "h": "25%",
+          "edge": {
+            "side": "h",
+            "gap": 0.173
+          }
+        }
+      ],
+      "highlights": [
+        {
+          "k": "Starter quality",
+          "lead": "Massachusetts",
+          "text": "Massachusetts leads on starter quality — Massachusetts 55.0, Sacramento State 53.2."
+        },
+        {
+          "k": "Rotation quality",
+          "lead": "Massachusetts",
+          "text": "Massachusetts leads on rotation quality — Massachusetts 52.1, Sacramento State 50.5."
+        },
+        {
+          "k": "Depth quality",
+          "lead": "Massachusetts",
+          "text": "Massachusetts leads on depth quality — Massachusetts 53.0, Sacramento State 52.2."
+        },
+        {
+          "k": "QB-room continuity",
+          "lead": "Massachusetts",
+          "text": "Massachusetts leads on qb-room continuity — Massachusetts 20%, Sacramento State 0%."
+        },
+        {
+          "k": "Data confidence",
+          "lead": "Sacramento State",
+          "text": "Sacramento State leads on data confidence — Massachusetts 7%, Sacramento State 25%."
+        }
+      ],
+      "note": "Roster construction from the committed rankings build. No recruiting star and no NIL figure appears here: no public feed this repo reads carries either, and a number nobody published is not estimated in its place."
+    },
+    "cases": {
+      "favourite": {
+        "team": "Sacramento State",
+        "heading": "Why Sacramento State can pull away",
+        "bullets": [
+          "Playing at Sacramento State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
+          "Stylistically the matchup favours Sacramento State by 0.4 points: field position (+0.4 pts)."
+        ]
+      },
+      "underdog": {
+        "team": "Massachusetts",
+        "heading": "Why Massachusetts can keep it close",
+        "bullets": [
+          "Massachusetts is the better football team by 0.6 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team (-0.6 pts).",
+          "The outcome range is 15.1 points wide at one sigma — p10 -19.2 to p90 +24.8 for Sacramento State, so a projection of +3.8 still produces results a long way either side of it.",
+          "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
+          "50% of the model’s own input contract was empty for this game — no roster, starter or injury context reached it, so the number leans on team strength more than it should."
+        ]
+      },
+      "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
+    },
+    "uncertainty": {
+      "items": [
+        {
+          "sev": "HIGH",
+          "label": "information missing",
+          "text": "The projection could be wrong because 50% of the model’s own input contract was empty for this game — no roster, starter or injury context reached it, so the number leans on team strength more than it should.",
+          "widening": null
+        },
+        {
+          "sev": "HIGH",
+          "label": "Massachusetts — low sample size",
+          "text": "1.9 FBS-equivalent games played.",
+          "widening": null
+        },
+        {
+          "sev": "HIGH",
+          "label": "Massachusetts — fcs dominated sample",
+          "text": "67% of games were against a pooled non-FBS opponent. Most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 8.3 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 98h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Massachusetts — injury uncertainty",
+          "text": "100% of projected starter value has no availability record.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Massachusetts — extreme transfer turnover",
+          "text": "80% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Massachusetts — thin offensive data",
+          "text": "143 offensive plays observed. Too few offensive snaps to score the offensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Massachusetts — thin defensive data",
+          "text": "133 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Sacramento State — injury uncertainty",
+          "text": "100% of projected starter value has no availability record.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Sacramento State — thin offensive data",
+          "text": "180 offensive plays observed. Too few offensive snaps to score the offensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Sacramento State — thin defensive data",
+          "text": "169 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Sacramento State — prior season missing",
+          "text": "no prior-season rating on file, so the prior term rests on talent alone. No prior-season rating exists (an FBS newcomer, or a season the feed never published), so the PRIOR term rests on talent alone",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "early season",
+          "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
+          "widening": "3%"
+        }
+      ],
+      "unmeasured": [
+        {
+          "item": "Home starting quarterback",
+          "why": "starting QB not supplied for home"
+        },
+        {
+          "item": "Away starting quarterback",
+          "why": "starting QB not supplied for away"
+        },
+        {
+          "item": "Home availability / injuries",
+          "why": "no injury report supplied for home"
+        },
+        {
+          "item": "Away availability / injuries",
+          "why": "no injury report supplied for away"
+        },
+        {
+          "item": "Weather at kickoff",
+          "why": "no weather supplied"
+        },
+        {
+          "item": "Off-field, culture and NIL situation",
+          "why": "no public feed for NIL figures, locker-room reporting or discipline exists that this engine reads; nothing is inferred and the gap is carried as uncertainty"
+        },
+        {
+          "item": "Coaching and coordinator continuity",
+          "why": "no public coaching-tenure feed is wired; a new coordinator changes a team’s identity in ways the ratings only learn after the fact"
+        },
+        {
+          "item": "Motivation, lookahead and locker-room state",
+          "why": "not measurable from any public source; treated as variance, never as a point adjustment"
+        },
+        {
+          "item": "Massachusetts — recruiting ratings",
+          "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Massachusetts — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+        },
+        {
+          "item": "Sacramento State — recruiting ratings",
+          "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Sacramento State — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+        }
+      ],
+      "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
+    },
+    "market": {
+      "available": true,
+      "model": "Sacramento State -3.8",
+      "model_raw": "Sacramento State -3.8",
+      "market": "Sacramento State +4.5",
+      "difference": "8.3 points",
+      "difference_n": 8.33032582212486,
+      "total_model": "52.9",
+      "total_market": "48.5",
+      "book": "captured (stale 98h) · FanDuel",
+      "captured": "2026-09-22T16:18:01.053+00:00",
+      "capture_age": "98 hours old",
+      "stale": false,
+      "classification": "INVESTIGATE",
+      "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401866429",
+      "home": "Sacramento State",
+      "away": "Massachusetts",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LIMITED_DATA",
+        "label": "LIMITED DATA",
+        "rule": "stale_market",
+        "means": "The only market number on file is a stale capture, so any gap is measured against a price that may no longer exist."
+      },
+      "fair": {
+        "line_text": "Sacramento State -3.8",
+        "favorite_team": "Sacramento State",
+        "underdog_team": "Massachusetts",
+        "display_fair_spread": 3.8,
+        "raw_home_margin": 3.83,
+        "raw_line_text": "Sacramento State -3.83",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 8.33,
+        "toward_team": "Sacramento State",
+        "text": "8.3 pts toward Sacramento State",
+        "market_line_text": "Massachusetts -4.5",
+        "market_home_margin": -4.5,
+        "favorite_differs": true,
+        "source": "captured (stale 98h) · FanDuel",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 77,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 85,
+        "tier": "STRONG",
+        "text": "85 · STRONG",
+        "sub": "main deduction: Massachusetts’s availability report is not due yet",
+        "score": 85,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18.3,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 12.7,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 18.1,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.9,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 14.7,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "Massachusetts’s availability report is not due yet; the impact of Massachusetts’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Re-read availability inside the filing window (Massachusetts)",
+            "potential_gain": 3,
+            "text": "up to +3"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Sacramento State)",
+            "potential_gain": 3,
+            "text": "up to +3"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
+        "stability": {
+          "tier": "STABLE",
+          "sd": 2.03,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
+      },
+      "drivers": {
+        "team": "Sacramento State",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "market",
+            "key": "market_gap",
+            "points": 8.33,
+            "text": "The market is 8.3 pts away from EdgeDesk’s number, toward Sacramento State (market: Massachusetts -4.5)"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "LOW",
+        "label": "Low",
+        "text": "the stored numbers span 3.8 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-16T12:00:40.648Z",
+          "source": "first published",
+          "home_margin": 7.65,
+          "text": "Sacramento State -7.7"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 3.83,
+          "text": "Sacramento State -3.8"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Sacramento State",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 3.8 points toward Massachusetts since the first published number.",
+        "attribution_text": "Projection changed 3.8 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
+    "headline": "EdgeDesk projects Sacramento State 28, Massachusetts 25.",
+    "state": {
+      "label": "INVESTIGATE",
+      "note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+      "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
+    },
+    "score": {
+      "away": {
+        "team": "Massachusetts",
+        "points": "25"
+      },
+      "home": {
+        "team": "Sacramento State",
+        "points": "28"
+      },
+      "note": "Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
+    },
+    "table": {
+      "cols": [
+        "Massachusetts",
+        "Sacramento State"
+      ],
+      "rows": [
+        {
+          "k": "ETSR (overall)",
+          "a": "-5.4  unranked",
+          "h": "-11.4  #133",
+          "note": "points vs an average FBS team, neutral field"
+        },
+        {
+          "k": "Talent",
+          "a": "40.2  unranked",
+          "h": "27.9  #133",
+          "note": null
+        },
+        {
+          "k": "Performance",
+          "a": "50.4  unranked",
+          "h": "25.9  #133",
+          "note": null
+        },
+        {
+          "k": "Offense",
+          "a": "46.9  unranked",
+          "h": "39.5  #124",
+          "note": null
+        },
+        {
+          "k": "Defense",
+          "a": "53.7  unranked",
+          "h": "35.9  #130",
+          "note": null
+        },
+        {
+          "k": "Special teams",
+          "a": null,
+          "h": "51.4  #12",
+          "note": null
+        },
+        {
+          "k": "Run offense",
+          "a": "46.6  unranked",
+          "h": "41.6  #115",
+          "note": null
+        },
+        {
+          "k": "Pass offense",
+          "a": "46.2  unranked",
+          "h": "35.8  #129",
+          "note": null
+        },
+        {
+          "k": "Run defense",
+          "a": "61.9  unranked",
+          "h": "45.3  #86",
+          "note": null
+        },
+        {
+          "k": "Pass defense",
+          "a": "45.6  unranked",
+          "h": "29.2  #132",
+          "note": null
+        },
+        {
+          "k": "QB room",
+          "a": "56.5  unranked",
+          "h": "51.4  #133",
+          "note": null
+        },
+        {
+          "k": "Offensive line",
+          "a": "45.0  unranked",
+          "h": "43.4  #128",
+          "note": null
+        },
+        {
+          "k": "Receivers",
+          "a": "54.6  unranked",
+          "h": "52.5  #133",
+          "note": null
+        },
+        {
+          "k": "Running backs",
+          "a": "53.3  unranked",
+          "h": "54.0  #131",
+          "note": null
+        },
+        {
+          "k": "Defensive line",
+          "a": "50.6  unranked",
+          "h": "57.0  #28",
+          "note": null
+        },
+        {
+          "k": "Linebackers",
+          "a": "49.9  unranked",
+          "h": "55.7  #34",
+          "note": null
+        },
+        {
+          "k": "Secondary",
+          "a": "51.8  unranked",
+          "h": "40.1  #133",
+          "note": null
+        },
+        {
+          "k": "Depth",
+          "a": "53.0  unranked",
+          "h": "52.2  #132",
+          "note": null
+        },
+        {
+          "k": "Continuity",
+          "a": "38.6  unranked",
+          "h": "35.1  #109",
+          "note": null
+        },
+        {
+          "k": "Confidence",
+          "a": "7%",
+          "h": "25%",
+          "note": "how much EdgeDesk knows, not how good the team is"
+        },
+        {
+          "k": "Δ national rank, this week",
+          "a": null,
+          "h": "no change",
+          "note": "differenced from last week’s committed snapshot"
+        }
+      ]
+    },
+    "notes": [
+      "EdgeDesk’s line is Sacramento State -3.8 on a neutral read of the two teams, before any book is consulted. Projected total 52.9.",
+      "Sacramento State wins 60% of the time in EdgeDesk’s simulation, Massachusetts 40%.",
+      "Eight games in ten land between -19.2 and +24.8 for Sacramento State. A single result inside that band tells you nothing new about either team.",
+      "The market has Sacramento State +4.5 at captured (stale 98h) · FanDuel, 8.3 points from EdgeDesk’s number.",
+      "Massachusetts quarterback: William Watson III — started the last game; no announcement for this one.",
+      "Sacramento State quarterback: Jackson Sharman — started the last game; no announcement for this one."
+    ],
+    "missing": [
+      "Massachusetts — etsr (overall): confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — talent: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — performance: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — offense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — defense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — special teams: no rating was published for this category.",
+      "Massachusetts — run offense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — pass offense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — run defense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — pass defense: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — qb room: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — offensive line: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — receivers: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — running backs: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — defensive line: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — linebackers: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — secondary: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — depth: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "Massachusetts — continuity: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached William Watson III — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Jackson Sharman — unknown is carried as unknown, never as healthy."
+    ],
+    "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
+    "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-26. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+  }
+}
