@@ -37,6 +37,17 @@
 --                            entry can never be silently re-read through
 --                            today's model. The close and the grade are
 --                            written later by the service role only.
+--                            "Compare My Number" saves the reader's OWN fair
+--                            spread and total here too (my_home_line,
+--                            my_total), under the same write-once rule, so
+--                            every number a reader ever entered is kept.
+--     share_cards            the research cards a reader generated: the exact
+--                            words and numbers printed on each, write-once,
+--                            refused at the database if they read like a tout
+--                            or the game has kicked off.
+--   user_preferences also carries the one persona answer ("What best
+--   describes how you research?"). It only reorders the desk; nothing is
+--   hidden because of it.
 --
 -- WHAT IT IS NOT
 --   Nothing here is a pick, a stake recommendation or a bet placed anywhere.
@@ -86,6 +97,7 @@ begin
     'public.game_research_history',
     'public.user_alerts',
     'public.research_journal',
+    'public.share_cards',
     'public.my_watchlist']) t
   where to_regclass(t) is not null;
   if v_list is null then return; end if;
@@ -174,6 +186,11 @@ alter table public.user_preferences add column if not exists onboarding_complete
 alter table public.user_preferences add column if not exists onboarding_version      int not null default 1;
 alter table public.user_preferences add column if not exists timezone                text;
 alter table public.user_preferences add column if not exists updated_at              timestamptz not null default now();
+-- "What best describes how you research?" — one answer, used only to decide
+-- what the desk shows first (lib/edgedesk_personal.js PERSONAS). Null until
+-- the reader answers; the question can be skipped.
+alter table public.user_preferences add column if not exists persona                 text;
+alter table public.user_preferences add column if not exists persona_set_at          timestamptz;
 
 do $c$ begin
   if not exists (select 1 from pg_constraint where conname = 'user_prefs_onboarding_status') then
@@ -196,6 +213,10 @@ do $c$ begin
     alter table public.user_preferences add constraint user_prefs_timezone_shape
       check (timezone is null or timezone ~ '^[A-Za-z0-9_+/-]{1,64}$');
   end if;
+  if not exists (select 1 from pg_constraint where conname = 'user_prefs_persona_valid') then
+    alter table public.user_preferences add constraint user_prefs_persona_valid
+      check (persona is null or persona in ('model_builder','researcher','market_comparer','creator','process_improver'));
+  end if;
 end $c$;
 
 -- A league must be one the product offers. A trigger rather than a foreign
@@ -213,6 +234,11 @@ begin
   new.interests := array(select distinct x from unnest(new.interests) x order by 1);
   if new.onboarding_status in ('completed', 'skipped') and new.onboarding_completed_at is null then
     new.onboarding_completed_at := now();
+  end if;
+  if new.persona is not null and (tg_op = 'INSERT' or new.persona is distinct from old.persona) then
+    new.persona_set_at := now();
+  elsif new.persona is null then
+    new.persona_set_at := null;
   end if;
   new.updated_at := now();
   return new;
@@ -631,7 +657,25 @@ do $c$ begin
           or (market_type = 'moneyline' and selection in ('home','away') and price_american is not null))));
   end if;
 end $c$;
+-- COMPARE MY NUMBER. The reader's own fair spread (as a HOME line: negative
+-- = home favoured, the convention every *_home_line column here uses) and
+-- their own fair total, saved beside EdgeDesk's numbers of the same moment.
+-- Part of the information set, so write-once like the rest of it: a reader who
+-- changes their mind saves a new entry, and the old number is kept.
+alter table public.research_journal add column if not exists my_home_line numeric;
+alter table public.research_journal add column if not exists my_total     numeric;
+do $c$ begin
+  if not exists (select 1 from pg_constraint where conname = 'research_journal_my_numbers') then
+    alter table public.research_journal add constraint research_journal_my_numbers check (
+          (my_home_line is null or my_home_line between -100 and 100)
+      and (my_total is null or my_total between 0 and 400));
+  end if;
+end $c$;
 create index if not exists research_journal_user_idx on public.research_journal (user_id, created_at desc);
+-- entries carrying the reader's own number are closed like wagers, so "your
+-- number, EdgeDesk's number, the close" can be read side by side
+create index if not exists research_journal_numbers_open_idx on public.research_journal (kickoff_at)
+  where graded_at is null and (my_home_line is not null or my_total is not null);
 create index if not exists research_journal_game_idx on public.research_journal (game_key);
 create index if not exists research_journal_ungraded_idx on public.research_journal (kickoff_at)
   where decision = 'wagered' and graded_at is null;
@@ -680,7 +724,8 @@ begin
       new.snap_market_book, new.snap_market_captured_at, new.snap_gap_pts, new.snap_win_prob_home,
       new.snap_reliability_score, new.snap_reliability_grade, new.snap_research_label, new.snap_qb,
       new.snap_injuries, new.snap_model_version, new.snapshot, new.snapshot_hash,
-      new.server_state, new.server_state_hash, new.server_state_at, new.after_kickoff)
+      new.server_state, new.server_state_hash, new.server_state_at, new.after_kickoff,
+      new.my_home_line, new.my_total)
      is distinct from
      (old.entry_id, old.user_id, old.created_at, old.game_key, old.home, old.away, old.kickoff_at,
       old.decision, old.market_type, old.selection, old.sportsbook, old.line, old.price_american, old.stake,
@@ -688,7 +733,8 @@ begin
       old.snap_market_book, old.snap_market_captured_at, old.snap_gap_pts, old.snap_win_prob_home,
       old.snap_reliability_score, old.snap_reliability_grade, old.snap_research_label, old.snap_qb,
       old.snap_injuries, old.snap_model_version, old.snapshot, old.snapshot_hash,
-      old.server_state, old.server_state_hash, old.server_state_at, old.after_kickoff) then
+      old.server_state, old.server_state_hash, old.server_state_at, old.after_kickoff,
+      old.my_home_line, old.my_total) then
     raise exception 'research_journal: entry % is write-once — the decision and the information set behind it cannot be edited', old.entry_id
       using errcode = 'restrict_violation';
   end if;
@@ -729,6 +775,84 @@ grant usage, select on sequence public.research_journal_id_seq to authenticated;
 do $g$ begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant select, update on public.research_journal to service_role';
+  end if;
+end $g$;
+
+-- ── 7b. share_cards ──────────────────────────────────────────────────────────
+-- A research card a reader generated to share (lib/edgedesk_share_card.js
+-- draws it in the browser; nothing here renders an image). The row is the
+-- record of WHAT WAS PRINTED: the exact words and numbers, the research state
+-- they came from, and when. Write-once. The database refuses a card whose
+-- words read like a tout (edp_copy_ok over every string on it) and a card for
+-- a game the shared state says has kicked off — research is pregame.
+create table if not exists public.share_cards (
+  id                 bigint generated always as identity primary key,
+  card_id            uuid not null default gen_random_uuid(),
+  user_id            uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  created_at         timestamptz not null default now(),
+  game_key           text not null,
+  format             text not null default 'x_landscape',
+  state_hash         text,
+  state_computed_at  timestamptz,
+  fair_home_line     numeric,
+  market_home_line   numeric,
+  gap_pts            numeric,
+  reliability_score  numeric,
+  content            jsonb not null,
+  content_hash       text not null
+);
+do $c$ begin
+  if not exists (select 1 from pg_constraint where conname = 'share_cards_card_unique') then
+    alter table public.share_cards add constraint share_cards_card_unique unique (card_id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'share_cards_shape') then
+    alter table public.share_cards add constraint share_cards_shape check (
+          game_key ~ '^[a-z0-9]{2,12}\|[A-Za-z0-9_.:-]{1,64}$'
+      and format in ('x_landscape', 'square')
+      and (state_hash is null or length(state_hash) <= 80)
+      and (reliability_score is null or reliability_score between 0 and 100)
+      and jsonb_typeof(content) = 'object'
+      and pg_column_size(content) <= 8000
+      and length(content_hash) between 1 and 80
+      and public.edp_copy_ok(content::text));
+  end if;
+end $c$;
+create index if not exists share_cards_user_idx on public.share_cards (user_id, created_at desc);
+
+create or replace function public.share_cards_on_insert()
+returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
+declare ko timestamptz; recent int;
+begin
+  if auth.uid() is not null then new.user_id := auth.uid(); end if;
+  new.created_at := now();
+  select count(*) into recent from public.share_cards where user_id = new.user_id and created_at > now() - interval '24 hours';
+  if recent >= 60 then
+    raise exception 'share_cards: at most 60 cards per 24 hours' using errcode = 'check_violation';
+  end if;
+  select kickoff_at into ko from public.game_research_state where game_key = new.game_key;
+  if ko is not null and now() >= ko then
+    raise exception 'share_cards: % has kicked off; a research card is made before the game', new.game_key using errcode = 'check_violation';
+  end if;
+  return new;
+end $$;
+drop trigger if exists share_cards_on_insert_trg on public.share_cards;
+create trigger share_cards_on_insert_trg before insert on public.share_cards
+  for each row execute function public.share_cards_on_insert();
+
+alter table public.share_cards enable row level security;
+drop policy if exists share_cards_select_own on public.share_cards;
+create policy share_cards_select_own on public.share_cards for select to authenticated using (user_id = auth.uid());
+drop policy if exists share_cards_insert_own on public.share_cards;
+create policy share_cards_insert_own on public.share_cards for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists share_cards_delete_own on public.share_cards;
+create policy share_cards_delete_own on public.share_cards for delete to authenticated using (user_id = auth.uid());
+revoke all on public.share_cards from anon;
+revoke update on public.share_cards from authenticated;
+grant select, insert, delete on public.share_cards to authenticated;
+grant usage, select on sequence public.share_cards_id_seq to authenticated;
+do $g$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant select on public.share_cards to service_role';
   end if;
 end $g$;
 
@@ -861,4 +985,18 @@ select 14, 'the proof metrics are callable without an account',
 union all
 select 15, 'the entitlement check is not callable without an account',
   case when not has_function_privilege('anon', 'public.edp_entitled(uuid)', 'execute') then 'ok' else 'CHECK THIS' end
+union all
+select 16, 'the persona answer is one of the five, or none',
+  case when exists (select 1 from pg_constraint where conname = 'user_prefs_persona_valid') then 'ok' else 'CHECK THIS' end
+union all
+select 17, 'the reader''s own number (Compare My Number) is write-once with the rest of the entry',
+  case when exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'research_journal' and column_name = 'my_home_line')
+        and position('my_home_line' in pg_get_functiondef('public.research_journal_on_update()'::regprocedure)) > 0
+        and not has_column_privilege('authenticated', 'public.research_journal', 'my_home_line', 'update') then 'ok' else 'CHECK THIS' end
+union all
+select 18, 'share cards: own rows only, write-once, tout copy refused',
+  case when exists (select 1 from pg_tables where schemaname = 'public' and tablename = 'share_cards' and rowsecurity)
+        and not has_table_privilege('authenticated', 'public.share_cards', 'update')
+        and not has_table_privilege('anon', 'public.share_cards', 'select')
+        and exists (select 1 from pg_constraint where conname = 'share_cards_shape') then 'ok' else 'CHECK THIS' end
 order by 1;

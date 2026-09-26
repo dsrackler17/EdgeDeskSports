@@ -133,4 +133,37 @@
 .edm-toast{position:fixed;left:50%;bottom:calc(var(--nav) + var(--foot) + 14px);transform:translate(-50%,20px);opacity:0;z-index:9999;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:9px 14px;font-size:12.5px;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100vw - 32px)}
 .edm-toast.on{opacity:1;transform:translate(-50%,0)}
 .edm-toast.bad{border-color:rgba(226,96,68,.55)}
-.edm-gxstar{display:flex;justify-content:flex-end;gap:6px;margin:0 0 8px}
+.edm-gxstar{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+
+/* persona: the one question, and the line that says the desk is arranged for it */
+.edm-persona{border-color:rgba(47,167,154,.45)}
+.edm-spot{font-size:11.5px;color:var(--dim);line-height:1.5;margin:0 0 10px;padding:7px 10px;border:1px dashed var(--border);border-radius:var(--rad-s)}
+.edm-spot b{color:var(--text)}
+
+/* a compact game row on the desk (Compare My Number, share cards) */
+.edm-mini{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--border);border-radius:var(--rad-s);background:var(--bg);padding:8px 10px;margin:0 0 6px}
+.edm-mini-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 200px}
+.edm-mini-t b{font-size:13px}
+.edm-mini-n{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;font-weight:600;color:var(--text)}
+.edm-mini-n .mdl{color:var(--mdl)}
+
+/* Compare My Number */
+.edm-inrow{display:flex;gap:6px}
+.edm-inrow select{flex:1 1 55%;min-width:0}
+.edm-inrow input{flex:1 1 45%;min-width:0}
+.edm-cmp{width:100%;border-collapse:collapse;margin:10px 0 4px;font-size:13px}
+.edm-cmp th,.edm-cmp td{text-align:left;padding:7px 8px;border-top:1px solid var(--border)}
+.edm-cmp thead th{border-top:none;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.edm-cmp tbody th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:700;width:18%}
+.edm-cmp td{font-weight:700;color:var(--text)}
+.edm-cmp td.you{color:var(--gold)}
+.edm-cmp td.mdl{color:var(--mdl)}
+.edm-ex.agree b{color:var(--pos)}
+.edm-mine{font-size:12px;color:var(--dim);line-height:1.5;margin:4px 0 2px}
+.edm-mine i{font-style:normal;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.edm-mine b{color:var(--gold)}
+@media(max-width:560px){.edm-cmp{font-size:12px}.edm-cmp th,.edm-cmp td{padding:6px 5px}}
+
+/* research card preview: the canvas is drawn at full size and shown scaled */
+.edm-canvas{border:1px solid var(--border);border-radius:var(--rad-s);background:var(--bg);padding:6px;margin:8px 0}
+.edm-canvas canvas{display:block;width:100%;height:auto;border-radius:8px}

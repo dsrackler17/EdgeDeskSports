@@ -12,6 +12,7 @@
      "Which games improved after QB confirmation?"             QB_IMPROVED
      "How has my CLV looked this month?"                       CLV
      "Show me games where my decisions disagree with EdgeDesk." VERSUS
+     "How do my numbers compare with EdgeDesk's?"              MY_NUMBERS
      "Why did this game's reliability change?"                 REL_WHY
      "What are my alerts?"                                     ALERTS
 
@@ -47,6 +48,7 @@
     ['WATCH_LIST', /(what('s| is)|show|list)[^?]{0,20}(on|in) my watch ?list|my watch ?list\??$/i],
     ['GAP_LOW_REL', /(high|large|big)[^?]{0,15}(disagreement|gap)[^?]{0,40}(low|weak|poor|bad) reliab/i],
     ['QB_IMPROVED', /(improv|reliab)[^?]{0,60}(qb|quarterback)[^?]{0,30}confirm|after (the )?(qb|quarterback)[^?]{0,20}confirm/i],
+    ['MY_NUMBERS', /compare my (own )?numbers?|\bmy (own )?(numbers?|fair (lines?|spreads?|totals?))\b[^?]{0,80}(edgedesk|compare|versus|\bvs\b|close|closing|differ|agree)|(edgedesk|close|closing)[^?]{0,60}\bmy (own )?(numbers?|fair (lines?|spreads?|totals?))\b/i],
     ['VERSUS', /(my (own )?(decisions?|bets?|wagers?|picks?)|i )[^?]{0,60}(disagree|against|opposite|differ)[^?]{0,20}edgedesk/i],
     ['CLV', /\bclv\b|closing[- ]line value|beat(ing)? the clos|decision quality|how (have|has|did) my (decisions|bets|wagers|research|process)/i],
     ['TOP5', /(top (5|five)|five games|5 games)[^?]{0,40}(research|worth)|most worth research|games? (should i|to) research|worth researching/i],
@@ -63,7 +65,7 @@
   M.NEEDS = {
     WATCH_CHANGES: ['watchlist', 'history_watch_24h', 'alerts'], WATCH_GRADE: ['watchlist', 'alerts'], WATCH_LIST: ['watchlist'],
     TOP5: ['top', 'prefs'], LARGEST_GAP: ['slate'], GAP_LOW_REL: ['slate'], QB_IMPROVED: ['watchlist', 'history_watch_7d', 'alerts'],
-    CLV: ['journal'], VERSUS: ['journal'], REL_WHY: ['watchlist', 'slate', 'history_game'], ALERTS: ['alerts']
+    CLV: ['journal'], VERSUS: ['journal'], MY_NUMBERS: ['journal'], REL_WHY: ['watchlist', 'slate', 'history_game'], ALERTS: ['alerts']
   };
   M.windowDays = function (q) { return /month|30 days/i.test(q) ? 30 : (/week|7 days/i.test(q) ? 7 : (/season|year|all time|ever/i.test(q) ? null : null)); };
 
@@ -260,6 +262,29 @@
       'Against it: ' + v.against_edgedesk.n + ' decisions, beat the close ' + (v.against_edgedesk.clv_n ? pct(v.against_edgedesk.beat_close_rate) : 'n/a') + '.'];
     return out('VERSUS', head, lines, { detail: detail, sources: [SRC.journal], actions: ['quality'],
       missing: ['EdgeDesk’s side is the side its fair line took against the market on screen when you logged each decision'] });
+  };
+
+  /* the reader's own numbers (Compare My Number) beside EdgeDesk's and, once
+     it is on file, the close. Distances, never a verdict on either number. */
+  A.MY_NUMBERS = function (d) {
+    if (d.journal_error) return out('MY_NUMBERS', 'Your research journal could not be read just now, so EdgeDesk will not report your numbers from memory.', [], { sources: [SRC.journal] });
+    var list = (d.journal || []).filter(function (e) { return num(e.my_home_line) != null || num(e.my_total) != null; });
+    if (!list.length) return out('MY_NUMBERS', 'You have not saved a number of your own yet. Use Compare my number on any game: EdgeDesk sets your fair spread and total beside its own and the market’s, and keeps every number you save.', [], { sources: [SRC.journal], actions: ['journal'] });
+    var ns = P.numbersSummary(list);
+    var head = 'You have saved ' + plural(ns.n, 'number') + ' of your own (' + plural(ns.spreads, 'spread') + ', ' + plural(ns.totals, 'total') + ')'
+      + (ns.avg_apart_from_edgedesk != null ? '; on average your spread sat ' + ns.avg_apart_from_edgedesk.toFixed(1) + ' points from EdgeDesk’s at the time.' : '.');
+    var lines = list.slice(0, 5).map(function (e) {
+      var s0 = { home: e.home || 'Home', away: e.away || 'Away' }, vc = P.numbersVsClose(e), bits = [];
+      if (num(e.my_home_line) != null) bits.push('yours ' + P.favText(s0, e.my_home_line));
+      if (num(e.snap_fair_home_line) != null) bits.push('EdgeDesk then ' + P.favText(s0, e.snap_fair_home_line));
+      if (num(e.snap_market_home_line) != null) bits.push('market then ' + P.favText(s0, e.snap_market_home_line));
+      if (num(e.my_total) != null) bits.push('your total ' + e.my_total);
+      if (vc.close_home_line != null && vc.mine != null) bits.push('close ' + P.favText(s0, vc.close_home_line) + ' (yours ' + vc.mine.toFixed(1) + ' from it' + (vc.edgedesk != null ? ', EdgeDesk’s ' + vc.edgedesk.toFixed(1) : '') + ')');
+      return (e.away || '?') + ' @ ' + (e.home || '?') + ' — ' + bits.join(', ');
+    });
+    var detail = ns.graded ? ['Of ' + plural(ns.graded, 'number') + ' with a close on file, yours sat nearer the close in ' + ns.mine_nearer + ', EdgeDesk’s in ' + ns.edgedesk_nearer + ', level in ' + ns.level + '.'] : [];
+    return out('MY_NUMBERS', head, lines, { detail: detail, sources: [SRC.journal], actions: ['journal'],
+      missing: (ns.sample_note ? [ns.sample_note] : []).concat(['Neither number is declared right: the close is the market’s last word, and one game says little about any number']) });
   };
 
   A.REL_WHY = function (d, now) {

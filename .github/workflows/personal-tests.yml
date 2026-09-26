@@ -1,0 +1,82 @@
+# EdgeDesk — the checks that gate every change to the personal research
+# terminal and the growth layer on top of it: the watchlist, alerts, journal
+# and Compare My Number, research cards, personas, the partner program and
+# its campaigns, trial activation, acquisition attribution and public samples.
+#
+#   suites      the libraries, the job's database pass (in-memory PostgREST),
+#               the page wiring, the AI desk's personal answers — offline.
+#   migrations  supabase/personal_research.sql, affiliates.sql and growth.sql
+#               applied TWICE to a real PostgreSQL on the runner's own
+#               throwaway cluster, and attacked as other readers, as anon and
+#               as the service role.
+#
+# The browser suite (tools/personal/personal_ui.e2e.js) needs Playwright and
+# is run by hand: npm run personal:e2e. Nothing here deploys or writes.
+name: Personal research CI
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_personal*.js'
+      - 'lib/edgedesk_personal.css'
+      - 'lib/edgedesk_share_card.js'
+      - 'lib/edgedesk_pricing.js'
+      - 'lib/research_core.js'
+      - 'supabase/personal_research.sql'
+      - 'supabase/affiliates.sql'
+      - 'supabase/growth.sql'
+      - 'supabase/billing.sql'
+      - 'supabase/stripe_webhook.sql'
+      - 'supabase/referral_codes.sql'
+      - 'supabase/functions/edgedesk_ai/_mine.js'
+      - 'tools/personal/**'
+      - 'research/sample/**'
+      - 'admin/growth/**'
+      - 'admin/affiliates/**'
+      - 'index.html'
+      - 'app.html'
+      - 'package.json'
+      - '.github/workflows/personal-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Alerts, Top 5, journal grading, CLV and the job's database pass
+        run: node tools/personal/personal.test.js
+      - name: One source for the offer, the books, the page wiring, no tout language
+        run: node tools/personal/personal_wiring.test.js
+      - name: Compare My Number, research cards, personas, creator offers, trial actions, public samples
+        run: node tools/personal/growth.test.js
+      - name: The AI desk answers the reader's research from their own rows
+        run: node tools/intelligence/mine.test.js
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      # The runner image ships PostgreSQL; each suite starts its own throwaway
+      # cluster, applies its migrations twice, and tears it down.
+      - name: Personal rows are private, the journal and the reader's number are write-once
+        run: node tools/personal/personal_sql.test.js
+      - name: The partner program and its campaigns track what happened and never rewrite money or credit
+        run: node tools/personal/affiliates_sql.test.js
+      - name: Trial activation, acquisition attribution and public samples
+        run: node tools/personal/growth_sql.test.js

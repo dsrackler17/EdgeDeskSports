@@ -30,7 +30,10 @@
       (the last market EdgeDesk held before kickoff, from the state history;
       the committed record's consensus close when the history has none), CLV,
       and — once record/football/<league>_<season>.json carries the final —
-      the result. Process and result are separate columns.
+      the result. Process and result are separate columns. Entries that carry
+      the reader's OWN number (Compare My Number) get the same close, so the
+      journal can set their number, EdgeDesk's and the close side by side;
+      they have no side and no price, so no CLV and no result.
    5  AFFILIATES. public.affiliate_reconcile() replays the Stripe ledger
       idempotently, where supabase/affiliates.sql is installed.
 
@@ -228,7 +231,16 @@ function recordGame(sport, season, gid) {
 }
 async function gradeJournal() {
   const nowIso = new Date().toISOString();
-  const rows = await DB.get('research_journal?select=*&decision=eq.wagered&graded_at=is.null&kickoff_at=lt.' + encodeURIComponent(nowIso) + '&order=kickoff_at.asc&limit=500');
+  const past = '&graded_at=is.null&kickoff_at=lt.' + encodeURIComponent(nowIso) + '&order=kickoff_at.asc&limit=500';
+  const rows = await DB.get('research_journal?select=*&decision=eq.wagered' + past);
+  /* the reader's own numbers: gte on a numeric column skips the nulls, in
+     PostgREST and in the test fake alike */
+  const seen = {};
+  rows.forEach((e) => { seen[e.entry_id] = 1; });
+  for (const q of ['my_home_line=gte.-1000', 'my_total=gte.0']) {
+    const more = await DB.get('research_journal?select=*&decision=neq.wagered&' + q + past).catch(() => []);
+    (more || []).forEach((e) => { if (!seen[e.entry_id]) { seen[e.entry_id] = 1; rows.push(e); } });
+  }
   let closed = 0, graded = 0;
   const hist = {};
   for (const e of rows) {
@@ -254,14 +266,20 @@ async function gradeJournal() {
       closed++;
     }
     const staleDays = (Date.now() - Date.parse(e.kickoff_at)) / 864e5;
-    if (g.result || staleDays > 10) {
+    if (e.decision !== 'wagered') {
+      /* a number entry is done once its close is on file (or never will be) */
+      if (patch.close_source || e.close_source != null || staleDays > 10) {
+        Object.assign(patch, { graded_at: nowIso, grade_note: (patch.close_source || e.close_source) ? 'close recorded beside your number' : 'no close on file ten days after kickoff' });
+        graded++;
+      }
+    } else if (g.result || staleDays > 10) {
       Object.assign(patch, { result: g.result, home_score: final ? final.home_score : null, away_score: final ? final.away_score : null,
         graded_at: nowIso, grade_note: (g.result ? null : 'no final score on file ten days after kickoff') || (g.note.length ? g.note.join('; ') : null) });
       graded++;
     }
     if (Object.keys(patch).length) await DB.patch('research_journal', 'entry_id=eq.' + encodeURIComponent(e.entry_id), patch);
   }
-  log('  journal: ' + rows.length + ' open wager(s) past kickoff · ' + closed + ' closed · ' + graded + ' graded' + (DRY ? ' (dry)' : ''));
+  log('  journal: ' + rows.length + ' open entr' + (rows.length === 1 ? 'y' : 'ies') + ' past kickoff (wagers and your numbers) · ' + closed + ' closed · ' + graded + ' graded' + (DRY ? ' (dry)' : ''));
   return { open: rows.length, closed, graded };
 }
 

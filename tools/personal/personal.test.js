@@ -248,7 +248,11 @@ function adapter(fake) {
   const fake2 = fakePgrest({
     'public.research_journal': [{ entry_id: 'j1', game_key: 'nfl|2026_02_DET_BUF', home: 'Buffalo Bills', away: 'Detroit Lions', kickoff_at: KO,
       decision: 'wagered', market_type: 'spread', selection: 'home', line: -4.5, price_american: -110, snap_fair_home_line: -3,
-      snap_market_home_line: -4.5, after_kickoff: false, graded_at: null, close_captured_at: null, close_source: null }],
+      snap_market_home_line: -4.5, after_kickoff: false, graded_at: null, close_captured_at: null, close_source: null },
+    { entry_id: 'j2', game_key: 'nfl|2026_02_DET_BUF', home: 'Buffalo Bills', away: 'Detroit Lions', kickoff_at: KO, decision: 'researching',
+      my_home_line: -6, my_total: null, snap_fair_home_line: -3, snap_market_home_line: -4.5, after_kickoff: false, graded_at: null, close_captured_at: null, close_source: null },
+    { entry_id: 'j3', game_key: 'nfl|2026_02_DET_BUF', home: 'Buffalo Bills', away: 'Detroit Lions', kickoff_at: KO, decision: 'passed',
+      my_home_line: null, my_total: null, after_kickoff: false, graded_at: null, close_captured_at: null, close_source: null }],
     'public.game_research_history': hist.map((h) => ({ game_key: 'nfl|2026_02_DET_BUF', computed_at: h.computed_at, state: h.state }))
   });
   const rec = JOB.recordGame('nfl', 2026, '2026_02_DET_BUF');
@@ -260,6 +264,13 @@ function adapter(fake) {
     chk('JOB: the close is the last pregame capture', j.close_home_line === -5.5 && /game_research_history/.test(j.close_source), j);
     chk('JOB: CLV is written with the close', j.clv_points === 1 && j.beat_close === true);
     chk('JOB: the result comes from the committed final', j.result === (41 - 31 - 4.5 > 0 ? 'win' : 'loss') && j.home_score === rec.final.home_score && !!j.graded_at, j);
+    const j2 = fake2.rows('public', 'research_journal').find((x) => x.entry_id === 'j2');
+    chk('JOB: an entry with the reader\'s own number gets the same close', j2.close_home_line === -5.5 && !!j2.graded_at && /beside your number/.test(j2.grade_note), j2);
+    chk('JOB: and no CLV or result, having no side or price', j2.clv_points == null && j2.result == null && j2.beat_close == null, j2);
+    const vc = P.numbersVsClose(j2);
+    chk('JOB: your number, EdgeDesk\'s and the market\'s then are each measured from the close', vc.mine === 0.5 && vc.edgedesk === 2.5 && vc.market_then === 1, vc);
+    const j3 = fake2.rows('public', 'research_journal').find((x) => x.entry_id === 'j3');
+    chk('JOB: a pass with no number is left alone', j3.close_source == null && j3.graded_at == null, j3);
   }
 
   failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 500) : '')));
