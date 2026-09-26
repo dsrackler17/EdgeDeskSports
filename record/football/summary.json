@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_football_model_record_summary_v1",
- "generated_at": "2026-09-26T05:10:00.101Z",
+ "generated_at": "2026-09-26T08:00:01.672Z",
  "season": 2026,
  "what": "The football model’s own record: the number it published before kickoff, graded against the closing line and the final. Separate from the edges record, which grades flagged prices.",
  "rules": [
@@ -253,19 +253,19 @@
    "counts": {
     "recorded": 290,
     "pregame": 124,
-    "awaiting_final": 1,
+    "awaiting_final": 0,
     "final_no_close": 0,
-    "graded": 165,
+    "graded": 166,
     "revised": 168,
     "beyond_guard": 4
    },
    "ats": {
     "all": {
-     "n": 165,
+     "n": 166,
      "w": 73,
-     "l": 90,
+     "l": 91,
      "p": 2,
-     "pct": 44.8
+     "pct": 44.5
     },
     "lean": {
      "n": 131,
@@ -284,11 +284,11 @@
    },
    "ou": {
     "all": {
-     "n": 109,
+     "n": 110,
      "w": 60,
-     "l": 49,
+     "l": 50,
      "p": 0,
-     "pct": 55
+     "pct": 54.5
     },
     "lean": {
      "n": 76,
@@ -306,21 +306,21 @@
     }
    },
    "su": {
-    "n": 165,
-    "w": 140,
+    "n": 166,
+    "w": 141,
     "l": 25,
     "p": 0,
-    "pct": 84.8
+    "pct": 84.9
    },
    "clv": {
     "spread_entry": {
-     "n": 5,
-     "sum": -1,
-     "avg": -0.2,
-     "beat": 1,
+     "n": 6,
+     "sum": 0,
+     "avg": 0,
+     "beat": 2,
      "flat": 1,
      "lost": 3,
-     "beat_pct": 20
+     "beat_pct": 33.3
     },
     "spread_entry_lean": {
      "n": 3,
@@ -332,45 +332,45 @@
      "beat_pct": 0
     },
     "spread_pick": {
-     "n": 5,
-     "sum": -1,
-     "avg": -0.2,
-     "beat": 1,
+     "n": 6,
+     "sum": 0,
+     "avg": 0,
+     "beat": 2,
      "flat": 1,
      "lost": 3,
-     "beat_pct": 20
+     "beat_pct": 33.3
     },
     "total_entry": {
-     "n": 4,
-     "sum": 0,
-     "avg": 0,
-     "beat": 1,
+     "n": 5,
+     "sum": 2,
+     "avg": 0.4,
+     "beat": 2,
      "flat": 2,
      "lost": 1,
-     "beat_pct": 25
+     "beat_pct": 40
     },
     "total_pick": {
-     "n": 4,
-     "sum": 0,
-     "avg": 0,
-     "beat": 1,
+     "n": 5,
+     "sum": 2,
+     "avg": 0.4,
+     "beat": 2,
      "flat": 2,
      "lost": 1,
-     "beat_pct": 25
+     "beat_pct": 40
     }
    },
    "error": {
-    "n": 165,
+    "n": 166,
     "model_mae": 12.79,
     "close_mae": 10.45,
-    "model_closer_pct": 37,
-    "total_n": 110,
-    "model_total_mae": 12.49,
-    "close_total_mae": 12.26
+    "model_closer_pct": 36.7,
+    "total_n": 111,
+    "model_total_mae": 12.55,
+    "close_total_mae": 12.32
    },
    "brier": {
-    "n": 80,
-    "model": 0.1066
+    "n": 81,
+    "model": 0.1078
    },
    "weeks": [
     {
@@ -432,29 +432,29 @@
     {
      "week": 4,
      "recorded": 71,
-     "graded": 5,
+     "graded": 6,
      "ats": {
-      "n": 5,
+      "n": 6,
       "w": 0,
-      "l": 4,
+      "l": 5,
       "p": 1,
       "pct": 0
      },
      "ou": {
-      "n": 4,
+      "n": 5,
       "w": 2,
-      "l": 2,
+      "l": 3,
       "p": 0,
-      "pct": 50
+      "pct": 40
      },
      "clv": {
-      "n": 5,
-      "sum": -1,
-      "avg": -0.2,
-      "beat": 1,
+      "n": 6,
+      "sum": 0,
+      "avg": 0,
+      "beat": 2,
       "flat": 1,
       "lost": 3,
-      "beat_pct": 20
+      "beat_pct": 33.3
      }
     },
     {
@@ -490,7 +490,7 @@
    "lean_threshold": 2,
    "guard_points": 21,
    "by_reliability": {
-    "n": 4,
+    "n": 5,
     "min_bucket_n": 30,
     "buckets": [
      {
@@ -510,17 +510,17 @@
      },
      {
       "bucket": "80-89",
-      "n": 2,
-      "mae_vs_close": 2.75,
-      "rmse_vs_close": 3.83,
-      "median_abs_vs_close": 2.75,
-      "mae_vs_result": 10,
-      "rmse_vs_result": 14.08,
-      "median_abs_vs_result": 9.99,
+      "n": 3,
+      "mae_vs_close": 2.04,
+      "rmse_vs_close": 3.14,
+      "median_abs_vs_close": 0.63,
+      "mae_vs_result": 10.71,
+      "rmse_vs_result": 13.46,
+      "median_abs_vs_result": 12.13,
       "favorite_accuracy": 1,
-      "favorite_n": 2,
+      "favorite_n": 3,
       "ats_research_only": 0,
-      "ats_n": 1,
+      "ats_n": 2,
       "sample_ok": false
      },
      {
@@ -603,19 +603,19 @@
    "counts": {
     "recorded": 135,
     "pregame": 62,
-    "awaiting_final": 1,
+    "awaiting_final": 0,
     "final_no_close": 0,
-    "graded": 72,
+    "graded": 73,
     "revised": 85,
     "beyond_guard": 0
    },
    "ats": {
     "all": {
-     "n": 72,
+     "n": 73,
      "w": 32,
-     "l": 40,
+     "l": 41,
      "p": 0,
-     "pct": 44.4
+     "pct": 43.8
     },
     "lean": {
      "n": 54,
@@ -634,11 +634,11 @@
    },
    "ou": {
     "all": {
-     "n": 71,
+     "n": 72,
      "w": 38,
-     "l": 33,
+     "l": 34,
      "p": 0,
-     "pct": 53.5
+     "pct": 52.8
     },
     "lean": {
      "n": 48,
@@ -656,31 +656,31 @@
     }
    },
    "su": {
-    "n": 72,
-    "w": 59,
+    "n": 73,
+    "w": 60,
     "l": 13,
     "p": 0,
-    "pct": 81.9
+    "pct": 82.2
    },
    "clv": {
     "spread_entry": {
-     "n": 1,
-     "sum": -0.5,
-     "avg": -0.5,
-     "beat": 0,
+     "n": 2,
+     "sum": 0.5,
+     "avg": 0.25,
+     "beat": 1,
      "flat": 0,
      "lost": 1,
-     "beat_pct": 0
+     "beat_pct": 50
     }
    },
    "error": {
-    "n": 72,
-    "model_mae": 11.29,
-    "close_mae": 9.87,
-    "model_closer_pct": 36.1,
-    "total_n": 72,
-    "model_total_mae": 13.24,
-    "close_total_mae": 13.03
+    "n": 73,
+    "model_mae": 11.31,
+    "close_mae": 9.89,
+    "model_closer_pct": 35.6,
+    "total_n": 73,
+    "model_total_mae": 13.32,
+    "close_total_mae": 13.1
    }
   },
   "other_fbs": {
@@ -1157,6 +1157,30 @@
   ],
   "cfb": [
    {
+    "game_id": "401858234",
+    "week": 4,
+    "kickoff": "2026-09-26T02:30:00.000Z",
+    "home": "California",
+    "away": "Clemson",
+    "group": "p4",
+    "model_line": 1.87,
+    "model_total": 53.1,
+    "entry_line": 1.5,
+    "close_line": 2.5,
+    "close_total": 52.5,
+    "final": [
+     24,
+     10
+    ],
+    "status": "GRADED",
+    "ats": "loss",
+    "ats_side": "home",
+    "ou": "loss",
+    "ou_side": "over",
+    "clv": 1,
+    "reliability": 86
+   },
+   {
     "game_id": "401858461",
     "week": 4,
     "kickoff": "2026-09-26T00:00:00.000Z",
@@ -1417,30 +1441,6 @@
     "ats_side": "home",
     "ou": null,
     "ou_side": null,
-    "clv": null,
-    "reliability": null
-   },
-   {
-    "game_id": "401860887",
-    "week": 3,
-    "kickoff": "2026-09-20T02:00:00.000Z",
-    "home": "San Diego State",
-    "away": "James Madison",
-    "group": "other_fbs",
-    "model_line": 4.27,
-    "model_total": 54.8,
-    "entry_line": null,
-    "close_line": -3,
-    "close_total": 46.5,
-    "final": [
-     26,
-     13
-    ],
-    "status": "GRADED",
-    "ats": "win",
-    "ats_side": "away",
-    "ou": "loss",
-    "ou_side": "over",
     "clv": null,
     "reliability": null
    }
