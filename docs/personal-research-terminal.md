@@ -5,7 +5,10 @@ into a research terminal that watches the market with them: a watchlist on the
 account, research-condition alerts, a Top 5 list ordered by research-worthiness,
 a decision journal that freezes EdgeDesk's numbers at decision time and grades
 the reader's number against the close, a partner program, live activity counts,
-and an AI desk that can answer from all of it.
+and an AI desk that can answer from all of it. The growth upgrade built on top
+of it (Compare My Number, research cards, trial activation, acquisition,
+personas, public samples, creator campaigns) is documented in
+[`growth-upgrade.md`](growth-upgrade.md).
 
 **No model methodology changed.** Nothing here computes a fair line, a win
 probability, a reliability score, a research label or a status. Every number a

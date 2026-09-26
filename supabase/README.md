@@ -61,9 +61,15 @@ written by the service role and readable by entitled readers:
 the football module itself through `tools/personal/research_state.js`) and
 `game_research_history` (every distinct state, appended by trigger). Plus the
 `my_watchlist` security-invoker view and `edgedesk_proof_metrics()` (anon-callable
-counts only — no user count, accuracy or profit). Report rows 1-14 should say
-`ok`. Tested against a real PostgreSQL by `tools/personal/personal_sql.test.js`;
-see `docs/personal-research-terminal.md`.
+counts only — no user count, accuracy or profit). Since the growth upgrade it
+also carries the reader's OWN number on a journal entry (`my_home_line`,
+`my_total` — Compare My Number; write-once with the rest of the entry), the
+persona answer on `user_preferences` (one of five keys, only reorders the desk),
+and `share_cards` (the exact words and numbers on every research card a reader
+generated: own rows only, write-once, tout copy refused, no card for a game that
+has kicked off). Report rows 1-18 should say `ok`. Tested against a real
+PostgreSQL by `tools/personal/personal_sql.test.js`; see
+`docs/personal-research-terminal.md` and `docs/growth-upgrade.md`.
 
 ### `affiliates.sql` — the partner program, tracked from Stripe's own records
 Run after `billing.sql`, `stripe_webhook.sql` and `referral_codes.sql`. Clicks
@@ -77,7 +83,31 @@ a manual payout reference; a refund voids or claws back, amounts are never
 edited or deleted). Partners read their own counts through
 `affiliate_my_dashboard()`; admins (`affiliate_admins`) use `/admin/affiliates/`.
 No money moves here. Add `charge.refunded` to the webhook endpoint's events in
-the Stripe dashboard. Tested by `tools/personal/affiliates_sql.test.js`.
+the Stripe dashboard. **Campaigns** (`affiliate_campaigns`): per creator, per
+code — the customer's discount described in Stripe's own words and checked
+against Stripe's record of the promotion code (add `promotion_code.created`,
+`promotion_code.updated` and `coupon.updated` to the webhook's events), the
+creator's commission (rate, recurring or one-time, months), a start, an end
+and an on/off switch, all edited in `/admin/affiliates/` without a deploy. The
+terms are snapshotted onto the attribution and never rewritten; a campaign is
+switched off, never deleted. Report rows 1-13 should say `ok`. Tested by
+`tools/personal/affiliates_sql.test.js`.
+
+### `growth.sql` — trial activation, acquisition attribution, public samples
+Run after `personal_research.sql` and `affiliates.sql` (the guard says so).
+`activation_settings` (one row: the weight of every trial action and the bars
+for EXPLORING, ACTIVATED and POWER_USER), `activation_events` (deduplicated
+actions — the ones with a row of their own recorded BY TRIGGER on the
+watchlist, journal, alert-settings and share-card tables, the rest only through
+`edp_track()`), `user_activation` (derived, replayed in order, internal — no
+client role can read it), `acquisition_visitors` / `user_acquisition` (first
+attributable touch write-once, last touch kept apart, classified into
+organic_x, x_dm, creator_affiliate, linkedin, search, direct, referral, other;
+it never touches the affiliate ledger) and `public_sample_games` (which games a
+signed-out visitor may read through `public_sample_research()`, a SUBSET of
+the shared research state). Admin reports (`growth_admin_*`) check the partner
+program's operator list. Report rows 1-9 should say `ok`. Tested by
+`tools/personal/growth_sql.test.js`; see `docs/growth-upgrade.md`.
 
 ### `bankroll_and_stakes.sql` — the risk policy and the stake audit trail
 `bankroll_settings` is one MUTABLE row per reader: the bankroll (deliberately

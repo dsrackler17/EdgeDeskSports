@@ -1944,6 +1944,7 @@ section.band.lp-quiet{padding:56px 0}
         <button class="btn primary lg authbtn" id="subBtn" onclick="startSubscribe()">Start researching</button>
         <p class="psub"><b data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</b></p>
         <p class="psub" style="margin-top:4px">No charge for 7 days &middot; cancel any time &middot; 21+ &middot; research tool, not betting advice &middot; 1-800-GAMBLER</p>
+        <p class="psub" id="edOffer" hidden></p>
       </div>
 
       <div>
@@ -2188,7 +2189,7 @@ section.band.lp-quiet{padding:56px 0}
      rather than duplicated inline so the landing page, the reset page and
      EdgeDesk Games cannot drift apart on any of the three. -->
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
-<script src="/lib/edgedesk_pricing.js?v=20260925p"></script>
+<script src="/lib/edgedesk_pricing.js?v=20260926g"></script>
 <script>try{window.EDPricing&&window.EDPricing.apply(document);}catch(e){}</script>
 <!-- The same "Report a problem" the terminal, Games and the 404 page use. It
      matters most HERE: somebody who cannot get past signup has no account, no
@@ -2377,6 +2378,54 @@ async function affClaim(token){
     if(r.ok){ try{ localStorage.setItem('edgedesk_aff_claimed_v1',code); }catch(e){} }
   }catch(e){}
 }
+/* ==========================================================================
+   ACQUISITION (supabase/growth.sql)
+   Every visit, with the raw signals it arrived with (ref, utm, referrer host,
+   landing path); the SERVER classifies the source (organic_x, x_dm,
+   creator_affiliate, linkedin, search, direct, referral, other) and freezes
+   the first attributable touch, keeping the latest one beside it. Anon and
+   fire-and-forget; only a hash of the visitor id is stored. It is a marketing
+   measurement: the partner credit above (first code-bearing touch, claimed
+   through affiliate_claim) is never read or written by it.
+   ========================================================================== */
+function acqTouch(x){
+  x=x||{};
+  return {ref:x.ref||null,utm_source:x.utm_source||null,utm_medium:x.utm_medium||null,utm_campaign:x.utm_campaign||null,
+    referrer_host:x.referrer||null,landing:x.landing||null,seen_at:x.seen_at||x.organic_first_seen_at||null};
+}
+function acqTrackVisit(){
+  var v=affVisitor(); if(!v) return;
+  try{
+    fetch(SB_URL+'/rest/v1/rpc/acq_track_visit',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({p_visitor:v,p_touch:acqTouch(ED_ATTR&&ED_ATTR.current)})}).catch(function(){});
+  }catch(e){}
+}
+async function acqClaim(token){
+  if(!token) return;
+  try{
+    await fetch(SB_URL+'/rest/v1/rpc/acq_claim',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({p_visitor:affVisitor(),p_first:acqTouch(ED_ATTR&&ED_ATTR.first),p_last:acqTouch(attrRead(ATTR_LAST))})});
+  }catch(e){}
+}
+/* A CREATOR CAMPAIGN'S OFFER (supabase/affiliates.sql affiliate_offer): the
+   code to carry to Stripe checkout, and the discount only as STRIPE records
+   it — worded by lib/edgedesk_pricing.js. No record, no discount line: the
+   page never promises a discount Stripe has not confirmed. */
+var ED_OFFER=null;
+async function edOfferLoad(){
+  var code=affCode(attrRef()); if(!code) return;
+  try{
+    var r=await fetch(SB_URL+'/rest/v1/rpc/affiliate_offer',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_code:code})});
+    if(!r.ok) return;
+    var o=await r.json(); if(!o||!o.ok) return;
+    ED_OFFER=o;
+    var line=o.discount&&window.EDPricing&&EDPricing.discountLine?EDPricing.discountLine(o.discount,o.code):null;
+    var el=document.getElementById('edOffer'); if(el&&line){el.textContent=line;el.hidden=false;}
+  }catch(e){}
+}
 /* the live-activity line in the hero: real counts or nothing */
 async function lpLiveLoad(){
   var el=document.getElementById('lpLive'); if(!el) return;
@@ -2554,7 +2603,7 @@ loadLiveProof();
 
 /* Audience + attribution run as soon as the DOM below them exists. */
 edAudience(); attrDecorateLinks();
-affTrackClick(); lpLiveLoad();
+affTrackClick(); acqTrackVisit(); edOfferLoad(); lpLiveLoad();
 
 /* ===== subscribe: signup/login -> SEPARATE ARL consent -> Stripe =====
    The 21+/Terms checkbox on signup does NOT cover auto-renewal. California's ARL
@@ -2764,6 +2813,9 @@ async function confirmArl(){
      customer may edit it at checkout, which is exactly why it is never the key). */
   var url=STRIPE_LINK+'?client_reference_id='+encodeURIComponent(u.id);
   if(u.email)url+='&prefilled_email='+encodeURIComponent(u.email);
+  /* a creator campaign's code travels to checkout; Stripe decides whether
+     and how much it discounts (affiliate_offer only names a code Stripe has) */
+  if(ED_OFFER&&ED_OFFER.checkout_code&&/^[A-Z0-9_.-]{1,64}$/.test(ED_OFFER.checkout_code))url+='&prefilled_promo_code='+encodeURIComponent(ED_OFFER.checkout_code);
   msg.className='auth-msg ok'; msg.textContent='Opening secure checkout…';
   window.location.href=url;
 }
@@ -2936,7 +2988,7 @@ async function submitAuth(){
    ========================================================================== */
 async function attrRecord(u,token){
   if(!u||!u.id||!token) return;
-  affClaim(token);
+  affClaim(token); acqClaim(token);
   var body=Object.assign({user_id:u.id,user_email:u.email||null},attrPayload());
   try{
     await fetch(SB_URL+'/rest/v1/referrals?on_conflict=user_id',{method:'POST',

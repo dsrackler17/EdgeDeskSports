@@ -1,8 +1,8 @@
 {
  "schema": "edgedesk_forecast_store_v1",
  "why": "the last forecast EdgeDesk actually observed for each game, so a build that cannot reach the provider carries it forward at its real observation time instead of publishing a refusal. Only observed forecasts are written here; a carried one is never re-committed as a fresh one.",
- "generated_at": "2026-09-25T23:21:49.864Z",
- "source": "open-meteo forecast (keyless), joined on the trained venue coordinates",
+ "generated_at": "2026-09-26T03:58:37.181Z",
+ "source": "open-meteo forecast (keyless), joined on the trained venue coordinates; NFL games joined on football/venues/nfl_stadiums.json (hand-entered, verified)",
  "by_game": {
   "401856696": {
    "temp_f": 86.3,
@@ -12888,6 +12888,17 @@
     }
    ],
    "kickoff": "2026-10-03T04:00:00.000Z"
+  },
+  "2026_02_SF_LA": {
+   "dome": true,
+   "temp_f": null,
+   "wind_mph": null,
+   "precip_in": null,
+   "roof": true,
+   "hours": [],
+   "source": "trained venue table — indoor venue, no request made",
+   "as_of": "2026-09-26T03:58:37.101Z",
+   "kickoff": "2026-09-22T00:15:00.000Z"
   }
  }
 }

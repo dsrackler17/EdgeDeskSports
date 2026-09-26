@@ -199,6 +199,18 @@ my CLV looked this month?" from those rows — and says so when a row is missing
 No model methodology changed. See
 [`docs/personal-research-terminal.md`](docs/personal-research-terminal.md).
 
+On top of it, the growth upgrade adds **Compare My Number** (a reader's own
+fair spread and total beside EdgeDesk's and the market's, the measured inputs
+the difference runs through, saved write-once to the journal and set against
+the close), **research cards** sized for X from real current data only,
+**trial activation** states from deduplicated actions (internal, with
+configurable thresholds and an admin report), **acquisition attribution**
+(first touch frozen, last touch kept apart, the affiliate ledger untouched),
+a one-question **persona** that reorders the desk without hiding anything,
+**public sample research** for games an admin chooses, and per-code **creator
+campaigns** whose discount Stripe confirms. See
+[`docs/growth-upgrade.md`](docs/growth-upgrade.md).
+
 ## The weekly research email
 Twice a week the same research goes out as an email nobody sends: **College
 Football Week Ahead** on Monday and **NFL Week Ahead** on Tuesday, both at 10:00

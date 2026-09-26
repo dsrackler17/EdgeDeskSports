@@ -195,6 +195,46 @@ try {
   chk('a reader may delete their own entry', db.as(A, `with d as (delete from public.research_journal where decision = 'passed' returning 1) select count(*) from d;`) === '1');
   chk('B cannot delete A\'s entries', db.as(B, `with d as (delete from public.research_journal returning 1) select count(*) from d;`) === '0');
 
+  /* ── Compare My Number: the reader's own number, kept forever ─────────── */
+  db.as(A, `insert into public.research_journal (game_key, decision, my_home_line, my_total, snap_fair_home_line, snap_market_home_line, snapshot, snapshot_hash)
+      values ('cfb|401862779','researching', -3.5, 51.5, -1.7, 2.5, '{"schema":"edgedesk_research_state/1"}','cmp1');`);
+  chk('a reader saves their own fair spread and total with EdgeDesk\'s numbers of the moment',
+    db.as(A, `select my_home_line || '|' || my_total || '|' || snap_fair_home_line from public.research_journal where snapshot_hash = 'cmp1';`) === '-3.5|51.5|-1.7');
+  err = db.mustFail(() => db.as(A, `update public.research_journal set my_home_line = -7 where snapshot_hash = 'cmp1';`));
+  chk('the reader\'s own number cannot be edited afterwards', !!err && /permission denied|write-once/.test(err));
+  err = db.mustFail(() => db.service(`update public.research_journal set my_home_line = -7 where snapshot_hash = 'cmp1';`));
+  chk('not even by the service role: a new number is a new entry, the old one is kept', !!err && /write-once/.test(err));
+  db.as(A, `insert into public.research_journal (game_key, decision, my_home_line, snapshot, snapshot_hash) values ('cfb|401862779','researching', -4, '{}','cmp2');`);
+  chk('a changed mind is a second entry, and both numbers are kept', db.as(A, `select string_agg(my_home_line::text, ',' order by id) from public.research_journal where game_key = 'cfb|401862779' and my_home_line is not null;`) === '-3.5,-4');
+  err = db.mustFail(() => db.as(A, `insert into public.research_journal (game_key, decision, my_home_line, snapshot, snapshot_hash) values ('cfb|401862779','researching', 180, '{}','cmp3');`));
+  chk('an impossible number is refused', !!err && /research_journal_my_numbers/.test(err));
+  chk('B cannot read A\'s numbers', db.as(B, `select count(*) from public.research_journal where my_home_line is not null;`) === '0');
+
+  /* ── persona ───────────────────────────────────────────────────────────── */
+  db.as(A, `insert into public.user_preferences (leagues, persona) values ('{cfb}', 'model_builder') on conflict (user_id) do update set persona = excluded.persona;`);
+  chk('the persona answer is stored with the time it was given', db.as(A, `select persona || '|' || (persona_set_at is not null) from public.user_preferences;`) === 'model_builder|true');
+  err = db.mustFail(() => db.as(A, `update public.user_preferences set persona = 'whale';`));
+  chk('a persona outside the five is refused', !!err && /user_prefs_persona_valid/.test(err));
+  db.as(A, `update public.user_preferences set persona = null;`);
+  chk('and it can be cleared', db.as(A, `select coalesce(persona, 'none') || '|' || (persona_set_at is null) from public.user_preferences;`) === 'none|true');
+
+  /* ── share cards ───────────────────────────────────────────────────────── */
+  const card = (hash, text) => `insert into public.share_cards (game_key, format, state_hash, fair_home_line, market_home_line, gap_pts, reliability_score, content, content_hash)
+      values ('cfb|401862779','x_landscape','h1', -1.7, 2.5, 4.2, 88, ${PG.lit(JSON.stringify({ matchup: 'Ole Miss @ Florida', fair: 'Florida -1.7', tagline: text }))}::jsonb, '${hash}');`;
+  db.as(A, card('c1', 'Research, not picks.'));
+  chk('a reader records the card they generated', db.as(A, `select count(*) from public.share_cards;`) === '1');
+  chk('B cannot read A\'s cards', db.as(B, `select count(*) from public.share_cards;`) === '0');
+  err = db.mustFail(() => db.as(A, card('c2', 'LOCK OF THE WEEK — guaranteed')));
+  chk('a card that reads like a tout is refused by the database', !!err && /share_cards_shape/.test(err));
+  err = db.mustFail(() => db.as(A, `update public.share_cards set gap_pts = 9;`));
+  chk('a card is write-once', !!err && /permission denied/.test(err));
+  err = db.mustFail(() => db.anon(`select count(*) from public.share_cards;`));
+  chk('anon reads no cards', !!err && /permission denied/.test(err));
+  db.service(`update public.game_research_state set kickoff_at = now() - interval '5 minutes' where game_key = 'cfb|401862779';`);
+  err = db.mustFail(() => db.as(A, card('c3', 'Research, not picks.')));
+  chk('no card is made for a game that has kicked off', !!err && /kicked off/.test(err));
+  db.service(`update public.game_research_state set kickoff_at = '${KICK}' where game_key = 'cfb|401862779';`);
+
   /* ── entitlement: with the paywall's function installed ───────────────── */
   db.sql(`create or replace function public.community_is_entitled(p_user uuid) returns boolean language sql stable as $$ select p_user = '${A}'::uuid $$;`);
   chk('with the paywall installed, an entitled reader reads the shared state', db.as(A, `select count(*) from public.game_research_state;`) === '1');
