@@ -54,11 +54,20 @@ function event(type, obj, userId, createdSecAgo) {
 
 try {
   ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql'].forEach((f) => db.applyFile(path.join(PG.ROOT, 'supabase', f)));
-  let out = db.applyFile(FILE);
+  let out = db.applyFileAtomic(FILE);
   chk('the migration applies after the billing files', true);
   chk('every report row says ok', !/CHECK THIS/.test(out), out.slice(-500));
-  out = db.applyFile(FILE);
+  out = db.applyFileAtomic(FILE);
   chk('and applies a second time', !/CHECK THIS/.test(out));
+  /* re-running it on a live site: a Stripe webhook (or the hourly reconcile)
+     holds stripe_events and then reads the affiliate tables. Run as the SQL
+     editor runs it — one transaction — the file must not deadlock with it. */
+  const hook = db.background('begin;\nselect count(*) from public.stripe_events;\nselect pg_sleep(2);\nselect count(*) from public.affiliate_settings;\ncommit;\n');
+  db.sleep(0.4);
+  const rerun = db.mustFail(() => db.applyFileAtomic(FILE));
+  const hk = hook.wait(30000);
+  chk('re-running it while a webhook is mid-event deadlocks neither side', rerun === null && hk.code === 0,
+    { rerun: rerun && rerun.slice(0, 400), hook: hk });
 
   db.sql(`insert into auth.users (id, email, created_at) values
     ('${U.admin}','owner@example.com', now() - interval '400 days'),

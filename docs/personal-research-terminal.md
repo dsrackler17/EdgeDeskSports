@@ -105,6 +105,7 @@ RELIABILITY or LIMITED DATA.
 ## 6. Rollout (manual steps)
 
 1. SQL editor: run `supabase/personal_research.sql`, then `supabase/affiliates.sql` (after `billing.sql`, `stripe_webhook.sql`, `referral_codes.sql`). Every report row should say `ok`. Re-run `supabase/referral_codes.sql` to pick up the revenue-view fix.
+   Both files are safe to re-run on the live site: each takes every lock it needs up front, all at once, so it cannot deadlock with a webhook or a reader saving a journal entry. If one reports it could not take its locks within 30 seconds, nothing was changed — run it again.
 2. Insert the owner into `public.affiliate_admins` if report row 7 says none yet.
 3. In the Stripe dashboard, add **`charge.refunded`** (and optionally `invoice.paid`) to the webhook endpoint's events. Nothing else changes on the webhook.
 4. GitHub → Actions → "Personal research state" → Run workflow once (it uses the existing `SB_URL` / `SB_SERVICE_ROLE` secrets).

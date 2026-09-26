@@ -59,6 +59,46 @@ begin
 end
 $guard$;
 
+-- ── re-running this file on a live site ─────────────────────────────────────
+-- The SQL editor runs the file as one transaction, and each statement below
+-- would take its lock as it reached it and hold it to the end. A Stripe webhook
+-- (and the hourly reconcile) holds stripe_events and then reads the affiliate
+-- tables; this file used to lock the affiliate tables first and stripe_events
+-- last, and the two deadlocked (40P01) when the file was re-run.
+-- So every lock the file needs is taken here, first, all at once or not at
+-- all (NOWAIT, retried for up to 30 seconds): the file never waits while it
+-- holds a lock, and what it would have deadlocked with waits a moment instead.
+do $locks$
+declare
+  v_list text;
+  v_try int := 0;
+begin
+  select string_agg(t, ', ') into v_list from unnest(array[
+    'public.stripe_events',
+    'public.affiliate_settings',
+    'public.affiliate_admins',
+    'public.affiliate_accounts',
+    'public.affiliate_clicks',
+    'public.affiliate_attributions',
+    'public.affiliate_conversions',
+    'public.affiliate_commissions']) t
+  where to_regclass(t) is not null;
+  if v_list is null then return; end if;
+  loop
+    begin
+      execute 'lock table ' || v_list || ' in access exclusive mode nowait';
+      return;
+    exception when lock_not_available then
+      v_try := v_try + 1;
+      if v_try >= 150 then
+        raise exception 'could not lock % within 30 seconds; something kept one of them busy. Nothing was changed: run this file again in a minute.', v_list;
+      end if;
+      perform pg_sleep(0.2);
+    end;
+  end loop;
+end
+$locks$;
+
 -- ── settings: the economics, in one row ─────────────────────────────────────
 create table if not exists public.affiliate_settings (
   id                          int primary key default 1,
