@@ -1,58 +1,58 @@
 {
  "schema": "edgedesk_fcs_bridge_validation_v1",
  "season": 2026,
- "generated_at": "2026-09-26T13:54:39.907Z",
+ "generated_at": "2026-09-26T21:19:36.696Z",
  "method": "walk-forward over every completed 2026 FBS-vs-FCS game: the FCS side rated from the 2025 fit carried forward and only the 2026 results before kickoff; the FBS side at the rating EdgeDesk priced it at before the game (engine replay). Errors are against the final margin, capped at the engine’s own ±35 (and uncapped beside it).",
- "n": 103,
+ "n": 104,
  "capped": {
   "floor": {
-   "n": 103,
-   "mae": 9.9,
-   "rmse": 12.49,
-   "bias": 0.03
+   "n": 104,
+   "mae": 9.91,
+   "rmse": 12.48,
+   "bias": -0.07
   },
   "bridge": {
-   "n": 103,
-   "mae": 9.49,
-   "rmse": 11.97,
-   "bias": -1.32
+   "n": 104,
+   "mae": 9.54,
+   "rmse": 12,
+   "bias": -1.45
   },
   "prior_only": {
-   "n": 103,
-   "mae": 9.46,
-   "rmse": 12.02,
-   "bias": -2.02
+   "n": 104,
+   "mae": 9.43,
+   "rmse": 11.98,
+   "bias": -2.06
   }
  },
  "uncapped": {
   "floor": {
-   "n": 103,
-   "mae": 17.61,
-   "rmse": 21.42,
-   "bias": -9.21
+   "n": 104,
+   "mae": 17.7,
+   "rmse": 21.48,
+   "bias": -9.38
   },
   "bridge": {
-   "n": 103,
-   "mae": 16.41,
-   "rmse": 19.75,
-   "bias": -10.57
+   "n": 104,
+   "mae": 16.54,
+   "rmse": 19.87,
+   "bias": -10.75
   },
   "prior_only": {
-   "n": 103,
-   "mae": 16.5,
-   "rmse": 20,
-   "bias": -11.27
+   "n": 104,
+   "mae": 16.56,
+   "rmse": 20.02,
+   "bias": -11.37
   }
  },
  "paired_abs_error_reduction": {
-  "mean": 0.4,
-  "se": 0.71,
-  "t": 0.57,
+  "mean": 0.37,
+  "se": 0.7,
+  "t": 0.52,
   "bridge_closer": 52,
-  "of": 103
+  "of": 104
  },
  "floor_value": -28,
- "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.57, n = 103).",
+ "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.52, n = 104).",
  "rows": [
   {
    "game_id": "401856767",
@@ -1083,6 +1083,16 @@
    "floor": 20.47,
    "bridge": 1.48,
    "bridge_sd": 7.3
+  },
+  {
+   "game_id": "401858468",
+   "week": 4,
+   "fcs": "howard",
+   "fbs": "rutgers",
+   "actual": 51,
+   "floor": 24,
+   "bridge": 20.8,
+   "bridge_sd": 6.81
   }
  ]
 }
