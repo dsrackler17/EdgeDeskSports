@@ -121,10 +121,16 @@ ELO_MOV_CAP = 35.0                    # diminishing returns on blowouts
 ELO_PTS_PER_ELO = 1.0 / 25.0          # margin per Elo point (fitted)
 
 # ------------------------------------------------------------ submodels
-RIDGE_ALPHA = 30.0                    # model C ridge penalty (tuned on dev)
-GBM_PARAMS = dict(objective='huber', alpha=14.0, learning_rate=0.03, num_leaves=15,
-                  min_data_in_leaf=60, feature_fraction=0.7, bagging_fraction=0.8,
-                  bagging_freq=1, lambda_l2=10.0, n_estimators=600, verbose=-1,
+# Model C ridge penalty: dev MAE flat for 10-100 (3: 12.827, 10: 12.822, 30: 12.820,
+# 100: 12.823, 300: 12.837) -> 30. report/tuning_models_C.json
+RIDGE_ALPHA = 30.0
+# Model D: the first specification (15 leaves, 600 trees) over-fit; a shallower,
+# shorter model won the dev search (report/tuning_models_D*.json):
+#   g0 15 leaves/600 trees 12.990 | g1 7/500 12.908 | g2 slow+L2 12.949 | g3 L2 loss 13.050
+#   g4 7 leaves/min 100/250 trees 12.890 (chosen) | g5 linear trees 12.903 | g6 5/200 12.942 | g7 7/150 12.949
+GBM_PARAMS = dict(objective='huber', alpha=14.0, learning_rate=0.03, num_leaves=7,
+                  min_data_in_leaf=100, feature_fraction=0.7, bagging_fraction=0.8,
+                  bagging_freq=1, lambda_l2=10.0, n_estimators=250, verbose=-1,
                   deterministic=True, force_row_wise=True, num_threads=1)
 
 # ------------------------------------------------------------- uncertainty
