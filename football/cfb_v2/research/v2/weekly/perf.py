@@ -477,10 +477,17 @@ def game_performance(season, T=None, validation=None):
         TG['expected_performance_margin'] = np.where(
             TG.home_away.eq('home'), TG.game_id.map(em), -TG.game_id.map(em))
         TG['scoreboard_overperformance'] = TG.margin - TG.expected_performance_margin
+        miss = X[[f for f, _ in EM_FEATURES]].isna()
+        why = pd.Series([','.join(c for c in miss.columns if r[c]) for _, r in miss.iterrows()], index=X.index)
+        TG['expected_margin_null_reason'] = TG.game_id.map(why).where(TG.expected_performance_margin.isna())
+        TG.loc[TG.expected_performance_margin.isna() & TG.expected_margin_null_reason.fillna('').ne(''),
+               'expected_margin_null_reason'] = 'feature_missing:' + TG.expected_margin_null_reason
+        TG.loc[~TG.has_pbp, 'expected_margin_null_reason'] = 'no_pbp'
         K = art['constants']
     else:
         TG['expected_performance_margin'] = np.nan
         TG['scoreboard_overperformance'] = np.nan
+        TG['expected_margin_null_reason'] = 'artifact_missing'
         K = None
     # ---------------------------------------------------------- turnovers
     TG['ints_made'] = TG.opp_ints_thrown

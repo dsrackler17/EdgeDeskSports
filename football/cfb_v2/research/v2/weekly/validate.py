@@ -40,7 +40,7 @@ CANCELED_STATUSES = {'STATUS_CANCELED', 'STATUS_CANCELLED'}
 PLAY_RATIO_MIN = 0.75        # below 75% of the national median play count = "few plays"
 REF_PLAYS_FALLBACK = 172     # median PBP rows per final game, 2024 and 2025 (both 172-173)
 REF_MIN_GAMES = 20           # fewer final games with PBP than this -> use the fallback
-SEQ_INVERSION_TOL = 3        # sequenceNumber decreases along play order (timeouts excluded)
+SEQ_INVERSION_TOL = 3        # min over (sequenceNumber, id) of decreases along play order, timeouts excluded
 PERIOD_BACK_TOL = 1          # plays whose period is below an earlier play's period
 EXTRA_GAP_TOL = 3            # missing play numbers beyond the (periods - 1) end-of-period rows
 MAX_STEP_TOL = 4             # largest single jump in game_play_number
@@ -278,9 +278,17 @@ def check_game_pbp(g, home_id, away_id, home_pts, away_pts, ref_plays):
     ttype = c['type.text'].astype(object).fillna('').to_numpy() if 'type.text' in c else np.array([''] * n, object)
     not_to = ttype != 'Timeout'
     # ------------------------------------------------------------ ordering
-    seq = _as_int_array(c.sequenceNumber)[not_to] if 'sequenceNumber' in c else np.array([])
-    seq = seq[~np.isnan(seq)]
-    seq_inv = int((np.diff(seq) < 0).sum()) if len(seq) > 1 else 0
+    # the provider carries two sequence keys: sequenceNumber (chronological in the
+    # 2014+ feed, not before) and the play id (chronological before 2014, occasionally
+    # not since). The order is corroborated when either key agrees with the play number.
+    inv = []
+    for col in ('sequenceNumber', 'id'):
+        if col in c:
+            q = _as_int_array(c[col])[not_to]
+            q = q[~np.isnan(q)]
+            if len(q) > 1:
+                inv.append(int((np.diff(q) < 0).sum()))
+    seq_inv = min(inv) if inv else 0
     period_back = int((per < np.maximum.accumulate(per)).sum())
     n_periods = len(np.unique(per))
     missing = int(gpn.max() - len(np.unique(gpn))) if gpn.min() >= 1 else 0
@@ -321,8 +329,8 @@ def check_game_pbp(g, home_id, away_id, home_pts, away_pts, ref_plays):
     dist = _as_int_array(c.distance)
     ytg = _as_int_array(c['start.yardsToEndzone'])
     yl = _as_int_array(c['start.yardLine'])
-    bad_down = int((scrim & ~np.isin(down, [1, 2, 3, 4])).sum() +
-                   (~scrim & ~np.isnan(down) & ((down < 0) | (down > 4))).sum())
+    # down is meaningful on scrimmage plays only (kickoffs / PATs carry 0, -1 or a stale down)
+    bad_down = int((scrim & ~np.isin(down, [1, 2, 3, 4])).sum())
     bad_dist = int((scrim & ~((dist >= 0) & (dist <= 99))).sum())
     bad_yl = int(((~np.isnan(ytg)) & ((ytg < 0) | (ytg > 100))).sum() +
                  ((~np.isnan(yl)) & ((yl < 0) | (yl > 100))).sum() +

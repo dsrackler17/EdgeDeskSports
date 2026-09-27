@@ -241,7 +241,9 @@ def test_pbp_checks():
     chk('a run of 10 missing play numbers -> play_order False', r.checks['play_order'] is False, r.issues)
     d = g.copy()
     d['sequenceNumber'] = d.sequenceNumber.values[::-1]
-    chk('sequence numbers running backwards -> play_order False', run1(d).checks['play_order'] is False)
+    chk('sequenceNumber backwards but play ids in order -> order corroborated', run1(d).checks['play_order'])
+    d['id'] = d['id'].values[::-1]
+    chk('both provider sequence keys backwards -> play_order False', run1(d).checks['play_order'] is False)
     # drive contiguity: five drive ids re-appear later
     d = g.copy()
     for k, j in enumerate((0, 2, 4, 6, 8)):

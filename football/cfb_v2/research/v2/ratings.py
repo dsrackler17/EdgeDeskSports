@@ -137,6 +137,7 @@ def solve(design, off_ids, def_ids, H, y, w, prior_o, prior_d, tau2_o, tau2_d,
 CG_TOL = 1e-10            # CG stops at this residual, relative to the evidence (see below)
 RESIDUAL_TOL = 1e-9       # the direct solution's relative residual ||Ax - b|| / ||b||
 DELTA_TOL = 1e-6          # max |x_cg - x_direct|, in rating units
+CG_REF_FLOOR = 1e-4       # the CG reference never falls below 1e-4 ||S b|| (round-off)
 
 
 def conjugate_gradient(A, b, x0, ref, tol=CG_TOL, maxiter=None):
@@ -149,18 +150,22 @@ def conjugate_gradient(A, b, x0, ref, tol=CG_TOL, maxiter=None):
     the prior (CG on the deviation from the prior). Relative to ||b|| the
     rule would be meaningless for metrics whose FBS prior variance sits at its
     1.5e-9 floor: b then carries 1e9 x prior mean on those rows and the
-    residual of every other row is invisible beside it.
+    residual of every other row is invisible beside it. The reference is
+    floored at CG_REF_FLOOR x ||S b|| so the target stays above round-off when
+    the data barely move the prior (a season's first few games).
     Deterministic: fixed order of operations, no randomness.
-    Returns (x, iterations, converged, relative residual at stop)."""
+    Returns (x, iterations, converged, relative residual at stop, reference used)."""
     d = np.sqrt(np.diag(A))
     s = 1.0 / d
     As = A * s[:, None] * s[None, :]
     bs = b * s
     z = np.asarray(x0, dtype=float) * d
     r = bs - As @ z
+    nb = float(np.linalg.norm(bs))
     nref = float(np.linalg.norm(ref * s))
-    if nref == 0.0:
-        nref = float(np.linalg.norm(bs)) or 1.0
+    kind = 'evidence ||S(b - A m)||'
+    if nref < CG_REF_FLOOR * nb or nref == 0.0:
+        nref, kind = (CG_REF_FLOOR * nb) or 1.0, 'floor %.0e ||S b||' % CG_REF_FLOOR
     p = r.copy()
     rr = float(r @ r)
     maxiter = maxiter or 20 * len(b)
@@ -175,7 +180,7 @@ def conjugate_gradient(A, b, x0, ref, tol=CG_TOL, maxiter=None):
         rr = rr_new
         it += 1
     rel = float(np.linalg.norm(bs - As @ z)) / nref
-    return z * s, it, bool(rel <= tol), rel
+    return z * s, it, bool(rel <= tol), rel, kind
 
 
 def solve_diagnostics(A, b, x, x_start, prior_mean):
@@ -186,11 +191,11 @@ def solve_diagnostics(A, b, x, x_start, prior_mean):
     cond = float(np.linalg.cond(A))
     d = np.sqrt(np.diag(A))
     cond_scaled = float(np.linalg.cond(A / d[:, None] / d[None, :]))
-    xc, it, ok, rel_cg = conjugate_gradient(A, b, x_start, b - A @ prior_mean)
+    xc, it, ok, rel_cg, ref_kind = conjugate_gradient(A, b, x_start, b - A @ prior_mean)
     delta = float(np.max(np.abs(xc - x))) if len(x) else 0.0
     return {'n_params': int(len(b)), 'solved': True, 'rel_residual': rel_res,
             'residual_threshold': RESIDUAL_TOL, 'cond': cond, 'cond_scaled': cond_scaled,
-            'cg_method': 'jacobi_pcg', 'cg_tol': CG_TOL, 'cg_tol_reference': 'evidence ||S(b - A m)||',
+            'cg_method': 'jacobi_pcg', 'cg_tol': CG_TOL, 'cg_tol_reference': ref_kind,
             'cg_iters': int(it), 'cg_converged': ok, 'cg_rel_residual_evidence': rel_cg,
             'cg_rel_residual': float(np.linalg.norm(A @ xc - b)) / nb,
             'delta_max_abs': delta, 'delta_threshold': DELTA_TOL,
