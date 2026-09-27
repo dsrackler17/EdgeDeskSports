@@ -38,7 +38,7 @@ Both are stored and shown. The difference is never hidden.
 | status | meaning |
 |---|---|
 | **BET** | the captured price clears every validated threshold: probability edge, calibrated EV, price limit, freshness, dispersion, confidences, integrity. Timing: BET_NOW, or WAIT only when the policy validated that waiting pays |
-| **LEAN** | a positive decision edge over break-even and at least 1 point of line disagreement, below the BET thresholds. Also a price that clears while betting is disabled (`NO_BET_BETTING_DISABLED`) |
+| **LEAN** | a positive decision edge over break-even and at least 0.5 points of line disagreement (policy v1, set by evidence: POLICY.md §30), below the BET thresholds. Also a price that clears while betting is disabled (`NO_BET_BETTING_DISABLED`) |
 | **RESEARCH** | a potential edge with unresolved uncertainty: the QB is unresolved (`RESEARCH_QB`), the market is immature (`RESEARCH_MARKET_IMMATURE`), inputs are incomplete (`RESEARCH_DATA_INCOMPLETE`), or the edge is extreme (`RESEARCH_EXTREME_EDGE`). Monitor; never bet now |
 | **PASS** | `PASS_PRICE`, `PASS_INSUFFICIENT_EV`, `PASS_MODEL_UNCERTAINTY`, `PASS_MODEL_DISAGREEMENT`, `PASS_MARKET_STALE`, `PASS_MARKET_DISPERSION`, `PASS_LINE_MOVED`, `PASS_DATA_QUALITY` |
 | **NO_BET** | fail closed: `NO_BET_CALIBRATION` (artifact missing or invalid), `NO_BET_VERSION_MISMATCH` (calibrated for another model version), `NO_BET_POLICY`, `NO_BET_COMPUTATION`. Predictions still display; recommendations do not |
@@ -150,7 +150,7 @@ Replayed projections are never used, because they were computed after the quotes
 ## Files
 
 - `football/cfb_decision/decision.js`: the engine, ES5 for the browser and node.
-- `football/cfb_decision/tests.js`: 83 checks, including parity with the Python reference (`v2/decision/reference.py`)
+- `football/cfb_decision/tests.js`: 98 checks, including parity with the Python reference (`v2/decision/reference.py`)
   on every number of the chosen side, over 46 frozen cases.
 - `supabase/cfb_decision.sql`: 11 append-only tables and the Model Lab views.
 - `football/cfb_decision/sql.test.js`: 44 checks on a real Postgres.
