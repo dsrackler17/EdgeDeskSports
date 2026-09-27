@@ -1,0 +1,891 @@
+{
+ "schema": "cfb_input_contract_v1",
+ "version": "cfb_input_contract_1",
+ "model_version": "edgedesk_cfb_v2.1.0",
+ "feature_version": "cfb_v2_fv2",
+ "declared_at": "2026-09-27T00:00:00.000Z",
+ "reference": "feature_reference_edgedesk_cfb_v2.1.0.json",
+ "rules": {
+  "critical": "A CRITICAL violation withholds the game: it is not inferred, not published and not decided (docs/cfb-production/CANONICAL.md \u00a73). The champion is never run on a silent default.",
+  "null": "REFUSE: a null is a CRITICAL violation (the model would impute it silently). ALLOWED_BEFORE_FIRST_GAME: a null is accepted only while min_games == 0 (as in training, where these four fields are null in week 1 and only then); otherwise CRITICAL.",
+  "range": "HARD range (CRITICAL outside it) = the training [min, max] widened by half the span on each side, intersected with the declared natural bounds (binary {0,1}, min 0, rest_diff clipped to [-14, 14]). SOFT range = the training [p01, p99]: values outside it are legitimate extremes, counted by the feature monitor, never refused.",
+  "type": "number: finite float; binary: exactly 0 or 1; anything else (text, inf) is CRITICAL.",
+  "timestamps": "feature_ts <= kickoff_ts and prediction_ts <= kickoff_ts (UTC); a snapshot whose inputs post-date kickoff is CRITICAL.",
+  "monitor": "The feature monitor compares a slate with the training reference of its season phase (mean shift in reference SDs, SD ratio, share outside the soft range, missingness). It flags; it never refits, clips or changes an input."
+ },
+ "model_inputs": [
+  {
+   "field": "home_field",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "elo_diff",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_prior_epa",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_prior_epa_pass",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_prior_epa_rush",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_prior_sr",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_prior_ppd",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_epa",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_epa_pass",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_epa_rush",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_sr",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_sr_pass",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_sr_rush",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "eff_pts_raw",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "ALLOWED_BEFORE_FIRST_GAME",
+   "missing_indicator": "min_games == 0",
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_line_yds",
+   "used_by": [
+    "C_ridge"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z)"
+  },
+  {
+   "field": "edge_stuff",
+   "used_by": [
+    "C_ridge"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z)"
+  },
+  {
+   "field": "edge_opp_rate",
+   "used_by": [
+    "C_ridge"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z)"
+  },
+  {
+   "field": "match_mix_edge",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "ALLOWED_BEFORE_FIRST_GAME",
+   "missing_indicator": "min_games == 0",
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_sr_early",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_sr_pd",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_sr_3rd",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_expl",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_expl_pass",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_expl_rush",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "x_pass_h",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "x_pass_a",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "x_rush_h",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "x_rush_a",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_rec_epa",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_rec_epa_pass",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_rec_epa_rush",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_rec_sr",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_rec_ppd",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "l4_edge_epa",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch",
+   "imputed_from": {
+    "raw": "h_epa__l4_off, h_epa__l4_def, a_epa__l4_off, a_epa__l4_def",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "l2_edge_epa",
+   "used_by": [
+    "C_ridge",
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z); D_gbm takes LightGBM's missing-value branch",
+   "imputed_from": {
+    "raw": "h_epa__l2_off, h_epa__l2_def, a_epa__l2_off, a_epa__l2_def",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "rest_diff",
+   "used_by": [
+    "C_ridge"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z)",
+   "hard_range": [
+    -14,
+    14
+   ],
+   "imputed_from": {
+    "raw": "rest_diff",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "travel_miles_log",
+   "used_by": [
+    "C_ridge"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z)",
+   "min": 0,
+   "imputed_from": {
+    "raw": "travel_miles",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "tz_shift",
+   "used_by": [
+    "C_ridge"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z)",
+   "imputed_from": {
+    "raw": "tz_shift",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "altitude_kft",
+   "used_by": [
+    "C_ridge"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z)",
+   "imputed_from": {
+    "raw": "altitude_diff_ft",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "conference_game_f",
+   "used_by": [
+    "C_ridge"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z)"
+  },
+  {
+   "field": "is_postseason_f",
+   "used_by": [
+    "C_ridge"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "C_ridge imputes the training mean (predict_live.LinearArt.z)"
+  },
+  {
+   "field": "edge_st_net",
+   "used_by": [
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "edge_fg_value",
+   "used_by": [
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "qb_delta_edge",
+   "used_by": [
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": "qb_missing_any",
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch"
+  },
+  {
+   "field": "qb_exp_edge",
+   "used_by": [
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": "qb_missing_any",
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch",
+   "imputed_from": {
+    "raw": "qb_exp_edge",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "h_qb_exp_db_log",
+   "used_by": [
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": "qb_missing_any",
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch",
+   "min": 0,
+   "imputed_from": {
+    "raw": "h_qb_exp_db_log",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "a_qb_exp_db_log",
+   "used_by": [
+    "D_gbm"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": "qb_missing_any",
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch",
+   "min": 0,
+   "imputed_from": {
+    "raw": "a_qb_exp_db_log",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "h_qb_changed",
+   "used_by": [
+    "D_gbm"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": "qb_missing_any",
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch",
+   "imputed_from": {
+    "raw": "h_qb_changed",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "a_qb_changed",
+   "used_by": [
+    "D_gbm"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": "qb_missing_any",
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch",
+   "imputed_from": {
+    "raw": "a_qb_changed",
+    "rule": "null -> 0 in models.add_derived, exactly as the artifact was trained; the raw missingness is monitored, not refused"
+   }
+  },
+  {
+   "field": "qb_missing_any",
+   "used_by": [
+    "D_gbm",
+    "sigma"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch; the sigma design fills it (walkforward.sigma_design)"
+  },
+  {
+   "field": "qb_unsettled_any",
+   "used_by": [
+    "D_gbm",
+    "sigma"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "D_gbm takes LightGBM's missing-value branch; the sigma design fills it (walkforward.sigma_design)"
+  },
+  {
+   "field": "drive_total_raw",
+   "used_by": [
+    "TotalE"
+   ],
+   "type": "number",
+   "null_policy": "ALLOWED_BEFORE_FIRST_GAME",
+   "missing_indicator": "min_games == 0",
+   "model_null_behavior": "TotalE imputes the training mean",
+   "min": 0
+  },
+  {
+   "field": "early_season",
+   "used_by": [
+    "sigma"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "the sigma design fills it (walkforward.sigma_design)"
+  },
+  {
+   "field": "rating_sd_sum",
+   "used_by": [
+    "sigma"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "the sigma design fills it (walkforward.sigma_design)",
+   "min": 0
+  },
+  {
+   "field": "vol_sum",
+   "used_by": [
+    "sigma"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "the sigma design fills it (walkforward.sigma_design)",
+   "min": 0
+  },
+  {
+   "field": "to_dependence",
+   "used_by": [
+    "sigma"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "the sigma design fills it (walkforward.sigma_design)",
+   "min": 0
+  },
+  {
+   "field": "min_games",
+   "used_by": [
+    "sigma",
+    "reliability"
+   ],
+   "type": "number",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "the sigma design fills it (walkforward.sigma_design)",
+   "min": 0
+  },
+  {
+   "field": "exp_plays_total",
+   "used_by": [
+    "sigma"
+   ],
+   "type": "number",
+   "null_policy": "ALLOWED_BEFORE_FIRST_GAME",
+   "missing_indicator": "min_games == 0",
+   "model_null_behavior": "the sigma design fills it (walkforward.sigma_design)",
+   "min": 0
+  },
+  {
+   "field": "fcs_game",
+   "used_by": [
+    "sigma",
+    "reliability"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "the sigma design fills it (walkforward.sigma_design)"
+  },
+  {
+   "field": "neutral_site",
+   "used_by": [
+    "context"
+   ],
+   "type": "binary",
+   "null_policy": "REFUSE",
+   "missing_indicator": null,
+   "model_null_behavior": "context flag (reliability / pricing rule)"
+  }
+ ],
+ "row_inputs": [
+  {
+   "field": "game_id",
+   "type": "id",
+   "critical": true,
+   "null_policy": "REFUSE"
+  },
+  {
+   "field": "home",
+   "type": "text",
+   "critical": true,
+   "null_policy": "REFUSE"
+  },
+  {
+   "field": "away",
+   "type": "text",
+   "critical": true,
+   "null_policy": "REFUSE"
+  },
+  {
+   "field": "home_id",
+   "type": "id",
+   "critical": true,
+   "null_policy": "REFUSE",
+   "rule": "home_id != away_id"
+  },
+  {
+   "field": "away_id",
+   "type": "id",
+   "critical": true,
+   "null_policy": "REFUSE"
+  },
+  {
+   "field": "kickoff",
+   "type": "utc_timestamp",
+   "critical": true,
+   "null_policy": "REFUSE"
+  },
+  {
+   "field": "prediction_ts",
+   "type": "utc_timestamp",
+   "critical": true,
+   "null_policy": "REFUSE",
+   "rule": "prediction_ts <= kickoff"
+  },
+  {
+   "field": "feature_ts",
+   "type": "utc_timestamp",
+   "critical": true,
+   "null_policy": "REFUSE",
+   "rule": "feature_ts <= kickoff"
+  },
+  {
+   "field": "ens_pred",
+   "type": "number",
+   "critical": true,
+   "null_policy": "REFUSE",
+   "range": [
+    -80,
+    80
+   ],
+   "note": "the pure home margin before live overlays"
+  },
+  {
+   "field": "sigma",
+   "type": "number",
+   "critical": true,
+   "null_policy": "REFUSE",
+   "range": [
+    3,
+    40
+   ]
+  },
+  {
+   "field": "priced",
+   "type": "boolean",
+   "critical": true,
+   "null_policy": "REFUSE",
+   "note": "false = FBS-vs-FCS, projected but never priced"
+  },
+  {
+   "field": "fcs_game",
+   "type": "boolean",
+   "critical": true,
+   "null_policy": "REFUSE"
+  },
+  {
+   "field": "neutral_site",
+   "type": "boolean",
+   "critical": true,
+   "null_policy": "REFUSE"
+  },
+  {
+   "field": "components",
+   "type": "object",
+   "critical": true,
+   "null_policy": "REFUSE",
+   "rule": "every stack-weight component present and finite; the ensemble equals their weighted sum"
+  },
+  {
+   "field": "ens_sd",
+   "type": "number",
+   "critical": false,
+   "decision_input": true,
+   "null_policy": "DEGRADE",
+   "range": [
+    0,
+    40
+   ],
+   "note": "engine.decide() reads 3 when absent: a silent default, so a missing value marks the decision inputs incomplete"
+  },
+  {
+   "field": "rating_sd_sum",
+   "type": "number",
+   "critical": false,
+   "decision_input": true,
+   "null_policy": "DEGRADE",
+   "range": [
+    0,
+    10
+   ],
+   "note": "engine.decide() reads the cover fill when absent: marked incomplete, never silent"
+  },
+  {
+   "field": "fair_total",
+   "type": "number",
+   "critical": false,
+   "null_policy": "ALLOWED",
+   "range": [
+    10,
+    160
+   ],
+   "note": "null = total withheld (margin larger than the modelled total)"
+  },
+  {
+   "field": "min_games",
+   "type": "number",
+   "critical": false,
+   "null_policy": "DEGRADE",
+   "range": [
+    0,
+    20
+   ]
+  },
+  {
+   "field": "early_season",
+   "type": "boolean",
+   "critical": false,
+   "null_policy": "DEGRADE"
+  },
+  {
+   "field": "qb_unsettled_any",
+   "type": "binary",
+   "critical": false,
+   "null_policy": "DEGRADE",
+   "missing_indicator_of": "QB_UNCERTAIN"
+  },
+  {
+   "field": "qb_missing_any",
+   "type": "binary",
+   "critical": false,
+   "null_policy": "DEGRADE",
+   "missing_indicator_of": "QB_UNCERTAIN",
+   "rule": "qb_missing_any = 1 whenever qb.home or qb.away is null"
+  },
+  {
+   "field": "qb",
+   "type": "object",
+   "critical": false,
+   "null_policy": "DEGRADE",
+   "note": "per side {exp_rating, backup_rating}; a null side is the missing indicator for that quarterback"
+  },
+  {
+   "field": "model_version",
+   "type": "text",
+   "critical": true,
+   "null_policy": "ALLOWED",
+   "rule": "when present, equals the canonical model version"
+  }
+ ]
+}
