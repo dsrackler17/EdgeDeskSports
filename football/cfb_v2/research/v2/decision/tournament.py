@@ -180,8 +180,29 @@ def close_ev(clv, table):
 def prepare(U, table):
     U = U.copy()
     U['close_ev'] = close_ev(U.clv_pts.values, table)
+    U['b_close_ev'] = close_ev(U.b_clv.values, table)
     U['p_dec'] = U.p_dec_
     return U
+
+
+BASELINES = ('baseline_001', 'baseline_lean')
+
+
+def baseline_view(Sc):
+    """The same quotes seen from the BASELINE's side (stage-7 walk-forward; it disagrees with the pure side on
+    some rows): its units, CLV, result and probability, so a baseline is always graded on the bet it made."""
+    B = Sc.copy()
+    res = B.b_result.values
+    B['units'] = B.b_units
+    B['clv_pts'] = B.b_clv
+    B['ats_win'] = np.where(res == 1, 1.0, np.where(res == -1, 0.0, np.nan))
+    B['is_push'] = (res == 0).astype(float)
+    B['p_dec'] = B.b_p
+    B['close_ev'] = B.b_close_ev
+    B['probability_edge'] = B.b_p - BE110
+    B['decision_ev'] = B.b_ev
+    B['moved_toward_model'] = np.where(B.b_clv.values != 0, (B.b_clv.values > 0).astype(float), np.nan)
+    return B
 
 
 # =============================================================== selection
@@ -847,10 +868,12 @@ def main(freeze=False):
     fixed_rows['multivariate'] = fixed_threshold_table(Sc, 'edge', gates=tuple(mvf[1]) if mvf else ())
     base_mask = sel['baseline_001']
     cards, valid, risks = {}, {}, {}
+    Vb = baseline_view(Sc)
     for cid, m in sel.items():
-        cards[cid] = oos_metrics(Sc, m)
-        risks[cid] = risk_block(Sc, m, icc_hi)
-        valid[cid] = bet_valid(cid, Sc, m, res, cards[cid], fixed_rows.get(cid),
+        V = Vb if cid in BASELINES else Sc
+        cards[cid] = oos_metrics(V, m)
+        risks[cid] = risk_block(V, m, icc_hi)
+        valid[cid] = bet_valid(cid, V, m, res, cards[cid], fixed_rows.get(cid),
                                base_mask, risks[cid])
         print('[tournament] %-14s n %4d  CLV %s  close-EV %s  ROI %s %s  -> %s' % (
             cid, cards[cid]['bet_count'], cards[cid].get('avg_clv'), cards[cid].get('close_implied_ev'), cards[cid].get('roi'),

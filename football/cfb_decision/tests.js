@@ -245,6 +245,16 @@ const topD = gFlat.decisions[gFlat.summary_index];
 chk('ties in the calibrated EV go to the better price (the higher decision EV)', topD && topD.book === 'B' && topD.status === gFlat.status, { idx: gFlat.summary_index, b: gFlat.by_book });
 const cFlat = D.publicCard(p0, gFlat);
 chk('the public card shows the decision behind the game status, not the first book', /-3\.5/.test(cFlat.best_market) && cFlat.why.indexOf(gFlat.status) === 0, cFlat);
+/* RESEARCH needs a potential edge on the DECISION probability, not the (overconfident) pure one */
+const FROZ = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'cfb_v2', 'artifacts', 'decision', 'cfb_decision_calibration_v1', 'calibration.json'), 'utf8'));
+const pQB = pure({ projected_margin: 7.5, sigma: 16 });
+const dQBneg = D.decideQuote(pQB, quote(), ctx({ artifact: FROZ, row: { qb_unsettled_any: true } }));
+chk('an unresolved QB on a quote with no decision edge is PASS_PRICE, not RESEARCH (the pure edge alone never labels it)',
+  dQBneg.status === 'PASS' && dQBneg.reason_codes[0] === 'PASS_PRICE' && dQBneg.probability_edge <= 0 && dQBneg.pure_cover_probability - dQBneg.break_even_probability > 0.05,
+  { s: dQBneg.status, r: dQBneg.reason_codes, pe: dQBneg.probability_edge });
+const dQBpos = D.decideQuote(pure({ projected_margin: 12, sigma: 16 }), quote(), ctx({ artifact: FROZ, row: { qb_unsettled_any: true } }));
+chk('an unresolved QB on a quote with a decision edge below the thresholds is RESEARCH_QB', dQBpos.status === 'RESEARCH'
+  && dQBpos.reason_codes[0] === 'RESEARCH_QB' && dQBpos.probability_edge > 0, { s: dQBpos.status, r: dQBpos.reason_codes, pe: dQBpos.probability_edge });
 /* an explicit early_season = 0 is honoured (postseason games carry schedule week 1) */
 chk('features: an explicit early_season 0 is not overridden by week <= 3',
   D.sideNumbers(pure({ week: 1 }), quote(), 'HOME', { policy: POL, artifact: ART, row: { early_season: 0 }, _mc: {} }).features.early_season === 0

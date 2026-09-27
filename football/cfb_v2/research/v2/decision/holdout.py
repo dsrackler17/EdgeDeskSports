@@ -95,7 +95,7 @@ def load_holdout():
     assert set(H.season) <= set(HOLDOUT)
     S7 = pd.read_parquet(os.path.join(C.OUT, 'stage7', 'backtest_predictions.parquet'),
                          columns=['game_id', 'season', 'ev', 'side', 'gap_open', 'early_season', 'reliability', 'line',
-                                  'bet_units', 'clv_pts'],
+                                  'bet_units', 'bet_result', 'clv_pts', 'p_side'],
                          filters=[('season', 'in', HOLDOUT)])
     return H, S7
 
@@ -118,13 +118,14 @@ def frame(H, S7, A, rule, table):
     fbs['qb_missing'] = fbs.qb_missing.astype(float)
     fbs['qb_unsettled'] = fbs.qb_unsettled.astype(float)
     b = S7.rename(columns={'ev': 'b_ev', 'side': 'b_side', 'gap_open': 'b_gap', 'early_season': 'b_early', 'reliability': 'b_rel',
-                           'line': 'b_line', 'bet_units': 'b_units', 'clv_pts': 'b_clv'})
+                           'line': 'b_line', 'bet_units': 'b_units', 'bet_result': 'b_result', 'clv_pts': 'b_clv', 'p_side': 'b_p'})
     fbs = fbs.merge(b.drop(columns=['season']), on='game_id', how='left', validate='many_to_one')
     has = fbs.b_ev.notna()
     fbs['b_lean'] = has & (fbs.b_ev > rule['lean_ev']) & (fbs.b_gap.abs() >= rule['lean_gap'])
     fbs['b_bet'] = fbs.b_lean & (fbs.b_ev > rule['bet_ev']) & (fbs.b_gap.abs() >= rule['bet_gap']) & (fbs.b_rel >= rule['bet_min_rel'])
     if rule.get('exclude_early'):
         fbs['b_bet'] &= ~fbs.b_early.fillna(0).astype(bool)
+    fbs['b_close_ev'] = T.close_ev(fbs.b_clv.values, table)
     fbs['kickoff_iso'] = pd.to_datetime(fbs.kickoff_ts, utc=True).dt.strftime('%Y-%m-%dT%H:%M:%S.000Z')
     fbs['decision_ts_iso'] = pd.to_datetime(fbs.decision_ts, utc=True).dt.strftime('%Y-%m-%dT%H:%M:%S.000Z')
     return fbs
@@ -173,8 +174,10 @@ def evaluate(F, tour, policy, A, dev_oos):
     """The holdout evaluation as a pure function of the holdout frame (tested on DEV stand-ins)."""
     masks = candidate_masks(F, tour)
     cands = {}
+    Fb = T.baseline_view(F)
     for cid, m in masks.items():
-        d = F[m]
+        V = Fb if cid in T.BASELINES else F
+        d = V[m]
         card = scorecard(d, B=2000)
         card['by_season'] = {str(S): (scorecard(d[d.season.eq(S)], B=1000, drawdown=False) if (d.season == S).any() else {'bet_count': 0})
                              for S in HOLDOUT}
@@ -190,7 +193,7 @@ def evaluate(F, tour, policy, A, dev_oos):
                 'calibrated': bool(card.get('calibrated_in_the_large'))}
         card['holdout_criteria'] = crit
         base = masks['baseline_001']
-        pu = np.where(m, F.units.values, 0.0)
+        pu = np.where(m, V.units.values, 0.0)
         bu = np.where(base, F.b_units.values, 0.0)
         card['paired_vs_baseline_units_per_quote'] = paired_cluster_diff(pu, bu, F.game_id.values)
         cands[cid] = card

@@ -177,4 +177,12 @@ the paired comparison, tiers and the §86 gate. Reported as it comes out; no re-
 
 ## Amendments
 
-None.
+1. **2026-09-27, after the first DEV run and before the freeze; no rule, grid, criterion or holdout read changed.**
+   Original text sha256 `ca45a7ee78912b06767df289226a4895fa5f0c81427c6b0c9924fba3016ba16d`.
+   - *Engine bug (decision.js), found by the production replay:* a quote that did not clear the thresholds was labelled
+     RESEARCH when its **pure** probability edge cleared `min_probability_edge`. The pure probability is the
+     overconfident one, so 31% of DEV quotes became RESEARCH with CLV (0.40) barely above PASS (0.28). decision.js now
+     asks for the same decision-probability edge LEAN needs (edge > `lean.min_probability_edge` and |gap| ≥
+     `lean.min_gap_pts`); "RESEARCH keeps decision.js's definition" (§5) refers to the fixed definition.
+   - *Study-code bug (tournament.py):* the two baseline candidates were graded on the pure model's side; they are now
+     graded on the side the baseline actually took (it differs on some rows).

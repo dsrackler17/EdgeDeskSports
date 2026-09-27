@@ -646,7 +646,7 @@ def decide_quote(pure, quote, ctx, with_targets=True):
     L = P.get('lean') or {}
     if pe > jor(L.get('min_probability_edge'), 0) and abs(s['gap_pts']) >= jor(L.get('min_gap_pts'), 1) and not research:
         return fin('LEAN', ['LEAN_DIRECTIONAL'])
-    if research and s['pure_cover_probability'] - s['break_even_probability'] >= P['min_probability_edge']:
+    if research and pe > jor(L.get('min_probability_edge'), 0) and abs(s['gap_pts']) >= jor(L.get('min_gap_pts'), 1):
         return fin('RESEARCH', research)
     return fin('PASS', ['PASS_PRICE' if pe <= 0 else 'PASS_INSUFFICIENT_EV'])
 

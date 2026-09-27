@@ -547,7 +547,9 @@
     if (pe > (L.min_probability_edge || 0) && Math.abs(s.gap_pts) >= (L.min_gap_pts || 1) && !research.length) {
       return fin('LEAN', ['LEAN_DIRECTIONAL']);
     }
-    if (research.length && s.pure_cover_probability - s.break_even_probability >= P.min_probability_edge) return fin('RESEARCH', research);
+    /* RESEARCH = a potential edge on the DECISION probability (what LEAN needs) held back by unresolved
+       uncertainty; the pure probability is overconfident and never labels a quote on its own */
+    if (research.length && pe > (L.min_probability_edge || 0) && Math.abs(s.gap_pts) >= (L.min_gap_pts || 1)) return fin('RESEARCH', research);
     return fin('PASS', [pe <= 0 ? 'PASS_PRICE' : 'PASS_INSUFFICIENT_EV']);
   }
 
