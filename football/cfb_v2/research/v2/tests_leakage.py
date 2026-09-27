@@ -82,6 +82,37 @@ def inject_final_outcome_into_gbm_is_refused():
         MD.FAMILIES.clear(); MD.FAMILIES.update(fam)
 
 
+# Phase-2 injection list: every kind of hindsight the brief names, offered to
+# the models under names that LOOK like legitimate features. Each must be
+# refused by the layer guard inside fit() (the contract is an exact allowlist).
+INJECTIONS = {
+    'final score': ['home_points', 'margin', 'x_final_score', 'match_final_margin'],
+    'closing spread': ['close_margin', 'spread_close', 'edge_closing_line'],
+    'future opponent rating': ['opp_rating_final', 'h_epa__final', 'edge_epa_season_final'],
+    'future season average': ['epa_season_final', 'lg_epa__final', 'form_epa_fullseason'],
+    'future injury status': ['qb_status_final', 'h_qb_status_final', 'injury_status_postgame'],
+    'postgame EPA': ['edge_epa_postgame', 'h_epa__postgame', 'epa_game'],
+    'postseason ranking': ['edge_postseason_rank', 'ap_rank_final', 'elo_postgame'],
+}
+
+
+@test
+def phase2_injections_are_refused_by_every_model():
+    X = pd.DataFrame({c: np.arange(60.0) for c in MD.features_for(['base'])})
+    y = np.arange(60.0)
+    for kind, cols in INJECTIONS.items():
+        for c in cols:
+            assert raises(K.LayerViolation, K.assert_pure, ['edge_epa', c]), (kind, c)
+            fam = MD.FAMILIES.copy()
+            MD.FAMILIES['base'] = MD.FAMILIES['base'] + [c]
+            try:
+                Xi = X.assign(**{c: np.arange(60.0)})
+                assert raises(K.LayerViolation, MD.ModelC(['base']).fit, Xi, y), (kind, c, 'ridge')
+                assert raises(K.LayerViolation, MD.ModelD(['base']).fit, Xi, y), (kind, c, 'gbm')
+            finally:
+                MD.FAMILIES.clear(); MD.FAMILIES.update(fam)
+
+
 @test
 def every_model_feature_is_pure():
     K.assert_pure(MD.features_for(MD.ABLATION_ORDER))

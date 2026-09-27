@@ -95,6 +95,21 @@ chk('injuries widen the distribution', E.pure(ROW, { injuries: { home: ol3 } }).
 chk('unknown injury status is a coin flip, not active',
   E._internal.injuryOverlay([{ unit: 'SKILL', usage_share: 0.4, status: '??' }], P).units.SKILL > 0.1);
 
+var one = E._internal.injuryOverlay([{ unit: 'OL', usage_share: 0.2, status: 'OUT' }], P).units.OL;
+var two = E._internal.injuryOverlay([{ unit: 'OL', usage_share: 0.2, status: 'OUT' }, { unit: 'OL', usage_share: 0.2, status: 'OUT' }], P).units.OL;
+var three = E._internal.injuryOverlay([{ unit: 'OL', usage_share: 0.2, status: 'OUT' }, { unit: 'OL', usage_share: 0.2, status: 'OUT' },
+  { unit: 'OL', usage_share: 0.2, status: 'OUT' }], P).units.OL;
+chk('each additional absence in a unit costs less than the one before (diminishing)', two - one < one && three - two < two - one);
+chk('a unit never exceeds its cap however many are out', E._internal.injuryOverlay(ol3.concat(ol3), P).units.OL < P.injury.unit_caps.OL);
+var deep = E._internal.injuryOverlay([{ unit: 'SKILL', usage_share: 0.4, status: 'OUT', replacement_quality: 0.8 }], P).units.SKILL;
+var thin = E._internal.injuryOverlay([{ unit: 'SKILL', usage_share: 0.4, status: 'OUT', replacement_quality: 0 }], P).units.SKILL;
+chk('a like-for-like backup reduces the loss (replacement depth)', deep < thin / 2);
+var late = E.pure(ROW, { as_of: '2026-10-03T20:00:00Z', qb_status: { home: 'out' }, injuries: { home: ol3 } });
+chk('a status report stamped after kickoff is refused, not applied (hindsight)',
+  late.overlay_refused && late.projected_margin === E.pure(ROW, {}).projected_margin && late.sigma === E.pure(ROW, {}).sigma);
+var early = E.pure(ROW, { as_of: '2026-10-02T20:00:00Z', injuries: { home: ol3 } });
+chk('a pregame status report is applied', !early.overlay_refused && early.sigma > p.sigma);
+
 /* --------------------------------------------------------- weather */
 chk('dome: weather adds nothing', E._internal.weatherOverlay({ dome: true, wind_mph: 30 }, P).var_pts === 0);
 chk('high wind widens only', E.pure(ROW, { weather: { wind_mph: 28 } }).sigma >= p.sigma

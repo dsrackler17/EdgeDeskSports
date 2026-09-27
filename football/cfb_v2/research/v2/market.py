@@ -193,4 +193,9 @@ def decide(M, rule):
     rv = big & ~bet
     st[rv.values] = 'REVIEW'
     why[rv.values] = 'disagreement beyond %.0f pts: historically a data or news problem more often than an edge' % rule['review_gap']
+    # the production orientation guard (engine.js decide): a disagreement that
+    # collapses when the market sign is flipped is a convention fault, never an edge
+    orient = has & (M.gap_open.abs() > 21) & ((M.ens_pred + M.line).abs() <= 7)
+    st[orient.values] = 'REVIEW'
+    why[orient.values] = 'market number looks sign-flipped relative to the model: data check, never an edge'
     return st, why

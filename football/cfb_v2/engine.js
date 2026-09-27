@@ -160,20 +160,29 @@
        pressure penalty. No position coefficient was trainable from public
        data, so the mean moves 0 points and the capped value WIDENS the
        distribution (params.injury.points_applied === false). */
-    var I = P.injury || {}, caps = I.unit_caps || {}, lost = {}, total = 0, u;
-    UNITS.forEach(function (k) { lost[k] = 0; });
+    /* Diminishing marginal effect (red-team hardening): within a unit the
+       expected lost usage x is mapped through cap * (1 - exp(-x / cap)), so
+       every additional absence costs less than the one before and the unit
+       can never exceed its cap; the team total uses the same saturating form.
+       replacement_quality (0 = no usable backup .. 1 = like-for-like backup)
+       shrinks a player's contribution when depth information is supplied. */
+    var I = P.injury || {}, caps = I.unit_caps || {}, raw = {}, lost = {}, total = 0, u;
+    UNITS.forEach(function (k) { raw[k] = 0; lost[k] = 0; });
     (list || []).forEach(function (x) {
       var unit = String(x.unit || '').toUpperCase();
-      if (lost[unit] == null) return;
+      if (raw[unit] == null) return;
       var po = OUT_PROB[String(x.status || '').toUpperCase()];
       if (!isNum(po)) po = 0.5;              /* unknown status: a coin flip, never assumed active */
-      lost[unit] += clamp(isNum(x.usage_share) ? x.usage_share : 0, 0, 1) * po;
+      var rq = isNum(x.replacement_quality) ? clamp(x.replacement_quality, 0, 1) : 0;
+      raw[unit] += clamp(isNum(x.usage_share) ? x.usage_share : 0, 0, 1) * po * (1 - rq);
     });
-    for (u in lost) if (lost.hasOwnProperty(u)) {
-      lost[u] = Math.min(lost[u], isNum(caps[u]) ? caps[u] : 1);
+    for (u in raw) if (raw.hasOwnProperty(u)) {
+      var cu = isNum(caps[u]) ? caps[u] : 1;
+      lost[u] = cu * (1 - Math.exp(-raw[u] / cu));
       total += lost[u];
     }
-    total = Math.min(total, isNum(I.team_cap) ? I.team_cap : 1.5);
+    var tc = isNum(I.team_cap) ? I.team_cap : 1.5;
+    total = tc * (1 - Math.exp(-total / tc));
     var sdPts = (I.var_pts_per_unit || 0) * total;
     return { units: lost, capped_total: r2(total, 3), mean_pts: 0, var_pts: sdPts * sdPts,
       supplied: !!(list && list.length), points_applied: !!I.points_applied };
@@ -203,6 +212,13 @@
         model_version: P.model_version };
     }
     overlays = overlays || {};
+    /* hindsight guard: a status report stamped at/after kickoff (a final
+       inactive list, a postgame injury report) is refused, never applied */
+    var refused = null;
+    if (overlays.as_of && row.kickoff && Date.parse(overlays.as_of) >= Date.parse(row.kickoff)) {
+      refused = 'overlays stamped ' + overlays.as_of + ' are at/after kickoff: refused (hindsight)';
+      overlays = {};
+    }
     var qH = qbOverlay('home', row.qb && row.qb.home, overlays.qb_status && overlays.qb_status.home, P);
     var qA = qbOverlay('away', row.qb && row.qb.away, overlays.qb_status && overlays.qb_status.away, P);
     var iH = injuryOverlay(overlays.injuries && overlays.injuries.home, P);
@@ -236,7 +252,8 @@
       football_prediction_confidence: rel.score, confidence_basis: rel.basis,
       drivers: row.drivers || [], uncertainty_drivers: row.uncertainty_drivers || [],
       overlays: { qb_home: qH, qb_away: qA, injuries_home: iH, injuries_away: iA, weather: wx },
-      data_quality: row.data_quality || null
+      data_quality: row.data_quality || null,
+      overlay_refused: refused
     };
     return deepFreeze(out);
   }
