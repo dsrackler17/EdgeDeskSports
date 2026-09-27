@@ -272,6 +272,18 @@ const q = (o) => MK.baseQuote(Object.assign({ game_id: 'g1', season: 2026, week:
     chk('report: quarantined quotes of the last 72 h raise one alert with their reasons', qa && qa.detail.count === 1 && qa.detail.reasons.SPREAD_OUT_OF_BOUNDS === 1, qa);
   }
 
+  /* ═══ 7. source freshness in last_run.json ═══════════════════════════ */
+  {
+    const RUN = require('./run.js');
+    const d = tmp(); const s = store(d);
+    s.appendQuotes([q({ game_id: 'f1', observed_at: h(-30), provider_updated_at: h(-40), kickoff_ts: K })]);
+    const f = RUN.sourceFreshness(s, h(-29), 2026);
+    chk('freshness: odds are judged by the provider\'s own update time (10 h old -> STALE against 6 h)', f.odds.status === 'STALE' && f.odds.age_h === 11 && f.odds.importance === 'CRITICAL', f.odds);
+    chk('freshness: the schedule build and the model feature build are reported with their limits', f.schedule && f.schedule.max_age_h === 26 && f.model_features && f.model_features.max_age_h === 192);
+    const none = RUN.sourceFreshness(store(tmp()), h(-29), 2026);
+    chk('freshness: no upcoming quote at all is MISSING, not fresh', none.odds.status === 'MISSING');
+  }
+
   fails.forEach((f) => console.log('FAIL | ' + f));
   console.log((fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
