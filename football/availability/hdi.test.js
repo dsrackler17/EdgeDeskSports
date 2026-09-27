@@ -162,7 +162,11 @@ function section5() {
   chk('as questionable', lacy && lacy.status === 'questionable');
   chk('identified from the player layer as the starting running back',
     lacy && lacy.starter === true && lacy.position === 'RB' && lacy.athlete_id != null, lacy);
-  chk('with his measured snap share', lacy && lacy.snap_share === 0.85, lacy && lacy.snap_share);
+  /* the share the player layer measured, read from the same file: the weekly
+     build rewrites it every run, so a pinned number would test the data, not the bridge */
+  const measured = (file.players || []).find(p => p.n === 'Kewan Lacy');
+  chk('with his measured snap share', lacy && measured && typeof measured.share === 'number'
+    && measured.share > 0 && measured.share <= 1 && lacy.snap_share === measured.share, [lacy && lacy.snap_share, measured && measured.share]);
   chk('and nobody the listing marks available is handed to the engine', inj.every(x => x.player !== 'Trinidad Chambliss'));
   finish();
 }
