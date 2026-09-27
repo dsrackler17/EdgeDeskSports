@@ -51,6 +51,13 @@ jobs:
   shadow:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      # one id across every step and every structured log line of this run
+      # (docs/cfb-production/JOBS.md §5)
+      CFB_CORRELATION_ID: cfb-v2-shadow-${{ github.run_id }}-${{ github.run_attempt }}
+      # set the repository variable to 1 once supabase/cfb_production.sql is
+      # applied: from then on a missing job lock fails closed
+      CFB_REQUIRE_JOB_LOCK: ${{ vars.CFB_REQUIRE_JOB_LOCK }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -78,6 +85,20 @@ jobs:
           [ "$M" = "live" ] && M=daily
           echo "mode=$M" >> "$GITHUB_OUTPUT"
           echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      # The production gate (football/cfb_production/gate.js): the frozen V2.1
+      # artifact must verify and be the tuple compatibility.json pins (else the
+      # job FAILS here, before any state is computed); the kill switch
+      # cfb_weekly_engine_enabled must be on; ONE weekly refresh holds
+      # cfb_job_lock('cfb_weekly_refresh', <season>) — a second run (pg_cron and
+      # the GitHub backup both firing, a manual dispatch) exits cleanly; the
+      # lease is exported so the mirror below re-enters it. Heartbeat STARTED.
+      - name: Production gate (compatibility, kill switch, weekly lock, heartbeat)
+        if: ${{ steps.mode.outputs.mode != 'retrain' }}
+        id: gate
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node football/cfb_production/gate.js start --job cfb_weekly_refresh --key auto
       - name: Cache raw data (one cache per ISO week; the live season is re-fetched every run)
         uses: actions/cache@v4
         with:
@@ -86,7 +107,7 @@ jobs:
           restore-keys: cfb-v2-data-
 
       - name: Weekly engine
-        if: ${{ steps.mode.outputs.mode != 'retrain' }}
+        if: ${{ steps.mode.outputs.mode != 'retrain' && steps.gate.outputs.proceed == 'true' }}
         id: engine
         working-directory: football/cfb_v2/research
         env:
@@ -105,7 +126,7 @@ jobs:
           exit 0
 
       - name: Engine and weekly-engine tests
-        if: ${{ steps.mode.outputs.mode != 'retrain' }}
+        if: ${{ steps.mode.outputs.mode != 'retrain' && steps.gate.outputs.proceed == 'true' }}
         working-directory: football/cfb_v2/research
         env:
           CFB_V2_DATA: ${{ github.workspace }}/football/cfb_v2/research/data
@@ -114,17 +135,8 @@ jobs:
           node ../tests.js
           python3 -m v2.weekly.tests_weekly --fast
 
-      - name: Insert-only copy to Supabase (when secrets are configured)
-        if: ${{ steps.mode.outputs.mode != 'retrain' }}
-        env:
-          SB_URL: ${{ secrets.SB_URL }}
-          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
-        run: |
-          node football/cfb_v2/sync_supabase.js
-          node football/cfb_weekly/sync_supabase.js
-
       - name: Publish
-        if: ${{ steps.mode.outputs.mode != 'retrain' }}
+        if: ${{ steps.mode.outputs.mode != 'retrain' && steps.gate.outputs.proceed == 'true' }}
         run: |
           git config user.name "edgedesk-bot"
           git config user.email "edgedesk-bot@users.noreply.github.com"
@@ -133,16 +145,39 @@ jobs:
             football/cfb_v2/learning football/cfb_v2/monitoring.json football/cfb_weekly
 
       - name: Hand the freeze to the Model Lab
-        if: ${{ steps.mode.outputs.mode == 'freeze' && steps.engine.outputs.status == '0' }}
+        if: ${{ steps.mode.outputs.mode == 'freeze' && steps.gate.outputs.proceed == 'true' && steps.engine.outputs.status == '0' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run cfb-lab.yml -f mode=hourly --ref main || echo "::warning::could not dispatch cfb-lab.yml; its hourly schedule will import the freeze"
 
+      # The mirror runs AFTER the publish and the Model Lab hand-off (as in
+      # cfb-lab.yml): a Supabase outage must never cost the git publish of a
+      # freeze. A mirror failure still turns the run red; the next run re-sends
+      # everything (insert-only, idempotent).
+      - name: Insert-only copy to Supabase (when secrets are configured)
+        if: ${{ steps.mode.outputs.mode != 'retrain' && steps.gate.outputs.proceed == 'true' }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          node football/cfb_v2/sync_supabase.js
+          node football/cfb_weekly/sync_supabase.js
+
       - name: Fail the run if the engine did not publish
-        if: ${{ steps.mode.outputs.mode != 'retrain' && steps.engine.outputs.status != '0' }}
+        if: ${{ steps.mode.outputs.mode != 'retrain' && steps.gate.outputs.proceed == 'true' && steps.engine.outputs.status != '0' }}
         run: |
           echo "the weekly engine did not publish (gate failed or a stage failed); see football/cfb_weekly/*/runs/" >&2
           exit 1
+
+      # Always: release the weekly lease, send the OK / FAILED heartbeat
+      # (deadline 26 h) and open a CRITICAL incident on failure (RUNBOOK.md:
+      # MONDAY REFRESH FAILED). It never fails the job itself.
+      - name: Production gate finish (lock, heartbeat, incident)
+        if: ${{ always() && steps.mode.outputs.mode != 'retrain' }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node football/cfb_production/gate.js finish --job cfb_weekly_refresh --status "${{ job.status }}" --proceeded "${{ steps.gate.outputs.proceed }}"
 
       # ------------------------------------------------------------ retrain
       - name: Retrain (offseason; a new challenger version, never auto-promoted)

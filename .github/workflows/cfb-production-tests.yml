@@ -1,0 +1,79 @@
+# EdgeDesk CFB production operations — run their suites on the pull request.
+#
+# The production layer decides whether a scheduled CFB job may run at all
+# (the gate: artifact compatibility, kill switch, job lock), how every mirror
+# writes to Postgres (classified bounded retry, deadlock incidents, one
+# transaction per chunk, the commit marker last) and what the operations
+# dashboard says. A change that weakens any of that has to fail on the PR that
+# makes it. Offline except the SQL suite, which builds a throwaway PostgreSQL
+# and runs the chaos cases (lock contention, a real two-session deadlock, lock
+# timeouts, duplicate job runs) and the disaster-recovery restore.
+name: CFB production tests
+
+on:
+  pull_request:
+    paths:
+      - 'football/cfb_production/**'
+      - 'supabase/cfb_production.sql'
+      - 'supabase/cfb_*.sql'
+      - 'football/*/sync_supabase.js'
+      - 'football/cfb_v2/artifacts/**'
+      - 'football/cfb_v2/params.js'
+      - 'football/cfb_v2/engine.js'
+      - 'football/cfb_decision/decision.js'
+      - 'football/cfb_v2/research/v2/weekly/runlog.py'
+      - 'football/cfb_v2/research/v2/weekly/project.py'
+      - 'admin/cfb-ops/**'
+      - 'tools/cfb/**'
+      - 'docs/cfb-production/**'
+      - '.github/workflows/cfb-*.yml'
+      - '.github/workflows/deploy-intelligence.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/cfb_production/*.js'
+      - 'football/cfb_production/*.json'
+      - 'supabase/cfb_production.sql'
+      - 'admin/cfb-ops/**'
+      - 'tools/cfb/**'
+      - '.github/workflows/cfb-production-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-production-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Python deps (the weekly engine's, for the taxonomy agreement check and YAML validation)
+        run: pip install --quiet -r football/cfb_v2/research/requirements.txt pyyaml
+      - name: Taxonomy, retry, locks, compatibility, manifest, versions, gate, jobs, anomalies, health, migrations
+        run: node football/cfb_production/tests.js
+      - name: Operations dashboard (admin/cfb-ops)
+        run: node football/cfb_production/ui.test.js
+      - name: Postgres — contract, chaos (locks, deadlock, lock timeout), idempotency 1x/2x/3x, disaster recovery
+        env:
+          CFB_PRODUCTION_SQL_REQUIRED: '1'
+        run: node football/cfb_production/sql.test.js
+      - name: The weekly engine's run tracking and compatibility checks
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_WEEKLY_QUIET: '1'
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+        run: python3 -m v2.weekly.tests_weekly --fast
+      - name: Release checklist (informational on a PR; a release runs it with --strict)
+        run: node tools/cfb/release_check.js --skip-tests || echo "::warning::the release checklist is not all PASS (see above); a release needs node tools/cfb/release_check.js --with-sql --with-python --strict"

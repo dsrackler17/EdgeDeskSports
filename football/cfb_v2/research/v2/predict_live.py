@@ -310,14 +310,27 @@ def main():
 def build_rows(season, now, version, X=None, A=None, gbm=None):
     """Every row of the season scored with the frozen artifact, with its shadow
     context. Pure: nothing is written (the weekly engine gates these rows
-    before `publish`)."""
+    before `publish`).
+
+    Attribution (audit F-02/F-10): the build directory must carry a current stamp
+    (common.require_build: never the stale v2.0.0 research/out), the feature rows must
+    be of the artifact's feature schema, and every row carries its own `model_version`
+    and `build` provenance, so a row can never be graded under another version."""
     if A is None or gbm is None:
         A, gbm = load_artifacts(version)
+    if A.get('model_version') != version:
+        raise common.StaleBuild('artifacts/%s holds model_version %s' % (version, A.get('model_version')))
+    stamp = common.require_build(A.get('feature_version'), 'scoring %s' % version)
     if X is None:
         X = pd.read_parquet(common.out_path('stage5', 'cfb_model_training_snapshots.parquet'))
         X = X[X.season.eq(season)]
+    fv = set(X.feature_version.dropna().unique()) if 'feature_version' in X else set()
+    if fv and fv != {A.get('feature_version')}:
+        raise common.StaleBuild('scoring %s refused: feature rows of schema %s, the artifact reads %s'
+                                % (version, sorted(fv), A.get('feature_version')))
+    prov = common.build_provenance(stamp, A, version)
     D = predict(X, A, gbm)
-    rows = [row_json(r) for _, r in D.iterrows()]
+    rows = [dict(row_json(r), model_version=version, build=prov) for _, r in D.iterrows()]
     # shadow context, frozen WITH the row: V1 (the champion), the frozen
     # candidate 001, and the market as observed by this run
     from . import shadow as SH
@@ -356,8 +369,12 @@ def publish(rows, season, now, version, replay_history=False, base=None, current
         json.dump(cur, fh, indent=1, sort_keys=True)
     if replay_history:
         past = [dict(r, state='REPLAY') for r in rows if pd.Timestamp(r['kickoff']) <= now]
+        bad = sorted({r.get('model_version') for r in past} - {version})
+        if bad:
+            raise common.StaleBuild('replay refused: rows of %s under model_version %s' % (bad, version))
         with open(os.path.join(base or os.path.join(REPO_V2, 'snapshots'), str(season), 'replay_to_date.json'), 'w') as fh:
             json.dump({'model_version': version, 'generated_at': common.iso(now.to_pydatetime()),
+                       'build': past[0].get('build') if past else None,
                        'label': 'REPLAY: point-in-time features and models trained through %d, generated '
                                 'after these games were played. Evidence of method, not of live foresight.'
                                 % (season - 1), 'rows': past}, fh, indent=1, sort_keys=True)

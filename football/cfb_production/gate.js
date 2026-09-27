@@ -6,7 +6,7 @@
      node football/cfb_production/gate.js start  --job <registry job> [--key auto|<key>]
                                                   [--flag <kill switch>] [--ttl <s>]
      node football/cfb_production/gate.js finish --job <registry job> [--key ...]
-                                                  --status success|failure|cancelled
+                                                  --status success|failure|cancelled [--proceeded true|false]
 
    START, in this order:
      1. COMPATIBILITY (compat.js): the V2.1 artifact verifies against its
@@ -22,6 +22,16 @@
         lease is exported (CFB_JOB_LOCK_HOLDER / CFB_JOB_LOCK_LEASE via
         $GITHUB_ENV) so the job's own mirror re-enters it instead of competing.
      4. HEARTBEAT STARTED.
+
+   A SUPABASE OUTAGE NEVER STOPS CAPTURE OR THE FREEZE. Market capture and the
+   weekly freeze are append-only observations that can never be re-taken, and
+   skipping them is not a false-BET risk; decisions are. So when the flag or the
+   lock cannot be READ (network, DATABASE_UNAVAILABLE, a 5xx after retries — not
+   a 404 / schema answer, not a flag that says off), the job proceeds under its
+   workflow concurrency group with decisions=false (fail closed for decisions,
+   open for capture), logs a WARNING and reports a best-effort incident. With
+   CFB_REQUIRE_JOB_LOCK=1 (strict: the owner's opt-in once the SQL is applied)
+   an unreadable flag or lock does not proceed.
    Outputs ($GITHUB_OUTPUT): proceed, decisions, lock, reason.
 
    FINISH (run with `if: always()`): releases the lease, sends the OK / FAILED
@@ -77,8 +87,8 @@ async function flagEnabled(o, flag) {
   } catch (e) {
     const code = T.classify(e);
     if (code === 'DATABASE_SCHEMA' || (e.http && e.http.status === 404)) return { enabled: true, source: 'cfb_feature_flags not applied' };
-    /* a flag we cannot read is not a flag that says go: fail closed */
-    return { enabled: false, source: 'unreadable (' + code + '): ' + e.message };
+    /* unreadable: open for capture, closed for decisions (strict mode: closed) */
+    return { enabled: !o.strict, unreadable: true, code, source: 'unreadable (' + code + '): ' + String(e.message).slice(0, 200) };
   }
 }
 
@@ -96,7 +106,8 @@ async function start(args, env, io) {
   const job = args.job;
   const spec = JOBS[job] || { flag: args.flag || null, ttl: 1800, decisions: false };
   const key = !args.key || args.key === 'auto' ? String(seasonFor(io.now ? new Date(io.now) : new Date())) : String(args.key);
-  const o = { url: env.SB_URL, key: env.SB_SERVICE_ROLE, fetch: io.fetch, log: io.log || LOG.logger({ job }, { env, sink: io.sink }) };
+  const o = { url: env.SB_URL, key: env.SB_SERVICE_ROLE, fetch: io.fetch, log: io.log || LOG.logger({ job }, { env, sink: io.sink }),
+    strict: env.CFB_REQUIRE_JOB_LOCK === '1' };
   const t0 = Date.now();
   const comp = compatibility(job, io);
   if (comp.fatal.length) {
@@ -108,10 +119,18 @@ async function start(args, env, io) {
     output(env, { proceed: 'false', decisions: 'false', lock: 'none', reason: 'incompatible: ' + why.slice(0, 400) });
     return { code: 2, proceed: false, reason: why };
   }
-  const decisions = spec.decisions && comp.decisionProblems.length === 0;
+  let decisions = spec.decisions && comp.decisionProblems.length === 0;
+  const degraded = [];
   if (spec.decisions && comp.decisionProblems.length) o.log.critical('gate', 'decisions_disabled', { error_code: 'CALIBRATION', problems: comp.decisionProblems });
 
   const flag = await flagEnabled(o, args.flag || spec.flag);
+  if (flag.unreadable && !o.strict) {
+    decisions = false;
+    degraded.push('flag ' + flag.code);
+    o.log.warn('gate', 'flag_unreadable', { error_code: flag.code, flag: args.flag || spec.flag, note: 'proceeding for capture; decisions off' });
+    await rpcSoft(o, 'cfb_record_incident', { p_incident_key: flag.code + ':' + job + ':gate:' + new Date().toISOString().slice(0, 10), p_error_code: flag.code,
+      p_severity: 'WARNING', p_job: job, p_correlation_id: o.log.ctx.correlation_id, p_message: 'kill switch unreadable: ' + flag.source, p_detail: {} });
+  }
   if (!flag.enabled) {
     await rpcSoft(o, 'cfb_heartbeat', { p_job: job, p_status: 'SKIPPED_DISABLED', p_correlation_id: o.log.ctx.correlation_id, p_detail: { flag: args.flag || spec.flag, source: flag.source } });
     o.log.warn('gate', 'skipped_disabled', { flag: args.flag || spec.flag, source: flag.source });
@@ -128,10 +147,18 @@ async function start(args, env, io) {
     } catch (e) {
       const code = T.classify(e);
       if (code === 'DATABASE_SCHEMA' || (e.http && e.http.status === 404)) { got = null; lock = 'none (cfb_production.sql not applied)'; }
-      else {
-        o.log.critical('gate', 'lock_error', { error_code: code, message: e.message });
-        output(env, { proceed: 'false', decisions: 'false', lock: 'error', reason: 'job lock unavailable: ' + code });
+      else if (o.strict) {
+        o.log.critical('gate', 'lock_error', { error_code: code, message: e.message, strict: true });
+        output(env, { proceed: 'false', decisions: 'false', lock: 'error', reason: 'job lock unavailable (strict mode): ' + code });
         return { code: 3, proceed: false, reason: 'lock error ' + code };
+      } else {
+        /* the database is unreachable: the concurrency group still serialises runs (pg_cron dispatches the same
+           workflow), capture and the freeze go on, decisions do not */
+        got = null; decisions = false; degraded.push('lock ' + code);
+        lock = 'none (unavailable: ' + code + ')';
+        o.log.warn('gate', 'lock_unavailable', { error_code: code, message: String(e.message).slice(0, 200), note: 'proceeding under the concurrency group; decisions off' });
+        await rpcSoft(o, 'cfb_record_incident', { p_incident_key: code + ':' + job + ':gate:' + new Date().toISOString().slice(0, 10), p_error_code: code,
+          p_severity: 'WARNING', p_job: job, p_correlation_id: o.log.ctx.correlation_id, p_message: 'job lock unavailable: ' + String(e.message).slice(0, 300), p_detail: {} });
       }
     }
     if (got && !got.acquired) {
@@ -147,9 +174,9 @@ async function start(args, env, io) {
     }
     await rpcSoft(o, 'cfb_heartbeat', { p_job: job, p_status: 'STARTED', p_correlation_id: o.log.ctx.correlation_id, p_detail: { lock_key: key, lock } });
   }
-  o.log.info('gate', 'proceed', { lock_key: key, lock, decisions, duration_ms: Date.now() - t0 });
-  output(env, { proceed: 'true', decisions: String(decisions), lock, reason: 'ok' });
-  return { code: 0, proceed: true, decisions, lock };
+  o.log.info('gate', 'proceed', { lock_key: key, lock, decisions, degraded, duration_ms: Date.now() - t0 });
+  output(env, { proceed: 'true', decisions: String(decisions), lock, reason: degraded.length ? 'degraded: ' + degraded.join(', ') + ' (decisions off)' : 'ok' });
+  return { code: 0, proceed: true, decisions, lock, degraded };
 }
 
 async function finish(args, env, io) {
@@ -162,7 +189,9 @@ async function finish(args, env, io) {
   const key = env.CFB_JOB_LOCK_KEY || (!args.key || args.key === 'auto' ? String(seasonFor()) : String(args.key));
   const out = { released: null, heartbeat: null, incident: null };
   if (env.CFB_JOB_LOCK_LEASE) out.released = await rpcSoft(o, 'cfb_job_unlock', { p_job: job, p_key: key, p_lease_id: env.CFB_JOB_LOCK_LEASE });
-  out.heartbeat = await rpcSoft(o, 'cfb_heartbeat', { p_job: job, p_status: ok ? 'OK' : 'FAILED', p_correlation_id: o.log.ctx.correlation_id, p_detail: { status } });
+  /* a run the gate did not let through already sent its SKIPPED_* heartbeat: an OK now would hide that nothing ran */
+  const skipped = String(args.proceeded || '') === 'false';
+  if (!(skipped && ok)) out.heartbeat = await rpcSoft(o, 'cfb_heartbeat', { p_job: job, p_status: ok ? 'OK' : 'FAILED', p_correlation_id: o.log.ctx.correlation_id, p_detail: { status } });
   if (!ok) {
     out.incident = await rpcSoft(o, 'cfb_record_incident', { p_incident_key: 'JOB_FAILED:' + job + ':' + new Date().toISOString().slice(0, 10),
       p_error_code: 'UNKNOWN', p_severity: spec.severity || 'WARNING', p_job: job, p_correlation_id: o.log.ctx.correlation_id,
@@ -177,7 +206,7 @@ module.exports = { start, finish, compatibility, seasonFor, JOBS };
 if (require.main === module) {
   const a = process.argv.slice(2);
   const arg = (k, d) => { const i = a.indexOf('--' + k); return i >= 0 ? a[i + 1] : d; };
-  const args = { job: arg('job'), key: arg('key', 'auto'), flag: arg('flag', null), ttl: arg('ttl', null), status: arg('status', null) };
+  const args = { job: arg('job'), key: arg('key', 'auto'), flag: arg('flag', null), ttl: arg('ttl', null), status: arg('status', null), proceeded: arg('proceeded', null) };
   if (!args.job || !/^[a-z][a-z0-9_]{2,63}$/.test(args.job)) { console.error('usage: gate.js start|finish --job <registry job> [...]'); process.exit(64); }
   const fn = a[0] === 'start' ? start : a[0] === 'finish' ? finish : null;
   if (!fn) { console.error('usage: gate.js start|finish --job <registry job> [...]'); process.exit(64); }

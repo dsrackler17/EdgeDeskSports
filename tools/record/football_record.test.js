@@ -358,7 +358,9 @@ chk('espn: scoreboard dates are Eastern calendar dates', () => S.etDate('2026-09
   const dir = path.join(__dirname, '..', '..', 'record', 'football');
   if (fs.existsSync(path.join(dir, 'summary.json'))) {
     ['nfl', 'cfb'].forEach((sp) => {
-      fs.readdirSync(dir).filter((f) => f.indexOf(sp + '_') === 0).forEach((f) => {
+      /* the season ledgers only (<sport>_<season>.json, football_record.js): the CFB Model
+         Lab publishes its own record, cfb_model_lab.json, beside them under another schema */
+      fs.readdirSync(dir).filter((f) => new RegExp('^' + sp + '_\\d{4}\\.json$').test(f)).forEach((f) => {
         const L = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
         const bad = Object.values(L.games).filter((e) => !(Date.parse(e.pick.at) < Date.parse(e.kickoff)) || (e.entry && e.entry.market && e.entry.market.at && !(Date.parse(e.entry.market.at) < Date.parse(e.kickoff))));
         chk('committed ' + f + ': every pick and entry is pregame', bad.length === 0, bad.slice(0, 3).map((e) => e.game_id));

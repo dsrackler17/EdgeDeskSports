@@ -297,6 +297,110 @@ def data_grading_matches_longhand_on_real_rows():
     return 'n=%d' % len(B)
 
 
+# ------------------------------------------------ market orientation (F-11)
+def _v1_builder():
+    """V1's market builder (football/cfb_p4/research/build_market.py), imported, not run."""
+    v1r = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'cfb_p4', 'research'))
+    os.environ.setdefault('CFB_P4_DATA', os.path.join(C.DATA, 'v1'))
+    if v1r not in sys.path:
+        sys.path.insert(0, v1r)
+    import build_market as BM                           # noqa: E402
+    return BM
+
+
+@test
+def book_sign_rule_drops_the_contradicting_book():
+    BM = _v1_builder()
+    # three books agree the home team is favoured, one lists the opposite sign (intertops 2014)
+    assert BM.sign_rule([7.0, 7.5, 6.5, -7.0]) == [None, None, None, 'dropped']
+    # a book 2.5 on the other side of pick'em is an ordinary disagreement: kept
+    assert BM.sign_rule([1.5, 1.0, -2.5]) == [None, None, None]
+    # ESPN Bet opener 2024 (Michigan at Washington): +3, +2.5 vs -8.5 -> the -8.5 is dropped
+    assert BM.sign_rule([3.0, -8.5, 2.5]) == [None, 'dropped', None]
+    # two books, one each side, both >= 3: nothing to decide by -> the field is unresolved
+    assert BM.sign_rule([6.0, -3.0]) == ['unresolved', 'unresolved']
+    # a genuine pick'em split is not unresolved
+    assert BM.sign_rule([0.5, -0.5]) == [None, None]
+    assert BM.sign_rule([np.nan, 7.0, -7.0, 6.0]) == [None, None, 'dropped', None]
+
+
+def _archive(rows):
+    return pd.DataFrame([dict(zip(('game_id', 'market_type', 'abbr', 'home_team_id', 'away_team_id', 'book', 'lines',
+                                   'opening_lines'), r)) for r in rows])
+
+
+@test
+def orientation_by_team_id_fixes_swapped_ids_and_ambiguous_abbreviations():
+    BM = _v1_builder()
+    rows = []
+    # the ARMY abbreviation is seen in many games; LAF only ever against Army (both ids equally often)
+    for g in range(10):
+        rows += [(100 + g, 'spread', 'ARM', 349.0, 900.0 + g, 'B', -10.0, -10.0),
+                 (100 + g, 'spread', 'OPP%d' % g, 349.0, 900.0 + g, 'B', 10.0, 10.0)]
+    rows += [(1, 'spread', 'ARM', 349.0, 322.0, 'B', -33.5, -33.0), (1, 'spread', 'LAF', 349.0, 322.0, 'B', 33.5, 33.0)]
+    # NAVY at ARMY in the schedule; the archive lists the ids the other way round (Army-Navy 2021)
+    for g in range(10):
+        rows += [(200 + g, 'spread', 'NAV', 2426.0, 800.0 + g, 'B', -3.0, -3.0),
+                 (200 + g, 'spread', 'X%d' % g, 2426.0, 800.0 + g, 'B', 3.0, 3.0)]
+    rows += [(2, 'spread', 'ARM', 2426.0, 349.0, 'B', 7.0, 8.5), (2, 'spread', 'NAV', 2426.0, 349.0, 'B', -7.0, -8.5)]
+    # a stray abbreviation of another game filed under game 1 (Ball State-Colgate rows in UMass-BC 2014)
+    for g in range(10):
+        rows += [(300 + g, 'spread', 'BALL', 2050.0, 700.0 + g, 'B', -20.0, -20.0)]
+    rows += [(1, 'spread', 'BALL', 349.0, 322.0, 'B', -28.5, -25.5)]
+    L = _archive(rows)
+    sched = {1: (349, 322), 2: (349, 2426)}
+    assign, OG = BM.orient_sides(L, sched)
+    og = OG.set_index('game_id')
+    assert assign[(1, 'ARM')] == 'home' and assign[(1, 'LAF')] == 'away', 'both sides resolved to the home team'
+    assert assign[(1, 'BALL')] is None, 'a stray abbreviation of another game was used'
+    assert og.loc[1, 'side_resolution'] == 'elimination'
+    # archive ids swapped vs the schedule: the side labels are unreliable, the lines are not used
+    assert assign[(2, 'ARM')] is None and assign[(2, 'NAV')] is None
+    assert bool(og.loc[2, 'archive_ids_swapped']) and og.loc[2, 'side_resolution'] == 'archive_ids_swapped'
+    assert not bool(og.loc[1, 'archive_ids_swapped'])
+    S = BM._side_frame(L, BM.resolve_abbr_sides(L), sched)
+    h = S[S.game_id.isin([1, 2]) & S.is_home.eq(True)].set_index('game_id')
+    assert -h.loc[1, 'lines'] == 33.5 and 2 not in h.index, h[['abbr', 'lines']]
+
+
+@test
+def stage2_orients_the_archive_against_its_own_schedule():
+    G = pd.DataFrame({'game_id': [1, 2, 3], 'home_id': [10, 20, 30], 'away_id': [11, 21, 31]})
+    M = pd.DataFrame({'game_id': [1, 2, 3], 'spread_open': [7.0, 7.0, 7.0], 'spread_close': [8.0, 8.0, 8.0],
+                      'spread_close_pin': [8.0, 8.0, 8.0], 'spread_open_pin': [7.0, 7.0, 7.0],
+                      'total_open': [50.0] * 3, 'total_close': [51.0] * 3,
+                      'orient_home_id': [10.0, 21.0, 99.0], 'orient_away_id': [11.0, 20.0, 98.0],
+                      'source': ['cfbfastR_multibook_archive'] * 3})
+    O = GM.orient_by_team_id(M.copy(), G).set_index('game_id')
+    assert O.loc[1, 'spread_close'] == 8.0 and not O.loc[1, 'market_reoriented']
+    assert O.loc[2, 'spread_close'] == -8.0 and O.loc[2, 'spread_open'] == -7.0 and O.loc[2, 'market_reoriented']
+    assert O.loc[2, 'total_close'] == 51.0, 'a total has no side'
+    assert np.isnan(O.loc[3, 'spread_close']) and bool(O.loc[3, '_team_mismatch'])
+
+
+@test
+def data_archive_orientation_named_games():
+    """[data] On the corrected V1 market table: the audit's named games carry the right sign."""
+    f = os.environ.get('CFB_V2_V1_MARKET', '')
+    if not f or not os.path.exists(f):
+        return 'skipped (no CFB_V2_V1_MARKET)'
+    M = pd.read_csv(f, low_memory=False).set_index('game_id')
+    if 'market_orientation_rule' not in M:
+        return 'skipped (archive built before the F-11 fix)'
+    # Army-Navy 2021: archive ids swapped, books contradict each other -> no spread, flagged, total kept
+    an = M.loc[401301056]
+    assert np.isnan(an.spread_close) and np.isnan(an.spread_open) and bool(an.archive_ids_swapped), an
+    assert an.total_close == 35.5
+    sw = M[M.archive_ids_swapped.fillna(False).astype(bool)]
+    assert sw.spread_close.isna().all() and sw.spread_open.isna().all()
+    # Army-Lafayette 2016: Army laid 33.5, not a pick'em
+    assert M.loc[400868915, 'spread_close'] > 30
+    # UMass-Boston College 2014 (BC -17; stray Ball State-Colgate rows under the same id)
+    assert M.loc[400547728, 'spread_close'] == -17.0
+    return '%d swapped-id games without a spread; Army-Lafayette 2016 close %+.1f' % (
+        len(sw), M.loc[400868915, 'spread_close'])
+
+
 def main():
     import argparse
     import json

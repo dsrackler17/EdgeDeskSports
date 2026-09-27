@@ -414,6 +414,117 @@ def artifact_live_path_reproduces_backtest():
     assert (j.sigma_l - j.sigma_b).abs().max() < 0.01
 
 
+# ---------------------------------------------------- outcome scan (F-15)
+# The layer contract checks column NAMES: an outcome disguised under an allowed
+# feature name passes it (audit F-15: the margin under an allowed name took MAE from
+# 12.55 to 7.54). This scan checks CONTENT: every model input against the result
+# against the close (margin - close) and against the margin itself. DECLARED
+# thresholds (the audit's, fixed before the v2.1.1 rebuild was scanned):
+#   * |corr(input, margin - close)| must not exceed max(0.08, 4 standard errors
+#     1/sqrt(n)): on v2.1.0 the largest is 0.052 (edge_stuff, n 8,668); the audit's
+#     disguised outcome scores 0.73. The 4-SE floor keeps a small live-season sample
+#     (n ~200: floor 0.28) from failing on noise.
+#   * with n >= 2,000, no single input's r^2 with the margin may exceed the close's
+#     r^2 (v2.1.0: 0.402 vs 0.446): no pregame input should know the result better
+#     than the market's final number. Below 2,000 games this check has no power and
+#     is not applied.
+#   * at least 150 scored games, else the scan reports itself skipped.
+OUTCOME_SCAN_MAX_ABS_CORR_ATS_CLOSE = 0.08
+OUTCOME_SCAN_SE_MULT = 4.0
+OUTCOME_SCAN_R2_MIN_N = 2000
+OUTCOME_SCAN_MIN_N = 150
+
+
+def outcome_scan(w, cols):
+    """w: FBS-vs-FBS FINAL rows with the model inputs `cols`, `margin` and `close_margin`.
+    Returns the per-input table and the violations of the declared thresholds."""
+    ats = w.margin - w.close_margin
+    close_r2 = float(np.corrcoef(w.close_margin, w.margin)[0, 1] ** 2)
+    rows, bad = [], []
+    for c in cols:
+        x = w[c].astype(float)
+        ok = x.notna() & ats.notna()
+        n = int(ok.sum())
+        if n < OUTCOME_SCAN_MIN_N or x[ok].std() == 0:
+            continue
+        ra = float(np.corrcoef(x[ok], ats[ok])[0, 1])
+        rm = float(np.corrcoef(x[ok], w.margin[ok])[0, 1])
+        thr = max(OUTCOME_SCAN_MAX_ABS_CORR_ATS_CLOSE, OUTCOME_SCAN_SE_MULT / np.sqrt(n))
+        rows.append({'feature': c, 'n': n, 'corr_ats_close': ra, 'r2_margin': rm * rm, 'threshold': thr})
+        if abs(ra) > thr:
+            bad.append('%s: corr with margin - close %.3f > %.3f (n %d)' % (c, ra, thr, n))
+        if len(w) >= OUTCOME_SCAN_R2_MIN_N and rm * rm > close_r2:
+            bad.append('%s: r2 with the margin %.3f > the close\'s %.3f' % (c, rm * rm, close_r2))
+    return {'n_games': int(len(w)), 'close_r2': close_r2, 'table': rows, 'violations': bad}
+
+
+def _scan_inputs():
+    """The model inputs (C and D) of the version being built, as the audit scanned them: its
+    artifact when it exists (a challenger is scanned before its export), else the production
+    artifact's."""
+    import json as _j
+    d = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'artifacts')
+    f = os.path.join(d, C.MODEL_VERSION, 'models.json')
+    if not os.path.exists(f):
+        f = os.path.join(d, C.PRODUCTION_MODEL_VERSION, 'models.json')
+    A = _j.load(open(f))
+    return sorted(set(A['submodels']['C_ridge']['cols']) | set(A['submodels']['D_gbm']['cols']))
+
+
+def _scan_frame():
+    """Scored FBS-vs-FBS rows of the build's stage-5 table with their close (None if absent)."""
+    fx = _art(('stage5', 'cfb_model_training_snapshots.parquet'))
+    fm = _art(('stage5', 'cfb_market_training_snapshots.parquet'))
+    if not fx or not fm:
+        return None
+    X = pd.read_parquet(fx)
+    M = pd.read_parquet(fm, columns=['game_id', 'close_margin'])
+    w = MD.add_derived(X).merge(M, on='game_id', how='inner')
+    return w[w.season.ge(C.FIRST_OOF_SEASON) & w.status.eq('FINAL') & ~w.fcs_game.astype(bool)
+             & w.margin.notna() & w.close_margin.notna()].copy()
+
+
+@test
+def outcome_scan_catches_a_disguised_outcome():
+    """Power, synthetic: an outcome under an allowed name is caught; honest inputs pass."""
+    rng = np.random.default_rng(C.SEED)
+    n = 3000
+    truth = rng.normal(0, 15, n)
+    margin = truth + rng.normal(0, 12, n)
+    close = truth + rng.normal(0, 3, n)
+    w = pd.DataFrame({'margin': margin, 'close_margin': close,
+                      'edge_epa': truth / 15 + rng.normal(0, 1.2, n),              # an honest, weaker signal
+                      'edge_ppd': rng.normal(0, 1, n)})
+    assert not outcome_scan(w, ['edge_epa', 'edge_ppd'])['violations']
+    w['edge_sr'] = (margin - close) + rng.normal(0, 8, n)                            # the result, disguised
+    v = outcome_scan(w, ['edge_epa', 'edge_ppd', 'edge_sr'])['violations']
+    assert v and all(x.startswith('edge_sr') for x in v), v
+    w['edge_sr'] = margin + rng.normal(0, 1, n)                                      # the margin itself
+    assert any('r2 with the margin' in x for x in outcome_scan(w, ['edge_sr'])['violations'])
+
+
+@test
+def artifact_outcome_scan_every_model_input():
+    """[artifact] Every model input of the built stage-5 table passes the declared scan;
+    the same table with the margin disguised as an input fails it (the scan has power
+    on real data)."""
+    w = _scan_frame()
+    if w is None:
+        return 'skipped (no artifact)'
+    if len(w) < OUTCOME_SCAN_MIN_N:
+        return 'skipped (%d scored games with a close < %d)' % (len(w), OUTCOME_SCAN_MIN_N)
+    cols = [c for c in _scan_inputs() if c in w.columns]
+    r = outcome_scan(w, cols)
+    assert not r['violations'], r['violations']
+    top = max(r['table'], key=lambda t: abs(t['corr_ats_close']))
+    inj = w.copy()
+    inj['edge_epa'] = inj.margin
+    assert any(x.startswith('edge_epa') for x in outcome_scan(inj, cols)['violations']), 'the scan has no power'
+    return '%d inputs, %d games, max |corr(x, margin-close)| %.3f (%s), max r2 %.3f vs close %.3f' % (
+        len(r['table']), r['n_games'], abs(top['corr_ats_close']), top['feature'],
+        max(t['r2_margin'] for t in r['table']), r['close_r2'])
+
+
 def main():
     fail = 0
     for fn in RESULTS:
