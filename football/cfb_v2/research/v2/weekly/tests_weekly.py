@@ -320,6 +320,18 @@ for _fn in (TF.classifier_every_case, TF.only_final_is_a_result_in_stage2,
             TF.weekly_verify_refuses_stage2_results_the_validator_rejects, TF.elo_never_absorbs_a_non_result):
     chk('finality (F-01): ' + _fn.__name__.replace('_', ' '), not throws(_fn))
 
+# ---------------------------------------------------------------- between-team variance (audit F-21)
+# the production version keeps the legacy stage-3 rule (its numbers are unchanged); the fixed
+# rule never pins a rating and scoring refuses features built under another rule
+# (v2/tests_between_var.py holds the real-data checks)
+from .. import tests_between_var as TBV
+for _fn in (TBV.default_rule_is_legacy_for_the_released_versions,
+            TBV.the_environment_selects_the_rule_and_refuses_an_unknown_one,
+            TBV.v2_keeps_a_positive_moment_and_falls_back_only_when_it_is_not_positive,
+            TBV.split_half_recovers_the_between_variance_when_the_noise_model_is_overstated,
+            TBV.scoring_refuses_features_of_another_rule):
+    chk('between variance (F-21): ' + _fn.__name__.replace('_', ' '), not throws(_fn))
+
 # ---------------------------------------------------------------- build provenance (audit F-02, F-10)
 # a build directory is trusted only with a current BUILD.json stamp; rows are graded
 # under the model_version that produced them
