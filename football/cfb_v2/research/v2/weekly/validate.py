@@ -22,19 +22,21 @@ import numpy as np
 import pandas as pd
 
 from .. import common
+from .. import games as GAMES
 from ..plays import FORBIDDEN_PBP_COLUMNS
 from . import ids
 
 RULE_VERSION = 'cfb_game_validation_v1'
 
 # ------------------------------------------------------------------ finality
+# ONE finality rule for the research stages and the weekly engine (audit F-01): the
+# provider statuses and the classifier live in v2/games.py (stage 2), and
+# `finality` below adds only what needs the clock (SCHEDULED, overdue).
 GRACE_HOURS = 8.0            # kickoff + 8h: a weather-delayed game can run 6-7 hours
-FINAL_STATUSES = {'STATUS_FINAL'}
-IN_PROGRESS_STATUSES = {'STATUS_IN_PROGRESS', 'STATUS_HALFTIME', 'STATUS_END_PERIOD',
-                        'STATUS_DELAYED', 'STATUS_RAIN_DELAY', 'STATUS_SUSPENDED',
-                        'STATUS_SCHEDULED'}
-POSTPONED_STATUSES = {'STATUS_POSTPONED'}
-CANCELED_STATUSES = {'STATUS_CANCELED', 'STATUS_CANCELLED'}
+FINAL_STATUSES = GAMES.FINAL_STATUSES
+IN_PROGRESS_STATUSES = GAMES.IN_PROGRESS_STATUSES
+POSTPONED_STATUSES = GAMES.POSTPONED_STATUSES
+CANCELED_STATUSES = GAMES.CANCELED_STATUSES
 
 # ------------------------------------------------------------- PBP tolerances
 PLAY_RATIO_MIN = 0.75        # below 75% of the national median play count = "few plays"
@@ -139,15 +141,18 @@ def finality(sched, now, pbp_completed=None):
     """Per schedule row: the pre-PBP status FINAL | POSTPONED | CANCELED | SCHEDULED |
     IN_PROGRESS | DATA_ERROR, plus `overdue`, `sources_agree` and issues.
 
-    Rules, first match wins (METHODS_GAMES.md 1.1):
+    Rules, first match wins (METHODS_GAMES.md 1.1; the classifier is
+    games.classify_result, shared with stage 2 since the F-01 fix):
       1. provider status CANCELED -> CANCELED; notes 'forfeit' -> CANCELED (no football
          was played); notes 'cancel' on an uncompleted game -> CANCELED
       2. provider status POSTPONED, or notes 'postpon' on an uncompleted game -> POSTPONED
       3. kickoff after `now` -> SCHEDULED (a result in the file is ignored: point in time)
-      4. final claim = (completed flag or status FINAL) and both scores present.
-         A final claim contradicted by an in-progress provider status or by the PBP's
-         status_type_completed == False -> IN_PROGRESS, sources_agree False.
-         Otherwise -> FINAL.
+      4. final claim = completed flag (exactly True) and both scores present. A claim
+         contradicted by an in-progress provider status or by the PBP's
+         status_type_completed == False -> IN_PROGRESS, sources_agree False. A completed
+         tie -> DATA_ERROR (overtime since 1996). Otherwise -> FINAL. A score without the
+         completed flag is a partial score -> IN_PROGRESS (a provider STATUS_FINAL
+         without the flag is not enough: sources_agree False).
       5. completed flag without both scores -> DATA_ERROR
       6. otherwise IN_PROGRESS (kickoff passed); `overdue` when now >= kickoff + grace.
     """
@@ -169,40 +174,22 @@ def finality(sched, now, pbp_completed=None):
         issues, agree, overdue = [], True, False
         if k is None:
             issues.append('kickoff time missing in the schedule')
-        if st in CANCELED_STATUSES:
-            status = 'CANCELED'
-        elif 'forfeit' in notes_l:
-            status = 'CANCELED'
-            issues.append('forfeit: result recorded without a game played (%s)' % notes)
-        elif 'cancel' in notes_l and not comp:
-            status = 'CANCELED'
-            issues.append('canceled per schedule notes (%s)' % notes)
-        elif st in POSTPONED_STATUSES or ('postpon' in notes_l and not comp):
-            status = 'POSTPONED'
+        cls, why, cls_agree = GAMES.classify_result(getattr(r, 'completed', None), st,
+                                                    notes if notes_l else '', hp, ap, pc)
+        if cls in ('CANCELED', 'POSTPONED'):
+            status = cls
+            if cls == 'CANCELED' and st not in CANCELED_STATUSES:
+                issues.append(why)
         elif now is not None and k is not None and k > now:
             status = 'SCHEDULED'
             if comp or st in FINAL_STATUSES:
                 issues.append('schedule carries a result for a game that kicks off after now; ignored')
+        elif cls is None:
+            status = 'IN_PROGRESS'          # kickoff passed, no result claim yet
         else:
-            claim = (comp or st in FINAL_STATUSES) and has_pts
-            if claim:
-                why = []
-                if st in IN_PROGRESS_STATUSES:
-                    why.append('provider status %s' % st)
-                if pc is False:
-                    why.append('PBP status_type_completed is false')
-                if why:
-                    status, agree = 'IN_PROGRESS', False
-                    issues.append('sources disagree: final score present but %s' % ' and '.join(why))
-                else:
-                    status = 'FINAL'
-                    if not comp:
-                        issues.append('completed flag false but provider status FINAL')
-            elif comp and not has_pts:
-                status = 'DATA_ERROR'
-                issues.append('schedule marks the game completed but a final score is missing')
-            else:
-                status = 'IN_PROGRESS'
+            status, agree = cls, cls_agree
+            if why:
+                issues.append(why)
         if status == 'IN_PROGRESS' and now is not None and k is not None and now >= k + grace:
             overdue = True
             issues.append('no final status %.0fh after kickoff (grace period passed)' % GRACE_HOURS)
@@ -567,11 +554,14 @@ def validate_games(season, now, source_week=None, pbp=None, sched=None, ref_play
                    overdue=bool(f.overdue))
         issues = list(f.fin_issues)
         per_max = _num(pd.to_numeric(g.period, errors='coerce').max()) if len(g) else None
-        if f.pre_status == 'FINAL':
+        # a completed tie is DATA_ERROR (never a result, F-01), but its PBP is still checked
+        # so the diagnostics (overtime_consistent) say why
+        tie = f.pre_status == 'DATA_ERROR' and hp is not None and ap is not None and hp == ap
+        if f.pre_status == 'FINAL' or tie:
             res = check_game_pbp(g, r.home_id, r.away_id, int(hp), int(ap), ref_plays)
-            status = game_status(res)
+            status = game_status(res) if not tie else 'DATA_ERROR'
             issues += res['issues']
-            row.update(status=status, home_points=int(hp), away_points=int(ap),
+            row.update(status=status, home_points=None if tie else int(hp), away_points=None if tie else int(ap),
                        overtime=res['overtime'], periods=res['periods'], pbp_plays=res['pbp_plays'],
                        pbp_completeness_score=res['completeness'], checks=res['checks'],
                        check_detail=res['detail'], pbp_score_home=res['pbp_score_home'],
@@ -598,6 +588,30 @@ def validate_games(season, now, source_week=None, pbp=None, sched=None, ref_play
     out = pd.DataFrame(rows, columns=cols)
     if len(out):
         out = out.sort_values(['kickoff_ts', 'game_id'], kind='mergesort', na_position='last').reset_index(drop=True)
+    return out
+
+
+def stage2_final_violations(G, V, season):
+    """Every game the stage-2 table counts as a RESULT (status FINAL: it feeds the
+    ratings, Elo, the QB state and the grades) that this validator does not accept as
+    final with the same score. The weekly engine refuses to go on when the list is not
+    empty (VERIFY_COMPLETED_GAMES, audit F-01): an in-progress, cancelled or unconfirmed
+    game can never reach the ratings. `V` = validate_games(season, now)."""
+    g = G[G.season.eq(season) & G.status.eq('FINAL')]
+    v = V.drop_duplicates('game_id').set_index('game_id') if len(V) else V
+    out = []
+    for gid, hp, ap in zip(g.game_id, g.home_points, g.away_points):
+        gid = int(gid)
+        if gid not in v.index:
+            out.append({'game_id': gid, 'reason': 'stage 2 FINAL, not in the validated schedule'})
+            continue
+        x = v.loc[gid]
+        if x.home_points is None or pd.isna(x.home_points):          # pre-status was not FINAL
+            out.append({'game_id': gid, 'reason': 'stage 2 FINAL, validator %s' % x.status,
+                        'validator_issues': list(x.issues or [])[:3]})
+        elif float(x.home_points) != float(hp) or float(x.away_points) != float(ap):
+            out.append({'game_id': gid, 'reason': 'score differs: stage 2 %g-%g, validator %g-%g'
+                        % (hp, ap, x.home_points, x.away_points)})
     return out
 
 

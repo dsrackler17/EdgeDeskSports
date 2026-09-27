@@ -8,9 +8,31 @@ Two files, never merged inside the pure path:
   market.parquet  opening / closing consensus lines, ALREADY converted to the
                   internal home-margin convention at this boundary.
 
-A game with no final score and a kickoff in the past is `status='NOT_PLAYED'`
-(postponed or cancelled): it stays in the table, is never scored, and is never
-absorbed into a rating.
+Finality (rule `FINALITY_RULE`, audit finding F-01). A game is a RESULT
+(`status='FINAL'`, margin and total set) only when the provider marks it
+`completed == True`, both scores are present, nothing contradicts the claim
+(an in-progress provider status, or a play-by-play whose `status_type_completed`
+is false) and the score is not a tie (impossible in college football since 1996
+overtime: a completed tie is a placeholder). Every other row keeps its own
+status and is NEVER a result: margin and total are NaN, and no rating, Elo, QB
+state or grade reads it.
+
+  FINAL        completed, both scores, uncontradicted, not a tie
+  IN_PROGRESS  a partial score (completed false), or a completed claim that the
+               provider status or the play-by-play contradicts
+  CANCELED     provider STATUS_CANCELED, a forfeit, or 'cancel' in the notes of
+               an uncompleted game (the 2024 App State-Liberty 0-0 row)
+  POSTPONED    provider STATUS_POSTPONED, or 'postpon' in the notes of an
+               uncompleted game
+  DATA_ERROR   completed with a missing score, or a completed tie
+  NOT_PLAYED   no score, not completed, kickoff in the past
+  SCHEDULED    no score, not completed, kickoff in the future
+
+The weekly engine's `weekly.validate.finality` applies the SAME classifier
+(`classify_result`), so the two can never disagree about what is final, and the
+engine's VERIFY_COMPLETED_GAMES stage refuses a stage-2 table that does.
+CANCELED and POSTPONED games also do not count as the previous game when rest
+days are computed: they did not take place on that date.
 """
 import math
 import sys
@@ -22,6 +44,141 @@ import pandas as pd
 
 from . import config as C
 from . import common
+
+# --------------------------------------------------------------- finality (F-01)
+FINALITY_RULE = 'cfb_v2_finality_v2'      # v1 (<= v2.1.0): "both scores present" = FINAL
+FINAL_STATUSES = {'STATUS_FINAL'}
+IN_PROGRESS_STATUSES = {'STATUS_IN_PROGRESS', 'STATUS_HALFTIME', 'STATUS_END_PERIOD',
+                        'STATUS_DELAYED', 'STATUS_RAIN_DELAY', 'STATUS_SUSPENDED',
+                        'STATUS_SCHEDULED'}
+POSTPONED_STATUSES = {'STATUS_POSTPONED'}
+CANCELED_STATUSES = {'STATUS_CANCELED', 'STATUS_CANCELLED'}
+# the only status that is a result; everything else has margin NaN
+RESULT_STATUS = 'FINAL'
+STAGE2_STATUSES = ('FINAL', 'IN_PROGRESS', 'CANCELED', 'POSTPONED', 'DATA_ERROR', 'NOT_PLAYED', 'SCHEDULED')
+
+
+def _flag(v):
+    """A provider boolean: True / False, or None when missing."""
+    if v is None:
+        return None
+    try:
+        if pd.isna(v):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return bool(v)
+
+
+def _points(v):
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return None if math.isnan(f) else f
+
+
+def _text(v):
+    t = '' if v is None else str(v)
+    return '' if t.strip().lower() in ('', 'nan', 'none', '<na>') else t
+
+
+def classify_result(completed, provider_status, notes, home_points, away_points, pbp_completed=None):
+    """(status, reason, sources_agree) for one schedule row, ignoring the clock.
+
+    status is FINAL | IN_PROGRESS | CANCELED | POSTPONED | DATA_ERROR, or None when the
+    row carries no result claim at all (the caller decides SCHEDULED / NOT_PLAYED /
+    IN_PROGRESS from the kickoff). First match wins:
+      1. provider CANCELED, a forfeit, or 'cancel' in the notes of an uncompleted game -> CANCELED
+      2. provider POSTPONED, or 'postpon' in the notes of an uncompleted game -> POSTPONED
+      3. completed with both scores:
+           provider status in progress, or PBP status_type_completed false -> IN_PROGRESS
+           (the sources disagree; never a result until they agree)
+           a tie -> DATA_ERROR (college football has had overtime since 1996)
+           otherwise -> FINAL
+      4. completed without both scores -> DATA_ERROR
+      5. not completed with a score (a partial score) -> IN_PROGRESS
+      6. not completed, no score, provider status in progress -> IN_PROGRESS
+      7. otherwise None
+    `completed` must be exactly True for FINAL: a missing flag is not a completion."""
+    st = _text(provider_status).upper()
+    nl = _text(notes).lower()
+    comp = _flag(completed) is True
+    hp, ap = _points(home_points), _points(away_points)
+    both = hp is not None and ap is not None
+    anyp = hp is not None or ap is not None
+    if st in CANCELED_STATUSES:
+        return 'CANCELED', 'provider status %s' % st, True
+    if 'forfeit' in nl:
+        return 'CANCELED', 'forfeit: result recorded without a game played (%s)' % _text(notes), True
+    if 'cancel' in nl and not comp:
+        return 'CANCELED', 'canceled per schedule notes (%s)' % _text(notes), True
+    if st in POSTPONED_STATUSES or ('postpon' in nl and not comp):
+        return 'POSTPONED', 'provider status %s' % (st or 'notes: ' + _text(notes)), True
+    if comp and both:
+        why = []
+        if st in IN_PROGRESS_STATUSES:
+            why.append('provider status %s' % st)
+        if _flag(pbp_completed) is False:
+            why.append('PBP status_type_completed is false')
+        if why:
+            return 'IN_PROGRESS', 'sources disagree: completed flag and a score but %s' % ' and '.join(why), False
+        if hp == ap:
+            return 'DATA_ERROR', 'completed tie %g-%g: impossible in college football (overtime since 1996)' % (hp, ap), True
+        return 'FINAL', None, True
+    if comp:
+        return 'DATA_ERROR', 'schedule marks the game completed but a final score is missing', True
+    if anyp:
+        return 'IN_PROGRESS', 'a score without the completed flag (partial score%s)' % (
+            ', provider status %s' % st if st else ''), st not in FINAL_STATUSES
+    if st in IN_PROGRESS_STATUSES:
+        return 'IN_PROGRESS', 'provider status %s' % st, True
+    return None, None, True
+
+
+def finality_inputs(season):
+    """Per game of `season`: the provider status (schedule `status`, which stage 1 does
+    not keep) and the play-by-play completion flag, read from the raw files exactly as
+    the weekly engine's validator reads them (None when a game has no PBP flag)."""
+    import os
+    import pyarrow.parquet as pq
+    f = common.data_path('sched', 'cfb_schedules_%d.parquet' % season)
+    s = pd.read_parquet(f, columns=[c for c in ('game_id', 'status') if c in pq.ParquetFile(f).schema_arrow.names])
+    s['game_id'] = pd.to_numeric(s.game_id, errors='coerce')
+    s = s[s.game_id.notna()].drop_duplicates('game_id')
+    out = pd.DataFrame({'game_id': s.game_id.astype('int64').values,
+                        'provider_status': s['status'].astype(object).values if 'status' in s else None})
+    pf = common.data_path('pbp', 'play_by_play_%d.parquet' % season)
+    pc = {}
+    if os.path.exists(pf) and 'status_type_completed' in pq.ParquetFile(pf).schema_arrow.names:
+        p = pd.read_parquet(pf, columns=['game_id', 'status_type_completed'])
+        p['game_id'] = pd.to_numeric(p.game_id, errors='coerce')
+        p = p[p.game_id.notna()]
+        agg = p.groupby('game_id').status_type_completed.agg(
+            lambda v: None if v.isna().all() else bool(v.dropna().astype(bool).all()))
+        pc = {int(k): v for k, v in agg.items()}
+    out['pbp_completed'] = [pc.get(int(g)) for g in out.game_id]
+    return out
+
+
+def assign_status(G, now=None):
+    """Set status / margin / total_pts / status_reason on a stage-2 frame that carries
+    completed, provider_status, pbp_completed, notes, the scores and kickoff_ts."""
+    now = pd.Timestamp.now(tz='UTC') if now is None else now
+    st, why = [], []
+    for r in G.itertuples(index=False):
+        s, w, _ = classify_result(getattr(r, 'completed', None), getattr(r, 'provider_status', None),
+                                  getattr(r, 'notes', None), r.home_points, r.away_points,
+                                  getattr(r, 'pbp_completed', None))
+        if s is None:
+            s = 'NOT_PLAYED' if r.kickoff_ts < now else 'SCHEDULED'
+        st.append(s)
+        why.append(w)
+    G['status'] = st
+    fin = G.status.eq(RESULT_STATUS).values
+    G['margin'] = np.where(fin, G.home_points - G.away_points, np.nan)
+    G['total_pts'] = np.where(fin, G.home_points + G.away_points, np.nan)
+    return G, why
 
 
 def _haversine(lat1, lon1, lat2, lon2):
@@ -86,18 +243,22 @@ def build_games(seasons):
     G['prediction_ts'] = pd.to_datetime(G.prediction_ts, utc=True)
     G['neutral_site'] = G.neutral_site.fillna(False).astype(bool)
     G['conference_game'] = G.conference_game.fillna(False).astype(bool)
-    played = G.home_points.notna() & G.away_points.notna()
-    G['status'] = np.where(played, 'FINAL',
-                           np.where(G.kickoff_ts < pd.Timestamp.now(tz='UTC'), 'NOT_PLAYED', 'SCHEDULED'))
-    G['margin'] = np.where(played, G.home_points - G.away_points, np.nan)
-    G['total_pts'] = np.where(played, G.home_points + G.away_points, np.nan)
+    # finality (F-01): FINAL needs the provider's completed flag; the provider status and
+    # the PBP completion flag come from the raw files (stage 1 keeps neither)
+    fi = pd.concat([finality_inputs(S) for S in sorted(G.season.dropna().astype(int).unique())], ignore_index=True)
+    fi = fi.drop_duplicates('game_id')
+    G = G.merge(fi, on='game_id', how='left')
+    G, reasons = assign_status(G)
     G['is_postseason'] = G.season_type.astype(str).str.lower().eq('postseason')
     G['fcs_game'] = ~(G.home_fbs & G.away_fbs)
 
     # ---------------------------------------------------------- rest days
+    # a CANCELED or POSTPONED game did not take place on its date: it is not the
+    # previous game of either team (F-01; only the 2024 App State-Liberty row, 2009-2025)
+    took_place = G[~G.status.isin(['CANCELED', 'POSTPONED'])]
     long = pd.concat([
-        G[['game_id', 'season', 'kickoff_ts', 'home_id']].rename(columns={'home_id': 'team_id'}),
-        G[['game_id', 'season', 'kickoff_ts', 'away_id']].rename(columns={'away_id': 'team_id'}),
+        took_place[['game_id', 'season', 'kickoff_ts', 'home_id']].rename(columns={'home_id': 'team_id'}),
+        took_place[['game_id', 'season', 'kickoff_ts', 'away_id']].rename(columns={'away_id': 'team_id'}),
     ]).sort_values(['team_id', 'kickoff_ts'])
     long['prev'] = long.groupby(['team_id', 'season']).kickoff_ts.shift(1)
     long['rest_days'] = (long.kickoff_ts - long.prev).dt.total_seconds() / 86400.0
@@ -130,8 +291,29 @@ def build_games(seasons):
     G['altitude_diff_ft'] = np.array(alt) * 3.28084
     report = dict(games=len(G), duplicate_ids_dropped=int(dup_ids),
                   duplicate_pair_day_dropped=int(dup_pairs),
-                  not_played=int((G.status == 'NOT_PLAYED').sum()))
+                  not_played=int((G.status == 'NOT_PLAYED').sum()),
+                  finality_rule=FINALITY_RULE,
+                  status_counts={k: int(v) for k, v in G.status.value_counts().sort_index().items()},
+                  not_a_result=[{'game_id': int(g), 'season': int(se), 'status': st, 'reason': w}
+                                for g, se, st, w in zip(G.game_id, G.season, G.status, reasons)
+                                if st in ('IN_PROGRESS', 'CANCELED', 'POSTPONED', 'DATA_ERROR')])
+    # the two finality helper columns are inputs, not part of the stage-2 schema
+    G = G.drop(columns=['provider_status', 'pbp_completed'])
+    check_finality(G)
     return G.sort_values(['kickoff_ts', 'game_id']).reset_index(drop=True), report
+
+
+def check_finality(G):
+    """Stage-2 invariants (F-01): only FINAL rows are results, every FINAL row is a
+    completed, decided game."""
+    bad = set(G.status) - set(STAGE2_STATUSES)
+    assert not bad, 'unknown stage-2 status %s' % sorted(bad)
+    fin = G.status.eq(RESULT_STATUS)
+    assert G.loc[fin, 'completed'].map(lambda v: _flag(v) is True).all(), 'FINAL without completed == True'
+    assert G.loc[fin, 'margin'].notna().all() and G.loc[fin, 'margin'].ne(0).all(), 'FINAL without a decided margin'
+    assert G.loc[~fin, 'margin'].isna().all() and G.loc[~fin, 'total_pts'].isna().all(), \
+        'a non-FINAL row carries a result'
+    return True
 
 
 # ------------------------------------------------------------------ market

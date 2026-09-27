@@ -28,6 +28,8 @@ on:
     branches: [main]
     paths:
       - 'football/cfb_v2/research/v2/weekly/**'
+      - 'football/cfb_v2/research/v2/games.py'
+      - 'football/cfb_v2/research/v2/tests_finality.py'
       - 'football/cfb_v2/research/v2/personnel/**'
       - 'football/cfb_weekly/*.js'
       - 'football/cfb_personnel/*.js'
@@ -68,6 +70,12 @@ jobs:
           CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
           CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
         run: python3 -m v2.weekly.tests_weekly --fast
+      - name: Finality (in-progress, cancelled and postponed games are never results; audit F-01)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+        run: python3 -m v2.tests_finality
       - name: Game validation, play context, game performance
         working-directory: football/cfb_v2/research
         env:

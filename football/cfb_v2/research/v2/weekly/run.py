@@ -186,6 +186,16 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
     def verify(rec):
         V = VAL.validate_games(season, now)
         ctx['validation'] = V
+        # F-01: stage 2 (what build_ratings, qb, elo and the grades read) must not count a
+        # game as a result that the validator does not accept as final with the same score.
+        # Refused, never warned: every stage that reads ratings depends on this one.
+        bad = VAL.stage2_final_violations(G, V, season)
+        rec['counts']['stage2_final_violations'] = len(bad)
+        if bad:
+            raise RL.StageError('stage 2 counts %d game(s) as FINAL that are not validated finals (%s); '
+                                'refusing to rate them' % (len(bad), '; '.join('%s: %s' % (b['game_id'], b['reason'])
+                                                                           for b in bad[:5])),
+                                'DATA_QUALITY', retryable=False)
         # the source week's games with an FBS team (Division II/III games mostly have no PBP and would
         # distort every share); an integer week is that regular-season week
         src = V[V.in_scope & V.season_type.eq('regular') & V.week.eq(sw)]
