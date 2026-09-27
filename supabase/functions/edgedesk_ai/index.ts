@@ -22551,6 +22551,196 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
 /*__EDBOARD_END__*/
 const EDBOARD: any = (globalThis as any).EDBOARD;
 /* ========================================================================
+   EDSPORTS — which sports are a current product and which are retired.
+   Source of truth: lib/edgedesk_sports.js. Inlined byte-for-byte by
+   tools/presentation/inline.js. The desk's support boundary reads it.
+   ======================================================================== */
+/*__EDSPORTS_START__*/
+/* ===========================================================================
+   EdgeDesk SPORTS — which sports are a current product, and which are retired.
+
+   ONE FILE, EVERY HOST. This exact block is inlined into
+     - app.html                               (research routes, live pools, record)
+     - record.html                            (the public record's default view)
+     - supabase/functions/edgedesk_ai/index.ts (the desk's support boundary)
+     - supabase/functions/capture/index.ts    (never buy odds for a retired sport)
+     - supabase/functions/close/index.ts      (never buy a live close for one)
+   by tools/presentation/inline.js; presentation_sync.test.js and
+   tools/app/sports_config.test.js fail when a copy drifts or a host stops
+   honouring it. Edit THIS file, then `node tools/presentation/inline.js`.
+
+   RETIRING A SPORT IS AN EDIT HERE, NOT A HUNT. Add an entry to RETIRED and
+   every host above follows: capture stops requesting its odds, close stops
+   requesting its closes, the desk answers questions about it with the support
+   boundary instead of research, the terminal's live pools and default record
+   drop it, and its old research routes land on RESEARCH_DEFAULT. What is NOT
+   automatic, and is pinned by tests instead: removing its tab and panel from
+   the Research navigation, and removing it from the board's SUPPORTED list.
+
+   RETIRED IS NOT DELETED. Nothing here touches stored rows. Historical signals,
+   grades, model outputs and research records stay exactly where they are; a
+   retired sport is only excluded from what the product offers today, and the
+   terminal's record keeps an explicit archive view that includes it.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDSPORTS = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VERSION = 1;
+
+  /* What the Research shell covers today, in its navigation order. This is the
+     list the desk quotes when it declines a retired sport, and the list the
+     navigation test holds the Research tabs to. */
+  var RESEARCH_COVERAGE = [
+    { id: 'football', label: 'Football' },
+    { id: 'ufc', label: 'UFC' },
+    { id: 'baseball', label: 'Baseball' }
+  ];
+  /* Where a retired research module's old route lands: the shell's default. */
+  var RESEARCH_DEFAULT = 'football';
+
+  /* Retired sports. `key_prefixes` match an Odds API sport_key; `modules` are
+     the Research shell ids that once served it; `title` catches stored rows
+     written before capture kept a sport_key; `words` recognise a question that
+     is about the sport (tour and event names, never a bare "match" or "set"). */
+  var RETIRED = [
+    {
+      id: 'tennis', label: 'Tennis', retired_on: '2026-09-27',
+      key_prefixes: ['tennis_'],
+      modules: ['tennis', 'wta'],
+      title: /^(ATP|WTA)\b|\btennis\b/i,
+      words: /\b(tennis|atp|wta|wimbledon|roland[- ]garros|french open|us open tennis|australian open|davis cup|billie jean king cup)\b/i
+    }
+  ];
+
+  function str(v) { return v == null ? '' : String(v); }
+
+  /* The retired entry a sport key (or a bare sport id such as "tennis") belongs to. */
+  function retiredByKey(key) {
+    var k = str(key).toLowerCase();
+    if (!k) return null;
+    for (var i = 0; i < RETIRED.length; i++) {
+      var s = RETIRED[i];
+      if (k === s.id) return s;
+      for (var j = 0; j < s.key_prefixes.length; j++) if (k.indexOf(s.key_prefixes[j]) === 0) return s;
+    }
+    return null;
+  }
+  function isRetiredKey(key) { return !!retiredByKey(key); }
+
+  /* A stored row: its sport_key decides; a row with no key falls back to its title. */
+  function retiredOfRow(r) {
+    if (!r) return null;
+    var k = str(r.sport_key);
+    if (k) return retiredByKey(k);
+    var t = str(r.sport_title);
+    for (var i = 0; i < RETIRED.length; i++) if (t && RETIRED[i].title.test(t)) return RETIRED[i];
+    return null;
+  }
+  function isRetiredRow(r) { return !!retiredOfRow(r); }
+  function dropRetired(rows) {
+    var out = [];
+    if (!rows || !rows.length) return out;
+    for (var i = 0; i < rows.length; i++) if (!retiredOfRow(rows[i])) out.push(rows[i]);
+    return out;
+  }
+  /* Keep only the sport keys a current product may use. */
+  function keepCurrentKeys(keys) {
+    var out = [];
+    for (var i = 0; i < (keys || []).length; i++) if (!isRetiredKey(keys[i])) out.push(keys[i]);
+    return out;
+  }
+  function retiredPrefixes() {
+    var out = [];
+    for (var i = 0; i < RETIRED.length; i++) out = out.concat(RETIRED[i].key_prefixes);
+    return out;
+  }
+
+  /* The retired sport a piece of text is about, or null. */
+  function retiredNamedIn(text) {
+    var q = str(text);
+    if (!q) return null;
+    for (var i = 0; i < RETIRED.length; i++) if (RETIRED[i].words.test(q)) return RETIRED[i];
+    return null;
+  }
+
+  /* THE DESK'S SUPPORT BOUNDARY: which retired sport, if any, a turn is about.
+     It is a product boundary, not a language rule. A question plainly about
+     history ("why did you stop covering tennis?") is not refused; a question
+     asking for research, a price, an edge or a bet on a retired sport — or a
+     turn whose open game resolved to one — is answered with unsupportedAnswer.
+     The server (edgedesk_ai) and the browser panel both decide with this. */
+  var HISTORY_ASK = /\b(histor(y|ical|ically)|archived?|retired|no longer|stop(ped)? (covering|supporting|offering)|used to (cover|support|offer)|(why|when) (did|do|does) (you|edgedesk))\b/i;
+  function supportBoundary(o) {
+    var q = str(o && o.question);
+    if (HISTORY_ASK.test(q)) return null;
+    var bySport = o && o.sportKey ? retiredByKey(o.sportKey) : null;
+    var entry = bySport || retiredNamedIn(q);
+    if (!entry) return null;
+    return {
+      entry: entry,
+      answer: unsupportedAnswer(entry),
+      reason: bySport ? 'the turn resolved to a retired sport' : 'the question names a retired sport'
+    };
+  }
+
+  /* { module: destination } for every retired Research module. */
+  function retiredModuleRoutes() {
+    var out = {};
+    for (var i = 0; i < RETIRED.length; i++)
+      for (var j = 0; j < RETIRED[i].modules.length; j++) out[RETIRED[i].modules[j]] = RESEARCH_DEFAULT;
+    return out;
+  }
+
+  /* A PostgREST filter that keeps rows of current sports: a NULL key is kept
+     (the row is judged by its title client-side), every retired prefix is out. */
+  function postgrestKeep(col) {
+    var c = str(col) || 'sport_key';
+    var nots = [];
+    var p = retiredPrefixes();
+    for (var i = 0; i < p.length; i++) nots.push(c + '.not.like.' + p[i] + '*');
+    if (!nots.length) return '';
+    return 'or=(' + c + '.is.null,' + (nots.length === 1 ? nots[0] : 'and(' + nots.join(',') + ')') + ')';
+  }
+
+  function coverageSentence() {
+    var l = [];
+    for (var i = 0; i < RESEARCH_COVERAGE.length; i++) l.push(RESEARCH_COVERAGE[i].label);
+    var list = l.length > 1 ? l.slice(0, -1).join(', ') + ' and ' + l[l.length - 1] : (l[0] || '');
+    return 'Current research coverage includes ' + list + '.';
+  }
+  /* The support boundary, in the product's words. */
+  function unsupportedAnswer(entry) {
+    var label = entry && entry.label ? entry.label : 'That sport';
+    return label + ' is not currently supported by EdgeDesk Research. ' + coverageSentence();
+  }
+
+  return {
+    VERSION: VERSION,
+    RETIRED: RETIRED,
+    RESEARCH_COVERAGE: RESEARCH_COVERAGE,
+    RESEARCH_DEFAULT: RESEARCH_DEFAULT,
+    retiredByKey: retiredByKey,
+    isRetiredKey: isRetiredKey,
+    retiredOfRow: retiredOfRow,
+    isRetiredRow: isRetiredRow,
+    dropRetired: dropRetired,
+    keepCurrentKeys: keepCurrentKeys,
+    retiredPrefixes: retiredPrefixes,
+    retiredNamedIn: retiredNamedIn,
+    supportBoundary: supportBoundary,
+    retiredModuleRoutes: retiredModuleRoutes,
+    postgrestKeep: postgrestKeep,
+    coverageSentence: coverageSentence,
+    unsupportedAnswer: unsupportedAnswer
+  };
+});
+/*__EDSPORTS_END__*/
+const EDSPORTS: any = (globalThis as any).EDSPORTS;
+/* ========================================================================
    PART 1g2 — THE RESEARCH CORE, THE GAME RESEARCH CONTRACT AND THE DESK
    KERNEL (EDDESK). Inlined from lib/research_core.js, lib/game_research.js
    and _desk.js by tools/presentation/inline.js. Do not edit here.
@@ -32351,7 +32541,7 @@ function mlbStartersFromResearch(research: ResearchOut | null): { label: string;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-27-r19-board-no-tennis";
+export const BUILD = "edgedesk_ai-2026-09-27-r20-support-boundary";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -32611,6 +32801,13 @@ function json(body: unknown, status = 200) {
 /* SYSTEM PROMPT                                                            */
 /* ======================================================================== */
 
+/* The SUPPORT BOUNDARY rule, written from EDSPORTS so the prompt and the
+   deterministic check (retiredSportTurn) name the same sports and the same
+   sentence. It covers what that check cannot see — a question naming only
+   players — and leaves the sport free to be mentioned as history. */
+const SUPPORT_BOUNDARY_RULE: string = (EDSPORTS?.RETIRED ?? []).map((r: any) =>
+  `- SUPPORT BOUNDARY. ${r.label} is not currently supported by EdgeDesk Research. If a question asks for research, a projection, a price, an edge, a best bet or a betting read on a ${String(r.label).toLowerCase()} match or player, including one that names only the players, reply with exactly this and nothing else: "${EDSPORTS.unsupportedAnswer(r)}" You may mention ${String(r.label).toLowerCase()} only as history (for example, that EdgeDesk once covered it), never as current research.`,
+).join("\n");
 const SYSTEM = `You are EdgeDesk Intelligence, the research analyst inside EdgeDesk — a CLV-first sports-betting research app. You are the reasoning layer over a deterministic pricing engine. You are not the engine.
 
 HOW A TURN REACHES YOU
@@ -32636,6 +32833,7 @@ HARD RULES
 - If something is UNAVAILABLE or missing, say "not available in EdgeDesk's current data" and name it once. EdgeDesk already tried to retrieve it — so say what was tried and what came back, not "I don't have access".
 - Never say you cannot see the slate, the board or today's games when evidence is attached. It is in front of you.
 - Prefer "EdgeDesk could not retrieve that" over a plausible-sounding invention. Every time.
+${SUPPORT_BOUNDARY_RULE}
 - EVERY NUMBER BELONGS TO ONE ENTITY. Read each figure from that entity's OWN evidence item, matched by name. Never carry a value across from another player, team or game, and never fill a gap with a neighbouring record's numbers. If two entities genuinely carry identical values, that is almost always you misreading the evidence, not a coincidence — re-read both items, and if one truly has no value for a field, say that field is not available for him rather than repeating the other's. An entity with no evidence item of its own gets named as missing, never described.
 
 IDENTITY BEFORE NUMBERS
@@ -38979,6 +39177,39 @@ export async function deskTurn(o: { body: any; auth: string; now?: number; fetch
   };
 }
 
+/* ========================================================================
+   THE SUPPORT BOUNDARY — a retired sport (EDSPORTS, lib/edgedesk_sports.js).
+
+   Tennis is not a product EdgeDesk offers today. A question asking for
+   research, a projection, a price, an edge or a bet on a retired sport gets
+   one plain sentence naming what IS covered, and nothing else: no research
+   packet, no model call, no ledger row. It is decided here, before the model,
+   because a boundary the model is merely asked to respect is a boundary a
+   phrasing can walk around.
+
+   It is a PRODUCT boundary, not a language rule. The word is not banned: a
+   question that is plainly about history ("why did you stop covering
+   tennis?") passes through to the normal pipeline, and the system prompt's
+   SUPPORT BOUNDARY rule covers what this check cannot see — a question naming
+   only players — while leaving the model free to mention the sport as
+   history. Two checks: the words of the question, and the sport the turn
+   actually resolved to (the reader's open packet, or retrieval).
+   ======================================================================== */
+export function retiredSportTurn(o: { question?: string | null; sportKey?: string | null; stage?: string }): any | null {
+  const b = EDSPORTS ? EDSPORTS.supportBoundary({ question: o.question ?? "", sportKey: o.sportKey ?? null }) : null;
+  if (!b) return null;
+  return {
+    answer: b.answer,
+    model: null,
+    narration: { ok: true, prose: "DETERMINISTIC", critic: null },
+    support_boundary: {
+      sport: b.entry.id, label: b.entry.label, stage: o.stage ?? "question", reason: b.reason,
+      coverage: EDSPORTS.RESEARCH_COVERAGE.map((c: any) => c.label),
+    },
+    build: BUILD,
+  };
+}
+
 export async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -39163,6 +39394,14 @@ export async function handle(req: Request): Promise<Response> {
     catch (e) { try { console.error("edgedesk_ai mine turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
 
+  /* --- the support boundary: a retired sport is answered, not researched.
+     After the reader's own rows (their journal is theirs, whatever the sport),
+     before the desk, retrieval and the model. */
+  {
+    const rb = retiredSportTurn({ question: String(body?.question ?? ""), sportKey: body?.packet?.game?.sport_key ?? body?.packet?.sport_key ?? null, stage: "question" });
+    if (rb) return json(rb);
+  }
+
   /* --- the desk: a short, direct answer from typed evidence -------------
      Only for a client that renders it (`desk: true`); anything the desk
      does not answer returns null here and runs the full pipeline below. */
@@ -39226,6 +39465,14 @@ export async function handle(req: Request): Promise<Response> {
       researchError = String((e as Error)?.stack ?? (e as Error)?.message ?? e).slice(0, 600);
       try { console.error("edgedesk_ai research threw", researchError); } catch { /* no console */ }
     }
+  }
+
+  /* --- the support boundary, again: retrieval resolved the turn to a retired
+     sport (a question that named only players, say). Nothing below runs. */
+  {
+    const resolved = (research as any)?.focus?.sport_key ?? (research as any)?.context?.sport ?? (research as any)?.state?.sport ?? null;
+    const rb = retiredSportTurn({ question: String(body?.question ?? ""), sportKey: resolved, stage: "retrieval" });
+    if (rb) return json(rb);
   }
 
   /* --- the deterministic presentation, BEFORE the model ------------------

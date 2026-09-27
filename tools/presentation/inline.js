@@ -41,6 +41,18 @@ const ROOT = path.join(__dirname, '..', '..');
 const FN = path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai');
 
 const LIBS = [
+  /* Which sports are a current product and which are retired. One list, read
+     by the terminal (routes, live pools, record), the public record page, the
+     desk's support boundary, and the two functions that spend odds credits —
+     so retiring a sport is an edit to lib/edgedesk_sports.js, not a hunt. */
+  {
+    name: 'EDSPORTS',
+    src: path.join(ROOT, 'lib', 'edgedesk_sports.js'),
+    start: '/*__EDSPORTS_START__*/', end: '/*__EDSPORTS_END__*/',
+    hosts: [path.join(ROOT, 'app.html'), path.join(ROOT, 'record.html'), path.join(FN, 'index.ts'),
+      path.join(ROOT, 'supabase', 'functions', 'capture', 'index.ts'),
+      path.join(ROOT, 'supabase', 'functions', 'close', 'index.ts')],
+  },
   /* ORDER MATTERS. The FBS resolver's host is _intelligence.js, which is
      itself the source EDINTEL is copied FROM, so the two resolver blocks must
      land before EDINTEL is read — one pass then carries a fbs.js edit all the

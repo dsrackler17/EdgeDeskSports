@@ -22,6 +22,7 @@ on:
   pull_request:
     paths:
       - 'supabase/functions/edgedesk_ai/**'
+      - 'lib/edgedesk_sports.js'
       - 'supabase/recommendation_ledger.sql'
       - 'supabase/research_packets.sql'
       - 'tools/intelligence/**'
@@ -70,6 +71,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/functions/edgedesk_ai/**'
+      - 'lib/edgedesk_sports.js'
       - 'supabase/research_packets.sql'
       - 'tools/intelligence/**'
       - '.github/workflows/intelligence-ci.yml'
@@ -108,6 +110,8 @@ jobs:
         run: node tools/intelligence/evals.test.js
       - name: Intelligence tells the truth about the slate, the price and the model
         run: node tools/intelligence/intelligence.test.js
+      - name: A retired sport gets the support boundary, not research
+        run: node tools/intelligence/support_boundary.test.js
       - name: The matchup research layer against the real artifacts
         run: node tools/intelligence/matchup.test.js
       - name: The acceptance conversation

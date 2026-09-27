@@ -534,9 +534,11 @@ section('STEP 9 · top 5 worth researching, on the college board');
   const ix = {}; units.forEach(u => { ix[String(u.g.game_id)] = u; });
   const npc = T.fbWrCandidate(npRow, ix);
   const row = T.fbWrRowHTML({ rank: 1, candidate: npc, why: { text: 'x' }, detail: { uncertainty: { elevated: false, reasons: [] } } });
-  has(row, '<i>EdgeDesk</i>Oregon -1.0', 'the overview list prints the near pick’em at its one-point display line');
-  lacks(row, '<i>EdgeDesk</i>Oregon -0.3', 'never as the raw 0.3');
-  lacks(row, '<i>EdgeDesk</i>Oregon +0.3', 'in either sign');
+  has(row, '<i>Model</i><b>Oregon -1.0', 'the overview list prints the near pick’em at its one-point display line');
+  lacks(row, '<i>Model</i><b>Oregon -0.3', 'never as the raw 0.3');
+  lacks(row, '<i>Model</i><b>Oregon +0.3', 'in either sign');
+  has(row, '<i>Confidence</i><b title="EdgeDesk information confidence: how good the inputs for this game are">' + npc.view.confidence.pct_text,
+    'and its confidence is the research view’s own');
   has(row, 'NEAR PICK’EM', 'with its badge');
 
   /* ---------------------------------------------------------------------- */

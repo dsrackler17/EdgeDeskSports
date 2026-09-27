@@ -43,7 +43,7 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--fg:#f1ebdf;--dim:#a29581;--faint:#887e70;--accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--mdl:#d274b0;--nav:62px;--foot:30px;--sp2:8px;--sp3:12px;--sp4:16px;--sp5:20px;--sp6:24px;--sp8:32px;--rad:14px;--rad-s:11px}
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--fg:#f1ebdf;--dim:#aa9c87;--faint:#958a7a;--accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--mdl:#d274b0;--nav:58px;--foot:30px;--sp2:8px;--sp3:12px;--sp4:16px;--sp5:20px;--sp6:24px;--sp8:32px;--rad:14px;--rad-s:11px}
 *{box-sizing:border-box}html,body{margin:0}
 body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;color-scheme:dark;accent-color:var(--accent)}
 /* printed briefs are dark-on-white paper: keep the light UA scheme there */
@@ -62,10 +62,26 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .hpbtn:hover .pill{border-color:var(--dim)}
 .hpsum.warn{color:var(--warn);border-color:rgba(214,158,60,.45)}
 .hpsum.err{color:var(--neg);border-color:rgba(226,96,68,.4)}
-/* On a phone the header cannot carry two pills without pushing the bar past
-   the viewport, so the narrow layout keeps the summary and drops the database
-   glance — which the panel still states in full on its first row. */
-@media(max-width:400px){.hpbtn #dbPill{display:none}}
+/* The header carries ONE status, "System ● Healthy": the database glance is
+   folded into it (sysHealthState reads #dbPill) and the panel states it in
+   full on its first row. The border stays neutral so a warning does not
+   shout; the dot and the word carry the state. */
+.hpbtn{min-height:32px;flex:none}
+.hpbtn #dbPill{display:none}
+.hpbtn .pill.hpsum{display:inline-flex;align-items:center;gap:6px;border-color:var(--border);color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;padding:4px 9px}
+.hpbtn:hover .pill.hpsum{border-color:var(--dim)}
+.hpbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:14px}
+.hpdot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.hpsum.ok .hpdot{background:var(--pos)}.hpsum.warn .hpdot{background:var(--warn)}.hpsum.err .hpdot{background:var(--neg)}
+.hpsum .hpk{color:var(--dim)}.hpsum .hpv,.hpsum .hpc{color:var(--text)}
+.hpsum.ok .hpv{color:var(--pos)}.hpsum.warn .hpv,.hpsum.warn .hpc{color:var(--warn)}.hpsum.err .hpv,.hpsum.err .hpc{color:var(--neg)}
+.hpsum .hpc{display:none}
+.appbar .edm-bell{flex:none}
+/* the research tag reads as part of the wordmark, not as a second badge */
+.appbar .tag{border:none;border-radius:0;padding:0;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em}
+/* a phone keeps the dot and the count, and drops the word */
+@media(max-width:479px){.appbar-in{gap:8px}.hpsum .hpv{display:none}.hpsum .hpc{display:inline}}
+@media(max-width:359px){.appbar .tag{display:none}}
 .hppop{display:none;position:absolute;top:calc(100% - 4px);right:12px;z-index:60;width:min(340px,calc(100vw - 24px));max-height:min(70vh,560px);overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.5);padding:12px}
 .hppop.on{display:block}
 .hppop .hph{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:0 0 8px}
@@ -85,6 +101,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .moreitem .ic{width:18px;height:18px;stroke:var(--faint);fill:none;stroke-width:2;flex:none}
 .moreitem span{display:block;font-size:11px;font-weight:400;color:var(--faint);margin-top:2px;line-height:1.45}
 .moreitem .go{margin-left:auto;color:var(--faint);font-size:15px;flex:none}
+.morehd{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700;margin:6px 0 -2px}
+.morehd:first-child{margin-top:0}
 .pill{font-size:10px;color:var(--dim);border:1px solid var(--border);border-radius:12px;padding:3px 8px}.pill.ok{color:var(--pos);border-color:rgba(118,189,62,.4)}.pill.err{color:var(--neg);border-color:rgba(226,96,68,.4)}
 /* bottom padding = nav + the measured disclaimer height (--foot, set by the script after .foot) + safe area: content can never end under either */
 .view{padding:14px 14px calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 16px);max-width:960px;margin:0 auto}.view.hide{display:none}
@@ -289,14 +307,22 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .gx-qb-foot{margin-top:9px;font-size:11px;line-height:1.55;color:var(--faint);padding:8px 10px;border-radius:9px;
   border:1px solid var(--border);border-left-width:3px;border-left-color:var(--border);background:var(--bg)}
 .gx-qb-foot b{color:var(--dim)}
-.rs-creed{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:5px;max-width:62ch}
-.rs-creed b{color:var(--dim);font-weight:600}
 /* START HERE — four ways in, all of them existing routes */
 .rs-start{display:flex;gap:6px;margin-top:var(--sp2);overflow-x:auto;scrollbar-width:none}
 .rs-start::-webkit-scrollbar{display:none}
 .rs-start button{flex:0 0 auto;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--dim);font-family:inherit;font-size:11.5px;font-weight:600;padding:9px 10px;cursor:pointer;white-space:nowrap;text-align:center}
 .rs-start button:hover{border-color:var(--accent);color:var(--accent)}
 .rs-start button.pri{color:var(--accent);border-color:rgba(47,167,154,.42)}
+/* the landing's three ways in (fbStartHereHTML): one primary, two quieter
+   secondaries. The primary is a tinted teal, not a solid slab — it leads
+   without shouting. A phone stacks it full-width over the two secondaries;
+   from 560px the three sit in one row. */
+.rs-start.rs-start-cta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp2);margin-top:var(--sp3);overflow:visible}
+.rs-start-cta button{min-height:38px;white-space:normal;font-size:12px}
+.rs-start-cta button.pri{grid-column:1/-1;min-height:44px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(47,167,154,.13);border-color:rgba(47,167,154,.55)}
+.rs-start-cta button.pri:hover{background:rgba(47,167,154,.2);border-color:var(--accent)}
+.rs-start-cta button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(min-width:560px){.rs-start.rs-start-cta{display:flex;flex-wrap:wrap}.rs-start-cta button{flex:0 0 auto;padding:9px 14px}.rs-start-cta button.pri{min-height:40px;padding:9px 20px}}
 /* RESEARCH A GAME — a compact finder over rows the module already computed */
 .rs-find{position:relative}
 .rs-find input{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:12.5px;padding:9px 11px}
@@ -720,18 +746,31 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .tbl th{text-align:right;color:var(--faint);font-size:9.5px;text-transform:uppercase;padding:8px;border-bottom:1px solid var(--border)}
 .tbl th:first-child,.tbl td:first-child{text-align:left}.tbl td{text-align:right;padding:8px;border-bottom:1px solid rgba(51,42,27,.6)}
 .bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom)}
-.bottomnav button{position:relative;flex:1 1 0;min-width:0;background:none;border:none;color:var(--faint);font-family:inherit;font-size:8.5px;font-weight:600;letter-spacing:.01em;white-space:nowrap;padding:9px 1px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:var(--nav);transition:color .15s}
+.bottomnav button{position:relative;flex:1 1 0;min-width:0;background:none;border:none;color:var(--faint);font-family:inherit;font-size:10.5px;font-weight:600;letter-spacing:.02em;white-space:nowrap;padding:9px 1px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:var(--nav);transition:color .15s}
 .bottomnav button:hover{color:var(--dim)}
 /* the active tab gets a real indicator, not just a colour change */
 .bottomnav button::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:2px;border-radius:0 0 3px 3px;background:var(--accent);transition:width .18s ease}
-.bottomnav button.on::before{width:26px}
+.bottomnav button.on::before{width:28px;height:3px}
 .bottomnav button.on{color:var(--accent)}
 .bottomnav button.on .ic{stroke-width:2.2}
-.bottomnav .ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;flex:none}
-@media(max-width:359px){.bottomnav button{font-size:7.5px;gap:3px}.bottomnav .ic{width:17px;height:17px}}
-@media(min-width:760px){.bottomnav{justify-content:center;gap:4px}.bottomnav button{flex:0 0 96px;font-size:10px}.bottomnav .ic{width:20px;height:20px}}
-/* the disclaimer sits ABOVE the nav (nav height + its own safe-area pad); one compact line, wrapping only when the width demands it */
-.foot{position:fixed;bottom:calc(var(--nav) + 1px + env(safe-area-inset-bottom));left:0;right:0;background:color-mix(in srgb,var(--surface2) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--border);font-size:9.5px;line-height:1.25;color:var(--dim);text-align:center;padding:3px 10px;z-index:25;text-wrap:balance}.foot b{color:var(--warn)}.foot .sep{color:var(--faint);margin:0 3px}
+.bottomnav .ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;flex:none}
+.bottomnav button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px;border-radius:10px}
+/* five seats share a phone's width, so the labels stay readable at 320px */
+@media(max-width:359px){.bottomnav button{font-size:10px}}
+@media(min-width:760px){.bottomnav{justify-content:center;gap:8px}.bottomnav button{flex:0 0 104px;font-size:11px}}
+/* the disclaimer sits ABOVE the nav (nav height + its own safe-area pad) as
+   one compact line. Every compliance element stays on every width — not
+   betting advice, signals can be wrong, 21+, 1-800-GAMBLER — and a phone
+   uses the short form of the first clause (.ft-s) so the line fits; the
+   link's accessible name always carries the full sentence. It still wraps
+   rather than clip if the type is scaled up. */
+.foot{position:fixed;bottom:calc(var(--nav) + 1px + env(safe-area-inset-bottom));left:0;right:0;background:color-mix(in srgb,var(--surface2) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--border);font-size:10px;line-height:1.3;color:var(--dim);text-align:center;padding:4px 10px;z-index:25;text-wrap:balance}
+.foot .footlink{background:none;border:none;padding:0;margin:0;font:inherit;font-weight:700;color:var(--warn)}
+.foot .footlink:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+.foot .sep{color:var(--faint);margin:0 4px}
+.foot .ft-s{display:none}
+@media(max-width:479px){.foot .ft-l{display:none}.foot .ft-s{display:inline}}
+@media(max-width:359px){.foot{font-size:9.5px;padding:4px 8px}.foot .sep{margin:0 3px}}
 .fb-drawer,.rs-dossier,#ufcModal,#tddModal,#cfbModal{padding-bottom:calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 24px)}
 @media(min-width:760px){.filters{grid-template-columns:repeat(4,1fr)}.kpis{grid-template-columns:repeat(4,1fr)}}
 /* ===== faultline ===== */
@@ -1245,10 +1284,16 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
    the one accent, amber marks research / experimental states, green is
    reserved for healthy or validated, red for a fault. No gradients, no
    glow, no motion beyond 150–250ms state transitions. */
-.rs-hd{align-items:flex-start}
-.rs-hd-t{min-width:0}
-.rs-hd-t h2{margin:0;font-size:18px;letter-spacing:.01em;line-height:1.25}
-.rs-sub{font-size:12.5px;color:var(--dim);margin-top:3px}
+.rs-hd{align-items:center;flex-wrap:wrap;row-gap:2px;margin-bottom:12px}
+.rs-hd-t{min-width:0;flex:1 1 0}
+/* level 1: the screen title is the brightest heading on the page; the
+   Experimental badge sits beside it, visibly secondary, and drops under it
+   only when the row is too narrow to hold both */
+.rs-hd-t h2{margin:0;font-size:16px;letter-spacing:.07em;line-height:1.25;color:var(--text);font-weight:700;display:flex;align-items:center;flex-wrap:wrap;gap:3px 8px}
+.rs-hd .rs-exp{font-size:8.5px;font-weight:500;letter-spacing:.1em;padding:1px 5px;border-radius:4px;background:none;border-color:rgba(217,154,43,.32)}
+.rs-sub{flex:1 0 100%;margin:4px 0 0;font-size:12.5px;line-height:1.45;color:var(--dim)}
+@media(max-width:359px){.rs-hd-t h2{letter-spacing:.04em}.rs-sub{font-size:12px}}
+@media(min-width:760px){.rs-hd-t h2{font-size:18px}}
 .rs-tool.ic{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;flex:none;margin-top:1px}
 .rs-tool.ic svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .rs-tool.ic.on{background:rgba(47,167,154,.12)}
@@ -1307,24 +1352,51 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-lnk:hover{border-color:rgba(47,167,154,.5);background:rgba(47,167,154,.08)}
 .fb-quiet{border:1px dashed var(--border);border-radius:12px;padding:16px 14px;color:var(--dim);font-size:13px;line-height:1.5;background:var(--surface)}
 .fb-quiet small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px}
-/* 5 Games Worth Researching: compact rows inside one card (fbWrRowHTML) */
-.fb-card.fb-wr{padding:4px 14px 12px}
-.fb-wr-r{padding:11px 0;border-top:1px solid var(--border);min-width:0}
+/* TODAY'S RESEARCH BOARD (fbWrInner) — the landing's centerpiece, so its
+   heading is the strongest section heading on the page: brighter, a step
+   larger, and marked by the accent rule. Every other section head stays at
+   level 2 (.fb-sechd). */
+.fb-wr-hd{margin:var(--sp6) 0 var(--sp3);padding-left:11px;border-left:2px solid var(--accent)}
+.fb-wr-t{margin:0;font-size:14px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text);line-height:1.3}
+.fb-wr-sub{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px;margin:3px 0 0;font-size:12.5px;line-height:1.4;color:var(--dim)}
+.fb-wr-sub .r{margin-left:auto;font:500 11px 'JetBrains Mono',monospace;color:var(--dim);white-space:nowrap}
+@media(min-width:760px){.fb-wr-t{font-size:15px}}
+/* one board card per game (fbWrRowHTML): matchup, then a readout of
+   market / model / gap / confidence / status — label beside value on a
+   phone, one five-column strip once the card itself is wide enough */
+.fb-card.fb-wr{padding:4px 14px 12px;container-type:inline-size}
+.fb-wr-r{padding:12px 0;border-top:1px solid var(--border);min-width:0}
 .fb-wr-r:first-child{border-top:none}
-.fb-wr-h{display:flex;align-items:baseline;gap:8px;min-width:0}
-.fb-wr-h .n{flex:none;width:16px;color:var(--faint);font:600 11px 'JetBrains Mono',monospace}
-.fb-wr-h .m{flex:1 1 auto;min-width:0;font-size:13.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-wr-h{display:flex;align-items:center;gap:8px;min-width:0}
+.fb-wr-h .n{flex:none;width:16px;color:var(--dim);font:600 11px 'JetBrains Mono',monospace}
+.fb-wr-h .m{flex:1 1 auto;min-width:0;font-size:14px;font-weight:600;line-height:1.3;color:var(--text)}
 .fb-wr-st{flex:none;font:600 9.5px 'JetBrains Mono',monospace;letter-spacing:.07em;text-transform:uppercase;border:1px solid rgba(47,167,154,.45);border-radius:5px;padding:1px 6px;color:var(--accent)}
 .fb-wr-st.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
 .fb-wr-st.mut{color:var(--dim);border-color:var(--border)}
-.fb-wr-u{margin:4px 0 0 24px;font-size:10.5px;letter-spacing:.02em;color:var(--warn)}
-.fb-wr-v{display:flex;flex-wrap:wrap;gap:3px 14px;margin:6px 0 0 24px;font:12px 'JetBrains Mono',monospace;color:var(--text);min-width:0}
-.fb-wr-v span{white-space:nowrap}
-.fb-wr-v i{font:normal 700 9.5px 'Inter',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-right:5px}
-.fb-wr-v .mdl{color:var(--mdl)}
+.fb-wr-u{margin:6px 0 0 24px;font-size:10.5px;letter-spacing:.02em;color:var(--warn)}
+.fb-wr-v{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:baseline;gap:4px 14px;margin:8px 0 0 24px;min-width:0}
+.fb-wr-c{display:contents}
+.fb-wr-c i{font:normal 700 9.5px 'Inter',system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.fb-wr-c b{min-width:0;font:500 12.5px 'JetBrains Mono',monospace;color:var(--text);overflow-wrap:anywhere}
+.fb-wr-c.mdl b{color:var(--mdl)}
+.fb-wr-c.gap b{color:var(--warn);font-weight:700}
+.fb-wr-c.cf b small{margin-left:3px;font:500 10.5px 'Inter',system-ui,sans-serif;color:var(--dim)}
+.fb-wr-c.cf.low b{color:var(--warn)}
+.fb-wr-c.cf.na b{font:500 12px 'Inter',system-ui,sans-serif;color:var(--dim)}
+@container (min-width:560px){
+  .fb-wr-v{grid-template-columns:none;grid-template-rows:auto auto;grid-auto-flow:column;grid-auto-columns:minmax(0,max-content);justify-content:start;gap:3px 26px}
+}
+/* the reasoning is one tap away, not a paragraph in every card */
 .fb-wr-w{margin:6px 0 0 24px;font-size:12px;line-height:1.45;color:var(--dim)}
-.fb-wr-w b{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-right:6px}
-.fb-wr-f{display:flex;align-items:center;gap:8px;margin:7px 0 0 24px;font:10.5px 'JetBrains Mono',monospace;color:var(--faint);min-width:0}
+.fb-wr-w summary{display:inline-flex;align-items:center;gap:7px;min-height:30px;cursor:pointer;list-style:none;color:var(--dim)}
+.fb-wr-w summary::-webkit-details-marker{display:none}
+.fb-wr-w summary::before{content:"";border-left:5px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .15s ease}
+.fb-wr-w[open] summary::before{transform:rotate(90deg)}
+.fb-wr-w summary b{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.fb-wr-w summary:hover{color:var(--text)}
+.fb-wr-w summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.fb-wr-w p{margin:0 0 4px}
+.fb-wr-f{display:flex;align-items:center;gap:8px;margin:2px 0 0 24px;font:10.5px 'JetBrains Mono',monospace;color:var(--dim);min-width:0}
 .fb-wr-f .ts{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .fb-wr-few{font-size:11.5px;color:var(--dim);padding:10px 0 0;border-top:1px solid var(--border)}
 .fb-wr-cols{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp3,12px);align-items:start}
@@ -1454,6 +1526,24 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-kpis{gap:var(--sp2);margin:var(--sp3) 0}
 .fb-kpi{padding:10px 6px 8px;min-height:66px;display:flex;flex-direction:column;justify-content:center}
 .fb-kpi .l{color:var(--dim)}
+/* the Football summary strip (.fb-kpis-read): four counts whose labels say
+   what they count, so labels wrap instead of truncating. One segmented
+   panel with hairline dividers rather than four boxes of equal weight. A
+   phone reads it as a 2×2 of number beside label; from 560px it is one row,
+   number over label. */
+.fb-card>.fb-kpis:first-child{margin-top:0}
+.fb-kpis.fb-kpis-read{grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:11px;overflow:hidden}
+.fb-kpis-read .fb-kpi{border:none;border-radius:0;min-height:0;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;padding:10px 12px;text-align:left}
+.fb-kpis-read .fb-kpi .n{flex:none;min-width:2ch;font-size:22px;font-variant-numeric:tabular-nums}
+.fb-kpis-read .fb-kpi .l{margin-top:0;font-size:9.5px;letter-spacing:.06em;line-height:1.3;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+@media(max-width:359px){.fb-kpis-read .fb-kpi{flex-direction:column;align-items:flex-start;gap:4px;padding:9px 10px}}
+@media(min-width:560px){
+  .fb-kpis.fb-kpis-read{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .fb-kpis-read .fb-kpi{flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:12px 8px;min-height:72px}
+  .fb-kpis-read .fb-kpi .n{font-size:26px}
+  .fb-kpis-read .fb-kpi .l{text-wrap:balance}
+}
+@media(min-width:760px){.fb-kpis-read .fb-kpi .n{font-size:28px}}
 .fb-note,.fb-sig-f,.fb-mvm-w,.fb-ms-v,.fb-sys-h .ts,.fb-range .lab,.fb-range .leg,.fb-split .lab,.fb-quiet small,.fb-drawer-card .sub{color:var(--dim)}
 .fb-defs{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;font-size:12px;line-height:1.4;margin:0}
 .fb-defs b{color:var(--text);font-weight:600;font-size:11.5px;letter-spacing:.02em}
@@ -1500,12 +1590,17 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 /* long signal titles wrap; the priority badge and sport tag follow on the next line if needed */
 .fb-sig-k{flex-wrap:wrap;row-gap:4px}
 .fb-sig-k .kk{white-space:normal;flex:1 1 auto;line-height:1.3}
-.fb-panelhd .freshness{color:var(--dim)}
+.fb-panelhd .freshness{color:var(--dim);text-align:right;line-height:1.35}
+@media(max-width:479px){.fb-panelhd .freshness{font-size:10.5px}}
 .fb-tool:focus-visible,.fb-btn:focus-visible,.fb-lnk:focus-visible,.fb-cta:focus-visible,.fb-tgl:focus-visible,.fb-sig:focus-visible,.fb-how:focus-visible,.stseg button:focus-visible,.rs-tool:focus-visible,.refreshbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-/* sport tabs: six labels fit a 360px column without a min-width, so nothing clips; scroll stays as the fallback */
-.stseg.research-sub button{min-width:0;flex:1 1 auto;padding:9px 6px;font-size:12px;min-height:38px;scroll-snap-align:center}
-.stseg.research-sub{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
-@media(max-width:340px){.stseg.research-sub button{font-size:11px;padding:9px 4px}}
+/* sport tabs: six labels share a phone's width with no min-width, so nothing
+   clips or wraps; at 320px they tighten rather than shrink the type, and a
+   smooth snap scroll stays as the fallback. From a tablet up the tabs keep
+   their natural width instead of stretching into wide empty cells. */
+.stseg.research-sub button{min-width:0;flex:1 1 auto;padding:9px 6px;font-size:12px;min-height:38px;scroll-snap-align:center;white-space:nowrap}
+.stseg.research-sub{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+@media(max-width:359px){.stseg.research-sub button{font-size:11.5px;padding:9px 4px}}
+@media(min-width:600px){.stseg.research-sub{width:max-content;max-width:100%}.stseg.research-sub button{flex:0 0 auto;padding:9px 18px}}
 /* shared frames on the non-sport panels */
 .rs-lede{color:var(--dim);font-size:12.5px;line-height:1.5;margin:0 0 var(--sp3)}
 .rs-lede b{color:var(--warn);font-weight:600}
@@ -2720,9 +2815,13 @@ body.focus .dk-focusnote{display:block}
        every existing call site still sets it; the button around it turns the
        header's status glance into the way in to model health, feed health and
        the fault list. Faults are operational transparency beside the product,
-       not one of its primary destinations. -->
-  <button class="hpbtn" id="sysHealthBtn" onclick="sysHealthToggle(event)" aria-haspopup="dialog" aria-expanded="false" aria-controls="sysHealthPop" title="System health">
-    <span class="pill" id="dbPill">DB …</span><span class="pill hpsum" id="sysHealthPill">HEALTH …</span>
+       not one of its primary destinations.
+       ONE status, not two pills: the database state already feeds the summary
+       (sysHealthState reads #dbPill), so #dbPill stays in the DOM for its
+       writers and readers but is not drawn; the popover's first row states it
+       in full. -->
+  <button class="hpbtn" id="sysHealthBtn" onclick="sysHealthToggle(event)" aria-haspopup="dialog" aria-expanded="false" aria-controls="sysHealthPop" aria-label="System status: checking. Open system health" title="System health">
+    <span class="pill" id="dbPill">DB …</span><span class="pill hpsum" id="sysHealthPill"><span class="hpk">System</span><i class="hpdot" aria-hidden="true"></i><span class="hpv">Checking</span><span class="hpc">…</span></span>
   </button>
   <div class="hppop" id="sysHealthPop" role="dialog" aria-label="System health" onclick="event.stopPropagation()"></div>
   <div class="edav-wrap">
@@ -2846,7 +2945,7 @@ body.focus .dk-focusnote{display:block}
         <div class="ph-c"><b>Outcome</b><div class="q">Did the bet win?</div><p>Wins and losses are shown as a flat one-unit simulation. They are real results, but a short run of them proves very little.</p></div>
         <div class="ph-c evid"><b>Price quality</b><div class="q">Did the entry beat the closing market?</div><p>The closing line is the market&rsquo;s final vote. Beating it consistently is the only evidence that a signal class is real. This is the layer EdgeDesk grades itself on.</p></div>
       </div>
-      <div class="dk-note">Poor segments, thin samples and faults stay visible below. Nothing is filtered out to make the record look better.</div>
+      <div class="dk-note">Poor segments, thin samples and faults stay visible below. Nothing is filtered out to make the record look better: the default view covers the sports EdgeDesk offers today, and retired sports stay in the archive view (Filters) exactly as stored.</div>
     </div>
 
     <div class="stseg" id="recSeg">
@@ -2872,6 +2971,7 @@ body.focus .dk-focusnote{display:block}
           <div><label>Min CLV %</label><input type="number" step="0.1" id="rfClv" placeholder="e.g. 0"></div>
           <div><label>Min odds (American)</label><input type="text" inputmode="text" id="rfOdds" placeholder="-150 or +120"></div>
           <div class="full"><label>Search (team, selection, book, market, sport, date)</label><input type="search" id="rfQ" placeholder="Search graded signals&hellip;"></div>
+          <div class="full"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="rfArchive" style="width:auto;margin:0"> Include retired sports (archive)</label></div>
         </div>
         <div class="rf-actions">
           <select id="rfSaved" style="width:auto;padding:7px 9px;font-size:12px;border-radius:8px"><option value="">Saved filters&hellip;</option></select>
@@ -2981,13 +3081,18 @@ body.focus .dk-focusnote{display:block}
        Panels keep their original ids so every existing $() lookup and render
        function is untouched; the shell only owns visibility + activation. -->
   <section id="v-research" class="view">
-    <div class="rs-hd"><div class="rs-hd-t"><h2>EdgeDesk Research <span class="rs-exp">Experimental</span></h2><div class="rs-sub">Understand the game, model, and market.</div><div class="rs-creed"><b>Research, not picks.</b> Model, market, roster and what is still unknown — never a black-box call.</div></div><span class="spacer"></span>
+    <!-- One title row and one line of purpose, so the first screen reaches the
+         research itself. "Research, not picks" is still the product's line: it
+         rides the persistent disclaimer, every module footer and the reading
+         order's own note, rather than a paragraph above the tabs. -->
+    <div class="rs-hd"><div class="rs-hd-t"><h2>EdgeDesk Research <span class="rs-exp">Experimental</span></h2></div>
       <button class="rs-tool ic" id="rsSearchBtn" onclick="rsToggleSearch()" title="Search research" aria-label="Search research"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
-      <button class="rs-tool ic" id="rsSavedBtn" onclick="rsToggleSaved()" title="Saved research" aria-label="Saved research"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button></div>
+      <button class="rs-tool ic" id="rsSavedBtn" onclick="rsToggleSaved()" title="Saved research" aria-label="Saved research"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+      <p class="rs-sub">Model, market, roster and uncertainty in one place.</p></div>
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsDrawer" class="fb-drawer" style="display:none" onclick="if(event.target===this)rsTkDrawerClose()"><div class="fb-drawer-card" id="rsDrawerCard"></div></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" class="on" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <nav class="stseg research-sub" aria-label="Research sports"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" class="on" aria-current="page" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></nav>
     <!-- RESEARCH DESK — the landing state of the Research shell. Answers
          "where should I research?" from the football engine's own today-items,
          the board's model/market disagreements and the data warnings the
@@ -3118,7 +3223,7 @@ body.focus .dk-focusnote{display:block}
        rather than stubbed. Rendered by loadMore(). -->
   <section id="v-more" class="view hide">
     <div class="row-between"><h2 style="margin:0">More</h2></div>
-    <p class="sidenote">Secondary and system destinations. The product lives in Research, Edges, Record and Ledger; what is here is how EdgeDesk is built, what it is running on, and where it is currently wrong.</p>
+    <p class="sidenote">Everything without a seat in the bar: Collective, Ledger and News, then how EdgeDesk is built, what it is running on, and where it is currently wrong.</p>
     <div class="morelist" id="moreList"></div>
   </section>
 
@@ -3138,7 +3243,7 @@ body.focus .dk-focusnote{display:block}
 <!-- first-run welcome + "How EdgeDesk works" sequence: overlays, rendered by desk-js -->
 <div id="welHost" class="wel" role="dialog" aria-modal="true" aria-label="Welcome to EdgeDesk"></div>
 <div id="hiwHost" class="hiw" role="dialog" aria-modal="true" aria-label="How EdgeDesk works" onclick="if(event.target===this)hiwClose()"></div>
-<div class="foot" id="edFoot" role="contentinfo"><b class="footlink" onclick="show('terms')">Research tool only — not betting advice.</b> Signals can be wrong.<span class="sep">·</span>21+<span class="sep">·</span>1-800-GAMBLER</div>
+<div class="foot" id="edFoot" role="contentinfo"><button type="button" class="footlink" onclick="show('terms')" aria-label="Research tool only — not betting advice. Read the terms and disclaimer."><span class="ft-l">Research tool only — not betting advice.</span><span class="ft-s">Not betting advice.</span></button> Signals can be wrong.<span class="sep">·</span>21+<span class="sep">·</span>1-800-GAMBLER</div>
 <script>
 /* the disclaimer's real height becomes --foot, so page padding and overlay
    padding track it through wrapping, font scaling and rotation */
@@ -3576,20 +3681,19 @@ window.mcRefresh=function(){
 };
 </script>
 <nav class="bottomnav" role="navigation" aria-label="Primary">
-  <!-- Order is deliberate: the scanner people open the app for, then the depth
-       that keeps them in it, then the two engagement surfaces (AI + Collective)
-       side by side, then proof and accounting, then the lower-traffic feeds.
+  <!-- Five seats, in the product's order: the research people open the app
+       for, the edges that sit beside it, the AI desk, the proof, and More.
+       Collective, Ledger and News left the bar but lost nothing: their views,
+       routes and loaders are untouched, More lists each of them first, and
+       More reads active while one of them is open (NAV_OWNER in show()).
        The AI button is STATIC and sits here rather than being appended at the
        end at runtime, and the old floating action button is retired — two
        entry points to the same panel, one of them hovering over the board,
        was the clutter. -->
-  <button data-v="research" class="on" aria-label="Research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
+  <button data-v="research" class="on" aria-current="page" aria-label="Research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
   <button data-v="edges" aria-label="Edges"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
   <button data-v="ai" aria-label="AI"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>AI</button>
-  <button data-v="collective" aria-label="Collective"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/></svg>Collective</button>
   <button data-v="record" aria-label="Record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
-  <button data-v="ledger" class="nav-sec" aria-label="Ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
-  <button data-v="news" class="nav-sec" aria-label="News"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
   <!-- FAULTS left this bar. It is model-health information, not a workflow, and
        it now lives behind the header health control and inside More. The view,
        its route and every detector are untouched. -->
@@ -3651,6 +3755,193 @@ window.mcRefresh=function(){
 <script src="/mlb/params.js?v=20260918a"></script>
 <script src="/mlb/engine.js?v=20260918a"></script>
 <script>
+/* ===== EdgeDesk sports: which sports are a current product and which are
+   retired. Canonical file lib/edgedesk_sports.js; inlined by
+   tools/presentation/inline.js. Everything below reads window.EDSPORTS. ===== */
+/*__EDSPORTS_START__*/
+/* ===========================================================================
+   EdgeDesk SPORTS — which sports are a current product, and which are retired.
+
+   ONE FILE, EVERY HOST. This exact block is inlined into
+     - app.html                               (research routes, live pools, record)
+     - record.html                            (the public record's default view)
+     - supabase/functions/edgedesk_ai/index.ts (the desk's support boundary)
+     - supabase/functions/capture/index.ts    (never buy odds for a retired sport)
+     - supabase/functions/close/index.ts      (never buy a live close for one)
+   by tools/presentation/inline.js; presentation_sync.test.js and
+   tools/app/sports_config.test.js fail when a copy drifts or a host stops
+   honouring it. Edit THIS file, then `node tools/presentation/inline.js`.
+
+   RETIRING A SPORT IS AN EDIT HERE, NOT A HUNT. Add an entry to RETIRED and
+   every host above follows: capture stops requesting its odds, close stops
+   requesting its closes, the desk answers questions about it with the support
+   boundary instead of research, the terminal's live pools and default record
+   drop it, and its old research routes land on RESEARCH_DEFAULT. What is NOT
+   automatic, and is pinned by tests instead: removing its tab and panel from
+   the Research navigation, and removing it from the board's SUPPORTED list.
+
+   RETIRED IS NOT DELETED. Nothing here touches stored rows. Historical signals,
+   grades, model outputs and research records stay exactly where they are; a
+   retired sport is only excluded from what the product offers today, and the
+   terminal's record keeps an explicit archive view that includes it.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDSPORTS = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VERSION = 1;
+
+  /* What the Research shell covers today, in its navigation order. This is the
+     list the desk quotes when it declines a retired sport, and the list the
+     navigation test holds the Research tabs to. */
+  var RESEARCH_COVERAGE = [
+    { id: 'football', label: 'Football' },
+    { id: 'ufc', label: 'UFC' },
+    { id: 'baseball', label: 'Baseball' }
+  ];
+  /* Where a retired research module's old route lands: the shell's default. */
+  var RESEARCH_DEFAULT = 'football';
+
+  /* Retired sports. `key_prefixes` match an Odds API sport_key; `modules` are
+     the Research shell ids that once served it; `title` catches stored rows
+     written before capture kept a sport_key; `words` recognise a question that
+     is about the sport (tour and event names, never a bare "match" or "set"). */
+  var RETIRED = [
+    {
+      id: 'tennis', label: 'Tennis', retired_on: '2026-09-27',
+      key_prefixes: ['tennis_'],
+      modules: ['tennis', 'wta'],
+      title: /^(ATP|WTA)\b|\btennis\b/i,
+      words: /\b(tennis|atp|wta|wimbledon|roland[- ]garros|french open|us open tennis|australian open|davis cup|billie jean king cup)\b/i
+    }
+  ];
+
+  function str(v) { return v == null ? '' : String(v); }
+
+  /* The retired entry a sport key (or a bare sport id such as "tennis") belongs to. */
+  function retiredByKey(key) {
+    var k = str(key).toLowerCase();
+    if (!k) return null;
+    for (var i = 0; i < RETIRED.length; i++) {
+      var s = RETIRED[i];
+      if (k === s.id) return s;
+      for (var j = 0; j < s.key_prefixes.length; j++) if (k.indexOf(s.key_prefixes[j]) === 0) return s;
+    }
+    return null;
+  }
+  function isRetiredKey(key) { return !!retiredByKey(key); }
+
+  /* A stored row: its sport_key decides; a row with no key falls back to its title. */
+  function retiredOfRow(r) {
+    if (!r) return null;
+    var k = str(r.sport_key);
+    if (k) return retiredByKey(k);
+    var t = str(r.sport_title);
+    for (var i = 0; i < RETIRED.length; i++) if (t && RETIRED[i].title.test(t)) return RETIRED[i];
+    return null;
+  }
+  function isRetiredRow(r) { return !!retiredOfRow(r); }
+  function dropRetired(rows) {
+    var out = [];
+    if (!rows || !rows.length) return out;
+    for (var i = 0; i < rows.length; i++) if (!retiredOfRow(rows[i])) out.push(rows[i]);
+    return out;
+  }
+  /* Keep only the sport keys a current product may use. */
+  function keepCurrentKeys(keys) {
+    var out = [];
+    for (var i = 0; i < (keys || []).length; i++) if (!isRetiredKey(keys[i])) out.push(keys[i]);
+    return out;
+  }
+  function retiredPrefixes() {
+    var out = [];
+    for (var i = 0; i < RETIRED.length; i++) out = out.concat(RETIRED[i].key_prefixes);
+    return out;
+  }
+
+  /* The retired sport a piece of text is about, or null. */
+  function retiredNamedIn(text) {
+    var q = str(text);
+    if (!q) return null;
+    for (var i = 0; i < RETIRED.length; i++) if (RETIRED[i].words.test(q)) return RETIRED[i];
+    return null;
+  }
+
+  /* THE DESK'S SUPPORT BOUNDARY: which retired sport, if any, a turn is about.
+     It is a product boundary, not a language rule. A question plainly about
+     history ("why did you stop covering tennis?") is not refused; a question
+     asking for research, a price, an edge or a bet on a retired sport — or a
+     turn whose open game resolved to one — is answered with unsupportedAnswer.
+     The server (edgedesk_ai) and the browser panel both decide with this. */
+  var HISTORY_ASK = /\b(histor(y|ical|ically)|archived?|retired|no longer|stop(ped)? (covering|supporting|offering)|used to (cover|support|offer)|(why|when) (did|do|does) (you|edgedesk))\b/i;
+  function supportBoundary(o) {
+    var q = str(o && o.question);
+    if (HISTORY_ASK.test(q)) return null;
+    var bySport = o && o.sportKey ? retiredByKey(o.sportKey) : null;
+    var entry = bySport || retiredNamedIn(q);
+    if (!entry) return null;
+    return {
+      entry: entry,
+      answer: unsupportedAnswer(entry),
+      reason: bySport ? 'the turn resolved to a retired sport' : 'the question names a retired sport'
+    };
+  }
+
+  /* { module: destination } for every retired Research module. */
+  function retiredModuleRoutes() {
+    var out = {};
+    for (var i = 0; i < RETIRED.length; i++)
+      for (var j = 0; j < RETIRED[i].modules.length; j++) out[RETIRED[i].modules[j]] = RESEARCH_DEFAULT;
+    return out;
+  }
+
+  /* A PostgREST filter that keeps rows of current sports: a NULL key is kept
+     (the row is judged by its title client-side), every retired prefix is out. */
+  function postgrestKeep(col) {
+    var c = str(col) || 'sport_key';
+    var nots = [];
+    var p = retiredPrefixes();
+    for (var i = 0; i < p.length; i++) nots.push(c + '.not.like.' + p[i] + '*');
+    if (!nots.length) return '';
+    return 'or=(' + c + '.is.null,' + (nots.length === 1 ? nots[0] : 'and(' + nots.join(',') + ')') + ')';
+  }
+
+  function coverageSentence() {
+    var l = [];
+    for (var i = 0; i < RESEARCH_COVERAGE.length; i++) l.push(RESEARCH_COVERAGE[i].label);
+    var list = l.length > 1 ? l.slice(0, -1).join(', ') + ' and ' + l[l.length - 1] : (l[0] || '');
+    return 'Current research coverage includes ' + list + '.';
+  }
+  /* The support boundary, in the product's words. */
+  function unsupportedAnswer(entry) {
+    var label = entry && entry.label ? entry.label : 'That sport';
+    return label + ' is not currently supported by EdgeDesk Research. ' + coverageSentence();
+  }
+
+  return {
+    VERSION: VERSION,
+    RETIRED: RETIRED,
+    RESEARCH_COVERAGE: RESEARCH_COVERAGE,
+    RESEARCH_DEFAULT: RESEARCH_DEFAULT,
+    retiredByKey: retiredByKey,
+    isRetiredKey: isRetiredKey,
+    retiredOfRow: retiredOfRow,
+    isRetiredRow: isRetiredRow,
+    dropRetired: dropRetired,
+    keepCurrentKeys: keepCurrentKeys,
+    retiredPrefixes: retiredPrefixes,
+    retiredNamedIn: retiredNamedIn,
+    supportBoundary: supportBoundary,
+    retiredModuleRoutes: retiredModuleRoutes,
+    postgrestKeep: postgrestKeep,
+    coverageSentence: coverageSentence,
+    unsupportedAnswer: unsupportedAnswer
+  };
+});
+/*__EDSPORTS_END__*/
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
@@ -4136,7 +4427,7 @@ function renderCorrobSplit(rows){
 async function renderLegacyGap(){
   var host=$('recBasis');if(!host)return;
   try{
-    var old=await sbGet('signals?select=clv&graded_at=not.is.null&clv=not.is.null&clv_excluded_reason=is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3&limit=5000');
+    var old=recScopeRows(await sbGet('signals?select=clv,sport_key,sport_title&graded_at=not.is.null&clv=not.is.null&clv_excluded_reason=is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3'+recScopeAmp()+'&limit=5000'));
     if(!old||!old.length)return;
     var s=0;old.forEach(function(r){s+=+r.clv;});
     var avg=s/old.length;
@@ -4376,7 +4667,7 @@ function methodFairBetSide(d1,d2){var qs=[1/d1,1/d2];var m=devigMult(qs)[0],p=de
 async function renderMethodSensitivity(){
   var host=$('recMethod');if(!host)return;
   var rows=null;
-  try{ rows=await sbGet('signals?select=pin_dec,pin_opp_dec,flagged_best_dec,first_best_dec,sport_title&graded_at=not.is.null&pin_dec=not.is.null&pin_opp_dec=not.is.null&limit=5000'); }
+  try{ rows=recScopeRows(await sbGet('signals?select=pin_dec,pin_opp_dec,flagged_best_dec,first_best_dec,sport_title,sport_key&graded_at=not.is.null&pin_dec=not.is.null&pin_opp_dec=not.is.null'+recScopeAmp()+'&limit=5000')); }
   catch(_){ rows=null; }
   if(!rows||!rows.length){
     host.innerHTML='<div class="asplit"><div class="asplit-h">De-vig method disagreement \u00b7 short prices</div>'+
@@ -4724,12 +5015,12 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
   /* and the URL stops claiming we are still in it. Only a #research/… hash
      is cleared — #receipt=… and anything else belongs to another view. */
   try{if(/^#research\//.test(location.hash||''))history.replaceState(null,'',location.pathname+location.search);}catch(_){}
-  var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);/* Faults, Terms and Settings have no seat of their own any more; they are
-     reached through More (or the header health control), so More is the tab
-     that reads active while one of them is open. Without this the bar shows
-     nothing active and a reader loses their place. */
-  var NAV_OWNER={faults:'more',terms:'more',settings:'more'};var navOn=NAV_OWNER[v]||v;
-  var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===navOn);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
+  var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);/* Faults, Terms, Settings, Collective, Ledger and News have no seat of
+     their own; they are reached through More (or the header health control),
+     so More is the tab that reads active while one of them is open. Without
+     this the bar shows nothing active and a reader loses their place. */
+  var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',ledger:'more',news:'more'};var navOn=NAV_OWNER[v]||v;
+  var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){b[j].classList.toggle('on',b[j].dataset.v===navOn);if(b[j].dataset.v===navOn)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
   if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/
   if(v==='social')loadSocial();else plStop();}
 
@@ -4751,11 +5042,11 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
 var RESEARCH_MODULES={};
 function researchRegister(m){RESEARCH_MODULES[m.id]=m;m._={loading:null,ctrl:null};}
 var RESEARCH_SUB='football';
-/* Retired research modules and where their old routes land. Tennis (and the
-   WTA engine folded into it) is no longer part of the product: its panel and
-   modules are gone, so an old bookmark, saved pref or #research/tennis/… link
-   lands on the Research shell's default destination instead of a dead route. */
-var RS_RETIRED={tennis:'football',wta:'football'};
+/* Retired research modules and where their old routes land (EDSPORTS: Tennis,
+   and the WTA engine folded into it). Their panels and modules are gone, so an
+   old bookmark, saved pref or #research/tennis/… link lands on the Research
+   shell's default destination instead of a dead route. */
+var RS_RETIRED=EDSPORTS.retiredModuleRoutes();
 window.researchGo=function(sub){
   /* the standalone CFB tab was folded into Football (rosters live on its
      middle segment, Power 4 carries the matchups); old links and saved
@@ -4771,8 +5062,9 @@ window.researchGo=function(sub){
   RESEARCH_SUB=sub;
   var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-research');
   var panels=document.querySelectorAll('#v-research .rpanel');for(var p=0;p<panels.length;p++)panels[p].classList.toggle('hide',panels[p].id!=='v-'+sub);
-  var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v==='research');
+  var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){b[j].classList.toggle('on',b[j].dataset.v==='research');if(b[j].dataset.v==='research')b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}
   var bars=document.querySelectorAll('.research-sub button');for(var k=0;k<bars.length;k++){bars[k].classList.toggle('on',bars[k].dataset.sub===sub);
+    if(bars[k].dataset.sub===sub)bars[k].setAttribute('aria-current','page');else bars[k].removeAttribute('aria-current');
     if(bars[k].dataset.sub===sub){try{bars[k].scrollIntoView({block:'nearest',inline:'nearest'});}catch(_){}}}
   window.scrollTo(0,0);
   plStop();
@@ -5414,8 +5706,8 @@ function rsTkSkel(){
     +'<div class="fb-today">'+[1,2].map(function(){return '<div class="fb-sig">'+bar('40%',10)+bar('70%',14)+'<div class="fb-sig-grid">'+[1,2,3].map(function(){return '<div class="c"><div class="fb-skel" style="height:9px"></div><div class="fb-skel" style="height:14px;margin-top:6px"></div></div>';}).join('')+'</div></div>';}).join('')+'</div>';
 }
 /* KPI tiles: list of {n, l, c} */
-function rsTkKpis(list){
-  return '<div class="fb-kpis">'+list.map(function(k){return '<div class="fb-kpi"><div class="n '+(k.c||'')+'">'+stEsc(String(k.n))+'</div><div class="l">'+stEsc(k.l)+'</div></div>';}).join('')+'</div>';
+function rsTkKpis(list,cls){
+  return '<div class="fb-kpis'+(cls?' '+cls:'')+'">'+list.map(function(k){return '<div class="fb-kpi"><div class="n '+(k.c||'')+'">'+stEsc(String(k.n))+'</div><div class="l">'+stEsc(k.l)+'</div></div>';}).join('')+'</div>';
 }
 function rsTkBadges(list){
   return '<div class="fb-badges">'+list.map(function(b){return '<span class="fb-badge '+b[0]+'"><i></i>'+stEsc(b[1])+'</span>';}).join('')+'</div>';
@@ -5517,13 +5809,13 @@ function rsTkScrollTo(el){
   setTimeout(function(){try{el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('fb-hl');setTimeout(function(){el.classList.remove('fb-hl');},1700);}catch(_){}},40);
 }
 
-/* standard snapshot card: o = {title, meta, kpis:[{n,l,c}], defs:[[k,d],...], how:html, key, cta:{label,onclick}} */
+/* standard snapshot card: o = {title, meta, kpis:[{n,l,c}], kpiCls, defs:[[k,d],...], how:html, key, cta:{label,onclick}} */
 function rsTkSnap(o){
   var defs=(o.defs||[]).map(function(d){return '<b>'+stEsc(d[0])+'</b><span>'+stEsc(d[1])+'</span>';}).join('');
   var open=!!RS_TK_OPEN[o.key+'How'];
   return '<div class="fb-card">'
     +(o.title?('<div class="fb-snap-h"><span class="t">'+stEsc(o.title)+'</span><span class="m">'+stEsc(o.meta||'')+'</span></div>'):'')
-    +rsTkKpis(o.kpis||[])
+    +rsTkKpis(o.kpis||[],o.kpiCls)
     +(defs?'<div class="fb-defs">'+defs+'</div>':'')
     +(o.how?'<button class="fb-how" id="'+o.key+'HowBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="'+o.key+'HowCol" onclick="rsTkColToggle(\''+o.key+'How\',\'Hide\',\'How this is counted →\')">'+(open?'Hide':'How this is counted →')+'</button>'
       +'<div class="fb-col'+(open?' open':'')+'" id="'+o.key+'HowCol"><div class="fb-howbody">'+o.how+'</div></div>':'')
@@ -5897,15 +6189,13 @@ async function loadWeights(){try{var w=await sbGet('model_weights?select=*');WEI
 
 /* ===== live edges (read from signals) ===== */
 var EDGES=[];
-/* RETIRED SPORTS. Tennis is no longer an EdgeDesk product, but capture still
-   stores tennis_* prices (backend, untouched). Every LIVE pool drops them where
-   it is read, so the board, its Sport filter, the desk, the Top 5 and the
-   brief never offer one. The graded record is NOT filtered: rows already
-   graded stay counted where they were. The title test covers rows written
-   without a sport_key. */
-var RETIRED_SPORT_KEY=/^tennis_/i, RETIRED_SPORT_TITLE=/^(ATP|WTA)\b|\btennis\b/i;
-function isRetiredSport(r){if(!r)return false;var k=String(r.sport_key||'');return k?RETIRED_SPORT_KEY.test(k):RETIRED_SPORT_TITLE.test(String(r.sport_title||''));}
-function dropRetiredSports(rows){return (rows||[]).filter(function(r){return !isRetiredSport(r);});}
+/* RETIRED SPORTS (EDSPORTS). Rows already stored for a retired sport stay in
+   the database; every LIVE pool drops them where it is read, so the board, its
+   Sport filter, the desk, the Top 5 and the brief never offer one. The record
+   applies the same rule to its default view (recScopeQ / recScopeRows) and
+   keeps an explicit archive view that includes them. */
+function isRetiredSport(r){return EDSPORTS.isRetiredRow(r);}
+function dropRetiredSports(rows){return EDSPORTS.dropRetired(rows);}
 function mktLabel(m){return m==='h2h'?'ML':m==='spreads'?'Spread':m==='totals'?'Total':m;}
 function selLabel(r){
   if(r.point==null)return r.selection;
@@ -8005,7 +8295,7 @@ var NO_CLV_REASONS=[
   ['no_entry_price','no frozen entry price']
 ];
 async function recNoClvBreakdown(flagFilter){
-  var base='graded_at=not.is.null&'+flagFilter+'&';
+  var base=recScopeF('graded_at=not.is.null&'+flagFilter)+'&';
   try{
     var out=[];
     var never=await sbCount(base+'closed_at=is.null');
@@ -8036,7 +8326,7 @@ function recNoClvSentence(missing,parts){
 
 async function loadRecordProof(){
   try{
-    var total=await sbCount('');var graded=await sbCount('graded_at=not.is.null');
+    var total=await sbCount(recScopeF(''));var graded=await sbCount(recScopeF('graded_at=not.is.null'));
     // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
     // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
     /* Filter on WHETHER THE ROW WAS EVER A SIGNAL, not on its live edge.
@@ -8069,8 +8359,8 @@ async function loadRecordProof(){
     var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var FLAG_ANY='flagged_at=not.is.null';
     var CLV_ANY='clv=not.is.null&clv_excluded_reason=is.null';
-    var _c=await Promise.all([sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),
-      sbCount('graded_at=not.is.null&'+CLV_ANY),sbCount('graded_at=not.is.null&'+FLAG_CLV)]);
+    var _c=await Promise.all([sbCount(recScopeF('graded_at=not.is.null&'+FLAG_STRICT)),sbCount(recScopeF('graded_at=not.is.null&'+FLAG_ANY)),
+      sbCount(recScopeF('graded_at=not.is.null&'+CLV_ANY)),sbCount(recScopeF('graded_at=not.is.null&'+FLAG_CLV))]);
     var nStrict=_c[0],nFlagAny=_c[1],nClvAny=_c[2],nFlagClv=_c[3];
     var EDGEQ,poolLabel,poolKind,gradedEdges;
     if(nFlagClv>0){EDGEQ=FLAG_CLV;poolLabel='flagged signals with a scored close';poolKind='flagclv';gradedEdges=nFlagClv;}
@@ -8085,7 +8375,8 @@ async function loadRecordProof(){
        a picture of a relationship that does not hold. */
     var recFunnel='Pool sizes (four overlapping filters, not a nested chain) \u00b7 graded '+graded+' \u00b7 flagged '+nFlagAny+' \u00b7 flagged and inside the 0.5\u20139.9% band '+nStrict+' \u00b7 flagged and scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
       recNoClvSentence(nFlagAny-nFlagClv, await recNoClvBreakdown(FLAG_ANY));
-    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,flagged_policy,flagged_tier,flagged_reference_type,sport_title,sport_key,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,flagged_policy,flagged_tier,flagged_reference_type,sport_title,sport_key,market,commence_time&graded_at=not.is.null&'+EDGEQ+recScopeAmp()+'&limit=5000');
+    g=recScopeRows(g);
     var w=0,l=0,clvSum=0,beatStored=0,clvArr=[],clvPos=0;
     /* tennis spreads/totals are not gradeable (set scores vs game lines): keep them
        out of every counted stat here, same rule as recStats. */
@@ -8119,7 +8410,7 @@ async function loadRecordProof(){
     renderSportSplit(g);
     renderTtcSplit(g);
     renderPriceSplit(g);
-    try{ var calRows=await sbGetAll('signals?select=closing_sharp_fair,result,sport_title,sport_key,market&graded_at=not.is.null&closing_sharp_fair=not.is.null&result=in.(win,loss)&not.and=(sport_key.like.tennis_*,market.in.(spreads,totals))',1000,12); renderCalibration(calRows); }
+    try{ var calRows=await sbGetAll('signals?select=closing_sharp_fair,result,sport_title,sport_key,market&graded_at=not.is.null&closing_sharp_fair=not.is.null&result=in.(win,loss)&not.and=(sport_key.like.tennis_*,market.in.(spreads,totals))'+recScopeAmp(),1000,12); renderCalibration(recScopeRows(calRows)); }
     catch(_c){ renderCalibration([]); }
     renderMethodSensitivity();
     renderEthos();
@@ -8127,7 +8418,7 @@ async function loadRecordProof(){
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
-    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&clv_excluded_reason=is.null&order=graded_at.asc&limit=5000');renderClvHero(series,avgCLV,beatRate,med,posRate,beatStoredRate);}catch(_){renderClvHero([],null,null,null,null,null);}
+    try{var series=recScopeRows(await sbGet('signals?select=clv,graded_at,sport_key,sport_title&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&clv_excluded_reason=is.null'+recScopeAmp()+'&order=graded_at.asc&limit=5000'));renderClvHero(series,avgCLV,beatRate,med,posRate,beatStoredRate);}catch(_){renderClvHero([],null,null,null,null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
     var _fCol=poolKind==='strict'?'var(--pos)':poolKind==='empty'?'var(--neg)':'var(--warn)';
     var _fWhy=poolKind==='clvany'?' No graded row has flagged_at set, so these are computed over every graded row with a CLV. That means capture v3 (which stamps flagged_at / flagged_edge) has not written any row that has since graded. Deploy or verify it and this promotes itself back to the strict flagged pool on its own.':poolKind==='flagany'?' flagged_at is set but flagged_edge is null or outside the 0.5\u20139.9% band, so the strict filter caught nothing. Check the scale flagged_edge is written on.':poolKind==='empty'?' The settle job is not writing clv on graded rows. That is a backend fix, not a frontend one.':'';
@@ -8265,7 +8556,7 @@ function reliabilitySVG(calib){
     '<text x="'+(W/2)+'" y="'+(H-4)+'" fill="var(--faint)" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono">model said (%)</text>'+
     '<text x="12" y="'+(H/2)+'" fill="var(--faint)" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90 12 '+(H/2)+')">actually happened (%)</text>'+'</svg>';
 }
-function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(function(r){return r.slice_type===t;}).sort(function(a,b){return(b.weight||0)-(a.weight||0);});
+function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(function(r){return r.slice_type===t&&(REC.archive||!(r.slice_type==='sport'&&EDSPORTS.isRetiredKey(r.slice_value)));}).sort(function(a,b){return(b.weight||0)-(a.weight||0);});
   $('sliceTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.slice_value+'</td><td>'+(r.n||0)+'</td><td>'+(r.hit_rate!=null?(r.hit_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.avg_clv||0)>=0?'pos':'neg')+'">'+(r.avg_clv!=null?((r.avg_clv>=0?'+':'')+(r.avg_clv*100).toFixed(1)+'%'):'—')+'</td><td>'+(r.beat_close_rate!=null?(r.beat_close_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.weight||1)>=1?'pos':'neg')+'">×'+(r.weight||1).toFixed(2)+'</td></tr>';}).join(''):'<tr><td colspan="6" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
 function renderCalib(){var order=['<0%','0-2%','2-4%','4-7%','7%+'],rows=CALIB.slice().sort(function(a,b){return order.indexOf(a.edge_bucket)-order.indexOf(b.edge_bucket);});
   $('calibTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.edge_bucket+'</td><td>'+(r.n||0)+'</td><td>'+(r.predicted_edge!=null?(r.predicted_edge*100).toFixed(1)+'%':'—')+'</td><td>'+(r.realized_winrate!=null?(r.realized_winrate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.realized_clv||0)>=0?'pos':'neg')+'">'+(r.realized_clv!=null?((r.realized_clv>=0?'+':'')+(r.realized_clv*100).toFixed(1)+'%'):'—')+'</td></tr>';}).join(''):'<tr><td colspan="5" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
@@ -8284,11 +8575,22 @@ $('sliceType').onchange=renderSlice;$('recRefresh').onclick=loadRecord;
      -> empty) is identical to the Proof layer so this dashboard can never
      show a prettier pool than the proof does.
    ===================================================================== */
-var REC={rows:[],flt:[],loaded:false,loading:false,proofDone:false,
+var REC={rows:[],flt:[],loaded:false,loading:false,proofDone:false,archive:false,
   pool:{kind:'',label:'',funnel:''},tab:'overview',
   sort:{k:'_gts',d:-1},page:0,per:25,dirty:{charts:true,analytics:true},open:{},colW:{},
   dow:{sport:'',market:''}};
 var REC_MIN=30; /* below this, everything gets a small-sample tag */
+/* THE DEFAULT RECORD IS THE CURRENT PRODUCT. Rows of a retired sport
+   (EDSPORTS) are left out of every count, row set and aggregate on this tab,
+   and out of its sport filter. Nothing is deleted: the archive view (the
+   filter bar's "Include retired sports" box, REC.archive) reads them back
+   exactly as stored. recScopeF adds the rule to a PostgREST filter (a NULL
+   sport_key is kept there and judged by its title in recScopeRows). */
+function recScopeQ(){return REC.archive?'':EDSPORTS.postgrestKeep('sport_key');}
+function recScopeF(f){var q=recScopeQ();return q?(f?f+'&'+q:q):f;}
+function recScopeAmp(){var q=recScopeQ();return q?'&'+q:'';}
+function recScopeRows(rows){return REC.archive?(rows||[]):EDSPORTS.dropRetired(rows);}
+function recRetiredSegment(seg){return EDSPORTS.isRetiredKey(seg)||EDSPORTS.isRetiredRow({sport_title:seg});}
 
 /* ---- tiny format helpers (records only, prefixed to avoid collisions) ---- */
 function recNum(v){return v==null||isNaN(v)?null:+v;}
@@ -8350,9 +8652,9 @@ async function loadRecord(force){
     var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var FLAG_ANY='flagged_at=not.is.null';
     var CLV_ANY='clv=not.is.null&clv_excluded_reason=is.null';
-    var counts=await Promise.all([sbCount(''),sbCount('graded_at=not.is.null'),
-      sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),
-      sbCount('graded_at=not.is.null&'+CLV_ANY),sbCount('graded_at=not.is.null&'+FLAG_CLV)]);
+    var counts=await Promise.all([sbCount(recScopeF('')),sbCount(recScopeF('graded_at=not.is.null')),
+      sbCount(recScopeF('graded_at=not.is.null&'+FLAG_STRICT)),sbCount(recScopeF('graded_at=not.is.null&'+FLAG_ANY)),
+      sbCount(recScopeF('graded_at=not.is.null&'+CLV_ANY)),sbCount(recScopeF('graded_at=not.is.null&'+FLAG_CLV))]);
     total=counts[0];graded=counts[1];nStrict=counts[2];nFlagAny=counts[3];nClvAny=counts[4];nFlagClv=counts[5];
     var EDGEQ,poolLabel,poolKind,gradedEdges;
     if(nFlagClv>0){EDGEQ=FLAG_CLV;poolLabel='flagged signals with a scored close';poolKind='flagclv';gradedEdges=nFlagClv;}
@@ -8377,7 +8679,8 @@ async function loadRecord(force){
         +' \u00b7 flagged and scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
         recNoClvSentence(nFlagAny-nFlagClv, await recNoClvBreakdown(FLAG_ANY)),
       total:total,graded:graded};
-    var rows=poolKind==='empty'?[]:await sbGetAll('signals?select='+REC_COLS+'&graded_at=not.is.null&'+EDGEQ+'&order=graded_at.asc',1000,12);
+    var rows=poolKind==='empty'?[]:await sbGetAll('signals?select='+REC_COLS+'&graded_at=not.is.null&'+EDGEQ+recScopeAmp()+'&order=graded_at.asc',1000,12);
+    rows=recScopeRows(rows);
     /* Tennis spreads/totals are not gradeable against the Odds API scores feed:
        it returns SET counts while these markets are denominated in GAMES. We do
        NOT hide these rows (that would look like a vanished bet). Instead we tag
@@ -8466,7 +8769,7 @@ function recApplyFilters(){
   REC.page=0;REC.open={};REC.dirty={charts:true,analytics:true};REC.kbIdx=null;
   var na=recFilterActiveCount();
   $('rfSummary').textContent=na?na+' active':'';
-  $('recCount').textContent=REC.flt.length+' of '+REC.rows.length+' graded signals'+(na?' match the filters':'')+' \u00b7 pool: '+REC.pool.label;
+  $('recCount').textContent=REC.flt.length+' of '+REC.rows.length+' graded signals'+(na?' match the filters':'')+' \u00b7 pool: '+REC.pool.label+(REC.archive?' \u00b7 archive: includes retired sports':'');
   recRenderAll();
 }
 
@@ -8613,7 +8916,7 @@ function recRowLeague(r){return recLeague(r&&r.sport_key,r&&r.sport_title);}
 
 async function recStatusCards(){
   try{
-    var rows=await sbGetAll('signals?select=sport_key,sport_title,clv,graded_at,clv_excluded_reason&flagged_at=not.is.null');
+    var rows=recScopeRows(await sbGetAll('signals?select=sport_key,sport_title,clv,graded_at,clv_excluded_reason&flagged_at=not.is.null'+recScopeAmp()));
     if(!rows||!rows.length)return;
     var by={};
     rows.forEach(function(r){
@@ -9127,7 +9430,7 @@ async function wewLoad(host){
 
 function wewRender(){
   var d=WEW.data||[];
-  function by(dim){return d.filter(function(r){return r.dimension===dim;});}
+  function by(dim){return d.filter(function(r){return r.dimension===dim&&(dim!=='sport'||REC.archive||!recRetiredSegment(r.segment));});}
   var graded=by('sport').reduce(function(s,r){return s+(r.n_graded||0);},0);
   var h='<div class="wew-wrap"><div class="wew-top">'+
     '<h3>Where EdgeDesk Wins</h3>'+
@@ -9541,6 +9844,8 @@ function recGo(tab){
     $(id).addEventListener('input',function(){clearTimeout(deb);deb=setTimeout(onChange,220);});
   });
   $('rfReset').addEventListener('click',recResetFilters);
+  /* the archive is a different row set, not a filter over this one: re-read */
+  $('rfArchive').addEventListener('change',function(){REC.archive=!!this.checked;loadRecord(true);});
   $('rfSave').addEventListener('click',recSaveFilter);
   $('rfDel').addEventListener('click',recDeleteFilter);
   $('rfSaved').addEventListener('change',function(){
@@ -9584,7 +9889,9 @@ function recGo(tab){
     REC.page=0;recRenderTable();
   });
 })();
-function recResetFilters(){recSetFilterState({});$('rfSaved').value='';recApplyFilters();}
+function recResetFilters(){recSetFilterState({});$('rfSaved').value='';
+  if(REC.archive){REC.archive=false;$('rfArchive').checked=false;loadRecord(true);return;}
+  recApplyFilters();}
 
 /* =====================================================================
    FOOTBALL MODEL RECORD — the research tool's own book, NFL and CFB.
@@ -19302,13 +19609,26 @@ function sysHealthState(){
   var n=st==='err'?(fails+(dbErr?1:0)):(warns+(faults||0));
   return {state:st,fails:fails,warns:warns,faults:faults,n:n,dbOk:dbOk,dbErr:dbErr,health:h};
 }
+/* One compact status: "System ● Healthy", "System ● 1 warning". A phone
+   drops the word and keeps the dot and the count (.hpc), so the three states
+   still read without colour alone; the button's aria-label always carries the
+   whole sentence. */
+function sysHealthPillParts(){
+  var s=sysHealthState();
+  if(!SH.health&&!SH.healthErr&&!s.dbOk&&!s.dbErr)return {cls:'',word:'Checking',count:'…',title:'Checking system status'};
+  if(s.state==='ok')return {cls:'ok',word:'Healthy',count:'',title:'All reporting checks healthy'};
+  if(s.state==='err')return {cls:'err',word:s.n>0?(s.n+' failing'):'Failing',count:s.n>0?String(s.n):'!',title:'A system check failed'};
+  return {cls:'warn',word:s.n>0?(s.n+' warning'+(s.n===1?'':'s')):'Attention',count:s.n>0?String(s.n):'!',title:'Something needs attention'};
+}
 function sysHealthPill(){
   var el=$('sysHealthPill');if(!el)return;
-  var s=sysHealthState();
-  if(!SH.health&&!SH.healthErr&&!s.dbOk&&!s.dbErr){el.textContent='HEALTH …';el.className='pill hpsum';return;}
-  el.textContent=s.state==='ok'?'HEALTH ✓':('HEALTH '+(s.n>0?s.n:(s.state==='err'?'✗':'⚠')));
-  el.className='pill hpsum'+(s.state==='ok'?' ok':(s.state==='err'?' err':' warn'));
-  el.title=s.state==='ok'?'All reporting checks healthy':(s.state==='err'?'A system check failed':'Something needs attention');
+  var p=sysHealthPillParts();
+  el.innerHTML='<span class="hpk">System</span><i class="hpdot" aria-hidden="true"></i><span class="hpv">'+edEsc(p.word)+'</span>'
+    +(p.count?'<span class="hpc">'+edEsc(p.count)+'</span>':'');
+  el.className='pill hpsum'+(p.cls?' '+p.cls:'');
+  el.title=p.title;
+  var btn=$('sysHealthBtn');
+  if(btn)btn.setAttribute('aria-label','System status: '+p.word.toLowerCase()+'. Open system health');
 }
 function shRow(label,note,value,cls){
   return '<div class="hpr"><span class="l">'+edEsc(label)+(note?'<i>'+edEsc(note)+'</i>':'')
@@ -19425,9 +19745,19 @@ function loadMore(){
     method:'<path d="M4 5h11a3 3 0 0 1 3 3v11"/><path d="M4 5v14h11"/><path d="M8 9h6M8 13h4"/>',
     sources:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
     settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
-    games:'<rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 12h3M8.5 10.5v3"/><circle cx="15.5" cy="11" r="1"/><circle cx="17.5" cy="13.5" r="1"/>'
+    games:'<rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 12h3M8.5 10.5v3"/><circle cx="15.5" cy="11" r="1"/><circle cx="17.5" cy="13.5" r="1"/>',
+    collective:'<circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/>',
+    ledger:'<path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/>',
+    news:'<path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>'
   };
   var rows=[];
+  /* the destinations that left the bottom bar come first: they are product,
+     not plumbing, and each opens its own untouched view */
+  var dest=[];
+  if($('v-collective'))dest.push(moreItem(IC.collective,'Collective','Independent model creators, one independently graded record.','show(\'collective\')'));
+  if($('v-ledger'))dest.push(moreItem(IC.ledger,'Ledger','The market\u2019s moves tracked automatically, plus the bets you log by hand.','show(\'ledger\')'));
+  if($('v-news'))dest.push(moreItem(IC.news,'News','News that touches a tracked team or a structural rule, with Moat Alerts.','show(\'news\')'));
+  if(dest.length)rows.push('<div class="morehd">Destinations</div>'+dest.join('')+'<div class="morehd">System &amp; help</div>');
   rows.push(moreItem(IC.health,'Model & data health','Database, self-check, feeds, build freshness — the same panel as the header status.','sysHealthOpen()'));
   if($('v-faults'))rows.push(moreItem(IC.faults,'Faults','Structural errors on the boards under watch, with the receipt for each.','show(\'faults\')'));
   if(typeof window.hiwOpen==='function')rows.push(moreItem(IC.method,'Methodology','How EdgeDesk prices, grades and proves itself, screen by screen.','hiwOpen()'));
@@ -23836,8 +24166,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
   var SIG_COLS='id,sig_key,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,first_sharp_fair,consensus_fair,closing_sharp_fair,n_books,is_fav';
   function loadSignals(){
-    return sbGet('signals?select='+SIG_COLS+'&graded_at=not.is.null&order=graded_at.desc&limit=150')
-      .then(function(rows){L.sigs=rows||[];L.sigsErr=null;}).catch(function(e){L.sigs=null;L.sigsErr=(e&&e.message)||'read failed';});
+    return sbGet('signals?select='+SIG_COLS+'&graded_at=not.is.null&'+EDSPORTS.postgrestKeep('sport_key')+'&order=graded_at.desc&limit=150')
+      .then(function(rows){L.sigs=EDSPORTS.dropRetired(rows);L.sigsErr=null;}).catch(function(e){L.sigs=null;L.sigsErr=(e&&e.message)||'read failed';});
   }
   function loadTicks(key){
     if(L.ticks[key]!==undefined)return Promise.resolve(L.ticks[key]);
@@ -40424,6 +40754,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(_bs){ packet=Object.assign(packet||{},{board_scope:_bs}); }
     if(extra && extra.board) packet = Object.assign(packet||{}, {board_mode:true, board:extra.board});
     var pm=(extra&&extra.presentation_mode)||PRES_MODE[mode]||(x?'STANDARD':'DEEP');
+    /* THE SUPPORT BOUNDARY (EDSPORTS.supportBoundary, the same decision the
+       function makes): a question asking for research on a retired sport is
+       answered here with the product's own sentence, in the same shape the
+       function returns, and no call is spent on it. */
+    try{
+      var _sb=window.EDSPORTS&&EDSPORTS.supportBoundary({question:question, sportKey:packet&&packet.game&&packet.game.sport_key});
+      if(_sb) return {answer:_sb.answer, model:null, narration:{ok:true,prose:'DETERMINISTIC',critic:null},
+        support_boundary:{sport:_sb.entry.id, label:_sb.entry.label, stage:'client', reason:_sb.reason,
+          coverage:EDSPORTS.RESEARCH_COVERAGE.map(function(c){return c.label;})}, build:'client'};
+    }catch(_){}
     var tok = (typeof edToken==='function')? await edToken() : (typeof SB_KEY!=='undefined'?SB_KEY:'');
     var r=await fetch(AI_FN,{method:'POST',
       headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
@@ -54839,24 +55179,45 @@ function fbWrCandidate(r,ix){
     c.qualifiers.push('STALE_MARKET');
   return c;
 }
+/* CONFIDENCE on a board card is READ, never derived. The college research
+   view publishes the engine's information confidence (lib/cfb_research_view.js
+   V.confidence: how good EdgeDesk's inputs for this game are); the NFL model
+   publishes no confidence and no completeness, so its card says "Not rated"
+   rather than standing a number in. The reading-order score is not a
+   confidence and is never shown as one (lib/research_priority.js). */
+function fbWrConfidence(c){
+  var cf=c.view&&c.view.confidence;
+  if(cf&&cf.tier)return {cls:cf.tier==='LOW'?'low':'',
+    html:(cf.pct_text?fbEsc(cf.pct_text)+' <small>'+fbEsc(cf.label)+'</small>':fbEsc(cf.label)),
+    title:'EdgeDesk information confidence: how good the inputs for this game are'};
+  return {cls:'na',html:'Not rated',
+    title:c.sport==='nfl'?'The NFL model publishes no confidence score':'No confidence score is on file for this game'};
+}
+/* One board card, collapsed: matchup, then market / model / gap /
+   confidence / status as one scannable readout. The "why research it"
+   sentence folds under a disclosure, and Open research is the full story. */
 function fbWrRowHTML(x){
   var c=x.candidate,u=x.detail.uncertainty,when='';
   try{when=c.kickoff?whenLabel(new Date(c.kickoff).toISOString()):'';}catch(_){}
   var stCls=c.status==='RESEARCH'?'':(c.status==='INVESTIGATE'?'warn':'mut');
   var mk=c.market,mAge=mk.kind==='live'?(mk.at!=null?('market '+ago(mk.at)):'market on file'):'consensus line';
+  var vg=c.view&&c.view.market_gap&&c.view.market_gap.available;
+  var cf=fbWrConfidence(c);
+  function cell(cls,label,val,title){
+    return '<div class="fb-wr-c'+(cls?' '+cls:'')+'"><i>'+label+'</i><b'+(title?' title="'+fbEsc(title)+'"':'')+'>'+val+'</b></div>';
+  }
   return '<div class="fb-wr-r">'
     +'<div class="fb-wr-h"><span class="n">'+x.rank+'</span><span class="m">'+fbEsc(c.away+' @ '+c.home)+'</span>'
-      +'<span class="fb-wr-st '+stCls+'">'+fbEsc(c.status)+'</span>'
       +(window.EDMine?window.EDMine.starHTML(c.board,c.gid,{home:c.home,away:c.away,kickoff:c.kickoff}):'')+'</div>'
+    +'<div class="fb-wr-v">'
+      +cell('','Market',fbEsc(vg?c.view.market_gap.market_line_text:(c.home+' '+fbHomeLine(c.market_margin))))
+      +cell('mdl','Model',vg?(fbEsc(c.view.fair.fair_line_text)+fbRvNearBadge(c.view)):fbEsc(c.home+' '+fbHomeLine(c.model_margin)))
+      +cell('gap','Gap',fbEsc(vg?c.view.market_gap.text:(Math.abs(c.model_margin-c.market_margin).toFixed(1)+' pts')))
+      +cell('cf '+cf.cls,'Confidence',cf.html,cf.title)
+      +cell('st','Status','<span class="fb-wr-st '+stCls+'">'+fbEsc(c.status)+'</span>')
+    +'</div>'
     +(u.elevated?'<div class="fb-wr-u">Higher uncertainty · '+fbEsc(u.reasons.map(function(k){return FB_WR_UNC[k]||k;}).join(' · '))+'</div>':'')
-    +(c.view&&c.view.market_gap&&c.view.market_gap.available
-      ?('<div class="fb-wr-v"><span><i>Market</i>'+fbEsc(c.view.market_gap.market_line_text)+'</span>'
-        +'<span class="mdl"><i>EdgeDesk</i>'+fbEsc(c.view.fair.fair_line_text)+fbRvNearBadge(c.view)+'</span>'
-        +'<span><i>Gap</i>'+fbEsc(c.view.market_gap.text)+'</span></div>')
-      :('<div class="fb-wr-v"><span><i>Market</i>'+fbEsc(c.home+' '+fbHomeLine(c.market_margin))+'</span>'
-      +'<span class="mdl"><i>EdgeDesk</i>'+fbEsc(c.home+' '+fbHomeLine(c.model_margin))+'</span>'
-      +'<span><i>Difference</i>'+Math.abs(c.model_margin-c.market_margin).toFixed(1)+' pts</span></div>'))
-    +'<div class="fb-wr-w"><b>Why research it</b>'+fbEsc(x.why.text)+'</div>'
+    +'<details class="fb-wr-w"><summary><b>Why research it</b></summary><p>'+fbEsc(x.why.text)+'</p></details>'
     +'<div class="fb-wr-f"><span class="ts">'+fbEsc([c.sport==='cfb'?'CFB':'NFL',when,mAge].filter(Boolean).join(' · '))+'</span>'
       +'<button class="fb-lnk" onclick="fbWrOpen(\''+edAttrJs(c.board)+'\',\''+edAttrJs(c.gid)+'\','+x.rank+')">Open research</button></div>'
     +'</div>';
@@ -54864,7 +55225,7 @@ function fbWrRowHTML(x){
 /* One league's list. Each league is ranked only against itself: an NFL
    gap and a college gap sit on different scales of expected error and
    different data, so the two boards get two reading orders, side by side. */
-function fbWrPanel(which,cands,P){
+function fbWrPanel(which,cands,P,tally){
   var label=which==='nfl'?'NFL':'CFB';
   function card(right,body){
     return '<div class="fb-card fb-wr" id="fbWr-'+which+'"><div class="rs-pv-h"><span class="t">'+label+'</span>'
@@ -54887,26 +55248,33 @@ function fbWrPanel(which,cands,P){
     return card('none clear the gates',quiet('No '+label+' game clears the research gates right now.',
       cands.length+' game'+(cands.length===1?'':'s')+' checked'+(parts.length?(': '+fbEsc(parts.join(' · '))):'')+'. Nothing is forced onto this list.'));
   }
+  if(tally)tally.n+=res.items.length;
   return card(res.eligible+' of '+cands.length+' clear the gates',
     res.items.map(fbWrRowHTML).join('')
     +(res.items.length<FB_WR_N?('<div class="fb-wr-few">Only '+res.items.length+' '+label+' game'+(res.items.length===1?' clears':'s clear')
       +' the gates right now. Nothing is added to fill the list.</div>'):''));
 }
+/* TODAY'S RESEARCH BOARD — the centerpiece of the landing, so it carries the
+   strongest section heading on the page. Its second line counts the games
+   actually listed across both leagues' panels, never a fixed five. */
 function fbWrInner(rows){
   var P=window.EDResearchPriority,st=FB.ui.wrLayer||{};
-  function head(r){return '<div class="fb-sechd"><span>5 Games Worth Researching</span><span class="r">'+r+'</span></div>';}
+  function head(r,n){
+    var sub=n==null?'':(n?(n+' game'+(n===1?'':'s')+' worth researching'):'No game clears the research gates right now');
+    return '<div class="fb-wr-hd"><h3 class="fb-wr-t">Today&rsquo;s Research Board</h3>'
+      +'<p class="fb-wr-sub"><span class="c">'+sub+'</span><span class="r">'+r+'</span></p></div>';
+  }
   if(!P)return head('not loaded')+'<div class="fb-quiet">The research-priority layer (lib/research_priority.js) did not load. Nothing is ranked rather than something invented.</div>';
   if(!fbWrLayerReady())return head(st.err?'unavailable':'loading')+'<div class="fb-quiet">'+(st.err
     ? 'The shared research layer did not load ('+fbEsc(st.err)+'), so there is no normalized gap or research flag to order by. Nothing is ranked rather than something invented.'
     : 'Loading the shared research layer…')+'</div>';
   var ix={};((FB.p4&&FB.p4.up)||[]).forEach(function(u){ix[String(u.g.game_id)]=u;});
   var cands=(rows||[]).map(function(r){return fbWrCandidate(r,ix);});
-  var open=!!RS_TK_OPEN.fbWrHow;
-  return head('ranked by league')
-    +'<div class="fb-wr-cols">'
-    +fbWrPanel('nfl',cands.filter(function(c){return c.sport==='nfl';}),P)
-    +fbWrPanel('cfb',cands.filter(function(c){return c.sport==='cfb';}),P)
-    +'</div>'
+  var open=!!RS_TK_OPEN.fbWrHow,tally={n:0};
+  var panels=fbWrPanel('nfl',cands.filter(function(c){return c.sport==='nfl';}),P,tally)
+    +fbWrPanel('cfb',cands.filter(function(c){return c.sport==='cfb';}),P,tally);
+  return head('ranked by league',tally.n)
+    +'<div class="fb-wr-cols">'+panels+'</div>'
     +'<p class="rs-pv-note">Reading order, not a ranking of bets. Research signals can be wrong.</p>'
     +'<button class="fb-how" id="fbWrHowBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="fbWrHowCol" onclick="rsTkColToggle(\'fbWrHow\',\'Hide\',\'How this order is built →\')">'+(open?'Hide':'How this order is built →')+'</button>'
     +'<div class="fb-col'+(open?' open':'')+'" id="fbWrHowCol"><div class="fb-howbody">'
@@ -55320,14 +55688,18 @@ function edEvent(name,params){
 window.edEvent=edEvent;
 
 /* ── START HERE ─────────────────────────────────────────────────────────
-   Four ways in, all of them routes that already exist. Deliberately not a
-   wizard: no steps, no numbering, no dismissable tutorial state. */
+   Three ways in, all of them routes that already exist, in the order a
+   reader needs them: start on today's reading order, find a specific game,
+   then leave for the model/market disagreements on Edges. Only the first is
+   primary. Power ratings keeps its two ways in on this same screen (the
+   ratings preview's "View all ratings" and the Ratings & models tool).
+   Deliberately not a wizard: no steps, no numbering, no dismissable
+   tutorial state. */
 function fbStartHereHTML(){
-  return '<div class="rs-start">'
-    +'<button class="pri" onclick="fbStartGo(\'find\')">Find a game</button>'
-    +'<button onclick="fbStartGo(\'today\')">Research today</button>'
-    +'<button onclick="fbStartGo(\'edges\')">Model disagreements</button>'
-    +'<button onclick="fbStartGo(\'ratings\')">Power ratings</button>'
+  return '<div class="rs-start rs-start-cta">'
+    +'<button class="pri" onclick="fbStartGo(\'today\')">Research today</button>'
+    +'<button onclick="fbStartGo(\'find\')">Find a game</button>'
+    +'<button onclick="fbStartGo(\'edges\')">Disagreements</button>'
     +'</div>';
 }
 window.fbStartGo=function(which){
@@ -55469,8 +55841,11 @@ function fbOverviewHTML(){
      cost ~60px of the first screen on a phone. The scope rides the freshness
      stamp in that header instead (fbRenderFresh). */
   var html=rsTkSnap({title:'',meta:'',key:'fbSnap',
-    kpis:[{n:s.games,l:'Games'},{n:s.cand,l:'Review',c:s.cand?'':'mut'},{n:s.dis,l:'Disagree',c:s.dis?'warn':'mut'},{n:s.faults,l:'Faults',c:s.faults?'neg':'pos'}],
-    how:'<b>Games</b> are the upcoming NFL games inside the next '+FB_LOOKAHEAD_D+' days, plus every game with an FBS team on the college slate once that board has been opened. <b>Review</b> requires a PREDICTED projection and a spread or total joined from captured quotes or the reference line. <b>Disagree</b> uses the engine’s own research-lean classification: 2+ pts of disagreement on the spread or total — research attention, unproven by the model’s own record. <b>Faults</b> add failed daily self-checks to games whose model–market gap exceeds the guard bound ('+FB_GUARD.nfl.game+' pts NFL, '+FB_GUARD.p4.game+' pts FBS).'+(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''),
+    /* the labels say what each number counts; the counts are fbSnapshot's,
+       unchanged, and "How this is counted" holds the exact rule for each */
+    kpis:[{n:s.games,l:'Games'},{n:s.cand,l:'Research-ready',c:s.cand?'':'mut'},{n:s.dis,l:'Market disagreements',c:s.dis?'warn':'mut'},{n:s.faults,l:'Data faults',c:s.faults?'neg':'pos'}],
+    kpiCls:'fb-kpis-read',
+    how:'<b>Games</b> are the upcoming NFL games inside the next '+FB_LOOKAHEAD_D+' days, plus every game with an FBS team on the college slate once that board has been opened. <b>Research-ready</b> requires a PREDICTED projection and a spread or total joined from captured quotes or the reference line. <b>Market disagreements</b> uses the engine’s own research-lean classification: 2+ pts of disagreement between the model and the market on the spread or total — research attention, unproven by the model’s own record. <b>Data faults</b> add failed daily self-checks to games whose model–market gap exceeds the guard bound ('+FB_GUARD.nfl.game+' pts NFL, '+FB_GUARD.p4.game+' pts FBS).'+(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''),
     foot:fbStartHereHTML()});
   /* where to start: the reading order first, the raw signals folded under it */
   html+='<div id="fbWr">'+fbWrInner(rows)+'</div>';

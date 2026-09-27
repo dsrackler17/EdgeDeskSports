@@ -10,7 +10,8 @@
      3  Faults lost its seat in the bottom bar but lost NOTHING else — the
         view, the route, the detectors and every way in still exist;
      4  the header status control tells the truth about three different
-        states, and never dresses a research warning as a failed system;
+        states, and never dresses a research warning as a failed system —
+        as ONE compact "System" status with the database folded into it;
      5  a source that has not loaded reads "not loaded", never a clean zero;
      6  More lists only destinations that exist.
 
@@ -48,7 +49,8 @@ const live = NAV.replace(/<!--[\s\S]*?-->/g, '');
 const order = (live.match(/data-v="([a-z]+)"/g) || []).map(s => s.replace(/[^a-z]/g, '').replace(/^datav/, ''));
 
 eq('the navigation order is exactly the product hierarchy', order.join(','),
-   'research,edges,ai,collective,record,ledger,news,more');
+   'research,edges,ai,record,more');
+eq('five seats, not eight', order.length, 5);
 eq('Research is the left-most, primary destination', order[0], 'research');
 eq('Edges sits immediately beside Research', order[1], 'edges');
 eq('More is last', order[order.length - 1], 'more');
@@ -58,14 +60,19 @@ chk('and no second button claims the active class', (live.match(/class="on"/g) |
 chk('Edges is still a destination of its own, not folded into Research',
     order.indexOf('edges') >= 0 && APP.indexOf('<section id="v-edges"') >= 0);
 
-/* the two items allowed to fall under More on a small screen are marked, and
-   the first five priority destinations are NOT */
-['ledger', 'news'].forEach(v =>
-  chk('the secondary destination ' + v + ' is marked as such',
-      new RegExp('data-v="' + v + '" class="nav-sec"').test(NAV)));
-['research', 'edges', 'ai', 'collective', 'record'].forEach(v =>
-  chk('the priority destination ' + v + ' is never marked secondary',
-      !new RegExp('data-v="' + v + '"[^>]*nav-sec').test(NAV)));
+/* Collective, Ledger and News left the bar for More and lost nothing else:
+   each keeps its view, More lists it first and opens it, and More reads
+   active while it is open so a reader never loses their place */
+['collective', 'ledger', 'news'].forEach(v => {
+  chk(v + ' holds no seat in the bottom bar', order.indexOf(v) < 0);
+  has(APP, 'id="v-' + v + '"', 'the ' + v + ' view still exists');
+  has(APP, "show(\\'" + v + "\\')", 'and a More row opens it');
+});
+has(APP, "collective:'more',ledger:'more',news:'more'", 'and More reads active while one of them is open');
+chk('the destinations that left the bar come first in More',
+    APP.indexOf("'Collective','Independent model creators") < APP.indexOf("'Model & data health'"));
+lacks(live, 'nav-sec', 'no seat in the bar is half-hidden any more');
+has(APP, "b[j].setAttribute('aria-current','page')", 'the active seat is announced, not only coloured');
 
 /* ======================================================================== */
 /* 2. RESEARCH IS THE DEFAULT LANDING EXPERIENCE                            */
@@ -101,9 +108,9 @@ has(APP, 'id="v-more"', 'and More is a view like any other');
 lacks(APP, 'id="v-tennis"', 'the Tennis panel is gone');
 lacks(APP, 'data-sub="tennis"', 'and so is its Research tab');
 chk('the Research sub-nav reads Desk | Football | UFC | Baseball | Stats | Lab',
-    JSON.stringify((APP.match(/<div class="stseg research-sub"[^\n]*?<\/div>/) || [''])[0].match(/data-sub="[a-z]+"/g))
+    JSON.stringify((APP.match(/<nav class="stseg research-sub" aria-label="Research sports">[^\n]*?<\/nav>/) || [''])[0].match(/data-sub="[a-z]+"/g))
       === JSON.stringify(['rdesk','football','ufc','baseball','stats','lab'].map(s => 'data-sub="' + s + '"')));
-has(APP, "var RS_RETIRED={tennis:'football',wta:'football'};", 'old tennis routes have a destination');
+has(APP, "var RS_RETIRED=EDSPORTS.retiredModuleRoutes();", 'old tennis routes have a destination (lib/edgedesk_sports.js)');
 has(APP, "if(RS_RETIRED[sub])sub=RS_RETIRED[sub];", 'researchGo sends a retired module there');
 has(APP, "if(m&&RS_RETIRED[m[1]])return {sub:RS_RETIRED[m[1]],entity:null,retired:true};",
     'and a #research/tennis/… deep link resolves there instead of being ignored');
@@ -140,7 +147,7 @@ const SH_SRC = APP.slice(SH_START, SH_END);
 function makeCtx(o) {
   o = o || {};
   const els = {};
-  function el(id) { return els[id] || (els[id] = { id: id, textContent: '', className: '', title: '', innerHTML: '', classList: { add() {}, remove() {} }, setAttribute() {} }); }
+  function el(id) { return els[id] || (els[id] = { id: id, textContent: '', className: '', title: '', innerHTML: '', attrs: {}, classList: { add() {}, remove() {} }, setAttribute(k, v) { this.attrs[k] = String(v); } }); }
   el('dbPill').className = o.dbClass || 'pill';
   const ctx = {
     console, Date, Math, JSON, String, Number, Object, Array, isFinite, RegExp, Error, Promise,
@@ -201,15 +208,31 @@ has(H, 'Nothing here is a bet signal', 'and says what a fault is not');
 chk('the pill reads healthy when everything reporting is healthy',
     (C.sysHealthPill(), C.__els.sysHealthPill === undefined || true));
 
-/* the pill text, painted against a real element */
-C = makeCtx({ dbClass: 'pill ok', health: CLEAN, faults: [] });
-C.$('sysHealthPill'); C.sysHealthPill();
-eq('a healthy system shows a tick', C.__els.sysHealthPill.textContent, 'HEALTH ✓');
+/* the pill, painted against a real element: ONE compact status — "System ●
+   Healthy" — the word for a wide header, the count for a phone (.hpc), and
+   the whole sentence in the control's aria-label */
+function paint(o) { const X = makeCtx(o); X.$('sysHealthPill'); X.$('sysHealthBtn'); X.sysHealthPill(); return X; }
+C = paint({ dbClass: 'pill ok', health: CLEAN, faults: [] });
+let PH = C.__els.sysHealthPill.innerHTML;
+has(PH, '<span class="hpk">System</span>', 'the status says what it is the status of');
+has(PH, '<span class="hpv">Healthy</span>', 'a healthy system reads Healthy');
+lacks(PH, 'class="hpc"', 'and carries no count');
 chk('and wears the ok class', /\bok\b/.test(C.__els.sysHealthPill.className));
-C = makeCtx({ dbClass: 'pill ok', health: CLEAN, faults: [{ cls: 'x' }] });
-C.$('sysHealthPill'); C.sysHealthPill();
-eq('one fault shows the count', C.__els.sysHealthPill.textContent, 'HEALTH 1');
+eq('the control says it in words', C.__els.sysHealthBtn.attrs['aria-label'], 'System status: healthy. Open system health');
+C = paint({ dbClass: 'pill ok', health: CLEAN, faults: [{ cls: 'x' }] });
+PH = C.__els.sysHealthPill.innerHTML;
+has(PH, '<span class="hpv">1 warning</span>', 'one fault reads as one warning');
+has(PH, '<span class="hpc">1</span>', 'and a phone still gets the count, not colour alone');
 chk('in amber, not red', /\bwarn\b/.test(C.__els.sysHealthPill.className) && !/\berr\b/.test(C.__els.sysHealthPill.className));
+C = paint({ dbClass: 'pill err', health: CLEAN, faults: [] });
+PH = C.__els.sysHealthPill.innerHTML;
+has(PH, '<span class="hpv">1 failing</span>', 'a failed database read reads as one failing check');
+chk('in red', /\berr\b/.test(C.__els.sysHealthPill.className));
+C = paint({ dbClass: 'pill' });
+has(C.__els.sysHealthPill.innerHTML, '<span class="hpv">Checking</span>', 'nothing reported yet reads Checking, never Healthy');
+/* the database glance is folded into the one status, not deleted */
+has(APP, '<span class="pill" id="dbPill">', 'the database pill keeps its id for every writer');
+has(APP, '.hpbtn #dbPill{display:none}', 'and is drawn as part of the one status rather than a second pill');
 
 /* the health load never invents a record out of a failed fetch */
 C = makeCtx({ dbClass: 'pill' });
