@@ -310,6 +310,16 @@ chk('misses: no play-by-play is UNEXPLAINED, never a guess', m4['primary_driver'
 m5 = MS.classify_game({'game_id': 5, 'ens_pred': 7}, dict(hp, turnover_luck_game=-2.0), dict(ap, turnover_luck_game=0.0))
 chk('misses: a turnover part under one turnover never leads', m5['primary_driver'] != 'TURNOVER_LUCK', m5)
 
+# ---------------------------------------------------------------- finality (audit F-01)
+# only a completed, uncontradicted, decided game is a result; the weekly validator and
+# stage 2 share the classifier; VERIFY_COMPLETED_GAMES refuses a stage-2 result the
+# validator rejects (v2/tests_finality.py holds the real-data checks)
+from .. import tests_finality as TF
+for _fn in (TF.classifier_every_case, TF.only_final_is_a_result_in_stage2,
+            TF.stage2_invariant_refuses_a_non_final_result, TF.weekly_validator_agrees_with_stage2,
+            TF.weekly_verify_refuses_stage2_results_the_validator_rejects, TF.elo_never_absorbs_a_non_result):
+    chk('finality (F-01): ' + _fn.__name__.replace('_', ' '), not throws(_fn))
+
 # ---------------------------------------------------------------- report tables
 from . import report as RP
 Gr = pd.DataFrame({'season': [2026, 2026], 'home_id': [1, 3], 'away_id': [2, 4], 'home_team': ['A', 'C'], 'away_team': ['B (FCS)', 'D'],

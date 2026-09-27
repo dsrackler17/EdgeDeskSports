@@ -42,9 +42,10 @@ const READS = {
 function timeQueries(db, reps, label) {
   const out = {};
   for (const [k, q] of Object.entries(READS)) {
-    const r = db.sql(`do $t$ declare t0 timestamptz; i int; begin
+    /* every row fetched (FOR ... IN EXECUTE), so the planner cannot skip the work a reader pays for */
+    const r = db.sql(`do $t$ declare t0 timestamptz; i int; rec record; begin
       create temp table if not exists perf_t (k text, ms float8);
-      for i in 1..${reps} loop t0 := clock_timestamp(); perform count(*) from (${q}) x; insert into perf_t values ('${k}', extract(epoch from clock_timestamp() - t0) * 1000); end loop; end $t$;
+      for i in 1..${reps} loop t0 := clock_timestamp(); for rec in execute ${PG.lit(q)} loop null; end loop; insert into perf_t values ('${k}', extract(epoch from clock_timestamp() - t0) * 1000); end loop; end $t$;
       select round(percentile_cont(0.5) within group (order by ms)::numeric, 2) || '|' || round(percentile_cont(0.95) within group (order by ms)::numeric, 2) || '|' || round(max(ms)::numeric, 2) from perf_t where k = '${k}';`);
     const [p50, p95, max] = r.split('\n').pop().split('|').map(Number);
     out[k] = { p50_ms: p50, p95_ms: p95, max_ms: max };
@@ -107,13 +108,16 @@ async function main() {
     /* under load: a writer mirroring decision rows in 2 000-row chunks + lab quote ingestion, and 6 other readers */
     const writer = db.background(`do $w$ declare i int; begin for i in 1..20 loop
         insert into public.cfb_decision_snapshots (decision_id, game_id, season, week, book, decided_at, kickoff_ts, engine_version, engine_role, model_version, status, timing, reason_codes, payload)
-        select 'load_' || i || '_' || g, 'h' || g, 2025, 12, 'b', now() - interval '1 hour', now() + interval '1 day', 'e', 'CURRENT', 'm', 'PASS', 'NONE', '{X}', '{}' from generate_series(1, 2000) g;
+        select 'load_' || i || '_' || g, 'h' || i || '_' || g, 2025, 12, 'b', now() - interval '1 hour', now() + interval '1 day', 'e', 'CURRENT', 'm', 'PASS', 'NONE', '{X}', '{}' from generate_series(1, 2000) g;
         perform public.cfb_lab_ingest_quotes(jsonb_build_array(jsonb_build_object('source','odds_api','book','loadbook','game_id','g1','market_type','spread','home_line', -3.5 - (i % 3),
           'price_home',-110,'price_away',-110,'observed_at', now() - make_interval(mins => 100 - i),'kickoff_ts', now() + interval '2 days','season',2025,'week',12)));
       end loop; end $w$;`);
-    const readers = [0, 1, 2, 3, 4, 5].map(() => db.background(`do $r$ declare i int; begin for i in 1..40 loop perform count(*) from (${READS.decisions_week_summary}) a; perform count(*) from (${READS.quotes_latest_per_book}) b; end loop; end $r$;`));
+    const readers = [0, 1, 2, 3, 4, 5].map(() => db.background(`do $r$ declare i int; rec record; begin for i in 1..40 loop
+        for rec in execute ${PG.lit(READS.decisions_week_summary)} loop null; end loop; for rec in execute ${PG.lit(READS.quotes_latest_per_book)} loop null; end loop; end loop; end $r$;`));
     rep.under_load = timeQueries(db, 30, 'while a writer mirrors 40 000 rows and 6 other readers run');
-    const w = writer.wait(120000);
+    const w = writer.wait(180000);
+    rep.under_load.writer_output = w.out.slice(0, 300);
+    rep.under_load.rows_written = +db.sql("select count(*) from public.cfb_decision_snapshots where decision_id like 'load_%'");
     readers.forEach((r) => r.wait(120000));
     rep.under_load.writer_exit = w.code;
     /* storage: bytes per row and projections */
