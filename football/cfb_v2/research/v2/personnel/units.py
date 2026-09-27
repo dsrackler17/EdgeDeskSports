@@ -582,7 +582,7 @@ def _attach_values(P, season, const):
     agg = v.groupby('row').agg(V=('V', lambda s: s.sum(min_count=1)),
                                V_sd=('V_sd', lambda s: np.sqrt((s ** 2).sum(min_count=1))),
                                value_basis=('prior_basis', lambda s: ','.join(sorted({str(x) for x in s}))),
-                               value_null=('null_reason', lambda s: ';'.join(sorted({x for x in s if x}))))
+                               value_null=('null_reason', lambda s: ';'.join(sorted({x for x in s if isinstance(x, str) and x}))))
     P = P.join(agg, how='left')
     return P
 

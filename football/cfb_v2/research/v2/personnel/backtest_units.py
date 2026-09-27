@@ -569,7 +569,7 @@ def pvar_table(season=2025, top=25):
     P = v.groupby(['group', 'espn_id', 'team_id', 'name'], dropna=False).agg(
         pvar=('pvar', lambda s: s.sum(min_count=1)), pvar_sd=('pvar_sd', lambda s: float(np.sqrt((s ** 2).sum()))),
         exposure=('n', 'max'), games=('games', 'max'),
-        null=('null_reason', lambda s: ';'.join(sorted({x for x in s if x})))).reset_index()
+        null=('null_reason', lambda s: ';'.join(sorted({x for x in s if isinstance(x, str) and x})))).reset_index()
     min_exp = {'RB': 60, 'WR': 30, 'TE': 20, 'FRONT7': 6, 'SECONDARY': 6, 'K': 8, 'P': 20}
     out = {'season': season, 'as_of': ids.ts(T), 'groups': {}}
     for gname, g in P.groupby('group'):
