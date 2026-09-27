@@ -263,11 +263,16 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
         if mode != 'rebuild':
             _sub([sys.executable, '-m', 'v2.qb', str(season)])
         Q, events = QBS.build(season, T)
-        ctx['qb_rows'], ctx['qb_events'] = Q, events
-        rec['counts'].update(qbs=int(len(Q)), qb_events=int(len(events)))
-        for e in events:
-            if e.get('event_type') in ('AMBIGUOUS_STARTER',):
-                run.warn('PLAYER_QB_METRICS', 'ambiguous starter: team %s' % e.get('team_id'))
+        # qb_state events: one row per detected change ('type', 'team_id', 'qb_id', 'game_id', ...),
+        # id'd by the change itself, so a re-run finds the same events
+        ev = [dict(e, event_type=e.get('type'), player_id=_pid(e.get('qb_id'))) for e in _records(events)]
+        ctx['qb_rows'], ctx['qb_events'] = Q, ev
+        rec['counts'].update(qbs=int(len(Q)), qb_events=len(ev),
+                             expected_starters=int(Q.expected_starter.sum()) if len(Q) else 0)
+        for e in ev:
+            if e['event_type'] == 'AMBIGUOUS_STARTER':
+                run.warn('PLAYER_QB_METRICS', 'ambiguous starter: team %s (%s)'
+                         % (e.get('team_id'), '; '.join((e.get('detail') or {}).get('reasons') or [])))
         return {}
 
     run.stage('PLAYER_QB_METRICS', qb, needs=('OPPONENT_ADJUSTMENT',))
@@ -453,9 +458,11 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
         st['team_week_state'] = store.write_versioned('team_week_state', rows)
         Q = ctx.get('qb_rows')
         if Q is not None:
-            st['qb_week_state'] = store.write_versioned('qb_week_state', [dict(r, season=season, week=sw, **base) for r in _records(Q)])
-        store.append_unique('qb_events', [dict(e, event_id='cfbe_' + ids.h(e.get('team_id'), e.get('event_type'), e.get('player_id'), season, sw),
-                                               season=season, week=sw, run_id=run.run_id) for e in (ctx.get('qb_events') or [])])
+            st['qb_week_state'] = store.write_versioned('qb_week_state', [
+                dict(r, player_id=_pid(r['qb_id']), season=season, week=sw, **{k: v for k, v in base.items() if k != 'as_of'},
+                     as_of=ids.ts(T)) for r in _records(Q)])
+        st['qb_events'] = store.append_unique('qb_events', [dict(e, week=sw, run_id=run.run_id)
+                                                            for e in (ctx.get('qb_events') or [])])
         U = ctx.get('units')
         if U is not None and len(U):
             st['unit_week_state'] = store.write_versioned('unit_week_state', [dict(r, run_id=run.run_id) for r in _records(U)])
@@ -538,6 +545,13 @@ class _Noop(Exception):
 
 
 # ------------------------------------------------------------------ helpers
+def _pid(x):
+    """An ESPN athlete id as text ('5078810', never '5078810.0'); None stays None."""
+    if x is None or (isinstance(x, float) and np.isnan(x)):
+        return None
+    return str(int(x)) if isinstance(x, (int, float, np.integer, np.floating)) else str(x)
+
+
 def _records(df):
     return [ids.clean(r) for r in df.to_dict('records')] if df is not None and len(df) else []
 
@@ -702,4 +716,6 @@ def main():
 
 
 if __name__ == '__main__':
+    from .runlog import single_thread_blas
+    single_thread_blas('v2.weekly.run')
     main()

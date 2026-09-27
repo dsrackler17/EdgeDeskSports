@@ -20,6 +20,7 @@ import errno
 import fcntl
 import json
 import os
+import sys
 import time
 import traceback
 
@@ -44,6 +45,21 @@ STAGE_GROUPS = {
     'model_lab_status': ('MODEL_LAB', 'GRADE_PREVIOUS'),
 }
 _SEVERITY = {None: -1, 'SKIPPED': 0, 'OK': 1, 'WARN': 2, 'BLOCKED': 3, 'FAILED': 4}
+
+
+BLAS_ENV = {'OMP_NUM_THREADS': '1', 'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'}
+
+
+def single_thread_blas(module):
+    """Re-execute `python -m module` with single-threaded BLAS unless it already
+    is. The rating solves are bit-reproducible only single-threaded (threaded
+    BLAS reorders sums: ~1e-12 differences), and a feature snapshot's id hashes
+    its inputs, so a threaded run would mint different ids for the same work.
+    The variables must be set before numpy loads, hence the re-exec."""
+    if all(os.environ.get(k) == v for k, v in BLAS_ENV.items()):
+        return
+    env = dict(os.environ, **BLAS_ENV)
+    os.execve(sys.executable, [sys.executable, '-m', module] + sys.argv[1:], env)
 
 
 class StageError(Exception):

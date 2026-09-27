@@ -521,4 +521,6 @@ def main():
 
 
 if __name__ == '__main__':
+    from .runlog import single_thread_blas
+    single_thread_blas('v2.weekly.tests_games')
     main()

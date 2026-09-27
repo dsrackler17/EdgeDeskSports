@@ -65,7 +65,7 @@ RATE_METRICS = [
     ('expl_epa_share', 'expl_epa', 'pos_epa'),
     ('havoc_rate', 'havoc', 'n_plays'),
     ('sack_rate', 'sacks', 'n_db'),
-    ('line_yds', 'line_yds', 'n_rush'),
+    ('line_yds_pr', 'line_yds', 'n_rush'),          # per rush (the sum keeps the name line_yds)
     ('stuff_rate', 'stuff', 'n_rush'),
     ('so_rate', 'scoring_opps', 'n_drives'),
     ('pts_per_opp', 'opp_pts', 'scoring_opps'),

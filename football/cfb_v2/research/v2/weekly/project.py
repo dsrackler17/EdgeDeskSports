@@ -76,7 +76,10 @@ def model_inputs(A):
     cols = []
     for k, v in A['submodels'].items():
         cols += list(v.get('cols', []))
-    base_sigma = [c for c in A['sigma_model']['cols'] if c not in ('ens_sd', 'abs_pred', 'exp_total_z', 'inv_games')]
+    # the sigma design's own derivations (walkforward.sigma_design) are made at inference from
+    # columns listed here: fcs_game_f is fcs_game, inv_games is min_games, the rest are predictions
+    base_sigma = [c for c in A['sigma_model']['cols']
+                  if c not in ('ens_sd', 'abs_pred', 'exp_total_z', 'inv_games', 'fcs_game_f')]
     cols += base_sigma + ['min_games', 'exp_plays_total', 'fcs_game', 'neutral_site']
     return list(dict.fromkeys(cols))
 

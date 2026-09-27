@@ -31,7 +31,10 @@ KINDS = {
     'research': ('research.jsonl', 'item_id', None, None),
 }
 # fields that never make two versions "different" (provenance, not content)
-PROVENANCE = {'run_id', 'computed_at', 'state_version', 'supersedes', 'reason', 'content_hash', 'recorded_at'}
+# (the source versions are provenance too: a re-run on a newer data version that computes the same
+#  state writes nothing; the record keeps the versions it was first computed from)
+PROVENANCE = {'run_id', 'computed_at', 'state_version', 'supersedes', 'reason', 'content_hash', 'recorded_at',
+              'data_version', 'pbp_version', 'roster_version', 'injury_version'}
 
 
 def season_dir(season, root=None):

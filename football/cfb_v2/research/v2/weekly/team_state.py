@@ -38,15 +38,39 @@ VOL_TREND_MIN_GAMES = 6
 THIN_GAMES = 3                  # thin data: < 3 games, or the prior still > 50% of the precision
 THIN_PRIOR_WEIGHT = 0.5
 
-# Movement guardrails, estimated by estimate_movement_bounds() on the DEV
-# seasons 2016-2023 from stage-3 ratings rebuilt with this code (hooks off):
-# every consecutive pair of freezes within a season, overall points state.
+# Movement guardrails: the p99.5 of the weekly |overall move| (points) and of
+# the SD drop 1 - sd_T/sd_prev, estimated by estimate_movement_bounds() on the
+# DEV seasons 2016-2023: every consecutive pair of freezes within a season,
+# from the prior-only freeze on (20,018 FBS and 12,491 FCS team-transitions).
+# Pooled, and by season phase (transition index k: MOVE_BUCKETS).
+# Provenance: stage-3 ratings rebuilt on 2026-09-27 with this repository's
+# build_ratings (hooks off); every rebuilt ratings_<S>.parquet is byte-identical
+# to the v2.1 build (out_h). sha256[:16] of ratings_<S>.parquet:
+#   2016 d26bf83b55cb9de1  2017 e32311dec84f3c43  2018 9ab8d396fb2a5ab9  2019 58d06bf74dc0779e
+#   2020 d7b8af475b63ce11  2021 6ca9080853ff6dd9  2022 a4b97bfe0b3f1d49  2023 8da74cd3c3a93923
+# Re-derive: team_state.estimate_movement_bounds(out_dir=<an OUT with those files>).
 MOVE_BOUNDS = {
-    'fbs_abs_move_p995': None,        # filled below
-    'fcs_abs_move_p995': None,
-    'fbs_sd_drop_p995': None,         # 1 - sd_T / sd_prev
-    'fcs_sd_drop_p995': None,
-    'provenance': {},
+    'fbs_abs_move_p995': 5.1018, 'fbs_sd_drop_p995': 0.1342,
+    'fcs_abs_move_p995': 18.4158, 'fcs_sd_drop_p995': 0.3593,
+    'by_bucket': {
+        'fbs': {'1': {'abs_move_p995': 5.3864, 'sd_drop_p995': 0.1512},
+                '2': {'abs_move_p995': 6.6137, 'sd_drop_p995': 0.161},
+                '3-4': {'abs_move_p995': 5.797, 'sd_drop_p995': 0.1004},
+                '5-7': {'abs_move_p995': 4.8314, 'sd_drop_p995': 0.0814},
+                '8-11': {'abs_move_p995': 4.13, 'sd_drop_p995': 0.0874},
+                '12-99': {'abs_move_p995': 2.8343, 'sd_drop_p995': 0.0584}},
+        'fcs': {'1': {'abs_move_p995': 8.7355, 'sd_drop_p995': 0.2831},
+                '2': {'abs_move_p995': 28.9528, 'sd_drop_p995': 0.4201},
+                '3-4': {'abs_move_p995': 22.6425, 'sd_drop_p995': 0.3626},
+                '5-7': {'abs_move_p995': 16.1028, 'sd_drop_p995': 0.3396},
+                '8-11': {'abs_move_p995': 6.31, 'sd_drop_p995': 0.2541},
+                '12-99': {'abs_move_p995': 6.8536, 'sd_drop_p995': 0.2186}}},
+    'provenance': {'seasons': list(range(2016, 2024)), 'quantile': 0.995, 'n_fbs': 20018, 'n_fcs': 12491,
+                   'estimated': '2026-09-27', 'function': 'team_state.estimate_movement_bounds',
+                   'ratings_sha256_16': {2016: 'd26bf83b55cb9de1', 2017: 'e32311dec84f3c43',
+                                         2018: '9ab8d396fb2a5ab9', 2019: '58d06bf74dc0779e',
+                                         2020: 'd7b8af475b63ce11', 2021: '6ca9080853ff6dd9',
+                                         2022: 'a4b97bfe0b3f1d49', 2023: '8da74cd3c3a93923'}},
 }
 
 # prior-mean components (build_prior's ridge design columns, grouped)
@@ -57,6 +81,21 @@ PRIOR_GROUPS = {
     'coaching_change': ('hc_new', 'lag1_hc'),
     'unit_change': ('unit_change',),
     'missing_data': ('m_lag1', 'm_lag2', 'm_ret', 'm_talent', 'm_coach'),
+}
+
+# why an optional numeric can be null (DESIGN: finite, or null with a reason)
+OPTIONAL_NULL_REASONS = {
+    'recent_minus_season_sd': 'no game before T',
+    'offense_trend_z': 'no game before T, or the recent/season difference has no sampling variance yet',
+    'defense_trend_z': 'no game before T, or the recent/season difference has no sampling variance yet',
+    'volatility_recent': 'fewer than 2 residuals in the recent window',
+    'volatility_trend_z': 'fewer than 2 residuals in the recent window',
+    'hfa_team_evidence_pts': 'needs at least one home and one away (non-neutral) game',
+    'hfa_team_evidence_raw_pts': 'needs at least one home and one away (non-neutral) game',
+    'hfa_team_evidence_n_home': 'no game before T',
+    'qb_offense_var_inflation_pts2': 'no QB rows for this team before T',
+    'prior_weight_offense': 'metric not rated',
+    'prior_weight_defense': 'metric not rated',
 }
 
 _CTX = {}
@@ -100,6 +139,9 @@ def opponent_adjust(season, T, warm=None, diag=True):
     with the convergence record. Returns a dict: ratings, league (frames at T),
     convergence, priors, explain, fbs (set), setup (the cached build context)."""
     T = _utc(T)
+    key = ('oa', int(season), T, bool(diag), warm is not None, C.OUT, C.DATA)
+    if key in _CTX:
+        return _copy_oa(_CTX[key])
     d = [] if diag else None
     ex = {}
     fr = BR.run(seasons_out=[season], only_ts=[T], write=False, diag=d, warm=warm, explain=ex,
@@ -108,7 +150,17 @@ def opponent_adjust(season, T, warm=None, diag=True):
            'priors': fr['priors'][season], 'explain': ex, 'fbs': set(fr['fbs'].get(season, set())),
            'setup': _br_ctx()['setup'], 'varcomp': fr['varcomp'], 'typ_n': fr['typ_n']}
     out['convergence'] = convergence_summary(d, season, T, warm is not None) if diag else None
-    return out
+    _CTX[key] = out
+    return _copy_oa(out)
+
+
+def _copy_oa(o):
+    """A copy safe for callers: the frames are copied, the convergence dict too."""
+    c = dict(o)
+    c['ratings'], c['league'] = o['ratings'].copy(), o['league'].copy()
+    if o['convergence'] is not None:
+        c['convergence'] = dict(o['convergence'], records=[dict(r) for r in o['convergence']['records']])
+    return c
 
 
 def convergence_summary(diag, season, T, warm_given=False):
@@ -332,25 +384,22 @@ def hfa_evidence(res, P, fbs):
     net residual - mean away net residual) / 4 per play (net = offence
     residual - defence residual; the symmetric H coding gives +-2 eta),
     in points x 2 x plays, shrunk across FBS teams by empirical Bayes."""
-    rows = []
-    for t in P.index:
-        o = res[res.off.eq(t) & res.H.ne(0)]
-        d = res[res['def'].eq(t) & res.H.ne(0)]
-        home = pd.concat([o[o.H.eq(1)].res, -d[d.H.eq(-1)].res])
-        away = pd.concat([o[o.H.eq(-1)].res, -d[d.H.eq(1)].res])
-        rows.append((t, home.mean() if len(home) else np.nan, away.mean() if len(away) else np.nan,
-                     len(home), len(away), np.concatenate([home.values, away.values])))
-    df = pd.DataFrame(rows, columns=['team_id', 'mh', 'ma', 'nh', 'na', 'all']).set_index('team_id')
-    pooled = np.concatenate([a for a in df['all'] if len(a)]) if len(df) else np.array([])
-    s2 = float(np.var(pooled)) if len(pooled) > 2 else np.nan
-    eta = (df.mh - df.ma) / 4.0
-    se2 = s2 * (1.0 / df.nh.where(df.nh > 0) + 1.0 / df.na.where(df.na > 0)) / 16.0
-    fb = [t for t in df.index if t in fbs and np.isfinite(eta.get(t, np.nan))]
+    r = res[res.H.ne(0)]
+    long = pd.concat([pd.DataFrame({'team_id': r.off.values, 'home': r.H.values == 1, 'v': r.res.values}),
+                      pd.DataFrame({'team_id': r['def'].values, 'home': r.H.values == -1, 'v': -r.res.values})])
+    g = long.groupby(['team_id', 'home']).v.agg(['mean', 'size']).unstack('home')
+    g = g.reindex(P.index)
+    mh, ma = g[('mean', True)], g[('mean', False)]
+    nh, na = g[('size', True)].fillna(0), g[('size', False)].fillna(0)
+    s2 = float(np.var(long.v.values)) if len(long) > 2 else np.nan
+    eta = (mh - ma) / 4.0
+    se2 = s2 * (1.0 / nh.where(nh > 0) + 1.0 / na.where(na > 0)) / 16.0
+    fb = [t for t in eta.index if t in fbs and np.isfinite(eta.get(t, np.nan))]
     tau2 = max(0.0, float(eta.loc[fb].var() - se2.loc[fb].mean())) if len(fb) > 5 else 0.0
     shr = eta * (tau2 / (tau2 + se2))
     pts = 2.0 * P['exp_plays']
     return pd.DataFrame({'hfa_team_evidence_raw_pts': eta * pts, 'hfa_team_evidence_pts': shr * pts,
-                         'hfa_team_evidence_n_home': df.nh / 2.0}), {'tau2_eta': tau2, 'resid_var': s2}
+                         'hfa_team_evidence_n_home': nh / 2.0}), {'tau2_eta': tau2, 'resid_var': s2}
 
 
 # ======================================================== prior accounting
@@ -364,36 +413,37 @@ def prior_accounting(priors, explain, Wt, fbs, season, metrics=None, plays=None)
     |centred group contribution| share. Accounting only: nothing changes the model."""
     frames = []
     metrics = metrics or sorted(Wt)
+    fbl = list(fbs)
     for m in metrics:
         pr, W = priors[m], Wt[m]
         ex = explain.get((season, m), {})
         for side, key in (('off', 'o'), ('def', 'd')):
-            f = pd.DataFrame(index=W.index)
-            f['metric'], f['side'] = m, side
-            f['tau2'] = [pr['tau2_' + key].get(t, pr['tau2_default_' + key]) for t in W.index]
-            f['posterior_var'] = W['%s_var' % side]
-            f['prior_weight'] = (f.posterior_var / f.tau2).clip(upper=1.0)
-            f['prior_mean'] = W['prior_%s' % side]
-            f['pool'] = np.where(W.index.isin(list(fbs)), 'none', 'fcs_pooled')
+            tau2 = np.array([pr['tau2_' + key].get(t, pr['tau2_default_' + key]) for t in W.index])
+            pv = W['%s_var' % side].values
+            cols = {'metric': m, 'side': side, 'tau2': tau2, 'posterior_var': pv,
+                    'prior_weight': np.minimum(pv / tau2, 1.0), 'prior_mean': W['prior_%s' % side].values,
+                    'pool': np.where(W.index.isin(fbl), 'none', 'fcs_pooled')}
             e = ex.get(side) if ex else None
             if e is not None and e.get('beta') is not None:
                 Xc, beta = e['X'], e['beta']
                 c = pd.DataFrame({'baseline': float(beta[0])}, index=Xc.index)
-                for g, cols in PRIOR_GROUPS.items():
-                    c[g] = sum(beta[1 + BR.PRIOR_COLS.index(col)] * Xc[col] for col in cols)
+                for g, gc in PRIOR_GROUPS.items():
+                    c[g] = sum(beta[1 + BR.PRIOR_COLS.index(col)] * Xc[col] for col in gc)
                 check = c.sum(axis=1)
-                fb = c.index.intersection(list(fbs))
-                cen = c[list(PRIOR_GROUPS)] - c.loc[fb, list(PRIOR_GROUPS)].mean()
+                fb = c.index.intersection(fbl)
+                grp = list(PRIOR_GROUPS)
+                cen = (c[grp] - c.loc[fb, grp].mean()).reindex(W.index)
                 tot = cen.abs().sum(axis=1)
-                share = cen.abs().div(tot.where(tot > 0), axis=0).fillna(0.0)
-                j = f.index.intersection(c.index)
-                f.loc[j, 'pool'] = 'fbs_ridge'
-                for g in PRIOR_GROUPS:
-                    f.loc[j, 'contrib_' + g] = cen.loc[j, g]
-                    f.loc[j, 'share_' + g] = share.loc[j, g]
-                    f.loc[j, 'eff_weight_' + g] = f.loc[j, 'prior_weight'] * share.loc[j, g]
-                f.loc[j, 'decomposition_error'] = check.loc[j] - f.loc[j, 'prior_mean']
-            frames.append(f)
+                share = cen.abs().div(tot.where(tot > 0), axis=0)
+                share = share.where(cen.notna(), np.nan).fillna(0.0).where(cen.notna())
+                has = cen.notna().all(axis=1).values
+                cols['pool'] = np.where(has, 'fbs_ridge', cols['pool'])
+                for g in grp:
+                    cols['contrib_' + g] = cen[g].values
+                    cols['share_' + g] = share[g].values
+                    cols['eff_weight_' + g] = cols['prior_weight'] * share[g].values
+                cols['decomposition_error'] = check.reindex(W.index).values - cols['prior_mean']
+            frames.append(pd.DataFrame(cols, index=W.index))
     return pd.concat(frames).rename_axis('team_id').reset_index()
 
 
@@ -517,19 +567,48 @@ def explain_changes(setup, priors, season, T_prev, T, W0, W1, lg0, lg1, P0, P1, 
                     'closure': float((m1 - m0) - sum(cmp.values()))}
         e['fixed_point_check'] = float(max(ch['epa']['off'].fixed_point_check.get(t, 0.0),
                                            ch['epa']['def'].fixed_point_check.get(t, 0.0)))
-        out[t] = e
+        out[int(t)] = e
     return out
 
 
 # ============================================================ guardrails
-def movement_flags(rows, prev, explanations=None, bounds=None):
+MOVE_BUCKETS = ((1, 1), (2, 2), (3, 4), (5, 7), (8, 11), (12, 99))   # transition index ranges
+
+
+def move_bucket(k):
+    """Bucket of the k-th transition of a season (k = 1: the prior -> the
+    first games; k = 2: first -> second freeze with games; ...)."""
+    for lo, hi in MOVE_BUCKETS:
+        if lo <= k <= hi:
+            return '%d-%d' % (lo, hi) if lo != hi else str(lo)
+    return None
+
+
+def transition_index(season, T):
+    """k of the transition T_prev -> T (0 when T has no game before it)."""
+    fr = freezes(season)
+    G = _games()
+    g = G[G.season.eq(season)]
+    k = 0
+    for F in fr:
+        if F > T:
+            break
+        if (g.kickoff_ts < F).any():
+            k += 1
+    return k
+
+
+def movement_flags(rows, prev, explanations=None, bounds=None, k=None):
     """Flag an overall move above the historical p99.5 weekly move, or an SD
-    collapse above its p99.5, naming the drivers from the explanations."""
+    collapse (1 - sd/sd_prev) above its p99.5, naming the drivers from the
+    explanations. The bound is the one of the season phase (MOVE_BUCKETS, by
+    transition index k) when k is given, else the pooled one."""
     b = bounds or MOVE_BOUNDS
     pv = prev.set_index('team_id') if prev is not None and len(prev) else None
     flags = []
     if pv is None:
         return flags
+    bucket = move_bucket(k) if k else None
     for r in rows.itertuples():
         if r.team_id not in pv.index:
             continue
@@ -537,62 +616,70 @@ def movement_flags(rows, prev, explanations=None, bounds=None):
         mv = float(r.overall_mean - q.overall_mean)
         drop = float(1.0 - r.overall_sd / q.overall_sd) if q.overall_sd > 0 else 0.0
         kind = 'fcs' if r.fcs else 'fbs'
-        lim_m, lim_s = b.get('%s_abs_move_p995' % kind), b.get('%s_sd_drop_p995' % kind)
+        by = b.get('by_bucket', {}).get(kind, {}).get(bucket) if bucket else None
+        lim_m = by['abs_move_p995'] if by else b.get('%s_abs_move_p995' % kind)
+        lim_s = by['sd_drop_p995'] if by else b.get('%s_sd_drop_p995' % kind)
         drivers = []
         ex = (explanations or {}).get(r.team_id)
         if ex and ex.get('available'):
             cmp = ex['overall']['components']
-            drivers = [{'component': k, 'points': round(v, 3)}
-                       for k, v in sorted(cmp.items(), key=lambda kv: -abs(kv[1])) if abs(v) >= 0.05][:3]
+            drivers = [{'component': c, 'points': round(v, 3)}
+                       for c, v in sorted(cmp.items(), key=lambda kv: -abs(kv[1])) if abs(v) >= 0.05][:3]
+        base = {'team_id': int(r.team_id), 'bucket': bucket or 'pooled',
+                'drivers': drivers or [{'component': 'unattributed'}]}
         if lim_m is not None and abs(mv) > lim_m:
-            flags.append({'team_id': int(r.team_id), 'flag': 'MOVE_ABOVE_P995', 'move': mv, 'bound': lim_m,
-                          'drivers': drivers or [{'component': 'unattributed'}]})
+            flags.append(dict(base, flag='MOVE_ABOVE_P995', move=mv, bound=lim_m))
         if lim_s is not None and drop > lim_s:
-            flags.append({'team_id': int(r.team_id), 'flag': 'SD_COLLAPSE', 'sd_drop': drop, 'bound': lim_s,
-                          'drivers': drivers or [{'component': 'unattributed'}]})
+            flags.append(dict(base, flag='SD_COLLAPSE', sd_drop=drop, bound=lim_s))
     return flags
 
 
 def movement_history(seasons, out_dir=None):
     """Weekly overall moves and SD drops (points) on stage-3 files: every
-    consecutive pair of freezes within each season."""
+    consecutive pair of freezes within each season, from the prior-only
+    freeze on (the pace/pass-rate means before any game: the previous
+    season's, as build() uses)."""
     import os
     base = out_dir or C.OUT
     G = _games()
+    TG, _ = BR.load_team_games(sorted(set(seasons) | set(s - 1 for s in seasons)))
     recs = []
     for S in seasons:
         Rs = pd.read_parquet(os.path.join(base, 'stage3', 'ratings_%d.parquet' % S))
         Ls = pd.read_parquet(os.path.join(base, 'stage3', 'league_%d.parquet' % S))
         g = G[G.season.eq(S)]
         fbs = set(g.loc[g.home_fbs, 'home_id']) | set(g.loc[g.away_fbs, 'away_id'])
-        TGp = None
-        prevP = None
+        mfb = _mu_fallback({'TG': TG}, S)
+        prevP, k = None, 0
         for T in sorted(Rs.prediction_ts.unique()):
             W = wide(Rs[Rs.prediction_ts.eq(T)])
             lg = league_at(Ls[Ls.prediction_ts.eq(T)])
-            if not np.isfinite(lg['plays_pg'][0]):
-                prevP = None          # before any game the pace mean is not identified: start at the next T
-                continue
-            P = points(W, lg, fbs)
-            if prevP is not None:
+            P = points(W, lg, fbs, mfb)
+            if prevP is not None and (g.kickoff_ts < T).any():
+                k += 1
                 j = P.index.intersection(prevP.index)
-                d = pd.DataFrame({'season': S, 'T': T, 'team_id': j,
-                                  'move': (P.loc[j, 'overall_mean'] - prevP.loc[j, 'overall_mean']).values,
-                                  'sd_drop': (1 - P.loc[j, 'overall_sd'] / prevP.loc[j, 'overall_sd']).values,
-                                  'fbs': [t in fbs for t in j]})
-                recs.append(d)
+                recs.append(pd.DataFrame({
+                    'season': S, 'T': T, 'k': k, 'team_id': j,
+                    'move': (P.loc[j, 'overall_mean'] - prevP.loc[j, 'overall_mean']).values,
+                    'sd_drop': (1 - P.loc[j, 'overall_sd'] / prevP.loc[j, 'overall_sd']).values,
+                    'fbs': [t in fbs for t in j]}))
             prevP = P
     return pd.concat(recs, ignore_index=True)
 
 
 def estimate_movement_bounds(seasons=C.DEV_SEASONS, out_dir=None, q=0.995):
     H = movement_history(seasons, out_dir)
-    out = {}
+    H['bucket'] = H.k.map(move_bucket)
+    out = {'by_bucket': {}}
     for kind, sel in (('fbs', H.fbs), ('fcs', ~H.fbs)):
         h = H[sel]
-        out['%s_abs_move_p995' % kind] = float(np.quantile(h.move.abs(), q))
-        out['%s_sd_drop_p995' % kind] = float(np.quantile(h.sd_drop, q))
+        out['%s_abs_move_p995' % kind] = round(float(np.quantile(h.move.abs(), q)), 4)
+        out['%s_sd_drop_p995' % kind] = round(float(np.quantile(h.sd_drop, q)), 4)
         out['n_%s' % kind] = int(len(h))
+        out['by_bucket'][kind] = {
+            bk: {'abs_move_p995': round(float(np.quantile(x.move.abs(), q)), 4),
+                 'sd_drop_p995': round(float(np.quantile(x.sd_drop, q)), 4), 'n': int(len(x))}
+            for bk, x in h.groupby('bucket')}
     out['seasons'] = [int(s) for s in seasons]
     return out, H
 
@@ -793,6 +880,9 @@ def build(season, T, prev=None, ratings=None, league=None, with_qb=True):
             'prior_weight_offense': pw_off, 'prior_weight_defense': pw_def, 'prior_weight_st': pw_st,
             'prior_weight': pwd, 'prior_components': comps,
             'prior_pool': 'fcs_pooled' if fcs else 'fbs_ridge',
+            # V2's FBS st_net prior variance sits at the build_prior floor (1.5e-9): the ST
+            # rating is its preseason prior and st_sd reflects the floor, not real uncertainty
+            'st_sd_floored': bool(pa_t.get(('st_net', 'off'), {}).get('tau2', 1.0) <= 1e-8),
             'thin_data': bool(thin), 'thin_data_reasons': thin,
             'trend_flags': flags,
             'lineup_context': lu,
@@ -803,6 +893,9 @@ def build(season, T, prev=None, ratings=None, league=None, with_qb=True):
             'model_version': C.MODEL_VERSION, 'feature_version': C.FEATURE_VERSION,
             'state_rule_version': STATE_RULE_VERSION,
         })
+        for f, why in OPTIONAL_NULL_REASONS.items():
+            if row.get(f) is None:
+                row['null_reasons'][f] = why
         row['row_hash'] = ids.content_hash(row)
         rows.append(row)
     rows = pd.DataFrame(rows)
@@ -917,44 +1010,55 @@ def delta_method_check(season, T):
     return out
 
 
-def st_shock(season, T, team_id, shock=14.0, scales=(1.0, 8.0)):
+def st_shock(season, T, team_id, shock=14.0, tau2_override=None):
     """Special-teams shrinkage: add ONE synthetic game in which `team_id` wins
     the special-teams battle by `shock` points of EPA (a blocked punt returned
-    for a touchdown plus a long return), against an average FBS opponent on a
-    neutral field, just before T, and report how far st_mean moves under the
-    production prior scale for st_net (1.0) and under weaker priors."""
+    for a touchdown plus a long return: y = +shock for the team, -shock for
+    the opponent, the zero-sum pair), against an average FBS opponent on a
+    neutral field just before T, and report how far st_mean moves.
+
+    Compared under: the production prior (st_net scale 1.0), a data-driven
+    prior (tau2 = the between-team variance of last season's data-only FBS
+    st_net finals, i.e. no floor), and an almost flat prior (tau2 = 1e6)."""
     T = _utc(T)
     cur = opponent_adjust(season, T, diag=False)
     setup, fbs = cur['setup'], cur['fbs']
     obs = _obs(setup, season, T)
-    fb_opp = sorted(t for t in fbs if t != team_id)[0]
-    gid = -1
-    k = T - pd.Timedelta(hours=1)
+    opp = sorted(t for t in fbs if t != team_id)[0]
     base = obs.iloc[:2].copy()
-    base['game_id'] = gid
-    base['team_id'] = [team_id, fb_opp]
-    base['opp_id'] = [fb_opp, team_id]
+    base['game_id'] = -1
+    base['team_id'] = [team_id, opp]
+    base['opp_id'] = [opp, team_id]
     base['H'] = 0.0
-    base['kickoff_ts'] = k
+    base['kickoff_ts'] = T - pd.Timedelta(hours=1)
     base['st_net_epa'] = [shock, -shock]
-    out = {'team_id': int(team_id), 'shock_pts': shock, 'scales': {}}
     spec = BR.metric_specs()['st_net']
-    for sc in scales:
-        pr = BR.build_prior(season, 'st_net', cur['priors']['st_net']['o'].keys() and
-                            sorted(cur['priors']['st_net']['o']), sorted(fbs), setup['final_do'],
-                            setup['FBS'], setup['RP'], setup['TT'], setup['CO'], setup['true_var']['st_net'],
-                            sc, _season_start(season), setup['TG'])
+    pr0 = cur['priors']['st_net']
+    fd = setup['final_do'].get(season - 1, {}).get('st_net')
+    fbs_prev = setup['FBS'].get(season - 1, set())
+    dd = float(fd['off'].loc[[t for t in fd['off'].index if t in fbs_prev]].var()) if fd is not None else 1.0
+    variants = {'production (scale 1.0)': None, 'data-driven tau2 (no floor)': dd, 'flat (tau2 1e6)': 1e6}
+    if tau2_override is not None:
+        variants = {'override': tau2_override}
+    out = {'team_id': int(team_id), 'fcs': team_id not in fbs, 'shock_pts': shock, 'variants': {},
+           'n_games_before': int(obs[obs.team_id.eq(team_id)].game_id.nunique())}
+    for name, tau2 in variants.items():
+        pr = pr0
+        if tau2 is not None:
+            pr = dict(pr0)
+            pr['tau2_o'] = {t: tau2 for t in pr0['tau2_o']}
+            pr['tau2_d'] = {t: tau2 for t in pr0['tau2_d']}
+            pr['tau2_default_o'] = pr['tau2_default_d'] = tau2
         f0, _ = R.fit_metric(obs, 'st_net', spec, setup['varcomp']['st_net'], pr, want_var=True)
         f1, _ = R.fit_metric(pd.concat([obs, base]), 'st_net', spec, setup['varcomp']['st_net'], pr,
                              want_var=True)
         s0 = 0.5 * (f0.loc[team_id, 'off'] - f0.loc[team_id, 'def'])
         s1 = 0.5 * (f1.loc[team_id, 'off'] - f1.loc[team_id, 'def'])
-        out['scales'][sc] = {'st_before': float(s0), 'st_after': float(s1), 'move_pts': float(s1 - s0),
-                             'move_share_of_shock': float((s1 - s0) / shock),
-                             'tau2_team': float(pr['tau2_o'][team_id]),
-                             'posterior_sd_after': float(0.5 * np.sqrt(f1.loc[team_id, 'off_var']
-                                                                        + f1.loc[team_id, 'def_var']))}
-    out['n_games_before'] = int(obs[obs.team_id.eq(team_id)].game_id.nunique())
+        out['variants'][name] = {
+            'tau2_team': float(pr['tau2_o'].get(team_id, pr['tau2_default_o'])),
+            'st_before': float(s0), 'st_after': float(s1), 'move_pts': float(s1 - s0),
+            'move_share_of_shock': float((s1 - s0) / shock),
+            'posterior_sd_after': float(0.5 * np.sqrt(f1.loc[team_id, 'off_var'] + f1.loc[team_id, 'def_var']))}
     return out
 
 

@@ -26,6 +26,10 @@ from . import project as PJ
 from . import runlog as RL
 from .store import Store
 
+if __name__ == '__main__':          # bit-reproducible solves need single-threaded BLAS
+    from .runlog import single_thread_blas
+    single_thread_blas('v2.weekly.tests_weekly')
+
 PASS, FAIL = [0], []
 
 

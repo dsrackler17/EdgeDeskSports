@@ -26,7 +26,8 @@ RULE = 'cfb_availability_state_v1'
 # replaces these with historically calibrated values where evidence exists)
 PLAY_PROBABILITY = {'ACTIVE': 1.0, 'AVAILABLE': 1.0, 'PROBABLE': 0.85, 'QUESTIONABLE': 0.5,
                     'GAME-TIME DECISION': 0.5, 'GTD': 0.5, 'DOUBTFUL': 0.2, 'OUT': 0.0, 'SUSPENDED': 0.0,
-                    'TRANSFERRED': 0.0, 'OUT FOR SEASON': 0.0, 'UNKNOWN': None}
+                    'TRANSFERRED': 0.0, 'OUT FOR SEASON': 0.0, 'UNKNOWN': None,
+                    'OUT FIRST HALF': 0.5}      # the expected share of the game he plays
 UNIT_OF_POSITION = {
     'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'WR': 'WR_TE', 'TE': 'WR_TE', 'OL': 'OL', 'OT': 'OL', 'T': 'OL', 'G': 'OL',
     'OG': 'OL', 'C': 'OL', 'IOL': 'OL', 'DL': 'DL', 'DE': 'DL', 'DT': 'DL', 'NT': 'DL', 'EDGE': 'DL', 'LB': 'LB',
@@ -49,6 +50,11 @@ def load_reports(season, reports_dir=None):
         r['_file'] = os.path.basename(f)
         out.append(r)
     return out
+
+
+def _status(p):
+    """A report status in the table's vocabulary ('OUT_FIRST_HALF' -> 'OUT FIRST HALF')."""
+    return str(p.get('status') or '').upper().replace('_', ' ').strip()
 
 
 def _known_at(r, as_of):
@@ -75,15 +81,15 @@ def snapshot(season, week, games, as_of, team_ids=None, reports=None):
             reps = [r for r in by_game_team.get(gid, []) if _known_at(r, as_of)
                     and (str(r.get('team_id', '')) == tid or (r.get('team') and tname and str(r['team']).lower() == str(tname).lower()))]
             rep = max(reps, key=lambda r: r.get('published_at') or r.get('retrieved_at')) if reps else None
-            players = (rep or {}).get('players') or []
+            players = (rep or {}).get('rows') or (rep or {}).get('players') or []   # report files carry 'rows'
             tier = TIER_OF_PLATFORM.get(str((rep or {}).get('platform', 'conference')).lower(), 2) if rep else None
             age = None
             if rep:
                 age = round((pd.Timestamp(as_of) - pd.Timestamp(rep.get('published_at') or rep.get('retrieved_at'))).total_seconds() / 3600, 2)
             for unit in UNITS:
                 ps = [p for p in players if UNIT_OF_POSITION.get(str(p.get('position', '')).upper()) == unit]
-                out_n = sum(1 for p in ps if PLAY_PROBABILITY.get(str(p.get('status', '')).upper()) == 0.0)
-                q_n = sum(1 for p in ps if (PLAY_PROBABILITY.get(str(p.get('status', '')).upper()) or 1.0) not in (0.0, 1.0))
+                out_n = sum(1 for p in ps if PLAY_PROBABILITY.get(_status(p)) == 0.0)
+                q_n = sum(1 for p in ps if (PLAY_PROBABILITY.get(_status(p)) or 1.0) not in (0.0, 1.0))
                 rows.append(ids.clean({
                     'unit_state_id': 'cfbu_' + ids.h(tid, season, week, unit, RULE, rep.get('_file') if rep else None),
                     'team_id': tid, 'season': season, 'week': week, 'game_id': gid, 'unit': unit,
@@ -91,7 +97,7 @@ def snapshot(season, week, games, as_of, team_ids=None, reports=None):
                     'knowledge': 'KNOWN' if rep else 'UNKNOWN',
                     'reported_out': out_n if rep else None, 'reported_uncertain': q_n if rep else None,
                     'players': [{'player_id': p.get('player_id'), 'name': p.get('player_name'), 'position': p.get('position'),
-                                 'status': p.get('status'), 'play_probability': PLAY_PROBABILITY.get(str(p.get('status', '')).upper())}
+                                 'status': p.get('status'), 'play_probability': PLAY_PROBABILITY.get(_status(p))}
                                 for p in ps],
                     'source': (rep or {}).get('source_url'), 'source_tier': tier, 'published_at': (rep or {}).get('published_at'),
                     'status_age_hours': age, 'as_of': ids.ts(as_of), 'rule_version': RULE,

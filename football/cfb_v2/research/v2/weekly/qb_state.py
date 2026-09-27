@@ -67,6 +67,13 @@ STARTER_TABLE = {
     (3, 3, False): (0.9272, 6793), (3, 3, True): (0.3409, 381),
 }
 # group rates the cells shrink toward: not benched 0.8974, benched 0.2845
+# In-season level: starter continuity drifts by season (DEV: 0.879 of transitions
+# kept the starter in 2016, 0.828 in 2023), so the cell probabilities are
+# shifted on the logit scale by one season-level delta, estimated at T from the
+# CURRENT season's transitions already resolved before T (point-in-time),
+# with a N(0, LEVEL_SD^2) prior. LEVEL_SD chosen by walk-forward log loss on
+# DEV 2019-2023 over {none, 0.1, 0.2, 0.3, 0.5} (METHODS_STATE.md).
+LEVEL_SD = 0.1
 # When the latest starter does NOT start the next game, who does (DEV 2016-2023):
 # the team's top backup by season non-garbage dropbacks, another QB who has
 # played this season, or a QB with no snaps this season (unlisted).
@@ -165,23 +172,39 @@ def pbp_qb_stats(season):
 def team_games(rows):
     """One row per team-game from per-QB rows of ONE team (sorted by kickoff):
     starter, non-garbage dropbacks per QB, benching."""
+    cols = ['game_id', 'kickoff_ts', 'qb_id', 'db', 'db_ng', 'first_play', 'starter']
+    if 'prediction_ts' in rows:
+        cols.append('prediction_ts')
+    recs = rows[cols].sort_values(['kickoff_ts', 'game_id', 'first_play']).to_dict('records')
+    by = {}
+    order = []
+    for r in recs:
+        if r['game_id'] not in by:
+            by[r['game_id']] = []
+            order.append(r['game_id'])
+        by[r['game_id']].append(r)
     out = []
-    for gid, g in rows.sort_values(['kickoff_ts', 'game_id', 'first_play']).groupby('game_id', sort=False):
-        st = g[g.starter]
-        starter = int(st.qb_id.iloc[0]) if len(st) else int(g.sort_values('first_play').qb_id.iloc[0])
-        dbng = g.groupby('qb_id').db_ng.sum()
-        tot = float(dbng.sum())
-        others = dbng.drop(starter, errors='ignore')
-        s_db = float(g.loc[g.qb_id.eq(starter), 'db'].sum())
+    for gid in order:
+        g = by[gid]
+        st = [r for r in g if r['starter']]
+        starter = int(st[0]['qb_id']) if st else int(min(g, key=lambda r: r['first_play'])['qb_id'])
+        dbng, db = {}, {}
+        for r in g:
+            q = int(r['qb_id'])
+            dbng[q] = dbng.get(q, 0.0) + float(r['db_ng'])
+            db[q] = db.get(q, 0.0) + float(r['db'])
+        tot = sum(dbng.values())
+        others = {q: v for q, v in dbng.items() if q != starter}
         reliever, share = None, 0.0
-        if len(others) and tot > 0:
-            reliever = int(others.idxmax())
-            share = float(others.max() / tot)
-        benched = bool(s_db >= 1 and tot > 0 and share >= BENCH_SHARE)
-        out.append({'game_id': gid, 'kickoff_ts': g.kickoff_ts.iloc[0], 'starter': starter,
-                    'db_ng': dbng.to_dict(), 'db_ng_total': tot, 'benched': benched,
+        if others and tot > 0:
+            reliever = max(sorted(others), key=lambda q: others[q])
+            share = others[reliever] / tot
+        benched = bool(db.get(starter, 0.0) >= 1 and tot > 0 and share >= BENCH_SHARE)
+        out.append({'game_id': gid, 'kickoff_ts': g[0]['kickoff_ts'], 'prediction_ts': g[0].get('prediction_ts'),
+                    'starter': starter,
+                    'db_ng': dbng, 'db_ng_total': tot, 'benched': benched,
                     'reliever': reliever if benched else None, 'reliever_share': share,
-                    'played': set(int(q) for q in g.qb_id)})
+                    'played': set(dbng)})
     return out
 
 
@@ -197,11 +220,16 @@ def window_state(games):
 
 # ================================================= starter probability fit
 def transitions(seasons):
-    """Every consecutive team-game pair of the given seasons: the window state
-    after game i and whether its starter started game i+1 (and, if not, who)."""
+    """Every consecutive team-game pair of the given seasons (see transitions_from)."""
     seasons = list(seasons)
     Q, _ = _load(max(seasons))
-    Q = Q[Q.g_season.isin(seasons)]
+    return transitions_from(Q[Q.g_season.isin(seasons)])
+
+
+def transitions_from(Q):
+    """The window state after each team game and whether its starter started
+    the team's next game (and, if not, who), with the next game's kickoff and
+    freeze (next_T) so a transition can be used only once it is resolved."""
     rows = []
     for (S, t), q in Q.groupby(['g_season', 'team_id']):
         games = team_games(q)
@@ -216,9 +244,36 @@ def transitions(seasons):
             order = sorted(seen, key=lambda x: (-seen[x], x))
             who = 'same' if nxt == sL else ('top_backup' if order and nxt == order[0]
                                             else ('other_seen' if nxt in seen else 'unseen'))
-            rows.append((S, t, i, n_last, k, benched, nxt == sL, who))
+            rows.append((S, t, i, n_last, k, benched, nxt == sL, who, games[i]['kickoff_ts'],
+                         games[i]['prediction_ts']))
     return pd.DataFrame(rows, columns=['season', 'team_id', 'game_index', 'n_last', 'k', 'benched',
-                                       'same', 'who'])
+                                       'same', 'who', 'next_kickoff', 'next_T'])
+
+
+def _logit(p):
+    p = min(max(p, 1e-6), 1 - 1e-6)
+    return float(np.log(p / (1 - p)))
+
+
+def level_shift(resolved, table=None, sd=LEVEL_SD):
+    """Season-level logit shift of the starter table: the MAP of delta in
+    logit(p) = logit(p_cell) + delta over already-resolved transitions of the
+    current season, with a N(0, sd^2) prior (0 when there are none)."""
+    if resolved is None or not len(resolved) or not sd:
+        return 0.0
+    z0 = np.array([_logit(starter_probability(a, b, c, table))
+                   for a, b, c in zip(resolved.n_last, resolved.k, resolved.benched)])
+    y = resolved.same.values.astype(float)
+    d = 0.0
+    for _ in range(50):
+        p = 1.0 / (1.0 + np.exp(-(z0 + d)))
+        g = float(np.sum(y - p)) - d / sd ** 2
+        h = -float(np.sum(p * (1 - p))) - 1.0 / sd ** 2
+        step = g / h
+        d -= step
+        if abs(step) < 1e-12:
+            break
+    return float(d)
 
 
 def fit_starter_table(tr, m=EB_M):
@@ -234,22 +289,73 @@ def fit_starter_table(tr, m=EB_M):
             'n': int(len(tr)), 'seasons': sorted(int(s) for s in tr.season.unique())}
 
 
-def starter_probability(n_last, k, benched, table=None):
-    """Calibrated P(the latest starter starts the next game)."""
+def calibration_report(tr, fit_seasons, test_season, sd=LEVEL_SD):
+    """Held-out calibration of the starter probability: the table fitted on
+    `fit_seasons`, applied to `test_season` exactly as build() would (at each
+    freeze, the level shift from that season's transitions resolved before it)."""
+    fit = fit_starter_table(tr[tr.season.isin(list(fit_seasons))])['table']
+    ho = tr[tr.season.eq(test_season)].copy()
+    p = np.empty(len(ho))
+    for T, idx in ho.groupby('next_T').groups.items():
+        res = ho[ho.next_kickoff < T]
+        d = level_shift(res, fit, sd) if sd else 0.0
+        sel = ho.index.get_indexer(idx)
+        p[sel] = [starter_probability(a, b, c, fit, d) for a, b, c in
+                  zip(ho.loc[idx, 'n_last'], ho.loc[idx, 'k'], ho.loc[idx, 'benched'])]
+    ho['p'] = p
+    y = ho.same.astype(float).values
+    bins = pd.cut(ho.p, [0, .2, .4, .6, .7, .8, .85, .9, .95, 1.0])
+    ece = float(sum(len(g) * abs(g.same.mean() - g.p.mean()) for _, g in ho.groupby(bins, observed=True)) / len(ho))
+    # logistic recalibration y ~ a + b logit(p): calibration slope b (1 = calibrated)
+    z = np.log(np.clip(p, 1e-6, 1 - 1e-6) / (1 - np.clip(p, 1e-6, 1 - 1e-6)))
+    X = np.column_stack([np.ones_like(z), z])
+    beta = np.zeros(2)
+    for _ in range(50):
+        q = 1 / (1 + np.exp(-X @ beta))
+        Hm = X.T @ (X * (q * (1 - q))[:, None])
+        step = np.linalg.solve(Hm, X.T @ (y - q))
+        beta += step
+        if np.max(np.abs(step)) < 1e-12:
+            break
+    se_b = float(np.sqrt(np.linalg.inv(Hm)[1, 1]))
+    cells = []
+    for key, g in ho.groupby(['n_last', 'k', 'benched']):
+        pm = g.p.mean()
+        cells.append({'cell': key, 'n': int(len(g)), 'observed': float(g.same.mean()), 'predicted': float(pm),
+                      'z': float((g.same.mean() - pm) / np.sqrt(pm * (1 - pm) / len(g)))})
+    base = float(tr[tr.season.isin(list(fit_seasons))].same.mean())
+    return {'test_season': int(test_season), 'n': int(len(ho)), 'level_sd': sd, 'ece': ece,
+            'mean_predicted': float(p.mean()), 'mean_observed': float(y.mean()),
+            'in_the_large_z': float((y.sum() - p.sum()) / np.sqrt(np.sum(p * (1 - p)))),
+            'slope': float(beta[1]), 'slope_se': se_b,
+            'brier': float(np.mean((p - y) ** 2)), 'brier_constant': float(np.mean((base - y) ** 2)),
+            'log_loss': float(-np.mean(y * np.log(np.clip(p, 1e-9, 1)) + (1 - y) * np.log(np.clip(1 - p, 1e-9, 1)))),
+            'cells': cells}
+
+
+def starter_probability(n_last, k, benched, table=None, delta=0.0):
+    """Calibrated P(the latest starter starts the next game): the table cell,
+    shifted by the season level `delta` on the logit scale."""
     tab = table if table is not None else STARTER_TABLE
     if n_last <= 0:
         return None
     key = (int(min(n_last, 3)), int(max(1, min(k, n_last, 3))), bool(benched))
     if key in tab:
         v = tab[key]
-        return float(v[0] if isinstance(v, tuple) else v)
-    # an unseen cell: the group rate of its benched flag
-    same = [v[0] if isinstance(v, tuple) else v for kk, v in tab.items() if kk[2] == bool(benched)]
-    return float(np.mean(same)) if same else None
+        p = float(v[0] if isinstance(v, tuple) else v)
+    else:
+        # an unseen cell: the group rate of its benched flag
+        same = [v[0] if isinstance(v, tuple) else v for kk, v in tab.items() if kk[2] == bool(benched)]
+        if not same:
+            return None
+        p = float(np.mean(same))
+    if delta:
+        p = 1.0 / (1.0 + np.exp(-(_logit(p) + delta)))
+    return p
 
 
 # ========================================================= change events
-def detect(rows, career, team_id, T=None, table=None, split=None):
+def detect(rows, career, team_id, T=None, table=None, split=None, delta=0.0):
     """QB state of ONE team from its current-season per-QB rows before T.
 
     rows    [game_id, kickoff_ts, qb_id, db, db_ng, first_play, starter] (this team,
@@ -265,7 +371,7 @@ def detect(rows, career, team_id, T=None, table=None, split=None):
     if not games:
         return out
     sL, n_last, k, benched = window_state(games)
-    p = starter_probability(n_last, k, benched, table)
+    p = starter_probability(n_last, k, benched, table, delta)
     last = games[-1]
     out.update(expected_qb=sL, starter_probability=p, n_last=n_last, k=k, benched_latest=benched)
     # the complement: the top backup (by season non-garbage dropbacks), other seen QBs, unseen
@@ -336,8 +442,11 @@ def detect(rows, career, team_id, T=None, table=None, split=None):
     s = sum(tot.values())
     heavy = sorted([q for q, v in tot.items() if s > 0 and v / s >= ROTATION_SHARE])
     if len(heavy) >= 2:
+        # a platoon (both play in the same games) vs a starter switch inside the window
+        together = sum(1 for g in win if sum(1 for q in heavy if g['db_ng'].get(q, 0) > 0) >= 2)
         add('MULTI_QB_ROTATION', None, qbs=heavy,
-            shares={str(q): round(tot[q] / s, 4) for q in heavy}, games=len(win))
+            shares={str(q): round(tot[q] / s, 4) for q in heavy}, games=len(win),
+            same_game_sharing=bool(together >= 2), games_shared=int(together))
     starters3 = len(set(g['starter'] for g in win))
     reasons = []
     if p is not None and p < AMBIGUOUS_P:
@@ -410,9 +519,14 @@ def build(season, T, ratings=None, league=None, Q=None):
     if stats is not None:
         stats = stats[stats.game_id.isin(set(qs.game_id))]
     T_prev = _prev_freeze(G, season, T)
+    g_s = G[G.season.eq(season)]
+    fbs = set(g_s.loc[g_s.home_fbs, 'home_id']) | set(g_s.loc[g_s.away_fbs, 'away_id'])
+    tr = transitions_from(qs)
+    resolved = tr[tr.next_kickoff < T] if len(tr) else tr
+    delta = level_shift(resolved)
     rows, events = [], []
     for t, q in qs.groupby('team_id'):
-        st = detect(q, career, t, T)
+        st = detect(q, career, t, T, delta=delta)
         exp_q = st['expected_qb']
         v2 = F.loc[t] if t in F.index else None
         if v2 is not None and not pd.isna(v2.get('qb_id')) and int(v2['qb_id']) != exp_q:
@@ -422,6 +536,9 @@ def build(season, T, ratings=None, league=None, Q=None):
             e['as_of'] = T
             e['fresh'] = bool(T_prev is None or e['kickoff_ts'] >= T_prev)
             e['rule_version'] = RULE_VERSION
+            e['fcs_team'] = bool(t not in fbs)
+            if t not in fbs:
+                e['reliability'] = 'low: FCS teams appear only in games against FBS teams'
             e['event_id'] = 'cfbq_' + ids.h('qbevent', e['type'], season, t, e['qb_id'], e['game_id'])
             events.append(e)
         season_db = q.groupby('qb_id').db.sum()
@@ -471,7 +588,8 @@ def build(season, T, ratings=None, league=None, Q=None):
             n_eff = float(den.get(qid, 0.0))
             post = float(rating.get(qid, repl))
             rows.append({
-                'season': int(season), 'as_of': T, 'team_id': int(t), 'qb_id': qid,
+                'season': int(season), 'as_of': T, 'team_id': int(t), 'fcs_team': bool(t not in fbs),
+                'qb_id': qid,
                 'qb_name': names.get(qid),
                 'expected_starter': bool(qid == exp_q),
                 'starter_probability': st['probabilities'].get(qid, 0.0 if st['starter_probability'] is not None
@@ -497,6 +615,8 @@ def build(season, T, ratings=None, league=None, Q=None):
                 'start_streak': int(st['streak']) if qid == exp_q else 0,
                 'qb_stabilizing': bool(st['stabilizing']) if qid == exp_q else False,
                 'p_unlisted_starter': st['p_unlisted'] if qid == exp_q else None,
+                'starter_level_shift': delta,
+                'starter_level_n': int(len(resolved)),
                 'null_reasons': null,
                 'rule_version': RULE_VERSION,
             })
@@ -521,8 +641,8 @@ def lineup(qb_rows, events, team_id):
     (s_j = season non-garbage dropback shares, v_j = posterior variances,
     posteriors independent), in (EPA/dropback)^2. team_state multiplies it by
     the expected dropbacks^2. The team's offensive MEAN is never rewritten."""
-    q = qb_rows[qb_rows.team_id.eq(team_id)] if len(qb_rows) else qb_rows
-    ev = events[events.team_id.eq(team_id)] if len(events) else events
+    q = qb_rows[qb_rows.team_id.values == team_id] if len(qb_rows) else qb_rows
+    ev = events[events.team_id.values == team_id] if events is not None and len(events) else pd.DataFrame()
     if not len(q):
         return {'expected_qb_id': None, 'status': 'NO_GAMES_YET', 'events': [], 'qb_change': False,
                 'qb_diff_var_epa_db2': None, 'qb_offense_var_inflation_epa_db2': 0.0,

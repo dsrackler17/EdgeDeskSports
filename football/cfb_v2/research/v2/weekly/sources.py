@@ -76,12 +76,16 @@ def _json(path):
 
 
 def _age_h(now, t):
+    """Hours between a file's time and the run's as-of instant. None when either
+    is missing, or when the file postdates the as-of instant (a historical
+    rebuild reads today's files: their age at T is not defined)."""
     if t is None:
         return None
     try:
-        return round((pd.Timestamp(now) - pd.Timestamp(t)).total_seconds() / 3600.0, 2)
+        a = round((pd.Timestamp(now) - pd.Timestamp(t)).total_seconds() / 3600.0, 2)
     except (ValueError, TypeError):
         return None
+    return a if a >= 0 else None
 
 
 def health(season, now, games=None, validation=None, lab_quotes_last=None, previous=None):
@@ -118,7 +122,8 @@ def health(season, now, games=None, validation=None, lab_quotes_last=None, previ
 
     # play-by-play: coverage of final games, and the validation error rate
     if validation is not None and len(validation):
-        fin = validation[validation.status.isin(['FINAL_VALIDATED', 'FINAL_PARTIAL_DATA', 'DATA_ERROR'])]
+        v = validation[validation.in_scope] if 'in_scope' in validation else validation   # games with an FBS team
+        fin = v[v.status.isin(['FINAL_VALIDATED', 'FINAL_PARTIAL_DATA', 'DATA_ERROR'])]
         with_pbp = int((fin.pbp_plays.fillna(0) > 0).sum()) if 'pbp_plays' in fin else 0
         cov = round(with_pbp / len(fin), 4) if len(fin) else None
         err = round(float(fin.status.eq('DATA_ERROR').mean()), 4) if len(fin) else None

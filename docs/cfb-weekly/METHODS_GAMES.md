@@ -278,7 +278,7 @@ definition without depending on a possibly stale file.
   | `expl_epa_share` | EPA on explosive plays / Σ max(EPA, 0) |
   | `havoc_rate` | (sacks ∪ rush TFL) / plays; "allowed" on the offense row |
   | `sack_rate` | sacks / dropbacks |
-  | `line_yds` | line yards / rushes (−1.2× losses, 0–4 yds ×1, 5–10 yds ×0.5) |
+  | `line_yds_pr` | line yards / rushes (−1.2× losses, 0–4 yds ×1, 5–10 yds ×0.5) |
   | `stuff_rate` | rushes ≤ 0 yds / rushes |
   | `so_rate` | scoring opportunities / drives |
   | `pts_per_opp` | points on opportunity drives / opportunities |

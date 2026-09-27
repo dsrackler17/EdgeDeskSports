@@ -46,6 +46,8 @@ def weekly(run, ctx, store):
         prev = None
     rise, fall, unc = _movers(rows, prev)
     V = ctx.get('validation')
+    if V is not None and 'in_scope' in V:
+        V = V[V.in_scope]                               # games with an FBS team
     fin = V[V.status.isin(['FINAL_VALIDATED', 'FINAL_PARTIAL_DATA', 'DATA_ERROR'])] if V is not None and len(V) else None
     sh = ctx.get('source_health') or {}
     srcs = {s['source']: s for s in sh.get('sources', [])}
@@ -73,7 +75,7 @@ def weekly(run, ctx, store):
         },
         'rating_changes': {'largest_rises': rise, 'largest_falls': fall, 'largest_uncertainty_changes': unc,
                            'review_flags': ctx.get('team_flags') or []},
-        'qb_changes': ctx.get('qb_events') or [],
+        'qb_changes': _qb_changes(ctx),
         'model_health': {
             'pipeline_status': {n: s['status'] for n, s in run.stages.items()},
             'opponent_adjustment': {k: v for k, v in (ctx.get('convergence') or {}).items() if k != 'metrics'},
@@ -105,6 +107,36 @@ def weekly(run, ctx, store):
     with open(os.path.join(d, name + '.md'), 'w') as f:
         f.write(markdown(body))
     return os.path.join('reports', name)
+
+
+def _qb_changes(ctx):
+    """This week's QB change events (fresh: detected in a game since the last
+    freeze), with team and player names."""
+    ev = [e for e in (ctx.get('qb_events') or []) if e.get('fresh', True)]
+    G = ctx.get('G')
+    teams = {}
+    if G is not None and len(G):
+        for side in ('home', 'away'):
+            teams.update({str(int(t)): n for t, n in zip(G['%s_id' % side], G['%s_team' % side]) if pd.notna(t)})
+    Q = ctx.get('qb_rows')
+    qbn = {}
+    if Q is not None and len(Q) and 'qb_name' in Q:
+        qbn = {str(int(q)): n for q, n in zip(Q.qb_id, Q.qb_name) if pd.notna(q) and isinstance(n, str)}
+
+    def pid(x):
+        return None if x is None or (isinstance(x, float) and np.isnan(x)) else str(int(x))
+    out = []
+    for e in ev:
+        d = dict(e.get('detail') or {})
+        for k in ('replaced_by', 'reliever', 'previous_team_id'):
+            if d.get(k) is not None:
+                d[k + '_name'] = qbn.get(pid(d[k])) if k != 'previous_team_id' else teams.get(pid(d[k]))
+        out.append({'team_id': pid(e.get('team_id')), 'team': teams.get(pid(e.get('team_id'))),
+                    'event_type': e.get('event_type') or e.get('type'), 'player_id': pid(e.get('qb_id')),
+                    'player_name': qbn.get(pid(e.get('qb_id'))), 'game_id': e.get('game_id'),
+                    'inferred': e.get('inferred'), 'reliability': e.get('reliability'), 'detail': d,
+                    'event_id': e.get('event_id')})
+    return out
 
 
 def _decisions(season):
@@ -154,8 +186,14 @@ def markdown(b):
     if rc['review_flags']:
         L += ['', '**Rating moves flagged for review:** ' + '; '.join('%s (%s)' % (f.get('team_id'), f.get('flag')) for f in rc['review_flags'])]
     L += ['', '## QB changes', '']
-    L += ['- %s: %s %s%s' % (e.get('team_id'), e.get('event_type'), e.get('player_name') or e.get('player_id') or '',
-                             ' — %s' % e.get('detail') if e.get('detail') else '') for e in b['qb_changes'][:30]] or ['- none detected']
+    L += ['- **%s**: %s %s%s%s' % (e.get('team') or e.get('team_id'), e.get('event_type'),
+                                   e.get('player_name') or e.get('player_id') or '',
+                                   ' (inferred from play-by-play)' if e.get('inferred') else '',
+                                   ' — ' + ', '.join('%s %s' % (k, v) for k, v in sorted((e.get('detail') or {}).items())
+                                                    if k in ('replaced_by_name', 'reliever_name', 'reliever_share',
+                                                             'previous_team_id_name', 'reasons', 'shares', 'games_missed'))
+                                   if e.get('detail') else '')
+          for e in b['qb_changes'][:40]] or ['- none detected this week']
     h = b['model_health']
     L += ['', '## Model health', '',
           '- gate: **%s**%s · artifact verified: %s · warnings %s · errors %s'
