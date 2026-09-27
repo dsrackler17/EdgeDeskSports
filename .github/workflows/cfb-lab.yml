@@ -87,6 +87,10 @@ jobs:
         if: ${{ (github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run' }}
         run: node football/cfb_decision/tests.js && node football/cfb_decision/shadow.js || echo "::warning::decision shadow did not run"
 
+      # football/cfb_lab/reports includes reports/<season>/provider_health.json, the
+      # circuit-breaker state the next run reads back (run.js): it must be committed
+      # every run, or a breaker that opened would forget it next hour
+      # (football/cfb_production/tests.js checks this path stays in the list).
       - name: Publish
         if: ${{ (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: |

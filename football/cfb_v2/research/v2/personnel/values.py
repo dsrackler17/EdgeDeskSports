@@ -821,7 +821,7 @@ def fill_state(state, season, T, const=None):
     agg = v.groupby(['espn_id', 'team_id']).agg(pv=('pvar', lambda s: s.sum(min_count=1)),
                                                 sd=('pvar_sd', lambda s: np.sqrt((s ** 2).sum(min_count=1))),
                                                 comps=('component', lambda s: ','.join(sorted(set(s)))),
-                                                why=('null_reason', lambda s: ';'.join(sorted({x for x in s if x}))))
+                                                why=('null_reason', lambda s: ';'.join(sorted({x for x in s if isinstance(x, str) and x}))))
     out = state.copy()
     key = pd.MultiIndex.from_arrays([out.espn_id.values, out.team_id.values])
     a = agg.reindex(key)

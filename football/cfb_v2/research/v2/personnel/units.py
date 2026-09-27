@@ -65,7 +65,7 @@ from . import usage as U
 from . import values as V
 
 RULE = 'cfb_personnel_units_v1'
-PANEL_VERSION = 'personnel_units_panel_v4'
+PANEL_VERSION = 'personnel_units_panel_v6'
 
 # ------------------------------------------------------------------ groups
 # share groups: a player's share of the team's attributed non-garbage events of the group's kind.
@@ -480,10 +480,13 @@ def panel(season, freezes, const=None, oracle=True):
                     else:                               # week 1: last season's usage at the team
                         e_ = pr.copy()
                         h_ = np.where(ret[K], pr_h[K], 0.0)
-                        tot = float(prior_share.sum())  # the whole unit incl. departed players
+                        # the unit total is the returning players' healthy shares: the departed players'
+                        # usage goes to unseen replacements (V = 0), never pro rata to the returners
+                        tot = float(h_.sum())
                         per_game = dict(per_prev)
                         den_pg = den_prev
                     prod_share = np.full(n, np.nan)
+                    prod_team = np.nan
                 else:
                     has = (C_ > 0) if J else np.zeros((n, 0), dtype=bool)
                     first = np.where(has.any(axis=1), has.argmax(axis=1), J) if J else np.zeros(n, dtype=int)
@@ -497,6 +500,7 @@ def panel(season, freezes, const=None, oracle=True):
                     den_pg = np.nan
                     ptot = C_.sum(axis=1) if J else np.zeros(n)
                     prod_share = ptot / ptot.sum() if ptot.sum() > 0 else np.zeros(n)
+                    prod_team = float(Cm[:, :J].sum()) if J else 0.0
                 base = 0.5 * (pi_s * pr + (1 - pi_s) * data_s) + 0.5 * (pi_r * pr + (1 - pi_r) * data_r)
                 if J:
                     rev = (C_[:, ::-1] > 0)
@@ -526,6 +530,7 @@ def panel(season, freezes, const=None, oracle=True):
                 put('group_total', np.full(n, tot))
                 put('den_per_game', np.full(n, den_pg))
                 put('prod_share', prod_share)
+                put('prod_team', np.full(n, prod_team))
                 for k in ('RB_rush', 'WR_rec', 'TE_rec', 'K_fg', 'K_xp', 'P_net'):
                     put('pg_' + k, np.full(n, per_game.get(k, np.nan)))
                 # ---- the oracle's hindsight: the upcoming game and the rest of the season
@@ -577,7 +582,7 @@ def _attach_values(P, season, const):
     agg = v.groupby('row').agg(V=('V', lambda s: s.sum(min_count=1)),
                                V_sd=('V_sd', lambda s: np.sqrt((s ** 2).sum(min_count=1))),
                                value_basis=('prior_basis', lambda s: ','.join(sorted({str(x) for x in s}))),
-                               value_null=('null_reason', lambda s: ';'.join(sorted({x for x in s if x}))))
+                               value_null=('null_reason', lambda s: ';'.join(sorted({x for x in s if isinstance(x, str) and x}))))
     P = P.join(agg, how='left')
     return P
 
@@ -590,7 +595,7 @@ def lineups(P, lam, availability=None):
     Share groups keep their total share and redistribute (lam to replacement); presence groups
     use the presence probability directly."""
     P = P.copy()
-    for c in ('u_oracle', 'u_pregame', 'u_healthy', 'u_report', 'absent', 'p_status'):
+    for c in ('u_oracle', 'u_pregame', 'u_healthy', 'u_report', 'u_known', 'absent', 'p_status'):
         P[c] = np.nan
     P['absent'] = False
     for (tid, T, g), x in P.groupby(['team_id', 'T', 'group'], sort=False):
@@ -610,6 +615,11 @@ def lineups(P, lam, availability=None):
             a = condition_share(x.e.values, h, p)
             ur, _ = redistribute(a, tot, lam, available=np.isnan(p) | (p > 0))
             P.loc[idx, 'u_report'] = ur if np.any(~np.isnan(p)) else x.e.values
+            # the KNOWN-absence lineup: reported statuses only, everyone else at his healthy share
+            # (the oracle's construction with the report in place of hindsight)
+            pk = np.where(np.isnan(p), 1.0, p)
+            uk, _ = redistribute(pk * h, tot, lam, available=pk > 0)
+            P.loc[idx, 'u_known'] = uk
             if bool(x.next_played.iloc[0]):
                 if g in ('K', 'P'):
                     ab = (x.h.values >= 0.5) & (x.next_c.values == 0) & (x.next_group_c.values > 0)
@@ -623,40 +633,65 @@ def lineups(P, lam, availability=None):
             P.loc[idx, 'u_healthy'] = 1.0
             P.loc[idx, 'u_pregame'] = x.e.values
             P.loc[idx, 'u_report'] = np.where(np.isnan(p), x.e.values, p)
+            P.loc[idx, 'u_known'] = np.where(np.isnan(p), 1.0, p)
             if bool(x.next_played.iloc[0]):
                 gone = (x.next_c.values == 0) & (x.rem_c.values == 0) & (x.rem_games.values >= GONE_MIN_REMAINING) \
                     & x.in_season.values
                 P.loc[idx, 'u_oracle'] = np.where(gone, 0.0, 1.0)
-                P.loc[idx, 'absent'] = gone & (x.prod_share.values >= DEF_CHANGE_SHARE)
+                own = x.prod_share.values * x.prod_team.values if 'prod_team' in x else np.zeros(len(x))
+                key = (x.prod_share.values >= DEF_CHANGE_SHARE) & (own >= DEF_MIN_OWN) & \
+                    (x.prod_team.values >= DEF_MIN_TEAM if 'prod_team' in x else False)
+                P.loc[idx, 'absent'] = gone & key
     return P
 
 
-VARIANTS = {'oracle': ('u_oracle', 'base'), 'oracle_naive': ('u_oracle', 'u_healthy'),
-            'pregame': ('u_pregame', 'base'), 'report': ('u_report', 'base')}
+# variant -> (upcoming lineup, reference lineup, value column).
+#   V      the efficiency value (values.py: EPA / points per event above replacement x events per game)
+#   V_use  the USAGE-REVEALED value of the skill groups (research alternative): the player's healthy events
+#          per game (h x the group's events per game). The coach's usage choice is read as a quality signal:
+#          a delta in V_use units is sum (u - b) x h x U (a share-weighted loss of usage); beta converts it to
+#          points. Only RB and WR_TE carry it (K / P have one specialist; the defence is production-based).
+VARIANTS = {'oracle': ('u_oracle', 'base', 'V'), 'oracle_naive': ('u_oracle', 'u_healthy', 'V'),
+            'pregame': ('u_pregame', 'base', 'V'), 'report': ('u_report', 'base', 'V'),
+            'oracle_use': ('u_oracle', 'base', 'V_use'), 'oracle_naive_use': ('u_oracle', 'u_healthy', 'V_use'),
+            'pregame_use': ('u_pregame', 'base', 'V_use'), 'report_use': ('u_report', 'base', 'V_use'),
+            # the report-path CANDIDATE: known absences only (reported OUT / QUESTIONABLE ...), relative to the
+            # healthy lineup, usage-revealed value; its oracle analogue is 'oracle_naive_use'
+            'report_absence_use': ('u_known', 'u_healthy', 'V_use')}
+# a NEW absence (the lineup change the rating has not absorbed yet): absent for at most this many games
+NEW_ABSENCE_MAX_GAMES = 2
+# a KEY defender (defensive 'unit change'): >= DEF_CHANGE_SHARE of the unit's production to date, with at
+# least DEF_MIN_OWN events of his own and DEF_MIN_TEAM for the team (a share of 1 sack is not a role)
+DEF_MIN_OWN = 2.0
+DEF_MIN_TEAM = 6.0
 
 
 def deltas(P, variants=('oracle', 'oracle_naive', 'pregame')):
     """Per (team, T, unit): delta (points per game, + = the team is stronger than its rating says)
     and variance per variant, and the absence descriptors of the unit."""
     P = P.copy()
-    Vv = P.V.fillna(0.0).values
-    Vs = P.V_sd.fillna(0.0).values
+    if 'V_use' not in P.columns:
+        P['V_use'] = np.where(P.group.isin(['RB', 'WR_TE']), P.h * P.den_per_game, P.V)
     for k in variants:
-        u, b = VARIANTS[k]
+        u, b, vc = VARIANTS[k]
         d = (P[u].values - P[b].values)
-        P['d_' + k] = d * Vv
-        P['v_' + k] = d ** 2 * Vs ** 2
+        P['d_' + k] = d * P[vc].fillna(0.0).values
+        sd = P.V_sd.fillna(0.0).values
+        if vc == 'V_use':                          # the usage value carries no value SD of its own
+            sd = np.where(P.group.isin(['RB', 'WR_TE']).values, 0.0, sd)
+        P['v_' + k] = d ** 2 * sd ** 2
     P['abs_in_season'] = P.absent & P.in_season
+    P['abs_new'] = P.abs_in_season & (P.games_missed_run + 1 <= NEW_ABSENCE_MAX_GAMES)
     P['abs_len'] = np.where(P.absent, P.games_missed_run + 1, np.nan)
     P['abs_V'] = np.where(P.absent, P.V.fillna(0.0) * P.h, 0.0)
     agg = {('d_' + k): 'sum' for k in variants}
     agg.update({('v_' + k): 'sum' for k in variants})
-    agg.update({'absent': 'sum', 'abs_in_season': 'sum', 'abs_len': 'max', 'abs_V': 'sum', 'V': lambda s: s.notna().sum(),
-                'pi_s': 'first', 'pi_r': 'first', 'J': 'first'})
+    agg.update({'absent': 'sum', 'abs_in_season': 'sum', 'abs_new': 'sum', 'abs_len': 'max', 'abs_V': 'sum',
+                'V': lambda s: s.notna().sum(), 'pi_s': 'first', 'pi_r': 'first', 'J': 'first'})
     keys = ['season', 'team_id', 'T', 'unit'] + (['game_id'] if 'game_id' in P.columns else [])
     D = P.groupby(keys, dropna=False).agg(agg).reset_index().rename(
-        columns={'absent': 'n_absent', 'abs_in_season': 'n_absent_in_season', 'abs_len': 'max_absence_len',
-                 'V': 'n_valued'})
+        columns={'absent': 'n_absent', 'abs_in_season': 'n_absent_in_season', 'abs_new': 'n_absent_new',
+                 'abs_len': 'max_absence_len', 'V': 'n_valued'})
     return D
 
 
@@ -754,9 +789,13 @@ def unit_state(season, T, availability=None, lam=None, teams=None, const=None):
                 av.setdefault((int(t), int(e)), 1.0)
     L = lineups(P, lam, availability=av)
     ol = ol_uncertainty(season, T, availability=reps, teams=teams)
+    L['V_use'] = np.where(L.group.isin(['RB', 'WR_TE']), L.h * L.den_per_game, np.nan)
+    ab = absence_betas()
     rows = []
     for (tid, unit), x in L.groupby(['team_id', 'unit'], sort=True):
         d, var = lineup_delta(x.base, x.u_report, x.V, x.V_sd)
+        d_abs = float(np.nansum((x.u_known - x.u_healthy) * x.V_use)) if unit in ('RB', 'WR_TE') else None
+        b_abs = ab.get('betas', {}).get(unit)
         # availability uncertainty: a QUESTIONABLE player is a coin flip, not half a player
         p = x.p_status.values
         av_var = float(np.nansum(np.where(np.isnan(p), 0.0, p * (1 - p)) * (x.h.values * x.V.fillna(0).values) ** 2))
@@ -777,6 +816,9 @@ def unit_state(season, T, availability=None, lam=None, teams=None, const=None):
                      'as_of': ids.ts(T), 'season': season, 'team_id': int(tid), 'unit': unit,
                      'next_game_id': nx.get(int(tid)), 'knowledge': 'REPORTED' if known else 'UNKNOWN',
                      'delta_pts': d, 'delta_sd': float(np.sqrt(var + av_var)),
+                     'absence_delta_use': d_abs,
+                     'absence_delta_pts': (b_abs['beta'] * d_abs) if (b_abs is not None and d_abs is not None) else None,
+                     'absence_beta': b_abs['beta'] if b_abs is not None else None,
                      'strength_expected': strength_up, 'strength_healthy': strength_h, 'strength_baseline': strength_b,
                      'health_pts': strength_up - strength_h, 'continuity': cont,
                      'depth_n': int((x.h * x.den_per_game.fillna(0) >= MIN_EXPECTED_EVENTS).sum())
@@ -804,6 +846,16 @@ def unit_state(season, T, availability=None, lam=None, teams=None, const=None):
                              'delta_sd': None, 'value_status': 'NULL: no RELIABLE defensive column at T '
                                                                '(usage.reliability); uncertainty-only'})
     return pd.DataFrame(rows)
+
+
+def absence_betas():
+    """The report-path candidate's betas (points per usage-revealed unit), fitted on the oracle absences of
+    2014-2023 and frozen (backtest_units.run_dev -> units/absence_beta.json); {} until estimated."""
+    f = common.out_path('personnel', 'units', 'absence_beta.json')
+    try:
+        return json.load(open(f))
+    except (OSError, ValueError):
+        return {}
 
 
 def lambda_estimate():

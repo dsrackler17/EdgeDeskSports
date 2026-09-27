@@ -212,6 +212,28 @@ def t_lineups_synthetic():
     P2['base'] = P2.e
     D = UN.deltas(UN.lineups(P2, 0.3), variants=('pregame',))
     chk('deltas_zero_when_history_equals_baseline', abs(float(D.d_pregame.iloc[0])) < 1e-12, D.d_pregame.tolist())
+    # the report-path candidate: known absences only -> exactly 0 without a report (ordinary games unchanged)
+    L0 = UN.lineups(P, 0.3, availability=None)
+    chk('known_lineup_is_healthy_without_report', np.allclose(L0.u_known, L0.u_healthy))
+    D0 = UN.deltas(L0, variants=('report_absence_use', 'report'))
+    chk('report_absence_delta_zero_without_report', float(D0.d_report_absence_use.abs().max()) == 0.0,
+        D0.d_report_absence_use.tolist())
+    L1 = UN.lineups(P, 0.3, availability={(7, 100): 0.0})
+    D1 = UN.deltas(L1, variants=('report_absence_use',))
+    chk('report_absence_delta_negative_when_starter_out', float(D1.d_report_absence_use.iloc[0]) < 0,
+        D1.d_report_absence_use.tolist())
+    Vu = L1.h * L1.den_per_game
+    exp = float(((L1.u_known - L1.u_healthy) * Vu).sum())
+    chk('report_absence_delta_formula', abs(float(D1.d_report_absence_use.iloc[0]) - exp) < 1e-9)
+    L2 = UN.lineups(P, 0.3, availability={(7, 100): 0.5})
+    chk('questionable_is_half_an_absence', abs(L2.u_known.iloc[0] - 0.5 * L2.u_healthy.iloc[0]) <
+        abs(L2.u_healthy.iloc[0]) and L2.u_known.iloc[0] > 0)
+    # the new-absence flag: 1-2 missed games only
+    P3 = P.assign(next_played=True, next_c=[0.0, 5.0, 1.0], rem_c=[0.0, 9.0, 3.0], rem_games=5, next_den=30.0,
+                  next_group_c=20.0, games_missed_run=[2, 0, 0])
+    D3 = UN.deltas(UN.lineups(P3, 0.3), variants=('oracle',))
+    chk('absence_three_games_is_not_new', int(D3.n_absent_in_season.iloc[0]) == 1 and int(D3.n_absent_new.iloc[0]) == 0,
+        D3[['n_absent_in_season', 'n_absent_new', 'max_absence_len']].to_dict('records'))
 
 
 def t_ol_rule():
@@ -420,7 +442,7 @@ def r_point_in_time_panel():
         d = fa0(season)
         if season == S:
             d = d.copy()
-            d.loc[d.kickoff_ts >= T, 'made'] = 0.0
+            d.loc[pd.to_datetime(d.kickoff_ts, utc=True) >= T, 'made'] = 0.0
         return d
     try:
         U.player_games, U.team_games, V.fg_attempts = pg_, tg_, fa_
@@ -472,6 +494,13 @@ def r_live_2026():
             chk('live_unreported_teams_unknown', other.knowledge.eq('UNKNOWN').all() if len(other) else True)
             ol = s[s.unit.eq('OL')]
             chk('live_ol_rows_not_estimated', ol.value_status.str.startswith('NOT_ESTIMATED').all() and len(ol) > 0)
+            rep = tid[tid.unit.isin(['RB', 'WR_TE'])]
+            # a reported absence moves the known-absence delta (either way: a low-usage player's share goes to
+            # higher-usage teammates under the usage-revealed value)
+            chk('live_known_absence_delta_moves_for_reported_team', (rep.absence_delta_use.fillna(0).abs() > 0).any(),
+                rep[['unit', 'absence_delta_use']].to_dict('records'))
+            chk('live_unreported_known_absence_zero', (other.absence_delta_use.fillna(0).abs() < 1e-12).all()
+                if len(other) else True)
             found = True
             break
     chk('live_found_a_report_with_an_out_skill_player', found)

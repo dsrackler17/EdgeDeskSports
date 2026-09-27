@@ -1,0 +1,50 @@
+{
+ "baseline_manifest_sha256": "d90f3789c988eb54dd0c1c3905b43591cc8d64c6caee70563fb4cdf4e237f1e0",
+ "bet_enabled": false,
+ "calibration_json_sha256": "389ad41f71309edcc190fd1f303468bf477a8b86e329ce4b62a0a36ee27e8421",
+ "calibration_manifest_sha256": "a7f523e1cd55edd8d696020deb733f0b9fadc1e71c828f1bf3b4b34bb6dbbe90",
+ "code_sha256": {
+  "holdout.py": "83ae87c5eea25161b5b2c5aea89b643c6163c216b497621582712b317a6fc8b0",
+  "policy.py": "d257294af87a534b6773d91cb1f8c6dd384721ba8ee795c20ac31e1d4dfe345d",
+  "portfolio.py": "6e8096d63e31fec5edf23fe089d967af17df32f2a849a23057a65539d72135f9",
+  "scorecard.py": "c52e2a2a0fd629fd78304931efd5be8ebcef0ece4e077f805d3e3d2a31e28d89",
+  "tournament.py": "f722de6dbdbe18bb1bef3710bf98181062d72cf653d6317fabb37b9bfc9c5a43"
+ },
+ "dataset_sha256": "f2d4e88f0d76ce66d5e57df0742fcd8c9860765d6f5be6979b7f924d023814cb",
+ "files": {
+  "../fixtures/policy_parity.json": "c6990aa299b72c5fae2d15d0dbac7bdf62832b01d824da81a9a0a1525fb269e7",
+  "evidence.json": "3a348093dcc907211d162ec17aaa05ffe587a0ed38d1e8cccba3250ebd4192e0",
+  "policy.json": "cb9019a29de20cefd96ac7dbb95b9a5f79381dfb5c2df469d7cb33992c9142fe"
+ },
+ "frozen_at": "2026-09-27",
+ "holdout": {
+  "access_log": "holdout_access.jsonl",
+  "at": "2026-09-27T16:30:11Z",
+  "policy_sha256": "cb9019a29de20cefd96ac7dbb95b9a5f79381dfb5c2df469d7cb33992c9142fe",
+  "results_sha256": "d8a3e7f7f6be65734ba23b02c137443f8eedc445a25f721463156ad26d6d94d6",
+  "seasons": [
+   2024,
+   2025
+  ]
+ },
+ "holdout_rule": "holdout.py reads 2024-2025 once for this policy sha256, logs the access in holdout_access.jsonl (append-only) and refuses a second run; policy.json never changes afterwards",
+ "holdout_scored": true,
+ "policy": "cfb_decision_policy_v1",
+ "prereg": {
+  "path": "docs/cfb-decision/POLICY_PREREG.md",
+  "sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8"
+ },
+ "promotion_gate": {
+  "G1_probabilities_calibrated": true,
+  "G2_tiers_rank_sensibly": true,
+  "G3_clv_strong_for_the_bet_region": false,
+  "G4_thresholds_stable": false,
+  "G5_drawdown_acceptable": false,
+  "G6_holdout_does_not_collapse": false,
+  "G7_shadow_sensible": false,
+  "G8_frozen_artifact_admits_a_bet": false,
+  "G9_credible_outcome": false,
+  "decision": "bet_enabled stays false",
+  "promote": false
+ }
+}

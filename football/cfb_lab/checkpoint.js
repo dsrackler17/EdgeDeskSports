@@ -11,6 +11,23 @@
    rule makes against that market. The row is hashed and appended; it is
    never edited.
 
+   PRODUCTION SAFETY (docs/cfb-production/MARKET_INTEGRITY.md, SETTLEMENT.md):
+   - every snapshot carries the market's integrity verdict
+     (inputs_ref.market_integrity: OK / DEGRADED / INVALID / MISSING and the
+     actionable status) and, when the gap or the cover probability is extreme,
+     the integrity review; a BET is downgraded to PASS (fail closed) unless the
+     market is ACTIONABLE and any required review passed. Football numbers are
+     never touched.
+   - ESPN's own schedule this hour is the kickoff authority: a game it reports
+     postponed, canceled, suspended, in progress or finished is not
+     snapshotted (a game that started early never gets a "pregame" row), and a
+     moved kickoff is used for the window of a NEW snapshot (old snapshots keep
+     the kickoff they were taken against).
+   - a game moved by more than 36 h is a rescheduled game: its old windows are
+     not reused; the windows of the new schedule are recorded as ADHOC
+     snapshots (never official), because one game id holds one row per
+     checkpoint.
+
      node football/cfb_lab/checkpoint.js [--season 2026] [--now ISO] [--models v1,v2.1,c001]
      node football/cfb_lab/checkpoint.js --adhoc --game <id> --model <version>
      node football/cfb_lab/checkpoint.js --import-freeze     (V2 Tuesday freezes -> WEEKLY_FREEZE)
@@ -22,6 +39,8 @@ const L = require('./lab_core.js');
 const G = require('./ledger.js');
 const M = require('./models.js');
 const GOV = require('./governance.js');
+const I = require('./integrity.js');
+const ID = require('./identity.js');
 const DIS = require('../../lib/cfb_disagreement.js');
 
 const U = L.util;
@@ -92,6 +111,16 @@ function buildRow(model, checkpointType, isFirst, market, decision, dq, ctx) {
   else if (decClass === 'PASS') passReason = decision.reason || null;
   const side = decision.side || null;
   const snapHomeLine = market && U.isNum(market.current_spread) ? market.current_spread : null;
+  /* fail closed for betting (§46, §112): the class stays BET only with an
+     ACTIONABLE market and a passed extreme-edge review */
+  const mi = ctx.integrity || null;
+  const review = I.extremeReview({ pure_home_margin: P.margin, fair_spread_home_line: L.conv.marginToBook(P.margin), market_home_line: snapHomeLine, side,
+    cover_probability: decision.cover_probability, home_id: gm.home_id, away_id: gm.away_id, game_id: gm.game_id,
+    qb_certainty: M.qbCertainty(model.slateGame), injury_certainty: M.injuryCertainty(model.slateGame, ctx.now), feature_ts: model.feature_ts,
+    market_age_min: mi && U.isNum(mi.newest_true_age_h) ? mi.newest_true_age_h * 60 : null, now: ctx.now, market_integrity: mi,
+    params_hash: model.params_hash, expected_params_hash: ctx.expectedParamsHash || null, model_version: model.model_version });
+  const gate = I.betGate(decClass, mi, review);
+  if (gate.gated) { decClass = gate.decision_class; passReason = gate.reason; }
   const recLine = side && U.isNum(snapHomeLine) ? L.conv.sideLine(side, snapHomeLine) : null;
   const recPrice = side ? (side === 'HOME' ? U.num(market && market.consensus_price_home) : U.num(market && market.consensus_price_away)) : null;
   const gap = U.isNum(snapHomeLine) ? U.r(P.margin - L.conv.bookToMargin(snapHomeLine), 3) : null;
@@ -149,7 +178,13 @@ function buildRow(model, checkpointType, isFirst, market, decision, dq, ctx) {
     primary_edge: model.explain.primary_edge, secondary_edge: model.explain.secondary_edge,
     primary_uncertainty: model.explain.primary_uncertainty, disagreement_summary: model.explain.disagreement_summary,
     inputs_ref: Object.assign({}, model.inputs, { quote_ids: market && market.quote_ids ? market.quote_ids : [], checkpoint_rule: L.RULES.checkpoint, dq_rule: L.RULES.dq,
-      qb_expected: expectedStarters(model.slateGame), segment: segmentOf(model.slateGame) }),
+      qb_expected: expectedStarters(model.slateGame), segment: segmentOf(model.slateGame) },
+      mi ? { market_integrity: { rule: mi.rule, status: mi.status, actionable_status: mi.actionable_status, reasons: mi.reasons, n_books: mi.n_books,
+        stale_share: mi.stale_share, newest_true_age_h: mi.newest_true_age_h, range_pts: mi.range_pts } } : {},
+      review.required ? { extreme_review: { rule: review.rule, triggers: review.triggers, ok: review.ok, failures: review.failures } } : {},
+      gate.gated ? { bet_gate: { rule: I.RULES.consensus, engine_class: L.decisionClass(status), reason: gate.reason } } : {},
+      ctx.kickoffBasis ? { kickoff_basis: ctx.kickoffBasis } : {},
+      ctx.reschedule ? { reschedule: ctx.reschedule } : {}),
   };
   /* the gate's verdict (V1 rows with a market only); the verified gap IS the
      row's raw gap, so the two can never disagree (cfb_lab_pred_verified_gap) */
@@ -186,11 +221,12 @@ function segmentOf(g) {
     home_division: g.home_division || null, away_division: g.away_division || null, matchup_type: g.matchup_type || null };
 }
 
-/* Games per week with the same pair twice (data-quality duplicate check). */
+/* Games per week with the same pair twice (data-quality duplicate check),
+   keyed by the canonical team ids where they resolve (identity.js). */
 function pairCounts(projections) {
   const m = new Map();
   for (const p of projections) {
-    const k = [String(p.game.home || '').toLowerCase().replace(/[^a-z0-9]/g, ''), String(p.game.away || '').toLowerCase().replace(/[^a-z0-9]/g, '')].sort().join('|');
+    const k = ID.pairKey(p.game.home, p.game.away, p.game.home_id, p.game.away_id);
     m.set(k, (m.get(k) || 0) + 1);
   }
   return m;
@@ -211,23 +247,63 @@ function run(opts) {
   const quotes = store.quotes();
   const qByGame = new Map();
   for (const q of quotes) if (q.game_id) { if (!qByGame.has(q.game_id)) qByGame.set(q.game_id, []); qByGame.get(q.game_id).push(q); }
-  const rows = [], log = { now, season, due: 0, taken: 0, skipped_no_projection: 0, by_model: {}, by_checkpoint: {} };
+  const rows = [], log = { now, season, due: 0, taken: 0, skipped_no_projection: 0, by_model: {}, by_checkpoint: {},
+    skipped_schedule: {}, kickoff_moved: [], rescheduled_adhoc: 0, bet_gated: 0 };
+  /* ESPN's schedule this hour (market.capture -> espnSchedule), and the
+     settled state of each game: a postponed / canceled game is not snapshotted
+     until it has a new kickoff */
+  const sched = opts.schedule || {};
+  const results = new Map();
+  store.results().slice().sort((a, b) => U.ms(a.recorded_at) - U.ms(b.recorded_at)).forEach((r) => results.set(r.game_id, r));
+  const liveRows = new Map();
+  for (const r of existing) { if (r.origin !== 'LIVE') continue; const k = r.game_id + '|' + r.model_version; if (!liveRows.has(k)) liveRows.set(k, []); liveRows.get(k).push(r); }
+  const quarantinedIds = {};
+  store.quarantine().forEach((x) => { quarantinedIds[x.quote_id] = true; });
+  const skip = (why) => { log.skipped_schedule[why] = (log.skipped_schedule[why] || 0) + 1; };
   for (const m of models) {
     const projs = [...m.projections.values()].filter((p) => p.game.season === season);
     const dup = pairCounts(projs);
-    for (const p of projs) {
-      if (opts.onlyGame && p.game.game_id !== String(opts.onlyGame)) continue;
+    for (const p0 of projs) {
+      if (opts.onlyGame && p0.game.game_id !== String(opts.onlyGame)) continue;
+      const es = sched[p0.game.game_id] || null;
+      if (es && ['POSTPONED', 'CANCELED', 'SUSPENDED'].includes(es.status)) { skip(es.status); continue; }
+      if (es && ['IN_PROGRESS', 'FINISHED'].includes(es.status)) { if (L.hoursToKickoff(p0.game.kickoff, now) > 0) skip('STARTED_BEFORE_MODEL_KICKOFF'); continue; }
+      /* the kickoff of a NEW snapshot: ESPN's current one when it moved */
+      let p = p0, kickoffBasis = null;
+      if (es && es.kickoff && U.ms(es.kickoff) !== U.ms(p0.game.kickoff)) {
+        kickoffBasis = { model: U.iso(p0.game.kickoff), schedule: es.kickoff, used: es.kickoff, source: 'espn' };
+        p = Object.assign({}, p0, { game: Object.assign({}, p0.game, { kickoff: es.kickoff }) });
+        log.kickoff_moved.push({ game_id: p0.game.game_id, model_version: m.model_version, from: kickoffBasis.model, to: es.kickoff });
+      }
       const h = L.hoursToKickoff(p.game.kickoff, now);
       if (!U.isNum(h) || h <= 0 || h > HORIZON_H) continue;
-      const types = have.get(p.game.game_id + '|' + m.model_version) || [];
-      const ct = opts.adhoc ? 'ADHOC' : L.dueCheckpoint(h, types);
+      const prior = liveRows.get(p.game.game_id + '|' + m.model_version) || [];
+      /* rescheduled: the existing snapshots were taken against a kickoff more
+         than 36 h away from this one */
+      const sameSched = prior.filter((r) => !I.rescheduled(r.kickoff_ts, p.game.kickoff));
+      const moved = prior.length > 0 && sameSched.length < prior.length;
+      const res = results.get(p.game.game_id);
+      if (res && res.status !== 'FINAL' && !moved) { skip('RESULT_' + res.status); continue; }
+      let ct, reschedule = null;
+      if (opts.adhoc) ct = 'ADHOC';
+      else if (moved) {
+        const types = sameSched.map((r) => (r.checkpoint_type === 'ADHOC' && r.inputs_ref && r.inputs_ref.reschedule ? r.inputs_ref.reschedule.window : r.checkpoint_type));
+        const w = L.dueCheckpoint(h, types);
+        if (!w) continue;
+        ct = 'ADHOC';
+        reschedule = { window: w, original_kickoff: U.iso(prior.filter((r) => I.rescheduled(r.kickoff_ts, p.game.kickoff))[0].kickoff_ts), note: 'rescheduled game: ADHOC stands in for the ' + w + ' window and is never official' };
+      } else ct = L.dueCheckpoint(h, prior.map((r) => r.checkpoint_type));
       if (!ct) continue;
       log.due++;
-      const market = L.marketAt(qByGame.get(p.game.game_id) || [], now, p.game.kickoff);
+      const gq = qByGame.get(p.game.game_id) || [];
+      const market = L.marketAt(gq, now, p.game.kickoff);
+      const integrity = I.assessMarket(gq, now, { kickoff: p.game.kickoff, hoursToKickoff: h, quarantinedIds });
       const dq = M.dataQuality({ slateGame: p.slateGame, model: p, market, hours: h, now, dupPairs: dup });
       const decision = p.decide(market, now);
-      const row = buildRow(p, ct, types.length === 0, market, decision, dq, { now, role: roleOf(roles, m.model_version), origin: 'LIVE',
+      const row = buildRow(p, ct, prior.length === 0, market, decision, dq, { now, role: roleOf(roles, m.model_version), origin: 'LIVE', integrity, kickoffBasis, reschedule,
         disagreement: disagreementFor(p, market, now, models) });
+      if (row.inputs_ref.bet_gate) log.bet_gated++;
+      if (reschedule) log.rescheduled_adhoc++;
       rows.push(row);
       log.by_model[m.model_version] = (log.by_model[m.model_version] || 0) + 1;
       log.by_checkpoint[ct] = (log.by_checkpoint[ct] || 0) + 1;

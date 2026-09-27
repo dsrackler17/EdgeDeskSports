@@ -93,7 +93,7 @@ def weekly(run, ctx, store):
         },
         'projection_changes': (ctx.get('changes') or [])[:20],
         'projection_review_flags': ctx.get('projection_flags') or [],
-        'performance_vs_expectation': _perf_table(ctx.get('team_summary')),
+        'performance_vs_expectation': _perf_table(ctx.get('team_summary'), names=_fbs_names(ctx.get('G'), season)),
         'research_flags': ctx.get('research') or [],
         'misses': {'rule': 'cfb_miss_classification_v1 (|error| >= 14 pts; data-based drivers)',
                    'by_driver': _miss_summary(ctx.get('misses')), 'games': (ctx.get('misses') or [])[:25]},
@@ -154,12 +154,30 @@ def _decisions(season):
         return None
 
 
-def _perf_table(S, n=10):
+def _fbs_names(G, season):
+    """{team_id: name} for the season's FBS teams (the table ranks the teams EdgeDesk rates, not
+    their one-game FCS opponents)."""
+    if G is None or not len(G) or 'home_fbs' not in G:
+        return None
+    g = G[G.season.eq(season)] if 'season' in G else G
+    out = {}
+    for side in ('home', 'away'):
+        x = g[g['%s_fbs' % side].fillna(False).astype(bool)]
+        out.update({str(int(t)): n for t, n in zip(x['%s_id' % side], x['%s_team' % side]) if pd.notna(t)})
+    return out
+
+
+def _perf_table(S, n=10, names=None):
     if S is None or not len(S):
         return []
     cols = [c for c in ('team_id', 'team', 'record', 'scoreboard_margin', 'performance_margin', 'turnover_luck_index',
                         'close_game_record', 'explosive_dependency_score') if c in S.columns]
     X = S[cols].copy()
+    if names is not None and 'team_id' in X:
+        tid = X.team_id.map(lambda t: str(int(t)) if pd.notna(t) else None)
+        X = X[tid.isin(set(names))].copy()
+        if 'team' not in X:
+            X['team'] = tid[X.index].map(names)
     if 'scoreboard_margin' in X and 'performance_margin' in X:
         X['scoreboard_minus_performance'] = X.scoreboard_margin - X.performance_margin
         X = X.reindex(X.scoreboard_minus_performance.abs().sort_values(ascending=False).index)
@@ -221,6 +239,8 @@ def markdown(b):
     L += ['', '## Upcoming week', '', '- games projected: %s · decisions: %s · model modes: %s'
           % (u['games_projected'], u['decisions'], u['model_modes']), '', 'High-uncertainty games:', '']
     L += ['- %s (sigma %s): %s' % (g['matchup'], g['sigma'], ', '.join(g['drivers'] or [])) for g in u['high_uncertainty_games']] or ['- none']
+    if u.get('decision_note'):
+        L += ['', '> Decisions: %s. Counts are the frozen rows decided so far this week.' % u['decision_note']]
     if b['projection_changes']:
         L += ['', '## Projection changes (why the pure number moved)', '']
         for c in b['projection_changes'][:12]:

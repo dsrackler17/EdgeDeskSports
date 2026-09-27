@@ -1,0 +1,801 @@
+{
+ "base_model_version": "edgedesk_cfb_v2.1.0",
+ "baseline": "cfb_decision_baseline_001",
+ "bet_confidence": {
+  "coef": {
+   "early_season": -0.13084003100000516,
+   "ens_sd": 0.011368661485808073,
+   "gap_pts": 0.08480626461850532,
+   "pure_cover_prob": 0.1059693349410499,
+   "reliability": -0.0603788885513139
+  },
+  "coef_ci95_bootstrap": {
+   "early_season": [
+    -0.1875,
+    -0.0813
+   ],
+   "ens_sd": [
+    -0.0468,
+    0.0646
+   ],
+   "gap_pts": [
+    0.0504,
+    0.1222
+   ],
+   "pure_cover_prob": [
+    0.0728,
+    0.1366
+   ],
+   "reliability": [
+    -0.1107,
+    -0.0014
+   ]
+  },
+  "fill": {
+   "early_season": 0.3458333333333333,
+   "ens_sd": 1.4433094442017347,
+   "gap_pts": 3.0566109661572707,
+   "pure_cover_prob": 0.5741000836644737,
+   "reliability": 63.85578703703704
+  },
+  "intercept": 0.1072094717016647,
+  "l2": 100.0,
+  "mu": {
+   "early_season": 0.3458333333333333,
+   "ens_sd": 1.4433094442017347,
+   "gap_pts": 3.0566109661572707,
+   "pure_cover_prob": 0.5741000836644737,
+   "reliability": 63.85578703703704
+  },
+  "n_train": 4320,
+  "note": "bet_confidence = P(positive CLV) (the p_positive_clv model); score = round(100 p). It targets CLV, not wins",
+  "sd": {
+   "early_season": 0.4756391898160715,
+   "ens_sd": 1.3062490374051525,
+   "gap_pts": 2.426893077199549,
+   "pure_cover_prob": 0.057134345011360624,
+   "reliability": 19.002053710425777
+  },
+  "target": "positive_clv",
+  "type": "logistic"
+ },
+ "clv_magnitude": {
+  "coef": {
+   "early_season": -0.1147479900127976,
+   "ens_sd": 0.01672408665471011,
+   "gap_pts": 0.14788662440722325,
+   "pure_cover_prob": 0.14500738792073084,
+   "reliability": -0.04845909382921835
+  },
+  "coef_ci95_bootstrap": {
+   "early_season": [
+    -0.1597,
+    -0.0632
+   ],
+   "ens_sd": [
+    -0.0308,
+    0.0687
+   ],
+   "gap_pts": [
+    0.1127,
+    0.1832
+   ],
+   "pure_cover_prob": [
+    0.1153,
+    0.1738
+   ],
+   "reliability": [
+    -0.0946,
+    0.0028
+   ]
+  },
+  "fill": {
+   "early_season": 0.3458333333333333,
+   "ens_sd": 1.4433094442017347,
+   "gap_pts": 3.0566109661572707,
+   "pure_cover_prob": 0.5741000836644737,
+   "reliability": 63.85578703703704
+  },
+  "intercept": 0.4321469907407408,
+  "l2": 1000.0,
+  "mu": {
+   "early_season": 0.3458333333333333,
+   "ens_sd": 1.4433094442017347,
+   "gap_pts": 3.0566109661572707,
+   "pure_cover_prob": 0.5741000836644737,
+   "reliability": 63.85578703703704
+  },
+  "n_train": 4320,
+  "note": "expected side-oriented CLV points (fit on CLV clipped at +/-10); features picked walk-forward: frozen_features",
+  "sd": {
+   "early_season": 0.4756391898160715,
+   "ens_sd": 1.3062490374051525,
+   "gap_pts": 2.426893077199549,
+   "pure_cover_prob": 0.057134345011360624,
+   "reliability": 19.002053710425777
+  },
+  "target": "clv_fit",
+  "type": "linear"
+ },
+ "cover_calibration": {
+  "domain": "side-oriented pure cover probability; maps are side-symmetric f(1-p) = 1 - f(p)",
+  "map": {
+   "method": "identity"
+  },
+  "selected_method": "shrink",
+  "selection_rule": "lowest pooled walk-forward log loss among SIDE-SYMMETRIC maps (f(1-p) = 1 - f(p), required because decision.js applies one map to each side); the first map in the parsimony order market -> identity -> shrink -> logit_pwl -> isotonic whose paired log-loss excess over the best is within 1 SE is chosen. Platt-with-intercept, 3-parameter beta and the unreflected isotonic are diagnostics (asymmetric).",
+  "walk_forward_log_loss_2018_2023": {
+   "beta": 0.6926,
+   "identity": 0.70251,
+   "isotonic": 0.69335,
+   "isotonic_fold": 0.70098,
+   "logit_pwl": 0.69265,
+   "market": 0.69315,
+   "platt": 0.69267,
+   "shrink": 0.69239
+  }
+ },
+ "created_at": "2026-09-27T15:39:18Z",
+ "ev_curve": {
+  "bins": [
+   {
+    "eb": -0.05680917781706911,
+    "n": 858,
+    "null": -0.0445048316181777,
+    "realized": -0.07151938970120787,
+    "se": 0.0323661067540753,
+    "x": -0.022683790848270945
+   },
+   {
+    "eb": -0.04455826326559947,
+    "n": 215,
+    "null": -0.04459214176014581,
+    "realized": -0.04439746300211417,
+    "se": 0.06448988395355686,
+    "x": 0.0047040574823224756
+   },
+   {
+    "eb": -0.06182499215774228,
+    "n": 204,
+    "null": -0.044480178461750175,
+    "realized": -0.14705882352941174,
+    "se": 0.06561927910999513,
+    "x": 0.014753676881355227
+   },
+   {
+    "eb": -0.03157414370071648,
+    "n": 187,
+    "null": -0.04472187452530885,
+    "realized": 0.04132231404958678,
+    "se": 0.06970085085517551,
+    "x": 0.024636211518617463
+   },
+   {
+    "eb": -0.04121257095498954,
+    "n": 332,
+    "null": -0.044600367832837384,
+    "realized": -0.030668127053669204,
+    "se": 0.052223193726018684,
+    "x": 0.04001113858938073
+   },
+   {
+    "eb": -0.04469629268129961,
+    "n": 348,
+    "null": -0.04470493275314219,
+    "realized": -0.04467084639498433,
+    "se": 0.05080000991110293,
+    "x": 0.06008926558311611
+   },
+   {
+    "eb": -0.029290662305134003,
+    "n": 456,
+    "null": -0.04470854844553618,
+    "realized": 0.005382775119617234,
+    "se": 0.044391140318469434,
+    "x": 0.08507498511707938
+   },
+   {
+    "eb": -0.015049960553981011,
+    "n": 600,
+    "null": -0.04468266209420735,
+    "realized": 0.035,
+    "se": 0.03847038348159299,
+    "x": 0.1236328146222506
+   },
+   {
+    "eb": -0.019956952518307782,
+    "n": 708,
+    "null": -0.044679134926766784,
+    "realized": 0.015793528505392906,
+    "se": 0.0355965419919109,
+    "x": 0.1925371124810715
+   },
+   {
+    "eb": -0.026621619505915645,
+    "n": 412,
+    "null": -0.044771194681303916,
+    "realized": 0.01809355692850839,
+    "se": 0.04646270726747797,
+    "x": 0.3278971847499275
+   }
+  ],
+  "input": "theoretical_ev",
+  "method": "binned realized units, normal-normal EB toward the no-skill value of each bin, then PAV (non-decreasing)",
+  "note": "input is the THEORETICAL EV (pure probability at the price); output the expected realized EV per unit at that price",
+  "price": -110,
+  "tau2": 0.0008762348825225633,
+  "x": [
+   -0.022683790848270945,
+   0.0047040574823224756,
+   0.014753676881355227,
+   0.024636211518617463,
+   0.04001113858938073,
+   0.06008926558311611,
+   0.08507498511707938,
+   0.1236328146222506,
+   0.1925371124810715,
+   0.3278971847499275
+  ],
+  "y": [
+   -0.0568091778170691,
+   -0.052964976139100985,
+   -0.052964976139100985,
+   -0.040532004939080477,
+   -0.040532004939080477,
+   -0.040532004939080477,
+   -0.029290662305134003,
+   -0.01984163136731847,
+   -0.01984163136731847,
+   -0.01984163136731847
+  ]
+ },
+ "ev_curve_decision": {
+  "bins": [
+   {
+    "eb": -0.03030539263837722,
+    "n": 3041,
+    "null": -0.04467396563696607,
+    "realized": -0.023108427251801136,
+    "se": 0.017176581157961182,
+    "x": -0.026637811913518262
+   },
+   {
+    "eb": -0.0381806387734378,
+    "n": 228,
+    "null": -0.04461866292738692,
+    "realized": 0.005183413078149927,
+    "se": 0.06298794865121288,
+    "x": 0.004766252403681165
+   },
+   {
+    "eb": -0.03370185883704476,
+    "n": 134,
+    "null": -0.044660567331103296,
+    "realized": 0.09023066485753052,
+    "se": 0.08161721991294753,
+    "x": 0.014778288322112398
+   },
+   {
+    "eb": -0.05181714612466225,
+    "n": 88,
+    "null": -0.04461726157270174,
+    "realized": -0.1745867768595041,
+    "se": 0.10021934189285243,
+    "x": 0.024531992707885027
+   },
+   {
+    "eb": -0.035386790041659524,
+    "n": 99,
+    "null": -0.0446174411253919,
+    "realized": 0.101010101010101,
+    "se": 0.09329425613416806,
+    "x": 0.0388796098057403
+   },
+   {
+    "eb": -0.044506860963551546,
+    "n": 35,
+    "null": -0.04451480264145197,
+    "realized": -0.04415584415584414,
+    "se": 0.16135285704412836,
+    "x": 0.058815385082585894
+   }
+  ],
+  "fit_rows": "walk-forward decision EVs of 2018-2023 (each season's decision probability from maps fit on earlier seasons)",
+  "input": "decision_ev",
+  "method": "binned realized units, normal-normal EB toward the no-skill value of each bin, then PAV (non-decreasing)",
+  "tau2": 0.0005890303549878802,
+  "x": [
+   -0.026637811913518262,
+   0.004766252403681165,
+   0.014778288322112398,
+   0.024531992707885027,
+   0.0388796098057403,
+   0.058815385082585894
+  ],
+  "y": [
+   -0.03172437929507084,
+   -0.03172437929507084,
+   -0.03172437929507084,
+   -0.03172437929507084,
+   -0.03172437929507084,
+   -0.03172437929507084
+  ]
+ },
+ "evidence": "evidence.json in this directory; docs/cfb-decision/CALIBRATION.md",
+ "features": {
+  "abs_gap_pts": "|gap_pts|",
+  "abs_line": "|quoted spread| (points)",
+  "decision_cover_prob": "the decision cover probability (after calibration and market shrinkage)",
+  "early_season": "1 if the snapshot is < 5 weeks after the season's first kickoff",
+  "ens_sd": "submodel disagreement (SD of C and D, points)",
+  "gap_pts": "model-market gap oriented to the side evaluated: (pure_margin - market_margin) * (+1 HOME / -1 AWAY), points",
+  "is_home_side": "1 if the side evaluated is HOME",
+  "pure_cover_prob": "PURE P(side covers | no push) from the frozen t distribution at the quote (probability)",
+  "qb_missing": "1 if either expected starting QB is unknown at the snapshot",
+  "qb_unsettled": "1 if either team used >= 2 starters in its last 3 games",
+  "reliability": "engine.js football_prediction_confidence (0-100, frozen params.js range and caps)",
+  "sigma": "the frozen error model SD (points) of the projection",
+  "total_line": "the quoted game total (points); fill = DEV mean when not captured"
+ },
+ "fit_seasons": {
+  "clv_models": [
+   2017,
+   2018,
+   2019,
+   2021,
+   2022,
+   2023
+  ],
+  "cover_calibration": [
+   2017,
+   2018,
+   2019,
+   2021,
+   2022,
+   2023
+  ],
+  "ev_curve": [
+   2017,
+   2018,
+   2019,
+   2021,
+   2022,
+   2023
+  ],
+  "ev_curve_decision": [
+   2018,
+   2019,
+   2021,
+   2022,
+   2023
+  ],
+  "football_confidence": [
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023
+  ],
+  "holdout_2024_2025": "never read",
+  "market_confidence": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2021,
+   2022,
+   2023
+  ],
+  "market_shrinkage": [
+   2017,
+   2018,
+   2019,
+   2021,
+   2022,
+   2023
+  ],
+  "push_table": [
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023
+  ]
+ },
+ "football_confidence": {
+  "coef": {},
+  "fill": {},
+  "intercept": 12.742780950314366,
+  "l2": 1e-06,
+  "mu": {},
+  "n_train": 5194,
+  "note": "expected |final margin - projected margin| (points); pure inputs only",
+  "sd": {},
+  "target": "abs_err",
+  "type": "linear"
+ },
+ "football_confidence_scale": {
+  "expected_abs_error_from_score": {
+   "x": [
+    0.0,
+    100.0
+   ],
+   "y": [
+    16.0,
+    10.0
+   ]
+  },
+  "note": "DECLARED absolute scale, linear and clamped: 100 = 10 pts expected |error|, 0 = 16 pts. Not fitted, so the score shows how much the data can separate games: on DEV FBS games it cannot (see evidence)",
+  "score_from_expected_abs_error": {
+   "x": [
+    10.0,
+    16.0
+   ],
+   "y": [
+    100.0,
+    0.0
+   ]
+  }
+ },
+ "market_confidence": {
+  "coef": {},
+  "fill": {},
+  "intercept": 1.589442013129103,
+  "l2": 1e-06,
+  "mu": {},
+  "n_train": 5027,
+  "note": "expected |close - quote| (points): how unsettled the quoted number is; point-in-time inputs only",
+  "sd": {},
+  "target": "abs_move",
+  "type": "linear"
+ },
+ "market_confidence_scale": {
+  "expected_abs_move_from_score": {
+   "x": [
+    0.0,
+    100.0
+   ],
+   "y": [
+    3.0,
+    0.5
+   ]
+  },
+  "note": "DECLARED absolute scale: 100 = 0.5 pt expected |close - quote|, 0 = 3 pts",
+  "score_from_expected_abs_move": {
+   "x": [
+    0.5,
+    3.0
+   ],
+   "y": [
+    100.0,
+    0.0
+   ]
+  }
+ },
+ "market_shrinkage": {
+  "formula": "decision_p = sigmoid(w_model * logit(calibrated_p) + (1 - w_model) * logit(market_p))",
+  "historical_market_p": "always 0.5 (ASSUMED -110 both sides): the data identify w only against a fair-line market",
+  "lr_test_w0": 8.31636989857543,
+  "lr_test_w1": 92.64338118593696,
+  "market_p": "proportional de-vig of the two-sided price for the side; 0.5 when the price is not two-sided",
+  "n_fit": 4252,
+  "per_season_local_w": {
+   "2017": {
+    "lr_w0": 0.323,
+    "lr_w1": 17.6901,
+    "n": 676.0,
+    "w": 0.1178,
+    "w_ci95_profile": [
+     -0.2885,
+     0.5257
+    ],
+    "w_unbounded": 0.1178
+   },
+   "2018": {
+    "lr_w0": 3.4671,
+    "lr_w1": 8.3,
+    "n": 692.0,
+    "w": 0.3888,
+    "w_ci95_profile": [
+     -0.0204,
+     0.8028
+    ],
+    "w_unbounded": 0.3888
+   },
+   "2019": {
+    "lr_w0": 0.0054,
+    "lr_w1": 24.1953,
+    "n": 682.0,
+    "w": -0.015,
+    "w_ci95_profile": [
+     -0.4167,
+     0.3865
+    ],
+    "w_unbounded": -0.015
+   },
+   "2021": {
+    "lr_w0": 2.6928,
+    "lr_w1": 14.2206,
+    "n": 713.0,
+    "w": 0.299,
+    "w_ci95_profile": [
+     -0.058,
+     0.6599
+    ],
+    "w_unbounded": 0.299
+   },
+   "2022": {
+    "lr_w0": 0.0,
+    "lr_w1": 25.9298,
+    "n": 709.0,
+    "w": -0.0008,
+    "w_ci95_profile": [
+     -0.3828,
+     0.3811
+    ],
+    "w_unbounded": -0.0008
+   },
+   "2023": {
+    "lr_w0": 7.8447,
+    "lr_w1": 8.3242,
+    "n": 780.0,
+    "w": 0.4868,
+    "w_ci95_profile": [
+     0.1454,
+     0.8336
+    ],
+    "w_unbounded": 0.4868
+   }
+  },
+  "space": "logit",
+  "w_ci95_profile_dev": [
+   0.07292078585766872,
+   0.38321828715899775
+  ],
+  "w_model": 0.22782933182210657,
+  "walk_forward_w_by_season": {
+   "2018": {
+    "lr_w0": 0.323,
+    "lr_w1": 17.6901,
+    "n": 676.0,
+    "w": 0.1178,
+    "w_ci95_profile": [
+     -0.2885,
+     0.5257
+    ],
+    "w_unbounded": 0.1178
+   },
+   "2019": {
+    "lr_w0": 2.9449,
+    "lr_w1": 25.1448,
+    "n": 1368.0,
+    "w": 0.2523,
+    "w_ci95_profile": [
+     -0.0358,
+     0.5421
+    ],
+    "w_unbounded": 0.2523
+   },
+   "2021": {
+    "lr_w0": 1.8253,
+    "lr_w1": 48.2152,
+    "n": 2050.0,
+    "w": 0.1612,
+    "w_ci95_profile": [
+     -0.0726,
+     0.3958
+    ],
+    "w_unbounded": 0.1612
+   },
+   "2022": {
+    "lr_w0": 4.1197,
+    "lr_w1": 62.0374,
+    "n": 2763.0,
+    "w": 0.2026,
+    "w_ci95_profile": [
+     0.007,
+     0.3988
+    ],
+    "w_unbounded": 0.2026
+   },
+   "2023": {
+    "lr_w0": 3.2554,
+    "lr_w1": 87.1029,
+    "n": 3472.0,
+    "w": 0.1602,
+    "w_ci95_profile": [
+     -0.0138,
+     0.3346
+    ],
+    "w_unbounded": 0.1602
+   }
+  }
+ },
+ "p_positive_clv": {
+  "coef": {
+   "early_season": -0.13084003100000516,
+   "ens_sd": 0.011368661485808073,
+   "gap_pts": 0.08480626461850532,
+   "pure_cover_prob": 0.1059693349410499,
+   "reliability": -0.0603788885513139
+  },
+  "coef_ci95_bootstrap": {
+   "early_season": [
+    -0.1875,
+    -0.0813
+   ],
+   "ens_sd": [
+    -0.0468,
+    0.0646
+   ],
+   "gap_pts": [
+    0.0504,
+    0.1222
+   ],
+   "pure_cover_prob": [
+    0.0728,
+    0.1366
+   ],
+   "reliability": [
+    -0.1107,
+    -0.0014
+   ]
+  },
+  "fill": {
+   "early_season": 0.3458333333333333,
+   "ens_sd": 1.4433094442017347,
+   "gap_pts": 3.0566109661572707,
+   "pure_cover_prob": 0.5741000836644737,
+   "reliability": 63.85578703703704
+  },
+  "intercept": 0.1072094717016647,
+  "l2": 100.0,
+  "mu": {
+   "early_season": 0.3458333333333333,
+   "ens_sd": 1.4433094442017347,
+   "gap_pts": 3.0566109661572707,
+   "pure_cover_prob": 0.5741000836644737,
+   "reliability": 63.85578703703704
+  },
+  "n_train": 4320,
+  "note": "P(side-oriented CLV > 0); features picked walk-forward: frozen_features",
+  "sd": {
+   "early_season": 0.4756391898160715,
+   "ens_sd": 1.3062490374051525,
+   "gap_pts": 2.426893077199549,
+   "pure_cover_prob": 0.057134345011360624,
+   "reliability": 19.002053710425777
+  },
+  "target": "positive_clv",
+  "type": "logistic"
+ },
+ "price_convention": "historical fits price every decision at an ASSUMED -110 each side (the archive used carries no decision-time prices); live decisions never assume a price: without a captured price break-even, probability edge and every EV are null",
+ "push_table": {
+  "0-2.5": 0.01440922190201729,
+  "13.5-99": 0.02680965147453083,
+  "2.5-3.5": 0.10891089108910891,
+  "3.5-6.5": 0.014198782961460446,
+  "6.5-7.5": 0.06550218340611354,
+  "7.5-13.5": 0.028011204481792718
+ },
+ "push_table_detail": {
+  "buckets": [
+   {
+    "hi": 2.5,
+    "lo": 0,
+    "n": 347,
+    "p": 0.01440922190201729
+   },
+   {
+    "hi": 3.5,
+    "lo": 2.5,
+    "n": 303,
+    "p": 0.10891089108910891
+   },
+   {
+    "hi": 6.5,
+    "lo": 3.5,
+    "n": 493,
+    "p": 0.014198782961460446
+   },
+   {
+    "hi": 7.5,
+    "lo": 6.5,
+    "n": 229,
+    "p": 0.06550218340611354
+   },
+   {
+    "hi": 13.5,
+    "lo": 7.5,
+    "n": 714,
+    "p": 0.028011204481792718
+   },
+   {
+    "hi": 99,
+    "lo": 13.5,
+    "n": 1119,
+    "p": 0.02680965147453083
+   }
+  ],
+  "default": 0.02,
+  "min_n": 50,
+  "rule": "integer lines only; first bucket with lo <= |line| <= hi; half-point lines push with probability 0"
+ },
+ "reliability_scale": {
+  "bands": [
+   {
+    "eb": 12.740775008072092,
+    "mean": 12.73223786616523,
+    "n": 576,
+    "se": 0.4242271269463467,
+    "x": 25.60763888888889
+   },
+   {
+    "eb": 12.740775008072092,
+    "mean": 12.640400767151611,
+    "n": 1288,
+    "se": 0.27329050985869524,
+    "x": 50.85170807453416
+   },
+   {
+    "eb": 12.740775008072092,
+    "mean": 12.896893328623744,
+    "n": 1639,
+    "se": 0.24468133321779303,
+    "x": 66.97559487492373
+   },
+   {
+    "eb": 12.740775008072092,
+    "mean": 12.674278498692148,
+    "n": 1339,
+    "se": 0.26262875147746834,
+    "x": 77.86109036594473
+   },
+   {
+    "eb": 12.740775008072092,
+    "mean": 12.677647674907037,
+    "n": 352,
+    "se": 0.5002782092802245,
+    "x": 96.35795454545455
+   }
+  ],
+  "expected_abs_error": {
+   "x": [
+    25.60763888888889,
+    50.85170807453416,
+    66.97559487492373,
+    77.86109036594473,
+    96.35795454545455
+   ],
+   "y": [
+    12.740775008072092,
+    12.740775008072092,
+    12.740775008072092,
+    12.740775008072092,
+    12.740775008072092
+   ]
+  },
+  "input": "reliability = engine.js football_prediction_confidence (0-100)",
+  "method": "mean |error| per production-score band (<40, 40-60, 60-75, 75-90, 90+; knot = the band's mean score), normal-normal empirical Bayes toward the pooled mean, then PAV (non-increasing); DEV FBS games 2017-2023",
+  "tau2": 0.0
+ },
+ "schema": "cfb_decision_calibration_schema_v1",
+ "schema_doc": {
+  "cover_calibration": "{map: <probability map>} or {conditional: {by, bins, maps}} (bin i = first edge v is below; len(bins) past the last)",
+  "ev": "EV = p (1 - push) b - (1 - p)(1 - push), b = payout per unit at the side's American price",
+  "interp_table": "{x ascending, y}: linear interpolation, clamped at both ends",
+  "market_shrinkage": "decision = sigmoid(w logit(calibrated) + (1-w) logit(market)) (space logit)",
+  "model": "z = intercept + sum coef_k (x_k - mu_k)/sd_k; missing x -> fill_k; logistic -> sigmoid(z)",
+  "probability_map": "identity | platt{a,b}: sigmoid(a+b*logit p) | beta{a,b,c}: sigmoid(c+a ln p-b ln(1-p)) | isotonic{x,y}: interp clamped then clamped to [1e-4,1-1e-4] | logit_pwl{x,y}: sigmoid(interp(logit p)); p clamped to [1e-4,1-1e-4] before logit",
+  "push_table": "{\"lo-hi\": p}: integer lines only, first bucket with lo <= |line| <= hi, else 0.02; half-point lines 0"
+ },
+ "side_convention": "every probability is P(the side covers | no push); a map is applied to the side's own pure probability",
+ "version": "cfb_decision_calibration_v1"
+}

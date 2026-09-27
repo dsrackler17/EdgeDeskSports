@@ -31,6 +31,8 @@ global.window = global.window || global;
 require(path.join(REPO, 'football', 'cfb_v2', 'params.js'));
 const E = require(path.join(REPO, 'football', 'cfb_v2', 'engine.js'));
 const D = require('./decision.js');
+/* the market-integrity rules (consensus, freshness, outliers); absent, the engine's own gates still apply */
+const INTEG = (() => { try { return require(path.join(REPO, 'football', 'cfb_lab', 'integrity.js')); } catch (e) { return null; } })();
 
 const ART_DIR = path.join(REPO, 'football', 'cfb_v2', 'artifacts', 'decision');
 const BASELINE_VERSION = 'cfb_decision_baseline_001';
@@ -103,7 +105,14 @@ function decideAll(season, nowMs) {
     const books = Object.values(latestByGameBook[q.game_id]).map((x) => ({ home_line: x.home_line }));
     const xs = books.map((b) => b.home_line).sort((a, b) => a - b);
     const iqr = xs.length >= 2 ? xs[Math.ceil((xs.length - 1) * 0.75)] - xs[Math.floor((xs.length - 1) * 0.25)] : null;
-    const market = { books: xs.length, dispersion_iqr: iqr, quotes: [q] };
+    /* the consensus verdict over every book's latest main line at this instant (integrity.assessMarket):
+       a BET needs it ACTIONABLE, exactly as decideGame does it for a whole slate */
+    const latest = Object.values(latestByGameBook[q.game_id]).map((x) => ({ source: x.source || 'book', book: x.book,
+      market_type: 'spread', home_line: x.home_line, price_home: x.price_home, price_away: x.price_away,
+      observed_at: x.observed_at, provider_updated_at: x.provider_updated_at, is_pregame: true, quote_id: x.quote_id || null }));
+    const integrity = INTEG ? INTEG.assessMarket(latest, q.observed_at, { kickoff: new Date(ko).toISOString(),
+      maxAgeH: policy && typeof policy.stale_minutes === 'number' ? policy.stale_minutes / 60 : undefined }) : undefined;
+    const market = { books: xs.length, dispersion_iqr: iqr, quotes: [q], integrity };
     const base = { game_id: String(q.game_id), season, week: q.week, book: q.book, quote_id: q.quote_id || null,
       observed_at: q.observed_at, decided_at: q.observed_at, kickoff_ts: new Date(ko).toISOString(),
       model_version: pure.model_version || g.model_version, origin: g.origin, official: true };

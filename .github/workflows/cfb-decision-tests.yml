@@ -11,6 +11,8 @@ on:
   pull_request:
     paths:
       - 'football/cfb_decision/**'
+      - 'football/cfb_lab/identity.js'
+      - 'football/cfb_lab/integrity.js'
       - 'football/cfb_v2/artifacts/decision/**'
       - 'football/cfb_v2/engine.js'
       - 'football/cfb_v2/params.js'
@@ -20,6 +22,8 @@ on:
     branches: [main]
     paths:
       - 'football/cfb_decision/*.js'
+      - 'football/cfb_lab/identity.js'
+      - 'football/cfb_lab/integrity.js'
       - 'football/cfb_v2/artifacts/decision/**'
       - 'supabase/cfb_decision.sql'
       - '.github/workflows/cfb-decision-tests.yml'
@@ -43,6 +47,8 @@ jobs:
           node-version: '22'
       - name: Decision engine (vig, EV, calibration, thresholds, PASS reasons, fail-closed, staking, exposure, parity)
         run: node football/cfb_decision/tests.js
+      - name: Market-integrity gates (a bad market turns BET into PASS, never the reverse)
+        run: node football/cfb_decision/integrity_gates.test.js
       - name: The decision Postgres contract
         env:
           CFB_DECISION_SQL_REQUIRED: '1'

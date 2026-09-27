@@ -22,6 +22,9 @@ const path = require('path');
 
 const REPO = path.resolve(__dirname, '..', '..');
 const SQL = path.join(REPO, 'supabase', 'cfb_decision.sql');
+/* one write path for every CFB mirror: classified bounded retry, incidents (docs/cfb-production/OPERATIONS.md §1) */
+const DB = require(path.join(REPO, 'football', 'cfb_production', 'db.js'));
+const LOG = require(path.join(REPO, 'football', 'cfb_production', 'log.js'));
 
 /* ledger file -> table, id column (football/cfb_decision/<season>/) */
 const TABLES = [
@@ -84,23 +87,10 @@ function plan(season, opts) {
   return out;
 }
 
-async function post(url, key, table, onConflict, rows) {
-  let sent = 0;
-  for (let i = 0; i < rows.length; i += 500) {
-    const chunk = rows.slice(i, i + 500);
-    let res, attempt = 0;
-    for (;;) {
-      res = await fetch(url + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
-        method: 'POST', headers: { apikey: key, authorization: 'Bearer ' + key, 'content-type': 'application/json',
-          prefer: 'resolution=ignore-duplicates,return=minimal' }, body: JSON.stringify(chunk) });
-      /* bounded retry for transient/rate-limit answers only; a 4xx schema error is permanent */
-      if (res.ok || ![408, 425, 429, 500, 502, 503, 504].includes(res.status) || ++attempt > 3) break;
-      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
-    }
-    if (!res.ok) throw new Error(table + ': HTTP ' + res.status + ' ' + (await res.text()).slice(0, 300));
-    sent += chunk.length;
-  }
-  return sent;
+/* insert-only, chunked; deadlock / lock-timeout / transient answers retried with bounded
+   jitter, every other error raised at once with its class (football/cfb_production/db.js) */
+function post(url, key, table, onConflict, rows, opts) {
+  return DB.postRows(url, key, table, onConflict, rows, opts);
 }
 
 async function sync(season, opts) {
@@ -111,8 +101,10 @@ async function sync(season, opts) {
     if (!opts.quiet) p.forEach((x) => console.log('[cfb_decision sync] ' + (opts.dryRun ? 'dry-run' : 'no credentials') + ': ' + x.table + ' ' + x.rows.length + ' rows'));
     return { skipped: true, plan: p.map((x) => ({ table: x.table, rows: x.rows.length })) };
   }
+  const log = opts.log || LOG.logger({ job: 'cfb_lab_hourly' }, { sink: opts.quiet ? () => {} : undefined });
+  const io = Object.assign({ log, fetch: opts.fetch, onIncident: DB.incidentSink({ url, key, log, fetch: opts.fetch }) }, opts.io || {});
   const out = {};
-  for (const x of p) out[x.table] = await post(url, key, x.table, x.id, x.rows);
+  for (const x of p) out[x.table] = await post(url, key, x.table, x.id, x.rows, io);
   return out;
 }
 

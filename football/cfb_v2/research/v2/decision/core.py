@@ -25,6 +25,8 @@ P_CLIP = 1e-4
 ASSUMED_PRICE = -110                      # historical study only, always labelled
 PRICE_SOURCE_ASSUMED = 'ASSUMED_-110'
 PRICE_SOURCE_NONE = 'NONE'                # a live quote without a captured price
+PRICE_SOURCE_CAPTURED = 'CAPTURED'        # a live quote with both sides' prices
+PRICE_SOURCE_ONE_SIDED = 'CAPTURED_ONE_SIDED'
 PUSH_BUCKETS = ((0, 2.5), (2.5, 3.5), (3.5, 6.5), (6.5, 7.5), (7.5, 13.5), (13.5, 99))
 PUSH_DEFAULT = 0.02                       # a bucket with <= PUSH_MIN_N integer lines
 PUSH_MIN_N = 50
