@@ -172,7 +172,8 @@ chk('every Collective posting handler is guarded',
 /* ======================================================================== */
 /* the Collective destination itself is a customer feature and stays */
 has(APP, 'id="v-collective"', 'the Collective view is untouched');
-has(APP, "data-v=\"collective\"", 'and keeps its seat in the nav');
+/* it left the bottom bar for More (five seats), not the product */
+has(APP, "show(\\'collective\\')", 'and More still opens it');
 has(APP, 'function loadCollective(', 'and its loader');
 /* research surfaces are untouched */
 ['id="v-research"', 'id="v-football"', 'fbGxSummary', 'fbRkPreviewHTML', 'fbStartHereHTML']
