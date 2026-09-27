@@ -437,7 +437,7 @@ def check_game_pbp(g, home_id, away_id, home_pts, away_pts, ref_plays):
         ot_ok = False
         issues.append('final score is tied without overtime')
     checks['overtime_consistent'] = bool(ot_ok)
-    detail.update(periods=periods, score_gap=gap)
+    detail.update(periods=periods, score_gap=None if gap is None else int(gap))
     # --------------------------------------------------------------- verdicts
     contradiction = False
     if gap is not None and gap > SCORE_SMALL_GAP:
