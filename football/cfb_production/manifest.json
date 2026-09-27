@@ -48,8 +48,8 @@
   "ok": true
  },
  "model_lab_versions": {
-  "ensemble_version_recorded_by_lab": "edgedesk_cfb_v2.1.0:44136fa355b3",
-  "note": "the Model Lab derives ensemble_version from params.js, which carries no stack weights: its value is the hash of {} and identifies no ensemble (VERSIONING.md §5); this manifest hashes models.json stack_weights"
+  "ensemble_version_recorded_by_lab": "edgedesk_cfb_v2.1.0:e105ca1727a6",
+  "note": null
  },
  "v1_fallback": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
@@ -333,11 +333,13 @@
   "No level substitutes a model that is not listed here (candidate edgedesk_cfb_v2.0.0 is never a fallback).",
   "Every level below FULL displays its mode; decisions at levels 2-4 are PASS / UNAVAILABLE with the reason, never BET."
  ],
- "deployed_at": "2026-09-27T17:48:22.967Z",
+ "deployed_at": "2026-09-27T19:35:35.396Z",
  "recorded_by": "football/cfb_production/manifest.js",
- "git_commit": "d04141bab18a0038f57df8212714136bed697a7b",
+ "git_commit": "567dcd907a38f1d78bc4714b398654a4668a6086",
  "git_dirty": false,
  "git_dirty_paths": [],
- "content_sha256": "0aa7f2bde80620b7f270e418003fa4306a458ee0f5487c92dc93a387cb039ff2",
- "manifest_id": "cfbm_7310d74d666888ad86216e43"
+ "supersedes": "cfbm_7310d74d666888ad86216e43",
+ "reason": "the Model Lab's ensemble_version is derived from the artifact's models.json (it was the hash of {}); no model, artifact or policy changed",
+ "content_sha256": "ca5d4494e1c1ff80349fca05bce3d73085cd8e1039c945d35996d5480f0f81f1",
+ "manifest_id": "cfbm_8338ed296ce94d11c63daae1"
 }
