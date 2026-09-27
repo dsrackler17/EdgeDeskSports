@@ -186,12 +186,19 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
     def verify(rec):
         V = VAL.validate_games(season, now)
         ctx['validation'] = V
-        src = V[V.week.eq(sw)] if 'week' in V else V
-        due = src[pd.to_datetime(src.kickoff_ts, utc=True, errors='coerce') < now - pd.Timedelta(hours=FINAL_GRACE_H)] \
-            if 'kickoff_ts' in src else src
-        not_final = due[due.status.isin(['SCHEDULED', 'IN_PROGRESS'])]
+        # the source week's games with an FBS team (Division II/III games mostly have no PBP and would
+        # distort every share); an integer week is that regular-season week
+        src = V[V.in_scope & V.season_type.eq('regular') & V.week.eq(sw)]
+        late = pd.to_datetime(src.kickoff_ts, utc=True, errors='coerce') < now - pd.Timedelta(hours=FINAL_GRACE_H)
+        not_final = src[src.status.isin(['SCHEDULED', 'IN_PROGRESS']) & (src.overdue.fillna(False).astype(bool) | late)]
         for _, r in not_final.iterrows():
-            run.warn('VERIFY_COMPLETED_GAMES', 'game %s not final %dh after kickoff' % (r.game_id, FINAL_GRACE_H))
+            run.warn('VERIFY_COMPLETED_GAMES', 'game %s has no confirmed final (%s)'
+                     % (r.game_id, 'overdue' if r.overdue else 'not final %dh after kickoff' % FINAL_GRACE_H))
+        # the schedule says completed while the provider status / PBP say otherwise: not processed as final
+        split = src[~src.sources_agree.fillna(True).astype(bool)]
+        for _, r in split.iterrows():
+            run.warn('VERIFY_COMPLETED_GAMES', 'game %s: schedule, provider status and PBP disagree on finality; held out'
+                     % r.game_id)
         # a second source: the Model Lab's settled results (ESPN scoreboard + cfbfastR agreement)
         lab = _lab_results(season)
         dis = []
@@ -202,7 +209,9 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
         for gid in dis:
             run.warn('VERIFY_COMPLETED_GAMES', 'final score of %s disagrees with the Model Lab settlement' % gid)
         rec['counts'].update(source_week_games=int(len(src)), source_week_final=int(src.status.str.startswith('FINAL').sum()),
-                             not_final_after_grace=int(len(not_final)), lab_disagreements=len(dis))
+                             not_final_after_grace=int(len(not_final)), finality_disagreements=int(len(split)),
+                             lab_disagreements=len(dis))
+        ctx['validation_week'] = src
         ctx['totals'] = {'games_expected': int(len(src)), 'games_final': int(src.status.str.startswith('FINAL').sum())}
         return {}
 
@@ -210,6 +219,7 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
 
     def validate_pbp(rec):
         V = ctx['validation']
+        V = V[V.in_scope]
         fin = V[V.status.isin(['FINAL_VALIDATED', 'FINAL_PARTIAL_DATA', 'DATA_ERROR'])]
         counts = V.status.value_counts().to_dict()
         rec['counts'].update({k.lower(): int(v) for k, v in counts.items()})
@@ -386,7 +396,7 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
                              team_rows=ctx.get('team_rows'), team_flags=ctx.get('team_flags'),
                              qb_rows=ctx.get('qb_rows'), market_ok=True)
         g = GATE.release_gate(run, checks, ctx.get('convergence'), ctx.get('artifact'),
-                              leakage_ok=run.ok('LEAKAGE_TESTS'), validation=ctx.get('validation'),
+                              leakage_ok=run.ok('LEAKAGE_TESTS'), validation=ctx.get('validation_week'),
                               source_health=ctx.get('source_health'), critical_stages=CRITICAL_STAGES)
         run.gate = g
         rec['counts'].update(checks=len(g['checks']), failed=len(g['failed']))

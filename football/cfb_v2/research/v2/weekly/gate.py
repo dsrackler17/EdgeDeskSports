@@ -80,7 +80,8 @@ def release_gate(run, sanity_checks, convergence, artifact, leakage_ok, validati
     crit = (source_health or {}).get('critical_failures') or []
     checks.append(check('critical data sources present', not crit, crit))
     if validation is not None and len(validation):
-        fin = validation[validation.status.isin(['FINAL_VALIDATED', 'FINAL_PARTIAL_DATA', 'DATA_ERROR'])]
+        v = validation[validation.in_scope] if 'in_scope' in validation else validation
+        fin = v[v.status.isin(['FINAL_VALIDATED', 'FINAL_PARTIAL_DATA', 'DATA_ERROR'])]
         share = float(fin.status.eq('DATA_ERROR').mean()) if len(fin) else 0.0
         checks.append(check('data errors within bound (%.0f%% of finals)' % (100 * MAX_DATA_ERROR_SHARE),
                             share <= MAX_DATA_ERROR_SHARE, round(share, 4)))
