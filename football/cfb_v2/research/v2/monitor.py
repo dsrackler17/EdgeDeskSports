@@ -259,8 +259,9 @@ def main():
     lsum = os.path.join(REPO_V2, 'learning', '%d_summary.json' % a.season)
     if os.path.exists(lsum):
         L = json.load(open(lsum))
-        mon['learning'] = {k: L.get(k) for k in ('games_scored', 'mae', 'bias', 'major_miss_share',
-                                                 'expected_major_miss_share_if_calibrated', 'miss_classes', 'sources')}
+        mon['learning'] = {k: L.get(k) for k in ('model_version', 'games_scored', 'mae', 'bias', 'major_miss_share',
+                                                 'expected_major_miss_share_if_calibrated', 'miss_classes', 'sources',
+                                                 'by_model_version')}
     mon['alerts'] = alerts
     mon['ok'] = not any(x['level'] == 'error' for x in alerts)
     with open(os.path.join(REPO_V2, 'monitoring.json'), 'w') as fh:

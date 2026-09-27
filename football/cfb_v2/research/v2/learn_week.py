@@ -36,24 +36,34 @@ from . import common
 REPO_V2 = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 
 
-def load_predictions(season):
-    d = os.path.join(REPO_V2, 'snapshots', str(season))
+def load_predictions(season, snap_dir=None):
+    """Every frozen and replayed row of the season, each under the model_version that
+    PRODUCED it (audit F-02): the row's own `model_version` (rows carry it since the
+    v2.1.1 patch), else its file's. A replay built by v2.0.0 is graded as v2.0.0, never
+    under the production version's name."""
+    d = snap_dir or os.path.join(REPO_V2, 'snapshots', str(season))
     rows = []
     if os.path.isdir(d):
         for f in sorted(os.listdir(d)):
+            if not f.endswith('.json'):
+                continue
             j = json.load(open(os.path.join(d, f)))
             if f == 'replay_to_date.json':
                 for r in j['rows']:
-                    rows.append(dict(r, source='REPLAY'))
+                    rows.append(dict(r, source='REPLAY', model_version=r.get('model_version') or j.get('model_version'),
+                                     snapshot_file=f))
             else:
                 for x in j['rows']:
-                    rows.append(dict(x['row'], source='FROZEN', hash=x['hash']))
+                    rows.append(dict(x['row'], source='FROZEN', hash=x['hash'], snapshot_file=f,
+                                     model_version=x['row'].get('model_version') or j.get('model_version')))
     P = pd.DataFrame(rows)
     if P.empty:
         return P
-    # a frozen row beats a replay row for the same game
+    P['model_version'] = P.model_version.fillna('UNKNOWN')
+    # per version, a frozen row beats a replay row for the same game
     P['rank'] = P.source.map({'FROZEN': 0, 'REPLAY': 1})
-    return P.sort_values(['game_id', 'rank']).drop_duplicates('game_id').drop(columns='rank')
+    return P.sort_values(['model_version', 'game_id', 'rank']).drop_duplicates(['model_version', 'game_id']) \
+        .drop(columns='rank')
 
 
 def classify(r, tg, qb, rnext, mk):
@@ -115,6 +125,8 @@ def main():
     P = load_predictions(a.season)
     if P.empty:
         print('[learn] no predictions for', a.season); return
+    # grade only against a current build (F-01 finality; never the stale research/out, F-10)
+    stamp = common.require_build(purpose='grading %d' % a.season, stages=('stage2',))
     G = pd.read_parquet(common.out_path('stage2', 'games.parquet'))
     tg = pd.read_parquet(common.out_path('stage1', 'team_game_%d.parquet' % a.season))
     qb = pd.read_parquet(common.out_path('stage1', 'qb_game_%d.parquet' % a.season))
@@ -131,7 +143,8 @@ def main():
     P['major'] = P.abs_error > 1.5 * P.sigma
     out = []
     for _, r in P.iterrows():
-        rec = {'game_id': int(r.game_id), 'week': int(r.week), 'home': r.home, 'away': r.away,
+        rec = {'game_id': int(r.game_id), 'model_version': r.model_version,
+               'week': int(r.week), 'home': r.home, 'away': r.away,
                'prediction_ts': r.prediction_ts, 'source': r.source, 'projected_margin': round(r.ens_pred, 2),
                'final_margin': float(r.margin), 'abs_error': round(r.abs_error, 2), 'sigma': r.sigma,
                'major_miss': bool(r.major)}
@@ -147,21 +160,43 @@ def main():
         out.append(rec)
     lab = pd.DataFrame(out)
     d = os.path.join(REPO_V2, 'learning'); os.makedirs(d, exist_ok=True)
+    grader = common.build_provenance(stamp)
     with open(os.path.join(d, '%d_misses.json' % a.season), 'w') as fh:
-        json.dump({'season': a.season, 'model_version': C.MODEL_VERSION, 'rows': out}, fh, indent=1,
-                  default=common._json_default, sort_keys=True)
-    fcs = P[P.get('priced', pd.Series(True, index=P.index)).eq(False)] if 'priced' in P else P.iloc[0:0]
-    fin = P[~P.index.isin(fcs.index)].copy()
+        json.dump({'season': a.season, 'model_version': C.MODEL_VERSION,
+                   'rows_by_model_version': P.model_version.value_counts().sort_index().to_dict(),
+                   'graded_with': {k: grader[k] for k in ('finality_rule', 'market_orientation_rule')},
+                   'rows': out}, fh, indent=1, default=common._json_default, sort_keys=True)
+    fcs_all = P[P.get('priced', pd.Series(True, index=P.index)).eq(False)] if 'priced' in P else P.iloc[0:0]
+    fin_all = P[~P.index.isin(fcs_all.index)].copy()
+
+    def block(f):
+        return {'games_scored': int(len(f)), 'mae': float(f.abs_error.mean()) if len(f) else None,
+                'bias': float(f.error.mean()) if len(f) else None,
+                'major_miss_share': float(f.major.mean()) if len(f) else None,
+                'sources': f.source.value_counts().to_dict()}
+    by_version = {v: dict(block(f), fcs_not_priced_games=int(fcs_all.model_version.eq(v).sum()))
+                  for v, f in fin_all.groupby('model_version')}
+    # the headline is the PRODUCTION version's rows only; other versions are reported beside it
+    fcs = fcs_all[fcs_all.model_version.eq(C.MODEL_VERSION)]
+    fin = fin_all[fin_all.model_version.eq(C.MODEL_VERSION)].copy()
     mon_fcs = {'games': int(len(fcs)), 'mae': float(fcs.abs_error.mean()) if len(fcs) else None,
                'bias': float(fcs.error.mean()) if len(fcs) else None,
                'note': 'FBS-vs-FCS rows are NOT PRICED; tracked so the known bias stays measured'}
-    mon = {'scope': 'priced games (FBS-vs-FBS)', 'fcs_not_priced': mon_fcs,'season': a.season, 'model_version': C.MODEL_VERSION, 'generated_at': common.iso(pd.Timestamp.now(tz='UTC').to_pydatetime()),
-           'games_scored': int(len(fin)), 'mae': float(fin.abs_error.mean()), 'bias': float(fin.error.mean()),
-           'major_miss_share': float(fin.major.mean()),
+    mon = {'scope': 'priced games (FBS-vs-FBS) of %s only; rows of other versions are in by_model_version'
+                    % C.MODEL_VERSION, 'fcs_not_priced': mon_fcs, 'season': a.season,
+           'model_version': C.MODEL_VERSION, 'generated_at': common.iso(pd.Timestamp.now(tz='UTC').to_pydatetime()),
+           'by_model_version': by_version,
+           'graded_with': {k: grader[k] for k in ('finality_rule', 'market_orientation_rule')},
+           'attribution': 'each row is graded under the model_version that produced it (its own, else its '
+                          'snapshot file\'s); never relabelled (audit F-02)',
+           'games_scored': int(len(fin)), 'mae': float(fin.abs_error.mean()) if len(fin) else None,
+           'bias': float(fin.error.mean()) if len(fin) else None,
+           'major_miss_share': float(fin.major.mean()) if len(fin) else None,
            'expected_major_miss_share_if_calibrated': 0.134,
            'by_week': fin.groupby('week').agg(n=('game_id', 'size'), mae=('abs_error', 'mean'),
                                                 bias=('error', 'mean')).round(3).reset_index().to_dict('records'),
-           'miss_classes': lab[lab.major_miss & lab.game_id.isin(fin.game_id)].classification.value_counts().to_dict()
+           'miss_classes': lab[lab.major_miss & lab.model_version.eq(C.MODEL_VERSION)
+                               & lab.game_id.isin(fin.game_id)].classification.value_counts().to_dict()
            if 'classification' in lab else {},
            'sources': fin.source.value_counts().to_dict(),
            'policy': 'monitoring only: no parameter changes between scheduled offseason retrains'}

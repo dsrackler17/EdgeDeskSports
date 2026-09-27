@@ -317,6 +317,41 @@ def check_finality(G):
 
 
 # ------------------------------------------------------------------ market
+# Orientation QA carried from V1's build_market.py (rule cfb_market_orientation_v2,
+# audit F-11): the team ids the archive rows were oriented by, whether the archive's
+# own ids were swapped vs the schedule, how the sides were resolved, and the book lines
+# the sign rule dropped. An archive built before the fix has none of them.
+MARKET_ORIENTATION_COLS = ('orient_home_id', 'orient_away_id', 'archive_ids_swapped', 'side_resolution',
+                           'spread_open_books_dropped', 'spread_close_books_dropped',
+                           'spread_open_sign_unresolved', 'spread_close_sign_unresolved',
+                           'market_orientation_rule')
+
+
+def orient_by_team_id(M, G):
+    """The archive's consensus is a HOME margin for the home team V1's schedule names.
+    Check it against THIS schedule's ids: the same orientation is kept, the reverse is
+    negated (flagged `market_reoriented`), anything else is dropped (`market_qa`
+    team_mismatch). A pre-fix archive (no orient ids) passes through unchanged."""
+    M['market_reoriented'] = False
+    M['_team_mismatch'] = False
+    if 'orient_home_id' not in M.columns:
+        return M
+    ids = G.set_index('game_id')[['home_id', 'away_id']]
+    h = M.game_id.map(ids.home_id)
+    a = M.game_id.map(ids.away_id)
+    arch = M.source.eq('cfbfastR_multibook_archive') & M.orient_home_id.notna()
+    same = arch & (M.orient_home_id == h) & (M.orient_away_id == a)
+    rev = arch & (M.orient_home_id == a) & (M.orient_away_id == h) & ~same
+    bad = arch & ~same & ~rev
+    for c in ('spread_open', 'spread_close', 'spread_close_pin', 'spread_open_pin'):
+        M.loc[rev, c] = -M.loc[rev, c]
+    M.loc[rev, 'market_reoriented'] = True
+    for c in ('spread_open', 'spread_close', 'spread_close_pin', 'spread_open_pin', 'total_open', 'total_close'):
+        M.loc[bad, c] = np.nan
+    M['_team_mismatch'] = bad
+    return M
+
+
 def build_market(G, v1_market_csv, mline_dir):
     """Opening / closing consensus, INTERNAL convention (home margin, + = home favoured).
 
@@ -328,8 +363,9 @@ def build_market(G, v1_market_csv, mline_dir):
     rows = []
     if os.path.exists(v1_market_csv):
         m = pd.read_csv(v1_market_csv, low_memory=False)
+        qa = [c for c in MARKET_ORIENTATION_COLS if c in m.columns]
         m = m[['game_id', 'spread_open', 'spread_close', 'spread_books', 'spread_close_sd',
-               'total_open', 'total_close', 'spread_close_pin', 'spread_open_pin']].copy()
+               'total_open', 'total_close', 'spread_close_pin', 'spread_open_pin'] + qa].copy()
         m['source'] = 'cfbfastR_multibook_archive'
         rows.append(m)
     cf = []
@@ -357,12 +393,15 @@ def build_market(G, v1_market_csv, mline_dir):
     M['_rank'] = M.source.map({'cfbfastR_multibook_archive': 0, 'cfbd_lines_provider_mean': 1})
     M = M.sort_values(['game_id', '_rank']).drop_duplicates('game_id').drop(columns='_rank')
     M = M[M.game_id.isin(G.game_id)].copy()
+    M = orient_by_team_id(M, G)
     # ---- market QA at the ingestion boundary. A bad number is DROPPED, never
     # repaired: guessing a convention from values is what produced every
     # sign bug this project has had (football/README.md). Found by execution:
     # openers of -185 and +334, and openers whose sign is flipped relative to
     # the close (2021 Big Ten title game opens 'Iowa -10.5', closes 'Michigan -12').
     M['market_qa'] = ''
+    tm = M.pop('_team_mismatch').fillna(False).astype(bool)
+    M.loc[tm, 'market_qa'] += 'team_mismatch;'
     for col in ('spread_open', 'spread_close'):
         bad = M[col].abs() > 60
         M.loc[bad, 'market_qa'] += col + '_implausible;'
@@ -396,7 +435,19 @@ def main():
     rep['sanity_corr_close_margin'] = float(j.spread_close.corr(j.margin))
     rep['sanity_mean_margin_minus_close'] = float((j.margin - j.spread_close).mean())
     assert rep['sanity_corr_close_margin'] > 0.5, 'market sign convention broken at ingestion'
+    mo = sorted(M.market_orientation_rule.dropna().unique()) if 'market_orientation_rule' in M else []
+    has_archive = M.source.eq('cfbfastR_multibook_archive').any()
+    rep['market_orientation_rule'] = mo[0] if len(mo) == 1 else (
+        'none (no multi-book archive: CFBD provider lines only)' if not has_archive else
+        'cfb_market_orientation_v1 (archive built before the F-11 fix)' if not mo else 'mixed %s' % mo)
+    rep['market_reoriented_games'] = int(M.market_reoriented.sum())
+    rep['market_team_mismatch_games'] = int(M.market_qa.str.contains('team_mismatch').sum())
+    for c in ('spread_open_books_dropped', 'spread_close_books_dropped'):
+        if c in M:
+            rep[c + '_games'] = int((M[c].fillna(0) > 0).sum())
     common.write_json(common.out_path('stage2', 'report.json'), rep)
+    common.stamp_build('stage2', finality_rule=FINALITY_RULE, market_orientation_rule=rep['market_orientation_rule'],
+                       games=int(len(G)), status_counts=rep['status_counts'])
     print('[stage2]', rep)
 
 

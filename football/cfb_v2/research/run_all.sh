@@ -7,8 +7,11 @@
 #                          ablation, report, export (a NEW model_version)
 #
 # Environment: CFB_V2_DATA (raw data dir), CFB_V2_OUT (work dir). Both default
-# to ./data and ./out. Single-threaded BLAS keeps every run deterministic and
-# avoids oversubscription.
+# to ./data and ./out. Both modes rebuild stages 1-5 into CFB_V2_OUT before they
+# publish; the publishing and grading steps refuse a directory whose BUILD.json
+# stamp is missing or not the current code's (audit F-10: a stale ./out is never
+# published). Single-threaded BLAS keeps every run deterministic and avoids
+# oversubscription.
 set -euo pipefail
 MODE="${1:-live}"
 HERE="$(cd "$(dirname "$0")" && pwd)"

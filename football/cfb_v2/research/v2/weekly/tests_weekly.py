@@ -320,6 +320,56 @@ for _fn in (TF.classifier_every_case, TF.only_final_is_a_result_in_stage2,
             TF.weekly_verify_refuses_stage2_results_the_validator_rejects, TF.elo_never_absorbs_a_non_result):
     chk('finality (F-01): ' + _fn.__name__.replace('_', ' '), not throws(_fn))
 
+# ---------------------------------------------------------------- build provenance (audit F-02, F-10)
+# a build directory is trusted only with a current BUILD.json stamp; rows are graded
+# under the model_version that produced them
+from .. import common as CM
+from .. import games as GMS
+from .. import learn_week as LW
+from .. import predict_live as PLV
+_tmp_out = tempfile.mkdtemp(prefix='cfbw_stamp_')
+_old_out = C.OUT
+try:
+    C.OUT = _tmp_out
+    chk('stamp: a build without BUILD.json (the stale research/out) is refused',
+        throws(lambda: CM.require_build('fvX', 'test'), CM.StaleBuild))
+    CM.stamp_build('stage2', finality_rule='cfb_v2_finality_v1')
+    chk('stamp: a stage 2 built under the old finality rule is refused',
+        throws(lambda: CM.require_build(None, 'test', stages=('stage2',)), CM.StaleBuild))
+    s2 = CM.stamp_build('stage2', finality_rule=GMS.FINALITY_RULE)
+    chk('stamp: grading needs only a current stage 2', not throws(lambda: CM.require_build(None, 'test', stages=('stage2',))))
+    CM.stamp_build('stage5', feature_version='fvOLD', stage2=s2)
+    chk('stamp: stage 5 of another feature schema is refused', throws(lambda: CM.require_build('fvX', 'test'), CM.StaleBuild))
+    CM.stamp_build('stage5', feature_version='fvX', stage2=dict(s2, built_at='1999-01-01T00:00:00Z'))
+    chk('stamp: stage 5 built from an earlier stage 2 is refused', throws(lambda: CM.require_build('fvX', 'test'), CM.StaleBuild))
+    CM.stamp_build('stage5', feature_version='fvX', stage2=s2)
+    b = CM.require_build('fvX', 'test')
+    prov = CM.build_provenance(b, {'model_version': 'm1', 'feature_version': 'fvX'})
+    chk('stamp: a current build passes; provenance carries no timestamp or path',
+        prov['finality_rule'] == GMS.FINALITY_RULE and not any('built_at' in str(v) or _tmp_out in str(v) for v in prov.values()), prov)
+    # attribution: a replay file written by another version is graded as that version
+    sd = os.path.join(_tmp_out, 'snaps')
+    os.makedirs(sd)
+    json.dump({'model_version': 'edgedesk_cfb_v2.0.0', 'rows': [{'game_id': 1, 'ens_pred': 3.0}, {'game_id': 2, 'ens_pred': 1.0}]},
+              open(os.path.join(sd, 'replay_to_date.json'), 'w'))
+    json.dump({'model_version': 'edgedesk_cfb_v2.1.0', 'rows': [{'hash': 'h', 'row': {'game_id': 1, 'ens_pred': 2.0}},
+                                                                {'hash': 'k', 'row': {'game_id': 3, 'ens_pred': 5.0,
+                                                                                      'model_version': 'edgedesk_cfb_v2.1.1'}}]},
+              open(os.path.join(sd, '20261006T120000Z.json'), 'w'))
+    P = LW.load_predictions(2026, snap_dir=sd)
+    by = {(int(g), v): src for g, v, src in zip(P.game_id, P.model_version, P.source)}
+    chk('attribution: replay rows keep the version that built them; frozen rows theirs; per-version dedupe',
+        by == {(1, 'edgedesk_cfb_v2.0.0'): 'REPLAY', (2, 'edgedesk_cfb_v2.0.0'): 'REPLAY',
+               (1, 'edgedesk_cfb_v2.1.0'): 'FROZEN', (3, 'edgedesk_cfb_v2.1.1'): 'FROZEN'}, by)
+    chk('attribution: a replay of rows from another version is refused',
+        throws(lambda: PLV.publish([{'game_id': 9, 'prediction_ts': '2026-09-01T12:00:00Z', 'kickoff': '2026-09-05T19:00:00Z',
+                                     'model_version': 'edgedesk_cfb_v2.0.0'}], 2026, pd.Timestamp('2026-09-27T12:00:00Z'),
+                                   'edgedesk_cfb_v2.1.0', replay_history=True, base=os.path.join(_tmp_out, 'pub'),
+                                   current_path=os.path.join(_tmp_out, 'current.json')), CM.StaleBuild))
+finally:
+    C.OUT = _old_out
+    shutil.rmtree(_tmp_out, ignore_errors=True)
+
 # ---------------------------------------------------------------- report tables
 from . import report as RP
 Gr = pd.DataFrame({'season': [2026, 2026], 'home_id': [1, 3], 'away_id': [2, 4], 'home_team': ['A', 'C'], 'away_team': ['B (FCS)', 'D'],

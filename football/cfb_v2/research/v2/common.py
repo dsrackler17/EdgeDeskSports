@@ -111,6 +111,87 @@ def data_path(*parts):
     return os.path.join(C.DATA, *parts)
 
 
+# ------------------------------------------------- build provenance (F-02, F-10)
+# Every build directory ($CFB_V2_OUT) carries BUILD.json, written by the stages that
+# define what a projection or a grade reads: stage 2 (the finality rule of the game
+# table, the market-orientation rule of the archive it read) and stage 5 (the feature
+# schema, and the stage-2 stamp it was built from). A step that PUBLISHES or GRADES
+# refuses a build without a current stamp: the stale v2.0.0 `research/out` (audit
+# F-10: config.OUT and run_all.sh default to it) has none, so it can never again be
+# published under another version's name (audit F-02).
+BUILD_FILE = 'BUILD.json'
+
+
+class StaleBuild(RuntimeError):
+    """The build directory was not produced by the current code for this model."""
+
+
+def build_stamp(out=None):
+    p = os.path.join(out or C.OUT, BUILD_FILE)
+    if not os.path.exists(p):
+        return None
+    with open(p) as f:
+        return json.load(f)
+
+
+def stamp_build(stage, **info):
+    """Record `stage`'s provenance in $CFB_V2_OUT/BUILD.json (merged, per stage)."""
+    b = build_stamp() or {'schema': 'cfb_v2_build_stamp_v1', 'stages': {}}
+    b['stages'][stage] = dict(info, built_at=iso(datetime.now(timezone.utc)))
+    write_json(os.path.join(C.OUT, BUILD_FILE), b)
+    return b['stages'][stage]
+
+
+def require_build(feature_version=None, purpose='this step', stages=('stage2', 'stage5')):
+    """The stamp of $CFB_V2_OUT, or StaleBuild when the build is not the current code's:
+    no stamp; stage 2 built under another finality rule; stage 5 missing, of another
+    feature schema (the artifact's `feature_version`), or built from an earlier stage 2."""
+    from . import games as GM                  # games imports common: resolved at call time
+    b = build_stamp()
+    why = []
+    if b is None:
+        why.append('no %s in the build directory (built before build stamps existed, e.g. the stale '
+                   'v2.0.0 research/out)' % BUILD_FILE)
+    else:
+        st = b.get('stages', {})
+        s2, s5 = st.get('stage2'), st.get('stage5')
+        if 'stage2' in stages and (not s2 or s2.get('finality_rule') != GM.FINALITY_RULE):
+            why.append('stage 2 was built under finality rule %s, the code applies %s'
+                       % ((s2 or {}).get('finality_rule'), GM.FINALITY_RULE))
+        if 'stage5' in stages:
+            if not s5:
+                why.append('stage 5 has no stamp')
+            else:
+                if feature_version and s5.get('feature_version') != feature_version:
+                    why.append('stage 5 has feature schema %s, the artifact reads %s'
+                               % (s5.get('feature_version'), feature_version))
+                if s2 and (s5.get('stage2') or {}).get('built_at') != s2.get('built_at'):
+                    why.append('stage 5 was built from an earlier stage 2 (rebuild stages 3-5)')
+    if why:
+        raise StaleBuild('%s refused: CFB_V2_OUT=%s is not a current build: %s'
+                         % (purpose, os.path.abspath(C.OUT), '; '.join(why)))
+    return b
+
+
+def build_provenance(b, artifact=None, version=None):
+    """The deterministic provenance a published or graded row carries: nothing that
+    changes between two runs of the same version on the same rules (no timestamps,
+    no paths), so a write-once row's hash is stable."""
+    st = (b or {}).get('stages', {})
+    s2, s5 = st.get('stage2') or {}, st.get('stage5') or {}
+    man = None
+    if version:
+        mp = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'artifacts', version, 'MANIFEST.json')
+        if os.path.exists(mp):
+            import hashlib
+            man = hashlib.sha256(open(mp, 'rb').read()).hexdigest()
+    return {'model_version': (artifact or {}).get('model_version', version),
+            'feature_version': s5.get('feature_version') or (artifact or {}).get('feature_version'),
+            'finality_rule': s2.get('finality_rule'),
+            'market_orientation_rule': s2.get('market_orientation_rule'),
+            'artifact_manifest_sha256': man}
+
+
 def write_json(path, obj):
     os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
     with open(path, 'w') as f:
