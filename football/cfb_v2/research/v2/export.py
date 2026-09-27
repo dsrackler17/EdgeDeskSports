@@ -109,6 +109,12 @@ def main(report_path=None):
     unc = L['unc']
     ver = C.MODEL_VERSION
     adir = os.path.join(REPO_V2, 'artifacts', ver)
+    # A released artifact (it has a MANIFEST.json) is never overwritten: a
+    # retrain is a NEW challenger version, shadowed and promoted only through
+    # the Model Lab's governance (docs/cfb-weekly/RUNBOOK.md).
+    if os.path.exists(os.path.join(adir, 'MANIFEST.json')):
+        raise SystemExit('[export] refused: artifacts/%s is a released artifact (MANIFEST.json). Retrain as a new '
+                         'challenger: CFB_V2_MODEL_VERSION=<new id> bash run_all.sh retrain' % ver)
     os.makedirs(adir, exist_ok=True)
     models = {k: linear_json(m) for k, m in ms.items() if k != 'D_gbm' and k in WF.SUB}
     models['TotalE'] = linear_json(tot)
@@ -193,7 +199,10 @@ def main(report_path=None):
           '   declared (not fitted) overlays, each labelled. */\n'
           '(function (root) { root.EDCfbV2Params = %s; })(typeof window !== "undefined" ? window : '
           '(typeof globalThis !== "undefined" ? globalThis : this));\n') % (ver, json.dumps(params, indent=1, sort_keys=True, default=common._json_default))
-    with open(os.path.join(REPO_V2, 'params.js'), 'w') as f:
+    # only the production version writes the browser params; a challenger's
+    # params stay with its artifact until a governed release
+    params_path = os.path.join(REPO_V2, 'params.js') if ver == C.PRODUCTION_MODEL_VERSION else os.path.join(adir, 'params.js')
+    with open(params_path, 'w') as f:
         f.write(js)
     print('[export] wrote', adir, 'and params.js; bet_enabled', params['market']['bet_enabled'],
           'decision', gates['decision'])

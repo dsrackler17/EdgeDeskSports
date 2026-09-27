@@ -12,7 +12,12 @@ is called by every tuner, and `tests/test_leakage.py` asserts that it raises.
 import os
 
 MODEL_ID = 'edgedesk_cfb_v2'
-MODEL_VERSION = 'edgedesk_cfb_v2.1.0'          # hardened; cfb_v2_candidate_001 = v2.0.0 (frozen)
+# The production artifact (released: artifacts/<version>/MANIFEST.json). A
+# retrain NEVER writes over it: it runs with CFB_V2_MODEL_VERSION set to a new
+# challenger id, and export.py refuses a manifested directory
+# (docs/cfb-weekly/RUNBOOK.md, retraining policy).
+PRODUCTION_MODEL_VERSION = 'edgedesk_cfb_v2.1.0'  # hardened; cfb_v2_candidate_001 = v2.0.0 (frozen)
+MODEL_VERSION = os.environ.get('CFB_V2_MODEL_VERSION') or PRODUCTION_MODEL_VERSION
 FEATURE_VERSION = 'cfb_v2_fv2'                 # fv2: volatility has a point-in-time prior
 SEED = 20260927                       # the only seed; LightGBM and bootstraps use it
 

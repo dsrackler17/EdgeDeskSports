@@ -34,6 +34,10 @@ on:
         description: 'weekly | daily (default) | freeze | retrain (offseason; produces a new challenger for review). "live" is an alias of daily.'
         required: false
         default: 'daily'
+      challenger_version:
+        description: 'retrain only: the NEW challenger model_version (default edgedesk_cfb_challenger_<run id>). A released artifact is never overwritten.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -144,6 +148,9 @@ jobs:
       - name: Retrain (offseason; a new challenger version, never auto-promoted)
         if: ${{ steps.mode.outputs.mode == 'retrain' }}
         working-directory: football/cfb_v2/research
+        env:
+          # export.py refuses to write over a released (manifested) artifact
+          CFB_V2_MODEL_VERSION: ${{ github.event.inputs.challenger_version || format('edgedesk_cfb_challenger_{0}', github.run_id) }}
         run: bash run_all.sh retrain
       - name: Keep the retrain for review (never auto-promoted)
         if: ${{ steps.mode.outputs.mode == 'retrain' }}
