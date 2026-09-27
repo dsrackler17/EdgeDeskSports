@@ -31,11 +31,33 @@ const TABLES = [
   ['cfb_lab_miss_reviews', 'miss_reviews', 'review_id', false],
 ];
 
-/* Only the columns the table has (SCHEMA.md); extra working fields stay in the ledger. */
-const DROP = { cfb_lab_market_lines: ['kickoff_ts'], cfb_lab_evaluations: [], cfb_lab_predictions: [] };
-function shape(table, row) {
-  const o = Object.assign({}, row);
-  (DROP[table] || []).forEach((k) => delete o[k]);
+/* Only the columns the table has: PostgREST refuses a row carrying any other
+   key. The column lists are read from the migration itself
+   (supabase/cfb_lab.sql), so the mirror and the schema cannot drift apart;
+   `recorded_at` is the server's own clock and is never sent. Keys the ledger
+   keeps that the table does not (working fields) are counted, not sent. */
+const fs = require('fs');
+let COLS = null;
+function columns() {
+  if (COLS) return COLS;
+  const sql = fs.readFileSync(path.join(G.REPO, 'supabase', 'cfb_lab.sql'), 'utf8');
+  COLS = {};
+  const re = /create table if not exists public\.(cfb_lab_[a-z0-9_]+)\s*\(([\s\S]*?)\n\);/g;
+  let m;
+  while ((m = re.exec(sql))) {
+    COLS[m[1]] = m[2].split('\n').map((l) => /^\s+([a-z_][a-z0-9_]*)\s+(text|int|integer|smallint|bigint|numeric|boolean|timestamptz|jsonb|date|double|real)\b/.exec(l))
+      .filter(Boolean).map((x) => x[1]).filter((c) => c !== 'constraint');
+  }
+  return COLS;
+}
+function shape(table, row, dropped) {
+  const cols = columns()[table];
+  if (!cols) throw new Error('supabase/cfb_lab.sql has no table ' + table);
+  const o = {};
+  for (const k of Object.keys(row)) {
+    if (k !== 'recorded_at' && cols.includes(k)) o[k] = row[k];
+    else if (dropped && k !== 'recorded_at') dropped[k] = (dropped[k] || 0) + 1;
+  }
   return o;
 }
 
@@ -56,7 +78,7 @@ async function post(url, key, table, onConflict, rows) {
 async function sync(season, opts) {
   opts = opts || {};
   const url = process.env.SB_URL, key = process.env.SB_SERVICE_ROLE;
-  const store = new G.Store(season);
+  const store = opts.store || new G.Store(season);
   const plan = TABLES.map(([table, kind, id, gov]) => {
     let rows;
     if (kind === 'predictions') rows = store.predictions();
@@ -65,11 +87,13 @@ async function sync(season, opts) {
        it is not copied back (it would be a second row for one observation) */
     else if (kind === 'quotes') rows = store.quotes().filter((q) => q.source !== 'odds_api');
     else rows = gov ? store.gov(kind) : G.readJsonl(store.f[kind]);
-    return { table, id, rows: rows.map((r) => shape(table, r)) };
+    const dropped = {};
+    return { table, id, rows: rows.map((r) => shape(table, r, dropped)), dropped };
   });
   if (!url || !key || opts.dryRun) {
-    plan.forEach((p) => console.log('[cfb_lab sync] ' + (opts.dryRun ? 'dry-run' : 'no credentials') + ': ' + p.table + ' ' + p.rows.length + ' rows'));
-    return { skipped: true };
+    if (!opts.quiet) plan.forEach((p) => console.log('[cfb_lab sync] ' + (opts.dryRun ? 'dry-run' : 'no credentials') + ': ' + p.table + ' ' + p.rows.length + ' rows'
+      + (Object.keys(p.dropped).length ? ' (ledger-only keys not sent: ' + Object.keys(p.dropped).join(', ') + ')' : '')));
+    return { skipped: true, plan: plan.map((p) => ({ table: p.table, rows: p.rows.length, dropped: p.dropped })) };
   }
   const out = {};
   for (const p of plan) out[p.table] = await post(url, key, p.table, p.id, p.rows);
@@ -101,7 +125,7 @@ async function pullQuotes(season, now) {
   });
 }
 
-module.exports = { sync, pullQuotes, TABLES, shape };
+module.exports = { sync, pullQuotes, TABLES, shape, columns };
 
 if (require.main === module) {
   const a = process.argv.slice(2);

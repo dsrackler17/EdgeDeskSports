@@ -97,8 +97,11 @@ node football/cfb_lab/governance.js retire --model edgedesk_cfb_v2.0.0 --reason 
 node football/cfb_lab/governance.js release-partition --season 2026 --reason "..." --actor <you>
 ```
 
-In Postgres, `select public.cfb_lab_set_role(model, label, role, reason, actor);` does the same for the
-mirror's role table. The repository is the source of truth, so change the role there first.
+Role changes reach Postgres through the hourly mirror; do not also call
+`public.cfb_lab_set_role(...)` for them. That function writes only to Postgres and exists for a
+database-only deployment; used alongside the repository it would create a second, differently-timed role
+event that the ledger never contains. A promotion writes the old champion's demotion before the new
+champion's promotion, which is the order Postgres requires (it refuses a second current champion).
 
 **Promotion** (`cfb_lab_promotion_v1`): evaluated only on the common set of LIVE official games (≥ 150)
 where both models have an official snapshot. Every gate must pass: the MAE difference's 95% CI is entirely

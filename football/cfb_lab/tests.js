@@ -143,6 +143,13 @@ function q(o) {
 
 /* ═══ 4. quotes: de-duplication, consensus, openers, closes ═════════════ */
 {
+  const at = '2026-10-01T09:00:00.000Z';
+  const ord = q({ source: 'cfbd', book: 'consensus', observed_at: at, home_line: -3 });
+  const po = q({ source: 'cfbd', book: 'consensus', observed_at: at, home_line: -2.5, is_provider_open: true });
+  const pc = q({ source: 'espn', book: 'espnbet', observed_at: '2026-10-03T19:40:00.000Z', home_line: -3.5, is_provider_close: true, is_pregame: false });
+  chk('quote ids: a provider opener never shares an id with the ordinary quote of the same moment', new Set([ord.quote_id, po.quote_id, pc.quote_id]).size === 3
+    && ord.quote_id === 'cfbq_' + G.h('cfbd', 'consensus', 'g1', 'spread', at) && po.quote_id === 'cfbq_' + G.h('cfbd', 'consensus', 'g1', 'spread', at, 'provider_open'));
+  chk('quote ids: both are written when captured together', MK.selectNew([], [ord, po]).stats.written === 2);
   const base = q({ observed_at: '2026-10-01T12:00:00.000Z' });
   chk('first quote is written', L.dedupeDecision(null, base) === 'written');
   chk('unchanged within 6 h is a duplicate', L.dedupeDecision(base, q({ observed_at: '2026-10-01T15:00:00.000Z' })) === 'duplicate');
@@ -348,6 +355,9 @@ function q(o) {
   const roles = GOV.currentRoles(s.gov('model_roles'));
   chk('one champion after promotion; the old one demoted', roles['edgedesk_cfb_v2.1.0'].role === 'champion' && roles['edgedesk_cfb_p4_v1.0.0'].role === 'challenger');
   chk('promotion is audited', s.gov('audit_log').some((a) => a.event_type === 'MODEL_PROMOTED' && a.subject === 'edgedesk_cfb_v2.1.0'));
+  const re = s.gov('model_roles');
+  chk('promotion writes the demotion BEFORE the promotion (Postgres refuses a second champion)',
+    re.findIndex((e) => e.model_version === 'edgedesk_cfb_p4_v1.0.0' && e.role === 'challenger') < re.findIndex((e) => e.model_version === 'edgedesk_cfb_v2.1.0' && e.role === 'champion'));
   chk('the champion cannot be retired directly', throws(() => GOV.retire(s, 'edgedesk_cfb_v2.1.0', 'x', 'y')));
   chk('a SINGLE_CHANGE experiment with two changes is refused', throws(() => GOV.experimentCreate(s, { id: 'EXP-9', name: 'x', baseline: 'a', challenger: 'b', hypothesis: 'h', change: ['one', 'two'], scope: 'SINGLE_CHANGE' })));
   chk('an experiment without a hypothesis is refused', throws(() => GOV.experimentCreate(s, { id: 'EXP-10', name: 'x', baseline: 'a', challenger: 'b', change: 'c' })));
@@ -419,6 +429,11 @@ function q(o) {
   const first = fs.readFileSync(wk, 'utf8');
   RP.run({ now: '2026-10-07T12:00:00.000Z', season: 2026, storeOpts: so, outDir: out, publicPath: pub });
   chk('a written weekly report is never regenerated', fs.readFileSync(wk, 'utf8') === first);
+  /* the insert-only mirror sends every ledger key: a key the table lacks would make PostgREST refuse the row */
+  const SY = require('./sync_supabase.js');
+  const sy = await SY.sync(2026, { dryRun: true, store: s, quiet: true });
+  chk('every ledger row maps onto its Postgres table (no key dropped, none unknown)', sy.plan.every((p) => Object.keys(p.dropped).length === 0) && sy.plan.find((p) => p.table === 'cfb_lab_predictions').rows > 0,
+    sy.plan.filter((p) => Object.keys(p.dropped).length));
   const W = JSON.parse(first);
   chk('weekly report has the postmortem sections and the no-overreaction policy', ['what_worked', 'what_failed', 'what_changed', 'what_may_be_random', 'what_deserves_investigation'].every((k) => Array.isArray(W.postmortem[k])) && /Nothing in this report changes a model/.test(W.policy));
   const P = JSON.parse(fs.readFileSync(pub, 'utf8'));

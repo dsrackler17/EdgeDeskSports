@@ -29,6 +29,11 @@ const HORIZON_H = 24 * 10;      // the board and current.json publish ~10 days a
 function roleOf(roles, mv) { const r = roles[mv]; return r ? r.role : 'candidate'; }
 
 /* Build one immutable prediction row (SCHEMA §1). */
+/* Probabilities are stored at 5 decimals (numeric(6,5)) and kept strictly
+   inside (0, 1): a near-certain game (p >= 0.999995) would otherwise round to
+   exactly 1, which no probability column accepts (SCHEMA.md §1). */
+function prob5(p) { return Math.min(0.99999, Math.max(0.00001, U.r(U.num(p), 5))); }
+
 function buildRow(model, checkpointType, isFirst, market, decision, dq, ctx) {
   const P = model.pure, gm = model.game;
   const origin = ctx.origin || 'LIVE';
@@ -68,7 +73,7 @@ function buildRow(model, checkpointType, isFirst, market, decision, dq, ctx) {
     pure_home_margin: U.r(P.margin, 3), fair_spread_home_line: U.r(L.conv.marginToBook(P.margin), 3),
     fair_spread_display: L.conv.display(P.margin, gm.home, gm.away),
     projected_home_points: U.r(P.home_pts, 2), projected_away_points: U.r(P.away_pts, 2), projected_total: U.r(P.total, 2),
-    home_win_probability: U.isNum(P.p_home) ? U.r(P.p_home, 5) : null, away_win_probability: U.isNum(P.p_home) ? U.r(1 - P.p_home, 5) : null,
+    home_win_probability: U.isNum(P.p_home) ? prob5(P.p_home) : null, away_win_probability: U.isNum(P.p_home) ? U.r(1 - prob5(P.p_home), 5) : null,
     prediction_sigma: U.isNum(P.sigma) ? U.r(P.sigma, 3) : null, t_df: U.isNum(P.t_df) ? P.t_df : null,
     interval_50_low: pick(50, 0), interval_50_high: pick(50, 1), interval_80_low: pick(80, 0), interval_80_high: pick(80, 1),
     interval_95_low: pick(95, 0), interval_95_high: pick(95, 1),
@@ -76,7 +81,8 @@ function buildRow(model, checkpointType, isFirst, market, decision, dq, ctx) {
     internal_consensus_score: L.consensusScore(P.ens_sd), ensemble_disagreement: U.isNum(P.ens_sd) ? U.r(P.ens_sd, 3) : null,
     expected_model_error: L.expectedAbsError(P.sigma, P.t_df),
     qb_certainty: M.qbCertainty(model.slateGame), injury_certainty: M.injuryCertainty(model.slateGame, ctx.now),
-    data_completeness: U.num(model.state.data_completeness), pbp_completeness: U.num(model.state.pbp_completeness),
+    data_completeness: U.isNum(U.num(model.state.data_completeness)) ? U.r(U.num(model.state.data_completeness), 4) : null,
+    pbp_completeness: U.isNum(U.num(model.state.pbp_completeness)) ? U.r(U.num(model.state.pbp_completeness), 4) : null,
     data_quality_status: dq.status, data_quality_issues: dq.checks.filter((c) => c.status !== 'GREEN'),
     efficiency_margin: sub.efficiency_margin, bayesian_margin: sub.bayesian_margin, drive_margin: sub.drive_margin,
     dynamic_rating_margin: sub.dynamic_rating_margin, matchup_ml_margin: sub.matchup_ml_margin, residual_adjusted_margin: sub.residual_adjusted_margin,
@@ -92,7 +98,8 @@ function buildRow(model, checkpointType, isFirst, market, decision, dq, ctx) {
     line_move_from_open: market ? U.num(market.line_move_from_open) : null, market_total: market ? U.num(market.market_total) : null,
     market_stale: market ? !!market.market_stale : true,
     model_market_gap: gap,
-    cover_probability: U.num(decision.cover_probability), break_even_probability: U.num(decision.break_even_probability),
+    cover_probability: U.isNum(U.num(decision.cover_probability)) ? prob5(decision.cover_probability) : null,
+    break_even_probability: U.isNum(U.num(decision.break_even_probability)) ? prob5(decision.break_even_probability) : null,
     estimated_ev: U.num(decision.estimated_ev), edge_quality: U.isNum(U.num(decision.edge_quality)) ? Math.round(decision.edge_quality) : null,
     betting_reliability: U.isNum(U.num(decision.betting_reliability)) ? Math.round(Math.min(decision.betting_reliability, cap)) : null,
     status, decision_class: decClass, decision_source: decision.decision_source, side,

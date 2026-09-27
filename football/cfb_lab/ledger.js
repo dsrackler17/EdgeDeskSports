@@ -37,7 +37,10 @@ function h(...parts) {
 const ts = (t) => (t == null ? null : new Date(L.util.ms(t)));
 const ids = {
   prediction: (p) => 'cfbp_' + h(p.model_version, p.game_id, p.checkpoint_type, ts(p.prediction_ts)),
-  quote: (q) => 'cfbq_' + h(q.source, q.book, q.game_id || q.provider_event_id, q.market_type, ts(q.observed_at)),
+  /* a provider-declared row gets a sixth part, so a declared opener or close
+     never shares an id with the ordinary quote observed at the same moment */
+  quote: (q) => 'cfbq_' + h(...[q.source, q.book, q.game_id || q.provider_event_id, q.market_type, ts(q.observed_at)]
+    .concat(q.is_provider_open ? ['provider_open'] : q.is_provider_close ? ['provider_close'] : [])),
   fingerprint: (q) => h(num(q.home_line), num(q.total_points), num(q.price_home), num(q.price_away), num(q.price_over), num(q.price_under)),
   line: (l) => 'cfbl_' + h(l.game_id, l.kind, l.book, l.market_type, l.rule_version),
   map: (x) => 'cfbx_' + h(x.source, x.provider_event_id, x.game_id),
