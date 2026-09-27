@@ -17,6 +17,16 @@
    quotes are dropped except for the 6-hour and close-zone heartbeats, and a
    quote at or after kickoff is never recorded as pregame.
 
+   Before de-duplication every candidate passes the integrity rules
+   (integrity.js, docs/cfb-production/MARKET_INTEGRITY.md): an impossible value
+   (a +450 spread, American odds of 0, a two-way price below fair, a timestamp
+   from the future), a quote from another game (teams, orientation, kickoff),
+   a robust cross-book outlier, a sign flip or an uncorroborated jump is written
+   to quarantine.jsonl with its reasons and evidence — kept for investigation,
+   never deleted, and never part of any opener, close or consensus. Provider
+   payloads are schema-checked first (providers.js): a missing required field
+   rejects that element and is logged, never read as zero.
+
      node football/cfb_lab/market.js capture [--season 2026] [--now ISO] [--no-espn] [--no-cfbd] [--supabase]
      node football/cfb_lab/market.js lines   [--season 2026] [--now ISO]
    ========================================================================== */
@@ -25,6 +35,8 @@ const fs = require('fs');
 const path = require('path');
 const L = require('./lab_core.js');
 const G = require('./ledger.js');
+const I = require('./integrity.js');
+const P = require('./providers.js');
 const SRC = require(path.join(G.REPO, 'tools', 'record', 'football_record_sources.js'));
 
 const U = L.util;
@@ -224,6 +236,99 @@ function selectNew(stored, candidates, opts) {
   return { rows: out, stats };
 }
 
+/* ------------------------------------------------ integrity screen */
+/* Every candidate, before de-duplication (MARKET_INTEGRITY.md §3-5):
+     REJECT      integrity.validateQuote: impossible values, clocks, wrong game
+     QUARANTINE  integrity.screenQuote: cross-book outlier (MAD), 1-2 book
+                 disagreement, sign flip, uncorroborated jump; and
+                 integrity.crossMarket: one book's spread and moneyline name
+                 different favourites
+   Accepted quotes go on to selectNew; the others become quarantine rows. The
+   wrong-game KICKOFF test applies to name-joined sources (odds_api) only: an
+   ESPN or CFBD quote carries the game's own id, so a kickoff that differs from
+   the index means the index is stale (a moved game), not that the quote is
+   someone else's. */
+const ID_JOINED = new Set(['espn', 'cfbd', 'record']);
+function screenCandidates(stored, candidates, opts) {
+  opts = opts || {};
+  const idx = opts.index || {};
+  const sameTeam = opts.sameTeam || null;
+  const now = opts.now || null;
+  const accepted = [], quarantined = [];
+  const ord = (q) => !q.is_provider_open && !q.is_provider_close && q.is_pregame !== false;
+  const byGame = new Map();
+  const add = (q) => { if (!q.game_id || !ord(q)) return; const k = q.game_id + '|' + q.market_type; if (!byGame.has(k)) byGame.set(k, []); byGame.get(k).push(q); };
+  stored.forEach(add);
+  const latestOf = (q) => {
+    const xs = byGame.get(q.game_id + '|' + q.market_type) || [];
+    let best = null;
+    for (const x of xs) if (x.source === q.source && x.book === q.book && U.ms(x.observed_at) <= U.ms(q.observed_at) && (!best || U.ms(x.observed_at) > U.ms(best.observed_at))) best = x;
+    return best;
+  };
+  const sorted = candidates.slice().sort((a, b) => (U.ms(a.observed_at) - U.ms(b.observed_at)) || (a.quote_id < b.quote_id ? -1 : 1));
+  /* one book, one moment: spread vs moneyline favourite */
+  const moment = new Map();
+  sorted.forEach((q) => { if (!ord(q) || !q.game_id) return; const k = [q.source, q.book, q.game_id, U.iso(q.observed_at)].join('|'); if (!moment.has(k)) moment.set(k, {}); moment.get(k)[q.market_type] = q; });
+  const crossBad = new Set();
+  moment.forEach((m) => { if (I.crossMarket(m.spread, m.moneyline).length) { crossBad.add(m.spread.quote_id); crossBad.add(m.moneyline.quote_id); } });
+  for (const q of sorted) {
+    const gi = q.game_id ? idx[q.game_id] : null;
+    const game = gi ? { home: gi.home, away: gi.away, kickoff: ID_JOINED.has(q.source) ? null : gi.kickoff } : null;
+    const v = I.validateQuote(q, { now, game, sameTeam });
+    if (!v.ok) { quarantined.push(qRow(q, 'REJECT', v.reasons, { warnings: v.warnings }, now, I.RULES.quote)); continue; }
+    if (crossBad.has(q.quote_id)) { quarantined.push(qRow(q, 'QUARANTINE', ['CROSS_MARKET_ORIENTATION'], null, now, I.RULES.outlier)); continue; }
+    if (q.game_id && ord(q) && (q.market_type === 'spread' || q.market_type === 'total')) {
+      const sc = I.screenQuote(q, byGame.get(q.game_id + '|' + q.market_type) || [], latestOf(q));
+      if (!sc.ok) { quarantined.push(qRow(q, 'QUARANTINE', sc.reasons, sc.evidence, now, I.RULES.outlier)); continue; }
+    }
+    accepted.push(q); add(q);
+  }
+  return { accepted, quarantined };
+}
+function qRow(q, severity, reasons, evidence, now, rule) {
+  const r = { quarantine_id: null, stage: 'INGEST', severity, reasons: reasons.slice(), rule_version: rule, status: 'OPEN',
+    quote_id: q.quote_id, source: q.source, book: q.book, game_id: q.game_id || null, provider_event_id: q.provider_event_id || null,
+    market_type: q.market_type, season: q.season == null ? null : q.season, week: q.week == null ? null : q.week,
+    home_line: q.home_line == null ? null : q.home_line, total_points: q.total_points == null ? null : q.total_points,
+    price_home: q.price_home == null ? null : q.price_home, price_away: q.price_away == null ? null : q.price_away,
+    price_over: q.price_over == null ? null : q.price_over, price_under: q.price_under == null ? null : q.price_under,
+    observed_at: U.iso(q.observed_at) || (q.observed_at == null ? null : String(q.observed_at)), provider_updated_at: q.provider_updated_at || null, kickoff_ts: q.kickoff_ts || null,
+    is_pregame: q.is_pregame !== false, is_provider_open: !!q.is_provider_open, is_provider_close: !!q.is_provider_close,
+    home_team: q.home_team || null, away_team: q.away_team || null, evidence: evidence || null, detected_at: U.iso(now) };
+  r.quarantine_id = G.ids.quarantine(r);
+  return r;
+}
+/* the same bad number re-observed every hour is one investigation, not 24:
+   a quarantine row whose key, values and reasons match the key's latest
+   quarantine row within the heartbeat interval is not written again */
+function dedupeQuarantine(existing, rows) {
+  const latest = new Map();
+  const keyOf = (r) => [r.source, r.book, r.game_id || r.provider_event_id, r.market_type].join('|');
+  const sig = (r) => JSON.stringify([r.home_line, r.total_points, r.price_home, r.price_away, r.price_over, r.price_under, r.reasons]);
+  existing.slice().sort((a, b) => U.ms(a.observed_at) - U.ms(b.observed_at)).forEach((r) => latest.set(keyOf(r), r));
+  const out = []; let skipped = 0;
+  rows.forEach((r) => {
+    const p = latest.get(keyOf(r));
+    if (p && sig(p) === sig(r) && U.ms(r.observed_at) - U.ms(p.observed_at) < L.constants.HEARTBEAT_H * 3600000) { skipped++; return; }
+    out.push(r); latest.set(keyOf(r), r);
+  });
+  return { rows: out, skipped };
+}
+/* ESPN's own view of each game this hour: its state and its current kickoff
+   (the schedule authority for moved, early, postponed and canceled games). */
+function espnSchedule(payloads) {
+  const out = {};
+  (payloads || []).forEach((json) => ((json && json.events) || []).forEach((ev) => {
+    const comp = (ev.competitions && ev.competitions[0]) || {};
+    const st = (comp.status && comp.status.type) || {};
+    const name = String(st.name || '');
+    const status = /POSTPONED/i.test(name) ? 'POSTPONED' : /CANCEL/i.test(name) ? 'CANCELED' : /SUSPEND/i.test(name) ? 'SUSPENDED'
+      : st.state === 'in' ? 'IN_PROGRESS' : (st.state === 'post' || st.completed === true) ? 'FINISHED' : st.state === 'pre' ? 'SCHEDULED' : 'UNKNOWN';
+    out[String(ev.id)] = { status, state: st.state || null, name: name || null, kickoff: U.iso(comp.date || ev.date) };
+  }));
+  return out;
+}
+
 /* ------------------------------------------------- openers and closes */
 /* For each game whose close is due (kickoff + 3 h <= now) and not yet
    derived: per-book and CONSENSUS OPEN/CLOSE rows (METRICS §4). The spread is
@@ -290,13 +395,23 @@ function etDates(now, backDays, fwdDays) {
   for (let d = -backDays; d <= fwdDays; d++) out.push(SRC.etDate(new Date(U.ms(now) + d * 86400000).toISOString()));
   return [...new Set(out)];
 }
+/* Each date is one guarded call (providers.js): a 30 s timeout, two bounded
+   retries on a timeout / network fault / 5xx / 429, and the ESPN circuit
+   breaker. With the breaker OPEN nothing is requested this hour; the stored
+   quotes simply age and the market becomes MARKET_STALE. */
 async function fetchEspn(now, opts) {
   opts = opts || {};
   const payloads = [];
+  const br = opts.breaker || new P.Breaker('espn_scoreboard', P.POLICIES.espn_scoreboard, opts.breakerState);
   for (const d of etDates(now, opts.back == null ? 2 : opts.back, opts.fwd == null ? 9 : opts.fwd)) {
-    try { payloads.push(JSON.parse(await SRC.fetchText(SRC.espnScoreboardUrl('cfb', d), 30000))); }
-    catch (e) { payloads.push({ error: d + ': ' + e.message, events: [] }); }
+    const r = await P.guarded('espn_scoreboard', async (signal) => {
+      const text = opts.fetchText ? await opts.fetchText(SRC.espnScoreboardUrl('cfb', d), signal) : await P.httpText(SRC.espnScoreboardUrl('cfb', d), signal);
+      try { return JSON.parse(text); } catch (e) { throw new P.SchemaError('ESPN ' + d + ': not JSON'); }
+    }, { breaker: br, now: U.iso(now), sleep: opts.sleep, rand: opts.rand });
+    if (r.ok) payloads.push(r.value);
+    else payloads.push({ error: d + ': ' + (r.class || 'UNKNOWN') + ' ' + r.error, error_class: r.class, events: [] });
   }
+  payloads.breaker = br.snapshot();
   return payloads;
 }
 
@@ -307,17 +422,28 @@ async function capture(season, now, opts) {
   const idx = gameIndex(season);
   const cand = [];
   const log = { espn: null, cfbd: null, supabase: null };
+  let schedule = {};
   if (opts.espn !== false) {
     const payloads = opts.espnPayloads || await fetchEspn(now, opts);
     const errs = payloads.filter((p) => p.error).map((p) => p.error);
-    payloads.forEach((p) => cand.push(...quotesFromEspn(p, now, idx)));
-    log.espn = { days: payloads.length, errors: errs, candidates: cand.length };
+    const schema = { rejected_payloads: 0, rejected_events: 0, problems: [] };
+    payloads.forEach((p) => {
+      if (p.error) return;
+      const v = P.validateEspnScoreboard(p, { use: 'quotes' });
+      if (!v.ok) { schema.rejected_payloads++; schema.problems.push(...v.problems); return; }
+      if (v.rejected.length) { schema.rejected_events += v.rejected.length; schema.problems.push(...v.rejected.slice(0, 10).map((x) => 'event ' + x.id + ': ' + x.problems.join('; '))); }
+      cand.push(...quotesFromEspn({ events: v.events }, now, idx));
+    });
+    schedule = espnSchedule(payloads.filter((p) => !p.error));
+    log.espn = { days: payloads.length, errors: errs, candidates: cand.length, schema, breaker: payloads.breaker || null };
   }
   if (opts.cfbd !== false) {
     const f = path.join(G.REPO, 'football', 'cfb_v2', 'shadow', String(season), 'lines.jsonl');
-    const rows = G.readJsonl(f);
+    const all = G.readJsonl(f);
+    const bad = all.map((x) => P.validateCfbdLineRow(x)).map((p, i) => ({ i, p })).filter((x) => x.p.length);
+    const rows = all.filter((x, i) => !bad.some((b) => b.i === i));
     const c = quotesFromCfbd(rows, idx);
-    cand.push(...c); log.cfbd = { ledger_rows: rows.length, candidates: c.length };
+    cand.push(...c); log.cfbd = { ledger_rows: all.length, candidates: c.length, schema_rejected: bad.length, schema_problems: bad.slice(0, 10).map((b) => 'row ' + (b.i + 1) + ': ' + b.p.join('; ')) };
   }
   let eventMap = store.eventMap();
   if (opts.supabaseQuotes) {
@@ -327,24 +453,90 @@ async function capture(season, now, opts) {
     cand.push(...idxQ);
     log.supabase = { candidates: idxQ.length, unmapped_events: mp.events, mapped_now: mp.rows.length, refused: mp.refused, refusal_reasons: mp.refusal_reasons, unresolved_names: mp.unresolved_names };
   }
-  const sel = selectNew(store.quotes(), cand, { eventMap });
+  const stored = store.quotes();
+  const resolved = cand.map((q) => resolveEvent(q, eventMap));
+  const scr = screenCandidates(stored, resolved, { index: idx, now, sameTeam: opts.sameTeam || require('./identity.js').sameTeamFn() });
+  const qd = dedupeQuarantine(store.quarantine(), scr.quarantined);
+  const qres = store.append('quarantine', qd.rows, 'quarantine_id');
+  const reasons = {};
+  scr.quarantined.forEach((r) => r.reasons.forEach((x) => { reasons[x] = (reasons[x] || 0) + 1; }));
+  log.integrity = { rule: [I.RULES.quote, I.RULES.outlier], candidates: resolved.length, accepted: scr.accepted.length,
+    rejected: scr.quarantined.filter((r) => r.severity === 'REJECT').length, quarantined: scr.quarantined.filter((r) => r.severity === 'QUARANTINE').length,
+    quarantine_written: qres.written, quarantine_repeats_skipped: qd.skipped, reasons };
+  const sel = selectNew(stored, scr.accepted, { eventMap });
   /* an Odds API quote whose event is still unmapped is kept (keyed by its
      provider event) but cannot enter a game's market until it is mapped */
   const res = store.appendQuotes(sel.rows);
-  return { log, dedupe: sel.stats, written: res.written, conflicts: res.conflicts };
+  return { log, dedupe: sel.stats, written: res.written, conflicts: res.conflicts, schedule };
 }
+/* The kickoff a close is anchored to (MARKET_INTEGRITY.md §7): the one ESPN
+   reported when it settled the game (the result's sources), else the newest
+   kickoff any LIVE snapshot was taken against, else the newest a quote
+   carried. Never the FIRST snapshot's kickoff: a game that moved later would
+   close too early (a stale close, written once and forever), and a game that
+   moved EARLIER would take quotes observed after the real start (live odds). */
+function authoritativeKickoffs(store) {
+  const out = new Map();
+  const put = (gid, t, basis, rank) => { if (!gid || U.ms(t) === null) return; const c = out.get(gid); if (!c || rank > c.rank) out.set(gid, { kickoff_ts: U.iso(t), basis, rank }); };
+  const newest = new Map();
+  for (const p of store.predictions()) if (p.origin === 'LIVE') { const c = newest.get(p.game_id); if (!c || U.ms(p.prediction_ts) > U.ms(c.prediction_ts)) newest.set(p.game_id, p); }
+  newest.forEach((p, gid) => put(gid, p.kickoff_ts, 'newest LIVE snapshot', 1));
+  const cur = settleCurrent(store.results());
+  cur.forEach((r, gid) => { const k = (r.sources || []).map((x) => x.kickoff_ts).filter(Boolean)[0]; if (k) put(gid, k, 'result:' + (r.sources.find((x) => x.kickoff_ts) || {}).source, 2); });
+  return out;
+}
+function settleCurrent(results) {
+  const m = new Map();
+  (results || []).slice().sort((a, b) => U.ms(a.recorded_at) - U.ms(b.recorded_at)).forEach((r) => m.set(r.game_id, r));
+  return m;
+}
+/* Openers and closes are derived once, and only for a game with a settled
+   state (FINAL, POSTPONED, CANCELED or NO_CONTEST): the result is the evidence
+   that the game's real kickoff has passed. */
 function lines(season, now, opts) {
-  const store = new G.Store(season, opts && opts.storeOpts);
+  opts = opts || {};
+  const store = new G.Store(season, opts.storeOpts);
+  const auth = authoritativeKickoffs(store);
+  const settled = settleCurrent(store.results());
   /* every game with a LIVE prediction gets its lines, quotes or not */
   const games = [];
   const seen = new Set();
-  for (const p of store.predictions()) if (p.origin === 'LIVE' && !seen.has(p.game_id)) { seen.add(p.game_id); games.push({ game_id: p.game_id, kickoff_ts: p.kickoff_ts }); }
-  const rows = deriveLines(store.quotes(), store.lines(), now, games);
+  for (const p of store.predictions()) if (p.origin === 'LIVE' && !seen.has(p.game_id)) { seen.add(p.game_id); games.push({ game_id: p.game_id, kickoff_ts: (auth.get(p.game_id) || {}).kickoff_ts || p.kickoff_ts }); }
+  const gate = (gid) => settled.has(gid);
+  const quotes = store.quotes().filter((q) => !q.game_id || gate(q.game_id));
+  /* a quoted game without a LIVE prediction is anchored the same way */
+  quotes.forEach((q) => { if (q.game_id && !seen.has(q.game_id) && auth.has(q.game_id)) { seen.add(q.game_id); games.push({ game_id: q.game_id, kickoff_ts: auth.get(q.game_id).kickoff_ts }); } });
+  const rows = deriveLines(quotes, store.lines(), now, games.filter((g) => gate(g.game_id)));
   const res = store.append('lines', rows, 'line_id');
-  return { derived: rows.length, written: res.written, conflicts: res.conflicts };
+  return { derived: rows.length, written: res.written, conflicts: res.conflicts, waiting_for_result: games.filter((g) => !gate(g.game_id) && L.closeDue(g.kickoff_ts, now)).length };
 }
 
-module.exports = { mapOddsEvents, scheduleGames, resolveEvent, bookKey, american, baseQuote, espnMarkets, quotesFromEspn, quotesFromCfbd, selectNew, deriveLines, gameIndex, fetchEspn, capture, lines };
+/* An audited correction to a derived OPEN or CLOSE line (MARKET_INTEGRITY.md
+   §6). The original line is never edited, replaced or removed, and grading
+   keeps using it; the correction is a separate record ("opener corrected
+   version") with the values, the reason and the actor, for a person to act on. */
+function correctLine(season, o, opts) {
+  const store = new G.Store(season, opts && opts.storeOpts);
+  if (!o || !o.line_id) throw new Error('correction needs line_id');
+  if (!o.reason || String(o.reason).trim().length < 10) throw new Error('correction needs a reason (10+ characters)');
+  if (!o.actor || !/^[a-z0-9_.@-]{2,64}$/i.test(String(o.actor))) throw new Error('correction needs an actor');
+  const orig = store.lines().find((l) => l.line_id === o.line_id);
+  if (!orig) throw new Error('no line ' + o.line_id);
+  const hl = o.home_line == null ? null : I.num(o.home_line), tp = o.total_points == null ? null : I.num(o.total_points);
+  if (orig.market_type === 'spread' && (hl === null || Math.abs(hl) > I.BOUNDS.SPREAD_ABS_MAX)) throw new Error('corrected spread must be a number within +/-' + I.BOUNDS.SPREAD_ABS_MAX);
+  if (orig.market_type === 'total' && (tp === null || tp < I.BOUNDS.TOTAL_MIN || tp > I.BOUNDS.TOTAL_MAX)) throw new Error('corrected total out of bounds');
+  const prior = store.marketCorrections().filter((c) => c.line_id === o.line_id);
+  const row = { correction_id: null, line_id: orig.line_id, game_id: orig.game_id, kind: orig.kind, book: orig.book, market_type: orig.market_type,
+    version: prior.length + 1, original: { home_line: orig.home_line, total_points: orig.total_points, price_home: orig.price_home, price_away: orig.price_away, quality: orig.quality },
+    corrected: { home_line: hl, total_points: tp, price_home: o.price_home == null ? null : I.num(o.price_home), price_away: o.price_away == null ? null : I.num(o.price_away) },
+    reason: String(o.reason), actor: String(o.actor), created_at: U.iso(o.now || new Date()) };
+  row.correction_id = G.ids.correction(row);
+  const res = store.append('market_corrections', [row], 'correction_id');
+  return { row, written: res.written };
+}
+
+module.exports = { mapOddsEvents, scheduleGames, resolveEvent, bookKey, american, baseQuote, espnMarkets, quotesFromEspn, quotesFromCfbd, selectNew, deriveLines, gameIndex, fetchEspn, capture, lines,
+  screenCandidates, dedupeQuarantine, espnSchedule, authoritativeKickoffs, correctLine };
 
 if (require.main === module) {
   const a = process.argv.slice(2);

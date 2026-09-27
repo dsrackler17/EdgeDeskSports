@@ -9,6 +9,10 @@
      results.jsonl               settlement facts (corrections supersede, never edit)
      evaluations.jsonl           grading of each snapshot (append-only, versioned)
      miss_reviews.jsonl          miss-review records
+     quarantine.jsonl            quotes refused or quarantined by the integrity
+                                 rules (integrity.js), kept for investigation
+     market_corrections.jsonl    audited corrections to a derived opener/close
+                                 (the original line is never rewritten)
    football/cfb_lab/governance/  model roles, experiments, audit log, partitions, research queue
 
    Rules (docs/cfb-lab/SCHEMA.md):
@@ -51,6 +55,9 @@ const ids = {
   result: (x) => 'cfbr_' + h(x.game_id, x.status, num(x.home_points), num(x.away_points), x.supersedes || null),
   evaluation: (e) => 'cfbe_' + h(e.prediction_id, e.eval_version, e.result_id, e.close_line_id || null),
   review: (m) => 'cfbm_' + h(m.prediction_id, m.classification, m.classified_by, m.supersedes || null),
+  /* one quarantine row per candidate quote per stage: a replay is a no-op */
+  quarantine: (x) => 'cfbz_' + h(x.quote_id, x.stage),
+  correction: (x) => 'cfbk_' + h(x.line_id, x.created_at),
   event: (kind, ...parts) => 'cfbg_' + h(kind, ...parts),
 };
 function num(x) { const n = L.util.num(x); return n === null ? null : n; }
@@ -81,6 +88,7 @@ function files(season, root) {
     lines: path.join(d, 'lines.jsonl'), event_map: path.join(d, 'event_map.jsonl'),
     results: path.join(d, 'results.jsonl'), evaluations: path.join(d, 'evaluations.jsonl'),
     miss_reviews: path.join(d, 'miss_reviews.jsonl'),
+    quarantine: path.join(d, 'quarantine.jsonl'), market_corrections: path.join(d, 'market_corrections.jsonl'),
   };
 }
 function govFiles(root) {
@@ -165,6 +173,8 @@ class Store {
   results() { return readJsonl(this.f.results); }
   evaluations() { return readJsonl(this.f.evaluations); }
   missReviews() { return readJsonl(this.f.miss_reviews); }
+  quarantine() { return readJsonl(this.f.quarantine); }
+  marketCorrections() { return readJsonl(this.f.market_corrections); }
   gov(kind) { return readJsonl(this.g[kind]); }
 
   /* predictions: id-unique AND (game, model, checkpoint) unique except ADHOC */
@@ -223,7 +233,8 @@ function verify(opts) {
     if (rel.includes('/predictions/')) return 'prediction_id';
     if (rel.includes('/quotes/')) return 'quote_id';
     const b = path.basename(rel, '.jsonl');
-    return { lines: 'line_id', event_map: 'map_id', results: 'result_id', evaluations: 'evaluation_id', miss_reviews: 'review_id' }[b] || 'event_id';
+    return { lines: 'line_id', event_map: 'map_id', results: 'result_id', evaluations: 'evaluation_id', miss_reviews: 'review_id',
+      quarantine: 'quarantine_id', market_corrections: 'correction_id' }[b] || 'event_id';
   };
   const walk = (d) => (fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : (e.name.endsWith('.jsonl') ? [path.join(d, e.name)] : []))) : []);
   const slots = new Set();
@@ -247,6 +258,8 @@ function verify(opts) {
         }
       }
       if (idf === 'quote_id' && id !== ids.quote(r)) problems.push(rel + ':' + (i + 1) + ' quote_id does not match its content');
+      if (idf === 'quarantine_id' && id !== ids.quarantine(r)) problems.push(rel + ':' + (i + 1) + ' quarantine_id does not match its content');
+      if (idf === 'correction_id' && id !== ids.correction(r)) problems.push(rel + ':' + (i + 1) + ' correction_id does not match its content');
     });
   }
   if (opts.base) {

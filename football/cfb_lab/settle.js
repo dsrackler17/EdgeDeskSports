@@ -8,6 +8,12 @@
                   sources the football record already trusts. A FINAL is written
                   only when every source that carries the game agrees; a later
                   disagreement writes a superseding row, never an edit.
+                  SETTLEMENT SAFETY (docs/cfb-production/SETTLEMENT.md): a FINAL
+                  reading needs a final state and a valid score — two integers,
+                  0-150, not a tie; suspended / delayed games are not final; an
+                  invalid final is refused and logged, and the game waits.
+                  Overtime is part of the result: margin, ATS and totals are
+                  graded on the final score including overtime.
      2. lines     openers and closes (market.deriveLines, METRICS §4).
      3. grade     one evaluation per snapshot per (result, close) — append-only;
                   a corrected result or a newly derived close adds a row.
@@ -23,13 +29,17 @@ const path = require('path');
 const L = require('./lab_core.js');
 const G = require('./ledger.js');
 const MK = require('./market.js');
+const I = require('./integrity.js');
 const SRC = require(path.join(G.REPO, 'tools', 'record', 'football_record_sources.js'));
+const P = require('./providers.js');
 
 const U = L.util;
 
 /* ------------------------------------------------------------ readings */
-/* ESPN scoreboard payloads -> { game_id: {status, home, away, overtime} } */
-function espnReadings(payloads) {
+/* ESPN scoreboard payloads -> { game_id: {status, home, away, overtime} }.
+   `refused` (optional array) collects every reading that is not a trustworthy
+   result: a "final" without a final state or a valid score. */
+function espnReadings(payloads, refused) {
   const out = {};
   (payloads || []).forEach((json) => ((json && json.events) || []).forEach((ev) => {
     const comp = (ev.competitions && ev.competitions[0]) || {};
@@ -44,16 +54,27 @@ function espnReadings(payloads) {
     else if (/FORFEIT|NO_CONTEST/i.test(name)) status = 'NO_CONTEST';
     else if (st.completed === true) status = 'FINAL';
     if (!status) return;
-    const hs = U.num(home.score), as = U.num(away.score);
-    out[String(ev.id)] = { source: 'espn', status, home_points: status === 'FINAL' ? hs : null, away_points: status === 'FINAL' ? as : null,
+    const hs = I.num(home.score), as = I.num(away.score);
+    const kick = U.iso(comp.date || ev.date);
+    const rd = { source: 'espn', status, home_points: status === 'FINAL' ? hs : null, away_points: status === 'FINAL' ? as : null,
       overtime: status === 'FINAL' && U.isNum(period) ? period > 4 : null, name };
+    if (kick) rd.kickoff_ts = kick;
+    const bad = status === 'FINAL' ? I.finalProblem(rd) : null;
+    if (bad) { if (refused) refused.push({ game_id: String(ev.id), source: 'espn', reason: bad, reading: rd }); return; }
+    out[String(ev.id)] = rd;
   }));
   return out;
 }
-function cfbfastrReadings(csvText, season) {
+function cfbfastrReadings(csvText, season, refused) {
   const parsed = SRC.parseCfbSchedule(csvText, season);
   const out = {};
-  Object.keys(parsed).forEach((id) => { const f = parsed[id].final; if (f) out[id] = { source: 'cfbfastR', status: 'FINAL', home_points: f.home_score, away_points: f.away_score, overtime: null }; });
+  Object.keys(parsed).forEach((id) => {
+    const f = parsed[id].final; if (!f) return;
+    const rd = { source: 'cfbfastR', status: 'FINAL', home_points: f.home_score, away_points: f.away_score, overtime: null };
+    const bad = I.finalProblem(rd);
+    if (bad) { if (refused) refused.push({ game_id: id, source: 'cfbfastR', reason: bad, reading: rd }); return; }
+    out[id] = rd;
+  });
   return out;
 }
 /* the football record's own finals (it reads the same two feeds hourly) — used
@@ -76,6 +97,9 @@ function resultsFrom(readingSets, existing, now, gameIds) {
   for (const gid of ids) {
     const rs = readingSets.map((s) => s[gid]).filter(Boolean);
     if (!rs.length) continue;
+    /* a source that says FINAL without a valid final is a disagreement: nothing is settled */
+    const invalid = rs.filter((r) => r.status === 'FINAL' && I.finalProblem(r));
+    if (invalid.length) { disagreements.push({ game_id: gid, readings: rs, invalid_final: invalid.map((r) => r.source + ': ' + I.finalProblem(r)) }); continue; }
     const finals = rs.filter((r) => r.status === 'FINAL');
     const voids = rs.filter((r) => r.status !== 'FINAL');
     let row = null;
@@ -85,10 +109,10 @@ function resultsFrom(readingSets, existing, now, gameIds) {
       const ot = finals.map((r) => r.overtime).find((x) => x === true || x === false);
       row = { game_id: gid, status: 'FINAL', home_points: finals[0].home_points, away_points: finals[0].away_points,
         final_margin: finals[0].home_points - finals[0].away_points, final_total: finals[0].home_points + finals[0].away_points,
-        overtime: ot === undefined ? null : ot, sources: rs.map((r) => ({ source: r.source, status: r.status, home_points: r.home_points, away_points: r.away_points })), sources_agree: true };
+        overtime: ot === undefined ? null : ot, sources: rs.map(srcOf), sources_agree: true };
     } else if (voids.length && !finals.length) {
       row = { game_id: gid, status: voids[0].status, home_points: null, away_points: null, final_margin: null, final_total: null, overtime: null,
-        sources: rs.map((r) => ({ source: r.source, status: r.status })), sources_agree: voids.every((v) => v.status === voids[0].status) };
+        sources: rs.map((r) => { const o = { source: r.source, status: r.status }; if (r.kickoff_ts) o.kickoff_ts = r.kickoff_ts; return o; }), sources_agree: voids.every((v) => v.status === voids[0].status) };
       if (!row.sources_agree) { disagreements.push({ game_id: gid, readings: rs }); continue; }
     } else { disagreements.push({ game_id: gid, readings: rs }); continue; }
     const prev = cur.get(gid);
@@ -101,6 +125,13 @@ function resultsFrom(readingSets, existing, now, gameIds) {
     out.push(row);
   }
   return { rows: out, disagreements };
+}
+/* a source entry of a result row; the kickoff the source reported rides along
+   (used to anchor closes and to void a snapshot of a game that was moved) */
+function srcOf(r) {
+  const o = { source: r.source, status: r.status, home_points: r.home_points, away_points: r.away_points };
+  if (r.kickoff_ts) o.kickoff_ts = r.kickoff_ts;
+  return o;
 }
 function currentResults(results) {
   const m = new Map();
@@ -116,14 +147,30 @@ function consensusLines(lines) {
 }
 
 /* ------------------------------------------------------------- grading */
+/* The kickoff the game was actually played at: the result's own source
+   kickoff (ESPN at settlement), else the newest kickoff a LIVE snapshot of the
+   game was taken against. */
+function actualKickoffs(preds, cur) {
+  const m = new Map();
+  for (const p of preds) if (p.origin === 'LIVE') { const c = m.get(p.game_id); if (!c || U.ms(p.prediction_ts) > U.ms(c.at)) m.set(p.game_id, { kickoff: p.kickoff_ts, at: p.prediction_ts }); }
+  const out = new Map();
+  m.forEach((v, gid) => out.set(gid, v.kickoff));
+  cur.forEach((r, gid) => { const k = (r.sources || []).map((x) => x.kickoff_ts).filter(Boolean)[0]; if (k) out.set(gid, k); });
+  return out;
+}
 function gradeAll(preds, results, lines, existingEvals, now) {
   const cur = currentResults(results);
   const cl = consensusLines(lines);
   const have = new Set((existingEvals || []).map((e) => e.evaluation_id));
+  const kicks = actualKickoffs(preds, cur);
   const out = [];
   for (const p of preds) {
-    const res = cur.get(p.game_id);
-    if (!res) continue;
+    const res0 = cur.get(p.game_id);
+    if (!res0) continue;
+    /* a snapshot of a game that was then moved by more than 36 h predicted a
+       game that did not happen at its time: VOID (the POSTPONED grading), never
+       a win or a loss (SETTLEMENT.md §4) */
+    const res = (res0.status === 'FINAL' && I.rescheduled(p.kickoff_ts, kicks.get(p.game_id))) ? Object.assign({}, res0, { status: 'POSTPONED' }) : res0;
     const ln = cl.get(p.game_id) || {};
     if (res.status === 'FINAL' && !ln.close && !L.closeDue(p.kickoff_ts, now)) continue;   // wait for the close grace
     const e = L.evaluate(p, res, ln);
@@ -217,11 +264,20 @@ async function run(opts) {
   const log = { now, season };
   /* 1. results */
   const sets = [];
+  const refused = [];
   if (!opts.offline) {
-    const payloads = opts.espnPayloads || await MK.fetchEspn(now, { back: 10, fwd: 0 });
-    sets.push(espnReadings(payloads));
-    try { sets.push(cfbfastrReadings(opts.cfbfastrCsv || await SRC.fetchText(SRC.URL_CFB_SCHED(season), 60000), season)); }
-    catch (e) { log.cfbfastr_error = e.message; }
+    const payloads = opts.espnPayloads || await MK.fetchEspn(now, { back: 10, fwd: 0, breakerState: opts.espnBreakerState });
+    const schema = payloads.filter((p) => !p.error).map((p) => P.validateEspnScoreboard(p, { use: 'results' }));
+    log.espn_schema = { rejected_payloads: schema.filter((v) => !v.ok).length, rejected_events: schema.reduce((a, v) => a + v.rejected.length, 0),
+      problems: schema.flatMap((v) => v.problems.concat(v.rejected.slice(0, 5).map((x) => 'event ' + x.id + ': ' + x.problems.join('; ')))).slice(0, 20) };
+    sets.push(espnReadings(schema.filter((v) => v.ok).map((v) => ({ events: v.events })), refused));
+    const cf = await P.guarded('cfbfastr_schedule', (signal) => (opts.cfbfastrCsv != null ? Promise.resolve(opts.cfbfastrCsv) : P.httpText(SRC.URL_CFB_SCHED(season), signal)), { now, breakerState: opts.cfbfastrBreakerState });
+    if (cf.ok) {
+      const missing = P.validateCfbfastrHeader(cf.value);
+      if (missing.length) log.cfbfastr_error = 'SCHEMA: cfbfastR schedule lacks ' + missing.join(', ');
+      else sets.push(cfbfastrReadings(cf.value, season, refused));
+    } else log.cfbfastr_error = (cf.class || 'UNKNOWN') + ': ' + cf.error;
+    log.breakers = { cfbfastr_schedule: cf.breaker };
     log.readings = sets.map((s) => Object.keys(s).length);
   }
   if (opts.readings) sets.push(...opts.readings);
@@ -235,6 +291,7 @@ async function run(opts) {
   rs.rows.forEach((r) => { const p = byGame.get(r.game_id); if (p) { r.season = p.season; r.week = p.week; } r.result_id = G.ids.result(r); });
   log.results = store.append('results', rs.rows, 'result_id').written;
   log.result_disagreements = rs.disagreements;
+  log.results_refused = refused.filter((x) => predGames.has(x.game_id));
   /* 2. lines */
   log.lines = MK.lines(season, now, { storeOpts: opts.storeOpts });
   /* 3. grading */
@@ -247,7 +304,7 @@ async function run(opts) {
   return log;
 }
 
-module.exports = { espnReadings, cfbfastrReadings, recordReadings, resultsFrom, currentResults, consensusLines, gradeAll, missReviews, observedStarters, learningEvidence, run };
+module.exports = { espnReadings, cfbfastrReadings, recordReadings, resultsFrom, currentResults, consensusLines, gradeAll, actualKickoffs, missReviews, observedStarters, learningEvidence, run };
 
 if (require.main === module) {
   const a = process.argv.slice(2);

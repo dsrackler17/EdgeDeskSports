@@ -98,6 +98,8 @@ function resolveTeam(ref, M) {
    (at least one side does not resolve and the raw names differ). */
 function sameTeam(x, y, M) {
   const a = resolveTeam(x, M), b = resolveTeam(y, M);
+  /* one side's own id and name disagree: that is a mapping fault, never a match */
+  if (a.conflict || b.conflict) return false;
   if (a.internal_team_id && b.internal_team_id) return a.internal_team_id === b.internal_team_id;
   const nx = typeof x === 'object' && x ? x.name : x, ny = typeof y === 'object' && y ? y.name : y;
   if (nx != null && ny != null && F.normKey(nx) && F.normKey(nx) === F.normKey(ny)) return true;

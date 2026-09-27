@@ -730,6 +730,9 @@ def run():
            'tail_multiplier': 1.0,
            'overtime_distribution': [D.r(float(Fdev['ot'][k]), 6) for k in range(0, 41)],
            'sigma_by_favorite_line': sbl,
+           'landing_dev_abs_margin': [{'k': k, 'share': D.r(float((P.abs_m.values == k).mean()), 5)} for k in range(1, 36)],
+           'landing_dev_n': int(len(P)),
+           'half_point_cents_at_-110': [{'line': x['line'], 'favorite': x['fav_cents'], 'underdog': x['dog_cents']} for x in res['half_point_values']],
            'holdout': 'scored once by python3 -m v2.market_intel.replay --holdout (docs/cfb-market/BACKTEST.md)'}
     D.write_artifact(ARTIFACT, art)
     D.write_json('keynumbers.json', res)
