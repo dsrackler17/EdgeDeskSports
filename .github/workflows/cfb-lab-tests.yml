@@ -26,6 +26,8 @@ on:
       - 'supabase/cfb_lab.sql'
       - 'supabase/cfb_lab_cron.sql'
       - 'supabase/cfb_market_integrity.sql'
+      - 'supabase/cfb_market.sql'
+      - 'football/cfb_market/**'
       - 'supabase/functions/edgedesk_ai/_cfb_explain.js'
       - 'football/cfb_decision/decision.js'
       - 'app.html'
@@ -43,6 +45,10 @@ on:
       - 'supabase/cfb_lab.sql'
       - 'supabase/cfb_lab_cron.sql'
       - 'supabase/cfb_market_integrity.sql'
+      - 'supabase/cfb_market.sql'
+      - 'football/cfb_market/*.js'
+      - 'football/cfb_market/fixtures/**'
+      - 'football/cfb_market/artifacts/**'
       - 'supabase/functions/capture/index.ts'
       - 'supabase/functions/edgedesk_ai/_cfb_explain.js'
       - 'football/cfb_decision/decision.js'
@@ -95,5 +101,11 @@ jobs:
         env:
           CFB_LAB_SQL_REQUIRED: '1'
         run: node football/cfb_lab/integrity_sql.test.js
+      - name: Market intelligence (key numbers, consensus, movement, timing; pure never follows the market)
+        run: node football/cfb_market/tests.js
+      - name: The market-intelligence Postgres contract
+        env:
+          CFB_MARKET_SQL_REQUIRED: '1'
+        run: node football/cfb_market/sql.test.js
       - name: The committed ledger is intact
         run: node football/cfb_lab/ledger.js verify

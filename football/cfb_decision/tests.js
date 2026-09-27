@@ -260,6 +260,11 @@ chk('features: an explicit early_season 0 is not overridden by week <= 3',
   D.sideNumbers(pure({ week: 1 }), quote(), 'HOME', { policy: POL, artifact: ART, row: { early_season: 0 }, _mc: {} }).features.early_season === 0
   && D.sideNumbers(pure({ week: 2 }), quote(), 'HOME', { policy: POL, artifact: ART, row: {}, _mc: {} }).features.early_season === 1);
 
+/* -------------------------------------------- language audit: whole words only */
+chk('auditLanguage: the product name EdgeDesk is not a value claim', D.auditLanguage('The line moved toward EdgeDesk.', { status: 'PASS' }).ok);
+chk('auditLanguage: an unsupported value claim is still refused', !D.auditLanguage('There is real value on this side.', { status: 'PASS' }).ok);
+chk('auditLanguage: a claimed edge without a number is still refused', !D.auditLanguage('We have an edge here.', { status: 'LEAN' }).ok);
+
 /* -------------------------------------------- parity with the Python reference */
 const FIX = path.join(__dirname, '..', 'cfb_v2', 'artifacts', 'decision', 'fixtures', 'decision_parity.json');
 const CAL = path.join(__dirname, '..', 'cfb_v2', 'artifacts', 'decision', 'cfb_decision_calibration_v1', 'calibration.json');
