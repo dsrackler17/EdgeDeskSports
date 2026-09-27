@@ -84,7 +84,7 @@ function build(opts) {
   const asOf = N.requireAsOf({ as_of_ts: opts.now });
   const asOfMs = ms(asOf);
   const season = opts.season || seasonFor(asOf);
-  const rd = (p) => (opts.files && opts.files[p]) || readJson(path.join(REPO, p));
+  const rd = (p) => (opts.files && Object.prototype.hasOwnProperty.call(opts.files, p) ? opts.files[p] : readJson(path.join(REPO, p)));
   const cur = rd('football/cfb_v2/current.json') || { rows: [] };
   const slate = rd('football/fbs/slate.json') || { games: [] };
   const manifest = rd('football/cfb_production/manifest.json') || {};
@@ -113,14 +113,22 @@ function build(opts) {
       home_win_prob: p.pure.p_home, fair_total: p.pure.total, source: p.source, slate_generated_at: slate.generated_at, kickoff: p.game.kickoff,
       home: p.game.home, away: p.game.away, week: p.game.week, season: p.game.season }]));
   } catch (e) { v1 = new Map(); }
-  const rows = new Map((cur.rows || []).map((r) => [String(r.game_id), r]));
+  /* one row per game: two DIFFERENT rows for one game (a duplicated game, a
+     half-written file) use neither: the game falls to the next level */
+  const rows = new Map(), dups = new Set();
+  (cur.rows || []).forEach((r) => {
+    const k = String(r.game_id);
+    if (rows.has(k)) { if (CANON.inputHash(rows.get(k)) !== CANON.inputHash(r)) dups.add(k); return; }
+    rows.set(k, r);
+  });
   const ids = new Set([...rows.keys()]);
   v1.forEach((p, k) => { if (!ids.has(k)) ids.add(k); });
   const games = [];
   for (const gid of [...ids].sort()) {
-    const row = rows.get(gid) || null;
+    const row = dups.has(gid) ? null : (rows.get(gid) || null);
+    const dupRow = dups.has(gid) ? rows.get(gid) : null;
     const v = v1.get(gid) || null;
-    const kick = N.utc((row && row.kickoff) || (v && v.kickoff));
+    const kick = N.utc((row && row.kickoff) || (dupRow && dupRow.kickoff) || (v && v.kickoff));
     const h = kick ? (ms(kick) - asOfMs) / 3600000 : null;
     if (h === null || h <= 0 || h > HORIZON_H) continue;
     const L2 = lab.get(gid + '|' + mv) || null;
@@ -130,10 +138,12 @@ function build(opts) {
     const snap = row ? CANON.snapshot(row, { as_of_ts: asOf, engine: E.engine, params: E.params, params_sha256: E.params_sha256, context: ctx,
       row_model_version: cur.model_version, source: 'football/cfb_v2/current.json' }) : null;
     const resolved = CANON.resolve(snap, v);
+    if (dupRow) resolved.reason = 'two different V2.1 rows for this game in current.json: neither is used';
     const off = officialDecision(decByGame.get(gid) || [], asOfMs);
     games.push({
       game_id: gid, season: (row && row.season) || (v && v.season), week: (row && row.week) || (v && v.week), kickoff: kick,
-      home: (row && row.home) || (v && v.home), away: (row && row.away) || (v && v.away), neutral_site: !!(row && row.neutral_site),
+      home: (row && row.home) || (dupRow && dupRow.home) || (v && v.home), away: (row && row.away) || (dupRow && dupRow.away) || (v && v.away), neutral_site: !!(row && row.neutral_site),
+      duplicate_rows: dupRow ? true : undefined,
       hours_to_kickoff: Math.round(h * 100) / 100,
       canonical: snap,
       v1: v,
