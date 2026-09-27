@@ -588,6 +588,8 @@ def _team_pbp_quality(V, T):
     if V is None or not len(V) or 'pbp_completeness_score' not in V:
         return {}
     fin = V[V.status.isin(['FINAL_VALIDATED', 'FINAL_PARTIAL_DATA', 'DATA_ERROR'])]
+    if 'in_scope' in fin:
+        fin = fin[fin.in_scope]          # games with an FBS team: the ones the ratings are built from
     if 'kickoff_ts' in fin:
         fin = fin[pd.to_datetime(fin.kickoff_ts, utc=True, errors='coerce') < T]
     rows = pd.concat([fin[['home_id', 'pbp_completeness_score']].rename(columns={'home_id': 't'}),
