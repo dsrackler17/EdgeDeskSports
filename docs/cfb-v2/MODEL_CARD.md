@@ -181,7 +181,14 @@ model and the cover calibration.
    weather widen the distribution only. None of them is validated.
 6. **Home bias**: holdout bias −0.46 (V2 slightly under-rates home teams); 2026 −0.97.
 7. **2013** lacks sacks; **2020** has no openers and a COVID schedule (reported, not dropped).
-8. Historical CLV/ROI assume a Tuesday bet at the opener at −110; the archive has no
+8. **Reliability does not rank-order above 60.** It isolates the worst games
+   (< 40: holdout MAE 14.0 vs 12.0–12.9 elsewhere) but the 90+ tier (MAE 12.59, 80%
+   coverage 0.77) is no better than 75–90 (MAE 12.01, coverage 0.83). The score is
+   an inverted sigma, and the lowest-sigma games are close matchups whose errors are
+   not smaller. **Treat reliability as "not bad" vs "bad", not as a fine grade.** Fix
+   for the next version (dev seasons only): map the score to each bucket's
+   walk-forward MAE and coverage instead of the sigma range.
+9. Historical CLV/ROI assume a Tuesday bet at the opener at −110; the archive has no
    spread prices and no intra-week lines, so the at-close grading is the lower bound.
 
 ## 9. Refresh and retraining policy
