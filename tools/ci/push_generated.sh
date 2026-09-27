@@ -30,6 +30,14 @@
 #   PUSH_ATTEMPTS   how many pushes to try (default 6; backoff 2,4,8,16,32 s)
 #   PUSH_REMOTE     remote name (default origin)
 #   PUSH_SLEEP      override the backoff (seconds) — the tests set it to 0
+#   PUSH_MERGE_PATHS  space-separated paths among the named ones that are
+#                   SOURCE, not artifacts (app.html, which build steps patch
+#                   in place). On a rejected push these are never overwritten
+#                   with our copy — that would silently revert whatever landed
+#                   on the branch meanwhile (a merged pull request). Instead our
+#                   own change to them is applied as a 3-way merge onto the new
+#                   tip; if it does not apply cleanly, nothing is pushed and the
+#                   script fails (a missed publish, never a reverted change).
 # ============================================================================
 set -euo pipefail
 
@@ -66,9 +74,18 @@ if git diff --cached --quiet; then
   echo "nothing changed under: ${PATHS[*]} — no commit"
   exit 0
 fi
+BASE=$(git rev-parse HEAD)
 git commit -q -m "$MESSAGE"
 MINE=$(git rev-parse HEAD)
+ORIG_MINE="$MINE"
 echo "committed $MINE: $MESSAGE"
+
+read -r -a MERGE <<< "${PUSH_MERGE_PATHS:-}"
+is_merge() {
+  local m
+  for m in "${MERGE[@]:-}"; do [ -n "$m" ] && [ "$m" = "$1" ] && return 0; done
+  return 1
+}
 
 i=0
 while [ "$i" -lt "$ATTEMPTS" ]; do
@@ -87,9 +104,21 @@ while [ "$i" -lt "$ATTEMPTS" ]; do
   # OUR artifacts on top: every named path becomes exactly what our commit
   # holds, deletions included
   for p in "${PATHS[@]}"; do
+    if is_merge "$p"; then continue; fi
     git rm -r -q --cached --ignore-unmatch -- "$p" 2>/dev/null || true
     rm -rf -- "$p"
     git checkout -q "$MINE" -- "$p" 2>/dev/null || true
+  done
+  # source paths: OUR change (the first commit's diff), merged onto the tip
+  for p in "${MERGE[@]:-}"; do
+    [ -n "$p" ] || continue
+    if git diff --quiet "$BASE" "$ORIG_MINE" -- "$p"; then continue; fi
+    if ! git diff --binary "$BASE" "$ORIG_MINE" -- "$p" | git apply --3way --index -q 2>/dev/null; then
+      echo "our change to $p does not apply to the new tip of $BRANCH (it changed there too);" >&2
+      echo "refusing to overwrite it — nothing pushed" >&2
+      git reset -q --hard FETCH_HEAD
+      exit 1
+    fi
   done
   stage
   if git diff --cached --quiet; then

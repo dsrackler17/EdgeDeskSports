@@ -75,6 +75,8 @@ jobs:
           node-version: '22'
       - name: Lab rules, ledger, settlement, grading, governance, end to end
         run: node football/cfb_lab/tests.js
+      - name: The replay import attributes every row to its own model version
+        run: node football/cfb_lab/backfill.test.js
       - name: The per-sportsbook feed inside the capture function
         run: node football/cfb_lab/capture_feed.test.js
       - name: Postgres functions agree with the JavaScript (shared fixture)

@@ -99,9 +99,21 @@ has(APP, "if(_rh){", 'a deep link still beats the remembered tab');
 /* ======================================================================== */
 /* nothing was renamed: every view id the app shipped with still exists */
 ['v-edges','v-faults','v-record','v-ledger','v-news','v-research','v-terms','v-social',
- 'v-settings','v-discipline','v-football','v-cfb','v-ufc','v-tennis','v-stats','v-props','v-lab','v-rdesk']
+ 'v-settings','v-discipline','v-football','v-cfb','v-ufc','v-stats','v-props','v-lab','v-rdesk']
   .forEach(id => has(APP, 'id="' + id + '"', 'the ' + id + ' route still exists'));
 has(APP, 'id="v-more"', 'and More is a view like any other');
+/* Tennis was retired from the product: its panel and tab are gone, and its old
+   routes (#research/tennis/…, #research/wta, a remembered sub) land on the
+   Research shell's default destination rather than a dead route */
+lacks(APP, 'id="v-tennis"', 'the Tennis panel is gone');
+lacks(APP, 'data-sub="tennis"', 'and so is its Research tab');
+chk('the Research sub-nav reads Desk | Football | UFC | Baseball | Stats | Lab',
+    JSON.stringify((APP.match(/<nav class="stseg research-sub" aria-label="Research sports">[^\n]*?<\/nav>/) || [''])[0].match(/data-sub="[a-z]+"/g))
+      === JSON.stringify(['rdesk','football','ufc','baseball','stats','lab'].map(s => 'data-sub="' + s + '"')));
+has(APP, "var RS_RETIRED={tennis:'football',wta:'football'};", 'old tennis routes have a destination');
+has(APP, "if(RS_RETIRED[sub])sub=RS_RETIRED[sub];", 'researchGo sends a retired module there');
+has(APP, "if(m&&RS_RETIRED[m[1]])return {sub:RS_RETIRED[m[1]],entity:null,retired:true};",
+    'and a #research/tennis/… deep link resolves there instead of being ignored');
 has(APP, "^#research\\/([a-z]+)(?:\\/(.+))?$", 'the research hash grammar is unchanged');
 has(APP, "window.addEventListener('hashchange'", 'back and forward still route');
 /* Research is now stamped into the URL on every boot, so leaving the shell has

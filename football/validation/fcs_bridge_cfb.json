@@ -1,58 +1,58 @@
 {
  "schema": "edgedesk_fcs_bridge_validation_v1",
  "season": 2026,
- "generated_at": "2026-09-27T08:22:39.898Z",
+ "generated_at": "2026-09-27T19:24:28.468Z",
  "method": "walk-forward over every completed 2026 FBS-vs-FCS game: the FCS side rated from the 2025 fit carried forward and only the 2026 results before kickoff; the FBS side at the rating EdgeDesk priced it at before the game (engine replay). Errors are against the final margin, capped at the engine’s own ±35 (and uncapped beside it).",
- "n": 110,
+ "n": 116,
  "capped": {
   "floor": {
-   "n": 110,
-   "mae": 9.7,
-   "rmse": 12.28,
-   "bias": 0
+   "n": 116,
+   "mae": 9.66,
+   "rmse": 12.26,
+   "bias": 0.07
   },
   "bridge": {
-   "n": 110,
-   "mae": 9.5,
-   "rmse": 12.01,
-   "bias": -1.07
+   "n": 116,
+   "mae": 9.54,
+   "rmse": 11.95,
+   "bias": -0.91
   },
   "prior_only": {
-   "n": 110,
-   "mae": 9.33,
-   "rmse": 11.92,
-   "bias": -1.79
+   "n": 116,
+   "mae": 9.42,
+   "rmse": 11.93,
+   "bias": -1.64
   }
  },
  "uncapped": {
   "floor": {
-   "n": 110,
-   "mae": 17.4,
-   "rmse": 21.16,
-   "bias": -9.2
+   "n": 116,
+   "mae": 17.33,
+   "rmse": 20.99,
+   "bias": -9.01
   },
   "bridge": {
-   "n": 110,
-   "mae": 16.36,
-   "rmse": 19.66,
-   "bias": -10.27
+   "n": 116,
+   "mae": 16.23,
+   "rmse": 19.46,
+   "bias": -10
   },
   "prior_only": {
-   "n": 110,
-   "mae": 16.39,
-   "rmse": 19.82,
-   "bias": -10.99
+   "n": 116,
+   "mae": 16.37,
+   "rmse": 19.72,
+   "bias": -10.72
   }
  },
  "paired_abs_error_reduction": {
-  "mean": 0.2,
-  "se": 0.68,
-  "t": 0.29,
-  "bridge_closer": 55,
-  "of": 110
+  "mean": 0.11,
+  "se": 0.66,
+  "t": 0.17,
+  "bridge_closer": 57,
+  "of": 116
  },
  "floor_value": -28,
- "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.29, n = 110).",
+ "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.17, n = 116).",
  "rows": [
   {
    "game_id": "401856767",
@@ -1153,6 +1153,66 @@
    "floor": 25.79,
    "bridge": 34.5,
    "bridge_sd": 6.53
+  },
+  {
+   "game_id": "401868188",
+   "week": 4,
+   "fcs": "gardnerwebb",
+   "fbs": "marshall",
+   "actual": 1,
+   "floor": 24.17,
+   "bridge": 16.99,
+   "bridge_sd": 6.53
+  },
+  {
+   "game_id": "401862781",
+   "week": 4,
+   "fcs": "northcarolinacentral",
+   "fbs": "eastcarolina",
+   "actual": 33,
+   "floor": 28.94,
+   "bridge": 22.85,
+   "bridge_sd": 7.95
+  },
+  {
+   "game_id": "401860892",
+   "week": 4,
+   "fcs": "incarnateword",
+   "fbs": "texasstate",
+   "actual": 53,
+   "floor": 31.11,
+   "bridge": 28.95,
+   "bridge_sd": 7.58
+  },
+  {
+   "game_id": "401867909",
+   "week": 4,
+   "fcs": "longislanduniversity",
+   "fbs": "floridainternational",
+   "actual": 17,
+   "floor": 24.66,
+   "bridge": 27.8,
+   "bridge_sd": 6.48
+  },
+  {
+   "game_id": "401870745",
+   "week": 4,
+   "fcs": "mercyhurst",
+   "fbs": "westernkentucky",
+   "actual": 45,
+   "floor": 20.45,
+   "bridge": 26.33,
+   "bridge_sd": 5.77
+  },
+  {
+   "game_id": "401862783",
+   "week": 4,
+   "fcs": "houstonchristian",
+   "fbs": "northtexas",
+   "actual": 49,
+   "floor": 35.05,
+   "bridge": 45.62,
+   "bridge_sd": 6.51
   }
  ]
 }

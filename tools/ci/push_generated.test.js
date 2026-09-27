@@ -129,7 +129,62 @@ git(root, ['clone', '-q', bare, B]);
   chk('while the other side\'s change is kept', fs.readFileSync(path.join(seed, 'README.md'), 'utf8') === 'seed 2\n');
 }
 
-/* 6. bad usage is refused, not silently a no-op */
+/* 6. a SOURCE file a build step patches in place (app.html), named in
+      PUSH_MERGE_PATHS: a pull request that landed meanwhile is kept, and our
+      own patch is merged onto it, never the whole file overwritten */
+function runMerge(cwd, args, merge) {
+  const r = spawnSync('bash', [SCRIPT].concat(args), { cwd, env: Object.assign({}, ENV, { PUSH_MERGE_PATHS: merge }), stdio: ['ignore', 'pipe', 'pipe'] });
+  return { code: r.status, out: String(r.stdout || '') + String(r.stderr || '') };
+}
+{
+  const page = ['<html>', 'header', 'board', 'footer', '</html>', ''].join('\n');
+  git(A, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  write(A, 'app.html', page);
+  git(A, ['add', '-A']); git(A, ['commit', '-q', '-m', 'app: page']); git(A, ['push', '-q', 'origin', 'main']);
+  git(B, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  /* the merged pull request: a new header */
+  write(B, 'app.html', page.replace('header', 'header v2 (merged PR)'));
+  git(B, ['add', '-A']); git(B, ['commit', '-q', '-m', 'app: new header']); git(B, ['push', '-q', 'origin', 'main']);
+  /* the build job, checked out before that merge: patches the footer and writes an artifact */
+  write(A, 'app.html', page.replace('footer', 'footer (patched by the build)'));
+  write(A, 'football/rating/current.json', '{"week":5}\n');
+  const r = runMerge(A, ['main', 'football: week 5', '--', 'football/rating/current.json', 'app.html'], 'app.html');
+  git(seed, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  const got = fs.readFileSync(path.join(seed, 'app.html'), 'utf8');
+  chk('a merged change to a source file survives a rejected push (it is not reverted)', r.code === 0 && /header v2 \(merged PR\)/.test(got), r.out + '\n' + got);
+  chk('and the build\'s own patch to it lands too', /footer \(patched by the build\)/.test(got), got);
+  chk('the artifacts still land beside it', fs.readFileSync(path.join(seed, 'football/rating/current.json'), 'utf8') === '{"week":5}\n');
+
+  /* the same line changed on both sides: refuse, never overwrite */
+  git(B, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  write(B, 'app.html', got.replace('footer (patched by the build)', 'footer (a merged PR)'));
+  git(B, ['add', '-A']); git(B, ['commit', '-q', '-m', 'app: footer PR']); git(B, ['push', '-q', 'origin', 'main']);
+  git(A, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  git(A, ['reset', '-q', '--hard', 'HEAD~1']);
+  write(A, 'app.html', got.replace('footer (patched by the build)', 'footer (patched again)'));
+  write(A, 'football/rating/current.json', '{"week":6}\n');
+  const before = git(seed, ['ls-remote', bare, 'refs/heads/main']);
+  const r2 = runMerge(A, ['main', 'football: week 6', '--', 'football/rating/current.json', 'app.html'], 'app.html');
+  const after = git(seed, ['ls-remote', bare, 'refs/heads/main']);
+  git(seed, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  chk('a conflicting change to a source file is refused: nothing is pushed', r2.code !== 0 && /refusing to overwrite/.test(r2.out) && before === after, r2.out);
+  chk('the branch keeps the other change exactly', /footer \(a merged PR\)/.test(fs.readFileSync(path.join(seed, 'app.html'), 'utf8')));
+  chk('the working tree is left clean after a refusal', git(A, ['status', '--porcelain']) === '');
+}
+
+/* 7. without PUSH_MERGE_PATHS nothing changes: an owned path is still ours */
+{
+  git(A, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  git(B, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  write(B, 'games/data/challenges.json', '{"challenges":["theirs"]}\n');
+  git(B, ['add', '-A']); git(B, ['commit', '-q', '-m', 'games: theirs']); git(B, ['push', '-q', 'origin', 'main']);
+  write(A, 'games/data/challenges.json', '{"challenges":["ours"]}\n');
+  const r = run(A, ['main', 'games: ours', '--', 'games/data/challenges.json']);
+  git(seed, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  chk('the default for a generated artifact is unchanged: ours wins', r.code === 0 && fs.readFileSync(path.join(seed, 'games/data/challenges.json'), 'utf8') === '{"challenges":["ours"]}\n', r.out);
+}
+
+/* 8. bad usage is refused, not silently a no-op */
 {
   const r = run(A, ['main', 'msg']);
   chk('missing paths are a usage error', r.code === 64, String(r.code));

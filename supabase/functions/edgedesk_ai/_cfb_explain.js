@@ -41,7 +41,10 @@
   'use strict';
 
   var VERSION = 'cfb_explanation_boundary_v1';
-  var STATUSES = ['BET', 'LEAN', 'RESEARCH', 'PASS', 'NO BET'];
+  /* the decision engine's words, plus the research terminal's canonical seven
+     (lib/cfb_terminal.js STATUS): an explanation must use the ONE status the
+     page shows, and name no other */
+  var STATUSES = ['BET', 'LEAN', 'RESEARCH', 'PASS', 'NO BET', 'WAIT', 'INVESTIGATE', 'DATA FAULT', 'NO MARKET'];
   /* metrics an explanation may name only when the facts carry them */
   var METRICS = [
     [/\bEPA\b|expected points added/i, 'epa'], [/success rate/i, 'success_rate'], [/\bSP\+|\bSP plus\b/i, 'sp_plus'],
@@ -63,7 +66,8 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
   /* ----------------------------------------------------------- the facts */
-  var STATUS_OF = { BET: 'BET', LEAN: 'LEAN', RESEARCH: 'RESEARCH', REVIEW: 'RESEARCH', PASS: 'PASS', NOT_PRICED: 'PASS', NO_BET: 'NO BET' };
+  var STATUS_OF = { BET: 'BET', LEAN: 'LEAN', RESEARCH: 'RESEARCH', REVIEW: 'RESEARCH', PASS: 'PASS', NOT_PRICED: 'PASS', NO_BET: 'NO BET',
+    WAIT: 'WAIT', INVESTIGATE: 'INVESTIGATE', DATA_FAULT: 'DATA FAULT', NO_MARKET: 'NO MARKET' };
   function qbStatus(x) {
     if (!x) return { status: 'UNKNOWN', name: null };
     var st = String(x.status || '');

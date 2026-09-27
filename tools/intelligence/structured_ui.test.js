@@ -81,7 +81,7 @@ vm.runInContext(src + '\nthis.DESK_SECTIONS=DESK_SECTIONS;this.structuredLabelHT
     model_case: { status: 'CONDITIONAL', tier: 'RESEARCH', fair_line: -2.5, cover_at_market: 0.5 } };
   const watch = Object.assign({}, opp, { id: 'w', sport: 'americanfootball_nfl', sport_label: 'NFL', matchup: 'Cincinnati Bengals @ Houston Texans', selection: 'Houston Texans', line: -3, quote: { executable: false, source: 'nflverse consensus (reference, no book, no capture time)', freshness: 'LINE_ONLY' }, fair: { method: 'MODEL_BLEND', fair_line: -3.6, probability: 0.53, validation: { tier: 'LEAN' } }, edge: { probability_edge_pp: 0.6, break_even: 0.524, uncertainty: 'sigma 13.2' }, threshold: { kind: 'line', bet_to_line: -3.5, method: 'the selection line where the fair cover meets break-even', note: 'LEAN tier' }, qualification: { status: 'WATCH', rules: ['R4_MODEL: LEAN_PLAY on a reference line with no executable price'], lean: true } });
   const board = { schema: 'edgedesk_board_v1', headline: '1 qualified opportunity across 2 sports evaluated for the next 7 days.', opportunities: [opp], watchlist: [watch], research_leads: [], data_checks: [], unsupported: [{ market: 'player_prop', label: 'player props', note: 'EdgeDesk has no pricing method for player props' }], candidates_considered: 9,
-    coverage: [{ sport: 'americanfootball_nfl', label: 'NFL', status: 'EVALUATED', eligible: 7 }, { sport: 'tennis_wta', label: 'WTA tennis', status: 'RETRIEVAL_FAILED', eligible: 0, errors: ['games could not be read (HTTP 500)'] }],
+    coverage: [{ sport: 'americanfootball_nfl', label: 'NFL', status: 'EVALUATED', eligible: 7 }, { sport: 'icehockey_nhl', label: 'NHL', status: 'RETRIEVAL_FAILED', eligible: 0, errors: ['games could not be read (HTTP 500)'] }],
     scope: { timezone: { zone: 'America/Chicago', source: 'client' }, window: { label: 'the next 7 days' }, follow_up: null }, freshness: { quotes: { newest: '2026-09-16T21:11:28.903Z', oldest: '2026-09-16T21:11:28.903Z' }, research: { newest: '2026-09-16T18:22:49.709Z' } }, note: 'Research, not picks.', no_bankroll_assumption: 'No stake, bankroll or risk preference is assumed.' };
   const html = bctx.boardAnswerHTML({ board }, 'The one qualified opportunity is North Texas -2.5.');
   has('the prose leads', html, 'The Desk’s read');
@@ -99,7 +99,7 @@ vm.runInContext(src + '\nthis.DESK_SECTIONS=DESK_SECTIONS;this.structuredLabelHT
   has('a reference line says it has no executable price', html, 'no executable price captured · nflverse consensus');
   has('LEAN is said on the watchlist row', html, '<b>LEAN</b>: break-even history, not a profit');
   has('the unsupported market is named', html, 'EdgeDesk has no pricing method for player props');
-  has('coverage names the failed sport with the reason', html, 'WTA tennis — retrieval failed<div class="m">games could not be read (HTTP 500)</div>');
+  has('coverage names the failed sport with the reason', html, 'NHL — retrieval failed<div class="m">games could not be read (HTTP 500)</div>');
   has('the window and time zone are shown', html, 'the next 7 days · America/Chicago');
   has('quote freshness and research freshness are shown separately', html, 'quotes captured 2026-09-16T21:11 to 2026-09-16T21:11 · research artifacts built 2026-09-16T18:22');
   has('no bankroll is assumed', html, 'No stake, bankroll or risk preference is assumed.');
