@@ -249,6 +249,27 @@ versions; authenticated reads, anon reads nothing. Mirrored insert-only by
 `apply_cfb_lab` input applies it after the weekly engine's file. Tested against a
 real PostgreSQL by `football/cfb_personnel/sql.test.js`.
 
+### `cfb_decision.sql` — the CFB wagering calibration and decision science system
+Needs nothing else first. Every wager decision the engine
+(`football/cfb_decision/decision.js`) makes, per game × sportsbook quote × snapshot ×
+engine version (`cfb_decision_snapshots`: probabilities, price, break-even,
+probability edge, theoretical and calibrated EV, CLV expectations, the three
+confidences, BETTABLE TO, stake, reason codes); `cfb_bet_eligibility` (the checks behind
+it); `cfb_decision_results` (process grade and outcome grade kept apart);
+`cfb_probability_calibration`, `cfb_ev_calibration` (every row names the price it
+assumed: CAPTURED or ASSUMED_-110), `cfb_decision_policies`, `cfb_bankroll_policy`,
+`cfb_decision_model_versions`, `cfb_portfolio_exposure`, `cfb_decision_experiments`
+(the holdout can be scored once) and `cfb_manual_decisions` (a person's wager, never
+official). The server refuses: a decision at or after kickoff; a BET without a
+captured price, a positive stake of at most 2u, a positive edge and its policy and
+calibration versions; a PASS without a reason; betting enabled by an unvalidated
+policy; full Kelly or an uncapped stake; a PRODUCTION policy, engine or calibration
+without a person and the evidence. Model Lab views: `cfb_decision_lab_view`,
+`cfb_decision_shadow_compare`, `cfb_decision_scorecard`. Append-only; internal
+(authenticated reads, anon nothing). Mirrored by `football/cfb_decision/sync_supabase.js`;
+editor path `parts/cfb_decision.part*-of-*.sql`; tested by
+`football/cfb_decision/sql.test.js`.
+
 ### `ufc_live_center.sql` — the UFC Live Fight Center contract
 The Fight Center used to read a live layer no file in this repository ever
 created (`ufc.live_events`, `ufc.live_fights`, `ufc.live_event_state`,

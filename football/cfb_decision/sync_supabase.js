@@ -1,38 +1,43 @@
 /* ============================================================================
-   CFB weekly engine — mirror football/cfb_weekly/<season>/*.jsonl into Postgres
-   (supabase/cfb_weekly.sql), insert-only.
+   CFB decisions — mirror the decision ledger into Postgres
+   (supabase/cfb_decision.sql), insert-only.
+
+   Committed ledger (football/cfb_decision/<season>/*.jsonl): every decision
+   snapshot (current and challenger engines), its eligibility checks, graded
+   results, exposure, policies, calibration and model versions, experiments,
+   and people's own wagers (stored apart, never official).
 
    Every table is write-once (triggers refuse UPDATE, DELETE and TRUNCATE, the
    service role included). Each row is POSTed with its typed columns (read from
    the migration itself, so the mirror cannot drift from the schema) and the
-   complete ledger row in `payload`, with `on_conflict=<id>` and
-   `resolution=ignore-duplicates`: a row already there is skipped, never
-   updated. Without SB_URL / SB_SERVICE_ROLE it logs and exits 0; the
-   repository is complete on its own.
+   complete row in `payload`, with `on_conflict=<id>` and
+   `resolution=ignore-duplicates`. Without SB_URL / SB_SERVICE_ROLE it logs and
+   exits 0.
 
-     node football/cfb_weekly/sync_supabase.js [--season 2026] [--dry-run]
+     node football/cfb_decision/sync_supabase.js [--season 2026] [--state-dir DIR] [--dry-run]
    ========================================================================== */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 
 const REPO = path.resolve(__dirname, '..', '..');
-const SQL = path.join(REPO, 'supabase', 'cfb_weekly.sql');
+const SQL = path.join(REPO, 'supabase', 'cfb_decision.sql');
 
-/* ledger file -> table, id column. The stage log is expanded from the run manifests. */
+/* ledger file -> table, id column (football/cfb_decision/<season>/) */
 const TABLES = [
-  ['runs.jsonl', 'cfb_pipeline_runs', 'run_id'],
-  ['game_validation.jsonl', 'cfb_game_validation', 'validation_id'],
-  ['game_performance.jsonl', 'cfb_game_performance', 'performance_id'],
-  ['team_week_state.jsonl', 'cfb_team_week_state', 'state_id'],
-  ['qb_week_state.jsonl', 'cfb_qb_week_state', 'qb_state_id'],
-  ['unit_week_state.jsonl', 'cfb_unit_week_state', 'unit_state_id'],
-  ['qb_events.jsonl', 'cfb_qb_events', 'event_id'],
-  ['projections.jsonl', 'cfb_weekly_projections', 'projection_id'],
-  ['projection_changes.jsonl', 'cfb_projection_changes', 'change_id'],
-  ['research.jsonl', 'cfb_weekly_research', 'item_id'],
-  ['misses.jsonl', 'cfb_weekly_misses', 'miss_id'],
+  ['model_versions.jsonl', 'cfb_decision_model_versions', 'version_row_id'],
+  ['probability_calibration.jsonl', 'cfb_probability_calibration', 'calibration_row_id'],
+  ['ev_calibration.jsonl', 'cfb_ev_calibration', 'ev_calibration_id'],
+  ['policies.jsonl', 'cfb_decision_policies', 'policy_row_id'],
+  ['bankroll_policy.jsonl', 'cfb_bankroll_policy', 'bankroll_row_id'],
+  ['decisions.jsonl', 'cfb_decision_snapshots', 'decision_id'],
+  ['eligibility.jsonl', 'cfb_bet_eligibility', 'eligibility_id'],
+  ['exposure.jsonl', 'cfb_portfolio_exposure', 'exposure_id'],
+  ['results.jsonl', 'cfb_decision_results', 'result_id'],
+  ['experiments.jsonl', 'cfb_decision_experiments', 'experiment_id'],
+  ['manual_decisions.jsonl', 'cfb_manual_decisions', 'manual_id'],
 ];
+const STATE_TABLES = [];
 
 let COLS = null;
 function columns() {
@@ -48,15 +53,17 @@ function columns() {
   return COLS;
 }
 
-/* typed columns from the row, the whole row as payload */
+/* typed columns from the row (ids as text: the ledger may hold numbers), the whole row as payload */
+const TEXT_IDS = new Set(['game_id']);
 function shape(table, row) {
   const cols = columns()[table];
-  if (!cols) throw new Error('supabase/cfb_weekly.sql has no table ' + table);
+  if (!cols) throw new Error('supabase/cfb_decision.sql has no table ' + table);
   const o = {};
   for (const c of cols) {
     if (c === 'recorded_at') continue;
     if (c === 'payload') o.payload = row;
-    else if (row[c] !== undefined) o[c] = row[c];
+    else if (row[c] !== undefined && row[c] !== null) o[c] = TEXT_IDS.has(c) ? String(row[c]) : row[c];
+    else if (row[c] === null) o[c] = null;
   }
   return o;
 }
@@ -66,30 +73,13 @@ function readJsonl(p) {
   return fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
 }
 
-function plan(season, root) {
-  const dir = path.join(root || path.join(REPO, 'football', 'cfb_weekly'), String(season));
+function plan(season, opts) {
+  opts = opts || {};
+  const dir = path.join(opts.root || path.join(REPO, 'football', 'cfb_decision'), String(season));
   const out = TABLES.map(([file, table, id]) => ({ table, id, rows: readJsonl(path.join(dir, file)).map((r) => shape(table, r)) }));
-  /* the stage log, one row per (run, stage), from the run manifests */
-  const stages = [];
-  const rdir = path.join(dir, 'runs');
-  if (fs.existsSync(rdir)) {
-    for (const f of fs.readdirSync(rdir).filter((x) => x.endsWith('.json')).sort()) {
-      const run = JSON.parse(fs.readFileSync(path.join(rdir, f), 'utf8'));
-      for (const s of run.stages || []) {
-        stages.push({ run_id: run.run_id, stage: s.stage, status: s.status, started_at: s.started_at, finished_at: s.finished_at,
-          ms: s.ms, error_class: s.error_class, error: s.error, counts: s.counts });
-      }
-    }
-  }
-  out.splice(1, 0, { table: 'cfb_pipeline_stage_log', id: 'run_id,stage', rows: stages });
-  /* source health, one row per (run, source) */
-  const sh = path.join(dir, 'source_health.json');
-  if (fs.existsSync(sh)) {
-    const h = JSON.parse(fs.readFileSync(sh, 'utf8'));
-    const crypto = require('crypto');
-    out.push({ table: 'cfb_source_health', id: 'health_id', rows: (h.sources || []).map((s) => shape('cfb_source_health', Object.assign({
-      health_id: 'cfbh_' + crypto.createHash('sha256').update([h.season, h.as_of, s.source].join('|')).digest('hex').slice(0, 24),
-      season: h.season, as_of: h.as_of }, s))) });
+  if (opts.stateDir) {
+    const sd = path.join(opts.stateDir, String(season));
+    for (const [file, table, id] of STATE_TABLES) out.push({ table, id, rows: readJsonl(path.join(sd, file)).map((r) => shape(table, r)) });
   }
   return out;
 }
@@ -116,9 +106,9 @@ async function post(url, key, table, onConflict, rows) {
 async function sync(season, opts) {
   opts = opts || {};
   const url = process.env.SB_URL, key = process.env.SB_SERVICE_ROLE;
-  const p = plan(season, opts.root);
+  const p = plan(season, opts);
   if (!url || !key || opts.dryRun) {
-    if (!opts.quiet) p.forEach((x) => console.log('[cfb_weekly sync] ' + (opts.dryRun ? 'dry-run' : 'no credentials') + ': ' + x.table + ' ' + x.rows.length + ' rows'));
+    if (!opts.quiet) p.forEach((x) => console.log('[cfb_decision sync] ' + (opts.dryRun ? 'dry-run' : 'no credentials') + ': ' + x.table + ' ' + x.rows.length + ' rows'));
     return { skipped: true, plan: p.map((x) => ({ table: x.table, rows: x.rows.length })) };
   }
   const out = {};
@@ -126,13 +116,13 @@ async function sync(season, opts) {
   return out;
 }
 
-module.exports = { sync, plan, shape, columns, TABLES };
+module.exports = { sync, plan, shape, columns, TABLES, STATE_TABLES };
 
 if (require.main === module) {
   const a = process.argv.slice(2);
   const arg = (k, d) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : d; };
   const now = new Date();
   const season = Number(arg('--season', now.getUTCMonth() <= 1 ? now.getUTCFullYear() - 1 : now.getUTCFullYear()));
-  sync(season, { dryRun: a.includes('--dry-run') })
+  sync(season, { dryRun: a.includes('--dry-run'), stateDir: arg('--state-dir', null) })
     .then((r) => console.log(JSON.stringify(r))).catch((e) => { console.error(e.message); process.exit(1); });
 }

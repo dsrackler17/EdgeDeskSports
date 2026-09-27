@@ -95,6 +95,8 @@ def weekly(run, ctx, store):
         'projection_review_flags': ctx.get('projection_flags') or [],
         'performance_vs_expectation': _perf_table(ctx.get('team_summary')),
         'research_flags': ctx.get('research') or [],
+        'misses': {'rule': 'cfb_miss_classification_v1 (|error| >= 14 pts; data-based drivers)',
+                   'by_driver': _miss_summary(ctx.get('misses')), 'games': (ctx.get('misses') or [])[:25]},
         'policy': 'State update only. No weights, features, calibration or ensemble changed; retraining happens only '
                   'as a challenger version (docs/cfb-weekly/RUNBOOK.md).',
     })
@@ -107,6 +109,11 @@ def weekly(run, ctx, store):
     with open(os.path.join(d, name + '.md'), 'w') as f:
         f.write(markdown(body))
     return os.path.join('reports', name)
+
+
+def _miss_summary(ms):
+    from .misses import summary
+    return summary(ms or [])
 
 
 def _qb_changes(ctx):
@@ -228,6 +235,17 @@ def markdown(b):
             L.append('| %s | %s | %s | %s | %s | %s | %s |' % (r.get('team') or r.get('team_id'), r.get('record'),
                      _f(r.get('scoreboard_margin'), sign=True), _f(r.get('performance_margin'), sign=True),
                      _f(r.get('turnover_luck_index'), sign=True), r.get('close_game_record'), _f(r.get('explosive_dependency_score'), 2)))
+    ms = b.get('misses') or {}
+    L += ['', '## Misses (|error| >= 14 pts), classified from postgame data', '']
+    if ms.get('games'):
+        L += ['| game | projected | actual | error | primary driver | performance gap | scoreboard gap |', '|---|---|---|---|---|---|---|']
+        L += ['| %s | %s | %s | %s | %s | %s | %s |' % (m.get('game_id'), _f(m.get('projected_margin')), _f(m.get('actual_margin'), 0),
+                                                     _f(m.get('error'), 1, sign=True), m.get('primary_driver'),
+                                                     _f(m.get('performance_gap'), 1, sign=True), _f(m.get('scoreboard_gap'), 1, sign=True))
+              for m in ms['games']]
+        L += ['', 'By driver: ' + ', '.join('%s %d (mean |error| %s)' % (d, v['n'], v['mean_abs_error']) for d, v in ms['by_driver'].items())]
+    else:
+        L += ['- none graded (no misses, or no frozen projections for the source week in this state root)']
     L += ['', '## Research flags', '']
     L += ['- %s (%s): n %s, mean residual %s, 95%% CI %s — %s' % (x['pattern'], x['origin'], x['n'], x['mean_residual'], x['ci95'], x['status'])
           for x in b['research_flags']] or ['- none crossed the evidence bar (n >= 50, |z| >= 2)']

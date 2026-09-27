@@ -402,9 +402,20 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
                              qb_rows=ctx.get('qb_rows'), market_ok=True)
         g = GATE.release_gate(run, checks, ctx.get('convergence'), ctx.get('artifact'),
                               leakage_ok=run.ok('LEAKAGE_TESTS'), validation=ctx.get('validation_week'),
-                              source_health=ctx.get('source_health'), critical_stages=CRITICAL_STAGES)
+                              source_health=ctx.get('source_health'), critical_stages=CRITICAL_STAGES,
+                              n_week_games=len(D))
         run.gate = g
-        rec['counts'].update(checks=len(g['checks']), failed=len(g['failed']))
+        ctx['withheld_games'], ctx['withheld_totals'] = set(g['withheld_games']), set(g['withheld_totals'])
+        for gid in g['withheld_games']:
+            run.warn('RELEASE_GATE', 'game %s withheld: failed a game-level sanity check' % gid)
+        for gid in g['withheld_totals']:
+            run.warn('RELEASE_GATE', 'game %s: total withheld (projected margin exceeds the projected total)' % gid)
+        # withheld games are not recorded as projections; a withheld total is recorded as withheld
+        ctx['projections'] = [dict(p, **({'fair_total': None, 'total_withheld': 'margin exceeds the modelled total'}
+                                         if str(p['game_id']) in ctx['withheld_totals'] else {}))
+                              for p in ctx['projections'] if str(p['game_id']) not in ctx['withheld_games']]
+        rec['counts'].update(checks=len(g['checks']), failed=len(g['failed']),
+                             withheld_games=len(g['withheld_games']), withheld_totals=len(g['withheld_totals']))
         if not g['pass']:
             raise RL.StageError('release gate failed: ' + '; '.join(g['failed']), 'DATA_QUALITY', retryable=False)
         return {}
@@ -414,6 +425,13 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
     # ---------------------------------------------------------- 16 publish + freeze
     def publish(rec):
         rows = PJ.PL.build_rows(season, now, C.MODEL_VERSION, X=ctx['X_season'], A=ctx['A'], gbm=ctx['gbm'])
+        wg, wt = ctx.get('withheld_games') or set(), ctx.get('withheld_totals') or set()
+        rows = [r for r in rows if str(r['game_id']) not in wg]
+        for r in rows:
+            if str(r['game_id']) in wt:
+                r['fair_total'] = None
+                r['total_withheld'] = 'the projected margin exceeds the modelled total (incoherent for this mismatch)'
+        rec['counts'].update(published_rows=len(rows), withheld_games=len(wg), withheld_totals=len(wt))
         # the degraded mode travels with the published row
         for r in rows:
             m = ctx['modes'].get(str(r['game_id']))
@@ -497,9 +515,22 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
             _sub([sys.executable, '-m', 'v2.learn_week', '--season', str(season)])
         ctx['previous_week'] = _lab_week_metrics(season, sw)
         rec['counts'].update({k: v for k, v in (ctx['previous_week'] or {}).items() if not isinstance(v, (dict, list))})
+        # miss classification (postgame data, never a narrative): the source week's frozen projections
+        from . import misses as MS
+        proj = [p for p in store.read('projections') if p.get('week') == sw]
+        P = ctx.get('performance')
+        if proj and P is not None and len(P):
+            src = G[G.season.eq(season) & G.week.eq(sw)]
+            units = AV.snapshot(season, sw, src, now) if len(src) else None
+            ms = MS.classify_week(proj, P, ctx.get('qb_events'), units, ctx.get('team_rows'))
+            ctx['misses'] = ms
+            rec['counts'].update(misses=len(ms), misses_added=store.append_unique('misses', ms))
+        else:
+            ctx['misses'] = []
+            rec['counts'].update(misses=0, miss_note='no frozen projections for week %s in this state root' % sw)
         return {}
 
-    run.stage('GRADE_PREVIOUS', grade, needs=('INGEST_FINAL_SCORES',))
+    run.stage('GRADE_PREVIOUS', grade, needs=('INGEST_FINAL_SCORES', 'GAME_PERFORMANCE', 'PLAYER_QB_METRICS'))
 
     def research(rec):
         from . import research as RS

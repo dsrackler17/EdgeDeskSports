@@ -99,6 +99,12 @@ try {
     Object.assign({}, stage, { stage: 'X', status: 'MAYBE' })))) || '') && /check constraint/i.test(db.mustFail(() => db.service(ins('cfb_pipeline_stage_log',
     Object.assign({}, stage, { stage: 'Y', status: 'FAILED', error_class: 'OOPS' })))) || ''));
 
+  const miss = { miss_id: 'cfbx_' + hex('1'), game_id: '401', season: 2026, week: 4, rule_version: 'cfb_miss_classification_v1',
+    projected_margin: 7, actual_margin: -14, error: -21, performance_gap: -2, scoreboard_gap: -19, primary_driver: 'TURNOVER_LUCK', payload: {} };
+  chk('a classified miss is accepted', !db.mustFail(() => db.service(ins('cfb_weekly_misses', miss))));
+  chk('a "miss" under 14 points is refused', /check constraint/i.test(db.mustFail(() => db.service(ins('cfb_weekly_misses', Object.assign({}, miss, { miss_id: 'cfbx_' + hex('2'), error: -9 })))) || ''));
+  chk('a miss driver outside the data-based vocabulary is refused', /check constraint/i.test(db.mustFail(() => db.service(ins('cfb_weekly_misses', Object.assign({}, miss, { miss_id: 'cfbx_' + hex('3'), primary_driver: 'BAD_VIBES' })))) || ''));
+
   /* the mirror's own rows, from a real run's ledger when there is one */
   const now = new Date();
   const season = now.getUTCMonth() <= 1 ? now.getUTCFullYear() - 1 : now.getUTCFullYear();
