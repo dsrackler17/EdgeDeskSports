@@ -110,6 +110,23 @@ Eligibility never depends on bankroll.
   - Until then no live decision can be a BET (`PASS_PRICE`).
   - That is the intended behavior, not a gap to paper over.
 
+## Shadow mode (brief §68)
+
+`football/cfb_decision/shadow.js` runs hourly inside the Model Lab job. For every LIVE frozen V2 projection and every
+pregame spread quote the Lab captured for it, it decides twice at the moment the quote arrived:
+- `CURRENT`: the frozen baseline `engine.decide()`;
+- `CHALLENGER`: this engine, with the newest calibration artifact and policy, failing closed without them.
+
+It appends both to `football/cfb_decision/<season>/decisions.jsonl` with deterministic ids. After settlement it
+grades each decision once (`results.jsonl`):
+- every status gets its side's ATS result (hypothetical for non-BETs, so PASS quality is measurable);
+- units are recorded only for a BET at a captured price;
+- CLV is measured against the Lab's consensus close;
+- a process grade (the price) is kept apart from the outcome grade.
+
+Replayed projections are never used, because they were computed after the quotes. The Postgres view
+`cfb_decision_shadow_compare` pairs the two engines quote by quote.
+
 ## Files
 
 - `football/cfb_decision/decision.js`: the engine, ES5 for the browser and node.
@@ -117,6 +134,7 @@ Eligibility never depends on bankroll.
 - `supabase/cfb_decision.sql`: 11 append-only tables and the Model Lab views.
 - `football/cfb_decision/sql.test.js`: 44 checks on a real Postgres.
 - `football/cfb_decision/sync_supabase.js`: the insert-only mirror.
+- `football/cfb_decision/shadow.js`: the current vs challenger record, run hourly by `cfb-lab.yml`.
 - `football/cfb_v2/artifacts/decision/`:
   - `cfb_decision_baseline_001` (frozen);
   - `cfb_decision_policy_v0` (the fail-safe default: betting disabled);

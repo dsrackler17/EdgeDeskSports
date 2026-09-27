@@ -83,6 +83,10 @@ jobs:
       - name: Ledger integrity (nothing committed was changed or removed)
         run: node football/cfb_lab/ledger.js verify --base HEAD
 
+      - name: Decision engine in shadow (current vs challenger on every captured quote)
+        if: ${{ (github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run' }}
+        run: node football/cfb_decision/tests.js && node football/cfb_decision/shadow.js || echo "::warning::decision shadow did not run"
+
       - name: Publish
         if: ${{ (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: |
@@ -90,14 +94,16 @@ jobs:
           git config user.email "edgedesk-bot@users.noreply.github.com"
           tools/ci/push_generated.sh main "cfb lab: hourly snapshots, market, settlement, reports" -- \
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
-            record/football/cfb_model_lab.json
+            record/football/cfb_model_lab.json football/cfb_decision
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ (github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run' }}
         env:
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
-        run: node football/cfb_lab/sync_supabase.js
+        run: |
+          node football/cfb_lab/sync_supabase.js
+          node football/cfb_decision/sync_supabase.js
 
       - name: Fail the run if any lab step failed
         if: ${{ steps.run.outputs.status != '0' }}
