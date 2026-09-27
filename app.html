@@ -56678,6 +56678,19 @@ function fbP4ForensicHTML(u,p,v){
   }).join('')+'</div>';
   return '<div class="dg-pk'+(d.verified?' verified':'')+'">'+head+grid+'<div class="gd-sec">Verification checks</div>'+chk+'</div>';
 }
+/* ═══ THE CANONICAL RESEARCH PAGE ═════════════════════════════════════════
+   Every CFB game has one canonical research page (research/cfb/), built from
+   the cached research objects football/cfb_terminal/build.js writes hourly.
+   The card links to it with the canonical status (BET / WAIT / RESEARCH /
+   PASS / INVESTIGATE / DATA FAULT / NO MARKET), read from board.json and
+   never recomputed here. No board.json, no chip: the link stays. */
+function fbTermLink(gid){
+  var r=FB.p4&&FB.p4.term?FB.p4.term[String(gid)]:null;
+  var tone={BET:'var(--pos)',RESEARCH:'var(--accent)',WAIT:'var(--gold)',INVESTIGATE:'var(--warn)',PASS:'var(--faint)',DATA_FAULT:'var(--neg)',NO_MARKET:'var(--faint)'};
+  return '<a class="mono" style="display:inline-block;margin-top:6px;font-size:11px" href="/research/cfb/#/game/'+encodeURIComponent(String(gid))+'">'
+    +(r?'<span style="color:'+(tone[r.status]||'var(--faint)')+'">●</span> '+fbEsc(r.status_label)+(r.verified?' · VERIFIED':'')+' · ':'')
+    +'Full research page →</a>';
+}
 function fbP4Card(u){
   var g=u.g,E=window.EDCfbP4,m=u.meta;
   var p=FB.p4._proj&&FB.p4._proj[String(g.game_id)];
@@ -56688,7 +56701,7 @@ function fbP4Card(u){
   var head='<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(g.away_team)+' @ '+fbEsc(g.home_team)+'</div>'
     +'<div class="mdl-card-when">'+fbEsc(confLine)
     +' · wk '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
-    +fbMineActs('p4',g.game_id,g.home_team,g.away_team,u.t)+'</div>';
+    +fbMineActs('p4',g.game_id,g.home_team,g.away_team,u.t)+fbTermLink(g.game_id)+'</div>';
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card">'+head+'<div class="gd-nodata">'+fbEsc(p.status)+': '
       +fbEsc(p.reason||(p.missing||[]).join(', '))+'</div></div>';
@@ -56706,20 +56719,19 @@ function fbP4Card(u){
   L+='<div class="gd-line"><span class="l">Win probability</span><span class="v">'+h+' '+fbWinText(m.home_win_prob)+' · '+a+' '+fbWinText(1-m.home_win_prob)+'</span></div>';
   L+='<div class="gd-line"><span class="l">Fair moneyline</span><span class="v">'+h+' '+(m.fair_home_ml>0?'+':'')+m.fair_home_ml+' · '+a+' '+(m.fair_away_ml>0?'+':'')+m.fair_away_ml+'</span></div>';
   L+='<div class="gd-line"><span class="l">Edge</span><span class="v">'
-    +(mk.spread_gap!=null?('spread '+fbPts(mk.spread_gap)+' pts '+fbP4EdgeTag(p.edge.spread)):'<span class="mut">no spread edge — no market</span>')
+    +(mk.spread_gap!=null?('spread '+fbPts(mk.spread_gap)+' pts'):'<span class="mut">no spread edge — no market</span>')
     +(mk.total_gap!=null?(' · total '+fbPts(mk.total_gap)+' pts'):'')+'</span></div>';
   L+='<div class="gd-line"><span class="l">Outcome range</span><span class="v mut">p10 '+fbPts(m.p10_margin)+' · median '+fbPts(m.median_margin)+' · p90 '+fbPts(m.p90_margin)+' (σ '+m.sigma_margin.toFixed(1)+')</span></div>';
   if(p.cover)L+='<div class="gd-line"><span class="l">P(home covers)</span><span class="v mut">'+(p.cover.win*100).toFixed(1)+'% · push '+(p.cover.push*100).toFixed(1)+'% <span class="mut">'+fbEsc(p.cover.basis)+'</span></span></div>';
   if(p.over)L+='<div class="gd-line"><span class="l">P(over)</span><span class="v mut">'+(p.over.win*100).toFixed(1)+'%</span></div>';
 
-  var chips='<div style="display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 4px">'
-    +fbP4Score('confidence',sc.confidence)+fbP4Score('volatility',sc.volatility)
-    +fbP4Score('roster stability',sc.roster_stability)
-    +fbP4Score('QB stability H',sc.qb_stability_home)+fbP4Score('QB stability A',sc.qb_stability_away)
-    +fbP4Score('injury uncertainty',sc.injury_uncertainty)
-    +fbP4Score('rivalry',sc.rivalry_intensity)+fbP4Score('scheme fit',sc.scheme_fit)
-    +fbP4Score('sched stress H',sc.schedule_stress_home)+fbP4Score('sched stress A',sc.schedule_stress_away)
-    +'</div>';
+  /* THE TEN-CHIP "MODEL SCORES" PANEL WAS REMOVED (research terminal audit,
+     docs/cfb-terminal/AUDIT.md): ten unlabelled 0-100 numbers beside the line,
+     one of them (volatility) documented by its own engine as not
+     discriminating between games, none of them a reason or a risk a reader
+     could act on. Confidence, stability and QB/injury uncertainty are read,
+     with their meaning, in the research read, reliability and "What could
+     make EdgeDesk wrong" on the research page. */
 
   /* the differentiator, front and centre: how much of the model's own input
      contract actually reached this projection */
@@ -56803,9 +56815,8 @@ function fbP4Card(u){
     +fbGxSec(gid,'watch','Follow · what changed',fbGxWatch(u,p),false,
       'a timeline of captured changes for games you follow')
     +fbGxSec(gid,'detail','Model and market detail',L,false,'spreads, totals, moneyline, outcome range')
-    +fbGxSec(gid,'scores','Model scores',chips+compl,false,'confidence, volatility, stability')
     +fbGxSec(gid,'edr','EdgeDesk rating · research context',edr,false,'not the number this line is priced from')
-    +fbGxSec(gid,'quality','Data quality and methodology',why,false,'the engine’s own notes')
+    +fbGxSec(gid,'quality','Data quality and methodology',compl+why,false,'the engine’s own notes')
     +hth;
   return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+body+'</div></div>';
 }
@@ -57375,7 +57386,10 @@ function fbP4StatusStrip(){
   return '<div style="margin:2px 0 8px">'
     +chip('DATA',dataOk?'LIVE':'ISSUE',dataOk?'var(--pos)':'var(--neg)')
     +chip('MODEL','UNPROVEN · RESEARCH','var(--mdl)')
-    +chip('HEALTH',hTxt,hCol)+'</div>';
+    +chip('HEALTH',hTxt,hCol)
+    /* the canonical research terminal: every game ranked by research interest,
+       one research page per game (research/cfb/) */
+    +'<a class="mono" style="font-size:11px" href="/research/cfb/">RESEARCH QUEUE · canonical research pages →</a></div>';
 }
 /* ═══ THE BOARD'S CONTROL SURFACE ══════════════════════════════════════════
    Four independent filters over ONE slate. They compose: picking the MAC
@@ -62692,6 +62706,19 @@ function fbRkTeamHTML(key){
   return h;
 }
 
+/* the canonical research terminal's board (football/cfb_terminal/board.json),
+   loaded once by the board — never by the card — so each card can link to the
+   game's research page with its canonical status (fbTermLink) */
+function fbTermLoad(){
+  var S=FB.p4;
+  if(S._termLoading||S.term)return;
+  S._termLoading=true;
+  try{
+    fetch('/football/cfb_terminal/board.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():null;})
+      .then(function(b){S._termLoading=false;if(!b||!b.rows)return;var m={};b.rows.forEach(function(r){m[String(r.game_id)]=r;});S.term=m;})
+      .catch(function(){S._termLoading=false;});
+  }catch(_){S._termLoading=false;}
+}
 function fbRenderBoard(host){
   var ban=$('fbBanner'),ctl=$('fbCtl');
   try{rsMetaRender('football');}catch(_){}
@@ -62715,6 +62742,7 @@ function fbRenderBoard(host){
       if(FB.p4.loadedAt&&FB.p4.up.length){ctl.style.display='flex';ctl.innerHTML=fbP4CtlHTML();}
       else ctl.style.display='none';
     }
+    try{fbTermLoad();}catch(_){}
     fbP4Render(host);return;
   }
   /* Rankings: ETSR and the national board. A committed artifact, rendered.

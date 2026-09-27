@@ -108,6 +108,14 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && steps.gate.outputs.decisions == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
         run: node football/cfb_decision/tests.js && node football/cfb_decision/shadow.js || echo "::warning::decision shadow did not run"
 
+      # The research terminal's cached research objects (football/cfb_terminal),
+      # rebuilt from what this run just appended: the page reads these and runs
+      # no model. The build refuses to write if a stale market would show an
+      # actionable status or a fair line would differ from the champion slate.
+      - name: Research terminal (football/cfb_terminal, research/cfb)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node football/cfb_terminal/build.js || echo "::warning::the research terminal could not be rebuilt; the last published objects stay up"
+
       - name: Operations report (football/cfb_production/reports/ops.json, admin/cfb-ops)
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         env:
@@ -127,7 +135,7 @@ jobs:
           tools/ci/push_generated.sh main "cfb lab: hourly snapshots, market, settlement, reports" -- \
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
             record/football/cfb_model_lab.json football/cfb_decision \
-            football/cfb_production/reports/ops.json
+            football/cfb_production/reports/ops.json football/cfb_terminal
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
