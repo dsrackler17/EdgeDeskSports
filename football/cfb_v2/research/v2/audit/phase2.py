@@ -16,7 +16,7 @@ from scipy import stats
 
 from . import _io
 
-RESEARCH = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..'))
+RESEARCH = os.environ.get('CFB_V2_RESEARCH') or os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 V2 = os.path.normpath(os.path.join(RESEARCH, '..'))
 REPO = os.path.normpath(os.path.join(V2, '..', '..'))
 DATA = os.environ.get('CFB_V2_DATA', os.path.join(RESEARCH, 'data'))
@@ -310,6 +310,26 @@ def timeline():
     return out
 
 
+# ------------------------------------------------------------------ core defect: ratings pinned to the prior
+def prior_pinned():
+    """Metrics whose in-season posterior never leaves the preseason prior for FBS teams (posterior variance at
+    the 1.5e-9 floor set by build_ratings.py:256 / :559). Reported per season at the final freeze."""
+    G = pd.read_parquet(os.path.join(_io.out_dir(), 'stage2', 'games.parquet'))
+    out = {}
+    for S in range(2014, 2027):
+        R = pd.read_parquet(os.path.join(_io.out_dir(), 'stage3', 'ratings_%d.parquet' % S),
+                            columns=['team_id', 'metric', 'prediction_ts', 'off', 'prior_off', 'off_var'])
+        g = G[G.season.eq(S)]
+        fbs = set(g[g.home_fbs].home_id) | set(g[g.away_fbs].away_id)
+        last = R[R.prediction_ts.eq(R.prediction_ts.max()) & R.team_id.isin(fbs)]
+        t = last.groupby('metric').apply(lambda d: pd.Series({
+            'median_abs_move_over_sd': float((d.off - d.prior_off).abs().median() / max(d.off.std(), 1e-12)),
+            'max_abs_move': float((d.off - d.prior_off).abs().max()),
+            'share_var_at_floor': float((d.off_var <= 1.6e-9).mean())}))
+        out[S] = {m: r.to_dict() for m, r in t.iterrows() if r.share_var_at_floor > 0.5}
+    return out
+
+
 def main():
     M = M_()
     out = {'doc': __doc__}
@@ -323,6 +343,7 @@ def main():
     out['67_similar_point_in_time'] = similar_pit(); print('67', out['67_similar_point_in_time'], flush=True)
     out['66_matchup_dev'] = matchup_dev(); print('66', out['66_matchup_dev'], flush=True)
     out['78_timeline'] = timeline(); print('78', json.dumps(out['78_timeline'], default=str)[:1500], flush=True)
+    out['core_prior_pinned_metrics'] = prior_pinned(); print('pinned', {k: list(v) for k, v in out['core_prior_pinned_metrics'].items()}, flush=True)
     _io.write('phase2.json', out)
     print('23', json.dumps(out['23_prior_double_count'], default=str)[:3000])
     print('22', json.dumps(out['22_market_signals'], default=str)[:1500])
