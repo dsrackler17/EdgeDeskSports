@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-09-27T07:22:16.727Z",
+ "generated_at": "2026-09-27T08:22:47.971Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -77,11 +77,11 @@
   }
  ],
  "summary": {
-  "games": 64,
+  "games": 63,
   "mean": 83.9,
   "median": 87,
   "percentiles": {
-   "p10": 76.9,
+   "p10": 76.6,
    "p25": 84,
    "p50": 87,
    "p75": 88,
@@ -98,7 +98,7 @@
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 51
+    "n": 50
    },
    {
     "grade": "ADEQUATE",
@@ -129,9 +129,9 @@
     "conference": "ACC"
    },
    {
-    "n": 9,
-    "mean": 78.6,
-    "median": 85,
+    "n": 8,
+    "mean": 77.5,
+    "median": 82,
     "conference": "American"
    },
    {
@@ -171,9 +171,9 @@
     "conference": "Mountain West"
    },
    {
-    "n": 5,
-    "mean": 85.8,
-    "median": 87,
+    "n": 4,
+    "mean": 85.5,
+    "median": 86.5,
     "conference": "Pac-12"
    },
    {
@@ -209,8 +209,8 @@
   ],
   "fbs_vs_fcs": {
    "fbs_fbs": {
-    "n": 61,
-    "mean": 85.2,
+    "n": 60,
+    "mean": 85.1,
     "median": 87
    },
    "fbs_fcs": {
@@ -269,7 +269,7 @@
    }
   ],
   "legacy_input_coverage": {
-   "n": 64,
+   "n": 63,
    "mean": 75.2,
    "median": 77,
    "p10": 73,
@@ -277,45 +277,45 @@
    "min": 46,
    "max": 92,
    "mode": 77,
-   "mode_n": 46,
+   "mode_n": 45,
    "basis": "input_coverage: applicable contract fields on file / applicable fields, counted, not weighted (the pre-v2 reliability)"
   },
   "bottlenecks": [
    {
     "key": "stability",
     "label": "Projection dispersion under perturbation",
-    "games": 64,
-    "points": 200.6
+    "games": 63,
+    "points": 198.6
    },
    {
     "key": "rating_sample",
     "label": "In-season rating sample still thin",
-    "games": 64,
-    "points": 104.1
+    "games": 63,
+    "points": 102.1
    },
    {
     "key": "qb_identity",
     "label": "Starting QB not confirmed",
-    "games": 64,
-    "points": 91.8
+    "games": 63,
+    "points": 90.7
    },
    {
     "key": "availability",
     "label": "Injury/availability information incomplete",
-    "games": 62,
-    "points": 304.3
+    "games": 61,
+    "points": 299.3
    },
    {
     "key": "qb_status",
     "label": "QB status unconfirmed (can he play)",
-    "games": 62,
-    "points": 154.5
+    "games": 61,
+    "points": 151.5
    },
    {
     "key": "transfer_turnover",
     "label": "Extreme transfer turnover",
-    "games": 54,
-    "points": 23.1
+    "games": 53,
+    "points": 22.8
    },
    {
     "key": "qb_conflict",
@@ -374,13 +374,13 @@
   ]
  },
  "summary_without_evidence": {
-  "games": 64,
+  "games": 63,
   "mean": 83.5,
-  "median": 86.5,
+  "median": 86,
   "percentiles": {
-   "p10": 70.2,
+   "p10": 69.8,
    "p25": 84,
-   "p50": 86.5,
+   "p50": 86,
    "p75": 88,
    "p90": 89
   },
@@ -395,7 +395,7 @@
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 51
+    "n": 50
    },
    {
     "grade": "ADEQUATE",
@@ -426,9 +426,9 @@
     "conference": "ACC"
    },
    {
-    "n": 9,
-    "mean": 77,
-    "median": 84,
+    "n": 8,
+    "mean": 75.8,
+    "median": 78.5,
     "conference": "American"
    },
    {
@@ -468,9 +468,9 @@
     "conference": "Mountain West"
    },
    {
-    "n": 5,
-    "mean": 85.4,
-    "median": 87,
+    "n": 4,
+    "mean": 85,
+    "median": 86,
     "conference": "Pac-12"
    },
    {
@@ -506,7 +506,7 @@
   ],
   "fbs_vs_fcs": {
    "fbs_fbs": {
-    "n": 61,
+    "n": 60,
     "mean": 84.7,
     "median": 87
    },
@@ -566,7 +566,7 @@
    }
   ],
   "legacy_input_coverage": {
-   "n": 64,
+   "n": 63,
    "mean": 75.2,
    "median": 77,
    "p10": 73,
@@ -574,45 +574,45 @@
    "min": 46,
    "max": 92,
    "mode": 77,
-   "mode_n": 46,
+   "mode_n": 45,
    "basis": "input_coverage: applicable contract fields on file / applicable fields, counted, not weighted (the pre-v2 reliability)"
   },
   "bottlenecks": [
    {
     "key": "availability",
     "label": "Injury/availability information incomplete",
-    "games": 64,
-    "points": 305.2
+    "games": 63,
+    "points": 300.1
    },
    {
     "key": "stability",
     "label": "Projection dispersion under perturbation",
-    "games": 64,
-    "points": 200.6
+    "games": 63,
+    "points": 198.6
    },
    {
     "key": "rating_sample",
     "label": "In-season rating sample still thin",
-    "games": 64,
-    "points": 104.1
+    "games": 63,
+    "points": 102.1
    },
    {
     "key": "qb_identity",
     "label": "Starting QB not confirmed",
-    "games": 64,
-    "points": 92.3
+    "games": 63,
+    "points": 91.2
    },
    {
     "key": "qb_status",
     "label": "QB status unconfirmed (can he play)",
-    "games": 62,
-    "points": 154.5
+    "games": 61,
+    "points": 151.5
    },
    {
     "key": "transfer_turnover",
     "label": "Extreme transfer turnover",
-    "games": 54,
-    "points": 23.1
+    "games": 53,
+    "points": 22.8
    },
    {
     "key": "qb_conflict",
@@ -627,6 +627,12 @@
     "points": 39.7
    },
    {
+    "key": "attribution",
+    "label": "Player production attribution incomplete",
+    "games": 5,
+    "points": 4.8
+   },
+   {
     "key": "fcs_dominated",
     "label": "Rating sample dominated by FCS opponents",
     "games": 4,
@@ -637,12 +643,6 @@
     "label": "Conflicting sources",
     "games": 4,
     "points": 5.6
-   },
-   {
-    "key": "attribution",
-    "label": "Player production attribution incomplete",
-    "games": 4,
-    "points": 4.3
    },
    {
     "key": "starters",
@@ -671,14 +671,14 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-09-27T07:22:09.255Z",
-  "games_with_evidence": 64,
+  "artifact_generated_at": "2026-09-27T08:22:40.974Z",
+  "games_with_evidence": 63,
   "summary": {
-   "games": 64,
-   "frozen_games": 66,
+   "games": 63,
+   "frozen_games": 67,
    "qb": {
     "by_confirmation": {
-     "EXPECTED": 122,
+     "EXPECTED": 120,
      "UNKNOWN": 1,
      "UNCERTAIN": 2,
      "CONFLICTED": 3
@@ -687,12 +687,12 @@
     "conflicts_resolved": 15,
     "conflicts_open": 3,
     "status_known": 4,
-    "sides": 128
+    "sides": 126
    },
    "availability": {
     "by_class": {
      "NOT_DUE_YET": 86,
-     "NOT_REQUIRED": 15,
+     "NOT_REQUIRED": 13,
      "NO_SOURCE": 3,
      "COMPREHENSIVE_OFFICIAL": 4,
      "PROVIDER_FAILED": 20
@@ -702,15 +702,15 @@
     "fresh": 4,
     "stale": 0,
     "unavailable": 20,
-    "starters_known_pct": 3.2,
+    "starters_known_pct": 3.3,
     "starters_known": 96,
-    "starters_total": 2998,
-    "historical_rows_refused": 6
+    "starters_total": 2950,
+    "historical_rows_refused": 5
    },
    "player_quality": {
-    "projected_starters_rated_pct": 37.8,
-    "starters_rated": 1133,
-    "starters_total": 3000,
+    "projected_starters_rated_pct": 37.9,
+    "starters_rated": 1119,
+    "starters_total": 2952,
     "key_contributors_rated_pct": 33.6,
     "unrated_meaningful_absences": 40,
     "unrated_critical_or_major_absences": 6
@@ -755,9 +755,9 @@
     "average_books_per_game": null,
     "one_book_games": 0,
     "three_plus_book_games": 0,
-    "under_two_sources": 64,
+    "under_two_sources": 63,
     "stale_markets": 0,
-    "no_market": 64
+    "no_market": 63
    },
    "providers": [
     {
@@ -922,7 +922,7 @@
     }
    ],
    "provider_failures": 4,
-   "stale_evidence_records": 56,
+   "stale_evidence_records": 57,
    "conflicts": 18
   }
  },
@@ -932,16 +932,16 @@
    {
     "key": "availability",
     "label": "Availability feed",
-    "games_affected": 62,
-    "current_points_lost": 458.8,
-    "maximum_recoverable_points": 371,
-    "games_recoverable": 53,
+    "games_affected": 61,
+    "current_points_lost": 450.8,
+    "maximum_recoverable_points": 363,
+    "games_recoverable": 52,
     "cost": 3,
     "feasible": 0.6,
     "how": "official conference reports cover conference games in the SEC, Big Ten, ACC and Big 12; the rest need a structured injury feed or team releases",
     "recover": "games whose availability read is missing, refused or not comprehensive",
-    "estimated_recoverable_points": 222.6,
-    "enrichment_roi": 74.2,
+    "estimated_recoverable_points": 217.8,
+    "enrichment_roi": 72.6,
     "engineering_priority": 1
    },
    {
@@ -962,16 +962,16 @@
    {
     "key": "qb_identity",
     "label": "QB confirmation",
-    "games_affected": 64,
-    "current_points_lost": 91.8,
-    "maximum_recoverable_points": 80,
-    "games_recoverable": 41,
+    "games_affected": 63,
+    "current_points_lost": 90.7,
+    "maximum_recoverable_points": 79,
+    "games_recoverable": 40,
     "cost": 3,
     "feasible": 0.5,
     "how": "official announcements, a provider depth chart, or trusted beat reporting above the observed previous start",
     "recover": "starters resolved only from the previous game",
-    "estimated_recoverable_points": 40,
-    "enrichment_roi": 13.33,
+    "estimated_recoverable_points": 39.5,
+    "enrichment_roi": 13.17,
     "engineering_priority": 3
    },
    {
@@ -1037,8 +1037,8 @@
    {
     "key": "stability",
     "label": "Projection stability",
-    "games_affected": 64,
-    "current_points_lost": 241.8,
+    "games_affected": 63,
+    "current_points_lost": 239.8,
     "maximum_recoverable_points": 0,
     "games_recoverable": 0,
     "cost": 5,
@@ -1052,8 +1052,8 @@
    {
     "key": "rating_sample",
     "label": "In-season rating sample",
-    "games_affected": 64,
-    "current_points_lost": 104.1,
+    "games_affected": 63,
+    "current_points_lost": 102.1,
     "maximum_recoverable_points": 0,
     "games_recoverable": 0,
     "cost": 5,
@@ -1067,7 +1067,7 @@
    {
     "key": "market_sources",
     "label": "Market-source depth",
-    "games_affected": 64,
+    "games_affected": 63,
     "current_points_lost": null,
     "maximum_recoverable_points": null,
     "estimated_recoverable_points": null,
@@ -1082,9 +1082,9 @@
    }
   ],
   "potential": {
-   "games": 64,
+   "games": 63,
    "mean_score": 83.9,
-   "mean_potential": 93.4,
+   "mean_potential": 93.3,
    "basis": "the mean score if every input with a recovery action were resolved; not a probability and not a forecast"
   }
  },
@@ -4616,7 +4616,7 @@
      {
       "component": "roster_availability",
       "points": 1.5,
-      "reason": "Georgia Tech non-QB absences rate 7/100 team impact (largest: RB2 Malachi Hosley, questionable) — measured, not priced into the spread; plus 16 absences with UNKNOWN impact (no measured player quality), 4 in a critical or major role",
+      "reason": "Georgia Tech non-QB absences rate 10/100 team impact (largest: RB2 Malachi Hosley, out) — measured, not priced into the spread; plus 16 absences with UNKNOWN impact (no measured player quality), 4 in a critical or major role",
       "family": "attribution",
       "action_key": "attribution:away"
      },
@@ -5940,7 +5940,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Syracuse’s starter record was re-read 1 min ago and describes evidence from 9.3 days ago",
+      "reason": "Syracuse’s starter record was re-read 1 min ago and describes evidence from 9.4 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -6243,7 +6243,7 @@
      {
       "component": "roster_availability",
       "points": 1,
-      "reason": "Minnesota non-QB absences rate 0/100 team impact (largest: DB9 Aidan Gousby, probable) — measured, not priced into the spread; plus 6 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "reason": "6 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
       "family": "attribution",
       "action_key": "attribution:away"
      },
@@ -7558,163 +7558,6 @@
    },
    "reliability_without_evidence": {
     "score": 84,
-    "grade": "STRONG"
-   }
-  },
-  "401860891": {
-   "game_id": "401860891",
-   "home": "Fresno State",
-   "away": "Rice",
-   "kickoff": "2026-09-27T02:00:00.000Z",
-   "home_conference": "Pac-12",
-   "away_conference": "American",
-   "matchup_type": "non_conference",
-   "legacy_input_coverage": 0.769,
-   "reliability": {
-    "contract": "cfb_reliability/2",
-    "score": 87,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
-    "tier": "STRONG",
-    "raw": 86.7,
-    "capped_by": [],
-    "gate_label": null,
-    "components": {
-     "team_data": {
-      "score": 18,
-      "max": 20
-     },
-     "roster_availability": {
-      "score": 10.7,
-      "max": 20
-     },
-     "projection_stability": {
-      "score": 18,
-      "max": 20
-     },
-     "freshness": {
-      "score": 15,
-      "max": 15
-     },
-     "source_integrity": {
-      "score": 15,
-      "max": 15
-     },
-     "environment": {
-      "score": 10,
-      "max": 10
-     }
-    },
-    "main_deduction": "no conference report is required for this fixture, and no other source covers it; the impact of Rice’s absences cannot be assessed: no current availability read for this game",
-    "potential": 96,
-    "evidence_used": true,
-    "stability": {
-     "sd": 2.08,
-     "p10": 11.74,
-     "p50": 14.82,
-     "p90": 17.89,
-     "favorite_flip_rate": 0,
-     "tier": "STABLE"
-    },
-    "penalties": [
-     {
-      "component": "roster_availability",
-      "points": 2.5,
-      "reason": "no conference report is required for this fixture, and no other source covers it; the impact of Rice’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2.5,
-      "reason": "no conference report is required for this fixture, and no other source covers it; the impact of Fresno State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "projection_stability",
-      "points": 2,
-      "reason": "the projected spread moves ±2.08 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.25 pts)",
-      "family": "stability",
-      "action_key": null
-     },
-     {
-      "component": "roster_availability",
-      "points": 1.5,
-      "reason": "no conference report is required for this fixture, so no source states whether Jacurri Brown can play",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1.5,
-      "reason": "no conference report is required for this fixture, so no source states whether Jayden Mandal can play",
-      "family": "qb_status",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "team_data",
-      "points": 1,
-      "reason": "Rice: 3 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 1,
-      "reason": "Fresno State: 3 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "roster_availability",
-      "points": 0.7,
-      "reason": "Jayden Mandal — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 0.4,
-      "reason": "Jacurri Brown — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 0.3,
-      "reason": "player production attributed at confidence 0.46; extreme transfer turnover (most of last season’s production is gone)",
-      "family": "transfer_turnover",
-      "action_key": null
-     }
-    ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [],
-    "next_actions": [
-     {
-      "action": "Register a school availability release for Rice",
-      "key": "availability:away",
-      "potential_gain": 2
-     },
-     {
-      "action": "Register a school availability release for Fresno State",
-      "key": "availability:home",
-      "potential_gain": 2
-     }
-    ],
-    "recoverable_by_family": {
-     "availability": 8,
-     "qb_identity": 1
-    }
-   },
-   "reliability_without_evidence": {
-    "score": 87,
     "grade": "STRONG"
    }
   },
