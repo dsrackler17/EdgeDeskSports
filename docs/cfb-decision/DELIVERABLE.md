@@ -1,4 +1,4 @@
-# CFB wagering calibration and decision science — the §87 deliverable (draft)
+# CFB wagering calibration and decision science — the §87 deliverable
 
 The brief's 42 required items, each with where it lives and what it found. Two studies produced them:
 - the **calibration study** (frozen `cfb_decision_calibration_v1`: [CALIBRATION.md](CALIBRATION.md), [DATASET.md](DATASET.md));
@@ -59,7 +59,7 @@ once.
 | 32 | production threshold choices | `cfb_decision_policy_v1/policy.json` | sha256 `cb9019a2…`. Frozen 2026-09-27 with provenance for each field. |
 | 33 | historical walk-forward tournament | POLICY.md §69 | 9 candidates evaluated on 2019 and 2021–2023. None is BET-VALID. |
 | 34 | untouched holdout results | POLICY.md §70; `holdout_access.jsonl`; `post_freeze_changes.jsonl` | Read once at 2026-09-27T16:30:11Z; a second run is refused. The `edge` candidate: ROI −0.062, CLV 0.61, calibrated in the large. Every post-freeze change is disclosed, and the pre-read manifest hash is rebuilt by the tests. |
-| 35 | shadow-mode implementation | `football/cfb_decision/shadow.js` (existing) | The shadow now picks `cfb_decision_policy_v1` (validated). No LIVE projection exists yet, so there are no shadow decisions. |
+| 35 | shadow-mode implementation | `football/cfb_decision/shadow.js`, hourly in `cfb-lab.yml` | CURRENT (the frozen baseline) vs CHALLENGER (this engine, newest artifact and policy: `cfb_decision_policy_v1`) on every LIVE frozen projection's quotes. Each quote carries the market-integrity verdict (`integrity.assessMarket`), so a one-book market can never be a BET. No LIVE projection exists yet, so there are no shadow decisions. |
 | 36 | database migrations | `supabase/cfb_decision.sql` (existing) | The policy satisfies the `cfb_decision_policies` and `cfb_bankroll_policy` constraints (tested). |
 | 37 | Model Lab additions | existing views; `v2/decision/scorecard.py --shadow` | The §73 scorecard runs on the live shadow record. |
 | 38 | tests | `tests_policy.py` (20 with `--full`), `tests_decision.py` (23), `tests.js` (98) | Includes parity of every status, reason code, stake and exposure between Python and JS. |
@@ -81,7 +81,8 @@ once.
 - **Artifacts:**
   - `football/cfb_v2/artifacts/decision/cfb_decision_policy_v1/{policy.json, evidence.json, MANIFEST.json, holdout_access.jsonl}`;
   - `fixtures/policy_parity.json`.
-- **decision.js**, minimal bug fixes, each with a test in `tests.js`:
+- **decision.js**, bug fixes, each with a test in `tests.js`:
+  - the empirical EV read by the thresholds now maps the decision EV through `ev_curve_decision` (it had mapped it through the theoretical-EV curve; found by the calibration study);
   - `priceTargets`: the bettable-to price now reads the same gates as the decision;
   - `decideQuote`: RESEARCH is now triggered by the decision edge, not the pure probability;
   - `decideGame`: ties go to the better price, and `summary_index` is added;
