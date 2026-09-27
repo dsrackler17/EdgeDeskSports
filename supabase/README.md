@@ -276,6 +276,47 @@ without a person and the evidence. Model Lab views: `cfb_decision_lab_view`,
 editor path `parts/cfb_decision.part*-of-*.sql`; tested by
 `football/cfb_decision/sql.test.js`.
 
+### `cfb_production.sql` — CFB production operations
+Apply it **last**, after the other CFB contracts (it needs nothing, but its
+published views and health checks read their tables; applied first it says what
+it skipped). The operational layer of the production pathway
+(`docs/cfb-production/`):
+
+* `cfb_production_model_manifest` — write-once: the exact system per deployment
+  (versions, artifact hashes, git commit, migration set, deployed_at).
+  `champion_selection` is `NOT_RUN` (no Model Championship has been run); a
+  `SELECTED` row needs the championship's evidence, a rollback row a reason.
+  Written by `node football/cfb_production/manifest.js --push` (the Deploy
+  intelligence workflow does it after applying this file).
+* `cfb_compatibility_matrix` + `cfb_assert_compatible(...)` — the explicit model ×
+  feature schema × calibration × decision policy × market engine tuples.
+* `cfb_feature_flags` — changed only by `cfb_set_feature_flag(flag, enabled,
+  actor, reason[, evidence])`, every change audited; guarded flags need evidence
+  and a person; betting cannot be switched on while the manifest's decision
+  policy has it off. A re-apply never resets a flag.
+* `cfb_audit_log` — append-only and hash-chained (`cfb_audit_verify()`).
+* `cfb_data_corrections` — `cfb_record_correction(...)` reads the original value
+  from the row, never mutates it; readers use `cfb_corrected(...)`.
+* `cfb_job_registry` (from `football/cfb_production/jobs.json`),
+  `cfb_job_heartbeats`, `cfb_job_heartbeat_status`; `cfb_job_lock(job, key,
+  holder, ttl)` / `cfb_job_lock_renew` / `cfb_job_unlock` (a lease behind an
+  advisory lock, fenced by its lease id); `cfb_incidents` +
+  `cfb_record_incident` / `cfb_resolve_incident`; `cfb_freshness_rules`.
+* `cfb_health(p_now)` — database, contracts, manifest, team state, odds / PBP /
+  prediction freshness, heartbeats, incidents, deadlock storm, expired leases,
+  partial mirrors, fail-closed betting, flags.
+* `cfb_team_week_state_published`, `cfb_weekly_projections_published` — only
+  runs whose run row (the mirror's commit marker, written last) has landed.
+
+Append-only for everybody on the audit tables; `authenticated` reads, `anon`
+nothing; the service role writes through the functions (plus INSERT of manifest
+and matrix rows). **A re-apply takes no ACCESS EXCLUSIVE lock on any table**
+(triggers, RLS and policies are created only when missing; it sets
+`lock_timeout = 5s`). Editor path: `parts/cfb_production.part*-of-*.sql`.
+Tested against a real PostgreSQL by `football/cfb_production/sql.test.js`
+(chaos: concurrent lock contention, a real two-session deadlock, lock timeouts,
+duplicate job runs; disaster recovery by dump and restore).
+
 ### `ufc_live_center.sql` — the UFC Live Fight Center contract
 The Fight Center used to read a live layer no file in this repository ever
 created (`ufc.live_events`, `ufc.live_fights`, `ufc.live_event_state`,

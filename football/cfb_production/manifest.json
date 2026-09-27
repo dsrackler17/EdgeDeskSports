@@ -114,9 +114,9 @@
    "bytes": 19100
   },
   "football/cfb_decision/decision.js": {
-   "sha256": "70d661e74706f410277fcca947f0abf8639e6082c41311c7eab02a076552d50c",
-   "git_blob": "3fec08c2c86b0b4ce12f5a0530aaf6b5ddc645ca",
-   "bytes": 51262
+   "sha256": "a55a80ace753a16eccabe713f06b7e12a0c4503f4be8b9c3a1e09512e13dac7c",
+   "git_blob": "e846ff893b1e7f412f7559c2462b6b54cccffdaa",
+   "bytes": 51343
   },
   "football/cfb_p4/params.js": {
    "sha256": "fac5ae0e37d5ea7319a407e4de70baa728741687e54a3f7649d15a0053dd4b0b",
@@ -129,7 +129,7 @@
    "bytes": 3230
   }
  },
- "migration_version": "cfbmig_19c27365ec86baad",
+ "migration_version": "cfbmig_0feeb0665bc310d5",
  "migrations": {
   "supabase/cfb_decision.sql": {
    "sha256": "c9fa8c119673110e7782f8ff8d080cf49a28a1781d80abc53947af2b08210fd7",
@@ -137,9 +137,9 @@
    "bytes": 21899
   },
   "supabase/cfb_lab.sql": {
-   "sha256": "386675d05e2df6a83dd4eb171c0c0bc7919eeed41519db0f28f367331631b42a",
-   "git_blob": "c51b03db8f73a8e1210315c529d98f9a08e3438a",
-   "bytes": 86673
+   "sha256": "7aa288bc2d5be097ad0c62ce943310fb1c4b7707202052dd1a29274e81c04c2f",
+   "git_blob": "64703d3477c62e9b7a9ec5ea3732a72aac14536d",
+   "bytes": 90995
   },
   "supabase/cfb_lab_cron.sql": {
    "sha256": "4e63c60c5f0fca8d295ec099ebe8fd290e72041322191c8d8334c18759da25e2",
@@ -167,9 +167,9 @@
    "bytes": 19856
   },
   "supabase/cfb_production.sql": {
-   "sha256": "b310c3aa0513e33294b78cefeb909767757c04e96cdee0c907a1a97657eef085",
-   "git_blob": "4f8a7320ef2a6c0139b265b1e00f14072c20cbb9",
-   "bytes": 84988
+   "sha256": "834f43d497e1787ad506418e9a6e663d81f30a9f4562819d3c1646eb1c49f199",
+   "git_blob": "9e6b7e90cd52136841fadca24b4914500571fd4f",
+   "bytes": 86470
   },
   "supabase/cfb_v2_model.sql": {
    "sha256": "ade9b7cb20fe6e1c6a750cf8a970bcc4f58aab9238452a74c63d19f34ee5cf29",
@@ -333,17 +333,45 @@
   "No level substitutes a model that is not listed here (candidate edgedesk_cfb_v2.0.0 is never a fallback).",
   "Every level below FULL displays its mode; decisions at levels 2-4 are PASS / UNAVAILABLE with the reason, never BET."
  ],
- "deployed_at": "2026-09-27T16:54:32.124Z",
+ "deployed_at": "2026-09-27T17:45:48.372Z",
  "recorded_by": "football/cfb_production/manifest.js",
- "git_commit": "4755fa7ea08d5b17152b4a2c0526a43b8a3bead8",
+ "git_commit": "2e9613654f18c278c364995dfd0fb3b59b189c68",
  "git_dirty": true,
  "git_dirty_paths": [
-  "football/cfb_production/compat.js",
-  "football/cfb_production/manifest.js",
-  "football/cfb_production/compatibility.json",
+  ".github/workflows/cfb-lab.yml",
+  ".github/workflows/cfb-v2-shadow.yml",
+  ".github/workflows/deploy-intelligence.yml",
+  "football/cfb_p4/research/build_market.py",
+  "football/cfb_production/gate.js",
   "football/cfb_production/manifest.json",
-  "supabase/cfb_market.sql"
+  "football/cfb_v2/research/run_all.sh",
+  "football/cfb_v2/research/v2/common.py",
+  "football/cfb_v2/research/v2/games.py",
+  "football/cfb_v2/research/v2/learn_week.py",
+  "football/cfb_v2/research/v2/monitor.py",
+  "football/cfb_v2/research/v2/predict_live.py",
+  "football/cfb_v2/research/v2/snapshots.py",
+  "football/cfb_v2/research/v2/tests_leakage.py",
+  "football/cfb_v2/research/v2/tests_signs.py",
+  "football/cfb_v2/research/v2/weekly/tests_weekly.py",
+  "supabase/README.md",
+  "tools/sql/split_sql.test.js",
+  ".github/workflows/cfb-production-tests.yml",
+  "docs/cfb-production/ARCHITECTURE.md",
+  "docs/cfb-production/DEPLOYMENT.md",
+  "docs/cfb-production/JOBS.md",
+  "docs/cfb-production/OPERATIONS.md",
+  "docs/cfb-production/ROLLBACK.md",
+  "docs/cfb-production/RUNBOOK.md",
+  "docs/cfb-production/VERSIONING.md",
+  "football/cfb_production/tests.js",
+  "supabase/parts/cfb_production.part1-of-5.sql",
+  "supabase/parts/cfb_production.part2-of-5.sql",
+  "supabase/parts/cfb_production.part3-of-5.sql",
+  "supabase/parts/cfb_production.part4-of-5.sql",
+  "supabase/parts/cfb_production.part5-of-5.sql",
+  "tools/cfb/"
  ],
- "content_sha256": "35b8ff926ebf3e720cb9930d8adb90a5bcc5fe9d5951d59357207c0b6558ea30",
- "manifest_id": "cfbm_74a7e7e5b255d8eed68e1470"
+ "content_sha256": "0aa7f2bde80620b7f270e418003fa4306a458ee0f5487c92dc93a387cb039ff2",
+ "manifest_id": "cfbm_fca6b759f4eab55a6e1f8812"
 }
