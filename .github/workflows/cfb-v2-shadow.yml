@@ -1,28 +1,43 @@
-# EdgeDesk CFB V2 — shadow-mode refresh.
+# EdgeDesk CFB V2 — the weekly learning and rating refresh engine
+# (docs/cfb-weekly/DESIGN.md, RUNBOOK.md).
 #
-# V2 runs BESIDE V1 and replaces nothing. Each run rebuilds the live season's
-# point-in-time features with the same code the backtest used, predicts with
-# the FROZEN artifacts of the current model version (no refit), and writes:
+# V2 runs BESIDE V1 and replaces nothing. Each run is ONE tracked pipeline run
+# (football/cfb_weekly/<season>/runs.jsonl): it rebuilds the live season's
+# point-in-time state with the same code the backtest used, validates the
+# finals and the play-by-play, updates team / QB / unit state, projects the
+# next week with the FROZEN artifact of the current model version (verified
+# against its MANIFEST; no refit), and publishes only when the release gate
+# passes. Outputs:
 #   football/cfb_v2/current.json          upcoming games, FROZEN or PROVISIONAL
-#   football/cfb_v2/snapshots/<season>/   write-once pregame snapshots, one file
-#                                         per Tuesday 12:00 UTC freeze
-# Retraining is NOT scheduled here: it is an offseason, manually dispatched
-# job (mode=retrain) that produces a new model_version for review.
+#   football/cfb_v2/snapshots/<season>/   write-once pregame snapshots (Tuesday 12:00 UTC)
+#   football/cfb_weekly/<season>/         run records, team/QB/unit state, feature
+#                                         snapshots, projections, changes, reports
+#
+# Modes (pg_cron's cfb_weekly_poke dispatches them; the schedule below is the
+# backup clock):
+#   weekly   Sun/Mon: finalize the source week, state, provisional projections
+#   freeze   Tue: the EARLY freeze at 12:00 UTC, market comparison, lab hand-off
+#   daily    Wed-Sat: refresh; a new football projection only if inputs changed
+#   retrain  offseason only: a NEW challenger version for review (never
+#            auto-promoted, never overwrites the champion or the production
+#            artifact)
 name: CFB V2 shadow
 
 on:
   schedule:
-    - cron: '17 13 * 8-12,1 2'    # Tuesday 13:17 UTC — first run after the weekly freeze
-    - cron: '47 10 * 8-12,1 *'    # daily in season — provisional rows, late-schedule games
+    - cron: '5 10 * 8-12,1 0,1'    # Sun + Mon 10:05 — weekly state after the Saturday slate
+    - cron: '17 12 * 8-12,1 2'     # Tue 12:17 — the EARLY freeze (pg_cron fires at 12:07)
+    - cron: '47 10 * 8-12,1 3-6'   # Wed-Sat 10:47 — daily football-change check
   workflow_dispatch:
     inputs:
       mode:
-        description: 'live (default) or retrain (offseason; produces a new model version for review)'
+        description: 'weekly | daily (default) | freeze | retrain (offseason; produces a new challenger for review). "live" is an alias of daily.'
         required: false
-        default: 'live'
+        default: 'daily'
 
 permissions:
   contents: write
+  actions: write          # to dispatch the Model Lab after a freeze
 
 concurrency:
   group: cfb-v2-shadow
@@ -33,8 +48,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      # the line ledger (shadow/<season>/lines.jsonl) is append-only: it is only
-      # ever extended by this job and committed back, never rewritten
       - uses: actions/checkout@v5
         with:
           ref: main
@@ -44,54 +57,96 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Python deps
-        run: pip install --quiet pandas numpy pyarrow scipy scikit-learn lightgbm
-      - name: Cache raw data
+      - name: Python deps (pinned; an upgrade is a governed change)
+        run: pip install --quiet -r football/cfb_v2/research/requirements.txt
+      - name: Mode
+        id: mode
+        run: |
+          M="${{ github.event.inputs.mode }}"
+          if [ -z "$M" ]; then
+            # a scheduled run: the day decides (UTC)
+            case "$(date -u +%u)" in
+              7|1) M=weekly ;;
+              2)   M=freeze ;;
+              *)   M=daily ;;
+            esac
+          fi
+          [ "$M" = "live" ] && M=daily
+          echo "mode=$M" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      - name: Cache raw data (one cache per ISO week; the live season is re-fetched every run)
         uses: actions/cache@v4
         with:
           path: football/cfb_v2/research/data
-          key: cfb-v2-data-${{ github.run_id }}
+          key: cfb-v2-data-${{ steps.mode.outputs.week }}
           restore-keys: cfb-v2-data-
-      - name: Run
+
+      - name: Weekly engine
+        if: ${{ steps.mode.outputs.mode != 'retrain' }}
+        id: engine
         working-directory: football/cfb_v2/research
-        run: bash run_all.sh "${{ github.event.inputs.mode || 'live' }}"
-      - name: Weekly learning + snapshot integrity (live only)
-        if: ${{ (github.event.inputs.mode || 'live') == 'live' }}
+        env:
+          CFB_V2_DATA: ${{ github.workspace }}/football/cfb_v2/research/data
+          CFB_V2_OUT: ${{ github.workspace }}/football/cfb_v2/research/out
+          OMP_NUM_THREADS: '1'
+          OPENBLAS_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+        run: |
+          set +e
+          python3 -m v2.weekly.run --mode "${{ steps.mode.outputs.mode }}"
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          # a gate failure is a recorded outcome, not a crash: the run record is
+          # still published below, and the job is marked failed at the end
+          exit 0
+
+      - name: Engine and weekly-engine tests
+        if: ${{ steps.mode.outputs.mode != 'retrain' }}
         working-directory: football/cfb_v2/research
         env:
           CFB_V2_DATA: ${{ github.workspace }}/football/cfb_v2/research/data
           CFB_V2_OUT: ${{ github.workspace }}/football/cfb_v2/research/out
         run: |
-          python3 -m v2.learn_week
-          python3 -m v2.predict_live --verify
-      - name: Shadow records, research statuses, monitoring + health warnings (live only)
-        if: ${{ (github.event.inputs.mode || 'live') == 'live' }}
-        working-directory: football/cfb_v2/research
-        env:
-          CFB_V2_DATA: ${{ github.workspace }}/football/cfb_v2/research/data
-          CFB_V2_OUT: ${{ github.workspace }}/football/cfb_v2/research/out
-        run: |
-          python3 -m v2.shadow
-          node ../shadow_decisions.js
-          python3 -m v2.monitor
-      - name: Engine tests
-        run: node football/cfb_v2/tests.js
+          node ../tests.js
+          python3 -m v2.weekly.tests_weekly --fast
+
       - name: Insert-only copy to Supabase (when secrets are configured)
-        if: ${{ (github.event.inputs.mode || 'live') == 'live' }}
+        if: ${{ steps.mode.outputs.mode != 'retrain' }}
         env:
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
-        run: node football/cfb_v2/sync_supabase.js
-      - name: Publish (live only)
-        if: ${{ (github.event.inputs.mode || 'live') == 'live' }}
+        run: |
+          node football/cfb_v2/sync_supabase.js
+          node football/cfb_weekly/sync_supabase.js
+
+      - name: Publish
+        if: ${{ steps.mode.outputs.mode != 'retrain' }}
         run: |
           git config user.name "edgedesk-bot"
           git config user.email "edgedesk-bot@users.noreply.github.com"
-          tools/ci/push_generated.sh main "cfb v2 shadow: frozen pregame snapshots" -- \
+          tools/ci/push_generated.sh main "cfb weekly engine: ${{ steps.mode.outputs.mode }} run" -- \
             football/cfb_v2/current.json football/cfb_v2/snapshots football/cfb_v2/shadow \
-            football/cfb_v2/learning football/cfb_v2/monitoring.json
+            football/cfb_v2/learning football/cfb_v2/monitoring.json football/cfb_weekly
+
+      - name: Hand the freeze to the Model Lab
+        if: ${{ steps.mode.outputs.mode == 'freeze' && steps.engine.outputs.status == '0' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cfb-lab.yml -f mode=hourly --ref main || echo "::warning::could not dispatch cfb-lab.yml; its hourly schedule will import the freeze"
+
+      - name: Fail the run if the engine did not publish
+        if: ${{ steps.mode.outputs.mode != 'retrain' && steps.engine.outputs.status != '0' }}
+        run: |
+          echo "the weekly engine did not publish (gate failed or a stage failed); see football/cfb_weekly/*/runs/" >&2
+          exit 1
+
+      # ------------------------------------------------------------ retrain
+      - name: Retrain (offseason; a new challenger version, never auto-promoted)
+        if: ${{ steps.mode.outputs.mode == 'retrain' }}
+        working-directory: football/cfb_v2/research
+        run: bash run_all.sh retrain
       - name: Keep the retrain for review (never auto-promoted)
-        if: ${{ github.event.inputs.mode == 'retrain' }}
+        if: ${{ steps.mode.outputs.mode == 'retrain' }}
         uses: actions/upload-artifact@v4
         with:
           name: cfb-v2-retrain

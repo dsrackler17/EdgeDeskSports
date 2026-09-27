@@ -210,6 +210,27 @@ the file unschedules a `cfb_lab_lines` job left by an earlier install. Where
 pg_cron or pg_net cannot be enabled it does not fail: it creates the poke,
 schedules nothing and its report (`cfb_lab_cron_status()`) says what was skipped.
 
+### `cfb_weekly.sql` — the CFB weekly learning and rating refresh engine
+Needs nothing else first (it shares no table with `cfb_lab.sql` or
+`cfb_v2_model.sql`). The run table `cfb_pipeline_runs` (one row per weekly-engine
+run: versions, per-stage statuses, counts) and `cfb_pipeline_stage_log`, and the
+engine's state, mirrored insert-only from `football/cfb_weekly/<season>/` by
+`football/cfb_weekly/sync_supabase.js`: `cfb_game_validation`,
+`cfb_game_performance`, `cfb_team_week_state`, `cfb_qb_week_state`,
+`cfb_unit_week_state`, `cfb_qb_events`, `cfb_upcoming_game_features`,
+`cfb_weekly_projections`, `cfb_projection_changes`, `cfb_weekly_research`,
+`cfb_source_health`. Every table is append-only (update/delete/truncate refused,
+service role included); exactly-once state is a unique index on the natural key
+plus `state_version`, and a correction is version n+1 naming what it supersedes.
+Typed columns for what is queried, `payload jsonb` for the complete row. Also
+`cfb_weekly_poke(mode)` and four pg_cron jobs that dispatch
+`.github/workflows/cfb-v2-shadow.yml` (Sun/Mon 10:05 `weekly`, Tue 12:07
+`freeze`, Wed–Sat 10:47 `daily`, August–January, UTC) with the same Vault token
+as `cfb_lab_cron.sql`; without pg_cron/pg_net it schedules nothing and the report
+says so. The editor path is `parts/cfb_weekly.part*-of-*.sql`; the `Deploy
+intelligence` workflow's `apply_cfb_lab` input applies it after the lab files.
+Tested against a real PostgreSQL by `football/cfb_weekly/sql.test.js`.
+
 ### `ufc_live_center.sql` — the UFC Live Fight Center contract
 The Fight Center used to read a live layer no file in this repository ever
 created (`ufc.live_events`, `ufc.live_fights`, `ufc.live_event_state`,

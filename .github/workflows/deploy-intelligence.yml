@@ -80,7 +80,7 @@ on:
         type: boolean
         default: false
       apply_cfb_lab:
-        description: 'Apply supabase/cfb_lab.sql (the CFB Live Model Lab tables, append-only triggers, market-rule functions and public record views) and then supabase/cfb_lab_cron.sql (the hourly pg_cron poke of cfb-lab.yml, which skips itself where pg_cron / pg_net are missing). Both idempotent; needs nothing else first.'
+        description: 'Apply supabase/cfb_lab.sql (the CFB Live Model Lab tables, append-only triggers, market-rule functions and public record views), then supabase/cfb_lab_cron.sql (the hourly pg_cron poke of cfb-lab.yml), then supabase/cfb_weekly.sql (the weekly refresh engine run table, state tables and its pg_cron dispatch). Each skips its schedule where pg_cron / pg_net are missing; all idempotent; nothing else needed first.'
         type: boolean
         default: false
 
@@ -278,6 +278,17 @@ jobs:
           # secret editorial_dispatch_sql.sql already reads.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_lab_cron.sql
 
+      - name: Apply the CFB weekly refresh engine contract and schedule
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Independent of the lab's tables. Append-only state tables, the run
+          # table, and cfb_weekly_poke(mode) with its pg_cron jobs (Sun/Mon
+          # 10:05 weekly, Tue 12:07 freeze, Wed-Sat 10:47 daily). Tested by
+          # football/cfb_weekly/sql.test.js; ends in a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_weekly.sql
+
       - name: Say what is skipped, rather than leaving it unsaid
         if: always()
         run: |
@@ -293,7 +304,7 @@ jobs:
             echo "- tennis live centre requested: ${{ inputs.apply_tennis_live_center }}"
             echo "- tennis record contract requested: ${{ inputs.apply_tennis_record }}"
             echo "- tennis rating lab requested: ${{ inputs.apply_tennis_lab }}"
-            echo "- CFB Model Lab contract and scheduler requested: ${{ inputs.apply_cfb_lab }}"
+            echo "- CFB Model Lab + weekly refresh engine contracts and schedules requested: ${{ inputs.apply_cfb_lab }}"
             echo ''
             echo 'Confirm what is actually running with the **Intelligence doctor** workflow — it asks the'
             echo 'deployment rather than trusting this one.'
