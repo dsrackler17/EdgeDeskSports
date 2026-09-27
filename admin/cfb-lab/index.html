@@ -476,7 +476,43 @@ details.model>summary{color:var(--text);font-size:13px;font-weight:600}
     return sec('market','7 · Market discovery','How the official numbers compare with the opener and the close, and whether the market came to them.',h);
   }
 
-  /* ========================================================= 8. governance */
+  /* ================================================ 8. major disagreements */
+  /* The integrity gate's verdicts on V1's latest market snapshot per game
+     (lab.json major_disagreement, football/cfb_lab/disagreement.js). A raw
+     7+ gap is INVESTIGATE until it passes every check; VERIFIED is rare by
+     design and is never a bet. The counts are what the gate found, never a
+     quota. */
+  function disHTML(lab){
+    var X=lab&&lab.major_disagreement;
+    if(!X) return sec('disagreement','8 · Major disagreements',null,empty('No major-disagreement block in lab.json.'));
+    function p1(x){ return isNum(x)?fx(x,1)+'%':D; }
+    var GR=X.graded||{}, h='';
+    h+=table([['Measure',function(r){ return esc(r[0]); },'txt'],['Value',function(r){ return r[1]; },'num']],[
+      ['Raw major disagreements (7+)',it(X.raw_major_disagreements)],
+      ['Verified major disagreements',it(X.verified_major_disagreements)+(X.verified_10plus?' · '+it(X.verified_10plus)+' at 10+':'')+(X.verified_15plus?' · '+it(X.verified_15plus)+' at 15+':'')],
+      ['Investigate',it(X.investigate)],['Data fault',it(X.data_fault)],['Market fault',it(X.market_fault)],
+      ['Verification not run (snapshots before the gate)',it(X.verification_not_run)],
+      ['Average raw gap (all snapshots with a market)',mae(X.average_raw_gap)],['Average raw gap (7+)',mae(X.average_raw_gap_7plus)],
+      ['Market movement toward verified gaps',p1(X.market_movement_toward_verified_pct)],['Market movement toward unverified 7+ gaps',p1(X.market_movement_toward_unverified_pct)],
+      ['Verified-gap MAE',mae(X.verified_gap_mae)],['Verified-gap CLV, pts',smae(X.verified_gap_clv)],
+      ['False-extreme rate, raw 7+',p1(X.false_extreme_rate_raw_pct)],['False-extreme rate, verified',p1(X.false_extreme_rate_verified_pct)]]);
+    var rows=[['raw 7+',GR.raw_7plus],['verified',GR.verified],['not verified',GR.unverified]].filter(function(r){ return r[1]; });
+    h+='<h3>Graded</h3>'+note('False extreme: the close did not move toward EdgeDesk AND the result landed on the market’s side. A losing ticket alone is never counted.')
+      +table([['Population',function(r){ return esc(r[0]); }],['n',function(r){ return it(r[1].n); },'num'],['Settled',function(r){ return it(r[1].settled); },'num'],
+        ['MAE',function(r){ return mae(r[1].mae); },'num'],['Market MAE',function(r){ return mae(r[1].market_mae_at_snapshot); },'num'],
+        ['Moved toward',function(r){ return p1(r[1].moved_toward_pct); },'num'],['CLV, pts',function(r){ return smae(r[1].clv_points); },'num'],
+        ['False extremes',function(r){ return it(r[1].false_extremes); },'num'],['False-extreme rate',function(r){ return p1(r[1].false_extreme_rate_pct); },'num']],rows);
+    var rc=X.root_causes_unverified||{}, rk=Object.keys(rc).sort(function(a,b){ return rc[b]-rc[a]; });
+    h+='<h3>Why unverified 7+ gaps did not verify</h3>'+(rk.length?table([['Root cause',function(k){ return esc(String(k).replace(/_/g,' ')); },'txt'],['n',function(k){ return it(rc[k]); },'num']],rk):empty('No unverified 7+ gap yet.'));
+    var W=X.by_week||{}, wk=Object.keys(W).sort(function(a,b){ return a-b; });
+    h+='<h3>By week</h3>'+(wk.length?table([['Week',function(w){ return esc(w); }],['Raw 7+',function(w){ return it(W[w].raw_7plus); },'num'],['10+',function(w){ return it(W[w].raw_10plus); },'num'],
+      ['15+',function(w){ return it(W[w].raw_15plus); },'num'],['Verified',function(w){ return it(W[w].verified); },'num'],['Investigate',function(w){ return it(W[w].investigate); },'num'],
+      ['Data fault',function(w){ return it(W[w].data_fault); },'num'],['Market fault',function(w){ return it(W[w].market_fault); },'num'],['Not run',function(w){ return it(W[w].not_run); },'num'],
+      ['Favourite flips',function(w){ return it(W[w].favorite_flips); },'num']],wk):empty('No 7+ gap yet.'));
+    return sec('disagreement','8 · Major disagreements','A raw 7+ point gap is INVESTIGATE until it passes every integrity check; only then is it a VERIFIED MAJOR DISAGREEMENT. Rare by design, never a quota, and never a bet.',h);
+  }
+
+  /* ========================================================= 9. governance */
   function govHTML(lab){
     var G=(lab&&lab.governance)||{}, h='';
     var ex=G.experiments||[];
@@ -494,14 +530,14 @@ details.model>summary{color:var(--text);font-size:13px;font-weight:600}
     var au=G.audit_tail||[];
     h+='<h3>Audit log (newest 25)</h3>'+(au.length?table([['When',function(a){ return when(a.created_at); }],['Event',function(a){ return esc(a.event_type); }],['Subject',function(a){ return esc(a.subject); }],
       ['Change',function(a){ return (a.before!=null?val(a.before)+' \u2192 ':'')+val(a.after); },'txt'],['Reason',function(a){ return esc(a.reason||D); },'txt'],['By',function(a){ return esc(a.actor||D); }]],au):empty('The audit log is empty.'));
-    return sec('governance','8 · Governance','What is being tested, which data may be used for what, what is waiting on evidence, and every governed change.',h);
+    return sec('governance','9 · Governance','What is being tested, which data may be used for what, what is waiting on evidence, and every governed change.',h);
   }
 
-  /* ====================================================== 9. reconstructed */
+  /* ===================================================== 10. reconstructed */
   function reconHTML(lab){
     var R=(lab&&lab.reconstructed)||{}, B=R.by_model||{}, ms_=Object.keys(B).sort(byRole(lab));
     var h='<div class="banner bad"><b>Not official \u00b7 not public \u00b7 not used for promotion</b>GIT_RECONSTRUCTED and REPLAY rows are evidence of method. They never enter a live figure above, the public record, the common set or any promotion decision.</div>'+note(R.note);
-    if(!ms_.length) return sec('reconstructed','9 · Reconstructed',null,h+empty('No reconstructed or replayed row has settled.'));
+    if(!ms_.length) return sec('reconstructed','10 · Reconstructed',null,h+empty('No reconstructed or replayed row has settled.'));
     function origins(m){ return ((B[m]||{}).origin||[]).map(function(o){ return chip(o,o+' \u00b7 not official'); }).join(' ')||chip('GIT_RECONSTRUCTED','not official'); }
     h+=table([['Model',function(m){ return mname(lab,m,true); }],['Origin',function(m){ return origins(m); }],['n',function(m){ var e=B[m].errors||{}; return nn(e.n,e.label); },'num'],
       ['MAE',function(m){ return mae((B[m].errors||{}).mae); },'num'],['RMSE',function(m){ return mae((B[m].errors||{}).rmse); },'num'],['Median AE',function(m){ return mae((B[m].errors||{}).median_ae); },'num'],
@@ -512,12 +548,12 @@ details.model>summary{color:var(--text);font-size:13px;font-weight:600}
     h+='<h3>Reconstructed rows against the market</h3>'+table([['Model',function(x){ return mname(lab,x.m,true)+' '+origins(x.m); }],['Against',function(x){ return esc(x.k); }],['n',function(x){ return nn(x.r.n,x.r.label); },'num'],
       ['Model MAE',function(x){ return mae(x.r.model_mae); },'num'],['Market MAE',function(x){ return mae(x.r.market_mae); },'num'],['Difference',function(x){ return smae(x.r.mean_error_diff); },'num'],
       ['95% CI',function(x){ return ci(x.r.diff_ci); },'num'],['Model closer',function(x){ return pc(x.r.beat_share); },'num']],rows);
-    return sec('reconstructed','9 · Reconstructed',null,h);
+    return sec('reconstructed','10 · Reconstructed',null,h);
   }
 
   /* ============================================================== page */
   var SECTIONS=[['health','Model health'],['this-week','This week'],['performance','Performance'],['comparison','Comparison'],['errors','Errors'],
-    ['edge','Edge'],['market','Market'],['governance','Governance'],['reconstructed','Reconstructed']];
+    ['edge','Edge'],['market','Market'],['disagreement','Disagreements'],['governance','Governance'],['reconstructed','Reconstructed']];
   function navHTML(){ return '<nav class="toc" aria-label="Sections">'+SECTIONS.map(function(s,i){ return '<a href="#'+s[0]+'">'+(i+1)+' '+esc(s[1])+'</a>'; }).join('')+'</nav>'; }
   function stampHTML(lab){
     if(!lab) return '<div class="banner bad"><b>lab.json did not load</b>Every section below is empty because there is nothing to read, not because nothing happened.</div>';
@@ -527,10 +563,10 @@ details.model>summary{color:var(--text);font-size:13px;font-weight:600}
     return h;
   }
   function render(lab,lastRun){
-    return navHTML()+stampHTML(lab)+healthHTML(lab,lastRun)+weekHTML(lab)+perfHTML(lab)+compHTML(lab)+errHTML(lab)+edgeHTML(lab)+mktHTML(lab)+govHTML(lab)+reconHTML(lab);
+    return navHTML()+stampHTML(lab)+healthHTML(lab,lastRun)+weekHTML(lab)+perfHTML(lab)+compHTML(lab)+errHTML(lab)+edgeHTML(lab)+mktHTML(lab)+disHTML(lab)+govHTML(lab)+reconHTML(lab);
   }
   window.EDLAB={render:render,SECTIONS:SECTIONS,nav:navHTML,health:healthHTML,job:jobHTML,thisWeek:weekHTML,performance:perfHTML,comparison:compHTML,
-    errors:errHTML,edge:edgeHTML,market:mktHTML,governance:govHTML,reconstructed:reconHTML,
+    errors:errHTML,edge:edgeHTML,market:mktHTML,disagreement:disHTML,governance:govHTML,reconstructed:reconHTML,
     fmt:{esc:esc,fx:fx,sg:sg,ln:ln,mae:mae,pr:pr,pc:pc,when:when}};
 })();
 /*__EDLAB_END__*/

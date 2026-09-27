@@ -186,7 +186,13 @@ reads exactly two owner-run views, `cfb_lab_public_record` (one row per graded
 OFFICIAL LIVE snapshot of the model that was champion when it was taken, with no
 internal field) and `cfb_lab_public_summary` (MAE, RMSE, Brier, 80% coverage,
 ATS and CLV of the research positions, per season and overall, with the sample
-label). Report rows 1–24 should each say `ok`. At 86 KB it is also split for
+label). Since the major-disagreement gate (docs/cfb-disagreement/DESIGN.md) the
+predictions table also carries the gate's verdict — `disagreement_status`,
+`verified_market_gap` (only on a VERIFIED 7+ snapshot, and then exactly the raw
+gap), `calibrated_market_gap`, `disagreement_root_cause`, `disagreement_checks` —
+added idempotently to a deployed table, and the `cfb_lab_major_disagreements`
+view (authenticated read, anon none) lists every 7+ snapshot with its verdict.
+Report rows 1–25 should each say `ok`. At 91 KB it is also split for
 the SQL editor: `parts/cfb_lab.part*-of-*.sql`. Or apply it with the
 `Deploy intelligence` workflow's `apply_cfb_lab` input, which applies this file
 and then `cfb_lab_cron.sql`. Tested against a real

@@ -169,9 +169,13 @@ section('STEP 3 · one research label, by rule and in order');
   eq('a 1.9-pt gap is MARKET ALIGNED', label(4.9, 3).key, 'MARKET_ALIGNED');
   eq('a 2.0-pt gap is WORTH RESEARCHING', label(5.0, 3).key, 'WORTH_RESEARCHING');
   eq('a 6.9-pt gap is WORTH RESEARCHING', label(9.9, 3).key, 'WORTH_RESEARCHING');
-  eq('a 7.0-pt gap is a MAJOR DISAGREEMENT', label(10.0, 3).key, 'MAJOR_DISAGREEMENT');
-  eq('a 21.0-pt gap is still a MAJOR DISAGREEMENT', label(24.0, 3).key, 'MAJOR_DISAGREEMENT');
-  eq('past the 21-pt guard it is LOW RELIABILITY', label(24.1, 3).key, 'LOW_RELIABILITY');
+  /* 7+: the integrity gate decides; with no gate result the view FAILS
+     CLOSED — a raw gap alone is never a major disagreement */
+  eq('a 7.0-pt gap with no gate result is INVESTIGATE, never verified', label(10.0, 3).key, 'INVESTIGATE');
+  chk('and says verification is incomplete', /VERIFICATION INCOMPLETE/.test(label(10.0, 3).means), label(10.0, 3).means);
+  eq('a 21.0-pt gap with no gate result is still INVESTIGATE', label(24.0, 3).key, 'INVESTIGATE');
+  eq('past the 21-pt guard, unverified, it is a DATA FAULT', label(24.1, 3).key, 'DATA_FAULT');
+  chk('MAJOR DISAGREEMENT is no longer a label anyone can receive', V.LABEL_KEYS.indexOf('MAJOR_DISAGREEMENT') < 0);
   eq('confidence 35 is enough to read the gap', label(5, 3, { conf: 35 }).key, 'WORTH_RESEARCHING');
   eq('confidence 34.9 is LIMITED DATA', label(5, 3, { conf: 34.9 }).key, 'LIMITED_DATA');
   eq('an unmeasured confidence is LIMITED DATA, never healthy', label(5, 3, { conf: null }).key, 'LIMITED_DATA');
@@ -187,12 +191,29 @@ section('STEP 3 · one research label, by rule and in order');
   eq('data problems outrank a near pick’em (low confidence)', label(0.4, 3, { conf: 20 }).key, 'LIMITED_DATA');
   eq('data problems outrank a near pick’em (low reliability)', label(0.4, 3, { coverage: { input_coverage: 0.4 } }).key, 'LOW_RELIABILITY');
   eq('no market outranks a near pick’em', label(0.4, null).key, 'LIMITED_DATA');
-  eq('a near pick’em outranks a major disagreement', label(-0.4, 9).key, 'NEAR_PICKEM');
+  eq('a 7+ gap on a near pick’em is still gate-decided (INVESTIGATE)', label(-0.4, 9).key, 'INVESTIGATE');
   eq('a near pick’em outranks worth researching', label(0.5, 3).key, 'NEAR_PICKEM');
-  eq('the guard outranks thin data (a fault is named as a fault)', label(30, 3, { conf: 10 }).key, 'LOW_RELIABILITY');
-  eq('low confidence outranks a major disagreement', label(12, 3, { conf: 20 }).key, 'LIMITED_DATA');
-  eq('low reliability outranks a major disagreement', label(12, 3, { coverage: { input_coverage: 0.3 } }).key, 'LOW_RELIABILITY');
-  eq('the major threshold outranks the research one', label(12, 3).key, 'MAJOR_DISAGREEMENT');
+  eq('the guard outranks thin data (a fault is named as a fault)', label(30, 3, { conf: 10 }).key, 'DATA_FAULT');
+  eq('a 7+ gap on low confidence is INVESTIGATE (the gate’s confidence check), never verified', label(12, 3, { conf: 20 }).key, 'INVESTIGATE');
+  eq('a 7+ gap on low reliability is INVESTIGATE, never verified', label(12, 3, { coverage: { input_coverage: 0.3 } }).key, 'INVESTIGATE');
+  eq('the major threshold outranks the research one', label(12, 3).key, 'INVESTIGATE');
+  /* the gate's verdict is what the view reads at 7+ */
+  const withGate = st => V.build({ game: GAME, projection: proj(12, { line: 3, conf: 70 }), market: { spread_line: 3 }, coverage: FULL,
+    disagreement: { available: true, status: st, status_label: st.replace(/_/g, ' '), verified: st === 'VERIFIED_MAJOR_DISAGREEMENT',
+      verified_market_gap: st === 'VERIFIED_MAJOR_DISAGREEMENT' ? 9 : null, verification: st === 'VERIFIED_MAJOR_DISAGREEMENT' ? 'PASSED' : 'FAILED',
+      root_cause: { primary: 'EARLY_SEASON_PRIOR_ERROR' }, checks: [{ group: 'TEAM_STATE', id: 'current_sample', status: st === 'VERIFIED_MAJOR_DISAGREEMENT' ? 'PASS' : 'FAIL', detail: 'fewest current-season games 1' }],
+      failed: [], incomplete: [], calibrated: { gap: 8.1 }, raw_market_gap: 9 } });
+  eq('a verified gate result reads VERIFIED MAJOR DISAGREEMENT', withGate('VERIFIED_MAJOR_DISAGREEMENT').research_label.key, 'VERIFIED_MAJOR_DISAGREEMENT');
+  chk('and says it is not a bet', /NOT a bet/.test(withGate('VERIFIED_MAJOR_DISAGREEMENT').research_label.means));
+  eq('the verified label carries the strongest tone', withGate('VERIFIED_MAJOR_DISAGREEMENT').research_label.tone, 'verified');
+  eq('an INVESTIGATE gate result reads INVESTIGATE', withGate('INVESTIGATE').research_label.key, 'INVESTIGATE');
+  chk('and names the failing check', /current-season games/.test(withGate('INVESTIGATE').research_label.means));
+  eq('a MARKET_FAULT gate result reads MARKET FAULT', withGate('MARKET_FAULT').research_label.key, 'MARKET_FAULT');
+  eq('a DATA_FAULT gate result reads DATA FAULT', withGate('DATA_FAULT').research_label.key, 'DATA_FAULT');
+  eq('only the verified one carries a verified gap', withGate('INVESTIGATE').disagreement.verified_market_gap, null);
+  eq('the view carries the gate summary for the evidence packet', withGate('VERIFIED_MAJOR_DISAGREEMENT').disagreement.status, 'VERIFIED_MAJOR_DISAGREEMENT');
+  chk('under 7 the view carries no gate summary', V.build({ game: GAME, projection: proj(5, { line: 3 }), market: { spread_line: 3 }, coverage: FULL }).disagreement === null);
+  chk('a verified label never appears without a gate result', [label(10, 3), label(24, 3), label(12, 3, { conf: 90 })].every(l => l.key !== 'VERIFIED_MAJOR_DISAGREEMENT'));
 
   /* the gap under the label is the raw one: a near pick'em against a
      1.2-pt market is aligned by value but named NEAR PICK'EM, and its sentence
@@ -202,7 +223,7 @@ section('STEP 3 · one research label, by rule and in order');
 
   /* every label is one of the six, and none is a pick */
   const all = [label(4.9, 3), label(5, 3), label(10, 3), label(30, 3), label(5, 3, { conf: 10 }), label(5, null), label(0.4, 0)];
-  chk('every result is one of the six supported labels', all.every(l => C && V.LABEL_KEYS.indexOf(l.key) >= 0 && V.LABELS[l.key].label === l.label));
+  chk('every result is one of the supported labels', all.every(l => C && V.LABEL_KEYS.indexOf(l.key) >= 0 && V.LABELS[l.key].label === l.label));
   const BET = /\b(lock|best bet|guarantee|guaranteed|hammer|bet this|sure thing|play of the day)\b/i;
   chk('no label or sentence uses betting language', all.every(l => !BET.test(l.label) && !BET.test(l.means)), all.map(l => l.label));
   chk('every label explains itself in a written sentence', all.every(l => l.means && l.means.length > 60));
@@ -233,9 +254,9 @@ section('STEP 4 · edge, confidence and reliability are three separate numbers')
   near('the same 9-pt gap on good data', good.market_gap.points, 9);
   near('on weak data', weak.market_gap.points, 9);
   near('and on thin data', thin.market_gap.points, 9);
-  eq('good data reads MAJOR DISAGREEMENT', good.research_label.key, 'MAJOR_DISAGREEMENT');
-  eq('the same gap on 40% reliability reads LOW RELIABILITY', weak.research_label.key, 'LOW_RELIABILITY');
-  eq('the same gap on 22% confidence reads LIMITED DATA', thin.research_label.key, 'LIMITED_DATA');
+  eq('good data, no gate result: INVESTIGATE (a raw gap alone is never major)', good.research_label.key, 'INVESTIGATE');
+  eq('the same gap on 40% reliability: INVESTIGATE', weak.research_label.key, 'INVESTIGATE');
+  eq('the same gap on 22% confidence: INVESTIGATE', thin.research_label.key, 'INVESTIGATE');
   eq('confidence does not move with reliability', weak.confidence.score, good.confidence.score);
   eq('reliability does not move with confidence', thin.reliability.value, good.reliability.value);
   const smallGap = V.build({ game: GAME, projection: proj(3.5, { line: 3, conf: 84 }), market: { spread_line: 3 },
@@ -549,12 +570,13 @@ section('STEP 10 · the research desk: label counts and what changed since');
   eq('every game is counted once', d.total, 7);
   eq('two worth researching', d.counts.WORTH_RESEARCHING, 2);
   eq('one market aligned', d.counts.MARKET_ALIGNED, 1);
-  eq('one major disagreement', d.counts.MAJOR_DISAGREEMENT, 1);
+  eq('one investigate (a 9-pt gap with no gate result)', d.counts.INVESTIGATE, 1);
+  eq('no verified disagreement without a gate', d.counts.VERIFIED_MAJOR_DISAGREEMENT, 0);
   eq('one near pick’em', d.counts.NEAR_PICKEM, 1);
   eq('one limited data (no market)', d.counts.LIMITED_DATA, 1);
   eq('one low reliability', d.counts.LOW_RELIABILITY, 1);
-  eq('the desk lists every label, worth researching first', d.items.map(i => i.key)[0], 'WORTH_RESEARCHING');
-  eq('six labels, no more', d.items.length, 6);
+  eq('the desk lists every label, verified first, then worth researching', d.items.map(i => i.key).slice(0, 2).join(','), 'VERIFIED_MAJOR_DISAGREEMENT,WORTH_RESEARCHING');
+  eq('nine labels, no more', d.items.length, 9);
   chk('and the counts sum to the board', d.items.reduce((a, i) => a + i.n, 0) === d.total);
 
   /* since this device's last visit */

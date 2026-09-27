@@ -432,3 +432,21 @@ It writes a `cfb_lab_model_roles` event and an audit-log entry.
   `PARTITION_RELEASED` audit event.
 - `lab_core.partitions.canUseForTuning()` and the V2 research config (`assert_dev_only`) refuse
   everything else.
+
+## 21. Major disagreements (`lab.json` → `major_disagreement`)
+
+Every V1 snapshot taken against a market carries the integrity gate's verdict
+(`football/cfb_lab/checkpoint.js` → `lib/cfb_disagreement.js`). One snapshot per
+game — the latest LIVE V1 snapshot with a market — is counted
+(`football/cfb_lab/disagreement.js`):
+
+| measure | definition |
+|---|---|
+| raw major disagreements | \|pure margin − market margin\| ≥ 7, whatever the gate said |
+| verified / investigate / data fault / market fault | the gate's verdicts; `verification_not_run` for snapshots taken before the gate existed |
+| average raw gap | mean \|gap\| over every game with a market, and over the 7+ ones |
+| market movement toward verified gaps | share of settled verified snapshots whose close moved toward EdgeDesk (\|move\| ≥ 0.25; unchanged counts half), beside the same for unverified 7+ |
+| verified-gap MAE / CLV | the snapshot's graded absolute error; (close − snapshot line) in EdgeDesk's direction, points |
+| false-extreme rate | the close did NOT move toward EdgeDesk AND the result landed on the market's side of the gap or within its first quarter (`falseExtreme`). A losing ticket alone is never counted. |
+
+VERIFIED is never a bet and the counts are never a quota. Page: `admin/cfb-lab` §8.

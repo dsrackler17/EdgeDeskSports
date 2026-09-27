@@ -55,8 +55,8 @@ const REGIONS = [
   ['var FBP4_FBS_TAIL_N=19;', 'function fbP4RowValues(u){'],
   ['function fbP4SideRating(side){', 'function fbP4Card(u){'],
   ['function fbEdrFor(name){', 'function fbP4Ratings(){'],
-  ['function fbP4Ratings(){', 'function fbP4StatusFor(p,mkt){'],
-  ['function fbP4StatusFor(p,mkt){', 'window.fbP4Gate=function(gid){'],
+  ['function fbP4Ratings(){', 'function fbP4StatusFor(p,mkt,u){'],
+  ['function fbP4StatusFor(p,mkt,u){', 'window.fbP4Gate=function(gid){'],
   ['function fbP4StatusStrip(){', 'function fbP4Render(host){']
 ];
 function slice(start, end) {

@@ -118,7 +118,10 @@ function view(raw, line, o) {
   const all = [view(-4.1, 1.5), view(-0.4, 0.5), view(-12, 1.5), view(-2, -1.9), view(-4, null), view(-4, 1.5, { conf: 20 }),
     view(-4, 1.5, { coverage: { input_coverage: 0.4 } }), view(-30, 1.5)].map(V.brief);
   const keys = {}; all.forEach(x => { keys[x.label.key] = 1; });
-  eq(Object.keys(keys).length, 6, 'the six labels all publish');
+  /* 9.5 and 28.5-pt gaps with no gate result publish as INVESTIGATE and
+     DATA FAULT: never as a verified disagreement */
+  eq(Object.keys(keys).length, 7, 'the seven reachable labels all publish');
+  ok(!keys.VERIFIED_MAJOR_DISAGREEMENT && !keys.MAJOR_DISAGREEMENT, 'no label publishes as a verified disagreement without a gate result');
   const text = all.map(x => strings(x).join(' \n ')).join(' \n ');
   ok(!AMODEL.FORBIDDEN.test(text), 'no brief carries the article model’s forbidden language', (text.match(AMODEL.FORBIDDEN) || [])[0]);
   ok(!NOTHING.test(text), 'and no stringified nothing', (text.match(NOTHING) || [])[0]);

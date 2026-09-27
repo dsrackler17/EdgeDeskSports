@@ -1,6 +1,78 @@
--- cfb_lab -- part 2 of 6.
+-- cfb_lab -- part 2 of 7.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
+
+-- 2. Market history (SCHEMA.md §2).
+create table if not exists public.cfb_lab_market_quotes (
+  quote_id            text primary key,
+  game_id             text,
+  season              int,
+  week                int,
+  source              text not null,
+  provider_event_id   text,
+  book                text not null,
+  market_type         text not null,
+  home_line           numeric(6,2),
+  total_points        numeric(6,2),
+  price_home          int,
+  price_away          int,
+  price_over          int,
+  price_under         int,
+  observed_at         timestamptz not null,
+  provider_updated_at timestamptz,
+  kickoff_ts          timestamptz,
+  is_heartbeat        boolean not null default false,
+  is_provider_open    boolean not null default false,
+  is_provider_close   boolean not null default false,
+  is_pregame          boolean not null default true,
+  home_team           text,
+  away_team           text,
+  fingerprint         text not null,
+  retrieved_at        timestamptz not null default now(),
+  recorded_at         timestamptz not null default now(),
+  constraint cfb_lab_quote_id_format check (quote_id ~ '^cfbq_[0-9a-f]{24}$'),
+  constraint cfb_lab_quote_source check (source in ('espn','cfbd','odds_api','record')),
+  constraint cfb_lab_quote_market check (market_type in ('spread','total','moneyline')),
+  constraint cfb_lab_quote_book check (length(book) > 0),
+  constraint cfb_lab_quote_game_key check (game_id is not null or provider_event_id is not null),
+  constraint cfb_lab_quote_pregame_before_kickoff check (not is_pregame or kickoff_ts is null or observed_at < kickoff_ts),
+  constraint cfb_lab_quote_pregame_flag check (is_pregame <> is_provider_close),
+  constraint cfb_lab_quote_one_provider_flag check (not (is_provider_open and is_provider_close)),
+  constraint cfb_lab_quote_spread_line check (market_type <> 'spread' or home_line is not null),
+  constraint cfb_lab_quote_total_points check (market_type <> 'total' or total_points is not null),
+  constraint cfb_lab_quote_moneyline_price check (market_type <> 'moneyline' or price_home is not null or price_away is not null)
+);
+comment on table public.cfb_lab_market_quotes is
+  'CFB Model Lab market history: one row per observed change (plus heartbeats) per source, book, game and market (SCHEMA.md §2). Written through cfb_lab_ingest_quotes(). Append-only.';
+
+-- 3. Openers and closes (SCHEMA.md §3), written by cfb_lab_derive_lines().
+create table if not exists public.cfb_lab_market_lines (
+  line_id         text primary key,
+  game_id         text not null,
+  kind            text not null,
+  book            text not null,
+  market_type     text not null,
+  home_line       numeric(6,2),
+  total_points    numeric(6,2),
+  price_home      int,
+  price_away      int,
+  observed_at     timestamptz,
+  n_books         int,
+  quality         text not null,
+  best_line_home  numeric(6,2),
+  best_line_away  numeric(6,2),
+  rule_version    text not null,
+  quote_ids       text[],
+  derived_at      timestamptz not null,
+  kickoff_ts      timestamptz,
+  recorded_at     timestamptz not null default now(),
+  constraint cfb_lab_line_id_format check (line_id ~ '^cfbl_[0-9a-f]{24}$'),
+  constraint cfb_lab_line_kind check (kind in ('OPEN','CLOSE')),
+  constraint cfb_lab_line_market check (market_type in ('spread','total','moneyline')),
+  constraint cfb_lab_line_quality check (quality in ('OBSERVED','PROVIDER_DECLARED','MISSING'))
+);
+comment on table public.cfb_lab_market_lines is
+  'CFB Model Lab write-once openers and closes, per book and CONSENSUS (SCHEMA.md §3, METRICS.md §4). A CLOSE is derived at least 3 hours after kickoff.';
 
 -- 3b. Provider event -> EdgeDesk game (SCHEMA.md §3b).
 create table if not exists public.cfb_lab_event_map (
@@ -293,77 +365,3 @@ create index if not exists cfb_lab_miss_pred_idx on public.cfb_lab_miss_reviews 
 create index if not exists cfb_lab_map_event_idx on public.cfb_lab_event_map (source, provider_event_id, created_at desc);
 create index if not exists cfb_lab_map_game_idx on public.cfb_lab_event_map (game_id);
 create index if not exists cfb_lab_role_model_idx on public.cfb_lab_model_roles (model_version, effective_at desc);
-
--- ============================================================ append-only
-create or replace function public.cfb_lab_append_only()
-returns trigger language plpgsql
-set search_path = pg_catalog, pg_temp
-as $fn$
-begin
-  if tg_op = 'UPDATE' then
-    raise exception '% is append-only: rows are never updated (a correction is a new row with supersedes)', tg_table_name
-      using errcode = 'restrict_violation';
-  elsif tg_op = 'DELETE' then
-    raise exception '% is append-only: rows are never deleted', tg_table_name
-      using errcode = 'restrict_violation';
-  else
-    raise exception '% is append-only: it is never truncated', tg_table_name
-      using errcode = 'restrict_violation';
-  end if;
-end $fn$;
-
--- A LIVE prediction is taken by the lab before kickoff, now: it cannot be
--- dated in the future. (Every row-local rule is a named check constraint on
--- the table; this is the one that needs the clock.)
-create or replace function public.cfb_lab_predictions_guard()
-returns trigger language plpgsql
-set search_path = pg_catalog, pg_temp
-as $fn$
-begin
-  if new.origin = 'LIVE' and new.prediction_ts > now() + interval '10 minutes' then
-    raise exception 'cfb_lab_predictions: LIVE prediction % is dated % which is in the future (now %)',
-      new.prediction_id, new.prediction_ts, now()
-      using errcode = 'check_violation';
-  end if;
-  return new;
-end $fn$;
-
--- The quotes of one game: rows written with its game_id, plus rows written
--- before their provider event was mapped (game_id NULL) whose NEWEST map row
--- (per source + provider_event_id) now names the game. The same resolution
--- cfb_lab_ingest_quotes applies at write time, applied again at read time, so
--- an Odds API event's earliest quotes still count once the event is mapped.
-create or replace function public.cfb_lab_game_quotes(p_game_id text)
-returns setof public.cfb_lab_market_quotes language sql stable
-set search_path = pg_catalog, pg_temp
-as $fn$
-  select q.* from public.cfb_lab_market_quotes q where q.game_id = p_game_id
-  union all
-  select q.* from public.cfb_lab_market_quotes q
-    join (
-      select distinct on (m.source, m.provider_event_id) m.source, m.provider_event_id, m.game_id
-        from public.cfb_lab_event_map m
-       where (m.source, m.provider_event_id) in
-             (select m2.source, m2.provider_event_id from public.cfb_lab_event_map m2 where m2.game_id = p_game_id)
-       order by m.source, m.provider_event_id, m.created_at desc, m.recorded_at desc, m.map_id desc
-    ) cur on cur.game_id = p_game_id and q.source = cur.source and q.provider_event_id = cur.provider_event_id
-   where q.game_id is null
-$fn$;
-
--- The kickoff the lab knows for a game: the newest of what the predictions
--- (by prediction_ts) and the game's quotes (cfb_lab_game_quotes, by
--- observed_at) say. A tie takes the later kickoff. NULL when the game is unknown.
-create or replace function public.cfb_lab_game_kickoff(p_game_id text)
-returns timestamptz language sql stable
-set search_path = pg_catalog, pg_temp
-as $fn$
-  select k from (
-    select p.kickoff_ts as k, p.prediction_ts as seen
-      from public.cfb_lab_predictions p where p.game_id = p_game_id
-    union all
-    select q.kickoff_ts, q.observed_at
-      from public.cfb_lab_game_quotes(p_game_id) q where q.kickoff_ts is not null
-  ) x
-  order by seen desc, k desc
-  limit 1
-$fn$;

@@ -228,6 +228,16 @@ create table if not exists public.cfb_lab_predictions (
   secondary_edge             text,
   primary_uncertainty        text,
   disagreement_summary       text,
+  -- the MAJOR-DISAGREEMENT INTEGRITY GATE's verdict on this snapshot
+  -- (lib/cfb_disagreement.js; docs/cfb-disagreement/DESIGN.md). The raw gap is
+  -- model_market_gap; the verified gap is set only when every check passed.
+  disagreement_version       text,
+  disagreement_status        text,
+  disagreement_tier          text,
+  verified_market_gap        numeric(7,3),
+  calibrated_market_gap      numeric(7,3),
+  disagreement_root_cause    text,
+  disagreement_checks        jsonb,
   inputs_ref                 jsonb not null,
   row_hash                   text not null,
   recorded_at                timestamptz not null default now(),
@@ -263,10 +273,37 @@ create table if not exists public.cfb_lab_predictions (
   constraint cfb_lab_pred_stake check (stake_units >= 0 and (bet_enabled or stake_units = 0)),
   constraint cfb_lab_pred_families check (official_families <@ array['EARLY_MODEL','MIDWEEK_MODEL','OFFICIAL','FINAL_MODEL']::text[]),
   constraint cfb_lab_pred_official check (not ('OFFICIAL' = any (official_families))
-    or (checkpoint_type = 'T24' and origin = 'LIVE'))
+    or (checkpoint_type = 'T24' and origin = 'LIVE')),
+  constraint cfb_lab_pred_disagreement_status check (disagreement_status is null or disagreement_status in
+    ('MARKET_ALIGNED','WORTH_RESEARCHING','INVESTIGATE','MARKET_FAULT','DATA_FAULT','VERIFIED_MAJOR_DISAGREEMENT')),
+  constraint cfb_lab_pred_verified_gap check (verified_market_gap is null
+    or (disagreement_status = 'VERIFIED_MAJOR_DISAGREEMENT' and model_market_gap is not null
+        and abs(verified_market_gap - model_market_gap) < 0.001 and abs(model_market_gap) >= 7))
 );
 comment on table public.cfb_lab_predictions is
   'CFB Model Lab live prediction ledger: one row per model per game per checkpoint (SCHEMA.md §1). Append-only.';
+
+-- 1b. The major-disagreement gate's verdict, added after the first deployment.
+--     Idempotent for a table that predates it; a fresh table already has it.
+alter table public.cfb_lab_predictions add column if not exists disagreement_version text;
+alter table public.cfb_lab_predictions add column if not exists disagreement_status text;
+alter table public.cfb_lab_predictions add column if not exists disagreement_tier text;
+alter table public.cfb_lab_predictions add column if not exists verified_market_gap numeric(7,3);
+alter table public.cfb_lab_predictions add column if not exists calibrated_market_gap numeric(7,3);
+alter table public.cfb_lab_predictions add column if not exists disagreement_root_cause text;
+alter table public.cfb_lab_predictions add column if not exists disagreement_checks jsonb;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'cfb_lab_pred_disagreement_status') then
+    alter table public.cfb_lab_predictions add constraint cfb_lab_pred_disagreement_status check (disagreement_status is null
+      or disagreement_status in ('MARKET_ALIGNED','WORTH_RESEARCHING','INVESTIGATE','MARKET_FAULT','DATA_FAULT','VERIFIED_MAJOR_DISAGREEMENT'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'cfb_lab_pred_verified_gap') then
+    alter table public.cfb_lab_predictions add constraint cfb_lab_pred_verified_gap check (verified_market_gap is null
+      or (disagreement_status = 'VERIFIED_MAJOR_DISAGREEMENT' and model_market_gap is not null
+          and abs(verified_market_gap - model_market_gap) < 0.001 and abs(model_market_gap) >= 7));
+  end if;
+end $$;
 
 -- 2. Market history (SCHEMA.md §2).
 create table if not exists public.cfb_lab_market_quotes (
@@ -1359,6 +1396,17 @@ create or replace view public.cfb_lab_official_predictions as
 select p.* from public.cfb_lab_predictions p
  where p.checkpoint_type = 'T24' and p.origin = 'LIVE';
 
+-- every snapshot whose raw gap to the market reached 7 points, with the
+-- integrity gate's verdict beside it: the Model Lab's major-disagreement read
+create or replace view public.cfb_lab_major_disagreements as
+select p.prediction_id, p.game_id, p.season, p.week, p.kickoff_ts, p.prediction_ts, p.checkpoint_type, p.origin,
+       p.model_version, p.model_label, p.home_team, p.away_team, p.pure_home_margin, p.current_spread,
+       p.model_market_gap as raw_market_gap, p.verified_market_gap, p.calibrated_market_gap,
+       p.disagreement_status, p.disagreement_tier, p.disagreement_root_cause, p.disagreement_checks,
+       p.sportsbook_count, p.market_dispersion, p.market_as_of, p.market_stale
+  from public.cfb_lab_predictions p
+ where p.model_market_gap is not null and abs(p.model_market_gap) >= 7;
+
 create or replace view public.cfb_lab_current_results as
 select distinct on (r.game_id) r.*
   from public.cfb_lab_results r
@@ -1457,7 +1505,7 @@ do $blk$
 declare v text;
 begin
   foreach v in array array['cfb_lab_current_roles','cfb_lab_official_predictions','cfb_lab_current_results',
-    'cfb_lab_current_evaluations','cfb_lab_consensus_now']
+    'cfb_lab_current_evaluations','cfb_lab_consensus_now','cfb_lab_major_disagreements']
   loop
     execute format('alter view public.%I set (security_invoker = true)', v);
     execute format('revoke all on public.%I from public', v);
@@ -1579,7 +1627,8 @@ select check_name, status from (
               when not exists (select 1 from tables
                                 where coalesce(has_table_privilege('anon', to_regclass('public.' || t), 'select'), true))
                and not exists (select 1 from unnest(array['cfb_lab_current_roles','cfb_lab_official_predictions',
-                                 'cfb_lab_current_results','cfb_lab_current_evaluations','cfb_lab_consensus_now']) v
+                                 'cfb_lab_current_results','cfb_lab_current_evaluations','cfb_lab_consensus_now',
+                                 'cfb_lab_major_disagreements']) v
                                 where coalesce(has_table_privilege('anon', to_regclass('public.' || v), 'select'), true))
               then 'ok' else 'CHECK THIS' end
   union all
@@ -1610,6 +1659,14 @@ select check_name, status from (
          case when public.cfb_lab_median(array[-3, -3.5]::numeric[]) = -3.25
                and public.cfb_lab_median_price(array[-105, 105]) = 100
                and public.cfb_lab_median_price(array[-110, -105]) = -107
+              then 'ok' else 'CHECK THIS' end
+  union all
+  select 13, 'the major-disagreement verdict: columns on cfb_lab_predictions, their constraints, and the cfb_lab_major_disagreements view',
+         case when (select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'cfb_lab_predictions'
+                     and column_name in ('disagreement_version','disagreement_status','disagreement_tier','verified_market_gap',
+                                         'calibrated_market_gap','disagreement_root_cause','disagreement_checks')) = 7
+               and (select count(*) from pg_constraint where conname in ('cfb_lab_pred_disagreement_status','cfb_lab_pred_verified_gap')) = 2
+               and to_regclass('public.cfb_lab_major_disagreements') is not null
               then 'ok' else 'CHECK THIS' end
 ) x
 order by ord, check_name;
