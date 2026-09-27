@@ -118,9 +118,10 @@ jobs:
 
       # The stored canonical projections every page reads
       # (football/cfb_production/canonical.js, docs/cfb-production/CANONICAL.md):
-      # nothing on a page recomputes a number. A failure warns; the previous
-      # file stays, carrying its own as_of_ts.
-      - name: Canonical projections (football/cfb_production/reports/projections.json)
+      # nothing on a page recomputes a number. Beside it, reports/traces.json,
+      # the per-game prediction trace the internal debug view reads. A failure
+      # warns; the previous files stay, carrying their own as_of_ts.
+      - name: Canonical projections (football/cfb_production/reports/projections.json, traces.json)
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: node football/cfb_production/projections.js --write || echo "::warning::the canonical projections could not be built"
 
@@ -143,7 +144,8 @@ jobs:
           tools/ci/push_generated.sh main "cfb lab: hourly snapshots, market, settlement, reports" -- \
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
-            football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json
+            football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
+            football/cfb_production/reports/traces.json
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}

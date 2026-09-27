@@ -25,9 +25,14 @@
                         RESEARCH field, labelled, never the official status
                         (audit F-22); the stage-8 "edge strength" rides along
                         only as a labelled research number
-     trace              where each number came from (file hashes, ledger ids)
+     trace              where each number came from (file times, ledger ids)
 
-     node football/cfb_production/projections.js [--now ISO] [--season S] [--write] [--out PATH]
+   Beside it, reports/traces.json: per game, the stage-by-stage prediction trace
+   (trace.js: raw inputs -> features -> submodels -> ensemble -> calibration ->
+   market -> decision), read by the internal debug view (admin/cfb-debug) only,
+   so the public page does not download it.
+
+     node football/cfb_production/projections.js [--now ISO] [--season S] [--write] [--out PATH] [--traces-out PATH]
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -35,9 +40,11 @@ const path = require('path');
 const crypto = require('crypto');
 const CANON = require('./canonical.js');
 const N = require('./numeric.js');
+const TR = require('./trace.js');
 
 const REPO = path.resolve(__dirname, '..', '..');
 const OUT = path.join(__dirname, 'reports', 'projections.json');
+const TRACES_OUT = path.join(__dirname, 'reports', 'traces.json');
 const SCHEMA = 'cfb_canonical_projections_v1';
 const HORIZON_H = 24 * 10;
 const OFFICIAL_POLICY = 'cfb_decision_policy_v1';
@@ -93,6 +100,8 @@ function build(opts) {
   const decisions = opts.decisions || readJsonl(path.join(REPO, 'football', 'cfb_decision', String(season), 'decisions.jsonl'));
   const E = CANON.loadEngine();
   const mv = E.params.model_version;
+  const W = CANON.stackWeights(mv);
+  const monitor = opts.monitor !== undefined ? opts.monitor : TR.featureMonitor(season, REPO);
   /* the newest LIVE lab snapshot of each game per model, taken at or before as_of */
   const lab = new Map();
   for (const p of preds) {
@@ -123,7 +132,7 @@ function build(opts) {
   });
   const ids = new Set([...rows.keys()]);
   v1.forEach((p, k) => { if (!ids.has(k)) ids.add(k); });
-  const games = [];
+  const games = [], traces = {};
   for (const gid of [...ids].sort()) {
     const row = dups.has(gid) ? null : (rows.get(gid) || null);
     const dupRow = dups.has(gid) ? rows.get(gid) : null;
@@ -140,6 +149,12 @@ function build(opts) {
     const resolved = CANON.resolve(snap, v);
     if (dupRow) resolved.reason = 'two different V2.1 rows for this game in current.json: neither is used';
     const off = officialDecision(decByGame.get(gid) || [], asOfMs);
+    const official = resolved.level === 4 ? { status: 'UNAVAILABLE', basis: OFFICIAL_POLICY, reason: resolved.reason } : off;
+    const research = L2 ? { status: L2.decision_class, engine_status: L2.status, basis: L2.decision_source && /^engine:/.test(L2.decision_source) ? RESEARCH_BASIS : 'the Model Lab\'s ' + (L2.decision_source || 'rule') + ' (research, not the governed policy)',
+      stage8_ev_strength: L2.edge_quality, stage8_ev_strength_note: 'engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality',
+      prediction_id: L2.prediction_id, checkpoint_type: L2.checkpoint_type, prediction_ts: L2.prediction_ts, row_hash: L2.row_hash,
+      canonical_modes: ir.canonical ? ir.canonical.degraded_modes : null } : null;
+    const disp = snap ? snap.display : (resolved.level === 3 ? { label: CANON.PUBLIC_LABEL.FALLBACK_MODEL, notes: [CANON.PUBLIC_LABEL.FALLBACK_MODEL], show_numbers: true, show_confidence_score: false } : { label: 'Prediction unavailable', show_numbers: false, show_confidence_score: false, notes: [] });
     games.push({
       game_id: gid, season: (row && row.season) || (v && v.season), week: (row && row.week) || (v && v.week), kickoff: kick,
       home: (row && row.home) || (dupRow && dupRow.home) || (v && v.home), away: (row && row.away) || (dupRow && dupRow.away) || (v && v.away), neutral_site: !!(row && row.neutral_site),
@@ -152,15 +167,13 @@ function build(opts) {
          that snapshot's margin minus the market margin, + = the model likes HOME) */
       market: L2 ? { home_line: L2.current_spread, as_of: L2.market_as_of, books: L2.sportsbook_count, stale: !!L2.market_stale,
         actionable_status: ir.market_integrity ? ir.market_integrity.actionable_status : null, gap: L2.model_market_gap, snapshot_ts: L2.prediction_ts } : null,
-      official_decision: resolved.level === 4 ? { status: 'UNAVAILABLE', basis: OFFICIAL_POLICY, reason: resolved.reason } : off,
-      research: L2 ? { status: L2.decision_class, engine_status: L2.status, basis: L2.decision_source && /^engine:/.test(L2.decision_source) ? RESEARCH_BASIS : 'the Model Lab\'s ' + (L2.decision_source || 'rule') + ' (research, not the governed policy)',
-        stage8_ev_strength: L2.edge_quality, stage8_ev_strength_note: 'engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality',
-        prediction_id: L2.prediction_id, checkpoint_type: L2.checkpoint_type, prediction_ts: L2.prediction_ts, row_hash: L2.row_hash,
-        canonical_modes: ir.canonical ? ir.canonical.degraded_modes : null } : null,
-      display: snap ? snap.display : (resolved.level === 3 ? { label: CANON.PUBLIC_LABEL.FALLBACK_MODEL, notes: [CANON.PUBLIC_LABEL.FALLBACK_MODEL], show_numbers: true, show_confidence_score: false } : { label: 'Prediction unavailable', show_numbers: false, show_confidence_score: false, notes: [] }),
+      official_decision: official,
+      research,
+      display: disp,
       trace: { current_generated_at: cur.generated_at || null, row_state: row ? row.state || null : null, row_prediction_ts: row ? row.prediction_ts : null,
         lab_prediction_id: L2 ? L2.prediction_id : null, lab_row_hash: L2 ? L2.row_hash : null, official_decision_id: off.decision_id || null },
     });
+    traces[gid] = TR.build({ row: row || dupRow, snap, params: E.params, weights: W, lab: L2, official, research, resolved, display: disp, source: 'football/cfb_v2/current.json', monitor }).stages;
   }
   const counts = { games: games.length, by_level: {}, by_mode: {}, official: {}, research: {} };
   games.forEach((g) => {
@@ -169,7 +182,7 @@ function build(opts) {
     counts.official[g.official_decision.status] = (counts.official[g.official_decision.status] || 0) + 1;
     if (g.research) counts.research[g.research.status] = (counts.research[g.research.status] || 0) + 1;
   });
-  return {
+  const out = {
     schema: SCHEMA, generated_at: asOf, as_of_ts: asOf, season, model_version: mv, champion: manifest.champion_model_version || null,
     champion_selection: manifest.champion_selection || null, manifest_id: manifest.manifest_id || null,
     contract_version: CANON.loadContract().version, numeric_rules: N.VERSION, official_policy: OFFICIAL_POLICY,
@@ -187,9 +200,13 @@ function build(opts) {
     counts,
     games,
   };
+  /* the traces travel beside the report, not inside it (never serialised with it) */
+  Object.defineProperty(out, 'traces', { enumerable: false, value: { schema: TR.SCHEMA, projections_schema: SCHEMA, generated_at: asOf, as_of_ts: asOf, season, model_version: mv,
+    stages: TR.STAGES, games: traces } });
+  return out;
 }
 
-module.exports = { build, officialDecision, OUT, SCHEMA, ORDER, RESEARCH_BASIS, TENDENCY_NOTE };
+module.exports = { build, officialDecision, OUT, TRACES_OUT, SCHEMA, ORDER, RESEARCH_BASIS, TENDENCY_NOTE };
 
 if (require.main === module) {
   const a = process.argv.slice(2);
@@ -200,6 +217,7 @@ if (require.main === module) {
     const out = arg('--out', OUT);
     fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.writeFileSync(out, JSON.stringify(r, null, 1) + '\n');
+    fs.writeFileSync(arg('--traces-out', out === OUT ? TRACES_OUT : out.replace(/\.json$/, '') + '.traces.json'), JSON.stringify(r.traces) + '\n');
   }
   console.log(JSON.stringify({ as_of_ts: r.as_of_ts, counts: r.counts }));
 }

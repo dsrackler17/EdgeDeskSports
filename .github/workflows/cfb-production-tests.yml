@@ -78,6 +78,8 @@ jobs:
         run: node football/cfb_production/ui.test.js
       - name: The canonical prediction pathway (no consumer recomputes; one official status; numeric safety; properties; chaos; reproducibility)
         run: node football/cfb_production/canonical.test.js
+      - name: Game-level debug view and the prediction trace (admin/cfb-debug)
+        run: node football/cfb_production/debug_ui.test.js
       - name: Golden games (stored invariant outputs of the production pathway)
         run: node football/cfb_production/golden.js
       - name: Final hardening test (a whole slate through every stage, then failures injected)
