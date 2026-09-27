@@ -196,9 +196,9 @@ td.txt{white-space:normal;min-width:220px;max-width:560px;overflow-wrap:anywhere
   }
   function degraded(o){
     var s=o.sections&&o.sections.degraded_games; if(!s) return card('degraded','Degraded games',null,'');
-    var rows=(s.degraded||[]).slice(0,100).map(function(g){ return '<tr><td class="mv">'+esc(g.game_id)+'</td><td>'+esc(g.away)+' at '+esc(g.home)+'</td><td>'+(g.modes||[]).map(chip).join(' ')+'</td><td class="txt">'+txt(g.reason)+'</td></tr>'; });
+    var rows=(s.degraded||[]).slice(0,100).map(function(g){ return '<tr><td class="mv">'+esc(g.game_id)+'</td><td>'+esc(g.away)+' at '+esc(g.home)+'</td><td>'+(g.modes||[]).map(chip).join(' ')+'</td><td class="num">'+txt(g.fallback_level)+'</td><td class="txt">'+txt(g.reason)+'</td></tr>'; });
     return card('degraded','Degraded games',s,'<div class="kpis">'+tile('V2.1 rows',it(s.v21_rows))+tile('Degraded',it(s.degraded_count))+tile('Lab data quality',val(s.lab_data_quality))+'</div>'
-      +(rows.length?table(['game','matchup','modes','reason'],rows):'<p class="empty">No degraded game.</p>'));
+      +(rows.length?table(['game','matchup','modes','level','reason'],rows):'<p class="empty">No degraded game.</p>'));
   }
   function predictions(o){
     var s=o.sections&&o.sections.predictions; if(!s) return card('predictions','Predictions',null,'');

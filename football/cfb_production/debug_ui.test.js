@@ -67,6 +67,19 @@ chk('trace: the decision stage keeps the official decision and the research clas
   const d = st(g, 'decision'); return JSON.stringify(d.official) === JSON.stringify(g.official_decision) && JSON.stringify(d.research) === JSON.stringify(g.research); }));
 chk('trace: a NOT_PRICED game (FBS vs FCS) still has its trace and says so', Pj.games.filter((g) => g.canonical && g.canonical.status === 'NOT_PRICED').every((g) => st(g, 'outcome').status === 'NOT_PRICED'));
 
+/* the operations dashboard's degraded games carry the same stored modes and level */
+{
+  const H = require('./health.js');
+  const ops = H.build({ now: NOW, projections: Pj });
+  const dg = ops.sections.degraded_games;
+  const byId = new Map(dg.degraded.map((d) => [d.game_id, d]));
+  const worse = Pj.games.filter((g) => g.canonical && g.canonical.degraded && g.canonical.degraded.modes.some((m) => m !== 'FULL'));
+  chk('ops: every game stored with a degraded mode is listed with those modes and its fallback level', worse.length > 0 && worse.every((g) => {
+    const d = byId.get(g.game_id); return d && g.canonical.degraded.modes.filter((m) => m !== 'FULL').every((m) => d.modes.includes(m)) && d.fallback_level === g.resolved.level; }),
+    worse.filter((g) => !byId.get(g.game_id)).map((g) => g.game_id).slice(0, 5));
+  chk('ops: the section names the projections it read', dg.canonical_projections_as_of === Pj.as_of_ts && dg.canonical_by_level && dg.canonical_by_level['2'] > 0);
+}
+
 const clean = (h) => !/undefined|NaN|>null</.test(h);
 const list = E.render(Pj, T, null);
 chk('list: every game is listed with a link to its view', Pj.games.every((g) => list.includes('?game=' + g.game_id)) && clean(list), list.slice(0, 200));

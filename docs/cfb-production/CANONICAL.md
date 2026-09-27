@@ -320,7 +320,7 @@ stacked margin.
 - it reads the two stored files, computes nothing and writes nothing;
 - it escapes every string.
 
-`debug_ui.test.js` (30 checks, CI) runs the page's own render block against:
+`debug_ui.test.js` (32 checks, CI) runs the page's own render block against:
 - the real build;
 - nothing at all;
 - hostile files (markup in every field);
@@ -352,7 +352,8 @@ snapshot:
 A fallback never borrows the other model's number. A V1 board that cannot be read
 is reported (`sources.v1_error`), not silently dropped.
 
-**Display.** Internal views show the modes by name and the level. A public page:
+**Display.** Internal views show the modes by name and the level: the debug view, and the
+ops dashboard's "Degraded games". A public page:
 - shows a degraded mode in words (`PUBLIC_LABEL`);
 - never shows a degraded projection's confidence score;
 - shows win probability in whole percent at most, and a degraded favourite of 85%+
@@ -465,7 +466,7 @@ All are in CI:
 | `canonical.test.js` | 117 |
 | `final_hardening.test.js` | 23 |
 | `replay.test.js` | 7 |
-| `debug_ui.test.js` | 30 |
+| `debug_ui.test.js` | 32 |
 | `security.test.js` | 55 |
 | `golden.js` | 15 cases |
 | `v2/weekly/tests_contract.py` | 51 fast, 54 real |
