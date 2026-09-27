@@ -22,6 +22,11 @@ from . import models as MD
 SUB = ['A_adj_eff', 'B_elo', 'C_ridge', 'D_gbm', 'E_drive']
 SIGMA_COLS = ['early_season', 'inv_games', 'rating_sd_sum', 'ens_sd', 'abs_pred', 'exp_total_z',
               'fcs_game_f', 'qb_missing_any', 'qb_unsettled_any', 'vol_sum', 'to_dependence']
+# Missing-value fills for the error model are LEARNED ON THE TRAINING ROWS and
+# stored with the model. (Candidate 001 filled with the median of whatever
+# batch was being predicted, i.e. a whole season including its later weeks —
+# found by tests_poison.row_independence.)
+SIGMA_FILL_COLS = ('rating_sd_sum', 'vol_sum', 'to_dependence')
 
 
 def assert_past_only(train_seasons, S):
@@ -70,19 +75,21 @@ def stack_weights(P, y):
 
 
 # ---------------------------------------------------------- uncertainty
-def sigma_design(D):
+def sigma_design(D, fill=None):
+    if fill is None:                       # artifacts older than the fix carry no fills
+        fill = {c: D[c].median() for c in SIGMA_FILL_COLS}
     Z = pd.DataFrame(index=D.index)
     Z['early_season'] = D.early_season.astype(float)
     Z['inv_games'] = 1.0 / (1.0 + D.min_games.fillna(0))
-    Z['rating_sd_sum'] = D.rating_sd_sum.fillna(D.rating_sd_sum.median())
+    Z['rating_sd_sum'] = D.rating_sd_sum.fillna(fill['rating_sd_sum'])
     Z['ens_sd'] = D.ens_sd
     Z['abs_pred'] = np.abs(D.ens_pred) / 10.0
     Z['exp_total_z'] = (D.pred_total - 55.0) / 10.0
     Z['fcs_game_f'] = D.fcs_game.astype(float)
     Z['qb_missing_any'] = D.qb_missing_any.fillna(1.0)
     Z['qb_unsettled_any'] = D.qb_unsettled_any.fillna(0.0)
-    Z['vol_sum'] = D.vol_sum.fillna(D.vol_sum.median())
-    Z['to_dependence'] = D.to_dependence.fillna(D.to_dependence.median())
+    Z['vol_sum'] = D.vol_sum.fillna(fill['vol_sum'])
+    Z['to_dependence'] = D.to_dependence.fillna(fill['to_dependence'])
     return Z[SIGMA_COLS]
 
 
@@ -90,7 +97,8 @@ class SigmaModel:
     """E[r^2] = exp(X b): Gamma GLM with log link (IRLS), ridge-stabilised."""
 
     def fit(self, D, r):
-        Z = sigma_design(D)
+        self.fill_ = {c: float(D[c].median()) for c in SIGMA_FILL_COLS}
+        Z = sigma_design(D, self.fill_)
         self.mu_, self.sd_ = Z.mean(), Z.std().replace(0, 1.0)
         A = np.column_stack([np.ones(len(Z)), ((Z - self.mu_) / self.sd_).values])
         yv = r ** 2 + 0.25
@@ -110,7 +118,7 @@ class SigmaModel:
         return self
 
     def predict(self, D):
-        Z = sigma_design(D)
+        Z = sigma_design(D, self.fill_)
         A = np.column_stack([np.ones(len(Z)), ((Z - self.mu_) / self.sd_).values])
         return np.sqrt(np.exp(A @ self.b_))
 
@@ -228,6 +236,7 @@ def run(X, seasons=None, fam_C=None, fam_D=None, gbm_params=None, ridge_alpha=No
             D.loc[m, 'hi_%d' % int(q * 100)] = cur.ens_pred.values + qs[q] * sg
         unc[S] = {'sigma_coef': sm.coef(), 'sigma_mu': {k: float(v) for k, v in sm.mu_.items()},
                   'sigma_sd': {k: float(v) for k, v in sm.sd_.items()},
+                  'sigma_fill': dict(sm.fill_),
                   't_df': int(df), 'abs_z_quantiles': qs,
                   'platt': [float(x) for x in platt.ab_],
                   'iso_x': [float(x) for x in iso.m_.X_thresholds_],

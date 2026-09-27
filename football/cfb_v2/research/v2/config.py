@@ -70,6 +70,14 @@ RATING_PRIOR_SCALE = {
 # recent horizon beats season-long next-game error by only 0.2% — the data's
 # way of saying "do not chase last week".
 RECENT_HALFLIFE_WEEKS = 8.0
+# Red-team variant switches (never set in production; the workflow does not
+# set them): scale every prior strength, or change the recent half-life, to
+# test whether ratings update too slowly (report/redteam/phase17_learning.json).
+_PS_MULT = float(os.environ.get('CFB_V2_PRIOR_SCALE_MULT', '1') or 1)
+if _PS_MULT != 1.0:
+    RATING_PRIOR_SCALE = {k: v * _PS_MULT for k, v in RATING_PRIOR_SCALE.items()}
+if os.environ.get('CFB_V2_HALFLIFE'):
+    RECENT_HALFLIFE_WEEKS = float(os.environ['CFB_V2_HALFLIFE'])
 RECENT_PRIOR_SCALE = 0.35              # recent-form posterior is shrunk toward season (tuned)
 FCS_POOL = 'FCS'                       # all non-FBS teams share one pooled prior mean
 

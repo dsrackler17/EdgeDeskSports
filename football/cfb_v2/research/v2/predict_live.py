@@ -76,7 +76,7 @@ def load_artifacts(version):
 
 
 def sigma_from_art(D, S):
-    Z = WF.sigma_design(D)
+    Z = WF.sigma_design(D, S.get('fill'))
     mu = np.array([S['mu'][c] for c in S['cols']]); sd = np.array([S['sd'][c] for c in S['cols']])
     Zs = (Z[S['cols']].values - mu) / sd
     b = np.array([S['coef']['intercept']] + [S['coef'][c] for c in S['cols']])

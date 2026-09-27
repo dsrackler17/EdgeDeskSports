@@ -105,8 +105,29 @@ def load_prior_inputs():
     return RP, TT, CO
 
 
+# Red-team ablation switch (never set in production): CFB_V2_PRIOR_DROP is a
+# comma list of prior inputs to remove — talent, retprod, coach, lagged, all.
+# A removed input becomes missing for every team, so the prior model learns
+# nothing from it ('all' leaves every team at the pooled FBS prior mean).
+PRIOR_DROP = set(x for x in os.environ.get('CFB_V2_PRIOR_DROP', '').split(',') if x)
+
+
 def prior_frame(S, teams, final_do, metric, RP, TT, CO):
     """Feature rows for the preseason prior of `metric` in season S."""
+    rows = _prior_frame(S, teams, final_do, metric, RP, TT, CO)
+    if 'talent' in PRIOR_DROP or 'all' in PRIOR_DROP:
+        rows['talent_z'] = np.nan
+    if 'retprod' in PRIOR_DROP or 'all' in PRIOR_DROP:
+        rows['ret_off'] = np.nan; rows['ret_def'] = np.nan
+    if 'coach' in PRIOR_DROP or 'all' in PRIOR_DROP:
+        rows['hc_new'] = np.nan; rows['oc_change'] = np.nan; rows['dc_change'] = np.nan
+    if 'lagged' in PRIOR_DROP or 'all' in PRIOR_DROP:
+        for c in ('off_lag1', 'off_lag2', 'def_lag1', 'def_lag2'):
+            rows[c] = np.nan
+    return rows
+
+
+def _prior_frame(S, teams, final_do, metric, RP, TT, CO):
     rows = pd.DataFrame({'team_id': sorted(teams)})
     rows['season'] = S
     for lag in (1, 2):
@@ -180,6 +201,7 @@ def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=N
     # ---- 1. variance components from burn-in seasons only
     vc_path = common.out_path('stage3', 'varcomp.json')
     varcomp = {}
+    typ_n = {}                   # typical per-game sample size (burn-in), for the volatility prior
     burn = TG[TG.g_season.isin([2009, 2010, 2011])]
     for m, spec in specs.items():
         rr = []
@@ -191,6 +213,7 @@ def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=N
             _, res = R.fit_metric(tg, m, spec, (spread * np.median(n), spread * 0.5), pr)
             rr.append(res)
         res = pd.concat(rr)
+        typ_n[m] = float(np.median(res.n)) if spec[2] != 'game' else 1.0
         s2p, s2g = R.estimate_varcomp(res)
         if spec[2] == 'game':
             s2p = 0.0 + 1e-9
@@ -285,10 +308,18 @@ def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=N
                     df['off_rec'] = rec.off.reindex(df.index)
                     df['def_rec'] = rec['def'].reindex(df.index)
                     mu, h = fit.attrs['mu'], fit.attrs['h']
+                if m in CORE_FORM:
+                    # the volatility PRIOR (the value residual_volatility shrinks
+                    # toward) is defined for every team at every freeze, so a
+                    # team with no games yet has its prior volatility — never a
+                    # fill computed from other rows (candidate 001 filled these
+                    # with a whole-season median in stage 5: a look-ahead)
+                    prior_sd = float(np.sqrt(s2p / typ_n[m] + s2g))
+                    if res is not None:
+                        df['vol'] = R.residual_volatility(res, prior_sd).reindex(df.index).fillna(prior_sd)
+                    else:
+                        df['vol'] = prior_sd
                 if m in CORE_FORM and res is not None:
-                    typ_n = float(np.median(res.n)) if spec[2] != 'game' else 1.0
-                    df['vol'] = R.residual_volatility(
-                        res, float(np.sqrt(s2p / typ_n + s2g))).reindex(df.index)
                     for k in (4, 2):
                         fo, fd = R.residual_form(res, k, shrink_k=2.0)
                         df['l%d_off' % k] = fo.reindex(df.index)

@@ -56,12 +56,14 @@ def push_prob(line, tab):
     return 0.02
 
 
-def cover_design(D, p_raw):
+def cover_design(D, p_raw, rsd_fill=1.0):
     """Conditional Platt design: the slope on the model's own cover logit may
-    shrink when the model is less trustworthy (dynamic no-bet zone)."""
+    shrink when the model is less trustworthy (dynamic no-bet zone).
+    rsd_fill is learned on the calibrator's TRAINING rows (candidate 001 used
+    the median of the batch being scored — a within-season look-ahead)."""
     x = np.log(np.clip(p_raw, 1e-4, 1 - 1e-4) / (1 - np.clip(p_raw, 1e-4, 1 - 1e-4)))
     ens_sd = (D.ens_sd.values - 3.0) / 2.0
-    rsd = (D.rating_sd_sum.fillna(D.rating_sd_sum.median()).values - 1.0)
+    rsd = (D.rating_sd_sum.fillna(rsd_fill).values - 1.0)
     early = D.early_season.values.astype(float)
     qbu = D.qb_unsettled_any.fillna(0).values + D.qb_missing_any.fillna(1).values
     return np.column_stack([np.ones_like(x), x, x * ens_sd, x * rsd, x * early, x * qbu])
@@ -106,11 +108,12 @@ def run(D, MK, unc, seasons):
                               np.array([unc[s]['t_df'] for s in past.season]))
         nonpush = past.margin.values != past.line.values
         yc = (past.margin.values > past.line.values).astype(float)
-        cal = CoverCalibrator().fit(cover_design(past[nonpush], pr_past[nonpush]), yc[nonpush])
+        rsd_fill = float(past.rating_sd_sum.median())
+        cal = CoverCalibrator().fit(cover_design(past[nonpush], pr_past[nonpush], rsd_fill), yc[nonpush])
         tab = push_prob_table(past)
         c = M[cur]
         pr = 1.0 - t_cdf((c.line.values - c.ens_pred.values) / c.sigma.values, df)
-        pc = cal.predict(cover_design(c, pr))
+        pc = cal.predict(cover_design(c, pr, rsd_fill))
         pp = np.array([push_prob(l, tab) for l in c.line.values])
         side_home = pc >= 0.5
         p_side = np.where(side_home, pc, 1 - pc)
@@ -144,7 +147,7 @@ def run(D, MK, unc, seasons):
         wm = (b[1] + b[3] * c.early_season.values + b[5] * (c.ens_sd.values - 3) / 2)
         wk = (b[2] + b[4] * c.early_season.values + b[6] * (c.ens_sd.values - 3) / 2)
         M.loc[cur, 'ma_weight_model'] = wm / np.where(np.abs(wm + wk) < 1e-6, 1, wm + wk)
-        params[S] = {'cover_cal': [float(x) for x in cal.b_], 'push_table': {'%s-%s' % k: v for k, v in tab.items()},
+        params[S] = {'cover_cal': [float(x) for x in cal.b_], 'cover_rsd_fill': rsd_fill, 'push_table': {'%s-%s' % k: v for k, v in tab.items()},
                      'ma_coef': [float(x) for x in b], 'clv_beta': beta, 'n_train': int(len(past))}
     # grading (evaluation only)
     fin = M.status.eq('FINAL') & M.line.notna() & M.side.notna()

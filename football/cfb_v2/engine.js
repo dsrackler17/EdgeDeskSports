@@ -259,7 +259,9 @@
 
   /* ================================================== MARKET DECISION */
   function consensus(books) {
-    var xs = (books || []).map(function (b) { return b.home_line; }).filter(isNum).sort(function (a, b) { return a - b; });
+    /* main lines only: an alternate spread is a different bet, never a consensus input */
+    var xs = (books || []).filter(function (b) { return b && !b.alternate; })
+      .map(function (b) { return b.home_line; }).filter(isNum).sort(function (a, b) { return a - b; });
     if (!xs.length) return null;
     var mid = Math.floor(xs.length / 2);
     var med = xs.length % 2 ? xs[mid] : (xs[mid - 1] + xs[mid]) / 2;
@@ -280,7 +282,8 @@
   function coverDesign(pure, row, pRaw) {
     var x = logit(pRaw);
     var ensSd = ((row && isNum(row.ens_sd)) ? row.ens_sd : 3) - 3;
-    var rsd = ((row && isNum(row.rating_sd_sum)) ? row.rating_sd_sum : 1) - 1;
+    var fill = (params().cover && isNum(params().cover.rsd_fill)) ? params().cover.rsd_fill : 1;
+    var rsd = ((row && isNum(row.rating_sd_sum)) ? row.rating_sd_sum : fill) - 1;
     var early = row && row.early_season ? 1 : 0;
     var qbu = (row && row.qb_unsettled_any ? 1 : 0) + (row && row.qb_missing_any ? 1 : 0);
     return [1, x, x * ensSd / 2, x * rsd, x * early, x * qbu];

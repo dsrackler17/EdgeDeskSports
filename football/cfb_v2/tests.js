@@ -128,6 +128,47 @@ chk('decision never mutates the pure projection', p.projected_margin === E.pure(
 chk('BET is never emitted while the rule is not validated',
   P.market.bet_enabled || [d1, d2].every(function (d) { return d.status !== 'BET'; }));
 
+/* ------------------------------------------- sign scenarios (audit) */
+/* The same scenarios as research/v2/tests_signs.py, through the production
+   decision path. Model margins are INTERNAL (+ = home wins by that many);
+   lines are BOOK (home -7 = home laying 7). */
+var SCEN = [
+  /* name, open home line, current home line, model margin, neutral, side, gap, moved */
+  ['home favourite', -7, -8.5, 10, false, 'HOME', 1.5, 'toward EdgeDesk'],
+  ['road favourite', 7, 8.5, -10, false, 'AWAY', -1.5, 'toward EdgeDesk'],
+  ['neutral-site favourite', -7, -8.5, 10, true, 'HOME', 1.5, 'toward EdgeDesk'],
+  ['home favourite, model takes the dog', -7, -8, 3, false, 'AWAY', -5, 'away from EdgeDesk'],
+  ['favourite flip', -2, 1.5, -3, false, 'AWAY', -1.5, 'toward EdgeDesk'],
+  /* a small gap can be overruled by the learned home-cover intercept (home sides
+     cover 48.6% historically), so the pick'em case uses an unambiguous gap */
+  ["pick'em", 0, -1, 4, false, 'HOME', 3, 'toward EdgeDesk']
+];
+SCEN.forEach(function (s) {
+  var pp = E.pure(Object.assign(clone(ROW), { ens_pred: s[3], neutral_site: s[4] }),
+    { qb_status: { home: 'confirmed', away: 'confirmed' } });
+  var d = E.decide(pp, { current: { home_line: s[2], ts: '2026-10-01T14:30:00Z' }, open: { home_line: s[1] },
+    price_home: -110, price_away: -110 }, { now: NOW, row: ROW });
+  chk('sign scenario ' + s[0] + ': market margin is the negated current line', d.current_market_margin === -s[2]);
+  chk('sign scenario ' + s[0] + ': gap = model - market (' + s[6] + ')', near(d.raw_gap_pts, pp.projected_margin + s[2], 1e-9)
+    && Math.sign(d.raw_gap_pts) === Math.sign(s[6]));
+  chk('sign scenario ' + s[0] + ': side ' + s[5], d.side === s[5]);
+  chk('sign scenario ' + s[0] + ': line move ' + s[7], d.market_moved === s[7]);
+  chk('sign scenario ' + s[0] + ': expected CLV has the sign of the move toward the side',
+    d.clv_opportunity_pts === null || Math.sign(d.clv_opportunity_pts) === (Math.abs(d.raw_gap_pts) < 1e-9 ? 0 : 1));
+  chk('sign scenario ' + s[0] + ': EV > 0 only if cover probability beats break-even',
+    (d.expected_value_per_unit > 0) === (d.cover_probability * (1 - d.push_probability) * (100 / 110)
+      - (1 - d.cover_probability) * (1 - d.push_probability) > 0));
+});
+var mirror = E.decide(E.pure(Object.assign(clone(ROW), { ens_pred: -6 }), { qb_status: { home: 'confirmed', away: 'confirmed' } }),
+  mkt(3), { now: NOW, row: ROW });
+var direct = E.decide(E.pure(Object.assign(clone(ROW), { ens_pred: 6 }), { qb_status: { home: 'confirmed', away: 'confirmed' } }),
+  mkt(-3), { now: NOW, row: ROW });
+chk('mirror: swapping home/away flips the side and keeps the cover probability',
+  mirror.side !== direct.side && near(mirror.cover_probability, direct.cover_probability, 0.02));
+var alt = E.decide(p, { books: [{ home_line: -3 }, { home_line: -3.5 }, { home_line: -3 }, { home_line: 10, alternate: true }],
+  ts: '2026-10-01T14:30:00Z', price_home: -110, price_away: -110 }, { now: NOW, row: ROW });
+chk('alternate spreads never enter the consensus', alt.current_home_line === -3 && alt.books === 3);
+
 /* ------------------------------------------------------ monotonicity */
 var probs = [-14, -7, -3, 0, 3, 7, 14].map(function (m) {
   return E.pure(Object.assign(clone(ROW), { ens_pred: m }), { qb_status: { home: 'confirmed', away: 'confirmed' } }).home_win_prob;

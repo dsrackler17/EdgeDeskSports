@@ -83,7 +83,8 @@ def main(report_path=None):
     beta_qb, qb_applied = qbc['points_per_epa_db'], qbc['applied']
     art = {'model_version': ver, 'feature_version': C.FEATURE_VERSION, 'trained_through': C.LIVE_SEASON - 1,
            'submodels': models, 'stack_weights': L['W'], 'sigma_model': {'coef': unc['sigma_coef'],
-           'mu': unc['sigma_mu'], 'sd': unc['sigma_sd'], 'cols': WF.SIGMA_COLS},
+           'mu': unc['sigma_mu'], 'sd': unc['sigma_sd'], 'cols': WF.SIGMA_COLS,
+           'fill': unc.get('sigma_fill')},
            't_df': unc['t_df'], 'abs_z_quantiles': unc['abs_z_quantiles'],
            'win_calibration': {'method': win_method, 'platt': unc['platt'],
                                'iso': {'x': unc['iso_x'], 'y': unc['iso_y']}},
@@ -107,6 +108,7 @@ def main(report_path=None):
         'calibration': {'win': {'method': win_method, 'platt': unc['platt'],
                                 'iso': {'x': unc['iso_x'], 'y': unc['iso_y']}}},
         'cover': {'coef': mk.get('cover_cal'), 'push_table': mk.get('push_table'),
+                  'rsd_fill': mk.get('cover_rsd_fill'),
                   'design': 'conditional platt on [1, x, x*ens_sd, x*rating_sd, x*early, x*qb_uncertainty]'},
         'clv': {'beta': mk.get('clv_beta')},
         'qb': {'points_per_epa_db': beta_qb, 'applied': qb_applied, 'evidence': qbc,
