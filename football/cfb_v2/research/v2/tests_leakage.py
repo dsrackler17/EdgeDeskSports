@@ -459,9 +459,14 @@ def outcome_scan(w, cols):
 
 
 def _scan_inputs():
-    """The production artifact's model inputs (C and D), as the audit scanned them."""
+    """The model inputs (C and D) of the version being built, as the audit scanned them: its
+    artifact when it exists (a challenger is scanned before its export), else the production
+    artifact's."""
     import json as _j
-    f = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'artifacts', C.MODEL_VERSION, 'models.json')
+    d = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'artifacts')
+    f = os.path.join(d, C.MODEL_VERSION, 'models.json')
+    if not os.path.exists(f):
+        f = os.path.join(d, C.PRODUCTION_MODEL_VERSION, 'models.json')
     A = _j.load(open(f))
     return sorted(set(A['submodels']['C_ridge']['cols']) | set(A['submodels']['D_gbm']['cols']))
 
