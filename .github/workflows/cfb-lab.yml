@@ -108,6 +108,22 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && steps.gate.outputs.decisions == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
         run: node football/cfb_decision/tests.js && node football/cfb_decision/shadow.js || echo "::warning::decision shadow did not run"
 
+      # Market intelligence (football/cfb_market): consensus snapshots, market
+      # events, provider conflicts and the market-informed challenger, appended
+      # to its own ledger from the Lab's quotes (read-only to it). Research: a
+      # failure warns and never costs the hourly publish.
+      - name: Market intelligence (append-only ledger)
+        if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
+        run: node football/cfb_market/run.js --write || echo "::warning::market intelligence did not run"
+
+      # The stored canonical projections every page reads
+      # (football/cfb_production/canonical.js, docs/cfb-production/CANONICAL.md):
+      # nothing on a page recomputes a number. A failure warns; the previous
+      # file stays, carrying its own as_of_ts.
+      - name: Canonical projections (football/cfb_production/reports/projections.json)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node football/cfb_production/projections.js --write || echo "::warning::the canonical projections could not be built"
+
       - name: Operations report (football/cfb_production/reports/ops.json, admin/cfb-ops)
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         env:
@@ -126,8 +142,8 @@ jobs:
           git config user.email "edgedesk-bot@users.noreply.github.com"
           tools/ci/push_generated.sh main "cfb lab: hourly snapshots, market, settlement, reports" -- \
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
-            record/football/cfb_model_lab.json football/cfb_decision \
-            football/cfb_production/reports/ops.json
+            record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
+            football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
@@ -137,6 +153,8 @@ jobs:
         run: |
           node football/cfb_lab/sync_supabase.js
           node football/cfb_decision/sync_supabase.js
+          # fail soft only while supabase/cfb_market.sql is not applied (404 / PGRST205 warns)
+          node football/cfb_market/sync_supabase.js
 
       - name: Fail the run if any lab step failed
         if: ${{ steps.gate.outputs.proceed == 'true' && steps.run.outputs.status != '0' }}
