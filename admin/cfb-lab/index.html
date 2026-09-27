@@ -270,10 +270,11 @@ details.model>summary{color:var(--text);font-size:13px;font-weight:600}
   /* ========================================================= 2. this week */
   function weekHTML(lab){
     var games=(lab&&lab.this_week)||[];
-    var sub='Each model\u2019s latest LIVE snapshot for games kicking off in the next 8 days. OFFICIAL marks the T24 snapshot, the one that is graded as the model\u2019s prediction. Lines are home lines.';
+    var sub='Each model\u2019s latest LIVE snapshot for games kicking off in the next 8 days. OFFICIAL marks the T24 snapshot, the one that is graded as the model\u2019s prediction. Lines are home lines. '
+      +'The class and position are RESEARCH: the Lab\u2019s own rules (V2: the stage-8 engine.decide() rule; V1: the record\u2019s lean rule). The official decision is the governed policy cfb_decision_policy_v1 alone (audit F-22), and betting is disabled.';
     if(!games.length) return sec('this-week','2 · This week',sub,empty('No LIVE snapshot exists for a game kicking off in the next 8 days.'));
     var order=allModels(lab);
-    var h='<div class="scroll"><table><thead><tr>'+['Kickoff','Game','Market','Open','Books','Model','Checkpoint','Fair line','Margin','Home win p','Gap','Decision','Position','Confidence','DQ'].map(function(t,i){ return '<th'+([2,3,4,8,9,10,13].indexOf(i)>=0?' class="num"':'')+'>'+esc(t)+'</th>'; }).join('')+'</tr></thead><tbody>';
+    var h='<div class="scroll"><table><thead><tr>'+['Kickoff','Game','Market','Open','Books','Model','Checkpoint','Fair line','Margin','Home win p','Gap','Research class','Research position','Confidence','DQ'].map(function(t,i){ return '<th'+([2,3,4,8,9,10,13].indexOf(i)>=0?' class="num"':'')+'>'+esc(t)+'</th>'; }).join('')+'</tr></thead><tbody>';
     games.forEach(function(g){
       var gm=g.models||{}, ks=Object.keys(gm).sort(function(a,b){ var i=order.indexOf(a), j=order.indexOf(b); return (i<0?99:i)-(j<0?99:j)||(a<b?-1:1); });
       var mk=g.market||{}, n=Math.max(ks.length,1);
@@ -420,7 +421,9 @@ details.model>summary{color:var(--text);font-size:13px;font-weight:600}
   }
 
   /* ====================================================== 6. edge analysis */
-  var KIND={gap:'Edge \u00b7 |model \u2212 market| at the snapshot, pts',reliability:'Reliability \u00b7 football_confidence',edge_quality:'Edge quality',disagreement:'Ensemble disagreement, pts'};
+  /* edge_quality is engine.decide()'s betting_edge_strength (uncalibrated EV / 10%): a research number that
+     does not sort outcomes, never shown as edge or bet quality (audit F-22 / F-23) */
+  var KIND={gap:'Edge \u00b7 |model \u2212 market| at the snapshot, pts',reliability:'Reliability \u00b7 football_confidence',edge_quality:'Stage-8 EV strength \u00b7 research only, not edge or bet quality',disagreement:'Ensemble disagreement, pts'};
   var FLAGS={gap:null,reliability:'RECALIBRATE',edge_quality:'DOES_NOT_SORT',disagreement:'DISAGREEMENT_PREDICTS_ERROR'};
   function bucketHTML(t){
     var fl=t.flags||[];
@@ -443,7 +446,7 @@ details.model>summary{color:var(--text);font-size:13px;font-weight:600}
         ['MAE',function(r){ return mae(r.mae); },'num'],['Brier',function(r){ return pr(r.brier); },'num'],['|Gap|',function(r){ return mae(r.market_disagreement); },'num','mean |model \u2212 market| at the snapshot'],
         ['Move after',function(r){ return smae(r.subsequent_move_toward_model); },'num','mean points the market moved toward the model after the snapshot'],['CLV potential',function(r){ return smae(r.clv_potential); },'num'],
         ['ATS if actioned',function(r){ return pc(r.ats_if_actioned); },'num'],['ATS n',function(r){ return it(r.ats_n); },'num']],e.timing||[]);
-      h+='<h3>Decisions (official snapshots, 1u hypothetical)</h3>'+table([['Class',function(r){ return chip(r.decision_class); }],['Snapshots',function(r){ return it(r.snapshots); },'num'],['MAE',function(r){ return mae(r.mae); },'num']]
+      h+='<h3>Research classes (official snapshots, 1u hypothetical; the Lab\u2019s rules, not the governed policy)</h3>'+table([['Class',function(r){ return chip(r.decision_class); }],['Snapshots',function(r){ return it(r.snapshots); },'num'],['MAE',function(r){ return mae(r.mae); },'num']]
         .concat(positions().map(function(c){ return [c[0],function(r){ return c[1]({b:r}); },c[2],c[3]]; })),e.decisions||[]);
       var nm=e.near_miss;
       h+='<h3>Near misses</h3>'+note('PASS or LEAN snapshots whose failing BET conditions were all within 0.01 EV, 0.5 pt and 5 reliability (METRICS \u00a712).')

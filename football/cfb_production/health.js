@@ -162,6 +162,9 @@ function build(opts) {
     status: bets > 0 && !betEnabled ? 'CRITICAL' : 'OK', betting_enabled: betEnabled, policy: policy && policy.version, policy_status: policy && policy.status,
     decision_rows: dl.length, by_role_status: byStatus, shadow_counts: sd && sd.counts, bets,
     rule: 'a BET while the policy has betting disabled is a fail-safe breach (CRITICAL); an unusual BET count is reviewed, never auto-cancelled',
+    /* one official definition (audit F-22): CHALLENGER rows are the governed policy; CURRENT rows are research */
+    roles: { CHALLENGER: 'OFFICIAL: the governed policy (football/cfb_decision/decision.js, ' + (policy && policy.version) + ')',
+      CURRENT: 'RESEARCH only: the stage-8 engine.decide() baseline, never the official status' },
   };
 
   /* ---------------------------------------------- warnings (incl. anomalies) */

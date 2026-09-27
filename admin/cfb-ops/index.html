@@ -211,7 +211,8 @@ td.txt{white-space:normal;min-width:220px;max-width:560px;overflow-wrap:anywhere
     var by=s.by_role_status||{};
     return card('bets','Bet decisions',s,'<div class="kpis">'+tile('Betting',s.betting_enabled?'<span class="chip bad">ENABLED</span>':'<span class="chip good">DISABLED</span>')
       +tile('Policy','<span class="mv">'+txt(s.policy)+'</span> '+txt(s.policy_status))+tile('BET decisions',it(s.bets))+tile('Decision rows',it(s.decision_rows))+'</div>'
-      +table(['role:status','count'],Object.keys(by).map(function(k){ return '<tr><td>'+esc(k)+'</td><td class="num">'+it(by[k])+'</td></tr>'; }))+'<p class="note">'+txt(s.rule)+'</p>');
+      +table(['role:status','count'],Object.keys(by).map(function(k){ return '<tr><td>'+esc(k)+'</td><td class="num">'+it(by[k])+'</td></tr>'; }))
+      +(s.roles?'<p class="note">'+Object.keys(s.roles).map(function(k){ return esc(k)+': '+txt(s.roles[k]); }).join(' · ')+'</p>':'')+'<p class="note">'+txt(s.rule)+'</p>');
   }
   function warnings(o){
     var s=o.sections&&o.sections.warnings; if(!s) return card('warnings','Warnings',null,'');
