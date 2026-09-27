@@ -320,15 +320,24 @@ def holdout_reeval(OLD, NEW):
     finally:
         C.OUT = old_out
     res = {}
-    for name, d in (('v210_reproduced', OLD), ('v211', NEW)):
+    for name, d in (('v210_reproduced', OLD), ('v211', NEW), ('v211_fail_closed_today', NEW)):
         H = pd.read_parquet(os.path.join(d, 'decision', 'decision_dataset.parquet'), columns=HO.HO_COLS,
                             filters=[('window', '==', 'holdout')])
+        if name == 'v211':
+            # the frozen numbers, as if the calibration's base_model_version named v2.1.1: without that
+            # switch decision.js / policy.py refuse every row (NO_BET_VERSION_MISMATCH, next variant)
+            H['model_version'] = A['base_model_version']
         S7 = pd.read_parquet(os.path.join(d, 'stage7', 'backtest_predictions.parquet'),
                              columns=['game_id', 'season', 'ev', 'side', 'gap_open', 'early_season', 'reliability', 'line',
                                       'bet_units', 'bet_result', 'clv_pts', 'p_side'],
                              filters=[('season', 'in', HO.HOLDOUT)])
         F = HO.frame(H, S7, A, rule, table)
         x = HO.evaluate(F, tour, policy, A, tour['oos'])
+        if name == 'v211_fail_closed_today':
+            res[name] = {'status_counts': x['production']['status_counts'],
+                         'why': 'the rows carry model_version edgedesk_cfb_v2.1.1; the frozen calibration is validated for '
+                                '%s, so policy.validate_artifact returns NO_BET_VERSION_MISMATCH' % A['base_model_version']}
+            continue
         x['per_book_sensitivity'] = HO.per_book(H, A, table)
         x['promotion_gate'] = T.promotion_gate(tour, an, holdout={'production': x['production'],
                                                                   'tiers_high_ge_low_clv': x['tiers_high_ge_low_clv'],
