@@ -685,11 +685,16 @@
       });
     var bets = per.filter(function (d) { return d.status === 'BET'; });
     var rank = function (d) { return isNum(d.empirical_ev) ? d.empirical_ev : -1; };
-    var best = bets.sort(function (x, y) { return rank(y) - rank(x); })[0] || null;
+    /* ties in the calibrated EV (a flat EV curve maps every quote to one value) go to the better
+       price: the higher decision EV at the quote's own line and price */
+    var tie = function (d) { return isNum(d.decision_ev) ? d.decision_ev : -1; };
+    var better = function (x, y) { return (rank(y) - rank(x)) || (tie(y) - tie(x)); };
+    var best = bets.sort(better)[0] || null;
     var order = { BET: 5, RESEARCH: 4, LEAN: 3, PASS: 2, NO_BET: 1 };
-    var top = per.slice().sort(function (x, y) { return (order[y.status] - order[x.status]) || (rank(y) - rank(x)); })[0] || null;
+    var top = per.slice().sort(function (x, y) { return (order[y.status] - order[x.status]) || better(x, y); })[0] || null;
     var out = { engine: ENGINE_ID, engine_version: ENGINE_VERSION, game_id: pure && pure.game_id,
       status: best ? 'BET' : (top ? top.status : 'NO_BET'),
+      summary_index: best ? per.indexOf(best) : (top ? per.indexOf(top) : null),
       best_quote: best ? { book: best.book, side: best.side, line: best.line_for_side, price: best.price,
                            bettable_to_line: best.price_targets.bettable_to_line, bettable_to_price: best.price_targets.bettable_to_price } : null,
       reason_codes: best ? best.reason_codes : (top ? top.reason_codes : ['NO_BET_COMPUTATION']),
@@ -746,8 +751,8 @@
 
   /* ------------------------------------------------------ public output */
   function publicCard(pure, g, names) {
-    var d = g && g.status === 'BET' ? g.decisions.filter(function (x) { return x.status === 'BET' && x.book === g.best_quote.book; })[0]
-      : (g && g.decisions && g.decisions[0]);
+    /* the decision behind the game's status (its best quote), never simply the first book */
+    var d = g && g.decisions && g.decisions.length ? (isNum(g.summary_index) ? g.decisions[g.summary_index] : g.decisions[0]) : null;
     var team = function (side) { return side === 'HOME' ? (names && names.home) || pure.home : (names && names.away) || pure.away; };
     var fmtLine = function (l) { return l > 0 ? '+' + l : String(l); };
     var conf = d && d.bet_confidence ? d.bet_confidence.label : 'UNKNOWN';
