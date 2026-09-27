@@ -1,0 +1,28 @@
+__pycache__/
+node_modules/
+football/data/cache/
+
+# the coverage gate caches the schedule feeds it downloads
+football/fbs/.cache/
+
+# The Desk's browser-verification screenshots — evidence for a run, not source.
+.desk-shots/
+football/cfb_p4/research/.cache/
+
+# the team-talent job caches the parquet it downloads
+football/players/.cache/
+
+# the venue resolver and the coaching build cache the parquet they download
+football/venues/.cache/
+football/coaching/.cache/
+
+# the NFL slate builder caches the nflverse CSVs it downloads
+football/nfl/.cache/
+
+# the lines-archive builders cache the cfbfastR downloads they read
+football/pricing/.cache/
+
+# The MLB dataset rebuild stages into here before anything is imported; the
+# committed copy under mlb/pitchers/dataset is only replaced once it validates.
+mlb/pitchers/.staging
+mlb/batters/.staging/

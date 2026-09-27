@@ -1,0 +1,15 @@
+{
+  "_readme": [
+    "Official availability sources, added by hand, one school or one conference at a time.",
+    "build_sources.js merges this into sources.json; the ingestion job reads sources.json.",
+    "An entry is USED only when it carries a url, so a half-filled entry is inert and safe to commit.",
+    "Add a school: put its ESPN team id (the same id football/rosters/fbs_<season>_espn.json uses)",
+    "under \"teams\" with any of availability_url, athletics_url, football_news_url, depth_chart_url,",
+    "roster_url, or beat_sources[{name,url,source_type}] where source_type is TEAM_REPORTER or",
+    "REPUTABLE_MEDIA. Add a conference report once under \"conferences\" and every school in it inherits it.",
+    "extract: how to read the page. 'auto' reads a table or list of player/status pairs; omit it for auto.",
+    "Never add a forum, an aggregator, a fantasy site or anything AI-generated: availability.js refuses them."
+  ],
+  "conferences": {},
+  "teams": {}
+}

@@ -1,0 +1,109 @@
+{
+ "automatic_replacement": false,
+ "bet_allowed": false,
+ "bet_evidence": {
+  "dev_rule": {
+   "ats": 0.5677966101694916,
+   "bet_ev": 0.0,
+   "bet_gap": 3.0,
+   "bet_min_rel": 65.0,
+   "clv": 0.29293628808864264,
+   "exclude_early": false,
+   "n": 361.0,
+   "review_gap": 7.0,
+   "roi": 0.08234701586502133,
+   "roi_lb90": 0.0011457182729897042
+  },
+  "holdout_bet": {
+   "n": 0
+  }
+ },
+ "bet_gate": "BET enabled only if the dev-selected rule had a positive lower 90% ROI bound and positive CLV on dev, AND on holdout its plays show positive mean CLV and positive ROI. Tightened before the holdout was scored (commit ab83459): the dev rule must also beat the 95th percentile of the same threshold search run on 500 coin-flip worlds (a reality check against threshold mining)",
+ "champion": "V1 (V2 is eligible; the switch is a person setting the flag)",
+ "decision": "ELIGIBLE_FOR_PROMOTION",
+ "detail": {
+  "G1_mae": {
+   "evidence": {
+    "diff_ci": [
+     -0.46162853281845684,
+     -0.07387483576339302
+    ],
+    "v1": 12.646917242939685,
+    "v2": 12.386140860615379
+   },
+   "pass": true,
+   "rule": "holdout spread MAE: V2 < V1 and the paired bootstrap 95% CI of (V2 - V1) is entirely below 0"
+  },
+  "G2_rmse": {
+   "evidence": {
+    "v1": 15.991105583121973,
+    "v2": 15.705696841581148
+   },
+   "pass": true,
+   "rule": "holdout RMSE: V2 < V1"
+  },
+  "G3_brier": {
+   "evidence": {
+    "v1": 0.1857482539063342,
+    "v2": 0.18295737449434835
+   },
+   "pass": true,
+   "rule": "holdout win-probability Brier (shipped calibration): V2 < V1"
+  },
+  "G4_calibration": {
+   "evidence": {
+    "ece": 0.017396610165622082
+   },
+   "pass": true,
+   "rule": "holdout win-probability ECE <= 0.03"
+  },
+  "G5_coverage": {
+   "evidence": {
+    "50": 0.5084007467330429,
+    "80": 0.8164281269446173,
+    "95": 0.9489732420659615
+   },
+   "pass": true,
+   "rule": "holdout interval coverage within 50%: 0.47-0.53, 80%: 0.77-0.83, 95%: 0.93-0.97"
+  },
+  "G6_stability": {
+   "evidence": {
+    "dev_seasons": 8,
+    "dev_seasons_v2_better": 7,
+    "holdout": {
+     "2024": [
+      12.579846211890645,
+      12.902713263198228
+     ],
+     "2025": [
+      12.089586927326048,
+      12.304333529085635
+     ]
+    }
+   },
+   "pass": true,
+   "rule": "V2 MAE <= V1 MAE in EVERY holdout season and in >= 6 of 8 dev seasons"
+  },
+  "G7_subgroups": {
+   "evidence": {
+    "max_regression": [
+     "spread_size:3-7",
+     -0.01380219935418836
+    ]
+   },
+   "pass": true,
+   "rule": "no holdout subgroup (week, P4/G5, spread size; n >= 100) where V2 MAE exceeds V1 by > 0.75"
+  }
+ },
+ "failed": [],
+ "note": "A pass makes V2 eligible. Production switches only when a person sets the flag.",
+ "passed": [
+  "G1_mae",
+  "G2_rmse",
+  "G3_brier",
+  "G4_calibration",
+  "G5_coverage",
+  "G6_stability",
+  "G7_subgroups"
+ ]
+}

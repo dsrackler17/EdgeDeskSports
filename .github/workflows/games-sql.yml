@@ -1,0 +1,675 @@
+# EdgeDesk — every RLS guarantee that a browser cannot be trusted to keep,
+# tested against a real PostgreSQL: the Games social layer, the franchise,
+# problem reports (the one table `anon` may write to), and member posts (where
+# who may PUBLISH is a value in a column, so no policy can express it and a
+# trigger has to).
+#
+# supabase/games_social.sql is where Head-to-Head answer privacy actually lives:
+# a table no client role may select from, and a security-definer function that
+# decides what may be seen. Reasoning about that is not evidence, so this job
+# applies the shipped file to a real database and attacks it as a client would.
+#
+# The suite SKIPS (and passes) on a machine without PostgreSQL, so `npm test`
+# stays green on a bare Node install. This workflow is where it must not skip.
+name: RLS against a real PostgreSQL
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/games_social.sql'
+      - 'supabase/games_franchise.sql'
+      - 'tools/games/sql/**'
+      - 'tools/games/sql_security.test.js'
+      - 'tools/games/franchise_sql.test.js'
+      - 'tools/games/cards_sql.test.js'
+      - 'tools/games/season_sql.test.js'
+      - 'tools/games/offline.test.js'
+      - 'supabase/issue_reports.sql'
+      - 'supabase/billing.sql'
+      - 'supabase/stripe_webhook.sql'
+      - 'supabase/referral_codes.sql'
+      - 'tools/app/sql/**'
+      - 'tools/app/issue_reports_sql.test.js'
+      - 'tools/app/billing_sql.test.js'
+      - 'supabase/site_articles.sql'
+      - 'supabase/community_posts.sql'
+      - 'tools/articles/sql/**'
+      - 'tools/articles/community_sql.test.js'
+      # THE EDITORIAL SCHEMAS. This job has run editorial_sql.test.js since the
+      # editorial system shipped, but neither the schema nor the suite was ever
+      # in this list — so a change to the SQL did not trigger the job that
+      # tests it, and the only reason it ever ran was that the same pushes
+      # happened to touch site_articles.sql. That is the same defect
+      # collective-tests.yml records in its own header: a PR touching only a
+      # test file went green without executing it.
+      - 'supabase/editorial_system.sql'
+      - 'supabase/editorial_runtime.sql'
+      - 'supabase/editorial_dispatch_sql.sql'
+      - 'tools/editorial/editorial_sql.test.js'
+      - 'tools/editorial/runtime_sql.test.js'
+      - 'tools/editorial/dispatch_sql.test.js'
+      # THE NEWSLETTER SCHEMA decides whether strangers receive email and who
+      # can read a subscriber address, and every one of those guarantees is a
+      # grant, a unique index or a check constraint rather than application
+      # code. Reasoning about them is not evidence.
+      - 'supabase/newsletter.sql'
+      - 'tools/newsletter/sql/**'
+      - 'tools/newsletter/newsletter_sql.test.js'
+      - 'supabase/ufc_live_center.sql'
+      - 'tools/ufc/sql/**'
+      - 'tools/ufc/ufc_sql.test.js'
+      - 'supabase/tennis_live_center.sql'
+      - 'supabase/tennis_lab.sql'
+      - 'tools/tennis/sql/**'
+      - 'tools/tennis/tennis_sql.test.js'
+      - 'tools/tennis/lab_sql.test.js'
+      - 'supabase/wta_board.sql'
+      - 'tools/tennis/wta_board_sql.test.js'
+      # THE RECORD CONTRACT AND ITS SUITE. This job has run record_sql.test.js
+      # since the record shipped, and neither the contract nor the suite was
+      # ever in this list — the same omission the editorial block above
+      # records. A pull request could rewrite 2,400 lines of the schema that
+      # holds the licensing gate, the leakage bound and the append-only
+      # prediction ledger, and the one job that applies it to a real
+      # PostgreSQL would not run. This PR is the proof: it changes that file
+      # and went green without the suite executing.
+      - 'supabase/tennis_record.sql'
+      - 'tools/tennis/record_sql.test.js'
+      - 'tools/tennis/import.test.js'
+      - 'tools/tennis/leakage.test.js'
+      # The record workflow's own preflight gate, and the workflow it is
+      # extracted from: a change to either must run the suite that proves an
+      # empty record is still refused.
+      - 'tools/tennis/record_workflow.test.js'
+      - '.github/workflows/tennis-record.yml'
+      # THE SPLIT PARTS AND THE CHECK THAT KEEPS THEM HONEST. supabase/parts is
+      # what gets pasted into the Supabase SQL editor, so a split that has
+      # drifted from its source installs a contract the repository has already
+      # moved past — which is the state the tennis schema was found in.
+      # split_sql.test.js exists to catch exactly that and was wired into no
+      # workflow at all: it lived only in `npm test`. Both the generator and
+      # everything it splits belong here.
+      - 'supabase/parts/**'
+      - 'tools/sql/**'
+      - 'supabase/mlb_offense_history.sql'
+      - 'supabase/college_baseball.sql'
+      - 'supabase/fix_promote_deletes_mlb.sql'
+      - 'supabase/fix_promote_deletes_cbb.sql'
+      # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
+      # function and its refusals are the whole safety property — a short,
+      # duplicated or unreconciled dataset must not be able to replace a good
+      # one — so reasoning about it is not evidence. The import suite drives
+      # the shipped importer over the committed dataset end to end.
+      - 'supabase/mlb_pitcher_history.sql'
+      - 'supabase/mlb_pitcher_features.sql'
+      - 'lib/mlb_pitcher_history.js'
+      - 'mlb/pitchers/dataset/**'
+      - 'tools/mlb/**'
+      - 'tools/intelligence/mlb_history.test.js'
+      - '.github/workflows/games-sql.yml'
+  pull_request:
+    paths:
+      - 'supabase/games_social.sql'
+      - 'supabase/games_franchise.sql'
+      - 'tools/games/sql/**'
+      - 'tools/games/sql_security.test.js'
+      - 'tools/games/franchise_sql.test.js'
+      - 'tools/games/cards_sql.test.js'
+      - 'tools/games/season_sql.test.js'
+      - 'tools/games/offline.test.js'
+      - 'supabase/issue_reports.sql'
+      - 'supabase/billing.sql'
+      - 'supabase/stripe_webhook.sql'
+      - 'supabase/referral_codes.sql'
+      - 'tools/app/sql/**'
+      - 'tools/app/issue_reports_sql.test.js'
+      - 'tools/app/billing_sql.test.js'
+      - 'supabase/site_articles.sql'
+      - 'supabase/community_posts.sql'
+      - 'tools/articles/sql/**'
+      - 'tools/articles/community_sql.test.js'
+      # THE EDITORIAL SCHEMAS. This job has run editorial_sql.test.js since the
+      # editorial system shipped, but neither the schema nor the suite was ever
+      # in this list — so a change to the SQL did not trigger the job that
+      # tests it, and the only reason it ever ran was that the same pushes
+      # happened to touch site_articles.sql. That is the same defect
+      # collective-tests.yml records in its own header: a PR touching only a
+      # test file went green without executing it.
+      - 'supabase/editorial_system.sql'
+      - 'supabase/editorial_runtime.sql'
+      - 'supabase/editorial_dispatch_sql.sql'
+      - 'tools/editorial/editorial_sql.test.js'
+      - 'tools/editorial/runtime_sql.test.js'
+      - 'tools/editorial/dispatch_sql.test.js'
+      # THE NEWSLETTER SCHEMA decides whether strangers receive email and who
+      # can read a subscriber address, and every one of those guarantees is a
+      # grant, a unique index or a check constraint rather than application
+      # code. Reasoning about them is not evidence.
+      - 'supabase/newsletter.sql'
+      - 'tools/newsletter/sql/**'
+      - 'tools/newsletter/newsletter_sql.test.js'
+      - 'supabase/ufc_live_center.sql'
+      - 'tools/ufc/sql/**'
+      - 'tools/ufc/ufc_sql.test.js'
+      - 'supabase/tennis_live_center.sql'
+      - 'supabase/tennis_lab.sql'
+      - 'tools/tennis/sql/**'
+      - 'tools/tennis/tennis_sql.test.js'
+      - 'tools/tennis/lab_sql.test.js'
+      - 'supabase/wta_board.sql'
+      - 'tools/tennis/wta_board_sql.test.js'
+      # THE RECORD CONTRACT AND ITS SUITE. This job has run record_sql.test.js
+      # since the record shipped, and neither the contract nor the suite was
+      # ever in this list — the same omission the editorial block above
+      # records. A pull request could rewrite 2,400 lines of the schema that
+      # holds the licensing gate, the leakage bound and the append-only
+      # prediction ledger, and the one job that applies it to a real
+      # PostgreSQL would not run. This PR is the proof: it changes that file
+      # and went green without the suite executing.
+      - 'supabase/tennis_record.sql'
+      - 'tools/tennis/record_sql.test.js'
+      - 'tools/tennis/import.test.js'
+      - 'tools/tennis/leakage.test.js'
+      # The record workflow's own preflight gate, and the workflow it is
+      # extracted from: a change to either must run the suite that proves an
+      # empty record is still refused.
+      - 'tools/tennis/record_workflow.test.js'
+      - '.github/workflows/tennis-record.yml'
+      # THE SPLIT PARTS AND THE CHECK THAT KEEPS THEM HONEST. supabase/parts is
+      # what gets pasted into the Supabase SQL editor, so a split that has
+      # drifted from its source installs a contract the repository has already
+      # moved past — which is the state the tennis schema was found in.
+      # split_sql.test.js exists to catch exactly that and was wired into no
+      # workflow at all: it lived only in `npm test`. Both the generator and
+      # everything it splits belong here.
+      - 'supabase/parts/**'
+      - 'tools/sql/**'
+      - 'supabase/mlb_offense_history.sql'
+      - 'supabase/college_baseball.sql'
+      - 'supabase/fix_promote_deletes_mlb.sql'
+      - 'supabase/fix_promote_deletes_cbb.sql'
+      # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
+      # function and its refusals are the whole safety property — a short,
+      # duplicated or unreconciled dataset must not be able to replace a good
+      # one — so reasoning about it is not evidence. The import suite drives
+      # the shipped importer over the committed dataset end to end.
+      - 'supabase/mlb_pitcher_history.sql'
+      - 'supabase/mlb_pitcher_features.sql'
+      - 'lib/mlb_pitcher_history.js'
+      - 'mlb/pitchers/dataset/**'
+      - 'tools/mlb/**'
+      - 'tools/intelligence/mlb_history.test.js'
+
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # EVERY SUITE HERE IS PIPED THROUGH `tee` so the step below can read its
+    # log back. Without pipefail the pipeline's status is tee's, which is
+    # always zero — so a suite could fail, its own step stay green, and the
+    # failure surface twenty steps later as the refusal's bare exit 1, with
+    # the node output that explained it long since scrolled past. A failing
+    # suite now fails its own step, next to what it printed.
+    defaults:
+      run:
+        shell: bash -eo pipefail {0}
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install the psql client
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      # THE SUITES BELOW DENY THOUSANDS OF STATEMENTS ON PURPOSE. That is what
+      # an RLS suite is: it asks anon to write a table it must not write, and
+      # passes when the database refuses. PostgreSQL logs every one of those
+      # refusals as ERROR plus the statement, and the runner prints the whole
+      # service-container log at the end of the job — tens of thousands of
+      # lines of expected denials, after everything the job actually said.
+      #
+      # It made failures unreadable. A red run ended in the dump, and the test
+      # output explaining it was thousands of lines further back than the log
+      # API would return. Four failures in this job were diagnosed by guessing
+      # because of it.
+      #
+      # Nothing diagnostic is lost: every one of those errors is an assertion
+      # PASSING, and a suite that genuinely fails says so in its own output.
+      - name: Quiet the expected permission denials in the server log
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -p 5432 -U postgres -v ON_ERROR_STOP=1 \
+            -c "alter system set log_min_messages = 'fatal'" \
+            -c "alter system set log_min_error_statement = 'panic'" \
+            -c "select pg_reload_conf()"
+
+      - name: Run the social SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/sql_security.test.js | tee sql.log
+
+      # The franchise layer: rosters, the ledger and every reward, attacked
+      # the same way on the same database.
+      - name: Run the franchise SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/franchise_sql.test.js | tee franchise.log
+
+      # THE MARKETPLACE, AND THE ONLY PROMISE THAT MATTERS WHEN MONEY MOVES:
+      # a card has exactly one owner, always, and two buyers racing for it
+      # produce one winner and one clean failure. Needs a real database
+      # because the guarantee is a unique index and a row lock.
+      - name: Run the cards SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/cards_sql.test.js | tee cards.log
+
+      # The season the record actually keeps: a power rating that is not the
+      # standings, ten award races scored on performance, and a title game.
+      - name: Run the season SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/season_sql.test.js | tee season.log
+
+      # OFFLINE AND RETRY, IN A REAL BROWSER. Chromium loads the real pages and
+      # every call it makes runs through psql against this database, so a
+      # connection dropped BEFORE a request lands and one dropped AFTER it
+      # commits are two different tests. Skips loudly if the browser is absent.
+      - name: Install Chromium for the browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+        continue-on-error: true
+
+      - name: Run the offline and retry suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/offline.test.js | tee offline.log
+
+      # THE NEWSLETTER SCHEMA. Four rules the database enforces itself — one
+      # edition per week, one delivery row per address, one processed provider
+      # event, one worker per edition — plus the one enforced by the ABSENCE
+      # of a grant: no client role, operator included, may read a subscriber
+      # address. Applied twice, applied to a bare project, and attacked as
+      # anon, as a signed-in reader and as the operator.
+      - name: Run the newsletter SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/newsletter/newsletter_sql.test.js | tee newsletter.log
+
+      # Problem reports: the one table `anon` may write to. That concession is
+      # only safe if an anonymous reporter cannot read anything back, nobody can
+      # file under another account's id, and no credential can be stored — which
+      # is what this proves, on the same real database.
+      - name: Run the problem-report SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/app/issue_reports_sql.test.js | tee issues.log
+
+      # The signup path's floor: the consent write that gates checkout, and the
+      # subscriptions row that IS the product and no browser may write. Also
+      # the referral report, which is read periodically and BELIEVED — so the
+      # question asked of it here is whether any number on it can be wrong: a
+      # subscription dropped off it, a sale credited to the wrong code, an
+      # invoice counted twice, revenue that arrived and is on no line.
+      - name: Run the billing SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/app/billing_sql.test.js | tee billing.log
+
+      # Member posts. Anyone with an account may WRITE; only an entitled
+      # subscriber may PUBLISH without an editor reading the post first. That
+      # is a statement about a value rather than about a row, so it lives in a
+      # trigger — and this is where the trigger is actually attacked, as anon,
+      # as a free account, as a subscriber, and as one member reaching for
+      # another's queued post.
+      - name: Run the member-post SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/articles/community_sql.test.js | tee community.log
+
+      # THE SPLIT PARTS MUST STILL BE THE CONTRACT. Needs no database: it
+      # re-runs the splitter over each source and compares the result to what
+      # is checked in, so a contract edited without regenerating its parts
+      # fails here instead of in the Supabase SQL editor weeks later. It ran
+      # in no workflow until now, and supabase/parts had been carrying a split
+      # of an older tennis contract for long enough to be pasted into
+      # production.
+      - name: The pasteable parts are the contract, not an older copy of it
+        run: node tools/sql/split_sql.test.js
+
+      # THE TENNIS RECORD CONTRACT. Three questions only a real database can
+      # answer, and all three are load-bearing:
+      #
+      #   the LICENCE GATE — the app has told readers for months that "the
+      #   database refuses to store any source not cleared for commercial use".
+      #   That was a promise about a schema that did not exist. This attacks the
+      #   schema that now does: an unregistered source is refused, and the
+      #   non-commercial archive cannot claim clearance it does not have.
+      #
+      #   IMMUTABILITY — a published prediction, a model version and a settled
+      #   record must be un-rewritable EVEN BY THE PIPELINE THAT WROTE THEM. A
+      #   public record its own writer can edit is not a record, and that is a
+      #   property of triggers, which only a database can demonstrate.
+      #
+      #   THE PAYWALL — attacked as anon, as a signed-in free account and as an
+      #   entitled subscriber, because the boundary is RLS calling the same
+      #   entitlement rule the rest of the product uses, not application code.
+      - name: Run the tennis record SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/record_sql.test.js | tee tennis_record.log
+
+      # The importer, driven end to end: reconciliation, a duplicate import, a
+      # CORRECTED result, an interrupted run resumed, and quarantine. Every one
+      # of those is a claim about transactions and upserts, so a fake database
+      # would prove none of them.
+      - name: Run the tennis importer suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/import.test.js | tee tennis_import.log
+
+      # FEATURE LEAKAGE. The suite that decides whether any of the tennis
+      # modelling is worth anything: it rebuilds the rolling aggregates by hand
+      # from matches strictly earlier and fails on any disagreement, then proves
+      # a future match cannot change an earlier feature row and that a
+      # correction propagates forward and only forward.
+      - name: Run the tennis feature-leakage suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/leakage.test.js | tee tennis_leakage.log
+
+      # THE WORKFLOW'S OWN PREFLIGHT GATE, run as shell against a real database.
+      # tennis-record.yml proved every relation existed and never asked whether
+      # a match was on file; production's record was empty and five of the seven
+      # build steps exited 0 over it. The gate is shell, so it is extracted from
+      # the YAML and executed here rather than re-described in JavaScript.
+      - name: Run the tennis record workflow gate
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/record_workflow.test.js | tee tennis_wfgate.log
+
+      # THE TENNIS LAB. The research product over the record — surface
+      # translation, form and trajectory, workload, the matchup studio, the
+      # historical explorer.
+      #
+      # Three of its claims can only be demonstrated by a real database:
+      #
+      #   THE MATCHUP STUDIO IS READABLE BY A SIGNED-OUT VISITOR. It crosses
+      #   into the PRIVATE point-in-time feature table to answer a historical
+      #   cutoff, and PostgreSQL checks table permissions when it plans a
+      #   statement rather than when a branch returns rows — so an invoker
+      #   function failed for anon even with no cutoff set. That is not
+      #   visible to any amount of reading and it made the centrepiece of the
+      #   Lab dead for every logged-out reader.
+      #
+      #   THE MARKET MODULE STAYS SHUT. Three conditions must hold together —
+      #   the flag, a commercially cleared provider, and a fresh snapshot FROM
+      #   that provider — and the suite drives every combination short of all
+      #   three, including a fresh snapshot from an uncleared source.
+      #
+      #   THE CUTOFF IS STRICT. A match is planted after the cutoff date and
+      #   the suite proves it cannot reach the answer.
+      - name: Run the tennis lab SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/lab_sql.test.js | tee tennis_lab.log
+
+      # THE WTA RESEARCH BOARD. app.html read wta.daily_research, wta.watchlist
+      # and wta.meta from the day the Tennis panel shipped, and no file in this
+      # repository ever created them — the panel's "the wta schema answers and
+      # is empty" was the honest report of a schema that was never built. They
+      # are now VIEWS over the tennis record rather than a second pipeline,
+      # which makes one new failure possible: the views and the page can
+      # disagree about a column name, and PostgREST answers that with a 400 the
+      # panel would report as a database fault. The suite reads the field names
+      # OUT of app.html and requires each to be a real column, so a rename on
+      # either side fails here rather than on the website.
+      - name: Run the WTA research board SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/wta_board_sql.test.js | tee tennis_wta.log
+
+      # The editorial system. Two rules in it are statements about VALUES
+      # rather than about rows, so neither can be an RLS policy and both are
+      # triggers: a pregame snapshot is immutable even to the service role the
+      # pipeline itself runs as, and only a PERSON may close a model-review
+      # candidate. Both are attacked here, along with the boundary that keeps
+      # the research behind an unpublished article invisible.
+      - name: Run the editorial SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/editorial/editorial_sql.test.js | tee editorial.log
+
+      # The editorial RUNTIME schema: settings validation, the audit trail, the
+      # lease (raced from two real processes) and the RLS that stops a browser
+      # holding the dispatcher lease. All of it is behaviour only a database
+      # can promise, so only a database can prove it.
+      - name: Run the editorial runtime SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/editorial/runtime_sql.test.js | tee editorial_runtime.log
+
+      # The SQL primary scheduler — the edge-function-free poke. It reads a
+      # GitHub token and can start a workflow, so the questions are whether a
+      # browser can reach it, whether a missing token is reported rather than
+      # silently swallowed, and whether it ever does anything but poke.
+      - name: Run the editorial SQL dispatcher suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/editorial/dispatch_sql.test.js | tee editorial_dispatch.log
+
+      # The UFC Live Fight Center contract: public reads, no client writes, the
+      # per-event poller lock, the dedup constraints and the cascade — the
+      # guarantees the browser and the GitHub jobs both depend on.
+      - name: Run the UFC live center SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/ufc/ufc_sql.test.js | tee ufc.log
+
+      # The tennis Live Match Center contract: public reads, no client writes,
+      # the per-TOUR-DAY poller lock (one scoreboard carries every tournament's
+      # live matches, so the lock is keyed by tour and day), the dedup
+      # constraints, the shape checks and the cascade.
+      - name: Run the tennis live center SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/tennis/tennis_sql.test.js | tee tennis.log
+
+      # THE MLB HISTORICAL PITCHING ARCHIVE, three suites on one database.
+      #
+      # The contract: public reads, no client writes, staging invisible to a
+      # client, the promote gate unreachable from one, and each of its four
+      # refusals — EMPTY_STAGING, COUNT_MISMATCH, DUPLICATE_KEY,
+      # VALIDATION_FAILED — leaving the previously promoted archive intact.
+      - name: Run the MLB pitching archive SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/mlb_pitchers_sql.test.js | tee mlb.log
+
+      # The import, end to end: the SHIPPED importer over the COMMITTED dataset
+      # — all 8,233 pitcher-seasons and 9,212 club rows — through the real
+      # promote gate, then read back through the query layer and checked
+      # against independently computed SQL. Includes the repair regression
+      # (Luis García's 2024 Angels and Red Sox rows) and the proof that a
+      # truncated dataset is refused with the good archive untouched.
+      - name: Run the MLB import suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/import.test.js | tee mlb_import.log
+
+      # THE AS-OF FEATURES, and the property a backtest cannot report on
+      # itself: a feature row for season S must not contain one atom of
+      # information from season S or later. Proved by corrupting every later
+      # season and requiring the row to come back identical. Also proves the
+      # SQL view and its JavaScript mirror agree field for field.
+      - name: Run the MLB as-of feature suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/features.test.js | tee mlb_features.log
+
+      # The refresh path: the provisional flag traced to what a reader sees, a
+      # build that cannot reach MLB, and the proof that the workflow actually
+      # invokes the importer rather than merely existing.
+      - name: Run the MLB refresh suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/refresh.test.js | tee mlb_refresh.log
+
+      # The desk's access to the same archive: routing, deterministic
+      # retrieval, all eight tools through the real runTool, the follow-up that
+      # resolves from carried ids alone, and the critic attacked with prose
+      # that reads a 2016-2025 record as tonight.
+      - name: Run the MLB intelligence suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/intelligence/mlb_history.test.js | tee mlb_ai.log
+
+      # THE OFFENSIVE ARCHIVE: the contract, the import and the as-of features,
+      # each against this same real PostgreSQL. The import suite runs BOTH
+      # importers over BOTH committed datasets so the two-way join — one MLB
+      # person id in two archives — is exercised against real rows.
+      - name: Run the MLB offensive SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/mlb_offense_sql.test.js | tee mlb_off_sql.log
+
+      - name: Run the MLB offensive dataset check
+        run: node tools/mlb/offense_dataset.js | tee mlb_off_dataset.log
+
+      - name: Run the MLB offensive import suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/offense_import.test.js | tee mlb_off_import.log
+
+      - name: Run the MLB offensive as-of feature suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/offense_features.test.js | tee mlb_off_features.log
+
+      - name: Run the MLB offensive refresh suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/offense_refresh.test.js | tee mlb_off_refresh.log
+
+      - name: Run the MLB offensive intelligence suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/intelligence/mlb_offense.test.js | tee mlb_off_ai.log
+
+      # THE MLB GAMES BOARD AND THE GAME BRIEF. The shipped loader in app.html,
+      # the shipped builder, and the shipped renderer in _presentation.js, run
+      # against each other — so a payload that no longer fits the renderer's
+      # contract fails here rather than as a blank section in a browser.
+      - name: Run the MLB game brief suite
+        run: node tools/mlb/game_brief.test.js | tee mlb_brief.log
+
+      # THE BASEBALL RESEARCH SURFACE, IN A REAL BROWSER, against this same
+      # database — no stubbed rows. Every number read off the screen is checked
+      # back against SQL, the games board included. Skips loudly if Chromium is
+      # absent, which the step below refuses.
+      - name: Run the baseball research surface e2e
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/baseball_ui.e2e.js | tee mlb_ui.log
+
+      # A skip here would mean the guarantee was never tested. On this job that
+      # is a failure, not a pass.
+      - name: Refuse a silent skip
+        run: |
+          # newsletter.log belongs here for the same reason every other name
+          # does: its suite SKIPS and passes without PostgreSQL, so a job that
+          # did not list it would go green on a newsletter suite that never
+          # ran — which is the exact failure this step exists to refuse.
+          #
+          # THE FIVE TENNIS LOGS ARE ON THIS LIST NOW, AND WERE NOT.
+          # tennis.log was the only one here, so record_sql, import, leakage and
+          # lab — the suites that hold the licensing gate, the leakage bound and
+          # the append-only prediction ledger — could each SKIP and this job
+          # would still report green. Adding tennis_wfgate.log without the other
+          # four would have left the new suite guarded and its neighbours not,
+          # which is the same omission one file further along. That is the sixth
+          # and seventh instance of the pattern this step exists to refuse: the
+          # absence of a signal reading exactly like a passing one.
+          #
+          # NOTE, still not fixed here because it is not this change's to widen:
+          # cards.log, season.log and offline.log are produced by steps above
+          # and are still absent from this list.
+          #
+          # AND IT SAYS WHAT IT REJECTED. `grep -q` exits 1 and prints nothing,
+          # so for a long time this step failed as a bare "exit code 1" with the
+          # runner's own service-container log — tens of thousands of lines of
+          # PostgreSQL statements — sitting between it and anyone reading back
+          # through the output. Which suite was missing its PASS line could not
+          # be read off the run at all. Now it names the file and shows the tail
+          # that failed to satisfy it.
+          bad=0
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log tennis_record.log tennis_import.log tennis_leakage.log tennis_wfgate.log tennis_lab.log tennis_wta.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
+            if [ ! -f "$f" ]; then
+              echo "::error::REFUSING: $f was never written — the step that produces it did not run"
+              bad=1
+              continue
+            fi
+            if grep -q '^SKIP' "$f"; then
+              echo "::error::REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
+              grep -m3 '^SKIP' "$f" | sed 's/^/    /'
+              bad=1
+              continue
+            fi
+            if ! grep -q '^PASS' "$f"; then
+              echo "::error::REFUSING: $f carries no PASS line, so nothing proves its suite finished"
+              echo "  last lines of $f:"
+              tail -n 6 "$f" | sed 's/^/    /'
+              bad=1
+            fi
+          done
+          if [ "$bad" != "0" ]; then exit 1; fi
+          echo "every listed suite reported PASS"

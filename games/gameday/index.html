@@ -1,0 +1,1050 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Game Day | EdgeDesk Games</title>
+<meta name="description" content="Your franchise plays every Saturday. Prepare during the week with real football, then play the game: a possession-by-possession result, a box score, a player of the game and a record that stays. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/gameday">
+<meta name="theme-color" content="#100e0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/gameday">
+<meta property="og:title" content="Game Day — EdgeDesk Games">
+<meta property="og:description" content="Your franchise plays every Saturday. Prepare with real football, then play the game. Free to play.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Game Day — EdgeDesk Games">
+<meta name="twitter:description" content="Your franchise plays every Saturday. Prepare with real football, then play the game.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260910a">
+<link rel="stylesheet" href="/games/franchise.css?v=20260910a">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <!-- GAME DAY ---------------------------------------------------------------
+       The weekly franchise game. Before Saturday: who is next, what is in
+       play, how prepared the week is. On Saturday: one button. After: the
+       result, the box score, the player of the game, what it paid, and the
+       one form that saves it all to an account. Every number here came from
+       the server; nothing on this page decides a result. -->
+  <!-- PLAY IT. The weekly franchise game is settled on the server; this is
+       the football you play with your hands, and it works whether or not you
+       have founded anything. It is first on the page because Game Day is the
+       product. -->
+  <div class="sec" style="margin-top:18px">
+    <div class="card">
+      <div class="eyebrow">Play</div>
+      <h2 style="font-size:22px;margin-top:6px">Call it yourself.</h2>
+      <p style="color:var(--dim);font-size:14px;line-height:1.55;margin-top:8px">
+        A full football game on a real field: your playbook, their coverage, down and distance,
+        the clock, fourth downs and a box score. Read the front, take the right receiver,
+        and see what the call was worth.</p>
+      <div class="chips">
+        <span class="chip">Play or <b>Coach</b> mode</span>
+        <span class="chip">Rookie to <b>Legend</b></span>
+        <span class="chip">Picks up where you left it</span>
+      </div>
+      <div class="btn-row"><a class="btn btn-go" href="/games/play/">Play the game</a></div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Game Day</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Loading the week</div>
+    </div>
+  </div>
+  <div id="after"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260910a"></script>
+<script src="/games/lib/scoring.js?v=20260910a"></script>
+<script src="/games/lib/challenge.js?v=20260910a"></script>
+<script src="/games/lib/research_state.js?v=20260910a"></script>
+<script src="/games/lib/attribution.js?v=20260910a"></script>
+<script src="/games/lib/store.js?v=20260910a"></script>
+<script src="/games/lib/dynasty.js?v=20260910a"></script>
+<script src="/games/lib/social.js?v=20260910a"></script>
+<script src="/games/lib/auth.js?v=20260910a"></script>
+<script src="/games/lib/gridiron/profile.js?v=20260910a"></script>
+<script src="/games/lib/franchise.js?v=20260910a"></script>
+<script src="/games/games.js?v=20260910a"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or franchise.js for
+   longer than it keeps this page, and a page built for the new library then
+   dies on the first function the old copy lacks — a skeleton that never
+   fills. The asset URLs above carry a version token so that cannot happen
+   from here on; this is the belt for the braces: if a required function is
+   missing, say so and offer a fresh load instead of a dead screen. */
+(function(){
+  var need=['EDFranchise.playWeek','EDFranchise.gameOpen','EDFranchise.gameCall','EDFranchise.snapCall','EDFranchise.driveLine','EDFranchise.stake','EDFranchise.gameFinish','EDFranchise.callsFor','EDFranchise.clockLine','EDFranchise.playbook','EDFranchise.tellLine','EDFranchise.playLine','EDFranchise.gamePhase','EDFranchise.schedule','EDFranchise.challengeAccept','EDFranchise.ladder','EDGames.saveCard','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,ST=window.EDGamesStore,FR=window.EDFranchise,S=window.EDGamesSocial,W=window.EDGamesWeek;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),after=$('after');
+  var esc=G.esc,fmt=FR.fmt;
+  var READY=G.boot('gameday');
+  var SCHED=null,MINE=null,LADDER=null,TRACKED=false,LADDER_TRACKED=false;
+  var RANKS=null,AWARDS=null,CHAMP=null;   /* season_v1: the league, the races, the title game */
+  var VIEW_GAME=(location.search.match(/[?&]game=([0-9a-f-]{36})/i)||[])[1]||null;
+  /* a franchise challenge link: /games/gameday/?fc=<token> */
+  var VIEW_FC=(location.search.match(/[?&]fc=([a-z0-9]{8,32})/i)||[])[1]||null;
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  function dayLabel(iso){
+    var t=Date.parse(String(iso||'').replace(' ','T'));
+    if(!isFinite(t))return '';
+    var d=new Date(t);return DAYS[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()];
+  }
+  function mark(f,size){return FR.logoSvg(f.logo,size||44,f.theme);}
+  function title(f){return ((f.city||'')+' '+(f.name||'')).trim();}
+  /* the founding door, carrying a challenge link back here once founded */
+  function foundHref(){return '/games/franchise/?intent='+(VIEW_FC?'fc':'gameday')+(VIEW_FC?'&next='+encodeURIComponent('/games/gameday/?fc='+VIEW_FC):'');}
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Game Day</div>'
+      +'<h1>Every Saturday, a game.</h1>'
+      +'<p>Your franchise plays an eight-week season against fictional clubs, one game a football week. '
+      +'During the week you prepare with the real games — scouting reports, the card, the drill, the film. '
+      +'On Saturday the game is played on the server from your roster, your scheme, your opponent and how prepared the week was: '
+      +'a possession-by-possession result, a box score, a player of the game, and a record that stays.</p>'
+      +'<ul class="fo-list"><li>A rival for life. Every season ends against them.</li>'
+      +'<li>A win pays Team Credits and Coach Points. A season completed pays more.</li>'
+      +'<li>Miss a week and you still play the game — unprepared.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="'+foundHref()+'" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
+    after.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">Franchise services are temporarily unavailable, so nothing can be saved to your record right now.<br><a class="btn btn-go" style="margin-top:14px" href="/games/play/">Play a game anyway</a></div></div></div>'
+      :h2hCard();
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'gameday',game_type:'franchise'});});
+  }
+
+  /* ---- the pregame -------------------------------------------------------- */
+  function prepList(prep){
+    var c=(prep&&prep.counts)||{},items=[];
+    var priced=c.price_it|0;
+    if(priced<3)items.push({t:'File a scouting report ('+priced+' of 3)',href:'/games/price-it/',w:'+'+Math.round(40/3)+'%'});
+    if(!c.pick5_submitted)items.push({t:'Submit your Pick 5 card',href:'/games/pick-5/',w:'+25%'});
+    if(!(c.drills|0))items.push({t:'Run the Two-Minute Drill',href:'/games/two-minute-drill/',w:'+20%'});
+    if((c.research|0)<2)items.push({t:'Open the research on a matchup ('+(c.research|0)+' of 2)',href:'/games/price-it/',w:'+'+(c.research?'7':'8')+'%'});
+    return items;
+  }
+  function edgeRow(k,v,s){
+    var n=+v||0,cls=n>0?'pos':n<0?'neg':'';
+    return '<li><span class="k">'+esc(k)+'</span><b class="'+cls+'">'+(n>0?'+':'')+esc(n)+'</b><span class="s">'+esc(s||'')+'</span></li>';
+  }
+  /* ── NEW WEAPON ────────────────────────────────────────────────────────
+     The man most recently kept from a pack, until he has played a game in
+     your hands: who he is, where he starts, the matchup he lines up against,
+     and the one thing to do about it. After that, what he has done for you. */
+  function tierWord(k){return k?k.charAt(0).toUpperCase()+k.slice(1):'';}
+  function weaponCard(snap,g){
+    var w=snap&&snap.weapon;if(!w||!w.name)return '';
+    var opp=(g&&g.opponent)||{},n=FR.STARTERS[w.position]||1,d=w.depth|0,starts=d>=1&&d<=n;
+    var slot=w.position+(n>1&&starts?d:'');
+    var off=['QB','RB','WR','TE','OL'].indexOf(w.position)>=0;
+    var edge=off&&opp.defense_r!=null?'Their defense rates <b>'+esc(opp.defense_r)+'</b> — he lines up against it.'
+      :!off&&opp.offense_r!=null?'Their offense rates <b>'+esc(opp.offense_r)+'</b> — he lines up against it.':'';
+    var ls=w.live_stats||{},gp=ls.games|0;
+    if(!(w.games_since|0)){
+      return '<div class="gd-weapon"><div class="k">New weapon</div>'
+        +'<div class="t"><b>'+esc(w.position)+' '+esc(w.name)+'</b> · '+esc(w.overall)+' OVR · '+esc(tierWord(w.tier))+'</div>'
+        +'<div class="s">'+(starts?'Starts at <b>'+esc(slot)+'</b>. ':'On the chart at '+esc(w.position)+esc(d||'')+' — <a href="/games/roster/">set the lineup</a> to start him. ')+edge+'</div>'
+        +'<div class="btn-row"><a class="btn btn-go" href="/games/play/" data-weapon="1">Play the next game</a></div></div>';
+    }
+    if(!gp)return '';
+    return '<div class="gd-weapon quiet"><div class="k">In your hands</div>'
+      +'<div class="t"><b>'+esc(w.position)+' '+esc(w.name)+'</b> · '+esc(FR.statsLine(w.position,ls,{games:true})||(gp+' GP'))+'</div></div>';
+  }
+  function pregame(snap,ph){
+    var f=snap.franchise,g=ph.game,opp=g.opponent||{},ss=snap.season||{};
+    var prep=snap.prep||FR.prep(snap.week||{}),ed=FR.matchupEdges(f,g,prep),todo=prepList(prep);
+    var ready=ph.phase==='ready';
+    return '<div class="eyebrow">Game Day · '+esc(ss.label||'Season I')+' · '
+      +(g.bowl?esc(g.bowl_name||'The bowl'):'Week '+esc(g.week)+' of '+esc(ss.weeks||8))
+      +(g.rival?' · <span class="rival-tag">Rivalry game</span>':'')+'</div>'
+      +weaponCard(snap,g)
+      +(g.bowl?'<div class="bowl"><div class="k">Postseason</div><div class="t">'+esc(g.bowl_name||'The bowl')+'</div>'
+        +'<div class="s">'+esc(ss.label||'The season')+' finished '+esc((ss.wins|0)+'–'+(ss.losses|0))+' and earned a ninth game, '
+        +'against a club rated above you. It counts in the record like any other.</div></div>':'')
+      +'<div class="gd-mu">'
+      +'<div class="gd-side" style="'+FR.themeVars(f.theme)+'">'+mark(f,56)+'<div class="gd-ab">'+esc(f.abbr)+'</div><div class="gd-nm">'+esc(title(f))+'</div><div class="gd-ovr">OVR '+esc(snap.rating&&snap.rating.overall!=null?snap.rating.overall:'—')+'</div></div>'
+      +'<div class="gd-vs">'+(g.home?'VS':'AT')+'<span>'+(g.home?'Home':'Away')+'</span></div>'
+      +'<div class="gd-side" style="'+FR.themeVars(opp.theme)+'">'+FR.logoSvg(opp.logo,56,opp.theme)+'<div class="gd-ab">'+esc(opp.abbr)+'</div><div class="gd-nm">'+esc(FR.opponentTitle(opp))+'</div><div class="gd-ovr">OVR '+esc(opp.overall!=null?opp.overall:'—')+'</div></div>'
+      +'</div>'
+      +'<div class="gd-style">'+esc(opp.style||'')+' '+(ed.opp_offense?esc(ed.opp_offense.label)+' offense':'')+(ed.opp_defense?' · '+esc(ed.opp_defense.label)+' defense':'')+'</div>'
+      /* the window */
+      +(ready
+        ?'<div class="gd-win on"><div class="t">Saturday’s game is open.</div>'
+          +'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="callBtn">Call '
+            +(g.bowl?esc(g.bowl_name||'the bowl'):'Week '+esc(g.week))+' · '+esc(FR.matchupLine(g))+'</button></div>'
+          +'<div class="btn-row"><button class="btn" type="button" id="playBtn">Quick play instead</button></div>'
+          +'<div class="ftp">Call it and you decide every possession — a dozen decisions, two minutes. Quick play is the same game called Balanced the whole way through. '
+          +'Either way the server resolves it from your roster, your scheme, the opponent and this week’s preparation: you send a call, never a result. Every game is played once; nothing can be replayed.</div></div>'
+        :'<div class="gd-win"><div class="t">Kicks off Saturday · '+esc(ph.opens?ph.opens.label:'')+'</div>'
+          +'<div class="s">Until then, every scouting report, card, drill and film session this week counts toward the game.</div></div>')
+      /* what is in play */
+      +'<div class="eyebrow" style="margin-top:16px">This week’s preparation</div>'
+      +'<div class="meter prep" style="margin-top:8px"><div class="k"><span>Preparation</span><b>'+esc(prep.preparation|0)+'%</b></div>'
+      +'<div class="bar"><div class="fill" style="width:'+(prep.preparation|0)+'%"></div></div>'
+      +'<div class="s">Swings the team '+(ed.prep_adj>0?'+':'')+esc(ed.prep_adj)+' rating points on Saturday (from −'+esc(FR.PREP_SWING)+' at 0% to +'+esc(FR.PREP_SWING)+' at 100%).</div></div>'
+      +(todo.length?'<ul class="obj" style="margin-top:8px">'+todo.map(function(t){
+          return '<li><span class="dot todo"></span><a href="'+esc(t.href)+'"><span class="t">'+esc(t.t)+'</span></a><span class="r">'+esc(t.w)+'</span></li>';
+        }).join('')+'</ul>':'<div class="ftp" style="margin-top:8px">The week’s work is done. The rest is Saturday.</div>')
+      +'<div class="eyebrow" style="margin-top:16px">What is in play</div>'
+      +'<ul class="gd-edges">'
+      +edgeRow('Home field',ed.home,g.home?'you are at home':'you are away')
+      +edgeRow((ed.offense?ed.offense.label:f.offense)+' vs their '+(ed.opp_defense?ed.opp_defense.label:opp.defense),ed.scheme_offense,'your offense against their defense')
+      +edgeRow('Their '+(ed.opp_offense?ed.opp_offense.label:opp.offense)+' vs your '+(ed.defense?ed.defense.label:f.defense),-ed.scheme_defense,'your defense against their offense')
+      +edgeRow('Preparation',ed.prep_adj,esc(prep.preparation|0)+'% this week')
+      +'</ul>'
+      +'<div class="ftp" style="margin-top:8px">In rating points, from the published table (sim_v4). Your starters’ traits add on the server; the result explains what applied.</div>'
+      /* THE SCOUTING REPORT: two or three edges and a worry for Saturday, read
+         off your starters against their schemes. A module you can fold away
+         and it stays folded. */
+      +'<details class="gd-scout" id="gdScout"'+(scoutOpen()?' open':'')+'><summary><span class="eyebrow">Opponent scouting report</span><span class="gd-scout-m" id="gdScoutM">reading the roster…</span></summary>'
+      +'<div class="gd-scout-b" id="gdScoutB"><div class="sk" style="width:70%"></div></div></details>'
+      +(snap.last_game?'<div class="gd-last">Last time out: <a href="/games/gameday/?game='+esc(snap.last_game.id)+'"><b>'+esc(FR.resultLine(snap.last_game))+'</b> '+esc(FR.matchupLine(snap.last_game))+'</a>'
+          +(snap.last_game.potg?' · POTG '+esc(snap.last_game.potg.name):'')+'</div>':'');
+  }
+
+  /* ---- between seasons ---------------------------------------------------- */
+  function seasonCard(snap,ph){
+    var ss=snap.season||{},f=snap.franchise,rec=snap.record||{},next=FR.levelInfo?null:null;
+    var nextN=(ss.number|0)+1;
+    if(ph.phase==='preseason'){
+      return '<div class="eyebrow">Game Day · '+esc(ss.label||'Season I')+'</div>'
+        +'<div class="gd-done"><div class="t">'+esc(ss.label||'Season I')+' is ready to be scheduled.</div>'
+        +'<div class="s">Eight games, one a football week, against clubs drawn around your team’s overall — and a rival, for life, to close it.</div></div>'
+        +'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="startBtn">Set the schedule and start '+esc(ss.label||'Season I')+'</button></div>';
+    }
+    if(ph.phase==='complete'){
+      return '<div class="eyebrow">Game Day · '+esc(ss.label||'Season')+' complete</div>'
+        +'<div class="gd-done"><div class="rec">'+esc((ss.wins|0)+'–'+(ss.losses|0)+(ss.ties?'–'+ss.ties:''))+'</div>'
+        +'<div class="t">'+esc(title(f))+' · '+esc(ss.label)+'</div>'
+        +'<div class="s">'+esc(fmt(ss.points_for))+' scored, '+esc(fmt(ss.points_against))+' allowed'+(rec.seasons?' · '+esc(rec.seasons)+' season'+(rec.seasons===1?'':'s')+' on the record':'')+'</div></div>'
+        +'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="startBtn">Start Season '+esc(roman(nextN))+'</button></div>'
+        +'<div class="ftp" style="margin-top:10px">The season lines reset; the careers, the record and the trophies stay. A new schedule is drawn around the team as it stands now.</div>';
+    }
+    return '<div class="eyebrow">Game Day</div><div class="empty">No game is scheduled. <a href="/games/status/">Status</a></div>';
+  }
+  function roman(n){var v=[10,9,5,4,1],s=['X','IX','V','IV','I'],o='';for(var i=0;i<v.length;i++){while(n>=v[i]){o+=s[i];n-=v[i];}}return o||'I';}
+
+  /* ---- the result --------------------------------------------------------- */
+  function qtable(box,f,opp){
+    var q1=(box.quarters&&box.quarters['for'])||[],q2=(box.quarters&&box.quarters.against)||[];
+    var ot=!!box.ot,n=ot?5:4,h='<table class="qt"><thead><tr><th></th>';
+    for(var i=0;i<n;i++)h+='<th>'+(i===4?'OT':'Q'+(i+1))+'</th>';
+    h+='<th>T</th></tr></thead><tbody>';
+    function row(ab,q,t){var r='<tr><td class="ab">'+esc(ab)+'</td>';for(var i=0;i<n;i++)r+='<td>'+esc(q[i]|0)+'</td>';return r+'<td class="t">'+esc(t)+'</td></tr>';}
+    h+=row(f.abbr,q1,box['final']['for'])+row(opp.abbr,q2,box['final'].against)+'</tbody></table>';
+    return h;
+  }
+  function teamStats(box){
+    var a=(box.team&&box.team['for'])||{},b=(box.team&&box.team.against)||{};
+    var rows=[['Total yards','yds'],['Passing','pass_yds'],['Rushing','rush_yds'],['Plays','plays'],['Turnovers','turnovers'],['Possessions','possessions']];
+    return '<table class="ts">'+rows.map(function(r){
+      return '<tr><td class="l">'+esc(a[r[1]]|0)+'</td><td class="k">'+esc(r[0])+'</td><td class="r">'+esc(b[r[1]]|0)+'</td></tr>';
+    }).join('')+'</table>';
+  }
+  function lines(box){
+    var ps=(box.players||[]).slice().filter(function(p){return p.position!=='OL'&&(+p.impact||0)>0;})
+      .sort(function(a,b){return (+b.impact||0)-(+a.impact||0);}).slice(0,7);
+    if(!ps.length)return '';
+    return '<ul class="lines">'+ps.map(function(p){
+      return '<li><span class="p">'+esc(p.position)+'</span><span class="n">'+esc(p.name)+'</span><span class="l">'+esc(FR.statsLine(p.position,p.stats))+'</span></li>';
+    }).join('')+'</ul>';
+  }
+  function why(box,f,opp){
+    var e=box.edges||{},tr=e.traits||{},prep=e.prep||{};
+    var rows=[];
+    rows.push(edgeRow('Home field',e.home,box.home?'at home':'away'));
+    rows.push(edgeRow('Preparation',e.prep_adj,(prep.preparation|0)+'% that week'));
+    rows.push(edgeRow((FR.optionOf(FR.OFFENSES,f.offense)||{}).label+' vs their '+(FR.optionOf(FR.DEFENSES,opp.defense)||{}).label,e.scheme_offense,'your offense'));
+    rows.push(edgeRow('Their '+(FR.optionOf(FR.OFFENSES,opp.offense)||{}).label+' vs your '+(FR.optionOf(FR.DEFENSES,f.defense)||{}).label,-(+e.scheme_defense||0),'your defense'));
+    if(tr.count)rows.push(edgeRow('Starters’ traits',Math.round(((+tr.offense||0)+(+tr.defense||0))*0.25*10)/10,tr.count+' traits in the lineup'));
+    return '<ul class="gd-edges">'+rows.join('')+'</ul>'
+      +'<div class="ftp" style="margin-top:8px">Effective ratings on the day: your offense '+esc(e.offense)+' vs their defense '+esc(e.opp_defense)+'; their offense '+esc(e.opp_offense)+' vs your defense '+esc(e.defense)+'. '+esc(e.possessions)+' possessions a side'+(box.ot?', overtime':'')+'. '+esc(box.sim||'sim_v4')+'.</div>';
+  }
+  /* WHAT THE GAME COST. The server draws injuries after a game and writes
+     them onto the box; this only says what it found. An empty list is no
+     block at all — most games cost nobody. */
+  function injuryNote(list){
+    list=list||[];
+    if(!list.length)return '';
+    return '<ul class="inj">'+list.map(function(i){
+      return '<li><span class="p">'+esc(i.position)+'</span>'
+        +'<span class="o"><b>'+esc(i.name)+'</b><small>left the game</small></span>'
+        +'<span class="r">'+esc(i.label||'Out')+' · '+esc(i.games|0)+' game'+((i.games|0)===1?'':'s')+'</span></li>';
+    }).join('')+'</ul>';
+  }
+  /* WHAT HAPPENED TO THE LEAD (moment_v1). Derived on the server from the
+     drive log the box already carries, so it cannot disagree with the game. */
+  function storyCard(box,f,opp){
+    var st=box.story;
+    if(!st)return '';
+    var parts=[];
+    if((st.lead_changes|0)>0)parts.push('the lead changed hands '+(st.lead_changes===1?'once':st.lead_changes+' times'));
+    if((st.key|0)>0)parts.push((st.key===1?'one possession':st.key+' possessions')+' decided it');
+    if((st.decided_at|0)>0&&(st.possessions|0)>0){
+      var after=(st.possessions|0)-(st.decided_at|0);
+      if(after>0)parts.push('it was settled with '+after+' still to play');
+    }
+    if(!parts.length&&!st.go_ahead&&!st.biggest)return '';
+    var ga=st.go_ahead,bg=st.biggest;
+    return '<div class="sn-story">'
+      +'<div class="k">The story</div>'
+      +(parts.length?'<div class="t">'+esc(parts.join(', ').replace(/^./,function(c){return c.toUpperCase();}))+'.</div>':'')
+      +(ga?'<div class="l"><b>Went ahead for good</b> · Q'+esc(ga.q|0)+' · '+esc(FR.momentLine(ga))+'</div>':'')
+      +(bg&&(!ga||bg.n!==ga.n||bg.side!==ga.side)?'<div class="l"><b>Biggest moment</b> · Q'+esc(bg.q|0)+' · '+esc(FR.momentLine(bg))+'</div>':'')
+      +'</div>';
+  }
+  function resultCard(game,snap,extra){
+    extra=extra||{};
+    var f=snap.franchise,box=game.box||{},opp=game.opponent||{},ss=extra.season||snap.season||{};
+    var res=game.result,cls=res==='W'?'w':res==='L'?'l':'t';
+    var potg=game.potg||box.potg;
+    var plays=(box.scoring||[]);
+    return '<div class="eyebrow">Final · '+esc(ss.label||'Season')+' · '
+      +(game.bowl?esc(game.bowl_name||'The bowl'):'Week '+esc(game.week))
+      +(game.rival?' · <span class="rival-tag">Rivalry game</span>':'')+(box.ot?' · Overtime':'')+'</div>'
+      +'<div class="score '+cls+'">'
+      +'<div class="side" style="'+FR.themeVars(f.theme)+'">'+mark(f,44)+'<div class="ab">'+esc(f.abbr)+'</div><div class="n">'+esc(game.score_for|0)+'</div></div>'
+      +'<div class="res"><b>'+(res==='W'?'WIN':res==='L'?'LOSS':'TIE')+'</b><span>'+(game.home?'vs':'at')+' '+esc(FR.opponentTitle(opp))+'</span></div>'
+      +'<div class="side" style="'+FR.themeVars(opp.theme)+'">'+FR.logoSvg(opp.logo,44,opp.theme)+'<div class="ab">'+esc(opp.abbr)+'</div><div class="n">'+esc(game.score_against|0)+'</div></div>'
+      +'</div>'
+      +storyCard(box,f,opp)
+      +(extra.rewards||'')
+      +(potg?'<div class="potg"><div class="k">Player of the game</div><div class="n">'+esc(potg.name)+' <span>'+esc(potg.position)+(potg.jersey!=null?' · #'+esc(potg.jersey):'')+'</span></div>'
+        +'<div class="l">'+esc(FR.statsLine(potg.position,potg.stats))+'</div></div>':'')
+      +injuryNote(game.injuries||box.injuries)
+      +(box.quarters?qtable(box,f,opp):'')
+      +(plays.length?'<div class="eyebrow" style="margin-top:14px">Scoring</div><ul class="plays">'+plays.map(function(p){
+          return '<li class="'+(p.side==='for'?'for':'against')+'"><span class="q">'+(p.q>4?'OT':'Q'+esc(p.q))+'</span><span class="d">'+esc(p.desc)+'</span><span class="sc">'+esc(p['for'])+'–'+esc(p.against)+'</span></li>';
+        }).join('')+'</ul>':'')
+      +(box.team?'<div class="eyebrow" style="margin-top:14px">Team</div>'+teamStats(box):'')
+      +(box.players?'<div class="eyebrow" style="margin-top:14px">Lines</div>'+lines(box):'')
+      +(box.edges?'<div class="eyebrow" style="margin-top:14px">Why it went this way</div>'+why(box,f,opp):'')
+      +'<div class="btn-row two" style="margin-top:16px"><button class="btn" type="button" id="shareGame">Share the result</button><a class="btn" href="/games/gameday/" id="backGd">Game Day</a></div>';
+  }
+
+  /* ---- the schedule and the history --------------------------------------- */
+  function scheduleSection(sc){
+    var ss=sc.season||{},games=sc.games||[];
+    return '<div class="sec"><div class="sec-h"><h2>'+esc(ss.label||'Season')+'</h2><span class="m">'+esc((ss.wins|0)+'–'+(ss.losses|0)+(ss.ties?'–'+ss.ties:''))+' · '+esc(ss.status||'')+'</span></div>'
+      +'<div class="card sched">'+(games.length?games.map(function(g){
+        var fin=g.status==='final',op=FR.opensIn(g.opens_at);
+        var right=fin?'<b class="'+(g.result==='W'?'w':g.result==='L'?'l':'t')+'">'+esc(FR.resultLine(g))+'</b>'
+          :(op.open?'<b class="go">Ready</b>':'<span>'+esc(dayLabel(g.opens_at))+'</span>');
+        var inner='<span class="w">Wk '+esc(g.week)+'</span>'+FR.logoSvg((g.opponent||{}).logo,26,(g.opponent||{}).theme)
+          +'<span class="o">'+esc(FR.matchupLine(g))+'<small>'+(g.rival?'<i class="rival-tag">Rival</i> · ':'')+'OVR '+esc((g.opponent||{}).overall)+(fin&&g.potg?' · POTG '+esc(g.potg.name):'')+'</small></span>'
+          +'<span class="r">'+right+'</span>';
+        return fin?'<a class="sched-row" href="/games/gameday/?game='+esc(g.id)+'">'+inner+'</a>':'<div class="sched-row">'+inner+'</div>';
+      }).join(''):'<div class="empty">No games scheduled.</div>')+'</div></div>';
+  }
+  function historySection(sc){
+    var rec=sc.record||{},rv=sc.rival||{},seasons=sc.seasons||[];
+    return '<div class="sec"><div class="sec-h"><h2>The record</h2><span class="m">permanent</span></div><div class="card">'
+      +'<div class="hist"><div><div class="k">All time</div><div class="v">'+esc((rec.wins|0)+'–'+(rec.losses|0)+(rec.ties?'–'+rec.ties:''))+'</div></div>'
+      +'<div><div class="k">Seasons</div><div class="v">'+esc(rec.seasons|0)+'</div></div>'
+      +'<div><div class="k">Rivalry</div><div class="v">'+esc((rv.wins|0)+'–'+(rv.losses|0)+(rv.ties?'–'+rv.ties:''))+'</div></div></div>'
+      +(rv.name?'<div class="gd-rival" style="'+FR.themeVars(rv.theme)+'">'+FR.logoSvg(rv.logo,34,rv.theme)+'<div><div class="k">Your rival, for life</div><div class="n">'+esc(FR.opponentTitle(rv))+'</div><div class="s">'+esc(rv.style||'')+' Every season ends against them.</div></div></div>':'')
+      +(seasons.length>1?'<table class="ledger-t" style="margin-top:12px">'+seasons.map(function(s){
+          return '<tr><td class="w">'+esc(s.label)+' <span style="color:var(--faint)">· '+esc(s.season)+'</span></td><td class="d">'+esc((s.wins|0)+'–'+(s.losses|0)+(s.ties?'–'+s.ties:''))+'</td><td class="t">'+esc(s.status)+'</td></tr>';
+        }).join('')+'</table>':'')
+      +'</div></div>';
+  }
+  /* ---- franchise vs franchise --------------------------------------------- */
+  function idCard(f,size){
+    if(!f)return '';
+    return '<div class="fc-hero" style="'+FR.themeVars(f.theme)+'">'+mark(f,size||56)
+      +'<div><div class="k">'+esc(f.abbr||'')+' · OVR '+esc(f.overall!=null?f.overall:'—')+(f.level?' · Level '+esc(f.level):'')+'</div>'
+      +'<div class="n">'+esc(title(f))+'</div>'
+      +'<div class="s">'+esc(FR.recordLine(f.record))+' this franchise'+(f.ladder_games?' · ladder '+esc(f.ladder_rating):'')+(f.fc_record&&(f.fc_record.wins|f.fc_record.losses|f.fc_record.ties)?' · challenges '+esc(FR.recordLine(f.fc_record)):'')+'</div></div></div>';
+  }
+  function fcRow(ch){
+    var fin=ch.status==='FINAL',them=ch.them||{};
+    var right=fin?'<b class="'+(ch.result==='W'?'w':ch.result==='L'?'l':'t')+'">'+esc(ch.result+' '+(ch.score_for|0)+'–'+(ch.score_against|0)+(ch.ot?' (OT)':''))+'</b>'
+        +(ch.rating_delta!=null?'<span class="d '+(ch.rating_delta>0?'up':ch.rating_delta<0?'dn':'')+'">'+(ch.rating_delta>0?'+':'')+esc(ch.rating_delta)+' ladder</span>':'')
+      :'';
+    var inner=(them.logo?FR.logoSvg(them.logo,30,them.theme):'<span class="fr-mark" style="width:30px;height:30px;border-radius:8px;background:var(--line)"></span>')
+      +'<span class="o"><b>'+esc(fin?(ch.you==='challenger'?'vs ':'at ')+title(them):'Waiting for a taker')+'</b><small>'+esc(fin?dayLabel(ch.played_at)+(ch.potg?' · POTG '+ch.potg.name:''):('open until '+dayLabel(ch.expires_at)+(ch.note?' · “'+ch.note+'”':'')))+'</small></span>'
+      +(fin?'<span class="r">'+right+'</span>':'<span class="r act"><button class="btn" type="button" data-fc-share>Share</button><button class="btn btn-ghost" type="button" data-fc-cancel aria-label="Withdraw this challenge">✕</button></span>');
+    return fin?'<li><a class="fcl-row" href="/games/gameday/?fc='+esc(ch.invite_token||'')+'" style="display:contents">'+inner+'</a></li>'
+      :'<li data-fc="'+esc(ch.id)+'" data-token="'+esc(ch.invite_token||'')+'">'+inner+'</li>';
+  }
+  function challengesSection(m){
+    m=m||{};
+    var open=m.open||[],played=m.played||[],riv=m.rivalries||[],rec=m.record||{};
+    return '<div class="sec"><div class="sec-h"><h2>Challenges</h2><span class="m">'+esc(FR.recordLine({wins:rec.wins,losses:rec.losses,ties:rec.ties}))+' vs other franchises</span></div>'
+      +'<div class="card">'
+      +'<div class="eyebrow">Challenge a friend’s franchise</div>'
+      +'<p style="margin:6px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55">One game, both rosters, neutral field, played on the server the moment they open the link. Both of you are paid by the table; the rivalry and the ladder move.</p>'
+      +'<div class="fc-new"><input type="text" id="fcNote" maxlength="80" placeholder="A line to send with it (optional)" aria-label="A note for the challenge">'
+      +'<button class="btn btn-go" type="button" id="fcCreate">Make a challenge link</button></div>'
+      +'<div id="fcLink"></div>'
+      +(open.length?'<div class="eyebrow" style="margin-top:14px">Out there · '+open.length+'</div><ul class="fcl">'+open.map(fcRow).join('')+'</ul>':'')
+      +(played.length?'<div class="eyebrow" style="margin-top:14px">Played</div><ul class="fcl">'+played.map(fcRow).join('')+'</ul>':'')
+      +(riv.length?'<div class="eyebrow" style="margin-top:14px">Rivalries</div><ul class="riv">'+riv.map(function(r){
+          var o=r.other||{};
+          return '<li>'+FR.logoSvg(o.logo,30,o.theme)+'<span class="o"><b>'+esc(title(o))+'</b><small>OVR '+esc(o.overall)+' · '+esc(FR.recordLine(o.record))+'</small></span>'
+            +'<span class="r">'+esc((r.fc_wins|0)+'–'+(r.fc_losses|0)+(r.fc_ties?'–'+r.fc_ties:''))+'<span>on the field</span>'
+            +((r.h2h_wins|r.h2h_losses|r.h2h_draws)?esc((r.h2h_wins|0)+'–'+(r.h2h_losses|0)+(r.h2h_draws?'–'+r.h2h_draws:''))+'<span>on the board</span>':'')+'</span></li>';
+        }).join('')+'</ul>':'')
+      +'<div class="ftp" style="margin-top:12px">A challenge pays +60 XP and +30 TC to play, +40 XP, +40 TC and +2 CP to win, and +40 XP, +1 CP for beating a team rated five or more higher. Careers grow; the season record does not.</div>'
+      +'<div class="ftp" style="margin-top:8px">Want the same games with a table and a title at the end? A <a href="/games/conference/">conference</a> is a league of friends with standings of its own — everybody plays everybody, one round a football week, and a bracket decides it.</div>'
+      +'</div></div>';
+  }
+  function ladderSection(l){
+    l=l||{};
+    var rows=l.rows||[],me=l.me;
+    if(!LADDER_TRACKED){LADDER_TRACKED=true;G.track('ladder_view',{rows:rows.length,rank:me?me.rank:null});}
+    return '<div class="sec"><div class="sec-h"><h2>The ladder</h2><span class="m">'+esc(l.total|0)+' franchise'+((l.total|0)===1?'':'s')+'</span></div><div class="card">'
+      +(rows.length?'<table class="ladder"><thead><tr><th class="rk">#</th><th>Franchise</th><th class="rt">Rating</th><th class="rc">W–L</th></tr></thead><tbody>'+rows.map(function(r){
+          return '<tr'+(r.is_you?' class="me"':'')+'><td class="rk">'+esc(r.rank)+'</td><td class="nm">'+FR.logoSvg(r.logo,26,r.theme)+esc(title(r))+'<small>OVR '+esc(r.overall)+' · '+esc(r.ladder_games)+' game'+(r.ladder_games===1?'':'s')+'</small></td>'
+            +'<td class="rt">'+esc(r.ladder_rating)+'</td><td class="rc">'+esc(FR.recordLine(r.fc_record))+'</td></tr>';
+        }).join('')+'</tbody></table>':'<div class="empty">Nobody has played a franchise challenge yet. The first one starts the ladder.</div>')
+      +'<div class="ladder-me">'+(me?(me.rank?'You are <b>#'+esc(me.rank)+'</b> at <b>'+esc(me.rating)+'</b> after '+esc(me.games)+' challenge'+(me.games===1?'':'s')+'.':'You join the ladder when you play your first challenge. Everyone starts at '+esc(FR.LADDER_START)+'.'):'')
+      +' Franchises only — never accounts. Ordinary Elo, K = '+esc(FR.LADDER_K)+'.</div>'
+      +'</div></div>';
+  }
+  function wireChallenges(){
+    var cb=$('fcCreate');
+    if(cb)cb.addEventListener('click',function(){
+      cb.disabled=true;cb.textContent='Making…';
+      var note=($('fcNote')&&$('fcNote').value||'').trim();
+      FR.challengeCreate(note).then(function(r){
+        cb.disabled=false;cb.textContent='Make a challenge link';
+        if(!r.ok||!r.data){G.toast(r.message||'Could not make the challenge.');return;}
+        G.track('fc_create',{note:!!note});
+        var url=FR.challengeUrl(r.data.invite_token);
+        $('fcLink').innerHTML='<div class="fc-link"><div><b>Your challenge link is ready.</b> Send it to anyone; whoever opens it with a franchise plays you at once.</div>'
+          +'<div class="u">'+esc(url)+'</div><div class="btn-row two"><button class="btn btn-go" type="button" data-fc-share data-token="'+esc(r.data.invite_token)+'">Share the link</button><button class="btn" type="button" data-fc-copy data-token="'+esc(r.data.invite_token)+'">Copy</button></div></div>';
+        return FR.challengesMine().then(function(m){if(m.ok&&m.data)MINE=m.data;renderAfter();
+          var again=$('fcLink');if(again)again.innerHTML='<div class="fc-link"><div><b>Your challenge link is ready.</b></div><div class="u">'+esc(url)+'</div><div class="btn-row two"><button class="btn btn-go" type="button" data-fc-share data-token="'+esc(r.data.invite_token)+'">Share the link</button><button class="btn" type="button" data-fc-copy data-token="'+esc(r.data.invite_token)+'">Copy</button></div></div>';});
+      });
+    });
+    after.addEventListener('click',function(e){
+      var t=e.target.closest?e.target.closest('[data-fc-share],[data-fc-copy],[data-fc-cancel]'):null;
+      if(!t)return;
+      var li=t.closest('[data-fc]'),token=t.getAttribute('data-token')||(li&&li.getAttribute('data-token'))||'';
+      if(t.hasAttribute('data-fc-cancel')&&li){
+        t.disabled=true;
+        FR.challengeCancel(li.getAttribute('data-fc')).then(function(r){
+          if(!r.ok){G.toast(r.message||'Could not cancel.');t.disabled=false;return;}
+          G.toast('Challenge withdrawn');
+          return FR.challengesMine().then(function(m){if(m.ok&&m.data)MINE=m.data;renderAfter();});
+        });
+        return;
+      }
+      shareInvite(token,t.hasAttribute('data-fc-copy'));
+    });
+  }
+  function shareInvite(token,copyOnly){
+    var snap=FR.snapshot(),me=MINE&&MINE.me?MINE.me:(snap&&snap.franchise?{city:snap.franchise.city,name:snap.franchise.name,overall:snap.rating?snap.rating.overall:null,record:snap.record}:null);
+    var url=FR.challengeUrl(token),text=FR.challengeInviteText(me,{});
+    G.track('fc_share',{copy:!!copyOnly});
+    if(!copyOnly&&navigator.share){return navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});}
+    if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(text+'\n'+url).then(function(){G.toast('Copied — paste it anywhere');}).catch(function(){G.toast('Could not copy automatically');});}
+    G.toast('Copy this: '+url);
+  }
+
+  /* THE INVITE LANDING. A stranger from a group chat, on a phone, must read
+     who is calling them out and answer without scrolling: the challenger's
+     card, one button. No franchise yet? Found one — no account needed — and
+     the link brings them straight back here. */
+  function renderInvite(pk){
+    var snap=FR.snapshot();
+    stage.className='card gd';
+    if(!pk){stage.innerHTML='<div class="eyebrow">Franchise challenge</div><div class="empty">This challenge link is not one EdgeDesk knows. <a href="/games/gameday/">Game Day</a></div>';return;}
+    G.track('fc_invite_open',{status:pk.status,has_franchise:!pk.needs_franchise,is_challenger:!!pk.is_challenger});
+    var me=pk.me||{};
+    if(pk.status==='FINAL'){showChallenge(pk,{});return;}
+    if(pk.status!=='OPEN'){
+      stage.innerHTML='<div class="eyebrow">Franchise challenge</div>'+idCard(me)+'<div class="empty">This challenge '+(pk.status==='EXPIRED'?'expired — a link is good for fourteen days.':'was withdrawn.')+'<br><a href="/games/gameday/">Game Day</a></div>';
+      return;
+    }
+    if(pk.is_challenger){
+      stage.innerHTML='<div class="eyebrow">Your challenge</div>'+idCard(me)+(pk.note?'<div class="fc-note">“'+esc(pk.note)+'”</div>':'')
+        +'<p style="margin:12px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55">This is your own link. Send it to anyone; whoever opens it with a franchise plays you at once, and the result lands here for both of you.</p>'
+        +'<div class="btn-row two"><button class="btn btn-go" type="button" data-fc-share data-token="'+esc(pk.invite_token)+'">Share the link</button><a class="btn" href="/games/gameday/">Game Day</a></div>';
+      stage.addEventListener('click',function(e){var t=e.target.closest?e.target.closest('[data-fc-share]'):null;if(t)shareInvite(t.getAttribute('data-token'),false);});
+      return;
+    }
+    stage.innerHTML='<div class="eyebrow">Franchise challenge</div>'
+      +'<h1 class="h2h-h1" style="font-size:24px;margin:8px 0 0">The '+esc(title(me))+' challenge your franchise</h1>'
+      +idCard(me)+(pk.note?'<div class="fc-note">“'+esc(pk.note)+'”</div>':'')
+      +(pk.needs_franchise
+        ?'<p style="margin:12px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55">You need a franchise to answer — one takes a minute and needs no account. Found one and this link brings you straight back to play.</p>'
+          +'<div class="btn-row"><a class="btn btn-go btn-big" href="'+foundHref()+'" id="goFound">Found a franchise and play</a></div>'
+        :(pk.can_accept
+          ?'<div class="gd-vs" style="margin:12px 0 0">VS</div>'+idCard(snap&&snap.franchise?{city:snap.franchise.city,name:snap.franchise.name,abbr:snap.franchise.abbr,logo:snap.franchise.logo,theme:snap.franchise.theme,overall:snap.rating?snap.rating.overall:null,record:snap.record,ladder_games:snap.ladder?snap.ladder.games:0,ladder_rating:snap.ladder?snap.ladder.rating:null}:null,44)
+            +'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="fcAccept">Accept and play</button></div>'
+            +'<div class="ftp" style="margin-top:10px">Played on the server the moment you accept: both rosters, both schemes, this week’s preparation on each side, a neutral field. Once.</div>'
+          :'<div class="empty">This challenge cannot be accepted right now.</div>'))
+      +'<div class="ftp" style="margin-top:12px;text-align:center"><b>Free to play</b> · No account needed · No real-money wagering</div>';
+    var ab=$('fcAccept');
+    if(ab)ab.addEventListener('click',function(){acceptChallenge(ab,pk);});
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'fc_invite',game_type:'franchise'});});
+  }
+  function acceptChallenge(btn,pk){
+    btn.disabled=true;btn.textContent='Playing…';
+    G.track('fc_accept',{});
+    FR.challengeAccept(pk.invite_token||VIEW_FC).then(function(r){
+      if(!r.ok||!r.data||!r.data.game){
+        G.toast(r.message||'The challenge could not be played.');btn.disabled=false;btn.textContent='Accept and play';
+        return FR.challengePeek(VIEW_FC).then(function(p){renderInvite(p.ok?p.data:null);});
+      }
+      var d=r.data,ch=d.game;
+      G.track('fc_complete',{result:ch.result,score_for:ch.score_for,score_against:ch.score_against,rating_delta:ch.rating_delta,xp:d.rewards?d.rewards.xp:null});
+      (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:'fc'});});
+      showChallenge(ch,{rewards:G.rewardPanel(r),fresh:true});
+      return FR.home().then(function(){return Promise.all([FR.challengesMine(),FR.ladder(10)]);}).then(function(rs){
+        if(rs[0].ok&&rs[0].data)MINE=rs[0].data;if(rs[1].ok&&rs[1].data)LADDER=rs[1].data;renderAfter();
+      });
+    });
+  }
+  /* THE RESULT of a challenge, from my side: my lines and theirs. */
+  function showChallenge(ch,extra){
+    extra=extra||{};
+    var snap=FR.snapshot(),me=ch.me||{},them=ch.them||{},box=ch.box||{},res=ch.result,cls=res==='W'?'w':res==='L'?'l':'t';
+    var mine=ch.you!=null;
+    stage.className='card gd';
+    stage.setAttribute('style',FR.themeVars(me.theme));
+    var theirs=(box.their_players||[]).slice().filter(function(p){return p.position!=='OL'&&(+p.impact||0)>0;}).sort(function(a,b){return (+b.impact||0)-(+a.impact||0);}).slice(0,4);
+    stage.innerHTML='<div class="eyebrow">Franchise challenge · final'+(box.ot?' · Overtime':'')+(mine?'':' · as the challenger saw it')+'</div>'
+      +'<div class="score '+cls+'">'
+      +'<div class="side" style="'+FR.themeVars(me.theme)+'">'+mark(me,44)+'<div class="ab">'+esc(me.abbr)+'</div><div class="n">'+esc(ch.score_for|0)+'</div></div>'
+      +'<div class="res"><b>'+(res==='W'?'WIN':res==='L'?'LOSS':'TIE')+'</b><span>vs '+esc(title(them))+'</span>'+(ch.rating_delta!=null?'<span>ladder '+(ch.rating_delta>0?'+':'')+esc(ch.rating_delta)+'</span>':'')+'</div>'
+      +'<div class="side" style="'+FR.themeVars(them.theme)+'">'+mark(them,44)+'<div class="ab">'+esc(them.abbr)+'</div><div class="n">'+esc(ch.score_against|0)+'</div></div>'
+      +'</div>'
+      +(extra.rewards||'')
+      +(box.potg?'<div class="potg"><div class="k">Player of the game · '+esc(me.abbr)+'</div><div class="n">'+esc(box.potg.name)+' <span>'+esc(box.potg.position)+'</span></div><div class="l">'+esc(FR.statsLine(box.potg.position,box.potg.stats))+'</div></div>':'')
+      +(box.their_potg?'<div class="potg" style="border-color:var(--line)"><div class="k" style="color:var(--faint)">Theirs · '+esc(them.abbr)+'</div><div class="n">'+esc(box.their_potg.name)+' <span>'+esc(box.their_potg.position)+'</span></div><div class="l">'+esc(FR.statsLine(box.their_potg.position,box.their_potg.stats))+'</div></div>':'')
+      +(box.quarters?qtable(box,me,them):'')
+      +((box.scoring||[]).length?'<div class="eyebrow" style="margin-top:14px">Scoring</div><ul class="plays">'+box.scoring.map(function(p){
+          return '<li class="'+(p.side==='for'?'for':'against')+'"><span class="q">'+(p.q>4?'OT':'Q'+esc(p.q))+'</span><span class="d">'+esc(p.desc)+'</span><span class="sc">'+esc(p['for'])+'–'+esc(p.against)+'</span></li>';
+        }).join('')+'</ul>':'')
+      +(box.team?'<div class="eyebrow" style="margin-top:14px">Team</div>'+teamStats(box):'')
+      +(box.players?'<div class="eyebrow" style="margin-top:14px">Your lines</div>'+lines(box):'')
+      +(theirs.length?'<div class="eyebrow" style="margin-top:14px">Their lines</div><ul class="lines">'+theirs.map(function(p){
+          return '<li><span class="p">'+esc(p.position)+'</span><span class="n">'+esc(p.name)+'</span><span class="l">'+esc(FR.statsLine(p.position,p.stats))+'</span></li>';
+        }).join('')+'</ul>':'')
+      +(box.edges&&box.edges.mine?'<div class="eyebrow" style="margin-top:14px">Why it went this way</div><ul class="gd-edges">'
+        +edgeRow('Your preparation',box.edges.mine.prep_adj,(box.edges.mine.prep?box.edges.mine.prep.preparation|0:0)+'% this week')
+        +edgeRow('Their preparation',box.edges.theirs?box.edges.theirs.prep_adj:0,(box.edges.theirs&&box.edges.theirs.prep?box.edges.theirs.prep.preparation|0:0)+'% this week')
+        +edgeRow('Your offense vs their defense',box.edges.mine.scheme,'scheme matchup')
+        +edgeRow('Their offense vs your defense',-(+(box.edges.theirs?box.edges.theirs.scheme:0)||0),'scheme matchup')
+        +'</ul><div class="ftp" style="margin-top:8px">Neutral field: no home edge. Effective ratings: your offense '+esc(box.edges.mine.offense)+', your defense '+esc(box.edges.mine.defense)+'; theirs '+esc(box.edges.theirs?box.edges.theirs.offense:'—')+' and '+esc(box.edges.theirs?box.edges.theirs.defense:'—')+'. '+esc(box.sim||'sim_v4')+'.</div>':'')
+      +'<div class="btn-row two" style="margin-top:16px"><button class="btn" type="button" id="shareFc">Share the result</button><a class="btn" href="/games/gameday/">Game Day</a></div>'
+      +(extra.fresh&&FR.owner()==='device'?'<div id="gdSave" style="margin-top:14px">'+G.conversionCard('fc_after')+'</div>':'');
+    var sh=$('shareFc');
+    if(sh)sh.addEventListener('click',function(){
+      var text=FR.challengeShareText(ch),url=location.origin+'/games/gameday/';
+      G.track('fc_share',{result:ch.result});
+      if(navigator.share){return navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});}
+      if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(text+'\n'+url).then(function(){G.toast('Copied — paste it anywhere');}).catch(function(){G.toast('Could not copy automatically');});}
+      G.toast('Copy this: '+url);
+    });
+    G.wireConversion(function(){var s=$('gdSave');if(s)setTimeout(function(){s.innerHTML='';},2500);});
+    try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){}
+  }
+
+  function h2hCard(){
+    return '<div class="sec"><div class="card"><div class="eyebrow">Head-to-Head</div>'
+      +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Play a real person on a real game. Your pick stays sealed until they lock theirs; a settled challenge pays your franchise Coach Points.</p>'
+      +'<div class="btn-row two"><a class="btn btn-go" href="/games/h2h/">Start a challenge</a><a class="btn" href="/games/groups/">Groups</a></div></div></div>';
+  }
+
+  /* ---- render ------------------------------------------------------------- */
+  /* the scouting report folds away and stays folded, per device */
+  function scoutOpen(){try{return localStorage.getItem('ed_gd_scout')!=='closed';}catch(_){return true;}}
+  var ROSTER_P=null;
+  function paintScout(snap,ph){
+    var box=$('gdScoutB'),m=$('gdScoutM'),det=$('gdScout');
+    if(!box||!ph.game||!ph.game.opponent)return;
+    if(det&&!det.__wired){det.__wired=1;det.addEventListener('toggle',function(){try{localStorage.setItem('ed_gd_scout',det.open?'open':'closed');}catch(_){}G.track('gameday_module',{module:'scout',open:det.open});});}
+    ROSTER_P=ROSTER_P||FR.roster();
+    ROSTER_P.then(function(r){
+      var d=r&&r.ok?r.data:null,players=d&&(d.players||d.roster);
+      if(!players){box.innerHTML='<div class="ftp">The roster could not be read. <a href="/games/roster/">Roster</a></div>';if(m)m.textContent='';return;}
+      var rep=FR.scoutingReport(players,snap.franchise,ph.game.opponent);
+      if(!rep){box.innerHTML='';return;}
+      if(m)m.textContent=(rep.edges.length?rep.edges.length+' edge'+(rep.edges.length===1?'':'s'):'no clear edge')+(rep.worries.length?' · '+rep.worries.length+' worr'+(rep.worries.length===1?'y':'ies'):'');
+      box.innerHTML='<div class="gd-scout-l">'+esc(rep.opponent.line)+'</div>'
+        +(rep.edges.length?'<ul class="gd-scout-e">'+rep.edges.map(function(e){return '<li><b class="v pos">+'+esc(e.value)+'</b><span class="t">'+esc(e.text)+'</span></li>';}).join('')+'</ul>':'<div class="ftp">No starter of yours has a clear edge against these schemes; the game is on the calls.</div>')
+        +(rep.worries.length?'<ul class="gd-scout-e">'+rep.worries.map(function(e){return '<li><b class="v neg">'+esc(e.value)+'</b><span class="t">'+esc(e.text)+'</span></li>';}).join('')+'</ul>':'')
+        +'<div class="ftp" style="margin-top:8px">Read off your starters’ archetypes against their schemes, the way the <a href="/games/roster/">roster</a> reads them. The lineup is yours to change until kickoff.</div>';
+    }).catch(function(){if(m)m.textContent='';});
+  }
+  function renderStage(){
+    var snap=FR.snapshot();
+    if(!snap||!snap.franchise){renderEmpty(FR.state());return;}
+    var ph=FR.gamePhase(snap);
+    stage.className='card gd';
+    stage.setAttribute('style',FR.themeVars(snap.franchise.theme));
+    if(ph.phase==='ready'||ph.phase==='waiting'){stage.innerHTML=pregame(snap,ph);paintScout(snap,ph);}
+    else stage.innerHTML=seasonCard(snap,ph);
+    wireStage(snap,ph);
+    if(!TRACKED){TRACKED=true;G.track('gameday_view',{phase:ph.phase,week:ph.game?ph.game.week:null,season:(snap.season||{}).number});}
+  }
+  /* a game just finished: the server has written this week's snapshot, so
+     ask for it again rather than guessing at it here */
+  function seasonReads(){
+    return Promise.all([
+      FR.rankings().then(function(r){if(r.ok&&r.data)RANKS=r.data;}),
+      FR.awards().then(function(r){if(r.ok&&r.data)AWARDS=r.data;}),
+      FR.championship().then(function(r){if(r.ok&&r.data)CHAMP=r.data;})
+    ]).then(renderAfter);
+  }
+  function renderAfter(){
+    var html='';
+    if(CHAMP&&CHAMP.scheduled)html+=titleSection(CHAMP);
+    if(RANKS&&RANKS.rows&&RANKS.rows.length)html+=rankingsSection(RANKS);
+    if(AWARDS&&AWARDS.races&&AWARDS.races.length)html+=awardsSection(AWARDS);
+    if(MINE)html+=challengesSection(MINE);
+    if(LADDER)html+=ladderSection(LADDER);
+    if(SCHED){html+=scheduleSection(SCHED)+historySection(SCHED);}
+    html+=h2hCard();
+    after.innerHTML=html;
+    if(MINE)wireChallenges();
+  }
+
+  /* ---- season_v1: the league, the races, the title game -------------------
+     Every number below is read from the server's own weekly snapshot. The
+     page does no ranking, no scoring and no picking; it lays out what the
+     record says and names the reason beside it. */
+  function movePill(m,prev){
+    if(prev==null)return '<span class="rk-m new">NEW</span>';
+    if(!m)return '<span class="rk-m even">—</span>';
+    return '<span class="rk-m '+(m>0?'up':'down')+'">'+(m>0?'▲':'▼')+Math.abs(m)+'</span>';
+  }
+  function rankRow(r){
+    /* A CLUB YOU HAVE NOT PLAYED HAS NO RECORD THE RECORD KNOWS ABOUT, so
+       saying 0–0 and then explaining it in a sentence that does not fit is
+       two lies in one line. It says what it is rated on and stops. */
+    var played=(r.played|0)>0;
+    var line=played
+      ? esc((r.wins|0)+'–'+(r.losses|0))+((r.why||[])[0]?' · '+esc((r.why||[])[0]):'')
+      : 'Roster '+esc(r.roster)+' · not played yet';
+    return '<li class="rk-row'+(r.mine?' me':'')+'">'
+      +'<span class="rk-n">'+esc(r.rank|0)+'</span>'
+      +movePill(r.movement,r.previous)
+      +FR.logoSvg(r.logo,24,r.theme)
+      +'<span class="rk-t">'+esc((r.city?r.city+' ':'')+(r.name||''))
+      +'<small>'+line+'</small></span>'
+      +'<span class="rk-r">'+esc(r.rating)+'</span></li>';
+  }
+  function moverLine(label,r){
+    if(!r)return '';
+    return '<div class="rk-mv"><div class="k">'+esc(label)+'</div>'
+      +'<div class="v">'+esc((r.city?r.city+' ':'')+(r.name||''))+' <em>'+esc(FR.moveWord(r.movement))+' to '+esc(r.rank|0)+'</em></div></div>';
+  }
+  function rankingsSection(rk){
+    var top=(rk.rows||[]).slice(0,10),me=rk.me;
+    var inTop=top.some(function(r){return r.mine;});
+    return '<div class="sec"><div class="sec-h"><h2>EdgeDesk Power Rankings</h2>'
+      +'<span class="m">Week '+esc(rk.week|0)+' · '+esc(rk.label||'')+'</span></div>'
+      +'<div class="card rk">'
+      +'<ul class="rk-list">'+top.map(rankRow).join('')
+      +(!inTop&&me?'<li class="rk-gap">·&nbsp;·&nbsp;·</li>'+rankRow(me):'')+'</ul>'
+      +'<div class="rk-movers">'
+        +moverLine('Biggest jump',rk.biggest_jump)
+        +moverLine('Biggest drop',rk.biggest_drop)
+        +'<div class="rk-mv"><div class="k">Risers</div><div class="v">'+esc((rk.risers||[]).length)+' up · '+esc((rk.fallers||[]).length)+' down</div></div>'
+        +((rk.new_top_ten||[]).length?'<div class="rk-mv"><div class="k">New in the top ten</div><div class="v">'
+          +(rk.new_top_ten||[]).map(function(r){return esc(r.name);}).join(', ')+'</div></div>':'')
+      +'</div>'
+      +'<div class="ftp">The rating is roster strength moved by what has actually happened: record, average margin capped at '
+      +esc((FR.SEASON_RULES||{}).margin_cap||21)+', who you played, recent form, wins over clubs rated above you and losses to clubs well below. It is not a sort by record.</div>'
+      +'</div></div>';
+  }
+  function awardCard(race){
+    var c=(race.candidates||[]);
+    if(!c.length)return '';
+    return '<div class="aw-race"><div class="aw-h"><span class="n">'+esc(race.name)+'</span><span class="b">'+esc(race.basis||'')+'</span></div>'
+      +'<ol class="aw-list">'+c.map(function(x){
+        return '<li'+(x.place===1?' class="lead"':'')+'>'
+          +'<span class="p">'+esc(x.place|0)+'</span>'
+          +movePill(x.movement,x.previous)
+          +'<span class="t">'+esc(x.name)+' <em>'+esc(x.position)+'</em>'
+          +'<small>'+esc(x.line)+' · '+esc(x.team_record)+'</small></span>'
+          +'<span class="s">'+esc(x.score|0)+'</span></li>';
+      }).join('')+'</ol></div>';
+  }
+  function awardsSection(aw){
+    var run=(aw.races||[]).filter(function(r){return (r.candidates||[]).length;});
+    if(!run.length)return '';
+    return '<div class="sec"><div class="sec-h"><h2>Award Watch</h2><span class="m">Week '+esc(aw.week|0)+' · '+esc(run.length)+' races</span></div>'
+      +'<div class="card aw">'+run.map(awardCard).join('')
+      +'<div class="ftp">Every score is a rate for the position, not a total — a back is measured against backs and a corner against corners. '
+      +'No overall is consulted anywhere in it. Scored over '+esc(aw.scope||'the men whose games this record keeps')+'.</div></div></div>';
+  }
+  function titleSection(ch){
+    if(!ch.played)return titlePregame(ch);
+    return titlePostgame(ch);
+  }
+  function titlePregame(ch){
+    var cl=ch.club||{},op=ch.opponent||{},r=cl.rating||{};
+    return '<div class="sec ttl"><div class="sec-h"><h2>'+esc(ch.name||'The EdgeDesk Championship')+'</h2>'
+      +'<span class="m">Week '+esc(ch.week|0)+' · '+esc(ch.label||'')+'</span></div>'
+      +'<div class="card ttl-c">'
+      +'<div class="ttl-vs">'
+        +'<div class="s"><div class="ab">'+esc(cl.abbr)+'</div><div class="n">'+esc(cl.name)+'</div><div class="rc">'+esc(cl.record)+'</div>'
+          +'<div class="rt">OVR '+esc(r.overall)+' · OFF '+esc(r.offense)+' · DEF '+esc(r.defense)+'</div></div>'
+        +'<div class="x">for the title</div>'
+        +'<div class="s"><div class="ab">'+esc(op.abbr)+'</div><div class="n">'+esc(op.name)+'</div><div class="rc">'+esc(op.record||'')+'</div>'
+          +'<div class="rt">OVR '+esc(op.overall)+' · OFF '+esc(op.offense_r)+' · DEF '+esc(op.defense_r)+'</div></div>'
+      +'</div>'
+      +'<div class="ttl-key"><div class="t">Where it turns</div><div class="s">'+esc((ch.key_matchup||{}).text||'')+'. '+esc(ch.edge||'')+'.</div></div>'
+      +((ch.stars||[]).length?'<div class="eyebrow" style="margin-top:14px">The men who got you here</div>'
+        +'<ul class="ttl-stars">'+(ch.stars||[]).slice(0,5).map(function(x){
+          return '<li><span class="t">'+esc(x.name)+' <em>'+esc(x.position)+'</em><small>'+esc(x.line)+'</small></span>'
+            +'<span class="s">'+esc(x.score|0)+'</span></li>';}).join('')+'</ul>':'')
+      +((ch.finalists||[]).length?'<div class="eyebrow" style="margin-top:14px">Award finalists on this roster</div>'
+        +'<ul class="ttl-fin">'+(ch.finalists||[]).map(function(a){
+          return '<li><span class="k">'+esc(a.award)+'</span><span class="v">'+esc(a.name)+' <em>'+esc(a.position)+'</em> · '+esc(a.line)+'</span></li>';
+        }).join('')+'</ul>':'')
+      +'<div class="eyebrow" style="margin-top:14px">The path</div>'
+      +'<ul class="ttl-path">'+(ch.path||[]).map(function(g){
+        return '<li class="'+(g.result==='W'?'w':g.result==='L'?'l':'')+'"><span class="w">Wk '+esc(g.week)+'</span>'
+          +'<span class="o">'+esc(g.opponent||'')+'</span><span class="r">'+esc(g.score||g.status||'')+'</span></li>';
+      }).join('')+'</ul>'
+      +'<div class="ftp">'+esc((ch.stadium||{}).note||'a neutral field')+'. The lineup is introduced before the kick.</div>'
+      +'</div></div>';
+  }
+  function titlePostgame(ch){
+    var f=ch.final||{},mvp=ch.mvp||null,won=!!ch.won;
+    return '<div class="sec ttl'+(won?' won':'')+'"><div class="sec-h"><h2>'+esc(ch.whistle||'')+'</h2>'
+      +'<span class="m">'+esc(ch.name||'')+' · '+esc(ch.label||'')+'</span></div>'
+      +'<div class="card ttl-c">'
+      +(won?'<div class="ttl-conf" aria-hidden="true">'+new Array(13).join('<i></i>')+'</div>':'')
+      +'<div class="ttl-final">'+esc(f['for']|0)+'<span>–</span>'+esc(f.against|0)+'</div>'
+      +'<div class="ttl-head">'+esc(ch.headline||'')+'</div>'
+      +'<ul class="ttl-cel">'+(ch.celebration||[]).map(function(l){return '<li>'+esc(l)+'</li>';}).join('')+'</ul>'
+      +(ch.trophy?'<div class="ttl-tro"><div class="t">'+esc(ch.trophy.name)+'</div>'
+        +'<div class="s">Presented to '+esc(ch.trophy.presented_to)+' · '+esc(ch.trophy.season)+' · '+esc(ch.trophy.record)+'</div></div>':'')
+      +(mvp?'<div class="ttl-mvp"><div class="k">Most Valuable Player</div>'
+        +'<div class="n">'+esc(mvp.name)+' <em>'+esc(mvp.position)+'</em></div>'
+        +'<div class="s">'+esc(mvp.line)+'</div>'
+        +'<div class="w">'+esc((mvp.why||[]).join(' · '))+'</div>'
+        +'<div class="b">Named from '+esc(mvp.basis||'the box score')+'.</div></div>':'')
+      +((ch.awards||[]).length?'<div class="eyebrow" style="margin-top:14px">The season\'s awards</div>'
+        +'<ul class="ttl-fin">'+(ch.awards||[]).map(function(a){
+          return '<li><span class="k">'+esc(a.award)+'</span><span class="v">'+esc(a.winner)+' <em>'+esc(a.position)+'</em> · '+esc(a.line)+'</span></li>';
+        }).join('')+'</ul>':'')
+      +(ch.vault?'<div class="ttl-vault"><div class="t">Championship Vault</div>'
+        +'<div class="s">'+(ch.vault.status==='sealed'?'Sealed and waiting in the Vault.':'Opened.')+'</div>'
+        +'<div class="btn-row"><a class="btn btn-go" href="/games/packs/">Open the Vault</a></div></div>':'')
+      +'<div class="ttl-leg">'+esc((ch.legacy||{}).line||'')+'</div>'
+      +'</div></div>';
+  }
+  function wireStage(snap,ph){
+    var pb=$('playBtn');
+    if(pb)pb.addEventListener('click',function(){play(pb,snap,ph);});
+    var cb=$('callBtn');
+    if(cb)cb.addEventListener('click',function(){openCalled(cb,snap,ph);});
+    var sb=$('startBtn');
+    if(sb)sb.addEventListener('click',function(){startSeason(sb);});
+  }
+  function play(btn,snap,ph){
+    btn.disabled=true;btn.textContent='Playing…';
+    G.track('weekly_game_started',{week:ph.game.week,season:(snap.season||{}).number,rival:!!ph.game.rival,home:!!ph.game.home,preparation:(snap.prep||{}).preparation});
+    FR.playWeek().then(function(r){
+      if(!r.ok||!r.data||!r.data.game){
+        G.toast(r.message||'The game could not be played. Try again.');
+        btn.disabled=false;btn.textContent='Play '+(ph.game.bowl?(ph.game.bowl_name||'the bowl'):'Week '+ph.game.week);
+        /* the server said when it opens: repaint from a fresh snapshot */
+        return FR.home().then(renderStage);
+      }
+      var d=r.data,g=d.game;
+      G.track('weekly_game_completed',{week:g.week,season:d.season?d.season.number:null,result:g.result,score_for:g.score_for,score_against:g.score_against,rival:!!g.rival,ot:!!g.ot,xp:d.rewards?d.rewards.xp:null});
+      (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:'gameday'});});
+      if(d.season_complete)G.track('season_complete',{season:d.season?d.season.number:null,wins:d.season?d.season.wins:null,losses:d.season?d.season.losses:null});
+      showResult(g,snap,{rewards:G.rewardPanel(r),season:d.season,fresh:true,complete:!!d.season_complete});
+      /* the snapshot and the schedule, refreshed from the server */
+      return FR.home().then(function(){return FR.schedule();}).then(function(s){if(s.ok&&s.data){SCHED=s.data;}renderAfter();return seasonReads();});
+    });
+  }
+  /* ---- THE DRIVES YOU CALL (Phase 13, snap_v1) ---------------------------
+     A CALL IS A DECISION, NEVER A RESULT. This page sends 'air' and gets
+     back what the server's own seeded simulator did with it. Nothing here
+     decides an outcome, keeps a score, or holds a half-played game: the
+     calls live on the game row, and every drive already played comes back
+     identical on the next call. Reload mid-game and you are where you were.
+     The last call comes back with the finished game — the same payload,
+     rewards and achievements quick play returns. */
+  var CALLED=null;   /* {drives:[], of:n, called:n} — what the server last said */
+
+  function openCalled(btn,snap,ph){
+    btn.disabled=true;btn.textContent='Opening…';
+    G.track('weekly_game_started',{week:ph.game.week,season:(snap.season||{}).number,rival:!!ph.game.rival,home:!!ph.game.home,preparation:(snap.prep||{}).preparation,mode:'called'});
+    FR.gameOpen().then(function(r){
+      if(!r.ok||!r.data){
+        G.toast(r.message||'The game could not be opened. Try again.');
+        return FR.home().then(renderStage);
+      }
+      CALLED={drives:(r.data.played||[]),of:(r.data.possessions|0)||(r.data.drives|0),called:r.data.called|0,
+              side:(r.data.next||{}).side||'off',clock:null};
+      renderCalled(snap,ph);
+    });
+  }
+  /* the scoreboard, the play-by-play so far, and the four calls */
+  function calledCard(snap,ph){
+    var f=snap.franchise,g=ph.game,opp=g.opponent||{},ss=snap.season||{};
+    var last=CALLED.drives.length?CALLED.drives[CALLED.drives.length-1]:null;
+    var me=last?last.me|0:0,op=last?last.op|0:0;
+    var n=(CALLED.called|0)+1,of=CALLED.of|0,done=n>of;
+    /* WHAT THIS ONE IS WORTH (moment_v1). The same number the server computes
+       and stamps on the drive — this page only says it out loud. */
+    /* possessions left for YOU, which is what the stake is priced on: the
+       remaining possessions are shared out between the two of you */
+    var left=Math.max(1,Math.ceil((of-(CALLED.called|0))/2)),st=FR.stake(me-op,left),key=FR.isKey(st);
+    var def=(CALLED.side==='def'),ck=FR.clockLine(CALLED.clock==null?FR.CLOCK.quarters*FR.CLOCK.quarter_seconds:CALLED.clock);
+    return '<div class="eyebrow">Game Day · '+esc(ss.label||'Season I')+' · '
+      +(g.bowl?esc(g.bowl_name||'The bowl'):'Week '+esc(g.week)+' of '+esc(ss.weeks||8))+'</div>'
+      +'<div class="sn-board'+(key?' key':'')+'">'
+      +'<div class="side"><div class="ab">'+esc(f.abbr)+'</div><div class="n">'+esc(me)+'</div></div>'
+      +'<div class="mid"><span class="ck">Q'+esc(ck.q)+' · '+esc(ck.label)+'</span>'
+        +(done?'Last possession':'Possession '+esc(n)+' of '+esc(of))+'<br>'+(g.home?'Home':'Away')+'</div>'
+      +'<div class="side"><div class="ab">'+esc(opp.abbr)+'</div><div class="n">'+esc(op)+'</div></div>'
+      +'</div>'
+      +(key
+        ?'<div class="sn-key"><div class="t">This one decides it</div>'
+          +'<div class="s">'+esc(FR.stakeLine(me-op,left))+'. Whatever you call here is the call the game is remembered for.</div></div>'
+        :'')
+      /* WHICHEVER SIDE OF THE BALL THIS ONE IS ON (Phase 15). You call all of
+         them now — your own possessions and theirs. */
+      +'<div class="eyebrow" style="margin-top:14px">'+(def?'Your defense':'Your call')+'</div>'
+      +'<div class="sn-who">'+(def
+        ?esc(FR.opponentTitle(opp))+' have the ball. They run '+esc((opp.style||'').toLowerCase()||'their own thing')+' — read it and take it away.'
+        :'Your ball.')+'</div>'
+      /* ON DEFENSE it is the four fronts. ON OFFENSE it is YOUR PLAYBOOK
+         (Phase 16), grouped by formation — because which formation you line
+         up in is what the other side reads, and a trick play only works out
+         of a formation that lies. */
+      +(def
+        ?'<ul class="sn-calls def">'+FR.callsFor('def').map(function(c){
+            return '<li><button type="button" class="snapBtn" data-call="'+esc(c.key)+'">'
+              +'<span class="t">'+esc(c.name)+'</span><span class="s">'+esc(c.means)+'</span></button></li>';
+          }).join('')+'</ul>'
+        :FR.playbook(f.offense).map(function(fm){
+            return '<div class="pb-set">'
+              +'<div class="pb-head"><span class="n">'+esc(fm.name)+'</span>'
+                +'<span class="tell '+(fm.tell<-0.15?'run':fm.tell>0.15?'pass':'')+'">'+esc(FR.tellLine(fm.tell))+'</span></div>'
+              +'<div class="pb-means">'+esc(fm.means)+'</div>'
+              +'<ul class="sn-calls pb">'+fm.plays.map(function(pl){
+                  return '<li><button type="button" class="snapBtn'+(pl.type==='trick'?' trick':'')+'" data-call="'+esc(pl.key)+'">'
+                    +'<span class="t">'+esc(pl.name)+(pl.type==='trick'?' <em>trick</em>':'')+'</span>'
+                    +'<span class="s">'+esc(pl.means)+'</span></button></li>';
+                }).join('')+'</ul>'
+              +'</div>';
+          }).join(''))
+      +'<div class="ftp" style="margin-top:8px">'
+      +(def?'A front is one more input beside home field, preparation and the scheme matchup — the server resolves the possession and this page is told what happened. '
+           :'The formation you line up in is what they read, and a trick play only works out of one that lies. Call the same trick twice and they stop buying it. ')
+      +'You never see their card before you answer it. Leave and come back and the game is where you left it.</div>'
+      /* THE MEASUREMENT SAID HALF THE LATE POSSESSIONS ARE TAPS ON A GAME
+         ALREADY OVER. When nothing is at stake, one tap finishes it — every
+         possession left called Balanced, which is what quick play always was. */
+      +(!key&&st<0.05&&left>1&&CALLED.drives.length
+        ?'<div class="sn-out"><div class="s">Nothing is riding on the '+esc(left)+' possessions left.</div>'
+          +'<button class="btn" type="button" id="finishBtn">Play the rest out</button></div>'
+        :'')
+      +(CALLED.drives.length
+        ?'<div class="eyebrow" style="margin-top:16px">The drives so far</div><ul class="sn-log">'
+          +CALLED.drives.map(function(d){return driveRow(d,f,opp);}).join('')+'</ul>'
+        :'<div class="ftp" style="margin-top:16px">Nothing has happened yet. '+esc(of)+' possessions to go.</div>');
+  }
+  function driveRow(d,f,opp){
+    var mine=d.side==='me',scored=(d.pts|0)>0;
+    return '<li class="'+(mine?'me':'')+(scored?' sc':'')+(d.key?' key':'')+'">'
+      +'<span class="q">Q'+esc(d.q|0)+'</span>'
+      +'<span class="d">'+esc(FR.driveLine(d))
+      +(mine&&d.play?'<em>'+esc(FR.playLine(d))+(d.front?' · they were in '+esc((FR.frontCall(d.front)||{}).name||d.front):'')+'</em>'
+        :mine&&d.call?'<em>You called '+esc((FR.snapCall(d.call)||{}).name||d.call)+'</em>'
+        :(d.front?'<em>They ran '+esc((FR.snapCall(d.call)||{}).name||d.call||'it')+' · you played '+esc((FR.frontCall(d.front)||{}).name||d.front)+'</em>'
+          :'<em>'+esc(FR.opponentTitle(opp))+'</em>'))
+      +'</span>'
+      +'<span class="sc-n">'+esc(d.me|0)+'–'+esc(d.op|0)+'</span></li>';
+  }
+  function renderCalled(snap,ph){
+    stage.className='card gd';
+    stage.setAttribute('style',FR.themeVars(snap.franchise.theme));
+    stage.innerHTML=calledCard(snap,ph);
+    var bs=stage.querySelectorAll('.snapBtn');
+    Array.prototype.forEach.call(bs,function(b){
+      b.addEventListener('click',function(){makeCall(b,bs,snap,ph);});
+    });
+    var fb=$('finishBtn');
+    if(fb)fb.addEventListener('click',function(){playOut(fb,bs,snap,ph);});
+    try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){}
+  }
+  function makeCall(btn,all,snap,ph){
+    Array.prototype.forEach.call(all,function(b){b.disabled=true;});
+    var key=btn.getAttribute('data-call');
+    FR.gameCall(key).then(function(r){
+      if(!r.ok||!r.data){
+        G.toast(r.message||'That possession could not be played. Try again.');
+        Array.prototype.forEach.call(all,function(b){b.disabled=false;});
+        return;
+      }
+      var d=r.data;
+      if(d.complete){
+        var g=d.game;
+        G.track('weekly_game_completed',{week:g.week,season:d.season?d.season.number:null,result:g.result,score_for:g.score_for,score_against:g.score_against,rival:!!g.rival,ot:!!g.ot,xp:d.rewards?d.rewards.xp:null,mode:'called'});
+        (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:'gameday'});});
+        if(d.season_complete)G.track('season_complete',{season:d.season?d.season.number:null,wins:d.season?d.season.wins:null,losses:d.season?d.season.losses:null});
+        CALLED=null;
+        showResult(g,snap,{rewards:G.rewardPanel(r),season:d.season,fresh:true,complete:!!d.season_complete});
+        return FR.home().then(function(){return FR.schedule();}).then(function(sc){if(sc.ok&&sc.data){SCHED=sc.data;}renderAfter();return seasonReads();});
+      }
+      /* the server sent back this possession and whatever answered it */
+      CALLED={drives:CALLED.drives.concat(d.drive||[]),of:(d.possessions|0)||(d.drives|0),called:d.called|0,
+              side:(d.next||{}).side||'off',clock:d.clock};
+      renderCalled(snap,ph);
+    });
+  }
+
+  /* one tap for a game that is already over. The server calls the published
+     default for every possession left and finishes through franchise_play_game
+     — the same door quick play and the last call both go through. */
+  function playOut(btn,all,snap,ph){
+    btn.disabled=true;btn.textContent='Playing it out…';
+    Array.prototype.forEach.call(all,function(b){b.disabled=true;});
+    FR.gameFinish().then(function(r){
+      if(!r.ok||!r.data||!r.data.game){
+        G.toast(r.message||'The game could not be played out. Try again.');
+        btn.disabled=false;btn.textContent='Play the rest out';
+        Array.prototype.forEach.call(all,function(b){b.disabled=false;});
+        return;
+      }
+      var d=r.data,g=d.game;
+      G.track('weekly_game_completed',{week:g.week,season:d.season?d.season.number:null,result:g.result,score_for:g.score_for,score_against:g.score_against,rival:!!g.rival,ot:!!g.ot,xp:d.rewards?d.rewards.xp:null,mode:'played_out'});
+      (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:'gameday'});});
+      if(d.season_complete)G.track('season_complete',{season:d.season?d.season.number:null,wins:d.season?d.season.wins:null,losses:d.season?d.season.losses:null});
+      CALLED=null;
+      showResult(g,snap,{rewards:G.rewardPanel(r),season:d.season,fresh:true,complete:!!d.season_complete});
+      return FR.home().then(function(){return FR.schedule();}).then(function(sc){if(sc.ok&&sc.data){SCHED=sc.data;}renderAfter();return seasonReads();});
+    });
+  }
+
+  function startSeason(btn){
+    btn.disabled=true;btn.textContent='Scheduling…';
+    FR.startSeason().then(function(r){
+      if(!r.ok){G.toast(r.message||'Could not start the season.');btn.disabled=false;btn.textContent='Start the season';return;}
+      if(r.data&&r.data.started){
+        G.track('season_started',{season:r.data.season_number});
+        var h=r.data.home||{},ng=h.next_game;
+        G.toast((h.season?h.season.label:'The season')+' is under way'+(ng?' · Week 1 '+FR.matchupLine(ng):''));
+      }
+      renderStage();
+      return FR.schedule().then(function(s){if(s.ok&&s.data)SCHED=s.data;renderAfter();});
+    });
+  }
+  function showResult(game,snap,extra){
+    stage.className='card gd'+(game.championship?' gd-ttl':'');
+    stage.setAttribute('style',FR.themeVars(snap.franchise.theme));
+    /* THE TITLE GAME DOES NOT ARRIVE LOOKING LIKE A TUESDAY. The full
+       ceremony — the trophy, the man who won it, the confetti — is the
+       championship section below, drawn from the server's own package; this
+       is the line that tells you which game you just played. */
+    stage.innerHTML=(game.championship
+      ?'<div class="ttl-whistle'+(game.result==='W'?' won':'')+'">'
+        +'<div class="k">'+esc(game.bowl_name||'The EdgeDesk Championship')+'</div>'
+        +'<div class="t">'+(game.result==='W'?'CHAMPIONS':'IT ENDS HERE')+'</div></div>'
+      :'')
+      +resultCard(game,snap,extra)
+      +(extra.complete?'<div class="gd-done" style="margin-top:14px"><div class="t">'+esc((extra.season||{}).label||'The season')+' is complete: '+esc(((extra.season||{}).wins|0)+'–'+((extra.season||{}).losses|0))+'.</div>'
+        +'<div class="s">The next one starts whenever you say. The careers and the record stay.</div>'
+        +'<div class="btn-row"><button class="btn btn-go" type="button" id="startBtn">Start the next season</button></div></div>':'')
+      /* the one form that keeps it: only for a franchise that lives on this device */
+      +(extra.fresh&&FR.owner()==='device'?'<div id="gdSave" style="margin-top:14px">'+G.conversionCard('gameday_after')+'</div>':'');
+    var sh=$('shareGame');
+    if(sh)sh.addEventListener('click',function(){shareGame(game,snap,extra.season);});
+    var sb=$('startBtn');
+    if(sb)sb.addEventListener('click',function(){startSeason(sb);});
+    G.wireConversion(function(){var s=$('gdSave');if(s)setTimeout(function(){s.innerHTML='';},2500);});
+    try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){}
+  }
+  function shareGame(game,snap,season){
+    var text=FR.gameShareText(snap.franchise,game,season||snap.season),url=location.origin+'/games/gameday/';
+    G.track('game_share',{week:game.week,result:game.result});
+    if(navigator.share){return navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});}
+    var payload=text+'\n'+url;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(payload).then(function(){G.toast('Copied — paste it anywhere');}).catch(function(){G.toast('Could not copy automatically');});
+    }
+    G.toast('Copy this: '+url);
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  G.franchiseReady().then(function(){
+    var st=FR.state();
+    if(VIEW_FC&&st!=='not_deployed'){
+      /* the link is the key: it reads with or without a franchise */
+      return FR.challengePeek(VIEW_FC).then(function(p){
+        renderInvite(p.ok?p.data:null);
+        if(st!=='franchise'){after.innerHTML=h2hCard();return;}
+        return Promise.all([FR.challengesMine(),FR.ladder(10),FR.schedule()]).then(function(rs){
+          if(rs[0].ok&&rs[0].data)MINE=rs[0].data;if(rs[1].ok&&rs[1].data)LADDER=rs[1].data;if(rs[2].ok&&rs[2].data)SCHED=rs[2].data;renderAfter();
+        });
+      });
+    }
+    if(st!=='franchise'){renderEmpty(st);return;}
+    renderStage();
+    var loads=[FR.schedule().then(function(s){if(s.ok&&s.data)SCHED=s.data;renderAfter();}),
+      FR.challengesMine().then(function(m){if(m.ok&&m.data)MINE=m.data;renderAfter();}),
+      FR.ladder(10).then(function(l){if(l.ok&&l.data)LADDER=l.data;renderAfter();}),
+      /* season_v1 — the league table, the races and the title game, all read */
+      FR.rankings().then(function(r){if(r.ok&&r.data)RANKS=r.data;renderAfter();}),
+      FR.awards().then(function(r){if(r.ok&&r.data)AWARDS=r.data;renderAfter();}),
+      FR.championship().then(function(r){if(r.ok&&r.data)CHAMP=r.data;renderAfter();})];
+    if(VIEW_GAME)loads.push(FR.game(VIEW_GAME).then(function(r){
+      if(r.ok&&r.data){showResult(r.data,FR.snapshot(),{season:null});}
+    }));
+    return Promise.all(loads);
+  }).catch(function(){renderEmpty(FR.state());});
+  document.addEventListener('edgames:franchise',function(){
+    /* a save, a claim or a sign-in changed who is on screen: repaint the
+       schedule's owner line without losing a result being read */
+    if(!$('shareGame')&&!$('shareFc')&&!VIEW_FC)renderStage();
+  });
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>

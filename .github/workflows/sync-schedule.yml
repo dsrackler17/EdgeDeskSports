@@ -1,0 +1,138 @@
+name: Sync the Collective schedule
+
+# A slate can only attach to a game the Collective already holds, so a week
+# the schedule is short of is a week creators lose rows to -- silently, and
+# with no fix available from their side. This keeps the schedule complete
+# without anybody remembering to.
+#
+# Daily rather than weekly on purpose: a week is not loaded all at once.
+# Kickoffs get set, non-conference games get added, and a creator posting on
+# Tuesday for a Saturday slate needs the games that appeared on Wednesday.
+#
+# It is IDEMPOTENT, which is what makes running it on a schedule safe rather
+# than merely convenient: a fixture already held is not offered again, and a
+# fixture whose facts already agree produces no write. A day on which nothing
+# changed costs a handful of reads and writes nothing at all. The weeks it
+# looks at are the current one and the two after it, and "current" is the same
+# resolver the site shows Current with -- so the week creators are about to
+# post for is always one of them.
+#
+# It writes with the SERVICE ROLE (SB_SERVICE_ROLE / SB_URL), the credential
+# this repository's jobs actually hold. It used to require an admin refresh
+# token that was never set, and so had never loaded a single game.
+on:
+  schedule:
+    # Twice a day, not once. A kickoff moved for television is announced
+    # during the afternoon and a once-a-morning job carries the old time until
+    # the next one -- which, on a Friday, is a Saturday slate that locks
+    # submissions at the wrong minute. Both runs are the same idempotent
+    # sync: a day on which nothing changed writes nothing.
+    - cron: '20 9 * * *'
+    - cron: '20 21 * * *'
+  workflow_dispatch:
+    inputs:
+      sport:
+        description: 'Limit to one sport code (NFL, CFB). Blank = all.'
+        required: false
+        default: ''
+      season:
+        description: 'Override the season. Blank = whatever the Collective says is current.'
+        required: false
+        default: ''
+      week:
+        description: 'One specific week. Blank = the current week and the next.'
+        required: false
+        default: ''
+      commit:
+        description: 'Actually load the missing games. Unchecked is a dry run.'
+        type: boolean
+        required: false
+        default: false
+      report_schema:
+        description: 'Also print the collective schema exactly as production serves it (relations, columns, routines; no rows).'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # Two runs loading the same week race each other into the same upsert.
+  group: sync-schedule
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Matching logic must pass before it is allowed to write
+        run: node tools/collective/sync_schedule.test.js
+
+      # WHICH WEEKS THIS JOB LOOKS AT is decided by the same resolver the site
+      # decides Current with. It used to be a private copy carrying the same
+      # 36-hour-lookback defect the server had, so a daily run loaded the week
+      # that was already over and the week being played, and never the week
+      # creators were about to post for.
+      - name: The week resolution must pass before it is allowed to write
+        run: node tools/collective/week_resolution.test.js
+
+      - name: Prove the source is live before anything is written
+        run: node tools/collective/sync_schedule.js --verify || true
+
+      # WHAT IS ACTUALLY THERE. A sync or a settle that refuses because a
+      # table or column is not in the schema names what it wanted; this
+      # names what production holds instead. Relations, columns and routines
+      # only -- no row is read and no value is printed.
+      - name: Report the collective schema as production serves it
+        if: ${{ inputs.report_schema }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          set -o pipefail
+          node tools/collective/schema_report.js | tee schema.txt
+          {
+            echo '## Collective schema (production)'
+            echo '```'
+            cat schema.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sync
+        env:
+          # THE DOOR THIS JOB WRITES THROUGH is the service role -- the same
+          # SB_SERVICE_ROLE / SB_URL the settle job already uses. It reads the
+          # season straight off the database, creates the teams and games it is
+          # short of, and updates a fixture that moved in place. The admin
+          # refresh token is the other door, used when it is the credential a
+          # run has. This job used to REQUIRE the admin token and exit green
+          # without it, which it did on every scheduled run there has ever
+          # been: nothing was loaded, ever, and the week creators were posting
+          # for was on the site only because somebody loaded it by hand.
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
+        run: |
+          ARGS=""
+          # A scheduled run loads. A manual run loads only when asked, so the
+          # dry run stays the way you inspect a week before writing it.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          fi
+          if [ -n "${{ inputs.sport }}" ];  then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
+          if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
+          if [ -n "${{ inputs.week }}" ];   then ARGS="$ARGS --week ${{ inputs.week }}"; fi
+          if [ -z "$EDGD_SB_SERVICE$EDGD_SB_URL$COLLECTIVE_ADMIN_REFRESH_TOKEN" ]; then
+            echo "::error::Neither SB_SERVICE_ROLE + SB_URL nor COLLECTIVE_ADMIN_REFRESH_TOKEN is set — nothing can be loaded."
+            echo "The verify step above still shows whether the source answered."
+            exit 1
+          fi
+          node tools/collective/sync_schedule.js $ARGS

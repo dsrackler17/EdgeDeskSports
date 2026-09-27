@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>CFB Model Lab</title>
+<meta name="description" content="Internal research terminal for the EdgeDesk college football Model Lab: every model snapshot, graded, compared and governed.">
+<!--
+  THE CFB MODEL LAB — an internal research terminal, not a product page.
+  It reads two committed artifacts and computes nothing of its own:
+
+    football/cfb_lab/reports/<season>/lab.json       every number on this page,
+                                                     written by
+                                                     football/cfb_lab/report.js
+                                                     from the append-only ledger
+    football/cfb_lab/reports/<season>/last_run.json  the hourly job's own log
+                                                     (optional: job health)
+
+  The season is ?season=YYYY, else 2026. Definitions live in
+  docs/cfb-lab/METRICS.md; this page only formats what report.js wrote
+  (lines 1 dp, MAE 2 dp, probabilities 3 dp, percents 1 dp), prints each
+  metric's sample-size label beside it and "—" for a null.
+
+  OFFICIAL = the LIVE T24 snapshot. GIT_RECONSTRUCTED and REPLAY rows live in
+  lab.json's `reconstructed` block, are rendered only in the last section
+  under a NOT OFFICIAL banner, and are never mixed into a live figure.
+
+  All rendering is a pure block between the EDLAB markers below (data in, HTML
+  string out, no DOM access) so football/cfb_lab/ui.test.js can run the very
+  code this page runs, offline, against real and generated lab.json files.
+-->
+<style>
+.viz-root{
+  color-scheme:dark;
+  --page:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;
+  --text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--grid:#2c2a23;--axis:#3a3326;
+  --series-1:#3987e5;--series-1-soft:rgba(57,135,229,.16);
+  --warning:#fab219;--critical:#e05252;--good:#2fb82f;
+  --warning-soft:rgba(250,178,25,.12);--critical-soft:rgba(224,82,82,.12);--good-soft:rgba(47,184,47,.12);
+}
+@media (prefers-color-scheme: light){
+  :root:where(:not([data-theme="dark"])) .viz-root{
+    color-scheme:light;
+    --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+    --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
+    --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+    --warning:#a86b00;--critical:#b42323;--good:#0b7a0b;
+    --warning-soft:rgba(168,107,0,.10);--critical-soft:rgba(180,35,35,.08);--good-soft:rgba(11,122,11,.08);
+  }
+  html:where(:not([data-theme="dark"])){background:#f9f9f7}
+}
+:root[data-theme="light"] .viz-root{
+  color-scheme:light;
+  --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+  --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
+  --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+  --warning:#a86b00;--critical:#b42323;--good:#0b7a0b;
+  --warning-soft:rgba(168,107,0,.10);--critical-soft:rgba(180,35,35,.08);--good-soft:rgba(11,122,11,.08);
+}
+*{box-sizing:border-box;margin:0}
+html{background:#100e0a}
+:root[data-theme="light"]{background:#f9f9f7}
+body.viz-root{background:var(--page);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.45;overflow-x:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px 48px}
+header{border-bottom:1px solid var(--border);padding:14px 0 10px}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:18px;font-weight:700}
+.tag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:12px;padding:2px 8px;font-weight:600}
+.sub{color:var(--dim);font-size:12.5px;margin-top:6px;max-width:860px;overflow-wrap:anywhere}
+.err{color:var(--critical);font-size:13px;margin-top:8px}
+.toc{position:sticky;top:0;z-index:5;background:var(--page);border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px 14px;padding:8px 0;margin-bottom:14px;font-size:12.5px}
+.toc a{color:var(--dim);text-decoration:none;white-space:nowrap}
+.toc a:hover,.toc a:focus{color:var(--text);text-decoration:underline}
+.stamp{font-size:11.5px;color:var(--faint);margin:0 0 12px;overflow-wrap:anywhere}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;min-width:0;scroll-margin-top:44px}
+.card>h2{font-size:15px;font-weight:700;margin-bottom:2px}
+h3{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);margin:14px 0 6px}
+h4{font-size:12.5px;font-weight:600;margin:10px 0 4px}
+.note{font-size:12px;color:var(--dim);margin:2px 0 8px;max-width:900px;overflow-wrap:anywhere}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}
+.tile{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-width:0}
+.tile .l{font-size:11px;color:var(--dim)}
+.tile .v{font-size:18px;font-weight:600;margin-top:1px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile .d{font-size:11px;color:var(--faint);margin-top:1px;overflow-wrap:anywhere}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;margin:4px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:bottom}
+td{padding:4px 7px;border-bottom:1px solid var(--grid);vertical-align:top;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.txt{white-space:normal;min-width:220px;max-width:520px;overflow-wrap:anywhere}
+tr.mkt td{color:var(--dim);font-style:italic}
+tr.grp td{border-top:1px solid var(--border)}
+tbody tr:hover td{background:var(--surface2)}
+.mv{font-size:10.5px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.dim{color:var(--dim)}
+.faint{color:var(--faint)}
+.chip{display:inline-block;font-size:9.5px;line-height:1.5;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:9px;padding:0 6px;color:var(--dim);font-weight:700;vertical-align:1px;white-space:nowrap;font-style:normal}
+.chip.good{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.chip.warn{color:var(--warning);border-color:var(--warning);background:var(--warning-soft)}
+.chip.bad{color:var(--critical);border-color:var(--critical);background:var(--critical-soft)}
+.chip.info{color:var(--series-1);border-color:var(--series-1);background:var(--series-1-soft)}
+.ss{display:inline-block;font-size:9.5px;color:var(--warning);border:1px dashed var(--warning);border-radius:8px;padding:0 5px;margin-left:4px;white-space:nowrap;font-weight:600;vertical-align:1px}
+.empty{border:1px dashed var(--border);border-radius:8px;padding:10px 12px;color:var(--dim);font-size:12.5px;margin:6px 0}
+.banner{border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:8px;padding:9px 12px;margin:6px 0 10px;font-size:12.5px;background:var(--warning-soft)}
+.banner.bad{border-left-color:var(--critical);background:var(--critical-soft)}
+.banner b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.gates{list-style:none;padding:0;margin:6px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:4px 14px;font-size:12px}
+.gates li{display:flex;gap:6px;align-items:baseline}
+.promo{border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:8px 0;background:var(--surface2)}
+details{margin:6px 0}
+details>summary{cursor:pointer;color:var(--dim);font-size:12.5px;padding:3px 0}
+details.model{border:1px solid var(--border);border-radius:8px;padding:4px 10px;margin:8px 0}
+details.model>summary{color:var(--text);font-size:13px;font-weight:600}
+.flags{margin:4px 0 6px;font-size:12px}
+.flags div{margin:2px 0}
+.quad td{text-align:right;font-variant-numeric:tabular-nums}
+.quad td:first-child,.quad th:first-child{text-align:left}
+@media(max-width:560px){.tile .v{font-size:16px}td.txt{min-width:180px}}
+</style>
+</head>
+<body class="viz-root">
+<div class="wrap">
+  <header>
+    <div class="hd"><h1>CFB Model Lab</h1><span class="tag">Internal · research terminal</span></div>
+    <p class="sub">Every college football model snapshot, graded against the result and the market. The OFFICIAL prediction is each model's LIVE T24 snapshot. Nothing on this page changes a model: alerts, flags and research items inform a person and wait for evidence. Definitions: <span class="mv">docs/cfb-lab/METRICS.md</span>.</p>
+    <p class="err" id="err" role="alert"></p>
+  </header>
+  <main id="lab" aria-live="polite"><p class="empty">Loading lab.json…</p></main>
+</div>
+<script>
+/*__EDLAB_START__*/
+(function(){
+  'use strict';
+  /* ---------------------------------------------------------- formatting */
+  var D='\u2014';
+  function isNum(x){ return typeof x==='number'&&isFinite(x); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function tidy(s,k){ return Number(s)===0?(0).toFixed(k):s; }
+  function fx(x,k){ return isNum(x)?tidy(x.toFixed(k),k):D; }
+  function sg(x,k){ if(!isNum(x)) return D; var s=tidy(x.toFixed(k),k); return (Number(s)>0?'+':'')+s; }
+  /* a line: 1 dp; 2 dp only for a quarter point (a median of two books, -4.25),
+     so a consensus number is never rounded into one no book offered */
+  function ln(x){ if(!isNum(x)) return D; var q=Math.abs(x*4-Math.round(x*4))<1e-9&&Math.abs(x*2-Math.round(x*2))>1e-9; return sg(x,q?2:1); }
+  function mae(x){ return fx(x,2); }
+  function smae(x){ return sg(x,2); }
+  function pr(x){ return fx(x,3); }
+  function pc(x){ return isNum(x)?tidy((100*x).toFixed(1),1)+'%':D; }
+  function spc(x){ return isNum(x)?sg(100*x,1)+'%':D; }
+  function it(x){ return isNum(x)?String(Math.round(x)):D; }
+  function ms(t){ var v=typeof t==='number'?t:Date.parse(t); return isFinite(v)?v:null; }
+  function when(t){ if(t==null||t==='') return D; var s=String(t); return /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(s)?s.slice(0,10)+' '+s.slice(11,16)+'Z':esc(s); }
+  function day(t){ if(t==null||t==='') return D; var s=String(t); return /^\d{4}-\d\d-\d\dT/.test(s)?s.slice(5,10)+' '+s.slice(11,16)+'Z':esc(s); }
+  function ss(label){ return label?'<span class="ss">'+esc(label)+'</span>':''; }
+  function nn(n,label){ return it(n)+ss(label); }
+  function ci(a){ return (a&&isNum(a[0])&&isNum(a[1]))?'['+sg(a[0],2)+', '+sg(a[1],2)+']':D; }
+  function wlp(o){ return o?(it(o.wins)+'-'+it(o.losses)+'-'+it(o.pushes)):D; }
+  function val(v){
+    if(v==null) return D;
+    if(isNum(v)) return String(Math.round(v*1000)/1000);
+    if(typeof v==='boolean') return v?'yes':'no';
+    if(Array.isArray(v)) return v.length?v.map(val).join('; '):D;
+    if(typeof v==='object') return Object.keys(v).map(function(k){ return esc(k)+': '+val(v[k]); }).join(' · ')||D;
+    return esc(v);
+  }
+  var CHIP={GREEN:'good',YELLOW:'warn',RED:'bad',BET:'good',LEAN:'info',RESEARCH:'warn',PASS:'',
+    WIN:'good',LOSS:'bad',PUSH:'warn',VOID:'',ELIGIBLE:'good',NOT_ELIGIBLE:'bad',INSUFFICIENT_SAMPLE:'warn',
+    champion:'good',challenger:'info',candidate:'',retired:'',OPEN:'info',CLOSED:'',RUNNING:'info',PLANNED:'',EVALUATED:'good',ABANDONED:'',
+    warn:'warn',critical:'bad',info:'info',OVERCONFIDENT:'bad',UNDERCONFIDENT:'warn','within band':'good',
+    RECALIBRATE:'bad',DOES_NOT_SORT:'bad',DISAGREEMENT_PREDICTS_ERROR:'bad',
+    MODEL_FAILURE:'bad',DATA_FAILURE:'bad',INFORMATION_CHANGE:'warn',HIGH_VARIANCE_OUTCOME:'info',UNKNOWN:'',
+    GIT_RECONSTRUCTED:'bad',REPLAY:'bad',LIVE:'good'};
+  function chip(v,text){ if(v==null||v==='') return D; var c=Object.prototype.hasOwnProperty.call(CHIP,v)?CHIP[v]:''; return '<span class="chip'+(c?' '+c:'')+'">'+esc(text==null?v:text)+'</span>'; }
+  function empty(msg){ return '<p class="empty">'+esc(msg)+'</p>'; }
+  function note(msg){ return msg?'<p class="note">'+esc(msg)+'</p>':''; }
+  function tile(l,v,d){ return '<div class="tile"><div class="l">'+esc(l)+'</div><div class="v">'+v+'</div>'+(d?'<div class="d">'+d+'</div>':'')+'</div>'; }
+  /* cols: [heading, fn(row) -> HTML, 'num'|'txt'|'', title] */
+  function table(cols,rows,rowCls){
+    var h='<div class="scroll"><table><thead><tr>';
+    cols.forEach(function(c){ h+='<th'+(c[2]?' class="'+c[2]+'"':'')+(c[3]?' title="'+esc(c[3])+'"':'')+'>'+esc(c[0])+'</th>'; });
+    h+='</tr></thead><tbody>';
+    rows.forEach(function(r,i){
+      var rc=rowCls?rowCls(r,i):'';
+      h+='<tr'+(rc?' class="'+rc+'"':'')+'>';
+      cols.forEach(function(c){ var v=c[1](r,i); h+='<td'+(c[2]?' class="'+c[2]+'"':'')+'>'+(v==null||v===''?D:v)+'</td>'; });
+      h+='</tr>';
+    });
+    return h+'</tbody></table></div>';
+  }
+  /* uniform rows of unknown shape: one column per key, values formatted by type */
+  function generic(rows){
+    if(!rows||!rows.length) return '';
+    var keys=[]; rows.forEach(function(r){ Object.keys(r||{}).forEach(function(k){ if(keys.indexOf(k)<0) keys.push(k); }); });
+    return table(keys.map(function(k){ return [k.replace(/_/g,' '),function(r){ var v=r[k]; return isNum(v)?val(v):(typeof v==='string'?esc(v):val(v)); },rows.some(function(r){ return isNum(r[k]); })?'num':(rows.some(function(r){ return typeof r[k]==='string'&&r[k].length>60; })?'txt':'')]; }),rows);
+  }
+  function sec(id,title,sub,body){ return '<section class="card" id="'+id+'"><h2>'+esc(title)+'</h2>'+note(sub)+body+'</section>'; }
+
+  /* ---------------------------------------------------------------- models */
+  var ROLE_RANK={champion:0,challenger:1,candidate:2,retired:3};
+  function roles(lab){ return (lab&&lab.health&&lab.health.roles)||{}; }
+  function roleOf(lab,mv){ var r=roles(lab)[mv]; var p=lab&&lab.performance&&lab.performance[mv]; return (r&&r.role)||(p&&p.role)||null; }
+  function labelOf(lab,mv){ var p=lab&&lab.performance&&lab.performance[mv]; var r=roles(lab)[mv]; return (p&&p.label)||(r&&r.label)||mv; }
+  function byRole(lab){ return function(a,b){ var x=ROLE_RANK[roleOf(lab,a)], y=ROLE_RANK[roleOf(lab,b)]; x=x==null?9:x; y=y==null?9:y; return x-y||(a<b?-1:a>b?1:0); }; }
+  function models(lab){ return Object.keys((lab&&lab.performance)||{}).sort(byRole(lab)); }
+  function allModels(lab){
+    var s={}; Object.keys(roles(lab)).concat(models(lab)).forEach(function(m){ s[m]=1; });
+    ((lab&&lab.health&&lab.health.models)||[]).forEach(function(m){ if(m&&m.model_version) s[m.model_version]=1; });
+    return Object.keys(s).sort(byRole(lab));
+  }
+  function mname(lab,mv,short){ var r=roleOf(lab,mv); return '<b>'+esc(labelOf(lab,mv))+'</b>'+(r?' '+chip(r):'')+(short?'':' <span class="mv">'+esc(mv)+'</span>'); }
+
+  /* ======================================================= 1. model health */
+  function jobHTML(lastRun){
+    var h='<h3>Job health (last_run.json)</h3>';
+    if(!lastRun||typeof lastRun!=='object') return h+empty('last_run.json was not found next to lab.json, so the hourly job\u2019s health is unknown.');
+    var steps=lastRun.steps||{}, names=Object.keys(steps);
+    var failed=names.filter(function(k){ return steps[k]&&steps[k].ok===false; });
+    h+='<div class="kpis">'+tile('Last run',when(lastRun.started_at),'finished '+when(lastRun.finished_at))
+      +tile('Overall',lastRun.ok===false?chip('RED','failed'):chip('GREEN','ok'),failed.length?esc(failed.length+' step(s) failed: '+failed.join(', ')):'every step ok or skipped')
+      +tile('Season',esc(lastRun.season==null?D:lastRun.season))+'</div>';
+    h+=table([['Step',function(k){ return esc(k); }],
+      ['Status',function(k){ var s=steps[k]||{}; return s.ok===false?chip('RED','failed'):(s.skipped?chip('YELLOW','skipped'):chip('GREEN','ok')); }],
+      ['ms',function(k){ return it((steps[k]||{}).ms); },'num'],
+      ['Detail',function(k){ var s=steps[k]||{};
+        if(s.ok===false) return '<span style="color:var(--critical)">'+esc(s.error||'failed')+'</span>';
+        if(typeof s.skipped==='string') return esc(s.skipped);
+        if(s.skipped===true) return '<span class="faint">skipped for this run</span>';
+        var bits=Object.keys(s).filter(function(x){ return x!=='ok'&&x!=='ms'&&x!=='skipped'&&(isNum(s[x])||typeof s[x]==='string'||typeof s[x]==='boolean'); })
+          .map(function(x){ return esc(x.replace(/_/g,' '))+' '+val(s[x]); });
+        return bits.join(' · ')||D; },'txt']],names);
+    return h;
+  }
+  function healthHTML(lab,lastRun){
+    var H=lab&&lab.health;
+    if(!H) return sec('health','1 · Model health',null,empty('lab.json has no health block.')+jobHTML(lastRun));
+    var champ=H.champion, L=H.ledger||{}, DQ=H.data_quality||{}, C=DQ.counts||{}, F=DQ.feeds||{}, alerts=H.alerts||[];
+    var champHTML=typeof champ==='string'?mname(lab,champ,true)+'<div class="mv">'+esc(champ)+'</div>'
+      :(Array.isArray(champ)?chip('RED',champ.length+' champions')+' <span class="dim">governance conflict: '+esc(champ.join(', '))+'</span>':chip('RED','none'));
+    function age(t){ var a=ms(t), b=ms(lab.generated_at); return (a!=null&&b!=null)?fx((b-a)/3600000,1)+' h before this report':''; }
+    var h='<div class="kpis">'
+      +tile('Champion',champHTML)
+      +tile('Snapshots in the ledger',it(L.predictions),it(L.live_predictions)+' LIVE \u00b7 the rest reconstructed / replay')
+      +tile('Settled',it(L.results)+' results',it(L.evaluations)+' evaluations \u00b7 '+it(L.miss_reviews)+' miss reviews')
+      +tile('Market',it(L.quotes)+' quotes',it(L.lines)+' derived open/close lines')
+      +tile('Data quality, upcoming',chip('GREEN',it(C.GREEN)+' green')+' '+chip('YELLOW',it(C.YELLOW)+' yellow')+' '+chip('RED',it(C.RED)+' red'),it(DQ.games)+' games')
+      +tile('Last quote',when(F.last_quote_at),esc(age(F.last_quote_at))+(isNum(F.quotes_total)?' \u00b7 '+it(F.quotes_total)+' total':''))
+      +tile('Last result',when(F.last_result_at),esc(age(F.last_result_at)))
+      +tile('Alerts',alerts.length?chip('YELLOW',String(alerts.length)):chip('GREEN','0'),'inform a person; never act')
+      +'</div>';
+    h+='<h3>Roles</h3>'+table([['Model',function(m){ return mname(lab,m); }],
+      ['Since',function(m){ var r=roles(lab)[m]; return r?when(r.effective_at):D; }],
+      ['Why',function(m){ var r=roles(lab)[m]; return r?esc(r.reason||D):D; },'txt'],
+      ['By',function(m){ var r=roles(lab)[m]; return r?esc(r.actor||D):D; }]],Object.keys(roles(lab)).sort(byRole(lab)));
+    var hm=H.models||[];
+    h+='<h3>Snapshots by model</h3>'+(hm.length?table([['Model',function(m){ return mname(lab,m.model_version); }],
+      ['LIVE snapshots',function(m){ return it(m.snapshots); },'num'],['Latest snapshot',function(m){ return when(m.latest_snapshot_at); }],
+      ['Upcoming games',function(m){ return it(m.upcoming_games); },'num'],['Avg reliability, upcoming',function(m){ return fx(m.avg_confidence_upcoming,1); },'num']],hm.slice().sort(function(a,b){ return byRole(lab)(a.model_version,b.model_version); }))
+      :empty('No model has taken a snapshot yet.'));
+    var bc=DQ.by_check||{}, checks=Object.keys(bc);
+    h+='<h3>Data quality of upcoming snapshots</h3>'+(checks.length?table([['Check',function(k){ return esc(k); }],['Yellow',function(k){ return it(bc[k].YELLOW); },'num'],['Red',function(k){ return it(bc[k].RED); },'num']],checks):empty('Every upcoming snapshot passed every data-quality check.'));
+    var ng=DQ.not_green||[];
+    if(ng.length) h+='<details><summary>'+esc(ng.length+' game(s) not GREEN')+'</summary>'+table([['Kickoff',function(g){ return day(g.kickoff); }],['Game',function(g){ return esc(g.matchup); }],['Status',function(g){ return chip(g.status); }],
+      ['Issues',function(g){ return (g.issues||[]).map(function(c){ return chip(c.status,c.check)+(c.detail?' '+esc(c.detail):''); }).join('<br>')||D; },'txt']],ng)+'</details>';
+    h+='<h3>Alerts</h3>'+note('Alerts inform a person. Drift alerts never retrain, re-weight, re-calibrate or promote anything, and no alert changes the champion (METRICS \u00a716).');
+    h+=alerts.length?table([['Level',function(a){ return chip(a.level); }],['Kind',function(a){ return esc(a.kind); }],['Model',function(a){ return a.model_version?mname(lab,a.model_version,true):D; }],
+      ['Message',function(a){ return esc(a.message); },'txt'],['Detail',function(a){ return val(a.detail); },'txt']],alerts):empty('No alerts on this run.');
+    return sec('health','1 · Model health','Champion and roles, what the ledger holds, the data quality of what is about to be predicted, and the hourly job.',h+jobHTML(lastRun));
+  }
+
+  /* ========================================================= 2. this week */
+  function weekHTML(lab){
+    var games=(lab&&lab.this_week)||[];
+    var sub='Each model\u2019s latest LIVE snapshot for games kicking off in the next 8 days. OFFICIAL marks the T24 snapshot, the one that is graded as the model\u2019s prediction. Lines are home lines.';
+    if(!games.length) return sec('this-week','2 · This week',sub,empty('No LIVE snapshot exists for a game kicking off in the next 8 days.'));
+    var order=allModels(lab);
+    var h='<div class="scroll"><table><thead><tr>'+['Kickoff','Game','Market','Open','Books','Model','Checkpoint','Fair line','Margin','Home win p','Gap','Decision','Position','Confidence','DQ'].map(function(t,i){ return '<th'+([2,3,4,8,9,10,13].indexOf(i)>=0?' class="num"':'')+'>'+esc(t)+'</th>'; }).join('')+'</tr></thead><tbody>';
+    games.forEach(function(g){
+      var gm=g.models||{}, ks=Object.keys(gm).sort(function(a,b){ var i=order.indexOf(a), j=order.indexOf(b); return (i<0?99:i)-(j<0?99:j)||(a<b?-1:1); });
+      var mk=g.market||{}, n=Math.max(ks.length,1);
+      var lead='<td rowspan="'+n+'">'+day(g.kickoff)+(g.week!=null?'<div class="faint">wk '+esc(g.week)+'</div>':'')+'</td>'
+        +'<td rowspan="'+n+'">'+esc(g.away)+' <span class="faint">@</span> '+esc(g.home)+'</td>'
+        +'<td class="num" rowspan="'+n+'">'+ln(mk.current)+(mk.stale?' '+chip('YELLOW','stale'):'')+(mk.as_of?'<div class="faint">'+day(mk.as_of)+'</div>':'')+'</td>'
+        +'<td class="num" rowspan="'+n+'">'+ln(mk.open)+'</td><td class="num" rowspan="'+n+'">'+it(mk.books)+'</td>';
+      if(!ks.length){ h+='<tr class="grp">'+lead+'<td colspan="10">'+D+'</td></tr>'; return; }
+      ks.forEach(function(k,i){
+        var m=gm[k]||{};
+        var dec=chip(m.decision)+(m.status&&m.decision&&m.status!==m.decision&&!(m.status==='REVIEW'&&m.decision==='RESEARCH')?' <span class="faint">engine '+esc(m.status)+'</span>':'');
+        var pos=m.side?esc(m.side==='HOME'?g.home:(m.side==='AWAY'?g.away:m.side))+' '+ln(m.line):D;
+        h+='<tr'+(i===0?' class="grp"':'')+'>'+(i===0?lead:'')
+          +'<td>'+mname(lab,k,true)+'</td>'
+          +'<td>'+esc(m.checkpoint||D)+(m.checkpoint==='T24'?' '+chip('GREEN','official'):'')+'</td>'
+          +'<td>'+esc(m.fair||D)+'</td><td class="num">'+ln(m.margin)+'</td><td class="num">'+pr(m.p_home)+'</td><td class="num">'+ln(m.gap)+'</td>'
+          +'<td>'+dec+'</td><td>'+pos+'</td><td class="num">'+it(m.conf)+'</td><td>'+chip(m.dq)+'</td></tr>';
+      });
+    });
+    h+='</tbody></table></div>';
+    return sec('this-week','2 · This week',sub,'<p class="note">'+esc(games.length+' games.')+'</p>'+h);
+  }
+
+  /* ======================================================= 3. performance */
+  function cov(iv){ return iv?pc(iv.coverage)+(iv.verdict&&iv.verdict!=='insufficient sample'?' '+chip(iv.verdict):''):D; }
+  function positions(b){ return [['Positions',function(r){ return nn(r.b.decisions,r.b.label); },'num'],['W-L-P',function(r){ return wlp(r.b); },'num'],['ATS',function(r){ return pc(r.b.ats_pct); },'num'],
+    ['ROI',function(r){ return spc(r.b.roi); },'num'],['Units',function(r){ return smae(r.b.units); },'num'],['CLV mean',function(r){ return smae(r.b.clv_mean); },'num'],
+    ['+CLV',function(r){ return pc(r.b.positive_clv_pct); },'num'],['Max DD',function(r){ return mae(r.b.max_drawdown); },'num'],['Price assumed',function(r){ return pc(r.b.price_assumed_share); },'num','share graded at an assumed -110']]; }
+  function calTable(c){
+    if(!c||!c.buckets) return empty('No calibration data.');
+    return table([['Bucket',function(b){ return esc(b.bucket); }],['n',function(b){ return nn(b.n,b.label); },'num'],['Predicted',function(b){ return pr(b.predicted); },'num'],
+      ['Observed',function(b){ return pr(b.observed); },'num'],['Difference',function(b){ return sg(b.difference,3); },'num']],c.buckets)
+      +'<p class="note">n '+it(c.n)+ss(c.label)+' \u00b7 ECE '+pr(c.ece)+' \u00b7 Brier '+pr(c.brier)+' \u00b7 slope '+pr(c.slope)+(c.slope_note?' ('+esc(c.slope_note)+')':'')+'</p>';
+  }
+  function perfHTML(lab){
+    var P=(lab&&lab.performance)||{}, ms_=models(lab);
+    var sub='Each model on its own OFFICIAL (LIVE T24) snapshots that have settled. Errors are actual minus predicted home margin; bias > 0 means the home side did better than predicted.';
+    if(!ms_.length) return sec('performance','3 · Performance',sub,empty('No model has a LIVE snapshot yet.'));
+    var settled=ms_.reduce(function(a,m){ var e=P[m].official&&P[m].official.errors; return a+(e&&isNum(e.n)?e.n:0); },0);
+    var h=settled?'':empty('No official LIVE predictions have settled yet.');
+    h+='<h3>Official summary</h3>'+table([['Model',function(m){ return mname(lab,m); }],
+      ['n',function(m){ var e=(P[m].official||{}).errors||{}; return nn(e.n,e.label); },'num'],
+      ['MAE',function(m){ return mae(((P[m].official||{}).errors||{}).mae); },'num'],['\u00b1SE',function(m){ return mae(((P[m].official||{}).errors||{}).mae_se); },'num','standard error of the MAE'],
+      ['RMSE',function(m){ return mae(((P[m].official||{}).errors||{}).rmse); },'num'],['Median AE',function(m){ return mae(((P[m].official||{}).errors||{}).median_ae); },'num'],
+      ['Bias',function(m){ return smae(((P[m].official||{}).errors||{}).bias); },'num'],['P90',function(m){ return mae(((P[m].official||{}).errors||{}).p90_ae); },'num'],
+      ['P95',function(m){ return mae(((P[m].official||{}).errors||{}).p95_ae); },'num'],['Brier',function(m){ return pr(((P[m].official||{}).errors||{}).brier); },'num'],
+      ['Log loss',function(m){ return pr(((P[m].official||{}).errors||{}).log_loss); },'num'],
+      ['Win ECE',function(m){ var c=(P[m].official||{}).win_calibration||{}; return pr(c.ece)+ss(c.label); },'num'],
+      ['Winner',function(m){ return pc(((P[m].official||{}).errors||{}).winner_accuracy); },'num','straight-up winner accuracy'],
+      ['50% cov',function(m){ return cov(((P[m].official||{}).intervals||{}).p50); },'num'],['80% cov',function(m){ var iv=((P[m].official||{}).intervals||{}).p80; return cov(iv)+(iv?ss(iv.label):''); },'num'],
+      ['95% cov',function(m){ return cov(((P[m].official||{}).intervals||{}).p95); },'num']],ms_);
+    var pr_=[]; ms_.forEach(function(m){ var o=P[m].official||{};
+      [['research positions (LEAN + BET, 1u hypothetical)',o.research_positions],['BET (staked)',o.bets],['every snapshot side (1u hypothetical)',o.every_snapshot_side]].forEach(function(x){ if(x[1]) pr_.push({m:m,k:x[0],b:x[1]}); }); });
+    h+='<h3>Positions on official snapshots</h3>'+note('Graded at the snapshot\u2019s own number. BET is disabled today, so the staked row stays empty; the hypothetical rows risk one unit each and claim nothing.')
+      +(pr_.length?table([['Model',function(r){ return mname(lab,r.m,true); }],['Population',function(r){ return esc(r.k); }]].concat(positions()),pr_):empty('No positions.'));
+    var W=[['last_25','last 25'],['last_50','last 50'],['last_100','last 100'],['season_to_date','season to date'],['all_live','all LIVE']], rw=[], rnote=null;
+    ms_.forEach(function(m){ var R=P[m].rolling||{}; if(R.note) rnote=R.note; W.forEach(function(w){ if(R[w[0]]) rw.push({m:m,w:w[1],r:R[w[0]]}); }); });
+    h+='<h3>Rolling windows</h3>'+note(rnote)+(rw.length?table([['Model',function(x){ return mname(lab,x.m,true); }],['Window',function(x){ return esc(x.w); }],
+      ['n',function(x){ var e=x.r.errors||{}; return nn(e.n,e.label); },'num'],['MAE',function(x){ return mae((x.r.errors||{}).mae); },'num'],['RMSE',function(x){ return mae((x.r.errors||{}).rmse); },'num'],
+      ['Median AE',function(x){ return mae((x.r.errors||{}).median_ae); },'num'],['Bias',function(x){ return smae((x.r.errors||{}).bias); },'num'],['P95',function(x){ return mae((x.r.errors||{}).p95_ae); },'num'],
+      ['Brier',function(x){ return pr(x.r.brier); },'num'],['80% cov',function(x){ return cov(x.r.intervals_80); },'num']],rw,function(x,i){ return i&&rw[i-1].m!==x.m?'grp':''; }):empty('No rolling windows.'));
+    ms_.forEach(function(m){ var o=P[m].official||{};
+      h+='<details><summary>Calibration \u00b7 '+esc(labelOf(lab,m))+'</summary><h4>Win probability (folded to the favourite)</h4>'+calTable(o.win_calibration)+'<h4>Cover probability</h4>'+calTable(o.cover_calibration)+'</details>'; });
+    return sec('performance','3 · Performance',sub,h);
+  }
+
+  /* ================================================== 4. model comparison */
+  var GATES={G1_mae_ci_below_zero:'MAE lower, paired bootstrap 95% CI of the difference entirely below 0',G2_brier_not_worse:'win Brier lower or equal',
+    G3_ece_within_001:'win ECE no more than champion + 0.01',G4_coverage80_in_band:'80% interval coverage within [0.75, 0.85]',
+    G5_tail_not_worse:'P95 absolute error no more than champion + 1.0',G6_weekly_stability:'lower MAE in at least 60% of the weeks'};
+  /* evaluations carry challenger / champion as version strings and the
+     numbers in challenger_stats / champion_stats; an older lab.json had the
+     numbers under challenger / champion, so fall back to the one model
+     holding the evaluation's role for the name */
+  function challengerOf(lab,e){
+    if(typeof e.challenger==='string') return e.challenger;
+    var R=roles(lab), hits=Object.keys(R).filter(function(k){ return R[k].role===e.role; });
+    return hits.length===1?hits[0]:null;
+  }
+  function statsOf(e,side){ var x=e[side+'_stats']; if(!x||typeof x!=='object') x=e[side]; return (x&&typeof x==='object')?x:{}; }
+  function promoHTML(lab,P){
+    if(!P) return empty('No promotion block in lab.json.');
+    var ev=P.evaluations||[];
+    var h=note('Rule cfb_lab_promotion_v1 (METRICS \u00a719): runs on the common official set once it reaches 150 games. Eligibility never changes the champion; only a person, through governance.js promote, does that, with an audit entry.');
+    if(!ev.length) return h+empty('No challenger or candidate is registered against the champion.');
+    ev.forEach(function(e){
+      var mv=challengerOf(lab,e), champ=typeof e.champion==='string'?e.champion:(typeof P.champion==='string'?P.champion:null);
+      var c=statsOf(e,'champion'), x=statsOf(e,'challenger'), g=e.gates||{};
+      h+='<div class="promo"><h4>'+(mv?mname(lab,mv):esc('unnamed '+(e.role||'model')))+' <span class="faint">vs champion</span> '+(champ?mname(lab,champ,true):D)+' '+chip(e.decision,String(e.decision||D).replace(/_/g,' '))+'</h4>'
+        +'<p class="note">n '+it(e.n)+' of '+it(e.min_n)+' needed'+(e.ready?'':' \u00b7 not ready')+' \u00b7 MAE difference (challenger \u2212 champion) '+sg(e.mae_diff,3)+' 95% CI '+ci(e.mae_diff_ci)+' \u00b7 weekly win share '+pc(e.weekly_win_share)+' over '+it(e.weeks)+' weeks</p>'
+        +table([['',function(r){ return esc(r[0]); }],['MAE',function(r){ return mae(r[1].mae); },'num'],['RMSE',function(r){ return mae(r[1].rmse); },'num'],['Brier',function(r){ return pr(r[1].brier); },'num'],
+          ['Win ECE',function(r){ return pr(r[1].ece); },'num'],['P95',function(r){ return mae(r[1].p95_ae); },'num'],['80% cov',function(r){ return pc(r[1].coverage_80); },'num']],[['champion',c],['challenger',x]])
+        +'<ul class="gates">'+Object.keys(g).map(function(k){ return '<li>'+(g[k]?chip('GREEN','pass'):chip('RED','fail'))+' <span><b>'+esc(k.split('_')[0])+'</b> '+esc(GATES[k]||k.replace(/_/g,' '))+'</span></li>'; }).join('')+'</ul>'
+        +(e.note?note(e.note):'')+'</div>';
+    });
+    return h;
+  }
+  function compHTML(lab){
+    var C=(lab&&lab.comparison)||{}, cm=C.common, h='';
+    h+='<h3>Common official set</h3>';
+    if(!cm) h+=empty('No common-set block in lab.json.');
+    else {
+      h+='<p class="note">'+esc(cm.note||'')+' <b>n = '+it(cm.n_common)+'</b>'+ss(cm.label)+'</p>';
+      if(!cm.n_common) h+=empty('No settled game has an OFFICIAL snapshot from every model yet, so the models cannot be compared on common ground.');
+      h+=table([['Model or market',function(r){ return r.name==='opening market'||r.name==='closing market'?'<i>'+esc(r.name)+'</i>':mname(lab,r.name); }],
+        ['n',function(r){ return it(r.n); },'num'],['MAE',function(r){ return mae(r.mae); },'num'],['RMSE',function(r){ return mae(r.rmse); },'num'],['Median AE',function(r){ return mae(r.median_ae); },'num'],
+        ['Bias',function(r){ return smae(r.bias); },'num'],['P90',function(r){ return mae(r.p90_ae); },'num'],['P95',function(r){ return mae(r.p95_ae); },'num'],
+        ['Brier',function(r){ return pr(r.brier); },'num'],['80% cov',function(r){ return pc(r.coverage_80); },'num']],cm.rows||[],function(r){ return r.name==='opening market'||r.name==='closing market'?'mkt':''; });
+    }
+    var S=C.submodels||{};
+    h+='<h3>Submodel scoreboard</h3>'+note(S.note||'Research only: ensemble weights never change because a component won a week.');
+    h+=(S.rows&&S.rows.length)?table([['#',function(r){ return it(r.rank_by_mae); },'num'],['Component \u00b7 model',function(r){ return esc(r.name); }],['n',function(r){ return nn(r.n,r.label); },'num'],
+      ['MAE',function(r){ return mae(r.mae); },'num'],['RMSE',function(r){ return mae(r.rmse); },'num'],['Bias',function(r){ return smae(r.bias); },'num'],['P90',function(r){ return mae(r.p90_ae); },'num'],['P95',function(r){ return mae(r.p95_ae); },'num']],S.rows)
+      :empty('No settled official snapshot carries component margins yet.');
+    h+='<h3>Promotion evaluation</h3>'+promoHTML(lab,C.promotion);
+    return sec('comparison','4 · Model comparison','The models on the same games, against the opener and the close; the components inside them; and where each challenger stands against the promotion gates.',h);
+  }
+
+  /* ===================================================== 5. error analysis */
+  var MISS=[['MODEL_FAILURE','MODEL FAILURE','the close was 7+ pts closer, with no data or information explanation'],
+    ['DATA_FAILURE','DATA FAILURE','data quality RED, a result-source disagreement or a team-mapping fault'],
+    ['INFORMATION_CHANGE','INFORMATION CHANGE','the starting QB changed, or the market moved 3+ pts toward the result after the snapshot'],
+    ['HIGH_VARIANCE_OUTCOME','HIGH-VARIANCE','documented luck factors and the close missed by at least 80% as much'],
+    ['UNKNOWN','UNKNOWN','nothing could be established; never assumed to be variance']];
+  function missLabel(k){ for(var i=0;i<MISS.length;i++) if(MISS[i][0]===k) return MISS[i][1]; return String(k||D).replace(/_/g,' '); }
+  function errHTML(lab){
+    var E=(lab&&lab.error_analysis)||{}, h='';
+    var lm=E.largest_misses||[];
+    h+='<h3>Largest official misses</h3>'+(lm.length?table([['Wk',function(r){ return it(r.week); },'num'],['Game',function(r){ return esc(r.matchup); }],['Model',function(r){ return esc(r.model); }],
+      ['Predicted',function(r){ return ln(r.predicted); },'num'],['Actual',function(r){ return ln(r.actual); },'num'],['Abs error',function(r){ return fx(r.abs_error,1); },'num'],
+      ['Close',function(r){ return ln(r.close_home_line); },'num'],['Close abs error',function(r){ return fx(r.close_abs_error,1); },'num'],
+      ['Class',function(r){ return r.classification?chip(r.classification,missLabel(r.classification)):D; }],['Rationale',function(r){ return esc(r.rationale||D); },'txt']],lm)
+      :empty('No official LIVE predictions have settled yet.'));
+    var sg_=E.segments||[], reading=null; sg_.forEach(function(s){ if(s.reading) reading=s.reading; });
+    h+='<h3>Segments</h3>'+note('Mean oriented error per segment on official snapshots; '+(reading||'positive = the oriented side did better than predicted')+'. A research item opens only at n \u2265 50 and |z| \u2265 2.')
+      +(sg_.length?table([['Segment',function(s){ return esc(s.segment); },'txt'],['Model',function(s){ return mname(lab,s.model_version,true); }],['n',function(s){ return nn(s.n,s.label); },'num'],
+        ['Mean',function(s){ return smae(s.mean_oriented_error); },'num'],['SE',function(s){ return mae(s.se); },'num'],['z',function(s){ return sg(s.z,2); },'num']],sg_):empty('No segment has a settled official snapshot yet.'));
+    var mr=E.miss_reviews||{}, keys=MISS.map(function(x){ return x[0]; }); Object.keys(mr).forEach(function(k){ if(keys.indexOf(k)<0) keys.push(k); });
+    var total=Object.keys(mr).reduce(function(a,k){ return a+(isNum(mr[k])?mr[k]:0); },0);
+    h+='<h3>Miss reviews</h3>'+note('Every official snapshot missing by 10+ points gets a review; the first rule that matches classifies it (METRICS \u00a717). A person can re-classify; that adds a row.')
+      +table([['Class',function(k){ return chip(k,missLabel(k)); }],['Reviews',function(k){ return it(mr[k]||0); },'num'],['Needs',function(k){ for(var i=0;i<MISS.length;i++) if(MISS[i][0]===k) return esc(MISS[i][2]); return D; },'txt']],keys)
+      +(total?'':empty('No miss reviews yet.'));
+    return sec('errors','5 · Error analysis','Where the official predictions missed, and why when the evidence says.',h);
+  }
+
+  /* ====================================================== 6. edge analysis */
+  var KIND={gap:'Edge \u00b7 |model \u2212 market| at the snapshot, pts',reliability:'Reliability \u00b7 football_confidence',edge_quality:'Edge quality',disagreement:'Ensemble disagreement, pts'};
+  var FLAGS={gap:null,reliability:'RECALIBRATE',edge_quality:'DOES_NOT_SORT',disagreement:'DISAGREEMENT_PREDICTS_ERROR'};
+  function bucketHTML(t){
+    var fl=t.flags||[];
+    var h='<h4>'+esc(KIND[t.kind]||t.kind)+'</h4><div class="flags">'+(fl.length?fl.map(function(f){ return '<div>'+chip(f.flag,f.flag)+' '+esc(f.detail||'')+'</div>'; }).join('')
+      :'<span class="faint">'+(FLAGS[t.kind]?esc('No '+FLAGS[t.kind]+' flag')+' (flags need n \u2265 30 per bucket).':'No flag is defined for this table.')+'</span>')+'</div>';
+    return h+table([['Bucket',function(r){ return esc(r.bucket); }],['n',function(r){ return nn(r.n,r.label); },'num'],['MAE',function(r){ return mae(r.mae); },'num'],['\u00b1SE',function(r){ return mae(r.mae_se); },'num'],
+      ['Med AE',function(r){ return mae(r.median_ae); },'num'],['Brier',function(r){ return pr(r.brier); },'num'],['Win ECE',function(r){ return pr(r.win_ece); },'num'],['80% cov',function(r){ return pc(r.coverage_80); },'num'],
+      ['Positions',function(r){ return it(r.decisions); },'num'],['W-L-P',function(r){ return wlp(r); },'num'],['ATS',function(r){ return pc(r.ats_pct); },'num'],['ROI',function(r){ return spc(r.roi); },'num'],
+      ['CLV',function(r){ return smae(r.clv_mean); },'num'],['+CLV',function(r){ return pc(r.positive_clv_pct); },'num'],['Mkt move',function(r){ return smae(r.market_move_mean); },'num','mean points the market moved toward the model, open to close'],
+      ['Rel.',function(r){ return fx(r.reliability_mean,1); },'num','mean reliability'],['Cover ECE',function(r){ return pr(r.cover_calibration_ece); },'num']],t.rows||[]);
+  }
+  function edgeHTML(lab){
+    var X=(lab&&lab.edge_analysis)||{}, ms_=Object.keys(X).sort(byRole(lab)), h='';
+    if(!ms_.length) return sec('edge','6 · Edge analysis',null,empty('No edge analysis in lab.json.'));
+    ms_.forEach(function(m,i){
+      var e=X[m]||{}, po=e.process_outcome||{}, cnt=po.counts||{};
+      h+='<details class="model"'+(i===0?' open':'')+'><summary>'+esc(labelOf(lab,m))+' <span class="mv">'+esc(m)+'</span></summary>';
+      h+='<h3>Buckets (official snapshots)</h3>'+(e.buckets||[]).map(bucketHTML).join('');
+      h+='<h3>Timing by checkpoint (every LIVE snapshot)</h3>'+table([['Checkpoint',function(r){ return esc(r.checkpoint)+(r.checkpoint==='T24'?' '+chip('GREEN','official'):''); }],['n',function(r){ return nn(r.n,r.label); },'num'],
+        ['MAE',function(r){ return mae(r.mae); },'num'],['Brier',function(r){ return pr(r.brier); },'num'],['|Gap|',function(r){ return mae(r.market_disagreement); },'num','mean |model \u2212 market| at the snapshot'],
+        ['Move after',function(r){ return smae(r.subsequent_move_toward_model); },'num','mean points the market moved toward the model after the snapshot'],['CLV potential',function(r){ return smae(r.clv_potential); },'num'],
+        ['ATS if actioned',function(r){ return pc(r.ats_if_actioned); },'num'],['ATS n',function(r){ return it(r.ats_n); },'num']],e.timing||[]);
+      h+='<h3>Decisions (official snapshots, 1u hypothetical)</h3>'+table([['Class',function(r){ return chip(r.decision_class); }],['Snapshots',function(r){ return it(r.snapshots); },'num'],['MAE',function(r){ return mae(r.mae); },'num']]
+        .concat(positions().map(function(c){ return [c[0],function(r){ return c[1]({b:r}); },c[2],c[3]]; })),e.decisions||[]);
+      var nm=e.near_miss;
+      h+='<h3>Near misses</h3>'+note('PASS or LEAN snapshots whose failing BET conditions were all within 0.01 EV, 0.5 pt and 5 reliability (METRICS \u00a712).')
+        +(nm?table(positions(),[{b:nm}]):empty('No near-miss block.'));
+      h+='<h3>Process vs outcome</h3>'+note(po.note)+'<div class="scroll"><table class="quad"><thead><tr><th>n '+it(po.n)+'</th><th class="num">Win</th><th class="num">Loss</th></tr></thead><tbody>'
+        +'<tr><td>Good process (beat the close)</td><td>'+it(cnt.GOOD_PROCESS_WIN||0)+'</td><td>'+it(cnt.GOOD_PROCESS_LOSS||0)+'</td></tr>'
+        +'<tr><td>Poor process</td><td>'+it(cnt.POOR_PROCESS_WIN||0)+'</td><td>'+it(cnt.POOR_PROCESS_LOSS||0)+'</td></tr>'
+        +'<tr><td class="faint">Unknown (no close, a push, or no side)</td><td colspan="2">'+it(cnt.UNKNOWN||0)+'</td></tr></tbody></table></div>';
+      h+='</details>';
+    });
+    return sec('edge','6 · Edge analysis','Does a bigger edge, a higher reliability or a quieter ensemble mean a smaller error or a better number? Flags fire only at n \u2265 30 per bucket and open a research item; nothing changes a threshold.',h);
+  }
+
+  /* ================================================= 7. market discovery */
+  function mktHTML(lab){
+    var M=(lab&&lab.market_discovery)||{}, P=(lab&&lab.performance)||{}, ms_=Object.keys(M).sort(byRole(lab)), h='';
+    if(!ms_.length) return sec('market','7 · Market discovery',null,empty('No market block in lab.json.'));
+    var rows=[]; ms_.forEach(function(m){ [['vs opener','vs_open'],['vs close','vs_close']].forEach(function(k){ if(M[m]&&M[m][k[1]]) rows.push({m:m,k:k[0],r:M[m][k[1]]}); }); });
+    h+='<h3>Accuracy against the market (official snapshots)</h3>'+note('Difference = model abs error \u2212 market abs error; negative means the model was closer to the result. Ties are not a win.')
+      +table([['Model',function(x){ return mname(lab,x.m,true); }],['Against',function(x){ return esc(x.k); }],['n',function(x){ return nn(x.r.n,x.r.label); },'num'],['Model MAE',function(x){ return mae(x.r.model_mae); },'num'],
+        ['Market MAE',function(x){ return mae(x.r.market_mae); },'num'],['Difference',function(x){ return smae(x.r.mean_error_diff); },'num'],['95% CI',function(x){ return ci(x.r.diff_ci); },'num'],
+        ['Model closer',function(x){ return pc(x.r.beat_share); },'num'],['Ties',function(x){ return pc(x.r.tie_share); },'num']],rows,function(x,i){ return i&&rows[i-1].m!==x.m?'grp':''; });
+    h+='<h3>Discovery: did the market move toward the model?</h3>'+note('Open to close, in the direction of the model\u2019s edge against the opener (METRICS \u00a79). Recorded whatever any wager did.')
+      +table([['Model',function(m){ return mname(lab,m,true); }],['n',function(m){ var d=(M[m]||{}).discovery||{}; return nn(d.n,d.label); },'num'],['Moved toward',function(m){ return pc(((M[m]||{}).discovery||{}).moved_toward_share); },'num'],
+        ['Mean move, pts',function(m){ return smae(((M[m]||{}).discovery||{}).mean_move_points); },'num'],['95% CI',function(m){ return ci(((M[m]||{}).discovery||{}).mean_move_ci); },'num']],ms_);
+    var cl=[]; ms_.forEach(function(m){ var o=(P[m]||{}).official||{}; [['LEAN + BET research positions',o.research_positions],['every snapshot side',o.every_snapshot_side]].forEach(function(x){ if(x[1]) cl.push({m:m,k:x[0],b:x[1]}); }); });
+    h+='<h3>Closing line value</h3>'+note('CLV = (snapshot home line \u2212 closing home line) \u00d7 side, in points; the close is the median of the books\u2019 last pregame quotes in the 180 minutes before kickoff.')
+      +(cl.length?table([['Model',function(x){ return mname(lab,x.m,true); }],['Population',function(x){ return esc(x.k); }],['n',function(x){ return nn(x.b.clv_n,x.b.label); },'num'],
+        ['Mean',function(x){ return smae(x.b.clv_mean); },'num'],['Median',function(x){ return smae(x.b.clv_median); },'num'],['+CLV',function(x){ return pc(x.b.positive_clv_pct); },'num']],cl):empty('No CLV yet.'));
+    return sec('market','7 · Market discovery','How the official numbers compare with the opener and the close, and whether the market came to them.',h);
+  }
+
+  /* ================================================ 8. major disagreements */
+  /* The integrity gate's verdicts on V1's latest market snapshot per game
+     (lab.json major_disagreement, football/cfb_lab/disagreement.js). A raw
+     7+ gap is INVESTIGATE until it passes every check; VERIFIED is rare by
+     design and is never a bet. The counts are what the gate found, never a
+     quota. */
+  function disHTML(lab){
+    var X=lab&&lab.major_disagreement;
+    if(!X) return sec('disagreement','8 · Major disagreements',null,empty('No major-disagreement block in lab.json.'));
+    function p1(x){ return isNum(x)?fx(x,1)+'%':D; }
+    var GR=X.graded||{}, h='';
+    h+=table([['Measure',function(r){ return esc(r[0]); },'txt'],['Value',function(r){ return r[1]; },'num']],[
+      ['Raw major disagreements (7+)',it(X.raw_major_disagreements)],
+      ['Verified major disagreements',it(X.verified_major_disagreements)+(X.verified_10plus?' · '+it(X.verified_10plus)+' at 10+':'')+(X.verified_15plus?' · '+it(X.verified_15plus)+' at 15+':'')],
+      ['Investigate',it(X.investigate)],['Data fault',it(X.data_fault)],['Market fault',it(X.market_fault)],
+      ['Verification not run (snapshots before the gate)',it(X.verification_not_run)],
+      ['Average raw gap (all snapshots with a market)',mae(X.average_raw_gap)],['Average raw gap (7+)',mae(X.average_raw_gap_7plus)],
+      ['Market movement toward verified gaps',p1(X.market_movement_toward_verified_pct)],['Market movement toward unverified 7+ gaps',p1(X.market_movement_toward_unverified_pct)],
+      ['Verified-gap MAE',mae(X.verified_gap_mae)],['Verified-gap CLV, pts',smae(X.verified_gap_clv)],
+      ['False-extreme rate, raw 7+',p1(X.false_extreme_rate_raw_pct)],['False-extreme rate, verified',p1(X.false_extreme_rate_verified_pct)]]);
+    var rows=[['raw 7+',GR.raw_7plus],['verified',GR.verified],['not verified',GR.unverified]].filter(function(r){ return r[1]; });
+    h+='<h3>Graded</h3>'+note('False extreme: the close did not move toward EdgeDesk AND the result landed on the market’s side. A losing ticket alone is never counted.')
+      +table([['Population',function(r){ return esc(r[0]); }],['n',function(r){ return it(r[1].n); },'num'],['Settled',function(r){ return it(r[1].settled); },'num'],
+        ['MAE',function(r){ return mae(r[1].mae); },'num'],['Market MAE',function(r){ return mae(r[1].market_mae_at_snapshot); },'num'],
+        ['Moved toward',function(r){ return p1(r[1].moved_toward_pct); },'num'],['CLV, pts',function(r){ return smae(r[1].clv_points); },'num'],
+        ['False extremes',function(r){ return it(r[1].false_extremes); },'num'],['False-extreme rate',function(r){ return p1(r[1].false_extreme_rate_pct); },'num']],rows);
+    var rc=X.root_causes_unverified||{}, rk=Object.keys(rc).sort(function(a,b){ return rc[b]-rc[a]; });
+    h+='<h3>Why unverified 7+ gaps did not verify</h3>'+(rk.length?table([['Root cause',function(k){ return esc(String(k).replace(/_/g,' ')); },'txt'],['n',function(k){ return it(rc[k]); },'num']],rk):empty('No unverified 7+ gap yet.'));
+    var W=X.by_week||{}, wk=Object.keys(W).sort(function(a,b){ return a-b; });
+    h+='<h3>By week</h3>'+(wk.length?table([['Week',function(w){ return esc(w); }],['Raw 7+',function(w){ return it(W[w].raw_7plus); },'num'],['10+',function(w){ return it(W[w].raw_10plus); },'num'],
+      ['15+',function(w){ return it(W[w].raw_15plus); },'num'],['Verified',function(w){ return it(W[w].verified); },'num'],['Investigate',function(w){ return it(W[w].investigate); },'num'],
+      ['Data fault',function(w){ return it(W[w].data_fault); },'num'],['Market fault',function(w){ return it(W[w].market_fault); },'num'],['Not run',function(w){ return it(W[w].not_run); },'num'],
+      ['Favourite flips',function(w){ return it(W[w].favorite_flips); },'num']],wk):empty('No 7+ gap yet.'));
+    return sec('disagreement','8 · Major disagreements','A raw 7+ point gap is INVESTIGATE until it passes every integrity check; only then is it a VERIFIED MAJOR DISAGREEMENT. Rare by design, never a quota, and never a bet.',h);
+  }
+
+  /* ========================================================= 9. governance */
+  function govHTML(lab){
+    var G=(lab&&lab.governance)||{}, h='';
+    var ex=G.experiments||[];
+    h+='<h3>Experiments</h3>'+(ex.length?table([['Id',function(x){ return esc(x.id); }],['Name',function(x){ return esc(x.name); },'txt'],['Status',function(x){ return chip(x.status); }],['Scope',function(x){ return esc(x.scope); }],
+      ['Baseline \u2192 challenger',function(x){ return '<span class="mv">'+esc(x.baseline)+'</span> \u2192 <span class="mv">'+esc(x.challenger)+'</span>'; }],
+      ['Hypothesis',function(x){ return esc(x.hypothesis); },'txt'],['Change',function(x){ return val(x.change); },'txt'],['Window',function(x){ return esc(x.window||D); },'txt']],ex):empty('No experiment is registered.'));
+    var pt=(G.partitions||[]).slice().sort(function(a,b){ return (a.season||0)-(b.season||0); });
+    h+='<h3>Partitions</h3>'+note('Live observation data is evaluation only; tuning may read only the development pool (METRICS \u00a720).')
+      +(pt.length?table([['Season',function(p){ return esc(p.season); },'num'],['Weeks',function(p){ return (p.week_from==null&&p.week_to==null)?'all':esc((p.week_from==null?'':p.week_from)+'\u2013'+(p.week_to==null?'':p.week_to)); }],
+        ['Pool',function(p){ return esc(p.pool); }],['Origin',function(p){ return esc(p.origin_scope); }],['Effective',function(p){ return when(p.effective_at); }],['Reason',function(p){ return esc(p.reason||D); },'txt'],['By',function(p){ return esc(p.actor||D); }]],pt):empty('No partition is recorded.'));
+    var rq=G.research_queue||[];
+    h+='<h3>Research queue</h3>'+note('Evidence-backed items only (segments at n \u2265 50 and |z| \u2265 2, bucket flags). An item is a question for a person, never a change.')
+      +(rq.length?table([['Item',function(q){ return esc(q.title||q.item_key); },'txt'],['Status',function(q){ return chip(q.status); }],['n',function(q){ return it(q.n); },'num'],['Effect',function(q){ return smae(q.effect); },'num'],
+        ['SE',function(q){ return mae(q.effect_se); },'num'],['Opened',function(q){ return when(q.opened_at); }],['Updated',function(q){ return when(q.updated_at); }],['Events',function(q){ return it(q.history); },'num']],rq):empty('The research queue is empty.'));
+    var au=G.audit_tail||[];
+    h+='<h3>Audit log (newest 25)</h3>'+(au.length?table([['When',function(a){ return when(a.created_at); }],['Event',function(a){ return esc(a.event_type); }],['Subject',function(a){ return esc(a.subject); }],
+      ['Change',function(a){ return (a.before!=null?val(a.before)+' \u2192 ':'')+val(a.after); },'txt'],['Reason',function(a){ return esc(a.reason||D); },'txt'],['By',function(a){ return esc(a.actor||D); }]],au):empty('The audit log is empty.'));
+    return sec('governance','9 · Governance','What is being tested, which data may be used for what, what is waiting on evidence, and every governed change.',h);
+  }
+
+  /* ===================================================== 10. reconstructed */
+  function reconHTML(lab){
+    var R=(lab&&lab.reconstructed)||{}, B=R.by_model||{}, ms_=Object.keys(B).sort(byRole(lab));
+    var h='<div class="banner bad"><b>Not official \u00b7 not public \u00b7 not used for promotion</b>GIT_RECONSTRUCTED and REPLAY rows are evidence of method. They never enter a live figure above, the public record, the common set or any promotion decision.</div>'+note(R.note);
+    if(!ms_.length) return sec('reconstructed','10 · Reconstructed',null,h+empty('No reconstructed or replayed row has settled.'));
+    function origins(m){ return ((B[m]||{}).origin||[]).map(function(o){ return chip(o,o+' \u00b7 not official'); }).join(' ')||chip('GIT_RECONSTRUCTED','not official'); }
+    h+=table([['Model',function(m){ return mname(lab,m,true); }],['Origin',function(m){ return origins(m); }],['n',function(m){ var e=B[m].errors||{}; return nn(e.n,e.label); },'num'],
+      ['MAE',function(m){ return mae((B[m].errors||{}).mae); },'num'],['RMSE',function(m){ return mae((B[m].errors||{}).rmse); },'num'],['Median AE',function(m){ return mae((B[m].errors||{}).median_ae); },'num'],
+      ['Bias',function(m){ return smae((B[m].errors||{}).bias); },'num'],['P95',function(m){ return mae((B[m].errors||{}).p95_ae); },'num'],['Brier',function(m){ return pr((B[m].errors||{}).brier); },'num'],
+      ['Log loss',function(m){ return pr((B[m].errors||{}).log_loss); },'num'],['Win ECE',function(m){ var c=B[m].win_calibration||{}; return pr(c.ece)+ss(c.label); },'num'],
+      ['Winner',function(m){ return pc((B[m].errors||{}).winner_accuracy); },'num'],['80% cov',function(m){ return cov((B[m].intervals||{}).p80); },'num']],ms_);
+    var rows=[]; ms_.forEach(function(m){ var mk=B[m].market||{}; [['vs opener',mk.vs_open],['vs close',mk.vs_close]].forEach(function(k){ if(k[1]) rows.push({m:m,k:k[0],r:k[1]}); }); });
+    h+='<h3>Reconstructed rows against the market</h3>'+table([['Model',function(x){ return mname(lab,x.m,true)+' '+origins(x.m); }],['Against',function(x){ return esc(x.k); }],['n',function(x){ return nn(x.r.n,x.r.label); },'num'],
+      ['Model MAE',function(x){ return mae(x.r.model_mae); },'num'],['Market MAE',function(x){ return mae(x.r.market_mae); },'num'],['Difference',function(x){ return smae(x.r.mean_error_diff); },'num'],
+      ['95% CI',function(x){ return ci(x.r.diff_ci); },'num'],['Model closer',function(x){ return pc(x.r.beat_share); },'num']],rows);
+    return sec('reconstructed','10 · Reconstructed',null,h);
+  }
+
+  /* ============================================================== page */
+  var SECTIONS=[['health','Model health'],['this-week','This week'],['performance','Performance'],['comparison','Comparison'],['errors','Errors'],
+    ['edge','Edge'],['market','Market'],['disagreement','Disagreements'],['governance','Governance'],['reconstructed','Reconstructed']];
+  function navHTML(){ return '<nav class="toc" aria-label="Sections">'+SECTIONS.map(function(s,i){ return '<a href="#'+s[0]+'">'+(i+1)+' '+esc(s[1])+'</a>'; }).join('')+'</nav>'; }
+  function stampHTML(lab){
+    if(!lab) return '<div class="banner bad"><b>lab.json did not load</b>Every section below is empty because there is nothing to read, not because nothing happened.</div>';
+    var h='<p class="stamp">lab.json generated '+when(lab.generated_at)+' \u00b7 season '+esc(lab.season==null?D:lab.season)+' \u00b7 schema <span class="mv">'+esc(lab.schema||D)+'</span> \u00b7 definitions <span class="mv">'+esc(lab.definitions||'docs/cfb-lab/METRICS.md')+'</span>'
+      +(lab.rules?' \u00b7 rules '+Object.keys(lab.rules).map(function(k){ return '<span class="mv">'+esc(lab.rules[k])+'</span>'; }).join(' '):'')+'</p>';
+    if(lab.schema&&lab.schema!=='edgedesk_cfb_model_lab_v1') h+='<div class="banner"><b>Unexpected schema</b>This page was written for edgedesk_cfb_model_lab_v1; some sections may be missing.</div>';
+    return h;
+  }
+  function render(lab,lastRun){
+    return navHTML()+stampHTML(lab)+healthHTML(lab,lastRun)+weekHTML(lab)+perfHTML(lab)+compHTML(lab)+errHTML(lab)+edgeHTML(lab)+mktHTML(lab)+disHTML(lab)+govHTML(lab)+reconHTML(lab);
+  }
+  window.EDLAB={render:render,SECTIONS:SECTIONS,nav:navHTML,health:healthHTML,job:jobHTML,thisWeek:weekHTML,performance:perfHTML,comparison:compHTML,
+    errors:errHTML,edge:edgeHTML,market:mktHTML,disagreement:disHTML,governance:govHTML,reconstructed:reconHTML,
+    fmt:{esc:esc,fx:fx,sg:sg,ln:ln,mae:mae,pr:pr,pc:pc,when:when}};
+})();
+/*__EDLAB_END__*/
+(function(){
+  'use strict';
+  if(typeof document==='undefined') return;
+  var q=(typeof URLSearchParams!=='undefined')?new URLSearchParams(location.search).get('season'):null;
+  var season=/^\d{4}$/.test(q||'')?q:'2026';
+  var base='../../football/cfb_lab/reports/'+season+'/';
+  var host=document.getElementById('lab'), err=document.getElementById('err');
+  function get(u){ return fetch(u,{cache:'no-cache'}).then(function(r){ if(!r.ok) throw new Error(u+' '+r.status); return r.json(); }); }
+  Promise.all([get(base+'lab.json').catch(function(e){ err.textContent='lab.json could not be read ('+String(e&&e.message||e)+').'; return null; }),
+    get(base+'last_run.json').catch(function(){ return null; })])
+    .then(function(x){ host.innerHTML=window.EDLAB.render(x[0],x[1]); document.title='CFB Model Lab \u00b7 '+season; })
+    .catch(function(e){ err.textContent='The Model Lab could not be rendered: '+String(e&&e.message||e); });
+})();
+</script>
+</body>
+</html>

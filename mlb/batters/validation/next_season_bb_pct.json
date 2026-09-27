@@ -1,0 +1,149 @@
+{
+  "target": "bb_pct",
+  "label": "next-season walk rate",
+  "min_prior_pa": 200,
+  "seasons_evaluated": [
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "pairs": 2165,
+  "incumbent": {
+    "name": "carry forward (last season)",
+    "mae": 0.02096070577367209,
+    "rmse": 0.027717024916730174,
+    "n": 2165,
+    "se": 0.00038984467954577054
+  },
+  "candidates": {
+    "league": {
+      "name": "the league’s prior value",
+      "mae": 0.026085120092378757,
+      "rmse": 0.03305691574056061,
+      "n": 2165,
+      "se": 0.0004365076218147367
+    },
+    "shrinkage": {
+      "name": "three-season baseline shrunk to the league",
+      "mae": 0.01844656986850152,
+      "rmse": 0.024887117647587526,
+      "n": 2165,
+      "se": 0.00035912496659500494
+    },
+    "ridge": {
+      "name": "ridge on seven as-of features",
+      "mae": 0.018655957546881593,
+      "rmse": 0.02491444414263673,
+      "n": 2165,
+      "se": 0.0003549783095515682
+    }
+  },
+  "best": {
+    "name": "three-season baseline shrunk to the league",
+    "mae": 0.01844656986850152,
+    "rmse": 0.024887117647587526,
+    "n": 2165,
+    "se": 0.00035912496659500494
+  },
+  "improvement": 0.11994519327342866,
+  "convincing": true,
+  "per_season": [
+    {
+      "season": 2018,
+      "n": 327,
+      "shrinkage_k": 100,
+      "carry_mae": 0.0214716636085627,
+      "league_mae": 0.026356510703363915,
+      "shrink_mae": 0.018576214470318264,
+      "ridge_mae": 0.01898270238854461
+    },
+    {
+      "season": 2019,
+      "n": 334,
+      "shrinkage_k": 200,
+      "carry_mae": 0.020415005988023958,
+      "league_mae": 0.0262671616766467,
+      "shrink_mae": 0.01733971064718562,
+      "ridge_mae": 0.01792265488332931
+    },
+    {
+      "season": 2021,
+      "n": 135,
+      "shrinkage_k": 200,
+      "carry_mae": 0.022357977777777784,
+      "league_mae": 0.02494487407407408,
+      "shrink_mae": 0.01607572314659163,
+      "ridge_mae": 0.016356421123394277
+    },
+    {
+      "season": 2022,
+      "n": 339,
+      "shrinkage_k": 200,
+      "carry_mae": 0.021736731563421832,
+      "league_mae": 0.025857256637168143,
+      "shrink_mae": 0.01949514903602754,
+      "ridge_mae": 0.020151099254595635
+    },
+    {
+      "season": 2023,
+      "n": 339,
+      "shrinkage_k": 200,
+      "carry_mae": 0.0199378348082596,
+      "league_mae": 0.026612259587020622,
+      "shrink_mae": 0.01828626320595656,
+      "ridge_mae": 0.0179128574596328
+    },
+    {
+      "season": 2024,
+      "n": 346,
+      "shrinkage_k": 200,
+      "carry_mae": 0.02001297687861272,
+      "league_mae": 0.025419872832369936,
+      "shrink_mae": 0.01863490512464422,
+      "ridge_mae": 0.018607465996528853
+    },
+    {
+      "season": 2025,
+      "n": 345,
+      "shrinkage_k": 200,
+      "carry_mae": 0.02165097681159421,
+      "league_mae": 0.026470939130434776,
+      "shrink_mae": 0.019261274577978032,
+      "ridge_mae": 0.019265670331396662
+    }
+  ],
+  "excluded_2020": [
+    {
+      "season": 2020,
+      "n": 333
+    }
+  ],
+  "median_shrinkage_k": 200,
+  "verdict": "three-season baseline shrunk to the league beats carry-forward for next-season walk rate by 12.0% out of sample, comfortably outside its own spread. It is a candidate worth arguing about — and still not promoted by this script.",
+  "not_computable": {
+    "metrics": [
+      "calibration",
+      "log loss",
+      "Brier score",
+      "CLV",
+      "ROI against closing"
+    ],
+    "why": "Those are defined over GAME-LEVEL probabilities scored against settled outcomes. This archive holds completed-season totals with no game logs and no dates, so it produces no game-level probability to score. Reporting them would mean inventing the thing being measured. A next-season rate forecast is not a game model and is not scored like one."
+  },
+  "promotion": {
+    "promoted": false,
+    "registry_touched": false,
+    "live_pricing_changed": false,
+    "note": "Report-only. research_model_current is untouched, no live price, fair line, total or player prop reads any of this, and offensive_index is never converted into a probability. A candidate that has not beaten carry-forward out of sample has earned nothing."
+  },
+  "generated_at": "2026-09-17T02:52:50.402Z",
+  "rating_version": "ED_BAT_PERF_V1",
+  "coverage": {
+    "start": 2016,
+    "end": 2025
+  }
+}

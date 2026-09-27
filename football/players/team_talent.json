@@ -1,0 +1,1328 @@
+{
+ "schema": "edgedesk_team_talent_v1",
+ "version": 1,
+ "season": 2026,
+ "generated_at": "2026-09-15T19:38:34.939Z",
+ "source": "sportsdataverse/cfbfastR-cfb-data cfb_team_talent",
+ "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_team_talent/parquet/cfb_team_talent_2026.parquet",
+ "definitions": {
+  "talent_composite": "the provider’s roster-level total of industry composite recruiting ratings. It is a PEDIGREE TOTAL, correlated with roster size and class retention, and it is not a rating of how good the team is.",
+  "talent_rank": "the provider’s national rank on that total, 1 = highest",
+  "blue_chip_ratio": "the share of the roster that carried a four- or five-star rating",
+  "recruits": "how many rated recruits the composite was summed over"
+ },
+ "scope": "TEAM LEVEL ONLY. Per-player recruiting ratings remain subscription data and are still not substituted anywhere; football/players/recruiting_adapter.js ships every per-player field null.",
+ "pricing": "RESEARCH ONLY. No coefficient has been fitted against this series on this corpus, so it moves no point of any projection. It fills the recruiting_talent contract field and nothing else.",
+ "teams_resolved": 137,
+ "with_composite": 137,
+ "with_blue_chip": 137,
+ "refused": [
+  {
+   "team": "Idaho Vandals",
+   "team_id": "70",
+   "why": "team_id 70 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Montana State Bobcats",
+   "team_id": "147",
+   "why": "team_id 147 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Cal Poly Mustangs",
+   "team_id": "13",
+   "why": "team_id 13 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "UC Davis Aggies",
+   "team_id": "302",
+   "why": "team_id 302 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Eastern Washington Eagles",
+   "team_id": "331",
+   "why": "team_id 331 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Portland State Vikings",
+   "team_id": "2502",
+   "why": "team_id 2502 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Northern Arizona Lumberjacks",
+   "team_id": "2464",
+   "why": "team_id 2464 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "South Dakota State Jackrabbits",
+   "team_id": "2571",
+   "why": "team_id 2571 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Montana Grizzlies",
+   "team_id": "149",
+   "why": "team_id 149 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Weber State Wildcats",
+   "team_id": "2692",
+   "why": "team_id 2692 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Harvard Crimson",
+   "team_id": "108",
+   "why": "team_id 108 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Idaho State Bengals",
+   "team_id": "304",
+   "why": "team_id 304 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Jackson State Tigers",
+   "team_id": "2296",
+   "why": "team_id 2296 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Stephen F. Austin Lumberjacks",
+   "team_id": "2617",
+   "why": "team_id 2617 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Utah Tech Trailblazers",
+   "team_id": "3101",
+   "why": "team_id 3101 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Ferris State Bulldogs",
+   "team_id": "2222",
+   "why": "team_id 2222 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Illinois State Redbirds",
+   "team_id": "2287",
+   "why": "team_id 2287 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Grand Valley State Lakers",
+   "team_id": "125",
+   "why": "team_id 125 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "South Dakota Coyotes",
+   "team_id": "233",
+   "why": "team_id 233 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Pennsylvania Quakers",
+   "team_id": "219",
+   "why": "team_id 219 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Western Carolina Catamounts",
+   "team_id": "2717",
+   "why": "team_id 2717 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "West Georgia Wolves",
+   "team_id": "2698",
+   "why": "team_id 2698 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Mercer Bears",
+   "team_id": "2382",
+   "why": "team_id 2382 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Wofford Terriers",
+   "team_id": "2747",
+   "why": "team_id 2747 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "North Dakota Fighting Hawks",
+   "team_id": "155",
+   "why": "team_id 155 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Yale Bulldogs",
+   "team_id": "43",
+   "why": "team_id 43 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "East Tennessee State Buccaneers",
+   "team_id": "2193",
+   "why": "team_id 2193 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Central Arkansas Bears",
+   "team_id": "2110",
+   "why": "team_id 2110 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Austin Peay Governors",
+   "team_id": "2046",
+   "why": "team_id 2046 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Howard Bison",
+   "team_id": "47",
+   "why": "team_id 47 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Eastern Kentucky Colonels",
+   "team_id": "2198",
+   "why": "team_id 2198 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "McNeese Cowboys",
+   "team_id": "2377",
+   "why": "team_id 2377 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Chattanooga Mocs",
+   "team_id": "236",
+   "why": "team_id 236 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Tennessee State Tigers",
+   "team_id": "2634",
+   "why": "team_id 2634 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Campbell Fighting Camels",
+   "team_id": "2097",
+   "why": "team_id 2097 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Princeton Tigers",
+   "team_id": "163",
+   "why": "team_id 163 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Southeast Missouri State Redhawks",
+   "team_id": "2546",
+   "why": "team_id 2546 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Youngstown State Penguins",
+   "team_id": "2754",
+   "why": "team_id 2754 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Central Washington Wildcats",
+   "team_id": "2120",
+   "why": "team_id 2120 is not an FBS programme in the roster sync"
+  },
+  {
+   "team": "Southern Illinois Salukis",
+   "team_id": "79",
+   "why": "team_id 79 is not an FBS programme in the roster sync"
+  }
+ ],
+ "refused_count": 175,
+ "fbs_not_published": [
+  {
+   "team_key": "hawaii",
+   "espn_team_id": "62"
+  }
+ ],
+ "fbs_not_published_count": 1,
+ "coverage_note": "refused rows are provider rows EdgeDesk would not join on an identity it could not corroborate; fbs_not_published are FBS programmes the provider’s table does not carry at all. The first is an EdgeDesk problem and the second is a source problem, and they are never counted together.",
+ "teams": {
+  "georgia": {
+   "provider_team": "Georgia Bulldogs",
+   "provider_team_id": "61",
+   "talent_composite": 1454.7,
+   "talent_rank": 1,
+   "blue_chip_ratio": 0.73,
+   "recruits": 115
+  },
+  "alabama": {
+   "provider_team": "Alabama Crimson Tide",
+   "provider_team_id": "333",
+   "talent_composite": 1451.4,
+   "talent_rank": 2,
+   "blue_chip_ratio": 0.616,
+   "recruits": 112
+  },
+  "texas": {
+   "provider_team": "Texas Longhorns",
+   "provider_team_id": "251",
+   "talent_composite": 1405,
+   "talent_rank": 3,
+   "blue_chip_ratio": 0.606,
+   "recruits": 99
+  },
+  "oregon": {
+   "provider_team": "Oregon Ducks",
+   "provider_team_id": "2483",
+   "talent_composite": 1401.6,
+   "talent_rank": 4,
+   "blue_chip_ratio": 0.538,
+   "recruits": 119
+  },
+  "ohiostate": {
+   "provider_team": "Ohio State Buckeyes",
+   "provider_team_id": "194",
+   "talent_composite": 1367.1,
+   "talent_rank": 5,
+   "blue_chip_ratio": 0.604,
+   "recruits": 101
+  },
+  "notredame": {
+   "provider_team": "Notre Dame Fighting Irish",
+   "provider_team_id": "87",
+   "talent_composite": 1331.3,
+   "talent_rank": 6,
+   "blue_chip_ratio": 0.654,
+   "recruits": 104
+  },
+  "texasam": {
+   "provider_team": "Texas A&M Aggies",
+   "provider_team_id": "245",
+   "talent_composite": 1292.8,
+   "talent_rank": 7,
+   "blue_chip_ratio": 0.708,
+   "recruits": 89
+  },
+  "usc": {
+   "provider_team": "USC Trojans",
+   "provider_team_id": "30",
+   "talent_composite": 1275.9,
+   "talent_rank": 8,
+   "blue_chip_ratio": 0.473,
+   "recruits": 110
+  },
+  "lsu": {
+   "provider_team": "LSU Tigers",
+   "provider_team_id": "99",
+   "talent_composite": 1272.7,
+   "talent_rank": 9,
+   "blue_chip_ratio": 0.51,
+   "recruits": 102
+  },
+  "miami": {
+   "provider_team": "Miami Hurricanes",
+   "provider_team_id": "2390",
+   "talent_composite": 1262.9,
+   "talent_rank": 10,
+   "blue_chip_ratio": 0.523,
+   "recruits": 107
+  },
+  "tennessee": {
+   "provider_team": "Tennessee Volunteers",
+   "provider_team_id": "2633",
+   "talent_composite": 1252.3,
+   "talent_rank": 11,
+   "blue_chip_ratio": 0.462,
+   "recruits": 104
+  },
+  "florida": {
+   "provider_team": "Florida Gators",
+   "provider_team_id": "57",
+   "talent_composite": 1249.5,
+   "talent_rank": 12,
+   "blue_chip_ratio": 0.582,
+   "recruits": 91
+  },
+  "michigan": {
+   "provider_team": "Michigan Wolverines",
+   "provider_team_id": "130",
+   "talent_composite": 1235.6,
+   "talent_rank": 13,
+   "blue_chip_ratio": 0.51,
+   "recruits": 100
+  },
+  "oklahoma": {
+   "provider_team": "Oklahoma Sooners",
+   "provider_team_id": "201",
+   "talent_composite": 1173.6,
+   "talent_rank": 14,
+   "blue_chip_ratio": 0.452,
+   "recruits": 104
+  },
+  "clemson": {
+   "provider_team": "Clemson Tigers",
+   "provider_team_id": "228",
+   "talent_composite": 1162.6,
+   "talent_rank": 15,
+   "blue_chip_ratio": 0.483,
+   "recruits": 87
+  },
+  "southcarolina": {
+   "provider_team": "South Carolina Gamecocks",
+   "provider_team_id": "2579",
+   "talent_composite": 1150.4,
+   "talent_rank": 16,
+   "blue_chip_ratio": 0.444,
+   "recruits": 90
+  },
+  "floridastate": {
+   "provider_team": "Florida State Seminoles",
+   "provider_team_id": "52",
+   "talent_composite": 1140.3,
+   "talent_rank": 17,
+   "blue_chip_ratio": 0.363,
+   "recruits": 102
+  },
+  "auburn": {
+   "provider_team": "Auburn Tigers",
+   "provider_team_id": "2",
+   "talent_composite": 1126.6,
+   "talent_rank": 18,
+   "blue_chip_ratio": 0.392,
+   "recruits": 97
+  },
+  "pennstate": {
+   "provider_team": "Penn State Nittany Lions",
+   "provider_team_id": "213",
+   "talent_composite": 1093.6,
+   "talent_rank": 19,
+   "blue_chip_ratio": 0.408,
+   "recruits": 98
+  },
+  "olemiss": {
+   "provider_team": "Ole Miss Rebels",
+   "provider_team_id": "145",
+   "talent_composite": 1077.1,
+   "talent_rank": 20,
+   "blue_chip_ratio": 0.414,
+   "recruits": 87
+  },
+  "texastech": {
+   "provider_team": "Texas Tech Red Raiders",
+   "provider_team_id": "2641",
+   "talent_composite": 1052.5,
+   "talent_rank": 21,
+   "blue_chip_ratio": 0.25,
+   "recruits": 92
+  },
+  "washington": {
+   "provider_team": "Washington Huskies",
+   "provider_team_id": "264",
+   "talent_composite": 1043.9,
+   "talent_rank": 22,
+   "blue_chip_ratio": 0.27,
+   "recruits": 100
+  },
+  "nebraska": {
+   "provider_team": "Nebraska Cornhuskers",
+   "provider_team_id": "158",
+   "talent_composite": 1029.4,
+   "talent_rank": 23,
+   "blue_chip_ratio": 0.263,
+   "recruits": 99
+  },
+  "mississippistate": {
+   "provider_team": "Mississippi State Bulldogs",
+   "provider_team_id": "344",
+   "talent_composite": 1004.9,
+   "talent_rank": 24,
+   "blue_chip_ratio": 0.116,
+   "recruits": 121
+  },
+  "missouri": {
+   "provider_team": "Missouri Tigers",
+   "provider_team_id": "142",
+   "talent_composite": 991.2,
+   "talent_rank": 25,
+   "blue_chip_ratio": 0.282,
+   "recruits": 85
+  },
+  "iowa": {
+   "provider_team": "Iowa Hawkeyes",
+   "provider_team_id": "2294",
+   "talent_composite": 987.5,
+   "talent_rank": 26,
+   "blue_chip_ratio": 0.196,
+   "recruits": 102
+  },
+  "tcu": {
+   "provider_team": "TCU Horned Frogs",
+   "provider_team_id": "2628",
+   "talent_composite": 978,
+   "talent_rank": 27,
+   "blue_chip_ratio": 0.19,
+   "recruits": 100
+  },
+  "rutgers": {
+   "provider_team": "Rutgers Scarlet Knights",
+   "provider_team_id": "164",
+   "talent_composite": 974.6,
+   "talent_rank": 28,
+   "blue_chip_ratio": 0.149,
+   "recruits": 101
+  },
+  "georgiatech": {
+   "provider_team": "Georgia Tech Yellow Jackets",
+   "provider_team_id": "59",
+   "talent_composite": 969,
+   "talent_rank": 29,
+   "blue_chip_ratio": 0.144,
+   "recruits": 90
+  },
+  "byu": {
+   "provider_team": "BYU Cougars",
+   "provider_team_id": "252",
+   "talent_composite": 966.2,
+   "talent_rank": 30,
+   "blue_chip_ratio": 0.129,
+   "recruits": 101
+  },
+  "northcarolina": {
+   "provider_team": "North Carolina Tar Heels",
+   "provider_team_id": "153",
+   "talent_composite": 964.9,
+   "talent_rank": 31,
+   "blue_chip_ratio": 0.154,
+   "recruits": 123
+  },
+  "kentucky": {
+   "provider_team": "Kentucky Wildcats",
+   "provider_team_id": "96",
+   "talent_composite": 957.3,
+   "talent_rank": 32,
+   "blue_chip_ratio": 0.191,
+   "recruits": 94
+  },
+  "minnesota": {
+   "provider_team": "Minnesota Golden Gophers",
+   "provider_team_id": "135",
+   "talent_composite": 945.3,
+   "talent_rank": 33,
+   "blue_chip_ratio": 0.123,
+   "recruits": 106
+  },
+  "utah": {
+   "provider_team": "Utah Utes",
+   "provider_team_id": "254",
+   "talent_composite": 941.3,
+   "talent_rank": 34,
+   "blue_chip_ratio": 0.153,
+   "recruits": 85
+  },
+  "virginiatech": {
+   "provider_team": "Virginia Tech Hokies",
+   "provider_team_id": "259",
+   "talent_composite": 941.2,
+   "talent_rank": 35,
+   "blue_chip_ratio": 0.193,
+   "recruits": 88
+  },
+  "ncstate": {
+   "provider_team": "NC State Wolfpack",
+   "provider_team_id": "152",
+   "talent_composite": 940,
+   "talent_rank": 36,
+   "blue_chip_ratio": 0.122,
+   "recruits": 98
+  },
+  "michiganstate": {
+   "provider_team": "Michigan State Spartans",
+   "provider_team_id": "127",
+   "talent_composite": 936.7,
+   "talent_rank": 37,
+   "blue_chip_ratio": 0.144,
+   "recruits": 90
+  },
+  "maryland": {
+   "provider_team": "Maryland Terrapins",
+   "provider_team_id": "120",
+   "talent_composite": 934.2,
+   "talent_rank": 38,
+   "blue_chip_ratio": 0.117,
+   "recruits": 94
+  },
+  "arizona": {
+   "provider_team": "Arizona Wildcats",
+   "provider_team_id": "12",
+   "talent_composite": 926,
+   "talent_rank": 39,
+   "blue_chip_ratio": 0.136,
+   "recruits": 103
+  },
+  "arkansas": {
+   "provider_team": "Arkansas Razorbacks",
+   "provider_team_id": "8",
+   "talent_composite": 923.3,
+   "talent_rank": 40,
+   "blue_chip_ratio": 0.151,
+   "recruits": 93
+  },
+  "illinois": {
+   "provider_team": "Illinois Fighting Illini",
+   "provider_team_id": "356",
+   "talent_composite": 917.7,
+   "talent_rank": 41,
+   "blue_chip_ratio": 0.078,
+   "recruits": 115
+  },
+  "syracuse": {
+   "provider_team": "Syracuse Orange",
+   "provider_team_id": "183",
+   "talent_composite": 915.4,
+   "talent_rank": 42,
+   "blue_chip_ratio": 0.082,
+   "recruits": 110
+  },
+  "westvirginia": {
+   "provider_team": "West Virginia Mountaineers",
+   "provider_team_id": "277",
+   "talent_composite": 911.7,
+   "talent_rank": 43,
+   "blue_chip_ratio": 0.063,
+   "recruits": 126
+  },
+  "kansasstate": {
+   "provider_team": "Kansas State Wildcats",
+   "provider_team_id": "2306",
+   "talent_composite": 908.4,
+   "talent_rank": 44,
+   "blue_chip_ratio": 0.078,
+   "recruits": 103
+  },
+  "wisconsin": {
+   "provider_team": "Wisconsin Badgers",
+   "provider_team_id": "275",
+   "talent_composite": 907,
+   "talent_rank": 45,
+   "blue_chip_ratio": 0.211,
+   "recruits": 90
+  },
+  "baylor": {
+   "provider_team": "Baylor Bears",
+   "provider_team_id": "239",
+   "talent_composite": 904.8,
+   "talent_rank": 46,
+   "blue_chip_ratio": 0.159,
+   "recruits": 82
+  },
+  "pittsburgh": {
+   "provider_team": "Pittsburgh Panthers",
+   "provider_team_id": "221",
+   "talent_composite": 901,
+   "talent_rank": 47,
+   "blue_chip_ratio": 0.126,
+   "recruits": 87
+  },
+  "vanderbilt": {
+   "provider_team": "Vanderbilt Commodores",
+   "provider_team_id": "238",
+   "talent_composite": 898.6,
+   "talent_rank": 48,
+   "blue_chip_ratio": 0.106,
+   "recruits": 85
+  },
+  "arizonastate": {
+   "provider_team": "Arizona State Sun Devils",
+   "provider_team_id": "9",
+   "talent_composite": 896.2,
+   "talent_rank": 49,
+   "blue_chip_ratio": 0.1,
+   "recruits": 90
+  },
+  "stanford": {
+   "provider_team": "Stanford Cardinal",
+   "provider_team_id": "24",
+   "talent_composite": 892.7,
+   "talent_rank": 50,
+   "blue_chip_ratio": 0.096,
+   "recruits": 94
+  },
+  "smu": {
+   "provider_team": "SMU Mustangs",
+   "provider_team_id": "2567",
+   "talent_composite": 874,
+   "talent_rank": 51,
+   "blue_chip_ratio": 0.163,
+   "recruits": 80
+  },
+  "indiana": {
+   "provider_team": "Indiana Hoosiers",
+   "provider_team_id": "84",
+   "talent_composite": 872,
+   "talent_rank": 52,
+   "blue_chip_ratio": 0.1,
+   "recruits": 100
+  },
+  "houston": {
+   "provider_team": "Houston Cougars",
+   "provider_team_id": "248",
+   "talent_composite": 866.8,
+   "talent_rank": 53,
+   "blue_chip_ratio": 0.122,
+   "recruits": 74
+  },
+  "colorado": {
+   "provider_team": "Colorado Buffaloes",
+   "provider_team_id": "38",
+   "talent_composite": 861.7,
+   "talent_rank": 54,
+   "blue_chip_ratio": 0.157,
+   "recruits": 70
+  },
+  "iowastate": {
+   "provider_team": "Iowa State Cyclones",
+   "provider_team_id": "66",
+   "talent_composite": 861.5,
+   "talent_rank": 55,
+   "blue_chip_ratio": 0.067,
+   "recruits": 104
+  },
+  "boisestate": {
+   "provider_team": "Boise State Broncos",
+   "provider_team_id": "68",
+   "talent_composite": 848.9,
+   "talent_rank": 56,
+   "blue_chip_ratio": 0.026,
+   "recruits": 117
+  },
+  "california": {
+   "provider_team": "California Golden Bears",
+   "provider_team_id": "25",
+   "talent_composite": 845.5,
+   "talent_rank": 57,
+   "blue_chip_ratio": 0.114,
+   "recruits": 79
+  },
+  "duke": {
+   "provider_team": "Duke Blue Devils",
+   "provider_team_id": "150",
+   "talent_composite": 835.4,
+   "talent_rank": 58,
+   "blue_chip_ratio": 0.077,
+   "recruits": 91
+  },
+  "wakeforest": {
+   "provider_team": "Wake Forest Demon Deacons",
+   "provider_team_id": "154",
+   "talent_composite": 817.8,
+   "talent_rank": 59,
+   "blue_chip_ratio": 0.032,
+   "recruits": 95
+  },
+  "memphis": {
+   "provider_team": "Memphis Tigers",
+   "provider_team_id": "235",
+   "talent_composite": 811.1,
+   "talent_rank": 60,
+   "blue_chip_ratio": 0.019,
+   "recruits": 106
+  },
+  "ucla": {
+   "provider_team": "UCLA Bruins",
+   "provider_team_id": "26",
+   "talent_composite": 811,
+   "talent_rank": 61,
+   "blue_chip_ratio": 0.082,
+   "recruits": 73
+  },
+  "louisville": {
+   "provider_team": "Louisville Cardinals",
+   "provider_team_id": "97",
+   "talent_composite": 810.6,
+   "talent_rank": 62,
+   "blue_chip_ratio": 0.155,
+   "recruits": 71
+  },
+  "bostoncollege": {
+   "provider_team": "Boston College Eagles",
+   "provider_team_id": "103",
+   "talent_composite": 809.9,
+   "talent_rank": 63,
+   "blue_chip_ratio": 0.06,
+   "recruits": 83
+  },
+  "olddominion": {
+   "provider_team": "Old Dominion Monarchs",
+   "provider_team_id": "295",
+   "talent_composite": 809,
+   "talent_rank": 64,
+   "blue_chip_ratio": 0.027,
+   "recruits": 112
+  },
+  "southflorida": {
+   "provider_team": "South Florida Bulls",
+   "provider_team_id": "58",
+   "talent_composite": 800.1,
+   "talent_rank": 65,
+   "blue_chip_ratio": 0.033,
+   "recruits": 90
+  },
+  "purdue": {
+   "provider_team": "Purdue Boilermakers",
+   "provider_team_id": "2509",
+   "talent_composite": 799.8,
+   "talent_rank": 66,
+   "blue_chip_ratio": 0.054,
+   "recruits": 92
+  },
+  "northwestern": {
+   "provider_team": "Northwestern Wildcats",
+   "provider_team_id": "77",
+   "talent_composite": 799.4,
+   "talent_rank": 67,
+   "blue_chip_ratio": 0.048,
+   "recruits": 84
+  },
+  "arkansasstate": {
+   "provider_team": "Arkansas State Red Wolves",
+   "provider_team_id": "2032",
+   "talent_composite": 798.8,
+   "talent_rank": 68,
+   "blue_chip_ratio": 0,
+   "recruits": 114
+  },
+  "georgiasouthern": {
+   "provider_team": "Georgia Southern Eagles",
+   "provider_team_id": "290",
+   "talent_composite": 791.1,
+   "talent_rank": 69,
+   "blue_chip_ratio": 0.022,
+   "recruits": 92
+  },
+  "northernillinois": {
+   "provider_team": "Northern Illinois Huskies",
+   "provider_team_id": "2459",
+   "talent_composite": 790.7,
+   "talent_rank": 70,
+   "blue_chip_ratio": 0.009,
+   "recruits": 109
+  },
+  "cincinnati": {
+   "provider_team": "Cincinnati Bearcats",
+   "provider_team_id": "2132",
+   "talent_composite": 779.5,
+   "talent_rank": 71,
+   "blue_chip_ratio": 0.038,
+   "recruits": 79
+  },
+  "utep": {
+   "provider_team": "UTEP Miners",
+   "provider_team_id": "2638",
+   "talent_composite": 777.9,
+   "talent_rank": 72,
+   "blue_chip_ratio": 0,
+   "recruits": 116
+  },
+  "easternmichigan": {
+   "provider_team": "Eastern Michigan Eagles",
+   "provider_team_id": "2199",
+   "talent_composite": 776.8,
+   "talent_rank": 73,
+   "blue_chip_ratio": 0,
+   "recruits": 123
+  },
+  "eastcarolina": {
+   "provider_team": "East Carolina Pirates",
+   "provider_team_id": "151",
+   "talent_composite": 776.7,
+   "talent_rank": 74,
+   "blue_chip_ratio": 0.031,
+   "recruits": 97
+  },
+  "troy": {
+   "provider_team": "Troy Trojans",
+   "provider_team_id": "2653",
+   "talent_composite": 776.5,
+   "talent_rank": 75,
+   "blue_chip_ratio": 0,
+   "recruits": 124
+  },
+  "tulane": {
+   "provider_team": "Tulane Green Wave",
+   "provider_team_id": "2655",
+   "talent_composite": 775.5,
+   "talent_rank": 76,
+   "blue_chip_ratio": 0.065,
+   "recruits": 77
+  },
+  "oregonstate": {
+   "provider_team": "Oregon State Beavers",
+   "provider_team_id": "204",
+   "talent_composite": 773.1,
+   "talent_rank": 77,
+   "blue_chip_ratio": 0.022,
+   "recruits": 89
+  },
+  "washingtonstate": {
+   "provider_team": "Washington State Cougars",
+   "provider_team_id": "265",
+   "talent_composite": 767.2,
+   "talent_rank": 78,
+   "blue_chip_ratio": 0.008,
+   "recruits": 127
+  },
+  "ucf": {
+   "provider_team": "UCF Knights",
+   "provider_team_id": "2116",
+   "talent_composite": 765.6,
+   "talent_rank": 79,
+   "blue_chip_ratio": 0.096,
+   "recruits": 73
+  },
+  "georgiastate": {
+   "provider_team": "Georgia State Panthers",
+   "provider_team_id": "2247",
+   "talent_composite": 759.2,
+   "talent_rank": 80,
+   "blue_chip_ratio": 0.011,
+   "recruits": 94
+  },
+  "wyoming": {
+   "provider_team": "Wyoming Cowboys",
+   "provider_team_id": "2751",
+   "talent_composite": 756,
+   "talent_rank": 81,
+   "blue_chip_ratio": 0,
+   "recruits": 101
+  },
+  "oklahomastate": {
+   "provider_team": "Oklahoma State Cowboys",
+   "provider_team_id": "197",
+   "talent_composite": 755.5,
+   "talent_rank": 82,
+   "blue_chip_ratio": 0,
+   "recruits": 93
+  },
+  "toledo": {
+   "provider_team": "Toledo Rockets",
+   "provider_team_id": "2649",
+   "talent_composite": 746.3,
+   "talent_rank": 83,
+   "blue_chip_ratio": 0.025,
+   "recruits": 79
+  },
+  "temple": {
+   "provider_team": "Temple Owls",
+   "provider_team_id": "218",
+   "talent_composite": 743.2,
+   "talent_rank": 84,
+   "blue_chip_ratio": 0.009,
+   "recruits": 114
+  },
+  "fresnostate": {
+   "provider_team": "Fresno State Bulldogs",
+   "provider_team_id": "278",
+   "talent_composite": 742.6,
+   "talent_rank": 85,
+   "blue_chip_ratio": 0,
+   "recruits": 97
+  },
+  "utsa": {
+   "provider_team": "UTSA Roadrunners",
+   "provider_team_id": "2636",
+   "talent_composite": 742.4,
+   "talent_rank": 86,
+   "blue_chip_ratio": 0.024,
+   "recruits": 85
+  },
+  "appstate": {
+   "provider_team": "Appalachian State Mountaineers",
+   "provider_team_id": "2026",
+   "talent_composite": 741.7,
+   "talent_rank": 87,
+   "blue_chip_ratio": 0.01,
+   "recruits": 105
+  },
+  "coloradostate": {
+   "provider_team": "Colorado State Rams",
+   "provider_team_id": "36",
+   "talent_composite": 741.6,
+   "talent_rank": 88,
+   "blue_chip_ratio": 0,
+   "recruits": 99
+  },
+  "southernmiss": {
+   "provider_team": "Southern Miss Golden Eagles",
+   "provider_team_id": "2572",
+   "talent_composite": 741.1,
+   "talent_rank": 89,
+   "blue_chip_ratio": 0,
+   "recruits": 94
+  },
+  "ulmonroe": {
+   "provider_team": "Louisiana-Monroe Warhawks",
+   "provider_team_id": "2433",
+   "talent_composite": 736.3,
+   "talent_rank": 90,
+   "blue_chip_ratio": 0.009,
+   "recruits": 106
+  },
+  "utahstate": {
+   "provider_team": "Utah State Aggies",
+   "provider_team_id": "328",
+   "talent_composite": 734.4,
+   "talent_rank": 91,
+   "blue_chip_ratio": 0,
+   "recruits": 96
+  },
+  "texasstate": {
+   "provider_team": "Texas State Bobcats",
+   "provider_team_id": "326",
+   "talent_composite": 731,
+   "talent_rank": 92,
+   "blue_chip_ratio": 0,
+   "recruits": 82
+  },
+  "southalabama": {
+   "provider_team": "South Alabama Jaguars",
+   "provider_team_id": "6",
+   "talent_composite": 729.1,
+   "talent_rank": 93,
+   "blue_chip_ratio": 0,
+   "recruits": 95
+  },
+  "kansas": {
+   "provider_team": "Kansas Jayhawks",
+   "provider_team_id": "2305",
+   "talent_composite": 728.4,
+   "talent_rank": 94,
+   "blue_chip_ratio": 0.043,
+   "recruits": 69
+  },
+  "ohio": {
+   "provider_team": "Ohio Bobcats",
+   "provider_team_id": "195",
+   "talent_composite": 728.1,
+   "talent_rank": 95,
+   "blue_chip_ratio": 0.027,
+   "recruits": 75
+  },
+  "unlv": {
+   "provider_team": "UNLV Rebels",
+   "provider_team_id": "2439",
+   "talent_composite": 727.9,
+   "talent_rank": 96,
+   "blue_chip_ratio": 0,
+   "recruits": 91
+  },
+  "westernmichigan": {
+   "provider_team": "Western Michigan Broncos",
+   "provider_team_id": "2711",
+   "talent_composite": 726.9,
+   "talent_rank": 97,
+   "blue_chip_ratio": 0,
+   "recruits": 87
+  },
+  "louisianatech": {
+   "provider_team": "Louisiana Tech Bulldogs",
+   "provider_team_id": "2348",
+   "talent_composite": 726.6,
+   "talent_rank": 98,
+   "blue_chip_ratio": 0,
+   "recruits": 92
+  },
+  "nevada": {
+   "provider_team": "Nevada Wolf Pack",
+   "provider_team_id": "2440",
+   "talent_composite": 726.6,
+   "talent_rank": 99,
+   "blue_chip_ratio": 0,
+   "recruits": 94
+  },
+  "rice": {
+   "provider_team": "Rice Owls",
+   "provider_team_id": "242",
+   "talent_composite": 724.7,
+   "talent_rank": 100,
+   "blue_chip_ratio": 0,
+   "recruits": 88
+  },
+  "coastalcarolina": {
+   "provider_team": "Coastal Carolina Chanticleers",
+   "provider_team_id": "324",
+   "talent_composite": 724.6,
+   "talent_rank": 101,
+   "blue_chip_ratio": 0,
+   "recruits": 93
+  },
+  "sanjosstate": {
+   "provider_team": "San Jose State Spartans",
+   "provider_team_id": "23",
+   "talent_composite": 724.2,
+   "talent_rank": 102,
+   "blue_chip_ratio": 0.011,
+   "recruits": 89
+  },
+  "miamioh": {
+   "provider_team": "Miami (OH) RedHawks",
+   "provider_team_id": "193",
+   "talent_composite": 722.4,
+   "talent_rank": 103,
+   "blue_chip_ratio": 0,
+   "recruits": 80
+  },
+  "sandiegostate": {
+   "provider_team": "San Diego State Aztecs",
+   "provider_team_id": "21",
+   "talent_composite": 722.2,
+   "talent_rank": 104,
+   "blue_chip_ratio": 0,
+   "recruits": 87
+  },
+  "bowlinggreen": {
+   "provider_team": "Bowling Green Falcons",
+   "provider_team_id": "189",
+   "talent_composite": 721.2,
+   "talent_rank": 105,
+   "blue_chip_ratio": 0,
+   "recruits": 87
+  },
+  "floridainternational": {
+   "provider_team": "FIU Panthers",
+   "provider_team_id": "2229",
+   "talent_composite": 720.1,
+   "talent_rank": 106,
+   "blue_chip_ratio": 0,
+   "recruits": 86
+  },
+  "middletennessee": {
+   "provider_team": "Middle Tennessee Blue Raiders",
+   "provider_team_id": "2393",
+   "talent_composite": 719.4,
+   "talent_rank": 107,
+   "blue_chip_ratio": 0,
+   "recruits": 84
+  },
+  "louisiana": {
+   "provider_team": "Louisiana Ragin' Cajuns",
+   "provider_team_id": "309",
+   "talent_composite": 716.1,
+   "talent_rank": 108,
+   "blue_chip_ratio": 0,
+   "recruits": 80
+  },
+  "buffalo": {
+   "provider_team": "Buffalo Bulls",
+   "provider_team_id": "2084",
+   "talent_composite": 711.4,
+   "talent_rank": 109,
+   "blue_chip_ratio": 0,
+   "recruits": 86
+  },
+  "centralmichigan": {
+   "provider_team": "Central Michigan Chippewas",
+   "provider_team_id": "2117",
+   "talent_composite": 710.6,
+   "talent_rank": 110,
+   "blue_chip_ratio": 0,
+   "recruits": 99
+  },
+  "kentstate": {
+   "provider_team": "Kent State Golden Flashes",
+   "provider_team_id": "2309",
+   "talent_composite": 709.5,
+   "talent_rank": 111,
+   "blue_chip_ratio": 0.013,
+   "recruits": 79
+  },
+  "floridaatlantic": {
+   "provider_team": "Florida Atlantic Owls",
+   "provider_team_id": "2226",
+   "talent_composite": 708.6,
+   "talent_rank": 112,
+   "blue_chip_ratio": 0.013,
+   "recruits": 76
+  },
+  "ballstate": {
+   "provider_team": "Ball State Cardinals",
+   "provider_team_id": "2050",
+   "talent_composite": 699.4,
+   "talent_rank": 114,
+   "blue_chip_ratio": 0,
+   "recruits": 84
+  },
+  "tulsa": {
+   "provider_team": "Tulsa Golden Hurricane",
+   "provider_team_id": "202",
+   "talent_composite": 698.8,
+   "talent_rank": 115,
+   "blue_chip_ratio": 0,
+   "recruits": 86
+  },
+  "jamesmadison": {
+   "provider_team": "James Madison Dukes",
+   "provider_team_id": "256",
+   "talent_composite": 695.2,
+   "talent_rank": 116,
+   "blue_chip_ratio": 0.013,
+   "recruits": 78
+  },
+  "airforce": {
+   "provider_team": "Air Force Falcons",
+   "provider_team_id": "2005",
+   "talent_composite": 693.3,
+   "talent_rank": 117,
+   "blue_chip_ratio": 0,
+   "recruits": 201
+  },
+  "sacramentostate": {
+   "provider_team": "Sacramento State Hornets",
+   "provider_team_id": "16",
+   "talent_composite": 693,
+   "talent_rank": 118,
+   "blue_chip_ratio": 0,
+   "recruits": 93
+  },
+  "northtexas": {
+   "provider_team": "North Texas Mean Green",
+   "provider_team_id": "249",
+   "talent_composite": 689.8,
+   "talent_rank": 119,
+   "blue_chip_ratio": 0.027,
+   "recruits": 73
+  },
+  "virginia": {
+   "provider_team": "Virginia Cavaliers",
+   "provider_team_id": "258",
+   "talent_composite": 681.8,
+   "talent_rank": 120,
+   "blue_chip_ratio": 0,
+   "recruits": 74
+  },
+  "charlotte": {
+   "provider_team": "Charlotte 49ers",
+   "provider_team_id": "2429",
+   "talent_composite": 677.8,
+   "talent_rank": 121,
+   "blue_chip_ratio": 0,
+   "recruits": 81
+  },
+  "jacksonvillestate": {
+   "provider_team": "Jacksonville State Gamecocks",
+   "provider_team_id": "55",
+   "talent_composite": 675.3,
+   "talent_rank": 122,
+   "blue_chip_ratio": 0,
+   "recruits": 84
+  },
+  "westernkentucky": {
+   "provider_team": "Western Kentucky Hilltoppers",
+   "provider_team_id": "98",
+   "talent_composite": 673.6,
+   "talent_rank": 123,
+   "blue_chip_ratio": 0,
+   "recruits": 76
+  },
+  "liberty": {
+   "provider_team": "Liberty Flames",
+   "provider_team_id": "2335",
+   "talent_composite": 667.7,
+   "talent_rank": 124,
+   "blue_chip_ratio": 0,
+   "recruits": 73
+  },
+  "marshall": {
+   "provider_team": "Marshall Thundering Herd",
+   "provider_team_id": "276",
+   "talent_composite": 654,
+   "talent_rank": 125,
+   "blue_chip_ratio": 0,
+   "recruits": 71
+  },
+  "northdakotastate": {
+   "provider_team": "North Dakota State Bison",
+   "provider_team_id": "2449",
+   "talent_composite": 645.2,
+   "talent_rank": 126,
+   "blue_chip_ratio": 0,
+   "recruits": 83
+  },
+  "uab": {
+   "provider_team": "UAB Blazers",
+   "provider_team_id": "5",
+   "talent_composite": 644,
+   "talent_rank": 127,
+   "blue_chip_ratio": 0.015,
+   "recruits": 66
+  },
+  "newmexicostate": {
+   "provider_team": "New Mexico State Aggies",
+   "provider_team_id": "166",
+   "talent_composite": 642.1,
+   "talent_rank": 128,
+   "blue_chip_ratio": 0,
+   "recruits": 84
+  },
+  "samhouston": {
+   "provider_team": "Sam Houston Bearkats",
+   "provider_team_id": "2534",
+   "talent_composite": 639,
+   "talent_rank": 129,
+   "blue_chip_ratio": 0,
+   "recruits": 67
+  },
+  "akron": {
+   "provider_team": "Akron Zips",
+   "provider_team_id": "2006",
+   "talent_composite": 633.6,
+   "talent_rank": 130,
+   "blue_chip_ratio": 0,
+   "recruits": 65
+  },
+  "uconn": {
+   "provider_team": "UConn Huskies",
+   "provider_team_id": "41",
+   "talent_composite": 615.6,
+   "talent_rank": 133,
+   "blue_chip_ratio": 0,
+   "recruits": 60
+  },
+  "newmexico": {
+   "provider_team": "New Mexico Lobos",
+   "provider_team_id": "167",
+   "talent_composite": 607.7,
+   "talent_rank": 134,
+   "blue_chip_ratio": 0,
+   "recruits": 81
+  },
+  "army": {
+   "provider_team": "Army Black Knights",
+   "provider_team_id": "349",
+   "talent_composite": 586.6,
+   "talent_rank": 137,
+   "blue_chip_ratio": 0,
+   "recruits": 245
+  },
+  "massachusetts": {
+   "provider_team": "UMass Minutemen",
+   "provider_team_id": "113",
+   "talent_composite": 580.1,
+   "talent_rank": 138,
+   "blue_chip_ratio": 0,
+   "recruits": 53
+  },
+  "kennesawstate": {
+   "provider_team": "Kennesaw State Owls",
+   "provider_team_id": "338",
+   "talent_composite": 538.4,
+   "talent_rank": 141,
+   "blue_chip_ratio": 0,
+   "recruits": 62
+  },
+  "missouristate": {
+   "provider_team": "Missouri State Bears",
+   "provider_team_id": "2623",
+   "talent_composite": 523.8,
+   "talent_rank": 142,
+   "blue_chip_ratio": 0,
+   "recruits": 57
+  },
+  "navy": {
+   "provider_team": "Navy Midshipmen",
+   "provider_team_id": "2426",
+   "talent_composite": 513.2,
+   "talent_rank": 143,
+   "blue_chip_ratio": 0,
+   "recruits": 152
+  },
+  "delaware": {
+   "provider_team": "Delaware Fightin' Blue Hens",
+   "provider_team_id": "48",
+   "talent_composite": 501.9,
+   "talent_rank": 146,
+   "blue_chip_ratio": 0,
+   "recruits": 63
+  }
+ }
+}

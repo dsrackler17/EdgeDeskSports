@@ -1,0 +1,121 @@
+{
+ "schema": "edgedesk_scorecard_v1",
+ "generated_at": "2026-09-25T14:42:44.700Z",
+ "inputs": {
+  "rows": 0,
+  "rows_status": "VIEW_NOT_FOUND",
+  "rows_detail": "research_packet_pricing does not exist on this database; run supabase/bankroll_and_stakes.sql",
+  "stake_rows": 0,
+  "stake_rows_status": "OK",
+  "stake_rows_detail": null,
+  "nfl_archive": {
+   "games": 7340,
+   "with_opener": 48
+  },
+  "cfb_archive": {
+   "games": 11502,
+   "with_open": 8557
+  }
+ },
+ "clv": {
+  "groups": {},
+  "sample_floor": 50,
+  "note": "Closing-line value measures whether the number the desk quoted was better than the number the market closed at. It is the honest scorecard for a pricer. A win-loss record at this sample size is variance, and neither figure is a claim of profit."
+ },
+ "staking": {
+  "schema": "edgedesk_stake_scorecard_v1",
+  "generated_at": "2026-09-25T14:42:44.671Z",
+  "rows": 0,
+  "sized": 0,
+  "status": "OK",
+  "detail": null,
+  "sample_floor": 50,
+  "grade_states": {},
+  "groups": {},
+  "passes": {},
+  "acceptance": {
+   "recommendations": 0,
+   "answered": 0,
+   "unanswered": 0,
+   "responses": {},
+   "taken": 0,
+   "declined": 0,
+   "expired": 0,
+   "acceptance_rate": null,
+   "graded_taken": 0,
+   "size_followed": 0,
+   "units_staked_by_reader": 0,
+   "profit_units_by_reader": 0,
+   "profit_units_if_sized_as_recommended": 0,
+   "note": "The reader’s record and the engine’s record are reported separately and never added together: a bet the reader declined is not a bet the engine lost, and a bet the reader resized is not the bet the engine sized."
+  },
+  "note": "Every figure here is measured against the SAME selections at the SAME prices, so the only question it can answer is whether the sizing rules beat flat staking on the card the engine chose. It cannot answer whether the card was worth betting; that is what the closing-line-value scorecard and the walk-forward validation are for. Below the sample floor no reading is claimed in either direction."
+ },
+ "postmortem": {
+  "counts": {
+   "rows": 0,
+   "graded": 0,
+   "hits": 0,
+   "pushes": 0,
+   "misses": 0,
+   "ungraded": 0
+  },
+  "by_class": {},
+  "candidates": [],
+  "note": "Data failures, analytical errors, model errors and variance are separated because each calls for a different fix. One loss is not proof of bad reasoning; one win is not proof of skill. Nothing here changes a model, a threshold or a prompt, and nothing generated here becomes a verified fact."
+ },
+ "tiers": {
+  "pricing": {
+   "nfl": {
+    "spread": "LEAN",
+    "total": "RESEARCH",
+    "moneyline": "RESEARCH",
+    "generated_at": "2026-09-16T16:30:19.183Z"
+   },
+   "cfb": {
+    "spread": "RESEARCH",
+    "total": "RESEARCH",
+    "moneyline": "RESEARCH",
+    "generated_at": "2026-09-16T16:30:19.224Z"
+   }
+  },
+  "movement": {
+   "nfl": {
+    "tier": "RESEARCH",
+    "basis": "NOT_ESTABLISHED: 17 closed games in the ledger; 300 are the floor for a reading"
+   },
+   "cfb": {
+    "tier": "LEAN",
+    "required_gap_points": 2,
+    "basis": "the number moved toward a disagreeing rating more often than not at 2+ points (0.5299, n 4369, p 0): a tendency, not a record"
+   }
+  },
+  "extra_markets": {
+   "open": [],
+   "refused": [
+    {
+     "market": "americanfootball_nfl|team_totals",
+     "why": "the archive carries no home_team_total / away_team_total / home_team_total_over_odds on any of its 7340 games, so there is no history to hold out, no record to grade and no tier to award"
+    },
+    {
+     "market": "americanfootball_ncaaf|team_totals",
+     "why": "the archive carries no home_team_total / away_team_total on any of its 11502 games, so there is no history to hold out, no record to grade and no tier to award"
+    },
+    {
+     "market": "americanfootball_nfl|player_props",
+     "why": "the archive carries no player_props on any of its 7340 games, so there is no history to hold out, no record to grade and no tier to award"
+    }
+   ],
+   "generated_at": "2026-09-23T14:20:09.891Z"
+  },
+  "features": {
+   "validated": 0,
+   "candidates": [
+    "players out or doubtful, all positions, home minus away",
+    "quarterbacks out or doubtful, both sides summed"
+   ]
+  }
+ },
+ "by_model_version": {},
+ "note": "Produced unattended. Nothing here promotes a tier, a coefficient or a prompt; a candidate is a hypothesis with the held-out evaluation it must pass named beside it. A closing-line-value record is evidence about the pricing process; a win-loss record at these sizes is variance; neither is a claim of profit."
+}

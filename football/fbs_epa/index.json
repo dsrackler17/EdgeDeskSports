@@ -1,0 +1,245 @@
+{
+ "schema": "edgedesk_fbs_epa_index_v1",
+ "version": 1,
+ "generated_at": "2026-09-27T13:07:55.193Z",
+ "season": 2026,
+ "source": {
+  "repository": "https://github.com/sportsdataverse/cfbfastR-cfb-data",
+  "corpus": {
+   "path": "football/data/cache/fbs_epa/corpus",
+   "present": false,
+   "rows": null
+  },
+  "manifest": null,
+  "refreshed": {
+   "at": "2026-09-27T13:07:55.193Z",
+   "commit": "main",
+   "season": 2026
+  }
+ },
+ "refresh": {
+  "attempted": true,
+  "ok": true,
+  "why": null,
+  "files": [
+   {
+    "file": "adv_passing_2026.parquet",
+    "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_passing/parquet/adv_passing_2026.parquet",
+    "ok": true,
+    "bytes": 116417,
+    "sha256": "1a9aba7fe80caeea7d7f54852c5c509162eca5739e14958c999165ae974eebcd",
+    "why": null,
+    "retrieved_at": "2026-09-27T13:07:55.193Z"
+   },
+   {
+    "file": "adv_team_2026.parquet",
+    "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_team/parquet/adv_team_2026.parquet",
+    "ok": true,
+    "bytes": 142544,
+    "sha256": "f1c6b399e608538da9fec26166da3b498a4939d709c795b623076978f4ffc00a",
+    "why": null,
+    "retrieved_at": "2026-09-27T13:07:55.193Z"
+   },
+   {
+    "file": "cfb_schedules_2026.parquet",
+    "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_schedules/parquet/cfb_schedules_2026.parquet",
+    "ok": true,
+    "bytes": 88656,
+    "sha256": "eca224395a67bd9b1e64b0b0c0c87a972889fbee99fbae777ad579763b6c296e",
+    "why": null,
+    "retrieved_at": "2026-09-27T13:07:55.193Z"
+   },
+   {
+    "file": "cfb_rosters_2026.parquet",
+    "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_rosters/parquet/cfb_rosters_2026.parquet",
+    "ok": true,
+    "bytes": 2829768,
+    "sha256": "8e95f0c8a0d6a18124e684c43855a8b4cb31714c94745da3f3431b74b057ea36",
+    "why": null,
+    "retrieved_at": "2026-09-27T13:07:55.193Z"
+   }
+  ],
+  "built": {
+   "games": 888,
+   "passer_games": 1155,
+   "team_games": 662,
+   "quarantined": 0,
+   "issues": {
+    "epa_denominator_consistent": 1141,
+    "identity_unique_season_team_name": 1147,
+    "team_or_unnamed_passing_rows_excluded": 11,
+    "identity_unmatched": 8,
+    "epa_denominator_unverified": 14
+   }
+  }
+ },
+ "freshness": {
+  "generated_at": "2026-09-27T13:07:55.193Z",
+  "observations_through": "2026-09-27T03:00:00.000Z",
+  "last_completed_game": "2026-09-27T03:00:00.000Z",
+  "observation_age_hours": 10.132,
+  "completed_games_without_passing_data": 0,
+  "coverage": "COMPLETE",
+  "coverage_why": null,
+  "source_commit": null,
+  "source_retrieved_at": "2026-09-27T13:07:55.193Z",
+  "source_age_hours": 0,
+  "state": "FRESH",
+  "why": null
+ },
+ "coverage": {
+  "season": 2026,
+  "scheduled_fbs_involving_games": 888,
+  "completed_by_cutoff": 331,
+  "completed_games_with_passing_data": 331,
+  "passer_rows": 1142,
+  "passer_rows_with_athlete_id": 1136,
+  "identity": {
+   "repaired": 2,
+   "ambiguous": 0,
+   "unresolved": 6,
+   "by_method": {
+    "initial_surname": 2
+   },
+   "resolved_at_assembly": 1147,
+   "same_athlete_rows_merged": {
+    "groups": 13,
+    "rows_merged": 13,
+    "by_season": {
+     "2026": 13
+    }
+   },
+   "unresolved_reasons": {
+    "no athlete of that name is on this team’s roster for this season": 3,
+    "no EdgeDesk roster covers this programme — it is not FBS this season, so its passers have no athlete id in any file EdgeDesk holds": 3
+   }
+  },
+  "players_in_artifact": 660,
+  "players_with_frozen_career": 427,
+  "players_with_current_season_games": 581,
+  "teams_in_artifact": 238,
+  "fbs_teams": 138,
+  "by_season": {
+   "2026": {
+    "games": 888,
+    "completed": 331,
+    "fbs_teams": 138,
+    "passer_rows": 1142,
+    "passer_rows_with_athlete_id": 1136,
+    "epa_reconciled_rows": 1128
+   }
+  },
+  "starters": {
+   "fbs_teams_with_a_starter_record": 138,
+   "with_a_resolved_player": 138,
+   "joined_to_this_artifact": 138,
+   "with_measured_epa_history": 138,
+   "no_epa_history": 0,
+   "unjoined": [],
+   "note": "a starter with no measured history is NOT a starter with average history. He is reported with an empty sample and the reason."
+  }
+ },
+ "validation": {
+  "ok": true,
+  "checks": [
+   {
+    "check": "schema and version are the ones the adapter reads",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "every player key equals its own athlete_id",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "no duplicate game in any player’s season log",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "every logged game has a parseable kickoff",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "the previous-season tail carries no current-season game",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "the frozen career spine stops before the current season",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "no observation is dated after the stated cutoff",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "an unreconciled denominator never carries a rate",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "every team in the artifact carries a division and a conference",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "the FBS universe for this season is covered",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "no outcome field reached the artifact",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "the pricing flag is carried, and it is the contract’s",
+    "ok": true,
+    "detail": null
+   },
+   {
+    "check": "every game log row from a season this run read resolves to a fixture in it",
+    "ok": true,
+    "detail": null
+   }
+  ],
+  "failures": []
+ },
+ "contract": {
+  "priced_input": false,
+  "summary": "The provider’s passing EPA is genuinely expected-points added, genuinely free of market information, and genuinely divided by attempts plus sacks. It is NOT the same measurement the shipped points_per_epa_db coefficient was fitted against: that coefficient was estimated on a different expected-points model, over a corpus with garbage time removed, against a replacement prior of zero that this series’ own league average (+0.061, drifting +0.047 across the window) does not sit at. Two of those three gaps are scale gaps, and a slope carries no meaning off its own scale. So the measurements ship as labelled research and the QB layer keeps contributing zero points.",
+  "blocking_findings": [
+   "garbage_time",
+   "ep_model_identity",
+   "ep_model_vintage",
+   "league_drift"
+  ],
+  "what_would_settle_it": [
+   "A coefficient re-estimated ON THIS SERIES, inside a training fold, rather than the one fitted against EdgeDesk’s own expected-points surface.",
+   "Season-centred features, so the +0.047 league drift across 2014–2026 cannot masquerade as quarterback quality.",
+   "Either a garbage-time filter applied to the provider series (which needs play-level rows this per-game table does not carry), or a demonstration that the contamination does not change the fitted slope.",
+   "A pass of the predeclared promotion rule in football/validation/, on evidence that is not the seasons the feature was chosen on."
+  ],
+  "provider_model": "2026.09.09",
+  "ep_model_training_seasons": [
+   2004,
+   2025
+  ]
+ },
+ "artifacts": {
+  "quarterbacks": "football/fbs_epa/qb_epa_2026.json",
+  "teams": "football/fbs_epa/teams.json",
+  "career_spine": "football/fbs_epa/career_through_2025.json"
+ },
+ "career_history": {
+  "source": "football/fbs_epa/career_through_2025.json (frozen spine — the corpus for earlier seasons was not present on this run)",
+  "frozen_through_season": 2025,
+  "spine_rewritten_this_run": false
+ },
+ "note": "source coverage, information coverage and PRICED coverage are three different numbers. This file reports the first two. Nothing here changes the third: every measurement it describes is research, and football/fbs_epa/epa_contract.js says why in detail."
+}

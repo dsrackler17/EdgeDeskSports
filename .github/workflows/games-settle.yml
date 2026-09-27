@@ -1,0 +1,82 @@
+# EdgeDesk Games — settle Head-to-Head challenges.
+#
+# The trusted half of the social layer. Grading runs here, holding the service
+# role, because h2h_settle() is granted to no client role: a player's browser
+# must never be able to decide who won.
+#
+# Harmless without credentials. On a fork, or before supabase/games_social.sql
+# is applied, the worker exits 0 having done nothing.
+name: Games settle H2H
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Grade but do not write'
+        type: boolean
+        required: false
+        default: false
+  schedule:
+    - cron: '35 8 * * *'     # after the overnight finals have landed
+    - cron: '35 15 * * 0,1'  # Sunday and Monday, once the weekend has settled
+
+concurrency:
+  group: games-settle
+  cancel-in-progress: false
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # The grading rules are pure functions and are tested on their own; a
+      # settlement run must not be the first thing that exercises them.
+      - name: Suites
+        run: node tools/games/social.test.js
+
+      # A missing secret in Actions is an empty string, never an error, so a
+      # misnamed or unset credential is invisible unless something says so.
+      # This says so, in the run summary, without failing the run: both jobs
+      # are designed to degrade rather than break.
+      - name: Report which credential is present
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -n "$EDGD_SB_SERVICE" ] && [ -n "$EDGD_SB_URL" ]; then
+            echo "::notice::Supabase service credential present." >&2
+            echo '- Supabase credential: **service role**' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '::warning::SB_SERVICE_ROLE / SB_URL are empty in this run. They are not GitHub Actions repository secrets. This run settles nothing and exits 0.' >&2
+            {
+              echo '- Supabase credential: **absent** — `SB_SERVICE_ROLE` and/or `SB_URL` resolved to an empty string.'
+              echo '- They must exist as **GitHub Actions repository secrets**; secrets stored in the Supabase dashboard are not visible here.'
+              echo '- This run settles nothing and exits 0.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Same credential names as games-challenges.yml. This step previously
+      # named a SUPABASE_SERVICE_KEY that does not exist, and a missing secret
+      # in Actions is an empty string rather than an error, so every run since
+      # this workflow landed took the "no service credentials" branch and
+      # exited 0 having settled nothing. The URL was never passed at all.
+      - name: Settle
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: node games/settle_h2h.js ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      # THE FRANCHISE. Finals land on the server's copy of the board, and
+      # every open Pick 5 selection whose game now has a final is graded and
+      # credited — server-side, idempotent, service role only. Same
+      # credentials, same harmlessness without them.
+      - name: Publish finals and settle franchise Pick 5
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: node games/publish_board.js --settle ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}

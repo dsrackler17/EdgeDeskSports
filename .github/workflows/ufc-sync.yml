@@ -1,0 +1,95 @@
+# EdgeDesk UFC — the background sync.
+#
+# Every six hours: discover the UFC cards in the window from ESPN's public
+# scoreboard, store events and bouts with their provider ids, resolve every
+# participant to the fighter dataset (and say which ones did not resolve),
+# link each bout to its odds-feed fixture only when both fighters match (a
+# "Draw" is a market row, never a fighter), write the pre-fight price history,
+# mark a card that never closed as stale, and rebuild the historical baselines
+# for every fighter on an upcoming card. Mondays it rebuilds every fighter.
+#
+# NO EDGE FUNCTION IS INVOLVED. The job writes over PostgREST with the service
+# role this repository already holds (SB_SERVICE_ROLE / SB_URL — the same
+# secrets the settle and schedule jobs use). The browser reads the result
+# through the anon/RLS door like every other research table.
+#
+# It is IDEMPOTENT: a card already on file is updated in place by its
+# provider id, a price already captured is not captured again, and a run on
+# which nothing changed writes what it read.
+name: UFC sync
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'     # the card, the fighters, the market
+    - cron: '47 8 * * 1'       # Mondays: every fighter's baseline, not just the upcoming ones
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Write to the database. Unchecked is a dry run that says what it would do.'
+        type: boolean
+        required: false
+        default: true
+      baselines:
+        description: 'Which fighter baselines to rebuild'
+        type: choice
+        options: [upcoming, all, none]
+        required: false
+        default: upcoming
+      event:
+        description: 'Limit to one provider event id (ESPN). Blank = the whole window.'
+        required: false
+        default: ''
+
+concurrency:
+  # Two syncs writing the same card race each other into the same upsert.
+  group: ufc-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The matching, market and bell rules must pass before anything is written
+        run: node tools/ufc/ufc.test.js
+
+      - name: Prove the source answers before anything is written
+        run: node tools/ufc/sync_events.js --verify || true
+
+      - name: Sync events, bouts, fighters and markets
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be written."
+            exit 1
+          fi
+          ARGS=""
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
+          if [ -n "${{ inputs.event }}" ]; then ARGS="$ARGS --event ${{ inputs.event }}"; fi
+          node tools/ufc/sync_events.js $ARGS
+
+      - name: Rebuild fighter baselines
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          MODE="${{ inputs.baselines }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "${{ github.event.schedule }}" = "47 8 * * 1" ]; then MODE=all; else MODE=upcoming; fi
+          fi
+          if [ -z "$MODE" ]; then MODE=upcoming; fi
+          if [ "$MODE" = "none" ]; then echo "baselines skipped by request"; exit 0; fi
+          ARGS="--$MODE"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
+          node tools/ufc/build_baselines.js $ARGS

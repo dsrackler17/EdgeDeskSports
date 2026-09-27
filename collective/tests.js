@@ -18,6 +18,11 @@
 
    Run:  node collective/tests.js
 
+   A second suite, collective/tests_render.js, drives the real renderWall,
+   renderBoard and renderRankings against a stubbed API and reads the HTML
+   they produce. It is the regression test for the day a finished slate
+   showed no grades at all. Run both.
+
    There is also an end-to-end harness that drives the REAL dashboard in
    Chromium — real file input, real buttons, backend stubbed so the exact POST
    body can be inspected. It needs playwright and a static server, so it is not
@@ -34,7 +39,17 @@ var HERE = __dirname;
 var PAGE = path.join(HERE, 'index.html');
 var pass = 0, fail = 0, failures = [];
 
+/* An assertion must FAIL, never crash. A throw inside one takes the report
+   at the bottom of this file down with it and hides every other result --
+   which is exactly what happened the first time a deliberate mutation was
+   run against the grading section. Pass a function and it is evaluated
+   here, in a try, so a broken implementation produces one red line instead
+   of a stack trace and no report at all. */
 function chk(name, ok, detail) {
+  if (typeof ok === 'function') {
+    try { ok = ok(); }
+    catch (e) { ok = false; detail = { threw: String((e && e.message) || e) }; }
+  }
   if (ok) { pass++; return; }
   fail++; failures.push({ name: name, detail: detail });
 }
@@ -159,6 +174,11 @@ try {
   vm.createContext(sandbox);
   /* route() at the tail touches the DOM; the declarations above it are what
      this suite needs, so a bootstrap throw is caught rather than fatal. */
+  /* The page loads the canonical research libraries by <script src> before
+     its inline block; load them the same way, into the same context. */
+  ['research_core.js', 'research_eval.js'].forEach(function (f) {
+    vm.runInContext(fs.readFileSync(path.join(HERE, '..', 'lib', f), 'utf8'), sandbox, { timeout: 15000 });
+  });
   vm.runInContext(CODE, sandbox, { timeout: 15000 });
 } catch (e) { bootErr = e; }
 if (bootErr) console.log('[boot] script stopped at: ' + bootErr.message);
@@ -418,46 +438,6 @@ if (typeof sandbox.teamKey === 'function') {
         && a.rows[0].home_team === 'Rutgers';
     })());
 
-  /* ---- the game id settles what a bare name cannot ---------------------
-     "LA" is the nflverse code for the Rams and a prefix of both LAR and
-     LAC, so as a name it is rightly refused. But the row carries the
-     schedule's own game id, and on 2026_01_SF_LA the home side can only be
-     the team the schedule spells LAR. The id fills only the slots the name
-     pass left open: clean names always win, so a wrong ref cannot
-     reassign a row whose names already resolve. */
-  var NFLSRV = [
-    { game_id: '2026_01_SF_LA',   label: 'SF @ LAR' },
-    { game_id: '2026_01_ARI_LAC', label: 'ARI @ LAC' }
-  ];
-  chk('LA on game 2026_01_SF_LA aligns to the schedule\'s LAR',
-    (function () {
-      var a = S.slateAlignToSchedule(NFLSRV,
-        [{ home_team: 'LA', away_team: 'SF', game_ref: '2026_01_SF_LA' }]);
-      var by = {}; a.changed.forEach(function (c) { by[c.from] = c; });
-      return a.rows[0].home_team === 'LAR' && a.rows[0].away_team === 'SF'
-        && by['LA'] && by['LA'].to === 'LAR' && by['LA'].how === 'game id'
-        && a.unresolved.length === 0;
-    })(), { got: S.slateAlignToSchedule(NFLSRV,
-      [{ home_team: 'LA', away_team: 'SF', game_ref: '2026_01_SF_LA' }]) });
-  chk('nothing is left unmatched once the id has spoken',
-    S.slateUnmatchedTeams(NFLSRV, S.slateAlignToSchedule(NFLSRV,
-      [{ home_team: 'LA',  away_team: 'SF',  game_ref: '2026_01_SF_LA' },
-       { home_team: 'LAC', away_team: 'ARI', game_ref: '2026_01_ARI_LAC' }]).rows).count === 0);
-  chk('a clean name beats a wrong game_ref',
-    (function () {
-      var a = S.slateAlignToSchedule(NFLSRV,
-        [{ home_team: 'LAC', away_team: 'ARI', game_ref: '2026_01_SF_LA' }]);
-      return a.rows[0].home_team === 'LAC' && a.rows[0].away_team === 'ARI';
-    })(),
-    'the id only fills slots the name pass could not resolve');
-  chk('without a matching id, LA stays refused rather than guessed',
-    (function () {
-      var a = S.slateAlignToSchedule(NFLSRV,
-        [{ home_team: 'LA', away_team: 'SF' }]);
-      return a.rows[0].home_team === 'LA' && a.unresolved.indexOf('LA') >= 0;
-    })(),
-    'a bare two-letter prefix of two teams is still a coin flip');
-
   /* ---- naming the missing team is only half an answer ------------------ */
   chk('a mascot suffix is recognised as the same school',
     S.teamSimilarity('TCU', 'TCU Horned Frogs') >= 0.8
@@ -536,9 +516,26 @@ if (typeof sandbox.teamKey === 'function') {
     })());
   chk('a known sport still gets its full week list',
     (function () {
+      /* 22: "read it from my file", then week 0 through week 20. College
+         football plays a WEEK 0 and a picker that started at 1 could not
+         express it, so a correct Week 0 slate had no week to be posted
+         under. The NFL, which has no week 0, still starts at 1. */
       var o = S.weekOptions(null, 'CFB');
-      return (o.match(/<option/g) || []).length === 21 && /Bowl Season/.test(o);
+      return (o.match(/<option/g) || []).length === 22 && /Bowl Season/.test(o)
+        && /<option value="0"/.test(o);
+    })(),
+    { n: (S.weekOptions(null, 'CFB').match(/<option/g) || []).length });
+  chk('and a sport with no week 0 is not offered one',
+    (function () {
+      var o = S.weekOptions(null, 'NFL');
+      return !/<option value="0"/.test(o) && /<option value="1"/.test(o);
     })());
+  chk('a Week 0 slate is detected as week 0, not as no week at all',
+    (function () {
+      var rows = [['week'], ['0'], ['0'], ['0']];
+      return S.slateDetectWeek(rows, 0) === 0 && S.slateDetectWeek([['week'], ['2']], 0) === 2;
+    })(),
+    'college football plays a week 0 and a file that says so has to be read');
   chk('two unknown sports do not merge into one family',
     S.sportFamily('KABADDI') !== S.sportFamily('SEPAKTAKRAW'));
   chk('display names come from the registry, not from the server',
@@ -607,14 +604,16 @@ if (typeof sandbox.teamKey === 'function') {
     })());
   chk('two models in one sport count once',
     S.creatorSports([{ sport: 'NFL' }, { sport: 'NFL' }]).length === 1);
-  chk('a declared sport is marked as not yet posted',
-    (function () {
-      var c = S.creatorSports([{ sport: 'NFL' }], ['CFB']);
-      var cfb = c.filter(function (x) { return x.family === 'CFB'; })[0];
-      return c.length === 2 && cfb && cfb.posted === false;
-    })());
-  chk('declaring a sport you already post for does not duplicate it',
-    S.creatorSports([{ sport: 'NFL' }], ['NFL']).length === 1);
+  /* What a creator covers has ONE source now: their models. It used to take a
+     second, browser-local list of "sports I plan to cover", which existed only
+     because covering a new sport meant asking somebody to create a model. A
+     tick creates the model, so a planned sport and a covered sport are the same
+     thing — and what a creator sees no longer depends on which browser they
+     opened the dashboard in. */
+  chk('there is no second, browser-local source of covered sports',
+    S.creatorSports([{ sport: 'NFL' }], ['CFB']).length === 1
+    && typeof S.declaredSports === 'undefined',
+    { len: S.creatorSports([{ sport: 'NFL' }], ['CFB']).length });
   chk('a creator with no models covers nothing',
     S.creatorSports([]).length === 0 && S.creatorSports(null).length === 0);
 
@@ -662,6 +661,64 @@ if (typeof sandbox.teamKey === 'function') {
     S.sportFamily('NCAAF') === S.sportFamily('CFB'),
     'the server may name the sport either way; the family is what matches');
 
+  /* ---- the sport decides which model a slate goes under ----------------
+     THE BUG. collective_ingest chose the model from the envelope's `model`
+     field alone: name nothing, own exactly one model, and whatever sport the
+     slate said it was, it was filed under that one model. A contributor with a
+     college model posting an NFL slate had every NFL game looked up in the
+     COLLEGE schedule and every row came back unmatched. The dashboard's answer
+     was to tell them to ask the operator for a model.
+
+     The rule now, on both sides: the sport decides, a model in a different
+     sport never wins, and a sport with no model gets one. */
+  chk('a CFB-only account posting an NFL slate is told to create an NFL model, not to use the CFB one',
+    (function () {
+      var r = S.slateModelForSport([{ model_slug: 'me-p4', sport: 'NCAAF' }], 'NFL');
+      return r.create === 'NFL' && !r.model;
+    })());
+  chk('and the same account posting a CFB slate uses the model it already has',
+    (function () {
+      var r = S.slateModelForSport([{ model_slug: 'me-p4', sport: 'NCAAF' }], 'CFB');
+      return r.model && r.model.model_slug === 'me-p4';
+    })(),
+    'the server spells it NCAAF and the file says CFB: one sport, one model');
+  chk('every alias of a sport reaches the same model, so no alias can make a second one',
+    ['CFB', 'NCAAF', 'ncaaf', 'College Football', 'CFB-P4'].every(function (code) {
+      var r = S.slateModelForSport([{ model_slug: 'me-p4', sport: 'NCAAF' }], code);
+      return r.model && r.model.model_slug === 'me-p4';
+    }));
+  chk('an account with both models sends each slate to its own',
+    (function () {
+      var ms = [{ model_slug: 'me-nfl', sport: 'NFL' }, { model_slug: 'me-p4', sport: 'NCAAF' }];
+      return S.slateModelForSport(ms, 'NFL').model.model_slug === 'me-nfl'
+        && S.slateModelForSport(ms, 'CFB').model.model_slug === 'me-p4';
+    })());
+  chk('picking the WRONG sport\u2019s model in the box does not override the file',
+    (function () {
+      var ms = [{ model_slug: 'me-nfl', sport: 'NFL' }, { model_slug: 'me-p4', sport: 'NCAAF' }];
+      return S.slateModelForSport(ms, 'NFL', 'me-p4').model.model_slug === 'me-nfl';
+    })(),
+    'posting NFL rows under a college model quarantines every one of them');
+  chk('but a choice between two models in the RIGHT sport is honoured',
+    (function () {
+      var ms = [{ model_slug: 'nfl-a', sport: 'NFL' }, { model_slug: 'nfl-b', sport: 'NFL' }];
+      return S.slateModelForSport(ms, 'NFL', 'nfl-b').model.model_slug === 'nfl-b';
+    })());
+  chk('and two models in one sport with no choice made is asked about, never guessed',
+    (function () {
+      var ms = [{ model_slug: 'nfl-a', sport: 'NFL' }, { model_slug: 'nfl-b', sport: 'NFL' }];
+      var r = S.slateModelForSport(ms, 'NFL');
+      return !r.model && r.ambiguous && r.ambiguous.length === 2;
+    })());
+  chk('an account with nothing at all gets a model for whatever it posts',
+    S.slateModelForSport([], 'NFL').create === 'NFL'
+    && S.slateModelForSport(null, 'CFB').create === 'CFB');
+  chk('a slate with no sport at all is never filed under a guess',
+    (function () {
+      var r = S.slateModelForSport([{ model_slug: 'me-nfl', sport: 'NFL' }], '');
+      return !r.model && !r.create;
+    })());
+
   /* ---- the server owns the sport vocabulary --------------------------- */
   chk('a detected sport is translated into the code THIS server uses',
     S.serverSportCode({ sports: [{ code: 'NFL' }, { code: 'NCAAF' }] }, 'CFB') === 'NCAAF',
@@ -674,104 +731,6 @@ if (typeof sandbox.teamKey === 'function') {
     ['CFB', 'NCAAF', 'CFB-P4', 'College'].every(function (c) {
       return S.sportFamily(c) === 'CFB';
     }));
-
-  /* ---- the picked team's number, one helper for every surface ----------
-     The wire is HOME convention throughout: projected_spread is the model's
-     number for the home side, line_at_submission is the market line for the
-     home side, and pick_side says — authoritatively — which team the model
-     actually took. pickedSide()/pickDisp() are the ONLY place the display
-     layer turns that home number into the picked team's number; the wall,
-     the board and the model pages all read through them. The regression
-     being pinned: an away pick shows the EXACT INVERSE of the home number,
-     a home pick shows it unchanged, and the sign of the spread never gets
-     a vote on which side was picked. */
-  chk('the pick helpers exist and are shared',
-    typeof S.pickedSide === 'function' && typeof S.pickDisp === 'function'
-    && typeof S.pickNum === 'function' && typeof S.pickSideNorm === 'function');
-
-  var PICKS = [
-    /* away dog: invert the home number, show plus */
-    { g:{home:'SEA',away:'NE'},  mr:{pick_side:'away',projected_spread:-3.5},  want:'NE +3.5' },
-    /* home favourite: home number unchanged, stays negative */
-    { g:{home:'LA', away:'SF'},  mr:{pick_side:'home',projected_spread:-3.5},  want:'LA -3.5' },
-    { g:{home:'LAC',away:'ARI'}, mr:{pick_side:'home',projected_spread:-10.5}, want:'LAC -10.5' },
-    { g:{home:'PIT',away:'ATL'}, mr:{pick_side:'away',projected_spread:-3.0},  want:'ATL +3.0' },
-    { g:{home:'MIN',away:'GB'},  mr:{pick_side:'away',projected_spread:-1.5},  want:'GB +1.5' },
-    { g:{home:'TEN',away:'NYJ'}, mr:{pick_side:'home',projected_spread:-2.5},  want:'TEN -2.5' },
-    { g:{home:'KC', away:'DEN'}, mr:{pick_side:'away',projected_spread:-2.5},  want:'DEN +2.5' },
-    /* home dog keeps its plus */
-    { g:{home:'IND',away:'BAL'}, mr:{pick_side:'home',projected_spread:3.5},   want:'IND +3.5' },
-    /* away favourite: a POSITIVE home number inverts to minus */
-    { g:{home:'CAR',away:'CHI'}, mr:{pick_side:'away',projected_spread:2.5},   want:'CHI -2.5' },
-    /* pick'em, away side: no -0 */
-    { g:{home:'HOU',away:'BUF'}, mr:{pick_side:'away',projected_spread:0},     want:'BUF 0.0' },
-    /* college names ride the same rail, accents and all */
-    { g:{home:'USC',away:'San José State'},
-      mr:{pick_side:'away',projected_spread:-34.82}, want:'San José State +34.8' }
-  ];
-  PICKS.forEach(function (t) {
-    chk('wall shows ' + t.want + ' for ' + t.g.away + ' @ ' + t.g.home
-        + ' (' + t.mr.pick_side + ' pick on home ' + t.mr.projected_spread + ')',
-      S.pickDisp(t.g, t.mr) === t.want, { got: S.pickDisp(t.g, t.mr) });
-  });
-
-  chk('the SIGN of the spread does not pick the side',
-    (function () {
-      /* same stored number, opposite explicit sides: both must be honoured */
-      var g = { home: 'SEA', away: 'NE' };
-      return S.pickDisp(g, { pick_side: 'home', projected_spread: -3.5 }) === 'SEA -3.5'
-        && S.pickDisp(g, { pick_side: 'away', projected_spread: -3.5 }) === 'NE +3.5';
-    })());
-  chk('pick_side is read case- and whitespace-insensitively',
-    (function () {
-      var g = { home: 'SEA', away: 'NE' };
-      return S.pickDisp(g, { pick_side: 'AWAY', projected_spread: -3.5 }) === 'NE +3.5'
-        && S.pickDisp(g, { pick_side: ' Home ', projected_spread: -3.5 }) === 'SEA -3.5'
-        && S.pickSideNorm({ pick_side: 'AWAY' }) === 'away'
-        && S.pickSideNorm({ pick_side: 'neither' }) === null;
-    })(),
-    'a capitalised side used to fall through and show the home team instead');
-  chk('a number that arrives as a string is still a number',
-    S.pickDisp({ home: 'SEA', away: 'NE' },
-      { pick_side: 'away', projected_spread: '-3.5' }) === 'NE +3.5');
-  chk('with no spread of its own the market line fills in, same convention',
-    (function () {
-      var g = { home: 'SEA', away: 'NE' };
-      var p = S.pickedSide(g, { pick_side: 'away', line_at_submission: -3.5 });
-      return S.pickDisp(g, { pick_side: 'away', line_at_submission: -3.5 }) === 'NE +3.5'
-        && p.own === false && near(p.spread, 3.5);
-    })(),
-    'the fallback must not be inverted a second time anywhere upstream');
-  chk('the model\'s own number beats the market line',
-    (function () {
-      var p = S.pickedSide({ home: 'SEA', away: 'NE' },
-        { pick_side: 'away', projected_spread: -1.5, line_at_submission: -3.5 });
-      return near(p.spread, 1.5) && p.own === true;
-    })());
-  chk('an away pick\'em is 0, never -0',
-    (function () {
-      var p = S.pickedSide({ home: 'HOU', away: 'BUF' },
-        { pick_side: 'away', projected_spread: 0 });
-      return p.spread === 0 && (1 / p.spread) === Infinity;
-    })());
-  chk('no usable side falls back to the HOME team with the home number',
-    S.pickDisp({ home: 'SEA', away: 'NE' }, { projected_spread: -3.5 }) === 'SEA -3.5'
-    && S.pickDisp({ home: 'SEA', away: 'NE' },
-         { pick_side: 'NE', projected_spread: -3.5 }) === 'SEA -3.5',
-    'a side the helper cannot read must never be guessed from the sign');
-  chk('a pick with no number at all still names the picked team',
-    S.pickDisp({ home: 'SEA', away: 'NE' }, { pick_side: 'away' }) === 'NE -'
-    && S.pickDisp({ home: 'SEA', away: 'NE' }, {}) === '-');
-  chk('pickedSide names the picked team, both sides',
-    (function () {
-      var g = { home: 'SEA', away: 'NE' };
-      return S.pickedSide(g, { pick_side: 'away', projected_spread: -3.5 }).team === 'NE'
-        && S.pickedSide(g, { pick_side: 'home', projected_spread: -3.5 }).team === 'SEA';
-    })());
-  chk('the win probability flips with the picked side, case-insensitively',
-    near(S.pickProb({ pick_side: 'away', home_win_probability: 0.7 }), 0.3)
-    && near(S.pickProb({ pick_side: 'AWAY', home_win_probability: 0.7 }), 0.3)
-    && near(S.pickProb({ pick_side: 'home', home_win_probability: 0.7 }), 0.7));
 
   /* ---- percent vs probability ---------------------------------------- */
   chk('a _pct header is a percent even when its value is below 1',
@@ -864,88 +823,3766 @@ if (typeof sandbox.teamKey === 'function') {
         || (o.cover_probability >= 0 && o.cover_probability <= 1);
     }));
 
-  /* the CFB export's own-number column is HOME convention already; the
-     pick-stated conversion below must never touch it, away pick or not */
-  chk('an away pick does NOT flip a home-named spread column',
-    near(r1.projected_spread, -34.82), { got: r1.projected_spread });
+  /* ---- the HW % field is the HOME team's chance, every time -------------
+     Reported from the live board: "the HW % field isn't always showing the
+     % chance of the home team winning outright." Three ways it happened:
+     the wall's probability cell was stated from the PICKED side while the
+     consensus row in the same column stated home; a pick-stated win-prob
+     column posted raw, inverting every away pick; and ml_home — a synonym
+     for this field — usually holds a PRICE, which read +100 as certainty. */
 
-  /* ---- a pick-centric sheet: the column is stated from the PICK ---------
-     The file that put "NE -3.5" on the wall for a model that was on NE
-     +3.5: a creator's own sheet with pick_line (the picked team's number),
-     pick_prob (P(the pick covers)) and pick_team. Stored raw, every away
-     pick posts with its sign turned around and the wall — correctly
-     inverting away picks — shows the exact opposite of the model's number.
-     The header says whose number it is, so ingestion turns it onto the
-     home side using each row's own pick, exactly as it already did for
-     p_spread_pick_pct cover probabilities. */
-  var MOOSE = [
-    'date,game_id,season,week,away,home,pick_team,pick_side,pick_line,pick_claim,pick_prob,home_win_prob,model_total',
-    '2026-09-09,2026_01_NE_SEA,2026,1,NE,SEA,NE,away,3.5,covers,0.5258,0.6247,41.65',
-    '2026-09-10,2026_01_SF_LA,2026,1,SF,LA,LA,home,-3.5,covers,0.5239,0.6599,53.21',
-    '2026-09-13,2026_01_CHI_CAR,2026,1,CHI,CAR,CHI,away,-2.5,covers,0.6004,0.3344,45.49',
-    '2026-09-13,2026_01_BUF_HOU,2026,1,BUF,HOU,BUF,away,0,covers,0.608,0.392,42.35',
-    '2026-09-13,2026_01_NO_DET,2026,1,NO,DET,,,7,covers,0.597,0.6739,48.76'
+  /* the outright call is split from the spread pick and NAMES its winner,
+     so no reader needs a sign convention to know which team a % belongs to */
+  chk('the outright cell names the favoured side with its own chance',
+    (function () {
+      var c = S.outrightCell({ home: 'LAC', away: 'ARI' }, { home_win_probability: 0.61, pick_side: 'away' });
+      return c && c.txt === 'LAC 61%';
+    })());
+  chk('a home dog outright call names the away team',
+    (function () {
+      var c = S.outrightCell({ home: 'IND', away: 'BAL' }, { home_win_probability: 0.38 });
+      return c && c.txt === 'BAL 62%';
+    })());
+  chk('the cover fallback stays home-stated and labelled cv',
+    (function () {
+      var c = S.outrightCell({ home: 'LAC', away: 'ARI' }, { cover_probability: 0.44, pick_side: 'away' });
+      return c && c.txt === 'cv 44%';
+    })());
+  chk('a row with no probability at all yields no cell',
+    S.outrightCell({ home: 'LAC', away: 'ARI' }, { pick_side: 'home' }) === null);
+
+  /* the Home win % column: a bare value under a labelled header, matching
+     the number the consensus averages; the cover fallback keeps its cv
+     label inside the cell because it is a different quantity */
+  chk('the home win cell is the bare home-stated percentage',
+    (function () { var c = S.hwCell({ home_win_probability: 0.62, pick_side: 'away' });
+      return c && c.txt === '62%'; })());
+  /* a cover probability is a different quantity: it must NOT appear under a
+     column headed "Home win %", but what the model did submit is not lost */
+  chk('a model with only a cover probability shows nothing in the win column',
+    (function () { var c = S.hwCell({ cover_probability: 0.44 });
+      return c && c.txt === '-' && /cover probability is 44%/.test(c.t); })());
+  chk('the home win cell is empty with nothing to show',
+    S.hwCell({ pick_side: 'home' }) === null);
+
+  /* ---- Delta Market: the one number a reader cannot do in their head ----
+     Model line minus captured market line, both home-stated in betting
+     sign. Negative means further onto the home team than the market. */
+  chk('a model further onto the home team reads negative',
+    near(S.deltaMarket(-5.0, -3.5), -1.5));
+  chk('a model further onto the road team reads positive',
+    near(S.deltaMarket(-2.5, -3.0), 0.5));
+  chk('a model on the market number reads zero',
+    S.deltaMarket(-3.0, -3.0) === 0);
+  chk('the reviewer\'s worked example reproduces exactly',
+    near(S.deltaMarket(-10.6, -3.0), -7.6) && near(S.deltaMarket(-6.0, -3.0), -3.0));
+  chk('no market number yields no difference, never a fabricated zero',
+    S.deltaMarket(-5.0, null) === null && S.deltaMarket(null, -3.0) === null);
+  chk('a non-finite line yields no difference',
+    S.deltaMarket(Infinity, -3) === null && S.deltaMarket(-3, NaN) === null);
+  chk('the difference cell names the side it leans, not a verdict',
+    (function () {
+      var h = S.deltaCell(-5.0, -3.5, { home: 'SEA', away: 'NE' });
+      return /further onto SEA/.test(h) && /-1\.5/.test(h) && !/edge/i.test(h);
+    })());
+  chk('a missing market renders a dash cell rather than broken markup',
+    S.deltaCell(-5.0, null, { home: 'SEA', away: 'NE' }) === '<span class="dmkt">-</span>');
+
+  /* ---- Age: how fresh this specific projection is ---------------------- */
+  chk('an hours-old projection reads in hours',
+    S.fmtAgeShort(new Date(Date.now() - 17 * 3600e3).toISOString()) === '17h');
+  chk('a days-old projection reads in days',
+    S.fmtAgeShort(new Date(Date.now() - 4 * 86400e3).toISOString()) === '4d');
+  chk('a minutes-old projection reads in minutes',
+    S.fmtAgeShort(new Date(Date.now() - 5 * 60e3).toISOString()) === '5m');
+  chk('no timestamp yields nothing at all',
+    S.fmtAgeShort(null) === '' && S.fmtAgeShort(undefined) === '');
+
+  /* ---- the board legend: one source, two renderings -------------------
+     A reader who does not know what a column is should never have to ask a
+     person, and the short note under the board must not drift from the full
+     table on the rules page, because there is only one definition of each. */
+  chk('every column on the board is explained',
+    (function () {
+      var keys = S.BOARD_LEGEND.map(function (x) { return x.k; });
+      return ['Pick', 'Model line', '\u0394 Mkt', 'Home %', 'Age'].every(function (k) {
+        return keys.indexOf(k) >= 0;
+      });
+    })(), { keys: S.BOARD_LEGEND.map(function (x) { return x.k; }) });
+  chk('the game badges and the result dot are explained too',
+    (function () {
+      var keys = S.BOARD_LEGEND.map(function (x) { return x.k; }).join('|');
+      return /GROUP/.test(keys) && /SPLIT/.test(keys) && /dot/i.test(keys);
+    })());
+  chk('every entry carries both a short and a long form',
+    S.BOARD_LEGEND.every(function (x) {
+      return x.k && typeof x.short === 'string' && x.short.length > 10
+        && typeof x.long === 'string' && x.long.length > x.short.length;
+    }));
+  chk('the short note names every column and points at the full one',
+    (function () {
+      var h = S.boardLegendShort();
+      return S.BOARD_LEGEND.every(function (x) { return h.indexOf(x.k) >= 0; })
+        && /href="#rules"/.test(h);
+    })());
+  chk('the legend states the home convention where it actually confuses people',
+    (function () {
+      var ml = S.BOARD_LEGEND.filter(function (x) { return x.k === 'Model line'; })[0];
+      return /HOME/.test(ml.long) && /betting sign/i.test(ml.long);
+    })());
+  chk('delta market is described as a comparison, never as an edge',
+    (function () {
+      var d = S.BOARD_LEGEND.filter(function (x) { return x.k === '\u0394 Mkt'; })[0];
+      return !/\bedge\b/i.test(d.short) && /not call a difference an edge/i.test(d.long);
+    })());
+  chk('home % is described as submitted-only, never inferred',
+    (function () {
+      var h = S.BOARD_LEGEND.filter(function (x) { return x.k === 'Home %'; })[0];
+      return /never infers/i.test(h.long);
+    })());
+
+  /* the pick is stated at the line it was made against, never at the
+     model's own projection — stating it at the projection is how "your
+     spread" got hand-mapped onto the market line to make the pick look
+     right, posting the market as the model on every game */
+  chk('pickNum prefers the market line the pick was made against',
+    (function () {
+      var n = S.pickNum({ projected_spread: -4.9, line_at_submission: -10.5 });
+      return n && near(n.v, -10.5) && n.own === false;
+    })());
+  chk('a pick with no market line falls back to the model own spread',
+    (function () {
+      var n = S.pickNum({ projected_spread: -4.9 });
+      return n && near(n.v, -4.9) && n.own === true;
+    })());
+  chk('an away pick displays the market line exact inverse',
+    S.pickDisp({ home: 'LAC', away: 'ARI' },
+      { pick_side: 'away', projected_spread: -4.9, line_at_submission: -10.5 }) === 'ARI +10.5');
+  chk('the model own spread never leaks into the pick statement',
+    S.pickDisp({ home: 'LAC', away: 'ARI' },
+      { pick_side: 'home', projected_spread: -4.9, line_at_submission: -10.5 }) === 'LAC -10.5');
+
+  /* ---- a row whose own numbers disagree with its pick side -------------
+     The failure this catches is a slate uploaded with one spread column
+     stated for the picked team instead of the home team. pick_side is a
+     word and survives that; the number does not. Both are on the wire, so
+     the contradiction is detectable without asking anyone. */
+  chk('a consistent home pick is not flagged',
+    S.wireContradiction(
+      { pick_side: 'home', projected_spread: -7.0, line_at_submission: -3.0 }) === null);
+  chk('a consistent away pick is not flagged',
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -3.0, line_at_submission: -7.0 }) === null);
+  chk('a pick side that contradicts the row own two spreads is flagged',
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -7.0, line_at_submission: -3.0 }) === 'home');
+  chk('the flag names the side the numbers imply, not the side claimed',
+    S.wireContradiction(
+      { pick_side: 'home', projected_spread: -3.0, line_at_submission: -7.0 }) === 'away');
+  chk('a model sitting exactly on the market number cannot contradict itself',
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -3.5, line_at_submission: -3.5 }) === null);
+  chk('a row missing either spread is never guessed at',
+    S.wireContradiction({ pick_side: 'home', projected_spread: -3.5 }) === null &&
+    S.wireContradiction({ pick_side: 'home', line_at_submission: -3.5 }) === null);
+  chk('a row with no pick side has nothing to contradict',
+    S.wireContradiction(
+      { projected_spread: -7.0, line_at_submission: -3.0 }) === null);
+  /* the exact shape reported on the board: the pick still reads correctly
+     off pick_side even when the model line beside it is inverted */
+  chk('a contradicted row still states the pick the creator submitted',
+    S.pickDisp({ home: 'CAR', away: 'CHI' },
+      { pick_side: 'away', projected_spread: -7.0, line_at_submission: -2.5 }) === 'CHI +2.5' &&
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -7.0, line_at_submission: -2.5 }) === 'home');
+
+  /* the price-shaped values a win-probability column actually receives */
+  chk('a home moneyline price reads as its implied probability',
+    near(S.slateWinProb('-150', 'ml_home'), 0.6));
+  chk('an even-money +100 price is 50%, never 100%',
+    near(S.slateWinProb('+100', 'ml_home'), 0.5));
+  chk('an underdog price converts too',
+    near(S.slateWinProb('+150', 'ml_home'), 0.4));
+  chk('a 100 in a percent-marked column is still 100%',
+    near(S.slateWinProb('100', 'home_win_prob_pct'), 1));
+  chk('a value that cannot be a probability is withheld, not posted',
+    S.slateWinProb('150', 'win_prob') === null);
+  chk('ordinary percentages and probabilities pass through unchanged',
+    near(S.slateWinProb('81.4', 'home_win_prob_pct'), 0.814)
+    && near(S.slateWinProb('0.64', 'home_win_probability'), 0.64));
+
+  /* a win-prob column stated from the picked team: same treatment as a
+     pick-stated spread — turned onto the home side, or withheld */
+  var PICKCSV = [
+    'home_team,away_team,date,pick,pick_win_prob',
+    'TCU,North Carolina,2026-08-29 16:00,TCU,70',
+    'TCU,North Carolina,2026-08-29 16:00,North Carolina,70',
+    'TCU,North Carolina,2026-08-29 16:00,,70'
   ].join('\n');
-  var moose2d = parseCsv(MOOSE);
-  S.SLATE.cols = moose2d[0]; S.SLATE.rows = moose2d; S.SLATE.map = {};
+  var pRows = parseCsv(PICKCSV);
+  S.SLATE.cols = pRows[0]; S.SLATE.rows = pRows; S.SLATE.map = {};
   S.slateGuessMap();
-  var mcol = function (f) { return S.SLATE.cols[S.SLATE.map[f]]; };
+  S.SLATE.map['home_win_probability'] = 4;   /* the creator maps it by hand */
+  var pBuilt = S.slateBuildRows('2026', '1');
+  chk('a pick-stated win probability keeps a home pick as given',
+    near(pBuilt.rows[0].home_win_probability, 0.70, 1e-9),
+    { got: pBuilt.rows[0].home_win_probability });
+  chk('a pick-stated win probability is turned around for an away pick',
+    near(pBuilt.rows[1].home_win_probability, 0.30, 1e-9),
+    { got: pBuilt.rows[1].home_win_probability });
+  chk('a pick-stated win probability with no readable pick is withheld',
+    pBuilt.rows[2].home_win_probability === undefined
+    && pBuilt.problems.some(function (p) { return /pick_win_prob/.test(p); }),
+    { problems: pBuilt.problems });
 
-  chk('pick_line maps to the spread field', mcol('projected_spread') === 'pick_line',
-    { got: mcol('projected_spread') });
-  chk('pick_prob maps to the cover field and is flagged pick-stated',
-    mcol('cover_probability') === 'pick_prob' && S.SLATE.coverIsPickSide === true);
-  chk('pick_team resolves the picked side', mcol('pick_side') === 'pick_team');
-  chk('model_total maps to the total', mcol('projected_total') === 'model_total');
-  chk('pick_line is in the "which is it?" list, like spread and line',
-    S.AMBIGUOUS_SPREAD.indexOf('pick_line') >= 0);
+  /* an ML column follows the ML pick, which is not the spread pick whenever
+     the model likes the dog against the number */
+  var MLCSV = [
+    'home_team,away_team,date,spread_pick,ml_pick,p_ml_pick_pct',
+    'TCU,North Carolina,2026-08-29 16:00,North Carolina,TCU,81.4',
+    'TCU,North Carolina,2026-08-29 16:00,TCU,North Carolina,60',
+    'TCU,North Carolina,2026-08-29 16:00,TCU,,60'
+  ].join('\n');
+  var mRows = parseCsv(MLCSV);
+  S.SLATE.cols = mRows[0]; S.SLATE.rows = mRows; S.SLATE.map = {};
+  S.slateGuessMap();
+  S.SLATE.map['home_win_probability'] = 5;   /* the creator maps it by hand */
+  var mBuilt = S.slateBuildRows('2026', '1');
+  chk('an ML-pick probability follows ml_pick, not the spread pick',
+    near(mBuilt.rows[0].home_win_probability, 0.814, 1e-9),
+    { got: mBuilt.rows[0].home_win_probability });
+  chk('an away ML pick is turned onto the home side',
+    near(mBuilt.rows[1].home_win_probability, 0.40, 1e-9),
+    { got: mBuilt.rows[1].home_win_probability });
+  chk('an ML-pick probability with no readable ml_pick is withheld',
+    mBuilt.rows[2].home_win_probability === undefined,
+    { got: mBuilt.rows[2].home_win_probability });
 
-  var mb = S.slateBuildRows('2026', '1');
-  var m0 = mb.rows[0], m1 = mb.rows[1], m2 = mb.rows[2], m3 = mb.rows[3], m4 = mb.rows[4];
-  chk('every Moose row builds', mb.rows.length === 5, { n: mb.rows.length });
-  chk('an away pick_line is stored as the home side\'s number',
-    m0.pick_side === 'away' && near(m0.projected_spread, -3.5),
-    { got: m0.projected_spread });
-  chk('a home pick_line is stored unchanged',
-    m1.pick_side === 'home' && near(m1.projected_spread, -3.5));
-  chk('an away FAVOURITE\'s pick_line turns positive on the home side',
-    m2.pick_side === 'away' && near(m2.projected_spread, 2.5),
-    { got: m2.projected_spread });
-  chk('an away pick\'em stores 0, never -0',
-    m3.projected_spread === 0 && (1 / m3.projected_spread) === Infinity);
-  chk('the implied line rides the converted home number',
-    near(m0.line_at_submission, -3.5), { got: m0.line_at_submission });
-  chk('a pick-stated cover probability is turned onto the home side',
-    near(m0.cover_probability, 1 - 0.5258) && near(m1.cover_probability, 0.5239),
-    { away: m0.cover_probability, home: m1.cover_probability });
-  chk('a row with no readable pick withholds the pick-stated number and says why',
-    m4.projected_spread === undefined
-    && mb.problems.some(function (p) { return /pick_line/.test(p) && /Row 6/.test(p); }),
-    { got: m4.projected_spread, problems: mb.problems });
+  /* ---- a remembered mapping never overrides the known EdgeDesk auto-map --
+     A hand-flip of "your spread" onto ref_home_line was remembered across
+     uploads: every slate posted the market line as the model own number,
+     the wall showed a spread the model own win probability contradicted,
+     and the API rejected the spread/probability pair. */
+  chk('a remembered mapping is reused for an ordinary file',
+    (function () {
+      var m2 = S.slateRememberedMap({ cols: mRows[0].slice(), map: { home_team: 0 } });
+      return m2 && m2.home_team === 0;
+    })());
+  chk('a remembered mapping with different headers is ignored',
+    S.slateRememberedMap({ cols: ['a', 'b'], map: { home_team: 0 } }) === null);
+  S.SLATE.cols = rows2d[0]; S.SLATE.rows = rows2d; S.SLATE.map = {};
+  S.slateGuessMap();
+  chk('an EdgeDesk export keeps its canonical mapping over a remembered one',
+    S.slateRememberedMap({ cols: rows2d[0].slice(), map: { projected_spread: 11 } }) === null);
 
-  /* the round trip that was broken: file → wire → wall */
-  chk('the wall reads Moose\'s picks back exactly as written',
-    S.pickDisp({ home: 'SEA', away: 'NE' }, m0) === 'NE +3.5'
-    && S.pickDisp({ home: 'LA', away: 'SF' }, m1) === 'LA -3.5'
-    && S.pickDisp({ home: 'CAR', away: 'CHI' }, m2) === 'CHI -2.5'
-    && S.pickDisp({ home: 'HOU', away: 'BUF' }, m3) === 'BUF 0.0',
-    { got: [S.pickDisp({ home: 'SEA', away: 'NE' }, m0),
-            S.pickDisp({ home: 'LA', away: 'SF' }, m1),
-            S.pickDisp({ home: 'CAR', away: 'CHI' }, m2),
-            S.pickDisp({ home: 'HOU', away: 'BUF' }, m3)] });
+  /* ---- board reading aids: split flags, group-vs-market, lead time -----
+     Three additions driven by "what is worth looking at on this board".
+     None of them invent a number: sigma and the consensus mean are already
+     computed per game, and the lead time reads a timestamp the games
+     payload may or may not carry. */
+  var SPLITSET = [
+    { game_id: 1, consensus: { n: 3, spread_stdev: 4.2 } },   /* widest */
+    { game_id: 2, consensus: { n: 3, spread_stdev: 2.6 } },
+    { game_id: 3, consensus: { n: 3, spread_stdev: 1.9 } },
+    { game_id: 4, consensus: { n: 3, spread_stdev: 1.7 } },   /* 4th, over floor */
+    { game_id: 5, consensus: { n: 3, spread_stdev: 0.4 } },   /* under the floor */
+    { game_id: 6, consensus: { n: 1, spread_stdev: 9.9 } },   /* one model is not a split */
+    { game_id: 7, consensus: { n: 3, spread_stdev: 9.9, locked: true } }
+  ];
+  var flags = S.splitGames(SPLITSET);
+  chk('only the widest few games are flagged as split',
+    Object.keys(flags).length === 3, { got: Object.keys(flags) });
+  chk('the split flags are the widest three by sigma',
+    flags['1'] === 4.2 && flags['2'] === 2.6 && flags['3'] === 1.9, { got: flags });
+  chk('a game inside a key number of agreement is never flagged',
+    flags['5'] === undefined);
+  chk('a single model is not a disagreement',
+    flags['6'] === undefined);
+  chk('a locked consensus is not flagged',
+    flags['7'] === undefined);
+  chk('a slate nobody split on gets no flags',
+    Object.keys(S.splitGames([{ game_id: 9, consensus: { n: 4, spread_stdev: 0.2 } }])).length === 0);
+  chk('a game with no id is still keyed by its teams',
+    S.gameKey({ home: 'SEA', away: 'NE' }).indexOf('NE@SEA') === 0);
+  chk('an id, when there is one, is the whole key',
+    S.gameKey({ game_id: 401856766, home: 'SEA', away: 'NE' }) === '401856766');
+  /* the season sweep dedupes on this key, so a pairing a season holds twice
+     — a regular-season game and a championship rematch — must not collapse
+     into one game and take the second one out of every record */
+  chk('the same pairing on two different days is two games',
+    S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T17:00:00Z' })
+      !== S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-12-06T17:00:00Z' }));
+  /* a doubleheader, or a rematch the schedule puts on the same date: the
+     day alone is not enough to tell two games apart */
+  chk('the same pairing on one day in two different weeks is two games',
+    S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T13:00:00Z', week: 2 })
+      !== S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T20:00:00Z', week: 15 }));
+  chk('the same game read twice keeps one key',
+    S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T17:00:00Z' })
+      === S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T17:00:00Z' }));
 
-  /* the conversion follows the mapping the creator actually set, not the
-     one the guesser produced: hand-move pick_line onto the market-line
-     field (the ambiguous-spread button does exactly this) and it is still
-     read as pick-stated */
-  S.SLATE.map['line_at_submission'] = S.SLATE.map['projected_spread'];
-  delete S.SLATE.map['projected_spread'];
-  var mb2 = S.slateBuildRows('2026', '1');
-  chk('a hand-remapped pick_line converts on the market-line field too',
-    near(mb2.rows[0].line_at_submission, -3.5)
-    && mb2.rows[0].projected_spread === undefined,
-    { got: mb2.rows[0].line_at_submission });
+  /* the group-vs-market edge needs BOTH numbers and a real consensus; it
+     is rendered through MCOdds, which this offline suite does not load, so
+     what is asserted here is that it refuses rather than throws */
+  chk('no group edge without a market number',
+    S.consensusEdge({ home: 'SEA', away: 'NE' }, { n: 3, spread_mean: -3.5 }, null) === null);
+  chk('no group edge from a single model',
+    S.consensusEdge({ home: 'SEA', away: 'NE' }, { n: 1, spread_mean: -3.5 }, -2.0) === null);
+  chk('no group edge from a locked consensus',
+    S.consensusEdge({ home: 'SEA', away: 'NE' }, { n: 3, spread_mean: -3.5, locked: true }, -2.0) === null);
+  chk('the group edge badge is empty rather than broken markup',
+    S.consensusEdgeBadge({ home: 'SEA', away: 'NE' }, null, null) === '');
+
+  /* lead time: dormant until the games payload carries a timestamp */
+  var KICK = '2026-09-13T17:00:00Z';
+  chk('a pick posted three days out reads in days',
+    S.pickLeadText({ submitted_at: '2026-09-10T17:00:00Z' }, KICK) === 'posted 3d before kickoff');
+  chk('a pick posted the same morning reads in hours',
+    S.pickLeadText({ submitted_at: '2026-09-13T09:00:00Z' }, KICK) === 'posted 8h before kickoff');
+  chk('a pick posted after kickoff says so',
+    S.pickLeadText({ submitted_at: '2026-09-13T19:00:00Z' }, KICK) === 'posted after kickoff');
+  chk('either timestamp field the API might grow is read',
+    S.pickLeadText({ received_at: '2026-09-11T17:00:00Z' }, KICK) === 'posted 2d before kickoff');
+  chk('no timestamp yields nothing at all, never a bare label',
+    S.pickLeadText({ projected_spread: -3 }, KICK) === '');
+  chk('a timestamp with no kickoff yields nothing',
+    S.pickLeadText({ submitted_at: KICK }, null) === '');
+
+  /* ---- calibration: claimed vs actual, folded onto the favoured side --- */
+  function pts(list) { return list.map(function (x) { return { p: x[0], y: x[1] }; }); }
+  var cal = S.calibrationBuckets(pts([
+    [0.70, 1], [0.70, 1], [0.70, 1], [0.70, 1], [0.70, 1], [0.70, 1], [0.70, 1],
+    [0.70, 0], [0.70, 0], [0.70, 0]
+  ]));
+  var b70 = cal.buckets[2];
+  chk('a 70% claim that wins 7 of 10 reads as calibrated',
+    cal.n === 10 && b70.n === 10 && near(b70.claimed, 0.7) && near(b70.actual, 0.7),
+    { b70: b70 });
+  chk('an away favourite folds onto the favoured side',
+    (function () {
+      /* p(home)=0.30 means the model favours the AWAY side at 70%; the away
+         side winning (y=0) is a hit */
+      var c = S.calibrationBuckets(pts([[0.30, 0], [0.30, 0], [0.30, 1]]));
+      var b = c.buckets[2];
+      return b.n === 3 && near(b.claimed, 0.7) && near(b.actual, 2 / 3, 1e-9);
+    })());
+  chk('a dead-even 50% lands in the lowest bucket as a home call',
+    (function () {
+      var c = S.calibrationBuckets(pts([[0.5, 1], [0.5, 0]]));
+      var b = c.buckets[0];
+      return b.n === 2 && near(b.claimed, 0.5) && near(b.actual, 0.5);
+    })());
+  chk('a certainty lands in the top bucket instead of falling off the end',
+    (function () {
+      var c = S.calibrationBuckets(pts([[1, 1]]));
+      return c.buckets[4].n === 1 && near(c.buckets[4].claimed, 1);
+    })());
+  chk('overconfidence is visible, not averaged away',
+    (function () {
+      /* claims 90%+, wins half: actual should read ~0.5 in the top bucket */
+      var c = S.calibrationBuckets(pts([[0.92, 1], [0.94, 0], [0.9, 1], [0.96, 0]]));
+      var b = c.buckets[4];
+      return b.n === 4 && near(b.actual, 0.5) && b.claimed > 0.9;
+    })());
+  chk('garbage points are counted as skipped, never binned',
+    (function () {
+      var c = S.calibrationBuckets(pts([[0.7, 1], [null, 1], [0.6, null], [2, 1]]));
+      return c.n === 1 && c.skipped === 3;
+    })());
+  chk('an empty record yields an empty readout, and no markup',
+    S.calibrationBuckets([]).n === 0 && S.calibrationHTML(S.calibrationBuckets([])) === '');
+
+  /* the harvest: settled games only, this model only, late excluded, tie skipped */
+  var CALGAMES = [
+    { result: { home_score: 24, away_score: 17 }, models: [
+      { creator_slug: 'edgedesk', model_slug: 'nfl', home_win_probability: 0.7 },
+      { creator_slug: 'edgedesk', model_slug: 'nfl', home_win_probability: 0.9, late: true },
+      { creator_slug: 'other', model_slug: 'x', home_win_probability: 0.5 },
+      { creator_slug: 'edgedesk', model_slug: 'nfl', locked: true },
+      { creator_slug: 'edgedesk', model_slug: 'nfl', cover_probability: 0.5 }
+    ] },
+    { result: { home_score: 20, away_score: 20 }, models: [
+      { creator_slug: 'edgedesk', model_slug: 'nfl', home_win_probability: 0.6 }
+    ] },
+    { models: [{ creator_slug: 'edgedesk', model_slug: 'nfl', home_win_probability: 0.6 }] }
+  ];
+  var harvest = S.calibrationPoints(CALGAMES, 'edgedesk', 'nfl');
+  chk('the harvest keeps one point: settled, this model, on time, with a probability',
+    harvest.length === 1 && near(harvest[0].p, 0.7) && harvest[0].y === 1,
+    { harvest: harvest });
+
+  /* ---- the outright record, and the Collective graded as one model ----- */
+  chk('the outright record counts favoured-side wins, either side of 50',
+    (function () {
+      var r = S.mlOutrightRecord(pts([[0.7, 1], [0.3, 0], [0.6, 0], [null, 1]]));
+      return r.n === 3 && r.w === 2 && r.l === 1 && near(r.pct, 2 / 3, 1e-9);
+    })());
+  chk('an empty outright record has a null percentage, never NaN',
+    (function () { var r = S.mlOutrightRecord([]); return r.n === 0 && r.pct === null; })());
+
+  var CONSGAMES = [
+    /* majority home at -3 close, home wins by 7: ATS win, outright hit */
+    { consensus: { n: 3, home_win_prob_mean: 0.7, pct_picks_home: 0.67 },
+      result: { home_score: 24, away_score: 17, closing_spread: -3 } },
+    /* majority away as home dog +3, home loses by 10: away covers, ATS win;
+       mean favours away (0.4), away won: outright hit */
+    { consensus: { n: 2, home_win_prob_mean: 0.4, pct_picks_home: 0.33 },
+      result: { home_score: 10, away_score: 20, closing_spread: 3 } },
+    /* lands exactly on the close: a push, not a result */
+    { consensus: { n: 3, home_win_prob_mean: 0.8, pct_picks_home: 1 },
+      result: { home_score: 27, away_score: 20, closing_spread: -7 } },
+    /* dead-even split: no ATS call to grade; outright still counts (a miss) */
+    { consensus: { n: 4, home_win_prob_mean: 0.55, pct_picks_home: 0.5 },
+      result: { home_score: 13, away_score: 17, closing_spread: -1 } },
+    /* one model is not an aggregate */
+    { consensus: { n: 1, home_win_prob_mean: 0.9, pct_picks_home: 1 },
+      result: { home_score: 30, away_score: 0, closing_spread: -10 } },
+    /* locked consensus never grades */
+    { consensus: { locked: true, n: 5, home_win_prob_mean: 0.9, pct_picks_home: 1 },
+      result: { home_score: 30, away_score: 0, closing_spread: -10 } },
+    /* not settled yet */
+    { consensus: { n: 3, home_win_prob_mean: 0.6, pct_picks_home: 0.8 } }
+  ];
+  var cons = S.consensusSeasonStats(CONSGAMES);
+  chk('the consensus ATS record grades the majority side against the close',
+    cons.ats.w === 2 && cons.ats.l === 0 && cons.ats.push === 1, { ats: cons.ats });
+  chk('the consensus outright record includes the push and even-split games',
+    cons.ml.n === 4 && cons.ml.w === 3 && cons.ml.l === 1, { ml: cons.ml },
+    /* the ATS push still grades outright: home at 80% won the game */
+    undefined);
+  chk('the consensus calibration points carry the mean probabilities',
+    cons.mlPts.length === 4 && near(cons.mlPts[0].p, 0.7) && cons.mlPts[0].y === 1);
+  chk('no settled aggregates yields empty records, not zeros pretending to grade',
+    (function () {
+      var c = S.consensusSeasonStats([{ consensus: { n: 1 }, result: { home_score: 1, away_score: 0, closing_spread: -1 } }]);
+      return c.ats.w === 0 && c.ats.l === 0 && c.ats.push === 0 && c.ml.n === 0;
+    })());
+
+  /* ---- the blank template must be right BY CONSTRUCTION ----------------
+     The template is what a creator is handed when they ask "how do I format
+     this". If its own headers did not map, or its example rows did not mean
+     what the page says they mean, it would teach the exact convention drift
+     it exists to prevent. So: parse it with the real parser, map it with the
+     real mapper, build it with the real row builder, and assert the values
+     that come out are the ones the format page promises. */
+  var tpl = parseCsv(S.slateTemplateCsv(true));
+  chk('every template column is a canonical wire field name',
+    S.SLATE_TEMPLATE_COLS.every(function (c) {
+      return S.SLATE_FIELDS.some(function (fd) { return fd.f === c || fd.syn.indexOf(c) >= 0; });
+    }), { cols: S.SLATE_TEMPLATE_COLS });
+  S.SLATE.cols = tpl[0]; S.SLATE.rows = tpl; S.SLATE.map = {};
+  S.slateGuessMap();
+  chk('the template maps with nothing left for the creator to correct',
+    S.SLATE_TEMPLATE_COLS.every(function (c) { return S.SLATE.map[c] !== undefined; }),
+    { unmapped: S.SLATE_TEMPLATE_COLS.filter(function (c) { return S.SLATE.map[c] === undefined; }) });
+  chk('no required field is missing from the template',
+    S.SLATE_FIELDS.filter(function (fd) { return fd.req && S.SLATE.map[fd.f] === undefined; }).length === 0);
+  chk('the template is not mistaken for an EdgeDesk export',
+    S.edSlateDetect() === false);
+  chk('no template column is read as pick-stated',
+    !S.slateColIsPickStated('projected_spread') && !S.slateColIsPickStated('line_at_submission')
+      && !S.slateColIsPickStated('home_win_probability'));
+
+  var tb = S.slateBuildRows('2026', '1');
+  chk('both template example rows build with no problems reported',
+    tb.rows.length === 2 && tb.problems.length === 0,
+    { n: tb.rows.length, problems: tb.problems });
+  var t0 = tb.rows[0], t1 = tb.rows[1];
+  chk('the home favourite example keeps its negative home spread',
+    near(t0.projected_spread, -5.0) && near(t0.line_at_submission, -3.5), { t0: t0 });
+  chk('a 0-100 percentage in the template is read as a probability',
+    near(t0.home_win_probability, 0.68) && near(t0.cover_probability, 0.507), { t0: t0 });
+  chk('the template pick names a team and resolves to a side',
+    t0.pick_side === 'home' && t1.pick_side === 'away',
+    { t0: t0.pick_side, t1: t1.pick_side });
+  chk('the home-dog example keeps its POSITIVE home spread',
+    near(t1.projected_spread, 2.6) && near(t1.line_at_submission, 2.5), { t1: t1 });
+  chk('the away-pick example is not silently turned around',
+    near(t1.home_win_probability, 0.403),
+    { got: t1.home_win_probability, why: 'a home-stated column is home-stated whatever the pick' });
+  chk('template scores survive as projections',
+    t0.proj_home_score === 24 && t0.proj_away_score === 19);
+  chk('the headers-only template carries no rows to post',
+    parseCsv(S.slateTemplateCsv(false)).length === 1);
+
+  /* the example rows must mean what the format page says they mean */
+  chk('the format doc documents every template column, in order',
+    S.SLATE_TEMPLATE_DOC.length === S.SLATE_TEMPLATE_COLS.length &&
+    S.SLATE_TEMPLATE_DOC.every(function (x, i) { return x.c === S.SLATE_TEMPLATE_COLS[i]; }),
+    { doc: S.SLATE_TEMPLATE_DOC.map(function (x) { return x.c; }) });
+  chk('every example row is as wide as the header',
+    S.SLATE_TEMPLATE_EXAMPLE.every(function (r) { return r.length === S.SLATE_TEMPLATE_COLS.length; }));
+
+  /* ---- a FINAL score must never post as a PROJECTED one ----------------
+     The EdgeDesk exports name the final score home_score / away_score, which
+     is also a legitimate name for a creator's projected scores. Mapped as a
+     projection, a finished game posts the actual result as the model's
+     expectation — and margin accuracy is graded from projected scores in
+     preference to the spread, so that is a fabricated perfect projection.
+     Verified against the REAL export header. */
+  var FINALHEAD = ['season','week','game_id','kickoff_local','away_team','home_team',
+    'model_home_line','model_fair_total','home_win_prob_pct','ref_home_line','spread_pick',
+    'home_score','away_score','final_margin','final_total','spread_result','total_result','ml_result'];
+  var FINALROW = ['2026','1','2026_01_NE_SEA','2026-09-09 20:20','NE','SEA',
+    '-5.01','43.7','68','-3.5','SEA',
+    '31','13','18','44','loss','over','win'];
+  chk('score columns beside result columns are read as FINALS',
+    S.slateScoresAreFinal(FINALHEAD) === true);
+  S.SLATE.cols = FINALHEAD; S.SLATE.rows = [FINALHEAD, FINALROW]; S.SLATE.map = {};
+  S.slateGuessMap();
+  chk('a final score never maps as a projected score',
+    S.SLATE.map['proj_home_score'] === undefined && S.SLATE.map['proj_away_score'] === undefined,
+    { home: S.SLATE.cols[S.SLATE.map['proj_home_score']], away: S.SLATE.cols[S.SLATE.map['proj_away_score']] });
+  var fb = S.slateBuildRows('2026', '1');
+  chk('the built row carries no invented projection',
+    fb.rows[0].proj_home_score === undefined && fb.rows[0].proj_away_score === undefined,
+    { row: fb.rows[0] });
+  chk('everything else on that row still posts normally',
+    near(fb.rows[0].projected_spread, -5.01) && near(fb.rows[0].home_win_probability, 0.68)
+      && fb.rows[0].pick_side === 'home', { row: fb.rows[0] });
+
+  /* a sheet that really is projecting scores keeps them */
+  var PROJHEAD = ['home_team','away_team','kickoff','home_score','away_score'];
+  chk('score columns with no result columns stay projections',
+    S.slateScoresAreFinal(PROJHEAD) === false);
+  S.SLATE.cols = PROJHEAD;
+  S.SLATE.rows = [PROJHEAD, ['SEA', 'NE', '2026-09-09', '24', '19']];
+  S.SLATE.map = {}; S.slateGuessMap();
+  var pb = S.slateBuildRows('2026', '1');
+  chk('a projecting sheet still posts its projected scores',
+    pb.rows[0].proj_home_score === 24 && pb.rows[0].proj_away_score === 19,
+    { row: pb.rows[0] });
+  chk('a sheet with result columns but no score columns is unaffected',
+    S.slateScoresAreFinal(['home_team','away_team','spread_result']) === false);
+
+  /* ---- the schedule truncates names, and four school pairs collide ------
+     Washington / Washington State, Mississippi / Mississippi State, and the
+     two Carolinas are identical in the first ten characters, which is how
+     the schedule stores them. Matching each name alone cannot separate them;
+     matching the PAIR can, because a game is two teams and only one
+     scheduled game has both. */
+  var SCHED = [
+    { game_id: '2026_01_WASH_OREG', home: 'OREGON', away: 'WASHINGTON' },
+    { game_id: '2026_01_WSU_UTAH',  home: 'UTAH',   away: 'WASHINGTON' },
+    { game_id: '2026_01_MISS_LSU',  home: 'LSU',    away: 'MISSISSIPP' }];
+
+  chk('the schedule name matches ours exactly, or as its own truncation',
+    S.slateNameMatches('Washington', 'WASHINGTON') === true &&
+    S.slateNameMatches('Washington State', 'WASHINGTON') === true &&
+    S.slateNameMatches('Oregon', 'WASHINGTON') === false);
+  chk('a pair identifies the game that neither name can',
+    S.slatePairGame(SCHED, 'Washington State', 'Utah').game_id === '2026_01_WSU_UTAH' &&
+    S.slatePairGame(SCHED, 'Washington', 'Oregon').game_id === '2026_01_WASH_OREG');
+  chk('a pair matching two games is refused, never guessed',
+    S.slatePairGame([SCHED[0], SCHED[0]], 'Washington', 'Oregon') === null);
+  chk('a pair matching nothing is null, not a near miss',
+    S.slatePairGame(SCHED, 'Washington', 'Alabama') === null);
+
+  var al = S.slateAlignToSchedule(SCHED, [
+    { home_team: 'Oregon', away_team: 'Washington',       projected_spread: -7 },
+    { home_team: 'Utah',   away_team: 'Washington State', projected_spread: -3 }]);
+  /* the substantive fix: each row carries the id of ITS game, so a name the
+     schedule cannot make unique can no longer misfile anyone's numbers */
+  chk('each row is pinned to its own game id',
+    al.rows[0].game_ref === '2026_01_WASH_OREG' &&
+    al.rows[1].game_ref === '2026_01_WSU_UTAH',
+    { refs: al.rows.map(function (r) { return r.game_ref; }) });
+  chk('Washington State is not filed on the Washington game',
+    al.rows[1].game_ref !== al.rows[0].game_ref);
+  /* what the pair CANNOT fix is the schedule having one name for two
+     schools, so that is reported rather than papered over */
+  chk('the name collision is reported with both of the creator names',
+    al.collisions.length === 1 &&
+    al.collisions[0].schedule_name === 'WASHINGTON' &&
+    al.collisions[0].yours.indexOf('Washington') >= 0 &&
+    al.collisions[0].yours.indexOf('Washington State') >= 0,
+    { collisions: al.collisions });
+  /* a slate with no collision must not raise one */
+  var clean = S.slateAlignToSchedule(SCHED, [
+    { home_team: 'Oregon', away_team: 'Washington', projected_spread: -7 }]);
+  chk('an ordinary slate reports no collision',
+    clean.collisions.length === 0, { collisions: clean.collisions });
+  chk('an explicit game_ref is still never overwritten by pairing',
+    S.slateAlignToSchedule(SCHED, [
+      { game_ref: '2026_01_WSU_UTAH', home_team: 'Utah', away_team: 'Washington State' }])
+      .rows[0].game_ref === '2026_01_WSU_UTAH');
+
+  /* ---- a market line is never invented from the model's own number ------
+     A cover probability used to fill an absent market line with the model's
+     own spread, which claimed the creator had supplied a market line they
+     had not: closing line value then measured the model against itself and
+     delta Mkt was 0.0 on every row by construction. */
+  var COVHEAD = ['home_team','away_team','kickoff','spread','cover_prob','pick'];
+  S.SLATE.cols = COVHEAD;
+  S.SLATE.rows = [COVHEAD,
+    ['SEA', 'NE', '2026-09-09', '-3.5', '0.55', 'SEA'],
+    ['LAC', 'ARI', '2026-09-13', '-10.5', '0.58', 'ARI']];
+  S.SLATE.map = {}; S.slateGuessMap();
+  var cb = S.slateBuildRows('2026', '1');
+  chk('a cover probability does not invent a market line',
+    cb.rows[0].line_at_submission === undefined &&
+    cb.rows[1].line_at_submission === undefined, { row: cb.rows[0] });
+  chk('the creator own spread still posts',
+    near(cb.rows[0].projected_spread, -3.5), { row: cb.rows[0] });
+  /* The API refuses cover_probability on a row with no line_at_submission
+     ("cover_probability requires line_at_submission"), and it is right to:
+     a cover percentage is P(covers AT a line). Two ways to satisfy that,
+     one of them honest -- withhold the cover, never invent the line. */
+  chk('a cover probability with no market line is withheld, not sent',
+    cb.rows[0].cover_probability === undefined &&
+    cb.rows[1].cover_probability === undefined, { row: cb.rows[0] });
+  chk('the withholding is counted so the creator can be told',
+    cb.coverWithheld === 2, { count: cb.coverWithheld });
+  /* and it is the LINE that decides, not the cover: given a real market
+     line, the cover posts untouched */
+  var COVHEAD2 = ['home_team','away_team','kickoff','spread','market_line','cover_prob','pick'];
+  S.SLATE.cols = COVHEAD2;
+  S.SLATE.rows = [COVHEAD2, ['SEA','NE','2026-09-09','-3.5','-4.5','0.55','SEA']];
+  S.SLATE.map = {}; S.slateGuessMap();
+  var cb2 = S.slateBuildRows('2026', '1');
+  chk('a cover probability WITH a market line posts untouched',
+    cb2.rows[0].cover_probability != null && near(cb2.rows[0].line_at_submission, -4.5)
+      && cb2.coverWithheld === 0, { row: cb2.rows[0] });
+  /* the rejection classifier must not read "cover_probability requires
+     line_at_submission" as the spread/probability rule */
+  chk('a missing-line rejection is not treated as a probability rejection',
+    S.probRejectHTML({ rows: [
+      { status: 'rejected', game_ref: '401856766',
+        reason: 'cover_probability requires line_at_submission' }] }) === '');
+  chk('a real spread/probability rejection is still caught',
+    S.probRejectHTML({ rows: [
+      { status: 'rejected', game_ref: '2026_01_MIA_LV',
+        reason: 'home_win_probability contradicts projected_spread; check that the probability is moneyline' }] })
+      .indexOf('refused on the spread/probability pair') >= 0);
+
+  /* ---- one column mapped into both spread fields ------------------------
+     Equal on every row is not a model agreeing with the market; it is a
+     mapping mistake, and it silently zeroes delta Mkt and closing line
+     value. Counted on built rows, so it catches the mapping however the
+     duplication happened. */
+  chk('two spread columns identical on every row are flagged',
+    S.slateSpreadsIdentical([
+      { projected_spread: -3.5, line_at_submission: -3.5 },
+      { projected_spread: -10.5, line_at_submission: -10.5 },
+      { projected_spread: 2.5, line_at_submission: 2.5 }]) === 3);
+  chk('a model that genuinely differs anywhere is not flagged',
+    S.slateSpreadsIdentical([
+      { projected_spread: -3.5, line_at_submission: -3.5 },
+      { projected_spread: -10.5, line_at_submission: -9.5 },
+      { projected_spread: 2.5, line_at_submission: 2.5 }]) === 0);
+  chk('agreeing on one or two games is never called a mapping mistake',
+    S.slateSpreadsIdentical([
+      { projected_spread: -3.5, line_at_submission: -3.5 },
+      { projected_spread: -7.0, line_at_submission: -7.0 }]) === 0);
+  chk('rows missing either spread are not counted as agreement',
+    S.slateSpreadsIdentical([
+      { projected_spread: -3.5 },
+      { line_at_submission: -7.0 },
+      { projected_spread: 2.5, line_at_submission: 2.5 }]) === 0);
+  /* the twin case makes the self-consistency guard blind, which is the
+     reason it has to be caught at upload rather than on the wall */
+  chk('twinned spreads leave nothing for the contradiction guard to see',
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -3.5, line_at_submission: -3.5 }) === null);
+
+  /* ---- the real 44-column NFL export ------------------------------------
+     Reported from the dashboard: a Week 1 2026 NFL slate checked clean
+     ("16 matched, 0 quarantined, 0 rejected") under a ticked "post
+     automatically when the check is clean", and never reached the wall.
+     The file's team columns spell the Rams LAR and its pick columns spell
+     them LA, so one row could not resolve its pick side; that put an entry
+     in built.problems, and hands-off mode declines on any problem without
+     saying a word. Two bugs, and the second one hid the first. */
+  var NFL = [
+    'season,week,game_id,kickoff_local,away_team,home_team,model_version,feature_version,'
+      + 'model_home_line,model_fair_total,home_win_prob_pct,ref_home_line,spread_pick,'
+      + 'p_spread_pick_pct,spread_push_pct,ml_pick,p_ml_pick_pct',
+    '2026,1,2026_01_NE_SEA,9/9/2026 20:20,NE,SEA,edgedesk_football_v1.0.0,nfl_fv1,'
+      + '-5.01,43.7,68,-3.5,SEA,50.7,0,SEA,68',
+    '2026,1,2026_01_SF_LA,9/10/2026 20:35,SF,LAR,edgedesk_football_v1.0.0,nfl_fv1,'
+      + '-5.18,50.7,68.6,-3.5,LA,50.7,0,LA,68.6',
+    '2026,1,2026_01_ARI_LAC,9/13/2026 16:25,ARI,LAC,edgedesk_football_v1.0.0,nfl_fv1,'
+      + '-4.93,45.3,67.8,-10.5,ARI,70.8,0,LAC,67.8'
+  ].join('\n');
+  var nrows = parseCsv(NFL);
+  S.SLATE.cols = nrows[0]; S.SLATE.rows = nrows; S.SLATE.map = {};
+  S.slateGuessMap();
+  chk('the EdgeDesk NFL export is recognised like its CFB sibling',
+    S.edSlateDetect() === true);
+  chk('the NFL export is detected as NFL',
+    S.slateDetectSport(S.SLATE.cols, S.SLATE.rows) === 'NFL',
+    { got: S.slateDetectSport(S.SLATE.cols, S.SLATE.rows) });
+  var nb = S.slateBuildRows('2026', '1');
+  chk('every NFL export row builds with no problems reported',
+    nb.rows.length === 3 && nb.problems.length === 0,
+    { n: nb.rows.length, problems: nb.problems });
+  chk('LA in the pick column resolves against LAR in the team column',
+    nb.rows[1].pick_side === 'home',
+    { got: nb.rows[1].pick_side, why: 'the same franchise, two codes, one file' });
+  chk('an away pick beside a LAC home team still resolves',
+    nb.rows[2].pick_side === 'away', { got: nb.rows[2].pick_side });
+
+  /* ---- a two letter code may match a code, never a name ----------------- */
+  chk('LA resolves to LAR when LAR is the only Los Angeles side',
+    S.slateSide('LA', 'LAR', 'SF') === 'home');
+  chk('LA resolves to LAC the same way', S.slateSide('LA', 'SF', 'LAC') === 'away');
+  chk('LA in a Rams-Chargers game is refused as ambiguous',
+    S.slateSide('LA', 'LAR', 'LAC') === null);
+  chk('LAR still resolves when the schedule is the one saying LA',
+    S.slateSide('LAR', 'LA', 'SF') === 'home');
+  chk('a two letter code never latches onto a spelled out name',
+    S.slateSide('NE', 'New Orleans', 'Miami') === null,
+    { why: 'NE is New England, which is not playing in this game' });
+  chk('NE at NO is still refused', S.slateSide('NE', 'NO', 'MIA') === null);
+  chk('NY in a Giants-Jets game is refused as ambiguous',
+    S.slateSide('NY', 'NYG', 'NYJ') === null);
+  chk('a three letter prefix of a full name still resolves',
+    S.slateSide('Ala', 'Alabama', 'Auburn') === 'home');
+
+  /* ---- a pick-stated cover % is withheld when the pick cannot be read ----
+     The spread, the market line and the win probability are all withheld
+     when the side they are stated from is unreadable. The cover probability
+     was not: its flip sat inside `if(parsedPick)`, so an unreadable pick
+     fell past it and posted P(my side covers) as P(home covers) — correct
+     when the pick happened to be home, silently inverted when it was away,
+     and indistinguishable from a real number either way. */
+  var UNREAD = [
+    'season,week,game_id,kickoff_local,away_team,home_team,model_version,feature_version,'
+      + 'model_home_line,model_fair_total,home_win_prob_pct,ref_home_line,spread_pick,'
+      + 'p_spread_pick_pct,spread_push_pct',
+    '2026,1,2026_01_X_Y,9/13/2026 13:00,BUF,MIA,edgedesk_football_v1.0.0,nfl_fv1,'
+      + '-3.5,44.5,58,-3,Rutgers,70.9,0'
+  ].join('\n');
+  var urows = parseCsv(UNREAD);
+  S.SLATE.cols = urows[0]; S.SLATE.rows = urows; S.SLATE.map = {};
+  S.slateGuessMap();
+  var ub = S.slateBuildRows('2026', '1');
+  chk('an unreadable pick withholds the pick-stated cover probability',
+    ub.rows.length === 1 && ub.rows[0].cover_probability === undefined,
+    { got: ub.rows[0] && ub.rows[0].cover_probability });
+  chk('withholding the cover probability is reported, not silent',
+    ub.problems.some(function (x) { return /cover/i.test(x); }),
+    { problems: ub.problems });
+  chk('the rest of the row still posts',
+    near(ub.rows[0].projected_spread, -3.5) && near(ub.rows[0].line_at_submission, -3),
+    { row: ub.rows[0] });
+
+  /* ---- a bare wall clock means one instant, whoever opens the file ------
+     "9/13/2026 13:00" is the NFL export's kickoff_local and carries no
+     designator. It used to fall through to new Date(), which is specified
+     to read it as the READER'S local time, so the same file meant a
+     different instant for every creator and a night game opened in US
+     Central landed on the next UTC day. */
+  chk('an M/D/YYYY wall clock is pinned, not read as the reader\'s local time',
+    S.slateKick('9/13/2026 13:00') === '2026-09-13T13:00:00.000Z',
+    { got: S.slateKick('9/13/2026 13:00') });
+  chk('a late kickoff does not roll into the next UTC day',
+    S.slateKick('9/9/2026 20:20') === '2026-09-09T20:20:00.000Z',
+    { got: S.slateKick('9/9/2026 20:20') });
+  chk('a declared timezone is still honoured on that form',
+    S.slateKick('9/13/2026 13:00', 'America/Chicago') === '2026-09-13T18:00:00.000Z',
+    { got: S.slateKick('9/13/2026 13:00', 'America/Chicago') });
+  chk('the ISO form is unchanged by all this',
+    S.slateKick('2026-08-29 16:00') === '2026-08-29T16:00:00.000Z');
+  chk('a date with no time still gets the midday default',
+    S.slateKick('9/13/2026') === '2026-09-13T17:00:00Z');
+  chk('an explicit offset in the value still wins',
+    S.slateKick('2026-09-13T13:00:00-05:00') === '2026-09-13T18:00:00.000Z');
+
+  /* ---- the file's own date, shown the way the file writes it ------------ */
+  chk('an M/D/YYYY kickoff is not cut mid-year',
+    S.edDateCell('9/9/2026 20:20') === '9/9/2026',
+    { got: S.edDateCell('9/9/2026 20:20') });
+  chk('an ISO kickoff still shows its date',
+    S.edDateCell('2026-08-29 16:00') === '2026-08-29');
+  chk('an empty kickoff shows a dash', S.edDateCell('') === '-'
+    && S.edDateCell(null) === '-');
 }
+
+
+/* =======================================================================
+   3. GRADING: a finished game is graded by the page, not waited on.
+
+   The bug these cover: a college slate finished on a Saturday and the site
+   showed "0 settled", "nobody has cleared the minimums" and an empty grade
+   column beside printed final scores, because the only grader was a
+   server-side settlement run that was behind. The page now applies the
+   published rule itself. These tests are the rule.
+   ======================================================================= */
+/* A guarded section that silently skips itself is a suite that reports ALL
+   GREEN having tested nothing. Name what has to exist, so a rename shows up
+   as a red line rather than as a smaller number nobody was watching. */
+chk('the page defines the grading functions this section tests',
+  ['atsResult', 'finalResult', 'projectedMargin', 'gradableRow', 'localGrade',
+   'serverGrade', 'rowGrade', 'modelRecord', 'modelCoverage', 'modelsInGames',
+   'rankBoard', 'localRankings', 'localGameLog', 'shownRecord', 'hasRecord',
+   'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
+   'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames',
+   'noCapturedClose', 'closelessLogRow', 'markCloselessGraded', 'closelessNote',
+   'serverRecordFor', 'logTally', 'atsReason', 'marketClvPoints', 'edgeBucketKey',
+   'modelBettingDiagnostics', 'bettingDiagnosticsHTML', 'lineValueHtml'
+  ].every(function (n) { return typeof sandbox[n] === 'function'; }),
+  { missing: ['atsResult', 'finalResult', 'projectedMargin', 'gradableRow', 'localGrade',
+      'serverGrade', 'rowGrade', 'modelRecord', 'modelCoverage', 'modelsInGames',
+      'rankBoard', 'localRankings', 'localGameLog', 'shownRecord', 'hasRecord',
+      'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
+      'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames',
+      'noCapturedClose', 'closelessLogRow', 'markCloselessGraded', 'closelessNote',
+      'serverRecordFor', 'logTally', 'atsReason', 'marketClvPoints', 'edgeBucketKey',
+      'modelBettingDiagnostics', 'bettingDiagnosticsHTML', 'lineValueHtml']
+      .filter(function (n) { return typeof sandbox[n] !== 'function'; }) });
+
+if (typeof sandbox.localGrade === 'function') try {
+  var G = sandbox;
+  var PAST = '2020-09-13T17:00:00Z';
+  var FUTURE = '2099-09-13T17:00:00Z';
+
+  function gm(o) {
+    o = o || {};
+    var res = null;
+    if (o.hs !== undefined || o.as !== undefined) {
+      res = { home_score: o.hs === undefined ? null : o.hs,
+              away_score: o.as === undefined ? null : o.as,
+              closing_spread: o.close === undefined ? -7 : o.close,
+              closing_total: 45 };
+    } else if (o.result !== undefined) { res = o.result; }
+    return { game_id: o.id || 'g1', label: o.label || 'AWAY @ HOME',
+             home: 'HOME', away: 'AWAY', week: o.week === undefined ? 1 : o.week,
+             kickoff_at: o.kickoff || PAST, result: res, models: o.models || [] };
+  }
+  function mr(o) {
+    o = o || {};
+    var r = { creator_slug: o.cs || 'c', model_slug: o.ms || 'm' };
+    ['pick_side', 'projected_spread', 'line_at_submission', 'home_win_probability',
+     'cover_probability', 'projected_total', 'proj_home_score', 'proj_away_score',
+     'locked', 'late', 'grade', 'data_origin', 'movement_n', 'received_at'].forEach(function (k) {
+      if (o[k] !== undefined) r[k] = o[k];
+    });
+    return r;
+  }
+
+  /* ---- market usefulness: CLV + edge buckets -------------------------
+     These numbers are allowed to describe a signal only if the sign
+     convention is right. Home and away are mirror images, and the bucket
+     is frozen from model-vs-market AT SUBMISSION rather than from the close. */
+  chk('CLV is positive when a home pick got -3 and the market closed -5',
+    near(G.marketClvPoints('home', -3, -5), 2));
+  chk('CLV is positive when an away pick got +3 and the market closed +1',
+    near(G.marketClvPoints('away', -3, -1), 2));
+  chk('CLV is negative when the posted number was worse than the close',
+    near(G.marketClvPoints('home', -5, -3), -2)
+      && near(G.marketClvPoints('away', -1, -3), -2));
+  chk('CLV needs a side and two real lines',
+    G.marketClvPoints(null, -3, -5) === null
+      && G.marketClvPoints('home', null, -5) === null
+      && G.marketClvPoints('home', -3, null) === null);
+  chk('edge buckets have stable boundaries',
+    G.edgeBucketKey(0) === '0-2'
+      && G.edgeBucketKey(1.99) === '0-2'
+      && G.edgeBucketKey(2) === '2-4'
+      && G.edgeBucketKey(4) === '4-6'
+      && G.edgeBucketKey(6) === '6+');
+
+  chk('diagnostics keep edge-at-post separate from closing-line value',
+    (function () {
+      var a=gm({id:'d1',hs:30,as:20,close:-5});
+      a.models=[mr({pick_side:'home',projected_spread:-8,line_at_submission:-3,received_at:'2020-09-12T17:00:00Z'})];
+      var b=gm({id:'d2',hs:21,as:20,close:-2});
+      b.models=[mr({pick_side:'away',projected_spread:2,line_at_submission:-4,received_at:'2020-09-12T17:00:00Z'})];
+      var d=G.modelBettingDiagnostics([a,b],'c','m');
+      return d.clv_n===2 && near(d.avg_clv,2) && near(d.clv_positive_pct,1)
+        && d.buckets['4-6'].n===1 && d.buckets['4-6'].wins===1
+        && d.buckets['6+'].n===1 && d.buckets['6+'].wins===1
+        && d.large.n===2 && d.large.wins===2;
+    })());
+  /* The first version of these diagnostics fell back to the side implied
+     against the CLOSE when a model named none, so the closing line chose
+     which way CLV was measured. The side is now frozen at submission. */
+  chk('CLV side is fixed at submission, never chosen by the close',
+    (function () {
+      var g=gm({id:'d3',hs:30,as:20,close:-6});
+      /* -4.5 posted into -4 is HOME at submission; against the close of -6
+         it would read AWAY. CLV must be the home number: -4 -> -6 = +2. */
+      g.models=[mr({projected_spread:-4.5,line_at_submission:-4,received_at:'2020-09-12T17:00:00Z'})];
+      var d=G.modelBettingDiagnostics([g],'c','m');
+      return d.clv_n===1 && near(d.avg_clv,2);
+    })());
+  chk('a graded row with no receipt time is left out of the diagnostics and counted, not guessed',
+    (function () {
+      var g=gm({id:'d4',hs:30,as:20,close:-5});
+      g.models=[mr({pick_side:'home',projected_spread:-8,line_at_submission:-3})];
+      var d=G.modelBettingDiagnostics([g],'c','m');
+      return d.clv_n===0 && d.excluded_untimed===1;
+    })());
+  chk('the board names a lone outlier descriptively and says nothing about an aligned model',
+    (function () {
+      var g=gm({id:'r1',kickoff:FUTURE});
+      g.models=[mr({cs:'a',projected_spread:-9,line_at_submission:-5.5}),
+        mr({cs:'b',projected_spread:-4,line_at_submission:-5.5}),
+        mr({cs:'c',projected_spread:-4.5,line_at_submission:-5.5}),
+        mr({cs:'d',projected_spread:-3,line_at_submission:-5.5})];
+      var lone=G.roomChipHtml(g,g.models[0]), aligned=G.roomChipHtml(g,g.models[1]);
+      return /lone outlier/.test(lone) && /not wrong/.test(lone) && aligned==='';
+    })());
+  chk('each diagnostic metric carries its own n and ATS carries an interval',
+    (function () {
+      var a=gm({id:'d5',hs:30,as:20,close:-5});
+      a.models=[mr({pick_side:'home',projected_spread:-8,line_at_submission:-3,home_win_probability:0.7,received_at:'2020-09-12T17:00:00Z'})];
+      var b=gm({id:'d6',hs:30,as:20,close:null});
+      b.models=[mr({projected_spread:-8,line_at_submission:-3,received_at:'2020-09-12T17:00:00Z'})];
+      var o=G.modelBettingDiagnostics([a,b],'c','m').research.overall;
+      return o.ats.n===1 && o.mae.n===2 && o.brier.n===1 && o.clv.n===1 && o.ats.interval && o.ats.interval.n===1;
+    })());
+  chk('the diagnostics panel prints intervals, median CLV and per-metric n',
+    (function () {
+      var a=gm({id:'d7',hs:30,as:20,close:-5});
+      a.models=[mr({pick_side:'home',projected_spread:-8,line_at_submission:-3,received_at:'2020-09-12T17:00:00Z'})];
+      var h=G.bettingDiagnosticsHTML(G.modelBettingDiagnostics([a],'c','m'));
+      return /Median CLV/.test(h) && /Wilson/.test(h) && /n=1/.test(h) && /fixed in advance/.test(h) && !/BEST BET|LOCK/.test(h);
+    })());
+
+  /* ---- the cover rule, written once and shared ------------------------
+     Home convention on both sides: margin + closing spread. A home team
+     favoured by 7 that wins by 10 has covered by 3. */
+  chk('a home pick covers when the home team beats the number',
+    G.atsResult(10, -7, 'home') === 'win' && G.atsResult(10, -7, 'away') === 'loss');
+  chk('an away pick covers when the home team falls short of the number',
+    G.atsResult(4, -7, 'away') === 'win' && G.atsResult(4, -7, 'home') === 'loss');
+  chk('landing exactly on the close is a push for BOTH sides',
+    G.atsResult(7, -7, 'home') === 'push' && G.atsResult(7, -7, 'away') === 'push');
+  chk('an underdog that wins outright covers, and so does one that loses inside the number',
+    G.atsResult(3, 7, 'home') === 'win' && G.atsResult(3, 7, 'away') === 'loss'
+      && G.atsResult(-3, 7, 'home') === 'win' && G.atsResult(-3, 7, 'away') === 'loss');
+  chk('a tie still has an against-the-spread result',
+    G.atsResult(0, -3.5, 'away') === 'win' && G.atsResult(0, 3.5, 'home') === 'win');
+  chk('no side, no closing line, or a non-number grades nothing',
+    G.atsResult(10, -7, null) === null && G.atsResult(10, null, 'home') === null
+      && G.atsResult(null, -7, 'home') === null
+      && G.atsResult(10, NaN, 'home') === null
+      && G.atsResult(10, -7, 'HOME') === null);
+  /* the consensus was graded by a hand-inlined copy of this arithmetic;
+     the point of factoring it out is that there is now only one */
+  chk('the consensus is graded by the same function as the members',
+    (function () {
+      var st = G.consensusSeasonStats([
+        gm({ hs: 30, as: 20, close: -7 }),                     /* home covers */
+        gm({ id: 'g2', hs: 27, as: 20, close: -7 }),           /* push        */
+        gm({ id: 'g3', hs: 24, as: 20, close: -7 })            /* away covers */
+      ].map(function (g, i) {
+        g.consensus = { n: 3, pct_picks_home: 0.75, home_win_prob_mean: 0.6 };
+        return g;
+      }));
+      return st.ats.w === 1 && st.ats.l === 1 && st.ats.push === 1;
+    })());
+
+  /* ---- what counts as a final score ---------------------------------- */
+  chk('a result with either score missing is not final',
+    G.finalResult(gm({ hs: 30 })) === null && G.finalResult(gm({ as: 20 })) === null
+      && G.finalResult(gm({ result: null })) === null);
+  chk('a score dated before its own kickoff is a placeholder, not a final',
+    G.finalResult(gm({ hs: 0, as: 0, kickoff: FUTURE })) === null,
+    'grading this shape would put a record on a game nobody has played');
+  chk('a real final carries the margin in home convention',
+    (function () { var r = G.finalResult(gm({ hs: 30, as: 20 }));
+      return r && r.margin === 10 && r.home === 30 && r.away === 20 && r.closing_spread === -7; })());
+  chk('a settled game with no captured close is still final',
+    (function () { var r = G.finalResult(gm({ hs: 30, as: 20, close: null }));
+      return r && r.margin === 10 && r.closing_spread === null; })());
+
+  /* ---- a 0-0 "final" is a blank form, not a score --------------------
+     The admin results form posted an EMPTY score box as 0, so one click
+     on Settle with nothing typed settled two games 0-0 and the server
+     graded every model on both: a margin error measured from zero, no ATS
+     result, a record of 0-0-0 over a log of 0-0 finals. */
+  chk('two zeros are a placeholder, never a final',
+    G.finalResult(gm({ hs: 0, as: 0 })) === null
+      && G.isPlaceholderResult({ home_score: 0, away_score: 0 })
+      && G.isPlaceholderResult({ home_score: '0', away_score: '0' })
+      && !G.isPlaceholderResult({ home_score: 0, away_score: 3 })
+      && !G.isPlaceholderResult({ home_score: null, away_score: null })
+      && !G.isPlaceholderResult(null),
+    'the admin form posted an empty score box as 0 and settled two games 0-0');
+  chk('a grade the server wrote against a placeholder is set aside, not shown',
+    (function () {
+      var g = gm({ hs: 0, as: 0 });
+      var mr = { creator_slug: 'a', model_slug: 'b', pick_side: 'home', projected_spread: -32,
+        grade: { pick_result: null, margin_error: 32, brier: null } };
+      var rec = G.modelRecord([g], 'a', 'b');
+      return G.rowGrade(g, mr) === null && rec.graded === 0 && rec.margin_n === 0 && !G.hasRecord(rec);
+    })(), 'a margin error measured from zero is not a margin error');
+  chk('once the real final is found the row is graded on it, by the page',
+    (function () {
+      var g = gm({ hs: 0, as: 0 });
+      g.settled_placeholder = true;
+      g.result = { home_score: 59, away_score: 28, closing_spread: -38.5, closing_total: null, source: 'espn' };
+      var mr = { creator_slug: 'a', model_slug: 'b', pick_side: 'home', projected_spread: -32,
+        grade: { pick_result: null, margin_error: 32, brier: null } };
+      var gr = G.rowGrade(g, mr);
+      return !!gr && gr.source === 'page' && gr.pick_result === 'loss' && near(gr.margin_error, 1);
+    })(), 'USC by 31 into a -38.5 close: the home side lost, and the margin error is 1, not 32');
+  chk('a placeholder still on the wire is not a settled game anywhere on the page',
+    (function () {
+      var g = gm({ hs: 0, as: 0 });
+      return G.placeholderSettled(g) && !G.placeholderSettled(gm({ hs: 30, as: 20 }))
+        && !G.placeholderSettled(gm({ result: null }));
+    })());
+  chk('a record with graded games and no decision in it is not 0-0-0',
+    G.recATSText({ graded: 2, wins: 0, losses: 0, pushes: 0, margin_n: 2 }) === null
+      && /no ATS picks/.test(G.recATSHtml({ graded: 2, wins: 0, losses: 0, pushes: 0 }))
+      && G.recATSText({ graded: 2, wins: 0, losses: 0, pushes: 2 }) === '0-0-2');
+  chk('a server log row that reads 0-0 is recognised as the placeholder',
+    G.placeholderLogRow({ final: '0-0' }) && G.placeholderLogRow({ final: '0 - 0' })
+      && G.placeholderLogRow({ home_score: 0, away_score: 0, final: 'x' })
+      && !G.placeholderLogRow({ final: '10-0' }) && !G.placeholderLogRow({ final: '0-7' })
+      && !G.placeholderLogRow({ final: '48 - 14' }) && !G.placeholderLogRow({}) && !G.placeholderLogRow(null));
+  chk('the server record and log go together, and go when either shows the placeholder',
+    (function () {
+      var d = { record: { graded: 2, wins: 0, losses: 0, pushes: 0, margin_n: 2, margin_mae: 22.25 },
+        recent_graded: [{ final: '0-0', margin_error: 32 }, { final: '0-0', margin_error: 12.5 }] };
+      var byRows = G.serverRecordFor(d, [], 'a', 'b');
+      var g = gm({ hs: 0, as: 0, models: [{ creator_slug: 'a', model_slug: 'b' }] });
+      var byGames = G.serverRecordFor({ record: d.record, recent_graded: [] }, [g], 'a', 'b');
+      var clean = G.serverRecordFor({ record: d.record, recent_graded: [{ final: '48 - 14' }] },
+        [gm({ hs: 48, as: 14 })], 'a', 'b');
+      var other = G.serverRecordFor({ record: d.record, recent_graded: [] }, [g], 'a', 'c');
+      return byRows.placeholders === 2 && byRows.rec === null && byRows.log.length === 0
+        && byGames.placeholders === 1 && byGames.rec === null
+        && clean.placeholders === 0 && clean.rec === d.record && clean.log.length === 1
+        && other.placeholders === 0 && other.rec === d.record;
+    })(), 'a record is only as good as the finals under it');
+  chk('shownRecord sets a server record aside for a model the placeholder was settled against',
+    (function () {
+      var srv = { graded: 2, wins: 0, losses: 0, pushes: 0, margin_n: 2 };
+      var loc = { 'a/b': { graded: 3, wins: 1, losses: 2, pushes: 0, margin_n: 3 } };
+      Object.defineProperty(loc, 'placeholderSettled', { value: { 'a/b': 1 }, enumerable: false });
+      var tainted = G.shownRecord(srv, loc, 'a', 'b');
+      var untouched = G.shownRecord(srv, loc, 'a', 'c');
+      var noLocal = G.shownRecord(srv, (function () {
+        var m = {}; Object.defineProperty(m, 'placeholderSettled', { value: { 'a/b': 1 }, enumerable: false }); return m; })(), 'a', 'b');
+      return tainted.rec === loc['a/b'] && tainted.live === true
+        && untouched.rec === srv && untouched.live === false
+        && noLocal.rec === null && Object.keys(loc).length === 1;
+    })(), 'nothing built on the placeholder is shown, not even as a fallback');
+
+  /* ---- a settled WIN or LOSS on a game with no captured close ----------
+     A Thursday night game finished, the score landed, the Collective had
+     captured no closing line for it — the board said "no captured close",
+     which is the honest answer — and the settlement run graded it anyway,
+     so the same game read "no captured close" on its row and moved the
+     model's record by a loss. There is no number it could have been graded
+     against: the published rule is that such a game has no against-the-
+     spread result for anybody and is counted by nobody. The page applied
+     that to its own grading and then took a win or a loss on the same game
+     from the server without asking. */
+  chk('a game with a final and no captured close is named as such',
+    G.noCapturedClose(gm({ hs: 27, as: 13, close: null })) === true
+      && G.noCapturedClose(gm({ hs: 27, as: 13, close: -7 })) === false
+      && G.noCapturedClose(gm({ result: null })) === false
+      && G.noCapturedClose(gm({ hs: 0, as: 0, close: null })) === false,
+    'a game with no final is not a game with no close, and 0-0 is not a final');
+  chk('a settled ATS result on a game with no captured close is set aside',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away', projected_spread: 2.5,
+          home_win_probability: 0.4,
+          grade: { pick_result: 'loss', margin_error: 1.5, brier: 0.36 } })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      return gr && gr.pick_result === null
+        && near(gr.margin_error, 1.5) && near(gr.brier, 0.36);
+    })(), 'the margin error and the brier need no close; the ATS result does');
+  chk('and it is counted by nobody, exactly as an ungraded game is',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away', projected_spread: 2.5,
+          home_win_probability: 0.4,
+          grade: { pick_result: 'loss', margin_error: 1.5, brier: 0.36 } })] });
+      var rec = G.modelRecord([g], 'a', 'b');
+      return rec.losses === 0 && rec.wins === 0 && rec.graded === 0
+        && rec.win_pct === null && rec.margin_n === 1 && rec.brier_n === 1
+        && rec.ats_missing.no_close === 1 && rec.games === 1;
+    })(), 'a record that counts it disagrees with the row printed under it');
+  chk('the row says WHY it has no result, over the settlement run’s answer',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away',
+          grade: { pick_result: 'loss', margin_error: null, brier: null } })] });
+      return G.atsReason(g, g.models[0]) === 'no_close';
+    })());
+  chk('a settled grade on a game that HAS a close is untouched',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: -7,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'home',
+          grade: { pick_result: 'win', margin_error: 1.5, brier: null } })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      var rec = G.modelRecord([g], 'a', 'b');
+      return gr && gr.pick_result === 'win' && gr.source === 'server'
+        && rec.wins === 1 && rec.graded === 1 && G.atsReason(g, g.models[0]) === null;
+    })(), 'the defence must not cost the settled grades that are sound');
+  chk('a server log row with a verdict and no close is shown ungraded, not lost',
+    (function () {
+      var row = { label: 'AWAY @ HOME', final: '13 - 27', closing_spread: null,
+        pick_result: 'loss', margin_error: 1.5, brier: 0.36 };
+      var out = G.serverRecordFor({ record: { graded: 3, wins: 2, losses: 1, pushes: 0 },
+        recent_graded: [row] }, [], 'a', 'b');
+      var t = G.logTally(out.log);
+      return out.closeless === 1 && out.rec === null && out.log.length === 1
+        && out.log[0].pick_result === null && out.log[0].ats_reason === 'no_close'
+        && near(out.log[0].margin_error, 1.5)
+        && t.losses === 0 && t.ungraded === 1 && t.ats_missing.no_close === 1
+        && t.margin_n === 1 && row.pick_result === 'loss';
+    })(), 'the game was played and belongs on the log; only its verdict goes');
+  chk('a clean server log and record are handed back as they are',
+    (function () {
+      var rec = { graded: 2, wins: 1, losses: 1, pushes: 0 };
+      var out = G.serverRecordFor({ record: rec,
+        recent_graded: [{ final: '13 - 27', closing_spread: -7, pick_result: 'loss' },
+                        { final: '30 - 20', closing_spread: null, pick_result: null }] },
+        [], 'a', 'b');
+      return out.closeless === 0 && out.rec === rec && out.log.length === 2
+        && out.log[0].pick_result === 'loss';
+    })(), 'a row with no verdict at all was never the problem');
+  chk('the model’s server record goes with the grades it was built from',
+    (function () {
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away',
+          grade: { pick_result: 'loss', margin_error: 1.5, brier: null } })] });
+      var out = G.serverRecordFor({ record: { graded: 3, wins: 2, losses: 1, pushes: 0 },
+        recent_graded: [] }, [g], 'a', 'b');
+      var other = G.serverRecordFor({ record: { graded: 3, wins: 2, losses: 1, pushes: 0 },
+        recent_graded: [] }, [g], 'a', 'c');
+      return out.closeless === 1 && out.rec === null && other.closeless === 0;
+    })());
+  chk('shownRecord sets a server record aside for a model graded with no close',
+    (function () {
+      var srv = { graded: 3, wins: 2, losses: 1, pushes: 0 };
+      var g = gm({ hs: 27, as: 13, close: null,
+        models: [mr({ cs: 'a', ms: 'b', pick_side: 'away',
+          grade: { pick_result: 'loss', margin_error: 1.5, brier: null } })] });
+      var loc = { 'a/b': { graded: 2, wins: 2, losses: 0, pushes: 0, margin_n: 3 },
+        'a/c': { graded: 2, wins: 1, losses: 1, pushes: 0, margin_n: 2 } };
+      G.markCloselessGraded(loc, [g]);
+      var tainted = G.shownRecord(srv, loc, 'a', 'b');
+      var untouched = G.shownRecord(srv, loc, 'a', 'c');
+      return tainted.rec === loc['a/b'] && tainted.live === true
+        && untouched.rec === srv && untouched.live === false
+        && Object.keys(loc).length === 2;
+    })(), 'the record above the log has to be counting the same games as the log');
+  chk('the note says which rule set the record aside, and for how many games',
+    /no close/.test(G.closelessNote(1)) && /captured closing line/.test(G.closelessNote(1))
+      && /2 of these models/.test(G.closelessNote(2, 'these models&rsquo;').replace(/&rsquo;/g, ''))
+      && G.closelessNote(0) === '');
+
+  /* ---- the projected margin ------------------------------------------ */
+  chk('a home-stated spread is the NEGATION of the projected home margin',
+    G.projectedMargin({ projected_spread: -12.5 }) === 12.5
+      && G.projectedMargin({ projected_spread: 3 }) === -3);
+  chk('projected scores beat the spread when both are present',
+    G.projectedMargin({ projected_spread: -12.5, proj_home_score: 31, proj_away_score: 17 }) === 14);
+  chk('a model that submitted neither has no projected margin',
+    G.projectedMargin({ pick_side: 'home' }) === null && G.projectedMargin(null) === null);
+
+  /* ---- one row, graded ------------------------------------------------ */
+  chk('a covering pick is a win, with margin error and brier',
+    (function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -12.5, home_win_probability: 0.8 })] });
+      var r = G.localGrade(g, g.models[0]);
+      return r && r.pick_result === 'win' && near(r.margin_error, 2.5)
+        && near(r.brier, 0.04) && r.source === 'page';
+    })());
+  chk('the losing side of the same game is a loss, and its brier is worse',
+    (function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'away', home_win_probability: 0.2 })] });
+      var r = G.localGrade(g, g.models[0]);
+      return r && r.pick_result === 'loss' && near(r.brier, 0.64) && r.margin_error === null;
+    })());
+  chk('margin error comes from projected SCORES when the model supplied them',
+    (function () {
+      var g = gm({ hs: 30, as: 20,
+        models: [mr({ pick_side: 'home', projected_spread: -12.5,
+                      proj_home_score: 31, proj_away_score: 17 })] });
+      return near(G.localGrade(g, g.models[0]).margin_error, 4);
+    })());
+  chk('a tie is graded against the spread but scores NO brier',
+    (function () {
+      var g = gm({ hs: 20, as: 20, close: -3.5,
+        models: [mr({ pick_side: 'away', home_win_probability: 0.7 })] });
+      var r = G.localGrade(g, g.models[0]);
+      return r && r.pick_result === 'win' && r.brier === null;
+    })(), 'a tie has no winner, so there is nothing for a win probability to be right about');
+  chk('a settled game with no captured close still grades margin and brier',
+    (function () {
+      var g = gm({ hs: 30, as: 20, close: null,
+        models: [mr({ pick_side: 'home', projected_spread: -12.5, home_win_probability: 0.8 })] });
+      var r = G.localGrade(g, g.models[0]);
+      return r && r.pick_result === null && near(r.margin_error, 2.5) && near(r.brier, 0.04);
+    })(), 'grading against the model own posted line instead would be self-reporting');
+  /* The reason every model faces ONE number. A creator who posted at their
+     own better line is graded on the Collective's close, and the two
+     disagree on exactly the games where it matters. */
+  chk('the grade uses the captured close, not the line the creator posted at',
+    function () {
+      var g = gm({ hs: 27, as: 20, close: -7.5,          /* a 7-point win */
+        models: [mr({ pick_side: 'home', line_at_submission: -6.5 })] });
+      return G.localGrade(g, g.models[0]).pick_result === 'loss'
+        && G.atsResult(7, -6.5, 'home') === 'win';       /* its own number covered */
+    },
+    'grading on line_at_submission would let every creator pick the number they are scored against');
+  chk('and a creator who posted at a WORSE number is not punished for it',
+    function () {
+      var g = gm({ hs: 27, as: 20, close: -6.5,
+        models: [mr({ pick_side: 'home', line_at_submission: -7.5 })] });
+      return G.localGrade(g, g.models[0]).pick_result === 'win';
+    });
+  chk('a LATE row is never graded',
+    (function () {
+      var g = gm({ hs: 30, as: 20, models: [mr({ pick_side: 'home', late: true })] });
+      return G.localGrade(g, g.models[0]) === null;
+    })());
+  chk('a LOCKED row is never graded',
+    (function () {
+      var g = gm({ hs: 30, as: 20, models: [mr({ pick_side: 'home', locked: true })] });
+      return G.localGrade(g, g.models[0]) === null;
+    })(), 'colouring a paywalled row by its outcome gives the number away');
+  chk('backfill and test rows are excluded when the wire says so',
+    (function () {
+      var g = gm({ hs: 30, as: 20,
+        models: [mr({ pick_side: 'home', data_origin: 'backfill' }),
+                 mr({ cs: 'c2', pick_side: 'home', data_origin: 'live' })] });
+      return G.localGrade(g, g.models[0]) === null && G.localGrade(g, g.models[1]) !== null;
+    })());
+  chk('a row with nothing gradeable on it is not a graded row',
+    (function () {
+      var g = gm({ hs: 30, as: 20, models: [mr({ projected_total: 44 })] });
+      return G.localGrade(g, g.models[0]) === null;
+    })());
+  chk('a game that is not final grades nothing',
+    (function () {
+      var g = gm({ models: [mr({ pick_side: 'home', projected_spread: -12.5 })] });
+      return G.localGrade(g, g.models[0]) === null;
+    })());
+  /* pick_side is the wire contract and survives a mapping mistake that a
+     spread does not; the grade uses the side and the captured close, and
+     neither of the two spreads the contradiction is between */
+  chk('a self-contradicting row is STILL graded, on the side it named',
+    (function () {
+      var m = mr({ pick_side: 'away', projected_spread: -10, line_at_submission: -3 });
+      var g = gm({ hs: 30, as: 20, close: -7, models: [m] });
+      return G.wireContradiction(m) === 'home' && G.localGrade(g, m).pick_result === 'loss';
+    })());
+
+  /* ---- server first, always, and never a blend ------------------------ */
+  chk('the settlement run wins whenever it has produced a grade',
+    (function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -12.5,
+                      grade: { pick_result: 'loss', margin_error: 9, brier: 0.5 } })] });
+      var r = G.rowGrade(g, g.models[0]);
+      return r.pick_result === 'loss' && r.margin_error === 9 && r.source === 'server';
+    })(), 'the page must never second-guess a settled game');
+  chk('an EMPTY grade object is not a grade and falls through to the page',
+    (function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -12.5,
+                      grade: { pick_result: null, margin_error: null, brier: null } })] });
+      var r = G.rowGrade(g, g.models[0]);
+      return r && r.pick_result === 'win' && r.source === 'page';
+    })());
+  chk('a partial server grade is used whole, never topped up from the page',
+    (function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -12.5, home_win_probability: 0.8,
+                      grade: { pick_result: 'win', margin_error: null, brier: null } })] });
+      var r = G.rowGrade(g, g.models[0]);
+      return r.source === 'server' && r.margin_error === null && r.brier === null;
+    })(), 'two graders averaged together is a third number nobody published');
+  /* One exclusion rule, whichever grader produced the grade. A settlement
+     run that published a grade on a late row would otherwise put a win in a
+     record on the same board that prints "Late, ungraded" beside it. */
+  chk('a LATE row is excluded even when the server graded it',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', late: true,
+                      grade: { pick_result: 'win', margin_error: 2, brier: 0.1 } })] });
+      return G.rowGrade(g, g.models[0]) === null
+        && G.modelRecord([g], 'c', 'm').graded === 0;
+    },
+    'the rule is that a late submission is excluded, not that it is excluded unless somebody graded it anyway');
+  chk('a LOCKED row is excluded even when the server graded it',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', locked: true, grade: { pick_result: 'win' } })] });
+      return G.rowGrade(g, g.models[0]) === null;
+    });
+  chk('a BACKFILLED row is excluded even when the server graded it',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', data_origin: 'backfill', grade: { pick_result: 'win' } })] });
+      return G.rowGrade(g, g.models[0]) === null;
+    }, 'backfill never counts toward the record, rankings, or consensus');
+  chk('and neither does a TEST row',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', data_origin: 'test' })] });
+      return G.rowGrade(g, g.models[0]) === null && G.gradableRow(g.models[0]) === false;
+    });
+  chk('a grade only ever names one of the three published results',
+    (function () {
+      var out = {}, i, cases = [[30, 20], [27, 20], [24, 20], [20, 20]];
+      for (i = 0; i < cases.length; i++) {
+        var g = gm({ hs: cases[i][0], as: cases[i][1], close: -7,
+          models: [mr({ pick_side: 'home' })] });
+        var one = G.localGrade(g, g.models[0]);
+        out[String(one && one.pick_result)] = 1;
+      }
+      return Object.keys(out).every(function (k) { return k === 'win' || k === 'loss' || k === 'push'; });
+    })(), 'pick_result is interpolated into a class attribute, so a sentinel string would be unstyled and unescaped');
+
+  /* ---- a record over a set of games ----------------------------------- */
+  var RECGAMES = [
+    gm({ id: 'a', hs: 30, as: 20, close: -7, kickoff: '2020-09-01T17:00:00Z',
+      models: [mr({ pick_side: 'home', projected_spread: -12.5, home_win_probability: 0.8 }),
+               mr({ cs: 'c2', pick_side: 'away' })] }),
+    gm({ id: 'b', hs: 27, as: 20, close: -7, kickoff: '2020-09-08T17:00:00Z',
+      models: [mr({ pick_side: 'home', projected_spread: -3 })] }),          /* push */
+    gm({ id: 'c', hs: 24, as: 20, close: -7, kickoff: '2020-09-15T17:00:00Z',
+      models: [mr({ pick_side: 'home', home_win_probability: 0.5 })] }),     /* loss */
+    gm({ id: 'd', hs: 31, as: 10, close: -7, kickoff: '2020-09-22T17:00:00Z',
+      models: [mr({ pick_side: 'home', late: true })] }),                    /* excluded */
+    gm({ id: 'e', models: [mr({ pick_side: 'home' })] })                     /* not played */
+  ];
+  chk('a record counts wins, losses and pushes and excludes late rows',
+    (function () {
+      var r = G.modelRecord(RECGAMES, 'c', 'm');
+      return r.wins === 1 && r.losses === 1 && r.pushes === 1 && r.graded === 3;
+    })());
+  chk('win percentage excludes pushes, exactly as the compare page says',
+    near(G.modelRecord(RECGAMES, 'c', 'm').win_pct, 0.5));
+  chk('each metric reports its OWN sample size',
+    (function () {
+      var r = G.modelRecord(RECGAMES, 'c', 'm');
+      return r.margin_n === 2 && r.brier_n === 2 && r.graded === 3;
+    })(), 'three models posted a pick, two a spread, two a probability');
+  chk('margin MAE is the mean of the absolute errors',
+    near(G.modelRecord(RECGAMES, 'c', 'm').margin_mae, (2.5 + 4) / 2));
+  chk('a record grades only the model it was asked about',
+    (function () { var r = G.modelRecord(RECGAMES, 'c2', 'm');
+      return r.graded === 1 && r.wins === 0 && r.losses === 1; })());
+  chk('one game contributes at most one graded row to a model',
+    function () {
+      var dup = gm({ id: 'z', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home' }), mr({ pick_side: 'home' })] });
+      return G.modelRecord([dup], 'c', 'm').graded === 1;
+    }, 'the latest submission received before the lock is the graded one');
+  /* the season sweep reads the week-less payload AND the week it belongs
+     to, so the same game arriving twice is the normal case, not a freak one */
+  chk('the SAME game passed twice is still one graded game',
+    function () {
+      var g = gm({ id: 'z2', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -10, home_win_probability: 0.8 })] });
+      var once = G.modelRecord([g], 'c', 'm'), twice = G.modelRecord([g, g], 'c', 'm');
+      return twice.graded === once.graded && twice.wins === 1
+        && twice.margin_n === 1 && twice.brier_n === 1;
+    });
+  chk('and so is the same game arriving as two separate objects',
+    function () {
+      var one = gm({ id: 'z3', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home' })] });
+      var copy = gm({ id: 'z3', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home' })] });
+      return G.modelRecord([one, copy], 'c', 'm').graded === 1;
+    });
+  chk('a page-graded record says how much of it the page graded',
+    G.modelRecord(RECGAMES, 'c', 'm').live === 3);
+
+  /* ---- coverage is measured against the games actually PLAYED --------- */
+  chk('coverage is a share of the played slate, not of the season fixtures',
+    (function () {
+      var settled = RECGAMES.filter(function (g) { return G.finalResult(g) !== null; });
+      var cov = G.modelCoverage(settled, 'c', 'm');
+      return cov.slate === 4 && cov.submitted === 3 && near(cov.pct, 75);
+    })(),
+    'measuring against a whole fifteen-week fixture list means nobody clears 60% until December');
+  chk('a LATE submission earns no coverage, because it can never be graded',
+    (function () {
+      var late = [gm({ id: 'L', hs: 30, as: 20, models: [mr({ pick_side: 'home', late: true })] })];
+      return G.modelCoverage(late, 'c', 'm').submitted === 0;
+    })(), 'otherwise a model clears the coverage minimum on rows the rules exclude');
+  /* A creator who joined in week eight cannot have posted week one, and
+     measuring them against it means a mid-season member can never clear the
+     coverage minimum however completely they post from the day they arrive. */
+  chk('coverage starts at the first game a model actually posted',
+    function () {
+      var early = [1, 2, 3].map(function (i) {
+        return gm({ id: 'e' + i, hs: 30, as: 20, close: -7,
+          kickoff: '2020-09-0' + i + 'T17:00:00Z' });          /* nobody posted these */
+      });
+      var late = [4, 5, 6].map(function (i) {
+        return gm({ id: 'e' + i, hs: 30, as: 20, close: -7,
+          kickoff: '2020-09-0' + i + 'T17:00:00Z',
+          models: [mr({ pick_side: 'home' })] });               /* joined here, posted all */
+      });
+      var cov = G.modelCoverage(early.concat(late), 'c', 'm');
+      return cov.slate === 3 && cov.submitted === 3 && near(cov.pct, 100);
+    },
+    'measuring a week-eight joiner against week one keeps them off the boards forever');
+  chk('and it still catches a model that skips games after it joined',
+    function () {
+      var all = [1, 2, 3, 4].map(function (i) {
+        return gm({ id: 'f' + i, hs: 30, as: 20, close: -7,
+          kickoff: '2020-09-0' + i + 'T17:00:00Z',
+          models: (i === 1 || i === 4) ? [mr({ pick_side: 'home' })] : [] });
+      });
+      var cov = G.modelCoverage(all, 'c', 'm');
+      return cov.slate === 4 && cov.submitted === 2 && near(cov.pct, 50);
+    });
+  chk('a model that skipped games covers less of the slate',
+    (function () {
+      var settled = RECGAMES.filter(function (g) { return G.finalResult(g) !== null; });
+      var cov = G.modelCoverage(settled, 'c2', 'm');
+      return cov.slate === 4 && cov.submitted === 1 && near(cov.pct, 25);
+    })());
+
+  /* ---- the boards, and the running table under them ------------------- */
+  var WALLFX = [{ creator_slug: 'c', model_slug: 'm', creator_name: 'Cee', model_name: 'Model C', sport: 'CFB' },
+                { creator_slug: 'c2', model_slug: 'm', creator_name: 'Dee', model_name: 'Model D', sport: 'CFB' }];
+  var SETTLED = RECGAMES.filter(function (g) { return G.finalResult(g) !== null; });
+  chk('the published minimums are applied to the ranked boards',
+    (function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
+      return rk.boards.win_pct.length === 0 && rk.boards.margin_mae.length === 0
+        && rk.boards.brier.length === 0;
+    })(), 'three graded games is not a rank, and the fix must not quietly drop the minimums');
+  chk('the same models DO rank once the minimums are met',
+    (function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 });
+      return rk.boards.win_pct.length === 1 && rk.boards.win_pct[0].creator_slug === 'c'
+        && rk.boards.win_pct[0].rank === 1 && rk.boards.win_pct[0].graded === 3;
+    })(), 'c2 is excluded on its sample: it was graded on one of four played games');
+  /* a push is a graded game — it is the third number in every record this
+     site prints — so it counts toward the sample the board is sized on,
+     even though the percentage itself excludes it */
+  chk('a push counts toward the sample minimum, and not toward the percentage',
+    function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 3, min_coverage_pct: 60 });
+      var row = rk.boards.win_pct[0];
+      return row && row.graded === 3 && near(row.value, 0.5)
+        && G.modelRecord(SETTLED, 'c', 'm').pushes === 1;
+    },
+    'sizing this board on wins+losses held a model off it while its own profile said it had cleared the sample');
+  chk('a ranking row carries every field the boards renderer reads',
+    (function () {
+      var r = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 })
+        .boards.win_pct[0];
+      return r.rank === 1 && r.creator_slug === 'c' && r.creator_name === 'Cee'
+        && r.model_name === 'Model C' && r.model_slug === 'm'
+        && typeof r.value === 'number' && typeof r.graded === 'number';
+    })());
+  chk('lower is better on margin MAE and Brier, higher on win %',
+    (function () {
+      var g1 = gm({ id: 'p', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -10, home_win_probability: 0.9 }),
+                 mr({ cs: 'c2', pick_side: 'home', projected_spread: -30, home_win_probability: 0.1 })] });
+      var g2 = gm({ id: 'q', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -10, home_win_probability: 0.9 }),
+                 mr({ cs: 'c2', pick_side: 'away', projected_spread: -30, home_win_probability: 0.1 })] });
+      var rk = G.localRankings([g1, g2], [g1, g2], WALLFX, { min_graded_games: 2, min_coverage_pct: 60 });
+      return rk.boards.win_pct[0].creator_slug === 'c'
+        && rk.boards.margin_mae[0].creator_slug === 'c'
+        && rk.boards.margin_mae[0].value < rk.boards.margin_mae[1].value
+        && rk.boards.brier[0].creator_slug === 'c'
+        && rk.boards.brier[0].value < rk.boards.brier[1].value;
+    })());
+  /* The other minimum, on its own. c2 above is kept off the boards by its
+     SAMPLE, so deleting the coverage filter entirely would not have shown
+     up anywhere — this is a model that clears the sample and is held off by
+     coverage and nothing else. */
+  chk('the coverage minimum alone can keep a model off the boards',
+    function () {
+      var posted = function (id, day) {
+        return gm({ id: id, hs: 30, as: 20, close: -7, kickoff: '2020-10-' + day + 'T17:00:00Z',
+          models: [mr({ pick_side: 'home', projected_spread: -10, home_win_probability: 0.8 })] });
+      };
+      var skipped = function (id, day) {
+        return gm({ id: id, hs: 30, as: 20, close: -7, kickoff: '2020-10-' + day + 'T17:00:00Z' });
+      };
+      var all = [posted('k1', '01'), posted('k2', '08'), skipped('k3', '15'), skipped('k4', '22')];
+      var rk = G.localRankings(all, all, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 });
+      return G.modelRecord(all, 'c', 'm').graded === 2          /* clears the sample */
+        && G.modelCoverage(all, 'c', 'm').pct === 50            /* misses the coverage */
+        && rk.boards.win_pct.length === 0 && rk.boards.margin_mae.length === 0
+        && rk.boards.brier.length === 0
+        && rk.standings.length === 1                            /* still tracked */
+        && /50% of the played slate is below the 60% minimum/.test(rk.unranked[0].reason);
+    },
+    'cherry-picking a slate is the fastest way off these boards');
+  chk('the live standings rank every model with a graded game, no minimums',
+    (function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
+      return rk.standings.length === 2 && rk.boards.win_pct.length === 0;
+    })(), 'unranked is not the same as untracked');
+  chk('the standings are ordered by win percentage, best first',
+    function () {
+      var g = function (id, day, aRes, bRes) {
+        return gm({ id: id, hs: 30, as: 20, close: -7, kickoff: '2020-12-' + day + 'T17:00:00Z',
+          models: [mr({ pick_side: aRes }), mr({ cs: 'c2', pick_side: bRes })] });
+      };
+      /* c wins two of two, c2 wins one of two */
+      var all = [g('s1', '01', 'home', 'home'), g('s2', '02', 'home', 'away')];
+      var st = G.localRankings(all, all, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 }).standings;
+      return st.length === 2 && st[0].creator_slug === 'c' && st[1].creator_slug === 'c2'
+        && st[0].win_pct > st[1].win_pct;
+    });
+  /* A model that posts a line every week and never types a pick side used to
+     have no win-loss record at all. Its own number says which side it is on
+     — that is what Δ Mkt has always meant — so it is graded on that. */
+  chk('a model that named no pick side is graded on the side its number implies',
+    function () {
+      var all = [1, 2, 3].map(function (i) {
+        return gm({ id: 'ns' + i, hs: 30, as: 20, close: -7,
+          kickoff: '2020-12-1' + i + 'T17:00:00Z',
+          models: [mr({ projected_spread: -10, home_win_probability: 0.8 })] });
+      });
+      var rk = G.localRankings(all, all, WALLFX, null);
+      var rec = G.modelRecord(all, 'c', 'm');
+      /* -10 into a -7 close is onto the home team, and home covered */
+      return rec.graded === 3 && rec.wins === 3 && rec.implied === 3
+        && rk.boards.win_pct.length === 1 && rk.unranked.length === 0;
+    },
+    'publishing an honest number every week and never typing a pick is not "no record"');
+  chk('but a row with no pick side AND no line of its own still has no ATS result',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ home_win_probability: 0.8 })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      return gr && gr.pick_result === null && gr.implied === false
+        && gr.brier != null;
+    },
+    'there is nothing to imply a side from');
+  chk('a model sitting exactly on the close leans neither way',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ projected_spread: -7 })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      /* no side to imply, so no against-the-spread result — but its margin
+         error is still real and still counts */
+      return G.impliedSide(g.models[0], -7) === null
+        && gr && gr.pick_result === null && gr.implied === false
+        && near(gr.margin_error, 3);
+    });
+  chk('the implied side is the difference between two numbers, not a sign',
+    function () {
+      /* both these models are on the home team, and one of them has a
+         positive spread — a sign test would get it wrong */
+      return G.impliedSide({ projected_spread: -14.6 }, -7.5) === 'home'
+        && G.impliedSide({ projected_spread: 3 }, 7) === 'home'
+        && G.impliedSide({ projected_spread: -2 }, -7.5) === 'away'
+        && G.impliedSide({ projected_spread: -10 }, null) === null
+        && G.impliedSide({}, -7) === null;
+    });
+  chk('a STATED pick always beats the one a number implies',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'away', projected_spread: -14.6 })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      /* its number is on home; it said away; away is what it is graded on */
+      return gr.pick_result === 'loss' && gr.implied === false;
+    });
+  chk('a model with no graded game is not in the standings either',
+    (function () {
+      var only = [gm({ id: 'n', models: [mr({ pick_side: 'home' })] })];
+      return G.localRankings(only, [], WALLFX, { min_graded_games: 2, min_coverage_pct: 60 })
+        .standings.length === 0;
+    })());
+  chk('the unranked reasons are counted from the games, not from a stale run',
+    (function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
+      var c = rk.unranked.filter(function (u) { return u.creator_slug === 'c'; })[0];
+      return c && /3 graded games is below the 20 minimum/.test(c.reason);
+    })(), 'the server said "0 graded games" about models that had played');
+  chk('a model below BOTH minimums is told both',
+    (function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
+      var c2 = rk.unranked.filter(function (u) { return u.creator_slug === 'c2'; })[0];
+      return c2 && /below the 20 minimum/.test(c2.reason) && /below the 60% minimum/.test(c2.reason);
+    })());
+  /* A model can clear both minimums and still be on no board: every one of
+     its graded games a push, so it has a record and no win percentage, and
+     no spread or probability to score either. "Not yet ranked" with a blank
+     reason beside it tells the creator nothing. */
+  chk('an unranked model always says why, even when it cleared the minimums',
+    function () {
+      var pushes = [1, 2, 3].map(function (i) {
+        return gm({ id: 'pu' + i, hs: 27, as: 20, close: -7,
+          kickoff: '2020-11-0' + i + 'T17:00:00Z',
+          models: [mr({ pick_side: 'home' })] });        /* no spread, no probability */
+      });
+      var rk = G.localRankings(pushes, pushes, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 });
+      var rec = G.modelRecord(pushes, 'c', 'm');
+      return rec.graded === 3 && rec.pushes === 3 && rec.win_pct === null
+        && rk.boards.win_pct.length === 0 && rk.boards.margin_mae.length === 0
+        && rk.boards.brier.length === 0
+        && rk.unranked.length === 1 && rk.unranked[0].reason.length > 0
+        && /no win percentage, margin error or win probability/.test(rk.unranked[0].reason);
+    });
+  chk('every unranked entry carries a non-empty reason, whatever the shape',
+    function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
+      return rk.unranked.length > 0
+        && rk.unranked.every(function (u) { return u.reason && u.reason.length > 0; });
+    });
+  /* There is no minimum any more. A football season is short — a dozen or
+     so games a week and a handful a model actually posts — so a 20-game bar
+     meant nobody was ranked until December on a site whose whole point is a
+     record you can watch build. A model is ranked from its first finished
+     game and the Graded column says what it stands on. */
+  chk('there is no sample or coverage minimum by default',
+    function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, null);
+      return rk.thresholds.min_graded_games === 0 && rk.thresholds.min_coverage_pct === 0;
+    });
+  chk('one finished game is enough to be ranked',
+    function () {
+      var one = [gm({ id: 'one', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -10, home_win_probability: 0.8 })] })];
+      var rk = G.localRankings(one, one, WALLFX, null);
+      return rk.boards.win_pct.length === 1 && rk.boards.win_pct[0].graded === 1
+        && rk.boards.margin_mae.length === 1 && rk.boards.brier.length === 1
+        && rk.unranked.length === 0;
+    },
+    'the whole complaint was that a record nobody can see until December is not a record');
+  chk('and every model with a graded game is on the boards, not just some',
+    function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, null);
+      return rk.boards.win_pct.length === 2 && rk.unranked.length === 0;
+    });
+  chk('a model the wall has never heard of keeps its slug rather than vanishing',
+    (function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, [], { min_graded_games: 2, min_coverage_pct: 60 });
+      return rk.entries.length === 2 && rk.entries[0].model_name === 'm';
+    })());
+
+  /* ---- which record a surface prints ----------------------------------
+     shownRecord decides, on every card, row and profile on the site, whose
+     grading a reader is looking at. */
+  chk('the Collective\u2019s own record wins whenever it has one',
+    function () {
+      var srv = { wins: 9, losses: 1, pushes: 0, graded: 10, win_pct: 0.9 };
+      var loc = { 'c/m': { wins: 1, losses: 9, pushes: 0, graded: 10, win_pct: 0.1 } };
+      var sr = G.shownRecord(srv, loc, 'c', 'm');
+      return sr.rec === srv && sr.live === false;
+    });
+  chk('the page\u2019s own fills a hole, and says it did',
+    function () {
+      var loc = { 'c/m': { wins: 2, losses: 1, pushes: 0, graded: 3, win_pct: 0.667 } };
+      var sr = G.shownRecord(null, loc, 'c', 'm');
+      return sr.rec === loc['c/m'] && sr.live === true;
+    });
+  chk('an empty server record is a hole, not a record',
+    function () {
+      var srv = { wins: 0, losses: 0, pushes: 0, graded: 0, win_pct: null };
+      var loc = { 'c/m': { wins: 2, losses: 1, pushes: 0, graded: 3, win_pct: 0.667 } };
+      return G.shownRecord(srv, loc, 'c', 'm').live === true;
+    },
+    'this is the whole bug: a settlement run that has reached a model and scored nothing');
+  chk('a model neither grader knows shows nothing rather than zeroes',
+    function () {
+      var sr = G.shownRecord(null, {}, 'nobody', 'nothing');
+      return sr.rec === null && sr.live === false;
+    });
+  /* hasRecord decides whether there is anything to show at all; gating it on
+     the ATS count alone hid the margin and Brier numbers of a model that
+     posts spreads and probabilities and never a pick side */
+  chk('a record exists when ANY of its three samples does',
+    function () {
+      return G.hasRecord({ graded: 3 }) && G.hasRecord({ graded: 0, margin_n: 2 })
+        && G.hasRecord({ graded: 0, brier_n: 5 }) && G.hasRecord({ margin_mae: 6.1 })
+        && !G.hasRecord({ graded: 0, margin_n: 0, brier_n: 0 })
+        && !G.hasRecord(null);
+    });
+  chk('and the ATS line says so when there is no ATS record',
+    function () {
+      return G.recATSText({ graded: 3, wins: 2, losses: 1, pushes: 0 }) === '2-1-0'
+        && G.recATSText({ graded: 0, wins: 0, losses: 0, pushes: 0 }) === null
+        && /no ATS picks/.test(G.recATSHtml({ graded: 0, margin_n: 4 }))
+        && !/0-0-0/.test(G.recATSHtml({ graded: 0, margin_n: 4 }));
+    });
+
+  /* ---- the game log --------------------------------------------------- */
+  chk('the game log is newest first and states the final the way the board does',
+    (function () {
+      var log = G.localGameLog(RECGAMES, 'c', 'm');
+      return log.length === 3 && log[0].final === '20 - 24' && log[0].pick_result === 'loss'
+        && log[0].pick_side === 'HOME' && log[0].closing_spread === -7;
+    })(), 'away - home, the same order the FINAL chip prints');
+  chk('the game log skips games that are not final and rows that are late',
+    G.localGameLog(RECGAMES, 'c', 'm').length === 3);
+
+  /* ---- a live board leads with what has not happened yet ---------------
+     The wall arrived in whatever order the server sent, which on a Sunday
+     meant last Saturday's finished games sitting above everything. */
+  chk('finished games sort below the ones still to come',
+    function () {
+      var soon = gm({ id: 'soon', kickoff: '2099-01-02T17:00:00Z' });
+      var later = gm({ id: 'later', kickoff: '2099-01-09T17:00:00Z' });
+      var old = gm({ id: 'old', hs: 30, as: 20, kickoff: '2020-09-01T17:00:00Z' });
+      var recent = gm({ id: 'recent', hs: 30, as: 20, kickoff: '2020-09-20T17:00:00Z' });
+      var out = G.slateOrder([old, later, recent, soon]).map(function (g) { return g.game_id; });
+      /* upcoming soonest-first, then finished newest-first */
+      return out.join(',') === 'soon,later,recent,old';
+    });
+  chk('a game past its kickoff counts as done even with no score yet',
+    function () {
+      var played = gm({ id: 'played', kickoff: '2020-09-01T17:00:00Z' });
+      var upcoming = gm({ id: 'upcoming', kickoff: '2099-01-02T17:00:00Z' });
+      return G.slateOrder([played, upcoming])[0].game_id === 'upcoming';
+    },
+    'a kicked-off game is not "upcoming" just because the wire has no result for it');
+  chk('ordering never drops or duplicates a game',
+    function () {
+      var out = G.slateOrder(RECGAMES);
+      return out.length === RECGAMES.length;
+    });
+  /* the market feed names its kickoff commence_time, so one ordering rule
+     has to serve both rather than two that drift apart */
+  chk('the same rule orders the market feed, under its own field name',
+    function () {
+      var soon = { event_id: 'soon', commence_time: '2099-01-02T17:00:00Z' };
+      var old = { event_id: 'old', commence_time: '2020-09-01T17:00:00Z' };
+      var recent = { event_id: 'recent', commence_time: '2020-09-20T17:00:00Z' };
+      var out = G.slateOrder([old, recent, soon], 'commence_time')
+        .map(function (g) { return g.event_id; });
+      return out.join(',') === 'soon,recent,old';
+    },
+    'a market that closed eight days ago led a page headed "prices across sportsbooks"');
+  chk('and ordering the market by the WRONG field would put everything at once',
+    function () {
+      /* guards the field name: reading kickoff_at off a market game gives
+         every row the same epoch and the sort silently does nothing */
+      var a = { event_id: 'a', commence_time: '2099-01-02T17:00:00Z' };
+      var b = { event_id: 'b', commence_time: '2020-09-01T17:00:00Z' };
+      var wrong = G.slateOrder([b, a]).map(function (g) { return g.event_id; });
+      var right = G.slateOrder([b, a], 'commence_time').map(function (g) { return g.event_id; });
+      return right.join(',') === 'a,b' && wrong.join(',') !== right.join(',');
+    });
+
+  /* ---- the market page named the wrong sport in its own copy -----------
+     It fetched whatever league the sport switcher said and then described it
+     as the NFL, so a college slate sat under NFL wording. */
+  chk('no page hardcodes the NFL into copy about the current sport',
+    !/Current NFL prices across sportsbooks/.test(CODE)
+      && !/No current prices are stored for the NFL/.test(CODE),
+    'the league came from the switcher; the words did not');
+  chk('the market page names its sport from the same place it fetches it',
+    /esc\(mktName\)\+' prices across sportsbooks/.test(CODE)
+      && /var mktName=sportLongName\(mktSport\.code\)/.test(CODE));
+  chk('and the market page carries the sport switcher, like every other view',
+    function () {
+      var market = CODE.slice(CODE.indexOf('async function renderMarket'),
+        CODE.indexOf('async function renderMarketGame'));
+      return /sportSwitcherHTML\(mMkt\)/.test(market)
+        && /bindSportSwitcher\(function\(\)\{renderMarket\(view\);\}\)/.test(market);
+    },
+    'you could not tell which league you were looking at, or change it');
+
+  /* ---- the scores the wire does not carry ------------------------------
+     /v1/games returns result:null on games that finished days ago, which is
+     why every record on the site read zero. A grader cannot invent a score,
+     so the page goes and reads one. */
+  chk('a team named two ways still matches',
+    function () {
+      var espn = ['northcarolinatarheels', 'northcarolina', 'tarheels', 'unc'];
+      return G.espnNameHit(espn, G.teamKey('NORTHCAROL'))      /* truncated key */
+        && G.espnNameHit(espn, G.teamKey('North Carolina'))
+        && G.espnNameHit(['sanjosestatespartans'], G.teamKey('SANJOSESTA'))
+        && G.espnNameHit(['texasam'], G.teamKey('Texas A&M'));
+    });
+  /* A four-character floor threw away every three-letter school, and three
+     letters is a whole name for a lot of them. */
+  chk('a three-letter school is a whole name, not a fragment',
+    function () {
+      return G.espnNameHit(['tcuhornedfrogs'], G.teamKey('TCU'))
+        && G.espnNameHit(['usctrojans'], G.teamKey('USC'))
+        && G.espnNameHit(['lsutigers'], G.teamKey('LSU'))
+        && G.espnNameHit(['byucougars'], G.teamKey('BYU'));
+    });
+  chk('a different school does not match, and an empty name never does',
+    function () {
+      return !G.espnNameHit(['miamihurricanes'], G.teamKey('Miami (OH)'))
+        && !G.espnNameHit(['alabamacrimsontide'], G.teamKey('AUB'))
+        && !G.espnNameHit([], G.teamKey('TCU'))
+        && !G.espnNameHit(['tcuhornedfrogs'], '');
+    });
+  /* Naming the limit rather than pretending it is not there: prefix matching
+     means "Ohio" also matches "Ohio State". It is why a match must agree on
+     BOTH sides of a game before a score is accepted — the pairing is the
+     real key, and two schools whose names nest are never each other's
+     opponent in the same fixture. */
+  chk('a nesting name is why both sides must agree before a score is taken',
+    function () {
+      var nests = G.espnNameHit(['ohiostatebuckeyes'], G.teamKey('Ohio'));
+      var list = [{ homeKeys: ['ohiostatebuckeyes'], awayKeys: ['michiganwolverines'],
+                    home: 30, away: 20 }];
+      /* Ohio at Michigan is NOT Michigan at Ohio State, and is refused */
+      return nests === true
+        && G.espnMatch(list, { home: 'MICHIGAN', away: 'OHIO' }) === null
+        && G.espnMatch(list, { home: 'OHIOSTATE', away: 'MICHIGAN' }) !== null;
+    });
+  chk('the scoreboard is asked for the day the game kicked off, in UTC',
+    function () {
+      return G.espnDayKey('2026-08-29T16:00:00Z') === '20260829'
+        && G.espnDayKey('2026-01-02T03:00:00Z') === '20260102'
+        && G.espnDayKey('nonsense') === null && G.espnDayKey(null) === null;
+    });
+  chk('the closing line comes from the Collective’s own stored close',
+    function () {
+      return G.marketClose({ closing: { 'spread:home': { line: -7.5 } } }) === -7.5
+        && G.marketClose({ closing: {} }) === null
+        && G.marketClose({ closing: { 'spread:home': { line: null } } }) === null
+        && G.marketClose(null) === null;
+    },
+    'never a live price, and never a number a creator supplied');
+
+  /* ---- the live refresh ----------------------------------------------- */
+  chk('the fingerprint is stable when nothing has changed',
+    G.liveFingerprint(RECGAMES) === G.liveFingerprint(RECGAMES.slice()));
+  chk('a final score landing changes the fingerprint',
+    G.liveFingerprint([gm({ id: 'x' })]) !== G.liveFingerprint([gm({ id: 'x', hs: 30, as: 20 })]));
+  chk('the settlement run publishing a grade changes the fingerprint',
+    G.liveFingerprint([gm({ id: 'x', hs: 30, as: 20, models: [mr({ pick_side: 'home' })] })])
+      !== G.liveFingerprint([gm({ id: 'x', hs: 30, as: 20,
+           models: [mr({ pick_side: 'home', grade: { pick_result: 'win' } })] })]));
+  chk('a moving market does NOT change the fingerprint',
+    G.liveFingerprint([gm({ id: 'x', hs: 30, as: 20,
+        models: [mr({ pick_side: 'home', line_at_submission: -3 })] })])
+      === G.liveFingerprint([gm({ id: 'x', hs: 30, as: 20,
+           models: [mr({ pick_side: 'home', line_at_submission: -9 })] })]),
+    'a page that redrew itself every time a book shaded a number would be unusable');
+  chk('the fingerprint does not depend on the order games arrive in',
+    G.liveFingerprint([gm({ id: 'a', hs: 1, as: 2 }), gm({ id: 'b', hs: 3, as: 4 })])
+      === G.liveFingerprint([gm({ id: 'b', hs: 3, as: 4 }), gm({ id: 'a', hs: 1, as: 2 })]));
+  chk('the record views refresh themselves',
+    (function () {
+      var was = G.location.hash, ok = true;
+      ['', '#/', '#board', '#rankings', '#models', '#performance',
+       '#/mustbemoose', '#/model/mustbemoose/cfb'].forEach(function (h) {
+        G.location.hash = h; if (!G.liveRoute()) ok = false;
+      });
+      G.location.hash = was; return ok;
+    })());
+  chk('the views holding a creator’s unsaved work never refresh underneath them',
+    (function () {
+      var was = G.location.hash, ok = true;
+      ['#dashboard', '#join', '#about', '#rules', '#format',
+       '#access_token=abc'].forEach(function (h) {
+        G.location.hash = h; if (G.liveRoute()) ok = false;
+      });
+      G.location.hash = was; return ok;
+    })(), 'redrawing the uploader would throw away a half-mapped slate');
+
+  /* ---- the page says which grader produced a number -------------------- */
+  chk('a page-computed grade is marked and a settled one is not',
+    G.gradeMark({ source: 'page' }).indexOf('pgrade') >= 0
+      && G.gradeMark({ source: 'server' }) === ''
+      && G.gradeMark(null) === '');
+  chk('the marker and the rules page agree that a settled grade REPLACES it',
+    /replaces it rather than adding to it/.test(G.liveMark(true))
+      && /replaces it rather than being averaged/.test(CODE));
+  /* "no ATS picks · - · 0 graded" told a reader this model had been graded
+     on nothing, next to a populated margin column. The card counts the
+     largest sample it actually has. */
+  chk('a card counts the biggest sample it has, not the first non-zero one',
+    function () {
+      var card = G.modelCard({ creator_slug: 'c', model_slug: 'm', creator_name: 'Cee',
+        model_name: 'Model C', sport: 'CFB', membership: 'MEMBER', monogram: 'C',
+        record: { wins: 0, losses: 0, pushes: 0, graded: 0, win_pct: null,
+                  margin_n: 2, brier_n: 5, margin_mae: 6.1, brier: 0.21 } }, null);
+      return card.indexOf('5 graded') >= 0 && card.indexOf('2 graded') < 0
+        && card.indexOf('no ATS picks') >= 0;
+    });
+  chk('the marker distinguishes a provisional week-only record from a season one',
+    function () {
+      return /pgrade/.test(G.liveMark(true, 'week'))
+        && />week</.test(G.liveMark(true, 'week'))
+        && />live</.test(G.liveMark(true))
+        && G.liveMark(false, 'week') === '';
+    },
+    'a one-week record presented as the model record is a smaller lie than "awaiting results" but still one');
+  chk('the wall legend explains the hollow dot, not just the colour',
+    G.BOARD_LEGEND.some(function (x) {
+      return x.k === 'The dot' && /HOLLOW/.test(x.long) && /FILLED/.test(x.long);
+    }),
+    'the colour alone cannot say which grades are settled and which the page worked out');
+  chk('the rankings page no longer advertises a minimum it does not enforce',
+    !/% of the season slate/.test(CODE)
+      && !/Nobody has cleared the minimums yet/.test(CODE)
+      && /There is no minimum/.test(CODE),
+    'the lede recited a 20-game bar that the boards stopped applying');
+  /* one board can be the page's and another the Collective's, so the note
+     under them points at the marker rather than claiming all three */
+  chk('the boards note points at the marker, not at all three boards',
+    /The values marked live are/.test(CODE)
+      && !/gradeNote\('These boards are'\)/.test(CODE));
+  chk('the footer no longer attributes every record to the settlement run',
+    !/Records are graded by the Collective on actual results/.test(CODE));
+  chk('the legend explains the marker to a reader who has not asked',
+    G.BOARD_LEGEND.some(function (x) { return /pgrade/.test(x.k) && /published rule/.test(x.long); }));
+  chk('the page no longer claims a grade it computed came from the settlement run',
+    !/Graded by the Collective against its own closing lines/.test(CODE),
+    'that sentence sat directly above a record this page may have graded itself');
+
+  /* =====================================================================
+     THE TEN-CHARACTER TEAM NAME, which is where the ATS record went.
+
+     The Collective's schedule stores team names cut to ten characters, and
+     every lookup into the odds feed was an EXACT match on that stored
+     string. So "Mississippi" (MISSISSIPP) and "West Virginia" (WESTVIRGIN)
+     never found their own market row, never took a closing line, and had no
+     against-the-spread result -- on a page that was showing their margin
+     errors in the next column. In the committed 2026 college record, 61 of
+     142 team names are exactly ten characters long and only 29 of 104
+     finished games have both names comfortably inside the cut.
+     ===================================================================== */
+  chk('the page defines the close-join functions this section tests',
+    ['teamsAgreeTrunc', 'looseMarketFor', 'marketFor', 'marketClose', 'marketCloseTotal',
+     'kickoffsAgree', 'atsReason', 'atsMissingText', 'logTally'
+    ].every(function (n) { return typeof sandbox[n] === 'function'; }),
+    { missing: ['teamsAgreeTrunc', 'looseMarketFor', 'marketFor', 'marketClose',
+        'marketCloseTotal', 'kickoffsAgree', 'atsReason', 'atsMissingText', 'logTally']
+        .filter(function (n) { return typeof sandbox[n] !== 'function'; }) });
+
+  chk('a ten-character truncation reaches the name it was cut from',
+    G.teamsAgreeTrunc('MISSISSIPP', 'Mississippi') &&
+    G.teamsAgreeTrunc('WESTVIRGIN', 'West Virginia') &&
+    G.teamsAgreeTrunc('FLORIDASTA', 'Florida State') &&
+    G.teamsAgreeTrunc('NORTHCAROL', 'North Carolina'));
+  chk('and a name that is not a truncation of it is still refused',
+    !G.teamsAgreeTrunc('MISSISSIPP', 'Missouri') &&
+    !G.teamsAgreeTrunc('NORTHTEXAS', 'North Carolina') &&
+    !G.teamsAgreeTrunc('GEORGIA', 'Georgia Tech') === false,
+    'GEORGIA is a real prefix of Georgia Tech: the PAIR is what refuses it, not the name');
+  chk('short codes may only latch onto other short codes, never onto a spelled-out name',
+    G.teamsAgreeTrunc('LAR', 'LA') && !G.teamsAgreeTrunc('LAR', 'LAC') &&
+    !G.teamsAgreeTrunc('NE', 'NO') && !G.teamsAgreeTrunc('LA', 'Lafayette'));
+
+  (function theJoin() {
+    var day = '2026-09-05T16:00:00Z';
+    var board = { games: [
+      { event_id: 'e1', home: 'Mississippi', away: 'Kentucky', commence_time: day,
+        closing: { 'spread:home': { line: -6.5 }, total: { line: 48.5 } } },
+      { event_id: 'e2', home: 'Mississippi State', away: 'Arizona', commence_time: day,
+        closing: { 'spread:home': { line: -3 } } },
+      { event_id: 'e3', home: 'West Virginia', away: 'Coastal Carolina', commence_time: day,
+        closing: { 'spread:home': { line: -7 } } }
+    ] };
+    var g = { game_id: 7, home: 'MISSISSIPP', away: 'KENTUCKY', kickoff_at: day };
+    chk('a truncated home name finds its market row when the PAIR is unique',
+      G.marketClose(G.marketFor(board, g)) === -6.5);
+    chk('and the stored closing TOTAL comes with it, never the current one',
+      G.marketCloseTotal(G.marketFor(board, g)) === 48.5 &&
+      G.marketCloseTotal({ closing: {}, consensus: { total: 50 } }) === null);
+    chk('a truncation that fits two rows equally is not matched at all',
+      G.marketFor(board, { game_id: 8, home: 'MISSISSIPP', away: 'ARIZONA',
+        kickoff_at: day }) === null ||
+      G.marketClose(G.marketFor(board, { game_id: 8, home: 'MISSISSIPP', away: 'ARIZONA',
+        kickoff_at: day })) === -3,
+      'the away side disambiguates: ARIZONA only plays Mississippi State that day');
+    chk('an ambiguous PAIR is refused rather than guessed',
+      (function () {
+        var two = { games: [
+          { home: 'North Carolina', away: 'TCU', commence_time: day, closing: { 'spread:home': { line: -1 } } },
+          { home: 'North Carolina State', away: 'TCU', commence_time: day, closing: { 'spread:home': { line: -9 } } }
+        ] };
+        return G.marketFor(two, { home: 'NORTHCAROL', away: 'TCU', kickoff_at: day }) === null;
+      })());
+    /* the guard that makes a wrong close impossible rather than merely
+       unlikely: a prefix rule allowed to guess at BOTH teams at once can land
+       a whole game on another row */
+    chk('a truncated match needs one side to be exactly right',
+      (function () {
+        var b = { games: [{ home: 'Miami (OH)', away: 'Georgia Tech', commence_time: day,
+          closing: { 'spread:home': { line: -4 } } }] };
+        /* GEORGIA prefixes Georgia Tech and MIAMI prefixes Miami (OH): both
+           sides guessed, and both wrong */
+        return G.marketFor(b, { home: 'MIAMI', away: 'GEORGIA', kickoff_at: day }) === null
+          /* pin either side and the other may be a truncation */
+          && G.marketFor(b, { home: 'MIAMIOH', away: 'GEORGIATEC', kickoff_at: day }) !== null;
+      })());
+    chk('a row on a different weekend is not this game\'s close',
+      G.marketFor(board, { home: 'MISSISSIPP', away: 'KENTUCKY',
+        kickoff_at: '2026-10-17T16:00:00Z' }) === null);
+    chk('a night game one calendar day apart between two feeds still joins',
+      G.kickoffsAgree('2026-09-06T02:30:00Z', '2026-09-05T21:30:00-05:00', 1));
+    chk('the server-side link still wins outright when the feed carries one',
+      (function () {
+        var linked = { games: [{ collective_game_id: 7, home: 'Somebody Else', away: 'Nobody',
+          commence_time: day, closing: { 'spread:home': { line: -2.5 } } }] };
+        linked.find = function (q) {
+          return q && q.game_id === 7 ? linked.games[0] : null; };
+        return G.marketClose(G.marketFor(linked, g)) === -2.5;
+      })());
+    chk('a board with no stored close yields nothing rather than the live number',
+      G.marketClose(G.marketFor({ games: [{ home: 'Mississippi', away: 'Kentucky',
+        commence_time: day, closing: {}, consensus: { spread: -6.5 } }] }, g)) === null);
+  })();
+
+  /* =====================================================================
+     WHY A GAME HAS NO ATS RESULT -- four states, four answers.
+     ===================================================================== */
+  (function reasons() {
+    var withClose = gm({ hs: 24, as: 17, close: -3, models: [] });
+    var noClose = gm({ hs: 24, as: 17, close: null, models: [] });
+    chk('a finished game with no captured close says so',
+      G.atsReason(noClose, mr({ pick_side: 'home', projected_spread: -7 })) === 'no_close');
+    chk('a model sitting exactly on the close named no side, and that is a different reason',
+      G.atsReason(withClose, mr({ projected_spread: -3 })) === 'no_side');
+    chk('a late row is excluded by rule, not by an absent number',
+      G.atsReason(withClose, mr({ pick_side: 'home', late: true })) === 'excluded_late');
+    chk('a locked row and backfilled data each say which they are',
+      G.atsReason(withClose, mr({ pick_side: 'home', locked: true })) === 'excluded_locked' &&
+      G.atsReason(withClose, mr({ pick_side: 'home', data_origin: 'backfill' })) === 'excluded_origin');
+    chk('a game that has not finished is not an ungraded ATS pick',
+      G.atsReason(gm({ kickoff: FUTURE, models: [] }), mr({ pick_side: 'home' })) === 'not_final');
+    chk('a row that DOES have an ATS result has no reason to give',
+      G.atsReason(withClose, mr({ pick_side: 'home', projected_spread: -7 })) === null);
+    chk('the breakdown names every bucket that has games in it, biggest first',
+      G.atsMissingText({ no_close: 83, no_side: 2, excluded_late: 1 }) ===
+        '83 with no captured closing line, 2 where the model named no side, 1 submitted after the lock' &&
+      G.atsMissingText({}) === '' && G.atsMissingText({ no_close: 0 }) === '');
+    /* a phrase that follows a count must carry no comma of its own, or the
+       list reads as twice as many items as it has */
+    chk('no reason in the list register contains a comma of its own',
+      Object.keys(G.ATS_REASON_LIST).every(function (k) {
+        return G.ATS_REASON_LIST[k].indexOf(',') < 0; }) &&
+      Object.keys(G.ATS_REASON_LIST).length === Object.keys(G.ATS_REASON).length,
+      G.ATS_REASON_LIST);
+  })();
+
+  /* =====================================================================
+     THREE SAMPLES, NEVER ONE. An ATS count of zero is not a statement
+     about the margin error in the next column.
+     ===================================================================== */
+  (function samples() {
+    var games = [
+      /* graded ATS, margin and Brier */
+      gm({ id: 'a', hs: 24, as: 17, close: -3,
+        models: [mr({ pick_side: 'home', projected_spread: -7, home_win_probability: 0.7 })] }),
+      /* no close: margin and Brier only */
+      gm({ id: 'b', hs: 31, as: 10, close: null,
+        models: [mr({ pick_side: 'home', projected_spread: -7, home_win_probability: 0.7 })] }),
+      /* no close and no probability: margin only */
+      gm({ id: 'c', hs: 14, as: 20, close: null,
+        models: [mr({ pick_side: 'away', projected_spread: 2 })] })
+    ];
+    var rec = G.modelRecord(games, 'c', 'm');
+    chk('each metric carries its own sample and they are allowed to differ',
+      rec.ats_n === 1 && rec.margin_n === 3 && rec.brier_n === 2 && rec.games === 3,
+      rec);
+    chk('and the ungraded ATS games are counted and attributed',
+      rec.ats_missing_n === 2 && rec.ats_missing.no_close === 2 && rec.ats_missing.no_side === 0,
+      rec.ats_missing);
+    chk('a model with a full margin column and no closes is not "0 graded" everywhere',
+      (function () {
+        var r2 = G.modelRecord(games.slice(1), 'c', 'm');
+        return r2.ats_n === 0 && r2.win_pct === null && r2.margin_n === 2 && r2.brier_n === 1;
+      })());
+  })();
+
+  /* =====================================================================
+     RECONCILIATION. A season-shaped sweep in the exact reported state --
+     91 played games, 8 of them with a captured close -- read three ways:
+     the record, the game log, and the standings row. They have to agree,
+     before and after the missing closes are recovered.
+     ===================================================================== */
+  (function reconcile() {
+    /* Deterministic, so the expected numbers below are arithmetic rather
+       than a fixture nobody can check: game i is home by (i % 21) - 7, the
+       model always picks home, and the close is -3 on the games that have
+       one. cover = margin + close. */
+    function season(withCloseUpTo) {
+      var out = [];
+      for (var i = 0; i < 91; i++) {
+        var margin = (i % 21) - 7;           /* -7 .. +13, and 0 for i%21===7 */
+        var hs = 20 + Math.max(0, margin), as = 20 + Math.max(0, -margin);
+        out.push(gm({ id: 'g' + i, week: 1 + Math.floor(i / 30),
+          hs: hs, as: as,
+          close: i < withCloseUpTo ? -3 : null,
+          models: [mr({ pick_side: 'home', projected_spread: -4, home_win_probability: 0.6 })] }));
+      }
+      return out;
+    }
+    function expected(list) {
+      var w = 0, l = 0, p = 0;
+      list.forEach(function (g) {
+        var r = G.finalResult(g);
+        if (!r || r.closing_spread == null) return;
+        var cover = r.margin + r.closing_spread;
+        if (cover === 0) p++; else if (cover > 0) w++; else l++;
+      });
+      return { w: w, l: l, p: p };
+    }
+
+    var eight = season(8);
+    var rec8 = G.modelRecord(eight, 'c', 'm');
+    var exp8 = expected(eight);
+    chk('the cumulative record is exactly the sum of the individual games',
+      rec8.wins === exp8.w && rec8.losses === exp8.l && rec8.pushes === exp8.p,
+      { record: [rec8.wins, rec8.losses, rec8.pushes], games: [exp8.w, exp8.l, exp8.p] });
+    chk('with 8 of 91 games carrying a close, 83 are ungraded ATS and named as such',
+      rec8.games === 91 && rec8.ats_n === exp8.w + exp8.l + exp8.p &&
+      rec8.ats_missing_n === 91 - rec8.ats_n && rec8.ats_missing.no_close === 91 - rec8.ats_n,
+      { played: rec8.games, ats: rec8.ats_n, missing: rec8.ats_missing });
+    chk('the margin and Brier samples are the whole 91 either way',
+      rec8.margin_n === 91 && rec8.brier_n === 91 - eight.filter(function (g) {
+        return G.finalResult(g).margin === 0; }).length,
+      { margin_n: rec8.margin_n, brier_n: rec8.brier_n });
+    chk('win percentage excludes pushes',
+      rec8.win_pct === (rec8.wins + rec8.losses ? rec8.wins / (rec8.wins + rec8.losses) : null));
+
+    var log8 = G.localGameLog(eight, 'c', 'm');
+    var tal8 = G.logTally(log8);
+    chk('the game log adds up to the same record, row for row',
+      tal8.n === 91 && tal8.wins === rec8.wins && tal8.losses === rec8.losses &&
+      tal8.pushes === rec8.pushes && tal8.ungraded === rec8.ats_missing_n &&
+      tal8.margin_n === rec8.margin_n && tal8.brier_n === rec8.brier_n,
+      { log: [tal8.wins, tal8.losses, tal8.pushes, tal8.ungraded], rec: [rec8.wins, rec8.losses, rec8.pushes, rec8.ats_missing_n] });
+    chk('and every ungraded row on the log says which reason it is',
+      log8.filter(function (r) { return r.pick_result == null; })
+        .every(function (r) { return r.ats_reason === 'no_close'; }));
+
+    var st8 = G.localRankings(eight, eight, [{ creator_slug: 'c', model_slug: 'm',
+      creator_name: 'C', model_name: 'M', sport: 'CFB' }], null).standings[0];
+    chk('the standings row is the same record the model page and the log show',
+      st8 && st8.record.wins === rec8.wins && st8.record.losses === rec8.losses &&
+      st8.record.pushes === rec8.pushes && st8.record.ats_n === rec8.ats_n &&
+      st8.margin_mae_n === rec8.margin_n && st8.brier_n === rec8.brier_n);
+    chk('a model with no ATS result is still ON the standings, on its other numbers',
+      (function () {
+        var none = season(0);
+        var r = G.localRankings(none, none, [{ creator_slug: 'c', model_slug: 'm',
+          creator_name: 'C', model_name: 'M', sport: 'CFB' }], null);
+        return r.standings.length === 1 && r.standings[0].record.ats_n === 0 &&
+          r.standings[0].margin_mae != null && r.boards.win_pct.length === 0 &&
+          r.boards.margin_mae.length === 1;
+      })(),
+      'an empty Win % board must not empty the other two');
+
+    /* ---- and once the closes are recovered ---------------------------- */
+    var all = season(91);
+    var recAll = G.modelRecord(all, 'c', 'm'), expAll = expected(all);
+    chk('recovering the closes grows the SAMPLE and nothing else moves',
+      recAll.wins === expAll.w && recAll.losses === expAll.l && recAll.pushes === expAll.p &&
+      recAll.ats_n === 91 && recAll.ats_missing_n === 0 &&
+      recAll.margin_n === rec8.margin_n && recAll.brier_n === rec8.brier_n,
+      { before: [rec8.wins, rec8.losses, rec8.pushes], after: [recAll.wins, recAll.losses, recAll.pushes] });
+    chk('the first eight games keep exactly the grades they already had',
+      (function () {
+        var a = G.localGameLog(eight, 'c', 'm').filter(function (r) { return r.pick_result != null; });
+        var b = G.localGameLog(all, 'c', 'm');
+        var byLabel = {};
+        b.forEach(function (r) { byLabel[r.label + r.kickoff_at + r.final] = r.pick_result; });
+        return a.length > 0 && a.every(function (r) {
+          return byLabel[r.label + r.kickoff_at + r.final] === r.pick_result; });
+      })(),
+      'a wider sample must never re-decide a game that was already graded');
+  })();
+
+  /* =====================================================================
+     ONE RESULT PER GAME. A revision, and a settlement landing on top of a
+     grade this page computed, must REPLACE -- never add a second row.
+     ===================================================================== */
+  (function oneRowPerGame() {
+    var revised = gm({ id: 'r1', hs: 28, as: 21, close: -3, models: [
+      mr({ pick_side: 'home', projected_spread: -7, movement_n: 3 }),
+      mr({ pick_side: 'away', projected_spread: 2 })          /* a later revision */
+    ] });
+    var rec = G.modelRecord([revised], 'c', 'm');
+    chk('two submissions on one game are one graded result, the first one served',
+      rec.ats_n === 1 && rec.wins === 1 && rec.losses === 0 && rec.games === 1, rec);
+    chk('and the log carries one row for that game, not two',
+      G.localGameLog([revised], 'c', 'm').length === 1);
+
+    var same = gm({ id: 'd1', hs: 28, as: 21, close: -3,
+      models: [mr({ pick_side: 'home', projected_spread: -7 })] });
+    var dup = [same, JSON.parse(JSON.stringify(same))];
+    chk('the same game arriving twice in a sweep is counted once',
+      G.modelRecord(dup, 'c', 'm').ats_n === 1 && G.localGameLog(dup, 'c', 'm').length === 1);
+
+    var settled = gm({ id: 's1', hs: 28, as: 21, close: -3, models: [
+      mr({ pick_side: 'home', projected_spread: -7,
+        grade: { pick_result: 'loss', margin_error: 2, brier: null } }) ] });
+    var sr = G.modelRecord([settled], 'c', 'm');
+    chk('a settled grade REPLACES the one this page worked out, never adds to it',
+      sr.ats_n === 1 && sr.losses === 1 && sr.wins === 0 && sr.live === 0,
+      'the page would have graded this a win; the settlement run says loss and the run is the record');
+    chk('and a settlement written against a 0-0 placeholder is set aside instead',
+      (function () {
+        var ph = gm({ id: 'p1', hs: 28, as: 21, close: -3, models: [
+          mr({ pick_side: 'home', projected_spread: -7,
+            grade: { pick_result: 'loss', margin_error: 28, brier: null } }) ] });
+        ph.settled_placeholder = true;
+        var r = G.modelRecord([ph], 'c', 'm');
+        return r.wins === 1 && r.losses === 0 && r.live === 1;
+      })());
+  })();
+
+  /* =====================================================================
+     SEASON SCOPE. A record is of one season, and the sweep that builds it
+     is keyed by sport and season.
+     ===================================================================== */
+  chk('the season sweep is cached per sport AND season, so two seasons cannot merge',
+    /SEASON_GAMES\[key\]/.test(CODE) && /var key=sport\+'\|'\+season/.test(CODE));
+  chk('a football season is named for the year it starts in',
+    G.seasonOfKickoff('2026-09-05T16:00:00Z') === 2026 &&
+    G.seasonOfKickoff('2027-01-08T00:00:00Z') === 2026 &&
+    G.seasonOfKickoff('2027-08-30T00:00:00Z') === 2027);
+} catch (e) {
+  chk('the grading section runs to the end without throwing', false,
+    { threw: String((e && e.stack) || e) });
+}
+
+/* =======================================================================
+   4. THE UPLOAD THAT WAS TOLD SEVENTEEN OF ITS TEAMS WERE WRONG.
+
+   A real CFB week-1 file, thirty games, every name correct, uploaded against
+   a backend whose schedule clips team names to ten characters and carries
+   only part of the slate. What came back:
+
+     "17 teams will not match your backend's schedule."
+       UCF                      -> UCLA        (closest on your backend)
+       Utah                     -> UTEP        (closest on your backend)
+       Iowa State               -> IOWA        (closest on your backend)
+       Eastern Illinois         -> ILLINOIS    (closest on your backend)
+       Arkansas-Pine Bluff      -> ARKANSASST  (closest on your backend)
+       New Hampshire            -> NEWMEXICOS  (closest on your backend)
+       Southeast Missouri State -> MISSOURIST  (closest on your backend)
+       Minnesota, Idaho, Purdue, Kansas, Syracuse, Kentucky, Bethune-Cookman,
+       Long Island University, Youngstown State, Tennessee State
+                                -- nothing similar on your backend
+
+   Every one of those suggestions is a different school. Worse, two names were
+   not merely suggested but silently REWRITTEN before posting -- "Georgia"
+   into Georgia Tech and "Indiana State" into Indiana -- under a green
+   "Matched to your schedule's own names", with a note underneath assuring the
+   creator that "your rows are still on the right games".
+
+   Nothing in the file was wrong. Ten of its thirty games were simply absent
+   from the backend's week, every one of them an FBS team hosting an opponent
+   the schedule feed does not carry. This section is that upload.
+   ======================================================================= */
+if (typeof sandbox.slateMatchRow === 'function') {
+  var S4 = sandbox;
+
+  /* The backend as it actually answers: names clipped to ten characters,
+     upper-cased, punctuation gone, and twenty of the thirty games present. */
+  function clip(n) { return S4.teamKey(n).toUpperCase().slice(0, 10); }
+  var P4 = [
+    ['Massachusetts', 'Rutgers', '401858423', '2026-09-03T22:00:00Z'],
+    ['Akron', 'Wake Forest', '401858204', '2026-09-03T23:00:00Z'],
+    ['Colorado', 'Georgia Tech', '401856776', '2026-09-04T00:00:00Z'],
+    ['UAB', 'Illinois', '401858424', '2026-09-04T01:00:00Z'],
+    ['UTEP', 'Oklahoma', '401856664', '2026-09-05T00:00:00Z'],
+    ['Toledo', 'Michigan State', '401858429', '2026-09-05T00:00:00Z'],
+    ['Miami', 'Stanford', '401858206', '2026-09-05T01:00:00Z'],
+    ['Fresno State', 'USC', '401858436', '2026-09-05T01:00:00Z'],
+    ['East Carolina', 'Alabama', '401856634', '2026-09-05T16:00:00Z'],
+    ['North Texas', 'Indiana', '401858425', '2026-09-05T16:00:00Z'],
+    ['Ohio', 'Nebraska', '401858430', '2026-09-05T16:00:00Z'],
+    ['Oregon State', 'Houston', '401856778', '2026-09-05T16:00:00Z'],
+    ['Coastal Carolina', 'West Virginia', '401856780', '2026-09-05T16:00:00Z'],
+    ['Ball State', 'Ohio State', '401858432', '2026-09-05T16:30:00Z'],
+    ['Miami (OH)', 'Pittsburgh', '401858207', '2026-09-05T16:30:00Z'],
+    ['Kent State', 'South Carolina', '401856665', '2026-09-05T16:45:00Z'],
+    ['Marshall', 'Penn State', '401858434', '2026-09-05T19:30:00Z'],
+    ['Tulane', 'Duke', '401858209', '2026-09-05T19:30:00Z'],
+    ['Baylor', 'Auburn', '401856636', '2026-09-05T19:30:00Z'],
+    ['Texas State', 'Texas', '401856667', '2026-09-05T19:30:00Z'],
+    /* two more real week-1 games, so IOWA and UCLA are on the backend
+       exactly as they were when it offered them to Iowa State and UCF */
+    ['Iowa', 'Kansas State', '401999001', '2026-09-05T18:00:00Z'],
+    ['UCLA', 'New Mexico State', '401999002', '2026-09-05T22:00:00Z']
+  ].map(function (g) {
+    return { label: clip(g[0]) + ' @ ' + clip(g[1]), game_id: g[2], kickoff_at: g[3] };
+  });
+
+  /* The creator's thirty rows, spelled the way the file spells them. The ten
+     the backend has no game for are marked. */
+  var FILE30 = [
+    ['Massachusetts', 'Rutgers', '401858423', '2026-09-03T22:00:00Z', 1],
+    ['Akron', 'Wake Forest', '401858204', '2026-09-03T23:00:00Z', 1],
+    ['Bethune-Cookman', 'UCF', '401856767', '2026-09-03T23:00:00Z', 0],
+    ['Arkansas-Pine Bluff', 'Missouri', '401856663', '2026-09-04T00:00:00Z', 0],
+    ['Colorado', 'Georgia Tech', '401856776', '2026-09-04T00:00:00Z', 1],
+    ['Eastern Illinois', 'Minnesota', '401858422', '2026-09-04T00:00:00Z', 0],
+    ['Idaho', 'Utah', '401856768', '2026-09-04T01:00:00Z', 0],
+    ['UAB', 'Illinois', '401858424', '2026-09-04T01:00:00Z', 1],
+    ['Indiana State', 'Purdue', '401858435', '2026-09-04T23:00:00Z', 0],
+    ['Long Island University', 'Kansas', '401856769', '2026-09-05T00:00:00Z', 0],
+    ['UTEP', 'Oklahoma', '401856664', '2026-09-05T00:00:00Z', 1],
+    ['Toledo', 'Michigan State', '401858429', '2026-09-05T00:00:00Z', 1],
+    ['Miami', 'Stanford', '401858206', '2026-09-05T01:00:00Z', 1],
+    ['Fresno State', 'USC', '401858436', '2026-09-05T01:00:00Z', 1],
+    ['East Carolina', 'Alabama', '401856634', '2026-09-05T16:00:00Z', 1],
+    ['North Texas', 'Indiana', '401858425', '2026-09-05T16:00:00Z', 1],
+    ['Ohio', 'Nebraska', '401858430', '2026-09-05T16:00:00Z', 1],
+    ['New Hampshire', 'Syracuse', '401858208', '2026-09-05T16:00:00Z', 0],
+    ['Oregon State', 'Houston', '401856778', '2026-09-05T16:00:00Z', 1],
+    ['Coastal Carolina', 'West Virginia', '401856780', '2026-09-05T16:00:00Z', 1],
+    ['Ball State', 'Ohio State', '401858432', '2026-09-05T16:30:00Z', 1],
+    ['Miami (OH)', 'Pittsburgh', '401858207', '2026-09-05T16:30:00Z', 1],
+    ['Kent State', 'South Carolina', '401856665', '2026-09-05T16:45:00Z', 1],
+    ['Southeast Missouri State', 'Iowa State', '401856779', '2026-09-05T17:00:00Z', 0],
+    ['Youngstown State', 'Kentucky', '401856659', '2026-09-05T17:00:00Z', 0],
+    ['Tennessee State', 'Georgia', '401856658', '2026-09-05T19:00:00Z', 0],
+    ['Marshall', 'Penn State', '401858434', '2026-09-05T19:30:00Z', 1],
+    ['Tulane', 'Duke', '401858209', '2026-09-05T19:30:00Z', 1],
+    ['Baylor', 'Auburn', '401856636', '2026-09-05T19:30:00Z', 1],
+    ['Texas State', 'Texas', '401856667', '2026-09-05T19:30:00Z', 1]
+  ];
+  function rows30(withIds) {
+    return FILE30.map(function (r, i) {
+      return { game_ref: withIds ? r[2] : 'R' + i, away_team: r[0], home_team: r[1], kickoff: r[3] };
+    });
+  }
+  var ONSCHEDULE = FILE30.filter(function (r) { return r[4]; }).length;   /* 20 */
+  var ABSENT = FILE30.length - ONSCHEDULE;                                /* 10 */
+
+  /* ---- the seven wrong suggestions, one test each -------------------- */
+  [['UCF', 'UCLA'], ['Utah', 'UTEP'], ['Iowa State', 'IOWA'],
+   ['Eastern Illinois', 'ILLINOIS'], ['Arkansas-Pine Bluff', 'ARKANSASST'],
+   ['New Hampshire', 'NEWMEXICOS'], ['Southeast Missouri State', 'MISSOURIST'],
+   ['Kansas', 'KANSASSTA'], ['Georgia', 'GEORGIATEC'],
+   ['Indiana State', 'INDIANA']].forEach(function (pr) {
+    chk('"' + pr[0] + '" is not close enough to ' + pr[1] + ' to be offered as it',
+      function () { return S4.teamSimilarity(pr[0], pr[1]) < S4.SLATE_RENAME_MIN; },
+      { score: S4.teamSimilarity(pr[0], pr[1]), bar: S4.SLATE_RENAME_MIN });
+  });
+  chk('the two Miamis are not each other, though they share five letters',
+    function () {
+      /* This file carries both. A raw shared-prefix ratio scored them 0.71 --
+         over any bar worth having -- because MIAMIFL and MIAMIOH agree for
+         five of their seven characters. */
+      return S4.teamSimilarity('Miami (FL)', 'Miami (OH)') < S4.SLATE_RENAME_MIN;
+    },
+    { score: S4.teamSimilarity('Miami (FL)', 'Miami (OH)') });
+  chk('two schools sharing two words of three are still two schools',
+    function () {
+      return S4.teamSimilarity('San Diego State', 'San Jose State') < S4.SLATE_RENAME_MIN;
+    },
+    { score: S4.teamSimilarity('San Diego State', 'San Jose State') });
+  chk('a real spelling difference still clears the bar comfortably',
+    function () {
+      return S4.teamSimilarity('Florida State', 'FLORIDASTA') >= S4.SLATE_RENAME_MIN
+        && S4.teamSimilarity("Hawai'i", 'Hawaii Rainbow Warriors') >= S4.SLATE_RENAME_MIN
+        && S4.teamSimilarity('San Jose State', 'San Jose St') >= S4.SLATE_RENAME_MIN;
+    },
+    'a bar that refuses the real differences strands the games it was raised to protect');
+  chk('the whole slate produces no rename suggestion at all',
+    function () {
+      var u = S4.slateUnmatchedTeams(P4, S4.slateAlignToSchedule(P4, rows30(false)).rows);
+      return u.suggest.every(function (x) { return x.theirs === null; });
+    },
+    { got: S4.slateUnmatchedTeams(P4, S4.slateAlignToSchedule(P4, rows30(false)).rows).suggest
+        .filter(function (x) { return x.theirs; }) });
+
+  /* ---- the two silent rewrites --------------------------------------- */
+  chk('"Georgia" is no longer rewritten into Georgia Tech',
+    function () {
+      var a = S4.slateAlignToSchedule(P4, rows30(false));
+      return a.rows[25].home_team === 'Georgia';
+    },
+    { got: S4.slateAlignToSchedule(P4, rows30(false)).rows[25] });
+  chk('"Indiana State" is no longer rewritten into Indiana',
+    function () {
+      var a = S4.slateAlignToSchedule(P4, rows30(false));
+      return a.rows[8].away_team === 'Indiana State';
+    },
+    { got: S4.slateAlignToSchedule(P4, rows30(false)).rows[8] });
+  chk('neither rewrite is reported as a match either',
+    function () {
+      var a = S4.slateAlignToSchedule(P4, rows30(false));
+      return a.changed.every(function (c) {
+        return c.from !== 'Georgia' && c.from !== 'Indiana State';
+      });
+    });
+  chk('nothing is claimed as a name collision when no game was matched',
+    function () { return S4.slateAlignToSchedule(P4, rows30(false)).collisions.length === 0; },
+    'the page printed "your rows are still on the right games" over rows that were not');
+
+  /* ---- what it should say instead ------------------------------------ */
+  chk('the twenty games the backend has all match',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.matched === ONSCHEDULE && r.total === 30;
+    },
+    { got: S4.slateScheduleReport(P4, rows30(false)) });
+  chk('the ten games the backend does not have are reported as GAMES, not teams',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.missing.length === ABSENT
+        && r.missing.every(function (m) { return m.away && m.home; });
+    },
+    { got: S4.slateScheduleReport(P4, rows30(false)).missing.length });
+  chk('every absent game is one the file actually named',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      var want = {};
+      FILE30.forEach(function (x) { if (!x[4]) want[x[0] + '@' + x[1]] = 1; });
+      return r.missing.length === ABSENT
+        && r.missing.every(function (m) { return want[m.away + '@' + m.home]; });
+    },
+    { got: S4.slateScheduleReport(P4, rows30(false)).missing
+        .map(function (m) { return m.away + '@' + m.home; }) });
+  chk('a game whose two teams are both unknown is counted as the schedule\'s gap',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.neither >= 6 && r.neither <= r.missing.length;
+    },
+    { neither: S4.slateScheduleReport(P4, rows30(false)).neither });
+  chk('no game is matched on one team only, on this file',
+    function () { return S4.slateScheduleReport(P4, rows30(false)).renamed.length === 0; },
+    { got: S4.slateScheduleReport(P4, rows30(false)).renamed });
+
+  /* ---- the file's own game ids -------------------------------------- */
+  chk('the game id in the file matches the schedule outright',
+    function () {
+      var hit = S4.slateMatchRow(P4, rows30(true)[0]);
+      return hit && hit.how === 'id' && hit.home === 'RUTGERS';
+    },
+    { got: S4.slateMatchRow(P4, rows30(true)[0]) });
+  chk('an id settles a spelling that the names could not',
+    function () {
+      /* the id is right, the home name is a school the schedule also carries */
+      var hit = S4.slateMatchRow(P4, { game_ref: '401858425', away_team: 'North Texas',
+        home_team: 'Indiana State', kickoff: '2026-09-05T16:00:00Z' });
+      return hit && hit.how === 'id' && hit.home === 'INDIANA';
+    });
+  chk('an id the schedule does not have does not match anything by force',
+    function () {
+      return S4.slateMatchRow(P4, { game_ref: '401856767', away_team: 'Bethune-Cookman',
+        home_team: 'UCF', kickoff: '2026-09-03T23:00:00Z' }) === null;
+    });
+  chk('a row matched by id carries that id onward',
+    function () {
+      var a = S4.slateAlignToSchedule(P4, rows30(true));
+      return a.rows[0].game_ref === '401858423' && a.rows[0].home_team === 'RUTGERS';
+    });
+  chk('ids do not rescue games the schedule is missing',
+    function () { return S4.slateScheduleReport(P4, rows30(true)).missing.length === ABSENT; },
+    'the ids are correct; the games are absent, and no id can add them');
+
+  /* ---- the clip width, which is what makes all of it decidable ------- */
+  chk('a schedule that clips at ten is recognised as clipping at ten',
+    function () { return S4.slateTruncWidth(S4.slateNameIndex(P4)) === 10; },
+    { got: S4.slateTruncWidth(S4.slateNameIndex(P4)) });
+  chk('a schedule that merely has one long name is not called a clip',
+    function () {
+      return S4.slateTruncWidth(S4.slateNameIndex(
+        [{ label: 'TCU @ North Carolina' }, { label: 'USC @ Ohio' }])) === 0;
+    },
+    'width is only a clip when several names land on it');
+  chk('a clipped name still resolves, at the clip width',
+    function () {
+      var ix = S4.slateNameIndex(P4.concat([{ label: 'FLORIDASTA @ MIAMIFL' }]));
+      var r = S4.slateResolveName(ix, 'Florida State');
+      return r && r.name === 'FLORIDASTA' && r.how === 'truncated';
+    },
+    'the clip guard must not break the case it was built for');
+  chk('a shorter name that is not at the clip width is a different school',
+    function () { return S4.slateResolveName(S4.slateNameIndex(P4), 'Indiana State') === null; });
+  chk('an expansion onto a name sitting at the clip width is refused',
+    function () { return S4.slateResolveName(S4.slateNameIndex(P4), 'Georgia') === null; },
+    'GEORGIATEC is ten characters on a schedule that clips at ten, so it is not "Georgia" spelled out');
+
+  /* ---- a pair still beats a clipped collision ------------------------ */
+  chk('an exact pair wins over one that had to shorten a name',
+    function () {
+      /* A schedule carrying both spellings. "Washington State" shortens onto
+         WASHINGTON, so both games match it — and only one of them is it. */
+      var hit = S4.slateMatchRow(
+        [{ label: 'WASHINGTONSTATE @ OREGON', game_id: 'X' },
+         { label: 'WASHINGTON @ OREGON', game_id: 'Y' }],
+        { away_team: 'Washington State', home_team: 'Oregon' });
+      return hit && hit.game_id === 'X';
+    },
+    { got: S4.slateMatchRow(
+        [{ label: 'WASHINGTONSTATE @ OREGON', game_id: 'X' },
+         { label: 'WASHINGTON @ OREGON', game_id: 'Y' }],
+        { away_team: 'Washington State', home_team: 'Oregon' }) });
+  chk('the pair pass itself prefers the exact spelling, before any fallback',
+    function () {
+      /* Isolated from slateMatchRow, whose rename branch would reach the same
+         answer by another route and hide a regression here. */
+      var g = S4.slatePairGame(
+        [{ label: 'WASHINGTONSTATE @ OREGON', game_id: 'X' },
+         { label: 'WASHINGTON @ OREGON', game_id: 'Y' }], 'Washington State', 'Oregon');
+      return g && g.game_id === 'X';
+    },
+    { got: S4.slatePairGame(
+        [{ label: 'WASHINGTONSTATE @ OREGON', game_id: 'X' },
+         { label: 'WASHINGTON @ OREGON', game_id: 'Y' }], 'Washington State', 'Oregon') });
+  chk('a shortening is only a shortening at the schedule\'s clip width',
+    function () {
+      /* INDIANA is seven characters on a schedule that clips at ten, so it is
+         Indiana entire — not Indiana State cut short. Pairing on it put a row
+         on another school's game with both sides apparently agreeing. */
+      return S4.slateNameMatches('Indiana State', 'INDIANA', 10) === false
+        && S4.slateNameMatches('Massachusetts', 'MASSACHUSE', 10) === true;
+    });
+  chk('with no clip to go on, the old six-character floor still stands',
+    function () {
+      return S4.slateNameMatches('Washington State', 'WASHINGTON', 0) === true;
+    },
+    'it is all there is, and the pair still has to agree on both sides');
+  chk('a clipped pair still matches when nothing exact competes',
+    function () {
+      var hit = S4.slateMatchRow([{ label: 'WASHINGTON @ OREGON', game_id: 'G1' }],
+        { away_team: 'Washington State', home_team: 'Oregon' });
+      return hit && hit.how === 'pair';
+    },
+    'the schedule spells both schools WASHINGTON; the pair is all there is');
+
+  chk('a schedule of short names is not mistaken for a clipped one',
+    function () {
+      /* Four names, all four characters, all the same length — which is a
+         coincidence, not a clip. Reading it as a clip at four makes "Iowa
+         State" resolve onto IOWA. */
+      var ix = S4.slateNameIndex([{ label: 'IOWA @ OHIO' }, { label: 'UTAH @ DUKE' }]);
+      return S4.slateTruncWidth(ix) === 0 && S4.slateResolveName(ix, 'Iowa State') === null;
+    },
+    { width: S4.slateTruncWidth(S4.slateNameIndex(
+        [{ label: 'IOWA @ OHIO' }, { label: 'UTAH @ DUKE' }])) });
+
+  /* ---- kickoffs ------------------------------------------------------ */
+  chk('a game a week away is not this row\'s game',
+    function () {
+      return S4.slateMatchRow([{ label: 'AKRON @ WAKEFOREST', kickoff_at: '2026-09-12T23:00:00Z' }],
+        { away_team: 'Akron', home_team: 'Wake Forest', kickoff: '2026-09-03T23:00:00Z' }) === null;
+    });
+  chk('a kickoff that merely moved a few hours still matches',
+    function () {
+      return !!S4.slateMatchRow([{ label: 'AKRON @ WAKEFOREST', kickoff_at: '2026-09-04T03:30:00Z' }],
+        { away_team: 'Akron', home_team: 'Wake Forest', kickoff: '2026-09-03T23:00:00Z' });
+    });
+  chk('a missing kickoff on either side is not a disagreement',
+    function () {
+      return !!S4.slateMatchRow([{ label: 'AKRON @ WAKEFOREST' }],
+        { away_team: 'Akron', home_team: 'Wake Forest', kickoff: '2026-09-03T23:00:00Z' })
+        && !!S4.slateMatchRow([{ label: 'AKRON @ WAKEFOREST', kickoff_at: '2026-09-03T23:00:00Z' }],
+          { away_team: 'Akron', home_team: 'Wake Forest' });
+    });
+
+  /* ---- one side exact, the other a real spelling difference ---------- */
+  chk('a genuine spelling difference on one side still matches its game',
+    function () {
+      var hit = S4.slateMatchRow([{ label: 'SANJOSEST @ USC', game_id: 'G9' }],
+        { away_team: 'San José State', home_team: 'USC' });
+      return hit && hit.game_id === 'G9';
+    });
+  chk('a rename never pivots off a clipped match',
+    function () {
+      /* INDIANA is a clipped-schedule match for "Indiana State", so pivoting
+         off it would propose renaming Purdue to whoever Indiana is playing */
+      return S4.slateMatchRow(P4, { away_team: 'Indiana State', home_team: 'Purdue',
+        kickoff: '2026-09-04T23:00:00Z' }) === null;
+    });
+  chk('a shortening that fits two schedule names is settled by the qualifier',
+    function () {
+      /* "Florida State" is a shortening of both FLORIDAST and FLORIDA, so the
+         pair pass refuses it — but FLORIDA carries no "State" and Florida
+         State does, which settles it without guessing. Getting this right is
+         the difference between a game matched and a game stranded. */
+      var hit = S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }, { label: 'FLORIDA @ MIAMI', game_id: 'B' }],
+        { away_team: 'Florida State', home_team: 'Miami' });
+      return hit && hit.game_id === 'A';
+    },
+    { got: S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }, { label: 'FLORIDA @ MIAMI', game_id: 'B' }],
+        { away_team: 'Florida State', home_team: 'Miami' }) });
+  chk('the plain school is never handed the State school\'s game',
+    function () {
+      return S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }],
+        { away_team: 'Florida', home_team: 'Miami' }) === null;
+    });
+  chk('when nothing separates two candidates it refuses, and says nothing',
+    function () {
+      return S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }, { label: 'FLORIDASTA @ MIAMI', game_id: 'B' }],
+        { away_team: 'Florida State', home_team: 'Miami' }) === null;
+    },
+    'both are Florida State shortened; picking one is how a slate gets misfiled');
+  chk('but an exact spelling among them is not ambiguous at all',
+    function () {
+      var hit = S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }, { label: 'FLORIDA @ MIAMI', game_id: 'B' }],
+        { away_team: 'Florida St', home_team: 'Miami' });
+      return hit && hit.game_id === 'A';
+    });
+
+  chk('a game matched on one side only is reported as exactly that',
+    function () {
+      /* The schedule carries mascots, the file does not. Neither name is a
+         shortening of the other, so the pair pass cannot see it; USC matching
+         exactly is what makes the other side safe to read. */
+      var r = S4.slateScheduleReport([{ label: 'TCU Horned Frogs @ USC', game_id: 'G9' }],
+        [{ away_team: 'TCU', home_team: 'USC' }]);
+      return r.renamed.length === 1 && r.missing.length === 0
+        && r.renamed[0].yourAway === 'TCU' && r.renamed[0].away === 'TCU Horned Frogs';
+    },
+    { got: S4.slateScheduleReport([{ label: 'TCU Horned Frogs @ USC', game_id: 'G9' }],
+        [{ away_team: 'TCU', home_team: 'USC' }]) });
+  chk('a game matched on both sides is not reported as a one-sided match',
+    function () {
+      var r = S4.slateScheduleReport([{ label: 'AKRON @ WAKEFOREST', game_id: 'G8' }],
+        [{ away_team: 'Akron', home_team: 'Wake Forest' }]);
+      return r.renamed.length === 0 && r.matched === 1;
+    });
+
+  /* ---- weeks that do not mean the same thing ------------------------- */
+  chk('the two date spans are reported so a week mismatch can be seen',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.yours && r.theirs
+        && new Date(r.yours.from).toISOString().slice(0, 10) === '2026-09-03';
+    },
+    { got: S4.slateScheduleReport(P4, rows30(false)).yours });
+  chk('a file for a different weekend leaves every game missing',
+    function () {
+      var far = rows30(false).map(function (o) {
+        return { game_ref: o.game_ref, away_team: o.away_team, home_team: o.home_team,
+                 kickoff: o.kickoff.replace('2026-09-0', '2026-10-0') };
+      });
+      var r = S4.slateScheduleReport(P4, far);
+      return r.matched === 0 && r.missing.length === 30;
+    });
+
+  /* ---- and the honest headline -------------------------------------- */
+  chk('the page can say how many GAMES are absent, not how many teams',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.missing.length === 10 && r.total === 30 && (r.total - r.missing.length) === 20;
+    },
+    'the old message counted 17 teams; the truth is 10 games');
+} else {
+  chk('the game-level matcher is defined', false);
+}
+
+/* =======================================================================
+   5. THE PARTICIPATION FLOOR.
+
+   A collective record is worth nothing if the models in it go quiet. The
+   floor is three eligible projections a week, and the whole point of it is
+   that nobody learns about it from being removed -- so it has to be on the
+   invite before anyone accepts, on the public rules, and as a live count on
+   the member's own dashboard while there is still time to act on it.
+
+   These are the checks that it says the same thing in every one of those
+   places, and that the count is the one that will actually be graded.
+   ======================================================================= */
+if (typeof sandbox.weekProjections === 'function') {
+  var S5 = sandbox;
+
+  chk('the floor is three, in one place',
+    function () { return S5.PARTICIPATION.min === 3; },
+    { got: S5.PARTICIPATION && S5.PARTICIPATION.min });
+  chk('the statement carries all three parts of the rule',
+    function () {
+      var all = S5.PARTICIPATION.lines.join(' ');
+      return /3 eligible model projections per week/.test(all)
+        && /declared sport or scope/.test(all)
+        && /moved to inactive or removed/.test(all)
+        && /Personal betting activity does not matter/.test(all)
+        && /not only the games you choose to bet/.test(all);
+    },
+    { got: S5.PARTICIPATION.lines });
+  chk('every surface renders the statement from that one source',
+    function () {
+      var h = S5.participationHTML('p', 'note');
+      return S5.PARTICIPATION.lines.every(function (l) { return h.indexOf(l) >= 0; });
+    });
+
+  /* ---- the count is the count that gets graded ----------------------- */
+  function slate(rows) {
+    return rows.map(function (r, i) {
+      return { game_ref: 'G' + i, models: r };
+    });
+  }
+  var MINE = { creator_slug: 'blerm', model_slug: 'blerm-cfb', data_origin: 'live' };
+  function mine(extra) {
+    var o = {}, k;
+    for (k in MINE) o[k] = MINE[k];
+    for (k in (extra || {})) o[k] = extra[k];
+    return o;
+  }
+
+  chk('one row per game is one projection',
+    function () {
+      return S5.weekProjections(slate([[mine()], [mine()], [mine()]]), 'blerm', null) === 3;
+    });
+  chk('two rows on the SAME game are still one projection',
+    function () {
+      /* a revision is not a second projection, and the graded record counts
+         the first pre-kickoff submission once */
+      return S5.weekProjections(slate([[mine(), mine()]]), 'blerm', null) === 1;
+    });
+  chk('somebody else’s rows are not yours',
+    function () {
+      return S5.weekProjections(
+        slate([[{ creator_slug: 'other', model_slug: 'x', data_origin: 'live' }],
+               [mine()]]), 'blerm', null) === 1;
+    });
+  chk('a late row does not count, because it is never graded',
+    function () {
+      return S5.weekProjections(slate([[mine({ late: true })], [mine()]]), 'blerm', null) === 1;
+    },
+    'counting it would tell a member they are clear on a number the boards will not honour');
+  chk('a locked row does not count either',
+    function () {
+      return S5.weekProjections(slate([[mine({ locked: true })], [mine()]]), 'blerm', null) === 1;
+    });
+  chk('backfilled history does not count as this week’s work',
+    function () {
+      return S5.weekProjections(
+        slate([[mine({ data_origin: 'backfill' })], [mine({ data_origin: 'test' })],
+               [mine()]]), 'blerm', null) === 1;
+    });
+  chk('a row with no stated origin is taken as live',
+    function () {
+      return S5.weekProjections(slate([[{ creator_slug: 'blerm', model_slug: 'b' }]]), 'blerm', null) === 1;
+    });
+  chk('a single model can be counted on its own',
+    function () {
+      var g = slate([[mine()], [mine({ model_slug: 'blerm-nfl' })]]);
+      return S5.weekProjections(g, 'blerm', 'blerm-cfb') === 1
+        && S5.weekProjections(g, 'blerm', null) === 2;
+    });
+  chk('an empty slate is zero, not a crash',
+    function () {
+      return S5.weekProjections([], 'blerm', null) === 0
+        && S5.weekProjections(null, 'blerm', null) === 0
+        && S5.weekProjections([{ }, { models: null }], 'blerm', null) === 0;
+    });
+
+  /* ---- and that it is actually printed where it has to be ------------ */
+  var SURFACES = [
+    ['the public rules page', /Staying in the Collective/],
+    ['the dashboard, next to the button that fixes it', /Staying active/],
+    ['the dashboard stat grid, as a live count', /This week<\/div><div class="v/],
+    ['the creator pitch on the about page', /What membership asks of you/],
+    ['the status chip, so a reader knows what Inactive means', /PARTICIPATION\.short/],
+    ['the model directory', /keeping to the Collective\\u2019s participation floor/]
+  ];
+  SURFACES.forEach(function (x) {
+    chk('the floor is stated on ' + x[0], function () { return x[1].test(CODE); });
+  });
+  chk('no surface hard-codes the number instead of reading it',
+    function () {
+      /* The one place a literal 3 is allowed is the declaration itself. A
+         second copy is how the page ends up promising two different rules. */
+      var body = CODE.replace(/var PARTICIPATION=\{[\s\S]*?\n\};/, '');
+      return !/3 eligible model projections/.test(body);
+    },
+    { found: /3 eligible model projections/.test(
+        CODE.replace(/var PARTICIPATION=\{[\s\S]*?\n\};/, '')) });
+
+  /* ---- the invite says it before anyone accepts ---------------------- */
+  var JOIN = fs.readFileSync(path.join(HERE, 'join.html'), 'utf8');
+  chk('the invite screen states the floor before the email field',
+    function () {
+      var i = JOIN.indexOf('You are joining the Model Collective');
+      var p = JOIN.indexOf('participationBlock()', i);
+      var e = JOIN.indexOf("id=\"jEmail\"", i);
+      return i >= 0 && p > i && e > p;
+    },
+    'agreeing to something means seeing it first');
+  chk('the invite states all three parts of the rule',
+    function () {
+      /* the count itself is interpolated from PARTICIPATION_MIN, which the
+         next check pins to the page's own number */
+      return /eligible model projections per week/.test(JOIN)
+        && /declared sport or scope/.test(JOIN)
+        && /moved to inactive or removed/.test(JOIN)
+        && /Personal betting activity does not matter/.test(JOIN)
+        && /not only the games you choose to bet/.test(JOIN);
+    });
+  chk('the finish screen says it again, with where to watch the count',
+    function () {
+      var i = JOIN.indexOf('You are in');
+      return i >= 0 && JOIN.indexOf('participationBlock()', i) > i
+        && /count for the current slate is on your/.test(JOIN.slice(i));
+    });
+  chk('the invite and the page agree on the number',
+    function () {
+      var m = JOIN.match(/var PARTICIPATION_MIN=(\d+);/);
+      return !!m && Number(m[1]) === S5.PARTICIPATION.min;
+    },
+    { join: (JOIN.match(/var PARTICIPATION_MIN=(\d+);/) || [])[1], page: S5.PARTICIPATION.min });
+
+  /* ---- and the admin minting the invite knows what it promised ------- */
+  var ADMIN = fs.readFileSync(path.join(HERE, 'admin.html'), 'utf8');
+  chk('the invite screen in admin repeats what the creator is told',
+    function () {
+      return /What the invite tells them/.test(ADMIN)
+        && /3 eligible model projections/.test(ADMIN);
+    });
+  chk('the members list carries the standard it is read against',
+    function () {
+      return /ACTIVE_NOTE/.test(ADMIN)
+        && /Last slate<\/b> is the/.test(ADMIN);
+    });
+} else {
+  chk('the participation floor is defined', false);
+}
+
+/* =======================================================================
+   6. THE RECEIPT, IN WORDS — and the tab that was reading yesterday's code.
+
+   The real receipt from the upload above, verbatim:
+
+     QUARANTINED 401856767: unknown_team_away
+     QUARANTINED 401856663: unknown_team_away
+     ... (nine of these)
+     QUARANTINED 401858435: unknown_game
+
+   Every part of that is true and none of it is usable: the game is named by
+   an id and the problem by a field name. And it carries the answer the
+   pre-flight could only guess at — `unknown_team_away` says the backend
+   resolved UCF perfectly well and could not resolve Bethune-Cookman, which
+   is the opposite of what "neither team is on that schedule" implies. The
+   backend is the thing doing the resolving, so it wins.
+   ======================================================================= */
+if (typeof sandbox.slateExplainRow === 'function') {
+  var S6 = sandbox;
+
+  /* the ten rows exactly as they came back, and what was sent under them */
+  var SENT = [
+    { game_ref: '401856767', away_team: 'Bethune-Cookman', home_team: 'UCF' },
+    { game_ref: '401856663', away_team: 'Arkansas-Pine Bluff', home_team: 'Missouri' },
+    { game_ref: '401858422', away_team: 'Eastern Illinois', home_team: 'Minnesota' },
+    { game_ref: '401856768', away_team: 'Idaho', home_team: 'Utah' },
+    { game_ref: '401858435', away_team: 'Indiana State', home_team: 'Purdue' },
+    { game_ref: '401856769', away_team: 'Long Island University', home_team: 'Kansas' },
+    { game_ref: '401858208', away_team: 'New Hampshire', home_team: 'Syracuse' },
+    { game_ref: '401856779', away_team: 'Southeast Missouri State', home_team: 'Iowa State' },
+    { game_ref: '401856659', away_team: 'Youngstown State', home_team: 'Kentucky' },
+    { game_ref: '401856658', away_team: 'Tennessee State', home_team: 'Georgia' },
+    { game_ref: '401858423', away_team: 'Massachusetts', home_team: 'Rutgers' }
+  ];
+  var GOT = [
+    { status: 'quarantined', game_ref: '401856767', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856663', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401858422', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856768', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401858435', reason: 'unknown_game' },
+    { status: 'quarantined', game_ref: '401856769', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401858208', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856779', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856659', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856658', reason: 'unknown_team_away' },
+    { status: 'resolved', game_ref: '401858423' }
+  ];
+
+  chk('a wire code becomes a game and a team',
+    function () {
+      var e = S6.slateExplainRow(GOT[0], SENT[0]);
+      return e.label === 'Bethune-Cookman @ UCF'
+        && e.team === 'Bethune-Cookman'
+        && /does not have Bethune-Cookman/.test(e.say);
+    },
+    { got: S6.slateExplainRow(GOT[0], SENT[0]) });
+  chk('the HOME code names the home team, not the away one',
+    function () {
+      var e = S6.slateExplainRow({ reason: 'unknown_team_home' }, SENT[0]);
+      return e.team === 'UCF' && e.side === 'home';
+    });
+  chk('unknown_game is not reported as a team problem',
+    function () {
+      var e = S6.slateExplainRow(GOT[4], SENT[4]);
+      return e.team === null && e.side === null && /no such game/.test(e.say);
+    },
+    { got: S6.slateExplainRow(GOT[4], SENT[4]) });
+  chk('a code nobody has seen before is passed through, never swallowed',
+    function () {
+      var e = S6.slateExplainRow({ reason: 'some_new_code' }, SENT[0]);
+      return e.say === 'some_new_code';
+    },
+    'a receipt that hides what the server said is worse than a raw code');
+  chk('a row the page cannot find still names its game ref',
+    function () {
+      var e = S6.slateExplainRow({ reason: 'unknown_team_away', game_ref: '999' }, null);
+      return e.label === '999' && e.team === null;
+    });
+
+  chk('the ten rows are read as one finding, not ten',
+    function () {
+      var q = S6.slateQuarantineCause(GOT, SENT);
+      return q.n === 10 && q.teams.length === 9;
+    },
+    { got: S6.slateQuarantineCause(GOT, SENT) });
+  chk('one unknown_game among them stops the single-cause claim',
+    function () {
+      /* nine name a team and one does not, so "all of them are the away
+         team" is not true and must not be printed */
+      return S6.slateQuarantineCause(GOT, SENT).oneSide === null;
+    },
+    'a summary that is nearly true is a summary that misleads');
+  chk('when every row IS the same side, that is said',
+    function () {
+      var got = GOT.filter(function (x) { return x.reason !== 'unknown_game'; });
+      var q = S6.slateQuarantineCause(got, SENT);
+      return q.oneSide === 'away' && q.n === 9
+        && q.teams.indexOf('Bethune-Cookman') >= 0
+        && q.teams.indexOf('Tennessee State') >= 0;
+    },
+    { got: S6.slateQuarantineCause(
+        GOT.filter(function (x) { return x.reason !== 'unknown_game'; }), SENT) });
+  chk('a resolved row is not a quarantine',
+    function () {
+      var q = S6.slateQuarantineCause(GOT, SENT);
+      return q.rows.every(function (e) { return e.label !== 'Massachusetts @ Rutgers'; });
+    });
+  chk('one quarantine alone is never dressed up as a pattern',
+    function () {
+      var q = S6.slateQuarantineCause(
+        [{ status: 'quarantined', game_ref: '401856767', reason: 'unknown_team_away' }], SENT);
+      return q.n === 1 && q.oneSide === null;
+    });
+  chk('the receipt prints the words, not the wire code',
+    function () {
+      return /slateExplainRow\(x,byRef\[/.test(CODE)
+        && !/esc\(x\.game_ref\)\+\(x\.reason\?': '\+esc\(x\.reason\)/.test(CODE);
+    },
+    'the old line was: QUARANTINED 401856767: unknown_team_away');
+  chk('the summary refuses to say the file is wrong when it is not',
+    function () { return /<b>Nothing in your file is wrong<\/b>/.test(CODE); });
+
+  /* ---- the tab that was reading yesterday's code -------------------- */
+  chk('the page checks whether a newer build is live',
+    function () { return typeof S6.checkBuild === 'function' && typeof S6.buildTag === 'function'; });
+  chk('the first answer is a baseline, never a prompt',
+    function () {
+      /* BUILD_TAG starts null; the first observation records it and returns
+         false. A page that nagged on load would nag every single load. */
+      return /if\(BUILD_TAG===null\)\{BUILD_TAG=t;return false;\}/.test(CODE);
+    });
+  chk('an unchanged validator is not a new build',
+    function () { return /if\(t===BUILD_TAG\)return false;/.test(CODE); });
+  chk('a failed or validator-less HEAD never nags',
+    function () {
+      return /catch\(e\)\{return false;\}/.test(CODE) && /if\(!t\)return false;/.test(CODE);
+    },
+    'a host that sends no etag is not evidence of anything');
+  chk('the banner offers the reload rather than taking it',
+    function () {
+      return /bldgo/.test(CODE) && /location\.reload\(\)/.test(CODE)
+        && !/BUILD_STALE=true;\s*location\.reload/.test(CODE);
+    },
+    'reloading mid-upload would lose the file the creator just picked');
+} else {
+  chk('the receipt explains itself', false);
+}
+
+/* =======================================================================
+   7. STOP DESCRIBING THE PROBLEM AND FIX IT.
+
+   "10 of your 30 games are not on your backend's schedule" is a true
+   sentence and it is still half a tool. The backend has a schedule loader,
+   /v1/admin/games, which wants week, kickoff, home and away — and every one
+   of those is already in the file the creator just uploaded. The rows that
+   quarantine because the schedule has never been told those games exist
+   ARE the rows that would tell it.
+
+   So the pre-flight offers to load them. Separate button, because writing
+   the schedule everybody is matched against is not what posting a slate
+   means.
+   ======================================================================= */
+if (typeof sandbox.slateAdminGames === 'function') {
+  var S7 = sandbox;
+
+  var MISS = [
+    { row: 2, away: 'Bethune-Cookman', home: 'UCF', kickoff: '2026-09-03T23:00:00Z', week: 1 },
+    { row: 5, away: 'Eastern Illinois', home: 'Minnesota', kickoff: '2026-09-04T00:00:00Z', week: 1 },
+    { row: 6, away: 'Idaho', home: 'Utah', kickoff: '2026-09-04T01:00:00Z', week: 1 }
+  ];
+
+  chk('the missing games become exactly what the schedule loader takes',
+    function () {
+      var g = S7.slateAdminGames(MISS, 1);
+      return g.length === 3
+        && g[0].week === 1 && g[0].home === 'UCF' && g[0].away === 'Bethune-Cookman'
+        && g[0].kickoff === '2026-09-03T23:00:00Z'
+        && Object.keys(g[0]).sort().join(',') === 'away,home,kickoff,week';
+    },
+    { got: S7.slateAdminGames(MISS, 1) });
+  chk('the creator\'s own spelling is sent, not a rewrite of it',
+    function () {
+      /* these are teams the backend has never heard of, so there is no
+         schedule spelling to prefer — sending anything but what the file
+         said would be inventing one */
+      return S7.slateAdminGames(MISS, 1)[0].away === 'Bethune-Cookman';
+    });
+  chk('the row\'s own week beats the upload box',
+    function () { return S7.slateAdminGames([{ away: 'A', home: 'B', kickoff: 'x', week: 4 }], 1)[0].week === 4; });
+  chk('the upload box fills in for a row that has no week',
+    function () {
+      return S7.slateAdminGames([{ away: 'A', home: 'B', kickoff: 'x', week: null }], 2)[0].week === 2;
+    });
+  chk('a game with no week at all is dropped, never guessed',
+    function () {
+      return S7.slateAdminGames([{ away: 'A', home: 'B', kickoff: 'x', week: null }], null).length === 0
+        && S7.slateAdminGames([{ away: 'A', home: 'B', kickoff: 'x', week: null }], '').length === 0;
+    },
+    'a game filed under the wrong week is worse than a missing one: it looks present');
+  chk('a half-formed row is dropped',
+    function () {
+      return S7.slateAdminGames([
+        { away: 'A', home: '', kickoff: 'x', week: 1 },
+        { away: '', home: 'B', kickoff: 'x', week: 1 },
+        { away: 'A', home: 'B', kickoff: null, week: 1 }], 1).length === 0;
+    });
+  chk('nothing missing means nothing to send',
+    function () { return S7.slateAdminGames([], 1).length === 0 && S7.slateAdminGames(null, 1).length === 0; });
+
+  /* ---- the week has to survive alignment to be sendable -------------- */
+  chk('a missing game carries the week it was built with',
+    function () {
+      var a = S7.slateAlignToSchedule(
+        [{ label: 'AKRON @ WAKEFOREST' }],
+        [{ away_team: 'Bethune-Cookman', home_team: 'UCF', kickoff: '2026-09-03T23:00:00Z', week: 1 }]);
+      return a.missing.length === 1 && a.missing[0].week === 1;
+    },
+    { got: S7.slateAlignToSchedule([{ label: 'AKRON @ WAKEFOREST' }],
+        [{ away_team: 'Bethune-Cookman', home_team: 'UCF', kickoff: '2026-09-03T23:00:00Z', week: 1 }]).missing });
+  chk('the report hands the loader a usable payload end to end',
+    function () {
+      var rows = [
+        { away_team: 'Bethune-Cookman', home_team: 'UCF', kickoff: '2026-09-03T23:00:00Z', week: 1 },
+        { away_team: 'Akron', home_team: 'Wake Forest', kickoff: '2026-09-03T23:00:00Z', week: 1 }
+      ];
+      var r = S7.slateScheduleReport([{ label: 'AKRON @ WAKEFOREST' }], rows);
+      var g = S7.slateAdminGames(r.missing, 1);
+      return r.missing.length === 1 && g.length === 1 && g[0].home === 'UCF';
+    },
+    'the game that matched must not be re-added to the schedule');
+
+  /* ---- and it is the right kind of action ---------------------------- */
+  chk('the loader is a separate button, not part of posting',
+    function () { return /id="slAddGames"/.test(CODE) && !/slAddGames[\s\S]{0,200}auto/.test(CODE); });
+  chk('it writes through the admin function, with the session already held',
+    function () {
+      return /\/v1\/admin\/games'[\s\S]{0,120}fn:'collective_admin'/.test(CODE);
+    });
+  chk('a non-admin is told that plainly, not shown a broken button',
+    function () {
+      return /e\.status===401\|\|e\.status===403/.test(CODE)
+        && /not on your backend\\u2019s admin list/.test(CODE);
+    });
+  chk('a team the backend does not know is reported, not silently dropped',
+    function () { return /does not know one of the teams/.test(CODE); });
+  chk('it does not send a college creator to a form that cannot accept them',
+    function () {
+      /* collective_admin's alias route validates the team code against
+         /^[A-Z0-9]{2,5}$/ and every CFB code on this backend is longer:
+         GEORGIATEC, MASSACHUSE, WAKEFOREST. Pointing somebody at that form
+         is sending them to a guaranteed 422. */
+      return !/Add it as an alias under/.test(CODE)
+        && /2 to 5 characters/.test(CODE);
+    },
+    'the advice has to be true for the sport the creator is actually posting');
+  chk('the receipt says which build of the page produced it',
+    function () { return /Page build: <span class="mono">'\+\s*esc\(String\(document\.lastModified/.test(CODE); },
+    'it cost a round trip of "this is fixed" / "it is not" to work that out from wording alone');
+} else {
+  chk('the schedule loader is defined', false);
+}
+
+/* =======================================================================
+   8. "THIS ACCOUNT IS NOT ON YOUR BACKEND'S ADMIN LIST."
+
+   The schedule loader shipped, the creator pressed it, and collective_admin
+   answered 403 -- correctly: requireAdmin checks the caller's user id against
+   the admin.user_ids config list, and the site's owner was not on it. The
+   page said so and stopped there, which is a dead end wearing the clothes of
+   an explanation. The remedy needs exactly one value the person cannot look
+   up without going and digging in the auth dashboard: their own user id. It
+   is in the session token they are already holding.
+   ======================================================================= */
+if (typeof sandbox.sessionUserId === 'function') {
+  var S8 = sandbox;
+
+  /* a real-shaped JWT: header.payload.signature, payload base64url */
+  function jwt(payload) {
+    var b64 = Buffer.from(JSON.stringify(payload)).toString('base64')
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return 'x.' + b64 + '.y';
+  }
+  function withSession(v, fn) {
+    var store = {};
+    var realGet = S8.localStorage.getItem;
+    S8.localStorage.getItem = function (k) {
+      return k === 'collective_session' ? (v === null ? null : JSON.stringify(v)) : null;
+    };
+    try { return fn(); } finally { S8.localStorage.getItem = realGet; }
+  }
+
+  chk('the user id is read out of the session the page already holds',
+    function () {
+      return withSession({ access_token: jwt({ sub: 'a1b2c3d4-0000-4000-8000-000000000000' }) },
+        function () { return S8.sessionUserId() === 'a1b2c3d4-0000-4000-8000-000000000000'; });
+    },
+    { got: withSession({ access_token: jwt({ sub: 'a1b2c3d4-0000-4000-8000-000000000000' }) },
+        function () { return S8.sessionUserId(); }) });
+  chk('base64url padding and alphabet are both handled',
+    function () {
+      /* a payload whose base64 needs padding, and whose alphabet uses - and _ */
+      return withSession({ access_token: jwt({ sub: 'ab', extra: '?????>>>>>' }) },
+        function () { return S8.sessionUserId() === 'ab'; });
+    });
+  chk('no session, no id, no crash',
+    function () { return withSession(null, function () { return S8.sessionUserId() === null; }); });
+  chk('a token that is not a JWT is null, not an exception',
+    function () {
+      return withSession({ access_token: 'not-a-jwt' }, function () { return S8.sessionUserId() === null; })
+        && withSession({ access_token: 'a.!!!!.c' }, function () { return S8.sessionUserId() === null; })
+        && withSession({}, function () { return S8.sessionUserId() === null; });
+    });
+  chk('a payload with no subject claims nothing',
+    function () {
+      return withSession({ access_token: jwt({ email: 'a@b.c' }) },
+        function () { return S8.sessionUserId() === null; });
+    });
+
+  /* ---- the statement that grants it ---------------------------------- */
+  chk('the grant names the account it is granting',
+    function () { return S8.adminGrantSQL('uid-1').indexOf('"uid-1"') >= 0; });
+  chk('the grant targets the key the backend actually reads',
+    function () {
+      /* requireAdmin reads get_config('admin.user_ids') */
+      return /admin\.user_ids/.test(S8.adminGrantSQL('u'));
+    });
+  chk('the grant finds its own schema rather than assuming public',
+    function () {
+      var q = S8.adminGrantSQL('u');
+      return /information_schema\.tables/.test(q) && !/\bpublic\.config\b/.test(q);
+    },
+    'the rest of this page writes SQL that way for a reason');
+  chk('the conflict clause references the target row the way Postgres allows',
+    function () {
+      /* Inside ON CONFLICT DO UPDATE the target is `config.value`;
+         `collective.config.value` there is an invalid FROM-clause reference
+         and the statement fails outright. */
+      var q = S8.adminGrantSQL('u');
+      return /coalesce\(config\.value/.test(q) && !/%I\.config\.value/.test(q);
+    },
+    { got: (S8.adminGrantSQL('u').match(/coalesce\([^,]*/) || [])[0] });
+  chk('the grant is safe to run twice and never drops an existing admin',
+    function () {
+      var q = S8.adminGrantSQL('u');
+      return /on conflict/i.test(q) && /jsonb_agg\(distinct/.test(q)
+        && /config\.value/.test(q);
+    },
+    'a grant that replaced the array would lock out every other administrator');
+
+  /* ---- and that the refusal actually offers it ----------------------- */
+  chk('the 403 hands over the id and the statement',
+    function () {
+      return /sessionUserId\(\)/.test(CODE) && /adminGrantSQL\(uid\)/.test(CODE);
+    });
+  chk('the refusal explains that this gates the admin page too',
+    function () { return /if that page has never let you in, this is why/.test(CODE); },
+    'the same list; somebody who could not use the admin page now knows why');
+
+  /* ---- the two questions are no longer phrased as one ---------------- */
+  chk('the pre-flight asks about games, and says so',
+    function () {
+      /* Comments quote the old wording while explaining why it changed, and
+         that is prose about the code, not copy the reader sees. Strip them
+         before asserting on what the page actually renders -- the same thing
+         the static scan at the top of this file does, for the same reason. */
+      var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+      return /neither team has a game on that schedule/.test(shown)
+        && !/neither team is on that schedule/.test(shown);
+    },
+    'the receipt says the backend HAS the home team; "is not on that schedule" read as a contradiction');
+  chk('the page states that a known team can still have no game',
+    function () { return /still have no game on this week/.test(CODE); });
+} else {
+  chk('the admin grant path is defined', false);
+}
+
+/* =======================================================================
+   RE-UPLOADING A SLATE THAT IS ALREADY POSTED.
+
+   `collective.projections` is append-only and the games feed serves each
+   model's FIRST pre-kickoff submission, so a corrected slate is stored as
+   movement and the board keeps the number it already had. That rule is
+   deliberate and is not what these tests are about.
+
+   What they are about is that the page said nothing about it anywhere. Two
+   creators in one week reported the uploader as broken -- "I re-uploaded my
+   week 1 picks and my upload from 5d ago is still showing on the wall" --
+   because "Your slate is in", in green, beside a link to the wall, is
+   indistinguishable from an upload that worked. It had worked. Nothing on
+   screen could tell them so.
+   ======================================================================= */
+if (typeof sandbox.slateRevisionScan === 'function') {
+  var SR = sandbox;
+
+  /* one scheduled game, with whatever model rows a case needs */
+  function srGame(id, away, home, models, kickoff) {
+    return { game_id: id, away: away, home: home,
+             kickoff_at: kickoff || '2026-09-03T20:00:00Z', models: models || [] };
+  }
+  function srRow(away, home, ref) {
+    var o = { away_team: away, home_team: home, kickoff: '2026-09-03T20:00:00Z' };
+    if (ref !== undefined) o.game_ref = ref;
+    return o;
+  }
+  var SR_MINE = { creator_slug: 'moose', model_slug: 'moose-cfb',
+                  received_at: '2026-08-23T14:00:00Z' };
+  /* "now": two hours before the fixture's kickoff, so nothing has locked */
+  var SR_NOW = new Date('2026-09-03T18:00:00Z').getTime();
+
+  /* ---- the lock itself ------------------------------------------------ */
+  chk('the lock is thirty minutes before kickoff by default',
+    SR.LOCK_MIN === 30 && SR.lockMinutes({}) === 30 && SR.lockMinutes(null) === 30);
+  chk('the server can state a different lock, and nonsense falls back',
+    SR.lockMinutes({ lock_minutes: 45 }) === 45 && SR.lockMinutes({ lock_minutes: 'x' }) === 30
+    && SR.lockMinutes({ lock_minutes: -5 }) === 30);
+  chk('a game locks exactly LOCK_MIN minutes before its kickoff',
+    SR.lockAt(srGame('G1', 'A', 'B')) === new Date('2026-09-03T19:30:00Z').getTime());
+  chk('a game with no kickoff never locks and never reports a lock',
+    SR.lockAt({}) === null && SR.gameLocked({}, SR_NOW) === false && SR.lockText({}, SR_NOW) === '');
+  chk('before the lock the game is open; at and after it, locked',
+    !SR.gameLocked(srGame('G1', 'A', 'B'), new Date('2026-09-03T19:29:59Z').getTime())
+    && SR.gameLocked(srGame('G1', 'A', 'B'), new Date('2026-09-03T19:30:00Z').getTime())
+    && SR.gameLocked(srGame('G1', 'A', 'B'), new Date('2026-09-03T21:00:00Z').getTime()));
+  chk('the header chip counts down to the lock, then says LOCKED',
+    /LOCKS IN 2H/.test(SR.lockChip(srGame('G1', 'A', 'B'), SR_NOW - 30 * 60000))
+    && /LOCKS IN 5M/.test(SR.lockChip(srGame('G1', 'A', 'B'), new Date('2026-09-03T19:25:00Z').getTime()))
+    && /class="gflag lock on"[^>]*>LOCKED</.test(SR.lockChip(srGame('G1', 'A', 'B'), new Date('2026-09-03T19:31:00Z').getTime())),
+    { chip: SR.lockChip(srGame('G1', 'A', 'B'), SR_NOW - 30 * 60000) });
+  chk('a finished game carries no lock chip -- the score says it all',
+    SR.lockChip({ kickoff_at: '2026-09-03T20:00:00Z', result: { home_score: 1, away_score: 0 } }, SR_NOW) === '');
+  chk('a row received after the lock is known to be after the lock',
+    SR.rowAfterLock(srGame('G1', 'A', 'B'), { received_at: '2026-09-03T19:45:00Z' })
+    && !SR.rowAfterLock(srGame('G1', 'A', 'B'), { received_at: '2026-09-03T19:00:00Z' })
+    && !SR.rowAfterLock(srGame('G1', 'A', 'B'), {})
+    && !SR.rowAfterLock({}, { received_at: '2026-09-03T19:45:00Z' }));
+  chk('the lead text names a post inside the lock window for what it is',
+    /after the lock/.test(SR.pickLeadText({ received_at: '2026-09-03T19:45:00Z' }, '2026-09-03T20:00:00Z'))
+    && !/after the lock/.test(SR.pickLeadText({ received_at: '2026-09-03T19:00:00Z' }, '2026-09-03T20:00:00Z')));
+
+  /* ---- one row per model per game: the latest one before the lock ----- */
+  function srSub(at, extra) {
+    var o = { creator_slug: 'moose', model_slug: 'moose-cfb', received_at: at,
+              pick_side: 'home', projected_spread: -36.5 };
+    for (var k in (extra || {})) o[k] = extra[k];
+    return o;
+  }
+  var SR_FEED = srGame('G1', 'UMASS', 'RUTGERS', [
+    srSub('2026-08-25T12:00:00Z', { line_at_submission: -36.5 }),
+    srSub('2026-09-01T12:00:00Z', { line_at_submission: -28.5 }),
+    { creator_slug: 'blerm', model_slug: 'blerm-cfb', received_at: '2026-08-30T12:00:00Z', pick_side: 'away' }
+  ]);
+  chk('the feed is collapsed to one row per model per game',
+    (function () {
+      var g = SR.collapseGameModels(JSON.parse(JSON.stringify(SR_FEED)));
+      return g.models.length === 2;
+    })());
+  chk('and the row kept is the LATEST submission received before the lock',
+    (function () {
+      var g = SR.collapseGameModels(JSON.parse(JSON.stringify(SR_FEED)));
+      var mine = g.models.filter(function (m) { return m.creator_slug === 'moose'; })[0];
+      return mine && mine.line_at_submission === -28.5 && mine.received_at === '2026-09-01T12:00:00Z';
+    })());
+  chk('the count of submissions rides with the kept row',
+    (function () {
+      var g = SR.collapseGameModels(JSON.parse(JSON.stringify(SR_FEED)));
+      var mine = g.models.filter(function (m) { return m.creator_slug === 'moose'; })[0];
+      var other = g.models.filter(function (m) { return m.creator_slug === 'blerm'; })[0];
+      return mine.movement_n === 2 && other.movement_n === undefined;
+    })(), 'one submission is not a revision and must not print +0');
+  chk('the order the feed sent the rows in does not decide which one wins',
+    (function () {
+      var g = JSON.parse(JSON.stringify(SR_FEED));
+      g.models.reverse();
+      var mine = SR.collapseGameModels(g).models.filter(function (m) { return m.creator_slug === 'moose'; })[0];
+      return mine.line_at_submission === -28.5;
+    })());
+  chk('a submission received after the lock never takes the slot, however new it is',
+    (function () {
+      var g = JSON.parse(JSON.stringify(SR_FEED));
+      g.models.push(srSub('2026-09-03T19:45:00Z', { line_at_submission: -20.5 }));
+      var mine = SR.collapseGameModels(g).models.filter(function (m) { return m.creator_slug === 'moose'; })[0];
+      return mine.line_at_submission === -28.5 && mine.movement_n === 3;
+    })());
+  chk('a row the server left unflagged but that arrived after the lock is flagged late here',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [srSub('2026-09-03T19:45:00Z')]);
+      var mine = SR.collapseGameModels(g).models[0];
+      return mine.late === true && mine.after_lock === true && !SR.gradableRow(mine);
+    })(), 'nothing posted inside the lock window counts, whoever posts it');
+  chk('the server\'s own row is not rewritten to do it',
+    (function () {
+      var row = srSub('2026-09-03T19:45:00Z');
+      SR.collapseGameModels(srGame('G1', 'UMASS', 'RUTGERS', [row]));
+      return row.late === undefined;
+    })());
+  chk('a late row is shown only when the model has nothing before the lock',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [srSub('2026-09-03T19:45:00Z'), srSub('2026-09-03T19:50:00Z')]);
+      var rows = SR.collapseGameModels(g).models;
+      return rows.length === 1 && rows[0].late === true && rows[0].received_at === '2026-09-03T19:50:00Z';
+    })());
+  chk('test and backfill rows never take the slot from a live one',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [
+        srSub('2026-08-25T12:00:00Z', { line_at_submission: -30 }),
+        srSub('2026-09-01T12:00:00Z', { line_at_submission: -10, data_origin: 'test' })]);
+      var mine = SR.collapseGameModels(g).models[0];
+      return mine.line_at_submission === -30;
+    })());
+  chk('a feed that already collapsed keeps the server\'s larger count',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [srSub('2026-09-01T12:00:00Z', { movement_n: 4 })]);
+      return SR.collapseGameModels(g).models[0].movement_n === 4;
+    })(), 'a feed showing one row can still know there were four');
+  chk('a paywalled row is kept as it came',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [{ creator_slug: 'moose', model_slug: 'moose-cfb', locked: true }]);
+      var rows = SR.collapseGameModels(g).models;
+      return rows.length === 1 && rows[0].locked === true && rows[0].late === undefined;
+    })());
+  chk('a game with no rows is left alone',
+    SR.collapseGameModels(srGame('G1', 'A', 'B', [])).models.length === 0
+    && SR.collapseGames(null) === null);
+  chk('every games feed passes through the collapse on arrival',
+    function () {
+      var i = CODE.indexOf('async function api(');
+      var body = CODE.slice(i, i + 1500);
+      return /path\.indexOf\('\/v1\/games'\)===0\)collapseGames\(d\.games\)/.test(body);
+    }, 'a reader that bypassed it could render a replaced number as current');
+  chk('the lock length is read from meta when the server states one',
+    /LOCK_MIN=lockMinutes\(META\)/.test(CODE));
+
+  /* ---- which prior row a new post would replace ----------------------- */
+  chk('a live pre-lock row from this model is a prior submission',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS', [SR_MINE]),
+      'moose', 'moose-cfb') !== null);
+  chk('another creator\'s row on the same game is not this model\'s submission',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'blerm', model_slug: 'blerm-cfb' }]), 'moose', 'moose-cfb') === null);
+  chk('another MODEL of the same creator is not this model\'s submission',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-nfl' }]), 'moose', 'moose-cfb') === null);
+  /* these three are stored but are not on the wall, so a new pre-lock live
+     post is a first submission and must not be reported as a replacement */
+  chk('a late row is not on the wall, so re-posting over it is a first submission',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-cfb', late: true }]),
+      'moose', 'moose-cfb') === null);
+  chk('test and backfill rows are not on the wall either',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-cfb', data_origin: 'test' }]),
+      'moose', 'moose-cfb') === null
+    && SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-cfb', data_origin: 'backfill' }]),
+      'moose', 'moose-cfb') === null);
+  chk('a row with no data_origin at all is live, as the rest of the page reads it',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-cfb' }]), 'moose', 'moose-cfb') !== null);
+  chk('with several prior rows the latest is the one being replaced',
+    (function () {
+      var p = SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+        [srSub('2026-08-25T12:00:00Z'), srSub('2026-09-01T12:00:00Z')]), 'moose', 'moose-cfb');
+      return p && p.received_at === '2026-09-01T12:00:00Z';
+    })());
+
+  /* ---- the scan, against the schedule the pre-flight already fetched --- */
+  var SR_SCHED = [srGame('G1', 'UMASS', 'RUTGERS', [SR_MINE]),
+                  srGame('G2', 'TOLEDO', 'MICHIGAN STATE', []),
+                  srGame('G3', 'FRESNO STATE', 'USC', [SR_MINE])];
+  chk('the scan separates games being replaced from ones that are new',
+    (function () {
+      var s = SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE'),
+         srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb', SR_NOW);
+      return s.n === 2 && s.fresh === 1 && s.unmatched === 0 && s.nLocked === 0;
+    })(), { got: SR.slateRevisionScan(SR_SCHED,
+      [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE'),
+       srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb', SR_NOW) });
+  chk('the scan names the games, so the note can list them',
+    (function () {
+      var s = SR.slateRevisionScan(SR_SCHED, [srRow('UMASS', 'RUTGERS')], 'moose', 'moose-cfb', SR_NOW);
+      return s.revised.length === 1 && s.revised[0].home === 'RUTGERS'
+        && s.revised[0].away === 'UMASS'
+        && s.revised[0].received_at === '2026-08-23T14:00:00Z';
+    })());
+  chk('a row on no scheduled game is counted apart, never guessed at',
+    (function () {
+      var s = SR.slateRevisionScan(SR_SCHED, [srRow('NOWHERE STATE', 'ATLANTIS')],
+        'moose', 'moose-cfb', SR_NOW);
+      return s.unmatched === 1 && s.n === 0 && s.fresh === 0;
+    })());
+  chk('a first-time slate reports nothing being replaced',
+    (function () {
+      var s = SR.slateRevisionScan(SR_SCHED,
+        [srRow('TOLEDO', 'MICHIGAN STATE')], 'moose', 'moose-cfb', SR_NOW);
+      return s.n === 0 && s.fresh === 1;
+    })());
+  chk('a game that has already locked is counted as locked, not as new or replaced',
+    (function () {
+      var lockedNow = new Date('2026-09-03T19:40:00Z').getTime();
+      var s = SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')], 'moose', 'moose-cfb', lockedNow);
+      return s.nLocked === 2 && s.n === 0 && s.fresh === 0 && s.locked[0].home === 'RUTGERS';
+    })(), { got: SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')], 'moose', 'moose-cfb',
+        new Date('2026-09-03T19:40:00Z').getTime()) });
+
+  /* ---- and says so before the creator posts --------------------------- */
+  chk('nothing is said when nothing is replaced and nothing is locked',
+    SR.slateRevisionHTML({ revised: [], n: 0, fresh: 4, unmatched: 0, locked: [], nLocked: 0 }) === '');
+  chk('the note says the post REPLACES the numbers on the wall, and names the games',
+    (function () {
+      var h = SR.slateRevisionHTML(SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')],
+        'moose', 'moose-cfb', SR_NOW));
+      return /replaces it on the wall/.test(h) && /RUTGERS/.test(h)
+        && /latest submission received before the lock, 30 minutes before kickoff/.test(h)
+        && /1 game here has no submission yet/.test(h)
+        && !/will not change the board/.test(h);
+    })(), { got: SR.slateRevisionHTML(SR.slateRevisionScan(SR_SCHED,
+      [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')],
+      'moose', 'moose-cfb', SR_NOW)) });
+  chk('a slate whose games have locked is warned that those rows will not count',
+    (function () {
+      var h = SR.slateRevisionHTML(SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb',
+        new Date('2026-09-03T19:40:00Z').getTime()));
+      return /2 games here have already locked/.test(h) && /will not count/.test(h)
+        && /RUTGERS/.test(h) && /USC/.test(h);
+    })());
+
+  /* ---- the receipt, from the server's own counts ----------------------- */
+  chk('a post that replaced nothing and was not late adds nothing to the receipt',
+    SR.slateMovementHTML({ resolved: 9, first: 9, movement: 0, late: 0 }) === '');
+  chk('a mixed post says how many numbers were replaced and how many were new',
+    (function () {
+      var h = SR.slateMovementHTML({ resolved: 12, first: 4, movement: 8 });
+      return /8 rows replaced numbers you had already posted/.test(h)
+        && /the wall shows the new ones now/.test(h)
+        && /4 rows were new on the wall/.test(h)
+        && !/does not change the wall/.test(h);
+    })(), { got: SR.slateMovementHTML({ resolved: 12, first: 4, movement: 8 }) });
+  chk('a re-post of an already-posted week says the wall now shows it',
+    (function () {
+      var h = SR.slateMovementHTML({ resolved: 16, first: 0, movement: 16 });
+      return /16 rows replaced numbers/.test(h) && /shows the new ones now/.test(h)
+        && /keep posting and editing a game until it locks/.test(h);
+    })());
+  chk('the receipt says where the replaced numbers went',
+    (function () {
+      var h = SR.slateMovementHTML({ resolved: 16, first: 0, movement: 16 });
+      return /stored as movement/.test(h) && /My submissions/.test(h);
+    })());
+  chk('rows that arrived after the lock are named as not counting',
+    (function () {
+      var h = SR.slateMovementHTML({ resolved: 10, first: 0, movement: 10, late: 3 });
+      return /3 rows arrived after their games locked and do not count/.test(h)
+        && /30 minutes before kickoff/.test(h);
+    })(), { got: SR.slateMovementHTML({ resolved: 10, first: 0, movement: 10, late: 3 }) });
+  /* the old headline branch is gone: a re-post IS a slate that is in */
+  chk('a re-post is headlined as a slate that is in, and says the wall moved',
+    function () {
+      var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ');
+      return !/Stored as revisions/.test(shown)
+        && /the wall shows these numbers now/.test(shown);
+    },
+    'the receipt headline');
+  chk('an all-late post is not reported as refused',
+    function () {
+      var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ');
+      return /Every row arrived after its game locked/.test(shown);
+    });
+  /* A function nobody calls explains nothing. These two hold the WIRING --
+     both of these were removable with every other test on this page still
+     green, which is the same shape of gap that let a suite pass over an
+     uploader creators could not use. */
+  chk('the receipt actually prints the movement note',
+    function () {
+      var i = CODE.indexOf('async function slateSend');
+      if (i < 0) return false;
+      var body = CODE.slice(i, i + 22000);
+      return body.indexOf('slateMovementHTML(c2)') >= 0
+        && body.indexOf('slateMovementHTML(c2)') > body.indexOf('Dry run:');
+    },
+    'the server counts replacements and the creator has to be told what that means');
+  chk('the check run actually prints the pre-post note',
+    function () {
+      var i = CODE.indexOf('async function slateSend');
+      if (i < 0) return false;
+      var body = CODE.slice(i, i + 22000);
+      return /revHtml=slateRevisionHTML\(slateRevisionScan\(/.test(body)
+        && /innerHTML=pfHtml\+alignHtml\+revHtml\+/.test(body);
+    },
+    'finding out on the wall afterwards is what this is meant to replace');
+
+  /* ---- the wall row carries the count -------------------------------- */
+  chk('the board explains the +n it prints beside a pick',
+    (function () {
+      var e = SR.BOARD_LEGEND.filter(function (x) { return /\+n/.test(x.k); })[0];
+      return e && /latest/i.test(e.long) && /movement/i.test(e.long) && /lock/i.test(e.long);
+    })(), { keys: SR.BOARD_LEGEND.map(function (x) { return x.k; }) });
+  chk('and explains the lock chip on a game header',
+    (function () {
+      var e = SR.BOARD_LEGEND.filter(function (x) { return /LOCK/.test(x.k); })[0];
+      return e && /thirty minutes before kickoff/.test(e.long);
+    })());
+  chk('the rules page states the lock rule, not the first-submission one',
+    (function () {
+      var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ');
+      return /latest live submission received before the lock/.test(shown)
+        && !/Why the first submission is the graded one/.test(shown)
+        && !/first pre-kickoff submission on a game is the one that counts/.test(shown);
+    })());
+  /* a replacement changes nothing the fingerprint used to look at, so a
+     wall left open on screen kept saying nothing had arrived */
+  chk('the live fingerprint notices a replacement arriving',
+    (function () {
+      var g0 = { game_id: 'G1', home: 'RUTGERS', away: 'UMASS', kickoff_at: '2026-09-03T20:00:00Z',
+                 models: [{ creator_slug: 'moose', model_slug: 'moose-cfb', movement_n: 1 }] };
+      var g1 = { game_id: 'G1', home: 'RUTGERS', away: 'UMASS', kickoff_at: '2026-09-03T20:00:00Z',
+                 models: [{ creator_slug: 'moose', model_slug: 'moose-cfb', movement_n: 2 }] };
+      return SR.liveFingerprint([g0]) !== SR.liveFingerprint([g1]);
+    })());
+} else {
+  chk('the re-upload path is defined', false);
+}
+
+/* ---- a row's identity is its GAME, not its line number in a spreadsheet -
+   slateAlignToSchedule has always said adopting the schedule's id is "the
+   part that matters", and the condition guarding it (`!c.game_ref`) could
+   never be true: slateBuildRows gives every row a ref, synthesising one from
+   the file's ROW NUMBER when the file carries no id. So a game re-exported
+   with one more game above it arrived under a different ref than the same
+   game the week before. */
+if (typeof sandbox.slateAlignToSchedule === 'function' && typeof sandbox.SLATE_SYNTH_REF !== 'undefined') {
+  var SA = sandbox;
+  var SA_SCHED = [{ game_id: '2026_01_UMASS_RUT', away: 'UMASS', home: 'RUTGERS',
+                    kickoff_at: '2026-09-03T20:00:00Z' }];
+  chk('a ref this page synthesised is replaced by the schedule\'s own game id',
+    (function () {
+      var a = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: 'R7_UMASS_RUTGERS', away_team: 'UMASS', home_team: 'RUTGERS',
+           kickoff: '2026-09-03T20:00:00Z' }]);
+      return a.rows[0].game_ref === '2026_01_UMASS_RUT';
+    })(), { got: SA.slateAlignToSchedule(SA_SCHED,
+      [{ game_ref: 'R7_UMASS_RUTGERS', away_team: 'UMASS', home_team: 'RUTGERS',
+         kickoff: '2026-09-03T20:00:00Z' }]).rows[0] });
+  chk('the same game at a different row number lands on the same ref',
+    (function () {
+      var one = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: 'R2_UMASS_RUTGERS', away_team: 'UMASS', home_team: 'RUTGERS',
+           kickoff: '2026-09-03T20:00:00Z' }]).rows[0].game_ref;
+      var two = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: 'R41_UMASS_RUTGERS', away_team: 'UMASS', home_team: 'RUTGERS',
+           kickoff: '2026-09-03T20:00:00Z' }]).rows[0].game_ref;
+      return one === two && one === '2026_01_UMASS_RUT';
+    })(), 'this is what made a corrected slate unrecognisable as the same picks');
+  chk('a ref the creator\'s own file supplied is never overwritten',
+    (function () {
+      var a = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: '2026_01_NE_SEA', away_team: 'UMASS', home_team: 'RUTGERS',
+           kickoff: '2026-09-03T20:00:00Z' }]);
+      return a.rows[0].game_ref === '2026_01_NE_SEA';
+    })(), 'the export carries real ids and they are the creator\'s, not ours');
+  chk('a row that matches no scheduled game keeps the ref it arrived with',
+    (function () {
+      var a = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: 'R3_NOWHERE_ATLANTIS', away_team: 'NOWHERE STATE',
+           home_team: 'ATLANTIS', kickoff: '2026-09-03T20:00:00Z' }]);
+      return a.rows[0].game_ref === 'R3_NOWHERE_ATLANTIS';
+    })());
+  chk('the synthesised-ref shape is the one slateBuildRows actually builds',
+    SA.SLATE_SYNTH_REF.test('R7_UMASS_RUTGERS') && !SA.SLATE_SYNTH_REF.test('2026_01_NE_SEA'));
+} else {
+  chk('the schedule-id adoption path is defined', false);
+}
+
+/* ---- the alignment dictionary belongs to one pre-flight ---------------- */
+chk('the pre-flight clears the schedule it aligns against before it can return',
+  function () {
+    var i = CODE.indexOf('async function slatePreflight');
+    if (i < 0) return false;
+    var head = CODE.slice(i, i + 6000);
+    var clear = head.indexOf('SLATE.serverGames=null');
+    var ret = head.indexOf('return {level:');
+    var fill = head.indexOf('SLATE.serverGames=list');
+    /* cleared BEFORE any path can return, and refilled only from a list this
+       pre-flight actually fetched for this sport, season and week */
+    return clear >= 0 && ret > 0 && fill > 0 && clear < ret && clear < fill;
+  },
+  'an NFL slate left its schedule behind and a college slate was aligned against it');
+
+/* ---- the week the FILE states, not the one the box is still holding ----- */
+chk('a second upload is not posted under the previous upload\'s week',
+  function () {
+    var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ');
+    return /if\(wk!==null&&!SLATE\.multiWeek&&\$\('slWeek'\)\)/.test(shown)
+      && !/!SLATE\.multiWeek&&\$\('slWeek'\)&&!\$\('slWeek'\)\.value/.test(shown);
+  },
+  'the guard was true only on the first upload of a session');
+
+/* =======================================================================
+   THE AUDIT PASS: the security helpers and the answer layer.
+   ======================================================================= */
+(function auditPass() {
+  var S9 = sandbox;
+  if (typeof S9.safeUrl !== 'function') { chk('the page defines safeUrl', false); return; }
+
+  /* ---- URLs a creator supplied go into href/src: only http(s) survives -- */
+  chk('an https URL is kept as written', S9.safeUrl('https://example.com/a?b=1') === 'https://example.com/a?b=1');
+  chk('an http URL is kept', S9.safeUrl('http://example.com') === 'http://example.com/');
+  chk('a javascript: URL is refused even though it escapes cleanly',
+    S9.safeUrl('javascript:alert(1)') === '' && S9.safeUrl('JAVASCRIPT:alert(1)') === '');
+  chk('a data: URL is refused', S9.safeUrl('data:text/html,<b>x</b>') === '');
+  chk('a bare path or an empty value is not a link', S9.safeUrl('/x') === '' && S9.safeUrl('') === '' && S9.safeUrl(null) === '');
+  chk('an X handle is reduced to what x.com routes',
+    S9.safeHandle('@edge_desk') === 'edge_desk' && S9.safeHandle('../evil?x') === 'evilx');
+  chk('the profile links use the safe forms',
+    /safeUrl\(c\.website_url\)/.test(CODE) && /safeHandle\(c\.x_handle\)/.test(CODE)
+    && /safeUrl\(r\.logo_url\)/.test(CODE));
+
+  /* ---- the session token goes to the API base, so the base is guarded -- */
+  chk('a staging function on supabase can be named in the URL',
+    S9.apiOverrideAllowed('https://abc.supabase.co/functions/v1') === true);
+  chk('a local server can be named in the URL',
+    S9.apiOverrideAllowed('http://localhost:54321/functions/v1') === true);
+  chk('an arbitrary host cannot be handed the session from a link',
+    S9.apiOverrideAllowed('https://attacker.example/functions/v1') === false
+    && S9.apiOverrideAllowed('https://supabase.co.attacker.example/') === false);
+  chk('a plain-http remote host is refused', S9.apiOverrideAllowed('http://abc.supabase.co/') === false);
+  chk('the API base is resolved through that guard', /var API = resolveApiBase\(\);/.test(CODE));
+  chk('sign-out revokes the refresh token at the auth server, not only locally',
+    /auth\/v1\/logout/.test(CODE.slice(CODE.indexOf('function clearSession'), CODE.indexOf('function clearSession') + 900)));
+  chk('the schedule loader is drawn only for an account the server calls admin',
+    function () {
+      var i = CODE.indexOf('var isAdmin=!!(me&&me.admin)');
+      return i > 0 && /if\(addable\.length&&isAdmin\)body\+=/.test(CODE.slice(i, i + 900));
+    });
+  chk('the page ships the same CSP baseline as the research terminal',
+    /http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'/.test(html));
+
+  /* ---- the answer layer: one vocabulary for a game --------------------- */
+  chk('disagreement is banded on sigma and nothing else',
+    S9.disagreementLevel(0.4) === 'LOW' && S9.disagreementLevel(1.2) === 'MODERATE'
+    && S9.disagreementLevel(1.5) === 'HIGH' && S9.disagreementLevel(null) === null);
+  chk('a home-stated spread is said for the team it favours',
+    S9.favSpread({ home: 'IND', away: 'BAL' }, -4) === 'IND -4.0'
+    && S9.favSpread({ home: 'IND', away: 'BAL' }, 2.5) === 'BAL -2.5'
+    && S9.favSpread({ home: 'IND', away: 'BAL' }, 0) === 'PK');
+  function mk(cs, side, spread) {
+    return { creator_slug: cs, model_slug: cs + '-m', pick_side: side, projected_spread: spread,
+      received_at: '2026-09-01T12:00:00Z', locked: false, late: false };
+  }
+  var room = { game_id: 'g1', home: 'IND', away: 'BAL', kickoff_at: '2099-01-01T00:00:00Z',
+    consensus: { locked: false, n: 3, spread_mean: 1.2, spread_median: 1.0, spread_stdev: 2.8,
+      spread_min: -2.5, spread_max: 4.0, pct_picks_home: 0.67 },
+    models: [mk('a', 'home', -2.5), mk('b', 'home', 1.0), mk('c', 'away', 4.0)] };
+  var gs = S9.gameSummary(room, null);
+  chk('the summary counts the reporting models and the pick split from the rows on screen',
+    gs && gs.n === 3 && gs.nPicks === 3 && gs.lean === 'home' && gs.leanN === 2);
+  chk('range and disagreement come straight from the consensus row',
+    gs && gs.range === 6.5 && gs.level === 'HIGH');
+  chk('the sentence describes, escapes, and never recommends',
+    function () {
+      var t = S9.gameWhyText(S9.gameSummary({ game_id: 'g2', home: '<b>H', away: 'A',
+        kickoff_at: '2099-01-01T00:00:00Z',
+        consensus: { locked: false, n: 3, spread_mean: 1, spread_median: 1, spread_stdev: 2.8, spread_min: -2, spread_max: 4 },
+        models: [mk('a', 'home', -2), mk('b', 'home', 1), mk('c', 'away', 4)] }, null));
+      return t.indexOf('&lt;b&gt;H') >= 0 && t.indexOf('<b>H') < 0 && !/bet|edge|should/i.test(t);
+    });
+  chk('a locked game keeps its count and yields no number',
+    function () {
+      var l = S9.gameSummary({ game_id: 'g3', home: 'H', away: 'A', consensus: { locked: true, n: 4 },
+        models: [{ creator_slug: 'x', model_slug: 'y', locked: true }] }, null);
+      return l.locked && l.n === 4 && l.median === null && l.sigma === null
+        && S9.gameCardHTML(l, {}).indexOf('member view') >= 0 && S9.gameWhyText(l) === '';
+    });
+  chk('the room picks each game once, for one reason, upcoming and open only',
+    function () {
+      var settled = { game_id: 'g4', home: 'H', away: 'A', kickoff_at: '2020-01-01T00:00:00Z',
+        result: { home_score: 1, away_score: 0, closing_spread: -1 },
+        consensus: { locked: false, n: 5, spread_mean: -3, spread_median: -3, spread_stdev: 5, spread_min: -9, spread_max: 1 },
+        models: [mk('a', 'home', -9), mk('b', 'home', 1)] };
+      var out = S9.roomHighlights([room, settled], null);
+      var keys = out.map(function (x) { return x.s.key; });
+      return out.length === 1 && keys[0] === 'g1' && out[0].tag === 'Most divided';
+    });
+  chk('the splits table renders the open games ranked by sigma',
+    /Disagreement/.test(S9.splitsTableHTML([room], null, 5)) && S9.splitsTableHTML([], null, 5) === '');
+
+  /* ---- behaviour, computed only from what is on the wire --------------- */
+  chk('behaviour needs three games and says its sample',
+    function () {
+      var g = function (id, sp, mn) {
+        return { game_id: id, home: 'H', away: 'A', kickoff_at: '2020-01-01T00:00:00Z',
+          result: { home_score: 1, away_score: 0, closing_spread: -3 },
+          models: [{ creator_slug: 'c', model_slug: 'm', projected_spread: sp, pick_side: 'home', movement_n: mn }] };
+      };
+      var b = S9.modelBehavior([g(1, -5, 1), g(2, -3, 2), g(3, -1, 1)], 'c', 'm');
+      return b.rows === 3 && b.deltaN === 3 && near(b.absDelta, 4 / 3) && near(b.revPct, 1 / 3)
+        && S9.modelBehaviorHTML(S9.modelBehavior([g(1, -5, 1)], 'c', 'm'), null) === ''
+        && /n=3/.test(S9.modelBehaviorHTML(b, 50));
+    });
+
+  /* ---- the upload path names its stages ------------------------------- */
+  chk('the seven stages are the seven the panel walks',
+    S9.SLATE_STEPS.join('|') === 'Upload|Detect|Map|Verify|Dry run|Post|Receipt');
+  chk('the strip marks the current stage and the ones behind it',
+    function () {
+      var h = S9.slateStepsHTML(4);
+      return (h.match(/class="done"/g) || []).length === 3 && (h.match(/class="on"/g) || []).length === 1;
+    });
+  chk('a post ends on the receipt and a dry run stops before it',
+    /if\(!dry\)slateStep\(7\)/.test(CODE) && /slateStep\(\(\(c2\.rejected\|\|0\)>0/.test(CODE));
+  chk('the receipt is the server\'s counts and says whose clock it printed',
+    /Server received/.test(CODE) && /Posted from this device/.test(CODE) && /LAST_RECEIPT=\{/.test(CODE));
+})();
+
+/* =======================================================================
+   THE 0-0 PLACEHOLDER — the admin results form that produced it.
+
+   home_score:+$('rH'+i).value  posts an EMPTY box as 0, because the unary
+   plus on an empty string is 0 and not NaN, so the "Scores required" guard
+   never fired and one click on Settle with nothing typed settled a game
+   0-0. The form has to refuse an empty box, refuse 0-0 outright, and list
+   a game already settled 0-0 so it can be settled again with the score.
+   ======================================================================= */
+(function adminResultsForm() {
+  var ADMIN2 = fs.readFileSync(path.join(HERE, 'admin.html'), 'utf8');
+  chk('the results form refuses an empty score box instead of posting it as 0',
+    /function settleScore\(/.test(ADMIN2) && !/home_score:\+\$\(/.test(ADMIN2)
+      && /Scores required/.test(ADMIN2));
+  chk('and refuses a 0-0 final outright',
+    /0-0 is not a final/.test(ADMIN2));
+  chk('a game settled 0-0 is listed for settling again, and says why',
+    /isPlaceholderResult\(g\.result\)/.test(ADMIN2) && /a placeholder, not a final/.test(ADMIN2));
+  /* the parser itself, lifted out of the page and driven */
+  var m = /function settleScore\(v\)\{[\s\S]*?\n\}/.exec(ADMIN2);
+  var settleScore = null;
+  try { settleScore = m ? new Function(m[0] + '; return settleScore;')() : null; } catch (e) { settleScore = null; }
+  chk('an empty box is NaN, a whole number is a score, and nothing else is',
+    !!settleScore && isNaN(settleScore('')) && isNaN(settleScore('  ')) && isNaN(settleScore(null))
+      && settleScore('31') === 31 && settleScore(' 0 ') === 0 && isNaN(settleScore('17.5'))
+      && isNaN(settleScore('-1')) && isNaN(settleScore('x')) && isNaN(settleScore('999')),
+    { lifted: !!settleScore });
+})();
 
 /* ---- report ------------------------------------------------------------ */
 failures.forEach(function (f) {

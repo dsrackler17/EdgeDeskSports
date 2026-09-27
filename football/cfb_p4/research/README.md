@@ -25,6 +25,33 @@ node ../tests.js                   # must exit 0
 
 Requires `python3` with `pandas`, `numpy` and `pyarrow`, and `node`.
 
+## The quarterback experiments
+
+Two files, and the second exists because the first one's harness could not be
+trusted with its own answer.
+
+```
+node fit_qb_quality.js   # the substitute metric (yards per dropback, success
+                         # rate) fitted when no EPA feed was believed to exist
+node fit_qb_epa.js       # REAL passing EPA from football/fbs_epa, with five
+                         # named leaks in the first harness closed
+```
+
+`fit_qb_epa.js` closes: the 2025-seeded rating state (it replays **cold** from
+2014 and asserts no seed survived), the whole-season league centre (strictly
+lagged), the quarterback read out of the game being predicted (**two arms**,
+pregame and participant, never pooled), selection on the folds that reported it
+(**nested** chronological selection), and games absorbed before they had
+finished (a **completion buffer**, so two games at one kickoff cannot see each
+other).
+
+Its answer, on the arm a price could actually use: **+0.008 points of spread a
+game, 95% CI [−0.030, +0.048]**. It fails the predeclared rule, `points_applied`
+stays false, and the reasons are in `qb_epa.json` beside the numbers.
+`football/validation/validate_features.js --external` folds both arms through
+the repository-wide promotion gate rather than letting the experiment grade
+itself; the participant arm is marked leakage-failed there, because it is.
+
 ## Discipline rules (why the numbers can be trusted)
 
 * **Chronological only.** One sequential pass in kickoff order. A game is

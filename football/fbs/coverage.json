@@ -1,0 +1,556 @@
+{
+ "version": "edgedesk_fbs_universe_v1.0.0",
+ "season": 2026,
+ "source": "cfbfastR-data schedules 2026",
+ "generated_at": "2026-09-27T17:07:13.246Z",
+ "counts": {
+  "fbs_teams": 138,
+  "non_fbs_teams": 100,
+  "conferences": 11,
+  "rows": 888
+ },
+ "p4": {
+  "ids": [
+   "acc",
+   "big12",
+   "bigten",
+   "sec"
+  ],
+  "season_used": 2025,
+  "basis": "the 2025 Power 4 membership — the latest season the trained universe carries. 2026 realignment is NOT reflected in this grouping, and each team’s conference itself still comes from the 2026 schedule feed."
+ },
+ "conferences": [
+  {
+   "id": "acc",
+   "label": "ACC",
+   "source_label": "ACC",
+   "group": "p4",
+   "known": true,
+   "teams": 17
+  },
+  {
+   "id": "big12",
+   "label": "Big 12",
+   "source_label": "Big 12",
+   "group": "p4",
+   "known": true,
+   "teams": 16
+  },
+  {
+   "id": "bigten",
+   "label": "Big Ten",
+   "source_label": "Big Ten",
+   "group": "p4",
+   "known": true,
+   "teams": 18
+  },
+  {
+   "id": "sec",
+   "label": "SEC",
+   "source_label": "SEC",
+   "group": "p4",
+   "known": true,
+   "teams": 16
+  },
+  {
+   "id": "american",
+   "label": "American",
+   "source_label": "American Athletic",
+   "group": "other",
+   "known": true,
+   "teams": 14
+  },
+  {
+   "id": "cusa",
+   "label": "Conference USA",
+   "source_label": "Conference USA",
+   "group": "other",
+   "known": true,
+   "teams": 10
+  },
+  {
+   "id": "mac",
+   "label": "MAC",
+   "source_label": "Mid-American",
+   "group": "other",
+   "known": true,
+   "teams": 13
+  },
+  {
+   "id": "mwc",
+   "label": "Mountain West",
+   "source_label": "Mountain West",
+   "group": "other",
+   "known": true,
+   "teams": 10
+  },
+  {
+   "id": "pac12",
+   "label": "Pac-12",
+   "source_label": "Pac-12",
+   "group": "other",
+   "known": true,
+   "teams": 8
+  },
+  {
+   "id": "sunbelt",
+   "label": "Sun Belt",
+   "source_label": "Sun Belt",
+   "group": "other",
+   "known": true,
+   "teams": 14
+  },
+  {
+   "id": "independents",
+   "label": "Independents",
+   "source_label": "FBS Independents",
+   "group": "independent",
+   "known": true,
+   "teams": 2
+  }
+ ],
+ "unmapped_teams": [],
+ "ambiguous_aliases": [],
+ "missing_conference": [],
+ "unexpected_conferences": [],
+ "conflicting_conferences": [],
+ "fbs_teams_without_rating": [],
+ "duplicate_games": [],
+ "games_missing_projection": [],
+ "odds_unmatched": [],
+ "slate": {
+  "total": 60,
+  "by_group": {
+   "other": 31,
+   "p4": 31,
+   "independent": 2
+  },
+  "by_matchup": {
+   "conference": 51,
+   "non_conference": 6,
+   "fbs_fcs": 3
+  },
+  "by_conference": {
+   "cusa": 3,
+   "american": 8,
+   "acc": 9,
+   "bigten": 8,
+   "sec": 7,
+   "big12": 7,
+   "independents": 2,
+   "mwc": 5,
+   "mac": 6,
+   "sunbelt": 7,
+   "pac12": 4
+  }
+ },
+ "ok": true,
+ "lookahead_days": 10,
+ "absorbed_games": 331,
+ "engine": {
+  "model_version": "edgedesk_cfb_p4_v1.0.0",
+  "trained_through": 2025,
+  "rating_backbone": {
+   "source": "edgedesk_national_rankings_v1",
+   "season": 2026,
+   "teams_loaded": 138,
+   "teams_active_in_pricing": 0,
+   "calibration_measured": false,
+   "mode": "SHADOW_RESEARCH",
+   "production_strength_source": "walk-forward-tested CFB replay with current score + efficiency absorption",
+   "availability_stripped_before_matchup": true,
+   "problem": null
+  },
+  "efficiency_replay": {
+   "source_schema": "edgedesk_cfb_engine_efficiency_v1",
+   "season": 2026,
+   "artifact_games_with_stats": 518,
+   "artifact_team_game_rows": 1024,
+   "games_absorbed_with_stats": 293,
+   "team_rows_absorbed": 476,
+   "final_games_without_play_stats": 38,
+   "missing_game_ids": [
+    "401856699",
+    "401856816",
+    "401868188",
+    "401856806",
+    "401862781",
+    "401856698",
+    "401858464",
+    "401858466",
+    "401862785",
+    "401858239",
+    "401860892",
+    "401867909",
+    "401869961",
+    "401858238",
+    "401862780",
+    "401856696",
+    "401856814",
+    "401856881",
+    "401862784",
+    "401869931"
+   ],
+   "measured_features": [
+    "success_rate",
+    "early_down_success",
+    "yards_per_play",
+    "sack_rate_allowed",
+    "stuff_rate",
+    "third_down_rate",
+    "red_zone_success",
+    "pass_rate",
+    "plays_per_game"
+   ],
+   "unavailable_features": [
+    "epa_per_play",
+    "epa_pass",
+    "epa_rush",
+    "passing_down_success",
+    "expl_epa_rate",
+    "front_disruption_rate",
+    "points_per_drive",
+    "start_field_position"
+   ],
+   "basis": "score/margin is absorbed for every completed game; play-level efficiency is additionally absorbed only where the public rankings play feed has a real team-game row"
+  }
+ },
+ "projection_status": {
+  "PREDICTED": 60
+ },
+ "weather": {
+  "requested": 58,
+  "answered": 57,
+  "dome": 2,
+  "no_venue": 0,
+  "failed": 1,
+  "carried": 1,
+  "carry_dropped": 0,
+  "failures": {
+   "HTTP 429": 1
+  },
+  "host": "api.open-meteo.com",
+  "summary": "57 of 58 outdoor game(s) got a forecast; 2 indoor venue(s) needed none; 0 had no coordinates to locate one; 1 request(s) failed; 1 carried the last observed forecast forward at its real age (HTTP 429 x1)"
+ },
+ "spread_recommendation": {
+  "NO_MARKET": 60
+ },
+ "engine_efficiency": {
+  "schema": "edgedesk_cfb_engine_efficiency_v1",
+  "season": 2026,
+  "games_in_artifact": 518,
+  "completed_games_replayed": 331,
+  "completed_games_with_both_team_efficiency": 183,
+  "missing_count": 148,
+  "problem": null
+ },
+ "checks": [
+  {
+   "name": "current-season engine efficiency artifact matches the pricing replay",
+   "ok": true,
+   "detail": {
+    "schema": "edgedesk_cfb_engine_efficiency_v1",
+    "season": 2026,
+    "problem": null
+   }
+  },
+  {
+   "name": "canonical neutral-field ETSR research map covers every active FBS program",
+   "ok": true,
+   "detail": {
+    "source": "edgedesk_national_rankings_v1",
+    "teams": 138,
+    "active_in_pricing": 0,
+    "mode": "SHADOW_RESEARCH",
+    "expected": 138,
+    "problem": null,
+    "missing": []
+   }
+  },
+  {
+   "name": "every active FBS team resolves to a canonical identity",
+   "ok": true,
+   "detail": {
+    "unmapped": 0,
+    "fbs_teams": 138
+   }
+  },
+  {
+   "name": "every active FBS team carries a conference or Independent classification",
+   "ok": true,
+   "detail": {
+    "without": []
+   }
+  },
+  {
+   "name": "every FBS-vs-FBS game has both teams in the active pricing rating state",
+   "ok": true,
+   "detail": {
+    "unrated": [],
+    "pricing_source": "walk-forward-tested CFB replay with current score + efficiency absorption"
+   }
+  },
+  {
+   "name": "no canonical game appears twice on the slate",
+   "ok": true,
+   "detail": {
+    "duplicates": [],
+    "dropped_as_duplicate": 0
+   }
+  },
+  {
+   "name": "games with no Power 4 participant are on the slate",
+   "ok": true,
+   "detail": {
+    "non_power_games": 29,
+    "total": 60,
+    "example": [
+     "Western Kentucky @ New Mexico State",
+     "North Texas @ Tulsa",
+     "Liberty @ Delaware"
+    ]
+   }
+  },
+  {
+   "name": "a game between two different conferences is never a conference game",
+   "ok": true,
+   "detail": {
+    "wrong": []
+   }
+  },
+  {
+   "name": "every conference game has exactly one shared, non-independent conference",
+   "ok": true,
+   "detail": {
+    "conference_games": 51,
+    "wrong": 0
+   }
+  },
+  {
+   "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
+   "ok": true,
+   "detail": {
+    "fbs_fcs_games": 3,
+    "graded": []
+   }
+  },
+  {
+   "name": "a game with no quote produces no line, no gap and no spread edge",
+   "ok": true,
+   "detail": {
+    "offenders": [],
+    "n": 0
+   }
+  },
+  {
+   "name": "the market layer is present and able to separate a live quote from a stale one",
+   "ok": true,
+   "detail": {
+    "orientation_guard": true,
+    "projects": true
+   }
+  },
+  {
+   "name": "the slate the board renders and the slate the export writes are the same list",
+   "ok": true,
+   "detail": {
+    "slate": 60,
+    "audit_total": 60
+   }
+  },
+  {
+   "name": "selecting two conferences never duplicates a game",
+   "ok": true,
+   "detail": {
+    "pairs_tested": 55,
+    "problem": null
+   }
+  },
+  {
+   "name": "a program that changed conference reads its OWN season in each season's universe",
+   "ok": true,
+   "detail": {
+    "tested": true,
+    "prior_season": 2025,
+    "realigned": 9,
+    "moves": [
+     {
+      "team": "UTEP",
+      "from": "Conference USA",
+      "to": "Mountain West"
+     },
+     {
+      "team": "Fresno State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Boise State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Texas State",
+      "from": "Sun Belt",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Northern Illinois",
+      "from": "MAC",
+      "to": "Mountain West"
+     },
+     {
+      "team": "Colorado State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Utah State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Louisiana Tech",
+      "from": "Conference USA",
+      "to": "Sun Belt"
+     },
+     {
+      "team": "San Diego State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     }
+    ]
+   }
+  },
+  {
+   "name": "the active FBS count comes from the feed, not from a stored number",
+   "ok": true,
+   "detail": {
+    "derived": 138,
+    "universe": 138
+   }
+  }
+ ],
+ "failures": [],
+ "warnings": [
+  {
+   "name": "completed games waiting on play-level efficiency",
+   "count": 148,
+   "detail": [
+    {
+     "game_id": "401856767",
+     "game": "Bethune-Cookman @ UCF",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401866409",
+     "game": "UAlbany @ Buffalo",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401864425",
+     "game": "West Georgia @ Kennesaw State",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401864424",
+     "game": "Merrimack @ Delaware",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401856663",
+     "game": "Arkansas-Pine Bluff @ Missouri",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401858422",
+     "game": "Eastern Illinois @ Minnesota",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401856768",
+     "game": "Idaho @ Utah",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401858435",
+     "game": "Indiana State @ Purdue",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401866623",
+     "game": "North Carolina A&T @ Georgia State",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401856769",
+     "game": "Long Island University @ Kansas",
+     "home": true,
+     "away": false
+    }
+   ],
+   "effect": "production team strength still comes from the replay; missing play-level rows leave that team on older efficiency state and confidence stays lower until the play feed lands. ETSR remains research context until calibrated."
+  }
+ ],
+ "season_aware": {
+  "tested": true,
+  "prior_season": 2025,
+  "realigned": 9,
+  "moves": [
+   {
+    "team": "UTEP",
+    "from": "Conference USA",
+    "to": "Mountain West"
+   },
+   {
+    "team": "Fresno State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Boise State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Texas State",
+    "from": "Sun Belt",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Northern Illinois",
+    "from": "MAC",
+    "to": "Mountain West"
+   },
+   {
+    "team": "Colorado State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Utah State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Louisiana Tech",
+    "from": "Conference USA",
+    "to": "Sun Belt"
+   },
+   {
+    "team": "San Diego State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   }
+  ]
+ }
+}

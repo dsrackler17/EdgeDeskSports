@@ -1,0 +1,1324 @@
+#!/usr/bin/env node
+/* ============================================================================
+   THE WEEKLY NATIONAL RANKINGS BUILD.
+
+   Runs in GitHub Actions, writes checked-in artifacts, and computes nothing in
+   anybody's browser. There is no Edge Function anywhere in this path and there
+   is no manual step.
+
+     PLAYER ARTIFACTS (football/players/)      talent, units, scheme
+     cfbfastR play attribution + schedules     performance, opponent adjustment
+     the public closing-line archive           the market column, kept OUTSIDE
+                                               every model number
+                    |
+                    v
+     TALENT  +  OPPONENT-ADJUSTED PERFORMANCE  ->  ETSR  ->  RANKS  ->  SNAPSHOT
+
+   WHERE EACH SEASON'S NUMBERS COME FROM, and why they differ:
+     * THIS season's talent is read from the COMMITTED player artifact, so the
+       rankings are demonstrably built on the same ratings the Players page
+       shows rather than on a private recomputation.
+     * EARLIER seasons are reconstructed here from the same modules, because
+       the player artifact only publishes the current season and the prior-
+       season ETSR chain needs the others. The reconstruction uses the same
+       code, so the two agree by construction.
+
+     node football/rankings/build_rankings.js [--season 2026] [--seasons 4]
+          [--cache DIR] [--dry] [--quiet] [--allow-anomalies]
+
+   IT IS IDEMPOTENT. Every artifact is written through writeIfChanged, which
+   ignores the two timestamps; the weekly snapshot is addressed by (season,
+   week ordinal) so re-running the same week overwrites one file rather than
+   appending a second; a team-game is deduplicated on (team, game_id) before
+   anything is aggregated; and a completed week is never rewritten at all.
+   Running it three times in a row produces the same tree as running it once.
+
+   Exit 0 = written or unchanged. Exit 1 = could not run, or a SEVERE anomaly
+   was found and the build refused to publish it.
+   ========================================================================== */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const zlib = require('zlib');
+
+const B = require('../players/build_players.js');
+const EPIR = require('../players/epir.js');
+const UNITS = require('../players/units.js');
+const PSCHEME = require('../players/scheme.js');
+const CFG = require('./config.js');
+const PERF = require('./performance.js');
+const ENGINE_EFF = require('./engine_efficiency.js');
+const TAL = require('./talent.js');
+const ETSR = require('./etsr.js');
+const SPECIAL = require('./special_teams.js');
+const COACHING_PROGRAM = require('./coaching_program.js');
+const HISTORY = require('./history.js');
+const FEEDCACHE = require('../data/feed_cache.js');
+
+const DIR = __dirname;
+const PLAYERS_DIR = path.join(DIR, '..', 'players');
+const BOX_DIR = path.join(DIR, '..', 'data', 'box');
+const OUT_CUR = path.join(DIR, 'current.json');
+const OUT_ENGINE_EFF = path.join(DIR, 'engine_efficiency.json');
+const OUT_SNAP = path.join(DIR, 'snapshots');
+const OUT_HEALTH = path.join(DIR, 'health.json');
+const OUT_HIST = path.join(DIR, 'history.json');
+const OUT_PARAMS = path.join(DIR, 'params.js');
+const OVERRIDES = path.join(DIR, 'overrides.json');
+const COACHING_CONTINUITY = path.join(DIR, '..', 'coaching', 'continuity.json');
+
+function arg(name, fb) {
+  const i = process.argv.indexOf('--' + name);
+  if (i < 0) return fb;
+  const v = process.argv[i + 1];
+  return (v == null || v.startsWith('--')) ? true : v;
+}
+const QUIET = !!arg('quiet', false);
+const DRY = !!arg('dry', false);
+const ALLOW_ANOM = !!arg('allow-anomalies', false);
+/* BACKFILL. `--through-week N` builds the board as it would have stood with
+   only games up to week ordinal N — the way a weekly history is reconstructed
+   for a season already in progress. A snapshot written this way is MARKED as
+   reconstructed rather than passed off as a contemporaneous record: the talent
+   half comes from today's committed player artifact, which did not exist in
+   the week being reconstructed, and pretending otherwise would be the same
+   sin as backdating a rating. `--rewrite-history` is required before the build
+   will touch a snapshot for a week that is already finished. */
+const THROUGH = arg('through-week', null);
+const THROUGH_ORD = (THROUGH == null || THROUGH === true) ? null : +THROUGH;
+const REWRITE_HISTORY = !!arg('rewrite-history', false);
+const CACHE = arg('cache', process.env.EDP_CACHE || '') || null;
+function log(...a) { if (!QUIET) console.log(...a); }
+function defaultSeason() { const d = new Date(); return (d.getMonth() <= 1) ? d.getFullYear() - 1 : d.getFullYear(); }
+const SEASON = +(arg('season', defaultSeason()));
+const SEASONS_BACK = +(arg('seasons', 4));
+
+const r1 = v => (v == null || !isFinite(v)) ? null : Math.round(v * 10) / 10;
+const r2 = v => (v == null || !isFinite(v)) ? null : Math.round(v * 100) / 100;
+const r3 = v => (v == null || !isFinite(v)) ? null : Math.round(v * 1000) / 1000;
+const isNum = x => typeof x === 'number' && isFinite(x);
+function readJson(f, fb) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { return fb; } }
+function digestOf(o) { return crypto.createHash('sha1').update(JSON.stringify(o)).digest('hex').slice(0, 16); }
+function mean(a) { return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; }
+
+/* --------------------------------------------------------------------------
+   WEEK RESOLUTION (§25)
+   Calendar weeks are useless here: the postseason restarts its own numbering,
+   and a bye is not a week of football. Everything downstream orders on the
+   ORDINAL below, and the label is what a human reads.
+   -------------------------------------------------------------------------- */
+const POSTSEASON_OFFSET = 20;
+function weekOrdinal(seasonType, week) {
+  const w = week == null ? 0 : +week;
+  return /post/i.test(String(seasonType || '')) ? POSTSEASON_OFFSET + w : w;
+}
+function weekLabel(seasonType, week, notes) {
+  if (/post/i.test(String(seasonType || ''))) {
+    const n = String(notes || '');
+    if (/playoff/i.test(n)) return 'Playoff';
+    if (/national championship/i.test(n)) return 'National championship';
+    return 'Bowls';
+  }
+  if (week === 0) return 'Week 0';
+  return 'Week ' + week;
+}
+/* The point in the season this build represents: the latest completed game. */
+/* A game is FINAL when a feed this pipeline reads says it was played. The
+   schedule feed says so with a score; the box feed says so by carrying both
+   teams' lines. `finalSource` is set by reconcileFinality() and is why the
+   board no longer waits on the slower of the two. */
+function isFinal(g) {
+  if (!g.completed) return false;
+  return g.home_points != null || !!g.final_source;
+}
+function resolveWeek(sched) {
+  let best = null;
+  for (const g of sched.games) {
+    if (!isFinal(g)) continue;
+    const ord = weekOrdinal(g.season_type, g.week);
+    if (best == null || ord > best.ordinal) {
+      best = { ordinal: ord, week: g.week, season_type: g.season_type || 'regular',
+        label: weekLabel(g.season_type, g.week, g.notes) };
+    }
+  }
+  if (!best) return { ordinal: 0, week: 0, season_type: 'regular', label: 'Preseason',
+    basis: 'no completed game in this season’s schedule yet, so this is a preseason board built on talent and last season' };
+  best.basis = 'the latest completed game in the schedule feed. Ordinal ' + best.ordinal
+    + ' (regular-season weeks keep their number; the postseason is offset by ' + POSTSEASON_OFFSET + ' so it sorts after them).';
+  return best;
+}
+
+/* --------------------------------------------------------------------------
+   THE MARKET-IMPLIED POWER COLUMN
+   Solved from the public closing-line archive, entirely SEPARATELY, and never
+   fed into ETSR. It exists so the two can be seen disagreeing.
+   -------------------------------------------------------------------------- */
+async function marketPower(season, sched, cacheDir) {
+  const LINE = 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/betting/csv/cfb_line_odds.csv.gz';
+  const TEAMS = 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/teams/teams_colors_logos.csv';
+  async function get(url, name) {
+    const cached = cacheDir ? path.join(cacheDir, name) : null;
+    /* the line archive is one whole-history file that grows every week, so it
+       is volatile by name and never served from a stale cache */
+    if (cached && FEEDCACHE.usable(cached, name, season, 64)) return fs.readFileSync(cached);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + name);
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (cached) { fs.mkdirSync(cacheDir, { recursive: true }); fs.writeFileSync(cached, buf); }
+    return buf;
+  }
+  let text, abbrToId = {};
+  try {
+    const t = (await get(TEAMS, 'teams_colors_logos.csv')).toString('utf8');
+    for (const row of B.parseCsvObjects(t)) if (row.abbreviation && row.team_id) abbrToId[String(row.abbreviation).toUpperCase()] = String(row.team_id);
+    text = zlib.gunzipSync(await get(LINE, 'cfb_line_odds.csv.gz')).toString('utf8');
+  } catch (e) {
+    return { available: false, reason: 'the public closing-line archive did not load: ' + e.message };
+  }
+  const nl = text.indexOf('\n');
+  const ix = B.headerIndex(text.slice(0, nl));
+  for (const k of ['game_id', 'market_type', 'abbr', 'lines', 'book', 'home_team_id', 'away_team_id', 'season']) {
+    if (ix[k] == null) return { available: false, reason: 'the line archive is missing column ' + k };
+  }
+  const byGame = {}, seen = new Set();
+  let pos = nl + 1, dupes = 0;
+  while (pos < text.length) {
+    let end = text.indexOf('\n', pos); if (end < 0) end = text.length;
+    const line = text.charCodeAt(end - 1) === 13 ? text.slice(pos, end - 1) : text.slice(pos, end);
+    pos = end + 1;
+    if (!line) continue;
+    const r = B.splitLine(line);
+    if (Math.floor(+r[ix.season]) !== season) continue;
+    if (r[ix.market_type] !== 'spread') continue;
+    const val = +r[ix.lines];
+    if (!isFinite(val)) continue;
+    const sig = r[ix.game_id] + '|' + r[ix.abbr] + '|' + r[ix.book] + '|' + val;
+    if (seen.has(sig)) { dupes++; continue; }
+    seen.add(sig);
+    const teamId = abbrToId[String(r[ix.abbr] || '').toUpperCase()];
+    if (!teamId) continue;
+    let handicap = null;
+    if (teamId === String(r[ix.home_team_id])) handicap = val;
+    else if (teamId === String(r[ix.away_team_id])) handicap = -val;
+    else continue;
+    (byGame[r[ix.game_id]] = byGame[r[ix.game_id]] || []).push(handicap);
+  }
+  function median(a) { const s = a.slice().sort((x, y) => x - y); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
+
+  /* one row per game: expected home margin = −handicap */
+  const rows = [];
+  for (const g of sched.games) {
+    const h = byGame[String(g.game_id)];
+    if (!h || !h.length) continue;
+    if (!g.home_fbs || !g.away_fbs) continue;
+    rows.push({ home: g.home, away: g.away, margin: -median(h), neutral: !!g.neutral });
+  }
+  if (rows.length < 60) {
+    return { available: false, rows: rows.length,
+      reason: 'only ' + rows.length + ' of this season’s FBS-vs-FBS games are in the public line archive — too few to solve a market power rating from' };
+  }
+  /* solve power[] and one home-field constant by alternating least squares */
+  const P = {}, teams = new Set();
+  for (const r of rows) { teams.add(r.home); teams.add(r.away); }
+  for (const t of teams) P[t] = 0;
+  let hfa = 2.5, it = 0, movement = Infinity;
+  for (it = 0; it < 500 && movement > 1e-7; it++) {
+    const acc = {}, cnt = {};
+    for (const r of rows) {
+      const h = r.neutral ? 0 : hfa;
+      acc[r.home] = (acc[r.home] || 0) + (r.margin - h + P[r.away]); cnt[r.home] = (cnt[r.home] || 0) + 1;
+      acc[r.away] = (acc[r.away] || 0) + (P[r.home] + h - r.margin); cnt[r.away] = (cnt[r.away] || 0) + 1;
+    }
+    movement = 0;
+    for (const t of teams) {
+      if (!cnt[t]) continue;
+      const nv = acc[t] / cnt[t];
+      movement = Math.max(movement, Math.abs(nv - P[t]));
+      P[t] = nv;
+    }
+    let hs = 0, hn = 0;
+    for (const r of rows) { if (r.neutral) continue; hs += r.margin - (P[r.home] - P[r.away]); hn++; }
+    if (hn) hfa = hs / hn;
+    /* re-centre so the market power scale means the same thing ETSR's does */
+    const m = mean(Array.from(teams).map(t => P[t]));
+    for (const t of teams) P[t] -= m;
+  }
+  return { available: true, power: P, home_field: r2(hfa), games: rows.length,
+    duplicates_dropped: dupes, iterations: it, converged: movement <= 1e-7,
+    basis: 'a least-squares power rating solved from the consensus closing spread of this season’s FBS-vs-FBS games, with one league home-field constant solved alongside it and the scale re-centred on zero. It is a SEPARATE measurement of the same teams and is an input to nothing.' };
+}
+
+/* --------------------------------------------------------------------------
+   ONE SEASON'S PLAYER LAYER, reconstructed
+   -------------------------------------------------------------------------- */
+function seasonPlayerLayer(y, play, sched, roster, careerBase) {
+  const teamAgg = B.teamSeasonAggregates(play.teamGames, sched.fbs);
+  const metrics = {};
+  for (const met of B.ADJ_METRICS) {
+    const a = B.opponentAdjust(play.teamGames, sched.fbs, met);
+    if (a) metrics[met.id] = a;
+  }
+  const norm = B.normaliseSeason(y, play, roster.cur, roster.prev, sched, { metrics, teamAgg });
+  const rated = EPIR.rateSeason(norm.players, {
+    coverage: B.coverageGates(play.counts, play.teamGameCount),
+    leagueAllowed: norm.leagueAllowed, season: y,
+    careerIndex: careerBase, params: null
+  });
+  const scheme = PSCHEME.buildProfiles(teamAgg.off, teamAgg.def, { season: y, rosterPositions: {} });
+  const byTeam = {};
+  for (const r of rated.ratings) if (r.team_key) (byTeam[r.team_key] = byTeam[r.team_key] || []).push(r);
+  const prevByTeam = {};
+  const units = {};
+  for (const key of Object.keys(byTeam)) {
+    if (!sched.fbs[key]) continue;
+    const profile = scheme.teams[key] || null;
+    units[key] = UNITS.rateTeam(key, sched.name[key] || key, byTeam[key],
+      { teamContext: PSCHEME.unitContext(profile), season: y });
+  }
+  return { ratings: rated.ratings, units, scheme, byTeam };
+}
+
+/* attach returning value and transfers, which need the PREVIOUS season's
+   ratings for the same team */
+function attachContinuity(units, byTeam, prevByTeam, curKeys, prevSeason) {
+  for (const key of Object.keys(units)) {
+    const prev = prevByTeam[key] || [];
+    const back = {};
+    for (const r of (byTeam[key] || [])) if (r.key) back[r.key] = 1;
+    units[key].returning = UNITS.returningValue(prev, back, { prior_season: prevSeason });
+    const incoming = (byTeam[key] || []).filter(r => r.status === 'transfer');
+    const outgoing = prev.filter(r => r.key && curKeys[r.key] && curKeys[r.key] !== key);
+    units[key].transfers = UNITS.transferValue(incoming, outgoing, {});
+  }
+}
+
+/* front-seven returning value, which the run-defence power score reads */
+function frontReturning(unitsTeam) {
+  const ret = unitsTeam && unitsTeam.returning;
+  if (!ret || !ret.by_group) return null;
+  const vals = [];
+  for (const g of ['DL', 'EDGE', 'LB']) {
+    const b = ret.by_group[g];
+    if (b && b.value_returning != null) vals.push(b.value_returning);
+  }
+  return vals.length ? mean(vals) : null;
+}
+
+/* --------------------------------------------------------------------------
+   ONE SEASON'S ETSR
+   -------------------------------------------------------------------------- */
+function seasonEtsr(y, unitsBySeason, perf, schemeHead, prevEtsr, leagueSlope, params) {
+  const talentOut = TAL.build(unitsBySeason, {});
+  const keys = Object.keys(talentOut.teams);
+  const context = {};
+  for (const k of keys) {
+    const t = talentOut.teams[k];
+    t._front_returning = frontReturning(unitsBySeason[k]);
+    const p = perf.teams[k] || null;
+    const cont = TAL.continuityRating(t, unitsBySeason[k]);
+    const sch = schemeHead ? schemeHead[k] : null;
+    context[k] = {
+      talent: t, performance: p, continuity: cont,
+      sample: p ? p.sample : { games: 0, fbs_equivalent_games: 0, distinct_opponents: 0 },
+      scheme_confidence: sch ? (sch.confidence != null ? sch.confidence : (sch.confidence && sch.confidence.value)) : null,
+      prev_etsr: prevEtsr ? prevEtsr[k] : null,
+      league_slope: leagueSlope
+    };
+  }
+  const built = ETSR.build({ keys, context, params });
+  return { talent: talentOut, context, rows: built.rows, centre: built.centre, keys };
+}
+
+/* the league carryover slope, measured the way this repo already measures it:
+   regress each season's ratings on the previous season's, across teams */
+function measureSlope(chain) {
+  const pairs = [];
+  const seasons = Object.keys(chain).map(Number).sort((a, b) => a - b);
+  for (let i = 1; i < seasons.length; i++) {
+    const a = chain[seasons[i - 1]], b = chain[seasons[i]];
+    if (!a || !b) continue;
+    const xs = [], ys = [];
+    for (const k of Object.keys(b)) {
+      if (!isNum(a[k]) || !isNum(b[k])) continue;
+      xs.push(a[k]); ys.push(b[k]);
+    }
+    if (xs.length < 20) { pairs.push({ from: seasons[i - 1], to: seasons[i], n: xs.length, slope: null, r2: null, reason: 'fewer than twenty teams rated in both seasons — refused rather than guessed' }); continue; }
+    const mx = mean(xs), my = mean(ys);
+    let sxy = 0, sxx = 0, syy = 0;
+    for (let j = 0; j < xs.length; j++) { const dx = xs[j] - mx, dy = ys[j] - my; sxy += dx * dy; sxx += dx * dx; syy += dy * dy; }
+    if (!(sxx > 0)) { pairs.push({ from: seasons[i - 1], to: seasons[i], n: xs.length, slope: null, reason: 'no variance' }); continue; }
+    pairs.push({ from: seasons[i - 1], to: seasons[i], n: xs.length,
+      slope: r3(sxy / sxx), r2: r3(syy > 0 ? (sxy * sxy) / (sxx * syy) : null) });
+  }
+  const usable = pairs.filter(p => isNum(p.slope));
+  const recent = usable.slice(-3);
+  return { pairs, value: recent.length ? r3(mean(recent.map(p => p.slope))) : null,
+    measured: recent.length > 0, used_pairs: recent.length,
+    trend: usable.length >= 2 ? r3(usable[usable.length - 1].slope - usable[0].slope) : null,
+    basis: 'each consecutive pair of seasons is regressed team-on-team and the mean of the most recent pairs is the league slope. When last season stops predicting this one, this number falls on its own — nobody edits a constant. It is the portal/NIL argument answered with arithmetic.' };
+}
+
+/* -------------------------------------------------------------------------- */
+async function main() {
+  const startedAt = new Date().toISOString();
+  const seasons = [];
+  for (let y = SEASON - SEASONS_BACK + 1; y <= SEASON; y++) seasons.push(y);
+  log(`EdgeDesk national rankings build — seasons ${seasons[0]}..${SEASON}`);
+
+  /* ---- the player artifact is the contract this build stands on ---- */
+  const playersCur = readJson(path.join(PLAYERS_DIR, 'current.json'), null);
+  if (!playersCur) { console.error('football/players/current.json is missing — run the player build first'); return 1; }
+  if (playersCur.season !== SEASON) {
+    console.error(`the committed player artifact is season ${playersCur.season} but this build is season ${SEASON}. Refusing to mix seasons.`);
+    return 1;
+  }
+  log(`  player artifact: season ${playersCur.season} week ${playersCur.week}, ${playersCur.player_count} players, built ${String(playersCur.generated_at).slice(0, 10)}`);
+
+  /* ---- load ---- */
+  const sched = {}, roster = {}, play = {};
+  for (const y of seasons) sched[y] = await B.loadSchedule(y);
+  for (const y of seasons.concat([seasons[0] - 1])) roster[y] = await B.loadRoster(y);
+  for (const y of seasons) {
+    const t0 = Date.now();
+    play[y] = await B.loadPlays(y, sched[y]);
+    log(`  ${y}: ${play[y].counts.plays} plays, ${play[y].teamGameCount} team-games (${Date.now() - t0}ms)`);
+  }
+
+  /* ---- SPECIAL TEAMS: join the box feed onto the play table's team-games ----
+     The play table carries the field-goal half (distance, make, block); the
+     ESPN box carries punting, extra points, returns and touchbacks, and the
+     opponent's own row in the same game carries this team's coverage. The
+     expected-FG curve is fitted across EVERY season in the window so the
+     season in progress is not scored against a curve fitted on itself. */
+  /* ---- BACKFILL PRUNE. Everything after the requested week ordinal is put
+     back to unplayed, in the CURRENT season only: earlier seasons are history
+     the prior-season chain needs whole. ---- */
+  if (THROUGH_ORD != null) {
+    if (!(THROUGH_ORD >= 0)) { console.error('--through-week needs a week ordinal >= 0'); return 1; }
+    let droppedGames = 0, droppedTeamGames = 0;
+    /* the play table carries a week number but no season type, and the
+       postseason restarts its numbering — so the ordinal comes from the
+       SCHEDULE, by game id, and a game the schedule does not know is judged on
+       its regular-season week rather than guessed at */
+    const ordByGame = {};
+    for (const g of sched[SEASON].games) ordByGame[String(g.game_id)] = weekOrdinal(g.season_type, g.week);
+    for (const g of sched[SEASON].games) {
+      if (weekOrdinal(g.season_type, g.week) <= THROUGH_ORD) continue;
+      if (g.completed || g.home_points != null) droppedGames++;
+      g.completed = false; g.home_points = null; g.away_points = null;
+    }
+    for (const key of Array.from(play[SEASON].teamGames.keys())) {
+      const tg = play[SEASON].teamGames.get(key);
+      const ord = ordByGame[String(tg.game_id)];
+      if ((ord == null ? weekOrdinal('regular', tg.week) : ord) <= THROUGH_ORD) continue;
+      play[SEASON].teamGames.delete(key);
+      droppedTeamGames++;
+    }
+    log(`  backfill: rebuilding as of week ordinal ${THROUGH_ORD} — ${droppedGames} later completed game(s) and ${droppedTeamGames} later team-game(s) removed`);
+  }
+
+  /* ---- WHICH GAMES ACTUALLY HAPPENED ----
+     Two feeds, two publication schedules, and the schedule is not always the
+     faster one. A game the ESPN box carries for BOTH teams is a game that was
+     played, whatever the schedule feed still says about it; the build takes
+     that as evidence, says where the finality came from, and never invents a
+     score it was not given. */
+  const boxes = {}, finality = {};
+  for (const y of seasons) boxes[y] = readJson(path.join(BOX_DIR, `${y}.json`), null);
+  for (const y of seasons) {
+    finality[y] = reconcileFinality(sched[y], boxes[y]);
+    if (finality[y].confirmed_by_box.length) {
+      log(`  ${y}: ${finality[y].confirmed_by_box.length} game(s) the box says were played and the schedule feed still calls unplayed:`);
+      for (const g of finality[y].confirmed_by_box.slice(0, 6)) log(`      ${g.game_id}  ${g.away} @ ${g.home}  (${g.start_date || 'no kickoff time'})`);
+    }
+  }
+
+  /* ---- and the team-games that exist ONLY in the box ---- */
+  const boxOnly = {};
+  for (const y of seasons) {
+    const weekByGame = {};
+    for (const g of sched[y].games) weekByGame[String(g.game_id)] = g.week;
+    boxOnly[y] = SPECIAL.boxOnlyTeamGames(play[y].teamGames, boxes[y],
+      { blankTG: B.blankTG, blankST: B.blankST, week_by_game: weekByGame });
+    for (const row of boxOnly[y].rows) play[y].teamGames.set(row.game_id + '|' + row.team, row);
+    if (boxOnly[y].rows.length) {
+      log(`  ${y}: ${boxOnly[y].rows.length} team-game(s) added from the box alone — a kicking line and no scrimmage plays`);
+    }
+  }
+
+  const allKicks = [];
+  for (const y of seasons) play[y].teamGames.forEach(tg => allKicks.push(tg));
+  const stReports = {};
+  for (const y of seasons) {
+    const boxY = boxes[y];
+    stReports[y] = SPECIAL.attach(play[y].teamGames, boxY, { kick_source: allKicks });
+    const r = stReports[y];
+    log(`  ${y}: special teams — ${r.box_joined}/${r.team_games} team-games joined the box`
+      + `, ${r.coverage_joined} with opponent coverage, ${r.fg_scored} with a scored field goal`
+      + (r.box_available ? '' : ` (${r.box_reason})`));
+  }
+
+  /* ---- per-season player layer, walked forward so nothing sees its future -- */
+  const careerBase = {};
+  const layers = {}, perfBySeason = {};
+  for (const y of seasons) {
+    const career = {};
+    for (const k of Object.keys(careerBase)) {
+      const rowsK = careerBase[k].filter(r => r.season < y);
+      if (rowsK.length) career[k] = rowsK;
+    }
+    layers[y] = seasonPlayerLayer(y, play[y], sched[y], { cur: roster[y], prev: roster[y - 1] || null }, career);
+    for (const r of layers[y].ratings) {
+      if (!r.key) continue;
+      (careerBase[r.key] = careerBase[r.key] || []).push({ season: y, z: r.components.quality.z_raw, n: r.sample_size, dc: r.data_completeness });
+    }
+    perfBySeason[y] = PERF.build(play[y].teamGames, { fbs: sched[y].fbs });
+    log(`  ${y}: ${Object.keys(layers[y].units).length} team unit records, performance converged: ${perfBySeason[y].diagnostics.all_converged}`);
+  }
+  /* continuity needs the previous season's ratings for the same team */
+  for (let i = 0; i < seasons.length; i++) {
+    const y = seasons[i], prevY = seasons[i - 1];
+    const curKeys = {};
+    for (const r of layers[y].ratings) if (r.key) curKeys[r.key] = r.team_key;
+    attachContinuity(layers[y].units, layers[y].byTeam, prevY ? layers[prevY].byTeam : {}, curKeys, prevY || null);
+  }
+
+  /* ---- the ETSR chain, oldest season first ---- */
+  const params = readJson(OUT_PARAMS.replace(/\.js$/, '.json'), null) || tryParams();
+  const chain = {}, seasonBuilds = {};
+  let slope = { value: null, measured: false, pairs: [], basis: 'not yet measured on the first pass' };
+  for (const y of seasons) {
+    const prev = chain[y - 1] || null;
+    const built = seasonEtsr(y, layers[y].units, perfBySeason[y], null, prev, slope.value, params);
+    seasonBuilds[y] = built;
+    chain[y] = {};
+    for (const k of built.keys) if (built.rows[k].available) chain[y][k] = built.rows[k].etsr;
+    slope = measureSlope(chain);
+  }
+  /* a second pass, now that the slope has been measured from the chain itself */
+  const finalSlope = measureSlope(chain);
+  log(`  league carryover slope: ${finalSlope.value == null ? 'not measurable' : finalSlope.value} over ${finalSlope.used_pairs} recent season pairs`);
+  for (const y of seasons) {
+    const prev = chain[y - 1] || null;
+    seasonBuilds[y] = seasonEtsr(y, layers[y].units, perfBySeason[y], null, prev, finalSlope.value, params);
+    chain[y] = {};
+    for (const k of seasonBuilds[y].keys) if (seasonBuilds[y].rows[k].available) chain[y][k] = seasonBuilds[y].rows[k].etsr;
+  }
+
+  /* ---- THIS season, using the COMMITTED player artifact for talent ---- */
+  const cur = SEASON;
+  const curUnits = {};
+  for (const k of Object.keys(playersCur.teams)) curUnits[k] = playersCur.teams[k];
+  const curTalent = TAL.build(curUnits, {});
+  for (const k of Object.keys(curTalent.teams)) curTalent.teams[k]._front_returning = frontReturningFromSummary(playersCur.teams[k]);
+
+  const perf = perfBySeason[cur];
+  const schemeHead = playersCur.scheme || {};
+
+  /* Coaching / Program is built BEFORE the current ETSR pass so the team
+     rating can see its measured score and reliability. The promotion switch
+     remains OFF in config until walk-forward validation clears it. */
+  const coachingSeasons = {};
+  for (const y of seasons) {
+    const sb = seasonBuilds[y];
+    if (!sb || !perfBySeason[y]) continue;
+    coachingSeasons[y] = {
+      /* Talent follows the published contract. Roster management uses the
+         committed current team artifact, while development uses same-player
+         reconstructed season records so transfers cannot receive development
+         credit merely for arriving talented. */
+      talent: y === cur ? curTalent.teams : sb.talent.teams,
+      performance: perfBySeason[y].teams,
+      roster: y === cur ? playersCur.teams : layers[y].units,
+      players: layers[y].byTeam
+    };
+  }
+  const coachingContinuityRaw = readJson(COACHING_CONTINUITY, null);
+  const coachingContinuity = coachingContinuityRaw && coachingContinuityRaw.season === cur
+    ? coachingContinuityRaw : null;
+  const coachingProgram = COACHING_PROGRAM.build(Object.keys(curTalent.teams), {
+    season: cur,
+    seasons: coachingSeasons,
+    staff: coachingContinuity,
+    roster_last_updated: playersCur.generated_at || null,
+    development_last_updated: startedAt,
+    /* The committed current roster and current staff artifact did not exist
+       at old weekly cutoffs. Refuse those two current-season inputs during a
+       reconstruction rather than leaking future personnel information. */
+    allow_current: THROUGH_ORD == null
+  });
+
+  const context = {};
+  for (const k of Object.keys(curTalent.teams)) {
+    const t = curTalent.teams[k];
+    const p = perf.teams[k] || null;
+    const sh = schemeHead[k] || null;
+    const cp = coachingProgram.teams[k] || COACHING_PROGRAM.emptyTeam(k);
+    context[k] = {
+      talent: t, performance: p,
+      continuity: TAL.continuityRating(t, playersCur.teams[k]),
+      sample: p ? p.sample : { games: 0, fbs_equivalent_games: 0, distinct_opponents: 0, non_fbs_share: null },
+      scheme_confidence: sh ? sh.confidence : null,
+      prev_etsr: chain[cur - 1] ? chain[cur - 1][k] : null,
+      league_slope: finalSlope.value,
+      coaching_program: {
+        rating: cp.coaching_program_rating,
+        reliability: cp.coaching_program_reliability,
+        available: cp.coaching_program_available
+      }
+    };
+  }
+  const built = ETSR.build({ keys: Object.keys(curTalent.teams), context, params });
+
+  /* ---- assemble the team records ---- */
+  const week = resolveWeek(sched[cur]);
+  const market = await marketPower(cur, sched[cur], CACHE);
+  const overrides = readJson(OVERRIDES, { overrides: [] });
+  const teams = {};
+  for (const k of Object.keys(built.rows)) {
+    const row = built.rows[k], t = curTalent.teams[k], p = perf.teams[k] || null;
+    const cp = coachingProgram.teams[k] || COACHING_PROGRAM.emptyTeam(k);
+    const rdp = ETSR.runDefencePower(t, p);
+    const cont = context[k].continuity;
+    const align = TAL.alignment(t, schemeHead[k] ? { offense: schemeHead[k].offense, defense: schemeHead[k].defense } : null);
+    const oppDeltas = [];
+    if (p) for (const m of (p.offense.used || []).concat(p.defense.used || [])) if (isNum(m.delta)) oppDeltas.push(Math.abs(m.delta / (m.league || 1)));
+    teams[k] = {
+      key: k, team: (playersCur.teams[k] && playersCur.teams[k].team) || sched[cur].name[k] || k,
+      conference: (playersCur.teams[k] && playersCur.teams[k].conference) || sched[cur].conf[k] || null,
+      etsr: row.etsr, etsr_raw: row.etsr_raw, available: row.available,
+      weights: row.weights, prior: row.prior,
+      performance_points: row.performance_points, talent_points: row.talent_points,
+      scalars: row.scalars, confidence: row.confidence, gates: row.gates,
+      home_field: row.home_field,
+      talent: {
+        rating: t.rating, components: t.components, missing: t.missing,
+        starter_quality: t.starter_quality, rotation_quality: t.rotation_quality,
+        depth_quality: t.depth_quality, missing_units: t.missing_units,
+        returning: t.returning, transfers: t.transfers, availability: t.availability,
+        recruiting: t.recruiting, smoothing: t.smoothing,
+        may_move: t.may_move, may_not_move: t.may_not_move
+      },
+      units: unitRatings(t),
+      performance: p ? {
+        rating: p.rating, net_z: r3(p.net_z),
+        offense: p.offense.rating, defense: p.defense.rating,
+        special_teams: p.special_teams.rating,
+        run_offense: p.sub_units.run_offense.rating, pass_offense: p.sub_units.pass_offense.rating,
+        run_defense: p.sub_units.run_defense.rating, pass_defense: p.sub_units.pass_defense.rating,
+        opponent_delta: r3(oppDeltas.length ? mean(oppDeltas) : null),
+        reliability: { net: p.reliability, offense: p.offense.reliability, defense: p.defense.reliability,
+          net_z_before_reliability: p.net_z_before_reliability, basis: p.reliability_basis },
+        offense_detail: { used: p.offense.used, missing: p.offense.missing, scored: p.offense.scored,
+          contract: p.offense.contract, reliability: p.offense.reliability },
+        defense_detail: { used: p.defense.used, missing: p.defense.missing, scored: p.defense.scored,
+          contract: p.defense.contract, reliability: p.defense.reliability },
+        sub_units: p.sub_units, sample: p.sample
+      } : { rating: null, available: false, reason: 'this team has produced no attributed play this season' },
+      /* SPECIAL TEAMS as a first-class unit, not the kicker room. Its own
+         rating, its own components, its own reason when it is absent, and it
+         is NOT an input to ETSR — kicking variance is the least repeatable
+         thing on a scoreboard and the team rating is deliberately built
+         without it. It is measured, ranked and shown; it does not move ETSR. */
+      special_teams: p ? Object.assign({}, p.special_teams, {
+        is_etsr_input: false,
+        is_etsr_input_basis: 'special teams is measured and ranked but is not an ETSR input. It is the least repeatable phase of football week to week, and folding it into a neutral-field team rating would move the spread on a variance that does not carry forward. If a walk-forward ever shows it does carry, it enters through a weight in config.js and this flag flips.',
+        provenance: SPECIAL.provenance(p)
+      }) : { rating: null, available: false,
+        reason: 'this team has produced no attributed play this season, so it has no special-teams record either' },
+      depth: { rating: t.depth_quality, basis: 'position-value weighted depth quality behind the projected starters' },
+      continuity: { rating: isNum(cont.value) ? r1(50 + 12 * ((cont.value - 0.5) / 0.18)) : null,
+        raw: r3(cont.value), components: cont.components, missing: cont.missing, coordinator: cont.coordinator,
+        basis: 'returning production VALUE, quarterback and line continuity, returning starters and transfer churn, on the same 0-100 scale as every other rating here' },
+      scheme_fit: { rating: align.available ? r1(50 + 12 * clampZ(align.value)) : null,
+        raw: r3(align.value), available: align.available, reason: align.reason,
+        pairs: align.pairs, basis: align.basis },
+      availability: { rating: t.availability.rating, out_share: t.availability.out_share,
+        unknown_share: t.availability.unknown_share, records: t.availability.records,
+        basis: t.availability.basis },
+      run_defence_power: rdp,
+      coaching_program_schema: cp.coaching_program_schema,
+      coaching_program_rating: cp.coaching_program_rating,
+      coaching_program_raw_score: cp.coaching_program_raw_score,
+      coaching_program_rank: cp.coaching_program_rank,
+      coaching_program_reliability: cp.coaching_program_reliability,
+      coaching_program_observed_weight: cp.coaching_program_observed_weight,
+      coaching_program_reliability_details: cp.coaching_program_reliability_details,
+      coaching_program_candidate_adjustment_points: row.coaching_program_adjustment
+        ? row.coaching_program_adjustment.candidate_points : null,
+      coaching_program_adjustment_points: row.coaching_program_adjustment
+        ? row.coaching_program_adjustment.applied_points : 0,
+      coaching_program_adjustment: row.coaching_program_adjustment,
+      coaching_program_inputs: cp.coaching_program_inputs,
+      coaching_program_warnings: cp.coaching_program_warnings,
+      coaching_program_available: cp.coaching_program_available,
+      coaching_program_affects_etsr: !!(row.coaching_program_adjustment
+        && row.coaching_program_adjustment.affects_etsr),
+      market: ETSR.marketCompare(row.etsr, market.available ? market.power[k] : null)
+    };
+  }
+  function clampZ(v) { return Math.max(-3, Math.min(3, v == null ? 0 : v)); }
+
+  /* ---- ranks ---- */
+  const ranks = ETSR.rankAll(teams);
+  for (const k of Object.keys(teams)) {
+    teams[k].rank = ranks.overall.ranks[k] ? ranks.overall.ranks[k].rank : null;
+    teams[k].ranks = {};
+    for (const cat of Object.keys(ranks)) {
+      const r = ranks[cat].ranks[k];
+      teams[k].ranks[cat] = r ? { rank: r.rank, value: r.value, unranked: !!r.unranked, reason: r.reason || null } : null;
+    }
+    teams[k].coaching_program_rank = teams[k].ranks.coaching_program
+      ? teams[k].ranks.coaching_program.rank : null;
+    teams[k].achievement = ETSR.achievement(k, ranks);
+    teams[k].why = ETSR.why(k, teams, ranks, { team_count: Object.keys(teams).length });
+  }
+
+  /* ---- movement against the last snapshot, and stability ----
+     "The last snapshot" is the latest one strictly BEFORE this week ordinal,
+     which is not the same thing as the file with the previous number: a bye, a
+     cancelled Saturday or a build that did not run leaves a gap, and the
+     comparison across it is still the honest one. The week actually compared
+     against ships inside every movement object. */
+  const allSnaps = loadSnapshots();
+  const prevSnap = HISTORY.previousSnapshot(allSnaps, SEASON, week.ordinal);
+  const prevTeams = prevSnap ? prevSnap.teams : null;
+  const prevMetaBase = prevSnap ? { season: prevSnap.season, week_ordinal: prevSnap.week_ordinal,
+    week_label: prevSnap.week_label, current_ordinal: week.ordinal, current_season: SEASON } : null;
+  for (const k of Object.keys(teams)) {
+    teams[k].movement = ETSR.movement(teams[k], prevTeams ? prevTeams[k] : null, prevMetaBase);
+  }
+  const stab = ETSR.stability(teams, prevTeams, { previous_reconstructed: !!(prevSnap && prevSnap.reconstructed) });
+
+  /* ---- anomalies. A SEVERE one refuses to publish. ---- */
+  const expected = Object.keys(sched[cur].fbs);
+  const anom = ETSR.anomalies(teams, prevTeams, {
+    expected_teams: expected, stability: stab,
+    player_artifact: playersCur.digest || null,
+    previous_player_artifact: (prevSnap && prevSnap.built_on && prevSnap.built_on.player_artifact) || null,
+    missing_snapshot: missingSnapshotCheck(SEASON, week.ordinal, sched[cur])
+  });
+  log(`  anomalies: ${anom.severe} severe, ${anom.warn} warnings`);
+  for (const a of anom.list.filter(x => x.severity === 'severe').slice(0, 12)) log(`    SEVERE ${a.id} ${a.team || ''} — ${a.detail}`);
+  if (anom.severe > 0 && !ALLOW_ANOM) {
+    console.error(`\nREFUSING TO PUBLISH: ${anom.severe} severe anomalies. Fix the input or pass --allow-anomalies deliberately.`);
+    if (!DRY) return 1;
+  }
+
+  /* ---- write ---- */
+  const manifest = {
+    schema: 'edgedesk_national_rankings_v1',
+    schema_version: CFG.SCHEMA_VERSION,
+    versions: Object.assign({}, CFG.VERSIONS, {
+      player_rating: playersCur.versions ? playersCur.versions.player_rating : null,
+      scheme_matchup: playersCur.versions ? playersCur.versions.scheme_matchup : null,
+      simulation: playersCur.versions ? playersCur.versions.simulation : null
+    }),
+    season: cur, week: week.week, week_ordinal: week.ordinal, week_label: week.label,
+    season_type: week.season_type, week_basis: week.basis,
+    data_as_of: startedAt, generated_at: startedAt,
+    built_on: {
+      player_artifact: { season: playersCur.season, week: playersCur.week,
+        generated_at: playersCur.generated_at, digest: playersCur.digest,
+        player_count: playersCur.player_count },
+      seasons_read: seasons,
+      note: 'this season’s talent is read from the committed player artifact; earlier seasons are reconstructed here from the same modules so the prior-season chain exists at all'
+    },
+    team_count: Object.keys(teams).length,
+    /* WHAT THIS BUILD ACTUALLY READ. A weekly rebuild that is quietly reading
+       a cached copy of last week's feed succeeds, commits nothing and freezes
+       the board; these four numbers are how that is seen rather than assumed. */
+    data_freshness: dataFreshness(sched[cur], play[cur], perf, finality[cur]),
+    carryover: finalSlope,
+    coaching_program: { schema: coachingProgram.schema, status: coachingProgram.status,
+      enabled: CFG.coachingProgram.enabled,
+      max_point_adjustment: CFG.coachingProgram.maxPointAdjustment,
+      affects_etsr: !!(CFG.coachingProgram.enabled && CFG.coachingProgram.affectsETSR),
+      apply_to: CFG.coachingProgram.applyTo,
+      formula: CFG.coachingProgram.formula,
+      validation_required: CFG.coachingProgram.validationRequired,
+      final_score_enabled: true,
+      ranking_enabled: true,
+      measured_components: ['talent_conversion', 'multi_season_program_overperformance', 'roster_management_retention', 'development'],
+      observed_not_scored: ['staff_continuity_stability'],
+      unavailable_components: ['game_management'],
+      staff_artifact: coachingContinuity
+        ? { available: true, season: coachingContinuity.season, generated_at: coachingContinuity.generated_at || null }
+        : { available: false, reason: coachingContinuityRaw
+          ? 'coaching continuity artifact season does not match this rankings build'
+          : 'coaching continuity artifact is missing' },
+      note: 'Step 7 candidate layer: the capped coaching/program point translation is computed and audited on the PRIOR / PROGRAM side. coachingProgram.affectsETSR remains false by default, so the applied adjustment is 0 until Step 8 walk-forward validation earns promotion.' },
+    centre: built.centre, centre_basis: built.centre_basis,
+    market: market.available
+      ? { available: true, games: market.games, home_field: market.home_field, iterations: market.iterations,
+          converged: market.converged, duplicates_dropped: market.duplicates_dropped, basis: market.basis, is_input: false }
+      : { available: false, reason: market.reason, is_input: false },
+    performance_diagnostics: perf.diagnostics,
+    stability: stab,
+    anomalies: anom,
+    overrides: { count: (overrides.overrides || []).length, policy: CFG.OVERRIDES,
+      entries: (overrides.overrides || []) },
+    ranks: rankSummary(ranks),
+    teams: teams,
+    notes: [
+      'ETSR is a NEUTRAL-FIELD number in points against an average FBS team. Home field, travel, rest, injuries, the quarterback and the scheme matchup are applied by the matchup layer to produce a game line — none of them is in this rating.',
+      'TALENT and PERFORMANCE are separate ratings and are ranked separately. The gap between them is one of the more useful things on this board and is never averaged away.',
+      'The market is a column, never an input. No number in this file was derived from a betting line.',
+      'No language model produced, adjusted, ranked or explained any rating here. Movement is differenced from component snapshots; "why" is assembled from component ranks.',
+      'A missing input lowers CONFIDENCE and never silently moves a rating.'
+    ]
+  };
+  manifest.digest = digestOf({ t: Object.keys(teams).map(k => [k, teams[k].etsr]), w: week.ordinal, s: cur });
+
+  if (DRY) {
+    log('\ndry run — nothing written');
+    printTop(teams, 15);
+    return anom.severe > 0 && !ALLOW_ANOM ? 1 : 0;
+  }
+
+  fs.mkdirSync(OUT_SNAP, { recursive: true });
+
+  /* POINT-IN-TIME. The current week is refreshed as its games land; an earlier
+     week is finished and is NEVER rewritten — the build refuses rather than
+     asks. Every ranking category's rating AND rank go in, so a question asked
+     in November about what the board said about special teams in week 3 has an
+     answer on file instead of a shrug. */
+  const snapName = `${cur}-w${String(week.ordinal).padStart(2, '0')}.json`;
+  const snapTeams = {};
+  for (const k of Object.keys(teams)) snapTeams[k] = HISTORY.snapshotTeam(teams[k]);
+  const snapshot = {
+    schema: 'edgedesk_rankings_snapshot_v2',
+    season: cur, week: week.week, week_ordinal: week.ordinal, week_label: week.label,
+    season_type: week.season_type,
+    versions: manifest.versions, schema_version: CFG.SCHEMA_VERSION,
+    data_as_of: startedAt, generated_at: startedAt, digest: manifest.digest,
+    carryover: finalSlope, centre: built.centre,
+    categories: HISTORY.categories(),
+    /* WHICH PLAYER ARTIFACT THIS BOARD'S TALENT CAME FROM. Talent is read from
+       the committed player layer, so two snapshots built on two different ones
+       are not comparable on talent — and a reader, the anomaly gate and a
+       future backfill all need to be able to tell. */
+    built_on: { player_artifact: playersCur.digest || null,
+      player_count: playersCur.player_count || null,
+      player_artifact_generated_at: playersCur.generated_at || null },
+    immutability: CFG.HISTORY.immutability_basis,
+    team_count: Object.keys(snapTeams).length,
+    teams: snapTeams
+  };
+  if (THROUGH_ORD != null) {
+    snapshot.reconstructed = true;
+    snapshot.reconstructed_basis = 'built after the fact with --through-week: every game after week ordinal '
+      + THROUGH_ORD + ' was put back to unplayed, but the TALENT half is read from the player artifact as it '
+      + 'stands today, which did not exist in the week being reconstructed. It is a reconstruction of what this '
+      + 'board would say about that week, not a record of what it did say, and it is labelled as one everywhere it appears.';
+  }
+  const snapPath = path.join(OUT_SNAP, snapName);
+  /* IMMUTABILITY. A week that is over is a finished record. Rewriting one
+     needs an explicit flag, so a stray --through-week cannot quietly edit the
+     history the movement column is differenced against. */
+  const laterOnFile = allSnaps.filter(sn => sn.season === cur && sn.week_ordinal > week.ordinal);
+  const snapExists = fs.existsSync(snapPath);
+  if (laterOnFile.length && snapExists && !REWRITE_HISTORY) {
+    console.error(`REFUSING TO REWRITE HISTORY: ${snapName} is a finished week (the board has since reached ordinal `
+      + `${Math.max(...laterOnFile.map(sn => sn.week_ordinal))}). Pass --rewrite-history to do it deliberately.`);
+    return 1;
+  }
+  writeIfChanged(snapPath, JSON.stringify(snapshot));
+  log(`  snapshot written: ${snapName} (${Object.keys(snapTeams).length} teams, ${HISTORY.categories().length} categories)`);
+
+  /* ---- the assembled history artifact, and the compact series the board
+     carries inline. The snapshots are the record; this is the read model. ---- */
+  const snapsNow = loadSnapshots().filter(sn => !(sn.season === cur && sn.week_ordinal === week.ordinal));
+  snapsNow.push(snapshot);
+  const hist = HISTORY.build(snapsNow, Object.keys(teams));
+  hist.season = cur;
+  hist.generated_at = startedAt;
+  hist.versions = manifest.versions;
+  writeIfChanged(OUT_HIST, JSON.stringify(hist));
+  log(`  history written: ${hist.snapshots.length} snapshot(s), ${Object.keys(hist.teams).length} teams`);
+
+  for (const k of Object.keys(teams)) {
+    const series = hist.teams[k] || [];
+    teams[k].history = series.map(r => ({
+      season: r.season, week_ordinal: r.week_ordinal, week_label: r.week_label,
+      etsr: r.etsr, rank: r.rank, confidence: r.confidence,
+      offense: r.categories.offense ? r.categories.offense.value : null,
+      defense: r.categories.defense ? r.categories.defense.value : null,
+      special_teams: r.categories.special_teams ? r.categories.special_teams.value : null,
+      talent: r.categories.talent ? r.categories.talent.value : null,
+      coaching_program: r.categories.coaching_program ? r.categories.coaching_program.value : null,
+      coaching_program_rank: r.categories.coaching_program ? r.categories.coaching_program.rank : null,
+      coaching_program_reliability: r.coaching_program ? r.coaching_program.reliability : null
+    }));
+    teams[k].history_basis = 'every week this team has been on the board, oldest first, straight out of the immutable weekly snapshots. The full per-category series with its deltas is football/rankings/history.json.';
+  }
+  manifest.history = { available: true, artifact: 'football/rankings/history.json',
+    snapshots: hist.snapshots, contract: CFG.HISTORY, categories: hist.categories };
+
+  /* ---- the pipeline health report ---- */
+  const health = pipelineHealth({
+    manifest, teams, ranks, sched: sched[cur], play: play[cur], perf,
+    stReport: stReports[cur], week, season: cur, startedAt, snapshots: hist.snapshots,
+    feedDensity: specialTeamsFeedDensity(cur, seasons)
+  });
+  /* THE BOARD CARRIES THE HEALTH REPORT'S CONTENT, NOT ITS CLOCK.
+     `last_rankings_build` moves on every run by design — it is the run record
+     — and embedding it here would make current.json differ from itself after a
+     rebuild that changed nothing, which is exactly the property the whole
+     artifact is supposed to have. The run stamp lives in health.json, which
+     the page reads separately and which says so. */
+  manifest.pipeline_health = Object.assign({}, health, {
+    last_rankings_build: null,
+    run_record: 'football/rankings/health.json',
+    run_record_basis: 'the timestamp of the most recent SUCCESSFUL build lives in the run record, not here: this file is content-addressed, so a rebuild that changed no number must leave it byte-identical.'
+  });
+  /* WRITTEN EVERY RUN, timestamps and all — deliberately NOT through
+     writeIfChanged. This file is the RUN RECORD: it is how the page's "built"
+     stamp reflects the most recent successful build rather than the last time
+     a number happened to change, and it is how a quiet Tuesday is told apart
+     from a pipeline that stopped running three weeks ago. The cost is one
+     small commit per successful run, which is the same bargain
+     football/health.json already makes for the daily model check. */
+  fs.writeFileSync(OUT_HEALTH, JSON.stringify(health, null, 1));
+
+  const engineEfficiency = ENGINE_EFF.build(play[cur].teamGames, {
+    fbs: sched[cur].fbs,
+    season: cur,
+    generated_at: startedAt
+  });
+  writeIfChanged(OUT_ENGINE_EFF, JSON.stringify(engineEfficiency));
+  writeIfChanged(OUT_CUR, JSON.stringify(manifest));
+  writeIfChanged(OUT_PARAMS, paramsFile(params, finalSlope, startedAt));
+  printTop(teams, 15);
+  printHealth(health);
+  log(`\ndone — ${Object.keys(teams).length} teams, season ${cur} ${week.label}`);
+  return 0;
+}
+
+/* the play loader hands back a Map of team-games in one place and an array in
+   another; both are a count here */
+function countOf(c) {
+  if (!c) return 0;
+  if (typeof c.size === 'number') return c.size;
+  if (typeof c.length === 'number') return c.length;
+  return 0;
+}
+
+/* --------------------------------------------------------------------------
+   FINALITY, RECONCILED ACROSS THE FEEDS THIS PIPELINE ALREADY READS.
+
+   SMU beat Florida State 27-24 on 7 September 2026. The next day the cfbfastR
+   schedule still carried the game as `completed=FALSE` with null points and
+   its play table had not one row for it, while the ESPN player box already
+   carried eighty rows across both teams. Reading the schedule as the sole
+   authority on "has this been played" put a team that had played a game on the
+   board as a team that had not.
+
+   A game the box carries for BOTH sides was played. That is taken as
+   finality — and nothing else is taken from it. No score is reconstructed from
+   a box score: the points stay null, they are not a rating input, and
+   inventing them would be exactly the kind of fabrication this pipeline
+   refuses everywhere else.
+   -------------------------------------------------------------------------- */
+function reconcileFinality(sched, box) {
+  const out = { confirmed_by_box: [], box_available: !!(box && box.team_games),
+    schedule_final: 0, basis: null };
+  if (!sched || !sched.games) return out;
+  for (const g of sched.games) if (g.completed && g.home_points != null) out.schedule_final++;
+  if (!out.box_available) {
+    out.basis = 'no box artifact with per-team-game rows was available, so finality rests on the schedule feed alone';
+    return out;
+  }
+  const sides = {};
+  for (const key of Object.keys(box.team_games)) {
+    const cut = key.indexOf('|');
+    if (cut < 0) continue;
+    const gid = key.slice(0, cut);
+    (sides[gid] = sides[gid] || new Set()).add(key.slice(cut + 1));
+  }
+  for (const g of sched.games) {
+    if (g.completed && g.home_points != null) continue;
+    const both = sides[String(g.game_id)];
+    if (!both || both.size < 2) continue;
+    g.completed = true;
+    g.final_source = 'espn_player_box';
+    out.confirmed_by_box.push({ game_id: String(g.game_id), home: g.home_name || g.home,
+      away: g.away_name || g.away, week: g.week, start_date: g.start_date || null,
+      note: 'the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication.' });
+  }
+  out.basis = 'a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was.';
+  return out;
+}
+
+/* What the current season's feeds contained when this build read them. */
+function dataFreshness(sched, play, perf, finality) {
+  let completed = 0, latest = null;
+  const ids = [];
+  for (const g of (sched && sched.games) || []) {
+    if (!isFinal(g)) continue;
+    completed++;
+    ids.push(String(g.game_id));
+    if (g.start_date && (latest == null || g.start_date > latest)) latest = g.start_date;
+  }
+  const rated = perf && perf.teams
+    ? Object.keys(perf.teams).filter(k => perf.teams[k].net_z != null).length : 0;
+  return {
+    completed_games: completed,
+    latest_completed_kickoff: latest,
+    /* THE EXACT SET OF FINAL GAMES THIS BUILD STOOD ON, as a digest.
+       A count can stay the same while the games change (a correction, a
+       reversal, a feed re-publishing a week); the refresh detector compares
+       this, so "is there new football" is answered by identity rather than by
+       arithmetic that a coincidence can defeat. */
+    completed_games_digest: crypto.createHash('sha1').update(ids.sort().join(',')).digest('hex').slice(0, 16),
+    finality: finality ? {
+      schedule_final: finality.schedule_final,
+      confirmed_by_box_alone: finality.confirmed_by_box.length,
+      games: finality.confirmed_by_box,
+      basis: finality.basis
+    } : null,
+    team_games_read: countOf(play && play.teamGames),
+    teams_with_a_performance_rating: rated,
+    basis: 'the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it.'
+  };
+}
+
+function frontReturningFromSummary(summary) {
+  const ret = summary && summary.returning;
+  if (!ret || !ret.by_group) return null;
+  const vals = [];
+  for (const g of ['DL', 'EDGE', 'LB']) {
+    const b = ret.by_group[g];
+    if (b && b.value_returning != null) vals.push(b.value_returning);
+  }
+  return vals.length ? mean(vals) : null;
+}
+function unitRatings(t) {
+  const out = {};
+  for (const name of Object.keys(t.units)) {
+    const u = t.units[name];
+    out[name] = u.available
+      ? { rating: u.rating, confidence: u.confidence, starter_quality: u.starter_quality,
+          depth_quality: u.depth_quality, continuity: u.continuity, experience: u.experience,
+          roster_size: u.roster_size, spellings: u.spellings_found }
+      : { rating: null, available: false, reason: u.reason };
+  }
+  return out;
+}
+function rankSummary(ranks) {
+  const out = {};
+  for (const k of Object.keys(ranks)) out[k] = { ranked: ranks[k].ranked, listed: ranks[k].listed };
+  return out;
+}
+function latestSnapshotBefore(season, ordinal) {
+  const best = HISTORY.previousSnapshot(loadSnapshots(), season, ordinal);
+  return best || null;
+}
+
+/* every snapshot on disk, oldest first. A v1 snapshot (no `cat` block) is read
+   as-is: the history assembler falls back to whatever categories it carries
+   rather than pretending the older weeks recorded columns they never did. */
+function loadSnapshots() {
+  if (!fs.existsSync(OUT_SNAP)) return [];
+  const out = [];
+  for (const f of fs.readdirSync(OUT_SNAP)) {
+    const m = f.match(/^(\d{4})-w(\d{2})\.json$/);
+    if (!m) continue;
+    const j = readJson(path.join(OUT_SNAP, f), null);
+    if (!j || !j.teams) continue;
+    if (j.season == null) j.season = +m[1];
+    if (j.week_ordinal == null) j.week_ordinal = +m[2];
+    out.push(j);
+  }
+  return HISTORY.order(out);
+}
+
+/* --------------------------------------------------------------------------
+   THE PIPELINE HEALTH REPORT
+   One page that answers, without anybody opening a JSON file: how many FBS
+   teams exist, how many were processed, how many hold each rating, how many
+   are low-confidence, how many are genuinely unranked and WHY, when a game was
+   last ingested, when the board was last built, and how fresh the feeds were.
+   -------------------------------------------------------------------------- */
+function pipelineHealth(a) {
+  const { manifest, teams, ranks, sched, play, perf, stReport, week, season, startedAt, snapshots } = a;
+  const fbsKeys = Object.keys(sched.fbs);
+  const keys = Object.keys(teams);
+  const has = f => keys.filter(k => { try { return f(teams[k]) != null; } catch (_) { return false; } }).length;
+
+  const byCategory = {};
+  for (const cat of CFG.RANKINGS) {
+    const r = ranks[cat.id];
+    const unranked = [];
+    for (const k of Object.keys(r.ranks)) if (r.ranks[k] && r.ranks[k].unranked) unranked.push(k);
+    const rated = Object.keys(r.ranks).length;
+    byCategory[cat.id] = {
+      label: cat.label,
+      rated, ranked: r.ranked,
+      unranked_low_confidence: unranked.length,
+      no_rating: fbsKeys.length - rated,
+      coverage: fbsKeys.length ? r3(rated / fbsKeys.length) : null
+    };
+  }
+
+  /* every FBS team that holds no rating in a category, with the reason THAT
+     TEAM was given. Not a count — a list, so "why is Marshall blank" is a
+     lookup rather than an investigation. */
+  const gaps = [];
+  for (const k of fbsKeys) {
+    const t = teams[k];
+    if (!t) { gaps.push({ team: k, missing: ['every category'],
+      reason: 'no rating row was produced for this FBS team at all' }); continue; }
+    const miss = [];
+    if (t.performance.offense == null) miss.push('offense');
+    if (t.performance.defense == null) miss.push('defense');
+    if (!t.special_teams || t.special_teams.rating == null) miss.push('special_teams');
+    if (t.coaching_program_rating == null) miss.push('coaching_program');
+    if (!miss.length) continue;
+    const reasons = [];
+    /* WHY A TEAM THAT PLAYED HAS NO OFFENCE. "No metric cleared its floor" is
+       true and useless when the real answer is that the play table has not
+       published the game yet. Say the real answer. */
+    const smp = t.performance.sample || {};
+    const playless = smp.games_played > 0 && !(smp.games > 0);
+    if (playless) {
+      reasons.push('this team has played ' + smp.games_played + ' game(s) and the play table has published none of them'
+        + ' — the game is confirmed final by the ESPN box, which carries a kicking line and no scrimmage plays.'
+        + ' Offence, defence and every sub-unit wait on the play feed; nothing about them is estimated in the meantime.');
+    }
+    if (!playless && t.performance.offense == null) {
+      reasons.push('offense: ' + (t.performance.available === false
+        ? t.performance.reason
+        : 'no offensive metric cleared its observation floor — '
+          + ((t.performance.offense_detail && t.performance.offense_detail.missing) || [])
+            .slice(0, 3).map(m => m.id + ' (' + m.why + ')').join('; ')));
+    }
+    if (!playless && t.performance.defense == null) {
+      reasons.push('defense: ' + (t.performance.available === false
+        ? t.performance.reason
+        : 'no defensive metric cleared its observation floor — '
+          + ((t.performance.defense_detail && t.performance.defense_detail.missing) || [])
+            .slice(0, 3).map(m => m.id + ' (' + m.why + ')').join('; ')));
+    }
+    if (!t.special_teams || t.special_teams.rating == null) {
+      reasons.push('special teams: ' + ((t.special_teams && t.special_teams.reason) || 'no special-teams record'));
+    }
+    if (t.coaching_program_rating == null) {
+      reasons.push('coaching / program: no reliability-shrunk score was published because no measured subcomponent with positive reliability was available');
+    }
+    if (!reasons.length) reasons.push('no rating in ' + miss.join(', ') + ' and no reason was recorded — investigate');
+    gaps.push({ team: t.team || k, key: k,
+      games_played: smp.games_played == null ? 0 : smp.games_played,
+      games_in_the_play_table: smp.games == null ? 0 : smp.games,
+      box_only_games: smp.box_only_games == null ? 0 : smp.box_only_games,
+      missing: miss, reason: reasons.join(' | ') });
+  }
+
+  const lowConf = keys.filter(k => teams[k].confidence.value < CFG.RANK_MIN_CONFIDENCE).length;
+  const lowCoachingReliability = keys.filter(k => teams[k].coaching_program_rating != null
+    && teams[k].coaching_program_reliability < CFG.RANK_MIN_CONFIDENCE).length;
+  const oneGame = keys.filter(k => teams[k].performance.sample && teams[k].performance.sample.games === 1);
+
+  return {
+    schema: 'edgedesk_rankings_health_v1',
+    generated_at: startedAt,
+    build_version: {
+      schema_version: CFG.SCHEMA_VERSION, versions: manifest.versions,
+      digest: manifest.digest
+    },
+    season, week: week.week, week_ordinal: week.ordinal, week_label: week.label,
+    fbs_teams_expected: fbsKeys.length,
+    teams_processed: keys.length,
+    teams_missing_entirely: fbsKeys.filter(k => !teams[k]),
+    ratings: {
+      overall: has(t => t.etsr),
+      talent: has(t => t.talent.rating),
+      performance: has(t => t.performance.rating),
+      coaching_program: has(t => t.coaching_program_rating),
+      offense: has(t => t.performance.offense),
+      defense: has(t => t.performance.defense),
+      special_teams: has(t => t.special_teams && t.special_teams.rating),
+      run_offense: has(t => t.performance.run_offense),
+      pass_offense: has(t => t.performance.pass_offense),
+      run_defense: has(t => t.run_defence_power.score),
+      pass_defense: has(t => t.performance.pass_defense),
+      depth: has(t => t.depth.rating),
+      continuity: has(t => t.continuity.rating)
+    },
+    by_category: byCategory,
+    confidence: {
+      below_rank_floor: lowConf,
+      coaching_program_below_rank_floor: lowCoachingReliability,
+      rank_floor: CFG.RANK_MIN_CONFIDENCE,
+      one_game_teams: oneGame.length,
+      one_game_rated: oneGame.filter(k => teams[k].performance.rating != null).length,
+      basis: 'ordinary categories use overall team confidence for the rank floor. Coaching / Program uses its own coaching_program_reliability. In either case a team keeps its rating and loses only its rank when reliability is below the floor.'
+    },
+    genuinely_unavailable: gaps,
+    ingestion: {
+      completed_games_in_schedule: manifest.data_freshness.completed_games,
+      last_completed_kickoff: manifest.data_freshness.latest_completed_kickoff,
+      team_games_read: manifest.data_freshness.team_games_read,
+      teams_with_a_performance_rating: manifest.data_freshness.teams_with_a_performance_rating,
+      special_teams_team_games_joined: stReport ? stReport.box_joined : 0,
+      special_teams_coverage_joined: stReport ? stReport.coverage_joined : 0,
+      special_teams_box_available: stReport ? stReport.box_available : false,
+      opponent_adjustment_converged: !!perf.diagnostics.all_converged
+    },
+    source_freshness: manifest.data_freshness,
+    special_teams_feed_density: a.feedDensity || null,
+    history: { snapshots: snapshots.length,
+      weeks_on_file: snapshots.map(sn => sn.season + ' ' + sn.week_label),
+      latest: snapshots.length ? snapshots[snapshots.length - 1] : null },
+    last_rankings_build: startedAt,
+    notes: [
+      'Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.',
+      'A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null.'
+    ]
+  };
+}
+
+/* IS THE KICKING FEED AS FULL AS IT WAS LAST YEAR?
+   A special-teams rating can only be as complete as the box rows behind it,
+   and a season in progress is published in pieces: a game lands, then the
+   punter's line lands. Comparing this season's per-team-game volumes against
+   the most recent COMPLETED season's turns "some teams have no punts" from a
+   mystery into a measured statement about the feed. It changes no rating. */
+function specialTeamsFeedDensity(season, seasons) {
+  const load = y => readJson(path.join(BOX_DIR, `${y}.json`), null);
+  const rate = b => {
+    if (!b || !b.team_games || !b.team_game_columns) return null;
+    const ix = {};
+    b.team_game_columns.forEach((c, i) => { ix[c] = i; });
+    const rows = Object.keys(b.team_games);
+    if (!rows.length) return null;
+    const out = { team_games: rows.length };
+    for (const c of ['fg_att', 'xp_att', 'punts', 'punts_in20', 'kr', 'pr']) {
+      let sum = 0;
+      for (const k of rows) sum += (b.team_games[k][ix[c]] || 0);
+      out[c] = Math.round((sum / rows.length) * 100) / 100;
+    }
+    return out;
+  };
+  const cur = rate(load(season));
+  /* the most recent EARLIER season this build actually read */
+  let refY = null;
+  for (const y of seasons) if (y < season && load(y)) refY = y;
+  const ref = refY ? rate(load(refY)) : null;
+  if (!cur) {
+    return { available: false,
+      reason: 'no per-team-game special-teams rows in this season’s box artifact — rebuild it with football/data/build_box.js' };
+  }
+  const ratios = {};
+  if (ref) for (const c of ['fg_att', 'xp_att', 'punts', 'punts_in20', 'kr', 'pr']) {
+    ratios[c] = ref[c] > 0 ? Math.round((cur[c] / ref[c]) * 100) / 100 : null;
+  }
+  const vals = Object.keys(ratios).map(k => ratios[k]).filter(isNum);
+  return {
+    available: true, season, reference_season: refY,
+    per_team_game: cur, reference_per_team_game: ref, ratio_to_reference: ref ? ratios : null,
+    mean_ratio: vals.length ? r2(mean(vals)) : null,
+    basis: 'per-team-game kicking, punting and return volumes in this season’s box artifact against the most recent completed season this build read. A season in progress publishes in pieces — a game lands, then the punter’s line lands — so a ratio below one is the FEED still filling in, not football that did not happen. It moves no rating: it is why some teams have no special-teams number yet.'
+  };
+}
+
+function printHealth(h) {
+  log('\n  PIPELINE HEALTH — ' + h.season + ' ' + h.week_label);
+  log('    ' + String(h.fbs_teams_expected).padStart(4) + '  FBS teams');
+  log('    ' + String(h.teams_processed).padStart(4) + '  teams processed');
+  for (const id of ['overall', 'talent', 'performance', 'coaching_program', 'offense', 'defense', 'special_teams',
+    'run_offense', 'pass_offense', 'run_defense', 'pass_defense']) {
+    log('    ' + String(h.ratings[id]).padStart(4) + '  ' + id.replace(/_/g, ' ') + ' ratings');
+  }
+  log('    ' + String(h.confidence.below_rank_floor).padStart(4) + '  low confidence (below the '
+    + Math.round(h.confidence.rank_floor * 100) + '% rank floor)');
+  log('    ' + String(h.genuinely_unavailable.length).padStart(4) + '  teams with a genuinely unavailable category');
+  if (h.special_teams_feed_density && h.special_teams_feed_density.mean_ratio != null) {
+    log('    kicking feed density ' + Math.round(h.special_teams_feed_density.mean_ratio * 100)
+      + '% of ' + h.special_teams_feed_density.reference_season + ' per team-game');
+  }
+  log('    last game ingested   ' + (h.ingestion.last_completed_kickoff || '—'));
+  log('    last rankings build  ' + h.last_rankings_build);
+  log('    build version        ' + h.build_version.versions.team_rating + ' / '
+    + h.build_version.versions.performance + ' / ' + h.build_version.versions.special_teams
+    + ' schema ' + h.build_version.schema_version + ' digest ' + h.build_version.digest);
+}
+function missingSnapshotCheck(season, ordinal, sched) {
+  if (!fs.existsSync(OUT_SNAP)) return null;
+  const have = new Set(fs.readdirSync(OUT_SNAP)
+    .map(f => f.match(/^(\d{4})-w(\d{2})\.json$/)).filter(Boolean)
+    .filter(m => +m[1] === season).map(m => +m[2]));
+  const completed = new Set();
+  for (const g of sched.games) if (isFinal(g)) completed.add(weekOrdinal(g.season_type, g.week));
+  const gaps = [...completed].filter(o => o < ordinal && !have.has(o)).sort((a, b) => a - b);
+  /* only weeks AFTER the first snapshot on file count as gaps: the system did
+     not exist before then, and demanding history it never had is a false alarm */
+  if (!have.size || !gaps.length) return null;
+  const first = Math.min(...have);
+  const real = gaps.filter(o => o > first);
+  return real.length ? `no snapshot on file for completed week ordinal(s) ${real.join(', ')}` : null;
+}
+function printTop(teams, n) {
+  const list = Object.values(teams).filter(t => isNum(t.etsr) && isNum(t.rank)).sort((a, b) => a.rank - b.rank);
+  log('\n  ' + 'RK'.padStart(3) + '  ' + 'TEAM'.padEnd(22) + 'ETSR'.padStart(7) + '  TAL'.padStart(6) + '  PERF'.padStart(6) + '  CONF'.padStart(6) + '  RUN D');
+  for (const t of list.slice(0, n)) {
+    log('  ' + String(t.rank).padStart(3) + '  ' + String(t.team).slice(0, 21).padEnd(22)
+      + (t.etsr > 0 ? '+' : '') + String(t.etsr).padStart(6)
+      + String(t.talent.rating == null ? '—' : t.talent.rating).padStart(7)
+      + String(t.performance.rating == null ? '—' : t.performance.rating).padStart(7)
+      + String(Math.round(t.confidence.value * 100) + '%').padStart(7)
+      + '  ' + String(t.run_defence_power.score == null ? '—' : t.run_defence_power.score));
+  }
+}
+function tryParams() {
+  try { return require(OUT_PARAMS); } catch (_) { return null; }
+}
+function paramsFile(prior, slope, at) {
+  const cal = (prior && prior.calibration) || {
+    measured: false,
+    talent_points_per_z: { value: null, points_applied: false,
+      reason: 'football/rankings/validate_rankings.js has not been run against this build, so no scalar is fitted and the declared fallback in config.js is used' },
+    performance_points_per_z: { value: null, points_applied: false,
+      reason: 'as above' },
+    prior_ramp_k: { value: null, reason: 'as above' }
+  };
+  const val = (prior && prior.validation_summary) || { ran: false, reason: 'no walk-forward validation has been run against this build' };
+  const out = {
+    schema: 'edgedesk_rankings_params_v1',
+    generated_at: at,
+    versions: CFG.VERSIONS, schema_version: CFG.SCHEMA_VERSION,
+    league_carryover: slope,
+    calibration: cal,
+    validation_summary: val
+  };
+  return `if(typeof window==='undefined'){globalThis.window=globalThis;}
+/* EdgeDesk National Rankings — MEASURED constants.
+   GENERATED FILE. The league carryover slope is re-measured on every build from
+   the rating chain itself. The points-per-z scalars and the prior ramp are
+   fitted ONLY by football/rankings/validate_rankings.js, and a build preserves
+   whatever that wrote rather than quietly refitting on a schedule — which is
+   how a research layer starts fitting the recent past without anyone deciding
+   to. Weights and contracts live in config.js; nothing here is hand-edited. */
+window.EDRankParams = ${JSON.stringify(out)};
+if(typeof module!=='undefined'&&module.exports)module.exports=window.EDRankParams;
+`;
+}
+function writeIfChanged(file, text) {
+  let old = null;
+  try { old = fs.readFileSync(file, 'utf8'); } catch (_) {}
+  const strip = s => String(s).replace(/"(generated_at|data_as_of)":"[^"]*"/g, '');
+  if (old != null && strip(old) === strip(text)) return false;
+  fs.writeFileSync(file, text);
+  return true;
+}
+
+module.exports = { main, weekOrdinal, weekLabel, resolveWeek, isFinal, reconcileFinality,
+  measureSlope, marketPower, specialTeamsFeedDensity,
+  seasonPlayerLayer, seasonEtsr, attachContinuity, frontReturning, latestSnapshotBefore,
+  loadSnapshots, pipelineHealth, missingSnapshotCheck, dataFreshness, POSTSEASON_OFFSET,
+  SNAP_DIR: OUT_SNAP, HEALTH_FILE: OUT_HEALTH, HISTORY_FILE: OUT_HIST };
+
+if (require.main === module) {
+  main().then(c => process.exit(c)).catch(e => { console.error('RANKINGS BUILD FAILED:', e && e.stack || e); process.exit(1); });
+}

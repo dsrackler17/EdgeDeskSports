@@ -1,0 +1,111 @@
+# EdgeDesk CFB Model Lab — run the lab's suites on the pull request.
+#
+# The hourly job (cfb-lab.yml) runs the lab tests before it writes, but it
+# only runs on main. A rule change that breaks immutability, a checkpoint
+# window, the closing line, or a CLV sign has to fail on the PR that makes
+# it, not an hour after the merge, inside a job that is appending to the
+# permanent ledger.
+#
+# Offline: no network, no credentials, nothing written outside temp dirs.
+name: CFB Model Lab tests
+
+on:
+  pull_request:
+    paths:
+      - 'football/cfb_lab/**'
+      # the models the lab snapshots: their adapters load these
+      - 'football/cfb_v2/engine.js'
+      - 'football/cfb_v2/params.js'
+      - 'football/cfb_p4/**'
+      - 'tools/record/football_record_sources.js'
+      - 'tools/record/football_record_core.js'
+      # the per-sportsbook feed into the lab, and the join it maps events with
+      - 'supabase/functions/capture/index.ts'
+      - 'supabase/functions/edgedesk_ai/_intelligence.js'
+      - 'football/fbs/fbs.js'
+      - 'supabase/cfb_lab.sql'
+      - 'supabase/cfb_lab_cron.sql'
+      - 'supabase/cfb_market_integrity.sql'
+      - 'supabase/cfb_market.sql'
+      - 'football/cfb_market/**'
+      - 'supabase/functions/edgedesk_ai/_cfb_explain.js'
+      - 'football/cfb_decision/decision.js'
+      - 'app.html'
+      - 'admin/cfb-lab/**'
+      - 'record.html'
+      - 'docs/cfb-lab/**'
+      - 'package.json'
+      - '.github/workflows/cfb-lab.yml'
+      - '.github/workflows/cfb-lab-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/cfb_lab/*.js'
+      - 'football/cfb_lab/fixtures/**'
+      - 'supabase/cfb_lab.sql'
+      - 'supabase/cfb_lab_cron.sql'
+      - 'supabase/cfb_market_integrity.sql'
+      - 'supabase/cfb_market.sql'
+      - 'football/cfb_market/*.js'
+      - 'football/cfb_market/fixtures/**'
+      - 'football/cfb_market/artifacts/**'
+      - 'supabase/functions/capture/index.ts'
+      - 'supabase/functions/edgedesk_ai/_cfb_explain.js'
+      - 'football/cfb_decision/decision.js'
+      - 'app.html'
+      - 'admin/cfb-lab/**'
+      - '.github/workflows/cfb-lab-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-lab-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Lab rules, ledger, settlement, grading, governance, end to end
+        run: node football/cfb_lab/tests.js
+      - name: The per-sportsbook feed inside the capture function
+        run: node football/cfb_lab/capture_feed.test.js
+      - name: Postgres functions agree with the JavaScript (shared fixture)
+        env:
+          CFB_LAB_SQL_REQUIRED: '1'
+        run: node football/cfb_lab/sql.test.js
+      - name: Internal Model Lab page
+        run: node football/cfb_lab/ui.test.js
+      - name: Public record section
+        run: node football/cfb_lab/record_section.test.js
+      - name: Market integrity (quote rules, outliers, consensus, freshness, settlement validity, BET gate)
+        run: node football/cfb_lab/integrity.test.js
+      - name: Chaos (provider outages, bad scores, postponements, settle 1x/2x/3x)
+        run: node football/cfb_lab/chaos.test.js
+      - name: Provider contracts (schema drift, retries, circuit breakers)
+        run: node football/cfb_lab/providers.test.js
+      - name: Sign conventions (spreads, prices, ATS, CLV, home/away)
+        run: node football/cfb_lab/sign_suite.test.js
+      - name: Frontend contract (the V2 panel, decision card, public record)
+        run: node football/cfb_lab/frontend_contract.test.js
+      - name: AI explanation boundary (facts only, refused claims)
+        run: node football/cfb_lab/explain_guard.test.js
+      - name: Market-integrity Postgres contract (shared rule fixture)
+        env:
+          CFB_LAB_SQL_REQUIRED: '1'
+        run: node football/cfb_lab/integrity_sql.test.js
+      - name: Market intelligence (key numbers, consensus, movement, timing; pure never follows the market)
+        run: node football/cfb_market/tests.js
+      - name: The market-intelligence Postgres contract
+        env:
+          CFB_MARKET_SQL_REQUIRED: '1'
+        run: node football/cfb_market/sql.test.js
+      - name: The committed ledger is intact
+        run: node football/cfb_lab/ledger.js verify

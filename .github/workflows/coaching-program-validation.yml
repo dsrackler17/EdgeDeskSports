@@ -1,0 +1,66 @@
+name: CFB Coaching Program validation
+
+on:
+  pull_request:
+    paths:
+      - 'football/rankings/validate_coaching_program.js'
+      - 'football/rankings/validate_coaching_program.test.js'
+      - 'football/rankings/coaching_program.js'
+      - 'football/rankings/etsr.js'
+      - 'football/validation/validate_features.js'
+      - '.github/workflows/coaching-program-validation.yml'
+  workflow_dispatch:
+    inputs:
+      first: { description: 'First season', required: false, default: '2021' }
+      last:  { description: 'Last season', required: false, default: '2025' }
+      tune:  { description: 'Tune seasons', required: false, default: '2021,2022,2023' }
+      hold:  { description: 'Holdout seasons', required: false, default: '2024,2025' }
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-coaching-program-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --quiet pyarrow
+
+      - uses: actions/cache@v4
+        with:
+          path: .cache/football
+          key: cfb-coaching-validation-${{ github.run_id }}
+          restore-keys: |
+            cfb-coaching-validation-
+            football-feeds-
+
+      - name: Cap selector contract
+        run: node football/rankings/validate_coaching_program.test.js
+
+      - name: Five-season CFB coaching walk-forward
+        run: |
+          node --max-old-space-size=8192 football/rankings/validate_coaching_program.js \
+            --first ${{ github.event.inputs.first || '2021' }} \
+            --last  ${{ github.event.inputs.last  || '2025' }} \
+            --tune  ${{ github.event.inputs.tune  || '2021,2022,2023' }} \
+            --hold  ${{ github.event.inputs.hold  || '2024,2025' }} \
+            --cache .cache/football \
+            --write
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cfb-coaching-program-validation
+          path: football/rankings/coaching_program_validation.json
+          if-no-files-found: error
+          retention-days: 30

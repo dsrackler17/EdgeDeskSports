@@ -171,6 +171,43 @@
       if (!a || !b) return null;
       return (b.win + 0.5 * b.push) - (a.win + 0.5 * a.push);
     },
+    /* THE OUTCOME RANGE, from the SAME distribution coverProbSpread integrates.
+       Primary path: the learned margin PMF CONDITIONED on this fair spread,
+       which keeps real key-number mass. Fallback: the pooled residual PMF,
+       shifted onto the fair spread. Nothing new is fitted here and no normal
+       approximation is used — a second distribution for the same quantity is
+       exactly the kind of duplicate model this repo refuses to carry. */
+    marginQuantiles: function (sport, fairSpread, ps) {
+      var sp = sportParams(sport);
+      if (!sp || !isNum(fairSpread) || !ps || !ps.length) return null;
+      var tab = sp.margin_pmf_by_spread, rng = sp.pmf_spread_range;
+      var es = null, shift = 0, basis = null, tot = 0, i;
+      if (tab && rng && fairSpread >= rng[0] && fairSpread <= rng[1]) {
+        var key = (Math.round(fairSpread * 2) / 2).toFixed(1);
+        if (key === '-0.0') key = '0.0';
+        var pmf = tab[key] || tab[Math.round(fairSpread).toFixed(1)];
+        if (pmf) {
+          es = pmfEntries(pmf);
+          for (i = 0; i < es.length; i++) tot += es[i][1];
+          if (tot > 0.5) basis = 'margin_pmf_by_spread'; else es = null;
+        }
+      }
+      if (!es) {
+        es = pmfEntries(sp.margin_resid_pmf);
+        tot = 0;
+        for (i = 0; i < es.length; i++) tot += es[i][1];
+        if (!(tot > 0.5)) return null;
+        shift = fairSpread;               /* residual table -> margin scale */
+        basis = 'pooled_residual';
+      }
+      var out = { basis: basis, sigma: sp.sigma_margin, q: {} };
+      for (var j = 0; j < ps.length; j++) {
+        var want = ps[j] * tot, acc = 0, hit = es[es.length - 1][0];
+        for (i = 0; i < es.length; i++) { acc += es[i][1]; if (acc >= want) { hit = es[i][0]; break; } }
+        out.q[String(ps[j])] = hit + shift;
+      }
+      return out;
+    },
     fairSpreadFromWinProb: function (sport, p) {
       var sp = sportParams(sport);
       if (!sp || !(p > 0 && p < 1)) return null;
@@ -356,16 +393,29 @@
     predict: function (st, game) {
       var sp = sportParams('nfl'); if (!sp) return null;
       var F = nfl.gameFeatures(st, game);
-      function lin(feats, names, w) {
-        var s = w[w.length - 1], i;
-        for (i = 0; i < names.length; i++) s += feats[names[i]] * w[i];
+      /* `terms` RECORDS the products this sum is already made of — same
+         operands, same order, so the accumulated value is untouched. The
+         spread model is linear, so its per-feature contributions are a fact
+         about the model rather than an attribution scheme invented for a
+         page: they reconcile to the number the engine publishes, and
+         football/tests.js holds them to 1e-9 against it. */
+      function lin(feats, names, w, terms) {
+        var s = w[w.length - 1], i, t;
+        if (terms) terms.push({ key: 'baseline', value: null, weight: w[w.length - 1], points: w[w.length - 1] });
+        for (i = 0; i < names.length; i++) {
+          t = feats[names[i]] * w[i];
+          s += t;
+          if (terms) terms.push({ key: names[i], value: feats[names[i]], weight: w[i], points: t });
+        }
         return s;
       }
-      var koerner = lin(F.spread, NFL_SPREAD_FEATS, sp.w_spread);
-      var ctxAdj = lin(F.ctx, NFL_CTX_FEATS, sp.w_ctx);
-      var total = lin(F.total, NFL_TOTAL_FEATS, sp.w_total);
+      var spreadTerms = [], ctxTerms = [], totalTerms = [];
+      var koerner = lin(F.spread, NFL_SPREAD_FEATS, sp.w_spread, spreadTerms);
+      var ctxAdj = lin(F.ctx, NFL_CTX_FEATS, sp.w_ctx, ctxTerms);
+      var total = lin(F.total, NFL_TOTAL_FEATS, sp.w_total, totalTerms);
       return { koerner_spread: koerner, ctx_adj: ctxAdj,
         model_spread: koerner + ctxAdj, sharp_total: total,
+        terms: { spread: spreadTerms, ctx: ctxTerms, total: totalTerms },
         features: F, known: F.known };
     }
   };
@@ -538,6 +588,7 @@
     }
     var sp = sportParams(sport);
     var comp = {}, fairSpread = null, fairTotal = null;
+    var terms = null, feats = null;
     if (sport === 'nfl') {
       var pr = nfl.predict(req.state, req.game);
       comp.koerner_spread = pr.koerner_spread;
@@ -545,6 +596,8 @@
       comp.sharp_total = pr.sharp_total;
       fairSpread = pr.model_spread;
       fairTotal = pr.sharp_total;
+      terms = pr.terms;
+      feats = pr.features;
     } else {
       var g = req.game;
       fairSpread = cfb.predictMargin(req.state, g.home, g.away,
@@ -576,6 +629,12 @@
         blend_total: blendT
       },
       components: comp,
+      /* the additive terms behind the two linear models, and the outcome
+         range read off the engine's own learned margin distribution. Both
+         are DESCRIPTIONS of the number above, never a second estimate of it. */
+      contributions: terms,
+      features: feats,
+      outcome_range: dist.marginQuantiles(sport, fairSpread, [0.1, 0.5, 0.9]),
       market: {
         spread_line: isNum(mkt.spread_line) ? mkt.spread_line : null,
         total_line: isNum(mkt.total_line) ? mkt.total_line : null,

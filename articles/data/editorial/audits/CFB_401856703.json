@@ -1,0 +1,648 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "CFB:401856703",
+  "game_id": "401856703",
+  "sport": "CFB",
+  "snapshot_id": "snap_c18ea9979e8f2439",
+  "audited_at": "2026-09-27T17:25:07.341Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Mississippi State -2.9 with a fair total of 56.9, which makes Mississippi State the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 2.9,
+      "favours_side": "home",
+      "favours_team": "Mississippi State",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 2.896072906300945,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Missouri winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Mississippi State is ahead on the scoreboard in a way that looks like Mississippi State -2.9 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Mississippi State -2.9 where the market has Mississippi State -6.0 at captured (stale 103h) · BetRivers — a 3.1 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 3.1,
+      "favours_side": "home",
+      "favours_team": "Mississippi State",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 3.1,
+        "unit": "points",
+        "market_margin": 6,
+        "market_text": "Mississippi State -6.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Mississippi State -6.0 and Mississippi State -2.9.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Playing at Mississippi State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Mississippi State’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model",
+      "weight": 4.1,
+      "favours_side": "home",
+      "favours_team": "Mississippi State",
+      "expected_signal": null,
+      "falsifier": "Missouri winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Missouri is the better football team by 1.2 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -1.2 of the EdgeDesk number, in Missouri’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 1.2,
+      "favours_side": "away",
+      "favours_team": "Missouri",
+      "expected_signal": null,
+      "falsifier": "Mississippi State winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Missouri’s pass offense rates 57.8 (#24 of 135) against Mississippi State’s pass defense at 49.0 (#78 of 136). Missouri’s unit stands higher among its own position group, by 54 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Missouri pass offense handles Mississippi State pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Missouri’s run offense rates 49.0 (#74 of 136) against Mississippi State’s run defense at 70.2 (#6 of 136). Mississippi State’s unit stands higher among its own position group, by 68 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Missouri run offense handles Mississippi State run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Mississippi State’s pass offense rates 60.8 (#13 of 135) against Missouri’s pass defense at 61.0 (#17 of 136). Mississippi State’s unit stands higher among its own position group, by 4 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Mississippi State pass offense handles Missouri pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Mississippi State’s run offense rates 70.2 (#4 of 136) against Missouri’s run defense at 63.9 (#20 of 136). Mississippi State’s unit stands higher among its own position group, by 16 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Mississippi State run offense handles Missouri run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Missouri holds the largest measured edge in this matchup: Missouri 57.7 (#16 of 136) vs Mississippi State 50.8 (#95 of 136) — 79 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "matchup",
+      "weight": 19.8,
+      "favours_side": "away",
+      "favours_team": "Missouri",
+      "expected_signal": null,
+      "falsifier": "Mississippi State winning that category on the day.",
+      "watch": "Whether Missouri’s edge in Linebackers shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Linebackers"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Mississippi State holds the largest measured edge in this matchup: Mississippi State 70.2 (#4 of 136) vs Missouri 49.0 (#74 of 136) — 70 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "rushing",
+      "weight": 17.5,
+      "favours_side": "home",
+      "favours_team": "Mississippi State",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Missouri winning that category on the day.",
+      "watch": "Whether Mississippi State’s edge in Run offense shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Run offense"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: 2.45 FBS-equivalent games played.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 3,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on Missouri — low sample size.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Mississippi State -2.9 with a fair total of 56.9, which makes Mississippi State the better team here by that margin on this field.",
+      "weight": 2.9,
+      "favours_team": "Mississippi State",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 2.896072906300945,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 7,
+          "away": -7,
+          "diff": 7
+        }
+      ],
+      "observed_result": "Mississippi State Bulldogs won by 7 where EdgeDesk projected a 2.9-point edge.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the right side won and the margin landed in the neighbourhood of the projection"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Mississippi State -2.9 where the market has Mississippi State -6.0 at captured (stale 103h) · BetRivers — a 3.1 points disagreement.",
+      "weight": 3.1,
+      "favours_team": "Mississippi State",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 3.1,
+        "unit": "points",
+        "market_margin": 6,
+        "market_text": "Mississippi State -6.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 7,
+          "away": -7,
+          "diff": 7
+        }
+      ],
+      "observed_result": "Mississippi State Bulldogs won by 7.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the result landed on EdgeDesk’s side of the market number: Mississippi State Bulldogs beat a margin of 6"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Playing at Mississippi State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Mississippi State’s favour.",
+      "weight": 4.1,
+      "favours_team": "Mississippi State",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Missouri is the better football team by 1.2 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -1.2 of the EdgeDesk number, in Missouri’s favour.",
+      "weight": 1.2,
+      "favours_team": "Missouri",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Missouri’s pass offense rates 57.8 (#24 of 135) against Mississippi State’s pass defense at 49.0 (#78 of 136). Missouri’s unit stands higher among its own position group, by 54 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Missouri’s run offense rates 49.0 (#74 of 136) against Mississippi State’s run defense at 70.2 (#6 of 136). Mississippi State’s unit stands higher among its own position group, by 68 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Mississippi State’s pass offense rates 60.8 (#13 of 135) against Missouri’s pass defense at 61.0 (#17 of 136). Mississippi State’s unit stands higher among its own position group, by 4 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Mississippi State’s run offense rates 70.2 (#4 of 136) against Missouri’s run defense at 63.9 (#20 of 136). Mississippi State’s unit stands higher among its own position group, by 16 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "matchup",
+      "claim": "Missouri holds the largest measured edge in this matchup: Missouri 57.7 (#16 of 136) vs Mississippi State 50.8 (#95 of 136) — 79 places on the national board.",
+      "weight": 19.8,
+      "favours_team": "Missouri",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Linebackers"
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "rushing",
+      "claim": "Mississippi State holds the largest measured edge in this matchup: Mississippi State 70.2 (#4 of 136) vs Missouri 49.0 (#74 of 136) — 70 places on the national board.",
+      "weight": 17.5,
+      "favours_team": "Mississippi State",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 3.475,
+          "away": 3.4,
+          "diff": 0.08,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.022,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 139,
+          "away": 119,
+          "diff": 20,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.144,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Mississippi State Bulldogs 3.48 yards per carry against Missouri Tigers 3.4; Mississippi State Bulldogs 139 rushing yards against Missouri Tigers 119.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: 2.45 FBS-equivalent games played.",
+      "weight": 3,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 2,
+      "PARTIALLY CONFIRMED": 1,
+      "NOT CONFIRMED": 0,
+      "INCONCLUSIVE": 8
+    },
+    "graded": 3,
+    "total": 11,
+    "not_observable": 8,
+    "headline": "2 of 3 gradeable claims held up, 0 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "401856703",
+    "sport": "CFB",
+    "snapshot_id": "snap_c18ea9979e8f2439",
+    "graded_at": "2026-09-27T17:25:07.341Z",
+    "final": {
+      "home_team": "Mississippi State Bulldogs",
+      "away_team": "Missouri Tigers",
+      "home_score": 31,
+      "away_score": 24,
+      "margin": 7,
+      "total_points": 55,
+      "winner": "Mississippi State Bulldogs"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "away",
+      "team": "Missouri",
+      "point": 6,
+      "line_text": "Missouri +6",
+      "book": "captured (stale 92h) · BetRivers",
+      "market_home_margin": -6,
+      "model_home_margin": -2.9,
+      "gap": 3.1,
+      "why": "EdgeDesk’s own number sat 3.1 points toward Missouri of the quote EdgeDesk captured at captured (stale 92h) · BetRivers. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "over",
+      "line": 58,
+      "model_total": 58.2,
+      "gap": 0.2,
+      "why": "EdgeDesk’s fair total of 58.2 sat 0.2 points above the captured total of 58."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "loss",
+        "cover_margin": -1,
+        "side": "away",
+        "point": 6,
+        "team": "Missouri",
+        "line_text": "Missouri +6"
+      },
+      "total": {
+        "outcome": "loss",
+        "points": 55,
+        "line": 58,
+        "side": "over",
+        "by": 3,
+        "direction": "under"
+      },
+      "moneyline": {
+        "outcome": "loss",
+        "side": "away",
+        "team": "Missouri"
+      }
+    },
+    "bet_headline": "LOSS",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": 2.9,
+      "actual_home_margin": 7,
+      "margin_error": 4.1,
+      "right_side": true,
+      "projected_total": 58.2,
+      "actual_total": 55,
+      "total_error": 3.2,
+      "projected_score": {
+        "away": 28,
+        "home": 31
+      },
+      "inside_published_range": true,
+      "range_text": "-20.1 → +23.9 (Mississippi State)"
+    },
+    "process": {
+      "grade": "MIXED",
+      "reasons": [
+        "0 claims held up, 1 held up in direction only and 0 did not. Parts of the read were right and parts were not.",
+        "The result carries 1 high-variance marker — the spread result changed on the final score — so the scoreboard is weaker evidence than it looks.",
+        "EdgeDesk projected a home margin of 2.9 and the game finished 7 the home way — 4.1 points of margin error, inside the range the model published."
+      ],
+      "confirmed": 0,
+      "partial": 1,
+      "wrong": 0,
+      "graded": 1,
+      "high_variance": 1,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "MIXED",
+    "variance_markers": [
+      {
+        "key": "late_ats_flip",
+        "severity": "high",
+        "label": "The spread result changed on the final score",
+        "text": "Before the last scoring play of the game the spread graded win; it finished loss. A number that moves on a score taken in the last minutes of a decided game is a scoreboard event, not a matchup one."
+      }
+    ],
+    "verdict": {
+      "key": "wrong_partly_for_the_right_reason",
+      "line": "The number did not land and the reasoning half held. There is something here to investigate without concluding the model is broken."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401856703:unobservable",
+      "game_id": "401856703",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 4,
+      "article_id": "postgame-cfb-401856703",
+      "snapshot_id": "snap_c18ea9979e8f2439",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "7 of the claims in this article rested on model, passing, rushing, matchup.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; the read does not name a side, so there is no direction to test.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
+      "bet_result": "LOSS",
+      "process_grade": "MIXED",
+      "created_at": "2026-09-27T17:25:07.341Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401856703:disagreement_landed",
+      "game_id": "401856703",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 4,
+      "article_id": "postgame-cfb-401856703",
+      "snapshot_id": "snap_c18ea9979e8f2439",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Mississippi State -2.9 where the market has Mississippi State -6.0 at captured (stale 103h) · BetRivers — a 3.1 points disagreement.",
+      "actual_result": "Mississippi State Bulldogs won by 7. the result landed on EdgeDesk’s side of the market number: Mississippi State Bulldogs beat a margin of 6",
+      "lesson": "The disagreement landed. One landing proves nothing on its own; the aggregate of them, held against the closing line, is the only thing that would.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "LOSS",
+      "process_grade": "MIXED",
+      "created_at": "2026-09-27T17:25:07.341Z"
+    }
+  ]
+}

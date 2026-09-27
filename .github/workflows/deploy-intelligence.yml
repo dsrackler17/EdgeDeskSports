@@ -1,0 +1,365 @@
+# Deploy what is merged.
+#
+# THIS WORKFLOW EXISTS BECAUSE ITS ABSENCE WAS THE ROOT CAUSE OF AN INCIDENT.
+#
+# On 2026-09-14 a customer asked "How does Texas State look this week?" and got
+# baseball. The routing fix for exactly that question had been written, reviewed
+# and merged to main. It had never been deployed: the deployment doctor, run
+# against production that day, reported
+#
+#   DEPLOYED   serving build edgedesk_ai-2026-09-14-r6-cfb-market-join
+#   STALE      this checkout would deploy edgedesk_ai-2026-09-14-r8-matchup-routing-fix
+#
+# app.html ships on merge because GitHub Pages serves the repository. The edge
+# function and every .sql migration did not ship at all — they were carried by
+# hand, from someone's laptop, whenever someone remembered. "Merged" and
+# "running" were two different facts and nothing in the repository connected
+# them, so the site and the desk drifted apart silently for two releases.
+#
+# It is MANUAL ON PURPOSE (workflow_dispatch). Deploying a research desk in the
+# middle of a Saturday card is a decision a person should make. What this
+# removes is not the decision; it is the laptop, the forgotten step and the
+# undeclared drift.
+#
+# ---------------------------------------------------------------------------
+# SECRETS IT NEEDS. Neither is used anywhere else in this repository, so both
+# have to be added once, by the account owner, in
+#   Settings -> Secrets and variables -> Actions
+#
+#   SUPABASE_ACCESS_TOKEN  a Supabase personal access token
+#                          (Supabase dashboard -> Account -> Access Tokens).
+#                          Required to deploy a function.
+#   SUPABASE_PROJECT_REF   the project ref, the subdomain of SB_URL.
+#   SB_DB_URL              the pooled Postgres connection string, for migrations
+#                          (Project Settings -> Database -> Connection string).
+#                          Only needed to apply SQL; leave it unset and the
+#                          migration step reports that it was skipped.
+#
+# Until SUPABASE_ACCESS_TOKEN exists this workflow stops on its first step and
+# says so, which is still better than a deploy nobody knows did not happen.
+# ---------------------------------------------------------------------------
+name: Deploy intelligence
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/edgedesk_ai'
+        type: boolean
+        default: true
+      deploy_capture:
+        description: 'Deploy supabase/functions/capture (the odds capture job)'
+        type: boolean
+        default: false
+      apply_ledger:
+        description: 'Apply supabase/recommendation_ledger.sql (idempotent)'
+        type: boolean
+        default: false
+      apply_research_packets:
+        description: 'Apply supabase/research_packets.sql — the prediction ledger the desk snapshots every packet into (idempotent)'
+        type: boolean
+        default: false
+      apply_bankroll_and_stakes:
+        description: 'Apply supabase/bankroll_and_stakes.sql — the reader''s risk policy and the write-once trail of every position the sizing engine produced (idempotent)'
+        type: boolean
+        default: false
+      apply_tennis_live_center:
+        description: 'Apply supabase/tennis_live_center.sql — the live match centre the record jobs join against (idempotent; already deployed, here so it has an apply path at all)'
+        type: boolean
+        default: false
+      reconcile_tennis_record:
+        description: 'Apply supabase/tennis_record_reconcile.sql FIRST — drops the pre-contract tennis relations standing in the record contract''s way. Refuses to drop anything holding a row or carrying a dependent view; a no-op once the contract owns those names.'
+        type: boolean
+        default: false
+      apply_tennis_record:
+        description: 'Apply supabase/tennis_record.sql — the tennis research record contract the Tennis record workflow reads and writes (idempotent over a database whose tables it created itself; see reconcile_tennis_record if it is not)'
+        type: boolean
+        default: false
+      apply_tennis_lab:
+        description: 'Apply supabase/tennis_lab.sql — the rating-lab columns and history on top of the record contract (idempotent; needs apply_tennis_record first, or already applied)'
+        type: boolean
+        default: false
+      apply_cfb_lab:
+        description: 'Apply supabase/cfb_lab.sql (the CFB Live Model Lab tables, append-only triggers, market-rule functions and public record views), then supabase/cfb_lab_cron.sql (the hourly pg_cron poke of cfb-lab.yml), then supabase/cfb_weekly.sql (the weekly refresh engine run table, state tables and its pg_cron dispatch), then supabase/cfb_personnel.sql (the roster intelligence tables), then supabase/cfb_decision.sql (the wagering decision tables), then supabase/cfb_production.sql (production operations: manifest, compatibility, flags, audit log, corrections, job locks, heartbeats, incidents, cfb_health) and records the production manifest. Each skips its schedule where pg_cron / pg_net are missing; all idempotent; nothing else needed first.'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-intelligence
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # NEVER SHIP A BUILD THAT FAILS ITS OWN ACCEPTANCE CONVERSATION.
+      # The suite below drives the reported questions through the real handler.
+      - name: The desk must answer its acceptance conversation first
+        run: npm run intel:test
+
+      # Same rule, applied to the other function this workflow can now ship.
+      # capture.test.js imports the deployed file itself against a mocked
+      # network, so this is the qualification contract the board is priced by,
+      # not a proxy for it.
+      - name: Capture must pass its qualification contract before it ships
+        if: ${{ inputs.deploy_capture }}
+        run: |
+          node tools/capture/capture.test.js
+          node tools/capture/verdict_authority.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then
+            echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the function cannot be deployed from CI. Add them in Settings > Secrets and variables > Actions."
+          fi
+
+      - name: Install the Supabase CLI
+        if: ${{ (inputs.deploy_function || inputs.deploy_capture) && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy edgedesk_ai
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy edgedesk_ai \
+            --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" \
+            --no-verify-jwt=false
+
+      # CAPTURE HAD NO DEPLOY PATH AT ALL. Every other function here is
+      # reachable from Actions; capture's header carries a
+      # `supabase functions deploy capture --no-verify-jwt` that only ever ran
+      # from somebody's laptop, so a merged capture fix stayed unshipped until
+      # a person remembered — the exact drift this workflow was written to end.
+      # On 2026-09-15 the doctor reported the deployment serving
+      # capture-v9-qualified against a checkout of capture-v9-qualified-r2.
+      #
+      # --no-verify-jwt IS LOAD-BEARING AND IS NOT A COPY OF THE LINE ABOVE.
+      # edgedesk_ai is called by signed-in browsers and verifies a JWT. capture
+      # is called by pg_cron and by .github/workflows/capture.yml, neither of
+      # which holds one: they authenticate with the x-cron-secret header that
+      # capture checks itself, in the first statement of its handler. Deploy it
+      # with JWT verification ON and the platform rejects both schedulers
+      # before capture ever sees the request, and the board stops filling with
+      # nothing in capture's own logs to say why.
+      - name: Deploy capture
+        if: ${{ inputs.deploy_capture && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy capture \
+            --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" \
+            --no-verify-jwt
+
+      - name: Apply the recommendation ledger migration
+        if: ${{ inputs.apply_ledger && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # The migration is written to be re-appliable; ledger_sql.test.js
+          # proves that by applying it twice against a throwaway server.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/recommendation_ledger.sql
+
+      - name: Apply the research packets migration
+        if: ${{ inputs.apply_research_packets && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent; research_packets_sql.test.js applies it twice against a
+          # throwaway server and attacks it. Its last statement is a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/research_packets.sql
+
+      - name: Apply the bankroll and stake-trail migration
+        if: ${{ inputs.apply_bankroll_and_stakes && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent; stake_sql.test.js applies it twice against a throwaway
+          # server and attacks it. Its last statement is a report, and a row
+          # reading CHECK THIS is the thing to read before deploying anything.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/bankroll_and_stakes.sql
+
+      - name: Apply the tennis live centre contract
+        if: ${{ inputs.apply_tennis_live_center && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent, and already in production — tennis-live.yml has been
+          # green against it for weeks. It is here because it had no apply path
+          # either, and the record jobs join tennis.live_matches: a database
+          # rebuilt from this repository needs to be able to get it back.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_live_center.sql
+
+      # RECONCILE FIRST, WHERE THE NAMES ARE ALREADY TAKEN BY AN EARLIER DRAFT.
+      #
+      # "Idempotent" is true of tennis_record.sql over a database whose tables
+      # IT created. Production carried an older draft of the same names — a
+      # tennis.players with no name_norm, a tennis.matches with no
+      # source_match_uid, a tennis.rankings_current that was a VIEW — and
+      # `create table if not exists` skips a name that is taken whatever is
+      # behind it, so the apply stopped at the first index that assumed its own
+      # columns, part-applied. This file removes only what is in the way, and
+      # refuses to drop a relation that holds a row or that a view depends on.
+      # It is a no-op once the contract owns those names, so leaving it checked
+      # on a later run cannot do anything.
+      - name: Reconcile a pre-contract tennis schema
+        if: ${{ inputs.reconcile_tennis_record && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_record_reconcile.sql
+
+      # THE TENNIS RESEARCH RECORD. supabase/tennis_record.sql has been in the
+      # repository, tested by games-sql.yml against a throwaway PostgreSQL and
+      # read by tools/tennis/*, since the record shipped — but it had no apply
+      # path anywhere. games-sql.yml only ever proved it CAN be applied; nothing
+      # applied it to production. So every Tennis record run failed on
+      #   ERROR: relation "tennis.ingestion_runs" does not exist
+      # against a database where the schema had simply never been installed.
+      # This is that path, in the same opt-in shape as the three above.
+      - name: Apply the tennis research record contract
+        if: ${{ inputs.apply_tennis_record && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent: every object is `create ... if not exists` or
+          # `create or replace`, and record_sql.test.js applies the file twice
+          # against a throwaway server and re-runs the live suite after.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_record.sql
+
+      - name: Apply the tennis rating lab contract
+        if: ${{ inputs.apply_tennis_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Adds columns to tennis.player_ratings_current, which the record
+          # contract owns, so the record contract has to be in place first.
+          # lab_sql.test.js applies both orders on a bare database and re-runs
+          # the record and live reports after, so neither order breaks.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_lab.sql
+
+      - name: Apply the CFB Model Lab contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent and append-only; football/cfb_lab/sql.test.js applies it
+          # twice against a throwaway server, reproduces every market-rule
+          # fixture and attacks every table. Its last statement is a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_lab.sql
+
+      - name: Apply the CFB Model Lab hourly scheduler
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Runs after the contract (the step above; it refuses without it).
+          # Where pg_cron or pg_net is missing it schedules nothing and its
+          # report says so rather than failing; the GitHub token is the Vault
+          # secret editorial_dispatch_sql.sql already reads.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_lab_cron.sql
+
+      - name: Apply the CFB weekly refresh engine contract and schedule
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Independent of the lab's tables. Append-only state tables, the run
+          # table, and cfb_weekly_poke(mode) with its pg_cron jobs (Sun/Mon
+          # 10:05 weekly, Tue 12:07 freeze, Wed-Sat 10:47 daily). Tested by
+          # football/cfb_weekly/sql.test.js; ends in a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_weekly.sql
+
+      - name: Apply the CFB personnel (roster intelligence) contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Independent tables: the player registry, player-week state, unit
+          # personnel state, player events, game snapshots and personnel model
+          # versions; append-only, internal (no anon access). Tested by
+          # football/cfb_personnel/sql.test.js; ends in a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_personnel.sql
+
+      - name: Apply the CFB wagering decision contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Decision snapshots, eligibility, results (process and outcome apart),
+          # calibration, policies, bankroll, exposure, experiments, manual wagers;
+          # append-only and internal. Tested by football/cfb_decision/sql.test.js.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_decision.sql
+
+      - name: Apply the CFB production operations contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+          # a DDL statement that cannot get its lock in 5 s fails instead of
+          # queueing every reader of the table behind it
+          PGOPTIONS: '-c lock_timeout=5s'
+        run: |
+          # LAST, after the contracts above (its published views and health checks
+          # read their tables). The manifest, the compatibility matrix, feature
+          # flags, the hash-chained audit log, manual corrections, job locks,
+          # heartbeats, incidents and cfb_health(). Idempotent; a re-apply takes no
+          # ACCESS EXCLUSIVE lock (measured by football/cfb_production/sql.test.js).
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_production.sql
+
+      - name: Record the CFB production manifest (write-once, deployment time = now)
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          # What exact system is deployed: versions, artifact hashes, commit,
+          # migration set; champion_selection NOT_RUN (no Model Championship).
+          node football/cfb_production/manifest.js --push
+
+      - name: Say what is skipped, rather than leaving it unsaid
+        if: always()
+        run: |
+          {
+            echo '## Deploy intelligence'
+            echo ''
+            [ "${{ steps.creds.outputs.have_token }}" = "yes" ] && echo '- Supabase access token: present' || echo '- Supabase access token: **missing — the function was NOT deployed**'
+            [ "${{ steps.creds.outputs.have_ref }}" = "yes" ]   && echo '- Project ref: present'          || echo '- Project ref: **missing**'
+            [ "${{ steps.creds.outputs.have_db }}" = "yes" ]    && echo '- Database URL: present'         || echo '- Database URL: missing (migrations skipped)'
+            echo ''
+            echo "- edgedesk_ai requested: ${{ inputs.deploy_function }}"
+            echo "- capture requested: ${{ inputs.deploy_capture }}"
+            echo "- tennis live centre requested: ${{ inputs.apply_tennis_live_center }}"
+            echo "- tennis record contract requested: ${{ inputs.apply_tennis_record }}"
+            echo "- tennis rating lab requested: ${{ inputs.apply_tennis_lab }}"
+            echo "- CFB Model Lab + weekly refresh engine contracts and schedules requested: ${{ inputs.apply_cfb_lab }}"
+            echo ''
+            echo 'Confirm what is actually running with the **Intelligence doctor** workflow — it asks the'
+            echo 'deployment rather than trusting this one.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # THE ONLY HONEST CONFIRMATION IS THE DEPLOYMENT'S OWN ANSWER.
+      - name: Ask production what it is now running
+        if: always()
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node tools/intelligence/deploy_doctor.js || true

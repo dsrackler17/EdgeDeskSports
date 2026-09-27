@@ -1,0 +1,70 @@
+# EdgeDesk — the personal research job: slate state, alerts, journal grades.
+#
+# Boots the real football module headlessly (the same host the article
+# generator uses), asks it for every upcoming game's research state, and
+# writes the result to public.game_research_state. The database's own
+# trigger keeps the history of every distinct state. Readers watching a game
+# whose state changed get the research-condition alerts they asked for
+# (in-app; nothing is emailed). Wagered journal entries whose game has kicked
+# off get their close, CLV and — once the committed record has the final —
+# their result. The affiliate ledger is reconciled against the Stripe ledger.
+#
+# It reads CAPTURED quotes only (public.signals, through a read-only reader
+# the job supplies), so it spends no odds-provider credit.
+#
+# Secrets: SB_URL and SB_SERVICE_ROLE, the same two the ingestion jobs use.
+# Without them the job refuses to run rather than pretending it wrote.
+# Requires supabase/personal_research.sql (and, for the affiliate step,
+# supabase/affiliates.sql) to have been run once in the SQL editor.
+name: Personal research state
+
+on:
+  schedule:
+    # Thirty-eight past the hour: after the capture day tier (:26) has landed
+    # new quotes and before the next one.
+    - cron: '38 * * * *'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Run one step only: states, alerts, grade or affiliates (blank = all)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: research-state
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The alert wording, thresholds, CLV and grading must pass before anything is written
+        run: node tools/personal/personal.test.js
+
+      - name: Build states, alert, grade, reconcile
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: |
+          if [ -z "$SB_URL" ] || [ -z "$SB_SERVICE_ROLE" ]; then
+            echo "::error::SB_URL / SB_SERVICE_ROLE are not set — nothing can be written."
+            exit 1
+          fi
+          if [ -n "$ONLY" ]; then
+            node tools/personal/research_state.js --network --only "$ONLY"
+          else
+            node tools/personal/research_state.js --network
+          fi

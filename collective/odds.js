@@ -158,6 +158,11 @@
     if (opts.books === undefined) opts.books = false;
     var q = [];
     if (opts.days) q.push('days=' + encodeURIComponent(opts.days));
+    /* the look-back. `days` only ever widened the future, and a fixed 24-hour
+       lower bound on the server dropped a game off the board a day after
+       kickoff — taking its closing line, and every record graded on it, with
+       it. A server that does not know this parameter ignores it. */
+    if (opts.back) q.push('back=' + encodeURIComponent(opts.back));
     if (opts.from) q.push('from=' + encodeURIComponent(opts.from));
     if (opts.to) q.push('to=' + encodeURIComponent(opts.to));
     if (opts.week) q.push('week=' + encodeURIComponent(opts.week));
@@ -619,42 +624,42 @@
   /* ------------------------------------------------------------------- css */
   var CSS = [
     '.mco-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;padding:6px 0}',
-    '.mco-tag{font-size:9.5px;letter-spacing:.14em;color:var(--faint,#5b6472);font-weight:700}',
+    '.mco-tag{font-size:9.5px;letter-spacing:.14em;color:var(--faint,#6f6553);font-weight:700}',
     '.mco-mk{white-space:nowrap}',
     '.mco-mk b{font-variant-numeric:tabular-nums}',
-    '.mco-dim{color:var(--dim,#8a93a2)}',
+    '.mco-dim{color:var(--dim,#a29581)}',
     '.mco-spacer{flex:1}',
-    '.mco-chip{font-size:10px;padding:2px 6px;border-radius:999px;border:1px solid var(--border,#262c36);white-space:nowrap}',
-    '.mco-fresh{color:var(--dim,#8a93a2)}',
+    '.mco-chip{font-size:10px;padding:2px 6px;border-radius:999px;border:1px solid var(--border,#332a1b);white-space:nowrap}',
+    '.mco-fresh{color:var(--dim,#a29581)}',
     '.mco-stale{color:var(--warn,#d99a2b);border-color:rgba(217,154,43,.45)}',
-    '.mco-none{color:var(--faint,#5b6472)}',
-    '.mco-live{color:var(--pos,#2fb47c);border-color:rgba(47,180,124,.5);font-weight:700;letter-spacing:.08em}',
-    '.mco-closed{color:var(--faint,#5b6472)}',
-    '.mco-empty{color:var(--dim,#8a93a2);font-size:12.5px;padding:8px 0}',
-    '.mco-card{border:1px solid var(--border,#262c36);border-radius:10px;padding:12px;background:var(--surface,#13161c)}',
+    '.mco-none{color:var(--faint,#6f6553)}',
+    '.mco-live{color:var(--pos,#76bd3e);border-color:rgba(118,189,62,.5);font-weight:700;letter-spacing:.08em}',
+    '.mco-closed{color:var(--faint,#6f6553)}',
+    '.mco-empty{color:var(--dim,#a29581);font-size:12.5px;padding:8px 0}',
+    '.mco-card{border:1px solid var(--border,#332a1b);border-radius:10px;padding:12px;background:var(--surface,#191510)}',
     '.mco-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}',
     '.mco-gm{font-weight:600}',
-    '.mco-cons,.mco-sharp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;padding:6px 0;border-top:1px solid var(--border,#262c36)}',
-    '.mco-note{color:var(--faint,#5b6472);font-size:11px;flex-basis:100%}',
-    '.mco-mkt{border-top:1px solid var(--border,#262c36);padding-top:8px;margin-top:8px}',
-    '.mco-mkt-t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim,#8a93a2);margin-bottom:4px}',
+    '.mco-cons,.mco-sharp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;padding:6px 0;border-top:1px solid var(--border,#332a1b)}',
+    '.mco-note{color:var(--faint,#6f6553);font-size:11px;flex-basis:100%}',
+    '.mco-mkt{border-top:1px solid var(--border,#332a1b);padding-top:8px;margin-top:8px}',
+    '.mco-mkt-t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim,#a29581);margin-bottom:4px}',
     '.mco-tbl{width:100%;border-collapse:collapse;font-size:12.5px}',
     '.mco-tbl td,.mco-tbl th{padding:3px 6px;text-align:left;vertical-align:top}',
-    '.mco-tbl th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim,#8a93a2)}',
+    '.mco-tbl th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim,#a29581)}',
     '.mco-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}',
     '.mco-sel{white-space:nowrap}',
     '.mco-books{display:flex;gap:5px;flex-wrap:wrap}',
-    '.mco-bk{font-size:11px;border:1px solid var(--border,#262c36);border-radius:6px;padding:1px 5px;font-variant-numeric:tabular-nums;white-space:nowrap}',
-    '.mco-bk i{font-style:normal;color:var(--faint,#5b6472);margin-right:5px}',
-    '.mco-best{border-color:rgba(47,180,124,.6);color:var(--pos,#2fb47c)}',
+    '.mco-bk{font-size:11px;border:1px solid var(--border,#332a1b);border-radius:6px;padding:1px 5px;font-variant-numeric:tabular-nums;white-space:nowrap}',
+    '.mco-bk i{font-style:normal;color:var(--faint,#6f6553);margin-right:5px}',
+    '.mco-best{border-color:rgba(118,189,62,.6);color:var(--pos,#76bd3e)}',
     '.mco-sharpbk i{color:var(--gold,#e3b84d)}',
-    '.mco-alt{font-size:10.5px;color:var(--faint,#5b6472);align-self:center}',
-    '.mco-oc{display:flex;gap:16px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border,#262c36);margin-top:8px;padding-top:8px;font-size:12.5px}',
+    '.mco-alt{font-size:10.5px;color:var(--faint,#6f6553);align-self:center}',
+    '.mco-oc{display:flex;gap:16px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border,#332a1b);margin-top:8px;padding-top:8px;font-size:12.5px}',
     '.mco-oc span{display:flex;flex-direction:column;font-variant-numeric:tabular-nums}',
-    '.mco-oc i{font-style:normal;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint,#5b6472)}',
+    '.mco-oc i{font-style:normal;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint,#6f6553)}',
     '.mco-edge{font-variant-numeric:tabular-nums}',
-    '.mco-foot{margin-top:10px;font-size:10.5px;color:var(--faint,#5b6472)}',
-    '.mco-move td{border-top:1px solid var(--border,#262c36)}'
+    '.mco-foot{margin-top:10px;font-size:10.5px;color:var(--faint,#6f6553)}',
+    '.mco-move td{border-top:1px solid var(--border,#332a1b)}'
   ].join('');
 
   /* Injected once per root, so the same components work in the page and

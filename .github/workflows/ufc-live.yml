@@ -1,0 +1,118 @@
+# EdgeDesk UFC — fight night.
+#
+# GitHub's scheduler cannot poll every twenty seconds and is not asked to.
+# Every half hour a GATE job reads the cards on file and asks one question:
+# is a card inside its live window right now (45 minutes before its start to
+# nine hours after)? When the answer is no, the run ends in seconds. When it
+# is yes, a POLL job starts and STAYS ALIVE for the card: it re-syncs that
+# event's bouts (fight order changes on the day), takes a lock on the event in
+# the database so no second poller can write against it, then reads the
+# provider, normalises the state, writes it, sleeps ~20 seconds, and repeats
+# until the card is over.
+#
+# RECOVERY. The lock has a TTL, so a job that dies without releasing it is
+# fenced out for two and a half minutes, not forever. A source failure backs
+# off and keeps the run alive; ninety minutes of failure ends the run so the
+# next gate starts a fresh one. A card that outlasts the runner's limit hands
+# off: the poller dispatches this workflow again for the same event before it
+# exits, and the job-level concurrency group (one per event) means at most one
+# such run is ever queued behind it. workflow_dispatch with an event id is
+# the manual recovery when the gate's own reading is wrong.
+#
+# Writes use the service role from repository secrets (SB_SERVICE_ROLE /
+# SB_URL). No credential reaches the browser; no Edge Function is involved.
+name: UFC live
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      event_id:
+        description: 'EdgeDesk event id to poll (espn:<id>). Blank = let the gate decide.'
+        required: false
+        default: ''
+      continuation:
+        description: 'Set by a poller handing off at its time limit.'
+        required: false
+        default: 'false'
+      max_minutes:
+        description: 'How long the poller may stay alive (GitHub caps a job at 360).'
+        required: false
+        default: '330'
+
+permissions:
+  contents: read
+  actions: write   # the poller dispatches its own continuation
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: ufc-live-gate
+      cancel-in-progress: false
+    outputs:
+      found: ${{ steps.gate.outputs.found }}
+      event_id: ${{ steps.gate.outputs.event_id }}
+      event_name: ${{ steps.gate.outputs.event_name }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Is a card in its live window?
+        id: gate
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set."
+            exit 1
+          fi
+          if [ -n "${{ inputs.event_id }}" ]; then
+            node tools/ufc/live_gate.js --event "${{ inputs.event_id }}"
+          else
+            node tools/ufc/live_gate.js
+          fi
+
+  poll:
+    needs: gate
+    if: needs.gate.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    concurrency:
+      # one live poller per event; a second run for the same card queues
+      # behind the first (and only one may queue), which is also how a
+      # hand-off at the time limit becomes the next run
+      group: ufc-live-${{ needs.gate.outputs.event_id }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The bell, restart and dedup rules must pass before a live write
+        run: node tools/ufc/ufc.test.js
+
+      - name: Confirm the card — bouts, order, fighters, market links
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          EV="${{ needs.gate.outputs.event_id }}"
+          PROVIDER_ID="${EV#espn:}"
+          node tools/ufc/sync_events.js --commit --event "$PROVIDER_ID" --from-days 2 --to-days 2 --no-stale || echo "::warning::pre-poll sync failed; polling with the card as last stored"
+
+      - name: Poll the card (${{ needs.gate.outputs.event_name }})
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UFC_LIVE_WORKFLOW: ufc-live.yml
+        run: |
+          MAX="${{ inputs.max_minutes }}"
+          if [ -z "$MAX" ]; then MAX=330; fi
+          node tools/ufc/live_poll.js --event "${{ needs.gate.outputs.event_id }}" --max-minutes "$MAX"

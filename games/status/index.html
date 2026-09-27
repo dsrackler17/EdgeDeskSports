@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Status | EdgeDesk Games</title>
+<meta name="description" content="What EdgeDesk Games is connected to right now: the challenge board, the market feed, the social layer and your local record.">
+<meta name="theme-color" content="#100e0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<!-- An operator page, not a product page. -->
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260910a">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap">
+  <div class="sec" style="margin-top:20px">
+    <div class="sec-h"><h2>Status</h2><span class="m" id="stamp"></span></div>
+    <p style="margin:0 0 14px;color:var(--dim);font-size:14px;line-height:1.6">
+      What EdgeDesk Games is connected to right now, checked live from this browser.
+      Nothing here is configurable from the page — this is a read-out, so that a
+      missing feed is visible instead of looking like a quiet day.
+    </p>
+    <div id="checks"><div class="card"><div class="sk" style="width:60%;margin:6px 0"></div>
+      <div class="sk" style="width:40%;margin:12px 0"></div></div></div>
+  </div>
+  <div id="detail"></div>
+</main>
+
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260910a"></script>
+<script src="/games/lib/scoring.js?v=20260910a"></script>
+<script src="/games/lib/challenge.js?v=20260910a"></script>
+<script src="/games/lib/research_state.js?v=20260910a"></script>
+<script src="/games/lib/attribution.js?v=20260910a"></script>
+<script src="/games/lib/store.js?v=20260910a"></script>
+<script src="/games/lib/social.js?v=20260910a"></script>
+<script src="/games/lib/franchise.js?v=20260910a"></script>
+<script src="/games/games.js?v=20260910a"></script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,S=window.EDGamesSocial,ST=window.EDGamesStore,
+      W=window.EDGamesWeek,CH=window.EDGamesChallenge,F=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+  var READY=G.boot('status');
+
+  function esc(s){return G.esc(s);}
+  /* label overrides the default word for the state: a database that is three
+     phases behind is CONNECTED and wrong, and "Not connected" would send an
+     operator looking at the network instead of at the SQL file. */
+  function row(state,title,detail,action,label){
+    var cls=state==='ok'?'ok':state==='warn'?'warn':state==='bad'?'neg':'mut';
+    var dot=label||(state==='ok'?'Connected':state==='warn'?'Degraded':state==='bad'?'Not connected':'Unknown');
+    return '<div class="card" style="padding:14px 16px">'
+      +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+      +'<span class="rs '+cls+'"><span class="dot"></span>'+esc(dot)+'</span>'
+      +'<b style="font-size:14px">'+esc(title)+'</b></div>'
+      +'<div class="rs-means" style="margin-top:8px">'+detail+'</div>'
+      +(action?('<div class="rs-means" style="color:var(--faint);margin-top:6px">'+action+'</div>'):'')
+      +'</div>';
+  }
+
+  function fmt(iso){
+    if(!iso)return 'never';
+    var t=Date.parse(iso);
+    if(!isFinite(t))return esc(String(iso));
+    var age=(Date.now()-t)/36e5;
+    var when=new Date(t).toLocaleString();
+    return esc(when)+' ('+(age<1?'under an hour':Math.round(age)+'h')+' ago)';
+  }
+
+  READY.then(function(cfg){
+    var out=[];
+
+    /* ---- 1. the challenge board ---- */
+    G.artifact().then(function(a){
+      var playable=CH.playable(a.challenges).length;
+      var mkt=a.counts&&a.counts.with_market||0;
+      out.push({order:1,html:row('ok','Challenge board',
+        'Built '+fmt(a.generated_at)+'.<br>'
+        +esc(a.counts.games)+' games read, <b>'+esc(playable)+'</b> playable now, model '
+        +esc(a.model_version||'—')+'.',
+        'Rebuilt daily by the Games challenge board workflow.')});
+
+      /* ---- 2. the market feed — the one that gates Pick 5 and Spread ---- */
+      if(mkt>0){
+        out.push({order:2,html:row('ok','Market feed',
+          '<b>'+esc(mkt)+'</b> of '+esc(playable)+' playable games carry a book number. '
+          +'Pick 5 and the Spread challenge are live.')});
+      }else{
+        out.push({order:2,html:row('bad','Market feed',
+          'No game on the board carries a book number, so <b>Pick 5 and the Spread '
+          +'challenge show their empty states</b>. Price It and the Winner and Price It '
+          +'challenges are unaffected — they run on EdgeDesk’s own projection.',
+          'The build reads <code>signals</code> and <code>cfb.lines</code>. The build log’s '
+          +'<code>[market]</code> lines name the row count from each source and the role used — '
+          +'that is where the cause is. Most often it is a runner with no network route to '
+          +'Supabase, or an ingest that has not run for this slate.')});
+      }
+      paint();
+    }).catch(function(){
+      out.push({order:1,html:row('bad','Challenge board',
+        'The committed board could not be loaded. Every game is unavailable until it is.')});
+      out.push({order:2,html:row('unknown','Market feed','Cannot tell without the board.')});
+      paint();
+    });
+
+    /* ---- 2.5 the schema log — WHAT IS INSTALLED HERE ----
+       This is the row that explains the two below it. Every phase of every
+       SQL file records itself in games_schema_log as it applies, so a
+       database that is three phases behind says so by name instead of
+       looking identical to a current one until a page calls a function
+       that is not there. games_schema() is granted to anon and returns
+       phase names and dates only. */
+    if(cfg&&(!F||typeof F.schema!=='function')){
+      /* A STALE LIBRARY, not a stale database. This page is the one an
+         operator opens when something is wrong, so it must not go quiet
+         about the row it cannot draw — and it must not blame the SQL for a
+         cached franchise.js. Every other row still renders. */
+      out.push({order:2.5,html:row('warn','Database schema',
+        'This browser is holding an older copy of <code>/games/lib/franchise.js</code> than '
+        +'this page needs, so the installed phases cannot be compared.',
+        '<a href="'+esc(location.pathname)+'?fresh='+Date.now()+'">Reload the page</a>.','Stale')});
+      paint();
+    }else if(cfg){
+      F.schema().then(function(r){
+        if(r.status===404||r.error==='not_configured'){
+          /* the log itself predates this database, so it cannot be asked */
+          out.push({order:2.5,html:row('warn','Database schema',
+            'This database was applied <b>before the schema log existed</b>, so it cannot say '
+            +'which phases it has. Everything may still be current — nothing can confirm it.',
+            'Re-apply <code>supabase/games_social.sql</code> and then '
+            +'<code>supabase/games_franchise.sql</code>. Both are safe to run again, and after '
+            +'that this row reports the real answer.','No log')});
+          return paint();
+        }
+        if(!r.ok||!r.data){
+          out.push({order:2.5,html:row('warn','Database schema',
+            'The schema could not be read: '+esc(r.message||r.error||'an error')+'.')});
+          return paint();
+        }
+        var d=r.data,gap=F.schemaGap(d);
+        var have='social <b>'+esc(d.social|0)+'</b> · franchise <b>'+esc(d.franchise|0)+'</b>';
+        var dates='First applied '+fmt(d.applied_at)
+          +(d.reapplied_at?('<br>Last re-applied '+fmt(d.reapplied_at)):'');
+        if(gap.ok){
+          out.push({order:2.5,html:row('ok','Database schema',
+            'Installed: '+have+' — everything this build expects.<br>'+dates,
+            gap.ahead
+              ? 'The database is AHEAD of this build. Harmless: a newer file was applied than '
+                +'the pages here know about. Deploy the site to catch up.'
+              : null)});
+        }else{
+          /* name the first few by name — enough to recognise what is missing —
+             and count the rest, because a fresh database is short nine phases
+             and nine titles in one sentence is a wall, not an answer. */
+          var what=gap.behind.map(function(b){
+            var show=b.missing.slice(0,3),rest=b.missing.length-show.length;
+            return '<b>'+esc(b.layer)+'</b> is at '+esc(b.have)+', this build wants '
+              +esc(b.want)+' — missing '
+              +show.map(function(m){return esc(m.phase)+') '+esc(m.name);}).join(', ')
+              +(rest>0?(', and '+esc(rest)+' more'):'')+'.';
+          }).join('<br>');
+          out.push({order:2.5,html:row('bad','Database schema',
+            'This database is <b>behind this build</b>, so pages that need a missing phase will '
+            +'fail on a function that is not there.<br>'+what+'<br>'+dates,
+            'Paste and run '+gap.behind.map(function(b){return '<code>'+esc(b.file)+'</code>';}).join(' then ')
+            +' in the Supabase SQL editor. Safe to run again.','Behind')});
+        }
+        paint();
+      });
+    }
+
+    /* ---- 3. the social layer ---- */
+    if(!cfg){
+      out.push({order:3,html:row('bad','Social layer',
+        'No endpoint is configured in this build, so Head-to-Head and Groups cannot run.',
+        'games/data/config.json is written by the build from app.html.')});
+      paint();
+    }else{
+      /* PROBE h2h_submit, NOT group_preview.
+         group_preview takes only a token, so it never calls games_hash() and
+         answers "live" just as happily against a stale deployment whose
+         games_hash still calls pgcrypto's digest() — the exact failure that
+         broke challenge creation in production while this page said fine.
+         h2h_submit computes games_hash(p_secret) in its DECLARE block, before
+         it looks the token up, so an unknown token exercises the hash and then
+         raises 'no such challenge' having written nothing. That is a real
+         end-to-end read of the layer people actually use. */
+      S.rpc('h2h_submit',{
+        p_token:'statuscheckdoesnotexist',
+        p_selection:{},
+        p_display_name:'status check',
+        p_secret:'00000000000000000000000000000000'
+      }).then(function(r){
+        var msg=String((r&&(r.message||r.error))||'');
+        var host=esc(cfg.supabase_url.replace(/^https?:\/\//,''));
+        if(r.ok){
+          /* the token does not exist, so a healthy backend cannot succeed */
+          out.push({order:3,html:row('warn','Social layer',
+            'Reachable at '+host+', but the check did not behave as expected.',
+            'A challenge submission against a token that does not exist should be refused.')});
+        }else if(r.status===404||r.error==='not_configured'){
+          out.push({order:3,html:row('bad','Social layer',
+            'The database functions are not deployed, so <b>Head-to-Head and Groups cannot '
+            +'be used</b>. Price It and Pick 5 are unaffected.',
+            'Apply <code>supabase/games_social.sql</code> to the Supabase project.')});
+        }else if(/does not exist/i.test(msg)&&/digest|function/i.test(msg)){
+          out.push({order:3,html:row('bad','Social layer',
+            'The deployed functions are <b>out of date</b>, so creating or joining a '
+            +'Head-to-Head or a group fails. Price It and Pick 5 are unaffected.',
+            'The database reported: <code>'+esc(msg)+'</code>. Re-apply the CURRENT '
+            +'<code>supabase/games_social.sql</code> from the repository — an older copy '
+            +'is still installed.')});
+        }else if(r.error==='P0002'||/no such challenge/i.test(msg)){
+          /* reached past games_hash and past the token lookup: fully deployed */
+          out.push({order:3,html:row('ok','Social layer',
+            'Head-to-Head and Groups are live against '+host+'.',
+            'Checked end to end: the secret hash and the challenge lookup both answered.')});
+        }else{
+          out.push({order:3,html:row('warn','Social layer',
+            'Reachable at '+host+', but the check returned: '+esc(msg||'an error')+'.')});
+        }
+        paint();
+      });
+    }
+
+    /* ---- 3b. the franchise layer ----
+       franchise_economy() is granted to anon and applies no state, so it is
+       a safe probe: a 404 means supabase/games_franchise.sql is not applied. */
+    if(cfg){
+      S.rpc('franchise_economy',{}).then(function(r){
+        if(r.ok&&r.data&&r.data.version){
+          out.push({order:3.5,html:row('ok','Franchise layer',
+            'Franchises, rosters and the ledger are live ('+esc(r.data.version)+').',
+            'The board is published to the server by the challenge workflow; Pick 5 settles on the server from the settle workflow.')});
+        }else if(r.status===404||r.error==='not_configured'){
+          out.push({order:3.5,html:row('bad','Franchise layer',
+            'The franchise functions are not deployed, so <b>a franchise cannot be founded and no reward is credited</b>. '
+            +'Price It, Pick 5 and the Drill are unaffected — they play and keep their record on this device.',
+            'Apply <code>supabase/games_franchise.sql</code> to the Supabase project, after <code>games_social.sql</code>.')});
+        }else{
+          out.push({order:3.5,html:row('warn','Franchise layer','Reachable, but the check returned: '+esc(r.message||r.error||'an error')+'.')});
+        }
+        paint();
+      });
+    }
+
+    /* ---- 4. your identity and record ---- */
+    var u=S.signedIn()?S.user():null;
+    out.push({order:4,html:row(u?'ok':'warn','Your account',
+      u?('Signed in as <b>'+esc(S.displayName())+'</b>. Head-to-Head results, ratings and '
+        +'group membership are saved to your account.')
+       :('Not signed in. You can play everything except creating or joining a group; '
+        +'results are kept on this device only.'),
+      u?null:'<a href="/games/franchise/?intent=status">Create a free account</a>')});
+
+    var pi=ST.priceItRecord(),p5=ST.pick5Record();
+    out.push({order:5,html:row(ST.storageWorks()?'ok':'warn','This device',
+      (ST.storageWorks()
+        ? 'Local storage is working, so streaks and history persist here.'
+        : 'This browser is blocking local storage, so nothing is saved between visits.')
+      +'<br>Price It: <b>'+pi.played+'</b> played'
+      +(pi.avg_distance!=null?(' · avg '+pi.avg_distance.toFixed(1)+' pts off'):'')
+      +' · Pick 5: <b>'+(p5.label||'—')+'</b>'
+      +' · week of '+esc(W.weekKey()))});
+
+    function paint(){
+      out.sort(function(a,b){return a.order-b.order;});
+      $('checks').innerHTML=out.map(function(o){return o.html;}).join('');
+      $('stamp').textContent='checked just now';
+    }
+    paint();
+  });
+})();
+</script>
+</body>
+</html>
