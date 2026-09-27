@@ -1,0 +1,161 @@
+{
+ "rules": "docs/cfb-v2/HARDENING_PREREG.md",
+ "window": "development 2016-2023 only",
+ "R2_components": {
+  "dev_drop_one_delta_mae": {
+   "A_adj_eff": -0.0004,
+   "B_elo": 0.0017,
+   "C_ridge": 0.0731,
+   "D_gbm": 0.0096,
+   "E_drive": -0.0023
+  },
+  "threshold": 0.005,
+  "keep": [
+   "C_ridge",
+   "D_gbm"
+  ],
+  "drop": [
+   "A_adj_eff",
+   "B_elo",
+   "E_drive"
+  ]
+ },
+ "R4_feature_groups": {
+  "EPA (current-season efficiency)": "RETEST",
+  "QB model": "RETEST",
+  "conference / postseason flags": "KEEP",
+  "drive efficiency": "REMOVE",
+  "explosiveness": "KEEP",
+  "finishing drives": "NOT IN CANDIDATE 001",
+  "havoc": "REMOVE",
+  "home field": "RETEST",
+  "matchup interactions": "RETEST",
+  "preseason prior edges": "KEEP",
+  "recent form": "KEEP",
+  "rest": "RETEST",
+  "results-based Elo": "KEEP",
+  "special teams": "RETEST",
+  "success rate": "KEEP",
+  "travel / time zone / altitude": "RETEST",
+  "trenches": "KEEP",
+  "turnover rate (volatile)": "NOT IN CANDIDATE 001"
+ },
+ "R4_prior_rebuilds": {
+  "all preseason information": "KEEP",
+  "coaching": "KEEP",
+  "last season ratings (program baseline)": "KEEP",
+  "recruiting / talent": "KEEP",
+  "returning production": "KEEP"
+ },
+ "R4_removed_groups": [
+  "drive efficiency",
+  "havoc"
+ ],
+ "R4_removed_columns": [
+  "drive_margin_raw",
+  "edge_havoc",
+  "edge_sack_rate",
+  "x_sack_a",
+  "x_sack_h"
+ ],
+ "R3_combination": {
+  "dev_mae": {
+   "sum_to_one_nonneg": 12.7958,
+   "mean": 12.7991
+  },
+  "tolerance": 0.01,
+  "chosen": "mean"
+ },
+ "R4_joint_check": {
+  "candidate_001_dev_mae": 12.8024,
+  "simplified_dev_mae": 12.7991,
+  "tolerance": 0.01,
+  "restored_groups": [],
+  "final_removed_columns": [
+   "drive_margin_raw",
+   "edge_havoc",
+   "edge_sack_rate",
+   "x_sack_a",
+   "x_sack_h"
+  ]
+ },
+ "R5_update_speed": {
+  "variants": {
+   "ps2": {
+    "n": 5954,
+    "mae_a": 12.8001,
+    "mae_b": 12.7991,
+    "diff": 0.001,
+    "ci": [
+     -0.0198,
+     0.0219
+    ],
+    "qualifies": false
+   },
+   "ps4": {
+    "n": 5954,
+    "mae_a": 12.8156,
+    "mae_b": 12.7991,
+    "diff": 0.0165,
+    "ci": [
+     -0.0168,
+     0.049
+    ],
+    "qualifies": false
+   },
+   "hl4": {
+    "n": 5954,
+    "mae_a": 12.7959,
+    "mae_b": 12.7991,
+    "diff": -0.0032,
+    "ci": [
+     -0.0179,
+     0.0119
+    ],
+    "qualifies": false
+   }
+  },
+  "rule": "adopt if dev MAE improves by >= 0.02 with CI < 0",
+  "adopted": null
+ },
+ "R6_calibration": {
+  "win": "raw",
+  "cover": "platt"
+ },
+ "R8_qb_overlay": {
+  "same starter": {
+   "n": 9396,
+   "mean_resid": 0.1502,
+   "ci": [
+    -0.195,
+    0.4677
+   ]
+  },
+  "baseline_same_starter_rate_dev": 0.8571,
+  "delta_change_minus_same": -1.1588,
+  "delta_ci": [
+   -2.0073,
+   -0.2177
+  ],
+  "any unexpected change": {
+   "n": 1567,
+   "mean_resid": -1.0087,
+   "ci": [
+    -1.8171,
+    -0.2119
+   ],
+   "applied": true,
+   "excess_var_pts2": 8.0962
+  },
+  "first-time starter": {
+   "n": 129,
+   "mean_resid": -2.9006,
+   "ci": [
+    -5.747,
+    0.0057
+   ],
+   "applied": false,
+   "excess_var_pts2": 16.8267
+  }
+ }
+}
