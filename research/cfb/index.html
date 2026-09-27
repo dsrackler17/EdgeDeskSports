@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- not indexed: whether the research terminal sits behind the subscription is the owner's call (docs/cfb-terminal/DELIVERABLE.md) -->
+<meta name="robots" content="noindex">
+<title>CFB Research Terminal · EdgeDesk</title>
+<meta name="description" content="EdgeDesk's independent college football fair lines, why they differ from the market, what could make them wrong, and what price matters. Research, not picks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="/research/cfb/terminal.css?v=20260927a">
+</head>
+<body>
+<!-- THE CFB RESEARCH TERMINAL.
+     It computes nothing that is a projection: it reads the cached research
+     objects football/cfb_terminal/build.js writes hourly from the production
+     artifacts (the champion's slate, the Model Lab ledger, the frozen decision
+     policy) and renders them. The same lib/cfb_terminal.js that built them
+     answers "Ask this game" from them, so the page, the brief and the
+     assistant cannot disagree about a number. -->
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><b>EDGEDESK</b><span class="sub">CFB research terminal</span>
+      <a class="back" href="/app.html">Terminal →</a></div>
+    <nav class="nav" id="nav">
+      <a href="#/" data-r="queue">Research queue</a>
+      <a href="#/brief" data-r="brief">Weekly brief</a>
+      <a href="#/watch" data-r="watch">Watchlist</a>
+      <a href="#/record" data-r="record">Record</a>
+      <a href="#/why" data-r="why">Why EdgeDesk</a>
+      <a href="#/terms" data-r="terms">Terms</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <div id="trust" class="trust" aria-label="Trust panel"></div>
+  <div id="view"><div class="empty">Loading EdgeDesk research…</div></div>
+  <div class="foot">Research, not picks and not advice. Every number on this page comes from EdgeDesk’s stored production outputs; a missing input is shown as missing.
+    21+. Gamble responsibly — 1-800-GAMBLER. · <a href="#" data-ed-report="Wrong or missing data">Report a data problem</a></div>
+</main>
+<div class="tip" id="tip"></div>
+<script src="/lib/cfb_terminal.js?v=20260927a"></script>
+<script src="/lib/edgedesk_report.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
+<script>
+try{ window.EDReport.configure({
+  url:"https://iattxbkbufslbauoumga.supabase.co",
+  key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8",
+  version:'cfb-terminal-2026-09', surface:'cfb-terminal'}); }catch(e){}
+</script>
+<script src="/research/cfb/terminal.js?v=20260927a"></script>
+</body>
+</html>

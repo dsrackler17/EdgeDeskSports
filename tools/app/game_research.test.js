@@ -424,7 +424,7 @@ chk('it is substantial enough to stand alone', BR.split('\n').length > 25);
 /* 10. STRUCTURE: SUMMARY FIRST, WARNINGS NEVER COLLAPSED                   */
 /* ======================================================================== */
 const CARD = APP.slice(APP.indexOf('function fbP4Card(u){'), APP.indexOf('function fbP4EdgeTag'));
-const order = ['fbGxSummary', "'drivers'", "'wrong'", "'cases'", "'scale'", "'detail'", "'scores'", "'edr'", "'quality'"];
+const order = ['fbGxSummary', "'drivers'", "'wrong'", "'cases'", "'scale'", "'detail'", "'edr'", "'quality'"];
 let last = -1;
 order.forEach(k => { const i = CARD.indexOf(k); chk('the card renders ' + k + ' in order', i > last, 'index ' + i); last = i; });
 chk('the summary is not inside a collapsible section', /var body=fbGxSummary\(u,p,gid\)/.test(CARD));
@@ -432,8 +432,16 @@ chk('drivers, risk, the cases and the scale default open',
   /'drivers',[\s\S]{0,80}?,true\)/.test(CARD) && /'wrong',[\s\S]{0,80}?,true\)/.test(CARD)
   && /'cases',[\s\S]{0,80}?,true\)/.test(CARD) && /'scale',[\s\S]{0,80}?,true\)/.test(CARD));
 chk('the deep modules default collapsed',
-  /'detail',[\s\S]{0,60}?,false,/.test(CARD) && /'scores',[\s\S]{0,60}?,false,/.test(CARD)
+  /'detail',[\s\S]{0,60}?,false,/.test(CARD)
   && /'edr',[\s\S]{0,80}?,false,/.test(CARD) && /'quality',[\s\S]{0,60}?,false,/.test(CARD));
+/* the research-terminal audit removed the ten-chip "Model scores" panel and the
+   legacy edge tag (a second status system); the card now links to the one
+   canonical research page instead (research/cfb/, docs/cfb-terminal/AUDIT.md) */
+chk('the ten-chip model-scores panel is gone', CARD.indexOf("'scores'") < 0 && CARD.indexOf("fbP4Score('volatility'") < 0);
+chk('the detail line no longer prints the legacy edge tag', CARD.indexOf('fbP4EdgeTag(p.edge.spread)') < 0);
+chk('every card links to the canonical research page', /fbTermLink\(g\.game_id\)/.test(CARD) && APP.indexOf("/research/cfb/#/game/'") >= 0);
+chk('the terminal board is loaded by the board, not the card', SRC.indexOf('fbTermLoad') < 0 && /try\{fbTermLoad\(\);\}catch/.test(APP));
+chk('the data-completeness line survived, in the quality section', /'quality','Data quality and methodology',compl\+why/.test(CARD));
 chk('nothing that existed on the card was dropped',
   ['fbEdrGameHTML', 'fbP4Hth', 'fbPqOpen'].every(f => CARD.indexOf(f) >= 0));
 /* the deep section must not repeat what the open sections above it now show */
