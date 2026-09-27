@@ -114,9 +114,11 @@ PACE_METRICS = [('plays_pg', 'n_plays_all'), ('drives_pg', 'n_drives_all')]
 ST_METRICS = [('st_net', 'st_net_epa'), ('fg_value', 'fg_epa')]
 
 # --------------------------------------------------------------- Elo (B)
-ELO_K = 20.0                          # tuned on dev window
-ELO_HFA = 55.0                        # Elo points (tuned)
-ELO_CARRY = 0.70                      # season carry-over toward conference mean (tuned)
+# tuned on the dev window (report/tuning_elo.json): K=50, HFA=70 Elo pts, carry-over 1
+# (the optimum is flat: the top four settings differ by < 0.006 pts of MAE)
+ELO_K = 50.0
+ELO_HFA = 70.0
+ELO_CARRY = 1.0
 ELO_MOV_CAP = 35.0                    # diminishing returns on blowouts
 ELO_PTS_PER_ELO = 1.0 / 25.0          # margin per Elo point (fitted)
 

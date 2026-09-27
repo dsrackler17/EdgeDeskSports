@@ -82,43 +82,74 @@ def add_baselines(M, X):
 
 
 # ------------------------------------------------------------- rule (DEV)
-def select_rule(M):
+def select_rule(M, n_null=500):
+    """Choose the BET rule on DEV seasons, then ask whether choosing the best of
+    many rules would have found something this good in a world with no edge.
+
+    Reality check (White 2000, simplified): the whole grid search is repeated
+    on n_null worlds in which every bet's result is replaced by a fair coin
+    (win/lose with the observed push rows kept as pushes). BET is enabled only
+    if the real best lower bound beats the 95th percentile of the null bests
+    AND the real best has positive CLV."""
     dev = [s for s in C.DEV_SEASONS]
     C.assert_dev_only(dev)
-    d = M[M.season.isin(dev) & M.ev.notna() & M.status.eq('FINAL') & ~M.fcs_game]
-    grid = []
+    d = M[M.season.isin(dev) & M.ev.notna() & M.status.eq('FINAL') & ~M.fcs_game].reset_index(drop=True)
+    ag, ev, rel = d.gap_open.abs().values, d.ev.values, d.reliability.fillna(0).values
+    early = d.early_season.astype(bool).values
+    specs, masks = [], []
     for review_gap in (7.0, 10.0, 14.0):
         for gap in (0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0):
-            for ev in (0.0, 0.02, 0.04, 0.06):
-                for rel in (0.0, 50.0, 65.0):
-                    for early in (False, True):
-                        m = (d.gap_open.abs() >= gap) & (d.gap_open.abs() < review_gap) & (d.ev > ev) \
-                            & (d.reliability.fillna(0) >= rel)
-                        if early:
-                            m &= ~d.early_season.astype(bool)
-                        s = d[m]
-                        n = len(s)
-                        if n < 150:
+            for evm in (0.0, 0.02, 0.04, 0.06):
+                for relm in (0.0, 50.0, 65.0):
+                    for ex in (False, True):
+                        m = (ag >= gap) & (ag < review_gap) & (ev > evm) & (rel >= relm)
+                        if ex:
+                            m &= ~early
+                        if m.sum() < 150:
                             continue
-                        u = s.bet_units.values
-                        roi = float(u.mean())
-                        se = float(u.std(ddof=1) / np.sqrt(n))
-                        grid.append(dict(review_gap=review_gap, bet_gap=gap, bet_ev=ev, bet_min_rel=rel,
-                                         exclude_early=early, n=n, roi=roi, roi_lb90=roi - 1.645 * se,
-                                         ats=float((s.bet_result[s.bet_result != 0] == 1).mean()),
-                                         clv=float(s.clv_pts.mean())))
-    G = pd.DataFrame(grid)
-    best = G.sort_values('roi_lb90', ascending=False).iloc[0].to_dict() if len(G) else None
-    validated = bool(best is not None and best['roi_lb90'] > 0 and best['clv'] > 0)
-    rule = {'review_gap': float(best['review_gap']) if best else 10.0,
-            'bet_gap': float(best['bet_gap']) if best else 99.0,
-            'bet_ev': float(best['bet_ev']) if best else 1.0,
-            'bet_min_rel': float(best['bet_min_rel']) if best else 101.0,
-            'exclude_early': bool(best['exclude_early']) if best else True,
-            'lean_ev': 0.0, 'lean_gap': 0.0,
+                        specs.append(dict(review_gap=review_gap, bet_gap=gap, bet_ev=evm, bet_min_rel=relm,
+                                          exclude_early=ex))
+                        masks.append(m)
+    Mk = np.array(masks, dtype=float)                   # rules x games
+    n = Mk.sum(axis=1)
+    WINP = MKT.WIN_PAYOUT
+
+    def lb90(units):
+        s1 = Mk @ units
+        s2 = Mk @ (units ** 2)
+        mean = s1 / n
+        var = (s2 - n * mean ** 2) / np.maximum(n - 1, 1)
+        return mean - 1.645 * np.sqrt(np.maximum(var, 0) / n), mean
+
+    u = d.bet_units.values.astype(float)
+    lb, roi = lb90(u)
+    res = d.bet_result.values
+    ats = np.array([(res[m][res[m] != 0] == 1).mean() for m in masks])
+    clv = (Mk @ np.nan_to_num(d.clv_pts.values)) / n
+    G = pd.DataFrame(specs)
+    G['n'], G['roi'], G['roi_lb90'], G['ats'], G['clv'] = n, roi, lb, ats, clv
+    rng = np.random.default_rng(C.SEED)
+    null_best = []
+    push = res == 0
+    for _ in range(n_null):
+        coin = np.where(rng.random(len(u)) < 0.5, WINP, -1.0)
+        coin[push] = 0.0
+        null_best.append(float(np.max(lb90(coin)[0])))
+    q95 = float(np.quantile(null_best, 0.95))
+    i = int(np.argmax(lb))
+    best = G.iloc[i].to_dict()
+    p_val = float(np.mean(np.array(null_best) >= best['roi_lb90']))
+    validated = bool(best['roi_lb90'] > q95 and best['clv'] > 0)
+    rule = {'review_gap': float(best['review_gap']), 'bet_gap': float(best['bet_gap']),
+            'bet_ev': float(best['bet_ev']), 'bet_min_rel': float(best['bet_min_rel']),
+            'exclude_early': bool(best['exclude_early']), 'lean_ev': 0.0, 'lean_gap': 0.0,
             'dev_best': best, 'bet_enabled': validated,
-            'selection': 'max lower 90% bound of ROI/bet on DEV seasons, n>=150; BET enabled only if that '
-                         'bound > 0 AND mean CLV > 0',
+            'reality_check': {'null_worlds': n_null, 'null_best_lb90_q95': q95,
+                              'p_value_best_rule': p_val,
+                              'rules_with_positive_lb90': int((G.roi_lb90 > 0).sum())},
+            'selection': 'max lower 90%% bound of ROI/bet on DEV seasons (n>=150) over %d rules; BET enabled '
+                         'only if that bound beats the 95th percentile of the same search on %d '
+                         'coin-flip worlds AND mean CLV > 0' % (len(G), n_null),
             'grid_size': int(len(G))}
     return rule, G
 
@@ -145,10 +176,17 @@ def betting_report(M, seasons, rule):
     w = M[M.season.isin(seasons) & M.status.eq('FINAL') & M.ev.notna() & ~M.fcs_game].copy()
     st, why = MKT.decide(w, rule)
     w['status_research'] = st
+    atc = lambda d: EV.betting_metrics(d.assign(bet_units=d.bet_units_close, bet_result=d.bet_result_close)
+                                       .dropna(subset=['bet_units']))
     out = {'all_games_side_of_model': EV.betting_metrics(w),
+           'all_games_side_of_model_at_close': atc(w),
            'by_status': {s: EV.betting_metrics(w[w.status_research.eq(s)]) for s in ('BET', 'LEAN', 'REVIEW', 'PASS')},
+           'by_status_at_close': {s: atc(w[w.status_research.eq(s)]) for s in ('BET', 'LEAN', 'REVIEW', 'PASS')},
            'status_counts': w.status_research.value_counts().to_dict()}
     b = EV.buckets(w)
+    for key in ('edge_bucket', 'reliability_bucket'):
+        if key in b:
+            out['by_' + key + '_at_close'] = {str(k): atc(w[b[key].eq(k)]) for k in sorted(b[key].dropna().unique())}
     for key in ('edge_bucket', 'reliability_bucket', 'week_bucket', 'spread_size', 'fav_dog_bet',
                 'home_away_bet', 'p4_g5', 'qb_certainty', 'total_size', 'season'):
         if key in b:

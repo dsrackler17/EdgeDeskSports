@@ -113,6 +113,14 @@ def render():
         L.append(bet_line('every game (always bet V2 side)', B['all_games_side_of_model']))
         for s in ('BET', 'LEAN', 'REVIEW', 'PASS'):
             L.append(bet_line('status ' + s, B['by_status'].get(s)))
+        L.append('\n**Pessimistic check — the same sides graded at the CLOSING number** (if a side only wins at '
+                 'the opener, the result is timing, not football):\n')
+        L.append(BET_HEAD)
+        L.append(bet_line('every game at close', B.get('all_games_side_of_model_at_close')))
+        for s in ('BET', 'LEAN', 'REVIEW', 'PASS'):
+            L.append(bet_line('status ' + s + ' at close', B.get('by_status_at_close', {}).get(s)))
+        for k, v in B.get('by_edge_bucket_at_close', {}).items():
+            L.append(bet_line('gap ' + k + ' at close', v))
         L.append('\nBy model–market gap (|V2 − opener|):\n')
         L.append(BET_HEAD)
         for k, v in B.get('by_edge_bucket', {}).items():

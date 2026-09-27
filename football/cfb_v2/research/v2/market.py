@@ -155,6 +155,17 @@ def run(D, MK, unc, seasons):
     M['bet_units'] = np.where(M.bet_result == 1, WIN_PAYOUT, np.where(M.bet_result == -1, -1.0, 0.0))
     M.loc[~fin, 'bet_units'] = np.nan
     M['clv_pts'] = np.where(hm, M.close_margin - M.line, M.line - M.close_margin)
+    # PESSIMISTIC CHECK: the archive has only the opener and the close, and a
+    # Tuesday freeze may already be looking at a line that has moved from the
+    # opener. Grading the same side at the CLOSING number is the lower bound:
+    # if the side does not win at the close, the opener result is timing.
+    finc = fin & M.close_margin.notna()
+    dc = M.margin - M.close_margin
+    M['bet_result_close'] = np.where(~finc, np.nan,
+                                     np.where(dc == 0, 0.0, np.where((dc > 0) == hm, 1.0, -1.0)))
+    M['bet_units_close'] = np.where(M.bet_result_close == 1, WIN_PAYOUT,
+                                    np.where(M.bet_result_close == -1, -1.0, 0.0))
+    M.loc[~finc, 'bet_units_close'] = np.nan
     return M, params
 
 
