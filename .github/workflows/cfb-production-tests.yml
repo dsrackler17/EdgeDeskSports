@@ -35,6 +35,7 @@ on:
       - 'football/cfb_v2/research/v2/weekly/project.py'
       - 'admin/cfb-ops/**'
       - 'tools/cfb/**'
+      - 'tools/ci/**'
       - 'docs/cfb-production/**'
       - '.github/workflows/cfb-*.yml'
       - '.github/workflows/deploy-intelligence.yml'
@@ -86,6 +87,8 @@ jobs:
         run: node football/cfb_production/final_hardening.test.js
       - name: A historical week replayed from schedule to settlement, twice (deterministic)
         run: node football/cfb_production/replay.test.js
+      - name: The shared push helper every publishing job uses (races, conflicts, source paths merged not overwritten)
+        run: node tools/ci/push_generated.test.js
       - name: Postgres — contract, chaos (locks, deadlock, lock timeout), idempotency 1x/2x/3x, disaster recovery
         env:
           CFB_PRODUCTION_SQL_REQUIRED: '1'

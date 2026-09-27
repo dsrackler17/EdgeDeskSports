@@ -221,6 +221,7 @@ def _setup(specs, all_seasons, write):
     # ---- 2. data-only finals
     final_do = {}
     between = {m: [] for m in specs}
+    between_seasons = {m: [] for m in specs}     # the season of each `between` entry
     for S in all_seasons:
         tg = TG[TG.g_season.eq(S)]
         if S == C.LIVE_SEASON or tg.empty:
@@ -239,6 +240,7 @@ def _setup(specs, all_seasons, write):
             fb = [t for t in fit.index if t in FBS.get(S, set())]
             between[m].append((fit.loc[fb, 'off'].var(), fit.loc[fb, 'def'].var(),
                                fit.loc[fb, 'off_var'].mean(), fit.loc[fb, 'def_var'].mean()))
+            between_seasons[m].append(S)
     if write:
         rows = []
         for S, mm in final_do.items():
@@ -249,14 +251,137 @@ def _setup(specs, all_seasons, write):
                 rows.append(df.reset_index())
         pd.concat(rows).to_parquet(common.out_path('stage3', 'final_dataonly.parquet'), index=False)
 
-    # true between-team variance (burn-in) as the fallback prior variance
+    # true between-team variance (burn-in) as the fallback prior variance.
+    # The rule is selectable (audit F-21; docs/cfb-audit/PATCH_v2.1.2.md section 1)
+    # and defaults to the legacy rule, so v2.1.0 / v2.1.1 builds are unchanged.
+    rule = between_var_rule()
     true_var = {}
+    bv_diag = {'rule': rule, 'rule_text': BETWEEN_VAR_RULES[rule], 'metrics': {}}
     for m, lst in between.items():
         a = np.array(lst[:3]) if lst else np.array([[1, 1, 0, 0]])
-        true_var[m] = (max(1e-8, np.mean(a[:, 0] - a[:, 2])), max(1e-8, np.mean(a[:, 1] - a[:, 3])))
+        if rule == LEGACY_BETWEEN_VAR_RULE:
+            # v2.1.0 / v2.1.1: a moment <= 0 becomes 1e-8, so build_prior's floor is
+            # 0.15 * 1e-8 = 1.5e-9 and the metric never leaves its prior (F-21)
+            true_var[m] = (max(1e-8, np.mean(a[:, 0] - a[:, 2])), max(1e-8, np.mean(a[:, 1] - a[:, 3])))
+            continue
+        true_var[m], bv_diag['metrics'][m] = _between_var_v2(m, specs[m], a, between_seasons[m][:3],
+                                                             TG, G, FBS, varcomp[m])
+    if write and rule != LEGACY_BETWEEN_VAR_RULE:
+        common.write_json(common.out_path('stage3', 'between_var.json'), bv_diag)
 
     return {'TG': TG, 'G': G, 'FBS': FBS, 'RP': RP, 'TT': TT, 'CO': CO, 'varcomp': varcomp,
-            'typ_n': typ_n, 'final_do': final_do, 'true_var': true_var}
+            'typ_n': typ_n, 'final_do': final_do, 'true_var': true_var, 'between_var_rule': rule}
+
+
+# ---------------------------------------------------- between-team variance rule
+# Audit F-21 (docs/cfb-audit/FINDINGS.md; the fix and its diagnostics are
+# docs/cfb-audit/PATCH_v2.1.2.md section 1). The burn-in between-team variance tv
+# of a metric's TRUE rating feeds build_prior: the prior variance is
+# max(moment, 0.15 * tv) and the home-effect prior variance is max(tv_off, tv_def).
+#
+#   cfb_v2_between_var_v1 (legacy; v2.1.0, v2.1.1; the default)
+#       tv = max(1e-8, mean over the first three seasons (2009-2011) of
+#                Var_FBS(season-end data-only rating) - mean posterior variance)
+#       For expl_pass, fg_value, st_net, to_rate and sack_rate's defence the
+#       model's posterior variance exceeds the observed spread, the moment is
+#       negative, tv = 1e-8, the prior variance is 1.5e-9 (x the prior scale) and
+#       the rating never moves in-season.
+#   cfb_v2_between_var_v2 (the F-21 fix; edgedesk_cfb_v2.1.2)
+#       the moment above wherever it is positive (every other metric is unchanged,
+#       bit for bit); where it is <= 0, the split-half covariance on the same
+#       burn-in seasons: the covariance, across the season's FBS teams, of the
+#       data-only ratings fitted separately on the odd- and the even-numbered
+#       weeks (the same weak prior and variance components as the season fit).
+#       The two halves share no game, so their estimation errors are independent
+#       and the covariance estimates the between-team variance without the
+#       posterior-variance noise model that made the moment negative. Where the
+#       split-half covariance is <= 0 too, the build REFUSES: no measurable
+#       team signal is a decision for a person, never a silent pin.
+#
+# Selection: $CFB_V2_BETWEEN_VAR_RULE when set; otherwise the rule recorded in
+# the released artifact of C.MODEL_VERSION (models.json `between_var_rule`),
+# and the legacy rule for an artifact that records none (v2.1.0, v2.1.1). The
+# production weekly run therefore builds v2.1.0's features exactly as before.
+# Stage 3 stamps the rule into BUILD.json, stage 5 carries it, and scoring
+# refuses an artifact whose rule differs from its features' (predict_live).
+LEGACY_BETWEEN_VAR_RULE = 'cfb_v2_between_var_v1'
+F21_BETWEEN_VAR_RULE = 'cfb_v2_between_var_v2'
+BETWEEN_VAR_RULES = {
+    LEGACY_BETWEEN_VAR_RULE: 'burn-in (2009-2011) method of moments, floored at 1e-8 (v2.1.0, v2.1.1; audit F-21)',
+    F21_BETWEEN_VAR_RULE: 'burn-in (2009-2011) method of moments where positive; else the split-half '
+                          '(odd / even weeks) covariance on the same seasons; else refuse (PATCH_v2.1.2.md section 1)',
+}
+_ARTIFACT_RULE = {}
+
+
+def artifact_between_var_rule(version):
+    """The between-variance rule a released artifact was built with (legacy when it records none)."""
+    if version not in _ARTIFACT_RULE:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'artifacts', version, 'models.json')
+        rule = None
+        if os.path.exists(p):
+            with open(p) as f:
+                rule = json.load(f).get('between_var_rule')
+        _ARTIFACT_RULE[version] = rule or LEGACY_BETWEEN_VAR_RULE
+    return _ARTIFACT_RULE[version]
+
+
+def between_var_rule():
+    rule = os.environ.get('CFB_V2_BETWEEN_VAR_RULE', '').strip() or artifact_between_var_rule(C.MODEL_VERSION)
+    if rule not in BETWEEN_VAR_RULES:
+        raise ValueError('CFB_V2_BETWEEN_VAR_RULE=%r: unknown rule (known: %s)' % (rule, sorted(BETWEEN_VAR_RULES)))
+    return rule
+
+
+def split_half_between(TG, G, FBS, m, spec, vc, seasons):
+    """Between-team variance of metric m's true rating without the noise model:
+    per season, the covariance across FBS teams of the data-only ratings fitted
+    on the odd-numbered and on the even-numbered weeks (stage-2 week; bowls carry
+    week 1). Returns per-season covariances and their approximate standard errors
+    (normal theory: sqrt((var_a var_b + cov^2) / (n - 1)))."""
+    week = G.set_index('game_id').week
+    out = []
+    for S in seasons:
+        tg = TG[TG.g_season.eq(S)]
+        y, n, ok = R.metric_obs(tg, spec[0], spec[1], spec[2])
+        big = float(np.var(y)) * 2.0
+        pr = weak_prior(set(tg.team_id) | set(tg.opp_id), big, big)     # the data-only fit's prior
+        par = tg.game_id.map(week).astype(int) % 2
+        fits = [R.fit_metric(tg[par.eq(h).values], m, spec, vc, pr)[0] for h in (1, 0)]
+        fb = [t for t in fits[0].index if t in FBS.get(S, set()) and t in fits[1].index]
+        rec = {'season': int(S), 'n_fbs': len(fb)}
+        for side in ('off', 'def'):
+            x1, x2 = fits[0].loc[fb, side].values, fits[1].loc[fb, side].values
+            c = float(np.cov(x1, x2)[0, 1])
+            rec['cov_' + side] = c
+            rec['se_' + side] = float(np.sqrt((np.var(x1, ddof=1) * np.var(x2, ddof=1) + c * c) / (len(fb) - 1)))
+        out.append(rec)
+    return out
+
+
+def _between_var_v2(m, spec, a, seasons, TG, G, FBS, vc):
+    """Rule cfb_v2_between_var_v2 for one metric: (tv_off, tv_def) and the diagnostics."""
+    sh = split_half_between(TG, G, FBS, m, spec, vc, seasons)
+    d = {'seasons': [int(s) for s in seasons], 'n_seasons': len(seasons)}
+    tv = []
+    for k, side in ((0, 'off'), (1, 'def')):
+        mom = np.mean(a[:, k] - a[:, k + 2])
+        cov = float(np.mean([r['cov_' + side] for r in sh]))
+        se = float(np.sqrt(np.sum([r['se_' + side] ** 2 for r in sh]))) / len(sh)
+        if mom > 0:
+            v, src = mom, 'moment'
+        elif cov > 0:
+            v, src = cov, 'split_half'
+        else:
+            raise SystemExit('[stage3] %s %s: the burn-in moment (%.3g) and the split-half covariance (%.3g) are both '
+                             '<= 0: no measurable between-team signal. Refused (rule %s): decide explicitly whether '
+                             'this metric is kept, never pin it silently.' % (m, side, mom, cov, F21_BETWEEN_VAR_RULE))
+        tv.append(v)
+        d[side] = {'observed_var': float(np.mean(a[:, k])), 'posterior_var': float(np.mean(a[:, k + 2])),
+                   'moment': float(mom), 'split_half_cov': cov, 'split_half_se': se,
+                   'split_half_by_season': [r['cov_' + side] for r in sh], 'source': src, 'tv': float(v),
+                   'legacy_tv': float(max(1e-8, mom))}
+    return tuple(tv), d
 
 
 def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=None, verbose=True,
@@ -289,7 +414,7 @@ def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=N
     halflife = C.RECENT_HALFLIFE_WEEKS if halflife is None else halflife
     all_seasons = list(range(C.FIRST_PBP_SEASON, C.LIVE_SEASON + 1))
     write_all = write and only_ts is None
-    setup_key = (tuple(specs), C.OUT, C.DATA)
+    setup_key = (tuple(specs), C.OUT, C.DATA, between_var_rule())
     if ctx is not None and not write_all and ctx.get('setup_key') == setup_key:
         su = ctx['setup']
     else:
@@ -426,6 +551,10 @@ def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=N
         pd.DataFrame(prior_records, columns=['season', 'metric', 'side', 'team_id', 'prior_mean',
                                              'prior_var']).to_parquet(
             common.out_path('stage3', 'priors.parquet'), index=False)
+    if write:
+        # the rule these ratings were built under (F-21): stage 5 carries it, scoring checks it
+        common.stamp_build('stage3', between_var_rule=su['between_var_rule'],
+                           seasons=sorted(int(s) for s in seasons_out))
     if return_frames:
         frames.update(final_do=final_do, varcomp=varcomp, typ_n=typ_n, fbs=FBS, true_var=true_var)
         return frames

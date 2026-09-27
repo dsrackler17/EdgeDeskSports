@@ -65,6 +65,14 @@ chk('F-22: a stage-8 engine.decide() output passed as the decision is not govern
   decision: { layer: 'market_decision_projection', status: 'LEAN', side: 'HOME' } }).decision.status === 'NO BET');
 chk('F-22: a decision.js output under policy v1 is governed', X.cfbFacts({ pure: { home: 'Texas', away: 'Oklahoma', projected_margin: 7, home_win_prob: 0.68 },
   decision: { engine: 'edgedesk_cfb_decision', engine_version: 'cfb_decision_engine_v1', policy_version: 'cfb_decision_policy_v1', status: 'LEAN', side: 'HOME', line_for_side: -3.5, reason_codes: ['NO_BET_BETTING_DISABLED'] } }).decision.status === 'LEAN');
+/* the research terminal's page status crosses as a RESEARCH status, never as a decision; its BET never crosses ungoverned */
+const termSrc = (st) => ({ pure: { home: 'Texas', away: 'Oklahoma', projected_margin: 7, home_win_prob: 0.68 }, decision: { status: st, side: 'HOME', reasons: ['a named reason'], bet_enabled: false } });
+const tw = X.cfbFacts(termSrc('WAIT'));
+chk('terminal: a WAIT page status crosses as a research status, labelled so in the prompt and the text', tw.decision.status === 'WAIT' && tw.decision.kind === 'RESEARCH_STATUS'
+  && /research status the page shows is WAIT \(research, not a wager\)/.test(X.buildPrompt(tw).system) && /Research status: WAIT/.test(X.render(tw)) && X.auditExplanation(X.render(tw), tw).ok, X.auditExplanation(X.render(tw), tw).issues);
+chk('terminal: an ungoverned BET page status is NO BET at the boundary', X.cfbFacts(termSrc('BET')).decision.status === 'NO BET');
+chk('terminal: DATA_FAULT and NO_MARKET cross as their page words', X.cfbFacts(termSrc('DATA_FAULT')).decision.status === 'DATA FAULT' && X.cfbFacts(termSrc('NO_MARKET')).decision.status === 'NO MARKET');
+chk('terminal: a stage-8 output (it carries layer) is never taken as a research status', X.cfbFacts({ pure: {}, decision: { layer: 'market_decision_projection', status: 'RESEARCH' } }).decision.status === 'NO BET');
 /* the stored canonical projection (projections.json entry) is a fact source too */
 const CANON = require('../cfb_production/canonical.js');
 const crow = { game_id: 9, season: 2026, week: 6, home: 'Texas', away: 'Oklahoma', home_id: 251, away_id: 201, kickoff: K, prediction_ts: NOW, feature_ts: NOW, ens_pred: 7, sigma: 15.5,

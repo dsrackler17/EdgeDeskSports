@@ -117,9 +117,10 @@ the one people skip:
 ## The shape of the estate
 
 `capture` covers `americanfootball_ncaaf` and `americanfootball_nfl` only. The
-app still renders MLB, golf, tennis and WTA surfaces from tables other jobs
-feed, so the football pivot reached capture but not the estate around it.
-That gap is the thing worth deciding about deliberately.
+app still renders MLB and golf surfaces from tables other jobs feed, so the
+football pivot reached capture but not the estate around it. That gap is the
+thing worth deciding about deliberately. (Tennis and WTA were retired from
+the app; their tables and jobs remain, dormant, in the backend.)
 
 **UFC no longer depends on any Edge Function.** The Live Fight Center reads the
 contract in `../ufc_live_center.sql`, which GitHub Actions fill directly over

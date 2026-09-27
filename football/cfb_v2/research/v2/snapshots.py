@@ -194,8 +194,13 @@ def main(seasons=None):
     MK = build_market_snapshots(G)
     MK.to_parquet(common.out_path('stage5', 'cfb_market_training_snapshots.parquet'), index=False)
     b = common.build_stamp() or {}
+    from .build_ratings import LEGACY_BETWEEN_VAR_RULE
+    # the stage-3 between-variance rule these features were built from (audit F-21): a
+    # stage 3 without a stamp predates the rule and is the legacy rule
     common.stamp_build('stage5', feature_version=C.FEATURE_VERSION, seasons=sorted(int(s) for s in X.season.unique()),
-                       stage2=(b.get('stages') or {}).get('stage2'))
+                       stage2=(b.get('stages') or {}).get('stage2'),
+                       between_var_rule=((b.get('stages') or {}).get('stage3') or {}).get('between_var_rule',
+                                                                                          LEGACY_BETWEEN_VAR_RULE))
     print('[stage5] snapshots', X.shape, 'market', MK.shape)
     return X
 

@@ -64,8 +64,9 @@ const AS_OF = '2026-09-28T12:00:00.000Z';
   const reach = files.filter((f) => { const t = read(f); return /^football\/cfb_v2\//.test(f) || /cfb_v2[\\/'"+ ,]*engine(\.js)?['"]|EDCfbV2\b|'engine\.js'/.test(t); });
   const PURE_OK = ['football/cfb_production/canonical.js', 'football/cfb_v2/engine.js'];
   const DECIDE_OK = ['football/cfb_v2/engine.js', 'football/cfb_lab/models.js', 'football/cfb_decision/shadow.js', 'football/cfb_v2/shadow_decisions.js'];
-  const pureCalls = reach.filter((f) => !PURE_OK.includes(f) && /(\bEDCfbV2|\bE|\beng|\bengine|\bV2\.eng|\bV)\s*\.\s*pure\s*\(/.test(code(f)));
-  const decideCalls = reach.filter((f) => !DECIDE_OK.includes(f) && /(\bEDCfbV2|\bE|\beng|\bengine|\bV2\.eng|\bV)\s*\.\s*decide\s*\(/.test(code(f)));
+  /* any receiver but the canonical service itself (E2.pure, eng.engine.pure, window.EDCfbV2.pure ...) */
+  const pureCalls = reach.filter((f) => !PURE_OK.includes(f) && /\b(?!CANON\b|canon\b)[A-Za-z_$][\w$]*\s*\.\s*pure\s*\(/.test(code(f)));
+  const decideCalls = reach.filter((f) => !DECIDE_OK.includes(f) && /(\bEDCfbV2|\bE\d*|\beng\w*|\bengine|\bV2\.eng|\bV\d*)\s*\.\s*decide\s*\(/.test(code(f)));
   chk('pathway: no file outside canonical.js calls the V2 engine\'s pure() (' + reach.length + ' files can reach it)', pureCalls.length === 0, pureCalls);
   chk('pathway: engine.decide() runs only in the stored-research producers (Model Lab, decision shadow, shadow decisions)', decideCalls.length === 0, decideCalls);
   const pages = ['app.html', 'record.html', 'brief.html', 'index.html'].concat(files.filter((f) => /^admin\/|^supabase\/functions\/|^tools\/(newsletter|articles|editorial)\//.test(f)));

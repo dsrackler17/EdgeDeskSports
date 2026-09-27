@@ -125,6 +125,14 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: node football/cfb_production/projections.js --write || echo "::warning::the canonical projections could not be built"
 
+      # The research terminal's cached research objects (football/cfb_terminal),
+      # rebuilt from what this run just appended: the page reads these and runs
+      # no model. The build refuses to write if a stale market would show an
+      # actionable status or a fair line would differ from the champion slate.
+      - name: Research terminal (football/cfb_terminal, research/cfb)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node football/cfb_terminal/build.js || echo "::warning::the research terminal could not be rebuilt; the last published objects stay up"
+
       - name: Operations report (football/cfb_production/reports/ops.json, admin/cfb-ops)
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         env:
@@ -145,7 +153,7 @@ jobs:
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
             football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
-            football/cfb_production/reports/traces.json
+            football/cfb_production/reports/traces.json football/cfb_terminal
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}

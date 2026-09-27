@@ -271,6 +271,11 @@ jobs:
           node football/matchup/research.test.js
 
       - name: Commit the artifacts
+        env:
+          # app.html and the patch script are SOURCE this job edits, not
+          # artifacts: on a rejected push they are merged onto the new tip,
+          # never overwritten (tools/ci/push_generated.sh)
+          PUSH_MERGE_PATHS: app.html tools/football/patch_nfl_live_paths.js
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -290,16 +295,14 @@ jobs:
           # fresh build" — on main, on every pull request, until a human
           # rebuilt by hand. An output whose input is not committed beside it
           # cannot be verified, which is the whole point of the gate.
-          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ football/coaching/ football/nfl/ football/identity/ football/pricing/ app.html tools/football/patch_nfl_live_paths.js
-          if git diff --cached --quiet; then
-            echo 'starter context and profiles unchanged — nothing to commit'
-            exit 0
-          fi
-          git commit -m 'starter context, quarterback EPA, team profiles and the published card'
-          for i in 1 2 3 4; do
-            git push origin "${{ github.ref_name }}" && exit 0
-            git pull --rebase origin "${{ github.ref_name }}" || true
-            sleep $((2 ** i))
-          done
-          echo 'could not push the research artifacts after 4 attempts'
-          exit 1
+          #
+          # THE PUSH goes through the shared helper. The loop that was here ran
+          # `git pull --rebase` after a rejected push, which refuses to start
+          # while the build has left other files modified ("cannot pull with
+          # rebase: You have unstaged changes"), so every retry failed the same
+          # way (2026-09-27 18:12) whenever another job pushed first.
+          bash tools/ci/push_generated.sh "${{ github.ref_name }}" \
+            'starter context, quarterback EPA, team profiles and the published card' -- \
+            football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ \
+            football/coaching/ football/nfl/ football/identity/ football/pricing/ \
+            app.html tools/football/patch_nfl_live_paths.js

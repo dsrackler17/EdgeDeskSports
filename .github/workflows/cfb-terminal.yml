@@ -1,0 +1,81 @@
+# EdgeDesk CFB Research Terminal — the rules, on the pull request.
+#
+# The hourly Model Lab job (cfb-lab.yml) rebuilds the research objects after it
+# appends its snapshots. A change that lets a stale market show an actionable
+# status, lets the market leak into the pure projection, lets an explanation
+# rewrite a status, or lets engagement data reach a model has to fail on the
+# PR that makes it — not an hour after the merge, in a job writing public
+# research pages.
+#
+# Offline: no network, no credentials. The analytics contract runs against a
+# real PostgreSQL service.
+name: CFB research terminal
+
+on:
+  pull_request:
+    paths:
+      - 'lib/cfb_terminal.js'
+      - 'football/cfb_terminal/**'
+      - 'research/cfb/**'
+      - 'supabase/cfb_terminal_analytics.sql'
+      - 'supabase/functions/edgedesk_ai/_cfb_explain.js'
+      - 'football/cfb_decision/decision.js'
+      - 'football/cfb_p4/**'
+      - 'football/cfb_v2/engine.js'
+      - 'football/cfb_v2/params.js'
+      - 'lib/cfb_disagreement.js'
+      - 'app.html'
+      - '.github/workflows/cfb-terminal.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/cfb_terminal.js'
+      - 'football/cfb_terminal/*.js'
+      - 'research/cfb/**'
+      - 'supabase/cfb_terminal_analytics.sql'
+      - '.github/workflows/cfb-terminal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-terminal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Build the research objects from the committed artifacts (check mode, writes nothing)
+        run: node football/cfb_terminal/build.js --check
+      - name: The terminal's rules (synthetic cases + the real slate + the page's boundaries)
+        run: node football/cfb_terminal/tests.js
+      - name: The internal user test (answerability audit, 20 games)
+        run: node football/cfb_terminal/user_test.js
+      - name: The explanation boundary still refuses what it must
+        run: node football/cfb_lab/explain_guard.test.js
+      - name: The game card keeps its structure and links to the research page
+        run: node tools/app/game_research.test.js
+      - name: psql
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+      - name: The analytics contract against a real PostgreSQL
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node football/cfb_terminal/analytics_sql.test.js

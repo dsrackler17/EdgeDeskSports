@@ -21788,7 +21788,8 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
   /* The sports the product can put on a board, with the pricing methods each
      one can actually reach. `season` months are the calendar months (1-12,
      inclusive, wrapping) in which the sport has a card at all; a sport out of
-     season is reported as such rather than read for nothing. */
+     season is reported as such rather than read for nothing. Tennis is no
+     longer an EdgeDesk product, so it is not a board sport. */
   var SUPPORTED = {
     americanfootball_nfl: { label: 'NFL', methods: ['MARKET_DEVIG', 'MODEL_BLEND'], window: 'this_week', season: [8, 2], family: 'football' },
     americanfootball_ncaaf: { label: 'college football', methods: ['MARKET_DEVIG', 'MODEL_BLEND'], window: 'this_week', season: [8, 1], family: 'football' },
@@ -21797,8 +21798,7 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
     basketball_wnba: { label: 'WNBA', methods: ['MARKET_DEVIG'], window: 'today', season: [5, 10], family: 'other' },
     basketball_ncaab: { label: 'college basketball', methods: ['MARKET_DEVIG'], window: 'today', season: [11, 4], family: 'other' },
     icehockey_nhl: { label: 'NHL', methods: ['MARKET_DEVIG'], window: 'today', season: [10, 6], family: 'other' },
-    mma_mixed_martial_arts: { label: 'UFC', methods: ['MARKET_DEVIG'], window: 'this_week', season: [1, 12], family: 'other' },
-    tennis_wta: { label: 'WTA tennis', methods: ['MARKET_DEVIG'], window: 'today', season: [1, 11], family: 'other' }
+    mma_mixed_martial_arts: { label: 'UFC', methods: ['MARKET_DEVIG'], window: 'this_week', season: [1, 12], family: 'other' }
   };
   var SPORT_WORDS = [
     ['americanfootball_nfl', /\bnfl\b|\bpro football\b/i],
@@ -21808,8 +21808,7 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
     ['basketball_wnba', /\bwnba\b/i],
     ['basketball_ncaab', /\b(college basketball|cbb|ncaab|college hoops)\b/i],
     ['icehockey_nhl', /\bnhl\b|\bhockey\b/i],
-    ['mma_mixed_martial_arts', /\bufc\b|\bmma\b/i],
-    ['tennis_wta', /\btennis\b|\bwta\b/i]
+    ['mma_mixed_martial_arts', /\bufc\b|\bmma\b/i]
   ];
   /* Capture's own sanity ceilings per market (LEARN_EDGE_MAX): an EV past
      these is a data question before it is a bet. */
@@ -25545,7 +25544,10 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
   'use strict';
 
   var VERSION = 'cfb_explanation_boundary_v2';
-  var STATUSES = ['BET', 'LEAN', 'RESEARCH', 'PASS', 'NO BET'];
+  /* the decision engine's words, plus the research terminal's canonical seven
+     (lib/cfb_terminal.js STATUS): an explanation must use the ONE status the
+     page shows, and name no other */
+  var STATUSES = ['BET', 'LEAN', 'RESEARCH', 'PASS', 'NO BET', 'WAIT', 'INVESTIGATE', 'DATA FAULT', 'NO MARKET'];
   /* metrics an explanation may name only when the facts carry them */
   var METRICS = [
     [/\bEPA\b|expected points added/i, 'epa'], [/success rate/i, 'success_rate'], [/\bSP\+|\bSP plus\b/i, 'sp_plus'],
@@ -25591,6 +25593,15 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       || (o.engine === 'edgedesk_cfb_decision' && o.policy_version === OFFICIAL_POLICY);
     return ok ? o : null;
   }
+  /* the research terminal's page status (T.explainSource): a research word the
+     page shows, never a decision. A stage-8 engine.decide() output (it carries
+     `layer`), a Model Lab row or a decision ledger row is never one; and the
+     terminal's BET is not accepted here (a BET crosses only as governed). */
+  var RESEARCH_STATUS = { RESEARCH: 'RESEARCH', WAIT: 'WAIT', INVESTIGATE: 'INVESTIGATE', PASS: 'PASS', DATA_FAULT: 'DATA FAULT', NO_MARKET: 'NO MARKET' };
+  function researchStatus(o) {
+    if (!o || typeof o !== 'object' || o.layer || o.engine_role || o.decision_class || o.prediction_id) return null;
+    return Object.prototype.hasOwnProperty.call(RESEARCH_STATUS, o.status) ? o : null;
+  }
   var MODE_WORDS = { NO_PLAYER_DATA: 'limited availability data', NO_ADVANCED_PBP: 'limited play-by-play data', QB_UNCERTAIN: 'a starting quarterback is not confirmed',
     MARKET_DEGRADED: 'market data limited', FALLBACK_MODEL: 'served by the fallback model' };
   /* src: the stored canonical projection (a projections.json game entry:
@@ -25604,6 +25615,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     var pure = canon ? Object.assign({}, canon.projection, { home: canon.home, away: canon.away, kickoff: canon.kickoff, neutral_site: canon.neutral_site,
       week: canon.week, season: canon.season, model_version: canon.model_version }) : (src.pure || {});
     var off = governed(official) || governed(src.official_decision) || governed(src.decision);
+    var rs = off ? null : researchStatus(src.decision);
     var f = { version: VERSION, game: {}, model: {}, market: null, decision: {}, qb: {}, data_quality: {}, degraded: [], allowed_metrics: {} };
     f.game = { home: row ? row.home_team : (pure.home || null), away: row ? row.away_team : (pure.away || null), kickoff: row ? row.kickoff_ts : (pure.kickoff || null),
       neutral_site: row ? !!row.neutral_site : !!pure.neutral_site, week: row ? row.week : (pure.week || null), season: row ? row.season : (pure.season || null) };
@@ -25621,10 +25633,12 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
         actionable_status: mi ? mi.actionable_status : (src.market && src.market.actionable_status) || null,
         gap: row ? r(num(row.model_market_gap), 1) : (isNum(margin) ? r(margin + hl, 1) : null) };
     }
-    f.decision = off ? { status: OFFICIAL_STATUS[off.status] || 'NO BET', side: off.side || null, line: num(off.line_for_side), price: num(off.price),
+    f.decision = off ? { status: OFFICIAL_STATUS[off.status] || 'NO BET', kind: 'OFFICIAL', side: off.side || null, line: num(off.line_for_side), price: num(off.price),
       cover_probability: r(num(off.decision_cover_probability), 3),
       reason: off.reason || (off.reason_codes || [])[0] || (off.reasons || [])[0] || null, bet_enabled: !!off.bet_enabled, policy: OFFICIAL_POLICY }
-      : { status: 'NO BET', side: null, line: null, price: null, cover_probability: null,
+      : rs ? { status: RESEARCH_STATUS[rs.status], kind: 'RESEARCH_STATUS', side: rs.side || null, line: null, price: null,
+        cover_probability: r(num(rs.cover_probability), 3), reason: (rs.reasons || [])[0] || rs.reason || null, bet_enabled: false, policy: OFFICIAL_POLICY }
+      : { status: 'NO BET', kind: 'OFFICIAL', side: null, line: null, price: null, cover_probability: null,
         reason: 'no governed decision (' + OFFICIAL_POLICY + ') for this game', bet_enabled: false, policy: OFFICIAL_POLICY };
     var qbx = (row && row.inputs_ref && row.inputs_ref.qb_expected) || src.qb || {};
     f.qb = { home: qbStatus(qbx.home), away: qbStatus(qbx.away) };
@@ -25662,7 +25676,8 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       'You explain one EdgeDesk college football prediction to a reader. You are not deciding anything.',
       'Use ONLY the facts in the FACTS block. Do not browse, search, call tools, or use outside knowledge about injuries, weather, news or betting markets.',
       'Every number you write must appear in FACTS exactly (rounded to its shown precision). Do not compute new numbers.',
-      'The official decision is ' + facts.decision.status + '. Use that word and no other status word. Never call a non-BET a bet, a play, a pick or a recommendation.',
+      (facts.decision.kind === 'RESEARCH_STATUS' ? 'The research status the page shows is ' + facts.decision.status + ' (research, not a wager).'
+        : 'The official decision is ' + facts.decision.status + '.') + ' Use that word and no other status word. Never call a non-BET a bet, a play, a pick or a recommendation.',
       'A quarterback is "confirmed" only if FACTS says CONFIRMED for him. Otherwise say his status is ' + 'not confirmed.',
       'Name no metric (EPA, success rate, SP+, CLV, public money, injuries, weather...) that FACTS does not carry.',
       'State the uncertainty plainly' + (facts.degraded.length ? ': ' + facts.degraded.join('; ') + '.' : '.'),
@@ -25742,7 +25757,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     if (facts.market) s.push('The market home line is ' + signed(facts.market.home_line) + (facts.market.actionable_status && facts.market.actionable_status !== 'ACTIONABLE' ? ' and is ' + facts.market.actionable_status.replace('MARKET_', '').toLowerCase() : '') + '.');
     else s.push('No market line is available.');
     var sideTeam = d.side === 'HOME' ? g.home : (d.side === 'AWAY' ? g.away : null);
-    s.push('Official decision: ' + d.status + (d.status === 'BET' && sideTeam ? ' on ' + sideTeam + ' ' + signed(d.line) : '') + (d.reason && d.status !== 'BET' ? ' (' + d.reason.replace(/[0-9]+(\.[0-9]+)?/g, '').replace(/\s+/g, ' ').trim().slice(0, 120) + ')' : '') + '.');
+    s.push((d.kind === 'RESEARCH_STATUS' ? 'Research status: ' : 'Official decision: ') + d.status + (d.status === 'BET' && sideTeam ? ' on ' + sideTeam + ' ' + signed(d.line) : '') + (d.reason && d.status !== 'BET' ? ' (' + d.reason.replace(/[0-9]+(\.[0-9]+)?/g, '').replace(/\s+/g, ' ').trim().slice(0, 120) + ')' : '') + '.');
     var qbNote = ['home', 'away'].filter(function (x) { return facts.qb[x].status !== 'CONFIRMED'; }).map(function (x) { return g[x] + ' quarterback status is ' + facts.qb[x].status.toLowerCase(); });
     if (facts.degraded.length) s.push('Uncertainty: ' + (qbNote.length ? qbNote.join('; ') + '; ' : '') + facts.degraded.filter(function (x) { return !/quarterback/.test(x); }).join('; ') + (facts.degraded.length ? '.' : ''));
     s.push('This is a probability, not a promise: any single game can go either way.');
@@ -32336,7 +32351,7 @@ function mlbStartersFromResearch(research: ResearchOut | null): { label: string;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-26-r18-numbers";
+export const BUILD = "edgedesk_ai-2026-09-27-r19-board-no-tennis";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
