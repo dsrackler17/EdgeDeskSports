@@ -263,6 +263,8 @@ function snapshot(row, opts) {
     sigma: p.sigma, t_df: p.t_df, intervals: p.intervals, football_prediction_confidence: p.football_prediction_confidence,
     confidence_basis: p.confidence_basis, components: p.components, ensemble_sd: p.ensemble_sd, drivers: p.drivers,
     uncertainty_drivers: p.uncertainty_drivers,
+    /* the engine's own wording of its drivers (engine.card: text only, no number is made there) */
+    why: typeof E.engine.card === 'function' ? E.engine.card(p, null).why : null,
   } : null;
   const dm = status === 'PREDICTED' ? modes(row, opts.context) : { modes: [], primary: null, football: [], reasons: {} };
   const snap = {

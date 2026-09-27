@@ -138,6 +138,10 @@ function build(opts) {
       canonical: snap,
       v1: v,
       resolved,
+      /* the market the newest Model Lab snapshot of V2.1 captured (its own time; the gap is
+         that snapshot's margin minus the market margin, + = the model likes HOME) */
+      market: L2 ? { home_line: L2.current_spread, as_of: L2.market_as_of, books: L2.sportsbook_count, stale: !!L2.market_stale,
+        actionable_status: ir.market_integrity ? ir.market_integrity.actionable_status : null, gap: L2.model_market_gap, snapshot_ts: L2.prediction_ts } : null,
       official_decision: resolved.level === 4 ? { status: 'UNAVAILABLE', basis: OFFICIAL_POLICY, reason: resolved.reason } : off,
       research: L2 ? { status: L2.decision_class, engine_status: L2.status, basis: L2.decision_source && /^engine:/.test(L2.decision_source) ? RESEARCH_BASIS : 'the Model Lab\'s ' + (L2.decision_source || 'rule') + ' (research, not the governed policy)',
         stage8_ev_strength: L2.edge_quality, stage8_ev_strength_note: 'engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality',
