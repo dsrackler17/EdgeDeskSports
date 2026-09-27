@@ -209,6 +209,9 @@
     if (!A || typeof A !== 'object') return { ok: false, code: 'NO_BET_CALIBRATION', detail: 'no calibration artifact loaded' };
     if (A.schema !== 'cfb_decision_calibration_schema_v1') return { ok: false, code: 'NO_BET_CALIBRATION', detail: 'unknown artifact schema ' + A.schema };
     if (!A.cover_calibration) return { ok: false, code: 'NO_BET_CALIBRATION', detail: 'artifact has no cover calibration' };
+    if (A.ev_curve && A.ev_curve.input === 'theoretical_ev' && !A.ev_curve_decision) {
+      return { ok: false, code: 'NO_BET_CALIBRATION', detail: 'artifact has no EV curve for the decision EV (ev_curve maps the theoretical EV)' };
+    }
     if (!A.base_model_version || A.base_model_version !== modelVersion) {
       return { ok: false, code: 'NO_BET_VERSION_MISMATCH',
         detail: 'artifact validated for ' + A.base_model_version + ', projection from ' + modelVersion };
@@ -332,13 +335,19 @@
     var be = breakEven(price);
     var ev = expectedValue(dp.decision, pp, price);
     var evTheory = expectedValue(pPure, pp, price);
-    var evEmp = isNum(ev) && A.ev_curve ? interp(A.ev_curve.x, A.ev_curve.y, ev) : ev;
+    // Empirical EV is the one the thresholds read. A curve declares its input: ev_curve_decision maps the
+    // decision EV; ev_curve with input 'theoretical_ev' maps the pure model's EV and is reported only.
+    // An ev_curve without an input declaration predates the schema field and maps the decision EV.
+    var cT = A.ev_curve && A.ev_curve.input === 'theoretical_ev' ? A.ev_curve : null;
+    var cD = A.ev_curve_decision || (A.ev_curve && !cT ? A.ev_curve : null);
+    var evEmp = isNum(ev) ? (cD ? interp(cD.x, cD.y, ev) : (cT ? null : ev)) : ev;
+    var evEmpT = isNum(evTheory) && cT ? interp(cT.x, cT.y, evTheory) : null;
     var expClv = A.clv_magnitude ? evalModel(A.clv_magnitude, feats) : null;
     return { side: side, price: isNum(price) ? price : null, pure_cover_probability: pPure,
       calibrated_cover_probability: dp.calibrated, decision_cover_probability: dp.decision, w_model: dp.w_model,
       market_implied_probability: marketP, devig: dv, push_probability: pp, break_even_probability: be,
       probability_edge: isNum(be) ? dp.decision - be : null, theoretical_ev: evTheory, decision_ev: ev,
-      empirical_ev: evEmp, expected_clv_pts: expClv, gap_pts: gapSide, features: feats };
+      empirical_ev: evEmp, empirical_ev_theoretical: evEmpT, expected_clv_pts: expClv, gap_pts: gapSide, features: feats };
   }
 
   function decideQuote(pure, quote, ctx) {
@@ -652,7 +661,7 @@
     applyMap: applyMap, calibrate: calibrate, evalModel: evalModel, validateArtifact: validateArtifact,
     validatePolicy: validatePolicy, pureCover: pureCover, decisionProbability: decisionProbability,
     footballConfidence: footballConfidence, marketConfidence: marketConfidence, betConfidence: betConfidence,
-    integrityCheck: integrityCheck, decideQuote: decideQuote, decideGame: decideGame, priceTargets: priceTargets,
+    integrityCheck: integrityCheck, sideNumbers: sideNumbers, decideQuote: decideQuote, decideGame: decideGame, priceTargets: priceTargets,
     kellyFraction: kellyFraction, stake: stake, applyExposure: applyExposure, explain: explain,
     auditLanguage: auditLanguage, attachNarrative: attachNarrative, manualDecision: manualDecision,
     assertOfficial: assertOfficial, publicCard: publicCard, timing: timing
