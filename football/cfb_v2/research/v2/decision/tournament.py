@@ -802,7 +802,17 @@ def paired_like_diff(a, b, B=2000):
 
 
 # ============================================================ the policy
-def derive_policy(res, sel, Sc, lean, sat, timing, tier, rank, slate, prereg_sha, valid, kelly_ok):
+def derive_policy(res, sel, Sc, lean, sat, timing, tier, rank, slate, prereg_sha, valid, kelly_ok, corr=None, icc=None):
+    A_PUSH = POL.load_artifact()['push_table']
+    pairs = (corr or {}).get('pairs', {})
+    corr_basis = {'rule': 'same_game_correlation = 1: every same-game position decision.js creates is a spread and the same '
+                          'side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: %s)'
+                          % (pairs.get('spread__alternate_spread_3pts_worse', {}).get('phi')),
+                  'dev_phi': {k: pairs[k]['phi'] for k in ('spread__moneyline_same_team', 'spread__alternate_spread_3pts_worse',
+                                                            'spread__alternate_spread_7pts_worse', 'favorite_spread__game_over',
+                                                            'favorite_spread__underdog_team_total_under') if k in pairs},
+                  'cross_game_icc_week': (icc or {}).get('week', {}).get('icc'),
+                  'cross_game_icc_conference_week': (icc or {}).get('conference_week', {}).get('icc')}
     fin = res['edge']['final_dev']['choice']
     min_pe = float(fin) if fin is not None else 0.03
     mv = res['multivariate']['final_dev']['choice']
@@ -825,11 +835,15 @@ def derive_policy(res, sel, Sc, lean, sat, timing, tier, rank, slate, prereg_sha
         'lean': {'min_probability_edge': 0.0, 'min_gap_pts': lean['choice']},
         'hysteresis': {'edge_buffer': timing['stability']['hysteresis_buffer_rule_value'],
                        'ev_buffer': timing['stability']['hysteresis_buffer_rule_value']},
-        'wait': {'enabled': bool(timing['wait_rule']['wait_enabled'])},
+        'wait': {'enabled': bool(timing['wait_rule']['wait_enabled']), 'ev_per_point': 0.03, 'p_disappear': 0.3,
+                 'min_benefit_ev': 0.01, 'note': 'disabled: no DEV evidence that waiting pays (prereg §5); the other keys are '
+                                                 'the declared decision.js defaults, used only if a later policy enables WAIT'},
+        'push_table': A_PUSH,
         'stake': {'method': 'flat', 'unit_u': 1, 'max_stake_u': 1, 'kelly_validated': bool(kelly_ok and edge_valid),
                   'kelly_fraction': 0.10, 'bankroll_u': 100, 'saturation_probability': sat['p_saturation']},
         'exposure': {'max_game_u': 1.0, 'same_game_correlation': 1.0, 'max_slate_u': float(slate['choice']),
-                     'max_cluster_u': float(slate['cluster_choice'])},
+                     'max_cluster_u': float(slate['cluster_choice']),
+                     'correlation_basis': corr_basis},
         'display': {'edge_quality_tiers': bool(tier['display_edge_quality_tiers']),
                     'bet_rankings': bool(rank['display_bet_rankings'])},
         'market_limits': {'max_stake_per_book_u': None, 'note': 'at current scale book limits are not the constraint; '
@@ -914,7 +928,7 @@ def main(freeze=False):
     kelly['validation'] = {'decision_p_logloss_vs_coin_ci': dll_ci, 'calibration_significant': kelly_ok,
                            'edge_region_bet_valid': valid['edge']['verdict'] == 'BET-VALID',
                            'kelly_validated': bool(kelly_ok and valid['edge']['verdict'] == 'BET-VALID')}
-    policy = derive_policy(res, sel, Sc, lean, sat, timing, tier, rank, slate, prereg_sha, valid, kelly_ok)
+    policy = derive_policy(res, sel, Sc, lean, sat, timing, tier, rank, slate, prereg_sha, valid, kelly_ok, corr, icc)
     # production replay (per-season walk-forward artifacts) and the counterfactual that exposes every gate
     arts = season_artifacts(A, U)
     Sc = Sc.copy()

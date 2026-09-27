@@ -26,6 +26,7 @@ on:
     branches: [main]
     paths:
       - 'football/cfb_v2/research/v2/weekly/**'
+      - 'football/cfb_v2/research/v2/personnel/**'
       - 'football/cfb_weekly/*.js'
       - 'football/cfb_personnel/*.js'
       - 'supabase/cfb_weekly.sql'
@@ -67,6 +68,20 @@ jobs:
           CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
           CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
         run: python3 -m v2.weekly.tests_games --fast
+      - name: Personnel QB layer (starter detection, lineup, backtest contracts; no data needed)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+          OMP_NUM_THREADS: '1'
+        run: python3 -m v2.personnel.tests_qb --fast
+      - name: Personnel unit values (shrinkage, replacement, lineups, deltas; no data needed)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+          OMP_NUM_THREADS: '1'
+        run: python3 -m v2.personnel.tests_units --fast
       - name: The Postgres contract (tables, write-once triggers, exactly-once keys, the poke)
         env:
           CFB_WEEKLY_SQL_REQUIRED: '1'

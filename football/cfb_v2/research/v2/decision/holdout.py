@@ -103,8 +103,8 @@ def load_holdout():
 # --------------------------------------------------------------- evaluate
 def frame(H, S7, A, rule, table):
     """Decision numbers from the FROZEN artifact; nothing refit."""
-    fbs = H[H.pricing_scope.eq('FBS_FBS') & H.status.eq('FINAL') & H.side.notna() & H.pure_cover_prob.notna()
-            & ~H.review_route.astype(bool)].copy()
+    fbs = H[H.pricing_scope.eq('FBS_FBS') & H.quote_role.eq('CONSENSUS_OPEN') & H.status.eq('FINAL') & H.side.notna()
+            & H.pure_cover_prob.notna() & ~H.review_route.astype(bool)].copy()     # the DEV grain; every book: per_book()
     w = float(A['market_shrinkage']['w_model'])
     fbs['p_dec'] = CAL.shrink_np(fbs.pure_cover_prob.values, 0.5, w)
     fbs['decision_ev'] = core.ev_with_push(fbs.p_dec.values, fbs.push_prob.fillna(0).values, -110)
@@ -173,6 +173,7 @@ def calibration_block(F):
 def evaluate(F, tour, policy, A, dev_oos):
     """The holdout evaluation as a pure function of the holdout frame (tested on DEV stand-ins)."""
     masks = candidate_masks(F, tour)
+    seasons = sorted(int(S) for S in F.season.unique())
     cands = {}
     Fb = T.baseline_view(F)
     for cid, m in masks.items():
@@ -180,7 +181,7 @@ def evaluate(F, tour, policy, A, dev_oos):
         d = V[m]
         card = scorecard(d, B=2000)
         card['by_season'] = {str(S): (scorecard(d[d.season.eq(S)], B=1000, drawdown=False) if (d.season == S).any() else {'bet_count': 0})
-                             for S in HOLDOUT}
+                             for S in seasons}
         dv = dev_oos.get(cid) or {}
         ce_lb = (dv.get('close_implied_ev_ci') or [None, None])[0]
         roi_lb = (dv.get('roi_ci') or [None, None])[0]
@@ -197,8 +198,7 @@ def evaluate(F, tour, policy, A, dev_oos):
         bu = np.where(base, F.b_units.values, 0.0)
         card['paired_vs_baseline_units_per_quote'] = paired_cluster_diff(pu, bu, F.game_id.values)
         cands[cid] = card
-    arts = {S: A for S in HOLDOUT}
-    dec = T.replay_frame(F.assign(season=F.season.astype(int)), policy, {int(S): A for S in HOLDOUT})
+    dec = T.replay_frame(F.assign(season=F.season.astype(int)), policy, {S: A for S in seasons})
     st, Rd = T.status_table(F, dec, 'status')
     rs, _ = T.status_table(F, dec, 'reason')
     lean = Rd[Rd._status.eq('LEAN')]
@@ -219,7 +219,7 @@ def evaluate(F, tour, policy, A, dev_oos):
                            'lean_clv_ci': rl(lean_ci, 3), 'lean_minus_pass_clv': T.paired_like_diff(lean.clv_pts.values, pas.clv_pts.values)},
             'tiers': tiers, 'tiers_high_ge_low_clv': bool(hi_ge_lo),
             'no_collapse': None if not len(prod_bets) else None,
-            'n_rows': int(len(F)), 'by_season_rows': {str(S): int((F.season == S).sum()) for S in HOLDOUT}}
+            'n_rows': int(len(F)), 'by_season_rows': {str(S): int((F.season == S).sum()) for S in seasons}}
 
 
 def per_book(H, A, table):

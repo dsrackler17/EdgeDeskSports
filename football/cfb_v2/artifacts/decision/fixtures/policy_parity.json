@@ -5842,6 +5842,798 @@
     "price_home": -110
    },
    "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5491,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.17,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0253,
+    "reason_codes": [
+     "LEAN_DIRECTIONAL"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_lean",
+   "market": {
+    "books": 5,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 52,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5086,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 0.32,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": -0.0152,
+    "reason_codes": [
+     "PASS_PRICE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_pass",
+   "market": {
+    "books": 5,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 5.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5491,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.17,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0253,
+    "reason_codes": [
+     "RESEARCH_QB"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_research_qb",
+   "market": {
+    "books": 5,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {
+    "qb_missing_any": true
+   }
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5491,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.17,
+    "ideal_entry_line": null,
+    "market_confidence_score": 70,
+    "probability_edge": 0.0253,
+    "reason_codes": [
+     "RESEARCH_MARKET_IMMATURE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_one_book",
+   "market": {
+    "books": 1,
+    "dispersion_iqr": null
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 75,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5913,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.93,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0675,
+    "reason_codes": [
+     "RESEARCH_EXTREME_EDGE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_extreme",
+   "market": {
+    "books": 5,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 19.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
   }
  ],
  "exposure": [
@@ -6101,40 +6893,106 @@
    },
    "now": "2026-10-01T15:00:00.000Z",
    "policy": {
-    "bet_enabled": true,
-    "exposure": {
-     "max_game_u": 1.5,
-     "max_slate_u": 3,
-     "same_game_correlation": 1
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
     },
-    "extreme_ev": 0.15,
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
     "extreme_gap_pts": 10,
     "extreme_max_age_minutes": 60,
     "hysteresis": {
-     "edge_buffer": 0.004,
-     "ev_buffer": 0.004
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
     },
+    "ideal_probability_edge": 0.02,
     "lean": {
-     "min_gap_pts": 1,
-     "min_probability_edge": 0
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
     },
     "max_dispersion_iqr": 1.5,
-    "max_ensemble_sd": 6,
+    "max_ensemble_sd": 6.0,
     "max_price": -125,
+    "min_bet_confidence": null,
     "min_books": 3,
-    "min_ev": 0.02,
-    "min_football_confidence": 30,
-    "min_probability_edge": 0.02,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
     "reference_price": -110,
     "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
      "max_stake_u": 1,
      "method": "flat",
+     "saturation_probability": 0.55,
      "unit_u": 1
     },
     "stale_minutes": 180,
-    "version": "parity_test_policy",
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
     "wait": {
-     "enabled": false
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
     }
    },
    "pure": {
