@@ -244,20 +244,24 @@ def enforce(X, A=None, contract=None, reference=None):
 
 
 # ----------------------------------------------------------------- monitor
+ENVELOPE_PAD = 1.0            # the training envelope is widened by its own width on each side ...
+ENVELOPE_FLOOR_SD = 0.5       # ... and by at least half a training SD (means and SDs)
+
+
 def _outside(x, env, floor):
-    """x outside the training envelope [lo, hi] widened by max(half its width, floor)."""
+    """x outside the training envelope [lo, hi] widened by max(its width, floor)."""
     if x is None or not env:
         return False
     lo, hi = env
-    pad = max(0.5 * (hi - lo), floor)
+    pad = max(ENVELOPE_PAD * (hi - lo), floor)
     return x < lo - pad or x > hi + pad
 
 
 def monitor(X, reference=None, contract=None, min_n=MIN_N):
     """The slate's distribution vs the training slates of the same week of the
     season. A statistic is flagged when it leaves the range the eight training
-    seasons' slates spanned, widened by half that range (and by a floor of a
-    quarter of the training SD for means and SDs). Returns
+    seasons' slates spanned, widened by that range on each side (and by at
+    least half a training SD for means and SDs). Returns
     {'status', 'phase', 'n', 'flags': [...], 'features': {...}}."""
     c = contract or load()
     ref = reference if reference is not None else load_reference(c)
@@ -273,7 +277,7 @@ def monitor(X, reference=None, contract=None, min_n=MIN_N):
     W = (ref.get('weeks') or {}).get(phase) or {}
     env = W.get('envelope') or {}
     out = {'status': 'OK', 'phase': phase, 'n': n, 'reference_slates': W.get('slates'), 'reference_sha256': ref.get('sha256'),
-           'rule': {'min_n': min_n, 'envelope_pad': 'max(half the envelope width, a quarter of the training SD)',
+           'rule': {'min_n': min_n, 'envelope_pad': 'max(%g x the envelope width, %g training SD)' % (ENVELOPE_PAD, ENVELOPE_FLOOR_SD),
                     'tail_share_min': TAIL_SHARE, 'missing_delta': MISSING_DELTA},
            'flags': [], 'features': {}}
     if n < min_n:
@@ -299,9 +303,9 @@ def monitor(X, reference=None, contract=None, min_n=MIN_N):
         v = {k: (round(x, 4) if isinstance(x, float) else x) for k, x in st.items()}
         v['envelope'] = e
         v['flags'] = []
-        if ftype.get(name) in ('number', 'binary') and _outside(st['mean'], e.get('mean'), 0.25 * rsd):
+        if ftype.get(name) in ('number', 'binary') and _outside(st['mean'], e.get('mean'), ENVELOPE_FLOOR_SD * rsd):
             v['flags'].append('MEAN_SHIFT')
-        if ftype.get(name) == 'number' and _outside(st['sd'], e.get('sd'), 0.25 * rsd):
+        if ftype.get(name) == 'number' and _outside(st['sd'], e.get('sd'), ENVELOPE_FLOOR_SD * rsd):
             v['flags'].append('SD_SHIFT')
         if st['tail'] is not None and e.get('tail') and st['tail'] > max(TAIL_SHARE, e['tail'][1] + 0.05):
             v['flags'].append('TAILS')
