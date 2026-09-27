@@ -1,0 +1,307 @@
+{
+ "generated_at": "2026-09-27T17:17:32.863Z",
+ "files": [
+  {
+   "file": "supabase/cfb_lab.sql",
+   "bytes": 86673,
+   "statements": 72,
+   "destructive": [],
+   "recreate": 8,
+   "rls_enable": {
+    "guarded": 0,
+    "unguarded": 1
+   },
+   "index_plain": 17,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": false
+  },
+  {
+   "file": "supabase/cfb_lab_cron.sql",
+   "bytes": 13642,
+   "statements": 10,
+   "destructive": [],
+   "recreate": 0,
+   "rls_enable": {
+    "guarded": 0,
+    "unguarded": 0
+   },
+   "index_plain": 0,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": false
+  },
+  {
+   "file": "supabase/cfb_weekly.sql",
+   "bytes": 26016,
+   "statements": 38,
+   "destructive": [],
+   "recreate": 4,
+   "rls_enable": {
+    "guarded": 0,
+    "unguarded": 1
+   },
+   "index_plain": 8,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": false
+  },
+  {
+   "file": "supabase/cfb_personnel.sql",
+   "bytes": 19856,
+   "statements": 27,
+   "destructive": [],
+   "recreate": 4,
+   "rls_enable": {
+    "guarded": 0,
+    "unguarded": 1
+   },
+   "index_plain": 8,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": false
+  },
+  {
+   "file": "supabase/cfb_decision.sql",
+   "bytes": 21899,
+   "statements": 26,
+   "destructive": [],
+   "recreate": 4,
+   "rls_enable": {
+    "guarded": 0,
+    "unguarded": 1
+   },
+   "index_plain": 7,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": false
+  },
+  {
+   "file": "supabase/cfb_v2_model.sql",
+   "bytes": 23143,
+   "statements": 49,
+   "destructive": [],
+   "recreate": 7,
+   "rls_enable": {
+    "guarded": 0,
+    "unguarded": 4
+   },
+   "index_plain": 7,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": false
+  },
+  {
+   "file": "supabase/cfb_market_integrity.sql",
+   "bytes": 32175,
+   "statements": 21,
+   "destructive": [],
+   "recreate": 5,
+   "rls_enable": {
+    "guarded": 0,
+    "unguarded": 1
+   },
+   "index_plain": 3,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": false
+  },
+  {
+   "file": "supabase/cfb_matchup.sql",
+   "bytes": 18475,
+   "statements": 24,
+   "destructive": [],
+   "recreate": 4,
+   "rls_enable": {
+    "guarded": 0,
+    "unguarded": 1
+   },
+   "index_plain": 6,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": false
+  },
+  {
+   "file": "supabase/cfb_market.sql",
+   "bytes": 19572,
+   "statements": 19,
+   "destructive": [],
+   "recreate": 4,
+   "rls_enable": {
+    "guarded": 0,
+    "unguarded": 1
+   },
+   "index_plain": 4,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": false
+  },
+  {
+   "file": "supabase/cfb_production.sql",
+   "bytes": 85619,
+   "statements": 67,
+   "destructive": [],
+   "recreate": 0,
+   "rls_enable": {
+    "guarded": 1,
+    "unguarded": 0
+   },
+   "index_plain": 10,
+   "index_concurrent": 0,
+   "not_null_add": [],
+   "volatile_default": [],
+   "lock_timeout": true
+  }
+ ],
+ "measured": {
+  "cfb_lab": {
+   "apply_ms": 153,
+   "reapply_ms": 93,
+   "reapply_access_exclusive_tables": [
+    "cfb_lab_audit_log",
+    "cfb_lab_evaluations",
+    "cfb_lab_event_map",
+    "cfb_lab_experiments",
+    "cfb_lab_market_lines",
+    "cfb_lab_market_quotes",
+    "cfb_lab_miss_reviews",
+    "cfb_lab_model_roles",
+    "cfb_lab_partitions",
+    "cfb_lab_predictions",
+    "cfb_lab_reports",
+    "cfb_lab_research_queue",
+    "cfb_lab_results"
+   ]
+  },
+  "cfb_lab_cron": {
+   "apply_ms": 43,
+   "reapply_ms": 35,
+   "reapply_access_exclusive_tables": []
+  },
+  "cfb_weekly": {
+   "apply_ms": 109,
+   "reapply_ms": 48,
+   "reapply_access_exclusive_tables": [
+    "cfb_game_performance",
+    "cfb_game_validation",
+    "cfb_pipeline_runs",
+    "cfb_pipeline_stage_log",
+    "cfb_projection_changes",
+    "cfb_qb_events",
+    "cfb_qb_week_state",
+    "cfb_source_health",
+    "cfb_team_week_state",
+    "cfb_unit_week_state",
+    "cfb_upcoming_game_features",
+    "cfb_weekly_misses",
+    "cfb_weekly_projections",
+    "cfb_weekly_research"
+   ]
+  },
+  "cfb_personnel": {
+   "apply_ms": 89,
+   "reapply_ms": 47,
+   "reapply_access_exclusive_tables": [
+    "cfb_depth_chart_state",
+    "cfb_personnel_game_snapshot",
+    "cfb_personnel_model_versions",
+    "cfb_personnel_unit_state",
+    "cfb_player_aliases",
+    "cfb_player_events",
+    "cfb_player_performance",
+    "cfb_player_week_state",
+    "cfb_players",
+    "cfb_transfer_history"
+   ]
+  },
+  "cfb_decision": {
+   "apply_ms": 94,
+   "reapply_ms": 48,
+   "reapply_access_exclusive_tables": [
+    "cfb_bankroll_policy",
+    "cfb_bet_eligibility",
+    "cfb_decision_experiments",
+    "cfb_decision_model_versions",
+    "cfb_decision_policies",
+    "cfb_decision_results",
+    "cfb_decision_snapshots",
+    "cfb_ev_calibration",
+    "cfb_manual_decisions",
+    "cfb_portfolio_exposure",
+    "cfb_probability_calibration"
+   ]
+  },
+  "cfb_v2_model": {
+   "apply_ms": 119,
+   "reapply_ms": 48,
+   "reapply_access_exclusive_tables": [
+    "cfb_backtest_predictions",
+    "cfb_backtest_runs",
+    "cfb_calibration_results",
+    "cfb_data_dictionary",
+    "cfb_game_feature_snapshots",
+    "cfb_market_decisions",
+    "cfb_market_snapshots",
+    "cfb_market_training_snapshots",
+    "cfb_model_component_predictions",
+    "cfb_model_monitoring",
+    "cfb_model_training_snapshots",
+    "cfb_model_versions",
+    "cfb_player_availability",
+    "cfb_prediction_intervals",
+    "cfb_prediction_misses",
+    "cfb_predictions",
+    "cfb_team_ratings",
+    "cfb_team_week_features"
+   ]
+  },
+  "cfb_market_integrity": {
+   "apply_ms": 80,
+   "reapply_ms": 57,
+   "reapply_access_exclusive_tables": [
+    "cfb_lab_results",
+    "cfb_market_line_corrections",
+    "cfb_market_quote_quarantine"
+   ]
+  },
+  "cfb_matchup": {
+   "apply_ms": 79,
+   "reapply_ms": 44,
+   "reapply_access_exclusive_tables": [
+    "cfb_game_matchup_features",
+    "cfb_matchup_model_versions",
+    "cfb_matchup_monitor",
+    "cfb_similar_matchups",
+    "cfb_style_change_events",
+    "cfb_team_week_style"
+   ]
+  },
+  "cfb_market": {
+   "apply_ms": 92,
+   "reapply_ms": 48,
+   "reapply_access_exclusive_tables": [
+    "cfb_book_quality",
+    "cfb_market_consensus_snapshots",
+    "cfb_market_events",
+    "cfb_market_information_events",
+    "cfb_market_predictions",
+    "cfb_market_provider_conflicts",
+    "cfb_market_public_betting"
+   ]
+  },
+  "cfb_production": {
+   "apply_ms": 145,
+   "reapply_ms": 71,
+   "reapply_access_exclusive_tables": []
+  }
+ }
+}
