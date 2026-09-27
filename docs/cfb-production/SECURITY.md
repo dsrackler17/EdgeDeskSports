@@ -28,7 +28,7 @@ non-anon JWTs, GitHub / Stripe / Anthropic / OpenAI / Slack / AWS tokens, databa
 keys in URLs and credential-named assignments; in workflows, a secret on a `run:` line or echoed. A finding
 shows the file, the line, the kind and a masked fingerprint (`sha256:<10 hex> (<n> chars)`), never the value.
 
-Result on 2026-09-27 (2730 files: 20 page files, 15 log files; 47 workflows): **no secret.**
+Result on 2026-09-27 (2735 files: 20 page files, 15 log files; 47 workflows): **no secret.**
 - 9 test fixtures: fake values in test files (`capture_feed.test.js`, `sql.test.js`, `capture.test.js`,
   two collective tests, `issue_reports.test.sql`, the stub key in `tools/intelligence/conversation.js`).
 - 2 informational: `deploy-intelligence.yml` lines 145 and 170 put `secrets.SUPABASE_PROJECT_REF` on a

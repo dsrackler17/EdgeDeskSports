@@ -257,7 +257,7 @@ probability collapse, BET spike, missing conference), plus the feature monitor.
   1.8e-4. This is recorded, not fixable without editing `engine.js`.
 
 **37. Security.** See SECURITY.md. Result:
-- The secret audit found no secret: 2,730 files including 20 page files and 15 log
+- The secret audit found no secret: 2,735 files including 20 page files and 15 log
   files, and 47 workflows.
 - It flagged 9 test fixtures and 2 INFO items (a project ref on a `run:` line).
 - Least privilege is enforced by test on every PR: every security-definer CFB function
