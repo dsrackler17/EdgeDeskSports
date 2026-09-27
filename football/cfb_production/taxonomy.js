@@ -75,6 +75,7 @@ function fromSqlstate(code) {
   if (!code) return null;
   const c = String(code).toUpperCase();
   if (SQLSTATE_EXACT[c]) return SQLSTATE_EXACT[c];
+  if (/^PGRST1\d\d$/.test(c)) return 'PROVIDER_REJECTED';          // PostgREST request errors (PGRST102: keys must match)
   if (/^[0-9A-Z]{5}$/.test(c) && SQLSTATE_CLASS[c.slice(0, 2)]) return SQLSTATE_CLASS[c.slice(0, 2)];
   return null;
 }
@@ -114,13 +115,12 @@ function classify(x) {
   if (x == null) return 'UNKNOWN';
   if (typeof x === 'object' && x.cfb_code && CODES[x.cfb_code]) return x.cfb_code;
   if (typeof x === 'object' && ('status' in x) && !(x instanceof Error)) {
-    const body = x.body;
-    let code = null;
-    if (body && typeof body === 'object') code = fromSqlstate(body.code);
-    else if (typeof body === 'string') {
-      try { const j = JSON.parse(body); code = fromSqlstate(j && j.code); } catch (_) { code = fromText(body); }
-    }
-    return code || fromHttp(x.status) || 'UNKNOWN';
+    let body = x.body;
+    if (typeof body === 'string') { try { body = JSON.parse(body); } catch (_) { const t = fromText(body); return t || fromHttp(x.status) || 'UNKNOWN'; } }
+    /* a body that NAMES a SQLSTATE decides, even when we do not know it: an unmapped
+       code behind a 500 (25P02, XX000, P0002 ...) is not a transient and is never retried */
+    if (body && typeof body === 'object' && body.code) return fromSqlstate(body.code) || 'UNKNOWN';
+    return fromHttp(x.status) || 'UNKNOWN';
   }
   if (x instanceof Error || typeof x === 'object') {
     const byCode = fromSqlstate(x.code) || fromSqlstate(x.sqlState);
