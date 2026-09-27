@@ -148,7 +148,9 @@ module.exports = { build, write, plan, RULE, TABLES, FILES };
 if (require.main === module) {
   const a = process.argv.slice(2);
   const arg = (k, d) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : d; };
-  const season = Number(arg('--season', new Date().getUTCFullYear()));
+  /* the season the Model Lab writes (its config), never the calendar year: a January bowl belongs to the season before */
+  const cfg = JSON.parse(fs.readFileSync(path.join(REPO, 'football', 'cfb_lab', 'config.json'), 'utf8'));
+  const season = Number(arg('--season', cfg.season));
   const now = arg('--now', new Date().toISOString());
   const b = build(season, now);
   const counts = Object.fromEntries(Object.keys(FILES).map((k) => [k, b[k].length]));

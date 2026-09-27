@@ -349,7 +349,10 @@ section('14. the page and its boundaries');
       if (e.isDirectory()) { if (!/node_modules|\.git|\.cache/.test(p)) walk(p); return; }
       if (!/\.(js|py|ts)$/.test(e.name)) return;
       const rel = path.relative(ROOT, p);
-      if (rel === 'research/cfb/terminal.js' || rel === 'football/cfb_terminal/analytics_sql.test.js' || rel === 'football/cfb_terminal/tests.js') return;
+      /* the terminal's own tests, and the production security test, which audits the
+         analytics writer's guards in its SQL (it reads no rows) */
+      if (rel === 'research/cfb/terminal.js' || rel === 'football/cfb_terminal/analytics_sql.test.js' || rel === 'football/cfb_terminal/tests.js'
+        || rel === 'football/cfb_production/security.test.js') return;
       if (/cfb_terminal_events|cfb_terminal_track/.test(fs.readFileSync(p, 'utf8'))) offenders.push(rel);
     });
   })(path.join(ROOT, 'football'));

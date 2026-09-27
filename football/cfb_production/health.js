@@ -135,13 +135,20 @@ function build(opts) {
   /* ---------------------------------------------- degraded games + predictions */
   const cur = readJson(P(read('football/cfb_v2/current.json')));
   const rows = (cur && cur.rows) || [];
-  const degraded = rows.filter((r) => r.priced === false || r.qb_missing_any || r.qb_unsettled_any || r.early_season || (r.model_mode && r.model_mode !== 'FULL'))
-    .map((r) => ({ game_id: String(r.game_id), home: r.home, away: r.away,
-      modes: [r.model_mode && r.model_mode !== 'FULL' ? r.model_mode : null, r.priced === false ? 'NOT_PRICED' : null, r.qb_missing_any ? 'QB_MISSING' : null,
-        r.qb_unsettled_any ? 'QB_UNSETTLED' : null, r.early_season ? 'EARLY_SEASON' : null].filter(Boolean), reason: r.not_priced_reason || null }));
+  /* the canonical modes and fallback level each game is stored with (reports/projections.json,
+     built earlier in the same hourly job; docs/cfb-production/CANONICAL.md §11) */
+  const proj = opts.projections !== undefined ? opts.projections : readJson(P(read('football/cfb_production/reports/projections.json')));
+  const canonBy = new Map(((proj && proj.games) || []).map((g) => [String(g.game_id), g]));
+  const cmodes = (r) => { const g = canonBy.get(String(r.game_id)); return g && g.canonical && g.canonical.degraded ? (g.canonical.degraded.modes || []).filter((m) => m !== 'FULL') : []; };
+  const degraded = rows.filter((r) => r.priced === false || r.qb_missing_any || r.qb_unsettled_any || r.early_season || (r.model_mode && r.model_mode !== 'FULL') || cmodes(r).length)
+    .map((r) => { const g = canonBy.get(String(r.game_id));
+      return { game_id: String(r.game_id), home: r.home, away: r.away,
+        modes: [r.model_mode && r.model_mode !== 'FULL' ? r.model_mode : null, r.priced === false ? 'NOT_PRICED' : null, r.qb_missing_any ? 'QB_MISSING' : null,
+          r.qb_unsettled_any ? 'QB_UNSETTLED' : null, r.early_season ? 'EARLY_SEASON' : null].filter(Boolean).concat(cmodes(r)).filter((m, i, a) => a.indexOf(m) === i),
+        fallback_level: g && g.resolved ? g.resolved.level : null, reason: r.not_priced_reason || null }; });
   const dq = (lab && lab.health && lab.health.data_quality) || null;
   out.sections.degraded_games = { status: dq && dq.counts && dq.counts.RED ? 'WARNING' : 'OK', v21_rows: rows.length, degraded: degraded.slice(0, 200), degraded_count: degraded.length,
-    lab_data_quality: dq ? dq.counts : null };
+    lab_data_quality: dq ? dq.counts : null, canonical_projections_as_of: proj ? proj.as_of_ts || null : null, canonical_by_level: proj && proj.counts ? proj.counts.by_level : null };
   const snapsDir = P('football/cfb_v2/snapshots', String(season));
   const frozen = fs.existsSync(snapsDir) ? fs.readdirSync(snapsDir).filter((f) => f.endsWith('.json') && f !== 'replay_to_date.json').length : 0;
   const curAge = cur ? ageMin(cur.generated_at, now) : null;
@@ -162,6 +169,9 @@ function build(opts) {
     status: bets > 0 && !betEnabled ? 'CRITICAL' : 'OK', betting_enabled: betEnabled, policy: policy && policy.version, policy_status: policy && policy.status,
     decision_rows: dl.length, by_role_status: byStatus, shadow_counts: sd && sd.counts, bets,
     rule: 'a BET while the policy has betting disabled is a fail-safe breach (CRITICAL); an unusual BET count is reviewed, never auto-cancelled',
+    /* one official definition (audit F-22): CHALLENGER rows are the governed policy; CURRENT rows are research */
+    roles: { CHALLENGER: 'OFFICIAL: the governed policy (football/cfb_decision/decision.js, ' + (policy && policy.version) + ')',
+      CURRENT: 'RESEARCH only: the stage-8 engine.decide() baseline, never the official status' },
   };
 
   /* ---------------------------------------------- warnings (incl. anomalies) */

@@ -543,7 +543,10 @@ function build(store, now) {
     const g = thisWeek.get(p.game_id);
     g.models[p.model_version] = { label: p.model_label, checkpoint: p.checkpoint_type, origin: p.origin, official: (p.official_families || []).includes('OFFICIAL'),
       prediction_ts: p.prediction_ts, margin: p.pure_home_margin, fair: p.fair_spread_display,
-      p_home: p.home_win_probability, sigma: p.prediction_sigma, conf: p.football_confidence, dq: p.data_quality_status, decision: p.decision_class, status: p.status, side: p.side, gap: p.model_market_gap, line: p.recommended_line };
+      p_home: p.home_win_probability, sigma: p.prediction_sigma, conf: p.football_confidence, dq: p.data_quality_status, decision: p.decision_class, status: p.status, side: p.side, gap: p.model_market_gap, line: p.recommended_line,
+      /* the class is the Lab's own research rule, never the official decision (audit F-22) */
+      decision_basis: 'research: ' + (p.decision_source || 'lab rule') + ' (the official decision is the governed policy cfb_decision_policy_v1)',
+      degraded_modes: p.inputs_ref && p.inputs_ref.canonical ? p.inputs_ref.canonical.degraded_modes : null };
     if (!g.market || U.ms(p.market_as_of) > U.ms(g.market.as_of)) g.market = { current: p.current_spread, open: p.opening_spread, books: p.sportsbook_count, as_of: p.market_as_of, sources: p.market_sources, stale: p.market_stale };
   });
   const alertList = alerts(D, now, roles);

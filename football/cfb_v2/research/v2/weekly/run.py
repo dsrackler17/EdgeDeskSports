@@ -338,7 +338,23 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
         A, gbm = PJ.PL.load_artifacts(C.MODEL_VERSION)
         ctx['A'], ctx['gbm'], ctx['X'] = A, gbm, Xt
         ctx['features'] = PJ.upcoming_features(Xt, A, T, ctx['versions'])
-        rec['counts'].update(target_games=int(len(Xt)), feature_columns=len(PJ.model_inputs(A)))
+        # the model input contract, BEFORE inference (docs/cfb-production/CANONICAL.md §3):
+        # a game with a CRITICAL violation is never inferred, published or decided; an
+        # artifact input the contract does not declare fails the stage. The monitor flags.
+        from . import contract as IC
+        ic = IC.enforce(Xt, A)
+        ctx['input_contract'] = ic
+        for gid in ic['critical_games']:
+            run.warn('UPCOMING_FEATURES', 'game %s violates the input contract (%s): withheld, never inferred'
+                     % (gid, '; '.join(ic['violations'][gid][:3])))
+        mon = IC.monitor(Xt)
+        ctx['feature_monitor'] = mon
+        for f in mon.get('flags', []):
+            run.warn('UPCOMING_FEATURES', 'feature monitor: %s %s vs the training slates of %s (review; nothing is refit)'
+                     % (f['field'], f['flag'], mon.get('phase')))
+        rec['counts'].update(target_games=int(len(Xt)), feature_columns=len(PJ.model_inputs(A)),
+                             input_contract=ic['version'], contract_withheld=len(ic['critical_games']),
+                             feature_monitor=mon.get('status'), feature_flags=len(mon.get('flags', [])))
         return {}
 
     run.stage('UPCOMING_FEATURES', features, needs=('TEAM_POSTERIORS',))
@@ -362,9 +378,12 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
         if not compat['ok']:
             # taxonomy CALIBRATION / MODEL_ARTIFACT -> runlog SCHEMA: never run an incompatible tuple
             raise RL.StageError('not a COMPATIBLE tuple: %s' % compat['reason'], 'SCHEMA')
-        D = PJ.infer(ctx['X'], ctx['A'], ctx['gbm'])
+        bad = set((ctx.get('input_contract') or {}).get('critical_games') or [])
+        X = ctx['X'][~ctx['X'].game_id.astype(str).isin(bad)] if bad else ctx['X']
+        D = PJ.infer(X, ctx['A'], ctx['gbm'])
         ctx['D'] = D
-        rec['counts'].update(games=int(len(D)), mean_abs_margin=round(float(D.ens_pred.abs().mean()), 3))
+        rec['counts'].update(games=int(len(D)), withheld_by_input_contract=len(bad),
+                             mean_abs_margin=round(float(D.ens_pred.abs().mean()), 3) if len(D) else None)
         return {}
 
     run.stage('PURE_SUBMODELS', submodels, needs=('UPCOMING_FEATURES', 'LEAKAGE_TESTS'))
@@ -416,10 +435,14 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
         checks = GATE.sanity(D, ctx['features'], G[G.season.eq(season)], T, now,
                              team_rows=ctx.get('team_rows'), team_flags=ctx.get('team_flags'),
                              qb_rows=ctx.get('qb_rows'), market_ok=True)
+        ic = ctx.get('input_contract') or {}
+        bad = list(ic.get('critical_games') or [])
+        checks.append(GATE.check('model inputs pass the input contract (%s)' % ic.get('version'), not bad, bad[:10],
+                                 games=bad, action='WITHHOLD_GAME'))
         g = GATE.release_gate(run, checks, ctx.get('convergence'), ctx.get('artifact'),
                               leakage_ok=run.ok('LEAKAGE_TESTS'), validation=ctx.get('validation_week'),
                               source_health=ctx.get('source_health'), critical_stages=CRITICAL_STAGES,
-                              n_week_games=len(D))
+                              n_week_games=len(D) + len(bad))
         run.gate = g
         ctx['withheld_games'], ctx['withheld_totals'] = set(g['withheld_games']), set(g['withheld_totals'])
         for gid in g['withheld_games']:
@@ -509,10 +532,31 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
         st['features'] = len(fresh)
         st['projections'] = store.append_unique('projections', ctx['projections'])
         st['projection_changes'] = store.append_unique('projection_changes', ctx['changes'])
+        if ctx.get('feature_monitor') is not None:
+            store.write_json('feature_monitor.json', dict(ctx['feature_monitor'], run_id=run.run_id, week=tw,
+                                                          input_contract={k: v for k, v in (ctx.get('input_contract') or {}).items()}))
         rec['counts'].update({k: v for k, v in st.items()})
         return {}
 
     run.stage('WRITE_STATE', write_state, needs=('FREEZE_EARLY',))
+
+    # ---------------------------------------------------------- matchup layer (shadow, records only)
+    def matchup_shadow(rec):
+        from . import matchup_shadow as MS
+        try:
+            out = MS.run_stage(season, T, ctx['X'], ctx['D'], store.dir, week=tw)
+        except Exception as e:                         # noqa: BLE001 - a shadow never blocks the pathway
+            run.warn('MATCHUP_SHADOW', 'matchup shadow did not run: %s: %s' % (type(e).__name__, str(e)[:200]))
+            return {'_status': 'SKIPPED'}
+        rec['counts'].update({k: v for k, v in out.items() if k != '_status'})
+        if out.get('n_refused'):
+            run.warn('MATCHUP_SHADOW', '%d matchup record(s) refused: %s' % (out['n_refused'], '; '.join(out['refused'][:3])))
+        if out.get('_status') == 'SKIPPED':
+            rec['error'] = out.get('reason')
+        return out
+
+    run.stage('MATCHUP_SHADOW', matchup_shadow, needs=('WRITE_STATE',),
+              skip='a rebuild records no matchup shadow' if mode == 'rebuild' else None)
 
     # ---------------------------------------------------------- 17 market comparison
     def market(rec):

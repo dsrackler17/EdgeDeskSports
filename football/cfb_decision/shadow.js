@@ -10,7 +10,7 @@
    at the moment the quote arrived:
 
      CURRENT     V2.1's engine.decide() — the frozen cfb_decision_baseline_001
-     CHALLENGER  football/cfb_decision/decision.js with the newest calibration
+     CHALLENGER  football/cfb_decision/decision.js with the PINNED calibration
                  artifact and policy (fail closed without them)
 
    Decisions are appended to football/cfb_decision/<season>/decisions.jsonl with
@@ -31,10 +31,13 @@ global.window = global.window || global;
 require(path.join(REPO, 'football', 'cfb_v2', 'params.js'));
 const E = require(path.join(REPO, 'football', 'cfb_v2', 'engine.js'));
 const D = require('./decision.js');
+/* the one canonical pathway to a V2 projection: input contract, the engine, numeric checks */
+const CANON = require(path.join(REPO, 'football', 'cfb_production', 'canonical.js'));
+/* the PINNED decision policy and calibration (compatibility.json), never "the newest directory" */
+const COMPAT = require(path.join(REPO, 'football', 'cfb_production', 'compat.js'));
 /* the market-integrity rules (consensus, freshness, outliers); absent, the engine's own gates still apply */
 const INTEG = (() => { try { return require(path.join(REPO, 'football', 'cfb_lab', 'integrity.js')); } catch (e) { return null; } })();
 
-const ART_DIR = path.join(REPO, 'football', 'cfb_v2', 'artifacts', 'decision');
 const BASELINE_VERSION = 'cfb_decision_baseline_001';
 
 function h(...parts) { return crypto.createHash('sha256').update(L.util.idParts(parts)).digest('hex').slice(0, 24); }
@@ -48,13 +51,6 @@ function appendUnique(p, rows, idf) {
     fs.appendFileSync(p, fresh.map((r) => JSON.stringify(r)).join('\n') + '\n');
   }
   return fresh.length;
-}
-
-/* the newest artifact / policy directories by name (v1 < v2 ...); none -> null (fail closed) */
-function newest(prefix, file) {
-  if (!fs.existsSync(ART_DIR)) return null;
-  const dirs = fs.readdirSync(ART_DIR).filter((d) => d.startsWith(prefix) && fs.existsSync(path.join(ART_DIR, d, file))).sort();
-  return dirs.length ? readJson(path.join(ART_DIR, dirs[dirs.length - 1], file)) : null;
 }
 
 function frozenRows(season) {
@@ -86,8 +82,10 @@ function quotes(season) {
 
 function decideAll(season, nowMs) {
   const rows = frozenRows(season);
-  const artifact = newest('cfb_decision_calibration_', 'calibration.json');
-  const policy = newest('cfb_decision_policy_', 'policy.json');
+  /* a missing or changed pinned artifact loads as null: every decision is then NO_BET (fail closed) */
+  const pinned = COMPAT.decisionArtifacts();
+  const artifact = pinned.calibration;
+  const policy = pinned.policy;
   const out = [];
   const qs = quotes(season).sort((a, b) => L.util.ms(a.observed_at) - L.util.ms(b.observed_at));
   /* market context at each quote: the other books' latest main lines before it */
@@ -101,7 +99,7 @@ function decideAll(season, nowMs) {
     /* only a projection frozen BEFORE the quote can decide it: replayed rows were computed later (hindsight) */
     if (g.origin !== 'LIVE') continue;
     if (g.row.prediction_ts && t < L.util.ms(g.row.prediction_ts)) continue;          /* a quote before the freeze */
-    const pure = E.pure(g.row, {});
+    const pure = CANON.pure(g.row, { engine: E, params: global.window.EDCfbV2Params, row_model_version: g.model_version });
     const books = Object.values(latestByGameBook[q.game_id]).map((x) => ({ home_line: x.home_line }));
     const xs = books.map((b) => b.home_line).sort((a, b) => a - b);
     const iqr = xs.length >= 2 ? xs[Math.ceil((xs.length - 1) * 0.75)] - xs[Math.floor((xs.length - 1) * 0.25)] : null;

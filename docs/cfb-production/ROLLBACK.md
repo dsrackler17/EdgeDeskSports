@@ -29,7 +29,9 @@ The production pathway serves V2.1 in shadow; V1 is the governance champion.
   consumers fall to level 3 of the hierarchy (V1).
 * **If V2.1 had been promoted:** a person restores V1 as champion through
   governance (the old champion is demoted in the same act, both audited):
-  `node football/cfb_lab/governance.js promote --model edgedesk_cfb_p4_v1.0.0 --reason "rollback: <why>" --actor <name>`,
+  `node football/cfb_lab/governance.js promote --model edgedesk_cfb_p4_v1.0.0 --rollback --reason "rollback: <why>" --actor <name>`
+  (`--rollback` is required: the promotion guard accepts V1's FALLBACK compatibility entry and skips the
+  shadow-sample check only for the documented return to the previous champion; VERSIONING.md §4),
   then records it: `select public.cfb_audit('MODEL_ROLLBACK', 'edgedesk_cfb_p4_v1.0.0', '{"champion":"edgedesk_cfb_v2.1.0"}', '{"champion":"edgedesk_cfb_p4_v1.0.0"}', '<why>', '<name>');`
 * **A bad artifact:** restore the pinned bytes from git — the manifest records
   each file's git blob: `git cat-file blob <git_blob> > <path>` for every entry

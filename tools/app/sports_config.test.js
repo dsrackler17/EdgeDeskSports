@@ -80,7 +80,8 @@ chk('a turn resolved to a tennis key is the boundary whatever its words', !!S.su
 
 /* ---- 3. the Research navigation ------------------------------------------ */
 const APP = read('app.html');
-const nav = (APP.match(/<div class="stseg research-sub"[^\n]*?<\/div>/) || [''])[0];
+/* the tab strip is a <nav> (it was a <div> before the Research UI refinement) */
+const nav = (APP.match(/<(nav|div) class="stseg research-sub"[^\n]*?<\/\1>/) || [''])[0];
 const subs = (nav.match(/data-sub="([a-z]+)"/g) || []).map((x) => x.slice(10, -1));
 chk('the Research tabs are Desk, the configured coverage, Stats and Lab',
   JSON.stringify(subs) === JSON.stringify(['rdesk'].concat(S.RESEARCH_COVERAGE.map((c) => c.id), ['stats', 'lab'])), subs);
