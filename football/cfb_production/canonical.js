@@ -240,7 +240,7 @@ function display(snap) {
     /* a degraded projection never shows its confidence score: the words say why (brief §48) */
     show_confidence_score: full,
     /* whole percent at most; a degraded favourite above 85% is said in words, not as a precise number */
-    win_probability_text: pw === null ? null : (!full && pw >= 0.85 ? 'strong favourite (' + notes.join(', ').toLowerCase() + ')' : Math.round(100 * pw) + '%'),
+    win_probability_text: pw === null ? null : (!full && pw >= 0.85 ? 'strong favourite (' + notes.join(', ').toLowerCase() + ')' : (pw >= 0.995 ? '>99%' : Math.round(100 * pw) + '%')),
   };
 }
 
@@ -278,7 +278,7 @@ function snapshot(row, opts) {
     status, reason: status === 'PREDICTED' ? null : (p.reason || null),
     projection: proj,
     contract: { version: contract.version, ok: contract.ok, critical: contract.critical, degrade: contract.degrade, decision_inputs_complete: contract.decision_inputs_complete },
-    numeric: { version: N.VERSION, ok: !(p.numeric && p.numeric.length), problems: p.numeric || [] },
+    numeric: { version: N.VERSION, ok: !(p.numeric && p.numeric.length), problems: p.numeric || [], notes: p.status === 'PREDICTED' ? N.roundingNotes(p) : [] },
     degraded: dm,
     fallback_level: status === 'PREDICTED' ? (dm.football.length ? 2 : 1) : (status === 'NOT_PRICED' ? null : 4),
     input_hash: inputHash(row, opts.overlays),
