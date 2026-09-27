@@ -19,7 +19,7 @@ Code: `football/cfb_v2/research/v2/matchup/` (`style`, `interactions`, `similar`
 cd football/cfb_v2/research
 export CFB_V2_DATA=$PWD/data CFB_V2_OUT=$PWD/out_h OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 python3 -m v2.matchup.audit                # scheme-data audit (15 s)
-python3 -m v2.matchup.style                # plays -> expectation models -> sums -> style ratings (~4 min cold)
+python3 -m v2.matchup.style [season]       # plays -> expectation models -> sums -> style ratings (~4 min cold; one season 16 s warm)
 python3 -m v2.matchup.backtest --dev       # every dev experiment (~3 min; similarity grid +2 min the first time)
 python3 -m v2.matchup.backtest --freeze    # the artifact from the dev decision
 python3 -m v2.matchup.backtest --holdout   # 2024-2025, ONCE (refuses a second scoring)
