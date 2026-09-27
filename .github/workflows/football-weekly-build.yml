@@ -514,6 +514,12 @@ jobs:
 
       - name: Commit
         if: steps.go.outputs.run == 'true'
+        env:
+          # app.html is SOURCE that this job patches in place, not an artifact:
+          # on a rejected push the helper merges our patch onto the new tip
+          # instead of overwriting the file, so a pull request merged while this
+          # job ran is never reverted (tools/ci/push_generated.sh)
+          PUSH_MERGE_PATHS: app.html
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
