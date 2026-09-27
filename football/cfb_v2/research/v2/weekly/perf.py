@@ -541,86 +541,95 @@ def _shrink_dep(expl_epa, pos_epa, n_plays, K):
 def team_summary(season, T, perf=None):
     """Per team, as of T: everything aggregated over the team's games that kicked
     off before T. Recency versions weight a game 0.5 ** (age_weeks / half-life),
-    half-life = config.RECENT_HALFLIFE_WEEKS, age measured from T."""
+    half-life = config.RECENT_HALFLIFE_WEEKS, age measured from T. Sums are taken
+    over the team's games with PBP (games_with_pbp); record and scoreboard margin use
+    every final game."""
     Tt = VAL._utc(T)
     P = game_performance(season, Tt) if perf is None else perf[perf.kickoff_ts < Tt]
     art = load_expected_margin()
     K = art['constants']
-    P = P[P.has_pbp | P.margin.notna()].copy()
+    P = P[P.margin.notna()].sort_values(['team_id', 'kickoff_ts', 'game_id'], kind='mergesort').copy()
+    if not len(P):
+        return pd.DataFrame()
     P['age_w'] = (Tt - P.kickoff_ts).dt.total_seconds() / (7 * 86400.0)
     P['rw'] = 0.5 ** (P.age_w / C.RECENT_HALFLIFE_WEEKS)
-    rows = []
-    for tid, g in P.groupby('team_id', sort=True):
-        r = dict(team_id=int(tid), season=season, as_of=ids.ts(Tt), fbs=bool(g.fbs.iloc[-1]),
-                 games=int(len(g)), wins=int(g.won.sum()), losses=int((g.margin < 0).sum()))
-        r['record'] = '%d-%d' % (r['wins'], r['losses'])
-        r['scoreboard_margin'] = float(g.margin.mean())
-        r['performance_margin'] = float(g.expected_performance_margin.mean()) if g.expected_performance_margin.notna().any() else None
-        r['overperformance'] = float(g.scoreboard_overperformance.mean()) if g.scoreboard_overperformance.notna().any() else None
-        close = g[g.margin.abs() <= CLOSE_GAME_MARGIN]
-        r['close_games'] = int(len(close))
-        r['close_wins'] = int((close.margin > 0).sum())
-        r['close_losses'] = int((close.margin < 0).sum())
-        r['close_game_record'] = '%d-%d' % (r['close_wins'], r['close_losses'])
-        # ------------------------------------------------ turnover luck (season to date)
-        h = g[g.has_pbp]
-        r.update(_turnover_luck(h, K))
-        # ------------------------------------------------ explosive
-        n_pl = float(h.off_n_plays.sum())
-        r['explosive_plays'] = float(h.off_expl.sum())
-        r['explosive_opportunity'] = _safe(h.off_expl.sum(), n_pl)
-        r['explosive_execution'] = _safe(h.off_expl_epa.sum(), h.off_expl.sum())
-        r['explosive_dependency_raw'] = _safe(h.off_expl_epa.sum(), h.off_pos_epa.sum())
-        r['explosive_dependency_score'] = float(_shrink_dep([h.off_expl_epa.sum()], [h.off_pos_epa.sum()], [n_pl], K)[0])
-        # ------------------------------------------------ drives, season and recency
-        r['drive_n'] = float(h.off_n_drives.sum())
-        for name, num, den in DRIVE_METRICS:
-            r['drive_%s' % name] = _safe(h['off_%s' % num].sum(), h['off_%s' % den].sum())
-            r['drive_%s_rec' % name] = _safe((h.rw * h['off_%s' % num]).sum(), (h.rw * h['off_%s' % den]).sum())
-            r['def_drive_%s' % name] = _safe(h['def_%s' % num].sum(), h['def_%s' % den].sum())
-            r['def_drive_%s_rec' % name] = _safe((h.rw * h['def_%s' % num]).sum(), (h.rw * h['def_%s' % den]).sum())
-        # ------------------------------------------------ special teams
-        for c in ('st_net_epa', 'fg_epa', 'punt_net_epa', 'kick_net_epa'):
-            r['%s_total' % c] = float(h[c].sum())
-            r['%s_pg' % c] = _safe(h[c].sum(), len(h))
-        r['games_with_pbp'] = int(len(h))
-        r['perf_version'] = PERF_VERSION
-        r['artifact_sha256'] = art['sha256']
-        rows.append(r)
-    return pd.DataFrame(rows)
+    P['loss'] = P.margin < 0
+    P['close'] = P.margin.abs() <= CLOSE_GAME_MARGIN
+    P['close_win'] = P.close & P.won
+    P['close_loss'] = P.close & P.loss
+    g = P.groupby('team_id', sort=True)
+    S = pd.DataFrame({
+        'fbs': g.fbs.last().astype(bool), 'games': g.size(), 'wins': g.won.sum().astype(int),
+        'losses': g.loss.sum().astype(int), 'scoreboard_margin': g.margin.mean(),
+        'performance_margin': g.expected_performance_margin.mean(),
+        'overperformance': g.scoreboard_overperformance.mean(),
+        'close_games': g.close.sum().astype(int), 'close_wins': g.close_win.sum().astype(int),
+        'close_losses': g.close_loss.sum().astype(int),
+    })
+    S['record'] = [f'{w}-{l}' for w, l in zip(S.wins, S.losses)]
+    S['close_game_record'] = [f'{w}-{l}' for w, l in zip(S.close_wins, S.close_losses)]
+    h = P[P.has_pbp]
+    sum_cols = ['dropbacks', 'opp_dropbacks', 'ints_thrown', 'ints_made', 'fumbles', 'fumbles_lost',
+                'opp_fumbles', 'opp_fumbles_recovered', 'forced_fumbles', 'return_tds',
+                'off_n_plays', 'off_expl', 'off_expl_epa', 'off_pos_epa',
+                'st_net_epa', 'fg_epa', 'punt_net_epa', 'kick_net_epa']
+    dcols = sorted({'%s_%s' % (sd, c) for sd in ('off', 'def') for _, a, b in DRIVE_METRICS for c in (a, b)})
+    H = h.groupby('team_id', sort=True)[sum_cols + dcols].sum().reindex(S.index)
+    Hr = h[dcols].mul(h.rw, axis=0).groupby(h.team_id, sort=True).sum().reindex(S.index)
+    S['games_with_pbp'] = h.groupby('team_id').size().reindex(S.index).fillna(0).astype(int)
+    S = S.join(_turnover_luck(H, K))
+    S['turnover_luck_pg'] = _div(S.turnover_luck_index, S.games_with_pbp)
+    S['explosive_plays'] = H.off_expl
+    S['explosive_opportunity'] = _div(H.off_expl, H.off_n_plays)
+    S['explosive_execution'] = _div(H.off_expl_epa, H.off_expl)
+    S['explosive_dependency_raw'] = _div(H.off_expl_epa, H.off_pos_epa)
+    S['explosive_dependency_score'] = _shrink_dep(H.off_expl_epa.fillna(0), H.off_pos_epa.fillna(0),
+                                                  H.off_n_plays.fillna(0), K)
+    S['drive_n'] = H.off_n_drives
+    for name, num, den in DRIVE_METRICS:
+        for sd, pre in (('off', 'drive_'), ('def', 'def_drive_')):
+            S[pre + name] = _div(H['%s_%s' % (sd, num)], H['%s_%s' % (sd, den)])
+            S[pre + name + '_rec'] = _div(Hr['%s_%s' % (sd, num)], Hr['%s_%s' % (sd, den)])
+    for c in ('st_net_epa', 'fg_epa', 'punt_net_epa', 'kick_net_epa'):
+        S['%s_total' % c] = H[c]
+        S['%s_pg' % c] = _div(H[c], S.games_with_pbp)
+    S = S.reset_index()
+    S.insert(1, 'season', season)
+    S.insert(2, 'as_of', ids.ts(Tt))
+    S['perf_version'] = PERF_VERSION
+    S['artifact_sha256'] = art['sha256']
+    return S
 
 
-def _safe(a, b):
-    a, b = float(a), float(b)
-    return a / b if b > 0 and np.isfinite(a) else None
-
-
-def _turnover_luck(h, K):
-    """Season-to-date turnover luck in points (METHODS 3.4):
-    ((takeaways - giveaways) - (E[takeaways] - E[giveaways])) * points_per_turnover,
-    E[fumbles lost] = fumbles * league lost share, E[INT] = dropbacks * shrunk rate,
-    shrunk rate = (INT + k * league rate) / (dropbacks + k)."""
+def _turnover_luck(H, K):
+    """Season-to-date turnover luck in points (METHODS 3.4), vectorised over the rows
+    of H (per-team sums):
+      luck = ((takeaways - giveaways) - (E[takeaways] - E[giveaways])) * points_per_turnover
+      E[fumbles lost] = own fumbles * league lost share (and the same for the opponent's)
+      E[INT thrown]   = dropbacks * (INT + k * league rate) / (dropbacks + k)
+      E[INT made]     = opponent dropbacks * (INT made + k * league rate) / (opp dropbacks + k)"""
     sL, rL, k, ppt = (K['fumble_lost_share'], K['int_rate_per_dropback'], K['int_shrinkage_k'],
                       K['points_per_turnover'])
-    db, dbo = float(h.dropbacks.sum()), float(h.opp_dropbacks.sum())
-    it, im = float(h.ints_thrown.sum()), float(h.ints_made.sum())
-    fu, fl = float(h.fumbles.sum()), float(h.fumbles_lost.sum())
-    ofu, ofr = float(h.opp_fumbles.sum()), float(h.opp_fumbles_recovered.sum())
-    r_off = (it + k * rL) / (db + k)
-    r_def = (im + k * rL) / (dbo + k)
-    e_it, e_im = db * r_off, dbo * r_def
+    f = lambda c: H[c].astype(float).fillna(0.0)
+    db, dbo, it, im = f('dropbacks'), f('opp_dropbacks'), f('ints_thrown'), f('ints_made')
+    fu, fl, ofu, ofr = f('fumbles'), f('fumbles_lost'), f('opp_fumbles'), f('opp_fumbles_recovered')
+    e_it = db * (it + k * rL) / (db + k)
+    e_im = dbo * (im + k * rL) / (dbo + k)
     e_fl, e_ofr = fu * sL, ofu * sL
     act = (im + ofr) - (it + fl)
     exp = (e_im + e_ofr) - (e_it + e_fl)
-    return dict(dropbacks=db, ints_thrown=it, ints_made=im, fumbles=fu, fumbles_lost=fl,
-                opp_fumbles=ofu, opp_fumbles_recovered=ofr, forced_fumbles=float(h.forced_fumbles.sum()),
-                return_tds=float(h.return_tds.sum()),
-                turnover_margin=act, exp_turnover_margin=exp,
-                exp_ints_thrown=e_it, exp_ints_made=e_im, exp_fumbles_lost=e_fl,
-                exp_opp_fumbles_recovered=e_ofr,
-                fumble_luck=((ofr - e_ofr) - (fl - e_fl)) * ppt,
-                int_luck=((im - e_im) - (it - e_it)) * ppt,
-                turnover_luck_index=(act - exp) * ppt)
+    out = pd.DataFrame({
+        'dropbacks': db, 'ints_thrown': it, 'ints_made': im, 'fumbles': fu, 'fumbles_lost': fl,
+        'opp_fumbles': ofu, 'opp_fumbles_recovered': ofr,
+        'forced_fumbles': f('forced_fumbles') if 'forced_fumbles' in H else np.nan,
+        'return_tds': f('return_tds') if 'return_tds' in H else np.nan,
+        'turnover_margin': act, 'exp_turnover_margin': exp, 'exp_ints_thrown': e_it,
+        'exp_ints_made': e_im, 'exp_fumbles_lost': e_fl, 'exp_opp_fumbles_recovered': e_ofr,
+        'fumble_luck': ((ofr - e_ofr) - (fl - e_fl)) * ppt,
+        'int_luck': ((im - e_im) - (it - e_it)) * ppt,
+        'turnover_luck_index': (act - exp) * ppt,
+    }, index=H.index)
+    return out
 
 
 # ------------------------------------------------------ fitting (dev only)
@@ -824,7 +833,6 @@ def evidence_explosive(seasons=C.DEV_SEASONS):
             x['resid'] = sgn * (x.margin - x.ens_pred)
             x['pred_team'] = sgn * x.ens_pred
             rows.append(x.assign(season=S))
-        rows[-1] = rows[-1]
     R = pd.concat(rows, ignore_index=True)
     R['prediction_ts'] = pd.to_datetime(R.prediction_ts, utc=True)
     # point-in-time cumulative sums per team: games that kicked off before prediction_ts

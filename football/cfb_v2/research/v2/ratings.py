@@ -124,7 +124,7 @@ def solve(design, off_ids, def_ids, H, y, w, prior_o, prior_d, tau2_o, tau2_d,
     prior_mean = np.concatenate([[0.0, float(h_prior[0])], po, pdm])
     if diag is not None:
         start = prior_mean if x0 is None else np.asarray(x0, dtype=float)
-        rec = solve_diagnostics(A, b, x, start)
+        rec = solve_diagnostics(A, b, x, start, prior_mean)
         rec['cg_start'] = 'prior_means' if x0 is None else 'prev_week'
         diag.append(rec)
     if system_out is not None:
@@ -134,32 +134,38 @@ def solve(design, off_ids, def_ids, H, y, w, prior_o, prior_d, tau2_o, tau2_d,
 
 
 # convergence record thresholds (docs/cfb-weekly/METHODS_STATE.md)
-CG_TOL = 1e-10            # CG stops when the (Jacobi-scaled) relative residual is below this
+CG_TOL = 1e-10            # CG stops at this residual, relative to the evidence (see below)
 RESIDUAL_TOL = 1e-9       # the direct solution's relative residual ||Ax - b|| / ||b||
 DELTA_TOL = 1e-6          # max |x_cg - x_direct|, in rating units
 
 
-def conjugate_gradient(A, b, x0, tol=CG_TOL, maxiter=None):
+def conjugate_gradient(A, b, x0, ref, tol=CG_TOL, maxiter=None):
     """Jacobi-preconditioned conjugate gradient on A x = b (A symmetric
     positive definite), written as plain CG on the symmetrically scaled
-    system (S A S) z = S b, S = diag(A)^-1/2, x = S z. The stopping rule is
-    the relative residual of the SCALED system: several metrics pin FBS teams
-    with prior precisions near 1e9 (tau2 at its 1.5e-9 floor), and the
-    unscaled residual is then dominated by those rows and stops early.
+    system (S A S) z = S b, S = diag(A)^-1/2, x = S z.
+
+    Stopping rule: ||S (b - A x)|| <= tol * ||S ref||, ref = b - A m with m the
+    prior means, i.e. the residual relative to the EVIDENCE the data add to
+    the prior (CG on the deviation from the prior). Relative to ||b|| the
+    rule would be meaningless for metrics whose FBS prior variance sits at its
+    1.5e-9 floor: b then carries 1e9 x prior mean on those rows and the
+    residual of every other row is invisible beside it.
     Deterministic: fixed order of operations, no randomness.
-    Returns (x, iterations, converged, scaled relative residual)."""
+    Returns (x, iterations, converged, relative residual at stop)."""
     d = np.sqrt(np.diag(A))
     s = 1.0 / d
     As = A * s[:, None] * s[None, :]
     bs = b * s
     z = np.asarray(x0, dtype=float) * d
     r = bs - As @ z
-    nb = float(np.linalg.norm(bs)) or 1.0
+    nref = float(np.linalg.norm(ref * s))
+    if nref == 0.0:
+        nref = float(np.linalg.norm(bs)) or 1.0
     p = r.copy()
     rr = float(r @ r)
     maxiter = maxiter or 20 * len(b)
     it = 0
-    while np.sqrt(rr) > tol * nb and it < maxiter:
+    while np.sqrt(rr) > tol * nref and it < maxiter:
         Ap = As @ p
         alpha = rr / float(p @ Ap)
         z = z + alpha * p
@@ -168,11 +174,11 @@ def conjugate_gradient(A, b, x0, tol=CG_TOL, maxiter=None):
         p = r + (rr_new / rr) * p
         rr = rr_new
         it += 1
-    rel = float(np.linalg.norm(bs - As @ z)) / nb
+    rel = float(np.linalg.norm(bs - As @ z)) / nref
     return z * s, it, bool(rel <= tol), rel
 
 
-def solve_diagnostics(A, b, x, x_start):
+def solve_diagnostics(A, b, x, x_start, prior_mean):
     """Convergence record of one solve: residual, conditioning, and an
     iterative cross-check (CG from x_start) against the direct solution."""
     nb = float(np.linalg.norm(b)) or 1.0
@@ -180,12 +186,12 @@ def solve_diagnostics(A, b, x, x_start):
     cond = float(np.linalg.cond(A))
     d = np.sqrt(np.diag(A))
     cond_scaled = float(np.linalg.cond(A / d[:, None] / d[None, :]))
-    xc, it, ok, rel_cg = conjugate_gradient(A, b, x_start)
+    xc, it, ok, rel_cg = conjugate_gradient(A, b, x_start, b - A @ prior_mean)
     delta = float(np.max(np.abs(xc - x))) if len(x) else 0.0
     return {'n_params': int(len(b)), 'solved': True, 'rel_residual': rel_res,
             'residual_threshold': RESIDUAL_TOL, 'cond': cond, 'cond_scaled': cond_scaled,
-            'cg_method': 'jacobi_pcg', 'cg_tol': CG_TOL, 'cg_iters': int(it), 'cg_converged': ok,
-            'cg_rel_residual_scaled': rel_cg,
+            'cg_method': 'jacobi_pcg', 'cg_tol': CG_TOL, 'cg_tol_reference': 'evidence ||S(b - A m)||',
+            'cg_iters': int(it), 'cg_converged': ok, 'cg_rel_residual_evidence': rel_cg,
             'cg_rel_residual': float(np.linalg.norm(A @ xc - b)) / nb,
             'delta_max_abs': delta, 'delta_threshold': DELTA_TOL,
             'converged': bool(rel_res < RESIDUAL_TOL and ok and delta < DELTA_TOL)}
