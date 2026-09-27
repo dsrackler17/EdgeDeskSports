@@ -82,6 +82,8 @@ jobs:
         run: node football/cfb_production/golden.js
       - name: Final hardening test (a whole slate through every stage, then failures injected)
         run: node football/cfb_production/final_hardening.test.js
+      - name: A historical week replayed from schedule to settlement, twice (deterministic)
+        run: node football/cfb_production/replay.test.js
       - name: Postgres — contract, chaos (locks, deadlock, lock timeout), idempotency 1x/2x/3x, disaster recovery
         env:
           CFB_PRODUCTION_SQL_REQUIRED: '1'
