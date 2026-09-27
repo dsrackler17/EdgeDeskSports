@@ -1,0 +1,507 @@
+{
+ "kind": "season",
+ "season": 2026,
+ "generated_at": "2026-09-27T12:18:09.000Z",
+ "comparison": {
+  "n_common": 0,
+  "label": "small sample",
+  "models": [],
+  "rows": [
+   {
+    "name": "opening market",
+    "label": "opener",
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "median_ae": null,
+    "bias": null,
+    "p90_ae": null,
+    "p95_ae": null,
+    "brier": null,
+    "coverage_80": null
+   },
+   {
+    "name": "closing market",
+    "label": "close",
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "median_ae": null,
+    "bias": null,
+    "p90_ae": null,
+    "p95_ae": null,
+    "brier": null,
+    "coverage_80": null
+   }
+  ],
+  "note": "Common set: LIVE settled games where every model has an OFFICIAL (T24) snapshot. Market rows use the subset of those games with that line."
+ },
+ "promotion": {
+  "champion": "edgedesk_cfb_p4_v1.0.0",
+  "evaluations": [
+   {
+    "challenger": "edgedesk_cfb_v2.1.0",
+    "role": "challenger",
+    "champion": "edgedesk_cfb_p4_v1.0.0",
+    "rule": "cfb_lab_promotion_v1",
+    "n": 0,
+    "min_n": 150,
+    "ready": false,
+    "decision": "INSUFFICIENT_SAMPLE",
+    "mae_diff": null,
+    "mae_diff_ci": [
+     null,
+     null
+    ],
+    "weekly_win_share": null,
+    "weeks": 0,
+    "gates": {
+     "G1_mae_ci_below_zero": false,
+     "G2_brier_not_worse": false,
+     "G3_ece_within_001": false,
+     "G4_coverage80_in_band": false,
+     "G5_tail_not_worse": false,
+     "G6_weekly_stability": false
+    },
+    "note": "Eligibility never changes the champion; only governance.js promote does, with an audit entry.",
+    "champion_stats": {
+     "mae": null,
+     "rmse": null,
+     "brier": null,
+     "ece": null,
+     "p95_ae": null
+    },
+    "challenger_stats": {
+     "mae": null,
+     "rmse": null,
+     "brier": null,
+     "ece": null,
+     "p95_ae": null,
+     "coverage_80": null
+    }
+   },
+   {
+    "challenger": "edgedesk_cfb_v2.0.0",
+    "role": "candidate",
+    "champion": "edgedesk_cfb_p4_v1.0.0",
+    "rule": "cfb_lab_promotion_v1",
+    "n": 0,
+    "min_n": 150,
+    "ready": false,
+    "decision": "INSUFFICIENT_SAMPLE",
+    "mae_diff": null,
+    "mae_diff_ci": [
+     null,
+     null
+    ],
+    "weekly_win_share": null,
+    "weeks": 0,
+    "gates": {
+     "G1_mae_ci_below_zero": false,
+     "G2_brier_not_worse": false,
+     "G3_ece_within_001": false,
+     "G4_coverage80_in_band": false,
+     "G5_tail_not_worse": false,
+     "G6_weekly_stability": false
+    },
+    "note": "Eligibility never changes the champion; only governance.js promote does, with an audit entry.",
+    "champion_stats": {
+     "mae": null,
+     "rmse": null,
+     "brier": null,
+     "ece": null,
+     "p95_ae": null
+    },
+    "challenger_stats": {
+     "mae": null,
+     "rmse": null,
+     "brier": null,
+     "ece": null,
+     "p95_ae": null,
+     "coverage_80": null
+    }
+   }
+  ]
+ },
+ "alerts": [],
+ "models": {
+  "edgedesk_cfb_p4_v1.0.0": {
+   "errors": {
+    "n": 0,
+    "label": "small sample",
+    "mae": null,
+    "rmse": null,
+    "median_ae": null,
+    "bias": null,
+    "p90_ae": null,
+    "p95_ae": null,
+    "mae_se": null,
+    "favorite_bias": null,
+    "favorite_bias_se": null,
+    "total_mae": null,
+    "winner_accuracy": null,
+    "brier": null,
+    "log_loss": null,
+    "coverage_50": null,
+    "coverage_80": null,
+    "coverage_95": null,
+    "n_intervals": 0
+   },
+   "brier": null,
+   "win_ece": null,
+   "calibration": [
+    {
+     "bucket": "50-55",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "55-60",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "60-65",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "65-70",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "70-75",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "75-80",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "80+",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    }
+   ],
+   "intervals": {
+    "p50": {
+     "nominal": 0.5,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    },
+    "p80": {
+     "nominal": 0.8,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    },
+    "p95": {
+     "nominal": 0.95,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    }
+   },
+   "research_positions": {
+    "record": "0-0-0",
+    "ats_pct": null,
+    "roi": null,
+    "clv_mean": null,
+    "positive_clv_pct": null,
+    "max_drawdown": 0
+   }
+  },
+  "edgedesk_cfb_v2.0.0": {
+   "errors": {
+    "n": 0,
+    "label": "small sample",
+    "mae": null,
+    "rmse": null,
+    "median_ae": null,
+    "bias": null,
+    "p90_ae": null,
+    "p95_ae": null,
+    "mae_se": null,
+    "favorite_bias": null,
+    "favorite_bias_se": null,
+    "total_mae": null,
+    "winner_accuracy": null,
+    "brier": null,
+    "log_loss": null,
+    "coverage_50": null,
+    "coverage_80": null,
+    "coverage_95": null,
+    "n_intervals": 0
+   },
+   "brier": null,
+   "win_ece": null,
+   "calibration": [
+    {
+     "bucket": "50-55",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "55-60",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "60-65",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "65-70",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "70-75",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "75-80",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "80+",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    }
+   ],
+   "intervals": {
+    "p50": {
+     "nominal": 0.5,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    },
+    "p80": {
+     "nominal": 0.8,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    },
+    "p95": {
+     "nominal": 0.95,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    }
+   },
+   "research_positions": {
+    "record": "0-0-0",
+    "ats_pct": null,
+    "roi": null,
+    "clv_mean": null,
+    "positive_clv_pct": null,
+    "max_drawdown": 0
+   }
+  },
+  "edgedesk_cfb_v2.1.0": {
+   "errors": {
+    "n": 0,
+    "label": "small sample",
+    "mae": null,
+    "rmse": null,
+    "median_ae": null,
+    "bias": null,
+    "p90_ae": null,
+    "p95_ae": null,
+    "mae_se": null,
+    "favorite_bias": null,
+    "favorite_bias_se": null,
+    "total_mae": null,
+    "winner_accuracy": null,
+    "brier": null,
+    "log_loss": null,
+    "coverage_50": null,
+    "coverage_80": null,
+    "coverage_95": null,
+    "n_intervals": 0
+   },
+   "brier": null,
+   "win_ece": null,
+   "calibration": [
+    {
+     "bucket": "50-55",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "55-60",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "60-65",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "65-70",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "70-75",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "75-80",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    },
+    {
+     "bucket": "80+",
+     "n": 0,
+     "predicted": null,
+     "observed": null,
+     "label": "small sample",
+     "difference": null
+    }
+   ],
+   "intervals": {
+    "p50": {
+     "nominal": 0.5,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    },
+    "p80": {
+     "nominal": 0.8,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    },
+    "p95": {
+     "nominal": 0.95,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    }
+   },
+   "research_positions": {
+    "record": "0-0-0",
+    "ats_pct": null,
+    "roi": null,
+    "clv_mean": null,
+    "positive_clv_pct": null,
+    "max_drawdown": 0
+   }
+  }
+ }
+}
