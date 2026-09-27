@@ -245,7 +245,7 @@ Audited on main at dbbf9ec0d or later.
 - The pipeline and infrastructure items (81 main board, 82, 86–94, 109–110) are **PENDING_H3**. H3, the pipeline-correctness hardening, is still running.
 - The classification below is provisional until those items are audited.
 
-## Phase 2 verdict (provisional): **B — APPROVED FOR SHADOW MODE ONLY**
+## Phase 2 verdict: **B — APPROVED FOR SHADOW MODE ONLY** (confirmed as final in phase 3, below)
 
 **Why not A:**
 - **No clean evidence.** There is no prospective V2 prediction yet; the first freeze is 2026-09-29. Every historical window was used in development.
@@ -677,3 +677,45 @@ Do not claim:
 - F-26;
 - F-28;
 - the FCS model.
+
+---
+
+# Phase 3: the production pathway (H3) and the final classification
+
+Full text:
+- [FINDINGS_PHASE3.md](FINDINGS_PHASE3.md)
+- [EXECUTIVE.md](EXECUTIVE.md) and [TECHNICAL.md](TECHNICAL.md) (item 126)
+- [DELIVERABLE.md](DELIVERABLE.md) (item 127, all 47 parts)
+
+**Final classification: B — APPROVED FOR SHADOW MODE ONLY.**
+- **Not A:** the evidence a production approval needs does not exist yet.
+- **Not C:** no attack got the canonical service to publish a wrong V2 number, or a BET, from rows the pipeline itself wrote.
+- **Not D:** betting is disabled, and what failed validation is disabled, relabelled or research-only.
+
+**Phase-3 findings:**
+
+| finding | severity | status |
+|---|---|---|
+| F-30: a BET row in the decision ledger was published as the official decision (it needs a foreign or corrupt row; the engine cannot write one with betting disabled) | MEDIUM | **FIXED** (PR #391: `projections.officialFor`, `cfbFacts`) |
+| F-31: at fallback level 3, V1's number sat beside an official decision made from V2 | MEDIUM | **FIXED** (PR #391: no official decision at level 3) |
+| F-32: the row contract checks no provenance or identity (a consistent shift, or swapped names, passes) | LOW | open |
+| F-33: the sigma check is only a wide bound | LOW | open |
+| F-34: a missing or unknown calibration block silently falls back to raw probabilities | LOW | open |
+| F-35: a stale `current.json` is not a degraded mode (health warns after 8 days) | LOW | open |
+| F-36: an HTTP 503 is not retried | LOW | open |
+| F-37: the promotion floor of 150 live pairs cannot confirm a 0.28-point gain | LOW | open |
+| F-38: 55 of 60 stored games degraded, 0 governed decisions, the week replay covers v2.0.0 rows only, the matchup shadow skips on a fresh build | limitation | documented |
+
+**Why not A (do not weaken):**
+1. No prospectively frozen V2 prediction has settled yet (the first freeze is 2026-09-29).
+2. 2024–25 has been read at least 13 times, and no untouched history remains.
+3. V2 trails the opening and closing lines everywhere.
+4. Its lead over an 8-feature ridge is not significant.
+5. Sigma, reliability and cover probability carry no information, and the snapshot ignores the starting QB (F-24).
+6. No Model Championship has been run; V1 is the governance champion.
+
+**Required for A:**
+- ≥ 700 settled, prospectively frozen FBS-vs-FBS games, with the CI for V2 − V1 MAE below 0 and calibration and coverage in band;
+- the governed switch from v2.1.0 to v2.1.2.
+
+**Required for any betting:** ≥ 200 settled, priced, multi-book shadow decisions with calibrated EV above 0.
