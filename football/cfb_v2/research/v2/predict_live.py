@@ -138,6 +138,13 @@ def row_json(r):
         'reliability_base': f(r['reliability'], 1),
         'components': comps, 'drivers': r['drivers'], 'uncertainty_drivers': r['uncertainty_drivers'],
         'qb': qb,
+        # FBS-vs-FCS games are NOT PRICED: the submodels are trained on FBS-vs-FBS
+        # games only and the walk-forward shows a growing bias on FCS games
+        # (dev -2.9, holdout -6.5, 2026 -9.0 pts; 80% coverage 0.68-0.81). The
+        # numbers stay in the snapshot so the weakness stays measured.
+        'priced': not bool(r['fcs_game']),
+        'not_priced_reason': ('FBS-vs-FCS: V2 has no validated FCS model (measured bias -6.5 pts on the '
+                              '2024-25 holdout)') if bool(r['fcs_game']) else None,
     }
 
 
@@ -145,9 +152,9 @@ def canonical_hash(obj):
     return hashlib.sha256(json.dumps(obj, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
-def freeze(rows, season, now, version):
+def freeze(rows, season, now, version, base=None):
     """Write-once snapshot files, one per prediction_ts."""
-    d = os.path.join(REPO_V2, 'snapshots', str(season))
+    d = os.path.join(base or os.path.join(REPO_V2, 'snapshots'), str(season))
     os.makedirs(d, exist_ok=True)
     log = {'frozen_new': 0, 'already_frozen': 0, 'refused_overwrites': []}
     by_ts = {}
@@ -183,9 +190,23 @@ def main():
     ap.add_argument('--season', type=int, default=C.LIVE_SEASON)
     ap.add_argument('--now', default=None)
     ap.add_argument('--version', default=C.MODEL_VERSION)
+    ap.add_argument('--verify', action='store_true',
+                    help='only verify that every frozen row still matches its stored hash')
     ap.add_argument('--replay-history', action='store_true',
                     help='also write the season-to-date replay (labelled REPLAY, never frozen)')
     a = ap.parse_args()
+    if a.verify:
+        d = os.path.join(REPO_V2, 'snapshots', str(a.season))
+        bad = 0
+        for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+            if f == 'replay_to_date.json':
+                continue
+            for x in json.load(open(os.path.join(d, f)))['rows']:
+                if canonical_hash(x['row']) != x['hash']:
+                    bad += 1
+                    print('TAMPERED', f, x['row']['game_id'])
+        print('[verify] %s' % ('ok' if not bad else '%d rows fail their hash' % bad))
+        raise SystemExit(1 if bad else 0)
     now = pd.Timestamp(a.now) if a.now else pd.Timestamp.now(tz='UTC')
     if now.tzinfo is None:
         now = now.tz_localize('UTC')
@@ -195,7 +216,8 @@ def main():
     D = predict(X, A, gbm)
     rows = [row_json(r) for _, r in D.iterrows()]
     log = freeze(rows, a.season, now, a.version)
-    upcoming = [r for r in rows if pd.Timestamp(r['kickoff']) > now]
+    horizon = now + pd.Timedelta(days=10)
+    upcoming = [r for r in rows if now < pd.Timestamp(r['kickoff']) <= horizon]
     for r in upcoming:
         r['state'] = 'FROZEN' if pd.Timestamp(r['prediction_ts']) <= now else 'PROVISIONAL'
     cur = {'model_version': a.version, 'generated_at': common.iso(now.to_pydatetime()),

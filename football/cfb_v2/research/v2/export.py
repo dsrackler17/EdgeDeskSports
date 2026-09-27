@@ -42,17 +42,23 @@ def linear_json(m):
             'intercept': bool(m.intercept)}
 
 
-def qb_coefficient(M, fitted):
-    """Points of margin per 1.0 EPA/dropback of quarterback change, from the
-    trained ridge: its coefficient on qb_delta_edge, unstandardized. Applied
-    to the mean only if the qb family survived the ablation."""
-    ms, _ = fitted
-    c = ms['C_ridge']
-    if 'qb_delta_edge' not in c.cols:
-        return None
-    i = c.cols.index('qb_delta_edge')
-    b = c.beta_[i + (1 if c.intercept else 0)] / float(c.sd_['qb_delta_edge'])
-    return float(b)
+def qb_coefficient():
+    """Points of margin per 1.0 EPA/dropback of quarterback change.
+
+    Measured, not assumed: the slope of the out-of-fold residual of the ridge
+    (whose selected families contain NO quarterback feature) on qb_delta_edge,
+    over 2014-2023 (never the holdout). Applied to the mean only if |t| > 2;
+    otherwise status reports widen the distribution and move nothing."""
+    import pandas as pd
+    M = pd.read_parquet(common.out_path('stage7', 'backtest_predictions.parquet'))
+    d = M[M.status.eq('FINAL') & ~M.fcs_game & M.season.between(C.FIRST_OOF_SEASON, max(C.DEV_SEASONS))
+          & (M.qb_delta_edge.abs() > 1e-9)]
+    r = (d.margin - d.pred_C_ridge).values
+    x = d.qb_delta_edge.values
+    b = float(np.sum(x * r) / np.sum(x * x))
+    se = float(np.sqrt(np.sum((r - b * x) ** 2) / (len(x) - 1) / np.sum(x * x)))
+    return {'points_per_epa_db': b, 'se': se, 't': b / se, 'n': int(len(x)),
+            'seasons': [C.FIRST_OOF_SEASON, max(C.DEV_SEASONS)], 'applied': bool(abs(b / se) > 2 and b > 0)}
 
 
 def main(report_path=None):
@@ -73,8 +79,8 @@ def main(report_path=None):
     models['D_gbm'] = {'cols': ms['D_gbm'].cols, 'file': 'gbm_D.txt',
                        'importance_gain_top20': dict(list(ms['D_gbm'].importance().items())[:20])}
     win_method = rep.get('win_calibration_choice', {}).get('method', 'platt')
-    beta_qb = qb_coefficient(None, L['fitted'])
-    qb_applied = bool(beta_qb is not None and 'qb' in (L.get('fam_C') or []) and beta_qb > 0)
+    qbc = qb_coefficient()
+    beta_qb, qb_applied = qbc['points_per_epa_db'], qbc['applied']
     art = {'model_version': ver, 'feature_version': C.FEATURE_VERSION, 'trained_through': C.LIVE_SEASON - 1,
            'submodels': models, 'stack_weights': L['W'], 'sigma_model': {'coef': unc['sigma_coef'],
            'mu': unc['sigma_mu'], 'sd': unc['sigma_sd'], 'cols': WF.SIGMA_COLS},
@@ -103,7 +109,7 @@ def main(report_path=None):
         'cover': {'coef': mk.get('cover_cal'), 'push_table': mk.get('push_table'),
                   'design': 'conditional platt on [1, x, x*ens_sd, x*rating_sd, x*early, x*qb_uncertainty]'},
         'clv': {'beta': mk.get('clv_beta')},
-        'qb': {'points_per_epa_db': beta_qb, 'applied': qb_applied,
+        'qb': {'points_per_epa_db': beta_qb, 'applied': qb_applied, 'evidence': qbc,
                'same_starter_prob': shrink.get('same_starter_prob'),
                'replacement_mean': shrink.get('replacement_mean'),
                'status_start_prob': STATUS_START_PROB,

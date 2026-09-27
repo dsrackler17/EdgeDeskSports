@@ -194,6 +194,10 @@
   function pure(row, overlays) {
     var P = params();
     if (!P) return { status: 'BLOCKED', reason: 'EDCfbV2Params not loaded' };
+    if (row && row.priced === false) {
+      return { status: 'NOT_PRICED', reason: row.not_priced_reason || 'not priced by V2',
+        model_version: P.model_version, game_id: row.game_id };
+    }
     if (!row || !isNum(row.ens_pred) || !isNum(row.sigma)) {
       return { status: 'INSUFFICIENT_DATA', reason: 'no frozen V2 snapshot for this game',
         model_version: P.model_version };

@@ -174,7 +174,23 @@ def build_market(G, v1_market_csv, mline_dir):
     # prefer the multi-book archive; CFBD fills what it does not carry
     M['_rank'] = M.source.map({'cfbfastR_multibook_archive': 0, 'cfbd_lines_provider_mean': 1})
     M = M.sort_values(['game_id', '_rank']).drop_duplicates('game_id').drop(columns='_rank')
-    M = M[M.game_id.isin(G.game_id)]
+    M = M[M.game_id.isin(G.game_id)].copy()
+    # ---- market QA at the ingestion boundary. A bad number is DROPPED, never
+    # repaired: guessing a convention from values is what produced every
+    # sign bug this project has had (football/README.md). Found by execution:
+    # openers of -185 and +334, and openers whose sign is flipped relative to
+    # the close (2021 Big Ten title game opens 'Iowa -10.5', closes 'Michigan -12').
+    M['market_qa'] = ''
+    for col in ('spread_open', 'spread_close'):
+        bad = M[col].abs() > 60
+        M.loc[bad, 'market_qa'] += col + '_implausible;'
+        M.loc[bad, col] = np.nan
+    mv = (M.spread_close - M.spread_open).abs()
+    flip = ((M.spread_open + M.spread_close).abs() <= 3) & (mv > 10)
+    jump = (mv > 14) & ~flip
+    M.loc[flip, 'market_qa'] += 'open_sign_flipped_vs_close;'
+    M.loc[jump, 'market_qa'] += 'open_to_close_jump_gt_14;'
+    M.loc[flip | jump, 'spread_open'] = np.nan
     # the archive's opener is missing for all of 2020 and before 2012; never imputed
     M['has_open'] = M.spread_open.notna()
     M['has_close'] = M.spread_close.notna()
@@ -191,6 +207,7 @@ def main():
     j = G.merge(M, on='game_id', how='inner')
     j = j[j.status.eq('FINAL') & j.spread_close.notna()]
     rep['market_rows'] = len(M)
+    rep['market_qa_dropped'] = M.market_qa.str.split(';').explode().replace('', np.nan).dropna().value_counts().to_dict()
     rep['sanity_corr_close_margin'] = float(j.spread_close.corr(j.margin))
     rep['sanity_mean_margin_minus_close'] = float((j.margin - j.spread_close).mean())
     assert rep['sanity_corr_close_margin'] > 0.5, 'market sign convention broken at ingestion'

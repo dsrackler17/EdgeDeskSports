@@ -150,7 +150,10 @@ chk('card carries the research status and the pure block', !!c.research_status &
 chk('card language never says lock / guaranteed / cant miss', !/lock|guarantee|can'?t miss/i.test(JSON.stringify(c)));
 chk('missing snapshot is INSUFFICIENT_DATA, not a number', E.pure(null, {}).status === 'INSUFFICIENT_DATA');
 var fcs = E.pure(Object.assign(clone(ROW), { fcs_game: true }), {});
-chk('FCS games cap confidence', fcs.football_prediction_confidence <= P.reliability.caps.fcs);
+chk('FCS flag alone still caps confidence', fcs.football_prediction_confidence <= P.reliability.caps.fcs);
+var np_ = E.pure(Object.assign(clone(ROW), { fcs_game: true, priced: false, not_priced_reason: 'FBS-vs-FCS' }), {});
+chk('an unpriced FBS-vs-FCS row returns NOT_PRICED and no number', np_.status === 'NOT_PRICED' && !('projected_margin' in np_));
+chk('a NOT_PRICED projection cannot be decided on', E.decide(np_, mkt(-30), { now: NOW, row: ROW }).status === 'PASS');
 
 console.log((n - fail) + '/' + n + ' passed');
 process.exit(fail ? 1 : 0);

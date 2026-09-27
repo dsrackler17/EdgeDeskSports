@@ -7,6 +7,7 @@ import pandas as pd
 from . import config as C
 from . import common
 from . import contract as K
+from . import gates as GT
 
 DOCS = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', '..', 'docs', 'cfb-v2'))
 NAMES = {'ens_pred': 'V2 ensemble (pure)', 'pred_A_adj_eff': 'V2 · A adjusted-efficiency', 'pred_B_elo': 'V2 · B dynamic Elo (simple Elo baseline)',
@@ -58,7 +59,10 @@ BET_HEAD = '| slice | n | ATS win rate [CI] | ROI/bet at −110 [CI] | mean CLV 
 
 def render():
     R = json.load(open(common.out_path('report', 'backtest.json')))
-    G = json.load(open(common.out_path('report', 'promotion.json')))
+    G = GT.evaluate(R, 'p_home_' + R['win_calibration_choice']['method'])
+    common.write_json(common.out_path('report', 'promotion.json'), G)
+    run1 = common.out_path('report', 'backtest_run1_bug.json')
+    R1 = json.load(open(run1)) if os.path.exists(run1) else None
     AB = json.load(open(common.out_path('report', 'ablation.json')))
     W = R['windows']
     L = []
@@ -70,12 +74,33 @@ def render():
     L.append('Windows: **development 2016–2023** (all tuning, ablation and threshold choices), **holdout 2024–2025** '
              '(scored once with the frozen configuration), **live 2026** (weeks already played; a replay with '
              'models trained through 2025 — see the model card for what that does and does not prove).\n')
+    if R1:
+        h1 = R1['windows']['holdout_2024_2025']['accuracy']['accuracy']
+        L.append('## Disclosure: the holdout was scored twice\n')
+        L.append('Run 1 exposed two defects, both fixed before run 2; no tuning value, feature family, window or '
+                 'gate changed between the runs:\n')
+        L.append('1. **Submodels A, B and E were fitted without an intercept on standardized inputs**, so they could '
+                 'not represent the average home margin and came out biased by about −4 points (dev bias A −4.06, '
+                 'B −3.88, E −4.10). Fixed by giving them an intercept.')
+        L.append('2. **The multi-book line archive carries corrupt rows** — openers of −185 and +334 and openers whose '
+                 'sign is flipped against the close. They inflated CLV (REVIEW rows showed +26.8 pts mean CLV on dev) '
+                 'and fed the BET-rule search. Fixed by market QA at ingestion: implausible numbers and sign-flipped '
+                 'or >14-pt opener jumps are DROPPED (never repaired). 31 values dropped.\n')
+        L.append('Run 1 holdout MAE: V2 %s, V1 %s, opener %s, close %s. Run 1 dev-selected rule: `%s` — it was '
+                 'enabled then, and it would have gone into production had the defects not been found. Run 2 '
+                 '(this report) is the one of record.\n' % (
+                     f(h1['ens_pred']['mae']), f(h1['base_v1']['mae']), f(h1['line']['mae']),
+                     f(h1['close_margin']['mae']),
+                     json.dumps({k: R1['rule'][k] for k in ('bet_gap', 'bet_ev', 'bet_min_rel', 'exclude_early',
+                                                             'bet_enabled')})))
     L.append('## Promotion decision\n')
     L.append('**%s** — champion remains **%s**. Automatic replacement: %s.\n' % (G['decision'], G['champion'], G['automatic_replacement']))
     L.append('| gate | rule | result | evidence |\n|---|---|---|---|')
     for k, v in G['detail'].items():
+        ev_ = json.loads(json.dumps(v['evidence'], default=str),
+                         parse_float=lambda x: round(float(x), 4))
         L.append('| %s | %s | %s | `%s` |' % (k, v['rule'], 'PASS' if v['pass'] else '**FAIL**',
-                                            json.dumps(v['evidence'], default=str)[:220]))
+                                            json.dumps(ev_)[:240]))
     L.append('\nBET status: **%s**. %s\n' % ('enabled' if G['bet_allowed'] else 'DISABLED', G['bet_gate']))
     for wn, title in (('holdout_2024_2025', 'Holdout 2024–2025'), ('dev_2016_2023', 'Development 2016–2023'),
                       ('live_2026', 'Live 2026 (replay, weeks played so far)')):
@@ -111,6 +136,8 @@ def render():
                  'the opener to the close on the side taken:\n')
         L.append(BET_HEAD)
         L.append(bet_line('every game (always bet V2 side)', B['all_games_side_of_model']))
+        L.append(bet_line('rows the dev rule selects (BET %s)' % ('enabled' if R['rule']['bet_enabled'] else 'DISABLED'),
+                          B.get('rule_qualified')))
         for s in ('BET', 'LEAN', 'REVIEW', 'PASS'):
             L.append(bet_line('status ' + s, B['by_status'].get(s)))
         L.append('\n**Pessimistic check — the same sides graded at the CLOSING number** (if a side only wins at '

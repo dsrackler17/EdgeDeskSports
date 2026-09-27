@@ -260,6 +260,35 @@ def stacking_weights_are_nonnegative_and_sum_to_one():
     assert np.all(w >= -1e-9) and abs(w.sum() - 1) < 1e-6 and w[2] < 0.1
 
 
+# ------------------------------------------------------- immutability
+@test
+def frozen_snapshots_are_write_once():
+    import tempfile, json as _j
+    from . import predict_live as PLV
+    base = tempfile.mkdtemp()
+    row = {'game_id': 7, 'prediction_ts': '2026-09-29T12:00:00Z', 'kickoff': '2026-10-03T19:30:00Z',
+           'ens_pred': 3.5, 'sigma': 15.0}
+    now = pd.Timestamp('2026-09-29T13:00:00Z')
+    log1 = PLV.freeze([row], 2026, now, 'v', base=base)
+    assert log1['frozen_new'] == 1
+    f = os.path.join(base, '2026', os.listdir(os.path.join(base, '2026'))[0])
+    first = open(f).read()
+    changed = dict(row, ens_pred=9.9)                     # a later run disagrees
+    log2 = PLV.freeze([changed], 2026, now + pd.Timedelta(hours=20), 'v', base=base)
+    assert open(f).read() == first, 'a frozen snapshot was overwritten'
+    assert log2['refused_overwrites'] == [{'game_id': 7, 'prediction_ts': '2026-09-29T12:00:00Z'}]
+    late = dict(row, game_id=8)                          # a game first seen after its freeze passed
+    PLV.freeze([row, late], 2026, now + pd.Timedelta(hours=30), 'v', base=base)
+    assert [x['row']['game_id'] for x in _j.load(open(f))['rows']] == [7], 'a late game was back-dated'
+    # after kickoff nothing is frozen
+    log4 = PLV.freeze([dict(row, game_id=9)], 2026, pd.Timestamp('2026-10-04T00:00:00Z'), 'v',
+                      base=tempfile.mkdtemp())
+    assert log4['frozen_new'] == 0
+    # tampering is detectable by the stored hash
+    d = _j.load(open(f)); d['rows'][0]['row']['ens_pred'] = 1.0
+    assert PLV.canonical_hash(d['rows'][0]['row']) != d['rows'][0]['hash']
+
+
 # ------------------------------------------------------------ artifacts
 def _art(p):
     f = common.out_path(*p)
@@ -307,6 +336,24 @@ def artifact_snapshots_have_no_market_columns():
     cols = pq.ParquetFile(f).schema_arrow.names
     bad = [c for c in cols if K.layer_of(c) in ('market', 'evaluation')]
     assert not bad, bad
+
+
+@test
+def artifact_live_path_reproduces_backtest():
+    f = _art(('stage7', 'backtest_predictions.parquet'))
+    cur = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'current.json')
+    if not f or not os.path.exists(cur):
+        return 'skipped (no artifact)'
+    import json as _j
+    L = pd.DataFrame(_j.load(open(cur))['rows'])
+    if L.empty:
+        return 'skipped (no upcoming rows)'
+    B = pd.read_parquet(f, columns=['game_id', 'season', 'ens_pred', 'sigma'])
+    j = L.merge(B[B.season.eq(int(L.season.iloc[0]))], on='game_id', suffixes=('_l', '_b'))
+    if j.empty:
+        return 'skipped (backtest predates these games)'
+    assert (j.ens_pred_l - j.ens_pred_b).abs().max() < 0.01, 'live artifacts diverge from the backtest models'
+    assert (j.sigma_l - j.sigma_b).abs().max() < 0.01
 
 
 def main():

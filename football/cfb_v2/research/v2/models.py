@@ -107,25 +107,29 @@ class Linear:
         return dict(zip(names, [float(b) for b in self.beta_]))
 
 
+# A, B and E carry an intercept: Linear standardizes (centres) its inputs, so
+# an intercept-free fit could not represent the average home margin. The first
+# holdout run had intercept=False here and all three came out biased by about
+# -4 points (disclosed in docs/cfb-v2/BACKTEST.md).
 class ModelA(Linear):
     COLS = ['home_field', 'eff_pts_raw', 'edge_st_net']
 
     def __init__(self):
-        super().__init__(self.COLS, alpha=1.0, intercept=False)
+        super().__init__(self.COLS, alpha=1.0, intercept=True)
 
 
 class ModelB(Linear):
     COLS = ['elo_diff']
 
     def __init__(self):
-        super().__init__(self.COLS, alpha=0.0, intercept=False)
+        super().__init__(self.COLS, alpha=0.0, intercept=True)
 
 
 class ModelE(Linear):
     COLS = ['home_field', 'drive_margin_raw', 'edge_st_net']
 
     def __init__(self):
-        super().__init__(self.COLS, alpha=1.0, intercept=False)
+        super().__init__(self.COLS, alpha=1.0, intercept=True)
 
 
 class ModelC(Linear):

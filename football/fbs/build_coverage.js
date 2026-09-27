@@ -54,6 +54,36 @@ const CACHE = path.join(HERE, '.cache');
 global.window = global.window || global;
 require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
 const E = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
+/* CFB V2 runs in SHADOW beside V1. Its frozen pure projections are read from
+   football/cfb_v2/current.json and published under `v2_shadow` — appended, so
+   no existing field changes. A missing file or engine means no block, never a
+   guessed one. The champion is whatever football/cfb_v2/params.js says, and
+   V1 stays the priced number until a person switches it. */
+const V2 = (function () {
+  try {
+    require(path.join(ROOT, 'football', 'cfb_v2', 'params.js'));
+    const eng = require(path.join(ROOT, 'football', 'cfb_v2', 'engine.js'));
+    const cur = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'current.json'), 'utf8'));
+    const byId = {};
+    (cur.rows || []).forEach(function (r) { byId[String(r.game_id)] = r; });
+    return { eng: eng, byId: byId, version: cur.model_version, generated_at: cur.generated_at };
+  } catch (e) { return null; }
+})();
+function v2Shadow(gameId) {
+  if (!V2) return null;
+  const row = V2.byId[String(gameId)];
+  if (!row) return null;
+  const p = V2.eng.pure(row, {});
+  if (p.status !== 'PREDICTED') {
+    return { model_version: V2.version, state: row.state || null, status: p.status, reason: p.reason || null };
+  }
+  return { model_version: p.model_version, state: row.state || null, status: p.status,
+    prediction_ts: p.prediction_ts, projected_margin: p.projected_margin,
+    home_line: p.fair_spread_home_line, fair_total: p.fair_total, home_win_prob: p.home_win_prob,
+    range_80: p.intervals.p80, confidence: p.football_prediction_confidence,
+    drivers: p.drivers, uncertainty_drivers: p.uncertainty_drivers,
+    label: 'SHADOW — V2 is evaluated beside V1; V1 remains the priced number' };
+}
 const FBS = require(path.join(HERE, 'fbs.js'));
 const IN = require(path.join(ROOT, 'football', 'matchup', 'inputs.js'));
 const CONF = require(path.join(ROOT, 'football', 'matchup', 'confidence.js'));
@@ -856,6 +886,7 @@ async function main() {
          conclusion — that the starter was considered and found irrelevant —
          when the truth is more specific and more useful than that. */
       shadow_effect: shadowEffect(p, sh, asm),
+      v2_shadow: v2Shadow(m.id),
       spread_recommendation: (p && p.edge && p.edge.spread) ? p.edge.spread.recommendation : null,
       /* no market is joined in this offline job — the board and the exports
          carry the live quote. Stated, never faked as a number. */

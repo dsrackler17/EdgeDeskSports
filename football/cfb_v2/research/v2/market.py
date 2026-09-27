@@ -182,7 +182,11 @@ def decide(M, rule):
     if rule.get('exclude_early'):
         bet &= ~M.early_season.astype(bool)
     st[lean.values] = 'LEAN'; why[lean.values] = 'positive calibrated EV below the BET rule'
-    st[bet.values] = 'BET'; why[bet.values] = 'meets the development-window rule'
+    if rule.get('bet_enabled'):
+        st[bet.values] = 'BET'; why[bet.values] = 'meets the development-window rule'
+    else:
+        st[bet.values] = 'LEAN'
+        why[bet.values] = 'meets the dev rule, but BET is disabled: the rule did not beat the reality check'
     rv = big & ~bet
     st[rv.values] = 'REVIEW'
     why[rv.values] = 'disagreement beyond %.0f pts: historically a data or news problem more often than an edge' % rule['review_gap']

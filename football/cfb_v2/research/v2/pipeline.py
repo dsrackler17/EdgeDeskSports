@@ -158,7 +158,11 @@ def select_rule(M, n_null=500):
 def window_report(M, seasons, pred_cols):
     w = M[M.season.isin(seasons) & M.status.eq('FINAL') & ~M.fcs_game]
     # a COMMON game set so every predictor is scored on the same games
-    common_set = w.dropna(subset=[c for c in pred_cols if c in w])
+    # predictors that do not exist in this window (V1 has no 2026 replay row, the
+    # close does not exist for unplayed games) are reported separately rather
+    # than emptying the common set
+    avail = [c for c in pred_cols if c in w and w[c].notna().mean() > 0.5]
+    common_set = w.dropna(subset=avail)
     out = {'n_games_all': int(len(w)), 'n_common': int(len(common_set)), 'accuracy': {}, 'paired_vs_v2': {}}
     for c in pred_cols:
         if c in common_set:
@@ -183,6 +187,11 @@ def betting_report(M, seasons, rule):
            'by_status': {s: EV.betting_metrics(w[w.status_research.eq(s)]) for s in ('BET', 'LEAN', 'REVIEW', 'PASS')},
            'by_status_at_close': {s: atc(w[w.status_research.eq(s)]) for s in ('BET', 'LEAN', 'REVIEW', 'PASS')},
            'status_counts': w.status_research.value_counts().to_dict()}
+    # the rows the dev rule WOULD bet, whether or not BET is enabled — so a
+    # disabled rule's out-of-sample record is still published
+    rq = MKT.decide(w, dict(rule, bet_enabled=True))[0] == 'BET'
+    out['rule_qualified'] = EV.betting_metrics(w[rq])
+    out['rule_qualified_at_close'] = atc(w[rq])
     b = EV.buckets(w)
     for key in ('edge_bucket', 'reliability_bucket'):
         if key in b:

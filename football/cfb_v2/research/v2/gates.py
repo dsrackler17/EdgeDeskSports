@@ -24,7 +24,9 @@ GATES = {
     'G7_subgroups': 'no holdout subgroup (week, P4/G5, spread size; n >= 100) where V2 MAE exceeds V1 by > 0.75',
 }
 BET_GATE = ('BET enabled only if the dev-selected rule had a positive lower 90% ROI bound and positive '
-            'CLV on dev, AND on holdout its plays show positive mean CLV and positive ROI')
+            'CLV on dev, AND on holdout its plays show positive mean CLV and positive ROI. Tightened before '
+            'the holdout was scored (commit ab83459): the dev rule must also beat the 95th percentile of the '
+            'same threshold search run on 500 coin-flip worlds (a reality check against threshold mining)')
 
 
 def evaluate(rep, win_key):
@@ -49,7 +51,8 @@ def evaluate(rep, win_key):
     ece = wp.get(win_key, {}).get('ece')
     gate('G4_calibration', ece is not None and ece <= 0.03, {'ece': ece})
     cv = H['accuracy']['intervals']
-    c50, c80, c95 = (cv.get(q, {}).get('coverage') for q in (50, 80, 95))
+    # keys are ints in memory and strings once the report has been through JSON
+    c50, c80, c95 = ((cv.get(q) or cv.get(str(q)) or {}).get('coverage') for q in (50, 80, 95))
     gate('G5_coverage', None not in (c50, c80, c95) and 0.47 <= c50 <= 0.53 and 0.77 <= c80 <= 0.83
          and 0.93 <= c95 <= 0.97, {'50': c50, '80': c80, '95': c95})
     sg_h = H['subgroups'].get('season', {})
@@ -71,7 +74,8 @@ def evaluate(rep, win_key):
     bet_allowed = bool(rule.get('bet_enabled') and hb.get('n', 0) > 0 and (hb.get('clv_mean') or -1) > 0
                        and (hb.get('roi_per_bet') or -1) > 0)
     decision = 'ELIGIBLE_FOR_PROMOTION' if not failed else 'KEEP_V1'
-    return {'decision': decision, 'champion': 'V2 (eligible; flag not switched)' if not failed else 'V1',
+    return {'decision': decision,
+            'champion': 'V1 (V2 is eligible; the switch is a person setting the flag)' if not failed else 'V1',
             'passed': passed, 'failed': failed, 'detail': detail, 'bet_allowed': bet_allowed,
             'bet_gate': BET_GATE, 'bet_evidence': {'dev_rule': rule.get('dev_best'), 'holdout_bet': hb},
             'automatic_replacement': False,

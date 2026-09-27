@@ -61,6 +61,15 @@ football/
                 `points_applied:false` and is published as research.
                 See players/README.md.
 
+  cfb_v2/       the CFB V2 ENGINE, in SHADOW beside cfb_p4 — joint Bayesian
+                opponent adjustment of play-by-play efficiency at every weekly
+                freeze, preseason priors as distributions, matchup features, a
+                QB value model, a five-model walk-forward ensemble, calibrated
+                heteroskedastic intervals, and a SEPARATE market decision layer.
+                Beats V1 on the 2024-25 holdout (MAE 12.39 vs 12.65), still
+                loses to the opener (12.09) and the close (12.01); BET disabled.
+                See cfb_v2/README.md and docs/cfb-v2/.
+
   personnel/    NON-QB PERSONNEL AVAILABILITY — how much worse a team is with
                 the expected replacement playing instead of each non-QB
                 absence: player quality, replacement quality, usage, position
