@@ -263,6 +263,34 @@ def t_holdout_once():
     assert E.index(reads[0]) < max(i for i, e in enumerate(E) if e['action'] == 'HOLDOUT_SCORED')      # logged before scoring
 
 
+def t_manifest_chain():
+    """The manifest the access log recorded at the read is the committed manifest minus holdout.py's documented post-read
+    fields (post_freeze_changes.jsonl); every post-freeze code change is disclosed with its current hash."""
+    log = os.path.join(_pdir(), 'holdout_access.jsonl')
+    pf = os.path.join(_pdir(), 'post_freeze_changes.jsonl')
+    if not os.path.exists(log):
+        return
+    read = [json.loads(l) for l in open(log) if l.strip() and json.loads(l)['action'] == 'READ_HOLDOUT'][0]
+    M = json.load(open(os.path.join(_pdir(), 'MANIFEST.json')))
+    ch = [json.loads(l) for l in open(pf) if l.strip()]
+    man = [c for c in ch if c['file'].endswith('MANIFEST.json')][-1]
+    assert man['sha256_now'] == sha(os.path.join(_pdir(), 'MANIFEST.json')) and man['sha256_at_freeze'] == read['manifest_sha256']
+    ev = json.load(open(os.path.join(_pdir(), 'evidence.json')))
+    pre = copy.deepcopy(M)
+    pre['holdout_scored'] = False
+    pre.pop('holdout')
+    pre['files']['evidence.json'] = man['evidence_json_sha256_at_freeze']
+    pre['promotion_gate'] = {k: (v['pass'] if isinstance(v, dict) else v) for k, v in ev['promotion_gate_before_holdout'].items()}
+    body = json.dumps(pre, indent=1, sort_keys=True) + '\n'
+    assert hashlib.sha256(body.encode()).hexdigest() == read['manifest_sha256'], 'the evidence chain to the holdout read is broken'
+    for c in ch:
+        f = os.path.join(POL.ARTIFACTS, '..', '..', '..', '..', c['file']) if not c['file'].endswith('MANIFEST.json') else None
+        if f:
+            assert sha(os.path.normpath(f)) == c['sha256_now'], c['file']
+    ran = read['code_sha256']['holdout.py']
+    assert any(c['file'].endswith('holdout.py') and c['sha256_now'] == ran for c in ch) or ran == M['code_sha256']['holdout.py']
+
+
 def t_holdout_refuses():
     from . import holdout as H
     from . import tournament as T
@@ -371,7 +399,7 @@ def t_full_rerun_byte_identical():
 SYNTHETIC = [t_js_semantics, t_eligibility_independent_of_bankroll, t_stake_caps_and_quarter_kelly, t_exposure_never_exceeds_caps,
              t_price_targets_clear_exactly, t_frozen_artifact_never_bets, t_research_needs_the_decision_edge, t_close_ev,
              t_scorecard_known, t_portfolio_mechanics, t_choose_plateau]
-ARTIFACT = [t_committed_policy, t_manifest_and_prereg, t_holdout_once, t_holdout_refuses, t_holdout_static_guard,
+ARTIFACT = [t_committed_policy, t_manifest_and_prereg, t_holdout_once, t_manifest_chain, t_holdout_refuses, t_holdout_static_guard,
             t_parity_fixture_reproduces, t_python_mirror_matches_fixture_statuses]
 DATA = [t_outputs_consistent]
 

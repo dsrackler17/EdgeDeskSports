@@ -945,8 +945,10 @@ def policy_main():
         w('')
         w('Read at %s for policy sha256 `%s` (calibration `%s`, pre-registration `%s`); logged in `holdout_access.jsonl` before the read; '
           'a second run is refused. Frozen artifact applied (w = 0.227829), frozen policy and frozen thresholds; nothing re-tuned. '
-          'Rows: %s (consensus openers, FBS).' % (a0[0]['at'] if a0 else '?', M['files']['policy.json'][:12], M['calibration_json_sha256'][:12],
-                                                  M['prereg']['sha256'][:12], H['by_season_rows']))
+          'Rows: %s (consensus openers, FBS). After the read holdout.py wrote the results into MANIFEST.json (see '
+          '`post_freeze_changes.jsonl`); the manifest the access log recorded (`%s`) is rebuilt and checked by tests_policy.py.'
+          % (a0[0]['at'] if a0 else '?', M['files']['policy.json'][:12], M['calibration_json_sha256'][:12],
+             M['prereg']['sha256'][:12], H['by_season_rows'], (a0[0]['manifest_sha256'][:12] if a0 else '?')))
         w('')
         w(CARD_HEAD % ('candidate', ' 2024 / 2025 ROI | no collapse vs DEV |'))
         w('|---|---|---|---|---|---|---|---|---|---|---|---|')
@@ -1239,7 +1241,10 @@ def policy_main():
     w('')
     w('- `football/cfb_v2/artifacts/decision/%s/`: `policy.json` (frozen), `evidence.json` (the tournament, the pre-holdout and post-holdout gate, '
       'the holdout results), `MANIFEST.json` (hashes of the policy, evidence, parity fixture, pre-registration, calibration, baseline, dataset '
-      'and code), `holdout_access.jsonl` (append-only).' % POLICY_VERSION)
+      'and code), `holdout_access.jsonl` (append-only) and `post_freeze_changes.jsonl` (append-only: every change after the '
+      'freeze, with its hashes — the holdout.py edit made before the read, the live-adapter fix in scorecard.py, and the manifest '
+      'fields holdout.py wrote after the read; `tests_policy.py` rebuilds the pre-read manifest and matches the hash the access '
+      'log recorded).' % POLICY_VERSION)
     w('- `football/cfb_v2/artifacts/decision/fixtures/policy_parity.json`: %s decision cases, stakes, portfolios and games; '
       '`football/cfb_decision/tests.js` checks decision.js against it.' % 'the')
     w('- Code: `v2/decision/{policy,tournament,portfolio,scorecard,holdout,tests_policy}.py`.')

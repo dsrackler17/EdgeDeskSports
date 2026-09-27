@@ -58,7 +58,7 @@ once.
 | 31 | threshold robustness | POLICY.md §55 | Neighbouring thresholds share the sign of the close-implied EV. None collapses and none is positive. |
 | 32 | production threshold choices | `cfb_decision_policy_v1/policy.json` | sha256 `cb9019a2…`. Frozen 2026-09-27 with provenance for each field. |
 | 33 | historical walk-forward tournament | POLICY.md §69 | 9 candidates evaluated on 2019 and 2021–2023. None is BET-VALID. |
-| 34 | untouched holdout results | POLICY.md §70; `holdout_access.jsonl` | Read once at 2026-09-27T16:30:11Z; a second run is refused. The `edge` candidate: ROI −0.062, CLV 0.61, calibrated in the large. |
+| 34 | untouched holdout results | POLICY.md §70; `holdout_access.jsonl`; `post_freeze_changes.jsonl` | Read once at 2026-09-27T16:30:11Z; a second run is refused. The `edge` candidate: ROI −0.062, CLV 0.61, calibrated in the large. Every post-freeze change is disclosed, and the pre-read manifest hash is rebuilt by the tests. |
 | 35 | shadow-mode implementation | `football/cfb_decision/shadow.js` (existing) | The shadow now picks `cfb_decision_policy_v1` (validated). No LIVE projection exists yet, so there are no shadow decisions. |
 | 36 | database migrations | `supabase/cfb_decision.sql` (existing) | The policy satisfies the `cfb_decision_policies` and `cfb_bankroll_policy` constraints (tested). |
 | 37 | Model Lab additions | existing views; `v2/decision/scorecard.py --shadow` | The §73 scorecard runs on the live shadow record. |
