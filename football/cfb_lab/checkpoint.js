@@ -41,11 +41,51 @@ const M = require('./models.js');
 const GOV = require('./governance.js');
 const I = require('./integrity.js');
 const ID = require('./identity.js');
+const DIS = require('../../lib/cfb_disagreement.js');
 
 const U = L.util;
 const HORIZON_H = 24 * 10;      // the board and current.json publish ~10 days ahead
 
 function roleOf(roles, mv) { const r = roles[mv]; return r ? r.role : 'candidate'; }
+
+/* THE MAJOR-DISAGREEMENT GATE, judged at the snapshot (lib/cfb_disagreement.js).
+   V1 only: its football inputs travel in the slate artifact
+   (slateGame.disagreement_inputs, football/fbs/build_coverage.js) and the
+   market is the one this snapshot captured. The independent submodels are the
+   V2 projections the lab loaded for the same game. Nothing here moves a
+   projection; a gate that cannot run leaves the fields null. */
+function submodelsFor(models, gameId) {
+  const out = { source: 'the Model Lab’s V2 projections', projections: {}, ensemble: null, ensemble_sd: null };
+  for (const m of models || []) {
+    const q = m.projections && m.projections.get(String(gameId));
+    if (!q || q.engine_id !== 'edgedesk_cfb_v2' || !q.pure || !U.isNum(q.pure.margin)) continue;
+    if (/v2\.1/.test(q.model_version || '')) {
+      Object.keys(q.components || {}).forEach((k) => { if (U.isNum(q.components[k])) out.projections['v2.1 ' + k] = q.components[k]; });
+      out.ensemble = q.pure.margin; out.ensemble_sd = U.isNum(q.pure.ens_sd) ? q.pure.ens_sd : null;
+    } else out.projections[(q.model_label || q.model_version) + ' ensemble'] = q.pure.margin;
+  }
+  return Object.keys(out.projections).length ? out : null;
+}
+function disagreementFor(p, market, now, models) {
+  const di = p && p.engine_id === 'edgedesk_cfb_p4' && p.slateGame && p.slateGame.disagreement_inputs;
+  if (!di || !di.projection || !market || !U.isNum(market.current_spread)) return null;
+  const rd = di.projection.rating_detail || {};
+  try {
+    return DIS.evaluate({ now_ms: U.ms(now),
+      game: { game_id: p.game.game_id, home: p.game.home, away: p.game.away, kickoff: p.game.kickoff, neutral_site: !!p.game.neutral_site,
+        venue: di.game ? di.game.venue : null, home_fbs: di.game ? di.game.home_fbs : true, away_fbs: di.game ? di.game.away_fbs : true },
+      mapping: { teams_resolved: true },
+      projection: di.projection,
+      /* the lab's dispersion is the IQR of the books' lines: a spread measure,
+         read as such */
+      market: { spread: L.conv.bookToMargin(market.current_spread), books: market.sportsbook_count || 0,
+        dispersion: U.num(market.market_dispersion), as_of: market.market_as_of || null, stale: !!market.market_stale,
+        source: (market.market_sources || []).join('+') || null },
+      submodels: submodelsFor(models, p.game.game_id), qb: di.qb || null, roster: di.roster || null, reliability: U.num(di.reliability),
+      long_term_vs_current_delta: (U.isNum(rd.home_gp) && U.isNum(rd.away_gp) && Math.min(rd.home_gp, rd.away_gp) >= 3)
+        ? (rd.home_carried - rd.away_carried) - (rd.home_fresh - rd.away_fresh) : null });
+  } catch (_) { return null; }
+}
 
 /* Build one immutable prediction row (SCHEMA §1). */
 /* Probabilities are stored at 5 decimals (numeric(6,5)) and kept strictly
@@ -146,6 +186,19 @@ function buildRow(model, checkpointType, isFirst, market, decision, dq, ctx) {
       ctx.kickoffBasis ? { kickoff_basis: ctx.kickoffBasis } : {},
       ctx.reschedule ? { reschedule: ctx.reschedule } : {}),
   };
+  /* the gate's verdict (V1 rows with a market only); the verified gap IS the
+     row's raw gap, so the two can never disagree (cfb_lab_pred_verified_gap) */
+  const dg = ctx.disagreement || null;
+  if (dg && dg.available && dg.status) {
+    row.disagreement_version = DIS.version;
+    row.disagreement_status = dg.status;
+    row.disagreement_tier = dg.tier || null;
+    row.verified_market_gap = dg.verified && U.isNum(gap) && Math.abs(gap) >= 7 ? gap : null;
+    row.calibrated_market_gap = dg.calibrated && U.isNum(dg.calibrated.gap) ? U.r(dg.calibrated.gap, 3) : null;
+    row.disagreement_root_cause = dg.root_cause ? dg.root_cause.primary : null;
+    row.disagreement_checks = dg.tier && /^MAJOR/.test(dg.tier)
+      ? { failed: dg.failed || [], incomplete: dg.incomplete || [], flags: dg.flags || [], groups: dg.groups || null } : null;
+  }
   row.prediction_id = G.ids.prediction(row);
   row.row_hash = G.rowHash(row);
   return row;
@@ -247,7 +300,8 @@ function run(opts) {
       const integrity = I.assessMarket(gq, now, { kickoff: p.game.kickoff, hoursToKickoff: h, quarantinedIds });
       const dq = M.dataQuality({ slateGame: p.slateGame, model: p, market, hours: h, now, dupPairs: dup });
       const decision = p.decide(market, now);
-      const row = buildRow(p, ct, prior.length === 0, market, decision, dq, { now, role: roleOf(roles, m.model_version), origin: 'LIVE', integrity, kickoffBasis, reschedule });
+      const row = buildRow(p, ct, prior.length === 0, market, decision, dq, { now, role: roleOf(roles, m.model_version), origin: 'LIVE', integrity, kickoffBasis, reschedule,
+        disagreement: disagreementFor(p, market, now, models) });
       if (row.inputs_ref.bet_gate) log.bet_gated++;
       if (reschedule) log.rescheduled_adhoc++;
       rows.push(row);

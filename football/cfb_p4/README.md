@@ -209,6 +209,17 @@ historical weather series exists in this corpus), non-QB injury weights,
 coaching tenure, NIL, per-player recruiting stars. Each has a declared
 injection point so the layer switches on the day real data arrives.
 
+## When EdgeDesk and the market disagree by 7+
+
+A raw 7+ point gap is never shown as a major disagreement. It is
+`INVESTIGATE` until the integrity gate (`lib/cfb_disagreement.js`) verifies
+it, and only then `VERIFIED MAJOR DISAGREEMENT` — which is still not a bet.
+The engine publishes `model.raw_game_margin` (the exact sum of the
+contributions) and a football-only calibrated margin as a SHADOW
+(`model.margin_calibration`, `margin_calibration.js`, not promoted: its
+walk-forward gain is under the 0.05-point bar). The priced fair spread is
+unchanged. Forensics, rules and evidence: `docs/cfb-disagreement/`.
+
 ## Running the tests
 
 ```

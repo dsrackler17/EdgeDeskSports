@@ -1898,6 +1898,19 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .rv-t{font-weight:700}.rv-t.hi{color:var(--pos)}.rv-t.md{color:var(--text)}.rv-t.lo{color:var(--neg)}
 .rv-dim{opacity:.5}
 .rv-fair{color:var(--accent)}
+/* THE STRONGEST TREATMENT ON THE BOARD, reserved for a disagreement that
+   survived every integrity check (lib/cfb_disagreement.js). A raw gap alone
+   never gets it: INVESTIGATE stays the quiet warn chip. */
+.rv-lab.verified{color:#11141a;background:var(--gold);border-color:var(--gold);font-weight:800;box-shadow:0 0 0 2px rgba(227,184,77,.28),0 0 14px rgba(227,184,77,.38)}
+.dg-pk{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:4px 0 6px}
+.dg-pk.verified{border-color:var(--gold);box-shadow:0 0 0 1px rgba(227,184,77,.35),0 0 18px rgba(227,184,77,.14)}
+.dg-h{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;letter-spacing:.04em;margin:0 0 4px}
+.dg-sub{font-size:11px;color:var(--dim);margin:0 0 8px;line-height:1.45}
+.dg-grid{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:3px 12px;font-size:11.5px;margin:0 0 8px}
+.dg-grid .l{color:var(--dim)}
+.dg-chk{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.55}
+.dg-chk .s-PASS{color:var(--pos)}.dg-chk .s-FAIL{color:var(--neg)}.dg-chk .s-WARN,.dg-chk .s-INCOMPLETE{color:var(--warn)}
+.dg-chk .s-NOT_APPLICABLE,.dg-chk .s-NOT_EVALUATED{color:var(--faint)}
 /* on a phone the research columns come first: the conference column (its
    badges are on the card) steps aside so the fair line, the gap and the label
    are on the first screen */
@@ -3993,6 +4006,12 @@ window.mcRefresh=function(){
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
 <script src="/lib/cfb_research_view.js?v=20260925e"></script>
+<!-- THE MAJOR-DISAGREEMENT INTEGRITY GATE: a 7+ point gap between EdgeDesk and
+     the market is INVESTIGATE until it passes every check (game, market, team
+     state, QB, roster, components, cross-model, football-only calibration),
+     and only then VERIFIED MAJOR DISAGREEMENT. It reads the projection and
+     never changes it. tools/football/disagreement.test.js holds it. -->
+<script src="/lib/cfb_disagreement.js?v=20260927a"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -50117,14 +50136,18 @@ function fbP4ViewFor(u,p,mkt,opts){
      minutes even when nothing else about the game has changed */
   var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,
     quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,visit?visit.t:'-',par?(par.ok+':'+par.gaps.length):'-',
-    !!(FB.personnel&&FB.personnel.data),!!(FB.relArt&&FB.relArt.data),
+    !!(FB.personnel&&FB.personnel.data),!!(FB.relArt&&FB.relArt.data),!!(FB.p4&&FB.p4.dgSub),
     Math.floor(Date.now()/3e5)].join('|');
   if(u[slot]&&u[slot].p===p&&u[slot].key===key)return u[slot].v;
-  var v=null,rel=null;
+  var v=null,rel=null,dg=null;
   try{ rel=fbP4ReliabilityFor(u,p,mkt,quotes); }catch(_){ rel=null; }
+  /* the integrity gate's verdict on a 7+ gap; null leaves the view to fail
+     closed (INVESTIGATE — VERIFICATION INCOMPLETE) */
+  try{ dg=fbP4DisagreementFor(u,p,mkt,rel); }catch(_){ dg=null; }
   try{
     v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt,
-      reliability:rel,coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,parity:par,now:Date.now()},fbP4ViewCfg());
+      reliability:rel,coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,parity:par,now:Date.now(),
+      disagreement:dg},fbP4ViewCfg());
   }catch(_){v=null;}
   u[slot]={p:p,key:key,v:v};
   return v;
@@ -50302,7 +50325,9 @@ function fbRvGapCell(v,gap){
 /* the labels under which a gap is not a reading of the market */
 function fbRvWeak(v){
   var k=v&&v.research_label&&v.research_label.key;
-  return k==='LIMITED_DATA'||k==='LOW_RELIABILITY';
+  /* an UNVERIFIED large gap is dimmed too: the size of a disagreement is
+     never shown as a finding until the integrity gate has verified it */
+  return k==='LIMITED_DATA'||k==='LOW_RELIABILITY'||k==='INVESTIGATE'||k==='DATA_FAULT'||k==='MARKET_FAULT';
 }
 var FB_RV_TIER={HIGH:['HIGH','hi'],MODERATE:['MOD','md'],LOW:['LOW','lo']};
 var FB_RV_REL={STRONG:'hi',ADEQUATE:'md',LOW:'lo'};
@@ -51941,6 +51966,13 @@ function fbP4Ensure(){
     .then(function(){return fbScript('football/fbs_epa/fbs_epa.js').catch(function(){});})
     .then(function(){return fbScript('football/cfb_p4/calibration.js').catch(function(){});})
     .then(function(){return fbScript('football/cfb_p4/v12_correction.js').catch(function(){});})
+    /* the football-only margin calibrator (published as a SHADOW margin; not
+       promoted — see its record) and the integrity gate's measured
+       parameters. Both optional: without them the engine publishes no shadow
+       margin and the gate runs on its declared defaults */
+    .then(function(){return fbScript('football/cfb_p4/margin_calibration.js').catch(function(){});})
+    .then(function(){return fbScript('football/cfb_p4/disagreement_params.js').catch(function(){});})
+    .then(function(){fbDgSubEnsure();})
     /* THE CONFIDENCE LEDGER AND THE OUTCOME RENDERER, shared with the offline
        build so the board and the committed artifact say the same thing about
        the same game. Optional in the same way as the two above: it changes no
@@ -56599,6 +56631,53 @@ function fbV2ShadowHTML(u,p){
   L+='<div class="gd-modelnote">'+fbEsc(c.language)+' V2 beats V1 on the 2024–25 holdout and still trails the opening and closing lines; BET is disabled because no betting rule survived out-of-sample testing.</div>';
   return L;
 }
+/* THE EVIDENCE PACKET for a 7+ gap: what EdgeDesk says, what the market
+   says, exactly how the fair line was built, the independent submodels, the
+   quarterback and availability state, the uncertainty, the market's depth and
+   freshness, and every integrity check with its result. Read off the view;
+   computes nothing. */
+function fbP4ForensicHTML(u,p,v){
+  var d=v&&v.disagreement;if(!d)return '';
+  var g=u.g,X=d.explanation||{},cm=d.cross_model||{},dec=d.decomposition||{},G=v.market_gap||{},B=v.best_available_line;
+  var h=fbEsc(g.home_team),a=fbEsc(g.away_team);
+  var side=function(x){if(x==null)return '—';if(Math.abs(x)<0.05)return '0.0';return (x>0?'+':'−')+Math.abs(x).toFixed(1)+' '+(x>0?h:a);};
+  var row=function(l,val){return '<span class="l">'+fbEsc(l)+'</span><span>'+val+'</span>';};
+  var A=null;try{A=fbP4Assembly(u);}catch(_){A=null;}
+  var qbt=function(r){return r?fbEsc((r.player_name||'?')+' · '+String(r.status||'').toLowerCase().replace(/_/g,' ')+(r.availability&&r.availability.state?' · '+String(r.availability.state).toLowerCase():'')):'no starter record';};
+  var avs=function(sd){var f=((A&&A.contract)||[]).filter(function(x){return x.field==='availability'&&x.side===sd;})[0];return f?fbEsc(String(f.state).toLowerCase().replace(/_/g,' ')):'—';};
+  var head=d.verified
+    ?'<div class="dg-h"><span class="rv-lab verified">'+fbEsc(d.status_label||'VERIFIED MAJOR DISAGREEMENT')+'</span></div>'
+      +'<div class="dg-sub">This one survived every check below. It is genuinely unusual'+(d.manual_review?' — and extraordinary in size, so a manual review is queued':'')+'. '
+      +'It is still not a bet: the decision layer needs a calibrated cover probability, positive expected value at a valid fresh price and acceptable uncertainty.</div>'
+    :'<div class="dg-h" style="color:'+(d.status==='DATA_FAULT'?'var(--neg)':(d.status==='MARKET_FAULT'?'var(--dim)':'var(--warn)'))+'">'+fbEsc(d.status_label||d.status||'INVESTIGATE')+'</div>'
+      +'<div class="dg-sub">A raw gap of this size is more often missing information, stale data, a scaling error or a mapping problem than a betting edge. '
+      +'Root cause: <b>'+fbEsc(String(d.root_cause||'UNKNOWN').replace(/_/g,' '))+'</b>.</div>';
+  var grid='<div class="dg-grid">'
+    +row('EdgeDesk fair',fbEsc(X.edgedesk||'—')+' <span class="mut">(pure — never moved by the market)</span>')
+    +row('Market consensus',fbEsc(X.market||'—')+(G.source?' <span class="mut">'+fbEsc(G.source)+'</span>':''))
+    +row('Best available',B&&B.available&&B.focus?fbEsc(B.focus.text||''):'<span class="mut">'+fbEsc((B&&B.reason)||'none captured')+'</span>')
+    +row('Raw gap',fbEsc((X.raw_gap!=null?X.raw_gap.toFixed(1):'—')+' pts toward '+(X.toward||'—'))+(d.favorite_flip?' · <b>favourite flip</b>':'')
+      +(d.verified_market_gap!=null?' · verified gap '+Math.abs(d.verified_market_gap).toFixed(1):''))
+    +row('Football-only calibrated gap',(d.calibrated_gap!=null?Math.abs(d.calibrated_gap).toFixed(1):'—')+' <span class="mut">(outcome-fitted shadow; not the priced number)</span>')
+    +row('Base rating difference',side(dec.neutral_strength)+' <span class="mut">long-term '+side(dec.long_term_state)+' · current form '+side(dec.current_form)+'</span>')
+    +row('Base-rating gap to market',fbEsc(X.base_rating_gap||'—'))
+    +row('Game adjustments','home field '+side(dec.home_field)+' · matchup '+side(dec.matchup)+' · conference '+side(dec.conference)
+      +' · QB '+side(dec.qb)+' · injuries '+side(dec.injuries)+' · rest/travel '+side(dec.rest_travel))
+    +row('Equation',fbEsc(X.equation||'—'))
+    +row('Submodel projections',(cm.projections||[]).length?(cm.projections||[]).map(function(s){return fbEsc(s.model)+' '+side(s.margin)+' <span class="mut">('+fbEsc(s.stance)+')</span>';}).join(' · '):'<span class="mut">unavailable</span>')
+    +row('Ensemble agreement',fbEsc(X.ensemble||'—'))
+    +row('QB state',h+': '+qbt(A&&A.starters&&A.starters.home)+' · '+a+': '+qbt(A&&A.starters&&A.starters.away))
+    +row('Roster / availability',h+': '+avs('home')+' · '+a+': '+avs('away'))
+    +row('Reliability',v.reliability&&v.reliability.text?fbEsc(v.reliability.text):'—')
+    +row('Prediction uncertainty','σ '+(p.model.sigma_margin!=null?p.model.sigma_margin.toFixed(1):'—')+' · p10 '+fbPts(p.model.p10_margin)+' · p90 '+fbPts(p.model.p90_margin))
+    +row('Market depth and freshness',fbEsc(X.market_summary||'—'))
+    +'</div>';
+  var chk='<div class="dg-chk">'+(d.checks||[]).map(function(c){
+    return '<div><span class="s-'+fbEsc(c.status)+'">'+fbEsc(c.status)+'</span> '+fbEsc(c.group+' · '+c.id)+' — '+fbEsc(c.detail||'')
+      +(c.status==='FAIL'&&c.cause?' <span class="mut">['+fbEsc(String(c.cause).replace(/_/g,' '))+']</span>':'')+'</div>';
+  }).join('')+'</div>';
+  return '<div class="dg-pk'+(d.verified?' verified':'')+'">'+head+grid+'<div class="gd-sec">Verification checks</div>'+chk+'</div>';
+}
 function fbP4Card(u){
   var g=u.g,E=window.EDCfbP4,m=u.meta;
   var p=FB.p4._proj&&FB.p4._proj[String(g.game_id)];
@@ -56686,6 +56765,8 @@ function fbP4Card(u){
      the order a reader meets it in, and what is open by default. */
   var rvC=fbP4ViewFor(u,p);
   var body=fbGxSummary(u,p,gid)
+    +(rvC&&rvC.disagreement?fbGxSec(gid,'forensic',(rvC.disagreement.verified?'Verified major disagreement':'Major disagreement')+' · evidence packet',
+      fbP4ForensicHTML(u,p,rvC),true,'every integrity check this gap had to pass, and why it did or did not'):'')
     +(rvC&&rvC.strongest_drivers?fbGxSec(gid,'why','Why EdgeDesk leans '+rvC.strongest_drivers.team,fbGxWhy(u,p),true,
       'the largest measured components on that side — research, not a pick'):'')
     +(rvC&&rvC.history?fbGxSec(gid,'proj','Projection status',fbGxProjStatus(u,p),true,
@@ -57157,15 +57238,108 @@ function fbP4Ratings(){
    never picks — DATA FAULT and INVESTIGATE mean "find out why the model
    and the market disagree", and with this model's record a big gap is more
    often missing information than an edge. */
-function fbP4StatusFor(p,mkt){
+/* ═══ THE MAJOR-DISAGREEMENT INTEGRITY GATE, per game ══════════════════════
+   The independent football opinions the gate's cross-model check reads: the
+   V2 shadow's own submodels (ridge, GBM) and ensembles. Loaded for the gate
+   whether or not the V2 panel is switched on — it is football data, priced
+   nowhere. Absent, every 7+ gap reads INVESTIGATE — VERIFICATION INCOMPLETE. */
+function fbDgSubEnsure(){
+  var S=FB.p4;if(!S||S.dgSubLoading)return;
+  S.dgSubLoading=true;
+  fetch('football/cfb_v2/current.json',{cache:'no-store'})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(j){
+      var by={};((j&&j.rows)||[]).forEach(function(r){
+        if(r.ens_pred==null)return;
+        var pr={},k;for(k in (r.components||{}))if(r.components.hasOwnProperty(k))pr['v2.1 '+k]=r.components[k];
+        var c1=r.shadow&&r.shadow.candidate_001;if(c1&&c1.ens_pred!=null)pr['v2 candidate 001 ensemble']=c1.ens_pred;
+        by[String(r.game_id)]={source:'football/cfb_v2/current.json ('+(r.state||'shadow')+')',projections:pr,ensemble:r.ens_pred,ensemble_sd:r.ens_sd};
+      });
+      S.dgSub=by;
+      try{if(S.up&&S.up.length)window.renderFootball();}catch(_){}
+    })
+    .catch(function(){S.dgSub=S.dgSub||null;});
+}
+/* ONE gate result per game, cached like the view. Reads the projection, the
+   market join, the consensus behind it, the starters and the availability
+   contract; changes none of them. Null (never a verdict) when it cannot run. */
+function fbP4DisagreementFor(u,p,mkt,rel){
+  var D=window.EDCfbDisagreement;
+  if(!D||!u||!u.g||!p||p.status!=='PREDICTED')return null;
+  mkt=mkt||(FB.p4._mkt&&FB.p4._mkt[String(u.g.game_id)])||null;
+  if(!mkt||(mkt.spread_line==null&&!mkt.spread_fault))return null;
+  /* the consensus behind the quote is read first: a change in the books
+     reporting is a change in what the gate judges, so it is in the key */
+  var quotes=null;try{quotes=fbP4QuotesFor(u);}catch(_){quotes=null;}
+  var cons=null;try{cons=fbMarketConsensusFor(u,quotes);}catch(_){cons=null;}
+  var key=[p.prediction_timestamp,mkt.spread_line,mkt.as_of,mkt.stale,!!FB.p4.dgSub,rel&&rel.score!=null?rel.score:'-',
+    cons?cons.books_reporting:'-',cons&&cons.market_dispersion?cons.market_dispersion.range:'-',
+    Math.floor(Date.now()/3e5)].join('|');
+  if(u._dg&&u._dg.p===p&&u._dg.key===key)return u._dg.v;
+  var v=null;
+  try{
+    var g=u.g,A=null;try{A=fbP4Assembly(u);}catch(_){A=null;}
+    var st=(A&&A.starters)||{};
+    var qb=function(r){return r?{status:r.status,player:r.player_name,availability:r.availability&&r.availability.state,change:false}:null;};
+    var av=function(side){var f=((A&&A.contract)||[]).filter(function(x){return x.field==='availability'&&x.side===side;})[0];return {feed_state:f?f.state:null};};
+    var proj=D.fromEngine(p),rd=proj?proj.rating_detail:{};
+    if(rel==null&&u._rv&&u._rv.v&&u._rv.v.reliability&&u._rv.v.reliability.scored)rel={score:u._rv.v.reliability.score};
+    v=D.evaluate({now_ms:Date.now(),
+      game:{game_id:String(g.game_id),home:g.home_team,away:g.away_team,kickoff:u.t?new Date(u.t).toISOString():(g.start_date||null),
+        neutral_site:!!g.neutral_site,venue:g.venue||null,
+        home_fbs:!(u.meta&&u.meta.home&&u.meta.home.is_fbs===false),away_fbs:!(u.meta&&u.meta.away&&u.meta.away.is_fbs===false)},
+      mapping:{teams_resolved:!!(mkt.match||/cfb\.lines/.test(String(mkt.book||'')))},
+      projection:proj,
+      market:{spread:mkt.spread_line,books:cons&&cons.books_reporting?cons.books_reporting:null,
+        range:cons&&cons.market_dispersion&&cons.market_dispersion.range!=null?cons.market_dispersion.range:null,
+        as_of:mkt.as_of||null,stale:!!mkt.stale,fault:!!mkt.spread_fault,source:mkt.book||null},
+      submodels:(FB.p4.dgSub&&FB.p4.dgSub[String(g.game_id)])||null,
+      qb:A?{home:qb(st.home),away:qb(st.away)}:null,
+      roster:A?{home:av('home'),away:av('away')}:null,
+      reliability:rel&&typeof rel.score==='number'?rel.score:null,
+      long_term_vs_current_delta:(rd&&rd.home_gp!=null&&rd.away_gp!=null&&Math.min(rd.home_gp,rd.away_gp)>=3)
+        ?((rd.home_carried-rd.away_carried)-(rd.home_fresh-rd.away_fresh)):null});
+  }catch(_){v=null;}
+  u._dg={p:p,key:key,v:v};
+  return v;
+}
+function fbP4UnitFor(p){
+  var S=FB.p4,k,i;if(!S||!S._proj||!p)return null;
+  for(k in S._proj)if(S._proj.hasOwnProperty(k)&&S._proj[k]===p){
+    for(i=0;i<(S.up||[]).length;i++)if(String(S.up[i].g.game_id)===k)return S.up[i];
+  }
+  return null;
+}
+/* the board status for a 7+ gap, from the gate. Null when the gate cannot
+   run, and the caller then FAILS CLOSED to INVESTIGATE (or DATA FAULT past the
+   guard) — a 7+ gap is never verified by default. */
+function fbP4GateStatus(p,mkt,u,gap){
+  u=u||fbP4UnitFor(p);if(!u)return null;
+  var rel=null;
+  if(!(u._rv&&u._rv.v&&u._rv.v.reliability&&u._rv.v.reliability.scored)){
+    try{rel=fbP4ReliabilityFor(u,p,mkt,fbP4QuotesFor(u));}catch(_){rel=null;}
+  }
+  var e=fbP4DisagreementFor(u,p,mkt,rel);
+  if(!e||!e.status)return null;
+  if(gap>FB_GUARD.p4.game&&!e.verified)return null;
+  if(e.status==='VERIFIED_MAJOR_DISAGREEMENT')return {t:'VERIFIED MAJOR DISAGREEMENT',c:'var(--gold)',cls:'verified',sub:e.status_label,verified:true};
+  if(e.status==='MARKET_FAULT')return {t:'MARKET FAULT',c:'var(--dim)',sub:e.status_label};
+  if(e.status==='DATA_FAULT')return {t:'DATA FAULT',c:'var(--neg)',sub:e.status_label};
+  return {t:'INVESTIGATE',c:'var(--warn)',sub:e.status_label};
+}
+function fbP4StatusFor(p,mkt,u){
   if(!p||p.status!=='PREDICTED')return {t:'AWAITING DATA',c:'var(--faint)'};
   if(!mkt||mkt.spread_line==null)return {t:'NO MARKET',c:'var(--faint)'};
   if(p.edge&&p.edge.spread&&p.edge.spread.recommendation==='PASS_LOW_CONFIDENCE')
     return {t:'THIN DATA',c:'var(--dim)'};
   if(mkt.stale)return {t:'STALE QUOTE',c:'var(--dim)'};
   var gap=Math.abs(p.model.fair_spread-mkt.spread_line);
+  /* 7+: the integrity gate decides. A gap past the guard that passes EVERY
+     check is shown, not hidden, as VERIFIED — extraordinary, with a manual
+     review queued */
+  if(gap>=7){var dg=null;try{dg=fbP4GateStatus(p,mkt,u,gap);}catch(_){dg=null;}if(dg)return dg;}
   if(gap>FB_GUARD.p4.game)return {t:'DATA FAULT',c:'var(--neg)'};
-  if(gap>=7)return {t:'INVESTIGATE',c:'var(--warn)'};
+  if(gap>=7)return {t:'INVESTIGATE',c:'var(--warn)',sub:'INVESTIGATE — VERIFICATION INCOMPLETE'};
   return {t:'RESEARCH',c:'var(--accent)'};
 }
 function fbP4Line(team,fairSpread){
@@ -57214,7 +57388,7 @@ function fbP4StatusStrip(){
    research router owns the hash, so this owns `?fbs_*` and leaves the hash
    exactly as it found it. */
 var FBP4_FILTER_DEFAULTS={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'};
-var FBP4_STATUSES=['RESEARCH','INVESTIGATE','THIN DATA','STALE QUOTE','NO MARKET','DATA FAULT','AWAITING DATA'];
+var FBP4_STATUSES=['VERIFIED MAJOR DISAGREEMENT','RESEARCH','INVESTIGATE','MARKET FAULT','THIN DATA','STALE QUOTE','NO MARKET','DATA FAULT','AWAITING DATA'];
 var FBP4_SORTS=[['kick','Kickoff'],['gap','Largest gap'],['conf','Conference'],['status','Status']];
 var FBP4_MARKETS=[['all','Any market state'],['with','With a market'],['without','No market'],['stale','Stale quote only']];
 
@@ -57315,7 +57489,7 @@ window.fbP4Notes=function(){
 function fbP4Row(u){
   var S=FB.p4,gid=String(u.g.game_id);
   var p=S._proj&&S._proj[gid],mkt=(S._mkt&&S._mkt[gid])||{};
-  var st=fbP4StatusFor(p,mkt);
+  var st=fbP4StatusFor(p,mkt,u);
   var gap=(p&&p.status==='PREDICTED'&&mkt.spread_line!=null)
     ?Math.abs(p.model.fair_spread-mkt.spread_line):null;
   var ctx=(p&&p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
@@ -57393,14 +57567,18 @@ function fbP4Visible(rows){
    Nothing about the slate size is written into the page as a constant. */
 function fbP4Counts(rows,visible){
   var c={total:rows.length,visible:visible.length,with_market:0,research:0,thin:0,
-    no_market:0,faults:0,stale:0,fbs_fcs:0,conference:0,non_conference:0,projected:0};
+    no_market:0,faults:0,stale:0,fbs_fcs:0,conference:0,non_conference:0,projected:0,
+    verified:0,investigate:0,market_faults:0};
   visible.forEach(function(r){
     if(r.mkt.spread_line!=null)c.with_market++;
     if(r.st.t==='NO MARKET')c.no_market++;
     if(r.st.t==='THIN DATA')c.thin++;
     if(r.st.t==='DATA FAULT')c.faults++;
     if(r.st.t==='STALE QUOTE')c.stale++;
-    if(r.st.t==='RESEARCH'||r.st.t==='INVESTIGATE')c.research++;
+    if(r.st.t==='RESEARCH'||r.st.t==='INVESTIGATE'||r.st.t==='VERIFIED MAJOR DISAGREEMENT')c.research++;
+    if(r.st.t==='VERIFIED MAJOR DISAGREEMENT')c.verified++;
+    if(r.st.t==='INVESTIGATE')c.investigate++;
+    if(r.st.t==='MARKET FAULT')c.market_faults++;
     if(r.p&&r.p.status==='PREDICTED')c.projected++;
     if(r.meta.matchup_type==='fbs_fcs')c.fbs_fcs++;
     else if(r.meta.matchup_type==='conference')c.conference++;
@@ -57605,7 +57783,8 @@ function fbP4BoardHTML(){
       cells='<span>'+model+'</span>'
         +'<span class="mut">'+market+'</span>'
         +'<span>'+(r.gap==null?'—':r.gap.toFixed(1))+'</span>'
-        +'<span style="color:'+st.c+'">'+st.t+'</span>';
+        +(st.verified?'<span class="rv-lab verified" title="'+fbEsc(st.sub||st.t)+'">'+st.t+'</span>'
+          :'<span style="color:'+st.c+'" title="'+fbEsc(st.sub||st.t)+'">'+st.t+'</span>');
     }
     html+='<div'+(RV?' class="rv-row"':'')+' onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="'+grid+';cursor:pointer;border-bottom:1px solid var(--border);padding:7px 2px;color:var(--text)">'
       +'<span id="p4arr-'+fbEsc(gid)+'" style="color:var(--faint)">▸</span>'
@@ -57628,11 +57807,13 @@ function fbP4BoardHTML(){
   }
   if(window.EDCfbResearchView)html+='<div class="gd-modelnote" style="margin-top:8px"><b>Research labels are research reads, never picks.</b> '
     +'WORTH RESEARCHING: EdgeDesk and the market differ by the research threshold or more, with usable confidence and reliability. '
-    +'MAJOR DISAGREEMENT: a gap of 7+ points — more often missing information than an edge. MARKET ALIGNED: inside the research threshold. '
+    +'INVESTIGATE: a gap of 7+ points that has not passed the integrity gate — more often missing information than an edge. '
+    +'VERIFIED MAJOR DISAGREEMENT: a 7+ gap that survived every check (correct game and orientation, a fresh multi-book market, ratings on current-season games, a resolved quarterback, no abnormal availability data, every adjustment inside its validated range, independent submodel support, and a gap that holds after football-only calibration). It is genuinely rare, and it is still not a bet. '
+    +'MARKET FAULT: the market data is too thin or stale to verify a large gap. DATA FAULT: a known integrity problem. MARKET ALIGNED: inside the research threshold. '
     +'NEAR PICK’EM: EdgeDesk names a side with under a point of separation. LIMITED DATA and LOW RELIABILITY: too little on file to read the gap. REL is a 0-100 reliability score (data quality, freshness, source agreement and projection stability), not a probability. '
     +'Hover a label for its reason and the board status the filters below still read.</div>';
   html+='<div class="gd-modelnote" style="margin-top:8px">Statuses are operational reads, never picks. '
-    +'DATA FAULT and INVESTIGATE mean “find out why the model and the market disagree” — with this model’s record, a big gap is more often missing information than an edge, '
+    +'DATA FAULT, MARKET FAULT and INVESTIGATE mean “find out why the model and the market disagree” — with this model’s record, a big gap is more often missing information than an edge, '
     +'and that is most true in the smaller-market games this board now carries, where fewer books post a number and less enrichment data exists. '
     +'THIN DATA marks games the model refuses to grade (an unrated or non-FBS opponent); STALE QUOTE means the only market number is an old capture; NO MARKET means no valid quote exists — never a zero line. '
     +'Click a row for the full gate: projection, conferences, drivers, data completeness, and the rosters head-to-head.</div>';

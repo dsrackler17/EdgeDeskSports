@@ -134,6 +134,13 @@ Unique `(game_id, model_version, checkpoint_type, origin)` except `checkpoint_ty
 | threshold_distance | jsonb | distance to each BET/LEAN threshold (METRICS §Near miss) |
 | near_miss | boolean not null | |
 | primary_edge, secondary_edge, primary_uncertainty, disagreement_summary | text | |
+| disagreement_version | text | the integrity gate's contract (`cfb_disagreement/1`); V1 snapshots with a market only, null otherwise |
+| disagreement_status | text | MARKET_ALIGNED \| WORTH_RESEARCHING \| INVESTIGATE \| MARKET_FAULT \| DATA_FAULT \| VERIFIED_MAJOR_DISAGREEMENT (`lib/cfb_disagreement.js`, docs/cfb-disagreement/DESIGN.md) |
+| disagreement_tier | text | RESEARCH, NONE, MAJOR_7, MAJOR_10, MAJOR_15 (by the raw gap) |
+| verified_market_gap | numeric(7,3) | set only on a VERIFIED 7+ snapshot, and then exactly `model_market_gap` (constraint `cfb_lab_pred_verified_gap`) |
+| calibrated_market_gap | numeric(7,3) | the gap after the football-only margin calibrator (shadow) |
+| disagreement_root_cause | text | the first failing check's cause, VALID_MODEL_DISAGREEMENT when every check passed, UNKNOWN when verification was incomplete |
+| disagreement_checks | jsonb | 7+ only: failed and incomplete check ids, flags, the per-group result |
 | inputs_ref | jsonb not null | what the snapshot read: file hashes, build times, quote ids |
 | row_hash | text not null | SHA-256 of the canonical row without `row_hash` |
 | recorded_at | timestamptz not null default now() | Postgres only: when the row reached the database |

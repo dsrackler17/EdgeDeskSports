@@ -1,4 +1,4 @@
--- cfb_lab -- part 6 of 6.
+-- cfb_lab -- part 7 of 7.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
@@ -64,7 +64,8 @@ select check_name, status from (
               when not exists (select 1 from tables
                                 where coalesce(has_table_privilege('anon', to_regclass('public.' || t), 'select'), true))
                and not exists (select 1 from unnest(array['cfb_lab_current_roles','cfb_lab_official_predictions',
-                                 'cfb_lab_current_results','cfb_lab_current_evaluations','cfb_lab_consensus_now']) v
+                                 'cfb_lab_current_results','cfb_lab_current_evaluations','cfb_lab_consensus_now',
+                                 'cfb_lab_major_disagreements']) v
                                 where coalesce(has_table_privilege('anon', to_regclass('public.' || v), 'select'), true))
               then 'ok' else 'CHECK THIS' end
   union all
@@ -95,6 +96,14 @@ select check_name, status from (
          case when public.cfb_lab_median(array[-3, -3.5]::numeric[]) = -3.25
                and public.cfb_lab_median_price(array[-105, 105]) = 100
                and public.cfb_lab_median_price(array[-110, -105]) = -107
+              then 'ok' else 'CHECK THIS' end
+  union all
+  select 13, 'the major-disagreement verdict: columns on cfb_lab_predictions, their constraints, and the cfb_lab_major_disagreements view',
+         case when (select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'cfb_lab_predictions'
+                     and column_name in ('disagreement_version','disagreement_status','disagreement_tier','verified_market_gap',
+                                         'calibrated_market_gap','disagreement_root_cause','disagreement_checks')) = 7
+               and (select count(*) from pg_constraint where conname in ('cfb_lab_pred_disagreement_status','cfb_lab_pred_verified_gap')) = 2
+               and to_regclass('public.cfb_lab_major_disagreements') is not null
               then 'ok' else 'CHECK THIS' end
 ) x
 order by ord, check_name;

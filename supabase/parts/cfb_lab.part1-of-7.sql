@@ -1,4 +1,4 @@
--- cfb_lab -- part 1 of 6.
+-- cfb_lab -- part 1 of 7.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
@@ -232,6 +232,16 @@ create table if not exists public.cfb_lab_predictions (
   secondary_edge             text,
   primary_uncertainty        text,
   disagreement_summary       text,
+  -- the MAJOR-DISAGREEMENT INTEGRITY GATE's verdict on this snapshot
+  -- (lib/cfb_disagreement.js; docs/cfb-disagreement/DESIGN.md). The raw gap is
+  -- model_market_gap; the verified gap is set only when every check passed.
+  disagreement_version       text,
+  disagreement_status        text,
+  disagreement_tier          text,
+  verified_market_gap        numeric(7,3),
+  calibrated_market_gap      numeric(7,3),
+  disagreement_root_cause    text,
+  disagreement_checks        jsonb,
   inputs_ref                 jsonb not null,
   row_hash                   text not null,
   recorded_at                timestamptz not null default now(),
@@ -267,79 +277,34 @@ create table if not exists public.cfb_lab_predictions (
   constraint cfb_lab_pred_stake check (stake_units >= 0 and (bet_enabled or stake_units = 0)),
   constraint cfb_lab_pred_families check (official_families <@ array['EARLY_MODEL','MIDWEEK_MODEL','OFFICIAL','FINAL_MODEL']::text[]),
   constraint cfb_lab_pred_official check (not ('OFFICIAL' = any (official_families))
-    or (checkpoint_type = 'T24' and origin = 'LIVE'))
+    or (checkpoint_type = 'T24' and origin = 'LIVE')),
+  constraint cfb_lab_pred_disagreement_status check (disagreement_status is null or disagreement_status in
+    ('MARKET_ALIGNED','WORTH_RESEARCHING','INVESTIGATE','MARKET_FAULT','DATA_FAULT','VERIFIED_MAJOR_DISAGREEMENT')),
+  constraint cfb_lab_pred_verified_gap check (verified_market_gap is null
+    or (disagreement_status = 'VERIFIED_MAJOR_DISAGREEMENT' and model_market_gap is not null
+        and abs(verified_market_gap - model_market_gap) < 0.001 and abs(model_market_gap) >= 7))
 );
 comment on table public.cfb_lab_predictions is
   'CFB Model Lab live prediction ledger: one row per model per game per checkpoint (SCHEMA.md §1). Append-only.';
 
--- 2. Market history (SCHEMA.md §2).
-create table if not exists public.cfb_lab_market_quotes (
-  quote_id            text primary key,
-  game_id             text,
-  season              int,
-  week                int,
-  source              text not null,
-  provider_event_id   text,
-  book                text not null,
-  market_type         text not null,
-  home_line           numeric(6,2),
-  total_points        numeric(6,2),
-  price_home          int,
-  price_away          int,
-  price_over          int,
-  price_under         int,
-  observed_at         timestamptz not null,
-  provider_updated_at timestamptz,
-  kickoff_ts          timestamptz,
-  is_heartbeat        boolean not null default false,
-  is_provider_open    boolean not null default false,
-  is_provider_close   boolean not null default false,
-  is_pregame          boolean not null default true,
-  home_team           text,
-  away_team           text,
-  fingerprint         text not null,
-  retrieved_at        timestamptz not null default now(),
-  recorded_at         timestamptz not null default now(),
-  constraint cfb_lab_quote_id_format check (quote_id ~ '^cfbq_[0-9a-f]{24}$'),
-  constraint cfb_lab_quote_source check (source in ('espn','cfbd','odds_api','record')),
-  constraint cfb_lab_quote_market check (market_type in ('spread','total','moneyline')),
-  constraint cfb_lab_quote_book check (length(book) > 0),
-  constraint cfb_lab_quote_game_key check (game_id is not null or provider_event_id is not null),
-  constraint cfb_lab_quote_pregame_before_kickoff check (not is_pregame or kickoff_ts is null or observed_at < kickoff_ts),
-  constraint cfb_lab_quote_pregame_flag check (is_pregame <> is_provider_close),
-  constraint cfb_lab_quote_one_provider_flag check (not (is_provider_open and is_provider_close)),
-  constraint cfb_lab_quote_spread_line check (market_type <> 'spread' or home_line is not null),
-  constraint cfb_lab_quote_total_points check (market_type <> 'total' or total_points is not null),
-  constraint cfb_lab_quote_moneyline_price check (market_type <> 'moneyline' or price_home is not null or price_away is not null)
-);
-comment on table public.cfb_lab_market_quotes is
-  'CFB Model Lab market history: one row per observed change (plus heartbeats) per source, book, game and market (SCHEMA.md §2). Written through cfb_lab_ingest_quotes(). Append-only.';
-
--- 3. Openers and closes (SCHEMA.md §3), written by cfb_lab_derive_lines().
-create table if not exists public.cfb_lab_market_lines (
-  line_id         text primary key,
-  game_id         text not null,
-  kind            text not null,
-  book            text not null,
-  market_type     text not null,
-  home_line       numeric(6,2),
-  total_points    numeric(6,2),
-  price_home      int,
-  price_away      int,
-  observed_at     timestamptz,
-  n_books         int,
-  quality         text not null,
-  best_line_home  numeric(6,2),
-  best_line_away  numeric(6,2),
-  rule_version    text not null,
-  quote_ids       text[],
-  derived_at      timestamptz not null,
-  kickoff_ts      timestamptz,
-  recorded_at     timestamptz not null default now(),
-  constraint cfb_lab_line_id_format check (line_id ~ '^cfbl_[0-9a-f]{24}$'),
-  constraint cfb_lab_line_kind check (kind in ('OPEN','CLOSE')),
-  constraint cfb_lab_line_market check (market_type in ('spread','total','moneyline')),
-  constraint cfb_lab_line_quality check (quality in ('OBSERVED','PROVIDER_DECLARED','MISSING'))
-);
-comment on table public.cfb_lab_market_lines is
-  'CFB Model Lab write-once openers and closes, per book and CONSENSUS (SCHEMA.md §3, METRICS.md §4). A CLOSE is derived at least 3 hours after kickoff.';
+-- 1b. The major-disagreement gate's verdict, added after the first deployment.
+--     Idempotent for a table that predates it; a fresh table already has it.
+alter table public.cfb_lab_predictions add column if not exists disagreement_version text;
+alter table public.cfb_lab_predictions add column if not exists disagreement_status text;
+alter table public.cfb_lab_predictions add column if not exists disagreement_tier text;
+alter table public.cfb_lab_predictions add column if not exists verified_market_gap numeric(7,3);
+alter table public.cfb_lab_predictions add column if not exists calibrated_market_gap numeric(7,3);
+alter table public.cfb_lab_predictions add column if not exists disagreement_root_cause text;
+alter table public.cfb_lab_predictions add column if not exists disagreement_checks jsonb;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'cfb_lab_pred_disagreement_status') then
+    alter table public.cfb_lab_predictions add constraint cfb_lab_pred_disagreement_status check (disagreement_status is null
+      or disagreement_status in ('MARKET_ALIGNED','WORTH_RESEARCHING','INVESTIGATE','MARKET_FAULT','DATA_FAULT','VERIFIED_MAJOR_DISAGREEMENT'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'cfb_lab_pred_verified_gap') then
+    alter table public.cfb_lab_predictions add constraint cfb_lab_pred_verified_gap check (verified_market_gap is null
+      or (disagreement_status = 'VERIFIED_MAJOR_DISAGREEMENT' and model_market_gap is not null
+          and abs(verified_market_gap - model_market_gap) < 0.001 and abs(model_market_gap) >= 7));
+  end if;
+end $$;

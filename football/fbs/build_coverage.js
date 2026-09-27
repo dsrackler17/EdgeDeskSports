@@ -91,6 +91,7 @@ const WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js'));
 const RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
 const EPA = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
 const REL = require(path.join(ROOT, 'lib', 'cfb_reliability.js'));
+const DIS = require(path.join(ROOT, 'lib', 'cfb_disagreement.js'));
 const GE = require(path.join(ROOT, 'lib', 'game_evidence.js'));
 const ROI = require(path.join(ROOT, 'football', 'enrichment', 'roi.js'));
 const AUDIT = require(path.join(ROOT, 'football', 'enrichment', 'audit.js'));
@@ -913,7 +914,24 @@ async function main() {
       evidence_used: !!pkgOf[m.id],
       reliability_potential: rel && rel.potential ? rel.potential.score : null,
       reliability_without_evidence: relBaseOf[m.id] && pkgOf[m.id] ? relBaseOf[m.id].score : null,
-      data_coverage: pkgOf[m.id] && rel ? GE.view(pkgOf[m.id], rel, { home: g.home_team, away: g.away_team }) : null
+      data_coverage: pkgOf[m.id] && rel ? GE.view(pkgOf[m.id], rel, { home: g.home_team, away: g.away_team }) : null,
+      /* THE MAJOR-DISAGREEMENT GATE'S FOOTBALL INPUTS, appended: the engine's
+         additive terms, the rating split (long-term state vs this season, games
+         behind each side), the football-only calibrated shadow margin, and the
+         quarterback and availability states. No market is in here — the Model
+         Lab joins the quote it captured and runs lib/cfb_disagreement.js at
+         every checkpoint, so the verdict is judged against the price of that
+         moment. */
+      disagreement_inputs: (p && p.status === 'PREDICTED') ? (function () {
+        const pr = DIS.fromEngine(p);
+        if (!pr) return null;
+        const av = (side) => { const f = (asm && asm.contract || []).find(x => x.field === 'availability' && x.side === side); return { feed_state: f ? f.state : null }; };
+        const qb = (side) => { const r = asm && asm.starters && asm.starters[side]; return r ? { status: r.status, player: r.player_name,
+          availability: r.availability ? r.availability.state : null, change: false } : null; };
+        return { contract: DIS.version, projection: pr, qb: { home: qb('home'), away: qb('away') },
+          roster: { home: av('home'), away: av('away') }, reliability: rel ? rel.score : null,
+          game: { home_fbs: !!m.home.is_fbs, away_fbs: !!m.away.is_fbs, venue: g.venue || null } };
+      })() : null
     };
   });
   const artifact = {

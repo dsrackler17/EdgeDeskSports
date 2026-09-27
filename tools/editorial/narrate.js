@@ -313,7 +313,8 @@
     /* the vocabulary of the domain, which is not a name */
     ['EdgeDesk Sports', 'Research Not', 'Not Confirmed', 'Partially Confirmed',
       /* the research view's own labels, in title case */
-      'Worth Researching', 'Major Disagreement', 'Market Aligned', 'Low Reliability', 'Limited Data', 'Not Compared'].forEach(function (s) {
+      'Worth Researching', 'Major Disagreement', 'Verified Major Disagreement', 'Investigate', 'Market Fault', 'Data Fault',
+      'Market Aligned', 'Low Reliability', 'Limited Data', 'Not Compared'].forEach(function (s) {
       out[s.toLowerCase()] = true;
       s.split(' ').forEach(function (t) { out[t.toLowerCase()] = true; });
     });

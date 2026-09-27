@@ -204,7 +204,7 @@ section('STEP 3 · one research label on the row, the card, the brief and the sh
   eq(T.fbP4ViewFor(nm.u, nm.p).research_label.key, 'LIMITED_DATA', 'no market line is LIMITED DATA');
   const mj = stageAt(12, { market_spread: -2.5 });
   withCoverage(mj.u, WELL);
-  eq(T.fbP4ViewFor(mj.u, mj.p).research_label.key, 'MAJOR_DISAGREEMENT', 'a 9.5-pt gap is MAJOR DISAGREEMENT');
+  eq(T.fbP4ViewFor(mj.u, mj.p).research_label.key, 'INVESTIGATE', 'a 9.5-pt gap with no integrity-gate result is INVESTIGATE, never verified');
   const al = stageAt(3.1, { market_spread: -2.5 });
   withCoverage(al.u, WELL);
   eq(T.fbP4ViewFor(al.u, al.p).research_label.key, 'MARKET_ALIGNED', 'a 0.6-pt gap is MARKET ALIGNED');
@@ -230,7 +230,11 @@ section('STEP 4 · the card and the row keep the gap, confidence and reliability
   has(rc.rel, '82%', 'and reliability in another');
   has(rc.fair, HOME + ' -12.0', 'the row’s fair line is named for its favourite');
   has(rc.market, HOME + ' -2.5', 'and so is its market line');
-  lacks(T.fbRvGapCell(v, v.market_gap.points), 'rv-dim', 'a gap on good data is not dimmed');
+  has(T.fbRvGapCell(v, v.market_gap.points), 'rv-dim', 'an UNVERIFIED 9.5-pt gap is dimmed even on good data: size alone is never a finding');
+  const ok = stageAt(6, { market_spread: -2.5 });
+  withCoverage(ok.u, WELL);
+  const vok = T.fbP4ViewFor(ok.u, ok.p);
+  lacks(T.fbRvGapCell(vok, vok.market_gap.points), 'rv-dim', 'a worth-researching gap on good data is not dimmed');
 
   /* the same size of gap on weak data looks different */
   const w = stageAt(12, { market_spread: -2.5 });

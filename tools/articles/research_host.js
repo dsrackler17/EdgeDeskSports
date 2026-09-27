@@ -292,6 +292,13 @@ async function open(opts) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_research_view.js'), 'utf8'), win,
       { filename: 'lib/cfb_research_view.js' });
   } catch (e) { log('  research view: ' + (e && e.message)); }
+  /* THE MAJOR-DISAGREEMENT INTEGRITY GATE and its measured parameters, as the
+     page loads them: without them a 7+ gap publishes as INVESTIGATE —
+     VERIFICATION INCOMPLETE (fail closed), never as a verified disagreement */
+  ['football/cfb_p4/margin_calibration.js', 'football/cfb_p4/disagreement_params.js', 'lib/cfb_disagreement.js'].forEach(function (f) {
+    try { vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), win, { filename: f }); }
+    catch (e) { log('  ' + f + ': ' + (e && e.message)); }
+  });
   try {
     const a = boot.app.indexOf('/*__EDINTEL_START__*/'), b = boot.app.indexOf('/*__EDINTEL_END__*/');
     if (a > 0 && b > a) vm.runInContext(boot.app.slice(a, b), win, { filename: 'app.html#EDINTEL' });

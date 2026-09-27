@@ -228,7 +228,8 @@ if (require.main === module) {
   const E = ctx.window.EDLAB;
   chk('EDLAB exposes render and the per-section renderers', E && ['render', 'health', 'thisWeek', 'performance', 'comparison', 'errors', 'edge', 'market', 'governance', 'reconstructed', 'job', 'nav'].every((k) => typeof E[k] === 'function'));
   const IDS = (E && E.SECTIONS || []).map((s) => s[0]);
-  chk('nine sections, in order', IDS.join() === 'health,this-week,performance,comparison,errors,edge,market,governance,reconstructed', IDS);
+  chk('ten sections, in order', IDS.join() === 'health,this-week,performance,comparison,errors,edge,market,disagreement,governance,reconstructed', IDS);
+  chk('the major-disagreement section renders from lab.json', E && typeof E.disagreement === 'function');
 
   /* ---- formatting ------------------------------------------------------------ */
   const F = E.fmt;

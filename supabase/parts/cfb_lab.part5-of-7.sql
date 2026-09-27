@@ -1,4 +1,4 @@
--- cfb_lab -- part 4 of 6.
+-- cfb_lab -- part 5 of 7.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 

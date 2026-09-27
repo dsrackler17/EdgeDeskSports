@@ -22,6 +22,7 @@ const L = require('./lab_core.js');
 const G = require('./ledger.js');
 const GOV = require('./governance.js');
 const I = require('./integrity.js');
+const DISLAB = require('./disagreement.js');
 
 const U = L.util;
 const CFG = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
@@ -560,6 +561,8 @@ function build(store, now) {
     error_analysis: { largest_misses: largestMisses(D, 20), segments, miss_reviews: countBy(D.reviews, 'classification') },
     edge_analysis: Object.fromEntries(models.map((m) => [m, { buckets: perModel[m].buckets, timing: perModel[m].timing, decisions: perModel[m].decisions, near_miss: perModel[m].near_miss, process_outcome: perModel[m].process_outcome }])),
     market_discovery: Object.fromEntries(models.map((m) => [m, perModel[m].official.market])),
+    /* the major-disagreement integrity gate's verdicts, graded (disagreement.js) */
+    major_disagreement: DISLAB.section(D),
     governance: { experiments: Object.values(GOV.experiments(D.experiments)).map((x) => ({ id: x.experiment_id, name: x.experiment_name, baseline: x.baseline_model, challenger: x.challenger_model, scope: x.scope, status: x.status, hypothesis: x.hypothesis, change: x.change, window: x.evaluation_window })),
       audit_tail: D.audit.slice(-25).reverse(), partitions: D.partitions, research_queue: queueState(D.queue) },
     reconstructed: { note: 'GIT_RECONSTRUCTED (V1 numbers recovered from the board\'s git history) and REPLAY (V2 run over past weeks) rows. Evidence of method, never part of the live record or of any promotion decision.', by_model: reconByModel },

@@ -1,4 +1,4 @@
--- cfb_lab -- part 5 of 6.
+-- cfb_lab -- part 6 of 7.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
@@ -99,6 +99,17 @@ create or replace view public.cfb_lab_official_predictions as
 select p.* from public.cfb_lab_predictions p
  where p.checkpoint_type = 'T24' and p.origin = 'LIVE';
 
+-- every snapshot whose raw gap to the market reached 7 points, with the
+-- integrity gate's verdict beside it: the Model Lab's major-disagreement read
+create or replace view public.cfb_lab_major_disagreements as
+select p.prediction_id, p.game_id, p.season, p.week, p.kickoff_ts, p.prediction_ts, p.checkpoint_type, p.origin,
+       p.model_version, p.model_label, p.home_team, p.away_team, p.pure_home_margin, p.current_spread,
+       p.model_market_gap as raw_market_gap, p.verified_market_gap, p.calibrated_market_gap,
+       p.disagreement_status, p.disagreement_tier, p.disagreement_root_cause, p.disagreement_checks,
+       p.sportsbook_count, p.market_dispersion, p.market_as_of, p.market_stale
+  from public.cfb_lab_predictions p
+ where p.model_market_gap is not null and abs(p.model_market_gap) >= 7;
+
 create or replace view public.cfb_lab_current_results as
 select distinct on (r.game_id) r.*
   from public.cfb_lab_results r
@@ -197,7 +208,7 @@ do $blk$
 declare v text;
 begin
   foreach v in array array['cfb_lab_current_roles','cfb_lab_official_predictions','cfb_lab_current_results',
-    'cfb_lab_current_evaluations','cfb_lab_consensus_now']
+    'cfb_lab_current_evaluations','cfb_lab_consensus_now','cfb_lab_major_disagreements']
   loop
     execute format('alter view public.%I set (security_invoker = true)', v);
     execute format('revoke all on public.%I from public', v);

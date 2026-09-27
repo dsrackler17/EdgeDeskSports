@@ -151,7 +151,7 @@ try {
   chk('it applies a second time without error, still all ok', !/CHECK THIS/.test(r2), r2.split('\n').filter((l) => /CHECK THIS/.test(l)));
   const r3 = psql(SQL, { command: true });
   chk('and a third time as ONE string in one round trip (the SQL editor), still all ok', !/CHECK THIS/.test(r3) && /\|ok$/m.test(r3), r3.slice(-300));
-  chk('the report has a row per table plus the checks', (r2.match(/\|ok$/gm) || []).length === 24, (r2.match(/\|ok$/gm) || []).length);
+  chk('the report has a row per table plus the checks', (r2.match(/\|ok$/gm) || []).length === 25, (r2.match(/\|ok$/gm) || []).length);
 
   /* the pre-split parts (supabase/parts), pasted one at a time in order, build the same contract */
   const PARTS = path.join(ROOT, 'supabase', 'parts');
@@ -161,7 +161,7 @@ try {
     psql(SHIM, { db: 'cfb_parts' });
     let lastOut = '';
     for (const f of parts) lastOut = psql(fs.readFileSync(path.join(PARTS, f), 'utf8'), { db: 'cfb_parts', command: true });
-    chk('the ' + parts.length + ' parts in supabase/parts, pasted in order, end in the same all-ok report', (lastOut.match(/\|ok$/gm) || []).length === 24 && !/CHECK THIS/.test(lastOut), lastOut.slice(-300));
+    chk('the ' + parts.length + ' parts in supabase/parts, pasted in order, end in the same all-ok report', (lastOut.match(/\|ok$/gm) || []).length === 25 && !/CHECK THIS/.test(lastOut), lastOut.slice(-300));
   }
 
   /* ---------------------------------------------------- rendering and ids */
@@ -363,6 +363,17 @@ try {
   const P = prediction({});
   ins('cfb_lab_predictions', P, { role: 'service_role' });
   chk('a valid OFFICIAL prediction is recorded by the service role', psql(`select count(*) from public.cfb_lab_predictions where prediction_id = '${P.prediction_id}'`) === '1');
+  /* a VERIFIED 7+ snapshot carries its verified gap and shows in the Model
+     Lab's major-disagreement view, beside the raw gap */
+  const PV = prediction({ game_id: 'pr_gv', checkpoint_type: 'T6', official_families: [], prediction_ts: '2025-10-04T13:00:00.000Z',
+    prediction_id: 'cfbp_' + 'ab'.repeat(12), model_market_gap: 9.5, current_spread: 6, disagreement_version: 'cfb_disagreement/1',
+    disagreement_status: 'VERIFIED_MAJOR_DISAGREEMENT', disagreement_tier: 'MAJOR_7', verified_market_gap: 9.5, calibrated_market_gap: 8.8,
+    disagreement_root_cause: 'VALID_MODEL_DISAGREEMENT', disagreement_checks: { failed: [], incomplete: [] } });
+  ins('cfb_lab_predictions', PV, { role: 'service_role' });
+  chk('a VERIFIED 9.5-pt snapshot is recorded with its verified gap',
+    psql(`select verified_market_gap || '|' || disagreement_status from public.cfb_lab_predictions where prediction_id = '${PV.prediction_id}'`) === '9.500|VERIFIED_MAJOR_DISAGREEMENT');
+  chk('and appears in cfb_lab_major_disagreements with the raw gap beside it',
+    psql(`select raw_market_gap || '|' || verified_market_gap from public.cfb_lab_major_disagreements where prediction_id = '${PV.prediction_id}'`) === '9.500|9.500');
   const tryPred = (over) => mustFail(`insert into public.cfb_lab_predictions select * from jsonb_populate_record(jsonb_populate_record(null::public.cfb_lab_predictions, jsonb_build_object('recorded_at', now())), ${J(prediction(over))})`, { role: 'service_role' });
   const bad = [
     ['a prediction taken after kickoff', { checkpoint_type: 'T2', official_families: [], prediction_ts: '2025-10-04T20:00:00.000Z', hours_to_kickoff: 0.5 }, /cfb_lab_pred_pregame|cfb_lab_pred_hours/],
@@ -388,6 +399,12 @@ try {
     ['an unknown decision class', { checkpoint_type: 'T12', official_families: [], prediction_ts: '2025-10-04T09:30:00.000Z', decision_class: 'STRONG BET' }, /cfb_lab_pred_decision_class/],
     ['an unknown checkpoint', { checkpoint_type: 'T36', official_families: [], prediction_ts: '2025-10-04T09:30:00.000Z' }, /cfb_lab_pred_checkpoint/],
     ['an unknown origin', { origin: 'BACKFILL', checkpoint_type: 'T12', official_families: [], prediction_ts: '2025-10-04T09:30:00.000Z' }, /cfb_lab_pred_origin/],
+    /* the major-disagreement verdict: a verified gap exists only on a VERIFIED
+       7+ snapshot and is exactly the raw gap; nothing else can carry one */
+    ['an unknown disagreement status (the retired MAJOR_DISAGREEMENT)', { checkpoint_type: 'T12', official_families: [], prediction_ts: '2025-10-04T09:30:00.000Z', model_market_gap: 9, disagreement_status: 'MAJOR_DISAGREEMENT' }, /cfb_lab_pred_disagreement_status/],
+    ['a verified gap on an INVESTIGATE snapshot', { checkpoint_type: 'T12', official_families: [], prediction_ts: '2025-10-04T09:30:00.000Z', model_market_gap: 9, disagreement_status: 'INVESTIGATE', verified_market_gap: 9 }, /cfb_lab_pred_verified_gap/],
+    ['a verified gap that is not the raw gap', { checkpoint_type: 'T12', official_families: [], prediction_ts: '2025-10-04T09:30:00.000Z', model_market_gap: 9, disagreement_status: 'VERIFIED_MAJOR_DISAGREEMENT', verified_market_gap: 11 }, /cfb_lab_pred_verified_gap/],
+    ['a verified gap under 7 points', { checkpoint_type: 'T12', official_families: [], prediction_ts: '2025-10-04T09:30:00.000Z', model_market_gap: 5, disagreement_status: 'VERIFIED_MAJOR_DISAGREEMENT', verified_market_gap: 5 }, /cfb_lab_pred_verified_gap/],
   ];
   for (const [name, over, re] of bad) {
     err = tryPred(over);
