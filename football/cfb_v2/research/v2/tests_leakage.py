@@ -403,9 +403,20 @@ def artifact_live_path_reproduces_backtest():
     if not f or not os.path.exists(cur):
         return 'skipped (no artifact)'
     import json as _j
-    L = pd.DataFrame(_j.load(open(cur))['rows'])
+    cj = _j.load(open(cur))
+    L = pd.DataFrame(cj['rows'])
     if L.empty:
         return 'skipped (no upcoming rows)'
+    # the same model on the same data rules, or the comparison means nothing (audit F-02: rows are
+    # compared under the version that produced them)
+    rp = _art(('report', 'backtest.json'))
+    built = _j.load(open(rp)).get('model_version') if rp else None
+    if built and cj.get('model_version') != built:
+        return 'skipped (current.json is %s, this build is %s)' % (cj.get('model_version'), built)
+    rules = {(x.get('build') or {}).get('finality_rule') for x in cj['rows']} - {None}
+    stamp = common.build_stamp() or {}
+    if rules and rules != {((stamp.get('stages') or {}).get('stage2') or {}).get('finality_rule')}:
+        return 'skipped (current.json was built under finality rule %s)' % sorted(rules)
     B = pd.read_parquet(f, columns=['game_id', 'season', 'ens_pred', 'sigma'])
     j = L.merge(B[B.season.eq(int(L.season.iloc[0]))], on='game_id', suffixes=('_l', '_b'))
     if j.empty:
