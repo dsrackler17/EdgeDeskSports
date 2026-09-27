@@ -25,7 +25,9 @@ QUOTES:
                    (spread_open_pin is null in every season). Pinnacle's CLOSE
                    (2012-2019) is kept on the outcome side only.
   LIVE_BOOK_QUOTE  2026: the Model Lab's pregame sportsbook quotes, real
-                   observed_at timestamps, NO prices -> EV not computable.
+                   observed_at timestamps; the price only when it was CAPTURED
+                   (none before week 5) -> otherwise EV is not computable.
+                   Provider-declared openers feed live line movement only.
   LIVE_CFBD_OPEN   2026: the CFBD provider-mean opener (no timestamp, no price).
   NONE             a snapshot with no quote (all of 2020; missing openers): the
                    pure side is still recorded for football-only analysis.
@@ -164,10 +166,19 @@ def load_ledger():
     Q = pd.DataFrame(Q)
     L = pd.DataFrame(L)
     R = pd.DataFrame(R)
+    sp = Q[Q.market_type.eq('spread')]
+    two = sp[sp.price_home.notna() & sp.price_away.notna()]
     info = {'quotes_total': int(len(Q)), 'quotes_spread': int(Q.market_type.eq('spread').sum()),
+            'spread_quotes_two_sided_price': int(len(two)),
+            'priced_spread_books': sorted(two.book.dropna().unique().tolist()),
+            'priced_spread_weeks': sorted(int(w) for w in two.week.dropna().unique()),
+            'first_priced_observed_at': str(two.observed_at.min()) if len(two) else None,
+            'priced_spread_games': int(two.game_id.nunique()),
+            'weeks': sorted(int(w) for w in Q.week.dropna().unique()),
             'books': sorted(Q.book.dropna().unique().tolist()),
             'quotes_with_any_price': int(Q[['price_home', 'price_away', 'price_over', 'price_under']].notna().any(axis=1).sum()),
-            'pregame_spread_quotes': int((Q.market_type.eq('spread') & Q.is_pregame).sum()),
+            'pregame_spread_quotes': int((Q.market_type.eq('spread') & Q.is_pregame & ~Q.is_provider_open).sum()),
+            'provider_open_spread_quotes': int((Q.market_type.eq('spread') & Q.is_provider_open).sum()),
             'provider_close_spread_quotes': int((Q.market_type.eq('spread') & Q.is_provider_close).sum())}
     return Q, L, R, info
 
@@ -235,8 +246,8 @@ def build(write=True, verbose=True):
     q['book'] = 'CONSENSUS'
     q['quote_line_margin'] = q.open_margin
     q['price_source'] = core.PRICE_SOURCE_ASSUMED
-    q['price_side_american'] = float(core.ASSUMED_PRICE)
-    q['price_other_american'] = float(core.ASSUMED_PRICE)
+    q['quote_price_home'] = float(core.ASSUMED_PRICE)
+    q['quote_price_away'] = float(core.ASSUMED_PRICE)
     q['quote_observed_at'] = pd.NaT
     q['decision_ts'] = q.prediction_ts
     q['close_line_margin'] = q.close_margin
@@ -256,8 +267,8 @@ def build(write=True, verbose=True):
         b['quote_role'] = 'BOOK_OPEN'
         b['quote_line_margin'] = b.book_open_margin
         b['price_source'] = core.PRICE_SOURCE_ASSUMED
-        b['price_side_american'] = float(core.ASSUMED_PRICE)
-        b['price_other_american'] = float(core.ASSUMED_PRICE)
+        b['quote_price_home'] = float(core.ASSUMED_PRICE)
+        b['quote_price_away'] = float(core.ASSUMED_PRICE)
         b['quote_observed_at'] = pd.NaT
         b['decision_ts'] = b.prediction_ts
         b['close_line_margin'] = b.close_margin
@@ -268,37 +279,45 @@ def build(write=True, verbose=True):
     # ---------------- live 2026
     Q, L, R, ledger_info = load_ledger()
     live = X[X.season.eq(C.LIVE_SEASON)]
-    lq = Q[Q.market_type.eq('spread') & Q.is_pregame.astype(bool) & Q.home_line.notna()].copy()
-    lq['game_id'] = lq.game_id.astype('int64')
-    lq['obs'] = pd.to_datetime(lq.observed_at, utc=True)
-    lq = lq[['game_id', 'book', 'home_line', 'obs', 'quote_id']].merge(live, on='game_id', how='inner')
-    lq = lq[lq.obs < lq.kickoff_ts]                                   # point in time: before kickoff
+    sp = Q[Q.market_type.eq('spread') & Q.home_line.notna()].copy()
+    sp['game_id'] = sp.game_id.astype('int64')
+    sp['obs'] = pd.to_datetime(sp.observed_at, utc=True)
+    # the provider's declared OPENER per (game, book): never a decision quote itself (its observed_at is the
+    # retrieval time, not the posting time), used only for live line movement
+    po = sp[sp.is_provider_open.astype(bool)].sort_values('obs').drop_duplicates(['game_id', 'book'], keep='first')
+    po = po.set_index(['game_id', 'book']).home_line
+    lq = sp[sp.is_pregame.astype(bool) & ~sp.is_provider_open.astype(bool) & ~sp.is_provider_close.astype(bool)]
+    lq = lq[['game_id', 'book', 'home_line', 'obs', 'quote_id', 'price_home', 'price_away']].merge(live, on='game_id', how='inner')
+    lq = lq[lq.obs < lq.kickoff_ts].copy()                            # point in time: before kickoff
     close = L[L.kind.eq('CLOSE') & L.market_type.eq('spread') & L.home_line.notna()].copy()
     close['game_id'] = close.game_id.astype('int64')
     close = close.drop_duplicates('game_id', keep='last').set_index('game_id')
     lq['quote_role'] = 'LIVE_BOOK_QUOTE'
     lq['quote_line_margin'] = -lq.home_line.astype(float)          # BOOK -> INTERNAL, once
-    lq['price_source'] = core.PRICE_SOURCE_NONE
-    lq['price_side_american'] = np.nan
-    lq['price_other_american'] = np.nan
+    lq['quote_price_home'] = pd.to_numeric(lq.price_home, errors='coerce').astype(float)
+    lq['quote_price_away'] = pd.to_numeric(lq.price_away, errors='coerce').astype(float)
+    npr = lq.quote_price_home.notna().astype(int) + lq.quote_price_away.notna().astype(int)
+    lq['price_source'] = np.where(npr == 2, core.PRICE_SOURCE_CAPTURED,
+                                  np.where(npr == 1, core.PRICE_SOURCE_ONE_SIDED, core.PRICE_SOURCE_NONE))
+    lq['live_open_line_margin'] = [-float(po[(g, b)]) if (g, b) in po.index else np.nan for g, b in zip(lq.game_id, lq.book)]
     lq['quote_observed_at'] = lq.obs
     lq['decision_ts'] = np.maximum(lq.obs.values, lq.prediction_ts.values)
     lq['close_line_margin'] = -lq.game_id.map(close.home_line).astype(float)
     lq['close_source'] = 'LEDGER_PROVIDER_DECLARED_CLOSE'
     lq['archive_open_price_home'] = np.nan
     lq['archive_open_price_away'] = np.nan
-    lq['quote_id'] = lq['quote_id']
-    keep = list(live.columns) + ['quote_role', 'book', 'quote_line_margin', 'price_source', 'price_side_american',
-                                 'price_other_american', 'quote_observed_at', 'decision_ts', 'close_line_margin',
-                                 'close_source', 'archive_open_price_home', 'archive_open_price_away', 'quote_id']
+    keep = list(live.columns) + ['quote_role', 'book', 'quote_line_margin', 'price_source', 'quote_price_home',
+                                 'quote_price_away', 'quote_observed_at', 'decision_ts', 'close_line_margin',
+                                 'close_source', 'archive_open_price_home', 'archive_open_price_away', 'quote_id',
+                                 'live_open_line_margin']
     rows.append(lq[keep])
     lc = live[live.open_margin.notna()].copy()
     lc['quote_role'] = 'LIVE_CFBD_OPEN'
     lc['book'] = 'CFBD_PROVIDER_MEAN'
     lc['quote_line_margin'] = lc.open_margin
     lc['price_source'] = core.PRICE_SOURCE_NONE
-    lc['price_side_american'] = np.nan
-    lc['price_other_american'] = np.nan
+    lc['quote_price_home'] = np.nan
+    lc['quote_price_away'] = np.nan
     lc['quote_observed_at'] = pd.NaT
     lc['decision_ts'] = lc.prediction_ts
     lc['close_line_margin'] = lc.close_margin
@@ -311,7 +330,7 @@ def build(write=True, verbose=True):
     nq = X[~X.game_id.isin(quoted)].copy()
     nq['quote_role'] = 'NONE'
     nq['book'] = None
-    for c in ('quote_line_margin', 'price_side_american', 'price_other_american', 'close_line_margin',
+    for c in ('quote_line_margin', 'quote_price_home', 'quote_price_away', 'close_line_margin',
               'archive_open_price_home', 'archive_open_price_away'):
         nq[c] = np.nan
     nq['price_source'] = None
@@ -383,10 +402,16 @@ def derive(Dd, ptab):
     Dd['archive_book_count'] = Dd.spread_books
     Dd['market_dispersion_close'] = Dd.spread_close_sd
     Dd['total_line'] = Dd.total_open.where(Dd.quote_role.ne('NONE'))
-    Dd['line_move_at_decision'] = np.nan                  # no intermediate line history anywhere
     Dd['market_maturity_hours'] = np.nan                  # no opener timestamps anywhere
-    Dd['quote_age_min'] = np.where(Dd.quote_role.eq('LIVE_BOOK_QUOTE'), 0.0, np.nan)
+    age = (pd.to_datetime(Dd.decision_ts, utc=True) - pd.to_datetime(Dd.quote_observed_at, utc=True)).dt.total_seconds() / 60.0
+    Dd['quote_age_min'] = np.where(Dd.quote_role.eq('LIVE_BOOK_QUOTE'), age, np.nan)
     Dd['hours_to_kickoff'] = (Dd.kickoff_ts - pd.to_datetime(Dd.decision_ts, utc=True)).dt.total_seconds() / 3600.0
+    ph_, pa_ = Dd.quote_price_home.astype(float).values, Dd.quote_price_away.astype(float).values
+    Dd['price_side_american'] = np.where(side_ok, np.where(side_home, ph_, pa_), np.nan)
+    Dd['price_other_american'] = np.where(side_ok, np.where(side_home, pa_, ph_), np.nan)
+    if 'live_open_line_margin' not in Dd:
+        Dd['live_open_line_margin'] = np.nan
+    Dd['line_move_at_decision'] = Dd.quote_line_margin - Dd.live_open_line_margin     # live only (home-margin change)
     ps = Dd.price_side_american.values.astype(float)
     po = Dd.price_other_american.values.astype(float)
     Dd['break_even_prob'] = core.break_even(ps)
@@ -417,6 +442,8 @@ def derive(Dd, ptab):
     Dd['is_push'] = np.where(np.isfinite(res), (res == 0).astype(float), np.nan)
     assumed = Dd.price_source.eq(core.PRICE_SOURCE_ASSUMED).values
     Dd['units_assumed_110'] = np.where(assumed, core.units(res, core.ASSUMED_PRICE), np.nan)
+    captured = Dd.price_source.isin([core.PRICE_SOURCE_CAPTURED, core.PRICE_SOURCE_ONE_SIDED]).values & np.isfinite(ps)
+    Dd['units_captured_price'] = np.where(captured & np.isfinite(res), core.units(res, np.nan_to_num(ps, nan=-110)), np.nan)
     aps = Dd.archive_open_price_side.values.astype(float)
     Dd['units_archive_price'] = np.where(np.isfinite(aps) & np.isfinite(res),
                                          core.units(res, np.nan_to_num(aps, nan=-110)), np.nan)
@@ -513,9 +540,11 @@ DICTIONARY = [
     ('quote_home_line', 'market', 'the same number in BOOK convention (home line)'),
     ('abs_line', 'market', '|quote_line_margin| (points)'),
     ('total_line', 'market', 'the opening total (points) where the archive has one; null live'),
-    ('price_source', 'market', 'ASSUMED_-110 (historical study only, labelled) | NONE (live: no price captured, EV not computable)'),
-    ('price_side_american', 'market', 'American price of the side taken at the decision (-110 ASSUMED historically; null live)'),
-    ('price_other_american', 'market', 'American price of the other side (-110 ASSUMED historically; null live)'),
+    ('price_source', 'market', 'ASSUMED_-110 (historical study only, labelled) | CAPTURED (live: both sides\' prices observed with the quote) | CAPTURED_ONE_SIDED | NONE (live: no price captured -> EV not computable, never assumed)'),
+    ('quote_price_home', 'market', 'American price of the HOME side of the quote (-110 ASSUMED historically; the captured price live; null when not captured)'),
+    ('quote_price_away', 'market', 'American price of the AWAY side of the quote (same conventions)'),
+    ('price_side_american', 'market', 'American price of the side taken (quote_price_home/away oriented to the side)'),
+    ('price_other_american', 'market', 'American price of the other side'),
     ('archive_open_price_home', 'market', 'the raw archive\'s own OPENING price for the home side, 2012-2019 only, where the consensus opener IS the single book\'s (5Dimes) opener; sensitivity check of the -110 assumption'),
     ('archive_open_price_away', 'market', 'the same for the away side'),
     ('archive_open_price_side', 'market', 'archive opening price of the side taken'),
@@ -530,8 +559,9 @@ DICTIONARY = [
     ('quote_observed_at', 'market', 'when the quote was observed (live only; historical openers carry no timestamp)'),
     ('decision_ts', 'market', 'max(prediction_ts, quote_observed_at): the earliest instant the decision could be made'),
     ('hours_to_kickoff', 'market', 'kickoff - decision_ts (hours)'),
-    ('quote_age_min', 'market', 'quote age at decision (minutes): 0 for a live quote decided when observed; null historically'),
-    ('line_move_at_decision', 'market', 'line movement from open to the decision quote: NULL everywhere — the archive has the opener and close only, and live quotes have no opener timestamp'),
+    ('quote_age_min', 'market', 'quote age at decision (minutes) = decision_ts - quote_observed_at: 0 when the quote arrives after the snapshot, positive when the snapshot is later than the quote; null historically'),
+    ('live_open_line_margin', 'market', 'live only: the same book\'s provider-declared OPENER (internal convention), when the ledger carries one'),
+    ('line_move_at_decision', 'market', 'home-margin move from the same book\'s provider opener to the decision quote (quote - opener). LIVE ONLY: the archive has the opener and close only, so it is null historically'),
     ('market_maturity_hours', 'market', 'hours since the opener was posted: NULL everywhere (no opener timestamps exist)'),
     # ------------------------------------------------------------ decision
     ('gap_home_pts', 'decision', 'pure_margin - quote_line_margin (+ = the model likes HOME against this quote)'),
@@ -558,6 +588,7 @@ DICTIONARY = [
     ('ats_win', 'outcome', '1 win, 0 loss, null push'),
     ('is_push', 'outcome', '1 if the margin landed on the line'),
     ('units_assumed_110', 'outcome', 'units at the ASSUMED -110 (+0.9091 / -1 / 0): historical rows only; null live'),
+    ('units_captured_price', 'outcome', 'units at the CAPTURED live price (live priced rows, once final)'),
     ('units_archive_price', 'outcome', 'units at the archive\'s own opening price (2016-2019 sensitivity only)'),
     ('close_line_margin', 'outcome', 'closing line, internal convention (archive consensus close; ledger provider close live)'),
     ('close_home_line', 'outcome', 'closing line, book convention'),
@@ -607,6 +638,9 @@ def summarize(Dd, ledger_info, per_book, ptab):
             'consensus_open_by_season_fbs': by_season, 'ledger': ledger_info,
             'pinnacle_open_rows': int(Dd.spread_open_pin.notna().sum()) if 'spread_open_pin' in Dd else 0,
             'fcs_rows_excluded_from_pricing': int(Dd.fcs_game.astype(bool).sum()),
+            'live_priced_rows': int(Dd.price_source.eq(core.PRICE_SOURCE_CAPTURED).sum()),
+            'live_priced_rows_final': int((Dd.price_source.eq(core.PRICE_SOURCE_CAPTURED) & Dd.status.eq('FINAL')).sum()),
+            'live_rows_with_line_move': int(Dd.line_move_at_decision.notna().sum()),
             'push_table_frozen_2014_2023': ptab.get(min(C.HOLDOUT_SEASONS)),
             'seasons': sorted(int(s) for s in Dd.season.unique())}
 
@@ -636,8 +670,10 @@ def write_dictionary_md(Dd, S):
              'Openers are normally posted before Tuesday, so the freeze may already face a moved line (REDTEAM section 15, '
              '"Edge decay"): historical opener results are an optimistic fill, and the close is the pessimistic check.')
     L.append('- **Live 2026 quotes** carry real `observed_at` timestamps (decision_ts = max(prediction_ts, observed_at); only '
-             'quotes observed before kickoff) and **no prices**, so `break_even_prob`, `theoretical_ev` and every EV are null: '
-             'a price is never assumed in a live decision.')
+             'quotes observed before kickoff). A price is used only when it was CAPTURED with the quote (`price_source = '
+             'CAPTURED`); otherwise `break_even_prob`, `theoretical_ev` and every EV are null — a price is never assumed in a '
+             'live decision. At this build: %d live rows carry a captured two-sided price (%d of them final).'
+             % (S['live_priced_rows'], S['live_priced_rows_final']))
     L.append('- **FBS vs FBS only for pricing.** FCS games stay in the file (`pricing_scope = FCS_EXCLUDED`, %d rows) and are excluded '
              'from every decision fit and table.' % S['fcs_rows_excluded_from_pricing'])
     L.append('')
@@ -666,17 +702,23 @@ def write_dictionary_md(Dd, S):
     for s in sorted(ss):
         v = ss[s]
         L.append('| %d | %d | %d | %s | %d | %d | %d |' % (s, v['fbs_consensus_open_rows'], v['with_pure_cover_prob'],
-                                                         ', '.join(v['opener_books']) or '—', v['archive_open_price_rows'],
+                                                         ', '.join(v['opener_books']).replace('|', ' + ') or '—', v['archive_open_price_rows'],
                                                          v['archive_price_is_-110_both_sides'], v['review_route']))
     lg = S['ledger']
     L.append('')
-    L.append('- **Live Model Lab ledger (2026):** %d quotes (%d spread), books: %s, quotes with any price: **%d**. Of the spread '
-             'quotes, %d are pregame (observed before kickoff) and %d are provider-declared closes (observed after kickoff: '
-             'outcome side only). There is essentially no priced, per-book, timestamped data yet.'
-             % (lg['quotes_total'], lg['quotes_spread'], ', '.join(lg['books']), lg['quotes_with_any_price'],
-                lg['pregame_spread_quotes'], lg['provider_close_spread_quotes']))
-    L.append('- **Line movement, market maturity and freshness** (`line_move_at_decision`, `market_maturity_hours`) are null '
-             'everywhere: the archive has only the opener and the close, and live quotes have no opener timestamp.')
+    L.append('- **Live Model Lab ledger (2026, weeks %s):** %d quotes (%d spread), books: %s. Spread quotes with a two-sided '
+             'price: **%d** (books %s, weeks %s, first captured %s, %d games). Of the spread quotes, %d are pregame current '
+             'quotes, %d provider-declared openers (live line movement only) and %d provider-declared closes (observed after '
+             'kickoff: outcome side only). Priced, per-book, timestamped data has only just begun: it is one book, one week, '
+             'and none of the priced games had been played at this build — nothing can be validated on it yet.'
+             % (', '.join(str(w) for w in lg['weeks']), lg['quotes_total'], lg['quotes_spread'], ', '.join(lg['books']),
+                lg['spread_quotes_two_sided_price'], ', '.join(lg['priced_spread_books']) or '—',
+                ', '.join(str(w) for w in lg['priced_spread_weeks']) or '—', lg['first_priced_observed_at'],
+                lg['priced_spread_games'], lg['pregame_spread_quotes'], lg['provider_open_spread_quotes'],
+                lg['provider_close_spread_quotes']))
+    L.append('- **Line movement, market maturity and freshness** are null historically: the archive has only the opener and '
+             'the close. Live, `line_move_at_decision` exists where the ledger carries the same book\'s provider opener (%d rows); '
+             '`market_maturity_hours` is null everywhere (no opener carries a posting time).' % S['live_rows_with_line_move'])
     L.append('- **Close-time columns are never decision inputs:** `market_dispersion_close` (closing SD across books) and '
              '`archive_book_count` (books in the archive, counted as of the close, era-confounded) are kept for diagnostics.')
     L.append('')

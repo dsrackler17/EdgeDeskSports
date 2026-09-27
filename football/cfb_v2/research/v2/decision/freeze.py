@@ -138,8 +138,11 @@ def fixture_cases(A, Wd):
     for lo, hi in ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 7), (7, 10), (10, 14)):
         s = dev[(dev.abs_gap_pts >= lo) & (dev.abs_gap_pts < hi)]
         picks += list(s.iloc[rng.choice(len(s), size=min(3, len(s)), replace=False)].index)
-    live = D[D.window.eq('live') & D.quote_role.eq('LIVE_BOOK_QUOTE') & D.pure_cover_prob.notna()].sort_values('decision_row_id')
-    lp = list(live.index[:: max(1, len(live) // 5)][:5])
+    live = D[D.window.eq('live') & D.quote_role.eq('LIVE_BOOK_QUOTE') & D.pure_cover_prob.notna()
+             & D.pricing_scope.eq('FBS_FBS')].sort_values('decision_row_id')
+    lpr = live[live.price_source.eq(core.PRICE_SOURCE_CAPTURED)]
+    lnp = live[~live.price_source.eq(core.PRICE_SOURCE_CAPTURED)]
+    lp = list(lpr.index[:: max(1, len(lpr) // 4)][:4]) + list(lnp.index[:: max(1, len(lnp) // 3)][:3])
 
     def row_inputs(rr, price_home, price_away):
         return {'pure_margin': float(rr.pure_margin), 'sigma': float(rr.sigma), 't_df': float(rr.t_df),
@@ -157,8 +160,12 @@ def fixture_cases(A, Wd):
                       row_inputs(rr, -110.0, -110.0)))
     for i in lp:
         rr = D.loc[i]
-        cases.append(('live_%s' % rr.decision_row_id, 'LIVE 2026 quote: no price captured -> EV, break-even and edge are null',
-                      row_inputs(rr, None, None)))
+        ph = float(rr.quote_price_home) if np.isfinite(rr.quote_price_home) else None
+        pa = float(rr.quote_price_away) if np.isfinite(rr.quote_price_away) else None
+        note = ('LIVE 2026 quote with a CAPTURED two-sided price (%s): real break-even, de-vigged market probability' % rr.book
+                if ph is not None and pa is not None else
+                'LIVE 2026 quote: no price captured -> EV, break-even and edge are null (never assumed)')
+        cases.append(('live_%s' % rr.decision_row_id, note, row_inputs(rr, ph, pa)))
     base = {'pure_margin': 7.0, 'sigma': 16.5, 't_df': 100.0, 'home_line': -3.0, 'price_home': -110.0, 'price_away': -110.0,
             'ens_sd': 1.2, 'reliability': 70.0, 'week': 8, 'early_season': 0.0, 'qb_missing': 0.0, 'qb_unsettled': 0.0,
             'total_line': 55.5, 'books': 5.0, 'dispersion': 0.5}
@@ -314,12 +321,22 @@ def main(W, Wd, s5, s10, s19, s24, s4, cond, s14, s33, s20, ps, summary):
            'fit_window': 'DEV 2016-2023 (priced 2017-2019, 2021-2023; 2020 has no openers)',
            'holdout_scored': False,
            'holdout_rule': 'the policy agent applies this frozen artifact to 2024 AND 2025 once, after its thresholds are frozen; nothing is refit',
-           'live': 'no priced live quote exists yet: every live EV is null'}
+           'live': live_note()}
     with open(os.path.join(ART_DIR, 'MANIFEST.json'), 'w') as f:
         json.dump(man, f, indent=1, sort_keys=True)
         f.write('\n')
     print('[freeze] wrote', ART_DIR, 'and', FIXTURE, '(%d cases)' % len(fx))
     return A
+
+
+def live_note():
+    S = json.load(open(os.path.join(DS.out_dir(), 'dataset_summary.json')))
+    lg = S['ledger']
+    return ('live quotes are priced only when the price was CAPTURED (never assumed). At this build the 2026 ledger has %d '
+            'spread quotes with a two-sided price (books %s, weeks %s; %d dataset rows priced, %d of them final); every '
+            'other live row has a null EV. Nothing in this artifact is fit on live data.'
+            % (lg['spread_quotes_two_sided_price'], lg['priced_spread_books'], lg['priced_spread_weeks'],
+               S['live_priced_rows'], S['live_priced_rows_final']))
 
 
 def _js(o):

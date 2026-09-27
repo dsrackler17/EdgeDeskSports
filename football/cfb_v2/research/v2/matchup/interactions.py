@@ -65,7 +65,7 @@ FAMILIES = {
     'short_yardage': ['edge_sy_conv', 'xm_sy_conv'],
     'play_select': ['resp_corr', 'proe_resp_corr'],
     'drive_model': ['drive_div'],
-    'personnel': ['inexp_x_rush', 'qbchg_x_havoc'],
+    'personnel': ['inexp_x_rush', 'qbchg_x_havoc', 'inexp_x_pd_burden'],
     'environment': ['alt_x_tempo', 'tz_x_tempo', 'home_x_sack', 'home_x_tempo'],
     'v2_existing': ['match_mix_edge', 'match_trench_edge', 'match_havoc_edge', 'match_sack_edge',
                     'match_explosive_edge', 'match_early_down_edge', 'match_passing_down_edge',
@@ -81,6 +81,7 @@ NARRATIVES = {
     'run teams shorten games / slow games help the underdog': 'poss_x_strength',
     'teams struggle against unfamiliar schemes': 'fam_edge',
     'a backup QB against a high-havoc defense': 'qbchg_x_havoc',
+    'a low-experience QB with a heavy passing-down burden underperforms': 'inexp_x_pd_burden',
     'offenses that attack the defense\'s weaker phase (pass vs run) gain beyond strength': 'mix_exploit',
     'strong finishing offense vs poor finishing defense': 'xm_pts_per_opp',
     'fast tempo teams wilt at altitude': 'alt_x_tempo',
@@ -232,6 +233,10 @@ def season_features(g, S):
     inexp = lambda o: -(g['%s_qb_exp_db_log' % o].fillna(0.0) - 5.0) / 1.5
     F['inexp_x_rush'] = _hma(lambda o, d: -_relu(inexp(o)) * _relu(-z.v2(d, 'def', 'sack_rate')))
     F['qbchg_x_havoc'] = _hma(lambda o, d: -g['%s_qb_changed' % o].fillna(0.0) * _relu(-z.v2(d, 'def', 'havoc')))
+    # QB x scheme fit (brief 26): an inexperienced QB in an offense that will often face passing downs
+    # (long 3rd downs vs this defense); the narrative predicts a POSITIVE coefficient on this (<= 0) term
+    F['inexp_x_pd_burden'] = _hma(lambda o, d: -_relu(inexp(o)) * _relu(-(z.s(o, 'off', 'third_dist')
+                                                                          + z.s(d, 'def', 'third_dist'))))
     # ---------------------------------------------------------------- environment (no weather: no forecasts)
     away_fast = -z.s('a', 'off', 'tempo')           # + = away offense plays fast
     F['alt_x_tempo'] = g['altitude_kft'] * away_fast if 'altitude_kft' in g else (g['altitude_diff_ft'].fillna(0) / 1000.0) * away_fast
@@ -269,6 +274,10 @@ def season_features(g, S):
 def build(X):
     """Interaction features for every row of X (a V2.1 stage-7 / stage-5 frame with the h_/a_
     ratings, ens_pred and pred_E_drive), aligned to X.index."""
+    X = X.copy()
+    if {'pred_C_ridge', 'pred_D_gbm'} <= set(X.columns):
+        # 2014-2015: V2.1 has no stack yet; its equal-weight C/D mean is the identical formula
+        X['ens_pred'] = X.ens_pred.where(X.ens_pred.notna(), X[['pred_C_ridge', 'pred_D_gbm']].mean(axis=1))
     X = attach_style(X)
     parts = [season_features(g, S) for S, g in X.groupby('season')]
     F = pd.concat(parts).loc[X.index]

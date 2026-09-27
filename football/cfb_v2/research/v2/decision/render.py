@@ -54,13 +54,14 @@ def outcome_table(rows, first='bucket', pure=True, dec=True):
 
 
 def prob_table(rows, first='bucket'):
-    L = ['| %s | n | mean pure p | mean decision p | cover rate | pure: calibration error / Brier | decision: calibration error / Brier | MAE model | MAE quote | model − quote [95%%] | mean abs gap |' % first,
+    L = ['| %s | n | mean pure p | mean decision p | cover rate [bootstrap 95%%] | pure: calibration error / Brier | decision: calibration error / Brier | MAE model | MAE quote | model − quote [95%%] | mean abs gap |' % first,
          '|---|---|---|---|---|---|---|---|---|---|---|']
     for r in rows:
         if not r.get('n'):
             continue
-        L.append('| %s | %d | %s | %s | %s | %s / %s | %s / %s | %s | %s | %s%s | %s |' % (
+        L.append('| %s | %d | %s | %s | %s%s | %s / %s | %s / %s | %s | %s | %s%s | %s |' % (
             r.get(first, r.get('bucket')), r['n'], f(r.get('mean_p_pure'), 4), f(r.get('mean_p_dec'), 4), p(r['cover_rate']),
+            ci(r.get('cover_boot'), 3, True),
             signed(r.get('cal_err_pure'), 4), f(r.get('brier_pure'), 4), signed(r.get('cal_err_dec'), 4), f(r.get('brier_dec'), 4),
             f(r.get('mae_model'), 2), f(r.get('mae_quote'), 2), signed(r.get('mae_model_minus_quote'), 2),
             ci(r.get('mae_model_minus_quote_ci'), 2), f(r.get('mean_abs_gap'), 2)))
@@ -69,14 +70,14 @@ def prob_table(rows, first='bucket'):
 
 def decile_table(d, label):
     L = ['**%s** (walk-forward, scored seasons, n %d):' % (label, d['n']), '',
-         '| decile | n | score mean [range] | CLV pts [95%] | +CLV [95%] | ATS [95%] | ROI [95%] | mean probability edge |',
-         '|---|---|---|---|---|---|---|---|']
+         '| decile | n | score mean [range] | CLV pts [95%] | +CLV [95%] | ATS [95%] | ROI [95%] | max DD u [95%] | mean probability edge |',
+         '|---|---|---|---|---|---|---|---|---|']
     for r in d['rows']:
-        L.append('| %d | %d | %s [%s, %s] | %s%s | %s%s | %s%s | %s%s | %s |' % (
+        L.append('| %d | %d | %s [%s, %s] | %s%s | %s%s | %s%s | %s%s | %s%s | %s |' % (
             r['decile'], r['n'], f(r['score_mean'], 4), f(r['score_range'][0], 4), f(r['score_range'][1], 4),
             f(r['clv_pts'], 2), ci(r['clv_pts_ci'], 2), p(r['positive_clv']), ci(r['positive_clv_ci'], 3, True),
             p(r['ats_win']), ci(r['ats_win_ci'], 3, True), signed(r['units_assumed_110'], 3), ci(r['units_assumed_110_ci'], 3),
-            signed(r['probability_edge'], 4)))
+            f(r.get('max_drawdown'), 1), ci(r.get('max_drawdown_ci'), 1), signed(r['probability_edge'], 4)))
     L += ['', '| outcome | Spearman of decile means (perm. p) | slope per decile [95%] | top − bottom decile [95%] | adjacent inversions | increasing supported |',
           '|---|---|---|---|---|---|']
     for o, t in d['tests'].items():
@@ -129,30 +130,43 @@ def main():
     add('1. **Are the probabilities calibrated?** The PURE cover probabilities are not: they are overconfident. On the scored '
         'DEV seasons the pure "65%%+" bucket predicted %s and covered %s%s; walk-forward log loss of the raw probabilities is '
         '%s against %s for a coin flip (Δ %s%s: significantly worse than no opinion). After the chosen decision map — '
-        '**shrink toward the market with w = %.3f** in logit space — the decision probabilities are calibrated within their '
-        'CIs (every decision bucket\'s cover rate brackets its prediction), log loss %s (Δ vs coin flip %s%s). '
+        '**shrink toward the market with w = %.3f** in logit space — %s, log loss %s (Δ vs coin flip %s%s). '
         'That improvement over a coin flip is small and **not significant out of sample** (the CI includes 0); in-sample on '
         'DEV the weight is %.3f with profile 95%% CI %s and LR p = %s against w = 0.'
         % (p(top['mean_p_pure']), p(top['cover_rate']), ci(top['cover_wilson'], 3, True), f(ident['log_loss'], 5),
            f(M['market']['log_loss'], 5), signed(ident['dll_vs_market'], 5), ci(ident['dll_vs_market_ci'], 5), w,
+           ('every decision bucket\'s Wilson interval contains its mean decision probability' if all(
+               b['cover_wilson'][0] <= b['mean_p_dec'] <= b['cover_wilson'][1] for b in s4['decision_buckets_scored'] if b.get('n'))
+            else 'the decision buckets are close to, but not all within, their Wilson intervals'),
            f(shr['log_loss'], 5), signed(shr['dll_vs_market'], 5), ci(shr['dll_vs_market_ci'], 5),
            sw['pooled_dev']['w'], ci(sw['pooled_dev']['w_ci95_profile'], 3), f(sw['pooled_p_w0'], 4)))
     g = cond['gap']['table_scored_2018_2023']
-    add('2. **Do bigger edges mean better outcomes?** For **CLV, yes**: mean CLV rises from %s pts in the <1 gap bucket to %s '
-        'in the 7+ bucket and the close moves toward the model on %s → %s of moved lines. For **wins and ROI, not '
-        'demonstrably**: cover rates run %s (<1) to %s (7+), every bucket\'s CI includes 52.4%%, and the empirical-Bayes EV '
-        'curve collapses to the no-skill value (τ² = 0) in every walk-forward season.'
+    lows = [(x['bucket'], x['cover_wilson'][0]) for x in g if x.get('n')]
+    hi_lb = max(lows, key=lambda t: t[1])
+    taus = [v['tau2'] for v in s10['ev_curve_walk_forward'].values()]
+    dt = s33['pure_cover_prob']['tests']['ats_win']
+    add('2. **Do bigger edges mean better outcomes?** For **CLV, clearly**: mean CLV rises from %s pts in the <1 gap bucket to %s '
+        'in the 7+ bucket and the close moves toward the model on %s → %s of moved lines. For **wins, weakly — and never '
+        'past the price**: across deciles of the pure probability the cover rate rises %s pts per decile %s (Spearman %s, '
+        'p %s) — the small real signal the weight w encodes — but the top-minus-bottom decile difference is %s%s, cover '
+        'rates by gap run %s (<1) to %s (7+), and no gap bucket\'s cover rate is significantly above the 52.38%% break-even '
+        '(highest Wilson lower bound %s, bucket %s). The frozen empirical EV curve never rises above %s per bet.'
         % (f(g[0]['clv'], 2), f(g[-1]['clv'], 2), p(g[0]['moved_toward']), p(g[-1]['moved_toward']),
-           p(g[0]['cover_rate']), p(g[-1]['cover_rate'])))
+           f(100 * dt['slope_per_decile'], 2), ci([100 * v for v in dt['slope_ci']], 2), f(dt['spearman_decile_means'], 2),
+           f(dt['spearman_perm_p'], 3), p(dt['top_minus_bottom']), ci(dt['top_minus_bottom_ci'], 3, True),
+           p(g[0]['cover_rate']), p(g[-1]['cover_rate']), p(hi_lb[1]), hi_lb[0], signed(max(A['ev_curve']['y']), 4)))
     rb = fb['reliability_bands_production_score']
     add('3. **Does reliability sort error?** **No, not among FBS-vs-FBS games.** MAE by production reliability band runs %s '
-        '(<40) … %s (90+), a slope of %s pts of |error| per 10 reliability points %s; sigma itself has a slope of %s %s per '
-        'point of sigma and its quintiles have MAE %s. The error model\'s heteroskedasticity is not visible in realized '
-        'errors out of sample; the frozen reliability scale is therefore nearly flat (%s → %s pts).'
-        % (f(rb[0]['mae'], 2), f(rb[-1]['mae'], 2), signed(fb['reliability_slope_per_10pts'], 3), ci(fb['reliability_slope_ci'], 3),
+        '(<40) … %s (90+), a slope of %s pts of |error| per 10 reliability points%s; sigma itself has a slope of %s%s per '
+        'point of sigma (the t model implies ≈ +0.8) and its quintiles have MAE %s. The error model\'s heteroskedasticity is '
+        'not visible in realized FBS errors out of sample; the frozen reliability scale is therefore %s.'
+        % (f(rb[0]['mae'], 2), f(rb[-1]['mae'], 2), signed(fb['reliability_slope_per_10pts'], 4), ci(fb['reliability_slope_ci'], 3),
            signed(fb['sigma_slope_abs_err_per_pt'], 3), ci(fb['sigma_slope_ci'], 3),
            ', '.join(f(x['mae'], 2) for x in fb['sigma_quintiles']),
-           f(max(A['reliability_scale']['expected_abs_error']['y']), 2), f(min(A['reliability_scale']['expected_abs_error']['y']), 2)))
+           ('flat at %s pts (every score maps to the same expected error)' % f(max(A['reliability_scale']['expected_abs_error']['y']), 2)
+            if max(A['reliability_scale']['expected_abs_error']['y']) - min(A['reliability_scale']['expected_abs_error']['y']) < 1e-9
+            else '%s → %s pts' % (f(max(A['reliability_scale']['expected_abs_error']['y']), 2),
+                                  f(min(A['reliability_scale']['expected_abs_error']['y']), 2)))))
     zt = {x['tercile']: x for x in fb['disagreement_vs_standardized_error']}
     ce = cond['ens_sd_tercile']
     add('4. **Does disagreement predict overconfidence?** **No.** High-disagreement games have standardized errors %s of '
@@ -178,16 +192,18 @@ def main():
     add('6. **What must the decision layer shrink?** The model\'s cover logit, by about **%d%%**: decision_p = '
         'sigmoid(%.3f × logit(pure_p) + %.3f × logit(market_p)). At −110 that turns a pure 60%% into %s and a pure 70%% into %s, '
         'so the decision probability exceeds break-even (52.38%%) only when the pure probability is above about %s — a gap '
-        'of roughly 4.5-5 points. On the scored seasons %s of decision rows had a positive probability edge; those %d rows '
+        'of about %.1f points at a typical sigma of 16.4. On the scored seasons %s of decision rows had a positive probability edge; those %d rows '
         'covered %s%s at ROI %s%s. The EV the pure model claims (mean %s per bet) must be discounted entirely: realized ROI '
         'was %s%s. **No conditional map is supported** (reliability, disagreement, timing and gap all fail the pre-declared '
-        'test). Football confidence and market confidence carry no measurable information historically; bet confidence '
-        '(P(positive CLV)) ranks CLV but not wins.'
-        % (round(100 * (1 - w)), w, 1 - w, p(_dec(0.60, w)), p(_dec(0.70, w)), p(_inv(w)),
+        'test). Football confidence carries no measurable information among FBS games; market confidence at most a weak '
+        'ordering (the top fifth of predicted line movement moves %s vs %s for the bottom fifth) that does not beat a '
+        'constant out of sample; bet confidence (P(positive CLV)) ranks CLV but not wins.'
+        % (round(100 * (1 - w)), w, 1 - w, p(_dec(0.60, w)), p(_dec(0.70, w)), p(_inv(w)), _gap(_inv(w)),
            p(sum(v['share_edge_pos'] * v['n'] for v in s14['by_season'].values()) / sum(v['n'] for v in s14['by_season'].values())),
            e14['n'], p(e14['cover_rate']), ci(e14['cover_wilson'], 3, True), signed(e14['roi'], 3), ci(e14['roi_ci'], 3),
            p(s10['evaluation_scored']['mean_theoretical_ev']), signed(s10['evaluation_scored']['mean_realized'], 4),
-           ci(s10['evaluation_scored']['mean_realized_ci'], 4)))
+           ci(s10['evaluation_scored']['mean_realized_ci'], 4),
+           f(mk['quintiles_abs_move_by_pit_model'][-1]['mae'], 2), f(mk['quintiles_abs_move_by_pit_model'][0]['mae'], 2)))
     add('')
     add('These answers agree with, and extend, the red team (docs/cfb-v2/REDTEAM.md §7, §12-15): raw cover probabilities are '
         'overconfident, calibrated ones collapse toward a coin flip, the close moves toward V2 by a fraction of the gap, and '
@@ -199,10 +215,16 @@ def main():
     # ------------------------------------------------------------------ data caveats
     add('## What the data allows (read before any table)')
     add('')
-    add('- **No decision-time prices after 2019, and none live.** The study prices every historical decision at an ASSUMED '
-        '−110. The raw archive does carry the opener\'s own price in 2012-2019 (5Dimes, the single book whose opener is the '
-        'consensus): see *Price sensitivity* below. The 2026 Model Lab has %d quotes, one book, **%d with a price**: no live '
-        'EV is computable and none is assumed.' % (ds['ledger']['quotes_total'], ds['ledger']['quotes_with_any_price']))
+    lg_ = ds['ledger']
+    add('- **No decision-time prices after 2019; live prices have only just begun.** The study prices every historical '
+        'decision at an ASSUMED −110. The raw archive does carry the opener\'s own price in 2012-2019 (5Dimes, the single '
+        'book whose opener is the consensus): see *Price sensitivity* below. The 2026 Model Lab ledger at this build: %d '
+        'quotes (books %s); **%d spread quotes carry a two-sided price** (%s, week(s) %s, first captured %s, %d games, %d of '
+        'the priced dataset rows final). Every live row without a captured price has a null EV; none is assumed. Nothing in '
+        'this study is fit on live data.'
+        % (lg_['quotes_total'], ', '.join(lg_['books']), lg_['spread_quotes_two_sided_price'],
+           ', '.join(lg_['priced_spread_books']) or '—', ', '.join(str(x) for x in lg_['priced_spread_weeks']) or '—',
+           lg_['first_priced_observed_at'], lg_['priced_spread_games'], ds['live_priced_rows_final']))
     add('- **The "consensus opener" is one book** in every DEV season but 2023 (5Dimes 2016-2019, Bovada 2021-2022), has no '
         'timestamp, and is assumed available at the Tuesday freeze (optimistic; the close is the pessimistic check).')
     add('- **No Pinnacle opener exists** (the archive\'s Pinnacle rows carry no opening line). **No line-movement, maturity or '
@@ -264,7 +286,10 @@ def main():
         'not side-symmetric, and decision.js applies one map to each side\'s own probability.')
     add('- **Selection rule (pre-declared):** %s' % s5['rule'])
     add('- **Chosen: `%s`** (best eligible: `%s`).' % (s5['chosen'], s5['best_eligible']))
-    add('- Platt\'s intercept and beta\'s extra shape do not help out of sample; isotonic over-fits (worse than a coin flip).')
+    add('- Diagnostics: Platt with an intercept %s the chosen map by %s log loss, beta by %s; isotonic %s a coin flip (Δ %s).'
+        % ('trails' if M['platt']['dll_vs_best_eligible'] > 0 else 'beats', signed(M['platt']['dll_vs_best_eligible'], 5),
+           signed(M['beta']['dll_vs_best_eligible'], 5), 'is worse than' if M['isotonic']['dll_vs_market'] > 0 else 'beats',
+           signed(M['isotonic']['dll_vs_market'], 5)))
     add('')
     # ------------------------------------------------------------------ §12-13
     add('## §12-13 Shrinkage toward the market (inside the decision layer only)')
@@ -286,9 +311,11 @@ def main():
         'χ² = %s (p = %s); w = 1 (trust the pure model): χ² = %s (p < 1e-8).'
         % (sw['pooled_dev']['w'], ci(sw['pooled_dev']['w_ci95_profile'], 3), ci(sw['pooled_bootstrap_ci95'], 3),
            sw['pooled_dev']['n'], f(sw['pooled_dev']['lr_w0'], 2), f(sw['pooled_p_w0'], 4), f(sw['pooled_dev']['lr_w1'], 1)))
-    add('- **Stability:** per-season weights are consistent with one weight (Cochran Q = %s on %d df, p = %s; inverse-variance '
-        'mean %s). Two seasons (2019, 2022) alone show no signal (w ≈ 0).'
-        % (f(sw['heterogeneity_Q'], 2), sw['heterogeneity_df'], f(sw['heterogeneity_p'], 3), f(sw['inverse_variance_mean_local_w'], 3)))
+    zero = [S for S, v in sw['per_season_local'].items() if v['w_ci95_profile'][0] is not None and v['w_ci95_profile'][0] <= 0]
+    add('- **Stability:** per-season weights are %s one weight (Cochran Q = %s on %d df, p = %s; inverse-variance '
+        'mean %s). Seasons whose own 95%% CI includes w = 0 (no signal that season alone): %s.'
+        % ('consistent with' if (sw['heterogeneity_p'] or 0) > 0.05 else 'NOT consistent with', f(sw['heterogeneity_Q'], 2),
+           sw['heterogeneity_df'], f(sw['heterogeneity_p'], 3), f(sw['inverse_variance_mean_local_w'], 3), ', '.join(zero) or 'none'))
     wt = s5['w_on_top_of_each_map']
     add('- **Residual shrinkage each alternative map still needs** (w fit on the map\'s own out-of-sample outputs): %s. '
         'Every richer map still needs heavy shrinkage (or is already flat): the data support one number.'
@@ -364,6 +391,12 @@ def main():
             ci(r['roi_ci'], 3), signed(r.get('roi_eb'), 3), f(r['clv'], 2), ci(r['clv_ci'], 2), p(r['cover_rate']),
             ci(r['cover_wilson'], 3, True), r['sample_status']))
     add('')
+    t7 = s10['theoretical_ev_buckets'][-1]
+    add('The prescribed 7+%% bucket combined: n %d, mean theoretical EV %s, mean decision EV %s, realized ROI %s%s (EB %s), '
+        'CLV %s%s, cover %s%s.' % (t7['n'], signed(t7['mean_theoretical_ev'], 4), signed(t7['mean_decision_ev'], 4),
+                                   signed(t7['roi'], 3), ci(t7['roi_ci'], 3), signed(t7.get('roi_eb'), 3), f(t7['clv'], 2),
+                                   ci(t7['clv_ci'], 2), p(t7['cover_rate']), ci(t7['cover_wilson'], 3, True)))
+    add('')
     add('Decision EV (walk-forward decision probability) buckets:')
     add('')
     add('| decision EV bucket | n | mean decision EV | realized ROI [95%] | EB ROI | CLV [95%] | cover [Wilson] | status |')
@@ -380,10 +413,12 @@ def main():
     add('**The empirical EV curve** (theoretical EV → expected realized EV). Method (pre-declared): bin by theoretical EV '
         '(edges 0, 1, 2, 3, 5, 7, 10, 15, 25%%), take the mean realized units per bin, shrink each bin toward the NO-SKILL '
         'value of that bin (a fair coin at the price: 0.5(1 − push)b − 0.5(1 − push)) with normal-normal empirical Bayes, then '
-        'pool adjacent violators so it never decreases. Walk-forward τ² by season: %s — **zero in every season**: the bins\' '
-        'differences are all within sampling noise, so the curve is the no-skill line. Frozen curve (all DEV): x = %s, y = %s.'
-        % (', '.join('%s %s' % (k, f(v['tau2'], 5)) for k, v in s10['ev_curve_walk_forward'].items()),
-           [round(v, 4) for v in A['ev_curve']['x']], [round(v, 4) for v in A['ev_curve']['y']]))
+        'pool adjacent violators so it never decreases. Walk-forward τ² by season: %s (τ² = 0 means the bins\' differences are '
+        'all within sampling noise and the curve IS the no-skill line). Frozen curve (all DEV, τ² %s): x = %s, y = %s — it '
+        'rises from %s to %s and **never reaches zero**: no theoretical-EV level has a positive expected realized EV at −110.'
+        % (', '.join('%s %s' % (k, f(v['tau2'], 5)) for k, v in s10['ev_curve_walk_forward'].items()), f(A['ev_curve']['tau2'], 5),
+           [round(v, 4) for v in A['ev_curve']['x']], [round(v, 4) for v in A['ev_curve']['y']],
+           signed(min(A['ev_curve']['y']), 4), signed(max(A['ev_curve']['y']), 4)))
     add('')
     add('| predictor of realized units (scored seasons) | mean | MSE vs realized |')
     add('|---|---|---|')
@@ -394,8 +429,11 @@ def main():
     add('| realized | %s%s | — |' % (signed(ev['mean_realized'], 4), ci(ev['mean_realized_ci'], 4)))
     add('')
     add('The decision EV is the best of these predictors; the theoretical EV is worse than assuming no skill. A second curve on '
-        'the walk-forward DECISION EV (`ev_curve_decision`, fit on 2018-2023 out-of-sample decision EVs) is also frozen: x = %s, '
-        'y = %s.' % ([round(v, 4) for v in A['ev_curve_decision']['x']], [round(v, 4) for v in A['ev_curve_decision']['y']]))
+        'the walk-forward DECISION EV (`ev_curve_decision`, fit on 2018-2023 out-of-sample decision EVs, τ² %s) is also frozen: '
+        'x = %s, y = %s%s.' % (f(A['ev_curve_decision']['tau2'], 5), [round(v, 4) for v in A['ev_curve_decision']['x']],
+                               [round(v, 4) for v in A['ev_curve_decision']['y']],
+                               ' — flat: pool-adjacent-violators merged every bin, i.e. higher decision EV has not meant higher realized EV'
+                               if len(set(round(v, 6) for v in A['ev_curve_decision']['y'])) == 1 else ''))
     add('')
     # ------------------------------------------------------------------ §19-20
     add('## §19-20 CLV models')
@@ -436,7 +474,11 @@ def main():
             % (label, fm['n_train'], fm['l2'], f(fm['intercept'], 4),
                ', '.join('%s %s%s' % (k, signed(v, 4), ci(fm['coef_ci95'].get(k), 3)) for k, v in fm['coef'].items()) or 'none'))
     add('')
-    add('Reliability diagram of the frozen P(positive CLV) (walk-forward deciles of the prediction):')
+    rd = s19['reliability_diagram_p_positive_clv']
+    add('Reliability diagram of the frozen P(positive CLV) (walk-forward deciles of the prediction). It ranks (bottom decile '
+        '%s → top %s observed) but is not calibrated everywhere: %d of 10 deciles have a Wilson interval that excludes the '
+        'prediction, so read it as a ranking.' % (p(rd[0]['obs']), p(rd[-1]['obs']),
+                                                  sum(1 for x in rd if not (x['obs_wilson'][0] <= x['pred'] <= x['obs_wilson'][1]))))
     add('')
     add('| decile | n | predicted | observed [Wilson 95%] |')
     add('|---|---|---|---|')
@@ -527,6 +569,11 @@ def main():
         add('| %d | %d | %s | %s%s | %s%s |' % (a['band'], a['n'], f(a['pred_mean'], 3), f(a['mae'], 3), ci(a['mae_ci'], 3),
                                               f(b['mae'], 3), ci(b['mae_ci'], 3)))
     add('')
+    qm = mk['quintiles_abs_move_by_pit_model']
+    add('The point-in-time model orders the move only weakly (top quintile %s%s vs %s–%s elsewhere) and does not beat a '
+        'constant on walk-forward MSE, so the frozen market confidence is the constant.' % (
+            f(qm[-1]['mae'], 3), ci(qm[-1]['mae_ci'], 3), f(min(x['mae'] for x in qm[:-1]), 3), f(max(x['mae'] for x in qm[:-1]), 3)))
+    add('')
     add('Dispersion, book count and Pinnacle presence exist historically only at the CLOSE (or as an era-confounded archive '
         'count); as diagnostics they make the model worse out of sample. **An empirical market confidence has to be learned '
         'from the live capture (freshness, per-book depth, dispersion at decision time), which does not exist yet.** '
@@ -541,7 +588,8 @@ def main():
     # ------------------------------------------------------------------ §33-36
     add('## §33-36 Rank order, monotonicity, minimum samples')
     add('')
-    add(s33['min_sample_rules']['rule'] + '.')
+    rule = s33['min_sample_rules']['rule']
+    add(rule[0].upper() + rule[1:] + '.')
     add('')
     for k, lab in (('pure_cover_prob', 'pure cover probability'), ('theoretical_ev', 'theoretical EV'),
                    ('probability_edge', 'probability edge (edge quality)'), ('exp_clv_wf', 'bet-quality score = expected CLV')):
@@ -552,7 +600,7 @@ def main():
     add('')
     add('FBS games %d: model MAE %s%s; expected |error| from the football model fit on 2017-2019: %s (theory %s). %s.'
         % (s20['n_games'], f(s20['mae_model'], 3), ci(s20['mae_model_ci'], 3), f(s20['mean_expected_abs_error_wf'], 3),
-           f(s20['mean_theory_expected_error'], 3), s20['note']))
+           f(s20['mean_theory_expected_error'], 3), s20['note'][0].upper() + s20['note'][1:]))
     dv = s20['diagnostic_vs_close']
     add('')
     add('%s: n %d (pushes %d), the model\'s side covered the close %s, mean pure p %s, log loss %s vs coin %s, weight on the '
@@ -571,8 +619,11 @@ def main():
            signed(ps['roi_diff_archive_minus_assumed'], 4), ci(ps['roi_diff_ci'], 4), f(ps['mean_break_even_archive'], 4),
            f(ps.get('w_anchor_devig_archive'), 3), f(ps.get('w_anchor_0.5'), 3), ps.get('n_w')))
     add('')
-    add('The assumed −110 is the real opening price for most of these openers and slightly optimistic overall; after 2019 no '
-        'price exists to check.')
+    d_ = ps['roi_diff_archive_minus_assumed']
+    add('The assumed −110 is the real opening price for %s of these openers and %s on ROI (%s per bet); after 2019 no '
+        'price exists to check.' % (p(ps['share_both_sides_-110']),
+                                    'slightly conservative' if d_ > 0 else ('slightly optimistic' if d_ < 0 else 'neutral'),
+                                    signed(d_, 4)))
     add('')
     # ------------------------------------------------------------------ policy
     add('## What the decision-policy agent must use')
@@ -580,10 +631,11 @@ def main():
     add('1. **decision_cover_probability**, never the pure one: identity map, then `w_model = %.4f` in logit space toward the '
         'de-vigged market probability (0.5 without a two-sided price). **probability_edge** = decision p − break-even(price).'
         % w)
-    add('2. **EV**: decision EV (the calibrated one) for thresholds; the empirical curves (`ev_curve` on the THEORETICAL EV, '
-        '`ev_curve_decision` on the decision EV) are flat at the no-skill value and exist to show that no EV level has a '
-        'demonstrated realized edge. Note: decision.js maps the DECISION EV through `ev_curve`, whose x-knots are THEORETICAL EV; '
-        'use `ev_curve_decision` for that input (both are flat here, so the number is the same).')
+    add('2. **EV**: the decision EV (the calibrated one) is the best predictor of realized EV. The empirical curves '
+        '(`ev_curve` on the THEORETICAL EV, max %s; `ev_curve_decision` on the decision EV, max %s) stay below zero everywhere: '
+        'no EV level has a demonstrated positive realized EV at −110. **decision.js maps the DECISION EV through `ev_curve`, '
+        'whose x-knots are THEORETICAL EV: use `ev_curve_decision` for that input** (the artifact labels each curve\'s `input`).'
+        % (signed(max(A['ev_curve']['y']), 4), signed(max(A['ev_curve_decision']['y']), 4)))
     add('3. **No conditional map**, no reliability/disagreement/timing/gap-specific weight: none passed.')
     add('4. **CLV is the only outcome the model demonstrably predicts** (direction and size of the move). p_positive_clv / '
         'bet_confidence and expected CLV rank it; read them as rankings (their calibration drifts with the season\'s base rate).')
@@ -598,8 +650,11 @@ def main():
     add('')
     add('- **Assumed prices.** Every historical ROI and EV here is at an assumed −110 (labelled `ASSUMED_-110`); 2016-2019 '
         'show the assumption is close for those openers; 2020-2025 cannot be checked.')
-    add('- **No live prices.** The 2026 ledger has one book and zero prices: no live EV, edge or bet is computable; the live '
-        'rows exist to exercise the pipeline and to accumulate CLV.')
+    add('- **Almost no live prices.** At this build the 2026 ledger has %d priced spread quotes (%s, week(s) %s; %d priced rows '
+        'final). Live rows without a captured price have null EV; nothing is fit on live data, and the live rows exist to '
+        'exercise the pipeline and to accumulate CLV and priced outcomes.'
+        % (ds['ledger']['spread_quotes_two_sided_price'], ', '.join(ds['ledger']['priced_spread_books']) or '—',
+           ', '.join(str(x) for x in ds['ledger']['priced_spread_weeks']) or '—', ds['live_priced_rows_final']))
     add('- **Opener timing.** Openers carry no timestamp; the Tuesday freeze may face a line that has already moved '
         '(optimistic fill; the close is the pessimistic check, REDTEAM §15).')
     add('- **2020** has no openers: no market statistic; football-side only.')
@@ -624,13 +679,20 @@ def main():
     add('| `cover_calibration` | `{map: %s}` + selection evidence (no `conditional`: none supported) |' % json.dumps(A['cover_calibration']['map']))
     add('| `market_shrinkage` | `{w_model: %.6f, space: "logit"}` + CI, LR tests, by-season weights |' % w)
     add('| `push_table` | `%s` (FBS openers 2014-2023, integer lines) |' % json.dumps({k: round(v, 4) for k, v in A['push_table'].items()}))
-    add('| `ev_curve` | input `theoretical_ev`; knots x/y (flat at %s) |' % f(A['ev_curve']['y'][0], 4))
-    add('| `ev_curve_decision` | input `decision_ev`; knots x/y |')
+    add('| `ev_curve` | input `theoretical_ev`; knots x/y (rising from %s to %s, never above 0) |'
+        % (signed(min(A['ev_curve']['y']), 4), signed(max(A['ev_curve']['y']), 4)))
+    add('| `ev_curve_decision` | input `decision_ev`; knots x/y (%s) |' % (
+        'flat at %s' % signed(A['ev_curve_decision']['y'][0], 4) if len(set(round(v, 6) for v in A['ev_curve_decision']['y'])) == 1
+        else 'rising from %s to %s' % (signed(min(A['ev_curve_decision']['y']), 4), signed(max(A['ev_curve_decision']['y']), 4))))
     add('| `p_positive_clv` / `bet_confidence` | logistic, features %s |' % list(A['p_positive_clv']['coef']))
     add('| `clv_magnitude` | linear, features %s |' % list(A['clv_magnitude']['coef']))
-    add('| `football_confidence` + `football_confidence_scale` | linear, features %s; declared scale 10-16 pts |' % list(A['football_confidence']['coef']))
+    add('| `football_confidence` + `football_confidence_scale` | linear, %s; declared scale 10-16 pts |'
+        % ('features %s' % list(A['football_confidence']['coef']) if A['football_confidence']['coef']
+           else 'intercept only (%s pts: no pure feature sorts FBS error)' % f(A['football_confidence']['intercept'], 3)))
     add('| `reliability_scale.expected_abs_error` | production reliability score → expected |error| (points) |')
-    add('| `market_confidence` + `market_confidence_scale` | linear, features %s; declared scale 0.5-3 pts |' % list(A['market_confidence']['coef']))
+    add('| `market_confidence` + `market_confidence_scale` | linear, %s; declared scale 0.5-3 pts |'
+        % ('features %s' % list(A['market_confidence']['coef']) if A['market_confidence']['coef']
+           else 'intercept only (%s pts: no point-in-time feature beats a constant)' % f(A['market_confidence']['intercept'], 3)))
     add('| `features` | the exact feature definitions (DATASET.md) |')
     add('| `fit_seasons` | %s |' % json.dumps(A['fit_seasons']))
     add('')
@@ -638,7 +700,10 @@ def main():
         'python3 -m v2.decision.baseline --verify && python3 -m v2.decision.dataset && python3 -m v2.decision.study && '
         'python3 -m v2.decision.tests_decision`.')
     os.makedirs(DS.DOCS, exist_ok=True)
-    open(DOC, 'w').write('\n'.join(L) + '\n')
+    text = '\n'.join(L) + '\n'
+    while '  [' in text:
+        text = text.replace('  [', ' [')
+    open(DOC, 'w').write(text)
     print('[render] wrote', DOC)
 
 
@@ -646,6 +711,11 @@ def _dec(pp, w):
     import math
     z = w * math.log(pp / (1 - pp))
     return 1 / (1 + math.exp(-z))
+
+
+def _gap(pthr, sigma=16.4):
+    from scipy import stats
+    return float(stats.norm.ppf(pthr) * sigma)
 
 
 def _inv(w, be=100 / 210):

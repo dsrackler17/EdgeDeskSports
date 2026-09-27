@@ -84,7 +84,7 @@ class RidgeResid:
 
     def fit(self, X, r):
         Z = X[self.cols].astype(float)
-        self.mean_ = Z.mean()
+        self.mean_ = Z.mean().fillna(0.0)          # a column with no training value contributes nothing
         self.sd_ = Z.std().replace(0, 1.0).fillna(1.0)
         A = self._Z(X)
         self.beta_ = np.linalg.solve(A.T @ A + self.alpha * np.eye(A.shape[1]), A.T @ np.asarray(r, dtype=float))

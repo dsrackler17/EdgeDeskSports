@@ -1,0 +1,213 @@
+{
+ "artifact": "cfb_market_book_quality_v1",
+ "books": {
+  "5dimessportbet": {
+   "consensus_weight": 1.002,
+   "family": "5dimes",
+   "hold": 0.0294,
+   "market_information_weight": 0.089,
+   "stale_or_outlier_rate_ge_1pt": 0.007
+  },
+  "bet365": {
+   "consensus_weight": 1.138,
+   "family": "bet365",
+   "hold": 0.0475,
+   "market_information_weight": 0.157,
+   "stale_or_outlier_rate_ge_1pt": 0.013
+  },
+  "betcrisbookmaker": {
+   "consensus_weight": 1.0,
+   "family": "bookmaker",
+   "hold": 0.0474,
+   "market_information_weight": 0.043,
+   "stale_or_outlier_rate_ge_1pt": 0.021
+  },
+  "betmania": {
+   "consensus_weight": 1.029,
+   "family": "betmania",
+   "hold": 0.0336,
+   "market_information_weight": 0.103,
+   "stale_or_outlier_rate_ge_1pt": 0.034
+  },
+  "betonlinesportsbetting": {
+   "consensus_weight": 1.069,
+   "family": "betonline",
+   "hold": 0.047,
+   "market_information_weight": 0.123,
+   "stale_or_outlier_rate_ge_1pt": 0.018
+  },
+  "betphoenix": {
+   "consensus_weight": 1.0,
+   "family": "betphoenix",
+   "hold": 0.0473,
+   "market_information_weight": 0.078,
+   "stale_or_outlier_rate_ge_1pt": 0.027
+  },
+  "bovadabodog": {
+   "consensus_weight": 1.014,
+   "family": "bovada",
+   "hold": 0.0471,
+   "market_information_weight": 0.095,
+   "stale_or_outlier_rate_ge_1pt": 0.084
+  },
+  "cloudbet": {
+   "consensus_weight": 1.023,
+   "family": "cloudbet",
+   "hold": 0.0362,
+   "market_information_weight": 0.1,
+   "stale_or_outlier_rate_ge_1pt": 0.184
+  },
+  "gtbets": {
+   "consensus_weight": 1.074,
+   "family": "gtbets",
+   "hold": 0.0451,
+   "market_information_weight": 0.126,
+   "stale_or_outlier_rate_ge_1pt": 0.014
+  },
+  "heritage": {
+   "consensus_weight": 1.0,
+   "family": "heritage",
+   "hold": 0.024,
+   "market_information_weight": 0.016,
+   "stale_or_outlier_rate_ge_1pt": 0.004
+  },
+  "intertops": {
+   "consensus_weight": 1.352,
+   "family": "intertops",
+   "hold": 0.0474,
+   "market_information_weight": 0.264,
+   "stale_or_outlier_rate_ge_1pt": 0.008
+  },
+  "jazz": {
+   "consensus_weight": 1.22,
+   "family": "jazz",
+   "hold": 0.0475,
+   "market_information_weight": 0.198,
+   "stale_or_outlier_rate_ge_1pt": 0.013
+  },
+  "justbet": {
+   "consensus_weight": 1.0,
+   "family": "justbet",
+   "hold": 0.0474,
+   "market_information_weight": 0.0,
+   "stale_or_outlier_rate_ge_1pt": 0.022
+  },
+  "matchbook": {
+   "consensus_weight": 1.039,
+   "family": "matchbook",
+   "hold": 0.0326,
+   "market_information_weight": 0.108,
+   "stale_or_outlier_rate_ge_1pt": 0.044
+  },
+  "mybookie": {
+   "consensus_weight": 1.0,
+   "family": "mybookie",
+   "hold": 0.0474,
+   "market_information_weight": 0.0,
+   "stale_or_outlier_rate_ge_1pt": 0.11
+  },
+  "nitrogensports": {
+   "consensus_weight": 1.0,
+   "family": "nitrogensports",
+   "hold": 0.0375,
+   "market_information_weight": 0.065,
+   "stale_or_outlier_rate_ge_1pt": 0.285
+  },
+  "pinnacle": {
+   "consensus_weight": 1.0,
+   "family": "pinnacle",
+   "hold": 0.0299,
+   "market_information_weight": 0.088,
+   "stale_or_outlier_rate_ge_1pt": 0.019
+  },
+  "sbr": {
+   "consensus_weight": 1.28,
+   "family": "sbr",
+   "hold": 0.0474,
+   "market_information_weight": 0.228,
+   "stale_or_outlier_rate_ge_1pt": 0.056
+  },
+  "skybook": {
+   "consensus_weight": 1.073,
+   "family": "skybook",
+   "hold": 0.0473,
+   "market_information_weight": 0.125,
+   "stale_or_outlier_rate_ge_1pt": 0.032
+  },
+  "sportsinteraction": {
+   "consensus_weight": 1.016,
+   "family": "sportsinteraction",
+   "hold": 0.0473,
+   "market_information_weight": 0.096,
+   "stale_or_outlier_rate_ge_1pt": 0.088
+  },
+  "wagerweb": {
+   "consensus_weight": 1.0,
+   "family": "wagerweb",
+   "hold": 0.0474,
+   "market_information_weight": 0.0,
+   "stale_or_outlier_rate_ge_1pt": 0.007
+  },
+  "youwagereu": {
+   "consensus_weight": 1.105,
+   "family": "youwagereu",
+   "hold": 0.0475,
+   "market_information_weight": 0.141,
+   "stale_or_outlier_rate_ge_1pt": 0.011
+  }
+ },
+ "consensus_rule": "consensus_margin = the median of the books' lines (the Lab rule, unchanged); the median of price-adjusted implied margins is carried beside it; the information-weighted median is implemented but INACTIVE (weights_active = false): on the DEV walk-forward no weighted, trimmed or Pinnacle-only rule beats the plain median by a margin its CI supports (docs/cfb-market/BACKTEST.md)",
+ "default_weight": 1.0,
+ "families": {
+  "5dimes": 1.002,
+  "bet365": 1.138,
+  "betmania": 1.029,
+  "betonline": 1.069,
+  "betphoenix": 1.0,
+  "bookmaker": 1.0,
+  "bovada": 1.014,
+  "cloudbet": 1.023,
+  "gtbets": 1.074,
+  "heritage": 1.0,
+  "intertops": 1.352,
+  "jazz": 1.22,
+  "justbet": 1.0,
+  "matchbook": 1.039,
+  "mybookie": 1.0,
+  "nitrogensports": 1.0,
+  "pinnacle": 1.0,
+  "sbr": 1.28,
+  "skybook": 1.073,
+  "sportsinteraction": 1.016,
+  "wagerweb": 1.0,
+  "youwagereu": 1.105
+ },
+ "fit": {
+  "eb": {
+   "Q": 25.09,
+   "k_books": 22,
+   "pooled_mean_slope": 0.088,
+   "tau2_between_books": 0.0675
+  },
+  "pooled_slope_all_books": {
+   "ci": [
+    -0.159,
+    0.347
+   ],
+   "est": 0.093,
+   "n": 2927
+  },
+  "population": "FBS vs FBS completed, CLOSING quotes with prices, games with >= 5 books",
+  "seasons": [
+   2016,
+   2017,
+   2018,
+   2019
+  ],
+  "weight_rule": "slope_b = outcome residual (margin - leave-one-out median) on the book's price-adjusted deviation from that median; empirical-Bayes shrinkage toward the precision-weighted mean slope with the DerSimonian-Laird between-book variance; market_information_weight = max(0, shrunk slope); consensus_weight = 1 + 2 x max(0, shrunk slope - mean slope)"
+ },
+ "note": "weights exist only for books in the 2016-2019 archive; the US books the Lab captures (draftkings, fanduel, betmgm, caesars, espnbet...) weigh 1 until their own timestamped history supports another number",
+ "schema": "cfb_market_book_quality_schema_v1",
+ "sigma_market": 15.705,
+ "weights_active": false
+}

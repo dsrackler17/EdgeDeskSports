@@ -1,0 +1,45 @@
+{
+ "artifact": "cfb_market_challenger_v1",
+ "conditional": {
+  "coef": [
+   0.18038,
+   -0.21012,
+   0.19475,
+   0.16946,
+   0.01409
+  ],
+  "definitions": {
+   "early": "early_season flag",
+   "ens_sd_z": "(ens_sd - 3) / 2",
+   "qb_unsettled": "either QB unsettled",
+   "rel_z": "(reliability - 50) / 25"
+  },
+  "variables": [
+   "early",
+   "rel_z",
+   "qb_unsettled",
+   "ens_sd_z"
+  ]
+ },
+ "conditional_used": false,
+ "fit": {
+  "n_games": 5018,
+  "population": "FBS vs FBS completed with a usable opener",
+  "seasons": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023
+  ],
+  "selection": "the conditional weight is used only if its DEV walk-forward MAE beats the single weight with a CI entirely below zero"
+ },
+ "formula": "market_adjusted_projection = market + w * (pure - market); market = the consensus opener at the Tuesday freeze (live: the consensus at the snapshot)",
+ "holdout": "scored once by python3 -m v2.market_intel.replay --holdout",
+ "label": "MARKET-INFORMED CHALLENGER (Model Lab only): never the EdgeDesk fair line, never a pure input",
+ "schema": "cfb_market_challenger_schema_v1",
+ "w_pure": 0.2271
+}

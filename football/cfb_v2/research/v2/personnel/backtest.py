@@ -69,11 +69,11 @@ def _frame(seasons):
     return G
 
 
-def _units_on(G, anchor, variant, eval_seasons, frozen_through=None):
-    """anchor + sum beta_u Delta_u, betas fitted walk-forward on margin - anchor (all five units)."""
+def _units_on(G, anchor, variant, eval_seasons, frozen_through=None, units=None):
+    """anchor + sum beta_u Delta_u, betas fitted walk-forward on margin - anchor."""
     H = G.copy()
     H['base'] = G[anchor]
-    pred, betas = BU.walk_forward(H, BU.VARIANT_UNITS['ALL'], variant, eval_seasons, frozen_through)
+    pred, betas = BU.walk_forward(H, units or BU.VARIANT_UNITS['ALL'], variant, eval_seasons, frozen_through)
     return pred, betas
 
 
@@ -93,10 +93,12 @@ def compare_all(eval_seasons, frozen_through=None):
     if out['qb_layer'] == 'AVAILABLE':
         preds['+QB'] = (G.pred_qb, G.p_home_qb)
         preds['+QB+OL'] = (G.pred_qb, G.p_home_qb)          # no OL report before 2026: identical by construction
-    for v in ('pregame', 'oracle'):
+    for v, units, lab in (('pregame', None, 'pregame, efficiency, all units'),
+                          ('oracle', None, 'oracle, efficiency, all units'),
+                          ('oracle_naive_use', BU.VARIANT_UNITS['SKILL'], 'skill known-absence, usage value, oracle')):
         anchor = 'pred_qb'
-        p, betas = _units_on(G, anchor, v, eval_seasons, frozen_through)
-        name = ('+ALL' if out['qb_layer'] == 'AVAILABLE' else '+UNITS(QB pending)') + ' [%s]' % v
+        p, betas = _units_on(G, anchor, v, eval_seasons, frozen_through, units)
+        name = ('+ALL' if out['qb_layer'] == 'AVAILABLE' else '+UNITS(QB pending)') + ' [%s]' % lab
         preds[name] = (p, pd.Series(np.where(G.sigma.notna(), BU.p_home(p.fillna(0), sig, df), np.nan), index=G.index))
         out.setdefault('unit_betas', {})[v] = betas
     for name, (p, ph) in preds.items():

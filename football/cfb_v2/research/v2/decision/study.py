@@ -854,6 +854,9 @@ def deciles(Wd, score, outcomes=('clv_pts', 'positive_clv', 'ats_win', 'units_as
             v = g[o].values
             row[o] = r(np.nanmean(v), 4)
             row[o + '_ci'] = rl(core.boot_ci(v, B=1000), 4)
+        u = g.sort_values('kickoff_ts', kind='mergesort').units_assumed_110.values
+        row['max_drawdown'] = r(core.max_drawdown(u), 2)
+        row['max_drawdown_ci'] = rl(core.boot_drawdown_ci(u, B=1000), 2)
         rows.append(row)
     tests = {}
     for o in outcomes:

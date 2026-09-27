@@ -224,20 +224,19 @@ def game_frame(seasons, lam=None):
     for side in ('home', 'away'):
         x = W.rename(columns={c: side[0] + '_' + c for c in W.columns if c not in ('game_id', 'team_id')})
         G = G.merge(x.rename(columns={'team_id': side + '_id'}), on=['game_id', side + '_id'], how='left')
+    new = {}
+    col = lambda c: G[c].fillna(0.0) if c in G else pd.Series(0.0, index=G.index)
     for u in EVAL_UNITS:
         for k in DELTA_VARIANTS:
-            h, a = 'h_d_%s__%s' % (k, u), 'a_d_%s__%s' % (k, u)
-            G[h] = G[h] if h in G else 0.0
-            G[a] = G[a] if a in G else 0.0
-            G['D_%s__%s' % (k, u)] = G[h].fillna(0.0) - G[a].fillna(0.0)
-            vh, va = 'h_v_%s__%s' % (k, u), 'a_v_%s__%s' % (k, u)
-            G['V_%s__%s' % (k, u)] = (G[vh].fillna(0.0) if vh in G else 0.0) + (G[va].fillna(0.0) if va in G else 0.0)
-        for s in ('h', 'a'):
-            for c in ('%s_n_absent_in_season__%s' % (s, u), '%s_n_absent_new__%s' % (s, u)):
-                G[c] = G[c].fillna(0) if c in G else 0
+            new['D_%s__%s' % (k, u)] = col('h_d_%s__%s' % (k, u)) - col('a_d_%s__%s' % (k, u))
+            new['V_%s__%s' % (k, u)] = col('h_v_%s__%s' % (k, u)) + col('a_v_%s__%s' % (k, u))
+        for s_ in ('h', 'a'):
+            for c in ('%s_n_absent_in_season__%s' % (s_, u), '%s_n_absent_new__%s' % (s_, u)):
+                new[c] = col(c)
         # a unit CHANGE: a new in-season absence (1-2 games old) on either side: the lineup change the
         # rating has not absorbed yet (long absences are the re-anchoring population: the ablation)
-        G['change__' + u] = (G['h_n_absent_new__' + u] > 0) | (G['a_n_absent_new__' + u] > 0)
+        new['change__' + u] = (new['h_n_absent_new__' + u] > 0) | (new['a_n_absent_new__' + u] > 0)
+    G = pd.concat([G.drop(columns=[c for c in new if c in G.columns]), pd.DataFrame(new, index=G.index)], axis=1)
     G['change__ANY'] = G[['change__' + u for u in EVAL_UNITS]].any(axis=1)
     G['change__SKILL'] = G.change__RB | G.change__WR_TE
     G['change__DEF'] = G.change__FRONT7 | G.change__SECONDARY
@@ -602,8 +601,9 @@ def reanchor_example(season=2019, team_id=None, espn_id=None):
     L = UN.lineups(P[P.group.isin(['RB'])], lam)
     if espn_id is None:
         a = L[L.absent & L.in_season & L.group.eq('RB')]
-        runs = a.groupby(['team_id', 'espn_id']).agg(n=('T', 'nunique'), V=('V', 'mean'), h=('h', 'max'))
-        runs = runs[runs.n >= 5].sort_values(['V'], ascending=False)
+        a = a.assign(Vh=a.V * a.h)
+        runs = a.groupby(['team_id', 'espn_id']).agg(n=('T', 'nunique'), Vh=('Vh', 'mean'))
+        runs = runs[runs.n >= 6].sort_values(['Vh'], ascending=False)
         team_id, espn_id = [int(x) for x in runs.index[0]]
     x = L[L.team_id.eq(team_id) & L.group.eq('RB')].copy()
     x['d_base'] = (x.u_oracle - x.base) * x.V.fillna(0)
@@ -624,6 +624,10 @@ def reanchor_example(season=2019, team_id=None, espn_id=None):
                      'absent_player_baseline': round(float(me.base.get(T, np.nan)), 4),
                      'absent_player_healthy': round(float(me.h.get(T, np.nan)), 4),
                      'absent_player_value_per_game': round(float(me.V.get(T, np.nan)), 3),
+                     'absent_player_delta_baseline': round(float((me.u_oracle.get(T, np.nan) - me.base.get(T, np.nan))
+                                                                 * me.V.get(T, np.nan)), 3),
+                     'absent_player_delta_naive': round(float((me.u_oracle.get(T, np.nan) - me.u_healthy.get(T, np.nan))
+                                                              * me.V.get(T, np.nan)), 3),
                      'replacement_baseline': round(float(rp.base.get(T, np.nan)), 4),
                      'replacement_expected': round(float(rp.e.get(T, np.nan)), 4),
                      'replacement_value_per_game': round(float(rp.V.get(T, np.nan)), 3),
@@ -789,6 +793,7 @@ def run_dev():
     _dump('ablation_dev.json', {vb: ablation(G, DEV, value=vb) for vb in ('', '_use')})
     _dump('multi_absence_dev.json', {vb: multi_absence(G, DEV, value=vb) for vb in ('', '_use')})
     _dump('returning_production_dev.json', returning_production(DEV))
+    absence_beta_fit(G)
     _dump('prereg_units.json', prereg(res))
     print('[dev] done %.0fs' % (time.time() - t0), flush=True)
     return res
@@ -803,7 +808,35 @@ def prereg(res):
     for vb in ('', '_use'):
         for name in VARIANT_UNITS:
             out['decisions'][name + vb] = _decide(res, name, vb)
+    # the REPORT-PATH candidate (added after the first dev pass showed the efficiency value and the anchored
+    # deltas carry no signal; disclosed in UNITS.md): known absences only, usage-revealed value, SKILL units.
+    # No historical report exists, so its evidence is the ORACLE (hindsight absences = a perfect report):
+    # recommended for the game-day report path only if the oracle passes the same two conditions.
+    o = res['oracle_naive_use']['variants']['SKILL']
+    ordinary, chg = o['no_change_games'], o['unit_change_games']
+    keep_ord = ordinary.get('d_mae', 1) <= 0.005 and ordinary.get('d_logloss', 0) <= 0.0005
+    better = chg.get('d_mae_ci', [0, 0])[1] < 0
+    out['decisions']['SKILL_report_absence_use'] = {
+        'value': 'usage-revealed', 'delta': 'known absences only (report path)', 'evidence': 'oracle',
+        'recommend': bool(keep_ord and better), 'ordinary_ok': bool(keep_ord), 'change_improved_ci_below_0': bool(better),
+        'oracle_change_d_mae': chg.get('d_mae'), 'oracle_change_d_mae_ci': chg.get('d_mae_ci'),
+        'oracle_change_d_rmse_ci': chg.get('d_rmse_ci'), 'oracle_ordinary_d_mae': ordinary.get('d_mae'),
+        'oracle_all_d_mae': o['all_games'].get('d_mae'), 'oracle_all_d_mae_ci': o['all_games'].get('d_mae_ci')}
     out['fixed_at'] = ids.ts(pd.Timestamp.now(tz='UTC'))
+    return out
+
+
+def absence_beta_fit(G):
+    """The report-path candidate's betas, fitted once on the oracle absences of 2014-2023 (usage-revealed
+    value, known-absence delta) and frozen: the holdout and the live engine use exactly these."""
+    train = G.season.le(max(DEV)).values
+    beta, cov, n = fit_beta(G, VARIANT_UNITS['SKILL'], 'oracle_naive_use', train)
+    out = {'betas': {u: {'beta': float(beta[i]), 'ci': [float(beta[i] - 1.96 * np.sqrt(cov[i, i])),
+                                                        float(beta[i] + 1.96 * np.sqrt(cov[i, i]))]}
+                     for i, u in enumerate(VARIANT_UNITS['SKILL'])},
+           'n_train': n, 'train_seasons': [int(G.season.min()), max(DEV)], 'variant': 'oracle_naive_use',
+           'units': 'points per (share x events per game) of usage lost at the healthy share'}
+    _dump('absence_beta.json', out)
     return out
 
 
@@ -835,7 +868,7 @@ def run_holdout(rescore=False):
     G = game_frame(TRAIN0 + DEV + HOLDOUT, lam)
     G[G.season.isin(HOLDOUT)].to_parquet(os.path.join(out_dir(), 'games_holdout.parquet'), index=False)
     res = {k: evaluate(G, HOLDOUT, frozen_through=max(DEV), delta_variant=k)
-           for k in ('oracle', 'pregame', 'oracle_use', 'pregame_use')}
+           for k in ('oracle', 'pregame', 'oracle_use', 'pregame_use', 'oracle_naive_use')}
     res['ablation'] = {vb or 'efficiency': ablation_holdout(G, vb) for vb in ('', '_use')}
     res['scored_at'] = ids.ts(pd.Timestamp.now(tz='UTC'))
     _dump('backtest_holdout.json', res)
