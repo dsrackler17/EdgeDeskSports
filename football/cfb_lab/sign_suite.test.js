@@ -133,6 +133,16 @@ const C = L.conv;
   chk('decision engine: road favourite model -10 vs home +7 favours AWAY', D.pureCover(Object.assign({}, pure, { projected_margin: -10 }), 7, 'AWAY') > 0.5);
   chk("decision engine: pick'em model 0 vs line 0 is 50/50", near(D.pureCover(Object.assign({}, pure, { projected_margin: 0 }), 0, 'HOME'), 0.5, 1e-9));
 
+  /* the engine rounds margin and fair line to 0.01 separately: they may differ
+     by one cent at a half-cent boundary, never by a sign */
+  const pr = E.pure(row(6.825));
+  chk('V2 rounding: 6.825 -> margin 6.83 and fair line -6.82 (a cent of rounding, never a sign)', pr.projected_margin === 6.83 && pr.fair_spread_home_line === -6.82, [pr.projected_margin, pr.fair_spread_home_line]);
+  const curj = JSON.parse(require('fs').readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'current.json'), 'utf8'));
+  const bad = (curj.rows || []).map((r) => E.pure(r, {})).filter((x) => x.status === 'PREDICTED')
+    .filter((x) => !(Math.abs(x.fair_spread_home_line + x.projected_margin) <= 0.011 && (Math.abs(x.projected_margin) < 0.01 || Math.sign(x.fair_spread_home_line) === -Math.sign(x.projected_margin))
+      && Math.abs(x.home_win_prob + x.away_win_prob - 1) <= 1e-3 && (x.projected_margin > 0) === (x.home_win_prob > 0.5 || x.projected_margin === 0)));
+  chk('V2 live contract: every PREDICTED row of current.json has fair line = -margin (within rounding), p_home + p_away = 1, and p_home > 50% exactly when the margin favours home', bad.length === 0, bad.map((x) => [x.game_id, x.projected_margin, x.fair_spread_home_line, x.home_win_prob]));
+
   /* ═══ 7. properties (alternate spreads, prices) ══════════════════════ */
   const lines = []; for (let x = -20; x <= 20; x += 0.5) lines.push(x);
   const homeP = lines.map((l) => D.pureCover(pure, l, 'HOME'));

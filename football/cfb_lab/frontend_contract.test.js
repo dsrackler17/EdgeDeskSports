@@ -74,6 +74,15 @@ const text = (h) => String(h).replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').re
   const h4 = text(panel(row('4', 7), 3));
   ctx.EDCfbV2.pure = realPure;
   chk('V2 panel: a broken sign contract shows NOTHING rather than a reversed side', /sign contract failed/.test(h4) && !/Fair spread/.test(h4), h4);
+  /* engine.js rounds the margin and the fair line to 0.01 independently: at a
+     half-cent boundary they differ by 0.01 (6.83 / -6.82). That is rounding,
+     not a reversed sign, and the guard must let it through. */
+  const half = text(panel(row('5', 6.825), 3));
+  chk('V2 panel: a half-cent rounding difference (6.825) is not a contract failure', !/sign contract failed/.test(half) && /Fair spread Texas -7\.0/.test(half) && /Projected margin Texas \+6\.8/.test(half), half.slice(0, 200));
+  const cur = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'current.json'), 'utf8'));
+  const live = (cur.rows || []).filter((r) => ctx.EDCfbV2.pure(r, {}).status === 'PREDICTED');
+  const broken = live.filter((r) => /sign contract failed/.test(panel(r, null)));
+  chk('V2 panel: every PREDICTED game in the live football/cfb_v2/current.json passes the guard (' + live.length + ')', live.length > 0 && broken.length === 0, broken.map((r) => r.game_id));
 }
 
 /* ═══ 2. admin/cfb-lab: "This week" ════════════════════════════════════ */
