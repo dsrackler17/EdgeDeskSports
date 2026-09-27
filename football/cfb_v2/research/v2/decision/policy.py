@@ -682,6 +682,10 @@ def stake(d, P):
     return r(min(f, S['max_stake_u'] if isnum(S.get('max_stake_u')) else 1), 2)
 
 
+def down3(x):
+    return math.floor(x * 1000 + 1e-9) / 1000
+
+
 def apply_exposure(positions, P):
     E = P.get('exposure') or {}
     lst = []
@@ -709,7 +713,7 @@ def apply_exposure(positions, P):
         eff = math.sqrt(max(0.0, v))
         if eff > cap and eff > 0:
             for x in g:
-                x['stake_u'] = r(x['stake_u'] * cap / eff, 3)
+                x['stake_u'] = down3(x['stake_u'] * cap / eff)
                 x['scaled_by'].append('game cap %su' % js_str(cap))
 
     def cap_group(key, cap_u, label):
@@ -729,7 +733,7 @@ def apply_exposure(positions, P):
                 s = s + x['stake_u']
             if s > cap_u:
                 for x in groups[gk]:
-                    x['stake_u'] = r(x['stake_u'] * cap_u / s, 3)
+                    x['stake_u'] = down3(x['stake_u'] * cap_u / s)
                     x['scaled_by'].append('%s %su' % (label, js_str(cap_u)))
 
     cap_group(lambda x: x.get('conference_cluster') or None, E.get('max_cluster_u'), 'cluster cap')
@@ -869,7 +873,7 @@ def fixture_cases(prod_policy=None):
                       'policy': pol, 'artifact_patch': artifact_patch if artifact_patch is not None else B,
                       'artifact_missing': artifact_missing,
                       'market': market if market is not None else {'books': 6, 'dispersion_iqr': 0.5},
-                      'row': row if row is not None else {}, 'now': now, 'previous_case': previous,
+                      'row': row if row is not None else {}, 'now': now, 'previous': previous,
                       'expected_model_version': expected_model_version})
 
     add('bet_clear', 'a clear price edge: BET, flat 1u, BET_NOW')
@@ -936,12 +940,16 @@ def fixture_cases(prod_policy=None):
         pure=_base_pure(week=1), row={'early_season': 0})
     add('same_team_join', 'a quote carrying the same home team name', quote=_base_quote(home_team='Texas Tech'))
     # hysteresis and line-moved: the previous decision is another case's output
-    add('hyst_prev', 'the previous BET (for hysteresis and line-moved)')
+    prev_far = {'status': 'BET', 'side': 'HOME', 'price_targets': {'bettable_to_line': -99}}
+    prev_near = {'status': 'BET', 'side': 'HOME', 'price_targets': {'bettable_to_line': -6.0}}
     add('hyst_held', 'just below the thresholds after a BET on the same side: HELD_BY_HYSTERESIS',
-        quote=_base_quote(home_line=-7.0), previous='hyst_prev', policy_patch={'hysteresis': {'ev_buffer': 0.05, 'edge_buffer': 0.05}})
-    add('hyst_not_held', 'the same without a buffer: not a BET', quote=_base_quote(home_line=-7.0), previous='hyst_prev',
+        quote=_base_quote(home_line=-7.0), previous=prev_far, policy_patch={'hysteresis': {'ev_buffer': 0.05, 'edge_buffer': 0.05}})
+    add('hyst_not_held', 'the same without a buffer: not a BET', quote=_base_quote(home_line=-7.0), previous=prev_far,
         policy_patch={'hysteresis': None})
-    add('line_moved', 'the line moved through the previous bettable-to: PASS_LINE_MOVED', quote=_base_quote(home_line=-9.0), previous='hyst_prev')
+    add('hyst_other_side', 'a previous BET on the other side is never held', quote=_base_quote(home_line=-7.0),
+        previous={'status': 'BET', 'side': 'AWAY', 'price_targets': {'bettable_to_line': -99}},
+        policy_patch={'hysteresis': {'ev_buffer': 0.05, 'edge_buffer': 0.05}})
+    add('line_moved', 'the line moved through the previous bettable-to: PASS_LINE_MOVED', quote=_base_quote(home_line=-9.0), previous=prev_near)
     # the frozen artifact as committed (flat decision EV curve): no quote clears at any price
     for cid, pm, hl, ph, pa in (('frozen_edge_110', 12.0, -3.5, -110, -110), ('frozen_small', 6.0, -3.5, -110, -110),
                                 ('frozen_plus_price', 12.0, -3.5, 120, -140), ('frozen_away', -12.0, 3.5, -110, -110)):
@@ -959,7 +967,7 @@ def fixture_cases(prod_policy=None):
     return cases
 
 
-def run_case(c, A_frozen, prev_out=None):
+def run_case(c, A_frozen):
     A = None if c['artifact_missing'] else _merge(A_frozen, c['artifact_patch'])
     pol = c['policy']
     if pol.get('max_price', 0) is None:
@@ -970,8 +978,8 @@ def run_case(c, A_frozen, prev_out=None):
     ctx = {'policy': pol, 'artifact': A, 'now': parse_ms(c['now']), 'market': c['market'], 'row': c['row']}
     if c.get('expected_model_version'):
         ctx['expected_model_version'] = c['expected_model_version']
-    if prev_out is not None:
-        ctx['previous'] = prev_out
+    if c.get('previous') is not None:
+        ctx['previous'] = c['previous']
     return decide_quote(pure, c['quote'], ctx)
 
 
@@ -995,11 +1003,9 @@ def _num_or_none(x):
 def build_fixture(prod_policy=None, path=FIXTURE):
     A = load_artifact()
     cases = fixture_cases(prod_policy)
-    outs, fx = {}, []
+    fx = []
     for c in cases:
-        prev = outs.get(c['previous_case']) if c['previous_case'] else None
-        o = run_case(c, A, prev)
-        outs[c['id']] = o
+        o = run_case(c, A)
         pt = o.get('price_targets') or {}
         exp = {'status': o['status'], 'reason_codes': o['reason_codes'], 'timing': o['timing'],
                'stake_u': _num_or_none(o.get('stake_u')), 'side': o.get('side'),

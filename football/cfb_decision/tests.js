@@ -196,6 +196,11 @@ const ex = D.applyExposure([{ game_id: 'g1', stake_u: 1 }, { game_id: 'g1', stak
 const g1 = ex.positions.filter((x) => x.game_id === 'g1').reduce((a, x) => a + x.stake_u, 0);
 chk('correlated same-game positions share the game cap', near(g1, 1.5 * 3 / 3.5, 1e-3) || g1 <= 1.5 + 1e-9, ex);
 chk('the slate cap scales every position down, never up', ex.total_u <= 3 + 1e-9 && ex.positions.every((x) => x.stake_u <= 1));
+const exR = D.applyExposure([{ game_id: 'a', stake_u: 1, conference_cluster: 'SEC' }, { game_id: 'a', stake_u: 0.8, conference_cluster: 'SEC' },
+  { game_id: 'b', stake_u: 1, conference_cluster: 'SEC' }, { game_id: 'c', stake_u: 1 }, { game_id: 'd', stake_u: 0.5 }],
+  { exposure: { max_game_u: 1, max_slate_u: 3, max_cluster_u: 1.5, same_game_correlation: 0.6 } });
+chk('rounding never pushes a total past its cap (scaled stakes round down)', exR.total_u <= 3 + 1e-12
+  && exR.positions.filter((x) => x.conference_cluster === 'SEC').reduce((a, x) => a + x.stake_u, 0) <= 1.5 + 1e-12, exR);
 const exRho = D.applyExposure([{ game_id: 'g', stake_u: 1 }, { game_id: 'g', stake_u: 1 }], Object.assign({}, POL, { exposure: { max_game_u: 1.5, same_game_correlation: 0 } }));
 chk('independent positions (rho 0) on one game fit under a cap their plain sum exceeds', exRho.total_u === 2);
 
@@ -296,6 +301,48 @@ if (fs.existsSync(FIX) && fs.existsSync(CAL)) {
     noDec.ev_curve && noDec.ev_curve.input === 'theoretical_ev' ? D.validateArtifact(noDec, 'edgedesk_cfb_v2.1.0').code === 'NO_BET_CALIBRATION' : true);
 } else {
   chk('parity fixture pending (the frozen artifact is not built yet)', true);
+}
+
+/* ------------------------- parity with the Python policy mirror (v2/decision/policy.py) */
+const PFIX = path.join(__dirname, '..', 'cfb_v2', 'artifacts', 'decision', 'fixtures', 'policy_parity.json');
+if (fs.existsSync(PFIX) && fs.existsSync(CAL)) {
+  const A0 = JSON.parse(fs.readFileSync(CAL, 'utf8'));
+  const PF = JSON.parse(fs.readFileSync(PFIX, 'utf8'));
+  const patch = (base, p) => { const o = JSON.parse(JSON.stringify(base)); Object.keys(p || {}).forEach((k) => { if (p[k] === null) delete o[k]; else o[k] = p[k]; }); return o; };
+  const same = (a, b) => (a == null && b == null) || (typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) <= 1e-9) || a === b;
+  const NUMS = ['stake_u', 'probability_edge', 'empirical_ev', 'decision_cover_probability', 'expected_clv_pts'];
+  const seenStatus = new Set(), seenCodes = new Set(), seenTiming = new Set();
+  let bad = [];
+  for (const c of PF.cases) {
+    const pure = Object.assign({}, c.pure);
+    if (pure.sigma === 'NaN') pure.sigma = NaN;
+    const ctx = { policy: c.policy, artifact: c.artifact_missing ? null : patch(A0, c.artifact_patch), now: Date.parse(c.now), market: c.market, row: c.row };
+    if (c.expected_model_version) ctx.expected_model_version = c.expected_model_version;
+    if (c.previous) ctx.previous = c.previous;
+    const d = D.decideQuote(pure, c.quote, ctx), e = c.expected, pt = d.price_targets || {};
+    const got = { status: d.status, timing: d.timing, side: d.side, bettable_to_price: pt.bettable_to_price, bettable_to_line: pt.bettable_to_line,
+      ideal_entry_line: pt.ideal_entry_line, bet_confidence_score: d.bet_confidence && d.bet_confidence.score,
+      market_confidence_score: d.market_confidence && d.market_confidence.score };
+    NUMS.forEach((k) => { got[k] = d[k]; });
+    Object.keys(got).forEach((k) => { if (!same(got[k], e[k])) bad.push({ id: c.id, field: k, want: e[k], got: got[k] }); });
+    if (JSON.stringify(d.reason_codes) !== JSON.stringify(e.reason_codes)) bad.push({ id: c.id, field: 'reason_codes', want: e.reason_codes, got: d.reason_codes });
+    seenStatus.add(d.status); d.reason_codes.forEach((x) => seenCodes.add(x)); seenTiming.add(d.timing);
+  }
+  chk('policy parity: every status, reason code, timing, stake and number matches the Python mirror (' + PF.cases.length + ' cases)', bad.length === 0, bad.slice(0, 6));
+  chk('policy parity covers every status and both timings', ['BET', 'LEAN', 'RESEARCH', 'PASS', 'NO_BET'].every((s) => seenStatus.has(s)) && seenTiming.has('WAIT') && seenTiming.has('BET_NOW'));
+  const mustCover = Object.keys(D.REASON).filter((k) => k !== 'PASS_QB_UNCERTAINTY');   /* decision.js never emits PASS_QB_UNCERTAINTY: an unresolved QB is RESEARCH_QB */
+  chk('policy parity covers every reason code decision.js can emit', mustCover.every((k) => seenCodes.has(k)), mustCover.filter((k) => !seenCodes.has(k)));
+  const sbad = PF.stakes.filter((s) => !same(D.stake(s.decision, { stake: s.stake_policy }), s.expected_stake_u)
+    || !same(D.kellyFraction(Math.min(s.decision.decision_cover_probability, s.stake_policy.saturation_probability || 1), s.decision.price), s.expected_kelly_fraction));
+  chk('policy parity: stakes and Kelly fractions (' + PF.stakes.length + ')', sbad.length === 0, sbad);
+  const ebad = PF.exposure.filter((x) => { const g = D.applyExposure(x.positions, { exposure: x.exposure });
+    return !same(g.total_u, x.expected.total_u) || g.positions.some((p, i) => !same(p.stake_u, x.expected.stakes[i]) || JSON.stringify(p.scaled_by) !== JSON.stringify(x.expected.scaled_by[i])); });
+  chk('policy parity: correlated exposure (' + PF.exposure.length + ' portfolios)', ebad.length === 0, ebad.map((x) => x.id));
+  const gbad = PF.games.filter((x) => { const g = D.decideGame(x.pure, x.market, { policy: x.policy, artifact: patch(A0, x.artifact_patch), now: Date.parse(x.now), row: {} });
+    return g.status !== x.expected.status || g.summary_index !== x.expected.summary_index || JSON.stringify(g.decisions.map((d) => d.status)) !== JSON.stringify(x.expected.statuses); });
+  chk('policy parity: per-book game decisions and the best quote (' + PF.games.length + ' games)', gbad.length === 0, gbad.map((x) => x.id));
+} else {
+  chk('policy parity fixture pending', true);
 }
 
 failures.forEach((f) => console.log('FAIL | ' + f));

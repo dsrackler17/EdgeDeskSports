@@ -638,6 +638,8 @@
      (spread, moneyline, alternates, team totals, game total), weighted by the
      policy's correlation assumptions; the slate and any conference cluster are
      capped. Stakes are scaled down, never up, and eligibility never changes. */
+  /* a scaled-down stake rounds DOWN (3 dp), so rounding can never push a total past its cap */
+  function down3(x) { return Math.floor(x * 1000 + 1e-9) / 1000; }
   function applyExposure(positions, P) {
     var E = P.exposure || {}, byGame = {}, i, k;
     var list = positions.map(function (x) { return Object.assign({}, x, { stake_u: x.stake_u || 0, scaled_by: [] }); });
@@ -648,7 +650,7 @@
       /* correlated sum: sqrt(sum s_i^2 + 2 rho sum_{i<j} s_i s_j) (rho = 1 -> the plain sum) */
       for (i = 0; i < g.length; i++) { v += g[i].stake_u * g[i].stake_u; for (var j = i + 1; j < g.length; j++) v += 2 * rho * g[i].stake_u * g[j].stake_u; }
       var eff = Math.sqrt(Math.max(0, v)), cap = isNum(E.max_game_u) ? E.max_game_u : 1.5;
-      if (eff > cap && eff > 0) g.forEach(function (x) { x.stake_u = r(x.stake_u * cap / eff, 3); x.scaled_by.push('game cap ' + cap + 'u'); });
+      if (eff > cap && eff > 0) g.forEach(function (x) { x.stake_u = down3(x.stake_u * cap / eff); x.scaled_by.push('game cap ' + cap + 'u'); });
     }
     function capGroup(key, capU, label) {
       if (!isNum(capU)) return;
@@ -656,7 +658,7 @@
       list.forEach(function (x) { var g = key(x); if (g != null) (groups[g] = groups[g] || []).push(x); });
       Object.keys(groups).forEach(function (g) {
         var s = groups[g].reduce(function (a, x) { return a + x.stake_u; }, 0);
-        if (s > capU) groups[g].forEach(function (x) { x.stake_u = r(x.stake_u * capU / s, 3); x.scaled_by.push(label + ' ' + capU + 'u'); });
+        if (s > capU) groups[g].forEach(function (x) { x.stake_u = down3(x.stake_u * capU / s); x.scaled_by.push(label + ' ' + capU + 'u'); });
       });
     }
     capGroup(function (x) { return x.conference_cluster || null; }, E.max_cluster_u, 'cluster cap');
