@@ -50718,9 +50718,21 @@ window.fbValidateQbRegistry=function(){
 };
 
 /* ---- NFL load: seeds -> season break(s) -> absorb completed -> predict ---- */
+var FB_URL_NFL_COACHING='/football/nfl/slate.json';
 function fbLoadNfl(signal){
   var E=window.EDFootball,S=FB.nfl;
-  S.notes=[];
+  S.notes=[];S.coachingArtifact=null;S.coachingByGame={};
+  var coachingP=fbFetchText(FB_URL_NFL_COACHING,signal).then(function(txt){
+    var j=JSON.parse(txt);
+    if(!j||j.schema!=='edgedesk_nfl_slate_v1')throw new Error('wrong NFL slate schema');
+    S.coachingArtifact=j;
+    (j.games||[]).forEach(function(g){S.coachingByGame[String(g.game_id)]=g.coaching_staff||null;});
+    return j;
+  }).catch(function(e){
+    S.coachingArtifact=null;S.coachingByGame={};
+    S.notes.push('NFL Coaching / Staff research context is unavailable in this session. The projection is unchanged; this layer never fills missing evidence with a guess.');
+    return null;
+  });
   /* non-QB personnel availability: display only, moves no number */
   try{ if(typeof fbPersonnelEnsure==='function')fbPersonnelEnsure(); }catch(_){}
   return fbFetchText(FB_URL_GAMES,signal).then(function(txt){
@@ -50804,8 +50816,9 @@ function fbLoadNfl(signal){
       }
       S.up.sort(function(a,b){return a.t-b.t;});
       S.up=S.up.slice(0,32);
-      return fbSignals('americanfootball_nfl',signal);
-    }).then(function(sig){
+      return Promise.all([fbSignals('americanfootball_nfl',signal),coachingP]);
+    }).then(function(parts){
+      var sig=parts[0];
       S.sig=sig;
       if(!Object.keys(sig).length)S.notes.push('Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number.');
       /* wait briefly for the roster; a slow roster host never holds the board */
@@ -51164,6 +51177,24 @@ function fbMineActs(sport,gid,home,away,t){
     +'<button type="button" class="edm-btn ghost sm" onclick="event.stopPropagation();EDMine.compareOpen(\''+key+'\')">Compare my number</button>'
     +'<button type="button" class="edm-btn ghost sm" onclick="event.stopPropagation();EDMine.shareOpen(\''+key+'\')">Share card</button></div>';
 }
+function fbNflCoachingHTML(g){
+  var S=FB.nfl, c=S&&S.coachingByGame?S.coachingByGame[String(g.game_id)]:null;
+  if(!c)return '<div class="gd-modelnote"><b>Coaching / Staff</b> · research context not published for this game. Applied to model: <b>0.0 points</b>.</div>';
+  function side(x){
+    if(!x||x.coaching_staff_rating==null)return 'not measured';
+    var rank=x.coaching_staff_rank==null?'unranked':('#'+x.coaching_staff_rank);
+    var rel=x.coaching_staff_reliability==null?'—':Math.round(x.coaching_staff_reliability*100)+'% rel';
+    return fbEsc(x.coach||'coach not named')+' · '+x.coaching_staff_rating.toFixed(1)+' · '+rank+' · '+rel;
+  }
+  var cand=c.candidate_matchup_points==null?'—':fbPts(c.candidate_matchup_points);
+  var status=c.validation_status||'UNVALIDATED';
+  return '<div class="gd-modelnote"><b>Coaching / Staff</b> · '+fbEsc(g.away_team)+': '+side(c.away)
+    +' · '+fbEsc(g.home_team)+': '+side(c.home)
+    +'<br><b>Research candidate:</b> '+cand+' home-margin pts at tuned ±'+fbEsc(String(c.tuned_candidate_cap||0))+' cap'
+    +' · validation '+fbEsc(status)
+    +' · <b>Applied to model: '+fbPts(c.adjustment_points==null?0:c.adjustment_points)+' points</b>. '
+    +'This is measured from leak-free pregame residuals; it is not a coach reputation grade.</div>';
+}
 function fbGameCardNfl(u){
   var g=u.g;
   var M=fbNflMarketFor(g,u.t);
@@ -51196,7 +51227,7 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
-    +lines+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
+    +lines+fbNflCoachingHTML(g)+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
