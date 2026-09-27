@@ -4,6 +4,7 @@
   gives a static host pretty routes:
     /join/{token}  ->  /collective/join.html?t={token}
     /c/{slug}      ->  /collective/#/{slug}
+    /tennis/…      ->  /app.html#research/football  (Tennis was retired)
   Anything else renders a small not-found page.
 -->
 <html lang="en">
@@ -17,6 +18,12 @@
   var p=location.pathname.split('/').filter(Boolean);
   if(p[0]==='join'&&p[1]){location.replace('/collective/join.html?t='+encodeURIComponent(p[1])+location.search.replace(/^\?/,'&').replace(/^&/,'&'));return;}
   if(p[0]==='c'&&p[1]){location.replace('/collective/#/'+encodeURIComponent(p[1]));return;}
+  /* Tennis is no longer an EdgeDesk product. An old or guessed tennis address
+     (/tennis, /wta, /research/tennis, /edges/tennis, anything deeper) lands on
+     Research, where the terminal's own router sends retired modules, instead
+     of on this page */
+  var tn=/^(tennis|wta|atp)$/i;
+  if(p[0]&&(tn.test(p[0])||((p[0]==='research'||p[0]==='edges')&&p[1]&&tn.test(p[1])))){location.replace('/app.html#research/football');return;}
   /* EdgeDesk Games share links: /games/price-it/{slug} -> the real page with
      the challenge named. The query form is the canonical one (a static host
      cannot render a per-matchup document), and this keeps the pretty link
