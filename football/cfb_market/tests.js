@@ -96,6 +96,7 @@ const PURE = { status: 'PREDICTED', game_id: 'G1', home: 'Texas Tech', away: 'Ba
   chk('half point: on 3 it is worth more cents than off a key', hv.half_point_worse.cents > M.halfPointValue(Object.assign({}, pure, { projected_margin: 5 }), -5, 'HOME', -110).half_point_worse.cents);
   const eq = M.priceForEv(M.outcomeProbs(P, -3.5, 'HOME'), M.evAt(M.outcomeProbs(P, -3, 'HOME'), -110));
   chk('half point: the equivalent price at the worse number reproduces the EV', near(M.evAt(M.outcomeProbs(P, -3.5, 'HOME'), eq), M.evAt(M.outcomeProbs(P, -3, 'HOME'), -110), 1e-9));
+  chk('half point: the equivalent price is unrounded analysis (rounded only for display)', Math.round(eq) !== eq);
   const np = M.halfPointValue(pure, -3, 'HOME', null);
   chk('half point: without a captured price no EV is computed', np.price_captured === false && np.ev_at_price === null && np.half_point_worse.ev_change === null);
   chk('cents: -110 = 0, +105 = 15, -120 = -10', M.util.cents(-110) === 0 && M.util.cents(105) === 15 && M.util.cents(-120) === -10);
@@ -129,24 +130,33 @@ const PURE = { status: 'PREDICTED', game_id: 'G1', home: 'Texas Tech', away: 'Ba
 
 /* ---------------------------------------------------- consensus snapshots */
 {
-  const qs = [q('dk', -3, 0, { price_home: -115, price_away: -105 }), q('fd', -3.5, 0.2), q('mgm', -3, 0.3, { price_home: -105, price_away: -115 }),
-    q('consensus', -4, 0.3, { source: 'cfbd' }), q('czr', -7, -8)];
-  const s = M.consensusSnapshot(qs, at(1), KICK);
+  /* 45.5 h before kickoff: the odds freshness limit is 6 h (integrity.FRESHNESS.odds) */
+  const qs = [q('dk', -3, 9, { price_home: -115, price_away: -105 }), q('fd', -3.5, 9.2), q('mgm', -3, 9.3, { price_home: -105, price_away: -115 }),
+    q('consensus', -4, 9.3, { source: 'cfbd' }), q('czr', -4, 1)];
+  const s = M.consensusSnapshot(qs, at(10), KICK);
   chk('consensus: the provider average drops out when real books quote', !s.books.some((b) => b.book === 'consensus'));
   chk('consensus: a stale book is listed and counted but never moves the consensus', s.stale_book_count === 1 && s.n_active_books === 3 && s.median_home_line === -3);
   chk('consensus: consensus_margin is the home margin (+3)', s.consensus_margin === 3);
   chk('consensus: best home number (-3) at the better price; best away number +3.5', s.best_home.line === -3 && s.best_home.price === -105 && s.best_away.line === 3.5 && s.best_away.book === 'fd');
   chk('consensus: median, weighted median, mean, trimmed mean, dispersion, uncertainty', s.weighted_median_home_line === -3 && near(s.mean_home_line, -3.1667, 1e-4)
     && typeof s.trimmed_mean_home_line === 'number' && s.dispersion_iqr === 0.25 && s.consensus_uncertainty > 0.25);
-  const w = M.consensusSnapshot(qs, at(1), KICK, { weights: { fd: 5 } });
+  chk('consensus: the freshness limit is integrity.js\'s (6 h inside 48 h of kickoff) and its verdict is carried', s.freshness_limit_hours === 6
+    && s.integrity.rule === 'cfb_market_consensus_integrity_v1' && typeof s.integrity.actionable_status === 'string');
+  const w = M.consensusSnapshot(qs, at(10), KICK, { weights: { fd: 5 } });
   chk('consensus: an information weight can move the weighted median only', w.weighted_median_home_line === -3.5 && w.median_home_line === -3);
-  const lab = L.marketAt(qs.filter((x) => x.book !== 'czr'), at(1), KICK);
-  const mine = M.consensusSnapshot(qs.filter((x) => x.book !== 'czr'), at(1), KICK);
+  const lab = L.marketAt(qs.filter((x) => x.book !== 'czr'), at(10), KICK);
+  const mine = M.consensusSnapshot(qs.filter((x) => x.book !== 'czr'), at(10), KICK);
   chk('consensus: parity with lab_core.marketAt (median, best numbers) without stale books', lab.current_spread === mine.median_home_line
     && lab.best_available_spread_home === mine.best_home.line && lab.best_available_spread_away === mine.best_away.line && lab.sportsbook_count === mine.n_active_books);
   const none = M.consensusSnapshot([q('dk', -3, -40)], at(1), KICK);
   chk('consensus: nothing inside 36 h -> NO_QUOTES', none.status === 'NO_QUOTES');
   chk('consensus: a quote at or after kickoff is never pregame market', M.consensusSnapshot([q('dk', -3, 60)], at(61), KICK).status === 'NO_QUOTES');
+  const out4 = [q('a', -3, 9), q('b', -3.5, 9.1), q('c', -3, 9.2), q('d', -14, 9.3)];
+  const so = M.consensusSnapshot(out4, at(10), KICK);
+  chk('consensus: a MAD outlier integrity.assessMarket isolates is listed, never used', so.integrity.outlier_quote_ids.length === 1 && so.integrity_excluded_count === 1
+    && so.n_active_books === 3 && so.median_home_line === -3);
+  const tru = M.consensusSnapshot([q('a', -3, 9, { provider_updated_at: at(1) })], at(10), KICK);
+  chk('consensus: TRUE age (integrity.quoteAgeH): a fresh heartbeat of a book last updated 9 h ago is stale', tru.status === 'ALL_STALE_OR_EXCLUDED' && tru.books[0].age_minutes === 540);
 }
 
 /* --------------------------------------------------- opener and close */
@@ -205,10 +215,13 @@ const PURE = { status: 'PREDICTED', game_id: 'G1', home: 'Texas Tech', away: 'Ba
   chk('stale: a book that moved recently is current', sb.status === 'CURRENT');
   const dv = M.staleQuotes([q('a', -3, 7), q('b', -4.5, 7.5), q('c', -3, 7.6)], at(8), KICK);
   chk('stale: a fresh book that simply disagrees is DIVERGENT_NOT_STALE', dv.find((x) => x.book === 'b').status === 'DIVERGENT_NOT_STALE');
-  const fs1 = M.staleDataFailsafe({ newest_quote_at: at(0) }, at(4));
-  chk('failsafe: a 4-hour-old market is MARKET DATA STALE and not actionable', fs1.status === 'MARKET_DATA_STALE' && fs1.actionable === false);
-  chk('failsafe: a fresh quote is actionable', M.staleDataFailsafe({ observed_at: at(0) }, at(1)).actionable === true);
-  chk('failsafe: no timestamp is never actionable', M.staleDataFailsafe({}, at(1)).actionable === false);
+  const fs1 = M.staleDataFailsafe({ observed_at: at(0) }, at(4));
+  chk('failsafe: a 4-hour-old quote is MARKET_STALE (integrity code; shown as MARKET DATA STALE), not actionable', fs1.status === 'MARKET_STALE' && fs1.display === 'MARKET DATA STALE' && fs1.actionable === false && fs1.limit_minutes === 180);
+  chk('failsafe: a fresh quote is ACTIONABLE', M.staleDataFailsafe({ observed_at: at(0) }, at(1)).status === 'ACTIONABLE');
+  chk('failsafe: no timestamp is MARKET_MISSING, never actionable', M.staleDataFailsafe({}, at(1)).status === 'MARKET_MISSING');
+  chk('failsafe: the true age counts (provider last update 5 h ago)', M.staleDataFailsafe({ observed_at: at(0.5), provider_updated_at: at(-4) }, at(1)).status === 'MARKET_STALE');
+  const one = M.consensusSnapshot([q('dk', -3, 9)], at(10), KICK);
+  chk('failsafe: a fresh one-book market keeps integrity\'s MARKET_DEGRADED (one book is a quote, not a consensus)', M.staleDataFailsafe(one, at(10)).status === 'MARKET_DEGRADED');
 }
 
 /* ---------------------------------------------------- gap and edges */
@@ -248,9 +261,16 @@ const PURE = { status: 'PREDICTED', game_id: 'G1', home: 'Texas Tech', away: 'Ba
   const ca = M.contradictionAlert(PURE, { raw_signed_gap: 4 }, { from_open: -2, classification: 'MARKET_MOVED', books_moving_with_consensus: 3 });
   chk('contradiction: confident model vs a broad market move away -> INVESTIGATE, model untouched', ca.alert === 'MARKET_CONTRADICTION' && ca.severity === 'INVESTIGATE' && /never changed/.test(ca.action));
   chk('contradiction: a move toward the model is no contradiction', M.contradictionAlert(PURE, { raw_signed_gap: 4 }, { from_open: 2, classification: 'MARKET_MOVED' }) === null);
-  const lg = M.largeGapChecks(PURE, { game_id: 'G1', home_line: 3, home_team: 'Baylor Bears', away_team: 'Texas Tech', kickoff_ts: KICK }, { qb_resolved: true, now: at(0) });
-  chk('large gap: 9-point gap with the teams swapped -> review before believing', lg.required && !lg.ok && lg.checks.find((c) => c.check === 'team_mapping').status === 'FAIL');
-  chk('large gap: a small gap needs no checks', M.largeGapChecks(PURE, { game_id: 'G1', home_line: -5 }, {}).required === false);
+  const ID = require(path.join(REPO, 'football', 'cfb_lab', 'identity.js'));
+  const same = ID.sameTeamFn ? ID.sameTeamFn() : ID.sameTeam;
+  const swapped = { game_id: 'G1', home_line: 3, home_team: 'Baylor', away_team: 'Texas Tech', kickoff_ts: KICK, observed_at: at(0) };
+  const lg = M.largeGapChecks(PURE, swapped, { sameTeam: same, now: at(0.2), qb_certainty: 90, injury_certainty: 90 }, { threshold: 7 });
+  chk('large gap: a 9-point gap with the teams swapped fails integrity.validateQuote (identity master) -> review', lg.required && !lg.ok
+    && lg.failures.indexOf('WRONG_GAME_ORIENTATION') >= 0 && lg.status === 'REVIEW_BEFORE_BELIEVING');
+  const big = M.largeGapChecks(Object.assign({}, PURE, { projected_margin: 16, fair_spread_home_line: -16 }), { game_id: 'G1', home_line: -3, home_team: 'Texas Tech', away_team: 'Baylor', observed_at: at(0) },
+    { sameTeam: same, now: at(0.2), qb_certainty: 50, injury_certainty: 90, neutral_site: false });
+  chk('large gap: 13 points runs integrity.extremeReview (an unsettled QB fails it)', big.required && big.extreme_review.required && !big.ok && big.failures.some((f) => /^QB/.test(f)));
+  chk('large gap: below every trigger no checks are required', M.largeGapChecks(PURE, { game_id: 'G1', home_line: -5 }, {}).required === false);
   const ser = [{ as_of: at(0), consensus_margin: 3 }, { as_of: at(2), consensus_margin: 3 }, { as_of: at(3.5), consensus_margin: 1 }];
   const ie = M.informationEvent({ type: 'QB_RULED_OUT', at: at(3) }, ser);
   chk('information event: market before/after with the timing recorded, never a cause', ie.attribution === 'TIMING_CONSISTENT' && ie.move_pts === -2 && /never claimed/.test(ie.note));
@@ -282,7 +302,7 @@ const PURE = { status: 'PREDICTED', game_id: 'G1', home: 'Texas Tech', away: 'Ba
   chk('timing scorecard: OPEN / 48H / 2H buckets; ROI only at captured prices', ts.map((x) => x.horizon).join() === 'OPEN,48H,2H' && ts[1].roi === null && ts[0].roi === 0.9091 && ts[2].roi === 1);
   const ser = M.snapshotSeries([q('a', 3, 0, { price_away: -105 }), q('a', 3.5, 7, { price_away: -110 }), q('a', 2.5, 20, { price_away: -115 })], KICK);
   const wc = M.waitComparison(ser, at(0.5), 'AWAY', KICK, PURE);
-  chk('bet now vs wait: point-in-time line at each horizon, CLV vs the final number', wc[0].consensus_line === -3 && wc[1].consensus_line === -3.5 && wc[3].consensus_line === -2.5
+  chk('bet now vs wait: point-in-time line at each horizon, CLV vs the final number', wc[0].consensus_line === -3 && wc[1].consensus_line === -3 && wc[2].consensus_line === -3.5 && wc[3].consensus_line === -2.5
     && wc[4].execution === 'FINAL_PREKICK' && wc[0].clv_vs_final_pts === -0.5 && typeof wc[0].ev_at_execution === 'number');
 }
 
@@ -298,7 +318,7 @@ const PURE = { status: 'PREDICTED', game_id: 'G1', home: 'Texas Tech', away: 'Ba
   const before = JSON.stringify(E.pure(ROW, {}));
   const p1 = E.pure(ROW, {});
   const marketA = [q('dk', -3, 0, { price_home: -110, price_away: -110 }), q('fd', -3.5, 0)];
-  const marketB = [q('dk', -10, 0, { price_home: -140, price_away: 120 }), q('fd', 4, 0, { price_home: 150, price_away: -170 })];
+  const marketB = [q('dk', -10, 0, { price_home: -140, price_away: 120 }), q('fd', -9.5, 0, { price_home: -105, price_away: -115 })];
   const outs = [];
   [marketA, marketB].forEach((mk) => {
     const s = M.consensusSnapshot(mk, at(1), KICK);
