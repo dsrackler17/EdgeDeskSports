@@ -18,9 +18,10 @@ inferred, not published and not decided (the weekly gate withholds it; more
 than 5% of a week withheld holds the week). Nothing here imputes, clips or
 changes an input.
 
-monitor(X, reference) compares a slate with the training rows of the same
-season phase: mean shift (in reference SDs), SD ratio, share outside the soft
-range, missingness. It returns flags; it never refits.
+monitor(X, reference) compares a slate with the training slates of the same
+week of the season: its mean, SD, share outside the soft range and missing
+share against the envelope the eight training seasons spanned. It returns
+flags; it never refits.
 
     python3 -m v2.weekly.contract --build-reference [--out-dir DIR]   (needs a v2.1 build)
     python3 -m v2.weekly.contract --check --season 2026               (the live slate, report only)
@@ -43,10 +44,8 @@ QUANTILES = (0.001, 0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999)
 
 # the monitor's declared thresholds (diagnostics, not tuned to produce flags)
 MIN_N = 20                   # a slate smaller than this is not judged
-MEAN_SHIFT_SD = 1.0          # |live mean - reference mean| / reference SD
-SD_RATIO = (0.5, 2.0)        # live SD / reference SD outside this band
-TAIL_SHARE = 0.10            # share of the slate outside the soft range (2% expected)
-MISSING_DELTA = 0.20         # live missing share - reference missing share
+TAIL_SHARE = 0.10            # share of the slate outside the soft range flagged at least above this
+MISSING_DELTA = 0.20         # live missing share above the training slates' maximum by more than this
 
 
 def load(path=None):
@@ -90,12 +89,24 @@ def _stats(v):
 
 
 # ----------------------------------------------------------------- reference
+def _slate_stats(v, soft):
+    v = pd.to_numeric(pd.Series(v), errors='coerce').astype(float)
+    ok = v[np.isfinite(v)]
+    out = {'missing': float(1 - len(ok) / len(v)) if len(v) else None,
+           'mean': float(ok.mean()) if len(ok) else None,
+           'sd': float(ok.std(ddof=1)) if len(ok) > 1 else None}
+    out['tail'] = float(((ok < soft[0]) | (ok > soft[1])).mean()) if soft and len(ok) else None
+    return out
+
+
 def build_reference(X, contract=None, source=None):
     """Distribution of every contract field on the training rows (dev seasons,
-    FBS-vs-FBS, FINAL: walkforward.train_rows' filter), overall and by week of
-    the season, plus the raw missingness of the fields add_derived fills with 0.
-    The HARD ranges come from `fields_inferred`: every dev row the model is
-    ever run on (FBS-vs-FCS games are inferred, though never priced)."""
+    FBS-vs-FBS, FINAL: walkforward.train_rows' filter), plus, for every week of
+    the season, the ENVELOPE of the per-season slate statistics (mean, SD,
+    share outside the soft range, missing share): the range those statistics
+    took across the eight training seasons. The HARD ranges come from
+    `fields_inferred`: every dev row the model is ever run on (FBS-vs-FCS
+    games are inferred, though never priced)."""
     c = contract or load()
     X = X[X.season.isin(DEV_SEASONS)]
     if 'status' in X:
@@ -105,22 +116,32 @@ def build_reference(X, contract=None, source=None):
     D = _derived(X)
     D['_phase'] = [phase_of(w, p) for w, p in zip(D.get('weeks_in', pd.Series(0.0, index=D.index)), D.is_postseason)]
     fields = [f['field'] for f in c['model_inputs']]
+    ftype = {f['field']: f['type'] for f in c['model_inputs']}
     raw = sorted({s.strip() for f in c['model_inputs'] if f.get('imputed_from') for s in f['imputed_from']['raw'].split(',')})
-    ref = {'schema': 'cfb_feature_reference_v1', 'model_version': c['model_version'], 'feature_version': c['feature_version'],
+    ref = {'schema': 'cfb_feature_reference_v2', 'model_version': c['model_version'], 'feature_version': c['feature_version'],
            'contract_version': c['version'], 'seasons': list(DEV_SEASONS), 'rows': int(len(D)), 'source': source,
            'filter': 'dev seasons, FBS-vs-FBS, FINAL (the training rows)', 'quantiles': list(QUANTILES),
-           'fields': {}, 'fields_inferred': {}, 'raw_missing': {}, 'phases': {}}
+           'fields': {}, 'fields_inferred': {}, 'weeks': {}}
     for f in fields:
         ref['fields'][f] = _stats(D[f]) if f in D else {'n': 0, 'absent': True}
         ref['fields_inferred'][f] = {k: v for k, v in _stats(Dall[f]).items() if k in ('n', 'missing_share', 'min', 'max')} if f in Dall else {'n': 0}
-    for r in raw:
-        if r in X:
-            ref['raw_missing'][r] = {'overall': round(float(X[r].isna().mean()), 6)}
+    soft = {f: ((ref['fields'][f].get('q') or {}).get('0.01'), (ref['fields'][f].get('q') or {}).get('0.99')) for f in fields}
     for ph, g in D.groupby('_phase'):
-        ref['phases'][ph] = {'rows': int(len(g)), 'fields': {f: _stats(g[f]) for f in fields if f in g}}
-        for r in raw:
-            if r in X:
-                ref['raw_missing'].setdefault(r, {})[ph] = round(float(X.loc[g.index, r].isna().mean()), 6)
+        env, n_slates = {}, 0
+        for _, sl in g.groupby('season'):
+            n_slates += 1
+            cols = [(f, sl[f], soft[f] if ftype[f] != 'binary' else None) for f in fields if f in sl]
+            cols += [(r, X.loc[sl.index, r], None) for r in raw if r in X]
+            for name, v, sf in cols:
+                st = _slate_stats(v, sf)
+                e = env.setdefault(name, {})
+                for k, x in st.items():
+                    if x is None:
+                        continue
+                    lo, hi = e.get(k, (x, x))
+                    e[k] = (min(lo, x), max(hi, x))
+        ref['weeks'][ph] = {'rows': int(len(g)), 'slates': n_slates,
+                            'envelope': {n: {k: [round(v[0], 6), round(v[1], 6)] for k, v in e.items()} for n, e in env.items()}}
     ref['sha256'] = hashlib.sha256(json.dumps({k: v for k, v in ref.items() if k != 'sha256'}, sort_keys=True).encode()).hexdigest()
     return ref
 
@@ -223,70 +244,73 @@ def enforce(X, A=None, contract=None, reference=None):
 
 
 # ----------------------------------------------------------------- monitor
+def _outside(x, env, floor):
+    """x outside the training envelope [lo, hi] widened by max(half its width, floor)."""
+    if x is None or not env:
+        return False
+    lo, hi = env
+    pad = max(0.5 * (hi - lo), floor)
+    return x < lo - pad or x > hi + pad
+
+
 def monitor(X, reference=None, contract=None, min_n=MIN_N):
-    """The slate's distribution vs the training reference of its phase.
-    Returns {'phase', 'n', 'flags': [...], 'features': {field: stats + verdict}}."""
+    """The slate's distribution vs the training slates of the same week of the
+    season. A statistic is flagged when it leaves the range the eight training
+    seasons' slates spanned, widened by half that range (and by a floor of a
+    quarter of the training SD for means and SDs). Returns
+    {'status', 'phase', 'n', 'flags': [...], 'features': {...}}."""
     c = contract or load()
     ref = reference if reference is not None else load_reference(c)
     if ref is None:
         return {'status': 'NO_REFERENCE', 'flags': [], 'n': int(len(X)),
                 'detail': 'no training reference (python3 -m v2.weekly.contract --build-reference)'}
     D = _derived(X) if len(X) else X
-    if 'fcs_game' in D:
+    if len(D) and 'fcs_game' in D:
         D = D[~D.fcs_game.astype(bool)]          # the reference is FBS-vs-FBS
     n = int(len(D))
     phases = [phase_of(w, p) for w, p in zip(D.get('weeks_in', pd.Series(0.0, index=D.index)), D.get('is_postseason', pd.Series(False, index=D.index)))]
     phase = max(set(phases), key=phases.count) if phases else None
-    R = (ref.get('phases', {}).get(phase) or {}).get('fields') or ref.get('fields', {})
-    rg = ranges(c, ref)
-    out = {'status': 'OK', 'phase': phase, 'n': n, 'reference_rows': (ref.get('phases', {}).get(phase) or {}).get('rows'),
-           'reference_sha256': ref.get('sha256'), 'rule': {'min_n': min_n, 'mean_shift_sd': MEAN_SHIFT_SD, 'sd_ratio': SD_RATIO,
-                                                          'tail_share': TAIL_SHARE, 'missing_delta': MISSING_DELTA},
+    W = (ref.get('weeks') or {}).get(phase) or {}
+    env = W.get('envelope') or {}
+    out = {'status': 'OK', 'phase': phase, 'n': n, 'reference_slates': W.get('slates'), 'reference_sha256': ref.get('sha256'),
+           'rule': {'min_n': min_n, 'envelope_pad': 'max(half the envelope width, a quarter of the training SD)',
+                    'tail_share_min': TAIL_SHARE, 'missing_delta': MISSING_DELTA},
            'flags': [], 'features': {}}
     if n < min_n:
         out['status'] = 'TOO_FEW_GAMES'
         return out
-    for f in c['model_inputs']:
-        name = f['field']
-        if name not in D or name not in R:
+    if not env:
+        out['status'] = 'NO_REFERENCE_WEEK'
+        return out
+    ftype = {f['field']: f['type'] for f in c['model_inputs']}
+    names = [f['field'] for f in c['model_inputs']] + [r for r in env if r not in ftype]
+    for name in names:
+        e = env.get(name)
+        if not e:
             continue
-        s, r = _stats(D[name]), R[name]
-        v = {'mean': s.get('mean'), 'sd': s.get('sd'), 'missing_share': s.get('missing_share'),
-             'ref_mean': r.get('mean'), 'ref_sd': r.get('sd'), 'ref_missing_share': r.get('missing_share'),
-             'q': s.get('q'), 'flags': []}
+        src = D[name] if name in D else (X.loc[D.index, name] if name in X else None)
+        if src is None:
+            continue
+        r = (ref.get('fields') or {}).get(name) or {}
+        q = r.get('q') or {}
+        soft = (q.get('0.01'), q.get('0.99')) if q and ftype.get(name) == 'number' else None
+        st = _slate_stats(src, soft)
         rsd = r.get('sd') or 0.0
-        if f['type'] != 'binary' and rsd > 1e-9 and s.get('mean') is not None:
-            v['mean_shift_sd'] = round((s['mean'] - r['mean']) / rsd, 3)
-            if abs(v['mean_shift_sd']) > MEAN_SHIFT_SD:
-                v['flags'].append('MEAN_SHIFT')
-            if s.get('sd') is not None:
-                v['sd_ratio'] = round(s['sd'] / rsd, 3)
-                if not (SD_RATIO[0] <= v['sd_ratio'] <= SD_RATIO[1]):
-                    v['flags'].append('SD_RATIO')
-            soft = rg[name]['soft']
-            if soft and soft[0] is not None:
-                x = pd.to_numeric(D[name], errors='coerce').dropna()
-                v['tail_share'] = round(float(((x < soft[0]) | (x > soft[1])).mean()), 4) if len(x) else None
-                if v['tail_share'] is not None and v['tail_share'] > TAIL_SHARE:
-                    v['flags'].append('TAILS')
-        if f['type'] == 'binary' and s.get('mean') is not None and r.get('mean') is not None:
-            v['share_diff'] = round(s['mean'] - r['mean'], 4)
-        if s.get('missing_share') is not None and (s['missing_share'] - (r.get('missing_share') or 0.0)) > MISSING_DELTA:
-            v['flags'].append('MISSINGNESS')
+        v = {k: (round(x, 4) if isinstance(x, float) else x) for k, x in st.items()}
+        v['envelope'] = e
+        v['flags'] = []
+        if ftype.get(name) in ('number', 'binary') and _outside(st['mean'], e.get('mean'), 0.25 * rsd):
+            v['flags'].append('MEAN_SHIFT')
+        if ftype.get(name) == 'number' and _outside(st['sd'], e.get('sd'), 0.25 * rsd):
+            v['flags'].append('SD_SHIFT')
+        if st['tail'] is not None and e.get('tail') and st['tail'] > max(TAIL_SHARE, e['tail'][1] + 0.05):
+            v['flags'].append('TAILS')
+        if st['missing'] is not None and e.get('missing') and st['missing'] - e['missing'][1] > MISSING_DELTA:
+            v['flags'].append('MISSINGNESS' if name in ftype else 'RAW_MISSINGNESS')
         out['features'][name] = v
         for fl in v['flags']:
-            out['flags'].append({'field': name, 'flag': fl, 'mean_shift_sd': v.get('mean_shift_sd'), 'sd_ratio': v.get('sd_ratio'),
-                                 'tail_share': v.get('tail_share'), 'missing_share': v.get('missing_share')})
-    # the raw sources add_derived fills with 0: their missingness, never refused
-    raw = {}
-    for r, m in (ref.get('raw_missing') or {}).items():
-        if r in X:
-            live = float(X.loc[D.index, r].isna().mean()) if len(D) else None
-            want = m.get(phase, m.get('overall'))
-            raw[r] = {'missing_share': round(live, 4) if live is not None else None, 'ref_missing_share': want}
-            if live is not None and want is not None and live - want > MISSING_DELTA:
-                out['flags'].append({'field': r, 'flag': 'RAW_MISSINGNESS', 'missing_share': round(live, 4), 'ref': want})
-    out['raw_missing'] = raw
+            out['flags'].append({'field': name, 'flag': fl, 'mean': v.get('mean'), 'sd': v.get('sd'), 'tail': v.get('tail'),
+                                 'missing': v.get('missing'), 'envelope': {k: e.get(k) for k in ('mean', 'sd', 'tail', 'missing')}})
     out['status'] = 'FLAGGED' if out['flags'] else 'OK'
     return out
 
