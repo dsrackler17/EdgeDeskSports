@@ -25,9 +25,8 @@ Nothing here reads snap counts, depth charts or OL participation: no feed carrie
 Starts exist for quarterbacks only; for every other position the flags are usage
 leaders (usage_leader_rush, usage_top3_target) and are named as usage-based.
 """
-import os
 import json
-import functools
+import os
 
 import numpy as np
 import pandas as pd
@@ -35,7 +34,7 @@ import pandas as pd
 from .. import common
 from ..weekly import ids
 
-CODE_VERSION = 'personnel_usage_v3'
+CODE_VERSION = 'personnel_usage_v6'
 ALL_STAR_TEAM_IDS = frozenset({3144, 3145, 3146, 3147, 3193, 3194, 3197, 3198, 125290, 125291})
 OFFSEASON_SEASON_TYPE = 4
 PLACEHOLDER_IDS = frozenset({1, 3, 13})
@@ -54,6 +53,12 @@ ID_COVERAGE_FLOOR = 0.80
 RATE_FLOOR = {'def_sacks': 0.961, 'def_ints': 0.448, 'def_pbu': 0.843, 'def_ff': 0.269, 'def_fr': 0.482}
 MIN_TEAM_GAMES_FOR_RELIABILITY = 20     # fewer team-games before T -> 'INSUFFICIENT'
 
+# roles whose team the provider can get wrong: a fumble can be recovered by either side
+# and fumble_recovery_team is sometimes the opponent of the recovering player (a QB's
+# own recovery filed to the defence). Their team is overridden by the player's
+# side-certain roles in the same game (_one_team_per_game).
+SIDE_UNCERTAIN_ROLES = ('fumble', 'fumble_recovered')
+
 ROLES_ID = ('passer', 'rusher', 'receiver', 'sack', 'interception', 'pass_breakup', 'fumble',
             'fumble_forced', 'fumble_recovered', 'fg_kicker', 'punter', 'kickoff',
             'kickoff_return', 'punt_return')
@@ -67,7 +72,7 @@ PBP_COLS = [
     'fumble_recovery_team', 'fumbling_team',
     'fg_attempt', 'fg_made', 'yds_fg', 'fg_team', 'punt', 'yds_punted', 'yds_punt_return',
     'punt_team', 'punt_return_team', 'kickoff_play', 'yds_kickoff', 'yds_kickoff_return',
-    'kicking_team', 'kick_return_team', 'xp_attempt', 'xp_made', 'xp_kicker_player_name',
+    'kicking_team', 'kick_return_team', 'xp_attempt', 'xp_made', 'xp_kicker_player_name', 'type.text', 'text',
     'sack_player_id2', 'sack_player_name2',
 ] + ['%s_player_id' % r for r in ROLES_ID] + ['%s_player_name' % r for r in ROLES_ID]
 
@@ -98,6 +103,7 @@ TEAM_COLS = ['team_dropbacks', 'team_dropbacks_ng', 'team_dropbacks_id', 'team_d
              'team_returns_id', 'team_plays', 'team_garbage_plays']
 
 _MEM = {}
+MEM_SEASONS = 10                        # full seasons kept in memory
 
 
 # ----------------------------------------------------------------- helpers
@@ -223,7 +229,8 @@ def _events(d):
             return
         x = pd.DataFrame({'game_id': d.game_id[m].values, 'team_id': np.asarray(team[m], dtype='float64'),
                           'pid': _num(d[pidc][m]).values, 'name': d[namec][m].values,
-                          'play': d.game_play_number[m].values})
+                          'play': d.game_play_number[m].values,
+                          'certain': role not in SIDE_UNCERTAIN_ROLES})
         mv = m.values
         for k, v in stats.items():
             if isinstance(v, pd.Series):
@@ -255,7 +262,8 @@ def _events(d):
     if s2.any():
         parts.append(pd.DataFrame({'game_id': d.game_id[s2].values, 'team_id': dfn[s2].astype('float64').values,
                                    'pid': _num(d.sack_player_id2[s2]).values, 'name': d.sack_player_name2[s2].values,
-                                   'play': d.game_play_number[s2].values, 'def_sacks': 0.5, 'def_sack_plays': 1.0}))
+                                   'play': d.game_play_number[s2].values, 'def_sacks': 0.5, 'def_sack_plays': 1.0,
+                                   'certain': True}))
     add(live & _b(d['int']), 'interception', dfn, def_ints=1.0)
     add(live, 'pass_breakup', dfn, def_pbu=1.0)
     add(live, 'fumble_forced', dfn, def_ff=1.0)
@@ -313,6 +321,24 @@ def initial_key(name):
     return k[0][0] + ' ' + k[-1]
 
 
+XP_TYPES = ('Extra Point Good', 'Extra Point Missed')
+
+
+def xp_plays(d):
+    """Extra-point attempts: the xp_attempt flag (2014+, kicker name on the TD play) or,
+    before 2014, the separate 'Extra Point Good/Missed' plays whose text names the
+    kicker ('A.J. Principe extra point GOOD.'). -> game_id, kicker name, made, team."""
+    a = d[_b(d.xp_attempt)]
+    a = pd.DataFrame({'game_id': a.game_id.values, 'xp_kicker_player_name': a.xp_kicker_player_name.values,
+                      'xp_made': _b(a.xp_made).values, 'pos_team_id': a.pos_team_id.values})
+    typ = d['type.text'].fillna('') if 'type.text' in d else pd.Series('', index=d.index)
+    b = d[typ.isin(XP_TYPES) & ~_b(d.xp_attempt)]
+    nm = b.text.fillna('').str.extract(r'^\s*(.+?)\s+extra point', expand=False) if 'text' in b else None
+    b = pd.DataFrame({'game_id': b.game_id.values, 'xp_kicker_player_name': nm.values if nm is not None else None,
+                      'xp_made': typ[b.index].eq('Extra Point Good').values, 'pos_team_id': b.pos_team_id.values})
+    return pd.concat([a, b], ignore_index=True)
+
+
 def _xp_events(d, ev):
     """Extra points carry a kicker NAME only (often abbreviated, 'N.Radicic'). Resolve it
     to an id, point-in-time: among the players who kicked (FG, kickoff or punt) for
@@ -320,10 +346,17 @@ def _xp_events(d, ev):
     key must match exactly one id; failing that, the initial + last-name key must.
     Unresolved attempts stay unattributed (team_xp_att - team_xp_att_id)."""
     empty = pd.DataFrame(columns=['game_id', 'team_id', 'pid', 'name', 'xp_att', 'xp_made'])
-    x = d[_b(d.xp_attempt) & d.xp_kicker_player_name.notna()]
+    xa = xp_plays(d)
+    n_all = int(len(xa))
+    x = xa[xa.xp_kicker_player_name.notna() & (xa.xp_kicker_player_name.astype(str).str.len() > 0)]
     if x.empty:
-        return empty, 0, 0
+        return empty, n_all, 0
+    g = d.drop_duplicates('game_id').set_index('game_id')
+    x = x.assign(kickoff_ts=g.kickoff_ts.reindex(x.game_id.values).values,
+                 homeTeamId=g.homeTeamId.reindex(x.game_id.values).values,
+                 awayTeamId=g.awayTeamId.reindex(x.game_id.values).values)
     x = x[['game_id', 'xp_kicker_player_name', 'xp_made', 'kickoff_ts', 'homeTeamId', 'awayTeamId']].copy()
+    x['kickoff_ts'] = pd.to_datetime(x.kickoff_ts, utc=True)
     x['_row'] = np.arange(len(x))
     x['k_full'] = [name_key(v) for v in x.xp_kicker_player_name]
     x['k_init'] = [initial_key(v) for v in x.xp_kicker_player_name]
@@ -349,8 +382,31 @@ def _xp_events(d, ev):
                         'pid': np.array([got[int(r)][1] for r in x._row], dtype='int64'),
                         'name': x.xp_kicker_player_name.values,
                         'xp_att': 1.0, 'xp_made': _b(x.xp_made).astype(float).values})
-    n_all = int(_b(d.xp_attempt).sum())
     return out, n_all, int(len(out))
+
+
+def _one_team_per_game(ev):
+    """A player plays for one team in a game. His side-UNCERTAIN events (fumbles and
+    fumble recoveries) go to the team of his side-certain events in that game
+    (passer/rusher/receiver -> offence; sack/INT/PBU/FF -> defence; kicking roles -> the
+    kicking/returning team the provider names); ties -> the team with more events, then
+    the lower id. Side-certain events are never moved, so every share denominator (built
+    from the same plays' offence/defence sides) still sums to 1. Players with uncertain
+    events only keep the provider's team."""
+    ev = ev.copy()
+    ev['certain'] = ev.certain.fillna(True).astype(bool)
+    c = ev[ev.certain].groupby(['game_id', 'pid', 'team_id']).size().rename('nc').reset_index()
+    a = ev.groupby(['game_id', 'pid', 'team_id']).size().rename('na').reset_index()
+    c = c.merge(a, on=['game_id', 'pid', 'team_id'], how='left')
+    c = c.sort_values(['game_id', 'pid', 'nc', 'na', 'team_id'], ascending=[True, True, False, False, True],
+                      kind='mergesort').drop_duplicates(['game_id', 'pid'])
+    best = c.set_index(['game_id', 'pid']).team_id
+    idx = pd.MultiIndex.from_arrays([ev.game_id.values, ev.pid.values])
+    b = best.reindex(idx).values
+    mv = ~ev.certain.values & ~np.isnan(b) & (b != ev.team_id.values)
+    moved = int(mv.sum())
+    ev['team_id'] = np.where(mv, b, ev.team_id.values).astype('int64')
+    return ev.drop(columns=['certain']), moved
 
 
 def _team_context(d):
@@ -403,7 +459,9 @@ def _build_full(season, pbp=None):
     d = clean_plays(d, season)
     ev, dropped = _events(d)
     xp, xp_n, xp_res = _xp_events(d, ev)
+    xp['certain'] = True
     ev = pd.concat([ev, xp], ignore_index=True, sort=False)
+    ev, moved = _one_team_per_game(ev)
     for c in STATS:
         if c not in ev.columns:
             ev[c] = 0.0
@@ -427,7 +485,7 @@ def _build_full(season, pbp=None):
                                                team_punts=('punts', 'sum'), team_xp_att_id=('xp_att', 'sum'))
     st['team_returns_id'] = (P.kick_returns + P.punt_returns).groupby([P.game_id, P.team_id]).sum()
     T = T.set_index(['game_id', 'team_id']).join(frt, how='outer').join(st, how='outer').fillna(0.0)
-    xpt = d[_b(d.xp_attempt)].groupby(['game_id', 'pos_team_id']).size().rename('team_xp_att')
+    xpt = xp_plays(d).groupby(['game_id', 'pos_team_id']).size().rename('team_xp_att')
     xpt.index = xpt.index.set_names(['game_id', 'team_id'])
     T = T.join(xpt, how='left').fillna({'team_xp_att': 0.0}).reset_index()
     for c in TEAM_COLS:
@@ -448,7 +506,7 @@ def _build_full(season, pbp=None):
     P = P.merge(T, on=['game_id', 'team_id'], how='inner')
     P = _derive(P)
     P.attrs['filtered'] = dict(d.attrs.get('filtered', {}), placeholder_or_negative_id_events=dropped,
-                               xp_attempts=xp_n, xp_resolved=xp_res)
+                               xp_attempts=xp_n, xp_resolved=xp_res, team_reassigned_events=moved)
     T.attrs['filtered'] = P.attrs['filtered']
     return P, T
 
@@ -519,6 +577,8 @@ def _full(season):
         except OSError:
             pass
     _MEM[key] = (P, T)
+    while len(_MEM) > MEM_SEASONS:                     # bounded: oldest season out first
+        _MEM.pop(next(iter(_MEM)))
     return P, T
 
 
@@ -531,7 +591,7 @@ def _restrict(P, T, T_):
 
 
 # -------------------------------------------------------------- public API
-def player_games(season, T=None, pbp=None):
+def player_games(season, T=None, pbp=None, null_unreliable=False):
     """One row per player x game (x team) for `season`, games that kicked off strictly
     before T when T is given. `pbp`: an explicit play table (tests); bypasses caches.
 
@@ -539,15 +599,27 @@ def player_games(season, T=None, pbp=None):
     player_id ('espn:<id>'), espn_id, game_id, team_id, opp_id, is_home, season, week,
     season_type, kickoff_ts, name; the STATS columns; the TEAM_COLS team context;
     shares (db_share[_ng], carry_share[_ng], target_share[_ng], sack_share);
-    qb_starter, qb_rush_att, usage_leader_dropback, usage_leader_rush, usage_top3_target."""
+    qb_starter, qb_rush_att, usage_leader_dropback, usage_leader_rush, usage_top3_target;
+    the reliability flags (<column>_reliable) of the season at T."""
     T_ = to_ts(T)
     if pbp is not None:
         P, TT = _build_full(season, pbp)
     else:
         P, TT = _full(season)
-    P2, _ = _restrict(P, TT, T_)
+    P2, T2 = _restrict(P, TT, T_)
     out = P2.copy()
+    rel = reliability(season, tg=T2)
+    # the season's column reliability AT T (games before T only): a collapsed provider
+    # column is flagged, never presented as zero production (null_unreliable nulls it)
+    for col, flag in (('def_sacks', 'def_sacks_reliable'), ('def_ints', 'def_ints_reliable'),
+                      ('def_pbu', 'def_pbu_reliable'), ('def_ff', 'def_ff_reliable'),
+                      ('def_fr', 'def_fr_reliable'), ('fumbles', 'fumbles_reliable'),
+                      ('kickoffs', 'kickoffs_reliable'), ('receiver', 'receiver_ids_reliable')):
+        out[flag] = rel.get(col, {}).get('verdict') == 'RELIABLE'
+    if null_unreliable:
+        out = mark_unreliable(out, rel)
     out.attrs = dict(P.attrs)
+    out.attrs['reliability'] = rel
     return out
 
 
@@ -632,7 +704,7 @@ def coverage(season):
     tgn = d.groupby(['game_id', 'pos_team_id']).ngroups
     r = lambda num, den: (float(num) / float(den)) if den else None
     fga, pun, ko = live & _b(d.fg_attempt), live & _b(d.punt), live & _b(d.kickoff_play)
-    xpa = _b(d.xp_attempt)
+    xpp = xp_plays(d)
     P, _ = _full(season)
     return {
         'season': season, 'games': int(d.game_id.nunique()), 'team_games': int(tgn),
@@ -654,11 +726,36 @@ def coverage(season):
         'fg_kicker_id': r((fga & valid_id(d.fg_kicker_player_id)).sum(), fga.sum()),
         'punter_id': r((pun & valid_id(d.punter_player_id)).sum(), pun.sum()),
         'kickoff_kicker_id': r((ko & valid_id(d.kickoff_player_id)).sum(), ko.sum()),
-        'xp_kicker_name': r((xpa & d.xp_kicker_player_name.notna()).sum(), xpa.sum()),
+        'xp_attempts': int(len(xpp)),
+        'xp_kicker_name': r(xpp.xp_kicker_player_name.notna().sum(), len(xpp)),
         'xp_kicker_resolved': r(P.attrs['filtered'].get('xp_resolved', 0), P.attrs['filtered'].get('xp_attempts', 0)),
         'team_placeholder_events': P.attrs['filtered'].get('placeholder_or_negative_id_events'),
         'kickoff_known': r(d.drop_duplicates('game_id').kickoff_ts.notna().sum(), d.game_id.nunique()),
+        **_coverage_extra(season, d),
     }
+
+
+def _coverage_extra(season, d):
+    """Returner and block ids, from the play text (read here only, for the audit)."""
+    x = pd.read_parquet(pbp_file(season), columns=['game_id', 'game_play_number', 'text', 'type.text',
+                                                   'kickoff_return_player_id', 'punt_return_player_id',
+                                                   'fg_block_player_id', 'punt_block_player_id'])
+    x = x.merge(d[['game_id', 'game_play_number', 'kickoff_play', 'punt', 'fg_attempt', 'penalty_no_play']].drop_duplicates(
+        ['game_id', 'game_play_number']), on=['game_id', 'game_play_number'], how='inner')
+    live = ~_b(x.penalty_no_play)
+    txt = x.text.fillna('').str.lower()
+    ret = txt.str.contains(r'\breturn(?:s|ed)? (?:for|by|of)\b', regex=True)
+    ko = live & _b(x.kickoff_play) & ret
+    pu = live & _b(x.punt) & ret
+    typ = x['type.text'].fillna('')
+    kick = _b(x.kickoff_play) | _b(x.punt) | _b(x.fg_attempt) | typ.str.contains('Punt|Field Goal', regex=True)
+    blk = typ.str.contains('Blocked', case=False) | (kick & txt.str.contains(r'\bblocked\b', regex=True))
+    r = lambda num, den: (float(num) / float(den)) if den else None
+    return {'kick_returner_id': r((ko & valid_id(x.kickoff_return_player_id)).sum(), ko.sum()),
+            'punt_returner_id': r((pu & valid_id(x.punt_return_player_id)).sum(), pu.sum()),
+            'blocked_kicks': int(blk.sum()),
+            'block_player_id': r((blk & (valid_id(x.fg_block_player_id) | valid_id(x.punt_block_player_id))).sum(),
+                                 blk.sum())}
 
 
 if __name__ == '__main__':
