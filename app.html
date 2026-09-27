@@ -51902,6 +51902,24 @@ var FBP4_LOOKAHEAD_D = 10;
 function FBP4_URL_SCHED(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_'+y+'.csv';}
 function FBP4_URL_ROSTER(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/rosters/csv/cfb_rosters_'+y+'.csv';}
 
+/* CFB V2 SHADOW LOADER — part of the engine-loading chain, never the card:
+   the card renders from what this loaded and fetches nothing of its own. */
+var FBV2={rows:null,loading:null,err:null};
+function fbV2On(){
+  try{return /[?&]cfbv2=1(&|$)/.test(location.search)||localStorage.getItem('edgedesk_cfb_v2')==='1';}
+  catch(e){return false;}
+}
+function fbV2Ensure(){
+  if(!fbV2On())return Promise.resolve(null);
+  if(FBV2.loading)return FBV2.loading;
+  FBV2.loading=fbScript('football/cfb_v2/params.js')
+    .then(function(){return fbScript('football/cfb_v2/engine.js');})
+    .then(function(){return fetch('football/cfb_v2/current.json',{cache:'no-store'});})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(j){FBV2.rows={};FBV2.meta=j;((j&&j.rows)||[]).forEach(function(r){FBV2.rows[String(r.game_id)]=r;});return FBV2;})
+    .catch(function(e){FBV2.err=(e&&e.message)||'V2 failed to load';return null;});
+  return FBV2.loading;
+}
 function fbP4Ensure(){
   if(window.EDCfbP4&&window.EDCfbP4Params&&window.EDFbs)return Promise.resolve();
   return fbScript('football/cfb_p4/params.js')
@@ -56544,22 +56562,6 @@ function fbGxExplain(u,p){
    No price is captured on this card, so the decision says EV is not
    computable rather than assuming -110. See football/cfb_v2 and docs/cfb-v2.
    =========================================================================== */
-var FBV2={rows:null,loading:null,err:null};
-function fbV2On(){
-  try{return /[?&]cfbv2=1(&|$)/.test(location.search)||localStorage.getItem('edgedesk_cfb_v2')==='1';}
-  catch(e){return false;}
-}
-function fbV2Ensure(){
-  if(!fbV2On())return Promise.resolve(null);
-  if(FBV2.loading)return FBV2.loading;
-  FBV2.loading=fbScript('football/cfb_v2/params.js')
-    .then(function(){return fbScript('football/cfb_v2/engine.js');})
-    .then(function(){return fetch('football/cfb_v2/current.json',{cache:'no-store'});})
-    .then(function(r){return r.ok?r.json():null;})
-    .then(function(j){FBV2.rows={};FBV2.meta=j;((j&&j.rows)||[]).forEach(function(r){FBV2.rows[String(r.game_id)]=r;});return FBV2;})
-    .catch(function(e){FBV2.err=(e&&e.message)||'V2 failed to load';return null;});
-  return FBV2.loading;
-}
 function fbV2ShadowHTML(u,p){
   var V=window.EDCfbV2,row=FBV2.rows&&FBV2.rows[String(u.g.game_id)];
   if(!V||!FBV2.rows)return '<div class="gd-nodata">V2 not loaded'+(FBV2.err?' — '+fbEsc(FBV2.err):'')+'</div>';
