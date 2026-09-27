@@ -763,7 +763,7 @@ const MLB_PACKET = {
     const tsGames = games.filter((g) => g.home_id === 'texasstate' || g.away_id === 'texasstate');
     const solo = R('How does Texas State look this week?');
     chk('and a single named program resolves to its game, or declines when the card shows two',
-      tsGames.length === 1 ? (solo && solo.home_id === 'texasstate') : solo === null,
+      tsGames.length === 1 ? (solo && String(solo.game_id) === String(tsGames[0].game_id)) : solo === null,
       { on_card: tsGames.length, resolved: solo && [solo.away_team, solo.home_team] });
     /* THE TRAP THE WHOLE INCIDENT TURNS ON. Asserted on the name resolution
        itself, which does not move with the window, so it cannot go vacuous. */
