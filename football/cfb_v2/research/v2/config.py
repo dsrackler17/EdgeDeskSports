@@ -12,8 +12,8 @@ is called by every tuner, and `tests/test_leakage.py` asserts that it raises.
 import os
 
 MODEL_ID = 'edgedesk_cfb_v2'
-MODEL_VERSION = 'edgedesk_cfb_v2.0.0'
-FEATURE_VERSION = 'cfb_v2_fv1'
+MODEL_VERSION = 'edgedesk_cfb_v2.1.0'          # hardened; cfb_v2_candidate_001 = v2.0.0 (frozen)
+FEATURE_VERSION = 'cfb_v2_fv2'                 # fv2: volatility has a point-in-time prior
 SEED = 20260927                       # the only seed; LightGBM and bootstraps use it
 
 DATA = os.environ.get('CFB_V2_DATA', 'data')
@@ -142,6 +142,20 @@ GBM_PARAMS = dict(objective='huber', alpha=14.0, learning_rate=0.03, num_leaves=
                   min_data_in_leaf=100, feature_fraction=0.7, bagging_fraction=0.8,
                   bagging_freq=1, lambda_l2=10.0, n_estimators=250, verbose=-1,
                   deterministic=True, force_row_wise=True, num_threads=1)
+
+# ------------------------------------------------- hardened architecture
+# Decided by the PRE-REGISTERED rules (docs/cfb-v2/HARDENING_PREREG.md) on the
+# development window; evidence in report/redteam/hardening_decisions.json.
+#  R2: A, B and E each change dev MAE by <= 0.005 when dropped from the stack
+#      (C and D residuals correlate 0.99 with each other, A/B/E 0.89-0.97) ->
+#      only C and D predict. A, B and E are still fitted in the backtest as
+#      BASELINES (the simple Elo is one of the brief's benchmarks).
+#  R3: the equal-weight mean of C and D is within 0.01 of the fitted stack.
+#  R4: removing havoc (and the drive-margin input of E) does not hurt dev MAE.
+ACTIVE_COMPONENTS = ('C_ridge', 'D_gbm')
+STACK_METHOD = 'mean'
+DROPPED_FEATURES = ('edge_havoc', 'edge_sack_rate', 'x_sack_h', 'x_sack_a', 'drive_margin_raw')
+COVER_CALIBRATION = 'platt'           # R6: lowest dev log loss of raw/platt/isotonic/beta
 
 # ------------------------------------------------------------- uncertainty
 INTERVALS = (0.50, 0.80, 0.95)

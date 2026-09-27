@@ -66,6 +66,8 @@ def cover_design(D, p_raw, rsd_fill=1.0):
     rsd = (D.rating_sd_sum.fillna(rsd_fill).values - 1.0)
     early = D.early_season.values.astype(float)
     qbu = D.qb_unsettled_any.fillna(0).values + D.qb_missing_any.fillna(1).values
+    if C.COVER_CALIBRATION == 'platt':     # hardened: plain Platt (the engine uses the first len(coef) terms)
+        return np.column_stack([np.ones_like(x), x])
     return np.column_stack([np.ones_like(x), x, x * ens_sd, x * rsd, x * early, x * qbu])
 
 

@@ -1,0 +1,227 @@
+{
+ "assumptions": {
+  "fills": "the Tuesday 12:00 UTC freeze is AFTER the opener is posted: an opener fill assumes the prediction existed when the opener did (see phase 16); the close is always fillable",
+  "kelly_stake_cap": "5% of bankroll",
+  "price": "-110 at the opener (optimistic fill) and at the close (achievable); actual closing juice where the archive has it (2014-2019)",
+  "start_bankroll_units": 100
+ },
+ "dev": {
+  "close_-110": {
+   "flat_0.5u": {
+    "ending_bankroll": 110.7273,
+    "max_drawdown_units": 7.9545,
+    "n_bets": 402,
+    "roi": 0.0534,
+    "sharpe_like_per_season": 0.5125,
+    "units_won": 10.7273,
+    "volatility_per_bet": 0.4669
+   },
+   "flat_1u": {
+    "ending_bankroll": 121.4545,
+    "max_drawdown_units": 15.9091,
+    "n_bets": 402,
+    "roi": 0.0534,
+    "sharpe_like_per_season": 0.5125,
+    "units_won": 21.4545,
+    "volatility_per_bet": 0.9338
+   },
+   "kelly_0.10": {
+    "ending_bankroll": 97.079,
+    "max_drawdown_pct": 6.1751,
+    "n_bets": 402
+   },
+   "kelly_0.25": {
+    "ending_bankroll": 92.359,
+    "max_drawdown_pct": 14.8791,
+    "n_bets": 402
+   },
+   "streaks": {
+    "best_winning": 11,
+    "worst_losing": 5
+   }
+  },
+  "close_actual_juice_flat_1u": {
+   "ending_bankroll": 121.8512,
+   "max_drawdown_units": 15.7388,
+   "n_bets": 402,
+   "roi": 0.0544,
+   "sharpe_like_per_season": 0.5214,
+   "units_won": 21.8512,
+   "volatility_per_bet": 0.9347
+  },
+  "open_-110": {
+   "flat_0.5u": {
+    "ending_bankroll": 119.2273,
+    "max_drawdown_units": 5.6818,
+    "n_bets": 402,
+    "roi": 0.0957,
+    "sharpe_like_per_season": 0.9191,
+    "units_won": 19.2273,
+    "volatility_per_bet": 0.4666
+   },
+   "flat_1u": {
+    "ending_bankroll": 138.4545,
+    "max_drawdown_units": 11.3636,
+    "n_bets": 402,
+    "roi": 0.0957,
+    "sharpe_like_per_season": 0.9191,
+    "units_won": 38.4545,
+    "volatility_per_bet": 0.9332
+   },
+   "kelly_0.10": {
+    "ending_bankroll": 101.9063,
+    "max_drawdown_pct": 5.354,
+    "n_bets": 402
+   },
+   "kelly_0.25": {
+    "ending_bankroll": 104.2676,
+    "max_drawdown_pct": 13.0039,
+    "n_bets": 402
+   },
+   "streaks": {
+    "best_winning": 10,
+    "worst_losing": 5
+   }
+  }
+ },
+ "holdout": {
+  "close_-110": {
+   "flat_0.5u": {
+    "ending_bankroll": 88.2727,
+    "max_drawdown_units": 18.0909,
+    "n_bets": 267,
+    "roi": -0.0878,
+    "sharpe_like_per_season": -1.0704,
+    "units_won": -11.7273,
+    "volatility_per_bet": 0.4741
+   },
+   "flat_1u": {
+    "ending_bankroll": 76.5455,
+    "max_drawdown_units": 36.1818,
+    "n_bets": 267,
+    "roi": -0.0878,
+    "sharpe_like_per_season": -1.0704,
+    "units_won": -23.4545,
+    "volatility_per_bet": 0.9482
+   },
+   "kelly_0.10": {
+    "ending_bankroll": 94.5667,
+    "max_drawdown_pct": 6.9178,
+    "n_bets": 267
+   },
+   "kelly_0.25": {
+    "ending_bankroll": 86.8112,
+    "max_drawdown_pct": 16.5296,
+    "n_bets": 267
+   },
+   "streaks": {
+    "best_winning": 9,
+    "worst_losing": 8
+   }
+  },
+  "open_-110": {
+   "flat_0.5u": {
+    "ending_bankroll": 91.5909,
+    "max_drawdown_units": 18.0909,
+    "n_bets": 267,
+    "roi": -0.063,
+    "sharpe_like_per_season": -0.7654,
+    "units_won": -8.4091,
+    "volatility_per_bet": 0.4754
+   },
+   "flat_1u": {
+    "ending_bankroll": 83.1818,
+    "max_drawdown_units": 36.1818,
+    "n_bets": 267,
+    "roi": -0.063,
+    "sharpe_like_per_season": -0.7654,
+    "units_won": -16.8182,
+    "volatility_per_bet": 0.9508
+   },
+   "kelly_0.10": {
+    "ending_bankroll": 96.5338,
+    "max_drawdown_pct": 6.5454,
+    "n_bets": 267
+   },
+   "kelly_0.25": {
+    "ending_bankroll": 91.3917,
+    "max_drawdown_pct": 15.6728,
+    "n_bets": 267
+   },
+   "streaks": {
+    "best_winning": 11,
+    "worst_losing": 8
+   }
+  }
+ },
+ "live": {
+  "close_-110": {
+   "flat_0.5u": {
+    "ending_bankroll": 96.4545,
+    "max_drawdown_units": 8.1364,
+    "n_bets": 72,
+    "roi": -0.0985,
+    "sharpe_like_per_season": -0.8768,
+    "units_won": -3.5455,
+    "volatility_per_bet": 0.4765
+   },
+   "flat_1u": {
+    "ending_bankroll": 92.9091,
+    "max_drawdown_units": 16.2727,
+    "n_bets": 72,
+    "roi": -0.0985,
+    "sharpe_like_per_season": -0.8768,
+    "units_won": -7.0909,
+    "volatility_per_bet": 0.9531
+   },
+   "kelly_0.10": {
+    "ending_bankroll": 100.8843,
+    "max_drawdown_pct": 1.352,
+    "n_bets": 72
+   },
+   "kelly_0.25": {
+    "ending_bankroll": 102.1691,
+    "max_drawdown_pct": 3.3723,
+    "n_bets": 72
+   },
+   "streaks": {
+    "best_winning": 7,
+    "worst_losing": 8
+   }
+  },
+  "open_-110": {
+   "flat_0.5u": {
+    "ending_bankroll": 101.2273,
+    "max_drawdown_units": 6.6364,
+    "n_bets": 72,
+    "roi": 0.0341,
+    "sharpe_like_per_season": 0.3041,
+    "units_won": 1.2273,
+    "volatility_per_bet": 0.4756
+   },
+   "flat_1u": {
+    "ending_bankroll": 102.4545,
+    "max_drawdown_units": 13.2727,
+    "n_bets": 72,
+    "roi": 0.0341,
+    "sharpe_like_per_season": 0.3041,
+    "units_won": 2.4545,
+    "volatility_per_bet": 0.9512
+   },
+   "kelly_0.10": {
+    "ending_bankroll": 102.0064,
+    "max_drawdown_pct": 1.3105,
+    "n_bets": 72
+   },
+   "kelly_0.25": {
+    "ending_bankroll": 105.0345,
+    "max_drawdown_pct": 3.2709,
+    "n_bets": 72
+   },
+   "streaks": {
+    "best_winning": 8,
+    "worst_losing": 8
+   }
+  }
+ }
+}

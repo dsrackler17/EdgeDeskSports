@@ -66,7 +66,7 @@ def features_for(families):
     cols = []
     for f in families:
         cols += FAMILIES[f]
-    return list(dict.fromkeys(cols))
+    return [c for c in dict.fromkeys(cols) if c not in C.DROPPED_FEATURES]
 
 
 # ------------------------------------------------------------------ linear

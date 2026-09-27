@@ -1,0 +1,104 @@
+{
+ "coefficient_shipped_pts_per_epa_db": 7.74,
+ "double_counting_check_residual_on_qb_features": {
+  "qb_delta_edge": {
+   "n": 6590,
+   "residual_slope": 5.5446,
+   "t": 1.6185
+  },
+  "qb_exp_edge": {
+   "n": 7029,
+   "residual_slope": 0.7125,
+   "t": 0.5454
+  }
+ },
+ "note": "Week-1 QB features are MISSING by construction (no current-season game), so returning production (prior) and the QB model never both describe the same QB in week 1. From week 2 the QB feature is qb_delta = expected starter minus the passers whose snaps built the offence ratings: only the part the team ratings have not absorbed.",
+ "surprise_change_slope": {
+  "ci": [
+   -25.6815,
+   1.6952
+  ],
+  "meaning": "realised team residual per EPA/dropback of starter change the snapshot did not know",
+  "n": 358,
+  "pts_per_epa_db": -11.9573
+ },
+ "types": {
+  "backup -> starter return (started earlier this season)": {
+   "ci": [
+    -1.4686,
+    0.6861
+   ],
+   "coverage80": 0.7986,
+   "mean_rating_change_vs_expected": 0.039,
+   "mean_team_residual": -0.4333,
+   "n": 844,
+   "overlay_would_predict_pts": 0.3016
+  },
+  "same starter as last game": {
+   "ci": [
+    -0.1022,
+    0.4576
+   ],
+   "coverage80": 0.8117,
+   "mean_rating_change_vs_expected": 0.0,
+   "mean_team_residual": 0.1685,
+   "n": 12016,
+   "overlay_would_predict_pts": 0.0
+  },
+  "starter -> backup / new starter": {
+   "ci": [
+    -2.317,
+    -0.3897
+   ],
+   "coverage80": 0.8152,
+   "mean_rating_change_vs_expected": -0.0591,
+   "mean_team_residual": -1.3543,
+   "n": 958,
+   "overlay_would_predict_pts": -0.4576
+  },
+  "starter -> backup / new starter (first-time starter)": {
+   "ci": [
+    -5.7959,
+    -0.6474
+   ],
+   "coverage80": 0.7722,
+   "mean_rating_change_vs_expected": -0.0571,
+   "mean_team_residual": -3.141,
+   "n": 158,
+   "overlay_would_predict_pts": -0.4419
+  },
+  "week 1: first-time starter (no career dropbacks)": {
+   "ci": [
+    -3.5562,
+    3.3361
+   ],
+   "coverage80": 0.7921,
+   "mean_rating_change_vs_expected": null,
+   "mean_team_residual": 0.0416,
+   "n": 101,
+   "overlay_would_predict_pts": null
+  },
+  "week 1: returning starter": {
+   "ci": [
+    -1.3404,
+    1.0451
+   ],
+   "coverage80": 0.7721,
+   "mean_rating_change_vs_expected": null,
+   "mean_team_residual": -0.0662,
+   "n": 645,
+   "overlay_would_predict_pts": null
+  },
+  "week 1: transfer / new team starter": {
+   "ci": [
+    -1.7059,
+    3.3873
+   ],
+   "coverage80": 0.7598,
+   "mean_rating_change_vs_expected": null,
+   "mean_team_residual": 0.8586,
+   "n": 179,
+   "overlay_would_predict_pts": null
+  }
+ }
+}

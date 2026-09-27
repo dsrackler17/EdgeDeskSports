@@ -1,0 +1,264 @@
+{
+ "A_vs_B_luck_effect_at_equal_surprise": {
+  "ci": [
+   -0.8561,
+   -0.5728
+  ],
+  "coef_luck": -0.7238,
+  "meaning": "negative = the model moves LESS for a turnover/ST-driven surprise than for a sustainable one"
+ },
+ "C_minus_D": {
+  "ci": [
+   1.1636,
+   1.3707
+  ],
+  "diff": 1.277
+ },
+ "classes": {
+  "A sustainable: beat expectation by 14+, success margin >= +4, turnover margin <= +1": {
+   "ci": [
+    2.6967,
+    2.8419
+   ],
+   "ensemble_rating_change": 2.7671,
+   "mean_surprise": 24.0099,
+   "n": 1172,
+   "next_game_residual": 1.4682,
+   "next_game_residual_ci": [
+    0.5333,
+    2.4159
+   ],
+   "per_point_of_surprise": 0.1149,
+   "scoreboard_elo_rating_change": 1.948
+  },
+  "B luck: beat expectation by 14+, turnover margin >= +3 or ST >= +7, success margin <= 0": {
+   "ci": [
+    1.7199,
+    2.0319
+   ],
+   "ensemble_rating_change": 1.8803,
+   "mean_surprise": 21.9035,
+   "n": 204,
+   "next_game_residual": -1.1686,
+   "next_game_residual_ci": [
+    -3.4764,
+    1.0645
+   ],
+   "per_point_of_surprise": 0.0813,
+   "scoreboard_elo_rating_change": 3.0181
+  },
+  "C lost, but won the success battle (success margin >= +3)": {
+   "ci": [
+    -0.5289,
+    -0.3525
+   ],
+   "ensemble_rating_change": -0.4398,
+   "mean_surprise": -7.502,
+   "n": 897,
+   "next_game_residual": 0.5113,
+   "next_game_residual_ci": [
+    -0.6727,
+    1.5949
+   ],
+   "per_point_of_surprise": 0.0852,
+   "scoreboard_elo_rating_change": -1.833
+  },
+  "D lost and lost the success battle (success margin <= -3)": {
+   "ci": [
+    -1.7614,
+    -1.6693
+   ],
+   "ensemble_rating_change": -1.7168,
+   "mean_surprise": -11.042,
+   "n": 4315,
+   "next_game_residual": -0.6738,
+   "next_game_residual_ci": [
+    -1.1689,
+    -0.1649
+   ],
+   "per_point_of_surprise": 0.1213,
+   "scoreboard_elo_rating_change": -1.3491
+  },
+  "E won, but lost the success battle (success margin <= -3)": {
+   "ci": [
+    0.3202,
+    0.4984
+   ],
+   "ensemble_rating_change": 0.4089,
+   "mean_surprise": 7.502,
+   "n": 897,
+   "next_game_residual": 0.1345,
+   "next_game_residual_ci": [
+    -0.8848,
+    1.2351
+   ],
+   "per_point_of_surprise": 0.0812,
+   "scoreboard_elo_rating_change": 1.8073
+  }
+ },
+ "examples": [
+  {
+   "class": "A",
+   "elo_change": 5.0491,
+   "game_id": 401117515,
+   "rating_change": 6.5573,
+   "season": 2019,
+   "st_net": 8.6553,
+   "success_margin": 11.5084,
+   "surprise": 59.3572,
+   "team_id": 62,
+   "team_margin": 51.0,
+   "to_margin": -0.0
+  },
+  {
+   "class": "A",
+   "elo_change": 1.4536,
+   "game_id": 401032064,
+   "rating_change": 4.5031,
+   "season": 2018,
+   "st_net": 5.8311,
+   "success_margin": 9.9614,
+   "surprise": 57.9064,
+   "team_id": 349,
+   "team_margin": 56.0,
+   "to_margin": 0.0
+  },
+  {
+   "class": "A",
+   "elo_change": 6.2464,
+   "game_id": 401234576,
+   "rating_change": 5.8675,
+   "season": 2020,
+   "st_net": -3.6953,
+   "success_margin": 12.8221,
+   "surprise": 57.4769,
+   "team_id": 252,
+   "team_margin": 52.0,
+   "to_margin": -1.0
+  },
+  {
+   "class": "A",
+   "elo_change": 0.9837,
+   "game_id": 401114193,
+   "rating_change": 2.959,
+   "season": 2019,
+   "st_net": -5.0939,
+   "success_margin": 8.9732,
+   "surprise": 57.1802,
+   "team_id": 2483,
+   "team_margin": 71.0,
+   "to_margin": 1.0
+  },
+  {
+   "class": "B",
+   "elo_change": 5.7105,
+   "game_id": 401525892,
+   "rating_change": 3.8748,
+   "season": 2023,
+   "st_net": -2.2526,
+   "success_margin": -1.7756,
+   "surprise": 52.0186,
+   "team_id": 2116,
+   "team_margin": 42.0,
+   "to_margin": 3.0
+  },
+  {
+   "class": "B",
+   "elo_change": 1.3091,
+   "game_id": 401249429,
+   "rating_change": 3.8314,
+   "season": 2020,
+   "st_net": 4.8477,
+   "success_margin": -0.1532,
+   "surprise": 51.0898,
+   "team_id": 9,
+   "team_margin": 63.0,
+   "to_margin": 4.0
+  },
+  {
+   "class": "B",
+   "elo_change": 4.1234,
+   "game_id": 400869556,
+   "rating_change": 2.1018,
+   "season": 2016,
+   "st_net": 10.4709,
+   "success_margin": -0.6456,
+   "surprise": 45.3498,
+   "team_id": 235,
+   "team_margin": 44.0,
+   "to_margin": 2.0
+  },
+  {
+   "class": "B",
+   "elo_change": 7.049,
+   "game_id": 401520361,
+   "rating_change": 5.4026,
+   "season": 2023,
+   "st_net": 5.8229,
+   "success_margin": -1.8405,
+   "surprise": 43.8737,
+   "team_id": 349,
+   "team_margin": 20.0,
+   "to_margin": 7.0
+  },
+  {
+   "class": "C",
+   "elo_change": -0.0847,
+   "game_id": 401628345,
+   "rating_change": 3.7574,
+   "season": 2024,
+   "st_net": 2.6031,
+   "success_margin": 8.3958,
+   "surprise": 23.996,
+   "team_id": 248,
+   "team_margin": -4.0,
+   "to_margin": -1.0
+  },
+  {
+   "class": "C",
+   "elo_change": -0.0502,
+   "game_id": 401628354,
+   "rating_change": 1.0806,
+   "season": 2024,
+   "st_net": 1.5299,
+   "success_margin": 3.3989,
+   "surprise": 23.1924,
+   "team_id": 96,
+   "team_margin": -1.0,
+   "to_margin": -1.0
+  },
+  {
+   "class": "C",
+   "elo_change": -0.0768,
+   "game_id": 401405145,
+   "rating_change": 1.5216,
+   "season": 2022,
+   "st_net": -5.6257,
+   "success_margin": 7.9548,
+   "surprise": 23.0044,
+   "team_id": 356,
+   "team_margin": -2.0,
+   "to_margin": 1.0
+  },
+  {
+   "class": "C",
+   "elo_change": -0.077,
+   "game_id": 401426618,
+   "rating_change": 1.883,
+   "season": 2022,
+   "st_net": 0.2393,
+   "success_margin": 4.9364,
+   "surprise": 20.0109,
+   "team_id": 2638,
+   "team_margin": -3.0,
+   "to_margin": -2.0
+  }
+ ],
+ "n_team_games": 15092,
+ "tests": {
+  "a loss that won the success battle is not a downgrade on average (C >= -0.25)": false,
+  "a loss that won the success battle is not punished like one that lost it (C > D)": true,
+  "no class is systematically mis-rated in its next game (every next-game residual CI covers 0)": false,
+  "sustainable surprise moves the rating more than luck (A > B at equal surprise)": true
+ }
+}

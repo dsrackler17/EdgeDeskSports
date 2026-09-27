@@ -75,8 +75,19 @@ chk('confirmed starter: no QB variance beyond ~0', conf.overlays.qb_home.var_pts
 if (P.qb.applied) chk('starter OUT moves the line toward the backup', out.projected_margin < conf.projected_margin - 0.5);
 else chk('starter OUT without a validated coefficient moves nothing', near(out.projected_margin, conf.projected_margin, 1e-9));
 chk('questionable widens the distribution more than confirmed', q.sigma > conf.sigma);
-chk('OUT is certain: less variance than questionable', out.overlays.qb_home.var_pts < q.overlays.qb_home.var_pts);
-chk('unknown status widens vs confirmed (never assumed active)', unk.sigma > conf.sigma);
+if (P.qb.model === 'level') {
+  var base = E.pure(ROW, {});
+  chk('QB level model: no report = the measured baseline, no shift and no extra variance (no double count)',
+    base.overlays.qb_home.mean_pts === 0 && base.overlays.qb_home.var_pts === 0 && unk.overlays.qb_home.mean_pts === 0);
+  chk('QB level model: OUT shifts by the measured change effect relative to the baseline',
+    near(out.overlays.qb_home.mean_pts, (P.qb.baseline_same_starter - 0) * P.qb.change_delta_pts, 1e-3));
+  chk('QB level model: a confirmed starter removes the baseline change risk (small upward shift)',
+    conf.overlays.qb_home.mean_pts > 0 && conf.overlays.qb_home.mean_pts < 0.5);
+  chk('QB level model: a backup-QB game carries the measured excess variance', out.overlays.qb_home.var_pts > 0);
+} else {
+  chk('OUT is certain: less variance than questionable', out.overlays.qb_home.var_pts < q.overlays.qb_home.var_pts);
+  chk('unknown status widens vs confirmed (never assumed active)', unk.sigma > conf.sigma);
+}
 chk('questionable caps confidence', q.football_prediction_confidence <= P.reliability.caps.qb_unsettled);
 var noHist = E.pure(Object.assign(clone(ROW), { qb: { home: null, away: null } }), {});
 chk('no QB history: no invented QB point value', noHist.overlays.qb_home.mean_pts === 0);

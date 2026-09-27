@@ -19,7 +19,8 @@ from . import config as C
 from . import common
 from . import models as MD
 
-SUB = ['A_adj_eff', 'B_elo', 'C_ridge', 'D_gbm', 'E_drive']
+ALL_SUB = ['A_adj_eff', 'B_elo', 'C_ridge', 'D_gbm', 'E_drive']   # fitted (A, B, E as baselines)
+SUB = list(C.ACTIVE_COMPONENTS)                                      # the ones that predict
 SIGMA_COLS = ['early_season', 'inv_games', 'rating_sd_sum', 'ens_sd', 'abs_pred', 'exp_total_z',
               'fcs_game_f', 'qb_missing_any', 'qb_unsettled_any', 'vol_sum', 'to_dependence']
 # Missing-value fills for the error model are LEARNED ON THE TRAINING ROWS and
@@ -194,7 +195,10 @@ def run(X, seasons=None, fam_C=None, fam_D=None, gbm_params=None, ridge_alpha=No
         if past.season.nunique() < 2:
             continue
         assert_past_only(sorted(past.season.unique()), S)
-        w = stack_weights(past[pcols].values, past.margin.values.astype(float))
+        if C.STACK_METHOD == 'mean':
+            w = np.full(len(pcols), 1.0 / len(pcols))
+        else:
+            w = stack_weights(past[pcols].values, past.margin.values.astype(float))
         W[S] = dict(zip(subset, [float(x) for x in w]))
         m = D.season.eq(S)
         D.loc[m, 'ens_pred'] = D.loc[m, pcols].values @ w

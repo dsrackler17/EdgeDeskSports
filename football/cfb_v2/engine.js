@@ -132,6 +132,25 @@
        measured historical probability that the most recent starter starts
        again — never assumed to be 1. */
     var Q = P.qb || {}, key = status ? STATUS_KEYS[String(status).toUpperCase()] : null;
+    if (Q.model === 'level') {
+      /* hardened: a measured LEVEL effect of a starter change (dev 2016-2023),
+         applied RELATIVE to the baseline change rate the training data already
+         contains. No report = the baseline = no shift and no extra variance
+         (candidate 001 shifted the mean for the baseline risk too: a double count). */
+      var common = P.qb_common || {};
+      var ps = key ? (common.status_start_prob || {})[key] : null;
+      var p0 = Q.baseline_same_starter, d = Q.change_delta_pts, ex = Q.change_excess_var_pts2 || 0;
+      if (!isNum(ps) || !isNum(p0) || !isNum(d)) {
+        return { side: side, status: key || 'no report', start_prob: null, mean_pts: 0, var_pts: 0, applied: true,
+          basis: 'no status report: the projection already carries the historical ' +
+            Math.round(100 * (1 - (isNum(p0) ? p0 : 0.86))) + '% chance of a starter change' };
+      }
+      var v = function (q) { return q * (1 - q) * d * d + (1 - q) * ex; };
+      return { side: side, status: key, start_prob: ps, mean_pts: r2((p0 - ps) * d, 3),
+        var_pts: Math.max(0, v(ps) - v(p0)), change_delta_pts: d, applied: true,
+        basis: 'reported status ' + key + ': start probability ' + ps + ' vs the ' + p0 + ' baseline; a change costs '
+          + r2(-d, 2) + ' pts (measured)' };
+    }
     var p = key ? Q.status_start_prob[key] : Q.same_starter_prob;
     var drop = (snap && isNum(snap.exp_rating) && isNum(snap.backup_rating))
       ? snap.backup_rating - snap.exp_rating : null;       /* EPA/dropback, usually < 0 */
