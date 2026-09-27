@@ -118,8 +118,10 @@ function run(opts) {
   try { rp = JSON.parse(fs.readFileSync(opts.replayFile || path.join(G.REPO, 'football', 'cfb_v2', 'snapshots', String(season), 'replay_to_date.json'), 'utf8')); } catch (e) { /* none */ }
   if (rp && rp.rows && rp.rows.length) {
     const A = M.v2Adapter('candidate_001_direct', { current: { rows: rp.rows, generated_at: rp.generated_at }, slate: { games: [] } });
+    const sel = replayRowsFor(rp, A.model_version);
+    if (Object.keys(sel.refused).length) log.replay_refused = sel.refused;
     const rrows = [];
-    for (const r of rp.rows) {
+    for (const r of sel.rows) {
       const p = A.projections.get(String(r.game_id));
       if (!p || !r.prediction_ts || !(U.ms(r.prediction_ts) < U.ms(r.kickoff))) continue;
       const key = p.game.game_id + '|' + A.model_version + '|WEEKLY_FREEZE';
@@ -136,7 +138,22 @@ function run(opts) {
 }
 function roleOf(roles, mv) { return roles[mv] ? roles[mv].role : 'candidate'; }
 
-module.exports = { run, recordQuotes };
+/* The replay rows this importer may label as `modelVersion` (candidate 001's
+   adapter). A row is attributed to the version that produced it: its own
+   model_version, else the file's (audit F-02: a replay once reached the Lab
+   under another version's name). Rows of any other version, or of no stated
+   version, are refused, never relabelled. */
+function replayRowsFor(rp, modelVersion) {
+  const out = { rows: [], refused: {} };
+  ((rp && rp.rows) || []).forEach((r) => {
+    const v = (r && r.model_version) || (rp && rp.model_version) || null;
+    if (v === modelVersion) out.rows.push(r);
+    else { const k = v || 'unstated'; out.refused[k] = (out.refused[k] || 0) + 1; }
+  });
+  return out;
+}
+
+module.exports = { run, recordQuotes, replayRowsFor };
 
 if (require.main === module) {
   const a = process.argv.slice(2);
