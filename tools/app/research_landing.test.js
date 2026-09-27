@@ -95,14 +95,20 @@ function makeCtx(o) {
 }
 const C = makeCtx();
 
-/* ---- START HERE: four ways in, every one an existing route ------------- */
+/* ---- START HERE: three ways in, one primary, every one an existing route */
 const SH = C.fbStartHereHTML();
-['Find a game', 'Research today', 'Model disagreements', 'Power ratings']
+['Research today', 'Find a game', 'Disagreements']
   .forEach(l => has(SH, '>' + l + '<', 'start-here offers "' + l + '"'));
-eq('start-here offers exactly four actions', (SH.match(/<button/g) || []).length, 4);
+eq('start-here offers exactly three actions', (SH.match(/<button/g) || []).length, 3);
+chk('Research today is the primary action, and first',
+  SH.indexOf('<button class="pri" onclick="fbStartGo(\'today\')">Research today</button>') > 0
+  && SH.indexOf('>Research today<') < SH.indexOf('>Find a game<') && SH.indexOf('>Find a game<') < SH.indexOf('>Disagreements<'));
+eq('and it is the only primary', (SH.match(/class="pri"/g) || []).length, 1);
 lacks(SH, 'Step 1', 'it is not a wizard');
 lacks(SH, 'Step 2', 'it is not a wizard (2)');
-chk('and every action routes through one handler', (SH.match(/fbStartGo\(/g) || []).length === 4);
+chk('and every action routes through one handler', (SH.match(/fbStartGo\(/g) || []).length === 3);
+/* Power ratings left the start row, not the screen */
+has(APP, "fbStartGo(\\'ratings\\')\">View all ratings", 'power ratings keep their way in on the landing');
 /* the routes it uses all exist in the app */
 ["show('edges')", 'fbSetSport(\'rankings\')', 'fbSetSport(\'players\')'].forEach(r =>
   has(APP, r, 'the route ' + r + ' the landing uses exists'));
@@ -231,9 +237,10 @@ has(TI, 'Missing is not zero', 'and a stale quote as missing, not zero');
 /* 3. THE FIRST SCREEN                                                      */
 /* ======================================================================== */
 has(APP, '<h2>EdgeDesk Research', 'the shell says whose research this is');
-has(APP, 'Understand the game, model, and market.', 'and what it is for');
-has(APP, 'rs-creed', 'the product philosophy has one line');
-has(APP, '<b>Research, not picks.</b>', 'and it is that one');
+has(APP, '<span class="rs-exp">Experimental</span>', 'and that it is experimental, as a badge beside the title');
+has(APP, '<p class="rs-sub">Model, market, roster and uncertainty in one place.</p>', 'and what it is for, in one line');
+lacks(APP, 'rs-creed', 'the paragraph above the tabs is gone, so the first screen reaches the research');
+has(APP, 'Research tool only — not betting advice.', 'research, not advice, still rides the persistent disclaimer');
 /* the duplication the audit found is gone */
 chk('the landing no longer repeats the module name inside its own card',
   APP.indexOf("rsTkSnap({title:'',meta:'',key:'fbSnap'") >= 0);
@@ -241,8 +248,11 @@ chk('and rsTkSnap drops the head row when there is no title',
   /\(o\.title\?\('<div class="fb-snap-h">/.test(APP));
 lacks(APP, "defs:[['Review','Projected games with market data joined.']",
   'the defs block that repeated the How expander is gone');
-has(APP, '<b>Review</b> requires a PREDICTED projection', 'but the methodology it held is still written');
-has(APP, 'foot:fbStartHereHTML()', 'the single CTA became four ways in');
+has(APP, '<b>Research-ready</b> requires a PREDICTED projection', 'but the methodology it held is still written');
+/* the four counts say what they count; the numbers are fbSnapshot's */
+has(APP, "kpis:[{n:s.games,l:'Games'},{n:s.cand,l:'Research-ready',c:s.cand?'':'mut'},{n:s.dis,l:'Market disagreements',c:s.dis?'warn':'mut'},{n:s.faults,l:'Data faults',c:s.faults?'neg':'pos'}]",
+  'the summary labels are Games, Research-ready, Market disagreements and Data faults, over the same counts');
+has(APP, 'foot:fbStartHereHTML()', 'the single CTA became three ways in');
 
 /* ======================================================================== */
 /* 4. THE MODULE CARDS NAME OUTCOMES, NOT MODULES                           */

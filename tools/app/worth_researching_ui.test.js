@@ -194,7 +194,8 @@ const HTML = C.fbWrInner(BOARD);
 const NFLP = panelOf(HTML, 'nfl'), CFBP = panelOf(HTML, 'cfb');
 const NROWS = rowsOf(NFLP), CROWS = rowsOf(CFBP), ROWS = NROWS.concat(CROWS);
 eq('the board is read without changing a row, a projection or a market', JSON.stringify(BOARD), before);
-has(HTML, '5 Games Worth Researching', 'the section is titled');
+has(HTML, '<h3 class="fb-wr-t">Today&rsquo;s Research Board</h3>', 'the section is titled');
+has(HTML, '<span class="c">10 games worth researching</span>', 'and counts the games actually listed, never a fixed five');
 has(HTML, '<span class="r">ranked by league</span>', 'and says the leagues are ranked separately');
 chk('NFL and CFB each have their own panel, NFL first', NFLP && CFBP && HTML.indexOf('id="fbWr-nfl"') < HTML.indexOf('id="fbWr-cfb"'));
 has(NFLP, '<span class="t">NFL</span>', 'the NFL panel is labelled');
@@ -250,19 +251,31 @@ same('the CFB list is the ordering layer\'s CFB top five, in its order', titles(
 ROWS.forEach((r, i) => {
   const n = '(row ' + (i + 1) + ') ';
   has(r, '<i>Market</i>', n + 'shows the market spread');
-  has(r, '<i>EdgeDesk</i>', n + 'shows the EdgeDesk spread');
-  has(r, '<i>Difference</i>', n + 'shows the difference');
-  chk(n + 'with a status chip', /<span class="fb-wr-st[^"]*">(RESEARCH|INVESTIGATE|AGREEMENT)<\/span>/.test(r));
+  has(r, '<i>Model</i>', n + 'shows the EdgeDesk spread');
+  has(r, '<i>Gap</i>', n + 'shows the gap');
+  has(r, '<i>Confidence</i>', n + 'shows confidence');
+  chk(n + 'with a status chip', /<i>Status<\/i><b><span class="fb-wr-st[^"]*">(RESEARCH|INVESTIGATE|AGREEMENT)<\/span>/.test(r));
   chk(n + 'a league', /<span class="ts">(CFB|NFL) · /.test(r));
-  has(r, '<b>Why research it</b>', n + 'one why');
+  has(r, '<details class="fb-wr-w"><summary><b>Why research it</b></summary>', n + 'one why, folded under a disclosure');
   eq(n + 'exactly one Open research action', (r.match(/Open research/g) || []).length, 1);
   lacks(r, 'fb-sig-grid', n + 'and not the full signal card');
 });
 const flip = ROWS.find((r) => r.indexOf('Ole Miss @ Florida') >= 0);
 chk('the flip game is listed', !!flip);
-has(flip, '<i>Market</i>Florida -2.0', 'its market line reads as the home line');
-has(flip, '<i>EdgeDesk</i>Florida +4.1', 'its EdgeDesk line likewise');
-has(flip, '<i>Difference</i>6.1 pts', 'and the difference');
+has(flip, '<i>Market</i><b>Florida -2.0</b>', 'its market line reads as the home line');
+has(flip, '<i>Model</i><b>Florida +4.1</b>', 'its EdgeDesk line likewise');
+has(flip, '<i>Gap</i><b>6.1 pts</b>', 'and the gap');
+/* confidence is READ from the research view, never derived: a game with no
+   published confidence says so, and the reading-order score never stands in */
+chk('every NFL row says its confidence is not rated', NROWS.every((r) => r.indexOf('<b title="The NFL model publishes no confidence score">Not rated</b>') >= 0));
+{
+  const cf = C.fbWrConfidence({ sport: 'cfb', view: { confidence: { tier: 'HIGH', label: 'High', pct_text: '84%', score: 84 } } });
+  eq('a college confidence prints the view\'s own percentage and tier', cf.html, '84% <small>High</small>');
+  eq('a Low tier is marked', C.fbWrConfidence({ sport: 'cfb', view: { confidence: { tier: 'LOW', label: 'Low', pct_text: '30%' } } }).cls, 'low');
+  eq('a college game with no view is not rated either', C.fbWrConfidence({ sport: 'cfb' }).html, 'Not rated');
+  lacks(fnSrc('fbWrConfidence'), '.score', 'the reading-order score is never read as a confidence');
+  lacks(fnSrc('fbWrConfidence'), 'detail', 'nor anything else from the ranking');
+}
 has(flip, 'Model flips the market favorite: EdgeDesk has Ole Miss by 4.1, the market has Florida by 2.', 'with the flip explained');
 has(flip, '>RESEARCH<', 'under its board status');
 lacks(flip, 'Higher uncertainty', 'and no uncertainty label it has not earned');
