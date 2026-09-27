@@ -342,7 +342,9 @@ function weeklyReport(D, week, now, champ) {
   const decCounts = {}; offPreds.filter((p) => p.model_version === champ).forEach((p) => { decCounts[p.decision_class] = (decCounts[p.decision_class] || 0) + 1; });
   const byPred = new Map(D.preds.map((p) => [p.prediction_id, p]));
   const row = (e) => { const p = byPred.get(e.prediction_id) || {}; return { matchup: p.away_team + ' @ ' + p.home_team, model: e.model_label, predicted: p.pure_home_margin, actual: e.final_margin, abs_error: e.abs_margin_error, close_abs_error: e.close_abs_error, beat_close: e.edgedesk_beat_close }; };
-  const wins = cOff.filter((e) => U.isNum(e.error_diff_vs_close)).sort((a, b) => a.error_diff_vs_close - b.error_diff_vs_close).slice(0, 5).map(row);
+  /* a win is a game the model called better than the closing line did
+     (error_diff_vs_close = |model error| - |close error| < 0) */
+  const wins = cOff.filter((e) => U.isNum(e.error_diff_vs_close) && e.error_diff_vs_close < 0).sort((a, b) => a.error_diff_vs_close - b.error_diff_vs_close).slice(0, 5).map(row);
   const misses = cOff.slice().sort((a, b) => b.abs_margin_error - a.abs_margin_error).slice(0, 5).map(row);
   const ref = CFG.reference[champ] || {};
   const lessons = segmentScan(Object.assign({}, D, { evals: off })).filter((s) => s.model_version === champ && s.n >= 10 && U.isNum(s.z) && Math.abs(s.z) >= 2)
@@ -359,7 +361,7 @@ function weeklyReport(D, week, now, champ) {
     if (U.isNum(z) && Math.abs(z) < 2) random.push('the MAE difference from the reference is within 2 SE: indistinguishable from noise at n=' + er.n);
   }
   const vc = cp.market.vs_close;
-  if (U.isNum(vc.beat_share)) (vc.beat_share >= 0.5 ? worked : failed).push('closer than the closing line in ' + Math.round(vc.beat_share * 100) + '% of ' + vc.n + ' games (mean error difference ' + vc.mean_error_diff + ')');
+  if (U.isNum(vc.beat_share)) (vc.beat_share >= 0.5 ? worked : failed).push('closer than the closing line in ' + Math.round(vc.beat_share * 100) + '% of ' + vc.n + ' games (mean |model error| − |close error| ' + vc.mean_error_diff + ' pts)');
   const d = cp.market.discovery;
   if (U.isNum(d.moved_toward_share)) (d.moved_toward_share >= 0.5 ? worked : failed).push('the market moved toward the model in ' + Math.round(d.moved_toward_share * 100) + '% of ' + d.n + ' games (mean ' + d.mean_move_points + ' pts)');
   const iv = cp.intervals.p80;
@@ -436,8 +438,8 @@ function mdWeekly(w) {
   Object.entries(w.model_performance.by_model).forEach(([m, p]) => lines.push('| ' + m + ' | ' + p.errors.n + ' | ' + f(p.errors.mae) + ' | ' + f(p.errors.rmse) + ' | ' + f(p.errors.bias) + ' | ' + f(p.brier, 4) + ' | ' + f(p.win_ece, 4) + ' | ' + [p.intervals.p50.coverage, p.intervals.p80.coverage, p.intervals.p95.coverage].map((x) => f(x, 2)).join(' / ') + ' |'));
   const m = w.market_performance;
   lines.push('', '## Market performance (champion)', '',
-    '- EdgeDesk vs opener: mean error difference ' + f(m.vs_open.mean_error_diff) + ' (n=' + m.vs_open.n + '), closer in ' + pc(m.vs_open.beat_share) + '.',
-    '- EdgeDesk vs close: mean error difference ' + f(m.vs_close.mean_error_diff) + ' (n=' + m.vs_close.n + '), closer in ' + pc(m.vs_close.beat_share) + '.',
+    '- EdgeDesk vs opener: mean (|EdgeDesk error| − |opener error|) ' + f(m.vs_open.mean_error_diff) + ' pts (negative = EdgeDesk closer to the result; n=' + m.vs_open.n + '); EdgeDesk closer in ' + pc(m.vs_open.beat_share) + ' of games.',
+    '- EdgeDesk vs close: mean (|EdgeDesk error| − |close error|) ' + f(m.vs_close.mean_error_diff) + ' pts (negative = EdgeDesk closer; n=' + m.vs_close.n + '); EdgeDesk closer in ' + pc(m.vs_close.beat_share) + ' of games.',
     '- Market moved toward EdgeDesk: ' + pc(m.discovery.moved_toward_share) + ' of ' + m.discovery.n + ' games, mean ' + f(m.discovery.mean_move_points) + ' pts.',
     '- Positive CLV: ' + pc(m.positive_clv_pct) + ', mean CLV ' + f(m.clv_mean) + ' pts.', '',
     '## Betting performance (research positions, graded at the snapshot number)', '',
@@ -445,7 +447,8 @@ function mdWeekly(w) {
     '- BET decisions: ' + w.betting_performance.bets.decisions + ' (BET is disabled).', '',
     '## Submodel performance', '', '| component | n | MAE | bias |', '|---|---|---|---|');
   w.submodel_performance.forEach((r) => lines.push('| ' + r.name + ' | ' + r.n + ' | ' + f(r.mae) + ' | ' + f(r.bias) + ' |'));
-  lines.push('', '## Biggest wins (closest to the result relative to the close)', '');
+  lines.push('', '## Biggest wins (games the model called better than the closing line)', '');
+  if (!w.biggest_wins.length) lines.push('- None this week.');
   w.biggest_wins.forEach((r) => lines.push('- ' + r.matchup + ': predicted ' + f(r.predicted, 1) + ', actual ' + r.actual + ' (error ' + f(r.abs_error, 1) + ' vs close ' + f(r.close_abs_error, 1) + ')'));
   lines.push('', '## Biggest misses', '');
   w.biggest_misses.forEach((r) => lines.push('- ' + r.matchup + ': predicted ' + f(r.predicted, 1) + ', actual ' + r.actual + ' (error ' + f(r.abs_error, 1) + ', close ' + f(r.close_abs_error, 1) + ')'));
