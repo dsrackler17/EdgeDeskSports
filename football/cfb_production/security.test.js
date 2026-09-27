@@ -8,7 +8,9 @@
        secret (tools/cfb/secret_audit.js over the real tree)
      3 least privilege in every supabase/cfb_*.sql: every security-definer
        function is revoked from public and anon; anon is granted nothing but
-       SELECT on the two settled-record views; every table sits behind RLS
+       SELECT on the two settled-record views and the research terminal's
+       guarded analytics writer; authenticated executes only the read-only
+       health report and the admin-gated roll-ups; every table sits behind RLS
      4 public endpoints cannot trigger a CFB refresh: the two dispatchers are
        revoked from anon and authenticated, no edge function or page names a
        CFB workflow or calls a CFB writer, capture needs CRON_SECRET, the
@@ -95,6 +97,13 @@ const rnd = (n, set) => { set = set || 'ABCDEFGHJKLMNPQRSTUVWabcdefghjkmnpqrstuv
 
 /* --------------------------------------------------- 3 least privilege (SQL) */
 const SQL = fs.readdirSync(path.join(ROOT, 'supabase')).filter((f) => /^cfb_.*\.sql$/.test(f));
+/* The documented exceptions, each with the guard that makes it safe (SECURITY.md §2):
+   anon may call the research terminal's analytics writer (a fixed event list, clipped
+   text, no identity, 120 events an hour; no model reads the table), and authenticated may
+   call the read-only health report and the terminal's roll-ups (growth admins only, inside). */
+const ANON_EXEC_OK = { cfb_terminal_track: /p_event not in \([^)]*\) then return false[\s\S]*?if n >= 120 then return false/ };
+const AUTH_EXEC_OK = { cfb_health: null, cfb_terminal_usage: /where public\.growth_is_admin\(\)/, cfb_terminal_return_rate: /where public\.growth_is_admin\(\)/ };
+const fnBody = (s, name) => { const i = s.indexOf('create or replace function public.' + name + '('); return i < 0 ? '' : s.slice(i, s.indexOf('$$;', i) > 0 ? s.indexOf('$$;', i) : s.indexOf('$fn$;', i)); };
 {
   const definers = [], unguarded = [];
   SQL.forEach((f) => {
@@ -104,20 +113,27 @@ const SQL = fs.readdirSync(path.join(ROOT, 'supabase')).filter((f) => /^cfb_.*\.
     while ((m = re.exec(s))) {
       if (!/security definer/i.test(m[3])) continue;
       const name = m[1]; definers.push(f + ' ' + name);
-      const direct = (who) => new RegExp('revoke all on function public\\.' + name + '\\s*\\([^;]*from ' + who + '\\b', 'i').test(s);
+      /* a direct revoke naming the role in its role list ("from public, anon") */
+      const direct = (who) => new RegExp('revoke all on function public\\.' + name + '\\s*\\([^;]*\\bfrom\\s+[a-z_, ]*\\b' + who + '\\b', 'i').test(s);
       /* or listed in a do-block array whose loop revokes from public and anon */
       const listed = new RegExp("'public\\." + name + "\\(", 'i').test(s) && /revoke all on function %s from public/i.test(s) && /revoke all on function %s from anon/i.test(s);
-      if (!((direct('public') && direct('anon')) || listed)) unguarded.push(f + ' ' + name);
+      const anonOk = ANON_EXEC_OK[name] && direct('public') && ANON_EXEC_OK[name].test(fnBody(s, name));
+      if (!((direct('public') && direct('anon')) || listed || anonOk)) unguarded.push(f + ' ' + name);
     }
   });
   chk('least privilege: security-definer functions found in the CFB migrations', definers.length >= 20, definers.length);
-  chk('least privilege: every security-definer CFB function is revoked from public and anon', unguarded.length === 0, unguarded);
+  chk('least privilege: every security-definer CFB function is revoked from public and anon (the analytics writer aside, with its guards)', unguarded.length === 0, unguarded);
   const anon = [];
-  SQL.forEach((f) => rd('supabase/' + f).split('\n').forEach((l, i) => { if (/\bgrant\b[^;]*\bto anon\b/i.test(l)) anon.push(f + ':' + (i + 1) + ' ' + l.trim()); }));
+  SQL.forEach((f) => rd('supabase/' + f).split('\n').forEach((l, i) => { if (/\bgrant\b[^;]*\bto\s+[a-z_, ]*\banon\b/i.test(l)) anon.push({ f, line: i + 1, text: l.trim() }); }));
   const lab = rd('supabase/cfb_lab.sql');
   const pubViews = /foreach v in array array\['cfb_lab_public_record','cfb_lab_public_summary'\][\s\S]*?grant select on public\.%I to anon/.test(lab);
-  chk("least privilege: anon's only grant is SELECT on the settled-record views (cfb_lab_public_record, cfb_lab_public_summary)",
-    anon.length === 1 && /grant select on public\.%I to anon/.test(anon[0]) && pubViews, anon);
+  const anonBad = anon.filter((a) => !(a.f === 'cfb_lab.sql' && /grant select on public\.%I to anon/.test(a.text))
+    && !(/grant execute on function public\.([a-z_]+)/.test(a.text) && ANON_EXEC_OK[/grant execute on function public\.([a-z_]+)/.exec(a.text)[1]]));
+  chk("least privilege: anon is granted only SELECT on the settled-record views and the analytics writer, nothing else",
+    pubViews && anonBad.length === 0 && anon.length >= 1, anonBad.map((a) => a.f + ':' + a.line + ' ' + a.text));
+  const track = fnBody(rd('supabase/cfb_terminal_analytics.sql') || '', 'cfb_terminal_track');
+  chk('least privilege: the anon analytics writer validates the event, clips text, rate-limits, and touches no model table',
+    ANON_EXEC_OK.cfb_terminal_track.test(track) && /left\(p_detail, 120\)/.test(track) && !/cfb_(lab|decision|weekly|v2|market|production)_/.test(track));
   chk('least privilege: the public record shows only graded T24 LIVE champion rows (joined to evaluations: after the result)',
     /cfb_lab_public_record as[\s\S]*?join \(select distinct on \(x\.prediction_id\) x\.\*\s+from public\.cfb_lab_evaluations[\s\S]*?where p\.checkpoint_type = 'T24' and p\.origin = 'LIVE' and p\.model_role = 'champion'/.test(lab));
   const noRls = [];
@@ -131,9 +147,14 @@ const SQL = fs.readdirSync(path.join(ROOT, 'supabase')).filter((f) => /^cfb_.*\.
     });
   });
   chk('least privilege: every CFB table has row level security', noRls.length === 0, noRls);
-  const health = rd('supabase/cfb_production.sql');
-  chk('least privilege: authenticated may run only the read-only cfb_health among the production functions',
-    /revoke all on function public\.cfb_health\(timestamptz\) from anon/.test(health) && !/grant execute on function public\.cfb_(?!health)[a-z_]+[^;]*to authenticated/i.test(SQL.map((f) => rd('supabase/' + f)).join('\n')));
+  const all = SQL.map((f) => rd('supabase/' + f)).join('\n');
+  const authExec = [];
+  let g; const gre = /grant execute on function public\.([a-z0-9_]+)[^;]*\bto\s+[a-z_, ]*\bauthenticated\b/gi;
+  while ((g = gre.exec(all))) authExec.push(g[1]);
+  const authBad = authExec.filter((n) => !Object.prototype.hasOwnProperty.call(AUTH_EXEC_OK, n) && !ANON_EXEC_OK[n]);
+  const authUngated = Object.keys(AUTH_EXEC_OK).filter((n) => AUTH_EXEC_OK[n] && authExec.includes(n) && !AUTH_EXEC_OK[n].test(fnBody(all, n)));
+  chk('least privilege: authenticated may execute only the read-only cfb_health and the admin-gated terminal roll-ups',
+    /revoke all on function public\.cfb_health\(timestamptz\) from anon/.test(all) && authBad.length === 0 && authUngated.length === 0, { authBad, authUngated });
 }
 
 /* ------------------------------------------- 4 public endpoints, no refresh */

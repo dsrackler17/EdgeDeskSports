@@ -28,7 +28,7 @@ non-anon JWTs, GitHub / Stripe / Anthropic / OpenAI / Slack / AWS tokens, databa
 keys in URLs and credential-named assignments; in workflows, a secret on a `run:` line or echoed. A finding
 shows the file, the line, the kind and a masked fingerprint (`sha256:<10 hex> (<n> chars)`), never the value.
 
-Result on 2026-09-27 (2716 files: 19 page files, 15 log files; 45 workflows): **no secret.**
+Result on 2026-09-27 (2730 files: 20 page files, 15 log files; 47 workflows): **no secret.**
 - 9 test fixtures: fake values in test files (`capture_feed.test.js`, `sql.test.js`, `capture.test.js`,
   two collective tests, `issue_reports.test.sql`, the stub key in `tools/intelligence/conversation.js`).
 - 2 informational: `deploy-intelligence.yml` lines 145 and 170 put `secrets.SUPABASE_PROJECT_REF` on a
@@ -57,10 +57,17 @@ dir, so the test holds none), that no finding carries a value, and that the real
 - The capture function inserts quotes through one RPC.
 - Nothing in the prediction path can alter a model, a policy or a role.
 
-**Enforced by `football/cfb_production/security.test.js`** (every PR, `cfb-security.yml`): every
-`security definer` function in `supabase/cfb_*.sql` (24 of them) is revoked from public and anon; anon's
-only grant is SELECT on the two settled-record views; every CFB table has row level security; authenticated
-may execute no CFB function but the read-only `cfb_health`.
+**Enforced by `football/cfb_production/security.test.js`** (every PR, `cfb-security.yml`):
+- every `security definer` function in `supabase/cfb_*.sql` is revoked from public and anon, with one
+  documented exception;
+- anon is granted only SELECT on the two settled-record views and EXECUTE on that exception,
+  `cfb_terminal_track` (`supabase/cfb_terminal_analytics.sql`, the research terminal's product analytics).
+  It is guarded: a fixed event list, clipped text, no identity, 120 events per visitor-hour, and an
+  insert into a table no model reads (`football/cfb_terminal/tests.js` enforces the last). It is a public
+  write, not a refresh: it cannot start a computation;
+- authenticated may execute only the read-only `cfb_health` and the terminal's roll-ups, which answer
+  only for growth admins (`growth_is_admin()` inside the function);
+- every CFB table has row level security.
 
 **Recommendation.** Replace the service role in the lab mirror and in capture's CFB feed with a dedicated
 Postgres role that has INSERT on `cfb_lab_*` / `cfb_market_*` and EXECUTE on the two ingest RPCs only. The

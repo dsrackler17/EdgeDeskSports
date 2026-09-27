@@ -35,10 +35,12 @@ Betting is disabled (`bet_enabled: false`).
 | the stored projections (`projections.js`) | `CANON.snapshot` → `reports/projections.json` (§2) |
 | the app's V2 panel (`app.html` `fbV2ShadowHTML`) | reads `projections.json`; loads no engine |
 | the internal debug view (`admin/cfb-debug`) | reads `projections.json` and `traces.json` (§10) |
+| the research terminal (`football/cfb_terminal/build.js`, `lib/cfb_terminal.js`, `research/cfb/`) | its hourly build takes V2.1's number from `CANON.pure`; its page reads the stored research objects |
 | the AI explanation (`supabase/functions/edgedesk_ai/_cfb_explain.js`) | `cfbFacts()` takes a stored projection entry or lab row (SECURITY.md §5) |
 
 **The contract test** (`canonical.test.js` §1) scans the repository. It fails when:
-- any file outside `canonical.js` calls the V2 engine's `pure()`;
+- any file outside `canonical.js` calls the V2 engine's `pure()`, through any receiver
+  (`E2.pure`, `eng.engine.pure`, `window.EDCfbV2.pure`);
 - `engine.decide()` runs outside the three stored-research producers;
 - a page, admin view, edge function, newsletter or article loads the V2 engine;
 - a node consumer bypasses `canonical.pure`;
@@ -379,7 +381,9 @@ and display layer. It covers:
 - the Model Lab page ("Research class", "Research position");
 - the ops dashboard (roles: CHALLENGER OFFICIAL, CURRENT RESEARCH);
 - the debug view;
-- the AI explanation boundary: a non-governed status is stated as NO BET.
+- the AI explanation boundary: a non-governed status is stated as NO BET. The research terminal's page
+  words (RESEARCH, WAIT, INVESTIGATE, PASS, DATA FAULT, NO MARKET) cross as a labelled research status,
+  and its BET crosses only as a governed decision.
 
 `canonical.test.js` and `frontend_contract.test.js` fail if a consumer shows the
 stage-8 status as official.
@@ -462,7 +466,7 @@ All are in CI:
 | `final_hardening.test.js` | 23 |
 | `replay.test.js` | 7 |
 | `debug_ui.test.js` | 30 |
-| `security.test.js` | 54 |
+| `security.test.js` | 55 |
 | `golden.js` | 15 cases |
 | `v2/weekly/tests_contract.py` | 51 fast, 54 real |
 | `tools/football/cfb_v2_panel.test.js` | 20 |
