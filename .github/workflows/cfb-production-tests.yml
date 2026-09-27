@@ -15,6 +15,16 @@ on:
     paths:
       - 'football/cfb_production/**'
       - 'supabase/cfb_production.sql'
+      # every consumer the canonical pathway test scans
+      - 'app.html'
+      - 'admin/**'
+      - 'supabase/functions/edgedesk_ai/**'
+      - 'football/cfb_lab/*.js'
+      - 'football/cfb_decision/*.js'
+      - 'football/cfb_market/*.js'
+      - 'football/cfb_v2/*.js'
+      - 'football/cfb_v2/current.json'
+      - 'football/fbs/build_coverage.js'
       - 'supabase/cfb_*.sql'
       - 'football/*/sync_supabase.js'
       - 'football/cfb_v2/artifacts/**'
@@ -34,6 +44,8 @@ on:
     paths:
       - 'football/cfb_production/*.js'
       - 'football/cfb_production/*.json'
+      - 'football/cfb_production/contract/**'
+      - 'football/cfb_production/golden/**'
       - 'supabase/cfb_production.sql'
       - 'admin/cfb-ops/**'
       - 'tools/cfb/**'
@@ -65,6 +77,16 @@ jobs:
         run: node football/cfb_production/tests.js
       - name: Operations dashboard (admin/cfb-ops)
         run: node football/cfb_production/ui.test.js
+      - name: The canonical prediction pathway (no consumer recomputes; one official status; numeric safety; properties; chaos; reproducibility)
+        run: node football/cfb_production/canonical.test.js
+      - name: Game-level debug view and the prediction trace (admin/cfb-debug)
+        run: node football/cfb_production/debug_ui.test.js
+      - name: Golden games (stored invariant outputs of the production pathway)
+        run: node football/cfb_production/golden.js
+      - name: Final hardening test (a whole slate through every stage, then failures injected)
+        run: node football/cfb_production/final_hardening.test.js
+      - name: A historical week replayed from schedule to settlement, twice (deterministic)
+        run: node football/cfb_production/replay.test.js
       - name: The shared push helper every publishing job uses (races, conflicts, source paths merged not overwritten)
         run: node tools/ci/push_generated.test.js
       - name: Postgres — contract, chaos (locks, deadlock, lock timeout), idempotency 1x/2x/3x, disaster recovery

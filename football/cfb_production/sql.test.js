@@ -387,11 +387,19 @@ function fingerprint(tables, dbname) {
 
     if (v2ok) {
       const vdir = path.join(tmp, 'v2snap'); fs.mkdirSync(vdir);
-      /* the replay rows, wrapped the way a frozen snapshot file wraps them ({ row, hash }) */
-      const rep = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'snapshots', '2026', 'replay_to_date.json'), 'utf8'));
-      fs.writeFileSync(path.join(vdir, 'week_fixture.json'), JSON.stringify({ model_version: rep.model_version, rows: rep.rows.map((r, i) => ({ row: r, hash: 'fixture' + i })) }));
+      /* the production model's live rows (current.json, V2.1), wrapped the way a frozen
+         snapshot file wraps them ({ row, hash }). The mirror runs them through the
+         canonical service with the production engine. */
+      const cur = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'current.json'), 'utf8'));
+      fs.writeFileSync(path.join(vdir, 'week_fixture.json'), JSON.stringify({ model_version: cur.model_version, rows: cur.rows.map((r, i) => ({ row: r, hash: 'fixture' + i })) }));
       const SYV = require('../cfb_v2/sync_supabase.js');
       const vp = SYV.plan(2026, { dir: vdir });
+      /* another version's rows (the v2.0.0 replay) are never run through the V2.1 engine
+         and published under their own label: the canonical service refuses them */
+      const odir = path.join(tmp, 'v2snap_other'); fs.mkdirSync(odir);
+      const rep = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'snapshots', '2026', 'replay_to_date.json'), 'utf8'));
+      fs.writeFileSync(path.join(odir, 'week_fixture.json'), JSON.stringify({ model_version: rep.model_version, rows: rep.rows.map((r, i) => ({ row: r, hash: 'fixture' + i })) }));
+      chk('V2 mirror: another version\'s snapshot (v2.0.0) is not re-computed by the V2.1 engine and published', rep.rows.length > 0 && SYV.plan(2026, { dir: odir }).preds.length === 0);
       await runs3('V2 mirror (' + vp.preds.length + ' predictions)', ['cfb_model_versions', 'cfb_predictions', 'cfb_prediction_intervals', 'cfb_model_component_predictions'],
         () => SYV.sync(2026, { dir: vdir, fetch: PR.makeFetch(db), quiet: true, log: quietLog('cfb_weekly_refresh') }));
       chk('V2 mirror: every prediction once, with its three intervals', db.sql('select count(*) from public.cfb_predictions') === String(vp.preds.length) && db.sql('select count(*) from public.cfb_prediction_intervals') === String(vp.ints.length) && vp.preds.length > 0);

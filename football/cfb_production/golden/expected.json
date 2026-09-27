@@ -1,0 +1,579 @@
+{
+ "schema": "cfb_golden_expected_v1",
+ "as_of_ts": "2026-09-28T12:00:00.000Z",
+ "note": "invariant outputs of the production pathway for the golden games; regenerate only with a new model version (a PATCH must reproduce them)",
+ "cases": [
+  {
+   "scenario": "road favourite",
+   "game_id": "401858250",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": -22.98,
+    "fair_spread_home_line": 22.98,
+    "fair_spread_display": "Notre Dame -23.0",
+    "home_win_prob": 0.0617,
+    "away_win_prob": 0.9383,
+    "sigma": 14.94,
+    "p80": [
+     -42.2,
+     -3.8
+    ],
+    "confidence": 100,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   },
+   "stage8_research": {
+    "status": "PASS",
+    "side": "AWAY",
+    "cover_probability_raw": 0.5398,
+    "cover_probability": 0.5101,
+    "stale": false,
+    "reasons": [
+     "insufficient edge after calibration and vig"
+    ]
+   },
+   "market_integrity": {
+    "status": "OK",
+    "actionable_status": "ACTIONABLE"
+   },
+   "governed": {
+    "status": "PASS",
+    "side": "AWAY",
+    "reason_codes": [
+     "PASS_PRICE"
+    ],
+    "pure_cover_probability": 0.5398,
+    "decision_cover_probability": 0.5091
+   }
+  },
+  {
+   "scenario": "road favourite, final (graded on the full score incl. overtime)",
+   "game_id": "401858250",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": -22.98,
+    "fair_spread_home_line": 22.98,
+    "fair_spread_display": "Notre Dame -23.0",
+    "home_win_prob": 0.0617,
+    "away_win_prob": 0.9383,
+    "sigma": 14.94,
+    "p80": [
+     -42.2,
+     -3.8
+    ],
+    "confidence": 100,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   },
+   "settlement": {
+    "result_status": "FINAL",
+    "ats_result": "LOSS",
+    "void": false,
+    "abs_margin_error": 1.98
+   }
+  },
+  {
+   "scenario": "neutral site (v2.0.0 replay row, its own engine)",
+   "game_id": "401856766",
+   "model_version": "edgedesk_cfb_v2.0.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": 11.87,
+    "fair_spread_home_line": -11.87,
+    "fair_spread_display": "TCU -12.0",
+    "home_win_prob": 0.7571,
+    "away_win_prob": 0.2429,
+    "sigma": 17.141,
+    "p80": [
+     -10.1,
+     33.9
+    ],
+    "confidence": 42,
+    "modes": [
+     "QB_UNCERTAIN"
+    ],
+    "fallback_level": 2,
+    "contract_ok": true,
+    "show_confidence_score": false
+   },
+   "resolved": {
+    "level": 2,
+    "mode": "DEGRADED",
+    "model_version": "edgedesk_cfb_v2.0.0",
+    "modes": [
+     "QB_UNCERTAIN"
+    ]
+   },
+   "stage8_research": {
+    "status": "PASS",
+    "side": "HOME",
+    "cover_probability_raw": 0.5321,
+    "cover_probability": 0.5033,
+    "stale": false,
+    "reasons": [
+     "insufficient edge after calibration and vig"
+    ]
+   },
+   "market_integrity": {
+    "status": "OK",
+    "actionable_status": "ACTIONABLE"
+   },
+   "governed": {
+    "status": "NO_BET",
+    "side": null,
+    "reason_codes": [
+     "NO_BET_VERSION_MISMATCH"
+    ]
+   }
+  },
+  {
+   "scenario": "QB change: home starter reported OUT",
+   "game_id": "401858245",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": 0.82,
+    "fair_spread_home_line": -0.82,
+    "fair_spread_display": "Virginia Tech -1.0",
+    "home_win_prob": 0.5203,
+    "away_win_prob": 0.4797,
+    "sigma": 16.173,
+    "p80": [
+     -20,
+     21.6
+    ],
+    "confidence": 73,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   },
+   "stage8_research": {
+    "status": "PASS",
+    "side": "AWAY",
+    "cover_probability_raw": 0.5169,
+    "cover_probability": 0.5058,
+    "stale": false,
+    "reasons": [
+     "insufficient edge after calibration and vig"
+    ]
+   },
+   "market_integrity": {
+    "status": "OK",
+    "actionable_status": "ACTIONABLE"
+   },
+   "governed": {
+    "status": "PASS",
+    "side": "AWAY",
+    "reason_codes": [
+     "PASS_PRICE"
+    ],
+    "pure_cover_probability": 0.5169,
+    "decision_cover_probability": 0.5039
+   }
+  },
+  {
+   "scenario": "QB change: no report (the baseline)",
+   "game_id": "401858245",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": 1.81,
+    "fair_spread_home_line": -1.81,
+    "fair_spread_display": "Virginia Tech -2.0",
+    "home_win_prob": 0.5455,
+    "away_win_prob": 0.4545,
+    "sigma": 15.962,
+    "p80": [
+     -18.7,
+     22.3
+    ],
+    "confidence": 80,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   }
+  },
+  {
+   "scenario": "FCS: projected, never priced",
+   "game_id": "401856706",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "NOT_PRICED",
+    "reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)"
+   },
+   "resolved": {
+    "level": null,
+    "mode": "NOT_PRICED",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": []
+   },
+   "stage8_research": {
+    "status": "PASS",
+    "side": null,
+    "stale": false,
+    "reasons": [
+     "no pure projection"
+    ]
+   },
+   "market_integrity": {
+    "status": "OK",
+    "actionable_status": "ACTIONABLE"
+   },
+   "governed": {
+    "status": "NO_BET",
+    "reason": "no pure projection"
+   }
+  },
+  {
+   "scenario": "huge favourite (FCS opponent)",
+   "game_id": "401862790",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "NOT_PRICED",
+    "reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)"
+   },
+   "resolved": {
+    "level": null,
+    "mode": "NOT_PRICED",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": []
+   }
+  },
+  {
+   "scenario": "huge favourite, synthetic 60-point margin (legitimate extreme: not refused)",
+   "game_id": "401858250",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": 60,
+    "fair_spread_home_line": -60,
+    "fair_spread_display": "North Carolina -60.0",
+    "home_win_prob": 1,
+    "away_win_prob": 0,
+    "sigma": 14.94,
+    "p80": [
+     40.8,
+     79.2
+    ],
+    "confidence": 100,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   }
+  },
+  {
+   "scenario": "impossible 95-point margin (refused by the input contract)",
+   "game_id": "401858250",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "UNAVAILABLE",
+    "reason": "input contract: ens_pred: 95 outside [-80, 80]"
+   },
+   "resolved": {
+    "level": 3,
+    "mode": "FALLBACK_MODEL",
+    "model_version": "edgedesk_cfb_p4_v1.0.0",
+    "modes": [
+     "FALLBACK_MODEL"
+    ],
+    "reason": "input contract: ens_pred: 95 outside [-80, 80]"
+   }
+  },
+  {
+   "scenario": "stale market (a 5-hour-old quote)",
+   "game_id": "401871050",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": -6.82,
+    "fair_spread_home_line": 6.83,
+    "fair_spread_display": "Liberty -7.0",
+    "home_win_prob": 0.3331,
+    "away_win_prob": 0.6669,
+    "sigma": 15.931,
+    "p80": [
+     -27.3,
+     13.6
+    ],
+    "confidence": 81,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   },
+   "stage8_research": {
+    "status": "PASS",
+    "side": "AWAY",
+    "cover_probability_raw": 0.5081,
+    "cover_probability": 0.5041,
+    "stale": true,
+    "reasons": [
+     "stale market (N min old)"
+    ]
+   },
+   "market_integrity": {
+    "status": "OK",
+    "actionable_status": "MARKET_STALE"
+   },
+   "governed": {
+    "status": "PASS",
+    "side": "AWAY",
+    "reason_codes": [
+     "PASS_MARKET_STALE"
+    ],
+    "pure_cover_probability": 0.5081,
+    "decision_cover_probability": 0.5018
+   }
+  },
+  {
+   "scenario": "postponed: never settled as a loss",
+   "game_id": "401858476",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": -4.02,
+    "fair_spread_home_line": 4.02,
+    "fair_spread_display": "Penn State -4.0",
+    "home_win_prob": 0.3981,
+    "away_win_prob": 0.6019,
+    "sigma": 15.68,
+    "p80": [
+     -24.2,
+     16.1
+    ],
+    "confidence": 88,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   },
+   "settlement": {
+    "result_status": "POSTPONED",
+    "ats_result": "VOID",
+    "void": true,
+    "abs_margin_error": null
+   }
+  },
+  {
+   "scenario": "canceled: never settled as a loss",
+   "game_id": "401858476",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": -4.02,
+    "fair_spread_home_line": 4.02,
+    "fair_spread_display": "Penn State -4.0",
+    "home_win_prob": 0.3981,
+    "away_win_prob": 0.6019,
+    "sigma": 15.68,
+    "p80": [
+     -24.2,
+     16.1
+    ],
+    "confidence": 88,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   },
+   "settlement": {
+    "result_status": "CANCELED",
+    "ats_result": "VOID",
+    "void": true,
+    "abs_margin_error": null
+   }
+  },
+  {
+   "scenario": "multiple injuries: four starters OUT (variance widens, mean unchanged)",
+   "game_id": "401856707",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": -9.38,
+    "fair_spread_home_line": 9.38,
+    "fair_spread_display": "Alabama -9.5",
+    "home_win_prob": 0.2721,
+    "away_win_prob": 0.7279,
+    "sigma": 15.566,
+    "p80": [
+     -29.4,
+     10.6
+    ],
+    "confidence": 92,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   }
+  },
+  {
+   "scenario": "multiple injuries: none reported",
+   "game_id": "401856707",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": -9.38,
+    "fair_spread_home_line": 9.38,
+    "fair_spread_display": "Alabama -9.5",
+    "home_win_prob": 0.2709,
+    "away_win_prob": 0.7291,
+    "sigma": 15.476,
+    "p80": [
+     -29.3,
+     10.5
+    ],
+    "confidence": 95,
+    "modes": [
+     "FULL"
+    ],
+    "fallback_level": 1,
+    "contract_ok": true,
+    "show_confidence_score": true
+   },
+   "resolved": {
+    "level": 1,
+    "mode": "FULL",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "FULL"
+    ]
+   }
+  },
+  {
+   "scenario": "degraded evidence: PBP 0.7, availability stale, market degraded",
+   "game_id": "401856707",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "pure": {
+    "status": "PREDICTED",
+    "projected_margin": -9.38,
+    "fair_spread_home_line": 9.38,
+    "fair_spread_display": "Alabama -9.5",
+    "home_win_prob": 0.2709,
+    "away_win_prob": 0.7291,
+    "sigma": 15.476,
+    "p80": [
+     -29.3,
+     10.5
+    ],
+    "confidence": 95,
+    "modes": [
+     "NO_PLAYER_DATA",
+     "NO_ADVANCED_PBP",
+     "MARKET_DEGRADED"
+    ],
+    "fallback_level": 2,
+    "contract_ok": true,
+    "show_confidence_score": false
+   },
+   "resolved": {
+    "level": 2,
+    "mode": "DEGRADED",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "modes": [
+     "NO_PLAYER_DATA",
+     "NO_ADVANCED_PBP",
+     "MARKET_DEGRADED"
+    ]
+   }
+  }
+ ]
+}

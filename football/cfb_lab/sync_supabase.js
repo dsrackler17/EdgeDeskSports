@@ -153,6 +153,8 @@ module.exports = { sync, pullQuotes, TABLES, shape, columns, tableMissing };
 if (require.main === module) {
   const a = process.argv.slice(2);
   const arg = (k, d) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : d; };
-  sync(Number(arg('--season', new Date().getUTCFullYear())), { dryRun: a.includes('--dry-run') })
+  /* the season run.js writes (config.json), never the calendar year: in January the bowls are last season's */
+  const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+  sync(Number(arg('--season', cfg.season)), { dryRun: a.includes('--dry-run') })
     .then((r) => console.log(JSON.stringify(r))).catch((e) => { console.error(e.message); process.exit(1); });
 }

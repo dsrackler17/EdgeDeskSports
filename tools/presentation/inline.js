@@ -182,6 +182,17 @@ const LIBS = [
     start: '/*__EDPERSONNEL_START__*/', end: '/*__EDPERSONNEL_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The CFB explanation fact boundary (brief §90-91; docs/cfb-production/
+     SECURITY.md §5): the only facts an explanation of a CFB game may use (the
+     stored canonical projection and the governed decision), the tool-less
+     prompt, the refusal audit and the deterministic fallback. Server-side
+     only: the function explains; it never decides or changes a number. */
+  {
+    name: 'EDCFBEXPLAIN',
+    src: path.join(FN, '_cfb_explain.js'),
+    start: '/*__EDCFBEXPLAIN_START__*/', end: '/*__EDCFBEXPLAIN_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The personal research layer: the research state, what changed, the
      alert wording, the Top-5 explanations, the journal's grade and the
      decision-quality analytics. The SAME file the terminal loads as

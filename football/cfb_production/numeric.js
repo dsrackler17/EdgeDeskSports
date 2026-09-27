@@ -9,7 +9,9 @@
      sanity(p)              broad bounds (brief §64). Deliberately wide: the
                             largest legitimate spread in 2006-2025 is 67.5, so
                             |margin| <= 80; a total of 10-160; team points
-                            0-150; sigma 3-40; probabilities strictly in (0, 1).
+                            0-150; sigma 3-40; probabilities strictly in (0, 1)
+                            (exactly 0 or 1 only past a 40-point margin, where
+                            the engine's 1e-4 rounding reaches it: a note).
      consistency(p, opts)   brief §65: home + away win probability = 1; the
                             fair home line = -margin; score difference =
                             margin; interval ordering (low < mean < high, 50%
@@ -43,6 +45,7 @@ const BOUNDS = {
 };
 const TOL = { fair_line: 0.015, prob_sum: 2e-4, score_diff: 0.02, interval: 1e-9, ensemble: 0.006, cover: 2e-3 };
 const VERSION = 'cfb_numeric_safety_v1';
+const CERTAIN_MARGIN = 40;       // beyond this a 1e-4-rounded probability may legitimately read 0 or 1
 
 function isNum(x) { return typeof x === 'number' && Number.isFinite(x); }
 function inOpen01(p) { return isNum(p) && p > 0 && p < 1; }
@@ -78,8 +81,11 @@ function sanity(p) {
   const m = p.projected_margin;
   if (!isNum(m)) out.push('MARGIN_NOT_FINITE');
   else if (Math.abs(m) > BOUNDS.margin_abs_max) out.push('MARGIN_OUT_OF_BOUNDS: ' + m);
-  if (!inOpen01(p.home_win_prob)) out.push('HOME_WIN_PROB_OUT_OF_BOUNDS: ' + p.home_win_prob);
-  if (!inOpen01(p.away_win_prob)) out.push('AWAY_WIN_PROB_OUT_OF_BOUNDS: ' + p.away_win_prob);
+  /* the engine rounds probabilities to 1e-4, so a legitimate projection of 40+
+     points can read exactly 1 / 0: a rounding note (roundingNotes), not a refusal */
+  const extreme = isNum(m) && Math.abs(m) >= CERTAIN_MARGIN;
+  if (!inOpen01(p.home_win_prob) && !(extreme && (p.home_win_prob === 0 || p.home_win_prob === 1))) out.push('HOME_WIN_PROB_OUT_OF_BOUNDS: ' + p.home_win_prob);
+  if (!inOpen01(p.away_win_prob) && !(extreme && (p.away_win_prob === 0 || p.away_win_prob === 1))) out.push('AWAY_WIN_PROB_OUT_OF_BOUNDS: ' + p.away_win_prob);
   if (!isNum(p.sigma) || p.sigma < BOUNDS.sigma[0] || p.sigma > BOUNDS.sigma[1]) out.push('SIGMA_OUT_OF_BOUNDS: ' + p.sigma);
   if (p.fair_total != null && (!isNum(p.fair_total) || p.fair_total < BOUNDS.total[0] || p.fair_total > BOUNDS.total[1])) out.push('TOTAL_OUT_OF_BOUNDS: ' + p.fair_total);
   const iv = p.intervals || {};
@@ -89,6 +95,13 @@ function sanity(p) {
     else if (Math.abs(x[0]) > BOUNDS.interval_abs_max || Math.abs(x[1]) > BOUNDS.interval_abs_max) out.push('INTERVAL_OUT_OF_BOUNDS_' + k);
   });
   if (isNum(p.football_prediction_confidence) && (p.football_prediction_confidence < 0 || p.football_prediction_confidence > 100)) out.push('CONFIDENCE_OUT_OF_BOUNDS');
+  return out;
+}
+
+/* notes that are not problems: what a reader must not be shown as precise */
+function roundingNotes(p) {
+  const out = [];
+  if (p && (p.home_win_prob === 0 || p.home_win_prob === 1)) out.push('PROBABILITY_ROUNDED_TO_CERTAINTY: the engine rounds to 1e-4; display as >99%');
   return out;
 }
 
@@ -150,4 +163,4 @@ function policyConsistency(d, opts) {
   return out;
 }
 
-module.exports = { VERSION, BOUNDS, TOL, isNum, utc, hoursBetween, requireAsOf, displayRound, sanity, consistency, coverConsistency, policyConsistency };
+module.exports = { VERSION, BOUNDS, TOL, CERTAIN_MARGIN, roundingNotes, isNum, utc, hoursBetween, requireAsOf, displayRound, sanity, consistency, coverConsistency, policyConsistency };

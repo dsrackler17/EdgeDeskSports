@@ -13,6 +13,9 @@ on:
   pull_request:
     paths:
       - 'football/cfb_lab/**'
+      - 'football/cfb_production/canonical.js'
+      - 'football/cfb_production/numeric.js'
+      - 'football/cfb_production/contract/**'
       # the models the lab snapshots: their adapters load these
       - 'football/cfb_v2/engine.js'
       - 'football/cfb_v2/params.js'
@@ -109,5 +112,7 @@ jobs:
         env:
           CFB_MARKET_SQL_REQUIRED: '1'
         run: node football/cfb_market/sql.test.js
+      - name: The market-intelligence mirror (fail-soft while its migration is unapplied) and its hourly wiring
+        run: node football/cfb_market/sync.test.js
       - name: The committed ledger is intact
         run: node football/cfb_lab/ledger.js verify

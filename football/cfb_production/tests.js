@@ -185,7 +185,7 @@ const hasPython = cp.spawnSync('python3', ['-c', 'import pandas'], { stdio: 'ign
   const auditLab = fs.readFileSync(path.join(ROOT, 'football', 'cfb_lab', 'governance', 'audit_log.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
     .find((e) => e.event_type === 'MODEL_REGISTERED' && e.subject === 'edgedesk_cfb_v2.1.0');
   chk('compat: the calibration version equals the one the Model Lab registered for V2.1', auditLab && auditLab.after.facts.calibration_version === facts.calibration_version, auditLab && auditLab.after.facts.calibration_version);
-  chk('compat: the Model Lab\'s ensemble_version is sha256("{}") — it identifies no ensemble; the manifest hashes the real stack weights', facts.lab_ensemble_version === facts.production_model_version + ':44136fa355b3' && facts.ensemble_version !== facts.lab_ensemble_version);
+  chk('compat: the Model Lab records the ensemble the manifest pins (its artifact\'s stack weights, no longer the hash of {})', facts.lab_ensemble_version === facts.ensemble_version && facts.lab_ensemble_version !== facts.production_model_version + ':44136fa355b3');
 
   /* ================================================================ 6 manifest */
   const m1 = MF.build({ deployedAt: '2026-10-03T12:00:00.000Z' }), m2 = MF.build({ deployedAt: '2026-10-10T12:00:00.000Z' });

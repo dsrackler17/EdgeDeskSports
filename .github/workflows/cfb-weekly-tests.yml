@@ -15,6 +15,7 @@ on:
     paths:
       - 'football/cfb_v2/research/v2/**'
       - 'football/cfb_v2/research/requirements.txt'
+      - 'football/cfb_production/contract/**'
       - 'football/cfb_v2/artifacts/**'
       - 'football/cfb_weekly/**'
       - 'supabase/cfb_weekly.sql'
@@ -70,6 +71,12 @@ jobs:
           CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
           CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
         run: python3 -m v2.weekly.tests_weekly --fast
+      - name: Model input contract, feature monitor and the matchup shadow stage (no build needed)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+        run: python3 -m v2.weekly.tests_contract --fast
       - name: Finality (in-progress, cancelled and postponed games are never results; audit F-01)
         working-directory: football/cfb_v2/research
         env:

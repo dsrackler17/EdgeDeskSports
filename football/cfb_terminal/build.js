@@ -48,6 +48,9 @@ const E1 = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
 require(path.join(ROOT, 'football', 'cfb_v2', 'params.js'));
 const E2 = require(path.join(ROOT, 'football', 'cfb_v2', 'engine.js'));
 const DEC = require(path.join(ROOT, 'football', 'cfb_decision', 'decision.js'));
+/* V2.1's pure number comes from the canonical service only (input contract, numeric
+   checks; docs/cfb-production/CANONICAL.md §1): a refused row is UNAVAILABLE, never a default */
+const CANON = require(path.join(ROOT, 'football', 'cfb_production', 'canonical.js'));
 const DIS = require(path.join(ROOT, 'lib', 'cfb_disagreement.js'));
 const T = require(path.join(ROOT, 'lib', 'cfb_terminal.js'));
 
@@ -234,7 +237,7 @@ function buildGame(ctx, row) {
   const champRows = labRows.filter((r) => r.model_version === G.champion).sort((a, b) => ms(a.prediction_ts) - ms(b.prediction_ts));
   const latestChamp = champRows[champRows.length - 1] || null;
   const v21 = ctx.v2.byId[gid] || null;
-  const v21pure = v21 ? E2.pure(v21, {}) : null;
+  const v21pure = v21 ? CANON.pure(v21) : null;
   const fcs = row.home_division !== 'fbs' || row.away_division !== 'fbs';
   const game = { game_id: gid, season: row.season, week: row.week, kickoff: row.kickoff, home: row.home_team, away: row.away_team,
     neutral_site: !!row.neutral_site, venue: row.venue || null, home_conference: row.home_conference, away_conference: row.away_conference,

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>CFB Game Debug</title>
+<meta name="description" content="Internal game-level debug view of the EdgeDesk college football production pathway: every stored number of one game and the stage-by-stage prediction trace.">
+<!--
+  CFB GAME DEBUG — internal. One game at a time (?game=<game_id>), or the
+  list of games. It reads TWO stored files and computes nothing of its own:
+
+    football/cfb_production/reports/projections.json   the canonical projections
+    football/cfb_production/reports/traces.json        the prediction trace per game
+
+  both written by football/cfb_production/projections.js in the hourly Model
+  Lab job. The trace runs raw inputs -> features -> submodels -> ensemble ->
+  calibration -> market -> decision -> outcome, as the pathway made them.
+
+  The official decision is the governed policy's (cfb_decision_policy_v1)
+  and is shown apart from the stage-8 research class, which is labelled
+  research (audit F-22). The P(positive CLV) tier is a closing-line tendency,
+  never edge quality (F-23). Betting is disabled: no status here is a wager.
+
+  All rendering is a pure block between the EDDEBUG markers below (data in,
+  HTML string out, no DOM access); every string from the files is escaped.
+  football/cfb_production/debug_ui.test.js runs this very block against real
+  and hostile files.
+-->
+<style>
+.viz-root{
+  color-scheme:dark;
+  --page:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;
+  --text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--grid:#2c2a23;
+  --series-1:#3987e5;--series-1-soft:rgba(57,135,229,.16);
+  --warning:#fab219;--critical:#e05252;--good:#2fb82f;
+  --warning-soft:rgba(250,178,25,.12);--critical-soft:rgba(224,82,82,.12);--good-soft:rgba(47,184,47,.12);
+}
+@media (prefers-color-scheme: light){
+  :root:where(:not([data-theme="dark"])) .viz-root{
+    color-scheme:light;
+    --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+    --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;
+    --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+    --warning:#a86b00;--critical:#b42323;--good:#0b7a0b;
+    --warning-soft:rgba(168,107,0,.10);--critical-soft:rgba(180,35,35,.08);--good-soft:rgba(11,122,11,.08);
+  }
+  html:where(:not([data-theme="dark"])){background:#f9f9f7}
+}
+:root[data-theme="light"] .viz-root{
+  color-scheme:light;
+  --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+  --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;
+  --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+  --warning:#a86b00;--critical:#b42323;--good:#0b7a0b;
+  --warning-soft:rgba(168,107,0,.10);--critical-soft:rgba(180,35,35,.08);--good-soft:rgba(11,122,11,.08);
+}
+*{box-sizing:border-box;margin:0}
+html{background:#100e0a}
+:root[data-theme="light"]{background:#f9f9f7}
+body.viz-root{background:var(--page);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.45;overflow-x:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px 48px}
+header{border-bottom:1px solid var(--border);padding:14px 0 10px}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:18px;font-weight:700}
+.tag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:12px;padding:2px 8px;font-weight:600}
+.sub{color:var(--dim);font-size:12.5px;margin-top:6px;max-width:860px;overflow-wrap:anywhere}
+.err{color:var(--critical);font-size:13px;margin-top:8px}
+.pick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 12px;font-size:12.5px;color:var(--dim)}
+.pick select{max-width:100%;min-width:0;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font:inherit}
+.pick a{color:var(--series-1)}
+.stamp{font-size:11.5px;color:var(--faint);margin:0 0 12px;overflow-wrap:anywhere}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;min-width:0}
+.card>h2{font-size:15px;font-weight:700;margin-bottom:4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.note{font-size:12px;color:var(--dim);margin:2px 0 8px;max-width:900px;overflow-wrap:anywhere}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}
+.tile{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-width:0}
+.tile .l{font-size:11px;color:var(--dim)}
+.tile .v{font-size:16px;font-weight:600;margin-top:1px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.cols h3{font-size:13px;margin:4px 0}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;margin:4px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:4px 7px;border-bottom:1px solid var(--grid);vertical-align:top;white-space:nowrap}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.txt{white-space:normal;min-width:220px;max-width:640px;overflow-wrap:anywhere}
+td.k{color:var(--dim);width:1%}
+td a{color:var(--series-1)}
+.mv{font-size:10.5px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
+.chip{display:inline-block;font-size:9.5px;line-height:1.5;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:9px;padding:0 6px;color:var(--dim);font-weight:700;white-space:nowrap}
+.chip.good{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.chip.warn{color:var(--warning);border-color:var(--warning);background:var(--warning-soft)}
+.chip.bad{color:var(--critical);border-color:var(--critical);background:var(--critical-soft)}
+.chip.info{color:var(--series-1);border-color:var(--series-1);background:var(--series-1-soft)}
+.empty{border:1px dashed var(--border);border-radius:8px;padding:10px 12px;color:var(--dim);font-size:12.5px;margin:6px 0}
+.banner{border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:8px;padding:9px 12px;margin:6px 0 10px;font-size:12.5px;background:var(--warning-soft)}
+@media(max-width:560px){.tile .v{font-size:15px}td.txt{min-width:180px}}
+</style>
+</head>
+<body class="viz-root">
+<div class="wrap">
+  <header>
+    <div class="hd"><h1>CFB Game Debug</h1><span class="tag">Internal · not for publication</span></div>
+    <p class="sub">Every stored number of one game and where it came from, stage by stage. Nothing here is recomputed. Betting is disabled: no status is a wager. Pathway: <span class="mv">docs/cfb-production/CANONICAL.md</span>.</p>
+    <p class="err" id="err" role="alert"></p>
+  </header>
+  <main id="dbg" aria-live="polite"><p class="empty">Loading projections.json and traces.json…</p></main>
+</div>
+<script>
+/*__EDDEBUG_START__*/
+(function(window){
+  'use strict';
+  var D='\u2014';
+  function isNum(x){ return typeof x==='number'&&isFinite(x); }
+  function arr(x){ return Array.isArray(x)?x:[]; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function txt(s){ return s==null||s===''?D:esc(s); }
+  function num(x,d){ return isNum(x)?String(Math.round(x*Math.pow(10,d==null?3:d))/Math.pow(10,d==null?3:d)):D; }
+  function pc(x){ return isNum(x)?(100*x).toFixed(1)+'%':D; }
+  function when(t){ if(t==null||t==='') return D; var s=String(t); return /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(s)?esc(s.slice(0,10)+' '+s.slice(11,16)+'Z'):esc(s); }
+  var CHIP={FULL:'good',PREDICTED:'good',DEGRADED:'warn',FALLBACK_MODEL:'warn',NOT_PRICED:'info',UNAVAILABLE:'bad',NO_DECISION:'',
+    BET:'bad',RESEARCH:'info',LEAN:'info',PASS:'',NO_BET:'',OK:'good',NOT_PUBLISHED:'',WARNING:'warn',FLAGGED:'warn'};
+  function chip(s){ var k=String(s==null?'UNKNOWN':s); return '<span class="chip'+(CHIP[k]?' '+CHIP[k]:'')+'">'+esc(k)+'</span>'; }
+  function val(v,depth){
+    depth=depth||0;
+    if(v==null) return D;
+    if(isNum(v)) return String(Math.round(v*1e6)/1e6);
+    if(typeof v==='boolean') return v?'yes':'no';
+    if(depth>4) return '…';
+    if(Array.isArray(v)) return v.length?v.map(function(x){ return val(x,depth+1); }).join('; '):D;
+    if(typeof v==='object'){ var ks=Object.keys(v); return ks.length?ks.map(function(k){ return esc(k)+': '+val(v[k],depth+1); }).join(' · '):D; }
+    return esc(v);
+  }
+  function tile(l,v){ return '<div class="tile"><div class="l">'+esc(l)+'</div><div class="v">'+v+'</div></div>'; }
+  function table(head,rows){
+    if(!rows.length) return '';
+    return '<div class="scroll"><table><thead><tr>'+head.map(function(h){ return '<th>'+esc(h)+'</th>'; }).join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
+  }
+  /* every key of an object, in its own order, escaped */
+  function kv(o,skip){
+    if(!o||typeof o!=='object') return '<p class="empty">'+txt(o)+'</p>';
+    var rows=[];
+    Object.keys(o).forEach(function(k){ if(skip&&skip.indexOf(k)>=0) return; rows.push('<tr><td class="k">'+esc(k)+'</td><td class="txt">'+val(o[k])+'</td></tr>'); });
+    return rows.length?'<div class="scroll"><table><tbody>'+rows.join('')+'</tbody></table></div>':'<p class="empty">'+D+'</p>';
+  }
+  function card(id,title,body,note){ return '<section class="card" id="'+esc(id)+'"><h2>'+title+'</h2>'+(note?'<p class="note">'+note+'</p>':'')+body+'</section>'; }
+  function gameHref(id){ return '?game='+encodeURIComponent(String(id)); }
+  function matchup(g){ return txt(g.away)+' at '+txt(g.home)+(g.neutral_site?' (neutral site)':''); }
+  function officialOf(g){ return g&&g.official_decision||null; }
+
+  var STAGE_TITLE={raw_inputs:'1 · Raw inputs',features:'2 · Features',submodels:'3 · Submodels',ensemble:'4 · Ensemble',calibration:'5 · Calibration',
+    market:'6 · Market',decision:'7 · Decision',outcome:'8 · Outcome: modes, fallback, display'};
+  var STAGE_NOTE={
+    raw_inputs:'The stored V2.1 row as the weekly engine froze it.',
+    features:'The input contract\'s verdict on this row, the feature drivers the engine stored, and the week\'s feature-distribution monitor (it flags, it never refits).',
+    submodels:'Each stacked submodel\'s home margin, its artifact weight and its share of the stacked margin.',
+    ensemble:'The stacked margin must equal the weighted submodels (the contract refuses the row otherwise).',
+    calibration:'Margin to probability: sigma, t degrees of freedom, raw and calibrated win probability, intervals, confidence and the numeric checks.',
+    market:'The market the newest Model Lab snapshot captured, with its integrity verdict. + gap = the model likes HOME.',
+    decision:'The official status comes only from the governed policy cfb_decision_policy_v1. The stage-8 class is research and is never an official status (F-22).',
+    outcome:'The degraded modes and why, the fallback level of the manifest\'s order, and what a public page may show.'};
+
+  function stageBody(s){
+    if(!s) return '<p class="empty">Not in the trace.</p>';
+    if(s.stage==='features'){
+      return kv(s,['stage','drivers','monitor'])
+        +'<h3 class="note">Drivers</h3>'+(table(['feature','points'],arr(s.drivers).map(function(d){ return '<tr><td>'+txt(d.feature)+'</td><td class="num">'+num(d.points,2)+'</td></tr>'; }))||'<p class="empty">No drivers stored.</p>')
+        +'<h3 class="note">Feature monitor</h3>'+kv(s.monitor);
+    }
+    if(s.stage==='submodels'){
+      return table(['submodel','home margin','weight','share'],arr(s.submodels).map(function(m){ return '<tr><td>'+txt(m.submodel)+'</td><td class="num">'+num(m.margin)+'</td><td class="num">'+num(m.weight,4)+'</td><td class="num">'+num(m.share)+'</td></tr>'; }))
+        +kv(s,['stage','submodels']);
+    }
+    if(s.stage==='decision'){
+      var o=s.official&&typeof s.official==='object'?s.official:{}, r=s.research;
+      var ct=o.closing_line_tendency;
+      return '<div class="cols"><div><h3>Official decision (governed policy)</h3>'+chip(o.status)+kv(o,['closing_line_tendency'])
+        +(ct?'<h3 class="note">Closing-line tendency</h3><p class="note">P(the close moves toward this side). It ranks line movement, not bet quality.</p>'+kv(ct):'')+'</div>'
+        +'<div><h3>Research only (stage-8 class, not a decision)</h3>'+(r?'<span class="chip info">research only</span>'+kv(r):'<p class="empty">No Model Lab snapshot.</p>')+'</div></div>'
+        +'<p class="note">'+txt(s.rule)+'</p>';
+    }
+    return kv(s,['stage']);
+  }
+
+  function gameView(P,T,g){
+    var tr=(T&&T.games&&T.games[g.game_id])||null;
+    var c=g.canonical||{}, pj=c.projection||{}, rs=g.resolved||{}, od=officialOf(g)||{};
+    var h='<p class="pick"><a href="?">All games</a></p>';
+    h+=card('game',matchup(g)+' '+chip(c.status||rs.mode),
+      '<div class="kpis">'+tile('Kickoff',when(g.kickoff))+tile('Hours to kickoff',num(g.hours_to_kickoff,1))+tile('Served by',chip(rs.mode)+' level '+txt(rs.level))
+      +tile('Fair spread',txt(pj.fair_spread_display))+tile('Home win probability',pc(pj.home_win_prob))+tile('Home margin',num(pj.projected_margin,2))
+      +tile('Official decision',chip(od.status))+tile('Research class',g.research?txt(g.research.status)+' <span class="mv">research</span>':D)+'</div>'
+      +kv({game_id:g.game_id,season:g.season,week:g.week,model_version:c.model_version,feature_version:c.feature_version,as_of_ts:c.as_of_ts,snapshot_id:c.snapshot_id,
+        input_hash:c.input_hash,projection_hash:c.projection_hash,params_sha256:c.params_sha256,public_display:g.display,resolved:rs,v1_fallback:g.v1,market:g.market,provenance:g.trace}),
+      g.duplicate_rows?'Two different V2.1 rows exist for this game: neither is used.':null);
+    if(!tr) return h+'<p class="empty">No prediction trace for this game in traces.json (older file, or the game left the horizon).</p>';
+    var by={}; arr(tr).forEach(function(s){ if(s&&s.stage) by[s.stage]=s; });
+    (arr(T&&T.stages).length?arr(T.stages):Object.keys(STAGE_TITLE)).forEach(function(k){ h+=card('st-'+k,esc(STAGE_TITLE[k]||k),stageBody(by[k]),esc(STAGE_NOTE[k]||'')); });
+    return h;
+  }
+
+  function listView(P){
+    var gs=arr(P&&P.games);
+    var rows=gs.map(function(g){
+      var c=g.canonical||{}, pj=c.projection||{}, rs=g.resolved||{}, od=officialOf(g)||{};
+      return '<tr><td><a href="'+esc(gameHref(g.game_id))+'">'+matchup(g)+'</a></td><td>'+when(g.kickoff)+'</td><td>'+chip(rs.mode)+'</td><td class="num">'+txt(rs.level)+'</td>'
+        +'<td class="txt">'+val(c.degraded&&c.degraded.modes)+'</td><td>'+txt(pj.fair_spread_display)+'</td><td class="num">'+pc(pj.home_win_prob)+'</td>'
+        +'<td>'+chip(od.status)+'</td><td>'+(g.research?txt(g.research.status):D)+'</td></tr>';
+    });
+    return card('games','Games ('+gs.length+')',table(['game','kickoff','served by','level','modes','fair spread','home win','official decision','research class'],rows)||'<p class="empty">No games in the file.</p>',
+      'Official decision: the governed policy only. Research class: the stage-8 rule, research only (F-22).');
+  }
+
+  function render(P,T,gameId){
+    if(!P||!Array.isArray(P.games)) return '<p class="empty">projections.json could not be read, so nothing can be shown. The hourly Model Lab job writes it (football/cfb_production/projections.js).</p>';
+    var h='<p class="stamp">as_of '+when(P.as_of_ts)+' · model '+txt(P.model_version)+' · champion '+txt(P.champion)+' · champion selection '+txt(P.champion_selection)
+      +' · contract '+txt(P.contract_version)+' · official policy '+txt(P.official_policy)+(T?' · traces as_of '+when(T.as_of_ts):' · traces.json not loaded')+'</p>';
+    if(T&&P.as_of_ts&&T.as_of_ts&&T.as_of_ts!==P.as_of_ts) h+='<div class="banner">traces.json ('+when(T.as_of_ts)+') and projections.json ('+when(P.as_of_ts)+') are from different runs.</div>';
+    if(gameId!=null&&gameId!==''){
+      var g=null; P.games.forEach(function(x){ if(String(x.game_id)===String(gameId)) g=x; });
+      if(!g) return h+'<p class="empty">Game '+esc(gameId)+' is not in projections.json (it may be outside the 10-day horizon). <a href="?">All games</a></p>';
+      return h+gameView(P,T,g);
+    }
+    return h+listView(P);
+  }
+
+  window.EDDEBUG={render:render,listView:listView,gameView:gameView,stageBody:stageBody,esc:esc,STAGE_TITLE:STAGE_TITLE};
+})(typeof window!=='undefined'?window:this);
+/*__EDDEBUG_END__*/
+(function(){
+  'use strict';
+  if(typeof document==='undefined') return;
+  var host=document.getElementById('dbg'), err=document.getElementById('err');
+  var m=/[?&]game=([A-Za-z0-9_-]{1,40})/.exec(location.search||'');
+  var gid=m?m[1]:null;
+  function get(u){ return fetch(u,{cache:'no-cache'}).then(function(r){ if(!r.ok) throw new Error(u.split('/').pop()+' '+r.status); return r.json(); }); }
+  var base='../../football/cfb_production/reports/';
+  Promise.all([
+    get(base+'projections.json').catch(function(e){ err.textContent='projections.json could not be read ('+String(e&&e.message||e)+').'; return null; }),
+    get(base+'traces.json').catch(function(){ return null; })
+  ]).then(function(x){ host.innerHTML=window.EDDEBUG.render(x[0],x[1],gid); })
+    .catch(function(e){ err.textContent='The view could not be rendered: '+String(e&&e.message||e); });
+})();
+</script>
+</body>
+</html>

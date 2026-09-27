@@ -48,8 +48,8 @@
   "ok": true
  },
  "model_lab_versions": {
-  "ensemble_version_recorded_by_lab": "edgedesk_cfb_v2.1.0:44136fa355b3",
-  "note": "the Model Lab derives ensemble_version from params.js, which carries no stack weights: its value is the hash of {} and identifies no ensemble (VERSIONING.md §5); this manifest hashes models.json stack_weights"
+  "ensemble_version_recorded_by_lab": "edgedesk_cfb_v2.1.0:e105ca1727a6",
+  "note": null
  },
  "v1_fallback": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
@@ -129,7 +129,7 @@
    "bytes": 3230
   }
  },
- "migration_version": "cfbmig_0feeb0665bc310d5",
+ "migration_version": "cfbmig_a5f9c646b088acb6",
  "migrations": {
   "supabase/cfb_decision.sql": {
    "sha256": "c9fa8c119673110e7782f8ff8d080cf49a28a1781d80abc53947af2b08210fd7",
@@ -170,6 +170,11 @@
    "sha256": "834f43d497e1787ad506418e9a6e663d81f30a9f4562819d3c1646eb1c49f199",
    "git_blob": "9e6b7e90cd52136841fadca24b4914500571fd4f",
    "bytes": 86470
+  },
+  "supabase/cfb_terminal_analytics.sql": {
+   "sha256": "50e339d2ab6df000c908b5fd7aa84868382df5c5cdba3e8a90ba27d517388363",
+   "git_blob": "7d481602087864d41a62d664091255fab74e444d",
+   "bytes": 7822
   },
   "supabase/cfb_v2_model.sql": {
    "sha256": "ade9b7cb20fe6e1c6a750cf8a970bcc4f58aab9238452a74c63d19f34ee5cf29",
@@ -333,11 +338,13 @@
   "No level substitutes a model that is not listed here (candidate edgedesk_cfb_v2.0.0 is never a fallback).",
   "Every level below FULL displays its mode; decisions at levels 2-4 are PASS / UNAVAILABLE with the reason, never BET."
  ],
- "deployed_at": "2026-09-27T17:48:22.967Z",
+ "deployed_at": "2026-09-27T19:42:20.652Z",
  "recorded_by": "football/cfb_production/manifest.js",
- "git_commit": "d04141bab18a0038f57df8212714136bed697a7b",
+ "git_commit": "c65003f70f057c848ac726e538b2afe492c7bd86",
  "git_dirty": false,
  "git_dirty_paths": [],
- "content_sha256": "0aa7f2bde80620b7f270e418003fa4306a458ee0f5487c92dc93a387cb039ff2",
- "manifest_id": "cfbm_7310d74d666888ad86216e43"
+ "supersedes": "cfbm_8338ed296ce94d11c63daae1",
+ "reason": "migration set changed: supabase/cfb_terminal_analytics.sql (the research terminal's product analytics) arrived from main; no model, artifact or policy changed",
+ "content_sha256": "c3d41ede7ea9e14cb02c6a7be23be3577bb0d701096847ad1be9c248929ef9aa",
+ "manifest_id": "cfbm_f86ae717dfd4dd772a89c995"
 }

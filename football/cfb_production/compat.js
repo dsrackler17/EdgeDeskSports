@@ -81,6 +81,50 @@ function newestDir(artDir, prefix, file) {
   return dirs.length ? dirs[dirs.length - 1] : null;
 }
 
+/* The pinned decision artifacts: exactly the policy and calibration directories
+   the active COMPATIBLE entry of compatibility.json names, verified against the
+   pinned content. football/cfb_decision/shadow.js loads through this, never
+   "the newest directory": a new directory is ignored until a person pins it,
+   and a pinned one that is missing or changed loads as null (fail closed). */
+function activeEntry(matrix, mv) {
+  return ((matrix && matrix.entries) || []).find((e) => e.model_version === mv && e.status === 'COMPATIBLE' && e.role === 'PRODUCTION_PATHWAY') || null;
+}
+function decisionArtifacts(opts) {
+  opts = opts || {};
+  const repo = opts.repo || REPO;
+  const matrix = opts.matrix || loadMatrix(opts.matrixPath);
+  const decArt = opts.artDir || path.join(repo, 'football', 'cfb_v2', 'artifacts', 'decision');
+  let mv = opts.model_version;
+  if (!mv) { try { mv = (readParams(path.join(repo, 'football', 'cfb_v2', 'params.js')) || {}).model_version; } catch (e) { mv = null; } }
+  const e = activeEntry(matrix, mv);
+  const out = { model_version: mv || null, policy: null, policy_dir: null, calibration: null, calibration_dir: null, problems: [] };
+  if (!e) { out.problems.push('no COMPATIBLE production entry for ' + mv); return out; }
+  const pdir = e.decision_policy_version;
+  const ppath = pdir ? path.join(decArt, pdir, 'policy.json') : null;
+  if (!ppath || !fs.existsSync(ppath)) out.problems.push('the pinned policy ' + pdir + ' is missing');
+  else if (shaFile(ppath) !== e.decision_policy_sha256) out.problems.push('the pinned policy ' + pdir + ' differs from its pinned content');
+  else { out.policy = readJson(ppath); out.policy_dir = pdir; }
+  const cdir = e.decision_calibration_version;
+  const cman = cdir ? path.join(decArt, cdir, 'MANIFEST.json') : null;
+  if (!cman || !fs.existsSync(cman) || !fs.existsSync(path.join(decArt, cdir, 'calibration.json'))) out.problems.push('the pinned calibration ' + cdir + ' is missing');
+  else if (shaFile(cman) !== e.decision_calibration_manifest_sha256) out.problems.push('the pinned calibration ' + cdir + ' MANIFEST differs from its pinned content');
+  else {
+    const cm = readJson(cman) || {};
+    const bad = Object.entries(cm.files || {}).filter(([f, want]) => shaFile(path.join(decArt, cdir, f)) !== want).map(([f]) => f);
+    if (bad.length) out.problems.push('the pinned calibration files differ from its MANIFEST: ' + bad.join(', '));
+    else { out.calibration = readJson(path.join(decArt, cdir, 'calibration.json')); out.calibration_dir = cdir; }
+  }
+  if (out.policy && out.policy.calibration_artifact && out.policy.calibration_artifact !== cdir) {
+    out.problems.push('the pinned policy names calibration ' + out.policy.calibration_artifact + ', the matrix pins ' + cdir);
+    out.policy = null; out.calibration = null;
+  }
+  return out;
+}
+
+function labEnsembleVersion(repo, mv, modelsJson) {
+  try { return require(path.join(repo, 'football', 'cfb_lab', 'models.js')).ensembleVersion(mv, modelsJson); } catch (e) { return null; }
+}
+
 function regex(file, re) { try { return (re.exec(fs.readFileSync(file, 'utf8')) || [])[1] || null; } catch (e) { return null; } }
 
 function facts(opts) {
@@ -99,7 +143,12 @@ function facts(opts) {
   const art = verifyArtifactDir(artDir);
   const models = readJson(path.join(artDir, 'models.json')) || {};
   const decArt = path.join(v2, 'artifacts', 'decision');
-  const policyDir = newestDir(decArt, 'cfb_decision_policy_', 'policy.json');
+  /* the policy the decision shadow LOADS: the pinned directory (decisionArtifacts);
+     the lexically newest directory is recorded only to show what is not loaded */
+  const pinned = activeEntry(opts.matrix || loadMatrix(), mv);
+  const newestPolicyDir = newestDir(decArt, 'cfb_decision_policy_', 'policy.json');
+  const policyDir = pinned && pinned.decision_policy_version && fs.existsSync(path.join(decArt, pinned.decision_policy_version, 'policy.json'))
+    ? pinned.decision_policy_version : null;
   const policy = policyDir ? readJson(path.join(decArt, policyDir, 'policy.json')) : null;
   const baselineDir = newestDir(decArt, 'cfb_decision_baseline_', 'MANIFEST.json');
   const baseline = baselineDir ? readJson(path.join(decArt, baselineDir, 'MANIFEST.json')) : null;
@@ -137,12 +186,14 @@ function facts(opts) {
     engine_sha256: shaFile(engineFile),
     calibration_version: P ? mv + ':' + hashObj({ win: P.calibration && P.calibration.win, cover: P.cover }).slice(0, 12) : null,
     ensemble_version: models.stack_weights ? mv + ':' + hashObj(models.stack_weights).slice(0, 12) : null,
-    lab_ensemble_version: P ? mv + ':' + hashObj(P.stack_weights || P.ensemble || {}).slice(0, 12) : null,
+    /* what the Model Lab records (football/cfb_lab/models.js ensembleVersion): read, not re-derived */
+    lab_ensemble_version: labEnsembleVersion(repo, mv, path.join(artDir, 'models.json')),
     stack_weights: models.stack_weights || null,
     market_engine_version: P ? mv + ':market:' + hashObj(P.market || {}).slice(0, 12) : null,
     bet_enabled_params: !!(P && P.market && P.market.bet_enabled),
     decision_policy: policy ? { version: policy.version, dir: policyDir, status: policy.status, bet_enabled: !!policy.bet_enabled,
       sha256: shaFile(path.join(decArt, policyDir, 'policy.json')) } : null,
+    decision_policy_newest_dir: newestPolicyDir,
     decision_baseline: baseline ? { version: baseline.baseline_id, dir: baselineDir, base_model_version: baseline.base_model_version,
       ok: baselineOk, files: baselineFiles, sha256: shaFile(path.join(decArt, baselineDir, 'MANIFEST.json')) } : null,
     decision_calibration: decisionCal,
@@ -215,4 +266,4 @@ function entryFor(f, meta) {
   };
 }
 
-module.exports = { facts, check, loadMatrix, entryFor, verifyArtifactDir, newestDir, readParams, hashObj, canonical, sha, shaFile, REPO, MATRIX, rel };
+module.exports = { facts, check, loadMatrix, entryFor, verifyArtifactDir, newestDir, activeEntry, decisionArtifacts, readParams, hashObj, canonical, sha, shaFile, REPO, MATRIX, rel };

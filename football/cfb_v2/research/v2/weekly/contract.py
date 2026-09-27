@@ -20,7 +20,7 @@ changes an input.
 
 monitor(X, reference) compares a slate with the training slates of the same
 week of the season: its mean, SD, share outside the soft range and missing
-share against the envelope the eight training seasons spanned. It returns
+share against the envelope the training seasons spanned. It returns
 flags; it never refits.
 
     python3 -m v2.weekly.contract --build-reference [--out-dir DIR]   (needs a v2.1 build)
@@ -39,7 +39,9 @@ from .sources import REPO
 
 CONTRACT_DIR = os.path.join(REPO, 'football', 'cfb_production', 'contract')
 CONTRACT_FILE = os.path.join(CONTRACT_DIR, 'input_contract.json')
-DEV_SEASONS = tuple(range(2016, 2024))          # the artifact's training window (meta.json windows.dev)
+# the artifact's training rows: every FBS-vs-FBS FINAL game 2012-2025 (trained_through 2025). The
+# reference reproduces C_ridge's stored training means exactly (tests_contract checks it).
+TRAINING_SEASONS = tuple(range(2012, 2026))
 QUANTILES = (0.001, 0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999)
 
 # the monitor's declared thresholds (diagnostics, not tuned to produce flags)
@@ -100,17 +102,20 @@ def _slate_stats(v, soft):
 
 
 def build_reference(X, contract=None, source=None):
-    """Distribution of every contract field on the training rows (dev seasons,
-    FBS-vs-FBS, FINAL: walkforward.train_rows' filter), plus, for every week of
+    """Distribution of every contract field on the training rows (FBS-vs-FBS
+    FINAL games with a margin, 2012-2025: the rows the artifact was fitted on),
+    plus, for every week of
     the season, the ENVELOPE of the per-season slate statistics (mean, SD,
     share outside the soft range, missing share): the range those statistics
-    took across the eight training seasons. The HARD ranges come from
+    took across the training seasons. The HARD ranges come from
     `fields_inferred`: every dev row the model is ever run on (FBS-vs-FCS
     games are inferred, though never priced)."""
     c = contract or load()
-    X = X[X.season.isin(DEV_SEASONS)]
+    X = X[X.season.isin(TRAINING_SEASONS)]
     if 'status' in X:
         X = X[X.status.eq('FINAL')]
+    if 'margin' in X:
+        X = X[X.margin.notna()]
     Dall = _derived(X)
     X = X[~X.fcs_game.astype(bool)]
     D = _derived(X)
@@ -119,8 +124,8 @@ def build_reference(X, contract=None, source=None):
     ftype = {f['field']: f['type'] for f in c['model_inputs']}
     raw = sorted({s.strip() for f in c['model_inputs'] if f.get('imputed_from') for s in f['imputed_from']['raw'].split(',')})
     ref = {'schema': 'cfb_feature_reference_v2', 'model_version': c['model_version'], 'feature_version': c['feature_version'],
-           'contract_version': c['version'], 'seasons': list(DEV_SEASONS), 'rows': int(len(D)), 'source': source,
-           'filter': 'dev seasons, FBS-vs-FBS, FINAL (the training rows)', 'quantiles': list(QUANTILES),
+           'contract_version': c['version'], 'seasons': list(TRAINING_SEASONS), 'rows': int(len(D)), 'source': source,
+           'filter': 'FBS-vs-FBS FINAL games with a margin, 2012-2025 (the rows the artifact was fitted on)', 'quantiles': list(QUANTILES),
            'fields': {}, 'fields_inferred': {}, 'weeks': {}}
     for f in fields:
         ref['fields'][f] = _stats(D[f]) if f in D else {'n': 0, 'absent': True}
@@ -259,7 +264,7 @@ def _outside(x, env, floor):
 
 def monitor(X, reference=None, contract=None, min_n=MIN_N):
     """The slate's distribution vs the training slates of the same week of the
-    season. A statistic is flagged when it leaves the range the eight training
+    season. A statistic is flagged when it leaves the range the training
     seasons' slates spanned, widened by that range on each side (and by at
     least half a training SD for means and SDs). Returns
     {'status', 'phase', 'n', 'flags': [...], 'features': {...}}."""

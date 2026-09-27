@@ -48888,21 +48888,29 @@ function FBP4_URL_SCHED(y){return 'https://raw.githubusercontent.com/sportsdatav
 function FBP4_URL_ROSTER(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/rosters/csv/cfb_rosters_'+y+'.csv';}
 
 /* CFB V2 SHADOW LOADER — part of the engine-loading chain, never the card:
-   the card renders from what this loaded and fetches nothing of its own. */
-var FBV2={rows:null,loading:null,err:null};
+   the card renders from what this loaded and fetches nothing of its own.
+   It loads the STORED canonical projections (football/cfb_production/
+   reports/projections.json, written by the hourly Model Lab job through
+   football/cfb_production/canonical.js). No engine is loaded here: the page
+   never computes a fair line, a probability, a reliability or a decision
+   (docs/cfb-production/CANONICAL.md; canonical.test.js holds it to that). */
+/* Stored reads (CANONICAL.md §6): one request, a 10 s timeout (a slow file is
+   an error, never a hung panel), kept for an hour then read again, and a file
+   whose as_of_ts is over 3 h old is labelled stale on the card. */
+var FBV2={games:null,loading:null,err:null,loadedAt:0,TIMEOUT_MS:10000,TTL_MS:3600000,STALE_MS:3*3600000};
 function fbV2On(){
   try{return /[?&]cfbv2=1(&|$)/.test(location.search)||localStorage.getItem('edgedesk_cfb_v2')==='1';}
   catch(e){return false;}
 }
 function fbV2Ensure(){
   if(!fbV2On())return Promise.resolve(null);
-  if(FBV2.loading)return FBV2.loading;
-  FBV2.loading=fbScript('football/cfb_v2/params.js')
-    .then(function(){return fbScript('football/cfb_v2/engine.js');})
-    .then(function(){return fetch('football/cfb_v2/current.json',{cache:'no-store'});})
-    .then(function(r){return r.ok?r.json():null;})
-    .then(function(j){FBV2.rows={};FBV2.meta=j;((j&&j.rows)||[]).forEach(function(r){FBV2.rows[String(r.game_id)]=r;});return FBV2;})
-    .catch(function(e){FBV2.err=(e&&e.message)||'V2 failed to load';return null;});
+  if(FBV2.loading&&Date.now()-FBV2.loadedAt<FBV2.TTL_MS)return FBV2.loading;
+  FBV2.loadedAt=Date.now();FBV2.err=null;
+  var timeout=new Promise(function(_,rej){setTimeout(function(){rej(new Error('projections.json did not arrive within '+(FBV2.TIMEOUT_MS/1000)+' s'));},FBV2.TIMEOUT_MS);});
+  FBV2.loading=Promise.race([fetch('football/cfb_production/reports/projections.json',{cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('projections.json '+r.status);return r.json();}),timeout])
+    .then(function(j){var gs={};((j&&j.games)||[]).forEach(function(g){gs[String(g.game_id)]=g;});FBV2.games=gs;FBV2.meta=j;return FBV2;})
+    .catch(function(e){FBV2.err=(e&&e.message)||'V2 failed to load';FBV2.loadedAt=Date.now()-FBV2.TTL_MS+300000;return null;});   /* a failure is retried after 5 min */
   return FBV2.loading;
 }
 function fbP4Ensure(){
@@ -53549,46 +53557,64 @@ function fbGxExplain(u,p){
 /* ===========================================================================
    CFB V2 — SHADOW PANEL (opt-in: ?cfbv2=1 or localStorage edgedesk_cfb_v2='1').
    V2 is evaluated beside V1 and replaces nothing: the V1 lines above it are
-   untouched. The panel shows V2's PURE projection (football only) and, apart
-   from it, V2's market decision against the market number V1 already joined.
-   No price is captured on this card, so the decision says EV is not
-   computable rather than assuming -110. See football/cfb_v2 and docs/cfb-v2.
+   untouched. Everything shown is READ from the stored canonical projection:
+   the pure projection, its degraded modes and fallback level, the market the
+   Model Lab captured, the OFFICIAL decision of the governed policy
+   (cfb_decision_policy_v1) and, labelled as research only, the stage-8 rule's
+   status. Nothing is computed here. See docs/cfb-production/CANONICAL.md.
    =========================================================================== */
+var FB_V2_MODE_WORDS={NO_PLAYER_DATA:'Limited availability data',NO_ADVANCED_PBP:'Limited play-by-play data',QB_UNCERTAIN:'Quarterback not confirmed',
+  MARKET_DEGRADED:'Market data limited',FALLBACK_MODEL:'Fallback model',FULL:'Full data'};
 function fbV2ShadowHTML(u,p){
-  var V=window.EDCfbV2,row=FBV2.rows&&FBV2.rows[String(u.g.game_id)];
-  if(!V||!FBV2.rows)return '<div class="gd-nodata">V2 not loaded'+(FBV2.err?' — '+fbEsc(FBV2.err):'')+'</div>';
-  if(!row)return '<div class="gd-nodata">No frozen V2 snapshot for this game yet.</div>';
-  var pu=V.pure(row,{});
-  if(pu.status!=='PREDICTED')return '<div class="gd-nodata">'+fbEsc(pu.status)+': '+fbEsc(pu.reason||'')+'</div>';
-  /* SIGN CONTRACT (docs/cfb-production/MARKET_INTEGRITY.md §1): the fair line
-     is the negated home margin and the two win probabilities sum to one. A
-     panel that cannot vouch for its own sign shows nothing rather than a
+  if(!FBV2.games)return '<div class="gd-nodata">V2 not loaded'+(FBV2.err?' — '+fbEsc(FBV2.err):'')+'</div>';
+  var e=FBV2.games[String(u.g.game_id)];
+  if(!e)return '<div class="gd-nodata">No stored V2 projection for this game yet.</div>';
+  var s=e.canonical,rv=e.resolved||{};
+  if(!s||s.status!=='PREDICTED'){
+    var why=(s&&s.reason)||rv.reason||'';
+    return '<div class="gd-nodata">'+fbEsc(rv.mode||(s&&s.status)||'UNAVAILABLE')
+      +(rv.level===3?' — the V2.1 projection is unavailable; the V1 number above is the fallback':'')+(why?': '+fbEsc(why):'')+'</div>';
+  }
+  var pu=s.projection||{};
+  /* SIGN CONTRACT (docs/cfb-production/MARKET_INTEGRITY.md §1): the stored fair
+     line is the negated home margin and the two win probabilities sum to one.
+     A panel that cannot vouch for its own sign shows nothing rather than a
      reversed side. It checks; it never recomputes a number. Both numbers are
      rounded to 0.01 independently, so they may disagree by 0.01. */
   if(!(typeof pu.projected_margin==='number'&&typeof pu.fair_spread_home_line==='number'&&Math.abs(pu.fair_spread_home_line+pu.projected_margin)<0.015
-    &&typeof pu.home_win_prob==='number'&&Math.abs(pu.home_win_prob+pu.away_win_prob-1)<1e-3))
+    &&typeof pu.home_win_prob==='number'&&typeof pu.away_win_prob==='number'&&Math.abs(pu.home_win_prob+pu.away_win_prob-1)<1e-3))
     return '<div class="gd-nodata">V2 sign contract failed for this game — nothing is shown rather than a possibly reversed side.</div>';
-  var mk=(p&&p.market)||{},cur=null;
-  if(mk.spread_line!=null)cur={home_line:-mk.spread_line,ts:mk.as_of||null};
-  var d=V.decide(pu,cur?{current:cur}:null,{row:row});
-  var c=V.card(pu,d),h=fbEsc(u.g.home_team),L='';
-  L+='<div class="gd-sec model">EdgeDesk pure projection <span class="unproven">SHADOW · '+fbEsc(pu.model_version)+' · '+fbEsc(row.state||'')+'</span></div>';
-  L+='<div class="gd-line"><span class="l">Fair spread</span><span class="v mdl">'+fbEsc(c.pure.fair_spread||'—')+'</span></div>';
-  L+='<div class="gd-line"><span class="l">Win probability</span><span class="v">'+h+' '+(pu.home_win_prob*100).toFixed(1)+'% · '+fbEsc(u.g.away_team)+' '+(pu.away_win_prob*100).toFixed(1)+'%</span></div>';
+  var h=fbEsc(u.g.home_team),a=fbEsc(u.g.away_team),L='',dm=(s.degraded&&s.degraded.modes)||['FULL'],dp=s.display||{},mk=e.market||null;
+  var od=e.official_decision||{status:'NO_DECISION'},rs=e.research||null,iv=pu.intervals||{},w=pu.why||{};
+  var sidePts=function(side,line){return (side==='HOME'?h:(side==='AWAY'?a:''))+' '+fbPts(line);};
+  var storedAge=Date.now()-Date.parse(s.as_of_ts||'');
+  L+='<div class="gd-sec model">EdgeDesk pure projection <span class="unproven">SHADOW · '+fbEsc(s.model_version)+' · '+fbEsc(s.row_state||'')+' · stored '+fbEsc(String(s.as_of_ts||'').slice(0,16).replace('T',' '))+'Z'
+    +(isFinite(storedAge)&&storedAge>FBV2.STALE_MS?' · STALE: not refreshed for '+Math.round(storedAge/3600000)+' h':'')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Data mode</span><span class="v">'+dm.map(function(m){return '<b>'+fbEsc(m)+'</b>';}).join(' · ')
+    +' <span class="mut">level '+fbEsc(String(rv.level==null?'—':rv.level))+' of the fallback order · '+fbEsc(dm.map(function(m){return FB_V2_MODE_WORDS[m]||m;}).join('; '))+'</span></span></div>';
+  L+='<div class="gd-line"><span class="l">Fair spread</span><span class="v mdl">'+fbEsc(pu.fair_spread_display||'—')+'</span></div>';
+  /* the stored display policy's wording (canonical.display): whole percent at most, and a
+     degraded strong favourite in words, never a precise number (brief §48) */
+  L+='<div class="gd-line"><span class="l">Win probability</span><span class="v">'+(pu.home_win_prob>=0.5?h:a)+' '+fbEsc(dp.win_probability_text||'—')+'</span></div>';
   L+='<div class="gd-line"><span class="l">Projected margin</span><span class="v">'+h+' '+fbPts(pu.projected_margin)+'</span></div>';
-  L+='<div class="gd-line"><span class="l">Prediction range (80%)</span><span class="v mut">'+fbPts(pu.intervals.p80[0])+' to '+fbPts(pu.intervals.p80[1])+'</span></div>';
-  L+='<div class="gd-line"><span class="l">Model confidence</span><span class="v">'+pu.football_prediction_confidence+'/100 <span class="mut">how trustworthy the data and prediction are — not how much EdgeDesk likes the game</span></span></div>';
-  var w=c.why;
+  L+='<div class="gd-line"><span class="l">Prediction range (80%)</span><span class="v mut">'+(iv.p80?fbPts(iv.p80[0])+' to '+fbPts(iv.p80[1]):'—')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Model confidence</span><span class="v">'+(dp.show_confidence_score&&typeof pu.football_prediction_confidence==='number'
+    ?pu.football_prediction_confidence+'/100 <span class="mut">how trustworthy the data and prediction are — not how much EdgeDesk likes the game</span>'
+    :'<b>'+fbEsc(dp.label||'Degraded')+'</b> <span class="mut">the score is withheld while the data is degraded</span>')+'</span></div>';
   L+='<div class="gd-sec">Why</div>';
-  L+='<div class="gd-line"><span class="l">Primary matchup edge</span><span class="v mut">'+(w.primary_matchup_edge?fbEsc(w.primary_matchup_edge.label)+' → '+fbEsc(w.primary_matchup_edge.favours)+' ('+w.primary_matchup_edge.points+' pts)':'—')+'</span></div>';
-  L+='<div class="gd-line"><span class="l">Secondary matchup edge</span><span class="v mut">'+(w.secondary_matchup_edge?fbEsc(w.secondary_matchup_edge.label)+' → '+fbEsc(w.secondary_matchup_edge.favours)+' ('+w.secondary_matchup_edge.points+' pts)':'—')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Primary matchup edge</span><span class="v mut">'+(w.primary_matchup_edge?fbEsc(w.primary_matchup_edge.label)+' → '+fbEsc(w.primary_matchup_edge.favours)+' ('+fbEsc(w.primary_matchup_edge.points)+' pts)':'—')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Secondary matchup edge</span><span class="v mut">'+(w.secondary_matchup_edge?fbEsc(w.secondary_matchup_edge.label)+' → '+fbEsc(w.secondary_matchup_edge.favours)+' ('+fbEsc(w.secondary_matchup_edge.points)+' pts)':'—')+'</span></div>';
   L+='<div class="gd-line"><span class="l">Main uncertainty</span><span class="v mut">'+fbEsc(w.main_uncertainty||'—')+'</span></div>';
   L+='<div class="gd-sec">Market (separate layer)</div>';
-  L+='<div class="gd-line"><span class="l">Current spread</span><span class="v">'+(d.current_home_line!=null?h+' '+fbPts(d.current_home_line):'<span class="mut">none joined</span>')+'</span></div>';
-  L+='<div class="gd-line"><span class="l">EdgeDesk disagreement</span><span class="v">'+(d.raw_gap_pts!=null?fbPts(d.raw_gap_pts)+' pts':'—')+'</span></div>';
-  L+='<div class="gd-line"><span class="l">Cover probability</span><span class="v mut">'+(d.cover_probability!=null?(d.cover_probability*100).toFixed(1)+'% '+fbEsc(d.side||''):'—')+'</span></div>';
-  L+='<div class="gd-line"><span class="l">Research status</span><span class="v"><b>'+fbEsc(c.research_status)+'</b> <span class="mut">'+fbEsc((c.reasons||[]).join(' · '))+'</span></span></div>';
-  L+='<div class="gd-modelnote">'+fbEsc(c.language)+' V2 beats V1 on the 2024–25 holdout and still trails the opening and closing lines; BET is disabled because no betting rule survived out-of-sample testing.</div>';
+  L+='<div class="gd-line"><span class="l">Current spread</span><span class="v">'+(mk&&typeof mk.home_line==='number'?h+' '+fbPts(mk.home_line)+' <span class="mut">'+fbEsc(mk.actionable_status||'')+(mk.stale?' · stale':'')+'</span>':'<span class="mut">none captured</span>')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">EdgeDesk disagreement</span><span class="v">'+(mk&&typeof mk.gap==='number'?fbPts(mk.gap)+' pts <span class="mut">'+(mk.gap>0?'toward '+h:(mk.gap<0?'toward '+a:''))+'</span>':'—')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Official decision</span><span class="v"><b>'+fbEsc(od.status==='NO_DECISION'?'NO DECISION':(od.status==='NO_BET'?'NO BET':od.status))+'</b> <span class="mut">'
+    +(od.side&&typeof od.line_for_side==='number'?sidePts(od.side,od.line_for_side)+(typeof od.price==='number'?' '+fbEsc(od.price):'')+' · ':'')
+    +fbEsc(od.reason||((od.reason_codes||[])[0])||'')+' · governed policy '+fbEsc(e.official_decision&&e.official_decision.basis||'cfb_decision_policy_v1')+'</span></span></div>';
+  if(od.closing_line_tendency&&od.closing_line_tendency.label)
+    L+='<div class="gd-line"><span class="l">Closing-line tendency</span><span class="v mut">'+fbEsc(od.closing_line_tendency.label)+' — ranks how the close tends to move, not bet quality</span></div>';
+  if(rs)L+='<div class="gd-line"><span class="l">Research only</span><span class="v mut">'+fbEsc(rs.status||'—')+' — the stage-8 rule, not the governed decision</span></div>';
+  L+='<div class="gd-modelnote">Research, not picks. Probabilities are estimates with measured error; nothing here is certain. V2 beats V1 on the 2024–25 data and still trails the opening and closing lines; betting is disabled.</div>';
   return L;
 }
 /* THE EVIDENCE PACKET for a 7+ gap: what EdgeDesk says, what the market
