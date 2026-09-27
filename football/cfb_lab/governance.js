@@ -12,7 +12,8 @@
    Nothing here changes a model. Promotion is a person's command:
 
      node football/cfb_lab/governance.js roles
-     node football/cfb_lab/governance.js promote --model <version> --reason "<why>" --actor <name> [--evidence <report>]
+     node football/cfb_lab/governance.js promote --model <version> --reason "<why>" --actor <name> [--evidence <report>] [--rollback]
+            (runs the promotion guard first: football/cfb_production/promotion.js)
      node football/cfb_lab/governance.js retire  --model <version> --reason "<why>" --actor <name>
      node football/cfb_lab/governance.js experiment --id EXP-003 --name ... --baseline <v> --challenger <v>
             --hypothesis "..." --change "<one change>" --scope SINGLE_CHANGE --window "<weeks>" --metrics mae,brier
@@ -58,10 +59,15 @@ function auditEvent(type, subject, before, after, reason, actor, at) {
     reason: reason || null, actor: actor || null, created_at: U.iso(at || new Date()) });
 }
 /* A person promotes a challenger. The old champion becomes challenger in the
-   same act; both changes are audited. Refused without a reason and an actor. */
+   same act; both changes are audited. Refused without a reason and an actor,
+   and, when a promotion guard result is passed (the CLI always passes one:
+   football/cfb_production/promotion.js), refused unless every check of it
+   passed; the guard's verdict is recorded with the audit event. */
 function promote(store, model, reason, actor, opts) {
   opts = opts || {};
   if (!reason || !actor) throw new Error('promotion needs --reason and --actor (a person, on the record)');
+  if (opts.guard && !opts.guard.ok) throw new Error('the promotion guard refused ' + model + ': ' + opts.guard.checks.filter((c) => !c.ok).map((c) => c.n + '. ' + c.check + ' (' + (c.detail || '') + ')').join('; '));
+  if (opts.guard && opts.guard.model !== model) throw new Error('the promotion guard was run for ' + opts.guard.model + ', not ' + model);
   const roles = currentRoles(store.gov('model_roles'));
   if (!roles[model]) throw new Error(model + ' is not registered');
   if (roles[model].role === 'champion') throw new Error(model + ' is already champion');
@@ -73,7 +79,8 @@ function promote(store, model, reason, actor, opts) {
     aud.push(auditEvent('ROLE_CHANGED', k, { role: 'champion' }, { role: 'challenger' }, 'replaced by ' + model, actor, at));
   });
   evs.push(roleEvent(model, roles[model].label, 'champion', reason, actor, at, opts.evidence || null));
-  aud.push(auditEvent('MODEL_PROMOTED', model, { role: roles[model].role }, { role: 'champion' }, reason, actor, at));
+  aud.push(auditEvent('MODEL_PROMOTED', model, { role: roles[model].role }, Object.assign({ role: 'champion' },
+    opts.guard ? { guard: { rule: opts.guard.rule, ok: opts.guard.ok, rollback: opts.guard.rollback, checks: opts.guard.checks.map((c) => c.n + ':' + (c.ok ? 'PASS' : 'FAIL')) } } : {}), reason, actor, at));
   store.append('model_roles', evs, 'event_id'); store.append('audit_log', aud, 'event_id');
   return { roles: evs, audit: aud };
 }
@@ -226,7 +233,13 @@ if (require.main === module) {
   const store = new G.Store(Number(arg('--season', new Date().getUTCFullYear())));
   try {
     if (a[0] === 'roles') console.log(JSON.stringify(currentRoles(store.gov('model_roles')), null, 1));
-    else if (a[0] === 'promote') console.log(JSON.stringify(promote(store, arg('--model'), arg('--reason'), arg('--actor'), { evidence: arg('--evidence', null) }), null, 1));
+    else if (a[0] === 'promote') {
+      /* the promotion guard (brief §76): explicit version, artifact, compatibility, tests, a complete shadow */
+      const PG = require(path.join(G.REPO, 'football', 'cfb_production', 'promotion.js'));
+      const guard = PG.guard(arg('--model'), { roles: currentRoles(store.gov('model_roles')), rollback: a.includes('--rollback'), tests: 'run' });
+      guard.checks.forEach((c) => console.error((c.ok ? 'PASS ' : 'FAIL ') + c.n + '. ' + c.check + ' — ' + (c.detail || '')));
+      console.log(JSON.stringify(promote(store, arg('--model'), arg('--reason'), arg('--actor'), { evidence: arg('--evidence', null), guard }), null, 1));
+    }
     else if (a[0] === 'retire') console.log(JSON.stringify(retire(store, arg('--model'), arg('--reason'), arg('--actor')), null, 1));
     else if (a[0] === 'experiment') console.log(JSON.stringify(experimentCreate(store, { id: arg('--id'), name: arg('--name'), baseline: arg('--baseline'), challenger: arg('--challenger'),
       hypothesis: arg('--hypothesis'), change: arg('--change'), scope: arg('--scope', 'SINGLE_CHANGE'), window: arg('--window', null), metrics: (arg('--metrics', '') || '').split(',').filter(Boolean) }, arg('--actor', null)), null, 1));
