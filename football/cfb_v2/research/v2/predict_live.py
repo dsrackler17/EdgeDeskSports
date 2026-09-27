@@ -320,7 +320,9 @@ def build_rows(season, now, version, X=None, A=None, gbm=None):
         A, gbm = load_artifacts(version)
     if A.get('model_version') != version:
         raise common.StaleBuild('artifacts/%s holds model_version %s' % (version, A.get('model_version')))
-    stamp = common.require_build(A.get('feature_version'), 'scoring %s' % version)
+    from .build_ratings import artifact_between_var_rule
+    stamp = common.require_build(A.get('feature_version'), 'scoring %s' % version,
+                                 between_var_rule=A.get('between_var_rule') or artifact_between_var_rule(version))
     if X is None:
         X = pd.read_parquet(common.out_path('stage5', 'cfb_model_training_snapshots.parquet'))
         X = X[X.season.eq(season)]
