@@ -277,7 +277,7 @@ async function run(opts) {
       if (missing.length) log.cfbfastr_error = 'SCHEMA: cfbfastR schedule lacks ' + missing.join(', ');
       else sets.push(cfbfastrReadings(cf.value, season, refused));
     } else log.cfbfastr_error = (cf.class || 'UNKNOWN') + ': ' + cf.error;
-    log.breakers = { cfbfastr_schedule: cf.breaker };
+    log.breakers = { cfbfastr_schedule: cf.breaker, espn_scoreboard: payloads.breaker || null };
     log.readings = sets.map((s) => Object.keys(s).length);
   }
   if (opts.readings) sets.push(...opts.readings);
