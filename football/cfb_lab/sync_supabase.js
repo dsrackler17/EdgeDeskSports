@@ -8,6 +8,12 @@
    is skipped, never updated. Without SB_URL / SB_SERVICE_ROLE it logs and
    exits 0 (the repository ledger is complete on its own).
 
+   The market-integrity tables (supabase/cfb_market_integrity.sql:
+   cfb_market_quote_quarantine <- quarantine.jsonl, cfb_market_line_corrections
+   <- market_corrections.jsonl) exist only once a person applies that file, so
+   they are OPTIONAL: while PostgREST answers "no such table" (404 / PGRST205 /
+   42P01) the mirror warns and carries on; it never fails the hourly job for them.
+
      node football/cfb_lab/sync_supabase.js [--season 2026] [--dry-run]
    ========================================================================== */
 'use strict';
@@ -32,7 +38,11 @@ const TABLES = [
   ['cfb_lab_results', 'results', 'result_id', false],
   ['cfb_lab_evaluations', 'evaluations', 'evaluation_id', false],
   ['cfb_lab_miss_reviews', 'miss_reviews', 'review_id', false],
+  /* optional (5th field): the table may not exist yet; see the header */
+  ['cfb_market_quote_quarantine', 'quarantine', 'quarantine_id', false, true],
+  ['cfb_market_line_corrections', 'market_corrections', 'correction_id', false, true],
 ];
+const SQL_FILES = ['cfb_lab.sql', 'cfb_market_integrity.sql'];
 
 /* Only the columns the table has: PostgREST refuses a row carrying any other
    key. The column lists are read from the migration itself
@@ -43,9 +53,9 @@ const fs = require('fs');
 let COLS = null;
 function columns() {
   if (COLS) return COLS;
-  const sql = fs.readFileSync(path.join(G.REPO, 'supabase', 'cfb_lab.sql'), 'utf8');
+  const sql = SQL_FILES.map((f) => { try { return fs.readFileSync(path.join(G.REPO, 'supabase', f), 'utf8'); } catch (e) { return ''; } }).join('\n');
   COLS = {};
-  const re = /create table if not exists public\.(cfb_lab_[a-z0-9_]+)\s*\(([\s\S]*?)\n\);/g;
+  const re = /create table if not exists public\.(cfb_[a-z0-9_]+)\s*\(([\s\S]*?)\n\);/g;
   let m;
   while ((m = re.exec(sql))) {
     COLS[m[1]] = m[2].split('\n').map((l) => /^\s+([a-z_][a-z0-9_]*)\s+(text|int|integer|smallint|bigint|numeric|boolean|timestamptz|jsonb|date|double|real)\b/.exec(l))
@@ -55,7 +65,7 @@ function columns() {
 }
 function shape(table, row, dropped) {
   const cols = columns()[table];
-  if (!cols) throw new Error('supabase/cfb_lab.sql has no table ' + table);
+  if (!cols) throw new Error('supabase/' + SQL_FILES.join(' / ') + ' has no table ' + table);
   const o = {};
   for (const k of Object.keys(row)) {
     if (k !== 'recorded_at' && cols.includes(k)) o[k] = row[k];
@@ -75,7 +85,7 @@ async function sync(season, opts) {
   opts = opts || {};
   const url = process.env.SB_URL, key = process.env.SB_SERVICE_ROLE;
   const store = opts.store || new G.Store(season);
-  const plan = TABLES.map(([table, kind, id, gov]) => {
+  const plan = TABLES.map(([table, kind, id, gov, optional]) => {
     let rows;
     if (kind === 'predictions') rows = store.predictions();
     /* odds_api quotes were written to Postgres by capture -> cfb_lab_ingest_quotes;
@@ -84,7 +94,7 @@ async function sync(season, opts) {
     else if (kind === 'quotes') rows = store.quotes().filter((q) => q.source !== 'odds_api');
     else rows = gov ? store.gov(kind) : G.readJsonl(store.f[kind]);
     const dropped = {};
-    return { table, id, rows: rows.map((r) => shape(table, r, dropped)), dropped };
+    return { table, id, rows: rows.map((r) => shape(table, r, dropped)), dropped, optional: !!optional };
   });
   if (!url || !key || opts.dryRun) {
     if (!opts.quiet) plan.forEach((p) => console.log('[cfb_lab sync] ' + (opts.dryRun ? 'dry-run' : 'no credentials') + ': ' + p.table + ' ' + p.rows.length + ' rows'
@@ -94,7 +104,17 @@ async function sync(season, opts) {
   const log = opts.log || LOG.logger({ job: 'cfb_lab_hourly' }, { sink: opts.quiet ? () => {} : undefined });
   const io = Object.assign({ log, fetch: opts.fetch, onIncident: DB.incidentSink({ url, key, log, fetch: opts.fetch }) }, opts.io || {});
   const out = {};
-  for (const p of plan) out[p.table] = await post(url, key, p.table, p.id, p.rows, io);
+  for (const p of plan) {
+    try {
+      out[p.table] = await post(url, key, p.table, p.id, p.rows, io);
+    } catch (e) {
+      if (!p.optional || !tableMissing(e)) throw e;
+      /* fail soft: the table's migration is not applied yet; the ledger keeps the rows and the next run sends them */
+      log.warn('mirror', 'optional_table_missing', { table: p.table, rows: p.rows.length, error_code: e.cfb_code || null,
+        note: 'apply supabase/cfb_market_integrity.sql to mirror it' });
+      out[p.table] = { skipped: 'table missing', rows: p.rows.length };
+    }
+  }
   return out;
 }
 
@@ -122,7 +142,13 @@ async function pullQuotes(season, now) {
   });
 }
 
-module.exports = { sync, pullQuotes, TABLES, shape, columns };
+/* PostgREST's "no such table": 404 with PGRST205 (42P01 on older servers) */
+function tableMissing(e) {
+  const h = (e && e.http) || {};
+  return h.status === 404 || h.code === 'PGRST205' || h.code === '42P01' || /PGRST205|42P01|does not exist/.test(String(e && e.message));
+}
+
+module.exports = { sync, pullQuotes, TABLES, shape, columns, tableMissing };
 
 if (require.main === module) {
   const a = process.argv.slice(2);

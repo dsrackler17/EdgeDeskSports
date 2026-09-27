@@ -62,7 +62,7 @@ create table if not exists public.cfb_team_week_style (
   constraint cfb_team_week_style_p check (style_drift_p is null or style_drift_p between 0 and 1),
   constraint cfb_team_week_style_games check (style_games >= 0),
   constraint cfb_team_week_style_version check (state_version >= 1 and (state_version = 1) = (supersedes is null)),
-  constraint cfb_team_week_style_payload check (jsonb_typeof(payload -> 'style') = 'object')
+  constraint cfb_team_week_style_payload check (coalesce(jsonb_typeof(payload -> 'style'), 'missing') = 'object')
 );
 create unique index if not exists cfb_team_week_style_key
   on public.cfb_team_week_style (team_id, season, as_of, feature_version, state_version);
@@ -100,7 +100,7 @@ create table if not exists public.cfb_game_matchup_features (
   constraint cfb_game_matchup_sum check (abs(matchup_aware_margin - (general_fair_margin + matchup_adjustment_points)) < 0.002),
   constraint cfb_game_matchup_conf check (matchup_confidence is null or matchup_confidence between 0 and 1),
   constraint cfb_game_matchup_poss check (expected_possessions is null or expected_possessions > 0),
-  constraint cfb_game_matchup_expl check (jsonb_typeof(payload -> 'explanation') = 'object')
+  constraint cfb_game_matchup_expl check (coalesce(jsonb_typeof(payload -> 'explanation'), 'missing') = 'object')
 );
 create unique index if not exists cfb_game_matchup_key
   on public.cfb_game_matchup_features (game_id, prediction_ts, feature_version, matchup_model_version, input_hash);

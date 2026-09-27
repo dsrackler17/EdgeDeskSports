@@ -173,7 +173,7 @@ create table if not exists public.cfb_compatibility_matrix (
   decided_at                timestamptz not null,
   payload                   jsonb not null,
   recorded_at               timestamptz not null default now(),
-  constraint cfb_compat_id check (row_id ~ '^cfbk_[0-9a-f]{24}$'),
+  constraint cfb_compat_id check (row_id ~ '^cfbcm_[0-9a-f]{24}$'),
   constraint cfb_compat_status check (status in ('COMPATIBLE','INCOMPATIBLE','RETIRED')),
   constraint cfb_compat_evidence check (length(btrim(evidence)) >= 8)
 );

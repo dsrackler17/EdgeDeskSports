@@ -367,6 +367,21 @@ def real():
     chk('real: hook general fair margin = the V2.1 projection', stored is not None and abs(g0['general_fair_margin'] - stored) < 1e-3)
     chk('real: hook matchup-aware = general + adjustment', abs(g0['matchup_aware_margin'] - g0['general_fair_margin']
                                                               - g0['matchup_adjustment_points']) < 2e-3)
+    # the live hook reproduces the backtest's features for a past (dev) freeze exactly
+    X23 = pd.read_parquet(common.out_path('stage5', 'cfb_model_training_snapshots.parquet'))
+    X23 = X23[X23.season.eq(2023)]
+    T23 = sorted(X23.prediction_ts.unique())[8]
+    X23 = X23[X23.prediction_ts.eq(T23) & ~X23.fcs_game.astype(bool)].head(6)
+    o23 = HK.matchup_week(2023, T23, X23, art=art)
+    Fs = F.set_index('game_id')
+    diffs = []
+    for g in o23['game_matchup']:
+        for c, v in g['features'].items():
+            ref = Fs.loc[int(g['game_id']), c] if c in Fs else None
+            if v is not None and ref is not None and np.isfinite(ref) and abs(v - ref) > 1e-3:
+                diffs.append((g['game_id'], c, v, float(ref)))
+    chk('real: the live hook reproduces the backtest features of a past freeze (%d games)' % len(o23['game_matchup']),
+        not diffs, diffs[:5])
     rows = HK.table_rows(out)
     sql = open(os.path.join(os.path.dirname(common.__file__), '..', '..', '..', '..', 'supabase', 'cfb_matchup.sql')).read()
     missing = [c for t, rr in rows.items() for r in rr[:1] for c in r if c not in sql]

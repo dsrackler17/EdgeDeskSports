@@ -1,0 +1,55 @@
+{
+ "schema": "cfb_compatibility_matrix_v1",
+ "rule": "An inference, a calibration, a decision policy or a market engine runs only as an explicitly COMPATIBLE tuple pinned here. Anything else fails (football/cfb_production/compat.js check()).",
+ "entries": [
+  {
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "role": "PRODUCTION_PATHWAY",
+   "status": "COMPATIBLE",
+   "feature_version": "cfb_v2_fv2",
+   "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+   "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
+   "engine_sha256": "745c1c3c9390dda7133ced12327978e383dd8d45d24cd4de6b02168e77b9c72c",
+   "calibration_version": "edgedesk_cfb_v2.1.0:97cadb764756",
+   "ensemble_version": "edgedesk_cfb_v2.1.0:e105ca1727a6",
+   "market_engine_version": "edgedesk_cfb_v2.1.0:market:368d4363a149",
+   "decision_policy_version": "cfb_decision_policy_v1",
+   "decision_policy_sha256": "cb9019a29de20cefd96ac7dbb95b9a5f79381dfb5c2df469d7cb33992c9142fe",
+   "decision_baseline_version": "cfb_decision_baseline_001",
+   "decision_calibration_version": "cfb_decision_calibration_v1",
+   "decision_calibration_manifest_sha256": "a7f523e1cd55edd8d696020deb733f0b9fadc1e71c828f1bf3b4b34bb6dbbe90",
+   "decision_engine_version": "cfb_decision_engine_v1",
+   "bet_enabled_allowed": false,
+   "evidence": "artifact football/cfb_v2/artifacts/edgedesk_cfb_v2.1.0 verifies against its MANIFEST.json; params.promotion ELIGIBLE_FOR_PROMOTION (backtest gates G1-G7 passed, report in params.js); decision baseline cfb_decision_baseline_001 was frozen on this model (base_model_version) with policy cfb_decision_policy_v1 (SHADOW, betting disabled) and calibration cfb_decision_calibration_v1 (base edgedesk_cfb_v2.1.0). No Model Championship was run.",
+   "decided_by": "cfb production hardening (football/cfb_production/manifest.js --write-compat)",
+   "decided_at": "2026-09-27T17:00:00.000Z"
+  },
+  {
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "role": "FALLBACK",
+   "status": "COMPATIBLE",
+   "feature_version": "cfb_p4_fv1",
+   "params_sha256": "fac5ae0e37d5ea7319a407e4de70baa728741687e54a3f7649d15a0053dd4b0b",
+   "calibration_version": "edgedesk_cfb_p4_v1.0.0",
+   "decision_policy_version": null,
+   "decision_engine_version": null,
+   "market_engine_version": "lab_rule:v1_gap_v1",
+   "evidence": "the governance champion (football/cfb_lab/governance/model_roles.jsonl); its board football/fbs/slate.json is the fallback level",
+   "decided_by": "cfb production hardening (football/cfb_production/manifest.js --write-compat)",
+   "decided_at": "2026-09-27T17:00:00.000Z"
+  },
+  {
+   "model_version": "edgedesk_cfb_v2.0.0",
+   "role": "CANDIDATE",
+   "status": "INCOMPATIBLE",
+   "feature_version": "cfb_v2_fv1",
+   "calibration_version": null,
+   "decision_policy_version": null,
+   "decision_engine_version": null,
+   "market_engine_version": null,
+   "evidence": "candidate 001 is tracked in shadow only; its artifact reads feature schema cfb_v2_fv1, the production features are cfb_v2_fv2; never a fallback",
+   "decided_by": "cfb production hardening (football/cfb_production/manifest.js --write-compat)",
+   "decided_at": "2026-09-27T17:00:00.000Z"
+  }
+ ]
+}

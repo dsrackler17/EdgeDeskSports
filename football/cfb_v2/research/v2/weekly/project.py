@@ -71,6 +71,38 @@ def verify_artifact(version):
             'files': have, 'manifest_hash': ids.content_hash(want)}
 
 
+# The explicit compatibility matrix (football/cfb_production/compatibility.json,
+# docs/cfb-production/VERSIONING.md): an artifact runs only as a COMPATIBLE
+# entry that pins this exact MANIFEST, this feature schema and this params.js.
+COMPATIBILITY = os.path.normpath(os.path.join(REPO_V2, '..', 'cfb_production', 'compatibility.json'))
+
+
+def verify_compatibility(version, matrix_path=None):
+    """Refuse (never warn) a model version whose artifact, feature schema or
+    calibration file is not the tuple the matrix pins as COMPATIBLE: new feature
+    code against an old artifact, or a calibration from another version."""
+    mp = matrix_path or COMPATIBILITY
+    if not os.path.exists(mp):
+        return {'ok': False, 'reason': 'no compatibility matrix at %s' % mp}
+    M = json.load(open(mp))
+    ents = [e for e in M.get('entries', []) if e.get('model_version') == version and e.get('status') == 'COMPATIBLE']
+    if not ents:
+        return {'ok': False, 'reason': 'the compatibility matrix has no COMPATIBLE entry for %s' % version}
+    e = ents[0]
+    d = os.path.join(ART_DIR, version)
+    A = json.load(open(os.path.join(d, 'models.json'))) if os.path.exists(os.path.join(d, 'models.json')) else {}
+    bad = []
+    if e.get('feature_version') != C.FEATURE_VERSION:
+        bad.append('the entry pins feature schema %s, the pipeline builds %s' % (e.get('feature_version'), C.FEATURE_VERSION))
+    if A.get('feature_version') != C.FEATURE_VERSION:
+        bad.append('the artifact reads feature schema %s, the pipeline builds %s' % (A.get('feature_version'), C.FEATURE_VERSION))
+    if ids.file_hash(os.path.join(d, 'MANIFEST.json')) != e.get('artifact_manifest_sha256'):
+        bad.append('MANIFEST.json is not the one the entry pins')
+    if ids.file_hash(os.path.join(REPO_V2, 'params.js')) != e.get('params_sha256'):
+        bad.append('params.js (calibration, market rule) is not the one the entry pins')
+    return {'ok': not bad, 'reason': '; '.join(bad) or None, 'entry': {k: e.get(k) for k in ('model_version', 'feature_version', 'calibration_version')}}
+
+
 def model_inputs(A):
     """Every column the frozen artifact reads (C, D, TotalE, sigma design)."""
     cols = []

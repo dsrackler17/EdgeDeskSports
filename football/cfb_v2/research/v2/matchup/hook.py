@@ -213,8 +213,9 @@ def matchup_week(season, T, X_T, projections=None, art=None, history=None, want_
     if want_similar:
         Mh = pd.concat([M[M.kickoff_ts < T], X.assign(status='SCHEDULED')], ignore_index=True)
         cfg = art['spec'].get('similarity') or dict(SM.DEFAULT)
-        SF, sim_pairs = SM.build(Mh[Mh.season.eq(season) | Mh.game_id.isin(X.game_id)], metric=cfg['metric'],
-                                 h=cfg['h'], want_pairs=True, seasons=[season])
+        # history: this season before T and all of last season (half weight), exactly as in the backtest
+        SF, sim_pairs = SM.build(Mh[Mh.season.between(season - 1, season) | Mh.game_id.isin(X.game_id)],
+                                 metric=cfg['metric'], h=cfg['h'], want_pairs=True, seasons=[season])
         SF = SF[SF.game_id.isin(X.game_id)].set_index('game_id')
         for c in ('sim_resid_edge', 'sim_margin_edge', 'fam_edge', 'home_eff_sim', 'away_eff_sim', 'home_max_sim',
                   'away_max_sim'):
@@ -419,7 +420,9 @@ def write_fixture(path, season=None, n_games=4):
     season = season or C.LIVE_SEASON
     X = pd.read_parquet(common.out_path('stage5', 'cfb_model_training_snapshots.parquet'))
     X = X[X.season.eq(season)]
-    T = X.prediction_ts.max()
+    now = pd.Timestamp.now(tz='UTC')
+    ahead = sorted(t for t in X.prediction_ts.unique() if t > now)
+    T = ahead[0] if ahead else X.prediction_ts.max()      # the next freeze of the live season
     XT = X[X.prediction_ts.eq(T) & ~X.fcs_game.astype(bool)].head(n_games)
     art = RS.load_artifact()
     out = matchup_week(season, T, XT, art=art)

@@ -112,6 +112,15 @@ function facts(opts) {
       if (have !== want) baselineOk = false;
     }
   }
+  /* the decision calibration the policy names, verified against its own MANIFEST (paths relative to its directory) */
+  let decisionCal = null;
+  if (policy && policy.calibration_artifact) {
+    const cdir = path.join(decArt, policy.calibration_artifact);
+    const cm = readJson(path.join(cdir, 'MANIFEST.json'));
+    const bad = cm ? Object.entries(cm.files || {}).filter(([p, want]) => shaFile(path.join(cdir, p)) !== want).map(([p]) => p) : ['MANIFEST.json'];
+    decisionCal = { version: policy.calibration_artifact, present: !!cm, base_model_version: cm && cm.base_model_version,
+      ok: !!cm && bad.length === 0, mismatched: bad, manifest_sha256: shaFile(path.join(cdir, 'MANIFEST.json')) };
+  }
   const decisionJs = path.join(repo, 'football', 'cfb_decision', 'decision.js');
   const v1Params = path.join(repo, 'football', 'cfb_p4', 'params.js');
   return {
@@ -136,6 +145,7 @@ function facts(opts) {
       sha256: shaFile(path.join(decArt, policyDir, 'policy.json')) } : null,
     decision_baseline: baseline ? { version: baseline.baseline_id, dir: baselineDir, base_model_version: baseline.base_model_version,
       ok: baselineOk, files: baselineFiles, sha256: shaFile(path.join(decArt, baselineDir, 'MANIFEST.json')) } : null,
+    decision_calibration: decisionCal,
     decision_engine_version: regex(decisionJs, /var ENGINE_VERSION = '([^']+)'/),
     decision_engine_sha256: shaFile(decisionJs),
     v1: { model_version: regex(v1Params, /"model_version":"([^"]+)"/), feature_version: regex(v1Params, /"feature_version":"([^"]+)"/),
@@ -175,6 +185,10 @@ function check(f, matrix, opts) {
       const db = f.decision_baseline;
       add('decision baseline belongs to this model and its pinned files verify', db && db.version === e.decision_baseline_version && db.base_model_version === mv && db.ok,
         'CALIBRATION', db ? db.version + ' base ' + db.base_model_version + (db.ok ? '' : '; files differ: ' + Object.keys(db.files).filter((k) => !db.files[k].ok).join(', ')) : 'no baseline');
+      const dc = f.decision_calibration;
+      add('decision calibration is the pinned one, belongs to this model and verifies', (e.decision_calibration_version || null) === (dc ? dc.version : null)
+        && (!dc || (dc.ok && dc.base_model_version === mv && dc.manifest_sha256 === e.decision_calibration_manifest_sha256)),
+        'CALIBRATION', dc ? dc.version + ' base ' + dc.base_model_version + (dc.ok ? '' : '; files differ: ' + dc.mismatched.join(', ')) + '; pinned ' + e.decision_calibration_version : 'policy names no calibration; pinned ' + e.decision_calibration_version);
       add('decision engine version is the pinned one', f.decision_engine_version === e.decision_engine_version, 'CALIBRATION', f.decision_engine_version + ' vs ' + e.decision_engine_version);
       add('betting stays disabled unless the pinned policy enables it', !(dp && dp.bet_enabled) || (e.bet_enabled_allowed === true), 'CALIBRATION', dp ? 'policy bet_enabled ' + dp.bet_enabled : 'none');
     }
@@ -194,6 +208,8 @@ function entryFor(f, meta) {
     engine_sha256: f.engine_sha256, calibration_version: f.calibration_version, ensemble_version: f.ensemble_version,
     market_engine_version: f.market_engine_version, decision_policy_version: f.decision_policy && f.decision_policy.version,
     decision_policy_sha256: f.decision_policy && f.decision_policy.sha256, decision_baseline_version: f.decision_baseline && f.decision_baseline.version,
+    decision_calibration_version: f.decision_calibration ? f.decision_calibration.version : null,
+    decision_calibration_manifest_sha256: f.decision_calibration ? f.decision_calibration.manifest_sha256 : null,
     decision_engine_version: f.decision_engine_version, bet_enabled_allowed: false,
     evidence: meta.evidence || null, decided_by: meta.decided_by || null, decided_at: meta.decided_at || null,
   };

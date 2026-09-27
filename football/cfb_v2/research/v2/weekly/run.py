@@ -345,7 +345,13 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
         art = PJ.verify_artifact(C.MODEL_VERSION)
         ctx['artifact'] = art
         if not art['ok']:
-            raise RL.StageError('artifact does not verify: %s' % art['reason'], 'DATA_QUALITY')
+            # taxonomy MODEL_ARTIFACT -> runlog SCHEMA (football/cfb_production/taxonomy.js)
+            raise RL.StageError('artifact does not verify: %s' % art['reason'], 'SCHEMA')
+        compat = PJ.verify_compatibility(C.MODEL_VERSION)
+        ctx['compatibility'] = compat
+        if not compat['ok']:
+            # taxonomy CALIBRATION / MODEL_ARTIFACT -> runlog SCHEMA: never run an incompatible tuple
+            raise RL.StageError('not a COMPATIBLE tuple: %s' % compat['reason'], 'SCHEMA')
         D = PJ.infer(ctx['X'], ctx['A'], ctx['gbm'])
         ctx['D'] = D
         rec['counts'].update(games=int(len(D)), mean_abs_margin=round(float(D.ens_pred.abs().mean()), 3))
