@@ -212,7 +212,11 @@ def evaluate(F, tour, policy, A, dev_oos):
         tiers[t] = {k: c.get(k) for k in ('bet_count', 'avg_clv', 'avg_clv_ci', 'positive_clv_pct', 'close_implied_ev', 'roi', 'ats')}
     hi_ge_lo = (tiers['HIGH'].get('avg_clv') or -9) >= (tiers['LOW'].get('avg_clv') or 9)
     prod_bets = Rd[Rd._status.eq('BET')]
-    return {'candidates': cands,
+    evr = T.expected_vs_realized(F, {'all_rows': np.ones(len(F), bool), 'lean_set_pe_gt_0': (F.probability_edge > 0).values,
+                                     'edge_frozen_threshold': masks['edge'], 'production_lean': Rd._status.eq('LEAN').values})
+    t_edge = tour['candidates']['edge']['final_dev']['choice']
+    tim, _ = T.timing_analysis(F.assign(w_used=float(A['market_shrinkage']['w_model'])), t_edge if t_edge is not None else 0.03)
+    return {'candidates': cands, 'expected_vs_realized': evr, 'timing': tim,
             'production': {'by_status': st, 'by_first_reason': rs, 'bets': int(len(prod_bets)),
                            'status_counts': {k: int(v) for k, v in Rd._status.value_counts().sort_index().items()},
                            'calibration': calibration_block(F),
