@@ -91,18 +91,24 @@ Published only if every critical check holds:
 4. the opponent adjustment converged for every metric;
 5. no leakage test failed;
 6. the artifact verified against its MANIFEST;
-7. every critical sanity check passes:
+7. every critical run-level sanity check passes:
    - no team projected in two games of the week, none home and away in one game, no duplicate games;
-   - win probabilities strictly inside (0, 1);
-   - no NaN or infinite spread, sigma or total; sigma > 0;
-   - implied team points ≥ 0, total in [10, 120], |margin| ≤ 75;
    - no invalid team id;
    - feature time < kickoff for every game, and every feature snapshot is as of T;
    - team state uses only games before T;
    - no extreme rating move without an explanation;
    - no market column among the model's inputs.
+8. game-level checks withhold games, not weeks. A game whose win probability is not strictly inside (0, 1),
+   whose spread, sigma or total is not finite (or sigma ≤ 0), or whose total is outside [10, 120] or margin
+   beyond ±75 is **withheld**: not published, not recorded as a projection, named in the run. The week is held
+   only if more than 5% of its games are withheld (`MAX_WITHHELD_SHARE`). A projected margin larger than the
+   projected total (negative implied points for one team: the separately modelled total is incoherent in a
+   lopsided mismatch: 3 of 11,262 walk-forward rows — Clemson–The Citadel and BYU–North Alabama 2020, Ohio
+   State–Ball State 2026 — and, under the frozen artifact, LSU–SE Louisiana 2025, which held a replayed week before
+   this rule)
+   withholds only that game's **total**: the spread publishes, the total is null with the reason.
 
-   An expected-starter QB state older than 21 days is a non-critical warning.
+An expected-starter QB state older than 21 days is a non-critical warning.
 
 A failed gate leaves the previous valid state standing: nothing is written to `current.json`, the snapshots
 or the state files. The run record (status `GATE_FAILED`, the failed checks) is still appended.

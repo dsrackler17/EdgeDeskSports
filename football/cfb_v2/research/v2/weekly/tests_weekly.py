@@ -177,8 +177,11 @@ late = [{'feature_ts': '2026-10-03T19:30:00.000Z', 'kickoff_ts': '2026-10-03T19:
 chk('gate: post-kickoff data is caught', any('post-kickoff' in c['check'] and not c['ok'] for c in GATE.sanity(fake_D(), late, games, T, T)))
 chk('gate: an invalid team id is caught', any('invalid team' in c['check'] and not c['ok']
                                               for c in GATE.sanity(fake_D(home_id=['zz', 'h1', 'h2', 'h3']), feats, games, T, T)))
-chk('gate: an impossible score (negative implied points) is caught', any('impossible' in c['check'] and not c['ok']
-                                                                        for c in GATE.sanity(fake_D(pred_total=12.0, ens_pred=[20.0, 0, 0, 0]), feats, games, T, T)))
+chk('gate: a margin beyond the total (negative implied points) is caught as a withheld TOTAL',
+    any('implied team points' in c['check'] and not c['ok'] and c.get('action') == 'WITHHOLD_TOTAL'
+        for c in GATE.sanity(fake_D(pred_total=[30.0, 55, 55, 55], ens_pred=[33.0, 0, 0, 0]), feats, games, T, T)))
+chk('gate: an implausible total withholds the game', any('plausible' in c['check'] and not c['ok'] and c.get('action') == 'WITHHOLD_GAME'
+                                                        for c in GATE.sanity(fake_D(pred_total=[5.0, 55, 55, 55]), feats, games, T, T)))
 chk('gate: an unexplained rating jump is caught', any('explanation' in c['check'] and not c['ok']
                                                      for c in GATE.sanity(fake_D(), feats, games, T, T, team_flags=[{'team_id': 'x', 'drivers': []}])))
 r = RL.PipelineRun(2026, 4, 5, 'weekly', 'm', 'f')
@@ -191,6 +194,15 @@ for name, args in (('not converged', ({'converged': False, 'not_converged': ['ep
                    ('leakage failure', ({'converged': True}, {'ok': True}, False))):
     gg = GATE.release_gate(r, ok_checks, *args, critical_stages=('INGEST_FINAL_SCORES',))
     chk('release gate: blocks on %s' % name, not gg['pass'] and gg['failed'], gg['failed'])
+one_bad = GATE.sanity(fake_D(pred_total=[5.0, 55, 55, 55]), feats, games, T, T)
+g1 = GATE.release_gate(r, one_bad, {'converged': True}, {'ok': True}, True, n_week_games=40)
+chk('release gate: one withheld game of 40 publishes the rest (2.5% <= 5%)', g1['pass'] and len(g1['withheld_games']) == 1, g1['failed'])
+g2 = GATE.release_gate(r, one_bad, {'converged': True}, {'ok': True}, True, n_week_games=4)
+chk('release gate: one withheld game of 4 holds the week (25% > 5%)', not g2['pass'])
+gt = GATE.release_gate(r, GATE.sanity(fake_D(pred_total=[30.0, 55, 55, 55], ens_pred=[33.0, 0, 0, 0]), feats, games, T, T),
+                       {'converged': True}, {'ok': True}, True, n_week_games=4)
+chk('release gate: an incoherent total withholds only that total; the week publishes', gt['pass'] and len(gt['withheld_totals']) == 1
+    and not gt['withheld_games'], gt)
 V = pd.DataFrame({'status': ['FINAL_VALIDATED'] * 18 + ['DATA_ERROR'] * 2})
 chk('release gate: blocks when data errors exceed the bound', not GATE.release_gate(r, ok_checks, {'converged': True}, {'ok': True}, True,
                                                                                     validation=V)['pass'])
