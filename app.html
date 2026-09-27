@@ -2945,7 +2945,7 @@ body.focus .dk-focusnote{display:block}
         <div class="ph-c"><b>Outcome</b><div class="q">Did the bet win?</div><p>Wins and losses are shown as a flat one-unit simulation. They are real results, but a short run of them proves very little.</p></div>
         <div class="ph-c evid"><b>Price quality</b><div class="q">Did the entry beat the closing market?</div><p>The closing line is the market&rsquo;s final vote. Beating it consistently is the only evidence that a signal class is real. This is the layer EdgeDesk grades itself on.</p></div>
       </div>
-      <div class="dk-note">Poor segments, thin samples and faults stay visible below. Nothing is filtered out to make the record look better.</div>
+      <div class="dk-note">Poor segments, thin samples and faults stay visible below. Nothing is filtered out to make the record look better: the default view covers the sports EdgeDesk offers today, and retired sports stay in the archive view (Filters) exactly as stored.</div>
     </div>
 
     <div class="stseg" id="recSeg">
@@ -2971,6 +2971,7 @@ body.focus .dk-focusnote{display:block}
           <div><label>Min CLV %</label><input type="number" step="0.1" id="rfClv" placeholder="e.g. 0"></div>
           <div><label>Min odds (American)</label><input type="text" inputmode="text" id="rfOdds" placeholder="-150 or +120"></div>
           <div class="full"><label>Search (team, selection, book, market, sport, date)</label><input type="search" id="rfQ" placeholder="Search graded signals&hellip;"></div>
+          <div class="full"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="rfArchive" style="width:auto;margin:0"> Include retired sports (archive)</label></div>
         </div>
         <div class="rf-actions">
           <select id="rfSaved" style="width:auto;padding:7px 9px;font-size:12px;border-radius:8px"><option value="">Saved filters&hellip;</option></select>
@@ -3754,6 +3755,193 @@ window.mcRefresh=function(){
 <script src="/mlb/params.js?v=20260918a"></script>
 <script src="/mlb/engine.js?v=20260918a"></script>
 <script>
+/* ===== EdgeDesk sports: which sports are a current product and which are
+   retired. Canonical file lib/edgedesk_sports.js; inlined by
+   tools/presentation/inline.js. Everything below reads window.EDSPORTS. ===== */
+/*__EDSPORTS_START__*/
+/* ===========================================================================
+   EdgeDesk SPORTS — which sports are a current product, and which are retired.
+
+   ONE FILE, EVERY HOST. This exact block is inlined into
+     - app.html                               (research routes, live pools, record)
+     - record.html                            (the public record's default view)
+     - supabase/functions/edgedesk_ai/index.ts (the desk's support boundary)
+     - supabase/functions/capture/index.ts    (never buy odds for a retired sport)
+     - supabase/functions/close/index.ts      (never buy a live close for one)
+   by tools/presentation/inline.js; presentation_sync.test.js and
+   tools/app/sports_config.test.js fail when a copy drifts or a host stops
+   honouring it. Edit THIS file, then `node tools/presentation/inline.js`.
+
+   RETIRING A SPORT IS AN EDIT HERE, NOT A HUNT. Add an entry to RETIRED and
+   every host above follows: capture stops requesting its odds, close stops
+   requesting its closes, the desk answers questions about it with the support
+   boundary instead of research, the terminal's live pools and default record
+   drop it, and its old research routes land on RESEARCH_DEFAULT. What is NOT
+   automatic, and is pinned by tests instead: removing its tab and panel from
+   the Research navigation, and removing it from the board's SUPPORTED list.
+
+   RETIRED IS NOT DELETED. Nothing here touches stored rows. Historical signals,
+   grades, model outputs and research records stay exactly where they are; a
+   retired sport is only excluded from what the product offers today, and the
+   terminal's record keeps an explicit archive view that includes it.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDSPORTS = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VERSION = 1;
+
+  /* What the Research shell covers today, in its navigation order. This is the
+     list the desk quotes when it declines a retired sport, and the list the
+     navigation test holds the Research tabs to. */
+  var RESEARCH_COVERAGE = [
+    { id: 'football', label: 'Football' },
+    { id: 'ufc', label: 'UFC' },
+    { id: 'baseball', label: 'Baseball' }
+  ];
+  /* Where a retired research module's old route lands: the shell's default. */
+  var RESEARCH_DEFAULT = 'football';
+
+  /* Retired sports. `key_prefixes` match an Odds API sport_key; `modules` are
+     the Research shell ids that once served it; `title` catches stored rows
+     written before capture kept a sport_key; `words` recognise a question that
+     is about the sport (tour and event names, never a bare "match" or "set"). */
+  var RETIRED = [
+    {
+      id: 'tennis', label: 'Tennis', retired_on: '2026-09-27',
+      key_prefixes: ['tennis_'],
+      modules: ['tennis', 'wta'],
+      title: /^(ATP|WTA)\b|\btennis\b/i,
+      words: /\b(tennis|atp|wta|wimbledon|roland[- ]garros|french open|us open tennis|australian open|davis cup|billie jean king cup)\b/i
+    }
+  ];
+
+  function str(v) { return v == null ? '' : String(v); }
+
+  /* The retired entry a sport key (or a bare sport id such as "tennis") belongs to. */
+  function retiredByKey(key) {
+    var k = str(key).toLowerCase();
+    if (!k) return null;
+    for (var i = 0; i < RETIRED.length; i++) {
+      var s = RETIRED[i];
+      if (k === s.id) return s;
+      for (var j = 0; j < s.key_prefixes.length; j++) if (k.indexOf(s.key_prefixes[j]) === 0) return s;
+    }
+    return null;
+  }
+  function isRetiredKey(key) { return !!retiredByKey(key); }
+
+  /* A stored row: its sport_key decides; a row with no key falls back to its title. */
+  function retiredOfRow(r) {
+    if (!r) return null;
+    var k = str(r.sport_key);
+    if (k) return retiredByKey(k);
+    var t = str(r.sport_title);
+    for (var i = 0; i < RETIRED.length; i++) if (t && RETIRED[i].title.test(t)) return RETIRED[i];
+    return null;
+  }
+  function isRetiredRow(r) { return !!retiredOfRow(r); }
+  function dropRetired(rows) {
+    var out = [];
+    if (!rows || !rows.length) return out;
+    for (var i = 0; i < rows.length; i++) if (!retiredOfRow(rows[i])) out.push(rows[i]);
+    return out;
+  }
+  /* Keep only the sport keys a current product may use. */
+  function keepCurrentKeys(keys) {
+    var out = [];
+    for (var i = 0; i < (keys || []).length; i++) if (!isRetiredKey(keys[i])) out.push(keys[i]);
+    return out;
+  }
+  function retiredPrefixes() {
+    var out = [];
+    for (var i = 0; i < RETIRED.length; i++) out = out.concat(RETIRED[i].key_prefixes);
+    return out;
+  }
+
+  /* The retired sport a piece of text is about, or null. */
+  function retiredNamedIn(text) {
+    var q = str(text);
+    if (!q) return null;
+    for (var i = 0; i < RETIRED.length; i++) if (RETIRED[i].words.test(q)) return RETIRED[i];
+    return null;
+  }
+
+  /* THE DESK'S SUPPORT BOUNDARY: which retired sport, if any, a turn is about.
+     It is a product boundary, not a language rule. A question plainly about
+     history ("why did you stop covering tennis?") is not refused; a question
+     asking for research, a price, an edge or a bet on a retired sport — or a
+     turn whose open game resolved to one — is answered with unsupportedAnswer.
+     The server (edgedesk_ai) and the browser panel both decide with this. */
+  var HISTORY_ASK = /\b(histor(y|ical|ically)|archived?|retired|no longer|stop(ped)? (covering|supporting|offering)|used to (cover|support|offer)|(why|when) (did|do|does) (you|edgedesk))\b/i;
+  function supportBoundary(o) {
+    var q = str(o && o.question);
+    if (HISTORY_ASK.test(q)) return null;
+    var bySport = o && o.sportKey ? retiredByKey(o.sportKey) : null;
+    var entry = bySport || retiredNamedIn(q);
+    if (!entry) return null;
+    return {
+      entry: entry,
+      answer: unsupportedAnswer(entry),
+      reason: bySport ? 'the turn resolved to a retired sport' : 'the question names a retired sport'
+    };
+  }
+
+  /* { module: destination } for every retired Research module. */
+  function retiredModuleRoutes() {
+    var out = {};
+    for (var i = 0; i < RETIRED.length; i++)
+      for (var j = 0; j < RETIRED[i].modules.length; j++) out[RETIRED[i].modules[j]] = RESEARCH_DEFAULT;
+    return out;
+  }
+
+  /* A PostgREST filter that keeps rows of current sports: a NULL key is kept
+     (the row is judged by its title client-side), every retired prefix is out. */
+  function postgrestKeep(col) {
+    var c = str(col) || 'sport_key';
+    var nots = [];
+    var p = retiredPrefixes();
+    for (var i = 0; i < p.length; i++) nots.push(c + '.not.like.' + p[i] + '*');
+    if (!nots.length) return '';
+    return 'or=(' + c + '.is.null,' + (nots.length === 1 ? nots[0] : 'and(' + nots.join(',') + ')') + ')';
+  }
+
+  function coverageSentence() {
+    var l = [];
+    for (var i = 0; i < RESEARCH_COVERAGE.length; i++) l.push(RESEARCH_COVERAGE[i].label);
+    var list = l.length > 1 ? l.slice(0, -1).join(', ') + ' and ' + l[l.length - 1] : (l[0] || '');
+    return 'Current research coverage includes ' + list + '.';
+  }
+  /* The support boundary, in the product's words. */
+  function unsupportedAnswer(entry) {
+    var label = entry && entry.label ? entry.label : 'That sport';
+    return label + ' is not currently supported by EdgeDesk Research. ' + coverageSentence();
+  }
+
+  return {
+    VERSION: VERSION,
+    RETIRED: RETIRED,
+    RESEARCH_COVERAGE: RESEARCH_COVERAGE,
+    RESEARCH_DEFAULT: RESEARCH_DEFAULT,
+    retiredByKey: retiredByKey,
+    isRetiredKey: isRetiredKey,
+    retiredOfRow: retiredOfRow,
+    isRetiredRow: isRetiredRow,
+    dropRetired: dropRetired,
+    keepCurrentKeys: keepCurrentKeys,
+    retiredPrefixes: retiredPrefixes,
+    retiredNamedIn: retiredNamedIn,
+    supportBoundary: supportBoundary,
+    retiredModuleRoutes: retiredModuleRoutes,
+    postgrestKeep: postgrestKeep,
+    coverageSentence: coverageSentence,
+    unsupportedAnswer: unsupportedAnswer
+  };
+});
+/*__EDSPORTS_END__*/
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
@@ -4239,7 +4427,7 @@ function renderCorrobSplit(rows){
 async function renderLegacyGap(){
   var host=$('recBasis');if(!host)return;
   try{
-    var old=await sbGet('signals?select=clv&graded_at=not.is.null&clv=not.is.null&clv_excluded_reason=is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3&limit=5000');
+    var old=recScopeRows(await sbGet('signals?select=clv,sport_key,sport_title&graded_at=not.is.null&clv=not.is.null&clv_excluded_reason=is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3'+recScopeAmp()+'&limit=5000'));
     if(!old||!old.length)return;
     var s=0;old.forEach(function(r){s+=+r.clv;});
     var avg=s/old.length;
@@ -4479,7 +4667,7 @@ function methodFairBetSide(d1,d2){var qs=[1/d1,1/d2];var m=devigMult(qs)[0],p=de
 async function renderMethodSensitivity(){
   var host=$('recMethod');if(!host)return;
   var rows=null;
-  try{ rows=await sbGet('signals?select=pin_dec,pin_opp_dec,flagged_best_dec,first_best_dec,sport_title&graded_at=not.is.null&pin_dec=not.is.null&pin_opp_dec=not.is.null&limit=5000'); }
+  try{ rows=recScopeRows(await sbGet('signals?select=pin_dec,pin_opp_dec,flagged_best_dec,first_best_dec,sport_title,sport_key&graded_at=not.is.null&pin_dec=not.is.null&pin_opp_dec=not.is.null'+recScopeAmp()+'&limit=5000')); }
   catch(_){ rows=null; }
   if(!rows||!rows.length){
     host.innerHTML='<div class="asplit"><div class="asplit-h">De-vig method disagreement \u00b7 short prices</div>'+
@@ -4854,11 +5042,11 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
 var RESEARCH_MODULES={};
 function researchRegister(m){RESEARCH_MODULES[m.id]=m;m._={loading:null,ctrl:null};}
 var RESEARCH_SUB='football';
-/* Retired research modules and where their old routes land. Tennis (and the
-   WTA engine folded into it) is no longer part of the product: its panel and
-   modules are gone, so an old bookmark, saved pref or #research/tennis/… link
-   lands on the Research shell's default destination instead of a dead route. */
-var RS_RETIRED={tennis:'football',wta:'football'};
+/* Retired research modules and where their old routes land (EDSPORTS: Tennis,
+   and the WTA engine folded into it). Their panels and modules are gone, so an
+   old bookmark, saved pref or #research/tennis/… link lands on the Research
+   shell's default destination instead of a dead route. */
+var RS_RETIRED=EDSPORTS.retiredModuleRoutes();
 window.researchGo=function(sub){
   /* the standalone CFB tab was folded into Football (rosters live on its
      middle segment, Power 4 carries the matchups); old links and saved
@@ -6001,15 +6189,13 @@ async function loadWeights(){try{var w=await sbGet('model_weights?select=*');WEI
 
 /* ===== live edges (read from signals) ===== */
 var EDGES=[];
-/* RETIRED SPORTS. Tennis is no longer an EdgeDesk product, but capture still
-   stores tennis_* prices (backend, untouched). Every LIVE pool drops them where
-   it is read, so the board, its Sport filter, the desk, the Top 5 and the
-   brief never offer one. The graded record is NOT filtered: rows already
-   graded stay counted where they were. The title test covers rows written
-   without a sport_key. */
-var RETIRED_SPORT_KEY=/^tennis_/i, RETIRED_SPORT_TITLE=/^(ATP|WTA)\b|\btennis\b/i;
-function isRetiredSport(r){if(!r)return false;var k=String(r.sport_key||'');return k?RETIRED_SPORT_KEY.test(k):RETIRED_SPORT_TITLE.test(String(r.sport_title||''));}
-function dropRetiredSports(rows){return (rows||[]).filter(function(r){return !isRetiredSport(r);});}
+/* RETIRED SPORTS (EDSPORTS). Rows already stored for a retired sport stay in
+   the database; every LIVE pool drops them where it is read, so the board, its
+   Sport filter, the desk, the Top 5 and the brief never offer one. The record
+   applies the same rule to its default view (recScopeQ / recScopeRows) and
+   keeps an explicit archive view that includes them. */
+function isRetiredSport(r){return EDSPORTS.isRetiredRow(r);}
+function dropRetiredSports(rows){return EDSPORTS.dropRetired(rows);}
 function mktLabel(m){return m==='h2h'?'ML':m==='spreads'?'Spread':m==='totals'?'Total':m;}
 function selLabel(r){
   if(r.point==null)return r.selection;
@@ -8109,7 +8295,7 @@ var NO_CLV_REASONS=[
   ['no_entry_price','no frozen entry price']
 ];
 async function recNoClvBreakdown(flagFilter){
-  var base='graded_at=not.is.null&'+flagFilter+'&';
+  var base=recScopeF('graded_at=not.is.null&'+flagFilter)+'&';
   try{
     var out=[];
     var never=await sbCount(base+'closed_at=is.null');
@@ -8140,7 +8326,7 @@ function recNoClvSentence(missing,parts){
 
 async function loadRecordProof(){
   try{
-    var total=await sbCount('');var graded=await sbCount('graded_at=not.is.null');
+    var total=await sbCount(recScopeF(''));var graded=await sbCount(recScopeF('graded_at=not.is.null'));
     // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
     // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
     /* Filter on WHETHER THE ROW WAS EVER A SIGNAL, not on its live edge.
@@ -8173,8 +8359,8 @@ async function loadRecordProof(){
     var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var FLAG_ANY='flagged_at=not.is.null';
     var CLV_ANY='clv=not.is.null&clv_excluded_reason=is.null';
-    var _c=await Promise.all([sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),
-      sbCount('graded_at=not.is.null&'+CLV_ANY),sbCount('graded_at=not.is.null&'+FLAG_CLV)]);
+    var _c=await Promise.all([sbCount(recScopeF('graded_at=not.is.null&'+FLAG_STRICT)),sbCount(recScopeF('graded_at=not.is.null&'+FLAG_ANY)),
+      sbCount(recScopeF('graded_at=not.is.null&'+CLV_ANY)),sbCount(recScopeF('graded_at=not.is.null&'+FLAG_CLV))]);
     var nStrict=_c[0],nFlagAny=_c[1],nClvAny=_c[2],nFlagClv=_c[3];
     var EDGEQ,poolLabel,poolKind,gradedEdges;
     if(nFlagClv>0){EDGEQ=FLAG_CLV;poolLabel='flagged signals with a scored close';poolKind='flagclv';gradedEdges=nFlagClv;}
@@ -8189,7 +8375,8 @@ async function loadRecordProof(){
        a picture of a relationship that does not hold. */
     var recFunnel='Pool sizes (four overlapping filters, not a nested chain) \u00b7 graded '+graded+' \u00b7 flagged '+nFlagAny+' \u00b7 flagged and inside the 0.5\u20139.9% band '+nStrict+' \u00b7 flagged and scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
       recNoClvSentence(nFlagAny-nFlagClv, await recNoClvBreakdown(FLAG_ANY));
-    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,flagged_policy,flagged_tier,flagged_reference_type,sport_title,sport_key,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,flagged_policy,flagged_tier,flagged_reference_type,sport_title,sport_key,market,commence_time&graded_at=not.is.null&'+EDGEQ+recScopeAmp()+'&limit=5000');
+    g=recScopeRows(g);
     var w=0,l=0,clvSum=0,beatStored=0,clvArr=[],clvPos=0;
     /* tennis spreads/totals are not gradeable (set scores vs game lines): keep them
        out of every counted stat here, same rule as recStats. */
@@ -8223,7 +8410,7 @@ async function loadRecordProof(){
     renderSportSplit(g);
     renderTtcSplit(g);
     renderPriceSplit(g);
-    try{ var calRows=await sbGetAll('signals?select=closing_sharp_fair,result,sport_title,sport_key,market&graded_at=not.is.null&closing_sharp_fair=not.is.null&result=in.(win,loss)&not.and=(sport_key.like.tennis_*,market.in.(spreads,totals))',1000,12); renderCalibration(calRows); }
+    try{ var calRows=await sbGetAll('signals?select=closing_sharp_fair,result,sport_title,sport_key,market&graded_at=not.is.null&closing_sharp_fair=not.is.null&result=in.(win,loss)&not.and=(sport_key.like.tennis_*,market.in.(spreads,totals))'+recScopeAmp(),1000,12); renderCalibration(recScopeRows(calRows)); }
     catch(_c){ renderCalibration([]); }
     renderMethodSensitivity();
     renderEthos();
@@ -8231,7 +8418,7 @@ async function loadRecordProof(){
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
-    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&clv_excluded_reason=is.null&order=graded_at.asc&limit=5000');renderClvHero(series,avgCLV,beatRate,med,posRate,beatStoredRate);}catch(_){renderClvHero([],null,null,null,null,null);}
+    try{var series=recScopeRows(await sbGet('signals?select=clv,graded_at,sport_key,sport_title&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&clv_excluded_reason=is.null'+recScopeAmp()+'&order=graded_at.asc&limit=5000'));renderClvHero(series,avgCLV,beatRate,med,posRate,beatStoredRate);}catch(_){renderClvHero([],null,null,null,null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
     var _fCol=poolKind==='strict'?'var(--pos)':poolKind==='empty'?'var(--neg)':'var(--warn)';
     var _fWhy=poolKind==='clvany'?' No graded row has flagged_at set, so these are computed over every graded row with a CLV. That means capture v3 (which stamps flagged_at / flagged_edge) has not written any row that has since graded. Deploy or verify it and this promotes itself back to the strict flagged pool on its own.':poolKind==='flagany'?' flagged_at is set but flagged_edge is null or outside the 0.5\u20139.9% band, so the strict filter caught nothing. Check the scale flagged_edge is written on.':poolKind==='empty'?' The settle job is not writing clv on graded rows. That is a backend fix, not a frontend one.':'';
@@ -8369,7 +8556,7 @@ function reliabilitySVG(calib){
     '<text x="'+(W/2)+'" y="'+(H-4)+'" fill="var(--faint)" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono">model said (%)</text>'+
     '<text x="12" y="'+(H/2)+'" fill="var(--faint)" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90 12 '+(H/2)+')">actually happened (%)</text>'+'</svg>';
 }
-function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(function(r){return r.slice_type===t;}).sort(function(a,b){return(b.weight||0)-(a.weight||0);});
+function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(function(r){return r.slice_type===t&&(REC.archive||!(r.slice_type==='sport'&&EDSPORTS.isRetiredKey(r.slice_value)));}).sort(function(a,b){return(b.weight||0)-(a.weight||0);});
   $('sliceTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.slice_value+'</td><td>'+(r.n||0)+'</td><td>'+(r.hit_rate!=null?(r.hit_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.avg_clv||0)>=0?'pos':'neg')+'">'+(r.avg_clv!=null?((r.avg_clv>=0?'+':'')+(r.avg_clv*100).toFixed(1)+'%'):'—')+'</td><td>'+(r.beat_close_rate!=null?(r.beat_close_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.weight||1)>=1?'pos':'neg')+'">×'+(r.weight||1).toFixed(2)+'</td></tr>';}).join(''):'<tr><td colspan="6" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
 function renderCalib(){var order=['<0%','0-2%','2-4%','4-7%','7%+'],rows=CALIB.slice().sort(function(a,b){return order.indexOf(a.edge_bucket)-order.indexOf(b.edge_bucket);});
   $('calibTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.edge_bucket+'</td><td>'+(r.n||0)+'</td><td>'+(r.predicted_edge!=null?(r.predicted_edge*100).toFixed(1)+'%':'—')+'</td><td>'+(r.realized_winrate!=null?(r.realized_winrate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.realized_clv||0)>=0?'pos':'neg')+'">'+(r.realized_clv!=null?((r.realized_clv>=0?'+':'')+(r.realized_clv*100).toFixed(1)+'%'):'—')+'</td></tr>';}).join(''):'<tr><td colspan="5" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
@@ -8388,11 +8575,22 @@ $('sliceType').onchange=renderSlice;$('recRefresh').onclick=loadRecord;
      -> empty) is identical to the Proof layer so this dashboard can never
      show a prettier pool than the proof does.
    ===================================================================== */
-var REC={rows:[],flt:[],loaded:false,loading:false,proofDone:false,
+var REC={rows:[],flt:[],loaded:false,loading:false,proofDone:false,archive:false,
   pool:{kind:'',label:'',funnel:''},tab:'overview',
   sort:{k:'_gts',d:-1},page:0,per:25,dirty:{charts:true,analytics:true},open:{},colW:{},
   dow:{sport:'',market:''}};
 var REC_MIN=30; /* below this, everything gets a small-sample tag */
+/* THE DEFAULT RECORD IS THE CURRENT PRODUCT. Rows of a retired sport
+   (EDSPORTS) are left out of every count, row set and aggregate on this tab,
+   and out of its sport filter. Nothing is deleted: the archive view (the
+   filter bar's "Include retired sports" box, REC.archive) reads them back
+   exactly as stored. recScopeF adds the rule to a PostgREST filter (a NULL
+   sport_key is kept there and judged by its title in recScopeRows). */
+function recScopeQ(){return REC.archive?'':EDSPORTS.postgrestKeep('sport_key');}
+function recScopeF(f){var q=recScopeQ();return q?(f?f+'&'+q:q):f;}
+function recScopeAmp(){var q=recScopeQ();return q?'&'+q:'';}
+function recScopeRows(rows){return REC.archive?(rows||[]):EDSPORTS.dropRetired(rows);}
+function recRetiredSegment(seg){return EDSPORTS.isRetiredKey(seg)||EDSPORTS.isRetiredRow({sport_title:seg});}
 
 /* ---- tiny format helpers (records only, prefixed to avoid collisions) ---- */
 function recNum(v){return v==null||isNaN(v)?null:+v;}
@@ -8454,9 +8652,9 @@ async function loadRecord(force){
     var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var FLAG_ANY='flagged_at=not.is.null';
     var CLV_ANY='clv=not.is.null&clv_excluded_reason=is.null';
-    var counts=await Promise.all([sbCount(''),sbCount('graded_at=not.is.null'),
-      sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),
-      sbCount('graded_at=not.is.null&'+CLV_ANY),sbCount('graded_at=not.is.null&'+FLAG_CLV)]);
+    var counts=await Promise.all([sbCount(recScopeF('')),sbCount(recScopeF('graded_at=not.is.null')),
+      sbCount(recScopeF('graded_at=not.is.null&'+FLAG_STRICT)),sbCount(recScopeF('graded_at=not.is.null&'+FLAG_ANY)),
+      sbCount(recScopeF('graded_at=not.is.null&'+CLV_ANY)),sbCount(recScopeF('graded_at=not.is.null&'+FLAG_CLV))]);
     total=counts[0];graded=counts[1];nStrict=counts[2];nFlagAny=counts[3];nClvAny=counts[4];nFlagClv=counts[5];
     var EDGEQ,poolLabel,poolKind,gradedEdges;
     if(nFlagClv>0){EDGEQ=FLAG_CLV;poolLabel='flagged signals with a scored close';poolKind='flagclv';gradedEdges=nFlagClv;}
@@ -8481,7 +8679,8 @@ async function loadRecord(force){
         +' \u00b7 flagged and scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
         recNoClvSentence(nFlagAny-nFlagClv, await recNoClvBreakdown(FLAG_ANY)),
       total:total,graded:graded};
-    var rows=poolKind==='empty'?[]:await sbGetAll('signals?select='+REC_COLS+'&graded_at=not.is.null&'+EDGEQ+'&order=graded_at.asc',1000,12);
+    var rows=poolKind==='empty'?[]:await sbGetAll('signals?select='+REC_COLS+'&graded_at=not.is.null&'+EDGEQ+recScopeAmp()+'&order=graded_at.asc',1000,12);
+    rows=recScopeRows(rows);
     /* Tennis spreads/totals are not gradeable against the Odds API scores feed:
        it returns SET counts while these markets are denominated in GAMES. We do
        NOT hide these rows (that would look like a vanished bet). Instead we tag
@@ -8570,7 +8769,7 @@ function recApplyFilters(){
   REC.page=0;REC.open={};REC.dirty={charts:true,analytics:true};REC.kbIdx=null;
   var na=recFilterActiveCount();
   $('rfSummary').textContent=na?na+' active':'';
-  $('recCount').textContent=REC.flt.length+' of '+REC.rows.length+' graded signals'+(na?' match the filters':'')+' \u00b7 pool: '+REC.pool.label;
+  $('recCount').textContent=REC.flt.length+' of '+REC.rows.length+' graded signals'+(na?' match the filters':'')+' \u00b7 pool: '+REC.pool.label+(REC.archive?' \u00b7 archive: includes retired sports':'');
   recRenderAll();
 }
 
@@ -8717,7 +8916,7 @@ function recRowLeague(r){return recLeague(r&&r.sport_key,r&&r.sport_title);}
 
 async function recStatusCards(){
   try{
-    var rows=await sbGetAll('signals?select=sport_key,sport_title,clv,graded_at,clv_excluded_reason&flagged_at=not.is.null');
+    var rows=recScopeRows(await sbGetAll('signals?select=sport_key,sport_title,clv,graded_at,clv_excluded_reason&flagged_at=not.is.null'+recScopeAmp()));
     if(!rows||!rows.length)return;
     var by={};
     rows.forEach(function(r){
@@ -9231,7 +9430,7 @@ async function wewLoad(host){
 
 function wewRender(){
   var d=WEW.data||[];
-  function by(dim){return d.filter(function(r){return r.dimension===dim;});}
+  function by(dim){return d.filter(function(r){return r.dimension===dim&&(dim!=='sport'||REC.archive||!recRetiredSegment(r.segment));});}
   var graded=by('sport').reduce(function(s,r){return s+(r.n_graded||0);},0);
   var h='<div class="wew-wrap"><div class="wew-top">'+
     '<h3>Where EdgeDesk Wins</h3>'+
@@ -9645,6 +9844,8 @@ function recGo(tab){
     $(id).addEventListener('input',function(){clearTimeout(deb);deb=setTimeout(onChange,220);});
   });
   $('rfReset').addEventListener('click',recResetFilters);
+  /* the archive is a different row set, not a filter over this one: re-read */
+  $('rfArchive').addEventListener('change',function(){REC.archive=!!this.checked;loadRecord(true);});
   $('rfSave').addEventListener('click',recSaveFilter);
   $('rfDel').addEventListener('click',recDeleteFilter);
   $('rfSaved').addEventListener('change',function(){
@@ -9688,7 +9889,9 @@ function recGo(tab){
     REC.page=0;recRenderTable();
   });
 })();
-function recResetFilters(){recSetFilterState({});$('rfSaved').value='';recApplyFilters();}
+function recResetFilters(){recSetFilterState({});$('rfSaved').value='';
+  if(REC.archive){REC.archive=false;$('rfArchive').checked=false;loadRecord(true);return;}
+  recApplyFilters();}
 
 /* =====================================================================
    FOOTBALL MODEL RECORD — the research tool's own book, NFL and CFB.
@@ -23963,8 +24166,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
   var SIG_COLS='id,sig_key,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,first_sharp_fair,consensus_fair,closing_sharp_fair,n_books,is_fav';
   function loadSignals(){
-    return sbGet('signals?select='+SIG_COLS+'&graded_at=not.is.null&order=graded_at.desc&limit=150')
-      .then(function(rows){L.sigs=rows||[];L.sigsErr=null;}).catch(function(e){L.sigs=null;L.sigsErr=(e&&e.message)||'read failed';});
+    return sbGet('signals?select='+SIG_COLS+'&graded_at=not.is.null&'+EDSPORTS.postgrestKeep('sport_key')+'&order=graded_at.desc&limit=150')
+      .then(function(rows){L.sigs=EDSPORTS.dropRetired(rows);L.sigsErr=null;}).catch(function(e){L.sigs=null;L.sigsErr=(e&&e.message)||'read failed';});
   }
   function loadTicks(key){
     if(L.ticks[key]!==undefined)return Promise.resolve(L.ticks[key]);
@@ -40551,6 +40754,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(_bs){ packet=Object.assign(packet||{},{board_scope:_bs}); }
     if(extra && extra.board) packet = Object.assign(packet||{}, {board_mode:true, board:extra.board});
     var pm=(extra&&extra.presentation_mode)||PRES_MODE[mode]||(x?'STANDARD':'DEEP');
+    /* THE SUPPORT BOUNDARY (EDSPORTS.supportBoundary, the same decision the
+       function makes): a question asking for research on a retired sport is
+       answered here with the product's own sentence, in the same shape the
+       function returns, and no call is spent on it. */
+    try{
+      var _sb=window.EDSPORTS&&EDSPORTS.supportBoundary({question:question, sportKey:packet&&packet.game&&packet.game.sport_key});
+      if(_sb) return {answer:_sb.answer, model:null, narration:{ok:true,prose:'DETERMINISTIC',critic:null},
+        support_boundary:{sport:_sb.entry.id, label:_sb.entry.label, stage:'client', reason:_sb.reason,
+          coverage:EDSPORTS.RESEARCH_COVERAGE.map(function(c){return c.label;})}, build:'client'};
+    }catch(_){}
     var tok = (typeof edToken==='function')? await edToken() : (typeof SB_KEY!=='undefined'?SB_KEY:'');
     var r=await fetch(AI_FN,{method:'POST',
       headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},

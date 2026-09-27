@@ -28,6 +28,7 @@ on:
       # The canonical research arithmetic every Collective diagnostic and the
       # EdgeDesk research contract are computed with, and its suites.
       - 'lib/research_core.js'
+      - 'lib/edgedesk_sports.js'
       - 'lib/research_eval.js'
       - 'lib/game_research.js'
       # the college research view and the reliability score it reads
@@ -117,6 +118,7 @@ on:
       # The canonical research arithmetic every Collective diagnostic and the
       # EdgeDesk research contract are computed with, and its suites.
       - 'lib/research_core.js'
+      - 'lib/edgedesk_sports.js'
       - 'lib/research_eval.js'
       - 'lib/game_research.js'
       # the college research view and the reliability score it reads
@@ -422,6 +424,11 @@ jobs:
       # Edges beside it, Faults reachable without a tab of its own.
       - name: The navigation says what the product is
         run: node tools/app/navigation.test.js
+
+      # One list of which sports EdgeDesk offers (lib/edgedesk_sports.js):
+      # every host carries it, and nothing offers or buys a retired sport.
+      - name: Retired sports stay retired everywhere
+        run: node tools/app/sports_config.test.js
 
       # The default landing page: what a new reader is told in five seconds,
       # and what the page is not allowed to imply about the model.

@@ -757,6 +757,50 @@ function ev(bookmakers, over) {
     ENV.CAPTURE_SPORTS = 'americanfootball_nfl';
   }
 
+  /* 26 — a retired sport (lib/edgedesk_sports.js) is never requested, whatever
+     the configuration or discovery says, and the run names what it skipped. */
+  {
+    const tennisReq = () => net.calls.filter((c) => /\/v4\/sports\/tennis_[^/]*\/(odds|events)/.test(c.url));
+    chk('26 · the default auto prefixes no longer include tennis_', cfg0.autoPrefixes.indexOf('tennis_') < 0, cfg0.autoPrefixes);
+    const explicit = M.defaultConfig((k) => (k === 'CAPTURE_AUTO_PREFIXES' ? 'tennis_,americanfootball_nfl' : undefined));
+    chk('26 · a retired prefix set explicitly is dropped too', explicit.autoPrefixes.join() === 'americanfootball_nfl', explicit.autoPrefixes);
+
+    net.db = () => res(200, [], { 'content-range': '*/0' });
+    net.odds['americanfootball_nfl'] = okPack();
+    net.odds['tennis_atp_us_open'] = okPack();
+    net.calls.length = 0;
+    ENV.CAPTURE_SPORTS = 'tennis_atp_us_open,americanfootball_nfl';
+    let j = await (await M.handle(rq())).json();
+    chk('26 · CAPTURE_SPORTS naming a tennis key requests no tennis odds', tennisReq().length === 0, tennisReq().map((c) => c.url));
+    chk('26 · the supported sport still captures', j.priced > 0, j.priced);
+    chk('26 · and the run reports the retired key it skipped', (j.retired_sports_skipped || []).indexOf('tennis_atp_us_open') >= 0, j.retired_sports_skipped);
+
+    net.calls.length = 0;
+    ENV.CAPTURE_SPORTS = '';
+    net.sports = ['americanfootball_nfl', 'tennis_wta_guadalajara_open'];
+    j = await (await M.handle(rq())).json();
+    chk('26 · an empty CAPTURE_SPORTS (capture everything active) still requests no tennis odds', tennisReq().length === 0, tennisReq().map((c) => c.url));
+    chk('26 · while the rest of the discovered board captures', j.priced > 0, j.priced);
+
+    net.calls.length = 0;
+    ENV.CAPTURE_SPORTS = 'americanfootball_nfl';
+    ENV.CAPTURE_AUTO_PREFIXES = 'tennis_';
+    j = await (await M.handle(rq())).json();
+    chk('26 · a stale CAPTURE_AUTO_PREFIXES=tennis_ secret adds no tennis key', tennisReq().length === 0 && (j.auto_added || []).length === 0, j.auto_added);
+
+    net.calls.length = 0;
+    ENV.CAPTURE_SPORTS = 'tennis_atp_us_open';
+    ENV.CAPTURE_AUTO_PREFIXES = '';
+    j = await (await M.handle(rq())).json();
+    chk('26 · a board of only retired sports makes no odds request at all',
+      net.calls.filter((c) => /\/odds/.test(c.url)).length === 0, net.calls.map((c) => c.url));
+    chk('26 · and says so rather than reporting an ok run', j.ok === false && /retired/.test(j.reason || ''), j.reason);
+
+    net.sports = ['americanfootball_nfl'];
+    delete net.odds['tennis_atp_us_open'];
+    ENV.CAPTURE_SPORTS = 'americanfootball_nfl';
+  }
+
   /* The freeze counts rows the database actually froze. */
   {
     net.odds['americanfootball_nfl'] = okPack();
