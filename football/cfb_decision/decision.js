@@ -48,6 +48,8 @@
     PASS_LINE_MOVED: 'the line has moved through the bettable threshold',
     PASS_DATA_QUALITY: 'a data-integrity check failed',
     PASS_MARKET_DISPERSION: 'books disagree too much to trust one number',
+    PASS_MARKET_INVALID: 'the quote failed market validation (impossible number, odds, timestamp or game) or is quarantined',
+    PASS_MARKET_DEGRADED: 'the market consensus is degraded (too few valid books, too many stale, or unresolved disagreement)',
     NO_BET_CALIBRATION: 'the decision calibration artifact is missing or invalid (fail closed)',
     NO_BET_VERSION_MISMATCH: 'the calibration was validated for a different football model version (fail closed)',
     NO_BET_COMPUTATION: 'a probability or value could not be computed (fail closed)',
@@ -253,9 +255,58 @@
     return { score: isNum(score) ? score : null, expected_abs_error_pts: r(eae, 2),
              label: !isNum(score) ? 'UNKNOWN' : score >= 70 ? 'HIGH' : score >= 45 ? 'MEDIUM' : 'LOW' };
   }
+  /* ------------------------------------------ production integrity hooks
+     (docs/cfb-production/MARKET_INTEGRITY.md). The rules live in
+     football/cfb_lab/integrity.js and the identity master in
+     football/cfb_lab/identity.js; in node they are required, in a browser they
+     are read from window.EDCfbIntegrity. Without them the minimal built-in
+     bounds below still refuse the impossible (never a silent pass). */
+  var INTEG = null, SAME_TEAM = null;
+  function integ() {
+    if (INTEG) return INTEG;
+    if (root && root.EDCfbIntegrity) INTEG = root.EDCfbIntegrity;
+    else if (typeof require === 'function') { try { INTEG = require('../cfb_lab/integrity.js'); } catch (e) { INTEG = null; } }
+    return INTEG;
+  }
+  function sameTeam(a, b) {
+    if (SAME_TEAM === null) {
+      SAME_TEAM = false;
+      if (root && typeof root.EDCfbSameTeam === 'function') SAME_TEAM = root.EDCfbSameTeam;
+      else if (typeof require === 'function') { try { SAME_TEAM = require('../cfb_lab/identity.js').sameTeam; } catch (e) { SAME_TEAM = false; } }
+    }
+    if (SAME_TEAM) { try { return SAME_TEAM(a, b); } catch (e) { return null; } }
+    return String(a).toLowerCase() === String(b).toLowerCase() ? true : null;
+  }
+  /* is this quote a possible market at all? (a +450 spread, odds of 0, a
+     price inside (-100, +100), a two-way price below fair, a timestamp from the
+     future: never decided on) */
+  function quoteProblems(quote, now) {
+    var I = integ();
+    var q = { market_type: 'spread', home_line: quote.home_line, price_home: quote.price_home, price_away: quote.price_away,
+      observed_at: quote.observed_at, provider_updated_at: quote.provider_updated_at };
+    if (I) return I.validateQuote(q, { now: new Date(now).toISOString() }).reasons;
+    var out = [], hl = quote.home_line;
+    if (isNum(hl) && Math.abs(hl) > 70) out.push('SPREAD_OUT_OF_BOUNDS');
+    [quote.price_home, quote.price_away].forEach(function (a) { if (isNum(a) && (a === 0 || Math.abs(a) < 100 || Math.abs(a) > 1000)) out.push('PRICE_INVALID'); });
+    var o = quote.observed_at ? Date.parse(quote.observed_at) : NaN;
+    if (isNum(o) && o > now + 5 * 60000) out.push('OBSERVED_IN_FUTURE');
+    return out;
+  }
+  /* a quote's identity for the integrity verdict: its id, else its book and time */
+  function quoteKey(q) { return q.quote_id != null ? String(q.quote_id) : 'book:' + q.book + '|' + q.observed_at; }
+  /* the quote's TRUE age: the provider's own last update when it is older than
+     our observation (a heartbeat of a book that stopped moving is not fresh) */
+  function quoteAgeMinutes(quote, now) {
+    var o = quote.observed_at ? Date.parse(quote.observed_at) : NaN;
+    if (!isNum(o)) return null;
+    var u = quote.provider_updated_at ? Date.parse(quote.provider_updated_at) : NaN;
+    var base = isNum(u) && u < o ? u : o;
+    return (now - base) / 60000;
+  }
+
   /* market: freshness, depth, agreement — how trustworthy the offered number is right now */
   function marketConfidence(quote, market, now, P) {
-    var age = quote.observed_at ? (now - Date.parse(quote.observed_at)) / 60000 : null;
+    var age = quoteAgeMinutes(quote, now);
     var books = market && isNum(market.books) ? market.books : null, iqr = market && isNum(market.dispersion_iqr) ? market.dispersion_iqr : null;
     var s = 100, basis = [];
     if (!isNum(age)) { s = 0; basis.push('quote time unknown'); }
@@ -278,28 +329,40 @@
 
   /* --------------------------------------------------------- integrity */
   /* an unusually large apparent edge is checked before it is believed */
-  function integrityCheck(pure, quote, ctx, gapPts, ev) {
+  /* EXTREME_COVER_PROBABILITY (§114): cfb_decision_calibration_v1's own
+     evidence (cover_buckets_decision) shows no decision cover probability
+     above 0.60 in 3,633 walk-forward development decisions. Beyond it the
+     number is historically unobserved, so the same player-status and
+     freshness checks an extreme edge gets must pass — a diagnostic trigger,
+     not a cap: passing them changes nothing. A policy may set its own. */
+  var EXTREME_COVER_PROBABILITY = 0.60;
+  function integrityCheck(pure, quote, ctx, gapPts, ev, pCover) {
     var P = ctx.policy, failures = [], now = ctx.now;
     var extreme = Math.abs(gapPts) >= (P.extreme_gap_pts || 10) || (isNum(ev) && ev >= (P.extreme_ev || 0.12));
+    var xp = isNum(P.extreme_cover_probability) ? P.extreme_cover_probability : EXTREME_COVER_PROBABILITY;
+    var extremeP = isNum(pCover) && (pCover >= xp || pCover <= 1 - xp);
     var mkt = -quote.home_line;
     if (Math.abs(gapPts) > (P.orientation_gap || 21) && Math.abs(pure.projected_margin + mkt) <= (P.orientation_reconcile || 7)) {
       failures.push('sign: the market number looks flipped relative to the model');
     }
     if (String(quote.game_id) !== String(pure.game_id)) failures.push('mapping: quote game ' + quote.game_id + ' is not projection game ' + pure.game_id);
-    if (quote.home_team && pure.home && String(quote.home_team).toLowerCase() !== String(pure.home).toLowerCase()) {
+    /* the team join goes through the identity master ("Texas Longhorns" is
+       Texas; "Miami" is never "Miami (OH)"); a pair it cannot verify fails */
+    if (quote.home_team && pure.home && sameTeam(quote.home_team, pure.home) !== true) {
       failures.push('join: quote home team ' + quote.home_team + ' is not ' + pure.home);
     }
     var ko = pure.kickoff ? Date.parse(pure.kickoff) : NaN;
     if (!isNum(ko) || now >= ko) failures.push('schedule: the game has kicked off or has no kickoff time');
     else if (ko - now > 10 * 86400000) failures.push('schedule: kickoff more than 10 days away');
     if (ctx.expected_model_version && pure.model_version !== ctx.expected_model_version) failures.push('model version: ' + pure.model_version);
-    if (extreme) {
+    if (extreme || extremeP) {
       var row = ctx.row || {};
       if (row.qb_missing_any || row.qb_unsettled_any) failures.push('player status: a starting quarterback is unresolved');
-      var age = quote.observed_at ? (now - Date.parse(quote.observed_at)) / 60000 : Infinity;
+      var age = quoteAgeMinutes(quote, now);
+      if (!isNum(age)) age = Infinity;
       if (!(age <= (P.extreme_max_age_minutes || 60))) failures.push('freshness: an extreme edge needs a quote under ' + (P.extreme_max_age_minutes || 60) + ' min old');
     }
-    return { extreme: extreme, ok: failures.length === 0, failures: failures };
+    return { extreme: extreme, extreme_probability: extremeP, ok: failures.length === 0, failures: failures };
   }
 
   /* -------------------------------------------------------- features */
@@ -372,6 +435,11 @@
     var av = validateArtifact(A, pure.model_version);
     if (!av.ok) { out.detail = av.detail; return fin('NO_BET', [av.code]); }
     if (!quote || !isNum(quote.home_line)) return fin('NO_BET', ['NO_BET_COMPUTATION']);
+    /* an impossible quote is not a market: PASS, never a number computed from it */
+    var qp = quoteProblems(quote, now);
+    if (qp.length) { out.detail = 'invalid quote: ' + qp.join(', '); return fin('PASS', ['PASS_MARKET_INVALID']); }
+    var mi = ctx.market && ctx.market.integrity;
+    if (mi && mi.quarantined_quote_ids && mi.quarantined_quote_ids.indexOf(quoteKey(quote)) >= 0) { out.detail = 'the quote is quarantined or a cross-book outlier'; return fin('PASS', ['PASS_MARKET_INVALID']); }
     ctx.now = now;
     var mc = marketConfidence(quote, ctx.market || {}, now, P);
     ctx._mc = mc;
@@ -410,7 +478,7 @@
     out.bet_confidence = betConfidence(s.features, A);
     out.price_targets = priceTargets(pure, quote, s.side, ctx);
     var ev = s.empirical_ev, pe = s.probability_edge, row = ctx.row || {};
-    var integ = integrityCheck(pure, quote, ctx, s.gap_pts, s.decision_ev);
+    var integ = integrityCheck(pure, quote, ctx, s.gap_pts, s.decision_ev, s.decision_cover_probability);
     out.integrity = integ;
     /* ------------------------------------------------ the gates, in order */
     if (!integ.ok) return fin('PASS', ['PASS_DATA_QUALITY']);
@@ -448,6 +516,11 @@
       if (disagree) return fin('PASS', ['PASS_MODEL_DISAGREEMENT']);
       if (weakBet) return fin('LEAN', ['LEAN_DIRECTIONAL']);
       if (!P.bet_enabled) return fin('LEAN', ['NO_BET_BETTING_DISABLED']);
+      /* fail closed (§13, §24, §46): a BET needs an ACTIONABLE consensus when one was assessed */
+      if (mi && mi.actionable_status && mi.actionable_status !== 'ACTIONABLE') {
+        out.detail = 'market ' + mi.actionable_status + (mi.reasons && mi.reasons.length ? ': ' + mi.reasons.join('; ') : '');
+        return fin('PASS', [mi.actionable_status === 'MARKET_STALE' ? 'PASS_MARKET_STALE' : (mi.actionable_status === 'MARKET_INVALID' ? 'PASS_MARKET_INVALID' : 'PASS_MARKET_DEGRADED')]);
+      }
       out.timing = timing(out, s, ctx);
       if (held) { out.reason_codes.push('HELD_BY_HYSTERESIS'); out.reasons.push(REASON.HELD_BY_HYSTERESIS); }
       out.stake_u = stake(out, P);
@@ -567,10 +640,20 @@
   function decideGame(pure, market, ctx) {
     ctx = ctx || {};
     var quotes = (market && market.quotes) || [];
+    /* the consensus integrity of the main-line quotes (integrity.assessMarket),
+       unless the caller assessed it already: a BET needs it ACTIONABLE */
+    var I = integ(), mk = market;
+    if (market && !market.integrity && I && quotes.length) {
+      var nowMs = isNum(ctx.now) ? ctx.now : (ctx.now ? Date.parse(ctx.now) : Date.now());
+      var main = quotes.filter(function (q) { return q && q.market_type !== 'total' && q.market_type !== 'moneyline' && !q.alternate; })
+        .map(function (q) { return { source: q.source || 'book', book: q.book, market_type: 'spread', home_line: q.home_line, price_home: q.price_home, price_away: q.price_away,
+          observed_at: q.observed_at, provider_updated_at: q.provider_updated_at, is_pregame: true, quote_id: quoteKey(q) }; });
+      mk = Object.assign({}, market, { integrity: I.assessMarket(main, new Date(nowMs).toISOString(), { kickoff: pure && pure.kickoff, maxAgeH: ctx.policy && isNum(ctx.policy.stale_minutes) ? ctx.policy.stale_minutes / 60 : undefined }) });
+    }
     var per = quotes.filter(function (q) { return q && q.market_type !== 'total' && !q.alternate; })
       .map(function (q) {
         var prev = ctx.previous_by_book ? ctx.previous_by_book[q.book] : null;
-        return decideQuote(pure, q, Object.assign({}, ctx, { market: market, previous: prev }));
+        return decideQuote(pure, q, Object.assign({}, ctx, { market: mk, previous: prev }));
       });
     var bets = per.filter(function (d) { return d.status === 'BET'; });
     var rank = function (d) { return isNum(d.empirical_ev) ? d.empirical_ev : -1; };

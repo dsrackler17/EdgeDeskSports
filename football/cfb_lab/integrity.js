@@ -301,7 +301,7 @@
     var real = per.filter(function (q) { return String(q.book).toLowerCase() !== 'consensus'; });
     var used = real.length ? real : per;
     var out = { rule: RULES.consensus, status: 'OK', actionable_status: 'ACTIONABLE', reasons: reasons, n_books: used.length,
-      stale_share: null, newest_true_age_h: null, range_pts: null, invalid_quote_ids: [], quarantined_used: [] };
+      stale_share: null, newest_true_age_h: null, range_pts: null, invalid_quote_ids: [], quarantined_used: [], outlier_quote_ids: [], quarantined_quote_ids: [] };
     if (!used.length) { out.status = 'MISSING'; out.actionable_status = 'MARKET_MISSING'; reasons.push('no pregame spread quote'); return out; }
     /* invalid: a used quote that fails the hard rules or is quarantined */
     used.forEach(function (q) {
@@ -315,9 +315,21 @@
     var staleN = ages.filter(function (a) { return a > lim; }).length;
     out.stale_share = used.length ? r(staleN / used.length, 3) : null;
     out.newest_true_age_h = ages.length ? r(Math.min.apply(null, ages), 3) : null;
+    /* disagreement that is RESOLVED: with three or more books a robust (MAD)
+       outlier is isolated — it is itself never actionable — and the range is
+       taken over the rest; with two books a wide gap cannot be resolved */
     var lines = used.map(function (q) { return num(q.home_line); });
-    out.range_pts = r(Math.max.apply(null, lines) - Math.min.apply(null, lines), 3);
-    if (out.invalid_quote_ids.length || out.quarantined_used.length) { out.status = 'INVALID'; out.actionable_status = 'MARKET_INVALID'; reasons.push('a quote in the market failed validation or is quarantined'); return out; }
+    out.outlier_quote_ids = [];
+    if (used.length >= 3) {
+      var med = median(lines), mad = median(lines.map(function (v) { return Math.abs(v - med); })) * 1.4826;
+      var thr = Math.max(OUTLIER.MIN_PTS.spread, OUTLIER.MAD_K * mad);
+      used.forEach(function (q, i) { if (Math.abs(lines[i] - med) > thr) out.outlier_quote_ids.push(q.quote_id); });
+    }
+    var kept = lines.filter(function (v, i) { return out.outlier_quote_ids.indexOf(used[i].quote_id) < 0; });
+    out.range_pts = kept.length ? r(Math.max.apply(null, kept) - Math.min.apply(null, kept), 3) : null;
+    out.quarantined_quote_ids = out.quarantined_used.concat(out.outlier_quote_ids);
+    if (out.outlier_quote_ids.length) reasons.push(out.outlier_quote_ids.length + ' outlier quote(s) isolated (never actionable)');
+    if (out.invalid_quote_ids.length || out.quarantined_used.length) { out.status = 'INVALID'; out.actionable_status = 'MARKET_INVALID'; out.quarantined_quote_ids = out.quarantined_used.concat(out.invalid_quote_ids); reasons.push('a quote in the market failed validation or is quarantined'); return out; }
     if (!isNum(out.newest_true_age_h) || out.newest_true_age_h > lim) { out.status = 'DEGRADED'; out.actionable_status = 'MARKET_STALE'; reasons.push('newest quote ' + (isNum(out.newest_true_age_h) ? out.newest_true_age_h.toFixed(1) + ' h' : 'of unknown age') + ' old (limit ' + lim + ' h)'); }
     var betLim = isNum(opts.staleForBetH) ? opts.staleForBetH : FRESHNESS.odds_bet.max_age_h(h);
     out.bet_fresh = isNum(out.newest_true_age_h) && out.newest_true_age_h <= betLim;

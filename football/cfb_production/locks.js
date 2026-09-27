@@ -54,7 +54,9 @@ async function withJobLock(o, fn) {
     got = await c.acquire(o.job, o.lockKey, holder, o.ttl, o.log ? o.log.ctx.correlation_id : null);
   } catch (e) {
     const code = T.classify(e);
-    if (code === 'DATABASE_SCHEMA' && !o.required) {
+    /* PostgREST answers a function it does not know with 404 (PGRST202, or 42883 on older servers) */
+    const missing = code === 'DATABASE_SCHEMA' || (e && e.http && e.http.status === 404);
+    if (missing && !o.required) {
       if (o.log) o.log.warn('lock', 'lock_unavailable', { error_code: code, job: o.job, lock_key: String(o.lockKey), note: 'supabase/cfb_production.sql not applied: running under the workflow concurrency group only' });
       return { ran: true, result: await fn(null), locked: false };
     }
