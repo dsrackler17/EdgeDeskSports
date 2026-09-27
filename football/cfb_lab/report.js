@@ -202,7 +202,7 @@ function largestMisses(D, n) {
   return D.evals.filter((e) => official(e) && settled(e)).sort((a, b) => b.abs_margin_error - a.abs_margin_error).slice(0, n || 15).map((e) => {
     const p = byPred.get(e.prediction_id) || {};
     const r = rev.get(e.prediction_id);
-    return { game_id: e.game_id, week: e.week, matchup: p.away_team + ' @ ' + p.home_team, model: e.model_label || e.model_version,
+    return { game_id: e.game_id, week: e.week, kickoff: e.kickoff_ts, matchup: p.away_team + ' @ ' + p.home_team, model: e.model_label || e.model_version, model_version: e.model_version,
       predicted: p.pure_home_margin, actual: e.final_margin, abs_error: e.abs_margin_error, close_home_line: e.close_home_line,
       close_abs_error: e.close_abs_error, classification: r ? r.classification : null, rationale: r ? r.rationale : null };
   });
@@ -400,7 +400,7 @@ function publicRecord(D, now) {
   const er = L.errorSummary(champSet), wc = L.winCalibration(champSet), rp = L.betting(champSet.filter(research), { hypothetical: true });
   const officialAll = D.preds.filter((p) => p.origin === 'LIVE' && p.checkpoint_type === 'T24' && p.model_role === 'champion');
   return {
-    schema: 'edgedesk_cfb_model_lab_public_v1', generated_at: U.iso(now), season: CFG.season,
+    schema: 'edgedesk_cfb_model_lab_public_v1', generated_at: U.iso(now), season: CFG.season, lab_started_at: CFG.lab_started_at,
     rules: {
       official_prediction: 'the champion model\'s T24 snapshot: the first taken when kickoff is 12 to 24 hours away (docs/cfb-lab/METRICS.md §3)',
       closing_line: 'median of books\' last pregame quotes in the 180 minutes before kickoff (§4)',
@@ -411,13 +411,18 @@ function publicRecord(D, now) {
     models: [...new Set(champSet.map((e) => e.model_version))],
     counts: { official_predictions: officialAll.length, graded: champSet.length, label: U.sampleLabel(champSet.length) },
     accuracy: { spread_mae: er.mae, rmse: er.rmse, bias: er.bias, win_brier: wc.brier, coverage_80: er.coverage_80, n: er.n },
-    research_positions: { n: rp.wins + rp.losses + rp.pushes, record: rp.wins + '-' + rp.losses + '-' + rp.pushes, ats_pct: rp.ats_pct,
+    research_positions: { n: rp.wins + rp.losses + rp.pushes, label: U.sampleLabel(rp.wins + rp.losses + rp.pushes), record: rp.wins + '-' + rp.losses + '-' + rp.pushes, ats_pct: rp.ats_pct,
       clv_mean: rp.clv_mean, positive_clv_pct: rp.positive_clv_pct, note: 'LEAN/BET research positions graded at the snapshot number. BET is disabled; no stake is claimed.' },
+    /* a position is a LEAN or BET with a side; a PASS or RESEARCH row is graded
+       for accuracy only, so its ATS result and CLV are null, never a "win" */
     games: champSet.map((e) => { const p = byPred.get(e.prediction_id) || {};
-      return { week: e.week, kickoff: e.kickoff_ts, matchup: p.away_team + ' @ ' + p.home_team, model_version: e.model_version,
+      const pos = research(e);
+      return { game_id: e.game_id, week: e.week, kickoff: e.kickoff_ts, home_team: p.home_team, away_team: p.away_team,
+        matchup: p.away_team + ' @ ' + p.home_team, model_version: e.model_version,
         official_line: p.fair_spread_display, home_win_probability: p.home_win_probability,
         final: e.final_away_points + '-' + e.final_home_points, abs_error: e.abs_margin_error,
-        decision: e.decision_class, side: e.side, line: e.graded_line, result: e.ats_result, clv: e.clv_points }; }),
+        decision: e.decision_class, is_position: pos, side: pos ? e.side : null, line: pos ? e.graded_line : null,
+        result: pos ? e.ats_result : null, clv: pos ? e.clv_points : null }; }),
   };
 }
 
@@ -514,7 +519,8 @@ function build(store, now) {
   up.filter((p) => U.ms(p.kickoff_ts) - t <= 8 * 86400000).forEach((p) => {
     if (!thisWeek.has(p.game_id)) thisWeek.set(p.game_id, { game_id: p.game_id, week: p.week, kickoff: p.kickoff_ts, home: p.home_team, away: p.away_team, market: null, models: {} });
     const g = thisWeek.get(p.game_id);
-    g.models[p.model_version] = { label: p.model_label, checkpoint: p.checkpoint_type, prediction_ts: p.prediction_ts, margin: p.pure_home_margin, fair: p.fair_spread_display,
+    g.models[p.model_version] = { label: p.model_label, checkpoint: p.checkpoint_type, origin: p.origin, official: (p.official_families || []).includes('OFFICIAL'),
+      prediction_ts: p.prediction_ts, margin: p.pure_home_margin, fair: p.fair_spread_display,
       p_home: p.home_win_probability, sigma: p.prediction_sigma, conf: p.football_confidence, dq: p.data_quality_status, decision: p.decision_class, status: p.status, side: p.side, gap: p.model_market_gap, line: p.recommended_line };
     if (!g.market || U.ms(p.market_as_of) > U.ms(g.market.as_of)) g.market = { current: p.current_spread, open: p.opening_spread, books: p.sportsbook_count, as_of: p.market_as_of, sources: p.market_sources, stale: p.market_stale };
   });
@@ -554,7 +560,6 @@ function run(opts) {
   const qev = queueEvents(B.D.queue, items, now);
   if (qev.length) { store.append('research_queue', qev, 'event_id'); B = build(store, now); }
   const write = (name, obj) => fs.writeFileSync(path.join(outDir, name), typeof obj === 'string' ? obj : JSON.stringify(obj, null, 1) + '\n');
-  write('lab.json', B.lab);
   const seasonRep = { kind: 'season', season, generated_at: now, comparison: B.lab.comparison.common, promotion: B.promo, alerts: B.alerts,
     models: Object.fromEntries(B.models.map((m) => [m, pickPerf(B.perModel[m].official)])) };
   write('season.json', seasonRep); write('season.md', mdSeason(seasonRep));
@@ -568,6 +573,12 @@ function run(opts) {
   });
   const pe = (B.promo.evaluations || []).filter((e) => e.ready);
   if (pe.length) write('promotion.json', { generated_at: now, rule: L.RULES.promotion, champion: B.promo.champion, evaluations: pe });
+  /* the index of what has been written, and the pre-registered references the
+     drift alerts compare against */
+  B.lab.files = { weekly: fs.readdirSync(outDir).filter((f) => /^week_\d+\.(json|md)$/.test(f)).sort(),
+    promotion: fs.existsSync(path.join(outDir, 'promotion.json')) ? 'promotion.json' : null, season: ['season.json', 'season.md'], last_run: 'last_run.json' };
+  B.lab.reference = CFG.reference;
+  write('lab.json', B.lab);
   const pub = publicRecord(B.D, now);
   const pubPath = opts.publicPath || path.join(G.REPO, CFG.public_record.path);
   fs.mkdirSync(path.dirname(pubPath), { recursive: true });

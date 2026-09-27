@@ -51,7 +51,9 @@ operational workflow is in [`RUNBOOK.md`](RUNBOOK.md).
 ## 1. `cfb_lab_predictions` — the live prediction ledger
 
 One row per model per game per checkpoint. Ledger file: `ledger/<season>/predictions/week_<NN>.jsonl`.
-Id: `prediction_id = 'cfbp_' + h(model_version, game_id, checkpoint_type, prediction_ts)`.
+Id: `prediction_id = 'cfbp_' + h(model_version, game_id, checkpoint_type, prediction_ts)` for a LIVE row; a
+`GIT_RECONSTRUCTED` or `REPLAY` row appends its origin as a fifth part, so it can never share an id with a LIVE
+snapshot of the same model, game, checkpoint and moment.
 Unique `(game_id, model_version, checkpoint_type, origin)` except `checkpoint_type = 'ADHOC'`: reconstructed or replayed history never occupies a LIVE checkpoint.
 
 | column | type | notes |

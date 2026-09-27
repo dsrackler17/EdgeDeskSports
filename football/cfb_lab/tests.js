@@ -143,6 +143,15 @@ function q(o) {
 
 /* ═══ 4. quotes: de-duplication, consensus, openers, closes ═════════════ */
 {
+  {
+    const live = row({ margin: 3 }, 'WEEKLY_FREEZE', '2026-10-01T12:00:00.000Z');
+    const rep = row({ margin: 3 }, 'WEEKLY_FREEZE', '2026-10-01T12:00:00.000Z', null, 'REPLAY');
+    chk('prediction ids: a REPLAY row never shares an id with the LIVE row of the same model, game, checkpoint and moment',
+      live.prediction_id !== rep.prediction_id && live.prediction_id === 'cfbp_' + G.h(live.model_version, live.game_id, 'WEEKLY_FREEZE', live.prediction_ts));
+    const d = tmp(), st = storeIn(d);
+    st.appendPredictions([rep]); st.appendPredictions([live]);
+    chk('prediction ids: the LIVE row is stored even when the REPLAY row landed first', st.predictions().filter((p) => p.origin === 'LIVE').length === 1 && st.predictions().length === 2);
+  }
   const at = '2026-10-01T09:00:00.000Z';
   const ord = q({ source: 'cfbd', book: 'consensus', observed_at: at, home_line: -3 });
   const po = q({ source: 'cfbd', book: 'consensus', observed_at: at, home_line: -2.5, is_provider_open: true });
@@ -440,6 +449,8 @@ function q(o) {
   const P = JSON.parse(fs.readFileSync(pub, 'utf8'));
   chk('public record: champion OFFICIAL LIVE only, losses included, void excluded', P.counts.graded === 1 && P.games.length === 1 && P.games[0].model_version === 'edgedesk_cfb_p4_v1.0.0', P.counts);
   chk('public record prints its rules and sample size', P.rules.official_prediction && P.counts.label === 'small sample');
+  chk('public record: a PASS/RESEARCH row is graded for accuracy only (no ATS result, no CLV)', P.games.every((g) => g.is_position || (g.result === null && g.clv === null && g.side === null))
+    && P.games.every((g) => g.home_team && g.away_team && g.game_id) && P.lab_started_at === '2026-09-27T12:00:00.000Z', P.games);
   const sm = lab.comparison.submodels.rows.map((r) => r.name);
   chk('submodel scoreboard lists components and ensembles', sm.some((n) => /C_ridge/.test(n)) && sm.some((n) => /ensemble/.test(n)));
 

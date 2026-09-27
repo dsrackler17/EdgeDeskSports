@@ -260,7 +260,7 @@ try {
       inputs_ref: { quote_ids: [] }, row_hash: 'f'.repeat(64),
     }, over);
     if (!over || over.hours_to_kickoff === undefined) p.hours_to_kickoff = Math.round((Date.parse(p.kickoff_ts) - Date.parse(p.prediction_ts)) / 3600) / 1000;
-    if (!over || over.prediction_id === undefined) p.prediction_id = 'cfbp_' + h(p.model_version, p.game_id, p.checkpoint_type, iso(p.prediction_ts));
+    if (!over || over.prediction_id === undefined) p.prediction_id = 'cfbp_' + h(...[p.model_version, p.game_id, p.checkpoint_type, iso(p.prediction_ts)].concat(p.origin && p.origin !== 'LIVE' ? [p.origin] : []));
     return p;
   };
   for (const c of FIX.line_cases) {

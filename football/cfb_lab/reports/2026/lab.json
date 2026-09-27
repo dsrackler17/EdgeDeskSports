@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-09-27T12:23:58.000Z",
+ "generated_at": "2026-09-27T12:28:58.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -82,7 +82,7 @@
    "feeds": {
     "last_quote_at": "2026-09-27T07:23:14.227Z",
     "quotes_total": 604,
-    "last_result_at": "2026-09-27T12:23:58.000Z"
+    "last_result_at": "2026-09-27T12:28:58.000Z"
    }
   },
   "alerts": [],
@@ -4326,6 +4326,36 @@
      }
     }
    }
+  }
+ },
+ "files": {
+  "weekly": [],
+  "promotion": null,
+  "season": [
+   "season.json",
+   "season.md"
+  ],
+  "last_run": "last_run.json"
+ },
+ "reference": {
+  "source": "football/cfb_v2/research/report/redteam/champion_challenger.json (holdout 2024-25, same 1604 FBS games) and candidate 001 / v2.1.0 holdout predictions for the spread of predicted margins",
+  "edgedesk_cfb_p4_v1.0.0": {
+   "mae": 12.6017,
+   "rmse": 15.9128,
+   "brier": 0.1857,
+   "pred_sd": null
+  },
+  "edgedesk_cfb_v2.0.0": {
+   "mae": 12.3332,
+   "rmse": 15.611,
+   "brier": 0.1832,
+   "pred_sd": 12.34
+  },
+  "edgedesk_cfb_v2.1.0": {
+   "mae": 12.3213,
+   "rmse": 15.6016,
+   "brier": 0.1831,
+   "pred_sd": 12.448
   }
  }
 }

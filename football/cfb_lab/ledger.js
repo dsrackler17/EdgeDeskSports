@@ -36,7 +36,11 @@ function h(...parts) {
 }
 const ts = (t) => (t == null ? null : new Date(L.util.ms(t)));
 const ids = {
-  prediction: (p) => 'cfbp_' + h(p.model_version, p.game_id, p.checkpoint_type, ts(p.prediction_ts)),
+  /* a GIT_RECONSTRUCTED or REPLAY row carries its origin as a fifth part, so
+     it can never share an id with (and silently displace) a LIVE snapshot of
+     the same model, game, checkpoint and moment; LIVE ids have four parts */
+  prediction: (p) => 'cfbp_' + h(...[p.model_version, p.game_id, p.checkpoint_type, ts(p.prediction_ts)]
+    .concat(p.origin && p.origin !== 'LIVE' ? [p.origin] : [])),
   /* a provider-declared row gets a sixth part, so a declared opener or close
      never shares an id with the ordinary quote observed at the same moment */
   quote: (q) => 'cfbq_' + h(...[q.source, q.book, q.game_id || q.provider_event_id, q.market_type, ts(q.observed_at)]
