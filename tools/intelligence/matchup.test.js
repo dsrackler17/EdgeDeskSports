@@ -590,18 +590,19 @@ section('the football card, ranked');
     data_completeness: g.data_completeness, availability_unknown: true,
   }));
   /* one priced, one stale, one number-only: the three states on one card */
-  games[0].market_home_handicap = -19.5; games[0].quote_observed_at = '2026-09-15T17:50:00Z';
+  const CARD_NOW = Math.min.apply(null, games.map((g) => Date.parse(g.kickoff)).filter(Number.isFinite)) - 2 * 86400e3;
+  games[0].market_home_handicap = -19.5; games[0].quote_observed_at = new Date(CARD_NOW - 10 * 60e3).toISOString();
   games[0].quote_book = 'DraftKings'; games[0].quote_price_american = '-110';
-  games[1].market_home_handicap = -3.5; games[1].quote_observed_at = '2026-09-13T02:00:00Z'; games[1].quote_book = 'FanDuel';
+  games[1].market_home_handicap = -3.5; games[1].quote_observed_at = new Date(CARD_NOW - 64 * 3600e3).toISOString(); games[1].quote_book = 'FanDuel';
   games[2].market_home_handicap = -30.5;
   const withinHours = 14 * 24;
-  const windowStart = NOW - 6 * 3600e3;
-  const windowEnd = NOW + withinHours * 3600e3;
+  const windowStart = CARD_NOW - 6 * 3600e3;
+  const windowEnd = CARD_NOW + withinHours * 3600e3;
   const scheduledInWindow = games.filter((g) => {
     const kick = Date.parse(g.kickoff);
     return !Number.isFinite(kick) || (kick >= windowStart && kick <= windowEnd);
   });
-  const r = E.rankFootballCard({ games, now: NOW, within_hours: withinHours });
+  const r = E.rankFootballCard({ games, now: CARD_NOW, within_hours: withinHours });
   eq('the denominator is the SCHEDULE, not the priced rows', r.counts.scheduled, games.length);
   eq('the requested window contains every scheduled candidate in that window', r.counts.in_window, scheduledInWindow.length);
   chk('and the three counts are reported separately', r.counts.with_market_number === 3 && r.counts.with_executable_price === 2,

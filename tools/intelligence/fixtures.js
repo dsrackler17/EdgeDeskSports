@@ -92,7 +92,12 @@ function build(now) {
     const up = games.filter((g) => Date.parse(g.kickoff) > now);
     return (up.length >= n ? up : games).slice(0, n);
   };
-  const slate = Object.assign({}, SLATE, { games: [NT].concat(ahead(SLATE.games, 6)) });
+  /* The real card's North Texas and Texas State games are left off, as the NFL
+     card's are below, so "North Texas" alone still names exactly one game when
+     the nightly slate happens to carry one of the fixture's programs. */
+  const FX_CFB = /^(texasstate|northtexas)$/i;
+  const cfbRest = ahead(SLATE.games.filter((g) => !FX_CFB.test(String(g.home_team_id)) && !FX_CFB.test(String(g.away_team_id))), 6);
+  const slate = Object.assign({}, SLATE, { games: [NT].concat(cfbRest) });
   /* One NFL game inside the window whatever the calendar says, on the front of
      the REAL committed NFL artifact, so the NFL card always carries a game the
      suites can name. The model fields are the shape the builder writes. */
