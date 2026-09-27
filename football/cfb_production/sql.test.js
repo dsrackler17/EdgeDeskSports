@@ -223,14 +223,14 @@ function fingerprint(tables, dbname) {
     const lease = (/"lease_id": "(lease_[0-9a-f]+)"/.exec(winners[0]) || [])[1];
     const holder = (/"holder": "(racer-\d)"/.exec(winners[0]) || [])[1];
     chk('another holder cannot release it (fenced by the lease id)', /"released": false/.test(db.service("select public.cfb_job_unlock('cfb_weekly_refresh', '2026', 'lease_" + hex('0') + "')")));
-    chk('the holder re-enters (the gate and its own mirror share one lease)', /"reentrant": true/.test(db.service(`select public.cfb_job_lock('cfb_weekly_refresh', '2026', '${holder}', 600)`)));
-    chk('a per-game lock on another key is independent', /"acquired": true/.test(db.service("select public.cfb_job_lock('cfb_game_refresh', '401871049', 'qb-news', 300)")) && /"acquired": true/.test(db.service("select public.cfb_job_lock('cfb_game_refresh', '401862786', 'scheduled', 300)")));
+    chk('the holder re-enters (the gate and its own mirror share one lease)', /"reentrant": true/.test(db.service(`select public.cfb_job_lock('cfb_weekly_refresh', '2026', '${holder}', 600);`)));
+    chk('a per-game lock on another key is independent', /"acquired": true/.test(db.service("select public.cfb_job_lock('cfb_game_refresh', '401871049', 'qb-news', 300);")) && /"acquired": true/.test(db.service("select public.cfb_job_lock('cfb_game_refresh', '401862786', 'scheduled', 300);")));
     db.sql("update public.cfb_job_locks set expires_at = clock_timestamp() - interval '1 second', acquired_at = clock_timestamp() - interval '2 hours' where job = 'cfb_weekly_refresh';");
     chk('cfb_health reports the expired lease', /job_locks=WARNING/.test(db.sql("select string_agg(check_name || '=' || status, ',') from public.cfb_health(now()) where check_name = 'job_locks'")));
-    const tk = db.service("select public.cfb_job_lock('cfb_weekly_refresh', '2026', 'next-run', 600)");
+    const tk = db.service("select public.cfb_job_lock('cfb_weekly_refresh', '2026', 'next-run', 600);");
     chk('an expired lease is taken over, and the takeover names the crashed holder', /"took_over_from": "racer-\d"/.test(tk) && db.sql("select count(*) from public.cfb_job_lock_events where event = 'TAKEOVER_EXPIRED'") === '1', tk);
-    chk('the crashed holder can neither renew nor release the lease it lost', /"renewed": false/.test(db.service(`select public.cfb_job_lock_renew('cfb_weekly_refresh', '2026', '${lease}', 600)`)) && /"released": false/.test(db.service(`select public.cfb_job_unlock('cfb_weekly_refresh', '2026', '${lease}')`)));
-    chk('bad arguments are refused (ttl bounds, key charset)', /ttl/.test(refused(() => db.service("select public.cfb_job_lock('cfb_weekly_refresh','2026','x', 5)")) || '') && /required/.test(refused(() => db.service("select public.cfb_job_lock('cfb_weekly_refresh','20 26;drop','x', 60)")) || ''));
+    chk('the crashed holder can neither renew nor release the lease it lost', /"renewed": false/.test(db.service(`select public.cfb_job_lock_renew('cfb_weekly_refresh', '2026', '${lease}', 600);`)) && /"released": false/.test(db.service(`select public.cfb_job_unlock('cfb_weekly_refresh', '2026', '${lease}');`)));
+    chk('bad arguments are refused (ttl bounds, key charset)', /ttl/.test(refused(() => db.service("select public.cfb_job_lock('cfb_weekly_refresh','2026','x', 5);")) || '') && /required/.test(refused(() => db.service("select public.cfb_job_lock('cfb_weekly_refresh','20 26;drop','x', 60);")) || ''));
     /* withGameLocks: deterministic order, skip what another job holds, release in finally */
     const gl = await LOCKS.withGameLocks({ url: URL_, key: KEY, fetch: fetch1, holder: 'weekly-daily', log: quietLog('cfb_game_refresh') }, ['401871049', '401000003', '401000001'], async (ids) => ids);
     chk('per-game locks: sorted order, the game QB news is refreshing is skipped, the rest refreshed', JSON.stringify(gl.result) === JSON.stringify(['401000001', '401000003']) && gl.skipped.length === 1 && gl.skipped[0].game_id === '401871049' && gl.skipped[0].holder === 'qb-news');
@@ -274,7 +274,7 @@ function fingerprint(tables, dbname) {
 
     /* ================================================================ G2. a second weekly mirror exits cleanly */
     db.sql("delete from public.cfb_job_locks where job = 'cfb_weekly_refresh';");
-    db.service("select public.cfb_job_lock('cfb_weekly_refresh', '2026', 'the-scheduled-run', 600)");
+    db.service("select public.cfb_job_lock('cfb_weekly_refresh', '2026', 'the-scheduled-run', 600);");
     const skipped = await SYW.sync(2026, { root: wroot, fetch: PR.makeFetch(db), quiet: true, log: quietLog('cfb_weekly_refresh') });
     chk('a weekly mirror started while another run holds the lock exits cleanly and writes nothing', skipped.skipped === 'PIPELINE_CONFLICT' && skipped.holder === 'the-scheduled-run' && db.sql('select count(*) from public.cfb_team_week_state') === '0', skipped);
     db.sql("delete from public.cfb_job_locks where job = 'cfb_weekly_refresh';");
@@ -387,7 +387,9 @@ function fingerprint(tables, dbname) {
 
     if (v2ok) {
       const vdir = path.join(tmp, 'v2snap'); fs.mkdirSync(vdir);
-      fs.copyFileSync(path.join(ROOT, 'football', 'cfb_v2', 'snapshots', '2026', 'replay_to_date.json'), path.join(vdir, 'week_replay_fixture.json'));
+      /* the replay rows, wrapped the way a frozen snapshot file wraps them ({ row, hash }) */
+      const rep = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'snapshots', '2026', 'replay_to_date.json'), 'utf8'));
+      fs.writeFileSync(path.join(vdir, 'week_fixture.json'), JSON.stringify({ model_version: rep.model_version, rows: rep.rows.map((r, i) => ({ row: r, hash: 'fixture' + i })) }));
       const SYV = require('../cfb_v2/sync_supabase.js');
       const vp = SYV.plan(2026, { dir: vdir });
       await runs3('V2 mirror (' + vp.preds.length + ' predictions)', ['cfb_model_versions', 'cfb_predictions', 'cfb_prediction_intervals', 'cfb_model_component_predictions'],
@@ -400,7 +402,7 @@ function fingerprint(tables, dbname) {
       observed_at: '2026-10-01T12:00:00.000Z', kickoff_ts: '2026-10-03T19:30:00.000Z', season: 2026, week: 5, retrieved_at: '2026-10-01T12:00:05.000Z' }]);
     const ing = [1, 2, 3].map(() => db.service(`select public.cfb_lab_ingest_quotes(${PG.lit(qjson)}::jsonb)::text;`));
     chk('cfb_lab_ingest_quotes 1x, 2x, 3x: written once, then duplicates', /"written": 1/.test(ing[0]) && /"written": 0/.test(ing[1]) && /"written": 0/.test(ing[2]), ing);
-    const lines = [1, 2, 3].map(() => { db.service("select public.cfb_lab_derive_lines('2026-10-04T12:00:00Z');"); return fingerprint(['cfb_lab_market_lines']); });
+    const lines = [1, 2, 3].map(() => { db.service("select public.cfb_lab_derive_lines('2026-09-26T12:00:00Z');"); return fingerprint(['cfb_lab_market_lines']); });
     chk('cfb_lab_derive_lines 1x, 2x, 3x: identical lines', lines[0] === lines[1] && lines[1] === lines[2]);
 
     /* the optional market-integrity tables: fail soft while missing, mirrored once applied */
@@ -423,12 +425,13 @@ function fingerprint(tables, dbname) {
     let hard = null;
     try { await SYL.sync(2026, { store: ls, fetch: f500, log: quietLog('cfb_lab_hourly') }); } catch (e) { hard = e; }
     chk('... but any OTHER failure of an optional table still fails the mirror (only "missing" is soft)', hard && hard.cfb_code === 'UNKNOWN');
+    const beforeIntegrity = fingerprint(LT_);
     db.applyFile(SQL('cfb_market_integrity'));
     const withQ = await SYL.sync(2026, { store: ls, fetch: PR.makeFetch(db), log: quietLog('cfb_lab_hourly') });
     await SYL.sync(2026, { store: ls, fetch: PR.makeFetch(db), log: quietLog('cfb_lab_hourly') });
     chk('once cfb_market_integrity.sql is applied the quarantine is mirrored, once, with no ledger key dropped', withQ.cfb_market_quote_quarantine === qz.length && db.sql('select count(*) from public.cfb_market_quote_quarantine') === String(qz.length));
     const again = await SYL.sync(2026, { fetch: PR.makeFetch(db), quiet: true, log: quietLog('cfb_lab_hourly') });
-    chk('the real ledger still re-mirrors after cfb_market_integrity.sql adds its settlement trigger and graded-once index', again.cfb_lab_results > 0 && fingerprint(LT_) === fingerprint(LT_));
+    chk('the real ledger still re-mirrors after cfb_market_integrity.sql adds its settlement trigger and graded-once index', again.cfb_lab_results > 0 && fingerprint(LT_) === beforeIntegrity);
 
     /* ================================================================ L. health */
     db.service("select public.cfb_heartbeat('cfb_weekly_refresh', 'OK', 'c', null, 1000, '{}'::jsonb);");
@@ -446,9 +449,9 @@ function fingerprint(tables, dbname) {
     db.service("select public.cfb_set_feature_flag('cfb_model_lab_enabled', false, 'dan', 'pause the lab for maintenance');");
     chk('health: a kill switch that is off is a WARNING', hNow(new Date().toISOString()).feature_flags === 'WARNING');
     db.service("select public.cfb_set_feature_flag('cfb_model_lab_enabled', true, 'dan', 'maintenance done, lab back on');");
-    chk('health: resolving an incident needs an actor and a resolution, and closes it', /"resolved": true/.test(db.service("select public.cfb_resolve_incident('DATABASE_DEADLOCK:storm:0', 'dan', 'lock order fixed in the mirror')"))
+    chk('health: resolving an incident needs an actor and a resolution, and closes it', /"resolved": true/.test(db.service("select public.cfb_resolve_incident('DATABASE_DEADLOCK:storm:0', 'dan', 'lock order fixed in the mirror');"))
       && db.sql("select status from public.cfb_incidents_current where incident_key = 'DATABASE_DEADLOCK:storm:0'") === 'RESOLVED');
-    const occ = db.service("select public.cfb_record_incident('repeat:key', 'DATABASE_TIMEOUT', 'WARNING', 'cfb_lab_hourly', null, 'again', '{}'::jsonb)") && db.service("select public.cfb_record_incident('repeat:key', 'DATABASE_TIMEOUT', 'WARNING', 'cfb_lab_hourly', null, 'again', '{}'::jsonb)");
+    const occ = db.service("select public.cfb_record_incident('repeat:key', 'DATABASE_TIMEOUT', 'WARNING', 'cfb_lab_hourly', null, 'again', '{}'::jsonb);") && db.service("select public.cfb_record_incident('repeat:key', 'DATABASE_TIMEOUT', 'WARNING', 'cfb_lab_hourly', null, 'again', '{}'::jsonb);");
     chk('health: a repeated incident is one open incident with occurrences, not two incidents', /"event": "OCCURRED"/.test(occ) && /"occurrences": 2/.test(occ) && db.sql("select count(*) from public.cfb_incidents_current where incident_key = 'repeat:key'") === '1');
 
     /* ================================================================ M. disaster recovery */
