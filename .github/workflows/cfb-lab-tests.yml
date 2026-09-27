@@ -64,6 +64,8 @@ jobs:
       - name: The per-sportsbook feed inside the capture function
         run: node football/cfb_lab/capture_feed.test.js
       - name: Postgres functions agree with the JavaScript (shared fixture)
+        env:
+          CFB_LAB_SQL_REQUIRED: '1'
         run: node football/cfb_lab/sql.test.js
       - name: Internal Model Lab page
         run: node football/cfb_lab/ui.test.js

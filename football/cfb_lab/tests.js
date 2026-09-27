@@ -194,8 +194,9 @@ function q(o) {
         const got = r.stats.written ? 'written' : (r.stats.refused ? 'refused' : 'duplicate');
         stored.push(...r.rows);
         const w = r.rows[0];
-        const extra = got !== 'written' || ((o.heartbeat === undefined || w.is_heartbeat === o.heartbeat) && (o.expect_game_id === undefined || w.game_id === o.expect_game_id));
-        chk('dedupe parity case ' + i + '.' + j + ' (' + (c.why || '') + ')', got === o.expect && extra, { got, expect: o.expect, row: w && { hb: w.is_heartbeat, gid: w.game_id } });
+        const extra = got !== 'written' || ((o.heartbeat === undefined || w.is_heartbeat === o.heartbeat) && (o.expect_game_id === undefined || w.game_id === o.expect_game_id)
+          && (o.expect_quote_id === undefined || w.quote_id === o.expect_quote_id));
+        chk('dedupe parity case ' + i + '.' + j + ' (' + (c.why || '') + ')', got === o.expect && extra, { got, expect: o.expect, row: w && { hb: w.is_heartbeat, gid: w.game_id, id: w.quote_id } });
       });
     });
     (F.line_cases || []).forEach((c, i) => {

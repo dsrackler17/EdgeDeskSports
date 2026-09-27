@@ -144,6 +144,72 @@ label with a sample floor. Tested against a real PostgreSQL by
 `Deploy intelligence` workflow's `apply_research_packets` input. The
 function reports its last write in `?probe=1 → packet_health`.
 
+### `cfb_lab.sql` — the CFB Live Model Lab, in Postgres
+The database half of the lab (`docs/cfb-lab/SCHEMA.md`, `docs/cfb-lab/METRICS.md`):
+thirteen `cfb_lab_` tables in `public` (predictions, market quotes, openers and
+closes, the provider-event map, results, evaluations, miss reviews, model roles,
+experiments, the audit log, partitions, the research queue, reports). The
+repository ledger under `football/cfb_lab/ledger/` is the source of truth;
+`football/cfb_lab/sync_supabase.js` mirrors it here insert-only with the service
+role. **It needs nothing else applied first** — it shares no table with
+`cfb_v2_model.sql` and can go in before or after it.
+
+**Append-only for everybody.** Every table carries `BEFORE UPDATE`, `BEFORE
+DELETE` and statement-level `BEFORE TRUNCATE` triggers that raise
+`restrict_violation`, and the service role — which bypasses row level security
+but not triggers — has had update, delete and truncate revoked besides. A
+correction is a new row with `supersedes`. The row rules are named check
+constraints (`cfb_lab_pred_*`, `cfb_lab_quote_*`, `cfb_lab_result_*`, …): a
+prediction precedes its kickoff and its `hours_to_kickoff` agrees with the two
+timestamps, `fair_spread_home_line = -pure_home_margin`, probabilities in (0,1)
+summing to 1, nested intervals, stake 0 unless BET is enabled, the `OFFICIAL`
+family only on a LIVE `T24`, one row per game, model, checkpoint and origin
+(ADHOC excepted). Four triggers need more than the row: a LIVE prediction cannot
+be future-dated, a `CLOSE` line cannot be derived before kickoff + 3 hours, a
+result correction must supersede an earlier result of the same game, and there is
+never a second champion.
+
+**Deterministic ids, the same in Node and here.** `cfb_lab_h()`,
+`cfb_lab_ts()` and `cfb_lab_num()` render and hash exactly as the JavaScript
+does (SCHEMA.md rule 4). **The market rules of METRICS.md §4 are functions**:
+`cfb_lab_ingest_quotes(jsonb)` (the de-duplication and heartbeat rule, the door
+the capture function's per-sportsbook feed writes through) and
+`cfb_lab_derive_lines(timestamptz)` (per-book and consensus openers and closes,
+medians of prices in decimal-odds space), both held to
+`football/cfb_lab/fixtures/market_rules.json` — the same cases the JavaScript
+copy must reproduce. `cfb_lab_set_role()` writes a role event and its audit
+event and demotes the sitting champion first. All three are security definer
+and callable by the service role only.
+
+**Who reads what.** `authenticated` reads every table and writes none; `anon`
+reads exactly two owner-run views, `cfb_lab_public_record` (one row per graded
+OFFICIAL LIVE snapshot of the model that was champion when it was taken, with no
+internal field) and `cfb_lab_public_summary` (MAE, RMSE, Brier, 80% coverage,
+ATS and CLV of the research positions, per season and overall, with the sample
+label). Report rows 1–24 should each say `ok`. At 86 KB it is also split for
+the SQL editor: `parts/cfb_lab.part*-of-*.sql`. Or apply it with the
+`Deploy intelligence` workflow's `apply_cfb_lab` input, which applies this file
+and then `cfb_lab_cron.sql`. Tested against a real
+PostgreSQL by `football/cfb_lab/sql.test.js`, which applies it twice and once as
+a single editor-style string, reproduces every fixture case, and attacks every
+table as the owner, the service role, anon and a signed-in reader.
+
+### `cfb_lab_cron.sql` — the lab's hourly poke
+Run after `cfb_lab.sql` (it refuses otherwise); the `Deploy intelligence`
+workflow's `apply_cfb_lab` input runs the two in that order. One pg_cron job,
+`cfb_lab_hourly` at `7 * * * *`, calling `cfb_lab_poke('hourly')`, which asks
+GitHub to run `.github/workflows/cfb-lab.yml` on `main` with `mode=hourly` — the
+checkpoint windows of METRICS.md §2 need a run inside every hour, and GitHub's
+own scheduler is the backup, not the clock. The token is the one
+`editorial_dispatch_sql.sql` already uses (Vault secret `edgedesk_gh_token`,
+falling back to the `edgedesk.gh_token` setting); a missing token is reported,
+never treated as success. **There is deliberately no database-side lines job**:
+the lines table is filled by the ledger mirror, and a job deriving lines here
+would land first with the same line_ids and win wherever the two copies differ;
+the file unschedules a `cfb_lab_lines` job left by an earlier install. Where
+pg_cron or pg_net cannot be enabled it does not fail: it creates the poke,
+schedules nothing and its report (`cfb_lab_cron_status()`) says what was skipped.
+
 ### `ufc_live_center.sql` — the UFC Live Fight Center contract
 The Fight Center used to read a live layer no file in this repository ever
 created (`ufc.live_events`, `ufc.live_fights`, `ufc.live_event_state`,

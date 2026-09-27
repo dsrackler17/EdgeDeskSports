@@ -25,7 +25,7 @@ const LIMIT = 18000;
 // moved past, which is the state the tennis schema was actually found in.
 const SOURCES = ['mlb_pitcher_history', 'mlb_offense_history', 'college_baseball',
                  'fix_promote_deletes_mlb', 'fix_promote_deletes_cbb',
-                 'tennis_record'];
+                 'tennis_record', 'cfb_lab'];
 
 let pass = 0;
 const failures = [];

@@ -140,7 +140,11 @@ Unique `(game_id, model_version, checkpoint_type, origin)` except `checkpoint_ty
 
 One row per observed change (plus heartbeats) per source, book, game and market.
 Ledger file: `ledger/<season>/quotes/week_<NN>.jsonl`.
-Id: `quote_id = 'cfbq_' + h(source, book, game_id or provider_event_id, market_type, observed_at)`.
+Id: `quote_id = 'cfbq_' + h(source, book, game_id or provider_event_id, market_type, observed_at)` for an
+ordinary quote; a provider-declared row appends a sixth part, `h(…, observed_at, 'provider_open')` when
+`is_provider_open` and `h(…, observed_at, 'provider_close')` when `is_provider_close`, so a declared number
+and an ordinary quote read in the same fetch are two rows. `cfb_lab_ingest_quotes` always computes the id
+and the fingerprint itself.
 
 | column | type | notes |
 |---|---|---|
