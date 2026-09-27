@@ -184,7 +184,8 @@ def build(M, metric=None, h=None, vectors=None, want_pairs=False, seasons=None):
     metric = metric or DEFAULT['metric']
     h = h or DEFAULT['h']
     seasons = seasons or sorted(M.season.unique())
-    vectors = vectors or {S: team_vectors(S) for S in sorted(set(seasons) | {min(seasons) - 1})
+    # every season AND the one before it (its last freeze describes last season's opponents)
+    vectors = vectors or {S: team_vectors(S) for S in sorted(set(seasons) | {s - 1 for s in seasons})
                           if S >= C.FIRST_SNAPSHOT_SEASON}
     oc, dc = off_cols(), def_cols()
     allc = oc + dc

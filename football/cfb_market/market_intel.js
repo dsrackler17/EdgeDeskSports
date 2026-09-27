@@ -48,15 +48,24 @@
 
   /* ------------------------------------------------------ dependencies */
   var DEC = root.EDCfbDecision || null;
+  var INTEG = root.EDCfbIntegrity || null;            /* football/cfb_lab/integrity.js: validity, outliers, true age, freshness */
   var ART = { key: null, books: null, challenger: null };
   if (typeof require === 'function') {
     try { DEC = DEC || require('../cfb_decision/decision.js'); } catch (e) { /* browser: load decision.js first */ }
+    try { INTEG = INTEG || require('../cfb_lab/integrity.js'); } catch (e) { /* browser: load integrity.js first */ }
     try { ART.key = require('./artifacts/key_numbers_v1.json'); } catch (e) { /* set with setArtifacts */ }
     try { ART.books = require('./artifacts/book_quality_v1.json'); } catch (e) { /* optional */ }
     try { ART.challenger = require('./artifacts/challenger_v1.json'); } catch (e) { /* optional */ }
   }
   function setArtifacts(a) { a = a || {}; if (a.key) ART.key = a.key; if (a.books) ART.books = a.books; if (a.challenger) ART.challenger = a.challenger; }
   function need() { if (!DEC) throw new Error('EDCfbDecision (football/cfb_decision/decision.js) must be loaded first'); return DEC; }
+  function integ() { if (!INTEG) throw new Error('EDCfbIntegrity (football/cfb_lab/integrity.js) must be loaded first'); return INTEG; }
+  /* the odds freshness limit (hours) at a given time to kickoff: integrity.FRESHNESS.odds (METRICS §14) */
+  function oddsLimitH(hoursToKickoff) { return integ().FRESHNESS.odds.max_age_h(hoursToKickoff); }
+  /* a quote's TRUE age in minutes: the older of our observation and the provider's own update (integrity.quoteAgeH) */
+  function trueAgeMin(q, asOf) { var h = integ().quoteAgeH(q, asOf); return isNum(h) ? h * 60 : null; }
+  /* unrounded American price from a payout (analysis values; display rounding is the caller's) */
+  function toAmerican(b) { return isNum(b) && b > 0 ? (b >= 1 ? 100 * b : -100 / b) : null; }
 
   /* ----------------------------------------------------------- helpers */
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
@@ -209,10 +218,9 @@
   }
   function priceForEv(o, target) {
     if (!o || !(o.win > 0)) return null;
-    var b = (target + o.loss) / o.win;
-    return need().payoutToAmerican(b);
+    return toAmerican((target + o.loss) / o.win);
   }
-  function fairPrice(o) { return o && o.win > 0 ? need().payoutToAmerican(o.loss / o.win) : null; }
+  function fairPrice(o) { return o && o.win > 0 ? toAmerican(o.loss / o.win) : null; }
   function cents(american, ref) { if (!isNum(american)) return null; ref = isNum(ref) ? ref : -110; var f = function (a) { return a < 0 ? a + 100 : a - 100; }; return f(american) - f(ref); }
   function pureDist(pure, t) { return keyPmf(num(pure && pure.projected_margin), num(pure && pure.sigma), num(pure && pure.t_df), t); }
 
@@ -332,12 +340,19 @@
   }
   /* The market as a snapshot at `asOf` sees it: each (source, book)'s latest
      ordinary pregame spread quote observed by then and within 36 h (the Lab's
-     marketAt rule); provider averages drop out when a real book is present; a
-     STALE book (older than 6 h inside 48 h of kickoff, 36 h before) is listed
-     and counted but never moves the consensus. */
+     marketAt selection); provider averages drop out when a real book is
+     present. The integrity rules are integrity.js's, never re-implemented here:
+       * a quote that fails integrity.validateQuote, is quarantined
+         (opts.quarantined_ids) or is a MAD outlier integrity.assessMarket
+         isolates is listed but never enters the consensus;
+       * a book is STALE when its TRUE age (integrity.quoteAgeH) exceeds the
+         odds freshness limit (integrity.FRESHNESS.odds: 6 h inside 48 h of
+         kickoff, else 36 h); it is counted but never moves the consensus;
+       * `integrity` carries assessMarket's verdict (status, actionable_status,
+         reasons) unchanged. */
   function consensusSnapshot(quotes, asOf, kickoff, opts) {
     opts = opts || {};
-    var t = ms(asOf), k = ms(kickoff);
+    var I = integ(), t = ms(asOf), k = ms(kickoff);
     var sp = (quotes || []).filter(function (q) {
       var o = ms(q.observed_at);
       return ordinarySpread(q) && o <= t && (k === null || o < k) && (t - o) <= CURRENT_MAX_AGE_H * 3600000;
@@ -345,17 +360,26 @@
     var per = latestPerBook(sp), real = per.filter(function (q) { return isRealBook(q.book); });
     var used = real.length ? real : per;
     var hours = k === null ? null : (k - t) / 3600000;
-    var staleH = isNum(opts.stale_hours) ? opts.stale_hours : ((isNum(hours) && hours <= 48) ? 6 : 36);
+    var staleH = isNum(opts.stale_hours) ? opts.stale_hours : oddsLimitH(hours);
+    var verdict = I.assessMarket(sp, iso(t), { kickoff: iso(k), quarantinedIds: opts.quarantined_ids || {} });
+    var excluded = {};
+    (verdict.outlier_quote_ids || []).concat(verdict.invalid_quote_ids || [], verdict.quarantined_used || []).forEach(function (id) { excluded[id] = 1; });
     var books = used.map(function (q) {
-      var age = (t - ms(q.observed_at)) / 60000;
+      var age = trueAgeMin(q, t), bad = !!excluded[q.quote_id];
       return { book: q.book, source: q.source, quote_id: q.quote_id || null, home_line: num(q.home_line),
         price_home: num(q.price_home), price_away: num(q.price_away), observed_at: iso(q.observed_at),
-        age_minutes: r(age, 1), stale: age > staleH * 60, weight: bookWeight(q.book, opts) };
+        provider_updated_at: iso(q.provider_updated_at), age_minutes: r(age, 1), stale: !isNum(age) || age > staleH * 60,
+        integrity_excluded: bad, weight: bookWeight(q.book, opts) };
     });
-    var fresh = books.filter(function (b) { return !b.stale; });
+    var fresh = books.filter(function (b) { return !b.stale && !b.integrity_excluded; });
     var out = { engine: ENGINE_ID, engine_version: ENGINE_VERSION, as_of: iso(t), kickoff_ts: iso(k),
       hours_to_kickoff: r(hours, 3), n_books_seen: books.length, n_active_books: fresh.length,
-      stale_book_count: books.length - fresh.length, books: books, status: fresh.length ? 'OK' : (books.length ? 'ALL_STALE' : 'NO_QUOTES') };
+      stale_book_count: books.filter(function (b) { return b.stale && !b.integrity_excluded; }).length,
+      integrity_excluded_count: books.filter(function (b) { return b.integrity_excluded; }).length,
+      freshness_limit_hours: staleH, books: books,
+      integrity: { rule: verdict.rule, status: verdict.status, actionable_status: verdict.actionable_status, reasons: verdict.reasons.slice(),
+        outlier_quote_ids: (verdict.outlier_quote_ids || []).slice(), newest_true_age_h: verdict.newest_true_age_h },
+      status: fresh.length ? 'OK' : (books.length ? 'ALL_STALE_OR_EXCLUDED' : 'NO_QUOTES') };
     if (!fresh.length) return freeze(out);
     var lines = fresh.map(function (b) { return b.home_line; }), ws = fresh.map(function (b) { return b.weight; });
     var med = median(lines), disp = iqr(lines), sdl = sd(lines);
@@ -460,20 +484,26 @@
       vs = p ? vs * (1 - a) + a * raw : 0;
       row.velocity_raw_pts_per_hour = r(raw, 4);
       row.line_velocity = r(vs, 4);
-      var moving = 0, same = 0, dir = Math.sign(row.from_previous);
-      if (p) {
-        var pb = {}; p.books.forEach(function (b) { pb[b.source + ':' + b.book] = b.home_line; });
+      /* one book vs the market: books that changed their number inside the lookback window
+         (default 60 min, else since the previous snapshot), against the consensus move over it */
+      var win = (isNum(opts.window_minutes) ? opts.window_minutes : 60) * 60000, ref = p, j;
+      for (j = i - 1; j >= 0; j--) { if (ms(series[j].as_of) <= ms(s.as_of) - win) { ref = series[j]; break; } }
+      var wMove = ref ? s.consensus_margin - ref.consensus_margin : 0;
+      var moving = 0, same = 0, dir = Math.sign(wMove);
+      if (ref) {
+        var pb = {}; ref.books.forEach(function (b) { pb[b.source + ':' + b.book] = b.home_line; });
         s.books.forEach(function (b) {
           var k = b.source + ':' + b.book;
           if (k in pb && pb[k] !== b.home_line) { moving++; if (Math.sign(bookToMargin(b.home_line) - bookToMargin(pb[k])) === dir && dir !== 0) same++; }
         });
       }
+      row.window_move = r(wMove, 3);
       row.books_moving = moving;
       row.books_moving_with_consensus = same;
       row.key_crossings = p ? keyCrossings(p.median_home_line, s.median_home_line) : [];
-      row.consensus_direction = dir > 0 ? 'TOWARD_HOME' : (dir < 0 ? 'TOWARD_AWAY' : 'NONE');
+      row.consensus_direction = row.from_previous > 0 ? 'TOWARD_HOME' : (row.from_previous < 0 ? 'TOWARD_AWAY' : 'NONE');
       row.dispersion_change = p && isNum(s.dispersion_iqr) && isNum(p.dispersion_iqr) ? r(s.dispersion_iqr - p.dispersion_iqr, 3) : null;
-      row.classification = !p ? 'OPEN' : (row.from_previous === 0 ? (moving ? 'ONE_BOOK_MOVED' : 'NO_MOVE')
+      row.classification = !p ? 'OPEN' : (row.window_move === 0 ? (moving ? 'ONE_BOOK_MOVED' : 'NO_MOVE')
         : (s.n_active_books < 2 ? 'SINGLE_BOOK_MARKET_MOVED' : (same >= 2 && same >= s.n_active_books / 2 ? 'MARKET_MOVED' : 'ONE_BOOK_MOVED')));
       if (first === null && row.from_open !== 0) first = s.as_of;
       row.time_since_first_move_hours = first === null ? null : r((ms(s.as_of) - ms(first)) / 3600000, 3);
@@ -581,7 +611,7 @@
   function staleQuotes(quotes, asOf, kickoff, opts) {
     opts = opts || {};
     var t = ms(asOf), snap = consensusSnapshot(quotes, t, kickoff, { stale_hours: 1e9 }), out = [];
-    var hours = (ms(kickoff) - t) / 3600000, ageLimit = (isNum(opts.age_hours) ? opts.age_hours : ((isNum(hours) && hours <= 48) ? 6 : 36)) * 60;
+    var hours = (ms(kickoff) - t) / 3600000, ageLimit = (isNum(opts.age_hours) ? opts.age_hours : oddsLimitH(hours)) * 60;
     (snap.books || []).forEach(function (b) {
       var others = (snap.books || []).filter(function (x) { return x !== b; });
       var since = ms(b.observed_at);
@@ -597,18 +627,33 @@
       if (others.length && movedOthers >= Math.ceil(2 * others.length / 3)) reasons.push(movedOthers + ' of ' + others.length + ' other books updated since');
       var score = r((aged ? 1 : 0) / 3 + (consMoved >= 0.5 ? 1 : 0) / 3 + (others.length && movedOthers >= Math.ceil(2 * others.length / 3) ? 1 : 0) / 3, 3);
       out.push({ book: b.book, source: b.source, home_line: b.home_line, age_minutes: b.age_minutes, diverges_pts: r(diverges, 3),
-        stale_probability: score, status: score >= 2 / 3 - 1e-9 ? 'STALE' : (diverges >= 1 ? 'DIVERGENT_NOT_STALE' : 'CURRENT'), reasons: reasons,
+        stale_probability: score, status: b.integrity_excluded ? 'INTEGRITY_EXCLUDED' : (score >= 2 / 3 - 1e-9 ? 'STALE' : (diverges >= 1 ? 'DIVERGENT_NOT_STALE' : 'CURRENT')), reasons: reasons,
         note: 'a deterministic score, not a validated probability' });
     });
     return out;
   }
+  /* never recommend a wager from a quote that may no longer exist. The limit
+     is integrity.FRESHNESS.odds_bet (3 h: the decision policy's stale_minutes)
+     on the TRUE age; the codes are integrity.js's actionable codes
+     (ACTIONABLE / MARKET_STALE / MARKET_DEGRADED / MARKET_INVALID / MARKET_MISSING).
+     A snapshot that carries an integrity verdict keeps its non-actionable code. */
   function staleDataFailsafe(snapOrQuote, now, opts) {
     opts = opts || {};
-    var lim = isNum(opts.stale_minutes) ? opts.stale_minutes : FAILSAFE_MINUTES;
-    var ts = snapOrQuote ? (snapOrQuote.newest_quote_at || snapOrQuote.observed_at) : null, age = ts ? (ms(now) - ms(ts)) / 60000 : null;
-    var ok = isNum(age) && age <= lim && age >= 0;
-    return { actionable: ok, status: ok ? 'MARKET_DATA_FRESH' : 'MARKET_DATA_STALE', age_minutes: r(age, 1), limit_minutes: lim,
-      reason: ok ? null : (isNum(age) ? 'the newest usable quote is ' + Math.round(age) + ' min old: never recommend a wager from a quote that may no longer exist' : 'no timestamped quote') };
+    var I = integ();
+    var lim = isNum(opts.stale_minutes) ? opts.stale_minutes : I.FRESHNESS.odds_bet.max_age_h() * 60;
+    var isSnap = !!(snapOrQuote && snapOrQuote.books);
+    var age = null;
+    if (isSnap) {
+      var ages = snapOrQuote.books.filter(function (b) { return !b.integrity_excluded; }).map(function (b) { return trueAgeMin(b, now); }).filter(isNum);
+      age = ages.length ? Math.min.apply(null, ages) : null;
+    } else if (snapOrQuote && snapOrQuote.observed_at) age = trueAgeMin(snapOrQuote, now);
+    var code = !isNum(age) ? 'MARKET_MISSING' : (age > lim || age < -I.BOUNDS.FUTURE_TOLERANCE_MIN ? 'MARKET_STALE' : 'ACTIONABLE');
+    var iv = isSnap && snapOrQuote.integrity ? snapOrQuote.integrity.actionable_status : null;
+    if (code === 'ACTIONABLE' && iv && iv !== 'ACTIONABLE') code = iv;
+    return { actionable: code === 'ACTIONABLE', status: code, display: code === 'MARKET_STALE' ? 'MARKET DATA STALE' : code.replace(/_/g, ' '),
+      age_minutes: r(age, 1), limit_minutes: lim, rule: I.RULES.freshness,
+      reason: code === 'ACTIONABLE' ? null : (code === 'MARKET_STALE' ? 'the newest usable quote is ' + Math.round(age) + ' min old (true age): never recommend a wager from a quote that may no longer exist'
+        : (code === 'MARKET_MISSING' ? 'no timestamped quote' : 'market integrity: ' + (snapOrQuote.integrity.reasons || []).join('; '))) };
   }
 
   /* ================================================ model vs market */
@@ -689,26 +734,32 @@
       questions: ['Did new football information arrive?', 'Did EdgeDesk data miss something?', 'Or is this market disagreement?'],
       action: 'review only: the football model is never changed by this alert' };
   }
-  /* a huge edge may be real, or a bug dressed as free money */
+  /* A huge edge may be real, or a bug dressed as free money. The checks are
+     integrity.js's (extremeReview: sign, mapping, QB, injuries, feature and
+     quote freshness, artifact; validateQuote: wrong game by teams, orientation
+     and kickoff) - never re-implemented here. This adds only the venue check
+     and lets the caller require the checks below integrity's 10-point trigger
+     (opts.threshold); ctx.sameTeam should be the identity master's resolver. */
   function largeGapChecks(pure, quote, ctx, opts) {
     opts = opts || {}; ctx = ctx || {};
-    var thr = isNum(opts.threshold) ? opts.threshold : 7, gap = isNum(num(pure && pure.projected_margin)) && isNum(num(quote && quote.home_line)) ? num(pure.projected_margin) - bookToMargin(num(quote.home_line)) : null;
-    if (!isNum(gap) || Math.abs(gap) < thr) return { required: false, gap: r(gap, 3) };
-    var low = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); };
-    var checks = [], ko = ms(pure.kickoff), qk = ms(quote.kickoff_ts);
-    function c(name, ok, detail) { checks.push({ check: name, status: ok === null ? 'UNKNOWN' : (ok ? 'PASS' : 'FAIL'), detail: detail || null }); }
-    c('team_mapping', quote.home_team ? low(quote.home_team).indexOf(low(pure.home)) >= 0 || low(pure.home).indexOf(low(quote.home_team)) >= 0 : null, quote.home_team);
-    c('opponent_mapping', quote.away_team ? low(quote.away_team).indexOf(low(pure.away)) >= 0 || low(pure.away).indexOf(low(quote.away_team)) >= 0 : null, quote.away_team);
-    c('home_away', String(quote.game_id) === String(pure.game_id) ? true : false, 'quote game ' + quote.game_id);
-    c('spread_sign', !(Math.abs(gap) > 21 && Math.abs(num(pure.projected_margin) + bookToMargin(num(quote.home_line))) <= 7), 'orientation rule: a gap that collapses when the sign flips is a convention fault');
-    c('qb_status', ctx.qb_resolved === undefined ? null : !!ctx.qb_resolved);
-    c('venue', ctx.neutral_site === undefined ? null : !!ctx.neutral_site === !!pure.neutral_site);
-    c('injuries', ctx.injury_coverage_ok === undefined ? null : !!ctx.injury_coverage_ok);
-    c('game_timestamp', isNum(ko) && isNum(qk) ? Math.abs(ko - qk) <= 36 * 3600000 : null);
-    c('stale_feature_state', pure.feature_ts || pure.prediction_ts ? (ms(ctx.now || Date.now()) - ms(pure.feature_ts || pure.prediction_ts)) <= 8 * 86400000 : null);
-    var bad = checks.filter(function (x) { return x.status !== 'PASS'; });
-    return { required: true, gap: r(gap, 3), threshold: thr, checks: checks, ok: !bad.length,
-      status: bad.length ? 'REVIEW_BEFORE_BELIEVING' : 'CHECKS_PASSED', note: 'passing the checks makes a huge edge believable, not a bet' };
+    var I = integ(), hl = num(quote && quote.home_line), mu = num(pure && pure.projected_margin);
+    var gap = isNum(mu) && isNum(hl) ? mu - bookToMargin(hl) : null;
+    var thr = isNum(opts.threshold) ? opts.threshold : I.EXTREME.GAP_PTS;
+    var review = I.extremeReview({ pure_home_margin: mu, fair_spread_home_line: num(pure && pure.fair_spread_home_line), market_home_line: hl,
+      side: ctx.side || (isNum(gap) && gap !== 0 ? (gap > 0 ? 'HOME' : 'AWAY') : null), cover_probability: ctx.cover_probability,
+      game_id: pure && pure.game_id, quote_game_id: quote && quote.game_id, quote_home_team: quote && quote.home_team, home_team: pure && pure.home,
+      sameTeam: ctx.sameTeam, qb_certainty: ctx.qb_certainty, injury_certainty: ctx.injury_certainty,
+      feature_ts: pure && (pure.feature_ts || pure.prediction_ts), market_age_min: trueAgeMin(quote || {}, ctx.now), now: iso(ctx.now),
+      model_version: pure && pure.model_version, expected_model_version: ctx.expected_model_version, market_integrity: ctx.market_integrity });
+    var validation = I.validateQuote(quote || {}, { now: iso(ctx.now), game: pure ? { home: pure.home, away: pure.away, kickoff: pure.kickoff } : null, sameTeam: ctx.sameTeam });
+    var required = review.required || (isNum(gap) && Math.abs(gap) >= thr);
+    if (!required) return { required: false, gap: r(gap, 3), threshold: thr };
+    var venue = ctx.neutral_site === undefined ? 'UNKNOWN' : (!!ctx.neutral_site === !!pure.neutral_site ? 'PASS' : 'FAIL');
+    var failures = (review.failures || []).concat(validation.reasons || []).concat(venue === 'FAIL' ? ['VENUE: neutral-site flag disagrees'] : []);
+    return { required: true, gap: r(gap, 3), threshold: thr, extreme_review: review, quote_validation: validation, venue: venue,
+      ok: failures.length === 0 && venue !== 'UNKNOWN' && (review.required ? review.ok : true), failures: failures,
+      status: failures.length ? 'REVIEW_BEFORE_BELIEVING' : (review.required ? 'CHECKS_PASSED' : 'BELOW_INTEGRITY_TRIGGER_CHECKED'),
+      note: 'passing the checks makes a huge edge believable, not a bet; the BET gate is integrity.betGate' };
   }
   function informationEvent(event, series, opts) {
     opts = opts || {};
@@ -824,7 +875,9 @@
   function auditMarketLanguage(text, d) {
     var t = String(text || ''), problems = [];
     MYTH.forEach(function (re) { if (re.test(t)) problems.push('not measurable / not allowed: ' + re); });
-    if (DEC && DEC.auditLanguage) { var a = DEC.auditLanguage(t, d || null); problems = problems.concat(a.problems || []); }
+    /* the decision engine's audit reads /edge/i as a value claim, so the brand name "EdgeDesk" alone would
+       trip it: the brand is neutralised before delegating (the claims it looks for are unchanged) */
+    if (DEC && DEC.auditLanguage) { var a = DEC.auditLanguage(t.replace(/EdgeDesk/g, 'the model'), d || null); problems = problems.concat(a.problems || []); }
     return { ok: problems.length === 0, problems: problems.filter(function (p, i, a) { return a.indexOf(p) === i; }) };
   }
   /* the clean public card (brief section 79): numbers from the engines, words from reason codes */

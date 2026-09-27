@@ -84,6 +84,7 @@ try {
   chk('an adjustment beyond the 3-point safety cap is refused', refused(ins('cfb_game_matchup_features', Object.assign({}, gm, { matchup_id: 'cfbmg_' + hex('6'), input_hash: 'h6', matchup_model_status: 'ADJUST', matchup_adjustment_points: 4, matchup_aware_margin: 0.8 }))));
   chk('matchup-aware != general + adjustment is refused', refused(ins('cfb_game_matchup_features', Object.assign({}, gm, { matchup_id: 'cfbmg_' + hex('7'), input_hash: 'h7', matchup_model_status: 'ADJUST', matchup_adjustment_points: 1, matchup_aware_margin: 5 }))));
   chk('a confidence above 1 is refused', refused(ins('cfb_game_matchup_features', Object.assign({}, gm, { matchup_id: 'cfbmg_' + hex('8'), input_hash: 'h8', matchup_confidence: 1.3 }))));
+  chk('a snapshot without its explanation is refused', refused(ins('cfb_game_matchup_features', Object.assign({}, gm, { matchup_id: 'cfbmg_' + hex('a'), input_hash: 'ha', payload: {} }))));
   chk('an unknown model status is refused', refused(ins('cfb_game_matchup_features', Object.assign({}, gm, { matchup_id: 'cfbmg_' + hex('9'), input_hash: 'h9', matchup_model_status: 'MAYBE' }))));
   chk('the latest view shows one row per game', db.sql(`select count(*) from public.cfb_game_matchup_latest where game_id = '401'`) === '1');
 
