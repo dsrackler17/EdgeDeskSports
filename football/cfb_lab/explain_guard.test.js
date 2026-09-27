@@ -4,7 +4,11 @@
    _cfb_explain.js; brief §90-91). Known answers:
 
    - the facts are built from the STORED snapshot (a real Model Lab row
-     shape) and carry nothing else: no params hash, no inputs_ref, no raw row;
+     shape, or the stored canonical projection) and carry nothing else: no
+     params hash, no inputs_ref, no raw row;
+   - the official status is the governed policy's (cfb_decision_policy_v1)
+     only: the Model Lab's stage-8 status is research (audit F-22), and
+     "edge / bet quality" wording is refused (audit F-23);
    - the prompt forbids tools and browsing, names the official status, and
      states the uncertainty;
    - the audit refuses: BET claimed on a PASS; a status word that is not the
@@ -44,10 +48,35 @@ function snapshot(o) {
   return CP.buildRow(P, 'T24', true, market, decision, o.dq || { status: 'GREEN', checks: [] }, { now: NOW, role: 'champion', origin: 'LIVE',
     integrity: o.integrity || { rule: 'r', status: 'DEGRADED', actionable_status: 'MARKET_DEGRADED', reasons: ['1 book'], n_books: 1 } });
 }
-const pass0 = X.cfbFacts(snapshot());
+/* the governed decision (cfb_decision_policy_v1, decision.js): the only official status (audit F-22) */
+const OFF = (status, o) => Object.assign({ status, basis: 'cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)', side: 'HOME', line_for_side: -3.5, price: -110,
+  decision_cover_probability: 0.54, reason: 'insufficient edge after calibration and vig' }, o || {});
+const pass0 = X.cfbFacts(snapshot(), OFF('PASS'));
 
 /* ═══ 1. the facts ═══════════════════════════════════════════════════════ */
-chk('facts: the official status, side and line come from the stored snapshot', pass0.decision.status === 'PASS' && pass0.decision.side === 'HOME' && pass0.decision.line === -3.5, pass0.decision);
+chk('facts: the official status, side and line come from the governed decision', pass0.decision.status === 'PASS' && pass0.decision.side === 'HOME' && pass0.decision.line === -3.5, pass0.decision);
+/* F-22: the Model Lab's stage-8 class is research, never the official status */
+const leanRow = snapshot({ status: 'LEAN' });
+const leanF = X.cfbFacts(leanRow);
+chk('F-22: a Model Lab row\'s stage-8 LEAN is never the official status (no governed decision -> NO BET)', leanRow.decision_class === 'LEAN' && leanF.decision.status === 'NO BET' && /no governed decision/.test(leanF.decision.reason), leanF.decision);
+chk('F-22: the prompt names NO BET, not the stage-8 LEAN', /official decision is NO BET/.test(X.buildPrompt(leanF).system) && !/official decision is LEAN/.test(X.buildPrompt(leanF).system));
+chk('F-22: an explanation repeating the stage-8 LEAN is refused', X.auditExplanation('This is a LEAN on Texas; the QB is not confirmed.', leanF).issues.some((i) => i.code === 'STATUS_MISMATCH'));
+chk('F-22: a stage-8 engine.decide() output passed as the decision is not governed (refused)', X.cfbFacts({ pure: { home: 'Texas', away: 'Oklahoma', projected_margin: 7, home_win_prob: 0.68 },
+  decision: { layer: 'market_decision_projection', status: 'LEAN', side: 'HOME' } }).decision.status === 'NO BET');
+chk('F-22: a decision.js output under policy v1 is governed', X.cfbFacts({ pure: { home: 'Texas', away: 'Oklahoma', projected_margin: 7, home_win_prob: 0.68 },
+  decision: { engine: 'edgedesk_cfb_decision', engine_version: 'cfb_decision_engine_v1', policy_version: 'cfb_decision_policy_v1', status: 'LEAN', side: 'HOME', line_for_side: -3.5, reason_codes: ['NO_BET_BETTING_DISABLED'] } }).decision.status === 'LEAN');
+/* the stored canonical projection (projections.json entry) is a fact source too */
+const CANON = require('../cfb_production/canonical.js');
+const crow = { game_id: 9, season: 2026, week: 6, home: 'Texas', away: 'Oklahoma', home_id: 251, away_id: 201, kickoff: K, prediction_ts: NOW, feature_ts: NOW, ens_pred: 7, sigma: 15.5,
+  fair_total: 52, ens_sd: 2, rating_sd_sum: 1.1, min_games: 5, early_season: false, qb: { home: null, away: {} }, qb_missing_any: 1, qb_unsettled_any: 0, priced: true, fcs_game: false,
+  neutral_site: false, components: { C_ridge: 7, D_gbm: 7 } };
+const entry = { canonical: CANON.snapshot(crow, { as_of_ts: NOW, context: { market_integrity: null } }), market: { home_line: -3.5, books: 1, actionable_status: 'MARKET_DEGRADED' },
+  official_decision: { status: 'NO_DECISION', basis: 'cfb_decision_policy_v1', reason: 'no governed decision for this game yet' } };
+const cf = X.cfbFacts(entry);
+chk('facts from the stored canonical projection: its numbers, its degraded modes in words, NO BET when no governed decision', cf.model.home_margin === 7 && cf.model.fair_line_display === 'Texas -7.0'
+  && cf.decision.status === 'NO BET' && cf.degraded.indexOf('a starting quarterback is not confirmed') >= 0 && X.auditExplanation(X.render(cf), cf).ok, [cf.decision, cf.degraded]);
+/* F-23: the P(positive CLV) tiers rank closing-line movement, not bet quality */
+chk('F-23: "edge quality" / "bet quality" wording is refused as an unsupported metric', ['The edge quality is HIGH.', 'A high-quality bet.', 'Bet quality: MEDIUM.'].every((t) => X.auditExplanation(t + ' NO BET; uncertain.', cf).issues.some((i) => i.code === 'UNSUPPORTED_METRIC')));
 chk('facts: home margin, fair line, probability and the 80% interval', pass0.model.home_margin === 7 && pass0.model.fair_line_display === 'Texas -7.0' && pass0.model.home_win_probability === 0.68 && pass0.model.interval_80.join() === '-12,26');
 chk('facts: QB status is CONFIRMED only when the source says so (Texas: last game\'s starter -> PROBABLE; Oklahoma: CONFIRMED)', pass0.qb.home.status === 'PROBABLE' && pass0.qb.away.status === 'CONFIRMED');
 chk('facts: the market carries its integrity status; the degraded modes are listed', pass0.market.actionable_status === 'MARKET_DEGRADED' && pass0.degraded.some((x) => /quarterback/.test(x)) && pass0.degraded.some((x) => /MARKET_DEGRADED/.test(x)));
@@ -85,17 +114,19 @@ chk('football words are not status words ("pass defense")', !codes('Texas has th
 /* ═══ 4. a real BET ═════════════════════════════════════════════════════ */
 const betRow = snapshot({ status: 'BET', bet: true, qbHome: { player_id: '1', player_name: 'Arch Manning', status: 'CONFIRMED', confirmed: true },
   integrity: { rule: 'r', status: 'OK', actionable_status: 'ACTIONABLE', reasons: [], n_books: 3 } });
-const betF = X.cfbFacts(betRow);
-chk('a BET snapshot (market actionable) is a BET fact', betF.decision.status === 'BET' && betRow.decision_class === 'BET', [betF.decision.status, betRow.decision_class, betRow.pass_reason]);
+const betF = X.cfbFacts(betRow, OFF('BET', { bet_enabled: true }));
+chk('a governed BET (market actionable) is a BET fact', betF.decision.status === 'BET' && betRow.decision_class === 'BET', [betF.decision.status, betRow.decision_class, betRow.pass_reason]);
 chk('on a BET, saying BET is allowed', X.auditExplanation('BET: Texas -3.5 at -110; the model has Texas by 7. Any single game can lose.', betF).ok, X.auditExplanation('BET: Texas -3.5 at -110; the model has Texas by 7. Any single game can lose.', betF).issues);
 chk('on a BET, saying NO BET is a status mismatch', codes('NO BET here.', betF).includes('STATUS_MISMATCH'));
 
 /* ═══ 5. the deterministic rendering always passes ════════════════════ */
 const variants = [snapshot(), snapshot({ status: 'LEAN' }), snapshot({ status: 'RESEARCH' }), snapshot({ margin: -10, line: 7, side: 'AWAY', p_home: 0.24 }), snapshot({ noMarket: true, side: null }),
   snapshot({ qbHome: null }), snapshot({ dq: { status: 'RED', checks: [{ check: 'team_mapping', status: 'RED', detail: 'swapped' }] } }), betRow, snapshot({ margin: 0, line: 0, p_home: 0.5, side: null })];
-const fails5 = variants.map((v) => { const f = X.cfbFacts(v); const t = X.render(f); const a = X.auditExplanation(t, f); return a.ok ? null : { t, issues: a.issues }; }).filter(Boolean);
+const offOf = (v) => (v.decision_class === 'PASS' ? OFF('PASS', { side: v.side }) : OFF(v.decision_class === 'BET' ? 'BET' : v.decision_class, { side: v.side, line_for_side: v.recommended_line }));
+const fails5 = variants.map((v) => { const f = X.cfbFacts(v, offOf(v)); const t = X.render(f); const a = X.auditExplanation(t, f); return a.ok ? null : { t, issues: a.issues }; }).filter(Boolean)
+  .concat(variants.map((v) => { const f = X.cfbFacts(v); const t = X.render(f); const a = X.auditExplanation(t, f); return a.ok ? null : { t, issues: a.issues, ungoverned: true }; }).filter(Boolean));
 chk('render(): the deterministic text passes its own audit for every status, side, QB and market case (' + variants.length + ')', fails5.length === 0, fails5[0]);
-const road = X.render(X.cfbFacts(snapshot({ margin: -10, line: 7, side: 'AWAY', p_home: 0.24 })));
+const road = X.render(X.cfbFacts(snapshot({ margin: -10, line: 7, side: 'AWAY', p_home: 0.24 }), OFF('PASS', { side: 'AWAY', line_for_side: -7 })));
 chk('render(): a road favourite names the favourite, the negative home margin and the away fair line', /projects Oklahoma by 10/.test(road) && /home margin of -10 for Texas/.test(road) && /Oklahoma -10\.0/.test(road), road);
 
 /* ═══ 6. explain(): the LLM cannot change the decision ═════════════════ */
