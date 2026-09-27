@@ -90,7 +90,7 @@ log loss 0.4576 → 0.4579.
 | WR_TE | **research (report-path candidate, next cycle)** | dev oracle signal (β 1.76), not confirmed on the holdout; retest as *new-absence* known-absence on live 2026 reports |
 | FRONT7 | **uncertainty-only** | production ≠ participation; defensive "absences" cannot be told from quiet games; no gain |
 | SECONDARY | **uncertainty-only** | as FRONT7; no value at all in 2021–2023 (INT / PBU ids collapse) |
-| ST (K, P) | **research** | pregame harms change games on dev (+0.008 [+0.001, +0.014]); holdout neutral |
+| ST (K, P) | **research** | pregame harms change games on dev (+0.008 [+0.001, +0.014]); holdout no gain (ordinary-game ΔRMSE +0.007 [+0.001, +0.012]); V2.1's ST ratings never leave their prior (§2) |
 | OL | **uncertainty-only, NOT_ESTIMATED** | no player data; declared variance prior to validate live |
 
 Challenger content from this layer: **none now**. The weekly engine may publish `unit_state` rows (values, lineups,
@@ -250,7 +250,19 @@ weights. Verified against `ratings.py` / `build_ratings.py`:
 - **The prior's share of the posterior** is π = (1/τ²)/(1/τ² + Σw) per horizon (the one-team form of `ratings.solve`).
   - Check against the joint solve's off_var(T)/off_var(T0), epa_pass, 2019, 60 FBS teams × 5 freezes:
     correlation **0.999** for epa_pass (300 team-freezes; epa_rush 0.990) (`tests_units: pi_one_team_matches_joint_solve`).
-  - The prior is large: mean π_season 0.85 and π_recent 0.81 over the backtest's team-freezes.
+  - The prior is large. Mean π season / recent over the dev team-freezes:
+
+    | group | π season | π recent |
+    |---|---|---|
+    | RB | 0.61 | 0.52 |
+    | WR_TE | 0.80 | 0.72 |
+    | FRONT7 / SECONDARY | 0.95 | 0.92 |
+    | K / P | **1.00** | **1.00** |
+
+  - **V2.1 finding (special teams).** For every FBS team the `fg_value` and `st_net` prior variance sits at its
+    1.5e-9 floor (`priors.parquet`). V2.1's special-teams ratings are therefore the preseason prior all season;
+    in-season kicking and punting never move them. The ST baseline lineup is last season's returning specialists.
+    This is a note for the next V2 retrain, not changed here.
 - **The prior's lineup** = last season's shares at the team of the players who **return**. A returning player is
   listed on this season's roster for the team or has been seen for it before T.
   - Departed players count as replacement (V = 0), because V2's prior already discounts departures through
@@ -454,19 +466,19 @@ How to read it:
 ### 4.3 What the dev backtest says
 
 - **Efficiency values do not carry the signal.** Every oracle / pregame efficiency variant has a CI covering 0.
-  - The fitted β_WR_TE is negative (−0.34 [−0.98, +0.29] in 2023). Once shrunk, the EPA-per-target differences
-    between a receiver and his replacement are too noisy to price.
+  - The fitted β_WR_TE is negative (+SKILL −0.36 [−0.99, +0.27] in 2023). Once shrunk, the EPA-per-target
+    differences between a receiver and his replacement are too noisy to price.
 - **Usage-revealed value.**
-  - The pure absence term (`oracle_naive_use`) is the only skill signal: β_WR_TE +1.67 [+0.84, +2.49] in 2023.
+  - The pure absence term (`oracle_naive_use`) is the only skill signal: β_WR_TE +1.66 [+0.84, +2.49] in 2023.
     V2.1's residual is −1.08 points for a team in the first two games of a skill absence (§5).
   - Anchored to the rating's lineup (`oracle_use`), the signal vanishes. The anchoring term Σ(healthy −
     rating lineup) × V_use has a **negative** β on dev, from sensitivity runs with each term alone:
-    RB −0.17 [−0.30, −0.03], WR_TE −0.74 [−1.07, −0.42].
+    RB −0.18 [−0.32, −0.05], WR_TE −0.70 [−1.03, −0.37].
   - With a data-only baseline (no prior lineup) it is 0. The proxy "the prior's lineup = returning players at last
     season's shares" is not what V2's prior represents; V2's prior regresses on the lagged rating, returning
     production and talent. The QB layer found the same defect from the other side (QB.md §4).
 - **History-only expected absences** (e − h with a usage or efficiency value) have no signal. Sensitivity: ΔMAE
-  +0.004 [−0.004, +0.012] and +0.002 [−0.003, +0.008].
+  +0.004 [−0.001, +0.010] and +0.001 [−0.006, +0.007].
   - Only a known absence helps. Before 2026 that is hindsight; in 2026 it is an official report.
 
 ## 5. Double-count ablation (dev, skill units, team-games with an in-season oracle absence, n 7,346)

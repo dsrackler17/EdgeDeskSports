@@ -763,21 +763,22 @@ def markdown(which=('dev',)):
     """Every table of UNITS.md from the JSON outputs."""
     parts = []
     c = V.constants()
-    parts.append('### constants\n| component | k [95% CI] | sigma2 | tau2 [95% CI] | split-half r (n, min/half) | '
-                 'repl [95% CI] (n player-seasons) | starter-slot mean | mu | rho stay [CI] (n) | rho transfer [CI] (n) | seasons |')
-    parts.append('|' + '---|' * 11)
+    tab = ['### constants\n| component | k [95% CI] | sigma2 | tau2 [95% CI] | split-half r (n, min/half) | '
+           'repl [95% CI] (n player-seasons) | starter-slot mean | mu | rho stay [CI] (n) | rho transfer [CI] (n) | seasons |',
+           '|' + '---|' * 11]
     for k_, x in c['components'].items():
         if not x.get('estimated'):
-            parts.append('| %s | not estimated: %s |' % (k_, x.get('reason')))
+            tab.append('| %s | not estimated: %s |' % (k_, x.get('reason')))
             continue
         ps = x['persistence']
-        parts.append('| %s | %s %s | %s | %s %s | %s (%d, %d) | %s %s (%d) | %s | %s | %s %s (%d) | %s %s (%d) | %s |' % (
+        tab.append('| %s | %s %s | %s | %s %s | %s (%d, %d) | %s %s (%d) | %s | %s | %s %s (%d) | %s %s (%d) | %s |' % (
             k_, _f(x['k'], 1), _ci(x['k_ci'], 1), _f(x['sigma2'], 4), _f(x['tau2'], 5), _ci(x['tau2_ci'], 5),
             _f(x['split_half_r'], 3), x['split_half_r_n'], x['split_half_r_min_exposure_per_half'],
             _f(x['repl'], 4, True), _ci(x['repl_ci'], 4), x['repl_n_player_seasons'], _f(x['starter_slot_mean'], 4, True),
             _f(x['mu_pop'], 4, True), _f(ps['stay'].get('rho'), 3), _ci(ps['stay'].get('rho_ci'), 3), ps['stay']['n'],
             _f(ps['transfer'].get('rho'), 3), _ci(ps['transfer'].get('rho_ci'), 3), ps['transfer']['n'],
             '%d-%d' % (min(x['seasons']), max(x['seasons']))))
+    parts.append('\n'.join(tab))
     for w in which:
         f = os.path.join(out_dir(), 'backtest_%s.json' % w)
         if not os.path.exists(f):
