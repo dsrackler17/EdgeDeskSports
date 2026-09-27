@@ -1,30 +1,30 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-09-26T23:45:05.701Z",
+ "generated_at": "2026-09-27T00:41:47.844Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-09-26T23:45:05.701Z",
-  "reliability_generated_at": "2026-09-26T23:45:05.701Z",
-  "enrichment_generated_at": "2026-09-26T23:44:59.025Z",
+  "at": "2026-09-27T00:41:47.844Z",
+  "reliability_generated_at": "2026-09-27T00:41:47.844Z",
+  "enrichment_generated_at": "2026-09-27T00:41:40.391Z",
   "counts": {
-   "games": 97,
-   "mean": 83.2,
+   "games": 98,
+   "mean": 83.1,
    "median": 86,
    "by_band": {
-    "VERY_STRONG": 10,
+    "VERY_STRONG": 11,
     "ADEQUATE": 8,
-    "STRONG": 68,
+    "STRONG": 67,
     "LOW": 9,
-    "CAUTION": 2
+    "CAUTION": 3
    },
    "missing_qb_status": 166,
-   "qb_conflicts_open": 5,
+   "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 13,
-   "unrated_meaningful_absences": 164,
+   "games_lacking_injury_information": 14,
+   "unrated_meaningful_absences": 198,
    "fcs_games_thin_data": 9,
-   "games_under_two_market_sources": 97,
-   "stale_evidence_records": 26,
+   "games_under_two_market_sources": 98,
+   "stale_evidence_records": 22,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -1754,24 +1754,24 @@
    },
    "401866429": {
     "game": "Massachusetts @ Sacramento State",
-    "score": 87,
-    "grade": "STRONG",
+    "score": 90,
+    "grade": "VERY_STRONG",
     "fam": {
-     "availability": 4.6,
      "fcs_dominated": 2,
      "stability": 1.9,
      "prior_missing": 1.7,
-     "qb_status": 2,
+     "attribution": 3,
      "qb_identity": 0.8,
-     "transfer_turnover": 0.3
+     "transfer_turnover": 0.3,
+     "player_identity": 0.1
     },
     "qb": {
      "home": "EXPECTED",
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
     }
    },
    "401866430": {
@@ -2219,59 +2219,72 @@
      "home": "PROVIDER_FAILED",
      "away": "PROVIDER_FAILED"
     }
+   },
+   "401871090": {
+    "game": "Southern Miss @ Troy",
+    "score": 69,
+    "grade": "CAUTION",
+    "fam": {
+     "availability": 6,
+     "qb_conflict": 2.7,
+     "qb_identity": 2.9,
+     "stability": 2.3,
+     "qb_status": 4,
+     "contract_conflicts": 1.4,
+     "rating_sample": 2,
+     "transfer_turnover": 0.6
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "CONFLICTED"
+    },
+    "avail": {
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
+    }
    }
   }
  },
  "previous": {
-  "at": "2026-09-26T21:59:54.056Z",
+  "at": "2026-09-26T23:45:05.701Z",
   "counts": {
-   "games": 121,
-   "mean": 81.7,
-   "median": 85,
+   "games": 97,
+   "mean": 83.2,
+   "median": 86,
    "by_band": {
-    "VERY_STRONG": 15,
-    "ADEQUATE": 13,
-    "STRONG": 74,
-    "LOW": 15,
-    "CAUTION": 4
+    "VERY_STRONG": 10,
+    "ADEQUATE": 8,
+    "STRONG": 68,
+    "LOW": 9,
+    "CAUTION": 2
    },
-   "missing_qb_status": 189,
-   "qb_conflicts_open": 9,
+   "missing_qb_status": 166,
+   "qb_conflicts_open": 5,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 16,
-   "unrated_meaningful_absences": 347,
-   "fcs_games_thin_data": 15,
-   "games_under_two_market_sources": 121,
-   "stale_evidence_records": 27,
+   "games_lacking_injury_information": 13,
+   "unrated_meaningful_absences": 164,
+   "fcs_games_thin_data": 9,
+   "games_under_two_market_sources": 97,
+   "stale_evidence_records": 26,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
  "what_improved": [
-  "+1.5 mean reliability (81.7 → 83.2)",
-  "+1 median reliability (85 → 86)",
-  "-23 QB statuses missing (189 → 166)",
-  "-4 open QB conflicts (9 → 5)",
-  "-3 games lacking injury information (16 → 13)",
-  "-183 unrated meaningful absences (347 → 164)",
-  "-6 FCS games at THIN DATA (15 → 9)",
-  "-24 games under two market sources (121 → 97)",
-  "-1 stale evidence records (27 → 26)",
-  "3 games moved ADEQUATE → STRONG",
-  "1 game moved CAUTION → STRONG"
+  "-4 stale evidence records (26 → 22)",
+  "1 game moved STRONG → VERY STRONG"
  ],
  "what_degraded": [
-  "2 games moved STRONG → ADEQUATE"
+  "-0.1 mean reliability (83.2 → 83.1)",
+  "+1 open QB conflicts (5 → 6)",
+  "+1 games lacking injury information (13 → 14)",
+  "+34 unrated meaningful absences (164 → 198)",
+  "+1 games under two market sources (97 → 98)"
  ],
  "why": [
-  "the slate itself changed: 0 games entered the window, 24 left it (kicked off or rolled out)",
-  "Baylor @ Arizona State: STRONG → ADEQUATE (86 → 79); largest change: qb_identity -1.2 pts",
-  "Virginia @ Florida State: ADEQUATE → STRONG (79 → 86); largest change: favorite_flips +3.8 pts",
-  "Oregon State @ Colorado State: ADEQUATE → STRONG (79 → 82); largest change: qb_identity +2 pts; home QB UNCERTAIN → EXPECTED",
-  "UTEP @ New Mexico: CAUTION → STRONG (69 → 86); largest change: qb_conflict +1.8 pts; home QB CONFLICTED → EXPECTED",
-  "Ohio @ Kent State: ADEQUATE → STRONG (79 → 89); largest change: qb_identity +2.1 pts; away QB CONFLICTED → EXPECTED",
-  "Western Kentucky @ New Mexico State: STRONG → ADEQUATE (81 → 76); largest change: favorite_flips -4.9 pts"
+  "the slate itself changed: 1 game entered the window, 0 left it (kicked off or rolled out)",
+  "Massachusetts @ Sacramento State: STRONG → VERY STRONG (87 → 90); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL"
  ],
  "history": [
   {
@@ -2745,6 +2758,31 @@
     "fcs_games_thin_data": 9,
     "games_under_two_market_sources": 97,
     "stale_evidence_records": 26,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-09-27T00:41:47.844Z",
+   "counts": {
+    "games": 98,
+    "mean": 83.1,
+    "median": 86,
+    "by_band": {
+     "VERY_STRONG": 11,
+     "ADEQUATE": 8,
+     "STRONG": 67,
+     "LOW": 9,
+     "CAUTION": 3
+    },
+    "missing_qb_status": 166,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 14,
+    "unrated_meaningful_absences": 198,
+    "fcs_games_thin_data": 9,
+    "games_under_two_market_sources": 98,
+    "stale_evidence_records": 22,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
