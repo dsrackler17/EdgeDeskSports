@@ -62,11 +62,17 @@ def add_derived(X):
     return X
 
 
-def features_for(families):
+def features_for(families, drop=None):
+    """The model columns of `families`, minus `drop`. `drop` defaults to the
+    PRODUCTION drop list (C.DROPPED_FEATURES), which is what the pipeline and
+    the exported model use. An experiment that reconstructs a specific model
+    (the red team's candidate 001 spec) must pass its own list, `drop=()`
+    included, so a later production decision never silently rewrites it."""
+    drop = C.DROPPED_FEATURES if drop is None else drop
     cols = []
     for f in families:
         cols += FAMILIES[f]
-    return [c for c in dict.fromkeys(cols) if c not in C.DROPPED_FEATURES]
+    return [c for c in dict.fromkeys(cols) if c not in drop]
 
 
 # ------------------------------------------------------------------ linear

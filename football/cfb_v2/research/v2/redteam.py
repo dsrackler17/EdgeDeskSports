@@ -156,6 +156,30 @@ def fbs_fin(D, seasons):
     return D[D.season.isin(seasons) & D.status.eq('FINAL') & ~D.fcs_game.astype(bool) & D.margin.notna()]
 
 
+# ============================================================ PHASE 4
+def phase4_reproduction(D):
+    """The independent walk-forward against candidate 001's frozen record
+    (football/cfb_v2/candidates/cfb_v2_candidate_001/predictions.csv.gz):
+    the largest absolute difference per quantity over every game both have."""
+    f = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'candidates', 'cfb_v2_candidate_001',
+                     'predictions.csv.gz')
+    P = pd.read_csv(f)
+    pairs = [('pred_' + c, 'pred_' + c) for c in RT.COMPONENTS] + [
+        ('pred', 'ens_pred'), ('sigma', 'sigma'), ('reliability', 'reliability'), ('p_win_raw', 'p_home_raw')] + [
+        (b % q, b % q) for q in (50, 80, 95) for b in ('lo_%d', 'hi_%d')]
+    j = D.merge(P, on='game_id', how='inner', suffixes=('_rt', '_c001'))
+    out = {'frozen_record': 'football/cfb_v2/candidates/cfb_v2_candidate_001/predictions.csv.gz', 'n_games': int(len(j))}
+    for a, b in pairs:
+        ca = a + '_rt' if a + '_rt' in j else a
+        cb = b + '_c001' if b + '_c001' in j else b
+        if ca not in j or cb not in j:
+            continue
+        m = j[ca].notna() & j[cb].notna()
+        out[a] = {'n': int(m.sum()), 'max_abs_diff': float((j.loc[m, ca] - j.loc[m, cb]).abs().max()),
+                  'missing_in_one': int((j[ca].isna() != j[cb].isna()).sum())}
+    return out
+
+
 # ============================================================ PHASE 5
 PREDICTORS = ['pred_A_adj_eff', 'pred_B_elo', 'pred_C_ridge', 'pred_D_gbm', 'pred_E_drive', 'pred',
               'base_v1', 'open_margin', 'close_margin']
@@ -343,7 +367,7 @@ def ablation_decision(r):
 
 
 def phase7_ablation(X, MK, fam, base_D, variants_root):
-    used = set(MD.features_for(fam['C'])) | set(MD.features_for(fam['D'])) | set(RT.A_COLS + RT.B_COLS + RT.E_COLS)
+    used = set(MD.features_for(fam['C'], drop=())) | set(MD.features_for(fam['D'], drop=())) | set(RT.A_COLS + RT.B_COLS + RT.E_COLS)
     res = {'groups': {}, 'prior_rebuilds': {}, 'not_testable': NOT_TESTABLE}
     for g, cols in ABLATION_GROUPS.items():
         in_model = [c for c in cols if c in used]
@@ -558,7 +582,14 @@ def phase10_uncertainty(D):
     for w, ss in WIN.items():
         d = D[D.season.isin(ss) & D.status.eq('FINAL') & D.margin.notna() & D.lo_80.notna()]
         fbs = d[~d.fcs_game.astype(bool)]
-        seg = {'all FBS-vs-FBS': cov_rows(fbs), 'FBS-vs-FCS': cov_rows(d[d.fcs_game.astype(bool)])}
+        fcs = d[d.fcs_game.astype(bool)]
+        seg = {'all FBS-vs-FBS': cov_rows(fbs), 'FBS-vs-FCS': cov_rows(fcs)}
+        if 'home_fbs' in fcs and len(fcs):
+            # error oriented to the FBS side: negative = the FBS team is under-rated
+            s_fbs = np.where(fcs.home_fbs.astype(bool), 1.0, -1.0)
+            e = (fcs.pred - fcs.margin) * s_fbs
+            seg['FBS-vs-FCS'].update(fbs_side_bias=r4(e.mean()), fbs_side_bias_ci=[r4(x) for x in boot(e.values)],
+                                     mae=r4((fcs.pred - fcs.margin).abs().mean()))
         wk = pd.cut(fbs.weeks_in, [-1, 2, 5, 9, 30], labels=['wk0-2', 'wk3-5', 'wk6-9', 'wk10+']).astype(str)
         wk[fbs.is_postseason.astype(bool)] = 'postseason'
         for k, g in fbs.groupby(wk):
@@ -1341,7 +1372,10 @@ def _boot_diff(a, b):
 
 
 # ============================================================ PHASE 18
-def phase18_early(D, X, out_root, variants_root, fam):
+def phase18_early(D, X, out_root, variants_root, fam, spec=None, comps=None, method='sum_to_one_nonneg'):
+    """`spec`/`comps`/`method` are the configuration under test, so the
+    no-preseason-information variant is the same model without priors."""
+    spec = spec or RT.Spec(fam['C'], fam['D'])
     out = {}
     wk = pd.cut(D.weeks_in, [-1, 1, 2, 3, 4, 5, 7, 10, 30], labels=['0-1', '1-2', '2-3', '3-4', '4-5', '5-7', '7-10', '10+']).astype(str)
     D = D.assign(wk=wk)
@@ -1350,9 +1384,9 @@ def phase18_early(D, X, out_root, variants_root, fam):
     fx = os.path.join(variants_root, 'out_fix')
     if os.path.exists(os.path.join(npv, 'stage5', 'cfb_model_training_snapshots.parquet')):
         Xn, _ = load(npv)
-        Dn = RT.run(Xn, RT.Spec(fam['C'], fam['D']), probs=False)['D'][['game_id', 'pred']].rename(columns={'pred': 'pred_noprior'})
+        Dn = RT.run(Xn, spec, comps=comps, method=method, probs=False)['D'][['game_id', 'pred']].rename(columns={'pred': 'pred_noprior'})
         Xf, _ = load(fx)
-        Df = RT.run(Xf, RT.Spec(fam['C'], fam['D']), probs=False)['D'][['game_id', 'pred']].rename(columns={'pred': 'pred_fix'})
+        Df = RT.run(Xf, spec, comps=comps, method=method, probs=False)['D'][['game_id', 'pred']].rename(columns={'pred': 'pred_fix'})
         D = D.merge(Dn, on='game_id', how='left').merge(Df, on='game_id', how='left')
     for w in ('dev', 'holdout'):
         d = fbs_fin(D, WIN[w])
@@ -1594,6 +1628,9 @@ def main():
         base = RT.run(X, RT.Spec(fam['C'], fam['D']), keep_models=False)
     D = attach_market(base['D'], MK)
     base['D'] = D
+    if 4 in ph and a.config == 'candidate_001':
+        dump('phase04_reproduction', phase4_reproduction(D))
+        print('[rt] phase 4 %.0fs' % (time.time() - t0))
     if 5 in ph:
         dump('phase05_components', phase5_components(D))
         print('[rt] phase 5 %.0fs' % (time.time() - t0))
@@ -1623,7 +1660,8 @@ def main():
         dump('phase17_learning', phase17_learning(X, fam, root))
         print('[rt] phase 17 %.0fs' % (time.time() - t0))
     if 18 in ph:
-        dump('phase18_early_season', phase18_early(D, X, root, a.variants_root, fam))
+        dump('phase18_early_season', phase18_early(D, X, root, a.variants_root, fam, spec=base['spec'],
+                                                   comps=base['comps'], method=base['method']))
         print('[rt] phase 18 %.0fs' % (time.time() - t0))
     if 19 in ph:
         dump('phase19_qb', phase19_qb(D, X, root))

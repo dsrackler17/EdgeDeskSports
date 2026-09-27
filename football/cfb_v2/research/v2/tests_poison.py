@@ -26,6 +26,7 @@ for a set of games must not depend on which OTHER games are predicted with
 it (a median fill over the prediction batch is a leak of later weeks).
 """
 import argparse
+import json
 import os
 import shutil
 import sys
@@ -177,9 +178,12 @@ def main():
     ap.add_argument('--season', type=int, default=2019)
     ap.add_argument('--cut-week', type=int, default=7, help='cut at the k-th freeze of the season')
     ap.add_argument('--keep', action='store_true')
+    ap.add_argument('--report', default=None, help='also write the result as JSON here')
     a = ap.parse_args()
     fail = 0
+    rep = {'season': a.season, 'cut_week': a.cut_week}
     bad = row_independence()
+    rep['row_independence_failures'] = bad
     for b in bad:
         print('FAIL row_independence: ' + b)
     fail += len(bad)
@@ -193,6 +197,8 @@ def main():
         Xc = build(a.season, os.path.join(tmp, 'clean_out'), os.path.join(tmp, 'clean_data'), None)
         Xp = build(a.season, os.path.join(tmp, 'poison_out'), os.path.join(tmp, 'poison_data'), T0)
         cols, n_pre, moved, moved_post = compare(Xc, Xp, T0)
+        rep.update(cutoff=str(T0), n_feature_columns=len(cols), n_pre_cutoff_rows=int(n_pre),
+                   moved_pre_cutoff={c: int(k) for c, k in moved.items()}, moved_post_cutoff_values=int(moved_post))
         print('     season %d, cutoff %s: %d feature columns, %d pre-cutoff rows' % (a.season, T0, len(cols), n_pre))
         if moved:
             fail += 1
@@ -210,6 +216,11 @@ def main():
         if not a.keep:
             shutil.rmtree(tmp, ignore_errors=True)
     print('poison tests: %s' % ('FAILED' if fail else 'green'))
+    if a.report:
+        rep['result'] = 'FAILED' if fail else 'green'
+        with open(a.report, 'w') as fh:
+            json.dump(rep, fh, indent=1, sort_keys=True)
+            fh.write('\n')
     sys.exit(1 if fail else 0)
 
 

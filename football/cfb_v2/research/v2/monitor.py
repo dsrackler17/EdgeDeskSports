@@ -21,7 +21,9 @@ anything: a person reads them (RUNBOOK.md, "Health warnings").
   ensemble_weights     the live stack weights differ from the exported artifact
   disagreement         C and D disagree beyond the backtest's 99th percentile
   pipeline_stale       current.json older than 36 h in season
-  feature_drift        population-stability index > 0.25 on a key input vs the backtest
+  feature_drift        week-matched population-stability index of an output (ens_pred,
+                       sigma, ens_sd, pred_total) above 0.25 AND above the 99th
+                       percentile of pure sampling noise, vs the holdout seasons
 """
 import argparse
 import json

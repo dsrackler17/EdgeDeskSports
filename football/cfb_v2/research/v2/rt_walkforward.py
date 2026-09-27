@@ -83,7 +83,9 @@ class GBM:
 class Spec:
     """One experimental configuration. `drop` removes columns from EVERY
     component that uses them (an ablation must remove the information, not
-    just one copy of it)."""
+    just one copy of it). The spec is explicit: the production drop list
+    (config.DROPPED_FEATURES) is NOT applied here, so Spec(fam_C, fam_D) is
+    candidate 001 and the hardened model is Spec(..., drop=<its list>)."""
 
     def __init__(self, fam_C=None, fam_D=None, drop=(), ridge_alpha=None, gbm_params=None,
                  noise_cols=0, name='candidate_001'):
@@ -103,9 +105,9 @@ class Spec:
         elif which == 'E':
             c = E_COLS
         elif which == 'C':
-            c = MD.features_for(self.fam_C or MD.ABLATION_ORDER)
+            c = MD.features_for(self.fam_C or MD.ABLATION_ORDER, drop=())
         else:
-            c = MD.features_for(self.fam_D or MD.ABLATION_ORDER)
+            c = MD.features_for(self.fam_D or MD.ABLATION_ORDER, drop=())
         c = [x for x in c if x not in self.drop]
         if which in ('C', 'D'):
             c += ['noise_%d' % i for i in range(self.noise_cols)]
@@ -418,7 +420,7 @@ def run(X, spec, comps=None, method='sum_to_one_nonneg', seasons=None, probs=Tru
     cols = ['game_id', 'season', 'week', 'status', 'margin', 'total_pts', 'fcs_game', 'neutral_site',
             'early_season', 'min_games', 'rating_sd_sum', 'qb_missing_any', 'qb_unsettled_any', 'vol_sum',
             'to_dependence', 'weeks_in', 'is_postseason', 'home_conference', 'away_conference', 'home_id',
-            'away_id', 'kickoff_ts', 'prediction_ts']
+            'away_id', 'kickoff_ts', 'prediction_ts', 'home_fbs']
     D = OOF.merge(X[[c for c in cols if c not in ('season',) and c in X.columns]], on='game_id', how='left')
     D.index = OOF.index
     D['pred'] = pred

@@ -298,16 +298,29 @@ def data_grading_matches_longhand_on_real_rows():
 
 
 def main():
+    import argparse
+    import json
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--report', default=None, help='also write the results as JSON here')
+    a = ap.parse_args()
     fail = 0
+    res = {}
     for fn in RESULTS:
         try:
             r = fn()
+            res[fn.__name__] = {'ok': True, 'detail': r if isinstance(r, str) else None}
             print('ok   ' + fn.__name__ + ('  [%s]' % r if isinstance(r, str) else ''))
         except Exception:
             fail += 1
+            res[fn.__name__] = {'ok': False, 'detail': None}
             print('FAIL ' + fn.__name__)
             traceback.print_exc()
     print('%d/%d passed' % (len(RESULTS) - fail, len(RESULTS)))
+    if a.report:
+        with open(a.report, 'w') as fh:
+            json.dump({'passed': len(RESULTS) - fail, 'total': len(RESULTS), 'scenarios': [x[0] for x in SCEN],
+                       'tests': res}, fh, indent=1, sort_keys=True)
+            fh.write('\n')
     sys.exit(1 if fail else 0)
 
 

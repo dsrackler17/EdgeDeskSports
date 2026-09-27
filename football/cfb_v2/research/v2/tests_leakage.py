@@ -115,8 +115,21 @@ def phase2_injections_are_refused_by_every_model():
 
 @test
 def every_model_feature_is_pure():
-    K.assert_pure(MD.features_for(MD.ABLATION_ORDER))
+    K.assert_pure(MD.features_for(MD.ABLATION_ORDER, drop=()))
     K.assert_pure(MD.ModelA.COLS + MD.ModelB.COLS + MD.ModelE.COLS + MD.TotalE.COLS)
+
+
+@test
+def red_team_candidate_spec_ignores_the_production_drop_list():
+    # the red team's Spec(fam_C, fam_D) IS candidate 001: a later production
+    # decision (config.DROPPED_FEATURES) must not silently change it
+    from . import rt_walkforward as RT
+    full = set(MD.features_for(MD.ABLATION_ORDER, drop=()))
+    spec = RT.Spec(MD.ABLATION_ORDER, MD.ABLATION_ORDER)
+    assert set(spec.cols('C')) == full and set(spec.cols('D')) == full
+    assert not set(MD.features_for(MD.ABLATION_ORDER)) & set(C.DROPPED_FEATURES)
+    hard = RT.Spec(MD.ABLATION_ORDER, MD.ABLATION_ORDER, drop=C.DROPPED_FEATURES)
+    assert set(hard.cols('C')) == set(MD.features_for(MD.ABLATION_ORDER))
 
 
 @test
@@ -318,6 +331,20 @@ def frozen_snapshots_are_write_once():
     # tampering is detectable by the stored hash
     d = _j.load(open(f)); d['rows'][0]['row']['ens_pred'] = 1.0
     assert PLV.canonical_hash(d['rows'][0]['row']) != d['rows'][0]['hash']
+
+
+@test
+def pregame_reports_are_recorded_beside_the_pure_projection():
+    # the shadow capture of the board's availability / QB evidence is data for
+    # a future validation: it never enters the pure projection or its hash
+    from . import predict_live as PLV
+    row = {'game_id': 7, 'prediction_ts': '2026-09-29T12:00:00Z', 'kickoff': '2026-10-03T19:30:00Z',
+           'ens_pred': 3.5, 'sigma': 15.0}
+    with_reports = dict(row, shadow={'pregame_reports': {'reports': [{'field': 'availability', 'side': 'home'}]}})
+    assert PLV.canonical_hash(PLV.pure_part(with_reports)) == PLV.canonical_hash(PLV.pure_part(row))
+    for g in PLV.pregame_reports().values():
+        assert {r['field'] for r in g['reports']} <= set(PLV.REPORT_FIELDS)
+        assert all(len(r['detail']) <= 120 for r in g['reports'])
 
 
 # ------------------------------------------------------------ artifacts

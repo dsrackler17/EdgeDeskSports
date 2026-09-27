@@ -144,12 +144,13 @@ def row_json(r):
         'components': comps, 'drivers': r['drivers'], 'uncertainty_drivers': r['uncertainty_drivers'],
         'qb': qb,
         # FBS-vs-FCS games are NOT PRICED: the submodels are trained on FBS-vs-FBS
-        # games only and the walk-forward shows a growing bias on FCS games
-        # (dev -2.9, holdout -6.5, 2026 -9.0 pts; 80% coverage 0.68-0.81). The
-        # numbers stay in the snapshot so the weakness stays measured.
+        # games only and the walk-forward shows a growing bias against the FBS
+        # side of FCS games (v2.1.0: dev -2.8, holdout -6.1, 2026 -8.8 pts;
+        # report/redteam/hardened/phase10_uncertainty.json). The numbers stay
+        # in the snapshot so the weakness stays measured.
         'priced': not bool(r['fcs_game']),
-        'not_priced_reason': ('FBS-vs-FCS: V2 has no validated FCS model (measured bias -6.5 pts on the '
-                              '2024-25 holdout)') if bool(r['fcs_game']) else None,
+        'not_priced_reason': ('FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS '
+                              'side -6.1 pts on the 2024-25 holdout)') if bool(r['fcs_game']) else None,
     }
 
 
@@ -178,6 +179,42 @@ def v1_projections():
         out[gid] = {'margin': g.get('model_home_margin'), 'home_win_prob': g.get('model_home_win_prob'),
                     'status': g.get('model_status'), 'slate_generated_at': s.get('generated_at'),
                     'source': 'football/fbs/slate.json (V1, cfb_p4 engine)'}
+    return out
+
+
+REPORT_FIELDS = ('availability', 'qb_availability', 'qb_starter')
+STARTER_KEYS = ('player_id', 'player_name', 'status', 'confirmed', 'published_at', 'retrieved_at')
+
+
+def pregame_reports():
+    """The pregame availability and QB-status evidence the V1 board held when
+    this row was frozen: its per-side input-contract entries (state, source,
+    timestamps, a short detail), the named starters, and the digest of the
+    availability sync it came from (football/availability/current.json, which
+    git keeps in full). Recorded only, never used by V2: this is the
+    point-in-time record an injury or QB-status validation will need."""
+    f = os.path.join(REPO_V2, '..', 'fbs', 'slate.json')
+    if not os.path.exists(f):
+        return {}
+    s = json.load(open(f))
+    af = os.path.join(REPO_V2, '..', 'availability', 'current.json')
+    av = json.load(open(af)) if os.path.exists(af) else {}
+    sync = {'digest': av.get('digest'), 'generated_at': av.get('generated_at'),
+            'file': 'football/availability/current.json'} if av else None
+    out = {}
+    for g in s.get('games', []):
+        try:
+            gid = int(g['game_id'])
+        except (KeyError, TypeError, ValueError):
+            continue
+        rep = [{'field': c.get('field'), 'side': c.get('side'), 'state': c.get('state'), 'source': c.get('source'),
+                'as_of': c.get('as_of'), 'observed_at': c.get('observed_at'), 'priced_by_v1': c.get('priced'),
+                'detail': (c.get('detail') or '')[:120]}
+               for c in (g.get('input_contract') or []) if c.get('field') in REPORT_FIELDS]
+        st = {side: ({k: (g.get(side + '_starter') or {}).get(k) for k in STARTER_KEYS}
+                     if g.get(side + '_starter') else None) for side in ('home', 'away')}
+        out[gid] = {'reports': rep, 'starters': st, 'availability_sync': sync,
+                    'slate_generated_at': s.get('generated_at')}
     return out
 
 
@@ -264,6 +301,7 @@ def main():
     # candidate 001, and the market as observed by this run
     from . import shadow as SH
     v1 = v1_projections()
+    pr = pregame_reports()
     c1 = candidate_projections(X)
     mk = SH.market_now(a.season) if os.path.exists(common.out_path('stage2', 'market.parquet')) else {}
     for r in rows:
@@ -273,6 +311,7 @@ def main():
                        'market_at_freeze': ({k: m[k] for k in ('open_home_line', 'current_home_line', 'total_open',
                                                                 'total_current', 'source', 'retrieved_at')}
                                             if m else None),
+                       'pregame_reports': pr.get(gid),
                        'captured_at': common.iso(now.to_pydatetime()),
                        'note': 'captured by the run that froze this row (at or after the freeze time); '
                                'BOOK home lines (- = home favoured); V1 and candidate 001 are home margins'}
@@ -285,7 +324,8 @@ def main():
            'mode': 'shadow', 'champion': 'V1', 'season': a.season,
            'note': 'V2 runs in SHADOW beside V1. Pure projections only; the market decision is computed '
                    'at read time by engine.decide() from live prices.',
-           'rows': sorted(upcoming, key=lambda r: (r['kickoff'], r['game_id']))}
+           'rows': sorted(({**r, 'shadow': {k: v for k, v in (r.get('shadow') or {}).items() if k != 'pregame_reports'}}
+                           for r in upcoming), key=lambda r: (r['kickoff'], r['game_id']))}
     with open(os.path.join(REPO_V2, 'current.json'), 'w') as fh:
         json.dump(cur, fh, indent=1, sort_keys=True)
     if a.replay_history:
