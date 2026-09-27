@@ -1915,6 +1915,7 @@ export function cfbQuoteProblems(q: any, nowMs: number): string[] {
   const obs = parseStamp(q.observed_at), upd = parseStamp(q.provider_updated_at);
   if (obs != null && obs > nowMs + tol) out.push("OBSERVED_IN_FUTURE");
   if (upd != null && obs != null && upd > obs + tol) out.push("PROVIDER_TS_AFTER_OBSERVED");
+  if (q.provider_updated_at != null && q.provider_updated_at !== "" && upd == null) out.push("PROVIDER_TS_UNPARSEABLE");
   return [...new Set(out)];
 }
 

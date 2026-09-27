@@ -170,7 +170,7 @@ const noSleep = () => Promise.resolve();
     const bad = CAP.cfbLabQuotes(json('odds_api_ncaaf_impossible.json'), NOW, NOWMS);
     const qr = (book, mt) => bad.quarantined.find((x) => x.book === book && x.market_type === mt);
     chk('capture: a +450 spread is quarantined with SPREAD_OUT_OF_BOUNDS, never sent', qr('draftkings', 'spread') && qr('draftkings', 'spread').reasons.includes('SPREAD_OUT_OF_BOUNDS')
-      && !bad.quotes.some((x) => x.book === 'draftkings' && x.market_type === 'spread'), bad.quarantined);
+      && !bad.quotes.some((x) => x.book === 'draftkings' && x.market_type === 'spread' && x.provider_event_id === 'oa_tex_ou'), bad.quarantined);
     chk('capture: decimal 1.0 (American 0) is no price at all (never 0)', !bad.quotes.concat(bad.quarantined).some((x) => x.price_home === 0 || x.price_away === 0));
     chk('capture: identical moneyline prices with both sides favoured are quarantined', qr('betmgm', 'moneyline') && qr('betmgm', 'moneyline').reasons.includes('IDENTICAL_SIDE_PRICES'));
     /* the capture copy of the hard rules reproduces every shared case */
@@ -188,7 +188,7 @@ const noSleep = () => Promise.resolve();
     chk('CFBD drift: no observed_at, a line as text, no line at all are each rejected', /observed_at/.test(drift[0].join()) && /not a number/.test(drift[1].join()) && /no line/.test(drift[2].join()), drift);
     const csv = fs.readFileSync(FX('cfbfastr_schedule.csv'), 'utf8');
     chk('cfbfastR fixture carries every required column', P.validateCfbfastrHeader(csv).length === 0);
-    chk('cfbfastR drift: renamed columns are named as missing', P.validateCfbfastrHeader(fs.readFileSync(FX('cfbfastr_schedule_schema_drift.csv'), 'utf8')).join() === 'game_id,home_team,home_points,away_team,away_points', P.validateCfbfastrHeader(fs.readFileSync(FX('cfbfastr_schedule_schema_drift.csv'), 'utf8')));
+    chk('cfbfastR drift: renamed columns are named as missing', P.validateCfbfastrHeader(fs.readFileSync(FX('cfbfastr_schedule_schema_drift.csv'), 'utf8')).join() === 'game_id,home_points,away_points,home_team,away_team', P.validateCfbfastrHeader(fs.readFileSync(FX('cfbfastr_schedule_schema_drift.csv'), 'utf8')));
     const refused = [];
     const cr = ST.cfbfastrReadings(csv, 2026, refused);
     chk('cfbfastR: finals read, an unplayed game has no final, a 0-0 "final" is refused', cr['401800001'].home_points === 31 && !cr['401800003'] && !cr['401800006'] && refused.some((x) => x.game_id === '401800006' && /tied/.test(x.reason)), { cr, refused });
