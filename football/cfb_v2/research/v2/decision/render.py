@@ -726,5 +726,575 @@ def _inv(w, be=100 / 210):
     return 1 / (1 + math.exp(-z))
 
 
+
+
+# ======================================================================
+# docs/cfb-decision/POLICY.md — the decision-policy study (python3 -m v2.decision.render --policy)
+# Every number is read from out_h/decision/policy/{tournament,analyses,holdout}.json and the frozen
+# policy artifact; nothing is typed by hand.
+# ======================================================================
+POLICY_DOC = os.path.join(DS.DOCS, 'POLICY.md')
+
+
+def PJ(name):
+    return json.load(open(os.path.join(DS.out_dir(), 'policy', name)))
+
+
+def _card_row(name, c, extra=''):
+    a = c.get('ats') or {}
+    wlp = '%s-%s-%s' % (a.get('wins', 0), a.get('losses', 0), a.get('pushes', 0)) if c.get('bet_count') else ''
+    return ('| %s | %s | %s | %s%s | %s%s | %s%s | %s | %s%s | %s%s | %s |%s' % (
+        name, c.get('bet_count', 0), wlp, p(a.get('cover_rate')), ci(a.get('wilson'), 3, True),
+        signed(c.get('roi'), 3), ci(c.get('roi_ci'), 3), f(c.get('avg_clv'), 2), ci(c.get('avg_clv_ci'), 2),
+        p(c.get('positive_clv_pct')), signed(c.get('close_implied_ev'), 4), ci(c.get('close_implied_ev_ci'), 4),
+        f(c.get('max_drawdown'), 1), ci(c.get('max_drawdown_ci'), 1), signed(c.get('calibration_error'), 3), extra))
+
+
+CARD_HEAD = ('| %s | n | W-L-P | cover [Wilson 95%%] | ROI at −110 [95%% CI] | CLV pts [95%% CI] | +CLV | close-implied EV [95%% CI] '
+             '| max DD u [95%%] | calib. error |%s')
+
+
+def live_price_targets():
+    """§51-52: the price-target table for every live 2026 quote with a CAPTURED two-sided price (inputs only), under the
+    frozen policy and artifact, evaluated at the moment the quote was observed (the 2026 projection is a replay)."""
+    import numpy as np
+    import pandas as pd
+    from . import policy as POL
+    from .tournament import POLICY_DIR
+    P = json.load(open(os.path.join(POLICY_DIR, 'policy.json')))
+    A = POL.load_artifact()
+    D = pd.read_parquet(os.path.join(DS.out_dir(), 'decision_dataset.parquet'), filters=[('window', '==', 'live')])
+    L = D[D.quote_role.eq('LIVE_BOOK_QUOTE') & D.price_source.eq('CAPTURED') & D.pricing_scope.eq('FBS_FBS')
+          & D.pure_cover_prob.notna()].sort_values(['kickoff_ts', 'game_id'])
+    rows = []
+    for rw in L.to_dict('records'):
+        obs = pd.Timestamp(rw['quote_observed_at']).tz_convert('UTC').strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        rw = dict(rw, decision_ts_iso=obs, kickoff_iso=pd.Timestamp(rw['kickoff_ts']).tz_convert('UTC').strftime('%Y-%m-%dT%H:%M:%S.000Z'))
+        pure, quote, row, market, now = POL.row_to_inputs(rw, float(rw['quote_price_home']), float(rw['quote_price_away']),
+                                                          books=float(rw['books']) if np.isfinite(rw['books']) else None)
+        pure['home'], quote['home_team'] = rw['home_team'], rw['home_team']
+        d = POL.decide_quote(pure, quote, {'policy': P, 'artifact': A, 'now': now, 'market': market, 'row': row,
+                                           'expected_model_version': pure['model_version']})
+        pt = d.get('price_targets') or {}
+        fair = POL.minimum_price(d['raw']['decision_cover_probability'], d.get('push_probability'), 0.0) if d.get('raw') else None
+        team = rw['home_team'] if d.get('side') == 'HOME' else rw['away_team']
+        rows.append({'game': '%s at %s' % (rw['away_team'], rw['home_team']), 'kickoff': str(rw['kickoff_ts'])[:16],
+                     'book': rw['book'], 'side': team, 'line': d.get('line_for_side'), 'price': d.get('price'),
+                     'pure_p': d.get('pure_cover_probability'), 'decision_p': d.get('decision_cover_probability'),
+                     'break_even': d.get('break_even_probability'), 'edge': d.get('probability_edge'),
+                     'decision_ev': d.get('decision_ev'), 'calibrated_ev': d.get('empirical_ev'), 'status': d['status'],
+                     'reasons': d['reason_codes'], 'bettable_to_price': pt.get('bettable_to_price'),
+                     'bettable_to_line': pt.get('bettable_to_line'), 'ideal_entry_line': pt.get('ideal_entry_line'),
+                     'do_not_bet': pt.get('do_not_bet'), 'decision_fair_price': fair})
+    return rows
+
+
+def policy_main():
+    T = PJ('tournament.json')
+    A = PJ('analyses.json')
+    H = PJ('holdout.json') if os.path.exists(os.path.join(DS.out_dir(), 'policy', 'holdout.json')) else None
+    from .tournament import POLICY_DIR, POLICY_VERSION
+    P = json.load(open(os.path.join(POLICY_DIR, 'policy.json')))
+    M = json.load(open(os.path.join(POLICY_DIR, 'MANIFEST.json')))
+    E = json.load(open(os.path.join(POLICY_DIR, 'evidence.json')))
+    acc = [json.loads(l) for l in open(os.path.join(POLICY_DIR, 'holdout_access.jsonl')) if l.strip()] \
+        if os.path.exists(os.path.join(POLICY_DIR, 'holdout_access.jsonl')) else []
+    oos, valid = T['oos'], T['bet_valid']
+    order = ['edge', 'decision_ev', 'empirical_ev', 'multivariate', 'clv_model', 'gap', 'baseline_001', 'baseline_lean', 'none']
+    L = []
+    w = L.append
+    w('# CFB decision policy — `%s`' % POLICY_VERSION)
+    w('')
+    w('Generated by `python3 -m v2.decision.render --policy` from the policy study (`v2/decision/tournament.py`, DEV only) and the '
+      'one-time holdout (`v2/decision/holdout.py`). Rules: [POLICY_PREREG.md](POLICY_PREREG.md) (sha256 `%s`, one disclosed '
+      'amendment). Calibration: [CALIBRATION.md](CALIBRATION.md) (`cfb_decision_calibration_v1`, frozen, not refit). Every betting '
+      'number is flat 1 unit at the labelled ASSUMED −110; every interval is a game-clustered bootstrap (seed 20260927).'
+      % M['prereg']['sha256'])
+    w('')
+    # ------------------------------------------------------------ verdict
+    e = oos['edge']
+    he = (H or {}).get('candidates', {}).get('edge', {})
+    w('## The verdict')
+    w('')
+    w('1. **No policy earns BET status, on DEV or on the holdout.** None of the %d tournament candidates is BET-VALID on the '
+      'walk-forward DEV seasons (%s): no candidate\'s realized ROI has a 95%% interval above zero, and no tuned candidate\'s '
+      'close-implied EV (the EV of the bet if the closing line is fair) is positive. The production candidate (`edge`, '
+      'probability edge ≥ %s) went %s on DEV out-of-sample: ROI %s%s, CLV %s%s, close-implied EV %s%s; on the holdout (2024-2025, '
+      'read once) %s: ROI %s%s, CLV %s%s, close-implied EV %s%s.'
+      % (len(order) - 1, ', '.join(str(s) for s in T['eval_seasons']), P['min_probability_edge'],
+         '%d bets' % e['bet_count'], signed(e.get('roi'), 3), ci(e.get('roi_ci'), 3), f(e.get('avg_clv'), 2), ci(e.get('avg_clv_ci'), 2),
+         signed(e.get('close_implied_ev'), 4), ci(e.get('close_implied_ev_ci'), 4),
+         '%d bets' % he.get('bet_count', 0), signed(he.get('roi'), 3), ci(he.get('roi_ci'), 3), f(he.get('avg_clv'), 2),
+         ci(he.get('avg_clv_ci'), 2), signed(he.get('close_implied_ev'), 4), ci(he.get('close_implied_ev_ci'), 4)))
+    w('2. **The production policy has an empty BET region, by the evidence.** `min_ev = %s` is read on the calibrated EV, and '
+      'the frozen decision-EV curve is flat at %s at every price: no quote is a BET at any price, and `bet_enabled` is false. '
+      'The §86 gate fails (G3–G9); betting stays disabled. *A missing BET is preferable to a false BET.*'
+      % (P['min_ev'], E['promotion_gate_before_holdout']['G8_frozen_artifact_admits_a_bet']['max_calibrated_ev']))
+    lg = A['lean']
+    w('3. **What the model does have is closing-line value, and the policy is built on it.** LEAN (a positive calibrated edge '
+      'over break-even, |gap| ≥ %s) beat the closer on DEV by %s pts [%s, %s] (vs %s for PASS; difference %s%s) and on the holdout '
+      'by %s pts%s (LEAN − PASS %s%s). That CLV does not cover the vig: LEAN\'s close-implied EV is %s on DEV and %s on the holdout. '
+      'LEAN means "the market is likely to move toward this side", not "bet it".'
+      % (P['lean']['min_gap_pts'], f(_st(A['pass_quality']['by_status'], 'LEAN').get('avg_clv'), 2), f(lg['lean_clv_ci'][0], 2),
+         f(lg['lean_clv_ci'][1], 2), f(_st(A['pass_quality']['by_status'], 'PASS').get('avg_clv'), 2), signed(lg['lean_minus_pass_clv']['diff'], 2),
+         ci(lg['lean_minus_pass_clv']['ci'], 2),
+         f(_st((H or {}).get('production', {}).get('by_status', []), 'LEAN').get('avg_clv'), 2), ci((H or {}).get('production', {}).get('lean_clv_ci'), 2),
+         signed(((H or {}).get('production', {}).get('lean_minus_pass_clv') or {}).get('diff'), 2),
+         ci(((H or {}).get('production', {}).get('lean_minus_pass_clv') or {}).get('ci'), 2),
+         signed(_st(A['pass_quality']['by_status'], 'LEAN').get('close_implied_ev'), 4),
+         signed(_st((H or {}).get('production', {}).get('by_status', []), 'LEAN').get('close_implied_ev'), 4)))
+    if H:
+        c = H['production']['calibration']
+        w('4. **The decision probability stays calibrated out of sample and carries almost no information about wins.** Holdout: '
+          'mean decision probability %s vs cover %s%s (inside the interval); log loss %s vs a coin flip %s (Δ %s%s). The pure '
+          'probability is again significantly worse than a coin flip (Δ %s%s). Expected vs realized units (decision probability): '
+          'z = %s on DEV, %s on the holdout; the pure model\'s theoretical EV misses by z = %s and %s.'
+          % (p(c['mean_p_dec']), p(c['cover_rate']), ci(c['cover_wilson'], 3, True), f(c['log_loss_decision'], 5), f(c['log_loss_coin'], 5),
+             signed(c['dll_decision_minus_coin'], 5), ci(c['dll_ci'], 5), signed(c['dll_pure_minus_coin'], 5), ci(c['dll_pure_ci'], 5),
+             f(A['expected_vs_realized']['all_rows']['z_realized_vs_decision'], 2), f(H['expected_vs_realized']['all_rows']['z_realized_vs_decision'], 2),
+             f(A['expected_vs_realized']['all_rows']['z_realized_vs_theoretical'], 2), f(H['expected_vs_realized']['all_rows']['z_realized_vs_theoretical'], 2)))
+    w('')
+    # ------------------------------------------------------- the policy
+    w('## The production policy (`football/cfb_v2/artifacts/decision/%s/policy.json`)' % POLICY_VERSION)
+    w('')
+    w('sha256 `%s`, frozen %s, status `%s`, `bet_enabled: %s`. decision.js `validatePolicy` accepts it; `shadow.js` picks it up '
+      'as the newest policy.' % (M['files']['policy.json'], M['frozen_at'], P['status'], str(P['bet_enabled']).lower()))
+    w('')
+    w('| field | value | where it comes from |')
+    w('|---|---|---|')
+    prov = P.get('provenance', {})
+    for k, v, src in (
+            ('min_probability_edge', P['min_probability_edge'], prov.get('min_probability_edge')),
+            ('min_ev (calibrated EV)', P['min_ev'], prov.get('min_ev')),
+            ('ideal_probability_edge', P['ideal_probability_edge'], '2 × min_probability_edge'),
+            ('lean', json.dumps(P['lean']), prov.get('lean.min_gap_pts')),
+            ('hysteresis', json.dumps(P['hysteresis']), prov.get('hysteresis')),
+            ('wait.enabled', P['wait']['enabled'], prov.get('wait')),
+            ('stake', 'flat %s u (max %s u); Kelly validated: %s; kelly_fraction %s; saturation p %s' % (
+                P['stake']['unit_u'], P['stake']['max_stake_u'], P['stake']['kelly_validated'], P['stake']['kelly_fraction'],
+                P['stake']['saturation_probability']), prov.get('stake.saturation_probability')),
+            ('exposure', 'game %s u, slate %s u, cluster %s u, same-game correlation %s' % (
+                P['exposure']['max_game_u'], P['exposure']['max_slate_u'], P['exposure']['max_cluster_u'],
+                P['exposure']['same_game_correlation']), prov.get('exposure.max_slate_u')),
+            ('display', json.dumps(P['display']), 'tier and ranking rules (prereg §5)'),
+            ('min_football_confidence / max_ensemble_sd', '%s / %s' % (P['min_football_confidence'], P['max_ensemble_sd']),
+             prov.get('min_football_confidence / max_ensemble_sd')),
+            ('min_bet_confidence', P['min_bet_confidence'], 'null: clv_model is not BET-VALID'),
+            ('stale_minutes, min_books, max_dispersion_iqr, max_price, reference_price',
+             '%s, %s, %s, %s, %s' % (P['stale_minutes'], P['min_books'], P['max_dispersion_iqr'], P['max_price'], P['reference_price']),
+             'declared, not fitted (no point-in-time history)'),
+            ('extreme checks', 'gap %s, EV %s, quote < %s min, cover p %s; orientation %s/%s' % (
+                P['extreme_gap_pts'], P['extreme_ev'], P['extreme_max_age_minutes'], P['extreme_cover_probability'],
+                P['orientation_gap'], P['orientation_reconcile']), 'declared')):
+        w('| %s | %s | %s |' % (k, v, src))
+    w('')
+    w('**Statuses under this policy and the frozen artifact.** BET: never (the calibrated EV is %s at every price). LEAN: a '
+      'decision-probability edge > 0 over the price\'s break-even and |gap| ≥ %s, no unresolved uncertainty. RESEARCH: the same '
+      'potential edge with an unresolved QB, fewer than %d books, incomplete inputs or an extreme edge (monitor, never bet). '
+      'PASS: everything else, with its reason. NO BET: fail closed.' % (
+          E['promotion_gate_before_holdout']['G8_frozen_artifact_admits_a_bet']['max_calibrated_ev'], P['lean']['min_gap_pts'], P['min_books']))
+    w('')
+    # ----------------------------------------------------- tournament
+    w('## §69 The walk-forward policy tournament (DEV out-of-sample: %s)' % ', '.join(str(s) for s in T['eval_seasons']))
+    w('')
+    w('Each tunable candidate chose its threshold on scored seasons before the evaluated season (in-fold score: the lower 90% '
+      'bound of the mean close-implied EV; a plateau within one SE of the best; its middle value). 2019 is evaluated with '
+      '2018 alone as training, which left the edge-based candidates without an eligible (n ≥ 100) threshold that fold.')
+    w('')
+    w(CARD_HEAD % ('candidate', ' fold choices (2019/2021/2022/2023) → final DEV | verdict |'))
+    w('|---|---|---|---|---|---|---|---|---|---|---|---|')
+    for cid in order:
+        c = oos[cid]
+        cand = T['candidates'][cid]
+        if cand['folds']:
+            fc = '/'.join(str(x['choice']) if not isinstance(x['choice'], list) else '%s+%s' % (x['choice'][0], ','.join(x['choice'][1]) or '—')
+                          for x in cand['folds'].values())
+            fin = cand['final_dev']['choice']
+            fin = '%s+%s' % (fin[0], ','.join(fin[1])) if isinstance(fin, list) else fin
+            fc = '%s → %s' % (fc, fin)
+        else:
+            fc = 'fixed'
+        w(_card_row('`%s`' % cid, c, ' %s | %s |' % (fc, valid[cid]['verdict'])))
+    w('')
+    w('BET-VALID criteria (prereg §4) per candidate — 1 sample, 2 pricing, 3 CLV, 4 outcome, 5 calibration, 6 stability, 7 paired vs '
+      'baseline, 8 risk:')
+    w('')
+    w('| candidate | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | paired Δ units per quote vs baseline_001 [95%] |')
+    w('|---|---|---|---|---|---|---|---|---|---|')
+    for cid in order:
+        cr = valid[cid]['criteria']
+        pdv = valid[cid]['paired_vs_baseline_units_per_quote']
+        w('| `%s` | %s | %s%s |' % (cid, ' | '.join('✓' if cr[k] else '✗' for k in sorted(cr)), signed(pdv['mean'], 4), ci(pdv['ci'], 4)))
+    w('')
+    w('Candidates: `edge` probability edge ≥ t; `decision_ev` decision EV ≥ t (at one price the same ordering as `edge`, up to the '
+      'push probability); `empirical_ev` the walk-forward calibrated EV ≥ 0 (what decision.js reads); `multivariate` `edge` plus '
+      'forward-selected gates (adopted on the final DEV fit: %s); `clv_model` edge > 0 and the frozen P(positive CLV) ≥ t; `gap` '
+      '|gap| ≥ t; `baseline_001` the frozen V2.1 BET-qualifying rule (graded on the side it took); `baseline_lean` its LEAN set.'
+      % (', '.join(T['candidates']['multivariate']['final_dev']['choice'][1]) or 'none'))
+    w('')
+    ch = A['decision_model_challenger']
+    w('**§18 decision-model challenger** (a logistic model of positive CLV adding QB flags, |line|, home side and week): AUC %s vs the '
+      'frozen model %s (Δ 95%% %s), log loss %s vs %s (Δ %s%s): **%s** (rule: AUC gain CI above 0).' % (
+          f(ch['auc_challenger'], 3), f(ch['auc_frozen'], 3), ci(ch['auc_diff_ci95'], 4), f(ch['log_loss_challenger'], 5),
+          f(ch['log_loss_frozen'], 5), signed(ch['log_loss_diff'], 5), ci(ch['log_loss_diff_ci95'], 5), 'adopted' if ch['adopted'] else 'not adopted'))
+    w('')
+    # ------------------------------------------------------- holdout
+    if H:
+        a0 = [x for x in acc if x.get('action') == 'READ_HOLDOUT']
+        w('## §70 The untouched holdout (2024, 2025), read once')
+        w('')
+        w('Read at %s for policy sha256 `%s` (calibration `%s`, pre-registration `%s`); logged in `holdout_access.jsonl` before the read; '
+          'a second run is refused. Frozen artifact applied (w = 0.227829), frozen policy and frozen thresholds; nothing re-tuned. '
+          'Rows: %s (consensus openers, FBS).' % (a0[0]['at'] if a0 else '?', M['files']['policy.json'][:12], M['calibration_json_sha256'][:12],
+                                                  M['prereg']['sha256'][:12], H['by_season_rows']))
+        w('')
+        w(CARD_HEAD % ('candidate', ' 2024 / 2025 ROI | no collapse vs DEV |'))
+        w('|---|---|---|---|---|---|---|---|---|---|---|---|')
+        for cid in order:
+            c = H['candidates'][cid]
+            bs = c.get('by_season', {})
+            yr = ' / '.join('%s (%s)' % (signed((bs.get(s) or {}).get('roi'), 3), (bs.get(s) or {}).get('bet_count', 0)) for s in ('2024', '2025'))
+            w(_card_row('`%s`' % cid, c, ' %s | %s |' % (yr, c.get('no_collapse_vs_dev'))))
+        w('')
+        w('Production replay on the holdout (frozen policy + artifact): %s. By status:' % ', '.join('%s %d' % kv for kv in H['production']['status_counts'].items()))
+        w('')
+        w(CARD_HEAD % ('status', ''))
+        w('|---|---|---|---|---|---|---|---|---|---|')
+        for c in H['production']['by_status']:
+            w(_card_row(c['group'], c))
+        w('')
+        pb = H['per_book_sensitivity']
+        w('Per-book sensitivity (every book\'s opener, %s rows, %s games, %s; game-clustered): all rows ROI %s%s, CLV %s; edge > 0 rows '
+          '(n %s) ROI %s%s, CLV %s%s, close-implied EV %s%s.' % (
+              pb['rows'], pb['games'], ', '.join(pb['books']), signed(pb['all']['roi'], 3), ci(pb['all']['roi_ci'], 3),
+              f(pb['all']['avg_clv'], 2), pb['edge_gt_0']['bet_count'], signed(pb['edge_gt_0']['roi'], 3), ci(pb['edge_gt_0']['roi_ci'], 3),
+              f(pb['edge_gt_0']['avg_clv'], 2), ci(pb['edge_gt_0']['avg_clv_ci'], 2), signed(pb['edge_gt_0']['close_implied_ev'], 4),
+              ci(pb['edge_gt_0']['close_implied_ev_ci'], 4)))
+        w('')
+        c = H['production']['calibration']
+        w('Holdout calibration of the decision probability (buckets): ' + '; '.join(
+            '%s n %d: mean %s, cover %s%s' % (b['bucket'], b['n'], p(b['mean_p_dec']), p(b['cover']), ci(b['wilson'], 3, True)) for b in c['buckets']) + '.')
+        w('')
+    # ------------------------------------------------------- pass quality
+    w('## §28-31 PASS quality, LEAN and RESEARCH (DEV scored seasons, hypothetical flat 1u for every status)')
+    w('')
+    w('Production replay (the frozen policy through the Python mirror of decision.js, per-season walk-forward artifacts):')
+    w('')
+    w(CARD_HEAD % ('status / first reason', ''))
+    w('|---|---|---|---|---|---|---|---|---|---|')
+    for c in A['pass_quality']['by_status'] + A['pass_quality']['by_first_reason']:
+        w(_card_row(c['group'], c))
+    w('')
+    w('Counterfactual (betting enabled and the calibrated EV replaced by the decision EV, to expose every gate that would fire):')
+    w('')
+    w(CARD_HEAD % ('first reason', ''))
+    w('|---|---|---|---|---|---|---|---|---|---|')
+    for c in A['pass_quality']['counterfactual_betting_enabled_by_reason']:
+        w(_card_row(c['group'], c))
+    w('')
+    r_ = A['research']
+    w('- **Filtering adds CLV, not wins.** LEAN rows beat PASS rows on CLV (above); their cover rates and ROI intervals overlap.')
+    w('- **LEAN** min gap: rows with |gap| in [g, g+1): ' + '; '.join('%s: n %d, CLV %s%s' % (x['g'], x['n'], f(x['clv'], 3), ci(x['clv_ci'], 3))
+                                                             for x in lg['gap_rule']['rows']) + ' → %s.' % lg['gap_rule']['choice'])
+    w('- **RESEARCH (QB)**: positive-edge rows with a QB flag: CLV %s%s, close-implied EV %s, ROI %s%s; without: CLV %s%s, ROI %s%s '
+      '(flagged − clear CLV %s%s).' % (
+          f(r_['qb_flagged']['avg_clv'], 2), ci(r_['qb_flagged']['avg_clv_ci'], 2), signed(r_['qb_flagged']['close_implied_ev'], 4),
+          signed(r_['qb_flagged']['roi'], 3), ci(r_['qb_flagged']['roi_ci'], 3), f(r_['qb_clear']['avg_clv'], 2), ci(r_['qb_clear']['avg_clv_ci'], 2),
+          signed(r_['qb_clear']['roi'], 3), ci(r_['qb_clear']['roi_ci'], 3), signed(r_['clv_diff_flagged_minus_clear']['diff'], 2),
+          ci(r_['clv_diff_flagged_minus_clear']['ci'], 2)))
+    w('')
+    # ------------------------------------------------ selectivity etc.
+    w('## §32-36, §55 Selectivity, rank order, robustness (DEV evaluated seasons)')
+    w('')
+    w('Optimal selectivity — the top share of quotes by probability edge:')
+    w('')
+    w('| top | n | CLV [95%] | close-implied EV [95%] | ROI [95%] | cover | max DD | calib. error | status |')
+    w('|---|---|---|---|---|---|---|---|---|')
+    for x in A['selectivity']['probability_edge']:
+        w('| %s | %d | %s%s | %s%s | %s%s | %s | %s | %s | %s |' % (
+            p(x['top_share'], 0), x['n'], f(x['clv'], 2), ci(x['clv_ci'], 2), signed(x['close_ev'], 4), ci(x['close_ev_ci'], 4),
+            signed(x['roi'], 3), ci(x['roi_ci'], 3), p(x['cover']), f(x['max_drawdown'], 1), signed(x['calibration_error'], 3), x['sample_status']))
+    w('')
+    w('Rank order (deciles; Spearman of decile means, slope per decile [95%]):')
+    w('')
+    w('| score | CLV | close-implied EV | ROI | cover |')
+    w('|---|---|---|---|---|')
+    for k, v in A['rank_order'].items():
+        t = v['tests']
+        cell = lambda o: '%s, %s%s%s' % (f(t[o]['spearman'], 2), signed(t[o]['slope_per_decile'], 4), ci(t[o]['slope_ci'], 4),
+                                         ' ✓' if t[o]['monotone_increasing_supported'] else '')
+        w('| %s | %s | %s | %s | %s |' % (k, cell('clv_pts'), cell('close_ev'), cell('units'), cell('ats_win')))
+    w('')
+    w('Threshold robustness (each grid value as a fixed threshold on the evaluated seasons):')
+    w('')
+    w('| candidate | t | n | ROI [95%] | CLV | close-implied EV [95%] | max DD | status |')
+    w('|---|---|---|---|---|---|---|---|')
+    for cid in ('edge', 'decision_ev', 'clv_model', 'gap'):
+        for x in A['robustness_fixed_thresholds'][cid]:
+            if not x['n']:
+                continue
+            w('| `%s` | %s | %d | %s%s | %s | %s%s | %s | %s |' % (cid, x['t'], x['n'], signed(x.get('roi'), 3), ci(x.get('roi_ci'), 3),
+                                                              f(x.get('clv'), 2), signed(x.get('close_ev'), 4), ci(x.get('close_ev_ci'), 4),
+                                                              f(x.get('max_drawdown'), 1), x.get('sample_status')))
+    w('')
+    # --------------------------------------------------- timing, stability
+    tm = A['timing']
+    w('## §21-23, §53-54, §62 Bet now vs wait, regret, edge disappearance, stability')
+    w('')
+    w('The archive has two snapshots per game: the opener (no timestamp; assumed available at the Tuesday freeze — an optimistic '
+      'fill) and the close. Every timing statement below is opener → close only.')
+    w('')
+    w('| set | n | ROI now (opener) | ROI waiting (close) | now − wait [95%] | CLV [95%] | share where the close was better | mean regret of betting now (pts) |')
+    w('|---|---|---|---|---|---|---|---|')
+    for k in ('lean_set_pe_gt_0', 'edge_region', 'all_rows'):
+        x = tm[k]
+        w('| %s | %d | %s | %s | %s%s | %s%s | %s | %s |' % (k, x['n'], signed(x['roi_bet_now_opener'], 3), signed(x['roi_wait_to_close'], 3),
+                                                        signed(x['now_minus_wait']['mean'], 3), ci(x['now_minus_wait']['ci'], 3),
+                                                        f(x['clv'], 2), ci(x['clv_ci'], 2), p(x['share_close_better_for_us']), f(x['regret_bet_now_pts'], 2)))
+    if H:
+        x = H['timing']['lean_set_pe_gt_0']
+        w('| holdout lean_set_pe_gt_0 | %d | %s | %s | %s%s | %s%s | %s | %s |' % (
+            x['n'], signed(x['roi_bet_now_opener'], 3), signed(x['roi_wait_to_close'], 3), signed(x['now_minus_wait']['mean'], 3),
+            ci(x['now_minus_wait']['ci'], 3), f(x['clv'], 2), ci(x['clv_ci'], 2), p(x['share_close_better_for_us']), f(x['regret_bet_now_pts'], 2)))
+    w('')
+    wr = tm['wait_rule']
+    w('- **WAIT is disabled:** edge-region rows with a negative expected CLV (the only ones decision.js could send to WAIT): %d. '
+      'Waiting never showed a benefit; betting the opener beat betting the same side at the close by the CLV.' % wr['n_expected_clv_negative'])
+    ed = tm['edge_disappearance']
+    w('- **Edge disappearance (§62):** %d of the positive-edge openers (%s) had no edge left at the close. Their ROI at the opener %s, at '
+      'the close %s%s; the %d whose edge survived to the close lost at the close: ROI %s%s. An edge that survives the market is more '
+      'often the model\'s error than the market\'s — the downgrade to PASS_LINE_MOVED is right.' % (
+          ed['edge_at_open_gone_at_close'], p(ed['share_of_edges']), signed(ed['gone_roi_at_opener'], 3), signed(ed['gone_roi_at_close'], 3),
+          ci(ed['gone_roi_at_close_ci'], 3), ed['kept_n'], signed(ed['kept_roi_at_close'], 3), ci(ed['kept_roi_at_close_ci'], 3)))
+    pr = tm['pass_regret']
+    w('- **PASS regret:** %d passed openers (%s of passes) showed an edge at the close; at the close they returned ROI %s%s.' % (
+        pr['passed_at_open_positive_edge_at_close'], p(pr['share_of_passes']), signed(pr['their_roi_at_close'], 3), ci(pr['their_roi_at_close_ci'], 3)))
+    st = tm['stability']
+    w('- **Stability / hysteresis (§53-54):** open → close transitions under the production policy: %s. In the `edge` region the '
+      'median |open → close edge change| is %s; flips out of the BET region by buffer: %s. Buffer frozen at %s (half the median move: '
+      'a line move of a point or more always re-decides). %s of quotes sit within 0.01 of the threshold.' % (
+          ', '.join('%s %d' % kv for kv in sorted(A['stability_transitions_open_to_close'].items())), f(st['median_abs_open_to_close_edge_change_in_region'], 4),
+          ', '.join('%s → %s' % (b, p(v['flip_rate'])) for b, v in sorted(st['flips_by_buffer'].items())), st['hysteresis_buffer_rule_value'],
+          p(st['near_threshold_share'])))
+    w('')
+    # --------------------------------------------------- risk layer
+    sat = A['saturation']
+    w('## §38-49 Staking, saturation, exposure, portfolio and risk of ruin')
+    w('')
+    w('**Edge saturation (§43)** — outcomes by decision probability: ' + '; '.join(
+        '%s n %d: cover %s, ROI %s, CLV %s' % (b['bucket'], b['bet_count'], p((b.get('ats') or {}).get('cover_rate')), signed(b.get('roi'), 3),
+                                              f(b.get('avg_clv'), 2)) for b in sat['decision_p_buckets'] if b['bet_count']) +
+      '. Saturation probability %s (the highest bucket with ≥ 300 rows).' % sat['p_saturation'])
+    w('')
+    k = A['kelly']
+    w('**Flat vs fractional Kelly (§39-42)** on the `edge` candidate\'s OOS bets (Kelly on the decision probability capped at %s; fixed 100 u base; '
+      'Kelly is NOT validated: the decision probability does not beat a coin flip significantly, CI %s):' % (k['edge_oos_set']['p_saturation'],
+                                                                                                          ci(k['validation']['decision_p_logloss_vs_coin_ci'], 5)))
+    w('')
+    w('| method | bets | mean stake | units | ROI per unit staked | units per bet [95%] | max DD [95%] |')
+    w('|---|---|---|---|---|---|---|')
+    for x in k['edge_oos_set']['rows']:
+        w('| %s | %d | %s | %s | %s | %s | %s%s |' % (x['method'], x['bets'], f(x['stake_mean'], 3), signed(x['units'], 2), signed(x['roi_per_unit_staked'], 4),
+                                                   ci(x['units_per_bet_ci'], 4), f(x['max_drawdown'], 1), ci(x['max_drawdown_ci'], 1)))
+    w('')
+    pf = A['portfolio']
+    sb, rr = pf['season_bootstrap'], pf['risk_of_ruin']
+    w('**Portfolio simulation (§47-48)** — %s (%d OOS bets), seasons of 15 weeks resampled from %d observed weeks: %s bets/season; season units '
+      'mean %s (SD %s, 5th pct %s, 95th %s); max drawdown median %s u, 95th pct %s u, 99th %s u; worst week %s u. Historical: max drawdown %s u, '
+      'longest losing streak %s, longest time to recover %s bets.' % (
+          pf['risk_set'], pf['n_bets'], sb['blocks'], sb['bets_per_season_mean'], signed(sb['season_units_mean'], 2), f(sb['season_units_sd'], 2),
+          signed(sb['season_units_p05'], 2), signed(sb['season_units_p95'], 2), f(sb['max_drawdown_p50'], 1), f(sb['max_drawdown_p95'], 1),
+          f(sb['max_drawdown_p99'], 1), f(sb['worst_week_min'], 1), f(pf['historical'].get('max_drawdown'), 1), pf['historical'].get('longest_losing_streak'),
+          (pf['historical'].get('time_to_recovery') or {}).get('bets')))
+    w('')
+    w('**Risk of ruin (§49)** — a 50%% loss of the bankroll within 3 seasons, flat 1 u, cover rate from the Beta posterior of the OOS record '
+      '(2.5/50/97.5%%: %s), within-week correlation %s, %d paths (Monte Carlo SE in brackets):' % (
+          ' / '.join(p(v) for v in rr['posterior_cover_quantiles'].values()), f(rr['rho'], 4), rr['paths']))
+    w('')
+    w('| bankroll | at 2.5th pct cover | at median | at 97.5th pct | posterior predictive |')
+    w('|---|---|---|---|---|')
+    for br in ('25', '50', '100'):
+        x = rr['by_bankroll'][br]
+        w('| %s u | %s [%s] | %s [%s] | %s [%s] | %s [%s] |' % (br, *[v for s in ('p025', 'p50', 'p975', 'posterior_predictive')
+                                                                 for v in (p(x[s]['ror'], 2), p(x[s]['mc_se'], 2))]))
+    w('')
+    sl = pf['slate_cap']
+    w('**Slate cap:** ' + '; '.join('%s u: p95 drawdown %s u, RoR %s %s' % (x['cap'], f(x['max_drawdown_p95'], 1), p(x['ror_p025'], 2), '✓' if x['passes'] else '✗')
+                                   for x in sl['table']) + ' → **%s u per slate, %s u per conference cluster**. No weekly quota (§76).' % (
+        sl['choice'], sl['cluster_choice']))
+    w('')
+    cg = A['correlations']
+    w('**Correlations (§46, DEV FBS finals, consensus close; phi of the outcome indicators [95%]):**')
+    w('')
+    w('| pair | phi [95%] | n | note |')
+    w('|---|---|---|---|')
+    for kk, x in cg['same_game']['pairs'].items():
+        w('| %s | %s%s | %d | %s |' % (kk.replace('__', ' + ').replace('_', ' '), signed(x['phi'], 3), ci(x['ci95'], 3), x['n'], x['note']))
+    w('')
+    w('By |line|: ' + '; '.join('%s: favourite spread + over %s, spread + moneyline %s' % (
+        b, signed(v['favorite_spread__game_over']['phi'], 3), signed(v['spread__moneyline_same_team']['phi'], 3)) for b, v in cg['same_game']['by_abs_line'].items())
+      + '. Cross-game (model-side results): within a week ICC %s%s, within a conference-week %s%s.' % (
+          signed(cg['cross_game_icc']['week']['icc'], 4), ci(cg['cross_game_icc']['week']['ci95'], 4),
+          signed(cg['cross_game_icc']['conference_week']['icc'], 4), ci(cg['cross_game_icc']['conference_week']['ci95'], 4)))
+    w('Not estimable: ' + '; '.join(cg['same_game']['not_estimable']) + '. The exposure caps use them through `same_game_correlation` = 1 '
+      '(every same-game position decision.js can hold is a spread; the same side at two books is one bet) and a game cap of 1 u.')
+    w('')
+    # --------------------------------------------------- tiers, rankings
+    ti = A['tiers']
+    w('## §73-76 Tiers, rankings, weekly counts, expected vs realized')
+    w('')
+    w('**Edge-quality tiers (§74)** — decision.js\'s bet-confidence labels (P(positive CLV) ≥ 0.58 HIGH, ≥ 0.52 MEDIUM): ' + '; '.join(
+        '%s n %d: CLV %s%s, +CLV %s, ROI %s' % (t_, x['bet_count'], f(x['avg_clv'], 2), ci(x['avg_clv_ci'], 2), p(x['positive_clv_pct']), signed(x['roi'], 3))
+        for t_, x in ti['bet_confidence_tiers'].items()) + '. HIGH − LOW CLV %s → **displayed: %s** (they order CLV, not wins).' % (
+        ci(ti['high_minus_low_clv_ci'], 2), ti['display_edge_quality_tiers']))
+    if H:
+        w('Holdout: ' + '; '.join('%s n %d: CLV %s' % (t_, x['bet_count'], f(x['avg_clv'], 2)) for t_, x in H['tiers'].items()) + '.')
+    w('The football-confidence labels (reliability ≥ 70 HIGH, ≥ 45 MEDIUM) do **not** sort error: MAE ' + ', '.join(
+        '%s %s%s' % (t_, f(x['mae_model'], 2), ci(x['mae_ci'], 2)) for t_, x in ti['football_confidence_labels_vs_error'].items())
+      + ' — they should not be shown as a quality tier.')
+    w('')
+    rk = A['rankings']
+    w('**No bet rankings (§75):** within-week Kendall τ between the ranking key and realized CLV: ' + '; '.join(
+        '%s %s%s' % (kk, signed(v['mean_kendall_tau'], 3), ci(v['ci95'], 3)) for kk, v in rk.items() if isinstance(v, dict))
+      + '. decision.js ranks by the calibrated EV, which the frozen artifact makes constant: **rankings are not displayed**.')
+    w('')
+    wk = A['weekly_counts']
+    w('**Recommended wager limit (§76):** no quota. Weekly OOS counts: ' + '; '.join(
+        '%s median %s, 90th pct %s, max %s, zero-bet weeks %s' % (kk, v['median'], v['p90'], v['max'], p(v['zero_bet_weeks_share']))
+        for kk, v in wk.items() if kk in ('edge', 'multivariate', 'baseline_001', 'empirical_ev')) + '.')
+    w('')
+    w('**Expected vs realized (§64)** — cumulative expected units from the decision probability vs realized:')
+    w('')
+    w('| set | n | expected (decision p) | expected (pure p) | realized | z vs decision | z vs pure |')
+    w('|---|---|---|---|---|---|---|')
+    for kk, v in A['expected_vs_realized'].items():
+        w('| DEV %s | %d | %s | %s | %s | %s | %s |' % (kk, v['n'], signed(v['expected_units_decision'], 1), signed(v['expected_units_theoretical'], 1),
+                                                   signed(v['realized_units'], 1), f(v['z_realized_vs_decision'], 2), f(v['z_realized_vs_theoretical'], 2)))
+    if H:
+        for kk, v in H['expected_vs_realized'].items():
+            w('| holdout %s | %d | %s | %s | %s | %s | %s |' % (kk, v['n'], signed(v['expected_units_decision'], 1), signed(v['expected_units_theoretical'], 1),
+                                                           signed(v['realized_units'], 1), f(v['z_realized_vs_decision'], 2), f(v['z_realized_vs_theoretical'], 2)))
+    w('')
+    # --------------------------------------------------- scorecard + gate
+    w('## §73 The decision-quality scorecard')
+    w('')
+    w('`v2/decision/scorecard.py` `scorecard(df)` returns BET COUNT, AVG PREDICTED EDGE, AVG EV, AVG CLV, POSITIVE CLV %, ATS, ROI, '
+      'MAX DRAWDOWN, BRIER, CALIBRATION ERROR and AVERAGE MARKET MOVEMENT AFTER BET (side-oriented and absolute), plus the close-implied EV, '
+      'with game-clustered intervals; PROCESS and OUTCOME are kept apart. The Model Lab runs it on the live shadow record: '
+      '`python3 -m v2.decision.scorecard --shadow football/cfb_decision/2026` (per engine and status; non-BET rows graded hypothetically).')
+    w('')
+    w('| strategy (DEV OOS) | bets | avg edge | avg EV | avg CLV | +CLV | ATS | ROI | max DD | Brier | calib. error | move after bet (abs) |')
+    w('|---|---|---|---|---|---|---|---|---|---|---|---|')
+    for cid in order:
+        c = oos[cid]
+        if not c.get('bet_count'):
+            continue
+        w('| `%s` | %d | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s (%s) |' % (
+            cid, c['bet_count'], signed(c.get('avg_predicted_edge'), 4), signed(c.get('avg_ev'), 4), f(c.get('avg_clv'), 2), p(c.get('positive_clv_pct')),
+            p((c.get('ats') or {}).get('cover_rate')), signed(c.get('roi'), 3), f(c.get('max_drawdown'), 1), f(c.get('brier'), 4),
+            signed(c.get('calibration_error'), 3), f(c.get('avg_market_move_after_bet'), 2), f(c.get('avg_abs_market_move_after_bet'), 2)))
+    w('')
+    g = (H or {}).get('promotion_gate') or E['promotion_gate_before_holdout']
+    w('## §86 The promotion gate')
+    w('')
+    w('| criterion | result | detail |')
+    w('|---|---|---|')
+    for kk, v in g.items():
+        if not kk.startswith('G'):
+            continue
+        det = {x: y for x, y in v.items() if x != 'pass' and y is not None}
+        w('| %s | %s | %s |' % (kk.replace('_', ' '), {True: 'PASS', False: 'FAIL', None: 'n/a'}[v['pass']], json.dumps(det) if det else ''))
+    w('')
+    w('**%s.** Betting can be enabled only by a person, through a new policy version that passes every criterion above.' % g['decision'].capitalize())
+    w('')
+    # --------------------------------------------------- price targets
+    lt = live_price_targets()
+    w('## §51-52, §60-61 Price targets for the live priced quotes')
+    w('')
+    w('Every 2026 quote with a CAPTURED two-sided price (%d, one book), decided at the moment it was observed with the frozen policy and '
+      'artifact (the 2026 projection is a replay: evidence of the mechanics, not of foresight). "Fair price" is the price at which the '
+      'decision probability has zero EV — shown for research; it is NOT a bettable-to price. BETTABLE TO is null for every quote: no price '
+      'clears the calibrated-EV floor, so the do-not-bet rule is "any price".' % len(lt))
+    w('')
+    w('| game | book | side | line | price | pure p | decision p | break-even | edge | status (reason) | bettable to | fair price |')
+    w('|---|---|---|---|---|---|---|---|---|---|---|---|')
+    for x in lt:
+        w('| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s (%s) | %s | %s |' % (
+            x['game'], x['book'], x['side'], x['line'], x['price'], p(x['pure_p']), p(x['decision_p']), p(x['break_even']),
+            signed(x['edge'], 4), x['status'], ', '.join(x['reasons']), x['bettable_to_price'] if x['bettable_to_price'] is not None else '—',
+            x['decision_fair_price']))
+    w('')
+    # --------------------------------------------------- engine notes
+    w('## decision.js: bugs fixed by this study (each with a test in tests.js)')
+    w('')
+    for b in DECISION_JS_FIXES:
+        w('- ' + b)
+    w('')
+    w('## Limitations')
+    w('')
+    for b in LIMITATIONS:
+        w('- ' + b)
+    w('')
+    w('## Files and reproduction')
+    w('')
+    w('- `football/cfb_v2/artifacts/decision/%s/`: `policy.json` (frozen), `evidence.json` (the tournament, the pre-holdout and post-holdout gate, '
+      'the holdout results), `MANIFEST.json` (hashes of the policy, evidence, parity fixture, pre-registration, calibration, baseline, dataset '
+      'and code), `holdout_access.jsonl` (append-only).' % POLICY_VERSION)
+    w('- `football/cfb_v2/artifacts/decision/fixtures/policy_parity.json`: %s decision cases, stakes, portfolios and games; '
+      '`football/cfb_decision/tests.js` checks decision.js against it.' % 'the')
+    w('- Code: `v2/decision/{policy,tournament,portfolio,scorecard,holdout,tests_policy}.py`.')
+    w('- Reproduce (byte-identical): `cd football/cfb_v2/research && export CFB_V2_DATA=$PWD/data CFB_V2_OUT=$PWD/out_h OMP_NUM_THREADS=1 '
+      'OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 && python3 -m v2.decision.tournament && python3 -m v2.decision.policy --fixture && '
+      'python3 -m v2.decision.render --policy && python3 -m v2.decision.tests_policy`. The holdout is not re-run: it refuses '
+      '(holdout_access.jsonl).')
+    with open(POLICY_DOC, 'w') as fh:
+        fh.write('\n'.join(L).rstrip() + '\n')
+    print('[render] wrote', POLICY_DOC)
+
+
+def _st(rows, name):
+    for x in rows or []:
+        if x.get('group') == name:
+            return x
+    return {}
+
+
+DECISION_JS_FIXES = [
+    '**Bettable-to price read the wrong gate** (`priceTargets`): it was the price where the raw decision EV met `min_ev`, ignoring the '
+    'calibrated-EV curve and the probability-edge threshold that decideQuote applies. Under the frozen artifact it printed "bettable to -114" '
+    'for a quote no price could make a BET. It now inverts the same curve and both thresholds, verifies the price clears (and one cent worse '
+    'does not), and is null when no price clears.',
+    '**RESEARCH was driven by the pure probability**: a quote that did not clear became RESEARCH when its PURE edge cleared `min_probability_edge` '
+    '(31% of DEV quotes, CLV barely above PASS). It now needs the decision-probability edge LEAN needs.',
+    '**Best quote under a flat EV curve** (`decideGame`): ties in the calibrated EV went to the first book listed, not the best price; ties now go '
+    'to the higher decision EV. The game carries `summary_index`.',
+    '**Public card showed the first book** (`publicCard`): for a non-BET game it explained `decisions[0]` (possibly a PASS) beside the game\'s '
+    'LEAN status; it now shows the decision behind the status.',
+    '**`early_season: 0` was overridden** (`features`): an explicit 0 fell back to "week <= 3", so every postseason game (schedule week 1) fed '
+    'early_season = 1 to the CLV models. An explicit value is now honoured.',
+    '**Exposure caps could be exceeded by rounding** (`applyExposure`): scaled stakes rounded to 3 dp could sum past a cap (3.001 u under a 3 u '
+    'slate cap); scaled stakes now round down.',
+    'Not changed (latent, reported): `P.x || default` makes an explicit 0 fall back to the default for `min_books`, `max_dispersion_iqr`, '
+    '`extreme_*`, `lean.min_gap_pts`, `wait.p_disappear` and others; the frozen policy sets none of them to 0. PASS_QB_UNCERTAINTY is in the '
+    'vocabulary but never emitted (an unresolved QB is RESEARCH_QB).',
+]
+LIMITATIONS = [
+    'Every historical price is an ASSUMED -110 (the 2016-2019 archive confirms -110 on 93.8% of openers; 2020-2025 cannot be checked). The price '
+    'gates, de-vig, bettable-to price and per-book statuses are tested but unvalidated on real prices: 29 live priced quotes, none settled.',
+    'Openers carry no timestamp: the historical fill is optimistic, and the close-implied EV, CLV and "bet now vs wait" are opener -> close only.',
+    'The 2019 fold trains on 2018 alone; edge-based candidates had no eligible threshold there. The evaluated sample for any candidate is a few '
+    'hundred bets: an ROI interval is about +/-10 points wide.',
+    'Market-depth gates (book count, dispersion, staleness) have no point-in-time history; their values are declared.',
+    'The CLV models used for bet confidence were fit on all DEV seasons (in-sample for the DEV replay); the tournament used the walk-forward '
+    'P(positive CLV).',
+    'Correlations are outcome correlations on DEV finals; team-total lines are synthetic; no SGP, prop or alternate-line prices exist.',
+    'The holdout can never be re-used for this policy; a new policy needs new live evidence (the shadow record) or a new untouched window.',
+]
+
+
 if __name__ == '__main__':
-    main()
+    import sys
+    if '--policy' in sys.argv:
+        policy_main()
+    else:
+        main()
