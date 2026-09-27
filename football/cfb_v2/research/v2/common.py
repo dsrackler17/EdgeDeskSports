@@ -142,10 +142,12 @@ def stamp_build(stage, **info):
     return b['stages'][stage]
 
 
-def require_build(feature_version=None, purpose='this step', stages=('stage2', 'stage5')):
+def require_build(feature_version=None, purpose='this step', stages=('stage2', 'stage5'), between_var_rule=None):
     """The stamp of $CFB_V2_OUT, or StaleBuild when the build is not the current code's:
     no stamp; stage 2 built under another finality rule; stage 5 missing, of another
-    feature schema (the artifact's `feature_version`), or built from an earlier stage 2."""
+    feature schema (the artifact's `feature_version`), or built from an earlier stage 2;
+    with `between_var_rule` (the artifact's stage-3 rule, audit F-21), stage 5 built
+    from stage-3 ratings of another rule (a stage 5 that records none is the legacy rule)."""
     from . import games as GM                  # games imports common: resolved at call time
     b = build_stamp()
     why = []
@@ -167,6 +169,13 @@ def require_build(feature_version=None, purpose='this step', stages=('stage2', '
                                % (s5.get('feature_version'), feature_version))
                 if s2 and (s5.get('stage2') or {}).get('built_at') != s2.get('built_at'):
                     why.append('stage 5 was built from an earlier stage 2 (rebuild stages 3-5)')
+                if between_var_rule:
+                    from .build_ratings import LEGACY_BETWEEN_VAR_RULE
+                    got = s5.get('between_var_rule', LEGACY_BETWEEN_VAR_RULE)
+                    if got != between_var_rule:
+                        why.append('stage 5 was built from stage-3 ratings of between-variance rule %s, the '
+                                   'artifact was trained on %s (set CFB_V2_BETWEEN_VAR_RULE and rebuild stages 3-5)'
+                                   % (got, between_var_rule))
     if why:
         raise StaleBuild('%s refused: CFB_V2_OUT=%s is not a current build: %s'
                          % (purpose, os.path.abspath(C.OUT), '; '.join(why)))

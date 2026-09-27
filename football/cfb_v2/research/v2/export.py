@@ -148,6 +148,14 @@ def main(report_path=None):
                                'iso': {'x': unc['iso_x'], 'y': unc['iso_y']}},
            'market': L['market'], 'rule': L['rule'], 'reliability_range': L['rel_range'],
            'families': {'C': L['fam_C'], 'D': L['fam_D']}}
+    # the stage-3 between-variance rule the features were built with (audit F-21): recorded
+    # only when it is not the legacy rule, so a legacy export is unchanged; scoring refuses
+    # features of another rule and stage 3 follows the rule of C.MODEL_VERSION's artifact
+    from .build_ratings import LEGACY_BETWEEN_VAR_RULE
+    bv_rule = (((common.build_stamp() or {}).get('stages') or {}).get('stage5') or {}).get(
+        'between_var_rule', LEGACY_BETWEEN_VAR_RULE)
+    if bv_rule != LEGACY_BETWEEN_VAR_RULE:
+        art['between_var_rule'] = bv_rule
     common.write_json(os.path.join(adir, 'models.json'), art)
     meta = {'model_version': ver, 'generated_at': common.iso(datetime.now(timezone.utc)),
             'monitoring_reference': monitoring_reference(L['W']),
