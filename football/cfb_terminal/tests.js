@@ -275,16 +275,33 @@ section('12. watchlist, personal books, brief, record helpers');
 section('13. the real slate, from the committed production artifacts');
 {
   const B = require('./build.js');
-  const board = JSON.parse(fs.readFileSync(path.join(__dirname, 'board.json'), 'utf8'));
-  const games = JSON.parse(fs.readFileSync(path.join(__dirname, 'games.json'), 'utf8')).games;
+  /* The committed board/games are a CACHE: the hourly football build can
+     refresh the slate between the terminal's build and this test, so the
+     rules are held on a FRESH build from the current inputs (written to a
+     temp dir, no history), and the cache is compared only with the slate it
+     records it was built from. */
+  const os = require('os');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cfb-terminal-'));
+  const fresh = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'build.js'), '--out', tmp], { encoding: 'utf8' });
+  ok('a fresh build from the current inputs succeeds', fresh.status === 0, (fresh.stderr || fresh.stdout || '').slice(0, 300));
+  const board = JSON.parse(fs.readFileSync(path.join(tmp, 'board.json'), 'utf8'));
+  const games = JSON.parse(fs.readFileSync(path.join(tmp, 'games.json'), 'utf8')).games;
   const slate = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'fbs', 'slate.json'), 'utf8'));
   const gov = B.loadGovernance();
   const objs = Object.keys(games).map((k) => games[k]);
   ok('the artifacts carry the governance champion', board.champion.model_version === gov.champion);
   const bySlate = {}; slate.games.forEach((g) => { bySlate[String(g.game_id)] = g; });
-  const mism = objs.filter((o) => o.edgedesk.available && bySlate[o.game_id] && board.champion.model_version === 'edgedesk_cfb_p4_v1.0.0'
-    && bySlate[o.game_id].generated_at_match !== false && Math.abs(o.edgedesk.home_margin - bySlate[o.game_id].model_home_margin) > 0.005);
-  ok('every research page’s fair line equals the champion slate’s (when built from this slate)', board.generated_at < slate.generated_at || mism.length === 0, mism.map((o) => o.game_id));
+  const mismatches = (list) => list.filter((o) => o.edgedesk.available && bySlate[o.game_id] && gov.champion === 'edgedesk_cfb_p4_v1.0.0'
+    && Math.abs(o.edgedesk.home_margin - bySlate[o.game_id].model_home_margin) > 0.005).map((o) => o.game_id);
+  ok('every research page’s fair line equals the champion slate’s', mismatches(objs).length === 0, mismatches(objs));
+  const cacheBoard = JSON.parse(fs.readFileSync(path.join(__dirname, 'board.json'), 'utf8'));
+  const builtFrom = ((cacheBoard.sources || []).filter((x) => x.id === 'slate')[0] || {}).updated_at || null;
+  ok('the committed cache names the slate it was built from', !!builtFrom);
+  if (builtFrom === slate.generated_at) {
+    const cached = JSON.parse(fs.readFileSync(path.join(__dirname, 'games.json'), 'utf8')).games;
+    const cm = mismatches(Object.keys(cached).map((k) => cached[k]));
+    ok('and, built from this very slate, it carries the same fair lines', cm.length === 0, cm);
+  }
   ok('no stale market carries an actionable status', objs.every((o) => !(o.market.stale && ['BET', 'RESEARCH', 'WAIT'].indexOf(o.status.key) >= 0)));
   ok('no BET while the policy has betting off', board.decision.bet_enabled || objs.every((o) => o.status.key !== 'BET'));
   ok('every timeline point is at or before the build and the kickoff', objs.every((o) => o.timeline.model.concat(o.timeline.market).every((p) => Date.parse(p.at) <= Date.parse(o.built_at) && Date.parse(p.at) <= Date.parse(o.kickoff))));
