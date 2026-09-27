@@ -1,0 +1,1009 @@
+{
+ "bugs_fixed": {
+  "F-01": "finality: FINAL needs completed == True, an uncontradicted provider status / PBP and a non-tie score; IN_PROGRESS, CANCELED, POSTPONED and DATA_ERROR are never results (rule cfb_v2_finality_v2)",
+  "F-02": "every published / replayed row carries model_version and build provenance; grading attributes each row to the version that produced it",
+  "F-10": "build directories are stamped (BUILD.json); publishing and grading refuse an unstamped or stale build",
+  "F-11": "market orientation by team id against the schedule, stray abbreviations ignored, swapped-id games without side lines, declared book-sign rule (rule cfb_market_orientation_v2)",
+  "F-15": "the outcome scan is a standing test with declared thresholds (v2/tests_leakage.py)"
+ },
+ "bugs_that_change_this_artifact": [
+  "F-01",
+  "F-11"
+ ],
+ "created_by": "EdgeDesk CFB audit patch engineer (v2.1.1)",
+ "data_diff": {
+  "games_that_changed_status": [
+   {
+    "feed_score": [
+     0,
+     0
+    ],
+    "game": "App State vs Liberty",
+    "game_id": 401640992,
+    "reason": "provider status STATUS_CANCELED",
+    "season": 2024,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "CANCELED",
+    "week": 5
+   },
+   {
+    "feed_score": [
+     13,
+     31
+    ],
+    "game": "Michigan State vs Nebraska",
+    "game_id": 401858464,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_IN_PROGRESS and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     20,
+     24
+    ],
+    "game": "Penn State vs Wisconsin",
+    "game_id": 401858466,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_IN_PROGRESS and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     42,
+     3
+    ],
+    "game": "Virginia vs Delaware",
+    "game_id": 401858239,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_IN_PROGRESS and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     63,
+     10
+    ],
+    "game": "Texas State vs Incarnate Word",
+    "game_id": 401860892,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_IN_PROGRESS and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     20,
+     3
+    ],
+    "game": "Florida International vs Long Island University",
+    "game_id": 401867909,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_IN_PROGRESS and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     20,
+     46
+    ],
+    "game": "Old Dominion vs James Madison",
+    "game_id": 401869961,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_IN_PROGRESS and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     52,
+     3
+    ],
+    "game": "Miami vs Central Michigan",
+    "game_id": 401858238,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_HALFTIME and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     7,
+     34
+    ],
+    "game": "Charlotte vs Louisiana",
+    "game_id": 401862780,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_HALFTIME and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     21,
+     3
+    ],
+    "game": "Alabama vs South Carolina",
+    "game_id": 401856696,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     7,
+     10
+    ],
+    "game": "Cincinnati vs Kansas State",
+    "game_id": 401856814,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     14,
+     13
+    ],
+    "game": "West Virginia vs Oklahoma State",
+    "game_id": 401856881,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     14,
+     7
+    ],
+    "game": "Tulane vs Southern Miss",
+    "game_id": 401862784,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     17,
+     14
+    ],
+    "game": "Arkansas State vs Kennesaw State",
+    "game_id": 401869931,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_HALFTIME and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     52,
+     7
+    ],
+    "game": "Western Kentucky vs Mercyhurst",
+    "game_id": 401870745,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_IN_PROGRESS and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     23,
+     13
+    ],
+    "game": "Jacksonville State vs Middle Tennessee",
+    "game_id": 401871048,
+    "reason": "sources disagree: completed flag and a score but provider status STATUS_IN_PROGRESS and PBP status_type_completed is false",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     7,
+     0
+    ],
+    "game": "LSU vs Texas A&M",
+    "game_id": 401856702,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     14,
+     0
+    ],
+    "game": "Washington State vs Arizona",
+    "game_id": 401856804,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     7,
+     3
+    ],
+    "game": "USC vs Oregon",
+    "game_id": 401858469,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     7,
+     7
+    ],
+    "game": "Utah State vs Troy",
+    "game_id": 401860894,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     14,
+     14
+    ],
+    "game": "North Texas vs Houston Christian",
+    "game_id": 401862783,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     14,
+     0
+    ],
+    "game": "NC State vs App State",
+    "game_id": 401864572,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     7,
+     0
+    ],
+    "game": "Mississippi State vs Missouri",
+    "game_id": 401856703,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     3,
+     0
+    ],
+    "game": "Arkansas vs Tulsa",
+    "game_id": 401856697,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   },
+   {
+    "feed_score": [
+     0,
+     0
+    ],
+    "game": "UL Monroe vs Florida Atlantic",
+    "game_id": 401862782,
+    "reason": "a score without the completed flag (partial score, provider status STATUS_IN_PROGRESS)",
+    "season": 2026,
+    "v2.1.0": "FINAL",
+    "v2.1.1": "IN_PROGRESS",
+    "week": 4
+   }
+  ],
+  "market_fields_changed_in_stage2": {
+   "fbs_vs_fbs_fields": 38,
+   "n_fields": 54,
+   "n_games": 41,
+   "rows": [
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 292690328,
+     "season": 2009,
+     "v2.1.0": 19.5,
+     "v2.1.1": 19.75,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 322592294,
+     "season": 2012,
+     "v2.1.0": 11.0,
+     "v2.1.1": 11.25,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 322870142,
+     "season": 2012,
+     "v2.1.0": -21.0,
+     "v2.1.1": -21.25,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 332410084,
+     "season": 2013,
+     "v2.1.0": 24.75,
+     "v2.1.1": 25.0,
+     "why": "2 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 332420012,
+     "season": 2013,
+     "v2.1.0": 30.75,
+     "v2.1.1": 31.0,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 332430356,
+     "season": 2013,
+     "v2.1.0": 16.75,
+     "v2.1.1": 17.0,
+     "why": "2 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_open",
+     "game_id": 400548095,
+     "season": 2014,
+     "v2.1.0": null,
+     "v2.1.1": 18.0,
+     "why": "other"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 400548095,
+     "season": 2014,
+     "v2.1.0": null,
+     "v2.1.1": 16.5,
+     "why": "other"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 400763401,
+     "season": 2015,
+     "v2.1.0": -1.75,
+     "v2.1.1": -2.0,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_open",
+     "game_id": 400868915,
+     "season": 2016,
+     "v2.1.0": 0.0,
+     "v2.1.1": 33.0,
+     "why": "abbreviation resolved by elimination"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 400868915,
+     "season": 2016,
+     "v2.1.0": 0.0,
+     "v2.1.1": 33.5,
+     "why": "abbreviation resolved by elimination"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 400869100,
+     "season": 2016,
+     "v2.1.0": -1.5,
+     "v2.1.1": -1.75,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 400955153,
+     "season": 2017,
+     "v2.1.0": -1.75,
+     "v2.1.1": -2.0,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_open",
+     "game_id": 401013374,
+     "season": 2018,
+     "v2.1.0": 0.0,
+     "v2.1.1": 44.5,
+     "why": "abbreviation resolved by elimination"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 401013374,
+     "season": 2018,
+     "v2.1.0": 0.0,
+     "v2.1.1": 46.0,
+     "why": "abbreviation resolved by elimination"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_open",
+     "game_id": 401082044,
+     "season": 2018,
+     "v2.1.0": 0.0,
+     "v2.1.1": 42.5,
+     "why": "abbreviation resolved by elimination"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 401082044,
+     "season": 2018,
+     "v2.1.0": 0.0,
+     "v2.1.1": 40.5,
+     "why": "abbreviation resolved by elimination"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_open",
+     "game_id": 401119255,
+     "season": 2019,
+     "v2.1.0": 0.0,
+     "v2.1.1": 46.5,
+     "why": "abbreviation resolved by elimination"
+    },
+    {
+     "fbs_vs_fbs": false,
+     "field": "spread_close",
+     "game_id": 401119255,
+     "season": 2019,
+     "v2.1.0": 0.0,
+     "v2.1.1": 41.5,
+     "why": "abbreviation resolved by elimination"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401207166,
+     "season": 2020,
+     "v2.1.0": -1.0,
+     "v2.1.1": -1.25,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401237105,
+     "season": 2020,
+     "v2.1.0": -14.0,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401249003,
+     "season": 2020,
+     "v2.1.0": -13.5,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401249033,
+     "season": 2020,
+     "v2.1.0": 2.5,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401301056,
+     "season": 2021,
+     "v2.1.0": -8.5,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401301056,
+     "season": 2021,
+     "v2.1.0": 7.0,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401403867,
+     "season": 2022,
+     "v2.1.0": 3.0,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401403867,
+     "season": 2022,
+     "v2.1.0": 4.5,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401520167,
+     "season": 2023,
+     "v2.1.0": -2.75,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401520167,
+     "season": 2023,
+     "v2.1.0": 2.5,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401520386,
+     "season": 2023,
+     "v2.1.0": -3.5,
+     "v2.1.1": null,
+     "why": "field unresolved by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401520445,
+     "season": 2023,
+     "v2.1.0": -1.75,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401520445,
+     "season": 2023,
+     "v2.1.0": -2.0,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401524046,
+     "season": 2023,
+     "v2.1.0": 6.0,
+     "v2.1.1": null,
+     "why": "field unresolved by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401551749,
+     "season": 2023,
+     "v2.1.0": 4.0,
+     "v2.1.1": 4.25,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401551755,
+     "season": 2023,
+     "v2.1.0": 15.0,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401551755,
+     "season": 2023,
+     "v2.1.0": 17.75,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401551767,
+     "season": 2023,
+     "v2.1.0": -6.25,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401551767,
+     "season": 2023,
+     "v2.1.0": -10.5,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401628369,
+     "season": 2024,
+     "v2.1.0": 3.0,
+     "v2.1.1": 3.25,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401628438,
+     "season": 2024,
+     "v2.1.0": -14.5,
+     "v2.1.1": -14.75,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401628505,
+     "season": 2024,
+     "v2.1.0": 2.5,
+     "v2.1.1": 2.75,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401635569,
+     "season": 2024,
+     "v2.1.0": -15.0,
+     "v2.1.1": -15.25,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401677085,
+     "season": 2024,
+     "v2.1.0": -7.25,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401677085,
+     "season": 2024,
+     "v2.1.0": -12.5,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401677093,
+     "season": 2024,
+     "v2.1.0": 2.75,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401677093,
+     "season": 2024,
+     "v2.1.0": 3.5,
+     "v2.1.1": null,
+     "why": "archive ids swapped: side lines not used"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401752745,
+     "season": 2025,
+     "v2.1.0": 1.5,
+     "v2.1.1": 2.0,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401752792,
+     "season": 2025,
+     "v2.1.0": -2.5,
+     "v2.1.1": -2.75,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401752875,
+     "season": 2025,
+     "v2.1.0": 1.5,
+     "v2.1.1": 2.25,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401752893,
+     "season": 2025,
+     "v2.1.0": -11.5,
+     "v2.1.1": -12.5,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401752895,
+     "season": 2025,
+     "v2.1.0": 2.5,
+     "v2.1.1": 2.75,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_close",
+     "game_id": 401752936,
+     "season": 2025,
+     "v2.1.0": -2.5,
+     "v2.1.1": -2.75,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401754591,
+     "season": 2025,
+     "v2.1.0": -5.5,
+     "v2.1.1": -6.0,
+     "why": "1 book line(s) dropped by the sign rule"
+    },
+    {
+     "fbs_vs_fbs": true,
+     "field": "spread_open",
+     "game_id": 401756955,
+     "season": 2025,
+     "v2.1.0": -2.0,
+     "v2.1.1": -2.25,
+     "why": "1 book line(s) dropped by the sign rule"
+    }
+   ]
+  },
+  "market_v1_archive_qa": {
+   "archive_ids_swapped_games": [
+    401237105,
+    401249003,
+    401249033,
+    401301056,
+    401403867,
+    401520167,
+    401520445,
+    401551755,
+    401551767,
+    401677085,
+    401677093
+   ],
+   "book_lines_dropped": {
+    "close": 170,
+    "open": 23
+   },
+   "dropped_by_book": {
+    "5Dimes & sportbet": 2,
+    "BOVADA & bodog": 10,
+    "BetCRIS & BOOKMAKER": 6,
+    "Bovada": 11,
+    "DraftKings": 22,
+    "ESPN Bet": 5,
+    "JUSTBET": 66,
+    "MATCHBOOK": 15,
+    "MY BOOKIE": 1,
+    "PINNACLE": 1,
+    "SBR": 2,
+    "Sports Interaction": 18,
+    "William Hill (New Jersey)": 1,
+    "bet365": 1,
+    "consensus": 6,
+    "intertops": 26,
+    "nitrogen sports": 3,
+    "youwager.eu": 3
+   },
+   "fields_unresolved": {
+    "close": 1,
+    "open": 2
+   },
+   "games": 17494,
+   "games_with_a_dropped_line": 171,
+   "rule": "cfb_market_orientation_v2",
+   "sides_by_elimination_games": 15,
+   "sides_unresolved_games": 208,
+   "sign_rule_min_abs": 3.0
+  },
+  "rest_days_changed": [
+   {
+    "game": "App State vs Liberty",
+    "game_id": 401640992,
+    "rest_diff_v2.1.0": 1.9375000000000009,
+    "rest_diff_v2.1.1": null
+   },
+   {
+    "game": "Marshall vs App State",
+    "game_id": 401643799,
+    "rest_diff_v2.1.0": 0.0,
+    "rest_diff_v2.1.1": -8.833333333333334
+   },
+   {
+    "game": "Liberty vs Florida International",
+    "game_id": 401640982,
+    "rest_diff_v2.1.0": 0.10416666666666785,
+    "rest_diff_v2.1.1": 7.000000000000002
+   }
+  ],
+  "stage2_games_2009_2023_rows_identical": true,
+  "stage2_games_sha256": {
+   "v2.1.0": "f6fb1e17d31947abba317673439bed4972f9e572bf0a3c0ff82b1ec10c2f5758",
+   "v2.1.1": "d303b6086a32cfaa6a51274ede8f763e6862e3b11cc797e5be80338c78e011a4"
+  },
+  "stage2_market_sha256": {
+   "v2.1.0": "d66c92629651a30472cf3bf43e4a8aee2cdc051406e842b3e5779c388b5a4032",
+   "v2.1.1": "d7d9c7c1b81625d7557e937c627f395ddec6fb8d673643a7d6b44e2687142f4b"
+  },
+  "training_rows_removed": [
+   {
+    "from": "the 2025 and 2026 walk-forward fits (and so this artifact), the holdout grading",
+    "game": "App State vs Liberty 2024 (cancelled, 0-0 in the feed)",
+    "game_id": 401640992
+   }
+  ]
+ },
+ "data_provenance_sha256": {
+  "betting/cfb_line_odds.csv.gz": "7ae899d9035750dccf22470d7923087a2659052aeb37a44204c35fbf6bf38d4d",
+  "pbp/play_by_play_2026.parquet": "9ba211aa4e4413f793d20aa4f6c2a52ab3580996583839723606b14245e8b248",
+  "sched/cfb_schedules_2024.parquet": "f74768cfe074a986d3a0e96da013f3c02e869e2675322ec02da7ced5a4969f61",
+  "sched/cfb_schedules_2026.parquet": "b9e744455f608f06358adec89fac82891c82b26d07cb0f697e860fa10d21b8e8",
+  "v1/out/market.csv": "2746487d7a4a77cf8d612e4d30c9381607879c53a9046ca16a15d98c02cb4870",
+  "v1/out_p/market.csv": "fe8374ecc02b7a9797c7a1c594b60fa7a6bf8eab38dc92c2e6c2fa342272c7d8"
+ },
+ "evidence": "football/cfb_v2/research/out_p/audit/patch_v211.json (python3 -m v2.audit.patch_v211); docs/cfb-audit/PATCH_v2.1.1.md",
+ "files": {
+  "gbm_D.txt": "457507ff111914a3f8f8840de4f118bb905f953c8d960e7c2eaab110924bbd0b",
+  "meta.json": "0b5dfbd09d427151e6a711441f8950ab7a7f406a79cd16c57d1000f788695ecb",
+  "models.json": "03421a317ce962b1e69c329a1ec0902d81fa069b4187fd3296e05e3281024861",
+  "params.js": "d6ea675e96a88d630793309283228a5f8ca90871776249210ae8fdfae594f635"
+ },
+ "kind": "PATCH: same code recipe, same hyper-parameters, corrected data (docs/cfb-audit/PATCH_v2.1.1.md)",
+ "model_version": "edgedesk_cfb_v2.1.1",
+ "parent_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+ "parent_version": "edgedesk_cfb_v2.1.0",
+ "recipe": {
+  "build_dir": "football/cfb_v2/research/out_p (git-ignored)",
+  "build_stamp": {
+   "stage2": {
+    "built_at": "2026-09-27T17:49:23Z",
+    "finality_rule": "cfb_v2_finality_v2",
+    "games": 15378,
+    "market_orientation_rule": "cfb_market_orientation_v2",
+    "status_counts": {
+     "CANCELED": 1,
+     "FINAL": 14789,
+     "IN_PROGRESS": 24,
+     "NOT_PLAYED": 7,
+     "SCHEDULED": 557
+    }
+   },
+   "stage5": {
+    "built_at": "2026-09-27T17:49:28Z",
+    "feature_version": "cfb_v2_fv2",
+    "seasons": [
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "stage2": {
+     "built_at": "2026-09-27T17:49:23Z",
+     "finality_rule": "cfb_v2_finality_v2",
+     "games": 15378,
+     "market_orientation_rule": "cfb_market_orientation_v2",
+     "status_counts": {
+      "CANCELED": 1,
+      "FINAL": 14789,
+      "IN_PROGRESS": 24,
+      "NOT_PLAYED": 7,
+      "SCHEDULED": 557
+     }
+    }
+   }
+  },
+  "code": "v2.pipeline + v2.export (the V2.1 recipe), no re-tuning",
+  "config_py_note": "identical to the file edgedesk_cfb_v2.1.0 was built with and to the one cfb_decision_baseline_001 pins",
+  "config_py_sha256": "fae24ed22941db719d5f66ad76617337891568bc5bfd2df15a98ecbecb29ce28",
+  "elo_tuning": "v2.elo re-derives its dev tuning each run; the result is identical to v2.1.0 (K 50, HFA 70, carry 1)",
+  "environment": "CFB_V2_V1_MARKET=data/v1/out_p/market.csv (V1 build_market.py after F-11), CFB_V2_V1_RECORDS=data/v1/out/v1_records.json (unchanged)",
+  "feature_version": "cfb_v2_fv2",
+  "frozen_tuning_inputs_copied_from_v2.1.0_build": {
+   "ablation.json": "1faaea62081f88e5b3b94d5062ace9e67a6b48aa81d51d4f0a642c8b966d40e0",
+   "selected_families.json": "08dcbce8816ad7b7edcbfe8a69fe4ba481d799fee88b90b135f4109cf2cc6960",
+   "tuning_models_C.json": "79f41706991b00330fe8c424de5273407119176b0e52afd42d29508516539846",
+   "tuning_models_D.json": "dde7472849116e0ff8f84a7bc9959ad723490361c09ec63c40ba692d98abf7c0",
+   "tuning_models_D2.json": "38d78902f360d5d3dd762e82687c77d0a544526dc82986f05dcaf3849077775f",
+   "tuning_ratings.json": "e23f958cf80e0a20d152bed08e8880e3868f2fcb11a688a4922231dbc8766d11"
+  },
+  "market_rule": "the dev-selected rule is the same (review 14, bet gap 3, EV 0.06, min reliability 0, exclude early; BET disabled); its reality-check statistics moved with the corrected dev market",
+  "trained_through": 2025
+ },
+ "status": "CHALLENGER_NOT_PROMOTED: not in football/cfb_production/compatibility.json; production stays edgedesk_cfb_v2.1.0 until the owner switches (PATCH_v2.1.1.md, section 9)"
+}

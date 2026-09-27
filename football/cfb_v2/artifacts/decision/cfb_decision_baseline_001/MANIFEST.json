@@ -1,0 +1,117 @@
+{
+ "base_model_version": "edgedesk_cfb_v2.1.0",
+ "baseline_id": "cfb_decision_baseline_001",
+ "created_at": "2026-09-27T14:58:25Z",
+ "data": {
+  "stage2_market": {
+   "columns": 15,
+   "content_sha256": "e9dc0212713e11b612c54de80da8702eb2e28fd468779ee7d96578a055215b64",
+   "file_sha256": "d66c92629651a30472cf3bf43e4a8aee2cdc051406e842b3e5779c388b5a4032",
+   "path": "football/cfb_v2/research/out_h/stage2/market.parquet",
+   "rows": 14254
+  },
+  "stage7_backtest_predictions": {
+   "columns": 919,
+   "content_sha256": "b53eb4858927d5d903a4aef9ea5892f223aa0829c728d64990f46686c8318f59",
+   "file_sha256": "536a829ba07e4119cdc4d0ec23433ada159478d3af8731004fc58deec4255b0c",
+   "path": "football/cfb_v2/research/out_h/stage7/backtest_predictions.parquet",
+   "rows": 11262
+  }
+ },
+ "files_sha256": {
+  "football/cfb_v2/artifacts/edgedesk_cfb_v2.1.0/MANIFEST.json": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+  "football/cfb_v2/engine.js": "745c1c3c9390dda7133ced12327978e383dd8d45d24cd4de6b02168e77b9c72c",
+  "football/cfb_v2/params.js": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
+  "football/cfb_v2/research/v2/config.py": "fae24ed22941db719d5f66ad76617337891568bc5bfd2df15a98ecbecb29ce28",
+  "football/cfb_v2/research/v2/market.py": "0aa82a28c66e6a4dfca4ec3ba0088b371ba1a92fdf8dcf9cb6a09edd01dc15c7"
+ },
+ "git_head_at_freeze": "e32fae1e3fdf70ba1b9c7591e30de4ead370ded2",
+ "historical_convention": "bet the OPENING consensus at the Tuesday 12:00 UTC freeze at an ASSUMED -110, graded against the final margin; CLV = opener -> close, oriented to the side (v2/market.py). Live: never assume a price (engine.js decide: EV null without one).",
+ "production_cover_layer": {
+  "clv": {
+   "beta": 0.108428524122218
+  },
+  "cover": {
+   "coef": [
+    -0.010509438983434842,
+    0.1869923286667317
+   ],
+   "design": "conditional platt on [1, x, x*ens_sd, x*rating_sd, x*early, x*qb_uncertainty]",
+   "push_table": {
+    "0-2.5": 0.010135135135135136,
+    "13.5-99": 0.028444444444444446,
+    "2.5-3.5": 0.09302325581395349,
+    "3.5-6.5": 0.016241299303944315,
+    "6.5-7.5": 0.057692307692307696,
+    "7.5-13.5": 0.03257328990228013
+   },
+   "rsd_fill": 1.088970848923323
+  },
+  "distribution": {
+   "abs_z_quantiles": {
+    "0.5": 0.6619039578475746,
+    "0.8": 1.2843870333270309,
+    "0.95": 1.9463031030140472
+   },
+   "t_df": 100
+  },
+  "reliability": {
+   "caps": {
+    "fcs": 50,
+    "no_games": 70,
+    "qb_unknown": 65,
+    "qb_unsettled": 75
+   },
+   "sigma_hi": 18.499479485538615,
+   "sigma_lo": 15.31064701507484
+  },
+  "win_calibration_method": "raw"
+ },
+ "production_rule": {
+  "bet_enabled": false,
+  "bet_ev": 0.06,
+  "bet_gap": 3.0,
+  "bet_min_rel": 0.0,
+  "dispersion_max": 1.5,
+  "exclude_early": true,
+  "grid_size": 341,
+  "lean_ev": 0.0,
+  "lean_gap": 0.0,
+  "orientation_gap": 21,
+  "orientation_reconcile": 7,
+  "reality_check": {
+   "null_best_lb90_q95": 0.05797807663190102,
+   "null_worlds": 500,
+   "p_value_best_rule": 0.136,
+   "rules_with_positive_lb90": 2
+  },
+  "review_gap": 14.0,
+  "rule_bet_enabled": false,
+  "selection": "max lower 90% bound of ROI/bet on DEV seasons (n>=150) over 341 rules; BET enabled only if that bound beats the 95th percentile of the same search on 500 coin-flip worlds AND mean CLV > 0",
+  "stale_minutes": 180
+ },
+ "reports": {
+  "backtest_report": {
+   "file_sha256": "48c1bbdd5e894af6a2c5808e93ec93ee853559679431de5199b515160add3b14",
+   "path": "football/cfb_v2/research/out_h/report/backtest.json"
+  }
+ },
+ "statement": "The frozen decision baseline. The decision-science layer (v2/decision) reads these pieces and never writes to them; `python3 -m v2.decision.baseline --verify` and tests_decision.py re-hash them.",
+ "windows": {
+  "dev": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023
+  ],
+  "holdout": [
+   2024,
+   2025
+  ],
+  "live": 2026
+ }
+}

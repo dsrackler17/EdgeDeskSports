@@ -362,8 +362,10 @@ chk('this season is trusted more the more of it has been played',
   chk('both roster paths record when they were read', (app.match(/S\.rosterAsOf=/g) || []).length >= 3,
     (app.match(/S\.rosterAsOf=[^;]*/g) || []));
   chk('the availability layer now reaches the engine instead of a hardcoded null',
-    /injuries:fbP4Injuries\(g\.home_team,g\.game_id\)/.test(app)
-      && /injuries:fbP4Injuries\(g\.away_team,g\.game_id\)/.test(app));
+    /* the fixture id reaches the list (and, since the list is dated, the
+       kickoff it is dated against may follow it) */
+    /injuries:fbP4Injuries\(g\.home_team,g\.game_id[,)]/.test(app)
+      && /injuries:fbP4Injuries\(g\.away_team,g\.game_id[,)]/.test(app));
   chk('a team EdgeDesk could not read still reports NO injury report rather than a clean one',
     /if\(q==='NONE'\|\|q==='LIMITED'\) return null;/.test(app));
   /* THE PRICED QB INPUT STAYS NULL — and that is now a narrower claim than it
@@ -380,8 +382,8 @@ chk('this season is trusted more the more of it has been played',
   chk('the priced QB input is still null on both sides',
     (app.match(/\bqb:null\b/g) || []).length >= 2, (app.match(/\bqb:null\b/g) || []).length);
   chk('and the starter reaches the engine only as context, never as the priced input',
-    /qb:null,qb_context:fbP4QbContext\(g\.home_team\)/.test(app)
-    && /qb:null,qb_context:fbP4QbContext\(g\.away_team\)/.test(app));
+    /qb:null,qb_context:fbP4QbContext\(g\.home_team[,)]/.test(app)
+    && /qb:null,qb_context:fbP4QbContext\(g\.away_team[,)]/.test(app));
   chk('the starter context carries no efficiency field that could reach the priced layer',
     (() => {
       const i = app.indexOf('function fbP4QbContext(');

@@ -79,6 +79,10 @@ on:
         description: 'Apply supabase/tennis_lab.sql — the rating-lab columns and history on top of the record contract (idempotent; needs apply_tennis_record first, or already applied)'
         type: boolean
         default: false
+      apply_cfb_lab:
+        description: 'Apply supabase/cfb_lab.sql (the CFB Live Model Lab tables, append-only triggers, market-rule functions and public record views), then supabase/cfb_lab_cron.sql (the hourly pg_cron poke of cfb-lab.yml), then supabase/cfb_weekly.sql (the weekly refresh engine run table, state tables and its pg_cron dispatch), then supabase/cfb_personnel.sql (the roster intelligence tables), then supabase/cfb_decision.sql (the wagering decision tables), then supabase/cfb_production.sql (production operations: manifest, compatibility, flags, audit log, corrections, job locks, heartbeats, incidents, cfb_health) and records the production manifest. Each skips its schedule where pg_cron / pg_net are missing; all idempotent; nothing else needed first.'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -253,6 +257,84 @@ jobs:
           # the record and live reports after, so neither order breaks.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tennis_lab.sql
 
+      - name: Apply the CFB Model Lab contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent and append-only; football/cfb_lab/sql.test.js applies it
+          # twice against a throwaway server, reproduces every market-rule
+          # fixture and attacks every table. Its last statement is a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_lab.sql
+
+      - name: Apply the CFB Model Lab hourly scheduler
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Runs after the contract (the step above; it refuses without it).
+          # Where pg_cron or pg_net is missing it schedules nothing and its
+          # report says so rather than failing; the GitHub token is the Vault
+          # secret editorial_dispatch_sql.sql already reads.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_lab_cron.sql
+
+      - name: Apply the CFB weekly refresh engine contract and schedule
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Independent of the lab's tables. Append-only state tables, the run
+          # table, and cfb_weekly_poke(mode) with its pg_cron jobs (Sun/Mon
+          # 10:05 weekly, Tue 12:07 freeze, Wed-Sat 10:47 daily). Tested by
+          # football/cfb_weekly/sql.test.js; ends in a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_weekly.sql
+
+      - name: Apply the CFB personnel (roster intelligence) contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Independent tables: the player registry, player-week state, unit
+          # personnel state, player events, game snapshots and personnel model
+          # versions; append-only, internal (no anon access). Tested by
+          # football/cfb_personnel/sql.test.js; ends in a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_personnel.sql
+
+      - name: Apply the CFB wagering decision contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Decision snapshots, eligibility, results (process and outcome apart),
+          # calibration, policies, bankroll, exposure, experiments, manual wagers;
+          # append-only and internal. Tested by football/cfb_decision/sql.test.js.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_decision.sql
+
+      - name: Apply the CFB production operations contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+          # a DDL statement that cannot get its lock in 5 s fails instead of
+          # queueing every reader of the table behind it
+          PGOPTIONS: '-c lock_timeout=5s'
+        run: |
+          # LAST, after the contracts above (its published views and health checks
+          # read their tables). The manifest, the compatibility matrix, feature
+          # flags, the hash-chained audit log, manual corrections, job locks,
+          # heartbeats, incidents and cfb_health(). Idempotent; a re-apply takes no
+          # ACCESS EXCLUSIVE lock (measured by football/cfb_production/sql.test.js).
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_production.sql
+
+      - name: Record the CFB production manifest (write-once, deployment time = now)
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          # What exact system is deployed: versions, artifact hashes, commit,
+          # migration set; champion_selection NOT_RUN (no Model Championship).
+          node football/cfb_production/manifest.js --push
+
       - name: Say what is skipped, rather than leaving it unsaid
         if: always()
         run: |
@@ -268,6 +350,7 @@ jobs:
             echo "- tennis live centre requested: ${{ inputs.apply_tennis_live_center }}"
             echo "- tennis record contract requested: ${{ inputs.apply_tennis_record }}"
             echo "- tennis rating lab requested: ${{ inputs.apply_tennis_lab }}"
+            echo "- CFB Model Lab + weekly refresh engine contracts and schedules requested: ${{ inputs.apply_cfb_lab }}"
             echo ''
             echo 'Confirm what is actually running with the **Intelligence doctor** workflow — it asks the'
             echo 'deployment rather than trusting this one.'

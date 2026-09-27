@@ -37,6 +37,7 @@ const JS = [
   'tools/intelligence/validate_staking.js', 'tools/intelligence/staking_validation.test.js',
   'tools/intelligence/stake_grades.js', 'tools/intelligence/stake_grades.test.js', 'tools/intelligence/learning_loop.js',
   'tools/intelligence/stake_host.test.js', 'tools/intelligence/validate_extra_markets.js',
+  'football/personnel/desk.js', 'tools/intelligence/personnel_desk.test.js',
 ];
 let bad = 0;
 for (const f of JS) {

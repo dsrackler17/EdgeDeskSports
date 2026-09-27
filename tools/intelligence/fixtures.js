@@ -92,7 +92,12 @@ function build(now) {
     const up = games.filter((g) => Date.parse(g.kickoff) > now);
     return (up.length >= n ? up : games).slice(0, n);
   };
-  const slate = Object.assign({}, SLATE, { games: [NT].concat(ahead(SLATE.games, 6)) });
+  /* The real card's North Texas and Texas State games are left off, as the NFL
+     card's are below, so "North Texas" alone still names exactly one game when
+     the nightly slate happens to carry one of the fixture's programs. */
+  const FX_CFB = /^(texasstate|northtexas)$/i;
+  const cfbRest = ahead(SLATE.games.filter((g) => !FX_CFB.test(String(g.home_team_id)) && !FX_CFB.test(String(g.away_team_id))), 6);
+  const slate = Object.assign({}, SLATE, { games: [NT].concat(cfbRest) });
   /* One NFL game inside the window whatever the calendar says, on the front of
      the REAL committed NFL artifact, so the NFL card always carries a game the
      suites can name. The model fields are the shape the builder writes. */
@@ -345,6 +350,10 @@ function router(fx, opts) {
     if (u.indexOf('api.open-meteo.com') >= 0) return opts.open_meteo === null ? null : (opts.open_meteo || fx.open_meteo);
     if (u.indexOf('api.search.brave.com') >= 0) return opts.search === undefined ? null : opts.search;
     if (u.indexOf('api.collegefootballdata.com') >= 0) return opts.cfbd === undefined ? null : opts.cfbd;
+    /* The non-QB personnel assessment (football/personnel/current.json):
+       404 unless a scenario supplies one, so every scenario written before
+       the layer existed reads exactly what it read then. */
+    if (u.indexOf('/football/personnel/current.json') >= 0) return opts.personnel === undefined ? null : opts.personnel;
     if (u.indexOf('/football/availability/current.json') >= 0) {
       return opts.avail === null ? null : (opts.avail || fx.avail);
     }

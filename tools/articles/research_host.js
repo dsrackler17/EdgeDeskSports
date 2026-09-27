@@ -261,6 +261,11 @@ async function open(opts) {
   const win = boot.win;
 
   installPageGlobals(win);
+  /* A CALLER'S OWN PAGE GLOBALS, opt-in. The personal-research job
+     (tools/personal/research_state.js) supplies a read-only sbFetch/sbGet so
+     the board joins the same captured quotes a signed-in browser reads; the
+     article generator passes nothing and runs exactly as before. */
+  if (opts.globals) Object.keys(opts.globals).forEach(function (k) { win[k] = opts.globals[k]; });
   const [fetchImpl, seen] = makeFetch(opts, log);
   win.fetch = fetchImpl;
   installScriptLoader(win, seen);
@@ -270,6 +275,34 @@ async function open(opts) {
      a script tag for it */
   M.loadEngine(win, ROOT);
   M.loadNflEngine(win, ROOT);
+  /* THE RESEARCH VIEW AND ITS FRESHNESS POLICY, as the page loads them. The
+     view (lib/cfb_research_view.js) is a plain <script src> outside the
+     football module, and EDINTEL — whose quoteState judges a captured quote
+     current or stale — is another block of app.html. The brief's research
+     view is built by the page's own adapter; without these it is simply
+     absent, never approximated. */
+  /* reliability (lib/cfb_reliability.js) first, as the page's script tags
+     order them: the view reads the scored reliability the adapter builds with
+     it, and without it a document would fall back to the legacy coverage */
+  try {
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_reliability.js'), 'utf8'), win,
+      { filename: 'lib/cfb_reliability.js' });
+  } catch (e) { log('  reliability: ' + (e && e.message)); }
+  try {
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_research_view.js'), 'utf8'), win,
+      { filename: 'lib/cfb_research_view.js' });
+  } catch (e) { log('  research view: ' + (e && e.message)); }
+  /* THE MAJOR-DISAGREEMENT INTEGRITY GATE and its measured parameters, as the
+     page loads them: without them a 7+ gap publishes as INVESTIGATE —
+     VERIFICATION INCOMPLETE (fail closed), never as a verified disagreement */
+  ['football/cfb_p4/margin_calibration.js', 'football/cfb_p4/disagreement_params.js', 'lib/cfb_disagreement.js'].forEach(function (f) {
+    try { vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), win, { filename: f }); }
+    catch (e) { log('  ' + f + ': ' + (e && e.message)); }
+  });
+  try {
+    const a = boot.app.indexOf('/*__EDINTEL_START__*/'), b = boot.app.indexOf('/*__EDINTEL_END__*/');
+    if (a > 0 && b > a) vm.runInContext(boot.app.slice(a, b), win, { filename: 'app.html#EDINTEL' });
+  } catch (e) { log('  freshness policy: ' + (e && e.message)); }
 
   log('booting the EdgeDesk football module…');
   try { await win.loadFootball(false); } catch (e) { log('  NFL board: ' + (e && e.message)); }
@@ -279,15 +312,28 @@ async function open(opts) {
   if (typeof win.fbP4Load !== 'function') {
     throw new Error('app.html does not export window.fbP4Load — the Power 4 board cannot be loaded headlessly');
   }
-  /* The P4 load ends in optional joins (rosters, book lines, weather). Any of
+  /* THE TERMINAL'S OWN LOADER when the page exports it: the replay, then the
+     efficiency late join and the canonical rating, exactly as the board runs
+     them — so an article prices a game the way the terminal and the published
+     build do (tools/football/page_build_parity.test.js), and its research
+     view can say it priced from the published inputs. The bare replay is the
+     fallback for an older page.
+     The P4 load ends in optional joins (rosters, book lines, weather). Any of
      them can be unreachable here, and the board is built to render without
      them, so the slate is awaited rather than the whole chain. */
+  const p4Loader = typeof win.fbP4LoadGuarded === 'function' ? win.fbP4LoadGuarded : win.fbP4Load;
   let p4Settled = false;
-  win.fbP4Load(false).then(() => { p4Settled = true; }, () => { p4Settled = true; });
+  p4Loader(false).then(() => { p4Settled = true; }, () => { p4Settled = true; });
   await waitFor(() => p4Settled || (win.FB.p4.up || []).length, LOAD_TIMEOUT_MS);
   if (!p4Settled) await waitFor(() => p4Settled, 15000);
   log('  Power 4 board: ' + (win.FB.p4.up || []).length + ' upcoming, season ' + win.FB.p4.season
     + (win.FB.p4.gate ? ' — GATE: ' + win.FB.p4.gate : ''));
+  /* the committed model record, so the research view's history — the
+     published path, the projection status, what changed — is the one the
+     terminal shows. A record that will not load leaves NO HISTORY. */
+  if (typeof win.fbP4RecordEnsure === 'function' && win.FB.p4.season) {
+    try { await win.fbP4RecordEnsure(win.FB.p4.season); } catch (_) {}
+  }
 
   /* ---- captured book quotes, replayed --------------------------------- */
   /* The live capture (Supabase `signals`) is behind an account and a build
@@ -385,4 +431,6 @@ async function open(opts) {
   };
 }
 
-module.exports = { open, installMarketSnapshot, FEEDS, CACHE_DIR, cacheNameFor, ROOT };
+module.exports = { open, installMarketSnapshot, FEEDS, CACHE_DIR, cacheNameFor, ROOT,
+  /* the stub browser, for suites that drive the page's own loaders */
+  makeFetch, installScriptLoader, installPageGlobals };

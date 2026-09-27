@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Gardner-Webb vs. Marshall: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Gardner-Webb vs. Marshall 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Gardner-Webb at Marshall at Marshall -24.8. Marshall wins 95% of simulations. Data confidence 43%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Gardner-Webb at Marshall at Marshall -24.8. Marshall wins 95% of simulations. Data confidence 47%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Marshall carries a full EdgeDesk team rating at -4.9; Gardner-Webb is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Marshall -24.8 before any sportsbook number…",
   "home_team": "Marshall",
   "away_team": "Gardner-Webb",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-26T19:30:00.000Z",
   "game_when_label": "2026-09-26 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-22T04:44:08.090Z",
-  "generated_at": "2026-09-22T11:27:42.488Z",
+  "updated_at": "2026-09-26T16:17:28.958Z",
+  "generated_at": "2026-09-26T16:17:28.958Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 43,
+  "model_status": "RESEARCH",
+  "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+  "confidence": 47,
   "priced": true,
   "fair_spread_text": "Marshall -24.8",
   "fair_total": null,
@@ -37,12 +37,12 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-09-26T19:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-22. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-26. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-22, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -66,12 +66,15 @@
       "Marshall carries a full EdgeDesk team rating at -4.9; Gardner-Webb is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
       "EdgeDesk makes it Marshall -24.8 before any sportsbook number is consulted, with Marshall winning 95% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; Gardner-Webb is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 43% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 47% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 24.754616906105127,
+      "fair_spread": 24.77171704718642,
       "fair_spread_text": "Marshall -24.8",
+      "fair_spread_raw_text": "Marshall -24.8",
+      "near_pickem": false,
+      "raw_margin_text": null,
       "favourite": "Marshall",
       "underdog": "Gardner-Webb",
       "margin": "24.8",
@@ -101,71 +104,91 @@
         "volatility_discriminates": false,
         "note": "Quoted from Marshall’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 43,
-      "inputs_reached_pct": 53,
+      "confidence_pct": 47,
+      "inputs_reached_pct": 48,
       "input_contract": {
-        "fields": 17,
-        "applicable": 15,
-        "known": 8,
-        "priced": 6,
-        "priced_coverage_pct": 40,
+        "fields": 26,
+        "applicable": 25,
+        "known": 12,
+        "priced": 7,
+        "priced_coverage_pct": 28,
         "by_state": {
-          "USABLE": 6,
-          "RESEARCH_ONLY": 2,
+          "USABLE": 7,
+          "RESEARCH_ONLY": 5,
           "STALE": 0,
-          "CONFLICTING": 0,
-          "NOT_APPLICABLE": 2,
-          "FETCH_FAILED": 1,
-          "UNAVAILABLE": 6
+          "CONFLICTING": 1,
+          "NOT_APPLICABLE": 1,
+          "NOT_REQUIRED": 2,
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 10
         },
         "absent": [
           {
-            "field": "venue_geography",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "no coordinates for Gardner-Webb’s home venue, so travel distance cannot be computed"
-          },
-          {
             "field": "weather",
             "side": null,
-            "state": "FETCH_FAILED",
-            "why": "the venue coordinates are known; no forecast reached this game"
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "roster",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Gardner-Webb is outside the 2026 FBS universe EdgeDesk rates, so no roster is retrieved for it. The engine prices the side from a shared FCS floor and charges the full weight of its roster term, so this is counted as the gap it is rather than excused as inapplicable"
           },
           {
             "field": "availability",
-            "side": "home",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "Marshall is not in the availability registry"
+            "why": "Gardner-Webb is outside the FBS availability registry, so no availability read covers it. The engine prices maximum injury uncertainty for this side and charges for the gap, so the contract counts it as a gap rather than excusing it as inapplicable"
           },
           {
-            "field": "qb_availability",
-            "side": "home",
+            "field": "roster_talent",
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "Gardner-Webb is outside the FBS field the player layer rates, so no composite is measured for it. The engine charges for the gap, so the contract counts it as one"
           },
           {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. EdgeDesk has not researched an availability-reporting policy for OVC; that is an open question, not a finding that none exists"
           },
           {
-            "field": "recruiting_talent",
+            "field": "team_rating",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Gardner-Webb is outside the rated FBS field, so the projection uses params.rating.fcs_rating — ONE floor number shared by every FCS programme. That is not a rating of this team, and the engine charges the full weight of the rating input for it. This row exists so that charge lands on a named field instead of on nothing"
+          },
+          {
+            "field": "matchup_profile",
             "side": null,
             "state": "UNAVAILABLE",
-            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+            "why": "the stylistic pairing needs a measured profile for BOTH sides and Gardner-Webb is outside the FBS field the profiles cover"
+          },
+          {
+            "field": "off_field",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
           },
           {
             "field": "coaching_continuity",
-            "side": null,
+            "side": "away",
             "state": "UNAVAILABLE",
-            "why": "no public, keyless feed carries coordinator or staff continuity"
+            "why": "Gardner-Webb has no prior season in the coach table to compare against, so whether this staff is new is unknown rather than continuous — a programme with no history is not a programme that kept its coach"
           }
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "RESEARCH",
+      "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -252,7 +275,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": null,
-        "retrieved_at": "2026-09-22T02:55:27.358Z"
+        "retrieved_at": "2026-09-26T13:53:31.599Z"
       },
       "home": {
         "team": "Marshall",
@@ -342,9 +365,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T22:30:00.000Z",
-        "retrieved_at": "2026-09-22T02:55:27.358Z"
+        "retrieved_at": "2026-09-26T13:53:31.599Z"
       },
-      "generated_at": "2026-09-22T02:56:09.206Z",
+      "generated_at": "2026-09-26T13:54:16.166Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -364,7 +387,7 @@
         },
         {
           "points": "-0.3",
-          "points_n": -0.2975803750948728,
+          "points_n": -0.28048023401358135,
           "text": "Stylistically the matchup favours Gardner-Webb by 0.3 points: early-down offence vs early-down defence",
           "favours": "Gardner-Webb"
         }
@@ -395,7 +418,7 @@
               },
               "h": {
                 "v": "-4.9",
-                "n": -4.89,
+                "n": -4.9,
                 "rank": "#105 of 133",
                 "rank_n": 105,
                 "note": null
@@ -414,10 +437,10 @@
                 "note": null
               },
               "h": {
-                "v": "55.3",
-                "n": 55.3,
-                "rank": "#38 of 133",
-                "rank_n": 38,
+                "v": "55.1",
+                "n": 55.1,
+                "rank": "#39 of 133",
+                "rank_n": 39,
                 "note": null
               },
               "edge": null
@@ -519,10 +542,10 @@
                 "note": null
               },
               "h": {
-                "v": "49.7",
-                "n": 49.7,
-                "rank": "#85 of 126",
-                "rank_n": 85,
+                "v": "49.6",
+                "n": 49.6,
+                "rank": "#88 of 126",
+                "rank_n": 88,
                 "note": null
               },
               "edge": null
@@ -539,10 +562,10 @@
                 "note": null
               },
               "h": {
-                "v": "52.1",
-                "n": 52.1,
-                "rank": "#54 of 133",
-                "rank_n": 54,
+                "v": "52.3",
+                "n": 52.3,
+                "rank": "#53 of 133",
+                "rank_n": 53,
                 "note": null
               },
               "edge": null
@@ -666,8 +689,8 @@
               "h": {
                 "v": "55.8",
                 "n": 55.8,
-                "rank": "#30 of 133",
-                "rank_n": 30,
+                "rank": "#32 of 133",
+                "rank_n": 32,
                 "note": null
               },
               "edge": null
@@ -706,8 +729,8 @@
               "h": {
                 "v": "54.7",
                 "n": 54.7,
-                "rank": "#117 of 133",
-                "rank_n": 117,
+                "rank": "#116 of 133",
+                "rank_n": 116,
                 "note": null
               },
               "edge": null
@@ -806,8 +829,8 @@
               "h": {
                 "v": "55.0",
                 "n": 55,
-                "rank": "#103 of 133",
-                "rank_n": 103,
+                "rank": "#104 of 133",
+                "rank_n": 104,
                 "note": null
               },
               "edge": null
@@ -831,8 +854,8 @@
               "h": {
                 "v": "54.1",
                 "n": 54.1,
-                "rank": "#25 of 133",
-                "rank_n": 25,
+                "rank": "#26 of 133",
+                "rank_n": 26,
                 "note": null
               },
               "edge": null
@@ -937,8 +960,8 @@
         "att": {
           "team": "Marshall",
           "label": "run offense",
-          "v": "52.1",
-          "rank": "#54 of 133",
+          "v": "52.3",
+          "rank": "#53 of 133",
           "note": null
         },
         "def": {
@@ -949,7 +972,7 @@
           "note": null
         },
         "complete": false,
-        "read": "Marshall’s run offense is measurable at 52.1 (#54 of 133). Gardner-Webb’s run defense is not, so the pairing cannot be scored."
+        "read": "Marshall’s run offense is measurable at 52.3 (#53 of 133). Gardner-Webb’s run defense is not, so the pairing cannot be scored."
       },
       {
         "title": "Gardner-Webb QB room vs Marshall secondary",
@@ -1052,7 +1075,7 @@
           "team": "Marshall",
           "label": "running backs",
           "v": "54.7",
-          "rank": "#117 of 133",
+          "rank": "#116 of 133",
           "note": null
         },
         "def": {
@@ -1063,7 +1086,7 @@
           "note": null
         },
         "complete": false,
-        "read": "Marshall’s running backs is measurable at 54.7 (#117 of 133). Gardner-Webb’s linebackers is not, so the pairing cannot be scored."
+        "read": "Marshall’s running backs is measurable at 54.7 (#116 of 133). Gardner-Webb’s linebackers is not, so the pairing cannot be scored."
       },
       {
         "title": "Gardner-Webb receivers vs Marshall secondary",
@@ -1090,7 +1113,7 @@
           "team": "Marshall",
           "label": "receivers",
           "v": "55.8",
-          "rank": "#30 of 133",
+          "rank": "#32 of 133",
           "note": null
         },
         "def": {
@@ -1101,7 +1124,7 @@
           "note": null
         },
         "complete": false,
-        "read": "Marshall’s receivers is measurable at 55.8 (#30 of 133). Gardner-Webb’s secondary is not, so the pairing cannot be scored."
+        "read": "Marshall’s receivers is measurable at 55.8 (#32 of 133). Gardner-Webb’s secondary is not, so the pairing cannot be scored."
       }
     ],
     "roster": {
@@ -1214,7 +1237,7 @@
           "Stylistically the matchup favours Gardner-Webb by 0.3 points: early-down offence vs early-down defence (-0.3 pts).",
           "The outcome range is 15.1 points wide at one sigma — p10 +1.8 to p90 +45.8 for Marshall, so a projection of +24.8 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
-          "50% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
+          "60% of the model’s own input contract was empty for this game — no roster, starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
           "Gardner-Webb is not in the FBS rating set, so EdgeDesk cannot measure what it does well. An unmeasured opponent is an unknown, not a weak one, and the size of the gap is not established."
         ]
       },
@@ -1225,13 +1248,19 @@
         {
           "sev": "HIGH",
           "label": "information missing",
-          "text": "The projection could be wrong because 50% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
+          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no roster, starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
           "widening": null
         },
         {
           "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 96h old",
           "widening": null
         },
         {
@@ -1261,6 +1290,12 @@
         {
           "sev": "LOW",
           "label": "missing",
+          "text": "away roster not supplied — talent, continuity and youth layers are blind",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
           "text": "home quarterback is contested — the evidence names more than one starter",
           "widening": null
         },
@@ -1280,18 +1315,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
           "widening": null
         },
         {
@@ -1317,10 +1340,6 @@
         {
           "item": "Away availability / injuries",
           "why": "no injury report supplied for away"
-        },
-        {
-          "item": "Blue-chip / per-player recruiting talent",
-          "why": "per-player recruiting stars are not present in the public roster feed (recruit_ids ships empty)"
         },
         {
           "item": "Weather at kickoff",
@@ -1354,15 +1373,203 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Marshall -24.8",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "model_raw": "Marshall -24.8",
+      "market": "Marshall -25.5",
+      "difference": "0.7 points",
+      "difference_n": 0.7282829528135792,
+      "total_model": null,
+      "total_market": "51.5",
+      "book": "captured (stale 96h) · FanDuel",
+      "captured": "2026-09-22T16:18:01.053+00:00",
+      "capture_age": "96 hours old",
+      "stale": false,
+      "classification": "RESEARCH",
+      "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401868188",
+      "home": "Marshall",
+      "away": "Gardner-Webb",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "LOW_RELIABILITY",
+        "label": "LOW RELIABILITY",
+        "rule": "reliability",
+        "means": "Reliability is 54 (LOW), THIN DATA, under the 60 bar below which EdgeDesk argues against its own number. Why: the projected spread moves ±7.93 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±8 pts); Gardner-Webb is priced from the shared FCS floor rating — one number for every FCS programme, not a rating of this team; the stylistic pairing needs a measured profile for BOTH sides and Gardner-Webb is outside the FBS field the profiles cover. A large gap on low reliability is more suspicious, not less."
+      },
+      "fair": {
+        "line_text": "Marshall -24.8",
+        "favorite_team": "Marshall",
+        "underdog_team": "Gardner-Webb",
+        "display_fair_spread": 24.8,
+        "raw_home_margin": 24.77,
+        "raw_line_text": "Marshall -24.77",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 0.73,
+        "toward_team": "Gardner-Webb",
+        "text": "0.7 pts toward Gardner-Webb",
+        "market_line_text": "Marshall -25.5",
+        "market_home_margin": 25.5,
+        "favorite_differs": false,
+        "source": "captured (stale 96h) · FanDuel",
+        "as_of": "2026-09-22T16:18:01.053+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 47,
+        "tier": "MODERATE",
+        "label": "Moderate"
+      },
+      "reliability": {
+        "pct": 54,
+        "tier": "LOW",
+        "text": "54 · LOW",
+        "sub": "main deduction: the projected spread moves ±7.93 pts (1 SD) across 64 perturbation scenarios (largest source",
+        "score": 54,
+        "grade": "LOW",
+        "grade_label": "LOW",
+        "gate_label": "THIN DATA",
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 9,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 7.4,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 6,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 11.3,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "the projected spread moves ±7.93 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±8 pts)",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Wire an FCS team-rating source (Gardner-Webb)",
+            "potential_gain": 6,
+            "text": "up to +6"
+          },
+          {
+            "action": "Restore an injury/availability source for Gardner-Webb",
+            "potential_gain": 5,
+            "text": "up to +5"
+          },
+          {
+            "action": "Register a school availability release for Marshall",
+            "potential_gain": 4,
+            "text": "up to +4"
+          }
+        ],
+        "stability": {
+          "tier": "UNSTABLE",
+          "sd": 7.93,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
+      },
+      "drivers": {
+        "team": "Marshall",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "MEDIUM",
+        "label": "Medium",
+        "text": "the stored numbers span 1.0 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-17T14:28:00.021Z",
+          "source": "first published",
+          "home_margin": 23.78,
+          "text": "Marshall -23.8"
+        },
+        {
+          "at": "2026-09-22T02:54:11.006Z",
+          "source": "latest published",
+          "home_margin": 24.77,
+          "text": "Marshall -24.8"
+        }
+      ],
+      "revisions": 5,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Marshall",
+        "since_at": "2026-09-22T02:54:11.006Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 1.0 points toward Marshall since the first published number.",
+        "attribution_text": "Projection changed 1.0 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": null,
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
     "headline": "EdgeDesk rates one side of this game and not the other. What it has is below; what it does not have is named.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "RESEARCH",
+      "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": null,
@@ -1381,7 +1588,7 @@
         {
           "k": "Talent",
           "a": null,
-          "h": "55.3  #38",
+          "h": "55.1  #39",
           "note": null
         },
         {
@@ -1405,13 +1612,13 @@
         {
           "k": "Special teams",
           "a": null,
-          "h": "49.7  #85",
+          "h": "49.6  #88",
           "note": null
         },
         {
           "k": "Run offense",
           "a": null,
-          "h": "52.1  #54",
+          "h": "52.3  #53",
           "note": null
         },
         {
@@ -1447,13 +1654,13 @@
         {
           "k": "Receivers",
           "a": null,
-          "h": "55.8  #30",
+          "h": "55.8  #32",
           "note": null
         },
         {
           "k": "Running backs",
           "a": null,
-          "h": "54.7  #117",
+          "h": "54.7  #116",
           "note": null
         },
         {
@@ -1477,7 +1684,7 @@
         {
           "k": "Depth",
           "a": null,
-          "h": "54.1  #25",
+          "h": "54.1  #26",
           "note": null
         },
         {
@@ -1495,7 +1702,7 @@
         {
           "k": "Δ national rank, this week",
           "a": null,
-          "h": "down 56",
+          "h": "no change",
           "note": "differenced from last week’s committed snapshot"
         }
       ]
@@ -1504,7 +1711,7 @@
       "EdgeDesk’s line is Marshall -24.8 on a neutral read of the two teams, before any book is consulted.",
       "Marshall wins 95% of the time in EdgeDesk’s simulation, Gardner-Webb 5%.",
       "Eight games in ten land between +1.8 and +45.8 for Marshall. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Marshall -25.5 at captured (stale 96h) · FanDuel, 0.7 points from EdgeDesk’s number.",
       "Gardner-Webb quarterback: Cole Pennington — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1516,11 +1723,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 3, built 2026-09-22. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-26. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-22T11:27:42.488Z"
+    "at": "2026-09-26T23:32:03.201Z"
   }
 }

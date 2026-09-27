@@ -174,6 +174,11 @@ try {
   vm.createContext(sandbox);
   /* route() at the tail touches the DOM; the declarations above it are what
      this suite needs, so a bootstrap throw is caught rather than fatal. */
+  /* The page loads the canonical research libraries by <script src> before
+     its inline block; load them the same way, into the same context. */
+  ['research_core.js', 'research_eval.js'].forEach(function (f) {
+    vm.runInContext(fs.readFileSync(path.join(HERE, '..', 'lib', f), 'utf8'), sandbox, { timeout: 15000 });
+  });
   vm.runInContext(CODE, sandbox, { timeout: 15000 });
 } catch (e) { bootErr = e; }
 if (bootErr) console.log('[boot] script stopped at: ' + bootErr.message);
@@ -1614,7 +1619,8 @@ chk('the page defines the grading functions this section tests',
    'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
    'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames',
    'noCapturedClose', 'closelessLogRow', 'markCloselessGraded', 'closelessNote',
-   'serverRecordFor', 'logTally', 'atsReason'
+   'serverRecordFor', 'logTally', 'atsReason', 'marketClvPoints', 'edgeBucketKey',
+   'modelBettingDiagnostics', 'bettingDiagnosticsHTML', 'lineValueHtml'
   ].every(function (n) { return typeof sandbox[n] === 'function'; }),
   { missing: ['atsResult', 'finalResult', 'projectedMargin', 'gradableRow', 'localGrade',
       'serverGrade', 'rowGrade', 'modelRecord', 'modelCoverage', 'modelsInGames',
@@ -1622,7 +1628,8 @@ chk('the page defines the grading functions this section tests',
       'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
       'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames',
       'noCapturedClose', 'closelessLogRow', 'markCloselessGraded', 'closelessNote',
-      'serverRecordFor', 'logTally', 'atsReason']
+      'serverRecordFor', 'logTally', 'atsReason', 'marketClvPoints', 'edgeBucketKey',
+      'modelBettingDiagnostics', 'bettingDiagnosticsHTML', 'lineValueHtml']
       .filter(function (n) { return typeof sandbox[n] !== 'function'; }) });
 
 if (typeof sandbox.localGrade === 'function') try {
@@ -1648,11 +1655,91 @@ if (typeof sandbox.localGrade === 'function') try {
     var r = { creator_slug: o.cs || 'c', model_slug: o.ms || 'm' };
     ['pick_side', 'projected_spread', 'line_at_submission', 'home_win_probability',
      'cover_probability', 'projected_total', 'proj_home_score', 'proj_away_score',
-     'locked', 'late', 'grade', 'data_origin', 'movement_n'].forEach(function (k) {
+     'locked', 'late', 'grade', 'data_origin', 'movement_n', 'received_at'].forEach(function (k) {
       if (o[k] !== undefined) r[k] = o[k];
     });
     return r;
   }
+
+  /* ---- market usefulness: CLV + edge buckets -------------------------
+     These numbers are allowed to describe a signal only if the sign
+     convention is right. Home and away are mirror images, and the bucket
+     is frozen from model-vs-market AT SUBMISSION rather than from the close. */
+  chk('CLV is positive when a home pick got -3 and the market closed -5',
+    near(G.marketClvPoints('home', -3, -5), 2));
+  chk('CLV is positive when an away pick got +3 and the market closed +1',
+    near(G.marketClvPoints('away', -3, -1), 2));
+  chk('CLV is negative when the posted number was worse than the close',
+    near(G.marketClvPoints('home', -5, -3), -2)
+      && near(G.marketClvPoints('away', -1, -3), -2));
+  chk('CLV needs a side and two real lines',
+    G.marketClvPoints(null, -3, -5) === null
+      && G.marketClvPoints('home', null, -5) === null
+      && G.marketClvPoints('home', -3, null) === null);
+  chk('edge buckets have stable boundaries',
+    G.edgeBucketKey(0) === '0-2'
+      && G.edgeBucketKey(1.99) === '0-2'
+      && G.edgeBucketKey(2) === '2-4'
+      && G.edgeBucketKey(4) === '4-6'
+      && G.edgeBucketKey(6) === '6+');
+
+  chk('diagnostics keep edge-at-post separate from closing-line value',
+    (function () {
+      var a=gm({id:'d1',hs:30,as:20,close:-5});
+      a.models=[mr({pick_side:'home',projected_spread:-8,line_at_submission:-3,received_at:'2020-09-12T17:00:00Z'})];
+      var b=gm({id:'d2',hs:21,as:20,close:-2});
+      b.models=[mr({pick_side:'away',projected_spread:2,line_at_submission:-4,received_at:'2020-09-12T17:00:00Z'})];
+      var d=G.modelBettingDiagnostics([a,b],'c','m');
+      return d.clv_n===2 && near(d.avg_clv,2) && near(d.clv_positive_pct,1)
+        && d.buckets['4-6'].n===1 && d.buckets['4-6'].wins===1
+        && d.buckets['6+'].n===1 && d.buckets['6+'].wins===1
+        && d.large.n===2 && d.large.wins===2;
+    })());
+  /* The first version of these diagnostics fell back to the side implied
+     against the CLOSE when a model named none, so the closing line chose
+     which way CLV was measured. The side is now frozen at submission. */
+  chk('CLV side is fixed at submission, never chosen by the close',
+    (function () {
+      var g=gm({id:'d3',hs:30,as:20,close:-6});
+      /* -4.5 posted into -4 is HOME at submission; against the close of -6
+         it would read AWAY. CLV must be the home number: -4 -> -6 = +2. */
+      g.models=[mr({projected_spread:-4.5,line_at_submission:-4,received_at:'2020-09-12T17:00:00Z'})];
+      var d=G.modelBettingDiagnostics([g],'c','m');
+      return d.clv_n===1 && near(d.avg_clv,2);
+    })());
+  chk('a graded row with no receipt time is left out of the diagnostics and counted, not guessed',
+    (function () {
+      var g=gm({id:'d4',hs:30,as:20,close:-5});
+      g.models=[mr({pick_side:'home',projected_spread:-8,line_at_submission:-3})];
+      var d=G.modelBettingDiagnostics([g],'c','m');
+      return d.clv_n===0 && d.excluded_untimed===1;
+    })());
+  chk('the board names a lone outlier descriptively and says nothing about an aligned model',
+    (function () {
+      var g=gm({id:'r1',kickoff:FUTURE});
+      g.models=[mr({cs:'a',projected_spread:-9,line_at_submission:-5.5}),
+        mr({cs:'b',projected_spread:-4,line_at_submission:-5.5}),
+        mr({cs:'c',projected_spread:-4.5,line_at_submission:-5.5}),
+        mr({cs:'d',projected_spread:-3,line_at_submission:-5.5})];
+      var lone=G.roomChipHtml(g,g.models[0]), aligned=G.roomChipHtml(g,g.models[1]);
+      return /lone outlier/.test(lone) && /not wrong/.test(lone) && aligned==='';
+    })());
+  chk('each diagnostic metric carries its own n and ATS carries an interval',
+    (function () {
+      var a=gm({id:'d5',hs:30,as:20,close:-5});
+      a.models=[mr({pick_side:'home',projected_spread:-8,line_at_submission:-3,home_win_probability:0.7,received_at:'2020-09-12T17:00:00Z'})];
+      var b=gm({id:'d6',hs:30,as:20,close:null});
+      b.models=[mr({projected_spread:-8,line_at_submission:-3,received_at:'2020-09-12T17:00:00Z'})];
+      var o=G.modelBettingDiagnostics([a,b],'c','m').research.overall;
+      return o.ats.n===1 && o.mae.n===2 && o.brier.n===1 && o.clv.n===1 && o.ats.interval && o.ats.interval.n===1;
+    })());
+  chk('the diagnostics panel prints intervals, median CLV and per-metric n',
+    (function () {
+      var a=gm({id:'d7',hs:30,as:20,close:-5});
+      a.models=[mr({pick_side:'home',projected_spread:-8,line_at_submission:-3,received_at:'2020-09-12T17:00:00Z'})];
+      var h=G.bettingDiagnosticsHTML(G.modelBettingDiagnostics([a],'c','m'));
+      return /Median CLV/.test(h) && /Wilson/.test(h) && /n=1/.test(h) && /fixed in advance/.test(h) && !/BEST BET|LOCK/.test(h);
+    })());
 
   /* ---- the cover rule, written once and shared ------------------------
      Home convention on both sides: margin + closing spread. A home team

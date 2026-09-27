@@ -1,0 +1,462 @@
+{
+ "schema": "edgedesk_cfb_reliability_calibration_v1",
+ "version": "cfb_reliability/2",
+ "season": 2026,
+ "generated_at": "2026-09-25T18:11:39.652Z",
+ "sources": {
+  "record_forward": 0,
+  "backfill": 76,
+  "unscorable": 85
+ },
+ "pooled": {
+  "n": 76,
+  "min_bucket_n": 30,
+  "buckets": [
+   {
+    "bucket": "90-100",
+    "n": 0,
+    "mae_vs_close": null,
+    "rmse_vs_close": null,
+    "median_abs_vs_close": null,
+    "mae_vs_result": null,
+    "rmse_vs_result": null,
+    "median_abs_vs_result": null,
+    "favorite_accuracy": null,
+    "favorite_n": 0,
+    "ats_research_only": null,
+    "ats_n": 0,
+    "sample_ok": false
+   },
+   {
+    "bucket": "80-89",
+    "n": 41,
+    "mae_vs_close": 5.01,
+    "rmse_vs_close": 6.4,
+    "median_abs_vs_close": 3.75,
+    "mae_vs_result": 9.43,
+    "rmse_vs_result": 12.03,
+    "median_abs_vs_result": 7.95,
+    "favorite_accuracy": 0.8,
+    "favorite_n": 40,
+    "ats_research_only": 0.5,
+    "ats_n": 38,
+    "sample_ok": true
+   },
+   {
+    "bucket": "70-79",
+    "n": 12,
+    "mae_vs_close": 5.57,
+    "rmse_vs_close": 6.3,
+    "median_abs_vs_close": 4.79,
+    "mae_vs_result": 10.85,
+    "rmse_vs_result": 12.72,
+    "median_abs_vs_result": 10.69,
+    "favorite_accuracy": 0.917,
+    "favorite_n": 12,
+    "ats_research_only": 0.583,
+    "ats_n": 12,
+    "sample_ok": false
+   },
+   {
+    "bucket": "60-69",
+    "n": 5,
+    "mae_vs_close": 6.07,
+    "rmse_vs_close": 6.26,
+    "median_abs_vs_close": 5.64,
+    "mae_vs_result": 4.13,
+    "rmse_vs_result": 4.76,
+    "median_abs_vs_result": 2.7,
+    "favorite_accuracy": 1,
+    "favorite_n": 5,
+    "ats_research_only": 1,
+    "ats_n": 5,
+    "sample_ok": false
+   },
+   {
+    "bucket": "50-59",
+    "n": 18,
+    "mae_vs_close": 10.4,
+    "rmse_vs_close": 14.1,
+    "median_abs_vs_close": 7.53,
+    "mae_vs_result": 16.46,
+    "rmse_vs_result": 20.4,
+    "median_abs_vs_result": 13.34,
+    "favorite_accuracy": 0.944,
+    "favorite_n": 18,
+    "ats_research_only": 0.471,
+    "ats_n": 17,
+    "sample_ok": false
+   },
+   {
+    "bucket": "<50",
+    "n": 0,
+    "mae_vs_close": null,
+    "rmse_vs_close": null,
+    "median_abs_vs_close": null,
+    "mae_vs_result": null,
+    "rmse_vs_result": null,
+    "median_abs_vs_result": null,
+    "favorite_accuracy": null,
+    "favorite_n": 0,
+    "ats_research_only": null,
+    "ats_n": 0,
+    "sample_ok": false
+   }
+  ],
+  "monotone_vs_close": {
+   "testable": false,
+   "why": "fewer than three buckets hold 30+ games"
+  },
+  "monotone_vs_result": {
+   "testable": false,
+   "why": "fewer than three buckets hold 30+ games"
+  },
+  "validated": false,
+  "verdict": "NOT VALIDATED: too few graded games per reliability bucket to test the ordering",
+  "note": "Reliability is read as published before each game and was never fitted to these outcomes. ATS is research only."
+ },
+ "fbs_only": {
+  "n": 58,
+  "min_bucket_n": 30,
+  "buckets": [
+   {
+    "bucket": "90-100",
+    "n": 0,
+    "mae_vs_close": null,
+    "rmse_vs_close": null,
+    "median_abs_vs_close": null,
+    "mae_vs_result": null,
+    "rmse_vs_result": null,
+    "median_abs_vs_result": null,
+    "favorite_accuracy": null,
+    "favorite_n": 0,
+    "ats_research_only": null,
+    "ats_n": 0,
+    "sample_ok": false
+   },
+   {
+    "bucket": "80-89",
+    "n": 41,
+    "mae_vs_close": 5.01,
+    "rmse_vs_close": 6.4,
+    "median_abs_vs_close": 3.75,
+    "mae_vs_result": 9.43,
+    "rmse_vs_result": 12.03,
+    "median_abs_vs_result": 7.95,
+    "favorite_accuracy": 0.8,
+    "favorite_n": 40,
+    "ats_research_only": 0.5,
+    "ats_n": 38,
+    "sample_ok": true
+   },
+   {
+    "bucket": "70-79",
+    "n": 12,
+    "mae_vs_close": 5.57,
+    "rmse_vs_close": 6.3,
+    "median_abs_vs_close": 4.79,
+    "mae_vs_result": 10.85,
+    "rmse_vs_result": 12.72,
+    "median_abs_vs_result": 10.69,
+    "favorite_accuracy": 0.917,
+    "favorite_n": 12,
+    "ats_research_only": 0.583,
+    "ats_n": 12,
+    "sample_ok": false
+   },
+   {
+    "bucket": "60-69",
+    "n": 5,
+    "mae_vs_close": 6.07,
+    "rmse_vs_close": 6.26,
+    "median_abs_vs_close": 5.64,
+    "mae_vs_result": 4.13,
+    "rmse_vs_result": 4.76,
+    "median_abs_vs_result": 2.7,
+    "favorite_accuracy": 1,
+    "favorite_n": 5,
+    "ats_research_only": 1,
+    "ats_n": 5,
+    "sample_ok": false
+   },
+   {
+    "bucket": "50-59",
+    "n": 0,
+    "mae_vs_close": null,
+    "rmse_vs_close": null,
+    "median_abs_vs_close": null,
+    "mae_vs_result": null,
+    "rmse_vs_result": null,
+    "median_abs_vs_result": null,
+    "favorite_accuracy": null,
+    "favorite_n": 0,
+    "ats_research_only": null,
+    "ats_n": 0,
+    "sample_ok": false
+   },
+   {
+    "bucket": "<50",
+    "n": 0,
+    "mae_vs_close": null,
+    "rmse_vs_close": null,
+    "median_abs_vs_close": null,
+    "mae_vs_result": null,
+    "rmse_vs_result": null,
+    "median_abs_vs_result": null,
+    "favorite_accuracy": null,
+    "favorite_n": 0,
+    "ats_research_only": null,
+    "ats_n": 0,
+    "sample_ok": false
+   }
+  ],
+  "monotone_vs_close": {
+   "testable": false,
+   "why": "fewer than three buckets hold 30+ games"
+  },
+  "monotone_vs_result": {
+   "testable": false,
+   "why": "fewer than three buckets hold 30+ games"
+  },
+  "validated": false,
+  "verdict": "NOT VALIDATED: too few graded games per reliability bucket to test the ordering",
+  "note": "Reliability is read as published before each game and was never fitted to these outcomes. ATS is research only."
+ },
+ "median_split": {
+  "median_reliability": 80,
+  "above": {
+   "n": 36,
+   "mae_vs_close": 4.95,
+   "mae_vs_result": 8.89
+  },
+  "at_or_below": {
+   "n": 40,
+   "mae_vs_close": 7.79,
+   "mae_vs_result": 12.84
+  }
+ },
+ "by_week": [
+  {
+   "week": 3,
+   "calibration": {
+    "n": 75,
+    "min_bucket_n": 30,
+    "buckets": [
+     {
+      "bucket": "90-100",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "80-89",
+      "n": 40,
+      "mae_vs_close": 5.06,
+      "rmse_vs_close": 6.47,
+      "median_abs_vs_close": 3.8,
+      "mae_vs_result": 9.22,
+      "rmse_vs_result": 11.86,
+      "median_abs_vs_result": 7.6,
+      "favorite_accuracy": 0.821,
+      "favorite_n": 39,
+      "ats_research_only": 0.514,
+      "ats_n": 37,
+      "sample_ok": true
+     },
+     {
+      "bucket": "70-79",
+      "n": 12,
+      "mae_vs_close": 5.57,
+      "rmse_vs_close": 6.3,
+      "median_abs_vs_close": 4.79,
+      "mae_vs_result": 10.85,
+      "rmse_vs_result": 12.72,
+      "median_abs_vs_result": 10.69,
+      "favorite_accuracy": 0.917,
+      "favorite_n": 12,
+      "ats_research_only": 0.583,
+      "ats_n": 12,
+      "sample_ok": false
+     },
+     {
+      "bucket": "60-69",
+      "n": 5,
+      "mae_vs_close": 6.07,
+      "rmse_vs_close": 6.26,
+      "median_abs_vs_close": 5.64,
+      "mae_vs_result": 4.13,
+      "rmse_vs_result": 4.76,
+      "median_abs_vs_result": 2.7,
+      "favorite_accuracy": 1,
+      "favorite_n": 5,
+      "ats_research_only": 1,
+      "ats_n": 5,
+      "sample_ok": false
+     },
+     {
+      "bucket": "50-59",
+      "n": 18,
+      "mae_vs_close": 10.4,
+      "rmse_vs_close": 14.1,
+      "median_abs_vs_close": 7.53,
+      "mae_vs_result": 16.46,
+      "rmse_vs_result": 20.4,
+      "median_abs_vs_result": 13.34,
+      "favorite_accuracy": 0.944,
+      "favorite_n": 18,
+      "ats_research_only": 0.471,
+      "ats_n": 17,
+      "sample_ok": false
+     },
+     {
+      "bucket": "<50",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     }
+    ],
+    "monotone_vs_close": {
+     "testable": false,
+     "why": "fewer than three buckets hold 30+ games"
+    },
+    "monotone_vs_result": {
+     "testable": false,
+     "why": "fewer than three buckets hold 30+ games"
+    },
+    "validated": false,
+    "verdict": "NOT VALIDATED: too few graded games per reliability bucket to test the ordering",
+    "note": "Reliability is read as published before each game and was never fitted to these outcomes. ATS is research only."
+   }
+  },
+  {
+   "week": 4,
+   "calibration": {
+    "n": 1,
+    "min_bucket_n": 30,
+    "buckets": [
+     {
+      "bucket": "90-100",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "80-89",
+      "n": 1,
+      "mae_vs_close": 3.06,
+      "rmse_vs_close": 3.06,
+      "median_abs_vs_close": 3.06,
+      "mae_vs_result": 17.56,
+      "rmse_vs_result": 17.56,
+      "median_abs_vs_result": 17.56,
+      "favorite_accuracy": 0,
+      "favorite_n": 1,
+      "ats_research_only": 0,
+      "ats_n": 1,
+      "sample_ok": false
+     },
+     {
+      "bucket": "70-79",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "60-69",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "50-59",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     },
+     {
+      "bucket": "<50",
+      "n": 0,
+      "mae_vs_close": null,
+      "rmse_vs_close": null,
+      "median_abs_vs_close": null,
+      "mae_vs_result": null,
+      "rmse_vs_result": null,
+      "median_abs_vs_result": null,
+      "favorite_accuracy": null,
+      "favorite_n": 0,
+      "ats_research_only": null,
+      "ats_n": 0,
+      "sample_ok": false
+     }
+    ],
+    "monotone_vs_close": {
+     "testable": false,
+     "why": "fewer than three buckets hold 30+ games"
+    },
+    "monotone_vs_result": {
+     "testable": false,
+     "why": "fewer than three buckets hold 30+ games"
+    },
+    "validated": false,
+    "verdict": "NOT VALIDATED: too few graded games per reliability bucket to test the ordering",
+    "note": "Reliability is read as published before each game and was never fitted to these outcomes. ATS is research only."
+   }
+  }
+ ],
+ "validated": false,
+ "statement": "NOT VALIDATED. NOT VALIDATED: too few graded games per reliability bucket to test the ordering. Reliability is published as a transparent data-quality measure, not as a validated predictor of error."
+}

@@ -1,0 +1,4033 @@
+{
+ "schema": "edgedesk_cfb_reliability_backfill_v1",
+ "version": "cfb_reliability/2",
+ "season": 2026,
+ "generated_at": "2026-09-25T18:11:39.275Z",
+ "method": "walk-forward: each graded pick scored from the slate it was published from, judged at that slate’s generated_at, with the engine’s additive terms from a replay of ONLY the games completed before it and the ranking gates from the latest earlier snapshot. No close, result or later artifact is read while scoring.",
+ "limits": [
+  "the personnel impact layer did not exist when these slates were published, so non-QB impact falls back to the contract availability state",
+  "the starter persistence calibration is not carried on a slate row, so QB identity certainty uses the declared evidence-class rates",
+  "the replayed rating state approximates the one that priced the pick (the engine-efficiency join has changed since); the gap is published per game as replay_vs_pick"
+ ],
+ "slates": [
+  {
+   "provenance": "03ee940eb0",
+   "generated_at": "2026-09-19T23:15:00.303Z",
+   "games": 16,
+   "has_contract": true
+  },
+  {
+   "provenance": "2d3382a34a",
+   "generated_at": "2026-09-12T22:24:40.487Z",
+   "games": 20,
+   "has_contract": false
+  },
+  {
+   "provenance": "3cc3deb448",
+   "generated_at": "2026-09-22T02:54:11.006Z",
+   "games": 1,
+   "has_contract": true
+  },
+  {
+   "provenance": "8ffb1bb893",
+   "generated_at": "2026-09-15T20:12:32.878Z",
+   "games": 59,
+   "has_contract": true
+  },
+  {
+   "provenance": "d927ca993a",
+   "generated_at": "2026-09-11T22:25:41.545Z",
+   "games": 65,
+   "has_contract": false
+  }
+ ],
+ "unscorable": [
+  {
+   "provenance": "2d3382a34a",
+   "games": 20,
+   "why": "this slate predates the input contract (published 2026-09-12T22:24:40.487Z), so its inputs cannot be scored"
+  },
+  {
+   "provenance": "d927ca993a",
+   "games": 65,
+   "why": "this slate predates the input contract (published 2026-09-11T22:25:41.545Z), so its inputs cannot be scored"
+  }
+ ],
+ "rows": [
+  {
+   "game_id": "401856688",
+   "week": 3,
+   "kickoff": "2026-09-19T23:30:00.000Z",
+   "home": "Ole Miss",
+   "away": "LSU",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 83,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 3.27,
+    "p50": 6.58,
+    "p90": 9.9,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 8.47,
+   "replay_vs_pick": -1.89,
+   "close_margin": -3,
+   "final_margin": 8
+  },
+  {
+   "game_id": "401856690",
+   "week": 3,
+   "kickoff": "2026-09-19T23:30:00.000Z",
+   "home": "Oklahoma",
+   "away": "New Mexico",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 69,
+   "grade": "CAUTION",
+   "capped_by": [
+    "ROSTER_CONFLICT"
+   ],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 14.5,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 10.9,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.96,
+    "p10": 11.95,
+    "p50": 15.36,
+    "p90": 18.78,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 16.04,
+   "replay_vs_pick": -0.68,
+   "close_margin": 21.5,
+   "final_margin": 8
+  },
+  {
+   "game_id": "401856692",
+   "week": 3,
+   "kickoff": "2026-09-19T23:45:00.000Z",
+   "home": "Tennessee",
+   "away": "Kennesaw State",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 79,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 3.63,
+    "p10": 25.9,
+    "p50": 30.86,
+    "p90": 35.81,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 30.64,
+   "replay_vs_pick": 0.22,
+   "close_margin": 35.5,
+   "final_margin": 33
+  },
+  {
+   "game_id": "401856693",
+   "week": 3,
+   "kickoff": "2026-09-20T00:00:00.000Z",
+   "home": "Texas",
+   "away": "UTSA",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 84,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 11.84,
+    "p50": 15.16,
+    "p90": 18.47,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 19.47,
+   "replay_vs_pick": -4.31,
+   "close_margin": 29.5,
+   "final_margin": 24
+  },
+  {
+   "game_id": "401856793",
+   "week": 3,
+   "kickoff": "2026-09-20T02:30:00.000Z",
+   "home": "Arizona",
+   "away": "Northern Illinois",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 16.4,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 13.3,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.53,
+    "p10": 27.82,
+    "p50": 30.79,
+    "p90": 33.77,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 29.94,
+   "replay_vs_pick": 0.85,
+   "close_margin": 34.5,
+   "final_margin": 25
+  },
+  {
+   "game_id": "401856795",
+   "week": 3,
+   "kickoff": "2026-09-19T23:30:00.000Z",
+   "home": "Colorado State",
+   "away": "BYU",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 15.4,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.75,
+    "p10": -23.11,
+    "p50": -19.92,
+    "p90": -16.72,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": -19.2,
+   "replay_vs_pick": -0.72,
+   "close_margin": -17.5,
+   "final_margin": -18
+  },
+  {
+   "game_id": "401856796",
+   "week": 3,
+   "kickoff": "2026-09-19T23:30:00.000Z",
+   "home": "Northwestern",
+   "away": "Colorado",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 79,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 15.9,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 12.6,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.63,
+    "p10": 6.99,
+    "p50": 10.26,
+    "p90": 13.52,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 10.55,
+   "replay_vs_pick": -0.29,
+   "close_margin": 3.5,
+   "final_margin": 34
+  },
+  {
+   "game_id": "401856799",
+   "week": 3,
+   "kickoff": "2026-09-20T00:00:00.000Z",
+   "home": "TCU",
+   "away": "Arkansas State",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 14.5,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.97,
+    "p10": 14.43,
+    "p50": 17.87,
+    "p90": 21.31,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 18.05,
+   "replay_vs_pick": -0.18,
+   "close_margin": 18.5,
+   "final_margin": 24
+  },
+  {
+   "game_id": "401856802",
+   "week": 3,
+   "kickoff": "2026-09-19T23:30:00.000Z",
+   "home": "Virginia",
+   "away": "West Virginia",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 83,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.7,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.2,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.17,
+    "p10": 6.53,
+    "p50": 9.61,
+    "p90": 12.7,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 8.74,
+   "replay_vs_pick": 0.87,
+   "close_margin": 10.5,
+   "final_margin": -11
+  },
+  {
+   "game_id": "401858232",
+   "week": 3,
+   "kickoff": "2026-09-19T23:30:00.000Z",
+   "home": "Maryland",
+   "away": "Virginia Tech",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 83,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 15.7,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.68,
+    "p10": 3.73,
+    "p50": 6.77,
+    "p90": 9.81,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 6.95,
+   "replay_vs_pick": -0.18,
+   "close_margin": -2.5,
+   "final_margin": -9
+  },
+  {
+   "game_id": "401858453",
+   "week": 3,
+   "kickoff": "2026-09-19T23:30:00.000Z",
+   "home": "Notre Dame",
+   "away": "Michigan State",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 84,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 19.19,
+    "p50": 22.5,
+    "p90": 25.82,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 23.49,
+   "replay_vs_pick": -0.99,
+   "close_margin": 28.5,
+   "final_margin": 17
+  },
+  {
+   "game_id": "401858458",
+   "week": 3,
+   "kickoff": "2026-09-20T03:00:00.000Z",
+   "home": "UCLA",
+   "away": "Purdue",
+   "group": "p4",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 83,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 8.06,
+    "p50": 11.37,
+    "p90": 14.68,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 10.76,
+   "replay_vs_pick": 0.61,
+   "close_margin": 13.5,
+   "final_margin": 14
+  },
+  {
+   "game_id": "401860887",
+   "week": 3,
+   "kickoff": "2026-09-20T02:00:00.000Z",
+   "home": "San Diego State",
+   "away": "James Madison",
+   "group": "other_fbs",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 85,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.3,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": -9.39,
+    "p50": -6.11,
+    "p90": -2.82,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": -4.27,
+   "replay_vs_pick": -1.84,
+   "close_margin": 3,
+   "final_margin": -13
+  },
+  {
+   "game_id": "401860888",
+   "week": 3,
+   "kickoff": "2026-09-20T03:00:00.000Z",
+   "home": "San José State",
+   "away": "Fresno State",
+   "group": "other_fbs",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 85,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.8,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.13,
+    "p10": -10.2,
+    "p50": -7.15,
+    "p90": -4.09,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": -7.23,
+   "replay_vs_pick": 0.08,
+   "close_margin": -4,
+   "final_margin": -16
+  },
+  {
+   "game_id": "401862776",
+   "week": 3,
+   "kickoff": "2026-09-20T00:00:00.000Z",
+   "home": "Louisiana",
+   "away": "UAB",
+   "group": "other_fbs",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 84,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 5.42,
+    "p50": 8.73,
+    "p90": 12.04,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 5.79,
+   "replay_vs_pick": 2.94,
+   "close_margin": 7,
+   "final_margin": 7
+  },
+  {
+   "game_id": "401864507",
+   "week": 3,
+   "kickoff": "2026-09-20T02:30:00.000Z",
+   "home": "Sacramento State",
+   "away": "North Dakota State",
+   "group": "other_fbs",
+   "provenance": "03ee940eb0",
+   "judged_at": "2026-09-19T23:15:00.303Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 80,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 18,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 18.4,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 13.3,
+     "max": 15
+    },
+    "environment": {
+     "score": 6.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 1.95,
+    "p10": -9.81,
+    "p50": -6.88,
+    "p90": -3.95,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": -8.39,
+   "replay_vs_pick": 1.51,
+   "close_margin": -26.5,
+   "final_margin": -21
+  },
+  {
+   "game_id": "401869941",
+   "week": 4,
+   "kickoff": "2026-09-24T23:30:00.000Z",
+   "home": "Coastal Carolina",
+   "away": "Liberty",
+   "group": "other_fbs",
+   "provenance": "3cc3deb448",
+   "judged_at": "2026-09-22T02:54:11.006Z",
+   "snapshot": "2026-w02.json",
+   "reliability": 80,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 18,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 13.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 13.3,
+     "max": 15
+    },
+    "environment": {
+     "score": 10,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 1.95,
+    "p10": -2.32,
+    "p50": 0.56,
+    "p90": 3.44,
+    "favorite_flip_rate": 0.219,
+    "tier": "MODERATE"
+   },
+   "model_margin": 0.56,
+   "replay_vs_pick": 0,
+   "close_margin": -2.5,
+   "final_margin": -17
+  },
+  {
+   "game_id": "401856685",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "Alabama",
+   "away": "Florida State",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 15.6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.7,
+    "p10": 19.63,
+    "p50": 22.72,
+    "p90": 25.82,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 21.98,
+   "replay_vs_pick": 0.74,
+   "close_margin": 18.5,
+   "final_margin": 14
+  },
+  {
+   "game_id": "401856686",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Arkansas",
+   "away": "Georgia",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 85,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": -17.69,
+    "p50": -14.38,
+    "p90": -11.07,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": -12.1,
+   "replay_vs_pick": -2.28,
+   "close_margin": -24.5,
+   "final_margin": -28
+  },
+  {
+   "game_id": "401856687",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "Auburn",
+   "away": "Florida",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 85,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 2.83,
+    "p50": 6.14,
+    "p90": 9.45,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 7.36,
+   "replay_vs_pick": -1.22,
+   "close_margin": -2.5,
+   "final_margin": -5
+  },
+  {
+   "game_id": "401856689",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "Missouri",
+   "away": "Troy",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 78,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 12.1,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 3.52,
+    "p10": 24.67,
+    "p50": 29.51,
+    "p90": 34.35,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 28.56,
+   "replay_vs_pick": 0.95,
+   "close_margin": 26.5,
+   "final_margin": 10
+  },
+  {
+   "game_id": "401856691",
+   "week": 3,
+   "kickoff": "2026-09-19T20:15:00.000Z",
+   "home": "South Carolina",
+   "away": "Mississippi State",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 85,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 3.59,
+    "p50": 6.91,
+    "p90": 10.22,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 6.85,
+   "replay_vs_pick": 0.06,
+   "close_margin": 3,
+   "final_margin": -7
+  },
+  {
+   "game_id": "401856694",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "Texas A&M",
+   "away": "Kentucky",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 85,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 19.41,
+    "p50": 22.72,
+    "p90": 26.04,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 22.98,
+   "replay_vs_pick": -0.26,
+   "close_margin": 16.5,
+   "final_margin": -10
+  },
+  {
+   "game_id": "401856695",
+   "week": 3,
+   "kickoff": "2026-09-19T16:45:00.000Z",
+   "home": "Vanderbilt",
+   "away": "NC State",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 79,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 15.6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 14,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.7,
+    "p10": 12.77,
+    "p50": 15.87,
+    "p90": 18.96,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 16.39,
+   "replay_vs_pick": -0.52,
+   "close_margin": 3,
+   "final_margin": 4
+  },
+  {
+   "game_id": "401856792",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Kansas State",
+   "away": "Tulane",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 9.42,
+    "p50": 12.73,
+    "p90": 16.04,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 13.9,
+   "replay_vs_pick": -1.17,
+   "close_margin": 20.5,
+   "final_margin": 11
+  },
+  {
+   "game_id": "401856797",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "Cincinnati",
+   "away": "Miami (OH)",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 81,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 13.6,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 6.42,
+    "p50": 9.73,
+    "p90": 13.04,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 18,
+   "replay_vs_pick": -8.27,
+   "close_margin": 14.5,
+   "final_margin": 4
+  },
+  {
+   "game_id": "401856798",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Iowa State",
+   "away": "Bowling Green",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 22.23,
+    "p50": 25.54,
+    "p90": 28.86,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 32.26,
+   "replay_vs_pick": -6.72,
+   "close_margin": 22.5,
+   "final_margin": 48
+  },
+  {
+   "game_id": "401856800",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "UCF",
+   "away": "Georgia State",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 80,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 14.5,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.97,
+    "p10": 11.02,
+    "p50": 14.46,
+    "p90": 17.9,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 15.15,
+   "replay_vs_pick": -0.69,
+   "close_margin": 17.5,
+   "final_margin": 14
+  },
+  {
+   "game_id": "401856801",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "Utah",
+   "away": "Utah State",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 69,
+   "grade": "CAUTION",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 4.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 15.4,
+     "max": 20
+    },
+    "freshness": {
+     "score": 13.6,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 9.2,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.75,
+    "p10": 28.62,
+    "p50": 31.81,
+    "p90": 35.01,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 30.3,
+   "replay_vs_pick": 1.51,
+   "close_margin": 26.5,
+   "final_margin": 33
+  },
+  {
+   "game_id": "401856803",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "Oklahoma State",
+   "away": "Murray State",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 57,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 6.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 14,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 13.86,
+    "p50": 24.45,
+    "p90": 35.04,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 23.95,
+   "replay_vs_pick": 0.5,
+   "close_margin": 56.5,
+   "final_margin": 59
+  },
+  {
+   "game_id": "401856811",
+   "week": 3,
+   "kickoff": "2026-09-19T00:00:00.000Z",
+   "home": "Texas Tech",
+   "away": "Houston",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 85,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 9.95,
+    "p50": 13.26,
+    "p90": 16.58,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 14.3,
+   "replay_vs_pick": -1.04,
+   "close_margin": 7.5,
+   "final_margin": 2
+  },
+  {
+   "game_id": "401856812",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Kansas",
+   "away": "Arizona State",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 81,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 14.1,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.2,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.02,
+    "p10": -3.55,
+    "p50": -0.82,
+    "p90": 1.91,
+    "favorite_flip_rate": 0.172,
+    "tier": "MODERATE"
+   },
+   "model_margin": -0.48,
+   "replay_vs_pick": -0.34,
+   "close_margin": -5.5,
+   "final_margin": -7
+  },
+  {
+   "game_id": "401858225",
+   "week": 3,
+   "kickoff": "2026-09-17T23:30:00.000Z",
+   "home": "Pittsburgh",
+   "away": "Syracuse",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 85,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 15.96,
+    "p50": 19.27,
+    "p90": 22.58,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 19.82,
+   "replay_vs_pick": -0.55,
+   "close_margin": 10.5,
+   "final_margin": 14
+  },
+  {
+   "game_id": "401858226",
+   "week": 3,
+   "kickoff": "2026-09-18T23:30:00.000Z",
+   "home": "Wake Forest",
+   "away": "Miami",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 85,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": -17.68,
+    "p50": -14.37,
+    "p90": -11.06,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": -13.21,
+   "replay_vs_pick": -1.16,
+   "close_margin": -20.5,
+   "final_margin": -13
+  },
+  {
+   "game_id": "401858227",
+   "week": 3,
+   "kickoff": "2026-09-19T18:00:00.000Z",
+   "home": "Boston College",
+   "away": "Maine",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 59,
+   "grade": "LOW",
+   "capped_by": [
+    "THIN_DATA"
+   ],
+   "components": {
+    "team_data": {
+     "score": 8.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 14.29,
+    "p50": 24.88,
+    "p90": 35.47,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 25.55,
+   "replay_vs_pick": -0.67,
+   "close_margin": 37.5,
+   "final_margin": 6
+  },
+  {
+   "game_id": "401858228",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Georgia Tech",
+   "away": "Mercer",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 59,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.1,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 18.57,
+    "p50": 29.16,
+    "p90": 39.76,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 29.16,
+   "replay_vs_pick": 0,
+   "close_margin": 38.5,
+   "final_margin": 33
+  },
+  {
+   "game_id": "401858229",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Clemson",
+   "away": "North Carolina",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 69,
+   "grade": "CAUTION",
+   "capped_by": [
+    "QB_UNKNOWN",
+    "ROSTER_CONFLICT"
+   ],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 13.8,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 10.9,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 4.49,
+    "p50": 7.8,
+    "p90": 11.11,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 10.11,
+   "replay_vs_pick": -2.31,
+   "close_margin": 3,
+   "final_margin": 8
+  },
+  {
+   "game_id": "401858230",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "Louisville",
+   "away": "SMU",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 12.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 13.1,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": -2.05,
+    "p50": 1.26,
+    "p90": 4.58,
+    "favorite_flip_rate": 0.172,
+    "tier": "MODERATE"
+   },
+   "model_margin": 2.05,
+   "replay_vs_pick": -0.79,
+   "close_margin": 3,
+   "final_margin": 10
+  },
+  {
+   "game_id": "401858231",
+   "week": 3,
+   "kickoff": "2026-09-19T20:00:00.000Z",
+   "home": "Duke",
+   "away": "Stanford",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 84,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 11.6,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.4,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 12.77,
+    "p50": 16.08,
+    "p90": 19.39,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 16.93,
+   "replay_vs_pick": -0.85,
+   "close_margin": 9.5,
+   "final_margin": 28
+  },
+  {
+   "game_id": "401858233",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "California",
+   "away": "Wagner",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 59,
+   "grade": "LOW",
+   "capped_by": [
+    "THIN_DATA"
+   ],
+   "components": {
+    "team_data": {
+     "score": 8.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.3,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 13.87,
+    "p50": 24.47,
+    "p90": 35.06,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 25.56,
+   "replay_vs_pick": -1.09,
+   "close_margin": 58.5,
+   "final_margin": 42
+  },
+  {
+   "game_id": "401858448",
+   "week": 3,
+   "kickoff": "2026-09-19T18:00:00.000Z",
+   "home": "Illinois",
+   "away": "Southern Illinois",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 56,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.1,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 6.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 14,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 23.39,
+    "p50": 33.98,
+    "p90": 44.58,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 33.98,
+   "replay_vs_pick": 0,
+   "close_margin": 34.5,
+   "final_margin": 38
+  },
+  {
+   "game_id": "401858449",
+   "week": 3,
+   "kickoff": "2026-09-19T20:00:00.000Z",
+   "home": "Indiana",
+   "away": "Western Kentucky",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 78,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 11.8,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 3.59,
+    "p10": 44.18,
+    "p50": 49.09,
+    "p90": 54,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 47.91,
+   "replay_vs_pick": 1.18,
+   "close_margin": 44.5,
+   "final_margin": 38
+  },
+  {
+   "game_id": "401858450",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "Michigan",
+   "away": "UTEP",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 81,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 14.7,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.93,
+    "p10": 24.95,
+    "p50": 28.33,
+    "p90": 31.71,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 30.01,
+   "replay_vs_pick": -1.68,
+   "close_margin": 34.5,
+   "final_margin": 35
+  },
+  {
+   "game_id": "401858451",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Minnesota",
+   "away": "Akron",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 6.25,
+    "p50": 9.56,
+    "p90": 12.87,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 19.43,
+   "replay_vs_pick": -9.87,
+   "close_margin": 22.5,
+   "final_margin": 34
+  },
+  {
+   "game_id": "401858452",
+   "week": 3,
+   "kickoff": "2026-09-19T23:15:00.000Z",
+   "home": "Nebraska",
+   "away": "North Dakota",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 59,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.1,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 25.23,
+    "p50": 35.82,
+    "p90": 46.41,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 35.82,
+   "replay_vs_pick": 0,
+   "close_margin": 27.5,
+   "final_margin": 27
+  },
+  {
+   "game_id": "401858454",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Ohio State",
+   "away": "Kent State",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 36.2,
+    "p50": 39.51,
+    "p90": 42.82,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 48.75,
+   "replay_vs_pick": -9.24,
+   "close_margin": 52.5,
+   "final_margin": 56
+  },
+  {
+   "game_id": "401858455",
+   "week": 3,
+   "kickoff": "2026-09-19T02:30:00.000Z",
+   "home": "Oregon",
+   "away": "Portland State",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 59,
+   "grade": "LOW",
+   "capped_by": [
+    "THIN_DATA"
+   ],
+   "components": {
+    "team_data": {
+     "score": 8.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.3,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 31.51,
+    "p50": 42.11,
+    "p90": 52.7,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 40.52,
+   "replay_vs_pick": 1.59,
+   "close_margin": 58.5,
+   "final_margin": 84
+  },
+  {
+   "game_id": "401858456",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Penn State",
+   "away": "Buffalo",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 28.19,
+    "p50": 31.5,
+    "p90": 34.81,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 40.23,
+   "replay_vs_pick": -8.73,
+   "close_margin": 39.5,
+   "final_margin": 42
+  },
+  {
+   "game_id": "401858457",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "Rutgers",
+   "away": "USC",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 69,
+   "grade": "CAUTION",
+   "capped_by": [
+    "ROSTER_CONFLICT"
+   ],
+   "components": {
+    "team_data": {
+     "score": 17.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.1,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 10.9,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.33,
+    "p10": -17.97,
+    "p50": -14.62,
+    "p90": -11.26,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": -12.67,
+   "replay_vs_pick": -1.95,
+   "close_margin": -21,
+   "final_margin": -7
+  },
+  {
+   "game_id": "401858459",
+   "week": 3,
+   "kickoff": "2026-09-19T23:15:00.000Z",
+   "home": "Washington",
+   "away": "Eastern Washington",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 59,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.1,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 28.81,
+    "p50": 39.4,
+    "p90": 50,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 39.4,
+   "replay_vs_pick": 0,
+   "close_margin": 42.5,
+   "final_margin": 32
+  },
+  {
+   "game_id": "401858460",
+   "week": 3,
+   "kickoff": "2026-09-19T16:30:00.000Z",
+   "home": "Wisconsin",
+   "away": "Eastern Michigan",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 83,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.18,
+    "p10": 9.87,
+    "p50": 13,
+    "p90": 16.12,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 22.94,
+   "replay_vs_pick": -9.94,
+   "close_margin": 23.5,
+   "final_margin": 44
+  },
+  {
+   "game_id": "401858471",
+   "week": 3,
+   "kickoff": "2026-09-19T20:00:00.000Z",
+   "home": "Iowa",
+   "away": "Northern Iowa",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 59,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.1,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 31.39,
+    "p50": 41.98,
+    "p90": 52.57,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 41.98,
+   "replay_vs_pick": 0,
+   "close_margin": 37.5,
+   "final_margin": 55
+  },
+  {
+   "game_id": "401860885",
+   "week": 3,
+   "kickoff": "2026-09-20T02:00:00.000Z",
+   "home": "Boise State",
+   "away": "South Dakota",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 57,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.1,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 7.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.2,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 25.08,
+    "p50": 35.68,
+    "p90": 46.27,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 35.67,
+   "replay_vs_pick": 0.01,
+   "close_margin": 28.5,
+   "final_margin": 14
+  },
+  {
+   "game_id": "401860886",
+   "week": 3,
+   "kickoff": "2026-09-20T03:00:00.000Z",
+   "home": "Oregon State",
+   "away": "Montana",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 51,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.1,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 4,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 13.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 12.3,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 10.76,
+    "p50": 21.35,
+    "p90": 31.94,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 21.35,
+   "replay_vs_pick": 0,
+   "close_margin": 17.5,
+   "final_margin": 35
+  },
+  {
+   "game_id": "401860889",
+   "week": 3,
+   "kickoff": "2026-09-19T16:00:00.000Z",
+   "home": "Texas State",
+   "away": "North Texas",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 81,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": -8.4,
+    "p50": -5.09,
+    "p90": -1.78,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": -6.67,
+   "replay_vs_pick": 1.58,
+   "close_margin": 3,
+   "final_margin": 14
+  },
+  {
+   "game_id": "401860890",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "Washington State",
+   "away": "Duquesne",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 58,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 7.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.2,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 19.99,
+    "p50": 30.58,
+    "p90": 41.17,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 30.62,
+   "replay_vs_pick": -0.04,
+   "close_margin": 38.5,
+   "final_margin": 41
+  },
+  {
+   "game_id": "401861963",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "Southern Miss",
+   "away": "UConn",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 76,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 11.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": -2.82,
+    "p50": 0.49,
+    "p90": 3.81,
+    "favorite_flip_rate": 0.266,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": -8.32,
+   "replay_vs_pick": 8.81,
+   "close_margin": -3.5,
+   "final_margin": -28
+  },
+  {
+   "game_id": "401862710",
+   "week": 3,
+   "kickoff": "2026-09-19T22:00:00.000Z",
+   "home": "Old Dominion",
+   "away": "East Carolina",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 82,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 3.83,
+    "p50": 7.14,
+    "p90": 10.45,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 3.54,
+   "replay_vs_pick": 3.6,
+   "close_margin": 2.5,
+   "final_margin": -3
+  },
+  {
+   "game_id": "401862771",
+   "week": 3,
+   "kickoff": "2026-09-19T22:00:00.000Z",
+   "home": "Florida Atlantic",
+   "away": "Florida International",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 76,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 11.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": -3.39,
+    "p50": -0.07,
+    "p90": 3.24,
+    "favorite_flip_rate": 0.344,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 3.03,
+   "replay_vs_pick": -3.1,
+   "close_margin": 5.5,
+   "final_margin": 6
+  },
+  {
+   "game_id": "401862772",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "Memphis",
+   "away": "UT Martin",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 50,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 9,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 4,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 13.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 10.9,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.99,
+    "p10": 20.57,
+    "p50": 31.28,
+    "p90": 41.98,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 31.12,
+   "replay_vs_pick": 0.16,
+   "close_margin": 33.5,
+   "final_margin": 24
+  },
+  {
+   "game_id": "401862773",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "Rice",
+   "away": "Western Michigan",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 81,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": -15.88,
+    "p50": -12.57,
+    "p90": -9.26,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": -7.69,
+   "replay_vs_pick": -4.88,
+   "close_margin": -8.5,
+   "final_margin": -7
+  },
+  {
+   "game_id": "401862774",
+   "week": 3,
+   "kickoff": "2026-09-19T19:00:00.000Z",
+   "home": "Toledo",
+   "away": "Temple",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 79,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 6.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 14,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 12.9,
+    "p50": 16.21,
+    "p90": 19.53,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 12.47,
+   "replay_vs_pick": 3.74,
+   "close_margin": 4.5,
+   "final_margin": 1
+  },
+  {
+   "game_id": "401862775",
+   "week": 3,
+   "kickoff": "2026-09-20T00:00:00.000Z",
+   "home": "Tulsa",
+   "away": "East Texas A&M",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 55,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.1,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 5.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.2,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 14,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 12.5,
+    "p50": 23.09,
+    "p90": 33.68,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 23.09,
+   "replay_vs_pick": 0,
+   "close_margin": 41.5,
+   "final_margin": 42
+  },
+  {
+   "game_id": "401862777",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "South Florida",
+   "away": "Delaware State",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 57,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.1,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 7.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.2,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 26.69,
+    "p50": 37.28,
+    "p90": 47.87,
+    "favorite_flip_rate": 0,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 37.28,
+   "replay_vs_pick": 0,
+   "close_margin": 37.5,
+   "final_margin": 42
+  },
+  {
+   "game_id": "401864443",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "Middle Tennessee",
+   "away": "Nevada",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 77,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 13,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 13.3,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.43,
+    "p10": -1.57,
+    "p50": 1.52,
+    "p90": 4.6,
+    "favorite_flip_rate": 0.156,
+    "tier": "MODERATE"
+   },
+   "model_margin": 1.26,
+   "replay_vs_pick": 0.26,
+   "close_margin": -3.5,
+   "final_margin": 7
+  },
+  {
+   "game_id": "401864508",
+   "week": 3,
+   "kickoff": "2026-09-19T17:00:00.000Z",
+   "home": "Central Michigan",
+   "away": "Wyoming",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 79,
+   "grade": "ADEQUATE",
+   "capped_by": [
+    "QB_CONTESTED"
+   ],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 7.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 14,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 2.16,
+    "p50": 5.47,
+    "p90": 8.78,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 2.41,
+   "replay_vs_pick": 3.06,
+   "close_margin": -1.5,
+   "final_margin": 14
+  },
+  {
+   "game_id": "401864574",
+   "week": 3,
+   "kickoff": "2026-09-19T22:00:00.000Z",
+   "home": "App State",
+   "away": "Charlotte",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 80,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 13.3,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 15.36,
+    "p50": 18.67,
+    "p90": 21.99,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 15.71,
+   "replay_vs_pick": 2.96,
+   "close_margin": 16.5,
+   "final_margin": 5
+  },
+  {
+   "game_id": "401866422",
+   "week": 3,
+   "kickoff": "2026-09-19T20:00:00.000Z",
+   "home": "Liberty",
+   "away": "Ball State",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 80,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 13.3,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": 6.89,
+    "p50": 10.21,
+    "p90": 13.52,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 11.65,
+   "replay_vs_pick": -1.44,
+   "close_margin": 14.5,
+   "final_margin": 36
+  },
+  {
+   "game_id": "401866423",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "South Alabama",
+   "away": "Ohio",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 78,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 9,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 13.1,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.31,
+    "p10": -2.19,
+    "p50": 1.12,
+    "p90": 4.43,
+    "favorite_flip_rate": 0.172,
+    "tier": "MODERATE"
+   },
+   "model_margin": 2.26,
+   "replay_vs_pick": -1.14,
+   "close_margin": 7,
+   "final_margin": 5
+  },
+  {
+   "game_id": "401866424",
+   "week": 3,
+   "kickoff": "2026-09-19T19:30:00.000Z",
+   "home": "Massachusetts",
+   "away": "Stonehill",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 57,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 7,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 4.9,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.2,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 4.01,
+    "p50": 14.6,
+    "p90": 25.19,
+    "favorite_flip_rate": 0.047,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 14.61,
+   "replay_vs_pick": -0.01,
+   "close_margin": 30.5,
+   "final_margin": 22
+  },
+  {
+   "game_id": "401867804",
+   "week": 3,
+   "kickoff": "2026-09-19T20:00:00.000Z",
+   "home": "Baylor",
+   "away": "Louisiana Tech",
+   "group": "p4",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 69,
+   "grade": "CAUTION",
+   "capped_by": [
+    "ROSTER_CONFLICT"
+   ],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.5,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 14.5,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 10.9,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.97,
+    "p10": 12.5,
+    "p50": 15.95,
+    "p90": 19.39,
+    "favorite_flip_rate": 0,
+    "tier": "MODERATE"
+   },
+   "model_margin": 14.86,
+   "replay_vs_pick": 1.09,
+   "close_margin": 20.5,
+   "final_margin": 17
+  },
+  {
+   "game_id": "401868317",
+   "week": 3,
+   "kickoff": "2026-09-19T20:30:00.000Z",
+   "home": "UL Monroe",
+   "away": "SE Louisiana",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 56,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 7.8,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 4.9,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 13.3,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 3.23,
+    "p50": 13.82,
+    "p90": 24.41,
+    "favorite_flip_rate": 0.047,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 15.34,
+   "replay_vs_pick": -1.52,
+   "close_margin": 9.5,
+   "final_margin": -3
+  },
+  {
+   "game_id": "401869940",
+   "week": 3,
+   "kickoff": "2026-09-19T15:30:00.000Z",
+   "home": "Delaware",
+   "away": "Coastal Carolina",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 83,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.3,
+    "p10": 3.49,
+    "p50": 6.79,
+    "p90": 10.09,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 6.86,
+   "replay_vs_pick": -0.07,
+   "close_margin": 4.5,
+   "final_margin": 8
+  },
+  {
+   "game_id": "401869948",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "Jacksonville State",
+   "away": "Georgia Southern",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 84,
+   "grade": "STRONG",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.5,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 8.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.21,
+    "p10": 0.37,
+    "p50": 3.53,
+    "p90": 6.68,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 3.36,
+   "replay_vs_pick": 0.17,
+   "close_margin": 3.5,
+   "final_margin": 4
+  },
+  {
+   "game_id": "401870764",
+   "week": 3,
+   "kickoff": "2026-09-19T23:00:00.000Z",
+   "home": "Sam Houston",
+   "away": "Nicholls",
+   "group": "fbs_fcs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 59,
+   "grade": "LOW",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 8.7,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 8.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 5.6,
+     "max": 20
+    },
+    "freshness": {
+     "score": 14.3,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 15,
+     "max": 15
+    },
+    "environment": {
+     "score": 7,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 7.96,
+    "p10": 5.06,
+    "p50": 15.65,
+    "p90": 26.24,
+    "favorite_flip_rate": 0.016,
+    "tier": "UNSTABLE"
+   },
+   "model_margin": 16.57,
+   "replay_vs_pick": -0.92,
+   "close_margin": 21,
+   "final_margin": 59
+  },
+  {
+   "game_id": "401871047",
+   "week": 3,
+   "kickoff": "2026-09-19T22:30:00.000Z",
+   "home": "Missouri State",
+   "away": "Marshall",
+   "group": "other_fbs",
+   "provenance": "8ffb1bb893",
+   "judged_at": "2026-09-15T20:12:32.878Z",
+   "snapshot": "2026-w01.json",
+   "reliability": 78,
+   "grade": "ADEQUATE",
+   "capped_by": [],
+   "components": {
+    "team_data": {
+     "score": 17.3,
+     "max": 20
+    },
+    "roster_availability": {
+     "score": 10.1,
+     "max": 20
+    },
+    "projection_stability": {
+     "score": 17.2,
+     "max": 20
+    },
+    "freshness": {
+     "score": 15,
+     "max": 15
+    },
+    "source_integrity": {
+     "score": 11.9,
+     "max": 15
+    },
+    "environment": {
+     "score": 6.5,
+     "max": 10
+    }
+   },
+   "stability": {
+    "sd": 2.3,
+    "p10": 0.77,
+    "p50": 4.07,
+    "p90": 7.36,
+    "favorite_flip_rate": 0,
+    "tier": "STABLE"
+   },
+   "model_margin": 3.38,
+   "replay_vs_pick": 0.69,
+   "close_margin": -4,
+   "final_margin": -6
+  }
+ ],
+ "replay_fidelity": {
+  "n": 76,
+  "median_abs_diff": 0.92,
+  "within_1pt": 41,
+  "basis": "how far the replayed number sits from the number the pick actually published; the stability terms are read off the replay"
+ }
+}

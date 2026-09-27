@@ -51,8 +51,11 @@ section('1. the policy registry — scope, vocabulary, and what it has not check
   chk('every PUBLISHED conference carries a url and a source for the claim',
     POLICY.published().every(c => !!c.report_url && !!c.source),
     POLICY.published().filter(c => !c.report_url || !c.source).map(c => c.id));
-  chk('every PUBLISHED policy covers conference games only — none claims to cover a non-conference fixture',
-    POLICY.published().every(c => c.applies_to === 'CONFERENCE_GAMES'),
+  /* ONE EXCEPTION, ON THE CONFERENCE'S OWN FILINGS: the MAC's 2026 archive
+     carries its schools' reports for non-conference games too
+     (conferences.test.js). No other conference may claim it. */
+  chk('every PUBLISHED policy covers conference games only, except the MAC, whose filings cover every game',
+    POLICY.published().every(c => c.applies_to === 'CONFERENCE_GAMES' || (c.applies_to === 'ALL_GAMES' && c.id === 'midamerican')),
     POLICY.published().map(c => c.id + '=' + c.applies_to));
   /* THE THING THE TASK NAMES: not every conference publishes the same report */
   const comp = POLICY.published().filter(c => c.comprehensive).map(c => c.id);
@@ -131,9 +134,11 @@ section('2. what a read produces, and what a failed read produces');
   chk('and it says why rather than leaving the reader to infer it',
     /not a statement that the roster is whole/.test(selective.why), selective.why);
 
-  /* a status outside the conference's published vocabulary */
-  const odd = R.ingest(Object.assign({}, BASE, { body: '<table><tr><td>Carson Beck</td><td>Probable</td></tr></table>',
-    content_type: 'text/html' }));
+  /* a status outside the conference's published vocabulary: the Mountain
+     West files only OUT and QUESTIONABLE (the ACC, whose example this once
+     was, lists PROBABLE in its own policy and files it) */
+  const odd = R.ingest(Object.assign({}, BASE, { conference: 'Mountain West',
+    body: '<table><tr><td>Carson Beck</td><td>Probable</td></tr></table>', content_type: 'text/html' }));
   chk('a designation the conference does not publish is quarantined, not mapped onto a neighbour',
     odd.rows.length === 0 && odd.unparsed.length === 1
       && /not in this conference/.test(odd.unparsed[0].why || ''), odd.unparsed);
@@ -245,11 +250,85 @@ section('6. the merged view never grades a failed read as a clean one');
   chk('the observation time is the report’s publication, not the sync’s run time',
     Date.parse(b.teams.m.observed_at) === Date.parse('2026-09-17T02:00:00Z'), b.teams.m.observed_at);
 
-  const quiet = Object.assign({}, real, { rows: [], silence_means_available: true });
-  const c = OVERLAY.build({ current, operator: { live: [] }, reports: [quiet], now: NOW });
-  chk('a comprehensive report naming nobody sets report_of_no_absences rather than inventing records',
-    c.teams.m.official_report.report_of_no_absences === true && c.teams.m.players.length === 0,
+  /* SILENCE HAS TO BE CORROBORATED. A document read for one side that names
+     nobody is indistinguishable from a page that is not the report; the same
+     document naming the OTHER side's players is what shows it is this game's
+     report and that it simply lists none of ours. */
+  const quiet = Object.assign({}, real, { rows: [], silence_means_available: true, game_id: 'G1' });
+  const alone = OVERLAY.build({ current, operator: { live: [] }, reports: [quiet], now: NOW });
+  chk('a report naming nobody on EITHER side of its fixture is a failed read, not a clean bill of health',
+    alone.teams.m.official_report === null && !!alone.teams.m.official_report_failed
+      && /named nobody on either side/.test(alone.teams.m.official_report_failed.why), alone.teams.m);
+  chk('and it does not raise the grade', alone.teams.m.dataQuality === 'LIMITED', alone.teams.m.dataQuality);
+  const other = Object.assign({}, real, { team: 'Florida State', game_id: 'G1',
+    rows: [{ player_name: 'Some One', player_id: '9', position: 'WR', status: 'QUESTIONABLE' }] });
+  const c = OVERLAY.build({ current, operator: { live: [] }, reports: [quiet, other], now: NOW });
+  chk('the same document naming the other side’s players corroborates it: report_of_no_absences, no invented records',
+    c.teams.m.official_report && c.teams.m.official_report.report_of_no_absences === true && c.teams.m.players.length === 0,
     c.teams.m.official_report);
+  const elsewhere = Object.assign({}, other, { source_url: 'another-document' });
+  const d = OVERLAY.build({ current, operator: { live: [] }, reports: [quiet, elsewhere], now: NOW });
+  chk('a different document does not corroborate it', d.teams.m.official_report === null, d.teams.m.official_report);
+  const said = Object.assign({}, quiet, { explicit_none: true });
+  const e = OVERLAY.build({ current, operator: { live: [] }, reports: [said], now: NOW });
+  chk('a parser that read an explicit "none listed" for this team makes it a report of no absences',
+    e.teams.m.official_report && e.teams.m.official_report.report_of_no_absences === true, e.teams.m.official_report);
+  const judged = OVERLAY.corroborate([quiet]);
+  chk('corroborate never edits the report it was handed', quiet.ok === true && judged[0] !== quiet && judged[0].ok === false);
+}
+
+section('7. a web page is never dated from its server header');
+{
+  const html = Buffer.from('<html><body>report</body></html>');
+  const pdf = Buffer.from('%PDF-1.4 ...');
+  const LM = 'Fri, 25 Sep 2026 14:59:23 GMT';
+  chk('a CMS page’s Last-Modified is its cache rebuild, not a filing time', R.publishedFromHeaders(LM, 'text/html; charset=utf-8', html) === null);
+  chk('a PDF’s Last-Modified is when it was uploaded', R.publishedFromHeaders(LM, 'application/pdf', pdf) === LM);
+  chk('a PDF is recognised by its bytes when the server mislabels it', R.publishedFromHeaders(LM, 'application/octet-stream', pdf) === LM);
+  chk('no header, no date', R.publishedFromHeaders(null, 'application/pdf', pdf) === null);
+}
+
+section('8. the reports already on file');
+{
+  /* every committed file that names nobody on either side of its fixture —
+     this season, every ACC, Big 12 and Big Ten read, taken from a homepage
+     or a policy page — is read as the failed read it was */
+  const fs = require('fs');
+  const all = R.readAll(path.join(__dirname, 'reports')).map(x => x.report);
+  const merged = OVERLAY.build({ current: null, operator: { live: [] }, reports: all, now: NOW });
+  const clean = Object.keys(merged.teams).map(k => merged.teams[k])
+    .filter(t => t.official_report && t.official_report.report_of_no_absences && !t.official_report.names);
+  const uncorroborated = OVERLAY.corroborate(all).filter(r => r.uncorroborated).length;
+  chk('no committed file becomes a report of no absences without corroboration',
+    clean.every(t => all.some(r => r.ok && (r.rows || []).length && String(r.game_id) === String(t.official_report.game_id)
+      && r.source_url === t.official_report.source_url) || all.some(r => r.explicit_none && r.team === t.team_name)),
+    clean.map(t => t.team_name));
+  console.log('       (' + uncorroborated + ' committed read(s) named nobody on either side and are read as failed reads)');
+}
+
+/* THE BUNDLE THE BOARD READS IS THE DIRECTORY THE BUILD READS. The board
+   cannot list football/availability/reports/, so it reads the one-file copy;
+   a report written without rewriting the copy would put the board back to
+   reporting "no report" for a filing the published slate has. */
+{
+  const fs = require('fs');
+  const dir = path.join(__dirname, 'reports');
+  const committed = JSON.parse(fs.readFileSync(R.BUNDLE_FILE, 'utf8'));
+  const fresh = R.bundle(dir);
+  chk('the committed reports bundle carries every report in the directory, in file-name order',
+    JSON.stringify(committed) === JSON.stringify(fresh),
+    { committed: (committed.reports || []).length, directory: fresh.reports.length });
+  chk('the bundle is the schema the board reads', committed.schema === R.BUNDLE_SCHEMA);
+  /* the overlay reads a bundled report exactly as it reads the file */
+  const files = R.readAll(dir);
+  if (files.length) {
+    const fromFiles = OVERLAY.build({ current: null, operator: { live: [] }, reports: files.map(x => x.report), now: NOW });
+    const fromBundle = OVERLAY.build({ current: null, operator: { live: [] }, reports: committed.reports, now: NOW });
+    chk('the overlay merges the bundle to the same teams, grades and official reports as the files',
+      JSON.stringify(fromFiles.teams) === JSON.stringify(fromBundle.teams));
+  }
+  const src = fs.readFileSync(path.join(__dirname, 'sync_reports.js'), 'utf8') + fs.readFileSync(path.join(__dirname, 'ingest_report.js'), 'utf8');
+  chk('both report writers rewrite the bundle', (src.match(/R\.writeBundle\(/g) || []).length >= 2);
 }
 
 console.log('\navailability reports: ' + pass + ' passed, ' + fail + ' failed');

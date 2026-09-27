@@ -1,0 +1,7218 @@
+{
+ "calibration_artifact": "cfb_decision_calibration_v1",
+ "cases": [
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "bet_clear",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a clear price edge: BET, flat 1u, BET_NOW",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 53,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -102,
+    "decision_cover_probability": 0.5273,
+    "empirical_ev": 0.0067,
+    "expected_clv_pts": 0.39,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0035,
+    "reason_codes": [
+     "LEAN_DIRECTIONAL"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "lean_small_edge",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a small edge below the thresholds: LEAN_DIRECTIONAL",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -7.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 49,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": 109,
+    "decision_cover_probability": 0.5,
+    "empirical_ev": -0.0455,
+    "expected_clv_pts": 0.13,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": -0.0238,
+    "reason_codes": [
+     "PASS_PRICE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_price_fair_line",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "no edge at the fair line: PASS_PRICE",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -9.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 50,
+    "bettable_to_line": -1.0,
+    "bettable_to_price": 104,
+    "decision_cover_probability": 0.507,
+    "empirical_ev": 0.0242,
+    "expected_clv_pts": 0.24,
+    "ideal_entry_line": 0.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.012,
+    "reason_codes": [
+     "PASS_INSUFFICIENT_EV"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_insufficient_ev",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a positive edge below 1 point of gap: PASS_INSUFFICIENT_EV",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 4.3,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -122,
+    "price_home": 102
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5895,
+    "empirical_ev": 0.0262,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0151,
+    "reason_codes": [
+     "PASS_PRICE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_juice",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "an edge at terrible juice (worse than the price limit): PASS_PRICE",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": 115,
+    "price_home": -135
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": null,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 80,
+    "probability_edge": null,
+    "reason_codes": [
+     "PASS_PRICE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_no_price",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "no captured price: PASS_PRICE, never an assumed -110",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": null,
+    "price_home": null
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 0,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "PASS_MARKET_STALE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_stale",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a stale quote: PASS_MARKET_STALE",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T09:00:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 60,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "PASS_MARKET_DISPERSION"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_dispersion",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 2.5
+   },
+   "note": "books disagree: PASS_MARKET_DISPERSION",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 1.05,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "PASS_MODEL_UNCERTAINTY"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_uncertainty",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "an uncertain projection: PASS_MODEL_UNCERTAINTY",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 10,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 62,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.99,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "PASS_MODEL_DISAGREEMENT"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_disagreement",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "submodel disagreement: PASS_MODEL_DISAGREEMENT",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 9,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "RESEARCH_QB"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "research_qb",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "an unresolved QB: RESEARCH_QB",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {
+    "qb_unsettled_any": true
+   }
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 70,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "RESEARCH_MARKET_IMMATURE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "research_immature",
+   "market": {
+    "books": 1,
+    "dispersion_iqr": 0
+   },
+   "note": "one book: RESEARCH_MARKET_IMMATURE",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "RESEARCH_DATA_INCOMPLETE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "research_incomplete",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "incomplete inputs: RESEARCH_DATA_INCOMPLETE",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {
+    "data_incomplete": true
+   }
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 74,
+    "bettable_to_line": -17.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.6887,
+    "empirical_ev": 0.2943,
+    "expected_clv_pts": 1.81,
+    "ideal_entry_line": -16.0,
+    "market_confidence_score": 100,
+    "probability_edge": 0.1649,
+    "reason_codes": [
+     "RESEARCH_EXTREME_EDGE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "research_extreme",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "an extreme edge that passes integrity: RESEARCH_EXTREME_EDGE",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 21,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -7,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 74,
+    "bettable_to_line": -17.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.6887,
+    "empirical_ev": 0.2943,
+    "expected_clv_pts": 1.81,
+    "ideal_entry_line": -16.0,
+    "market_confidence_score": 75,
+    "probability_edge": 0.1649,
+    "reason_codes": [
+     "PASS_DATA_QUALITY"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_data_quality_stale_extreme",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "an extreme edge with a 2.5-hour-old quote: PASS_DATA_QUALITY",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 21,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -7,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T12:30:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "PASS_DATA_QUALITY"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_data_quality_mapping",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a quote for another game: PASS_DATA_QUALITY",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "999",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 93,
+    "bettable_to_line": 14.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.9738,
+    "empirical_ev": 0.3,
+    "expected_clv_pts": 4.32,
+    "ideal_entry_line": 14.0,
+    "market_confidence_score": 100,
+    "probability_edge": 0.45,
+    "reason_codes": [
+     "PASS_DATA_QUALITY"
+    ],
+    "side": "AWAY",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_data_quality_flip",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a sign-flipped market: PASS_DATA_QUALITY",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": -24,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -24,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 0,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "PASS_DATA_QUALITY"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_data_quality_kickoff",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "after kickoff",
+   "now": "2026-10-03T20:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "PASS_DATA_QUALITY"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": "edgedesk_cfb_v9",
+   "id": "pass_data_quality_version",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the expected model version differs",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "NO_BET_BETTING_DISABLED"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "lean_betting_disabled",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "betting disabled: LEAN NO_BET_BETTING_DISABLED",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": false,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "LEAN_DIRECTIONAL"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "lean_weak_bet",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "bet confidence below the policy floor: LEAN_DIRECTIONAL",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_bet_confidence": 99,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "PASS_MARKET_DEGRADED"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_market_degraded",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5,
+    "integrity": {
+     "actionable_status": "MARKET_DEGRADED",
+     "reasons": [
+      "few books"
+     ]
+    }
+   },
+   "note": "an assessed consensus that is not actionable: PASS_MARKET_DEGRADED",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "PASS_MARKET_STALE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_market_stale_consensus",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5,
+    "integrity": {
+     "actionable_status": "MARKET_STALE"
+    }
+   },
+   "note": "an assessed consensus that is stale: PASS_MARKET_STALE",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": null,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": null,
+    "empirical_ev": null,
+    "expected_clv_pts": null,
+    "ideal_entry_line": null,
+    "market_confidence_score": null,
+    "probability_edge": null,
+    "reason_codes": [
+     "PASS_MARKET_INVALID"
+    ],
+    "side": null,
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_market_invalid_quarantine",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5,
+    "integrity": {
+     "quarantined_quote_ids": [
+      "q-77"
+     ]
+    }
+   },
+   "note": "a quarantined quote: PASS_MARKET_INVALID",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110,
+    "quote_id": "q-77"
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": null,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": null,
+    "empirical_ev": null,
+    "expected_clv_pts": null,
+    "ideal_entry_line": null,
+    "market_confidence_score": null,
+    "probability_edge": null,
+    "reason_codes": [
+     "PASS_MARKET_INVALID"
+    ],
+    "side": null,
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_market_invalid_price",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "an impossible American price: PASS_MARKET_INVALID",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": 50
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": null,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": null,
+    "empirical_ev": null,
+    "expected_clv_pts": null,
+    "ideal_entry_line": null,
+    "market_confidence_score": null,
+    "probability_edge": null,
+    "reason_codes": [
+     "PASS_MARKET_INVALID"
+    ],
+    "side": null,
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "pass_market_invalid_spread",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "an impossible spread: PASS_MARKET_INVALID",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -80,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": true,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": null,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": null,
+    "empirical_ev": null,
+    "expected_clv_pts": null,
+    "ideal_entry_line": null,
+    "market_confidence_score": null,
+    "probability_edge": null,
+    "reason_codes": [
+     "NO_BET_CALIBRATION"
+    ],
+    "side": null,
+    "stake_u": 0.0,
+    "status": "NO_BET",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "no_bet_calibration",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "no calibration artifact: NO_BET_CALIBRATION",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": null,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": null,
+    "empirical_ev": null,
+    "expected_clv_pts": null,
+    "ideal_entry_line": null,
+    "market_confidence_score": null,
+    "probability_edge": null,
+    "reason_codes": [
+     "NO_BET_VERSION_MISMATCH"
+    ],
+    "side": null,
+    "stake_u": 0.0,
+    "status": "NO_BET",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "no_bet_version",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a model version the artifact was not validated for: NO_BET_VERSION_MISMATCH",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v3.0.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": null,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": null,
+    "empirical_ev": null,
+    "expected_clv_pts": null,
+    "ideal_entry_line": null,
+    "market_confidence_score": null,
+    "probability_edge": null,
+    "reason_codes": [
+     "NO_BET_POLICY"
+    ],
+    "side": null,
+    "stake_u": 0.0,
+    "status": "NO_BET",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "no_bet_policy",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a policy without max_price: NO_BET_POLICY",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": null,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": null,
+    "empirical_ev": null,
+    "expected_clv_pts": null,
+    "ideal_entry_line": null,
+    "market_confidence_score": null,
+    "probability_edge": null,
+    "reason_codes": [
+     "NO_BET_COMPUTATION"
+    ],
+    "side": null,
+    "stake_u": 0.0,
+    "status": "NO_BET",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "no_bet_computation",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a failed probability computation: NO_BET_COMPUTATION",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": "NaN",
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": null,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": null,
+    "empirical_ev": null,
+    "expected_clv_pts": null,
+    "ideal_entry_line": null,
+    "market_confidence_score": null,
+    "probability_edge": null,
+    "reason_codes": [
+     "NO_BET_COMPUTATION"
+    ],
+    "side": null,
+    "stake_u": 0.0,
+    "status": "NO_BET",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "no_bet_not_predicted",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a projection that is not PREDICTED: NO_BET_COMPUTATION",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "NO_DATA",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "clv_magnitude": {
+     "coef": {},
+     "intercept": -2,
+     "type": "linear"
+    },
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": -2.0,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "WAIT"
+   },
+   "expected_model_version": null,
+   "id": "bet_wait",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "validated WAIT and a line expected to improve by 2 points: WAIT",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": true,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.005,
+     "p_disappear": 0.1
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "clv_magnitude": {
+     "coef": {},
+     "intercept": -0.1,
+     "type": "linear"
+    },
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": -0.1,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "bet_now_tiny",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a trivial expected improvement: BET_NOW",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": true,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.005,
+     "p_disappear": 0.1
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "bet_kelly",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "fractional Kelly validated: 0.25 Kelly, capped at 1u",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.25,
+     "kelly_validated": true,
+     "max_stake_u": 1,
+     "method": "fractional_kelly",
+     "saturation_probability": 0.58
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "bet_kelly_saturated",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "Kelly input capped at the saturation probability",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.25,
+     "kelly_validated": true,
+     "max_stake_u": 5,
+     "method": "fractional_kelly",
+     "saturation_probability": 0.52
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "bet_kelly_unvalidated",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "unvalidated Kelly falls back to flat",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "fractional_kelly",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 3.04,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "bet_kelly_above_quarter",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a policy asking for full Kelly gets quarter Kelly",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 1,
+     "kelly_validated": true,
+     "max_stake_u": 100,
+     "method": "fractional_kelly",
+     "saturation_probability": 0.7
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "AWAY",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "away_side_bet",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the model prefers the away side",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": -9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": 3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5844,
+    "empirical_ev": 0.0796,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0431,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "shaded_price",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a shaded two-sided price (de-vig != 0.5)",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -102,
+    "price_home": -118
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 62,
+    "bettable_to_line": 1.5,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5795,
+    "empirical_ev": 0.275,
+    "expected_clv_pts": 0.96,
+    "ideal_entry_line": 3.0,
+    "market_confidence_score": 100,
+    "probability_edge": 0.125,
+    "reason_codes": [
+     "RESEARCH_EXTREME_EDGE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "plus_money",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a plus-money side",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 2.0,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": 4.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -140,
+    "price_home": 120
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 62,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5886,
+    "empirical_ev": 0.1103,
+    "expected_clv_pts": 0.96,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0648,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "key_number_3",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "an integer line on 3 (push probability)",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.0,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "postseason_week1",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a postseason game: schedule week 1 with an explicit early_season 0",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 1
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {
+    "early_season": 0
+   }
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 61,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -125,
+    "decision_cover_probability": 0.5818,
+    "empirical_ev": 0.1108,
+    "expected_clv_pts": 0.9,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.058,
+    "reason_codes": [
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "same_team_join",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a quote carrying the same home team name",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "home_team": "Texas Tech",
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 54,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -105,
+    "decision_cover_probability": 0.5342,
+    "empirical_ev": 0.0185,
+    "expected_clv_pts": 0.45,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0103,
+    "reason_codes": [
+     "HELD_BY_HYSTERESIS",
+     "BET_VALIDATED"
+    ],
+    "side": "HOME",
+    "stake_u": 1.0,
+    "status": "BET",
+    "timing": "BET_NOW"
+   },
+   "expected_model_version": null,
+   "id": "hyst_held",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "just below the thresholds after a BET on the same side: HELD_BY_HYSTERESIS",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.05,
+     "ev_buffer": 0.05
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": {
+    "price_targets": {
+     "bettable_to_line": -99
+    },
+    "side": "HOME",
+    "status": "BET"
+   },
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -7.0,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 54,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -105,
+    "decision_cover_probability": 0.5342,
+    "empirical_ev": 0.0185,
+    "expected_clv_pts": 0.45,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0103,
+    "reason_codes": [
+     "LEAN_DIRECTIONAL"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "hyst_not_held",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the same without a buffer: not a BET",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": {
+    "price_targets": {
+     "bettable_to_line": -99
+    },
+    "side": "HOME",
+    "status": "BET"
+   },
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -7.0,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 54,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": -105,
+    "decision_cover_probability": 0.5342,
+    "empirical_ev": 0.0185,
+    "expected_clv_pts": 0.45,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0103,
+    "reason_codes": [
+     "LEAN_DIRECTIONAL"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "hyst_other_side",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "a previous BET on the other side is never held",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.05,
+     "ev_buffer": 0.05
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": {
+    "price_targets": {
+     "bettable_to_line": -99
+    },
+    "side": "AWAY",
+    "status": "BET"
+   },
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -7.0,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "bet_confidence_score": 50,
+    "bettable_to_line": -6.0,
+    "bettable_to_price": 106,
+    "decision_cover_probability": 0.5068,
+    "empirical_ev": -0.0315,
+    "expected_clv_pts": 0.2,
+    "ideal_entry_line": -4.5,
+    "market_confidence_score": 100,
+    "probability_edge": -0.017,
+    "reason_codes": [
+     "PASS_LINE_MOVED"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "line_moved",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the line moved through the previous bettable-to: PASS_LINE_MOVED",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": {
+    "price_targets": {
+     "bettable_to_line": -6.0
+    },
+    "side": "HOME",
+    "status": "BET"
+   },
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 9.5,
+    "sigma": 15.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -9.0,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5491,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.17,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0253,
+    "reason_codes": [
+     "LEAN_DIRECTIONAL"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "frozen_edge_110",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the frozen calibration artifact (flat decision EV curve): the price never clears",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 54,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5143,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 0.44,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": -0.0095,
+    "reason_codes": [
+     "PASS_PRICE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "frozen_small",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the frozen calibration artifact (flat decision EV curve): the price never clears",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 6.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5011,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.17,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0466,
+    "reason_codes": [
+     "LEAN_DIRECTIONAL"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "frozen_plus_price",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the frozen calibration artifact (flat decision EV curve): the price never clears",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -140,
+    "price_home": 120
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5491,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.17,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0253,
+    "reason_codes": [
+     "LEAN_DIRECTIONAL"
+    ],
+    "side": "AWAY",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "frozen_away",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the frozen calibration artifact (flat decision EV curve): the price never clears",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": -12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": 3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5491,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.17,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0253,
+    "reason_codes": [
+     "LEAN_DIRECTIONAL"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "LEAN",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_lean",
+   "market": {
+    "books": 5,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 52,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5086,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 0.32,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": -0.0152,
+    "reason_codes": [
+     "PASS_PRICE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "PASS",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_pass",
+   "market": {
+    "books": 5,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 5.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5491,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.17,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0253,
+    "reason_codes": [
+     "RESEARCH_QB"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_research_qb",
+   "market": {
+    "books": 5,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {
+    "qb_missing_any": true
+   }
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 65,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5491,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.17,
+    "ideal_entry_line": null,
+    "market_confidence_score": 70,
+    "probability_edge": 0.0253,
+    "reason_codes": [
+     "RESEARCH_MARKET_IMMATURE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_one_book",
+   "market": {
+    "books": 1,
+    "dispersion_iqr": null
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  },
+  {
+   "artifact_missing": false,
+   "artifact_patch": {},
+   "expected": {
+    "bet_confidence_score": 75,
+    "bettable_to_line": null,
+    "bettable_to_price": null,
+    "decision_cover_probability": 0.5913,
+    "empirical_ev": -0.0317,
+    "expected_clv_pts": 1.93,
+    "ideal_entry_line": null,
+    "market_confidence_score": 100,
+    "probability_edge": 0.0675,
+    "reason_codes": [
+     "RESEARCH_EXTREME_EDGE"
+    ],
+    "side": "HOME",
+    "stake_u": 0.0,
+    "status": "RESEARCH",
+    "timing": "NONE"
+   },
+   "expected_model_version": null,
+   "id": "prod_extreme",
+   "market": {
+    "books": 5,
+    "dispersion_iqr": 0.5
+   },
+   "note": "the committed production policy with the frozen artifact",
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "previous": null,
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 19.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   },
+   "quote": {
+    "book": "bookA",
+    "game_id": "401",
+    "home_line": -3.5,
+    "market_type": "spread",
+    "observed_at": "2026-10-01T14:50:00.000Z",
+    "price_away": -110,
+    "price_home": -110
+   },
+   "row": {}
+  }
+ ],
+ "exposure": [
+  {
+   "expected": {
+    "scaled_by": [
+     [
+      "game cap 1.5u",
+      "slate cap 3u"
+     ],
+     [
+      "game cap 1.5u",
+      "slate cap 3u"
+     ],
+     [
+      "slate cap 3u"
+     ],
+     [
+      "slate cap 3u"
+     ]
+    ],
+    "stakes": [
+     0.642,
+     0.642,
+     0.857,
+     0.857
+    ],
+    "total_u": 2.998
+   },
+   "exposure": {
+    "max_game_u": 1.5,
+    "max_slate_u": 3,
+    "same_game_correlation": 1
+   },
+   "id": "two_same_game_rho1",
+   "positions": [
+    {
+     "game_id": "g1",
+     "stake_u": 1
+    },
+    {
+     "game_id": "g1",
+     "stake_u": 1
+    },
+    {
+     "game_id": "g2",
+     "stake_u": 1
+    },
+    {
+     "game_id": "g3",
+     "stake_u": 1
+    }
+   ]
+  },
+  {
+   "expected": {
+    "scaled_by": [
+     [],
+     []
+    ],
+    "stakes": [
+     1,
+     1
+    ],
+    "total_u": 2.0
+   },
+   "exposure": {
+    "max_game_u": 1.5,
+    "same_game_correlation": 0
+   },
+   "id": "rho0",
+   "positions": [
+    {
+     "game_id": "g",
+     "stake_u": 1
+    },
+    {
+     "game_id": "g",
+     "stake_u": 1
+    }
+   ]
+  },
+  {
+   "expected": {
+    "scaled_by": [
+     [
+      "game cap 1u",
+      "cluster cap 1.5u"
+     ],
+     [
+      "game cap 1u",
+      "cluster cap 1.5u"
+     ],
+     [
+      "cluster cap 1.5u"
+     ],
+     [],
+     []
+    ],
+    "stakes": [
+     0.439,
+     0.351,
+     0.708,
+     1,
+     0.5
+    ],
+    "total_u": 2.998
+   },
+   "exposure": {
+    "max_cluster_u": 1.5,
+    "max_game_u": 1,
+    "max_slate_u": 3,
+    "same_game_correlation": 0.6
+   },
+   "id": "rho_mid_cluster",
+   "positions": [
+    {
+     "conference_cluster": "SEC",
+     "game_id": "a",
+     "stake_u": 1
+    },
+    {
+     "conference_cluster": "SEC",
+     "game_id": "a",
+     "stake_u": 0.8
+    },
+    {
+     "conference_cluster": "SEC",
+     "game_id": "b",
+     "stake_u": 1
+    },
+    {
+     "conference_cluster": "B12",
+     "game_id": "c",
+     "stake_u": 1
+    },
+    {
+     "game_id": "d",
+     "stake_u": 0.5
+    }
+   ]
+  },
+  {
+   "expected": {
+    "scaled_by": [
+     [],
+     []
+    ],
+    "stakes": [
+     0.5,
+     0.5
+    ],
+    "total_u": 1.0
+   },
+   "exposure": {
+    "max_game_u": 1,
+    "max_slate_u": 8
+   },
+   "id": "under_caps",
+   "positions": [
+    {
+     "game_id": "x",
+     "stake_u": 0.5
+    },
+    {
+     "game_id": "y",
+     "stake_u": 0.5
+    }
+   ]
+  },
+  {
+   "expected": {
+    "scaled_by": [
+     [
+      "game cap 1.5u"
+     ],
+     [
+      "game cap 1.5u"
+     ],
+     [
+      "game cap 1.5u"
+     ]
+    ],
+    "stakes": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "total_u": 1.5
+   },
+   "exposure": {},
+   "id": "defaults",
+   "positions": [
+    {
+     "game_id": "x",
+     "stake_u": 1
+    },
+    {
+     "game_id": "x",
+     "stake_u": 1
+    },
+    {
+     "game_id": "x",
+     "stake_u": 1
+    }
+   ]
+  }
+ ],
+ "games": [
+  {
+   "artifact_patch": {},
+   "expected": {
+    "status": "LEAN",
+    "statuses": [
+     "PASS",
+     "LEAN",
+     "LEAN"
+    ],
+    "summary_index": 1
+   },
+   "id": "game_frozen_flat",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5,
+    "integrity": {
+     "actionable_status": "ACTIONABLE"
+    },
+    "quotes": [
+     {
+      "book": "A",
+      "game_id": "401",
+      "home_line": -8.5,
+      "market_type": "spread",
+      "observed_at": "2026-10-01T14:50:00.000Z",
+      "price_away": -110,
+      "price_home": -110
+     },
+     {
+      "book": "B",
+      "game_id": "401",
+      "home_line": -3.5,
+      "market_type": "spread",
+      "observed_at": "2026-10-01T14:50:00.000Z",
+      "price_away": -110,
+      "price_home": -110
+     },
+     {
+      "book": "C",
+      "game_id": "401",
+      "home_line": -6.0,
+      "market_type": "spread",
+      "observed_at": "2026-10-01T14:50:00.000Z",
+      "price_away": -110,
+      "price_home": -110
+     }
+    ]
+   },
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "baseline": "cfb_decision_baseline_001",
+    "bet_enabled": false,
+    "calibration_artifact": "cfb_decision_calibration_v1",
+    "display": {
+     "bet_rankings": false,
+     "edge_quality_tiers": true
+    },
+    "exposure": {
+     "correlation_basis": {
+      "cross_game_icc_conference_week": -0.00189,
+      "cross_game_icc_week": -0.00328,
+      "dev_phi": {
+       "favorite_spread__game_over": 0.0468,
+       "favorite_spread__underdog_team_total_under": 0.4884,
+       "spread__alternate_spread_3pts_worse": 0.8758,
+       "spread__alternate_spread_7pts_worse": 0.7075,
+       "spread__moneyline_same_team": 0.5232
+      },
+      "rule": "same_game_correlation = 1: every same-game position decision.js creates is a spread and the same side at two books is the same bet (DEV phi of the same team covering at lines 3 points apart: 0.8758)"
+     },
+     "max_cluster_u": 5.0,
+     "max_game_u": 1.0,
+     "max_slate_u": 10.0,
+     "same_game_correlation": 1.0
+    },
+    "extreme_cover_probability": 0.6,
+    "extreme_ev": 0.12,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.003,
+     "ev_buffer": 0.003
+    },
+    "ideal_probability_edge": 0.02,
+    "lean": {
+     "min_gap_pts": 0.5,
+     "min_probability_edge": 0.0
+    },
+    "market_limits": {
+     "max_stake_per_book_u": null,
+     "note": "at current scale book limits are not the constraint; per-book limits, liquidity and price impact are recorded here when stakes grow (brief \u00a750)"
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6.0,
+    "max_price": -125,
+    "min_bet_confidence": null,
+    "min_books": 3,
+    "min_ev": 0.0,
+    "min_football_confidence": 40,
+    "min_probability_edge": 0.01,
+    "note": "Derived by the pre-registered rules of docs/cfb-decision/POLICY_PREREG.md from the DEV walk-forward policy study (docs/cfb-decision/POLICY.md). Betting is disabled: turning it on is a person's promotion decision through the section-86 gate, which this policy fails. Under the frozen calibration artifact the calibrated (curve-mapped) EV is -0.0317 at every price, so no quote clears min_ev and the BET region is empty.",
+    "orientation_gap": 21,
+    "orientation_reconcile": 7,
+    "prereg_sha256": "bd27933629b80c2441f68fdcaafdbf5568e828bb08243f52cbbc0a708a391ea8",
+    "provenance": {
+     "declared_not_fitted": [
+      "stale_minutes",
+      "min_books",
+      "max_dispersion_iqr",
+      "max_price",
+      "reference_price",
+      "extreme_*",
+      "orientation_*"
+     ],
+     "exposure.max_slate_u": "slate-cap risk rule (prereg \u00a75, \u00a77)",
+     "hysteresis": "noise-scale buffer rule (prereg \u00a75)",
+     "lean.min_gap_pts": "gap bucket CLV rule (prereg \u00a75)",
+     "min_ev": "declared floor on the calibrated EV (prereg \u00a75)",
+     "min_football_confidence / max_ensemble_sd": "declared safety bounds carried from v0: not validated filters",
+     "min_probability_edge": "edge candidate, final DEV plateau choice (prereg \u00a73, \u00a75)",
+     "stake.saturation_probability": "highest decision-probability bucket with >= 300 rows (prereg \u00a75)",
+     "wait": "WAIT evidence rule (prereg \u00a75)"
+    },
+    "push_table": {
+     "0-2.5": 0.01440922190201729,
+     "13.5-99": 0.02680965147453083,
+     "2.5-3.5": 0.10891089108910891,
+     "3.5-6.5": 0.014198782961460446,
+     "6.5-7.5": 0.06550218340611354,
+     "7.5-13.5": 0.028011204481792718
+    },
+    "reference_price": -110,
+    "stake": {
+     "bankroll_u": 100,
+     "kelly_fraction": 0.1,
+     "kelly_validated": false,
+     "max_stake_u": 1,
+     "method": "flat",
+     "saturation_probability": 0.55,
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "status": "SHADOW",
+    "version": "cfb_decision_policy_v1",
+    "wait": {
+     "enabled": false,
+     "ev_per_point": 0.03,
+     "min_benefit_ev": 0.01,
+     "note": "disabled: no DEV evidence that waiting pays (prereg \u00a75); the other keys are the declared decision.js defaults, used only if a later policy enables WAIT",
+     "p_disappear": 0.3
+    }
+   },
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   }
+  },
+  {
+   "artifact_patch": {
+    "cover_calibration": {
+     "map": {
+      "a": 0,
+      "b": 0.6,
+      "method": "platt"
+     }
+    },
+    "ev_curve_decision": {
+     "input": "decision_ev",
+     "x": [
+      -0.2,
+      0.3
+     ],
+     "y": [
+      -0.2,
+      0.3
+     ]
+    },
+    "market_shrinkage": {
+     "space": "logit",
+     "w_model": 0.85
+    }
+   },
+   "expected": {
+    "status": "BET",
+    "statuses": [
+     "BET",
+     "RESEARCH",
+     "BET"
+    ],
+    "summary_index": 2
+   },
+   "id": "game_bettable",
+   "market": {
+    "books": 6,
+    "dispersion_iqr": 0.5,
+    "integrity": {
+     "actionable_status": "ACTIONABLE"
+    },
+    "quotes": [
+     {
+      "book": "A",
+      "game_id": "401",
+      "home_line": -8.5,
+      "market_type": "spread",
+      "observed_at": "2026-10-01T14:50:00.000Z",
+      "price_away": -110,
+      "price_home": -110
+     },
+     {
+      "book": "B",
+      "game_id": "401",
+      "home_line": -3.5,
+      "market_type": "spread",
+      "observed_at": "2026-10-01T14:50:00.000Z",
+      "price_away": -110,
+      "price_home": -110
+     },
+     {
+      "book": "C",
+      "game_id": "401",
+      "home_line": -6.0,
+      "market_type": "spread",
+      "observed_at": "2026-10-01T14:50:00.000Z",
+      "price_away": -110,
+      "price_home": -110
+     }
+    ]
+   },
+   "now": "2026-10-01T15:00:00.000Z",
+   "policy": {
+    "bet_enabled": true,
+    "exposure": {
+     "max_game_u": 1.5,
+     "max_slate_u": 3,
+     "same_game_correlation": 1
+    },
+    "extreme_ev": 0.15,
+    "extreme_gap_pts": 10,
+    "extreme_max_age_minutes": 60,
+    "hysteresis": {
+     "edge_buffer": 0.004,
+     "ev_buffer": 0.004
+    },
+    "lean": {
+     "min_gap_pts": 1,
+     "min_probability_edge": 0
+    },
+    "max_dispersion_iqr": 1.5,
+    "max_ensemble_sd": 6,
+    "max_price": -125,
+    "min_books": 3,
+    "min_ev": 0.02,
+    "min_football_confidence": 30,
+    "min_probability_edge": 0.02,
+    "reference_price": -110,
+    "stake": {
+     "max_stake_u": 1,
+     "method": "flat",
+     "unit_u": 1
+    },
+    "stale_minutes": 180,
+    "version": "parity_test_policy",
+    "wait": {
+     "enabled": false
+    }
+   },
+   "pure": {
+    "away": "Baylor",
+    "ensemble_sd": 2.0,
+    "football_prediction_confidence": 70,
+    "game_id": "401",
+    "home": "Texas Tech",
+    "kickoff": "2026-10-03T19:30:00.000Z",
+    "model_version": "edgedesk_cfb_v2.1.0",
+    "projected_margin": 12.0,
+    "sigma": 16.0,
+    "status": "PREDICTED",
+    "t_df": 100,
+    "week": 6
+   }
+  }
+ ],
+ "generated_by": "v2.decision.policy.build_fixture",
+ "mirror_of": "football/cfb_decision/decision.js",
+ "note": "artifact_patch keys replace the frozen calibration artifact's keys (fixture only); policies are inline. TEST policies enable betting to reach every gate; the committed production policy never does.",
+ "stakes": [
+  {
+   "decision": {
+    "decision_cover_probability": 0.56,
+    "price": -110
+   },
+   "expected_kelly_fraction": 0.07600000000000012,
+   "expected_stake_u": 1,
+   "stake_policy": {
+    "max_stake_u": 1,
+    "method": "flat",
+    "unit_u": 1
+   }
+  },
+  {
+   "decision": {
+    "decision_cover_probability": 0.56,
+    "price": -110
+   },
+   "expected_kelly_fraction": 0.07600000000000012,
+   "expected_stake_u": 0.5,
+   "stake_policy": {
+    "max_stake_u": 0.5,
+    "method": "flat",
+    "unit_u": 1
+   }
+  },
+  {
+   "decision": {
+    "decision_cover_probability": 0.5412,
+    "price": -110
+   },
+   "expected_kelly_fraction": 0.03652000000000001,
+   "expected_stake_u": 0.37,
+   "stake_policy": {
+    "bankroll_u": 100,
+    "kelly_fraction": 0.1,
+    "kelly_validated": true,
+    "max_stake_u": 1.5,
+    "method": "fractional_kelly",
+    "saturation_probability": 0.55
+   }
+  },
+  {
+   "decision": {
+    "decision_cover_probability": 0.5712,
+    "price": 105
+   },
+   "expected_kelly_fraction": 0.12142857142857158,
+   "expected_stake_u": 1.5,
+   "stake_policy": {
+    "bankroll_u": 100,
+    "kelly_fraction": 0.25,
+    "kelly_validated": true,
+    "max_stake_u": 1.5,
+    "method": "fractional_kelly",
+    "saturation_probability": 0.55
+   }
+  },
+  {
+   "decision": {
+    "decision_cover_probability": 0.49,
+    "price": -110
+   },
+   "expected_kelly_fraction": 0.0,
+   "expected_stake_u": 0.0,
+   "stake_policy": {
+    "bankroll_u": 100,
+    "kelly_fraction": 0.25,
+    "kelly_validated": true,
+    "max_stake_u": 1,
+    "method": "fractional_kelly",
+    "saturation_probability": 0.6
+   }
+  }
+ ],
+ "tolerance": 1e-09
+}

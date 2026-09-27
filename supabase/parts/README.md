@@ -27,8 +27,16 @@ Then, on a database that already has the three above, the amendments:
    guard for the roles PostgREST connects as, which refuses a `DELETE` with no
    `WHERE`; every promote cleared its live table with a bare one
 
+Independent of all of the above, the CFB Live Model Lab:
+
+6. `cfb_lab.part1-of-*.sql` … the last part (then `cfb_lab_cron.sql`, unsplit,
+   if the hourly poke is wanted)
+7. `cfb_weekly.part1-of-*.sql` … the last part (the CFB weekly learning and
+   rating refresh engine: run table, state tables and its pg_cron dispatch;
+   independent of `cfb_lab`)
+
 The last part of each file prints that file's report. Every row of the
-`guarantee` column must read `ok`.
+`guarantee` column must read `ok` (for `cfb_lab`, every row of `status`).
 
 Nothing is cut in the middle of a statement: the splitter tracks line comments,
 nested block comments, quoted strings, quoted identifiers and dollar-quoted
@@ -50,6 +58,8 @@ These are generated. After editing any of the three source files, rebuild with:
     npm run sql:split -- supabase/college_baseball.sql   supabase/parts 18000
     npm run sql:split -- supabase/fix_promote_deletes_mlb.sql supabase/parts 18000
     npm run sql:split -- supabase/fix_promote_deletes_cbb.sql supabase/parts 18000
+    npm run sql:split -- supabase/cfb_lab.sql            supabase/parts 18000
+    npm run sql:split -- supabase/cfb_weekly.sql         supabase/parts 18000
 
 The part count changes as a file grows, so delete the old
 `<name>.part*-of-*.sql` for that file first.

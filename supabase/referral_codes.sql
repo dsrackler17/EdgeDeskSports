@@ -199,23 +199,32 @@ revoke all on function public.referral_stripe_id(jsonb) from public, anon, authe
 -- not a handled event type (see HANDLED in the webhook), so the ledger has no
 -- refunds in it and this is GROSS received, not net. Saying that here is the
 -- alternative to a net figure that quietly is not one.
+-- THE INVOICE IS INSIDE THE EVENT. The webhook stores the WHOLE Stripe event
+-- (payload = {id: evt_…, type, data: {object: <the invoice>}}), so reading
+-- `payload ->> 'amount_paid'` at the top level found nothing on any real
+-- delivery and this view was empty in production. `inv` is the invoice
+-- whichever shape the row holds: the event's data.object, or — for a row
+-- pasted by hand or written by an older build — the bare object. (Fixed
+-- 2026-09-25 alongside supabase/affiliates.sql, which reads the same shape.)
 create or replace view public.referral_invoice_payments as
-  select distinct on (e.payload ->> 'id')
-         e.payload ->> 'id'                                          as invoice_id,
+  select distinct on (x.inv ->> 'id')
+         x.inv ->> 'id'                                              as invoice_id,
          coalesce(
-           public.referral_stripe_id(e.payload -> 'subscription'),
+           public.referral_stripe_id(x.inv -> 'subscription'),
            -- newer API versions moved it under the invoice's parent
-           public.referral_stripe_id(e.payload -> 'parent' -> 'subscription_details' -> 'subscription')
+           public.referral_stripe_id(x.inv -> 'parent' -> 'subscription_details' -> 'subscription')
          )                                                           as stripe_subscription_id,
-         public.referral_stripe_id(e.payload -> 'customer')           as stripe_customer_id,
-         (e.payload ->> 'amount_paid')::bigint                        as amount_paid_cents,
-         upper(nullif(e.payload ->> 'currency', ''))                  as currency,
+         public.referral_stripe_id(x.inv -> 'customer')               as stripe_customer_id,
+         (x.inv ->> 'amount_paid')::bigint                            as amount_paid_cents,
+         upper(nullif(x.inv ->> 'currency', ''))                      as currency,
          coalesce(e.stripe_created, e.created_at)                     as paid_at
     from public.stripe_events e
+    cross join lateral (select case when e.payload ? 'data' and jsonb_typeof(e.payload -> 'data' -> 'object') = 'object'
+                                    then e.payload -> 'data' -> 'object' else e.payload end as inv) x
    where e.type = 'invoice.payment_succeeded'
-     and e.payload ->> 'id' is not null
-     and e.payload ->> 'amount_paid' ~ '^[0-9]+$'
-   order by e.payload ->> 'id', coalesce(e.stripe_created, e.created_at) desc;
+     and x.inv ->> 'id' is not null
+     and x.inv ->> 'amount_paid' ~ '^[0-9]+$'
+   order by x.inv ->> 'id', coalesce(e.stripe_created, e.created_at) desc;
 revoke all on public.referral_invoice_payments from anon, authenticated;
 
 -- Which subscription row each paid invoice belongs to. An invoice names its

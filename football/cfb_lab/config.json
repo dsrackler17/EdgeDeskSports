@@ -1,0 +1,20 @@
+{
+  "schema": "edgedesk_cfb_lab_config_v1",
+  "note": "Pre-registered references for drift alerts and comparisons. Changing any value is a governed act: append a RULE_CHANGED event to governance/audit_log.jsonl.",
+  "season": 2026,
+  "lab_started_at": "2026-09-27T12:00:00.000Z",
+  "models": {
+    "edgedesk_cfb_p4_v1.0.0": { "label": "V1", "adapter": "v1" },
+    "edgedesk_cfb_v2.1.0": { "label": "V2.1 · hardened", "adapter": "v2.1" },
+    "edgedesk_cfb_v2.0.0": { "label": "V2 · candidate 001", "adapter": "c001" }
+  },
+  "reference": {
+    "source": "football/cfb_v2/research/report/redteam/champion_challenger.json (holdout 2024-25, same 1604 FBS games) and candidate 001 / v2.1.0 holdout predictions for the spread of predicted margins",
+    "edgedesk_cfb_p4_v1.0.0": { "mae": 12.6017, "rmse": 15.9128, "brier": 0.1857, "pred_sd": null },
+    "edgedesk_cfb_v2.0.0": { "mae": 12.3332, "rmse": 15.611, "brier": 0.1832, "pred_sd": 12.34 },
+    "edgedesk_cfb_v2.1.0": { "mae": 12.3213, "rmse": 15.6016, "brier": 0.1831, "pred_sd": 12.448 }
+  },
+  "research_queue": { "min_n": 50, "z": 2.0, "evidence_step_n": 25 },
+  "weekly_report": { "complete_after_last_kickoff_hours": 48 },
+  "public_record": { "path": "record/football/cfb_model_lab.json", "min_n_label": 30 }
+}

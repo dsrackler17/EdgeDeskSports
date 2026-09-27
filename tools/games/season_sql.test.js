@@ -263,10 +263,13 @@ chk('the award finalists shown are this season’s leaders, or none at all',
   Array.isArray(pre.finalists), JSON.stringify(pre.finalists));
 
 /* ── 7-8. the man who won it, and the record of it ────────────────────── */
-const men = q("select string_agg(id::text || '~' || first_name || ' ' || last_name || '~' || position || '~' || overall, '|')"
-  + ' from (select * from public.game_players where franchise_id = ' + lit(C) + "::uuid and status = 'active'"
-  + " and position in ('RB','WR') order by overall desc limit 2) x", true).split('|').map(s => s.split('~'));
-const star = men[0], worker = men[1];
+/* ratings are drawn at random, so the two best cards can tie: the worker is the best card strictly below
+   the star (and never his namesake), not simply the second in line */
+const card = extra => q("select id::text || '~' || first_name || ' ' || last_name || '~' || position || '~' || overall"
+  + ' from public.game_players where franchise_id = ' + lit(C) + "::uuid and status = 'active'"
+  + " and position in ('RB','WR')" + extra + ' order by overall desc, id limit 1', true).split('~');
+const star = card('');
+const worker = card(' and overall < ' + (+star[3]) + " and first_name || ' ' || last_name <> " + lit(star[1]));
 const box = JSON.stringify({
   final: { for: 31, against: 24 }, result: 'W',
   quarters: { for: [7, 7, 10, 7], against: [3, 7, 7, 7] }, scoring: [],

@@ -32,12 +32,56 @@ assumed:
 EdgeDesk convention on output: `spread_line` is the number of points the HOME
 team must win by. Home -14 in book terms becomes spread_line = +14.
 
+Orientation and book-sign QA (EdgeDesk CFB audit finding F-11, fixed 2026-09-27;
+rule `MARKET_ORIENTATION_RULE`). Established by execution on the full archive:
+
+* The archive's `home_team_id`/`away_team_id` are SWAPPED relative to the
+  schedule in 12 games (2020-2024, e.g. Army-Navy 2021, UTSA-Coastal 2024). Sides
+  are oriented against the SCHEDULE's home_id/away_id (the archive's ids are used
+  only for a game the schedule does not carry). In those games the archive's side
+  LABELS also contradict each other across books: Army-Navy 2021 has Bovada (and
+  its moneyline, Army -300) at Army -7 and three feeds (Caesars, consensus,
+  teamrankings) at Army +7; New Mexico-San Jose State 2020 is 1 book against 5;
+  UNC-South Carolina 2023 has a Bovada spread and moneyline of opposite sides. No
+  rule on the lines alone recovers the true number, so a game whose archive ids
+  are swapped does not use its side-labelled lines (spreads and moneylines):
+  `side_resolution = archive_ids_swapped`, counted in market_qa.json; its total
+  is kept. The line is left missing, never guessed.
+* An abbreviation seen only against one opponent (LAF: only ever vs Army) maps
+  to both teams equally often, so both of a game's sides could resolve to the
+  home team and the median of +33.5 and -33.5 became a 0.0 line (Army-Lafayette
+  2016/2018, Buffalo-Robert Morris 2019). Each game's abbreviations are assigned
+  to its two team ids with the counts of `resolve_abbr_sides`: an abbreviation
+  belongs to the team id(s) it is seen with most often over the whole archive; one
+  whose most frequent id is neither of the game's teams is a stray row of another
+  game and is ignored (UMass-Boston College 2014 also carries Ball State-Colgate
+  rows); one tied between the game's two teams takes the side its partner does not
+  hold; two abbreviations claiming the same side, or a tie with nothing to break
+  it, is `side_resolution = unresolved` and those rows are not used (never guessed).
+* One book's line can carry the opposite sign of the others (intertops and
+  Sports Interaction 2014, JUSTBET 2008, ESPN Bet / DraftKings openers
+  2023-25). Declared rule, per game and separately for the opener and the
+  close, on each book's home-margin line: the books with a non-zero line vote
+  by sign; a line whose sign is opposite to a STRICT majority of the voting
+  books and whose size is at least `SIGN_RULE_MIN_ABS` points is DROPPED (a
+  line within 2.5 of pick'em on the other side is an ordinary disagreement and
+  is kept). With no strict majority and a line of that size on each side the
+  field is UNRESOLVED: every line of it is dropped and the consensus is left
+  missing. Dropped lines stay in market_books.csv with `sign_conflict` =
+  dropped | unresolved; each game carries the counts
+  (`spread_open_books_dropped`, `spread_close_books_dropped`,
+  `spread_open_sign_unresolved`, `spread_close_sign_unresolved`), and
+  <out>/market_qa.json the totals.
+
 Usage: python3 build_market.py <out_dir>
-Writes <out>/market.csv (one row per game) and <out>/market_books.csv
-(one row per game x book x market, for book-level work such as de-vig).
+Writes <out>/market.csv (one row per game), <out>/market_books.csv
+(one row per game x book x market, for book-level work such as de-vig) and
+<out>/market_qa.json (orientation and sign-rule counts).
 """
 import os
 import sys
+
+import json
 
 import numpy as np
 import pandas as pd
@@ -47,6 +91,9 @@ import common
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'out'
 
 SHARP_BOOKS = ('PINNACLE', 'Pinnacle')
+
+MARKET_ORIENTATION_RULE = 'cfb_market_orientation_v2'   # v1: archive ids, global abbr map, no sign rule
+SIGN_RULE_MIN_ABS = 3.0
 
 
 def _load_raw():
@@ -101,13 +148,133 @@ def resolve_abbr_sides(L):
     return best
 
 
-def _side_frame(L, amap):
-    """spread/moneyline rows tagged home/away."""
+def _abbr_counts(L):
+    """n(abbr, team_id): rows of the abbreviation carrying that id on either side
+    (orientation-free evidence; the same counts resolve_abbr_sides ranks)."""
+    side = L[L.market_type.isin(('spread', 'money_line'))]
+    side = side[side.abbr.str.lower().ne('nan')]
+    long = pd.concat([
+        side[['abbr', 'home_team_id']].rename(columns={'home_team_id': 'tid'}),
+        side[['abbr', 'away_team_id']].rename(columns={'away_team_id': 'tid'}),
+    ], ignore_index=True).dropna(subset=['tid'])
+    return long.groupby(['abbr', 'tid']).size().to_dict()
+
+
+def schedule_ids():
+    """{game_id: (home_id, away_id)} from the schedules (the orientation authority)."""
+    g = common.load_schedules()[['game_id', 'home_id', 'away_id']].copy()
+    g['game_id'] = pd.to_numeric(g.game_id, errors='coerce')
+    g = g.dropna().drop_duplicates('game_id')
+    return {int(a): (int(h), int(w)) for a, h, w in zip(g.game_id, g.home_id, g.away_id)}
+
+
+def orient_sides(L, sched=None):
+    """Per (game, abbr): 'home' | 'away' | None, oriented against the schedule's ids.
+    Returns (assignment dict, per-game frame: game_id, home_id, away_id,
+    archive_ids_swapped, side_resolution)."""
+    sched = schedule_ids() if sched is None else sched
+    cnt = _abbr_counts(L)
+    best = {}
+    for (x, t), n in cnt.items():
+        best[x] = max(best.get(x, 0), n)
+    tops = {}
+    for (x, t), n in cnt.items():             # the id(s) each abbreviation is seen with most often
+        if n == best[x]:
+            tops.setdefault(x, set()).add(t)
+    side = L[L.market_type.isin(('spread', 'money_line'))]
+    side = side[side.abbr.str.lower().ne('nan')]
+    arch = side.groupby('game_id')[['home_team_id', 'away_team_id']].agg(
+        lambda x: x.dropna().mode().iloc[0] if x.notna().any() else np.nan)
+    abbrs = side.groupby('game_id').abbr.agg(lambda x: sorted(set(x)))
+    assign, games = {}, []
+    for gid, ab in abbrs.items():
+        ah, aa = arch.loc[gid, 'home_team_id'], arch.loc[gid, 'away_team_id']
+        if int(gid) in sched:
+            h, a = sched[int(gid)]
+        elif pd.notna(ah) and pd.notna(aa):
+            h, a = int(ah), int(aa)
+        else:
+            games.append((gid, np.nan, np.nan, False, 'unresolved'))
+            continue
+        swapped = bool(pd.notna(ah) and pd.notna(aa) and int(ah) == a and int(aa) == h and h != a)
+        if swapped:                     # the archive's own side labels are unreliable here (module doc)
+            for x in ab:
+                assign[(gid, x)] = None
+            games.append((gid, h, a, True, 'archive_ids_swapped'))
+            continue
+        ind = {}
+        for x in ab:
+            top = tops.get(x, set())
+            mine = top & {float(h), float(a)}
+            if not mine:
+                assign[(gid, x)] = None             # a stray abbreviation of another game: ignored
+                continue
+            ind[x] = None if len(mine) == 2 else ('home' if mine == {float(h)} else 'away')
+        how = 'ok'
+        if len(ind) == 2:
+            x, y = sorted(ind)
+            if ind[x] is None and ind[y] is not None:
+                ind[x], how = ('away' if ind[y] == 'home' else 'home'), 'elimination'
+            elif ind[y] is None and ind[x] is not None:
+                ind[y], how = ('away' if ind[x] == 'home' else 'home'), 'elimination'
+            elif ind[x] is None or ind[x] == ind[y]:
+                ind = {x: None, y: None}
+        if not ind or any(v is None for v in ind.values()):
+            how = 'unresolved'
+        for x, v in ind.items():
+            assign[(gid, x)] = v
+        games.append((gid, h, a, swapped, how))
+    G = pd.DataFrame(games, columns=['game_id', 'home_id', 'away_id', 'archive_ids_swapped', 'side_resolution'])
+    return assign, G
+
+
+def _side_frame(L, amap, sched=None):
+    """spread/moneyline rows tagged home/away, oriented by TEAM ID against the
+    schedule (see the module doc: F-11). `amap` is kept for the reported mapping
+    quality; the orientation itself is orient_sides'."""
     s = L[L.market_type.isin(('spread', 'money_line'))].merge(
         amap[['abbr', 'tid', 'agreement']], on='abbr', how='left')
-    s['is_home'] = np.where(s.tid.notna() & (s.tid == s.home_team_id), True,
-                    np.where(s.tid.notna() & (s.tid == s.away_team_id), False, None))
+    assign, _ = orient_sides(L, sched)
+    v = [assign.get((g, x)) for g, x in zip(s.game_id, s.abbr)]
+    s['is_home'] = pd.Series([None if x is None else (x == 'home') for x in v], index=s.index, dtype=object)
     return s
+
+
+def sign_rule(values, min_abs=SIGN_RULE_MIN_ABS):
+    """One game's lines for one field (home-margin convention), one per book.
+    Returns a list of None | 'dropped' | 'unresolved', aligned with `values`."""
+    x = np.asarray(values, dtype=float)
+    ok = ~np.isnan(x)
+    pos, neg = int((x[ok] > 0).sum()), int((x[ok] < 0).sum())
+    big = ok & (np.abs(np.where(ok, x, 0)) >= min_abs)
+    out = [None] * len(x)
+    if pos > neg:
+        maj = 1.0
+    elif neg > pos:
+        maj = -1.0
+    else:
+        if (big & (x > 0)).any() and (big & (x < 0)).any():
+            return ['unresolved' if o else None for o in ok]
+        return out
+    for i in np.where(big & (np.sign(np.where(ok, x, 0)) == -maj))[0]:
+        out[i] = 'dropped'
+    return out
+
+
+def apply_sign_rule(sp):
+    """sp: spread rows on the home side with spread_line / spread_open. Adds
+    close_conflict / open_conflict (None | dropped | unresolved) per row; the verdict
+    is per BOOK (the median of that book's rows), applied to all of its rows."""
+    sp = sp.copy()
+    for fld, col in (('close', 'spread_line'), ('open', 'spread_open')):
+        per = sp.groupby(['game_id', 'book'])[col].median().dropna().reset_index()
+        verdict = {}
+        for gid, d in per.groupby('game_id'):
+            for b, v in zip(d.book, sign_rule(d[col].values)):
+                if v:
+                    verdict[(gid, b)] = v
+        sp[fld + '_conflict'] = [verdict.get((g, b)) for g, b in zip(sp.game_id, sp.book)]
+    return sp
 
 
 def _median(x):
@@ -124,9 +291,15 @@ def build():
     if len(weak):
         print(weak.sort_values('agreement').head(12).to_string(index=False))
 
-    S = _side_frame(L, amap)
+    sched = schedule_ids()
+    assign, OG = orient_sides(L, sched)
+    S = _side_frame(L, amap, sched)
     unresolved = S.is_home.isna().mean()
     print('[abbr] unresolved side rows: %.4f' % unresolved)
+    print('[orient] games: %d; archive ids swapped vs the schedule (side lines not used): %d; sides by '
+          'elimination: %d; unresolved: %d'
+          % (len(OG), int(OG.archive_ids_swapped.sum()), int(OG.side_resolution.eq('elimination').sum()),
+             int(OG.side_resolution.eq('unresolved').sum())))
     S = S[S.is_home.notna()].copy()
     S['is_home'] = S.is_home.astype(bool)
 
@@ -134,6 +307,16 @@ def build():
     sp = S[S.market_type.eq('spread') & S.is_home].copy()
     sp['spread_line'] = -sp['lines']              # book home -14  ->  +14
     sp['spread_open'] = -sp['opening_lines']
+    # ---- book-sign rule (F-11): a line opposite to a strict majority of books is dropped
+    sp = apply_sign_rule(sp)
+    sp_all = sp.copy()
+    sp.loc[sp.close_conflict.notna(), 'spread_line'] = np.nan
+    sp.loc[sp.open_conflict.notna(), 'spread_open'] = np.nan
+    drops = {}
+    for fld in ('close', 'open'):
+        c = sp_all[sp_all[fld + '_conflict'].notna()].drop_duplicates(['game_id', 'book'])
+        drops['spread_%s_books_dropped' % fld] = c[c[fld + '_conflict'].eq('dropped')].groupby('game_id').book.nunique()
+        drops['spread_%s_sign_unresolved' % fld] = c[c[fld + '_conflict'].eq('unresolved')].groupby('game_id').size() > 0
 
     # ---- totals ----
     to = L[L.market_type.eq('total')].copy()
@@ -152,6 +335,11 @@ def build():
         t = d[['game_id', 'season', 'week', 'book', cols['close'], cols['open']]].copy()
         t.columns = ['game_id', 'season', 'week', 'book', 'close', 'open']
         t['market'] = name
+        if name == 'spread':           # the book lines as oriented, with the sign-rule verdict
+            t['close'] = -sp_all.loc[t.index, 'lines']
+            t['open'] = -sp_all.loc[t.index, 'opening_lines']
+            t['close_conflict'] = sp_all.loc[t.index, 'close_conflict']
+            t['open_conflict'] = sp_all.loc[t.index, 'open_conflict']
         per_book.append(t)
     mlh = ml[ml.is_home][['game_id', 'season', 'week', 'book', 'odds', 'opening_odds']].copy()
     mlh.columns = ['game_id', 'season', 'week', 'book', 'close', 'open']
@@ -164,7 +352,11 @@ def build():
     BK = BK[BK.game_id.notna()]
 
     def agg(market, prefix):
-        d = BK[BK.market.eq(market)]
+        d = BK[BK.market.eq(market)].copy()
+        if market == 'spread':          # dropped / unresolved lines never enter a consensus
+            d.loc[d.close_conflict.notna(), 'close'] = np.nan
+            d.loc[d.open_conflict.notna(), 'open'] = np.nan
+            d = d[d.close.notna() | d.open.notna()]
         g = d.groupby('game_id').agg(
             **{prefix + '_close': ('close', _median),
                prefix + '_open': ('open', _median),
@@ -180,6 +372,12 @@ def build():
     M = M.join(agg('ml_home', 'mlh'), how='outer')
     M = M.join(agg('ml_away', 'mla'), how='outer')
     M = M.reset_index()
+    M = M.merge(OG[['game_id', 'home_id', 'away_id', 'archive_ids_swapped', 'side_resolution']]
+                .rename(columns={'home_id': 'orient_home_id', 'away_id': 'orient_away_id'}), on='game_id', how='left')
+    for k, v in drops.items():
+        M[k] = M.game_id.map(v)
+        M[k] = M[k].fillna(0).astype(int) if k.endswith('dropped') else M[k].fillna(False).astype(bool)
+    M['market_orientation_rule'] = MARKET_ORIENTATION_RULE
 
     g = common.load_schedules()[['game_id', 'season', 'week', 'home_team', 'away_team',
                                  'home_key', 'away_key', 'home_fbs', 'away_fbs',
@@ -195,6 +393,21 @@ def build():
     os.makedirs(OUT, exist_ok=True)
     M.to_csv(os.path.join(OUT, 'market.csv'), index=False)
     BK.to_csv(os.path.join(OUT, 'market_books.csv'), index=False)
+    spb = BK[BK.market.eq('spread')]
+    qa = {'rule': MARKET_ORIENTATION_RULE, 'sign_rule_min_abs': SIGN_RULE_MIN_ABS,
+          'games': int(len(OG)),
+          'archive_ids_swapped_games': sorted(int(x) for x in OG.game_id[OG.archive_ids_swapped]),
+          'sides_by_elimination_games': int(OG.side_resolution.eq('elimination').sum()),
+          'sides_unresolved_games': int(OG.side_resolution.eq('unresolved').sum()),
+          'book_lines_dropped': {f: int(spb[spb[f + '_conflict'].eq('dropped')].drop_duplicates(['game_id', 'book']).shape[0])
+                                 for f in ('close', 'open')},
+          'games_with_a_dropped_line': int(spb[spb.close_conflict.eq('dropped') | spb.open_conflict.eq('dropped')].game_id.nunique()),
+          'fields_unresolved': {f: int(spb[spb[f + '_conflict'].eq('unresolved')].game_id.nunique()) for f in ('close', 'open')},
+          'dropped_by_book': spb[spb.close_conflict.notna() | spb.open_conflict.notna()]
+          .drop_duplicates(['game_id', 'book']).book.value_counts().to_dict()}
+    with open(os.path.join(OUT, 'market_qa.json'), 'w') as fh:
+        json.dump(qa, fh, indent=1, sort_keys=True)
+    print('[orient/sign QA]', {k: v for k, v in qa.items() if k != 'archive_ids_swapped_games'})
 
     fbs = M[M.home_fbs & M.away_fbs & M.played]
     cov = fbs.groupby('season').agg(

@@ -203,12 +203,14 @@ const R_END = APP.indexOf('\n/* ---- CSV export', R_START);
 chk('app: the request builder is found', R_START >= 0 && R_END > R_START);
 const REQ_SRC = APP.slice(R_START, R_END);
 chk('app: the request builder takes a market-free mode', /var noMkt=/.test(REQ_SRC));
+/* the join is made once, behind the guard, and handed on: either inline in
+   the request, or as `mkt` to the shared assembly and its fallback */
 chk('app: in which the market is empty rather than joined',
-  /market:noMkt\?\{\}:fbP4Market\(u\)/.test(REQ_SRC), REQ_SRC.slice(0, 0));
+  /(market:|var mkt=)noMkt\?\{\}:fbP4Market\(u\)/.test(REQ_SRC), REQ_SRC.slice(0, 0));
 chk('app: and the odds stamp is not read from it either',
   /odds:noMkt\?null:/.test(REQ_SRC));
 const REQ_BARE = REQ_SRC
-  .replace(/market:noMkt\?\{\}:fbP4Market\(u\)/g, '')
+  .replace(/(market:|var mkt=)noMkt\?\{\}:fbP4Market\(u\)/g, '')
   .replace(/odds:noMkt\?null:\(\(fbP4Market\(u\)\|\|\{\}\)\.as_of\|\|null\)/g, '');
 chk('app: so no market-free request can reach the join it is judging',
   REQ_BARE.indexOf('fbP4Market(') < 0,

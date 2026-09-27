@@ -1,0 +1,802 @@
+{
+ "completed_at": "2026-09-27T15:11:22.563Z",
+ "data_version": "9e3417ac6bd85ff60f9259ae",
+ "drive_status": "OK",
+ "errors": [],
+ "errors_count": 0,
+ "feature_version": "cfb_v2_fv2",
+ "games_expected": 71,
+ "games_final": 71,
+ "games_processed": 331,
+ "gate": {
+  "checks": [
+   {
+    "check": "pipeline completed (every critical stage OK or WARN)",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "critical data sources present",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "data errors within bound (5% of finals)",
+    "critical": true,
+    "detail": 0.0,
+    "ok": true
+   },
+   {
+    "check": "opponent adjustment converged (every metric)",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "no leakage test failure",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "model artifacts loaded and verified against MANIFEST.json",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "sanity checks pass",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "games withheld by game-level checks within bound (5% of the week)",
+    "critical": true,
+    "detail": {
+     "share": 0.0,
+     "withheld": []
+    },
+    "ok": true
+   },
+   {
+    "check": "no team projected in two games of the week",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "no team both home and away in one game",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "no duplicate games",
+    "critical": true,
+    "detail": 0,
+    "ok": true
+   },
+   {
+    "action": "WITHHOLD_GAME",
+    "check": "win probabilities strictly inside (0, 1); home + away = 1 by construction",
+    "critical": true,
+    "detail": [],
+    "games": [],
+    "ok": true
+   },
+   {
+    "action": "WITHHOLD_GAME",
+    "check": "no NaN or infinite spreads, sigmas or totals; sigma positive",
+    "critical": true,
+    "detail": [],
+    "games": [],
+    "ok": true
+   },
+   {
+    "action": "WITHHOLD_GAME",
+    "check": "plausible totals (10-120) and margins (|margin| <= 75)",
+    "critical": true,
+    "detail": [],
+    "games": [],
+    "ok": true
+   },
+   {
+    "action": "WITHHOLD_TOTAL",
+    "check": "implied team points >= 0 (margin within the total)",
+    "critical": false,
+    "detail": [],
+    "games": [],
+    "ok": true
+   },
+   {
+    "check": "no invalid team ids",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "no post-kickoff data (feature_ts < kickoff for every game)",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "every feature snapshot is as of the freeze instant T",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "no market inputs in the pure model (checked against the artifact columns)",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   }
+  ],
+  "failed": [],
+  "pass": true,
+  "warnings": [],
+  "withheld_games": [],
+  "withheld_totals": []
+ },
+ "market_status": "OK",
+ "metrics": {},
+ "mode": "weekly",
+ "model_lab_status": "OK",
+ "model_version": "edgedesk_cfb_v2.1.0",
+ "opponent_adjustment_status": "OK",
+ "pbp_status": "OK",
+ "player_status": "WARN",
+ "plays_expected": null,
+ "plays_processed": 57003,
+ "projection_status": "OK",
+ "published": true,
+ "run_id": "cfbw_ca7901274dbe2351a2604217",
+ "run_key": "782cb29a2a35cdc90cd5ac51",
+ "score_ingestion_status": "OK",
+ "season": 2026,
+ "source_week": 4,
+ "stages": [
+  {
+   "counts": {
+    "T": "2026-09-29T12:00:00.000Z",
+    "games_final": 331,
+    "games_season": 888,
+    "source_week": 4,
+    "stage1_seasons_rebuilt": 18,
+    "target_week": 5
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:09:05.555Z",
+   "ms": 59221,
+   "needs": [],
+   "stage": "INGEST_FINAL_SCORES",
+   "started_at": "2026-09-27T15:08:06.334Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "finality_disagreements": 0,
+    "lab_disagreements": 0,
+    "not_final_after_grace": 0,
+    "source_week_final": 71,
+    "source_week_games": 71
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:09:10.502Z",
+   "ms": 4946,
+   "needs": [
+    "INGEST_FINAL_SCORES"
+   ],
+   "stage": "VERIFY_COMPLETED_GAMES",
+   "started_at": "2026-09-27T15:09:05.556Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "final_partial_data": 13,
+    "final_validated": 318,
+    "mean_completeness": 0.9854,
+    "plays_processed": 57003,
+    "scheduled": 557
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:09:10.507Z",
+   "ms": 5,
+   "needs": [
+    "VERIFY_COMPLETED_GAMES"
+   ],
+   "stage": "VALIDATE_PBP",
+   "started_at": "2026-09-27T15:09:10.502Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "team_games": 662
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:09:11.398Z",
+   "ms": 891,
+   "needs": [
+    "VALIDATE_PBP"
+   ],
+   "stage": "GAME_PERFORMANCE",
+   "started_at": "2026-09-27T15:09:10.507Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "teams": 233
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:09:11.627Z",
+   "ms": 228,
+   "needs": [
+    "GAME_PERFORMANCE"
+   ],
+   "stage": "DRIVE_METRICS",
+   "started_at": "2026-09-27T15:09:11.398Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {},
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:09:56.845Z",
+   "ms": 45217,
+   "needs": [
+    "VALIDATE_PBP"
+   ],
+   "stage": "OPPONENT_ADJUSTMENT",
+   "started_at": "2026-09-27T15:09:11.627Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "expected_starters": 233,
+    "qb_events": 154,
+    "qbs": 415
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:10:17.934Z",
+   "ms": 21089,
+   "needs": [
+    "OPPONENT_ADJUSTMENT"
+   ],
+   "stage": "PLAYER_QB_METRICS",
+   "started_at": "2026-09-27T15:09:56.845Z",
+   "status": "WARN",
+   "warnings": [
+    "ambiguous starter: team 6 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 36 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 38 (starter probability 0.36 < 0.60)",
+    "ambiguous starter: team 48 (starter probability 0.36 < 0.60)",
+    "ambiguous starter: team 98 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 151 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 164 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 202 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 239 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 295 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2006 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2050 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2115 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2116 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2229 (starter probability 0.36 < 0.60)",
+    "ambiguous starter: team 2348 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2382 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2426 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2429 (starter probability 0.36 < 0.60)",
+    "ambiguous starter: team 2433 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2448 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2483 (starter probability 0.36 < 0.60)",
+    "ambiguous starter: team 2572 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2623 (starter probability 0.36 < 0.60)",
+    "ambiguous starter: team 2643 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2698 (starter probability 0.33 < 0.60)",
+    "ambiguous starter: team 2747 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2815 (starter probability 0.33 < 0.60)"
+   ]
+  },
+  {
+   "counts": {
+    "teams": 118,
+    "teams_with_report": 14
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:10:17.997Z",
+   "ms": 63,
+   "needs": [
+    "INGEST_FINAL_SCORES"
+   ],
+   "stage": "AVAILABILITY_STATE",
+   "started_at": "2026-09-27T15:10:17.934Z",
+   "status": "WARN",
+   "warnings": [
+    "official availability reports for only 14 of 118 teams: UNKNOWN is not healthy"
+   ]
+  },
+  {
+   "counts": {
+    "converged": true,
+    "metrics": 28,
+    "movement_flags": 0,
+    "teams": 238
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:10:54.165Z",
+   "ms": 36167,
+   "needs": [
+    "OPPONENT_ADJUSTMENT",
+    "PLAYER_QB_METRICS"
+   ],
+   "stage": "TEAM_POSTERIORS",
+   "started_at": "2026-09-27T15:10:17.997Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "teams_recent": 238
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:10:54.165Z",
+   "ms": 0,
+   "needs": [
+    "TEAM_POSTERIORS"
+   ],
+   "stage": "RECENT_FORM",
+   "started_at": "2026-09-27T15:10:54.165Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "feature_columns": 60,
+    "target_games": 59
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:10.827Z",
+   "ms": 16661,
+   "needs": [
+    "TEAM_POSTERIORS"
+   ],
+   "stage": "UPCOMING_FEATURES",
+   "started_at": "2026-09-27T15:10:54.166Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {},
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:13.253Z",
+   "ms": 2426,
+   "needs": [
+    "UPCOMING_FEATURES"
+   ],
+   "stage": "LEAKAGE_TESTS",
+   "started_at": "2026-09-27T15:11:10.827Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "games": 59,
+    "mean_abs_margin": 11.447
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:13.386Z",
+   "ms": 132,
+   "needs": [
+    "UPCOMING_FEATURES",
+    "LEAKAGE_TESTS"
+   ],
+   "stage": "PURE_SUBMODELS",
+   "started_at": "2026-09-27T15:11:13.254Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "directional_agreement": 0.9661,
+    "mean_ens_sd": 1.213
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:13.386Z",
+   "ms": 0,
+   "needs": [
+    "PURE_SUBMODELS"
+   ],
+   "stage": "ENSEMBLE",
+   "started_at": "2026-09-27T15:11:13.386Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "win_calibration_method": "raw"
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:13.386Z",
+   "ms": 0,
+   "needs": [
+    "ENSEMBLE"
+   ],
+   "stage": "CALIBRATION",
+   "started_at": "2026-09-27T15:11:13.386Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "mean_expected_error": 12.741,
+    "mean_sigma": 15.968
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:13.386Z",
+   "ms": 0,
+   "needs": [
+    "CALIBRATION"
+   ],
+   "stage": "UNCERTAINTY",
+   "started_at": "2026-09-27T15:11:13.386Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "changed": 0,
+    "flags": 0,
+    "modes": {
+     "DEGRADED_AVAILABILITY": 59,
+     "DEGRADED_MARKET": 0,
+     "DEGRADED_PBP": 0,
+     "FALLBACK": 0,
+     "FULL": 0
+    },
+    "new_projections": 59
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:13.533Z",
+   "ms": 146,
+   "needs": [
+    "UNCERTAINTY"
+   ],
+   "stage": "PROJECTION_RECORDS",
+   "started_at": "2026-09-27T15:11:13.386Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "checks": 19,
+    "failed": 0,
+    "withheld_games": 0,
+    "withheld_totals": 0
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:13.555Z",
+   "ms": 21,
+   "needs": [
+    "PROJECTION_RECORDS"
+   ],
+   "stage": "RELEASE_GATE",
+   "started_at": "2026-09-27T15:11:13.533Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "already_frozen": 0,
+    "frozen_new": 0,
+    "published_rows": 888,
+    "refused_overwrites": 0,
+    "upcoming": 60,
+    "withheld_games": 0,
+    "withheld_totals": 0
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:17.433Z",
+   "ms": 3878,
+   "needs": [
+    "RELEASE_GATE"
+   ],
+   "stage": "FREEZE_EARLY",
+   "started_at": "2026-09-27T15:11:13.555Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "features": 59,
+    "game_performance": {
+     "corrected": 0,
+     "unchanged": 0,
+     "written": 662
+    },
+    "game_validation": {
+     "corrected": 0,
+     "unchanged": 0,
+     "written": 3679
+    },
+    "projection_changes": 0,
+    "projections": 59,
+    "qb_events": 154,
+    "qb_week_state": {
+     "corrected": 0,
+     "unchanged": 0,
+     "written": 415
+    },
+    "team_week_state": {
+     "corrected": 0,
+     "unchanged": 0,
+     "written": 238
+    },
+    "unit_week_state": {
+     "corrected": 0,
+     "unchanged": 0,
+     "written": 944
+    }
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:19.562Z",
+   "ms": 2128,
+   "needs": [
+    "FREEZE_EARLY"
+   ],
+   "stage": "WRITE_STATE",
+   "started_at": "2026-09-27T15:11:17.434Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {},
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:20.276Z",
+   "ms": 714,
+   "needs": [
+    "FREEZE_EARLY"
+   ],
+   "stage": "MARKET_COMPARISON",
+   "started_at": "2026-09-27T15:11:19.562Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "graded": 0,
+    "miss_note": "no frozen projections for week 4 in this state root",
+    "misses": 0,
+    "note": "no graded LIVE official predictions for this week in the Model Lab yet",
+    "week": 4
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:21.393Z",
+   "ms": 1117,
+   "needs": [
+    "INGEST_FINAL_SCORES",
+    "GAME_PERFORMANCE",
+    "PLAYER_QB_METRICS"
+   ],
+   "stage": "GRADE_PREVIOUS",
+   "started_at": "2026-09-27T15:11:20.276Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "items": 0
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:21.424Z",
+   "ms": 31,
+   "needs": [
+    "GRADE_PREVIOUS"
+   ],
+   "stage": "RESEARCH",
+   "started_at": "2026-09-27T15:11:21.394Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "awaiting_import": 0,
+    "frozen_games": 0,
+    "imported_by_lab": 0
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:21.450Z",
+   "ms": 25,
+   "needs": [
+    "FREEZE_EARLY"
+   ],
+   "stage": "MODEL_LAB",
+   "started_at": "2026-09-27T15:11:21.425Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "report": "reports/week_05"
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-09-27T15:11:22.563Z",
+   "ms": 1113,
+   "needs": [
+    "INGEST_FINAL_SCORES"
+   ],
+   "stage": "HEALTH_REPORT",
+   "started_at": "2026-09-27T15:11:21.450Z",
+   "status": "OK",
+   "warnings": []
+  }
+ ],
+ "started_at": "2026-09-27T15:08:06.327Z",
+ "status": "PUBLISHED",
+ "target_week": 5,
+ "team_rating_status": "OK",
+ "versions": {
+  "data_version": "9e3417ac6bd85ff60f9259ae",
+  "history_version": "c5cecd0381807c691310f735",
+  "injury_version": "be08d1ea25683c25f405958a",
+  "market_version": "cb69aa9d4c2ec58764e1c381",
+  "pbp_version": "5cf9fc87b04b87d6fd115b17",
+  "qb_status_version": "0cc7ddfcfdbca29c2ba5b2db",
+  "retprod_version": "b0c8c75ccbf73dab52f0d129",
+  "roster_version": "7cc01403162886c21f374762",
+  "schedule_version": "c6ece53a17c932af8a185430",
+  "talent_version": "b7a74e35abd254c9e9fe6dc0",
+  "weather_version": "c298dabcd9afcab117be6d0d"
+ },
+ "warnings": [
+  {
+   "message": "ambiguous starter: team 6 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 36 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 38 (starter probability 0.36 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 48 (starter probability 0.36 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 98 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 151 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 164 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 202 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 239 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 295 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2006 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2050 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2115 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2116 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2229 (starter probability 0.36 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2348 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2382 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2426 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2429 (starter probability 0.36 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2433 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2448 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2483 (starter probability 0.36 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2572 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2623 (starter probability 0.36 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2643 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2698 (starter probability 0.33 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2747 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2815 (starter probability 0.33 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "official availability reports for only 14 of 118 teams: UNKNOWN is not healthy",
+   "stage": "AVAILABILITY_STATE"
+  }
+ ],
+ "warnings_count": 29
+}

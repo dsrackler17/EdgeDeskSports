@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>EdgeDesk Data Health</title>
+<meta name="description" content="Development view: why CFB reliability is being lost — provider health, QB and availability coverage, player-quality coverage, the FCS bridge, market depth, the enrichment ROI planner and the self-audit.">
+<!--
+  EDGEDESK DATA HEALTH — a development / diagnostic view, not a product page.
+  It reads four committed artifacts and computes nothing of its own:
+
+    football/enrichment/current.json      the evidence packages, provider
+                                          health and coverage summary
+    football/fbs/reliability.json         the scored slate, the enrichment ROI
+                                          plan, and the same slate scored
+                                          without the evidence packages
+    football/enrichment/audit.json        the self-audit and its history
+    football/enrichment/fcs_ratings.json  the FCS bridge and its walk-forward
+
+  It exists to answer one question at a glance: WHY is reliability being
+  lost, and which data work would recover the most of it. Reliability is a
+  0-100 data-quality score; it is NOT a probability and not a betting signal.
+-->
+<style>
+.viz-root{
+  color-scheme:dark;
+  --page:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;
+  --text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--grid:#2c2a23;--axis:#3a3326;
+  --series-1:#3987e5;--series-1-soft:rgba(57,135,229,.16);
+  --warning:#fab219;--critical:#d03b3b;--good:#0ca30c;
+}
+@media (prefers-color-scheme: light){
+  :root:where(:not([data-theme="dark"])) .viz-root{
+    color-scheme:light;
+    --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+    --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
+    --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+  }
+}
+:root[data-theme="light"] .viz-root{
+  color-scheme:light;
+  --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+  --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
+  --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+}
+*{box-sizing:border-box;margin:0}
+html,body{background:#100e0a}
+body.viz-root{background:var(--page);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.45}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 48px}
+header{border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:18px}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:18px;font-weight:700}
+.tag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:12px;padding:2px 8px;font-weight:600}
+.sub{color:var(--dim);font-size:13px;margin-top:6px;max-width:760px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
+.filters label{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
+select{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.tile .l{font-size:12px;color:var(--dim)}
+.tile .v{font-size:26px;font-weight:600;margin-top:2px}
+.tile .d{font-size:11.5px;color:var(--faint);margin-top:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;min-width:0}
+.card h2{font-size:14px;font-weight:600;margin-bottom:2px}
+.card .note{font-size:12px;color:var(--dim);margin-bottom:10px}
+.chart{width:100%;overflow:hidden}
+.chart svg{display:block;width:100%;height:auto}
+.axis-t{fill:var(--faint);font-size:10.5px;font-variant-numeric:tabular-nums}
+.lab-t{fill:var(--dim);font-size:11px}
+.val-t{fill:var(--text);font-size:11px;font-variant-numeric:tabular-nums}
+.bar{fill:var(--series-1)}
+.bar:hover,.bar:focus{opacity:.8;outline:none}
+.hbars{display:flex;flex-direction:column;gap:6px}
+.hb{display:grid;grid-template-columns:minmax(120px,38%) 1fr auto;gap:10px;align-items:center;font-size:12.5px}
+.hb .n{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .t{height:14px;border-radius:0 4px 4px 0;background:var(--series-1);min-width:2px}
+.hb .tr{background:var(--series-1-soft);border-radius:0 4px 4px 0}
+.hb .x{color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--border)}
+td{padding:7px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.why{color:var(--dim);font-size:12px}
+.why div{margin-top:2px}
+.scroll{overflow-x:auto}
+.banner{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+.banner.ok{border-left-color:var(--good)}
+.banner b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.ico{flex:none;width:18px;height:18px}
+details summary{cursor:pointer;color:var(--dim);font-size:12.5px;margin-top:8px}
+#tip{position:fixed;pointer-events:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;display:none;z-index:20;max-width:280px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+#tip .tv{font-weight:600;font-size:13px}
+#tip .tl{color:var(--dim)}
+.err{color:var(--critical);font-size:13px}
+.pill{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;border-radius:10px;padding:2px 8px;border:1px solid var(--border)}
+.st-HEALTHY{color:var(--good);border-color:var(--good)}
+.st-DEGRADED,.st-STALE,.st-RATE_LIMITED{color:var(--warning);border-color:var(--warning)}
+.st-AUTH_FAILURE,.st-DOWN{color:var(--critical);border-color:var(--critical)}
+.st-NOT_CONFIGURED{color:var(--faint)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:13px}
+.two div:nth-child(odd){color:var(--dim)}
+.two div:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+ul.list{margin:6px 0 0 18px;padding:0;font-size:12.5px}
+ul.list li{margin:2px 0}
+</style>
+</head>
+<body class="viz-root">
+<div class="wrap">
+  <header>
+    <div class="hd"><h1>EdgeDesk data health</h1><span class="tag">Development view</span></div>
+    <p class="sub">Why college reliability is being lost, and what data work would recover it. Every number here counts what EdgeDesk knows against what it is asked; none of it is a probability, and none of it moves a projection. <a href="../reliability/" style="color:var(--dim)">Reliability diagnostics &rarr;</a></p>
+    <p class="sub" id="stamp"></p>
+  </header>
+  <div id="err" class="err"></div>
+  <section class="kpis" id="kpis" aria-label="Headline numbers"></section>
+
+  <div class="card"><h2>Data bottlenecks &mdash; enrichment ROI</h2>
+    <p class="note">For each bottleneck: the games carrying it, the reliability points it costs as scored, what resolving it in full would recover (re-scored with the same simulator the next-action list uses: caps honoured, stability held), a realistic share of that, and the implementation/data cost. Ranked by ROI = estimated recoverable points / cost. An engineering diagnostic, not a betting metric.</p>
+    <div class="scroll"><table id="t-roi"></table></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h2>Quarterback coverage</h2><p class="note">Sides on the slate, by the resolver&rsquo;s confirmation level. Labels, not probabilities.</p><div class="hbars" id="c-qb"></div><div class="two" id="qb-extra" style="margin-top:10px"></div></div>
+    <div class="card"><h2>Availability</h2><p class="note">Each side&rsquo;s availability read for its fixture. A provider failure is never read as a healthy roster.</p><div class="hbars" id="c-av"></div><div class="two" id="av-extra" style="margin-top:10px"></div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h2>Player ratings</h2><p class="note">Projected starters (a base 11+11 formation plus K/P) with a MEASURED player-quality rating. An unrated player is not a replacement-level player.</p><div class="two" id="pq"></div></div>
+    <div class="card"><h2>FCS rating bridge</h2><p class="note">FCS teams rated on EdgeDesk&rsquo;s own FBS scale through cross-division games. Shadow only: the engine still prices every FCS side from the shared floor.</p><div class="two" id="fcs"></div><p class="note" id="fcs-verdict" style="margin-top:8px"></p></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h2>Markets</h2><p class="note">Multi-book consensus per game (lib/market_consensus.js). Comparison evidence only.</p><div class="two" id="mk"></div></div>
+    <div class="card"><h2>Reliability with and without the evidence packages</h2><p class="note">The same games, the same run, the same projections: scored from the enrichment evidence, and from the v2 inputs alone.</p><div class="scroll"><table id="t-ba"></table></div></div>
+  </div>
+
+  <div class="card"><h2>Providers</h2><p class="note">Every source, its health this run, and whose failure it is. A refusal by the run&rsquo;s own network policy is attributed to the run, not the provider.</p><div class="scroll"><table id="t-prov"></table></div></div>
+
+  <div class="card"><h2>Self-audit: what changed since the last refresh</h2><div class="grid2" style="margin-bottom:0"><div><b style="font-size:12px">WHAT IMPROVED</b><ul class="list" id="au-up"></ul></div><div><b style="font-size:12px">WHAT DEGRADED</b><ul class="list" id="au-down"></ul></div></div><details><summary>Why</summary><ul class="list" id="au-why"></ul></details><div class="scroll" style="margin-top:10px"><table id="t-au"></table></div></div>
+
+  <div class="card"><h2>Refresh schedule</h2><p class="note">Minutes between provider calls for each kind of data, by hours to kickoff. A game past its horizon is not called at all; a game that has kicked off is frozen.</p><div class="scroll"><table id="t-sched"></table></div></div>
+</div>
+<div id="tip" role="tooltip"></div>
+<script>
+(function(){
+  'use strict';
+  function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=String(text);return e;}
+  function td(t,cls){return el('td',cls||null,t==null||t===''?'\u2014':t);}
+  function thRow(tb,cols){var tr=el('tr');cols.forEach(function(c){tr.appendChild(el('th',c[1]||null,c[0]));});tb.appendChild(tr);}
+  function hbars(host,rows){
+    host.textContent='';var max=Math.max.apply(null,rows.map(function(r){return r.value;}).concat([1]));
+    rows.forEach(function(r){var row=el('div','hb');row.appendChild(el('div','n',r.label));
+      var tr=el('div','tr');var bar=el('div','t');bar.style.width=(r.value>0?Math.max(0.5,100*r.value/max):0)+'%';if(!(r.value>0))bar.style.minWidth='0';
+      tr.appendChild(bar);var c=el('div');c.appendChild(tr);row.appendChild(c);row.appendChild(el('div','x',r.text||r.value));host.appendChild(row);});
+  }
+  function pairs(host,list){host.textContent='';list.forEach(function(p){host.appendChild(el('div',null,p[0]));host.appendChild(el('div',null,p[1]==null?'\u2014':p[1]));});}
+  function load(u){return fetch(u,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(u+' '+r.status);return r.json();});}
+  var QB=['CONFIRMED','STRONGLY_EXPECTED','EXPECTED','UNCERTAIN','CONFLICTED','UNKNOWN'];
+  var AV=['COMPREHENSIVE_OFFICIAL','OFFICIAL_THIS_GAME','OFFICIAL_ABSENCE_ONLY','MULTI_SOURCE_CURRENT','STRUCTURED_CURRENT','STALE_CARRIED','NOT_DUE_YET','NOT_REQUIRED','PROVIDER_FAILED','NO_SOURCE'];
+  Promise.all([load('/football/enrichment/current.json'),load('/football/fbs/reliability.json'),
+    load('/football/enrichment/audit.json').catch(function(){return null;}),load('/football/enrichment/fcs_ratings.json').catch(function(){return null;})]).then(function(x){
+    var E=x[0],A=x[1],AU=x[2],F=x[3],S=E.summary;
+    document.getElementById('stamp').textContent='Evidence built '+E.generated_at+' ('+E.run.environment+(E.run.live?', live provider checks':', offline')+') \u00b7 slate scored '+A.generated_at;
+    var K=document.getElementById('kpis');
+    function tile(l,v,d){var t=el('div','tile');t.appendChild(el('div','l',l));t.appendChild(el('div','v',v==null?'\u2014':v));if(d)t.appendChild(el('div','d',d));K.appendChild(t);}
+    tile('Games',S.games,S.frozen_games?S.frozen_games+' frozen after kickoff':null);
+    tile('Mean reliability',A.summary.mean,'median '+A.summary.median+(A.summary_without_evidence?' \u00b7 '+A.summary_without_evidence.mean+' without evidence':''));
+    if(A.roi&&A.roi.potential)tile('Potential (mean)',A.roi.potential.mean_potential,'if unresolved evidence were resolved');
+    tile('QB confirmed',(S.qb.by_confirmation.CONFIRMED||0)+' / '+S.qb.sides,'sides');
+    tile('Teams with availability',S.availability.teams_covered+' / '+S.availability.fbs_teams_on_slate,S.availability.starters_known_pct+'% of starters known');
+    tile('Provider failures',S.provider_failures,(S.providers||[]).length+' providers');
+    /* ROI */
+    var t=document.getElementById('t-roi');thRow(t,[['#','num'],['Bottleneck'],['Games','num'],['Points lost','num'],['Max recoverable','num'],['Estimated','num'],['Cost','num'],['ROI','num'],['How']]);
+    ((A.roi&&A.roi.families)||[]).forEach(function(b){var tr=el('tr');tr.appendChild(td(b.engineering_priority,'num'));tr.appendChild(td(b.label));tr.appendChild(td(b.games_affected,'num'));
+      tr.appendChild(td(b.current_points_lost,'num'));tr.appendChild(td(b.maximum_recoverable_points,'num'));tr.appendChild(td(b.estimated_recoverable_points,'num'));
+      tr.appendChild(td(b.cost,'num'));tr.appendChild(td(b.enrichment_roi,'num'));var w=td(b.how);w.className='why';tr.appendChild(w);t.appendChild(tr);});
+    /* QB */
+    hbars(document.getElementById('c-qb'),QB.map(function(k){return {label:k.replace(/_/g,' ').toLowerCase(),value:S.qb.by_confirmation[k]||0};}));
+    pairs(document.getElementById('qb-extra'),[['conflicts detected',S.qb.conflicts_detected],['resolved by the hierarchy',S.qb.conflicts_resolved],['open (CONFLICTED)',S.qb.conflicts_open],['QB status known',S.qb.status_known+' / '+S.qb.sides]]);
+    /* availability */
+    hbars(document.getElementById('c-av'),AV.filter(function(k){return S.availability.by_class[k];}).map(function(k){return {label:k.replace(/_/g,' ').toLowerCase(),value:S.availability.by_class[k]};}));
+    pairs(document.getElementById('av-extra'),[['FBS teams covered',S.availability.teams_covered+' / '+S.availability.fbs_teams_on_slate],['fresh',S.availability.fresh],['stale',S.availability.stale],['unavailable',S.availability.unavailable],
+      ['projected starters with a known status',S.availability.starters_known+' / '+S.availability.starters_total+' ('+S.availability.starters_known_pct+'%)'],['historical rows refused',S.availability.historical_rows_refused]]);
+    pairs(document.getElementById('pq'),[['projected starters rated',S.player_quality.projected_starters_rated_pct+'% ('+S.player_quality.starters_rated+' / '+S.player_quality.starters_total+')'],
+      ['key contributors rated',S.player_quality.key_contributors_rated_pct+'%'],['absences with UNKNOWN impact',S.player_quality.unrated_meaningful_absences],['of them in a critical or major role',S.player_quality.unrated_critical_or_major_absences]]);
+    if(F){var V=F.validation||{};pairs(document.getElementById('fcs'),[['rated FCS teams',S.fcs.rated_teams],['by confidence',JSON.stringify(S.fcs.by_confidence).replace(/[{}"]/g,'').replace(/,/g,' \u00b7 ').replace(/:/g,' ')],
+      ['bridge games (base season)',F.bridge.base_season.cross_division_games+' cross-division, '+F.bridge.base_season.fcs_vs_fcs_games+' FCS-vs-FCS'],['bridge games (this season)',F.bridge.this_season.cross_division_games+' cross-division, '+F.bridge.this_season.fcs_vs_fcs_games+' FCS-vs-FCS'],
+      ['FCS level vs the floor',F.bridge.fcs_level.mean+' \u00b1 '+F.bridge.fcs_level.sd+' vs '+F.floor],['walk-forward MAE, floor vs bridge',V.capped?(V.capped.floor.mae+' vs '+V.capped.bridge.mae+' (n '+V.n+')'):null],
+      ['FCS sides on the slate at THIN DATA',(S.fcs.fcs_sides_on_slate-S.fcs.fcs_sides_strong)+' / '+S.fcs.fcs_sides_on_slate]]);
+      document.getElementById('fcs-verdict').textContent=V.verdict||'';}
+    pairs(document.getElementById('mk'),[['games with a market joined',S.market.games_with_market+' / '+S.games],['average books per game',S.market.average_books_per_game],['one-book games',S.market.one_book_games],['3+ book games',S.market.three_plus_book_games],
+      ['games under two sources',S.market.under_two_sources],['stale markets',S.market.stale_markets]]);
+    /* before / after */
+    var ba=document.getElementById('t-ba');thRow(ba,[['Measure'],['Without evidence','num'],['With evidence','num']]);
+    var W=A.summary_without_evidence,N=A.summary;
+    if(W){[['mean',W.mean,N.mean],['median',W.median,N.median]].concat(N.by_grade.map(function(g,i){return [g.label,W.by_grade[i].n,g.n];})).forEach(function(r){var tr=el('tr');tr.appendChild(td(r[0]));tr.appendChild(td(r[1],'num'));tr.appendChild(td(r[2],'num'));ba.appendChild(tr);});}
+    /* providers */
+    var tp=document.getElementById('t-prov');thRow(tp,[['Provider'],['Kind'],['State'],['Why'],['Whose']]);
+    Object.keys(E.providers).sort().forEach(function(k){var p=E.providers[k],tr=el('tr');tr.appendChild(td(p.label||k));tr.appendChild(td(p.kind));
+      var c=el('td');c.appendChild(el('span','pill st-'+p.state,p.state.replace(/_/g,' ')));tr.appendChild(c);var w=td(p.reason);w.className='why';tr.appendChild(w);tr.appendChild(td(p.attributable_to));tp.appendChild(tr);});
+    /* audit */
+    if(AU){function list(id,xs){var u=document.getElementById(id);(xs&&xs.length?xs:['nothing']).forEach(function(t){u.appendChild(el('li',null,t));});}
+      list('au-up',AU.what_improved);list('au-down',AU.what_degraded);list('au-why',AU.why);
+      var ta=document.getElementById('t-au');thRow(ta,[['Count'],['Previous','num'],['Now','num']]);
+      var C=AU.latest.counts,P=AU.previous?AU.previous.counts:{};
+      ['games','mean','median','missing_qb_status','qb_conflicts_open','games_lacking_injury_information','unrated_meaningful_absences','fcs_games_thin_data','games_under_two_market_sources','stale_evidence_records','provider_failures'].forEach(function(k){
+        var tr=el('tr');tr.appendChild(td(k.replace(/_/g,' ')));tr.appendChild(td(P[k],'num'));tr.appendChild(td(C[k],'num'));ta.appendChild(tr);});}
+    /* schedule */
+    var ts=document.getElementById('t-sched');thRow(ts,[['Data'],['> 72h','num'],['24-72h','num'],['6-24h','num'],['< 6h','num'],['< 90 min','num'],['Horizon (days)','num']]);
+    (E.schedule||[]).forEach(function(r){var tr=el('tr');tr.appendChild(td(r.kind.replace(/_/g,' ')));['NORMAL','ELEVATED','HIGH','VERY_HIGH','FINAL'].forEach(function(w){tr.appendChild(td(r.minutes[w]==null?'not read':r.minutes[w],'num'));});tr.appendChild(td(r.horizon_days,'num'));ts.appendChild(tr);});
+  }).catch(function(e){document.getElementById('err').textContent='The data-health artifacts could not be read: '+(e&&e.message||e);});
+})();
+</script>
+</body>
+</html>

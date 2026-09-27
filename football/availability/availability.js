@@ -71,7 +71,9 @@
     try { t = t.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch (e) {}
     return t;
   }
-  function toMs(t) { if (t == null || t === '') return null; var ms = Date.parse(String(t)); return isFinite(ms) ? ms : null; }
+  /* a number is already epoch milliseconds: parsing its string form gave NaN,
+     and a caller's `now` was silently replaced by the wall clock */
+  function toMs(t) { if (t == null || t === '') return null; if (typeof t === 'number') return isFinite(t) ? t : null; var ms = Date.parse(String(t)); return isFinite(ms) ? ms : null; }
   function iso(ms) { return new Date(ms).toISOString(); }
 
   /* ------------------------------------------------- status normalization */

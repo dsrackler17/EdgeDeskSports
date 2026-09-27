@@ -172,7 +172,13 @@ var P4_HEAD = ['kickoff_tz', 'neutral_site', 'venue', 'home_conference', 'away_c
 var FBS_HEAD = ['home_team_id', 'away_team_id', 'home_conference_id', 'away_conference_id',
   'home_fbs_group', 'away_fbs_group', 'home_division', 'away_division',
   'matchup_type', 'is_conference_game', 'model_status', 'data_completeness',
-  'market_status', 'quote_timestamp', 'board_status'];
+  'market_status', 'quote_timestamp', 'board_status',
+  /* reliability, appended last (lib/cfb_reliability.js). This offline
+     generator replays the engine without the input assembly reliability is
+     scored from, so it copies the published slate's score for a game that
+     slate carries under the same model version and leaves the four cells
+     empty otherwise — an empty cell, never an invented score */
+  'reliability_score', 'reliability_grade', 'projection_stability_sd', 'favorite_flip_rate'];
 
 var HEAD = NFL_HEAD.concat(P4_HEAD).concat(FBS_HEAD);
 var FBS_AT = NFL_HEAD.length + P4_HEAD.length;
@@ -208,7 +214,21 @@ function fbsTail(g, p, mkt, universe) {
     (mkt && mkt.spread_line != null) ? (mkt.stale ? 'STALE QUOTE' : 'LIVE') : 'NO MARKET',
     (mkt && mkt.as_of) || '',
     boardStatus(p, mkt)
-  ];
+  ].concat(relTail(g, p));
+}
+var PUBLISHED_REL = null;
+function relTail(g, p) {
+  if (PUBLISHED_REL === null) {
+    PUBLISHED_REL = {};
+    try {
+      var sl = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'fbs', 'slate.json'), 'utf8'));
+      (sl.games || []).forEach(function (r) { if (r && r.reliability_score != null) PUBLISHED_REL[String(r.game_id)] = r; });
+    } catch (_) { /* no published slate: the cells stay empty */ }
+  }
+  var r = g && g.game_id != null ? PUBLISHED_REL[String(g.game_id)] : null;
+  if (!r || !p || p.status !== 'PREDICTED') return ['', '', '', ''];
+  var st = r.projection_stability || null;
+  return [r.reliability_score, r.reliability_grade || '', st ? st.projection_stability_sd : '', st ? st.favorite_flip_rate : ''];
 }
 
 var BASIS = (function () {

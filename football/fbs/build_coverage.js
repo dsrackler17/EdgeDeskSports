@@ -54,12 +54,47 @@ const CACHE = path.join(HERE, '.cache');
 global.window = global.window || global;
 require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
 const E = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
+/* CFB V2 runs in SHADOW beside V1. Its frozen pure projections are read from
+   football/cfb_v2/current.json and published under `v2_shadow` — appended, so
+   no existing field changes. A missing file or engine means no block, never a
+   guessed one. The champion is whatever football/cfb_v2/params.js says, and
+   V1 stays the priced number until a person switches it. */
+const V2 = (function () {
+  try {
+    require(path.join(ROOT, 'football', 'cfb_v2', 'params.js'));
+    const eng = require(path.join(ROOT, 'football', 'cfb_v2', 'engine.js'));
+    const cur = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'current.json'), 'utf8'));
+    const byId = {};
+    (cur.rows || []).forEach(function (r) { byId[String(r.game_id)] = r; });
+    return { eng: eng, byId: byId, version: cur.model_version, generated_at: cur.generated_at };
+  } catch (e) { return null; }
+})();
+function v2Shadow(gameId) {
+  if (!V2) return null;
+  const row = V2.byId[String(gameId)];
+  if (!row) return null;
+  const p = V2.eng.pure(row, {});
+  if (p.status !== 'PREDICTED') {
+    return { model_version: V2.version, state: row.state || null, status: p.status, reason: p.reason || null };
+  }
+  return { model_version: p.model_version, state: row.state || null, status: p.status,
+    prediction_ts: p.prediction_ts, projected_margin: p.projected_margin,
+    home_line: p.fair_spread_home_line, fair_total: p.fair_total, home_win_prob: p.home_win_prob,
+    range_80: p.intervals.p80, confidence: p.football_prediction_confidence,
+    drivers: p.drivers, uncertainty_drivers: p.uncertainty_drivers,
+    label: 'SHADOW — V2 is evaluated beside V1; V1 remains the priced number' };
+}
 const FBS = require(path.join(HERE, 'fbs.js'));
 const IN = require(path.join(ROOT, 'football', 'matchup', 'inputs.js'));
 const CONF = require(path.join(ROOT, 'football', 'matchup', 'confidence.js'));
 const WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js'));
 const RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
 const EPA = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
+const REL = require(path.join(ROOT, 'lib', 'cfb_reliability.js'));
+const DIS = require(path.join(ROOT, 'lib', 'cfb_disagreement.js'));
+const GE = require(path.join(ROOT, 'lib', 'game_evidence.js'));
+const ROI = require(path.join(ROOT, 'football', 'enrichment', 'roi.js'));
+const AUDIT = require(path.join(ROOT, 'football', 'enrichment', 'audit.js'));
 const P = global.EDCfbP4Params;
 
 const SCHED = y => `https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_${y}.csv`;
@@ -674,8 +709,59 @@ async function main() {
   report.ok = report.failures.length === 0;
 
   /* ------------------------------------------------------- the artifacts */
+  /* RELIABILITY (lib/cfb_reliability.js): how much EdgeDesk trusts the
+     completeness, freshness, consistency and stability of the inputs under
+     each projection — six components, hard gates, the reasons and what would
+     raise it. Scored here from exactly what this build priced from, plus the
+     two layers the board does not load (the non-QB personnel impact
+     measurement and the ranking layer's team-data gates), which are
+     published beside the score in football/fbs/reliability.json so the board
+     re-scores from the same facts. No market is joined here, so the market
+     items do not apply to this artifact's score. */
+  const personnelArt = readJson(path.join(ROOT, 'football', 'personnel', 'current.json'), null);
+  const rankByKey = {};
+  ((ctx.rankings && ctx.rankings.teams) ? Object.values(ctx.rankings.teams) : []).forEach(t => { if (t && t.key) rankByKey[t.key] = t; });
+  const relNow = Date.parse(report.generated_at);
+  const relOf = {}, relInputs = {}, relBaseOf = {}, pkgOf = {};
+  /* THE EVIDENCE PACKAGES (football/enrichment/build_enrichment.js, run
+     before this build): each game is scored from its package — the one
+     interpretation of availability, the quarterback, absences, the FCS
+     bridge — and ALSO without it, so the artifact carries the same-run
+     score the v2 inputs alone would give. Neither moves a projection. */
+  const enrichArt = readJson(path.join(ROOT, 'football', 'enrichment', 'current.json'), null);
+  const enrichOk = !!(enrichArt && enrichArt.schema === GE.ARTIFACT_SCHEMA);
+  for (const it of slate) {
+    const m = it.meta, g = it.g, p = projected[m.id];
+    const asm = (p && p.assembly) || null;
+    const base = asm && asm.baseline;
+    const pg = personnelArt && personnelArt.games ? personnelArt.games[String(m.id)] : null;
+    const pers = pg ? { home: REL.compactPersonnel(pg.home), away: REL.compactPersonnel(pg.away) } : null;
+    const tq = { home: REL.teamQuality(rankByKey[m.home.key]), away: REL.teamQuality(rankByKey[m.away.key]) };
+    let rel = null, relBase = null;
+    const pkg0 = enrichOk ? GE.forGame(enrichArt, m.id) : null;
+    const pkg = pkg0 ? GE.complete(pkg0, { contract: asm ? asm.contract : [] }) : null;
+    try {
+      const inp = REL.inputFor({
+        now: relNow, game: g, meta: m, projection: p && p.status ? p : null,
+        contract: asm ? asm.contract : [], starters: asm ? asm.starters : {}, qb_epa: asm ? asm.qb_epa : {},
+        injuries: base ? { home: base.teams.home.injuries, away: base.teams.away.injuries } : {},
+        venues: base ? base.venue : null,
+        rosters: base ? { home: base.teams.home.roster, away: base.teams.away.roster } : {},
+        personnel: pers, team_quality: tq, market: null,
+        built_at: report.generated_at, engine: E, state: st, params: P, evidence: pkg
+      });
+      rel = REL.score(inp);
+      relBase = pkg ? REL.score(Object.assign({}, inp, { evidence: null })) : rel;
+    } catch (e) { rel = null; log('[fbs] reliability ' + m.id + ': ' + ((e && e.message) || e)); }
+    relOf[m.id] = rel;
+    relBaseOf[m.id] = relBase;
+    pkgOf[m.id] = pkg;
+    relInputs[m.id] = { personnel: pers, team_quality: tq };
+  }
+
   const slateRows = slate.map(it => {
     const m = it.meta, g = it.g, p = projected[m.id];
+    const rel = relOf[m.id] || null;
     const unc = (p && p.layers && p.layers.uncertainty && p.layers.uncertainty.context) || null;
     const asm = (p && p.assembly) || null;
     const sh = (p && p.shadow) || null;
@@ -801,11 +887,51 @@ async function main() {
          conclusion — that the starter was considered and found irrelevant —
          when the truth is more specific and more useful than that. */
       shadow_effect: shadowEffect(p, sh, asm),
+      v2_shadow: v2Shadow(m.id),
       spread_recommendation: (p && p.edge && p.edge.spread) ? p.edge.spread.recommendation : null,
       /* no market is joined in this offline job — the board and the exports
          carry the live quote. Stated, never faked as a number. */
       market_status: 'NOT JOINED IN THIS BUILD',
-      quote_timestamp: null
+      quote_timestamp: null,
+      /* RELIABILITY, appended so every existing consumer's fields are
+         untouched. `input_coverage` above is kept exactly as it was: it is
+         one of the facts reliability reads, not a synonym for it. */
+      reliability_score: rel ? rel.score : null,
+      reliability_grade: rel ? rel.grade : null,
+      reliability_components: rel ? REL.compact(rel).components : null,
+      reliability_next_actions: rel ? REL.published(rel).next_actions : null,
+      projection_stability: rel && rel.stability && rel.stability.tier ? {
+        projection_stability_score: rel.stability.projection_stability_score,
+        projection_stability_sd: rel.stability.projection_stability_sd,
+        projection_p10: rel.stability.projection_p10, projection_p50: rel.stability.projection_p50,
+        projection_p90: rel.stability.projection_p90, favorite_flip_rate: rel.stability.favorite_flip_rate,
+        tier: rel.stability.tier } : null,
+      reliability: rel ? REL.published(rel) : null,
+      /* THE ENRICHMENT, appended: whether the score was calculated from an
+         evidence package, the score it could approximately reach with its
+         unresolved evidence resolved (not a probability), and the DATA
+         COVERAGE block the card prints */
+      evidence_used: !!pkgOf[m.id],
+      reliability_potential: rel && rel.potential ? rel.potential.score : null,
+      reliability_without_evidence: relBaseOf[m.id] && pkgOf[m.id] ? relBaseOf[m.id].score : null,
+      data_coverage: pkgOf[m.id] && rel ? GE.view(pkgOf[m.id], rel, { home: g.home_team, away: g.away_team }) : null,
+      /* THE MAJOR-DISAGREEMENT GATE'S FOOTBALL INPUTS, appended: the engine's
+         additive terms, the rating split (long-term state vs this season, games
+         behind each side), the football-only calibrated shadow margin, and the
+         quarterback and availability states. No market is in here — the Model
+         Lab joins the quote it captured and runs lib/cfb_disagreement.js at
+         every checkpoint, so the verdict is judged against the price of that
+         moment. */
+      disagreement_inputs: (p && p.status === 'PREDICTED') ? (function () {
+        const pr = DIS.fromEngine(p);
+        if (!pr) return null;
+        const av = (side) => { const f = (asm && asm.contract || []).find(x => x.field === 'availability' && x.side === side); return { feed_state: f ? f.state : null }; };
+        const qb = (side) => { const r = asm && asm.starters && asm.starters[side]; return r ? { status: r.status, player: r.player_name,
+          availability: r.availability ? r.availability.state : null, change: false } : null; };
+        return { contract: DIS.version, projection: pr, qb: { home: qb('home'), away: qb('away') },
+          roster: { home: av('home'), away: av('away') }, reliability: rel ? rel.score : null,
+          game: { home_fbs: !!m.home.is_fbs, away_fbs: !!m.away.is_fbs, venue: g.venue || null } };
+      })() : null
     };
   });
   const artifact = {
@@ -845,9 +971,74 @@ async function main() {
     games: slateRows
   };
 
+  /* THE RELIABILITY ARTIFACT: every game's score with its components, gates,
+     reasons and next actions, the slate-wide dashboard, and the inputs the
+     board needs to re-score a game from the same facts this build used. */
+  const relRows = slateRows.map(r => ({ game_id: r.game_id, home: r.home_team, away: r.away_team,
+    home_conference: r.home_conference, away_conference: r.away_conference, matchup_type: r.matchup_type,
+    kickoff: r.kickoff, legacy_input_coverage: r.input_coverage, reliability: relOf[r.game_id] || null }));
+  const relArtifact = {
+    schema: 'edgedesk_cfb_reliability_v1', version: REL.version, season: a.season,
+    generated_at: report.generated_at,
+    basis: 'Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the '
+      + 'information under each projection. It is NOT a probability that the projection is right and not a betting '
+      + 'signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.',
+    market: 'NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote',
+    weights: REL.CONFIG.weights, caps: REL.CONFIG.caps, grades: REL.CONFIG.grades,
+    not_scored: (relRows.find(r => r.reliability) || {}).reliability ? relRows.find(r => r.reliability).reliability.not_scored : [],
+    summary: REL.summarize(relRows),
+    /* the same games, the same run, scored WITHOUT the evidence packages:
+       what the v2 inputs alone would say, so the effect of the enrichment is
+       measured on identical projections */
+    summary_without_evidence: enrichOk ? REL.summarize(relRows.map(r => Object.assign({}, r, { reliability: relBaseOf[r.game_id] || null }))) : null,
+    enrichment: enrichOk ? { artifact_generated_at: enrichArt.generated_at, games_with_evidence: Object.keys(pkgOf).filter(k => pkgOf[k]).length,
+      summary: enrichArt.summary } : { state: 'ABSENT', why: 'football/enrichment/current.json is missing or has another schema: every game scored without an evidence package' },
+    roi: ROI.plan(relRows, { market: enrichOk && enrichArt.summary ? enrichArt.summary.market : null }),
+    /* the ranking layer's team-data gates the score reads, by team key, so
+       the board — which does not load the 6 MB rankings artifact — scores
+       from the same facts */
+    team_quality: {},
+    games: {}
+  };
+  Object.keys(rankByKey).sort().forEach(k => {
+    const q = REL.teamQuality(rankByKey[k]);
+    if (q) relArtifact.team_quality[k] = { gates: q.gates };
+  });
+  relRows.forEach(r => {
+    const c = REL.compact(r.reliability);
+    relArtifact.games[r.game_id] = { game_id: r.game_id, home: r.home, away: r.away, kickoff: r.kickoff,
+      home_conference: r.home_conference, away_conference: r.away_conference, matchup_type: r.matchup_type,
+      legacy_input_coverage: r.legacy_input_coverage == null ? null : r.legacy_input_coverage,
+      reliability: c ? Object.assign(c, {
+        penalties: (r.reliability.penalties || []).map(p => ({ component: p.component, points: p.points,
+          reason: p.reason, family: p.family || null, action_key: p.action_key || null })),
+        gates: (r.reliability.gates || []).map(g => ({ id: g.id, cap: g.cap, binding: g.binding })),
+        missing: r.reliability.missing,
+        next_actions: (r.reliability.next_actions || []).map(a => ({ action: a.action, key: a.key, potential_gain: a.potential_gain })),
+        recoverable_by_family: r.reliability.recoverable_by_family || null
+      }) : null,
+      reliability_without_evidence: relBaseOf[r.game_id] && pkgOf[r.game_id] ? { score: relBaseOf[r.game_id].score, grade: relBaseOf[r.game_id].grade } : null };
+  });
+
   if (!a.check) {
     fs.writeFileSync(path.join(HERE, 'coverage.json'), JSON.stringify(report, null, 1) + '\n');
     fs.writeFileSync(path.join(HERE, 'slate.json'), JSON.stringify(artifact, null, 1) + '\n');
+    fs.writeFileSync(path.join(HERE, 'reliability.json'), JSON.stringify(relArtifact, null, 1) + '\n');
+    /* THE SELF-AUDIT: what EdgeDesk knows now against the previous refresh */
+    try {
+      /* the baseline a first audit compares with: this slate, this run,
+         scored from the v2 inputs alone */
+      const baseArt = { generated_at: relArtifact.generated_at, games: {} };
+      Object.keys(relArtifact.games).forEach(k => {
+        const g = relArtifact.games[k], b = relBaseOf[k];
+        baseArt.games[k] = Object.assign({}, g, { reliability: b ? { score: b.score, grade: b.grade,
+          penalties: (b.penalties || []).map(p => ({ points: p.points, family: p.family || null, action_key: p.action_key || null, component: p.component })),
+          gates: (b.gates || []).map(x => ({ id: x.id, binding: x.binding })) } : null });
+      });
+      const au = AUDIT.run(relArtifact, enrichOk ? enrichArt : null, { at: report.generated_at,
+        baseline: AUDIT.snapshot(baseArt, null, { at: report.generated_at }), baseline_label: 'this slate scored without the evidence packages (v2 inputs only)' });
+      log('[fbs] audit: improved ' + au.what_improved.length + ', degraded ' + au.what_degraded.length);
+    } catch (e) { log('[fbs] self-audit not written: ' + ((e && e.message) || e)); }
   }
 
   log(`[fbs] ${a.season}: ${universe.counts.fbs_teams} active FBS programs, `

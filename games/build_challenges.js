@@ -461,7 +461,12 @@ function toRecord(o) {
   var mkt = num(o.ref_home_line);
   var conf = num(o.confidence);
   var gap = (edge != null && mkt != null) ? (edge - mkt) : null;
-  var st = STATE.classify(conf, gap);
+  /* Classify on the numbers the board publishes, not the raw ones. A raw gap
+     of 1.95 is PASS but ships as 2.0, and a confidence of 34.6 is THIN but
+     ships as 35; the card would then state a number its label contradicts. */
+  var pubConf = conf == null ? null : Math.round(conf);
+  var pubGap = r1(gap);
+  var st = STATE.classify(pubConf, pubGap);
   return {
     game_id: String(o.game_id),
     season: num(o.season),
@@ -477,9 +482,9 @@ function toRecord(o) {
     edgedesk_spread: r1(edge),
     market_spread: r1(mkt),
     market_source: txt(o.ref_source),
-    spread_gap: r1(gap),
+    spread_gap: pubGap,
     /* ---- context the reveal is allowed to show ---- */
-    confidence: conf == null ? null : Math.round(conf),
+    confidence: pubConf,
     status: txt(o.data_status),
     research_state: st.key,
     research_state_label: st.label,

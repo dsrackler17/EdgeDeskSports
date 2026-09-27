@@ -71,6 +71,9 @@
   /* Availability, kept apart from the starter question on purpose. */
   var AVAIL_STATES = ['OUT', 'DOUBTFUL', 'QUESTIONABLE', 'GAME_TIME_DECISION', 'LIMITED', 'PROBABLE', 'AVAILABLE', 'UNKNOWN'];
   var AVAIL_DOUBT = { OUT: 100, DOUBTFUL: 80, GAME_TIME_DECISION: 65, QUESTIONABLE: 60, LIMITED: 40, PROBABLE: 25, AVAILABLE: 10, UNKNOWN: 50 };
+  /* a week: the availability layer's HISTORICAL line
+     (football/availability/availability.js getAvailabilityFreshness) */
+  var AVAIL_HISTORICAL_H = 168;
 
   /* How old a piece of evidence may be before it is called stale. Usage is
      measured in weeks because a start is a weekly fact; reports in hours
@@ -449,6 +452,32 @@
         source: part.source || null, source_url: part.source_url || null
       };
     }
+    /* A REPORT HAS A CLOCK. Its PUBLICATION is what dates it: the collector
+       re-reads ESPN's injury page every run and stamps what it found as
+       observed that morning, and a 2020 designation re-read today is still a
+       2020 designation. The same two fields, in the same order, as the
+       availability layer's ladder (availability.js getAvailabilityFreshness):
+       the publication, else the observation. Older than a week, or with
+       neither, is historical. It is kept as the reason, never as the state. */
+    var historical = null;
+    if (rec) {
+      var dated = rec.published_at || rec.retrieved_at || null;
+      var ageH = hoursBetween(dated, now == null ? Date.now() : now);
+      if (ms(dated) == null) historical = 'it carries no date';
+      else if (ageH != null && ageH > AVAIL_HISTORICAL_H)
+        historical = 'it was ' + (rec.published_at ? 'published ' : 'observed ') + String(dated).slice(0, 10)
+          + ', more than a week ago';
+    }
+    if (rec && historical) {
+      return {
+        state: 'UNKNOWN', doubt: AVAIL_DOUBT.UNKNOWN, evidence: 'NONE',
+        why: (rec.source || 'an availability source') + ' has a report on this player, but ' + historical
+          + ', so it says nothing about this week. No current report is not the same as healthy',
+        source: rec.source || null, source_url: rec.source_url || null,
+        published_at: rec.published_at || null, retrieved_at: rec.retrieved_at || null,
+        checked: true, historical: true, participation: partNote
+      };
+    }
     if (!rec) {
       return {
         state: 'UNKNOWN', doubt: AVAIL_DOUBT.UNKNOWN, evidence: 'NONE',
@@ -462,7 +491,9 @@
     var st = String(rec.status || 'UNKNOWN').toUpperCase();
     if (AVAIL_DOUBT[st] == null) st = 'UNKNOWN';
     return {
-      state: st, doubt: AVAIL_DOUBT[st], evidence: 'EXPLICIT',
+      /* EXPLICIT only when the report says something: a row naming him with
+         no designation is not evidence either way */
+      state: st, doubt: AVAIL_DOUBT[st], evidence: st === 'UNKNOWN' ? 'NONE' : 'EXPLICIT',
       why: rec.detail || rec.injury || null,
       source: rec.source || null, source_url: rec.source_url || null,
       published_at: rec.published_at || null, retrieved_at: rec.retrieved_at || null,

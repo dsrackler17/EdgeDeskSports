@@ -132,6 +132,62 @@ const LIBS = [
     start: '/*__EDBOARD_START__*/', end: '/*__EDBOARD_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The canonical research arithmetic and the per-game research contract
+     (lib/research_core.js, lib/game_research.js) — the same files the
+     terminal and the Collective load in the browser — so the desk reads a
+     game through the one typed-evidence object rather than re-deriving it.
+     ORDER MATTERS: game_research reads EDResearch when it loads. */
+  {
+    name: 'EDRCORE',
+    src: path.join(ROOT, 'lib', 'research_core.js'),
+    start: '/*__EDRCORE_START__*/', end: '/*__EDRCORE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDGAMERES',
+    src: path.join(ROOT, 'lib', 'game_research.js'),
+    start: '/*__EDGAMERES_START__*/', end: '/*__EDGAMERES_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* The desk layer: the sport-aware typed-evidence contract, the price
+     verdict and ladder, the deterministic board ranking, intent, the
+     conversation state, Similar Situations' gate and the short answer.
+     Server-side only. */
+  {
+    name: 'EDDESK',
+    src: path.join(FN, '_desk.js'),
+    start: '/*__EDDESK_START__*/', end: '/*__EDDESK_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* Non-QB personnel availability for the desk: intent, the game and the
+     player a question names, the deterministic answer, the packet block and
+     the critic check that fails an injury turned into spread points. Its
+     canonical copy lives with the scoring core in football/personnel/.
+     Server-side only; the page reads the committed artifact directly. */
+  {
+    name: 'EDPERSONNEL',
+    src: path.join(ROOT, 'football', 'personnel', 'desk.js'),
+    start: '/*__EDPERSONNEL_START__*/', end: '/*__EDPERSONNEL_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* The personal research layer: the research state, what changed, the
+     alert wording, the Top-5 explanations, the journal's grade and the
+     decision-quality analytics. The SAME file the terminal loads as
+     window.EDPersonal. ORDER MATTERS: it reads EDResearch (EDRCORE). */
+  {
+    name: 'EDPERSONAL',
+    src: path.join(ROOT, 'lib', 'edgedesk_personal.js'),
+    start: '/*__EDPERSONAL_START__*/', end: '/*__EDPERSONAL_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* The desk's answers over the reader's own rows (watchlist, alerts,
+     journal) and the shared slate research state. Server-side only. */
+  {
+    name: 'EDMINE',
+    src: path.join(FN, '_mine.js'),
+    start: '/*__EDMINE_START__*/', end: '/*__EDMINE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The staking layer (Slice 8): the bankroll policy, the reliability score,
      the conservative probability, expected value at the executable price,
      Kelly under every exposure cap, the portfolio rules, the card and the

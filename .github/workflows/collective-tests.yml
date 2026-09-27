@@ -25,6 +25,20 @@ on:
       # touching only a test file went green without executing it.
       - 'collective/tests.js'
       - 'collective/tests_render.js'
+      # The canonical research arithmetic every Collective diagnostic and the
+      # EdgeDesk research contract are computed with, and its suites.
+      - 'lib/research_core.js'
+      - 'lib/research_eval.js'
+      - 'lib/game_research.js'
+      # the college research view and the reliability score it reads
+      - 'lib/cfb_research_view.js'
+      - 'lib/cfb_disagreement.js'
+      - 'lib/cfb_reliability.js'
+      - 'lib/game_evidence.js'
+      - 'lib/market_consensus.js'
+      - 'football/enrichment/**'
+      - 'lib/research_priority.js'
+      - 'tools/research/**'
       - 'tools/collective/**'
       - 'brief.html'
       - 'record.html'
@@ -43,7 +57,8 @@ on:
       - 'football/venues/**'
       - 'football/coaching/**'
       - 'football/nfl/**'
-      - 'football/nfl/**'
+      # the off-field register's reader, shared by the build and the board
+      - 'football/offfield/**'
       # The FBS universe: team identity, season conference, program grouping
       # and the canonical slate. The board suite reads the renderer out of
       # app.html, so a change to either has to be able to trigger the job.
@@ -99,6 +114,20 @@ on:
       # touching only a test file went green without executing it.
       - 'collective/tests.js'
       - 'collective/tests_render.js'
+      # The canonical research arithmetic every Collective diagnostic and the
+      # EdgeDesk research contract are computed with, and its suites.
+      - 'lib/research_core.js'
+      - 'lib/research_eval.js'
+      - 'lib/game_research.js'
+      # the college research view and the reliability score it reads
+      - 'lib/cfb_research_view.js'
+      - 'lib/cfb_disagreement.js'
+      - 'lib/cfb_reliability.js'
+      - 'lib/game_evidence.js'
+      - 'lib/market_consensus.js'
+      - 'football/enrichment/**'
+      - 'lib/research_priority.js'
+      - 'tools/research/**'
       - 'tools/collective/**'
       - 'brief.html'
       - 'record.html'
@@ -116,6 +145,8 @@ on:
       - 'football/cfb_p4/**'
       - 'football/venues/**'
       - 'football/coaching/**'
+      # the off-field register's reader, shared by the build and the board
+      - 'football/offfield/**'
       # The FBS universe: team identity, season conference, program grouping
       # and the canonical slate. The board suite reads the renderer out of
       # app.html, so a change to either has to be able to trigger the job.
@@ -182,6 +213,8 @@ jobs:
       # finished slate showed no grades at all was not gating the file it
       # guards, and a change that emptied every record again would have gone
       # green. Both are offline and take seconds.
+      - name: Research core and walk-forward evaluator
+        run: npm run -s research:test
       - name: The upload path and the page's pure functions
         run: node collective/tests.js
 
@@ -262,6 +295,64 @@ jobs:
       # ratings views share one baseline.
       - name: The FBS board covers every conference and its filters compose
         run: node tools/football/fbs_board_ui.test.js
+
+      # THE NEAR-PICK'EM DISPLAY LINE. A projected margin under one point is
+      # shown at a one-point floor on the side the model measurably favours;
+      # the raw margin stays what win probability, confidence, cover, EV, the
+      # market gap and grading are computed from. The engine suite pins the
+      # arithmetic, the page suite runs the real module out of app.html.
+      - name: A near pick'em shows a side at one point, and nothing measured moves
+        run: node football/cfb_p4/fair_line.test.js && node tools/football/fair_line_ui.test.js
+
+      # THE CFB RESEARCH VIEW. What a reader sees first on the college board --
+      # the side, the market gap, one research label, the reasons, the best
+      # available line, the projection's own history -- read off the finished
+      # projection by lib/cfb_research_view.js. The unit suite pins every rule
+      # and threshold; the page suite runs the real module out of app.html.
+      - name: The CFB research view reads the projection and never moves it
+        run: node tools/football/cfb_research_view.test.js && node tools/football/cfb_research_view_ui.test.js
+
+      # THE MAJOR-DISAGREEMENT INTEGRITY GATE. A raw 7+ point gap is
+      # INVESTIGATE until it passes every check (lib/cfb_disagreement.js);
+      # the suite proves each check and tier, fail-closed behaviour, that the
+      # pure fair spread never moves, and the board / view / Model Lab wiring.
+      - name: A major disagreement is verified only when every integrity check passes
+        run: node tools/football/disagreement.test.js
+
+      # RELIABILITY. How much EdgeDesk trusts the information under each
+      # college projection: six components, hard gates, the perturbation
+      # stability test, the reasons and what would raise it
+      # (lib/cfb_reliability.js). The suite damages an excellent game one
+      # input at a time and pins what each damage costs, that the same input
+      # always scores the same, and that nothing observed after the judging
+      # time — no result, no close — can inform a pregame score.
+      - name: Reliability is earned from the inputs, never from the outcome
+        run: node tools/football/reliability.test.js
+
+      # THE ENRICHMENT LAYER (football/enrichment/): every "never fake
+      # coverage" rule on fixtures — a provider failure is not a healthy
+      # roster, a missing record is not an available player, one quote is not
+      # a consensus, an unrated player is not replacement level, UNKNOWN stays
+      # UNKNOWN — plus the QB hierarchy, the FCS bridge on a known truth, and
+      # reliability read from an evidence package.
+      - name: The enrichment layer never fakes coverage
+        run: node football/enrichment/enrichment.test.js
+
+      # THE RESEARCH VIEW, PUBLISHED. The same read, cut by V.brief() to what a
+      # document may carry (nothing device-local, nothing that ages with the
+      # clock), in the research payload the publisher brief, articles, the
+      # editorial snapshot, the narration and the newsletter all read.
+      - name: The CFB research view is published the same everywhere it goes
+        run: node tools/football/research_view_publish.test.js
+
+      # THE BOARD REPRODUCES THE PUBLISHED NUMBER. The terminal's own loader
+      # and the published build's replay, over one committed input set, must
+      # price every game identically -- the research desk reads any difference
+      # between the live and published numbers as a projection moving. The
+      # board once absorbed play-level efficiency twice and drifted up to 1.6
+      # pts on the same inputs; this suite would have caught it.
+      - name: The board reproduces the published build's number
+        run: node tools/football/page_build_parity.test.js
 
       # The player quality + scheme matchup layer: the rules its ratings are
       # not allowed to break (a missing input never becoming a zero, no rating
@@ -512,6 +603,20 @@ jobs:
       # request or a roster listing never becomes "everyone is available".
       - name: An unread availability report is never read as good news
         run: node football/availability/reports.test.js
+      - name: Conference availability listings (HD Intelligence)
+        run: node football/availability/hdi.test.js
+      - name: The American, MAC and Pac-12 reports, held to what they file
+        run: node football/availability/conferences.test.js
+
+      # THE ENGINE'S AVAILABILITY IS ABOUT THIS GAME, AND DATED. A 2020 ESPN
+      # note re-read this morning, last week's conference filing, and a QB
+      # "listed" with no designation all reached the priced injury list or the
+      # quarterback's confidence. Pinned case by case: historical rows refused
+      # against the kickoff, the collector's own status field read, OUT scored
+      # as OUT, silence on a comprehensive filing read as available, and one
+      # official report per fixture.
+      - name: Availability reaches a game only when it is about that game, and dated
+        run: node football/matchup/availability_fixture.test.js
 
       # THE STARTER CONTEXT. Same defect as the confidence layer above, one
       # directory over: the suite existed, package.json ran it, and the only

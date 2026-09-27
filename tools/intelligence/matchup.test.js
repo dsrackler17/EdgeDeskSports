@@ -87,12 +87,17 @@ function avFor(name) { return AVAIL_IX[cavNorm(name)] || null; }
 function pickBriefSubject() {
   const seen = {};
   SLATE.games.forEach((g) => { [g.home_team_id, g.away_team_id].forEach((k) => { seen[k] = (seen[k] || 0) + 1; }); });
+  /* Only the NAMED team has to be unique: the question names one programme.
+     A window spanning two weekends has almost no P4 game whose two teams
+     both play once (0 of 49 on the 2026-09-23 card), but plenty whose home or
+     away side does. */
   const eligible = SLATE.games.filter((g) => g.model_status === 'PREDICTED'
     && g.home_fbs_group === 'p4' && g.away_fbs_group === 'p4'
-    && Date.parse(g.kickoff) > NOW && seen[g.home_team_id] === 1 && seen[g.away_team_id] === 1
+    && Date.parse(g.kickoff) > NOW && (seen[g.home_team_id] === 1 || seen[g.away_team_id] === 1)
     && rkFor(g.home_team) && rkFor(g.away_team))
     .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
-  return eligible.length ? eligible[0].home_team : 'Texas Tech';
+  if (!eligible.length) return 'Texas Tech';
+  return seen[eligible[0].home_team_id] === 1 ? eligible[0].home_team : eligible[0].away_team;
 }
 const BRIEF_SUBJECT = pickBriefSubject();
 
@@ -585,18 +590,19 @@ section('the football card, ranked');
     data_completeness: g.data_completeness, availability_unknown: true,
   }));
   /* one priced, one stale, one number-only: the three states on one card */
-  games[0].market_home_handicap = -19.5; games[0].quote_observed_at = '2026-09-15T17:50:00Z';
+  const CARD_NOW = Math.min.apply(null, games.map((g) => Date.parse(g.kickoff)).filter(Number.isFinite)) - 2 * 86400e3;
+  games[0].market_home_handicap = -19.5; games[0].quote_observed_at = new Date(CARD_NOW - 10 * 60e3).toISOString();
   games[0].quote_book = 'DraftKings'; games[0].quote_price_american = '-110';
-  games[1].market_home_handicap = -3.5; games[1].quote_observed_at = '2026-09-13T02:00:00Z'; games[1].quote_book = 'FanDuel';
+  games[1].market_home_handicap = -3.5; games[1].quote_observed_at = new Date(CARD_NOW - 64 * 3600e3).toISOString(); games[1].quote_book = 'FanDuel';
   games[2].market_home_handicap = -30.5;
   const withinHours = 14 * 24;
-  const windowStart = NOW - 6 * 3600e3;
-  const windowEnd = NOW + withinHours * 3600e3;
+  const windowStart = CARD_NOW - 6 * 3600e3;
+  const windowEnd = CARD_NOW + withinHours * 3600e3;
   const scheduledInWindow = games.filter((g) => {
     const kick = Date.parse(g.kickoff);
     return !Number.isFinite(kick) || (kick >= windowStart && kick <= windowEnd);
   });
-  const r = E.rankFootballCard({ games, now: NOW, within_hours: withinHours });
+  const r = E.rankFootballCard({ games, now: CARD_NOW, within_hours: withinHours });
   eq('the denominator is the SCHEDULE, not the priced rows', r.counts.scheduled, games.length);
   eq('the requested window contains every scheduled candidate in that window', r.counts.in_window, scheduledInWindow.length);
   chk('and the three counts are reported separately', r.counts.with_market_number === 3 && r.counts.with_executable_price === 2,

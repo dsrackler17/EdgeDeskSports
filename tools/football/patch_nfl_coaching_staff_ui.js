@@ -39,6 +39,8 @@ replaceOne(
 `function fbLoadNfl(signal){
   var E=window.EDFootball,S=FB.nfl;
   S.notes=[];
+  /* non-QB personnel availability: display only, moves no number */
+  try{ if(typeof fbPersonnelEnsure==='function')fbPersonnelEnsure(); }catch(_){}
   return fbFetchText(FB_URL_GAMES,signal).then(function(txt){`,
 `var FB_URL_NFL_COACHING='/football/nfl/slate.json';
 function fbLoadNfl(signal){
@@ -55,6 +57,8 @@ function fbLoadNfl(signal){
     S.notes.push('NFL Coaching / Staff research context is unavailable in this session. The projection is unchanged; this layer never fills missing evidence with a guess.');
     return null;
   });
+  /* non-QB personnel availability: display only, moves no number */
+  try{ if(typeof fbPersonnelEnsure==='function')fbPersonnelEnsure(); }catch(_){}
   return fbFetchText(FB_URL_GAMES,signal).then(function(txt){`,
   'NFL coaching artifact loader'
 );
@@ -100,8 +104,8 @@ function fbGameCardNfl(u){
 );
 
 replaceOne(
-`    +lines+qb+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';`,
-`    +lines+fbNflCoachingHTML(g)+qb+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';`,
+`    +lines+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';`,
+`    +lines+fbNflCoachingHTML(g)+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';`,
   'NFL coaching card insertion'
 );
 

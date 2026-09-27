@@ -105,12 +105,39 @@
        depth chart rather than vanishing. */
     if (totalW > 0) for (i = 0; i < participants.length; i++) participants[i].effective_weight /= totalW;
 
+    /* ABILITY, WITH NOBODY REMOVED FOR AVAILABILITY. `rating` below is the
+       unit EXPECTED to take the field this week; this is the unit's ability
+       from the same depth curve with every player in. They are published
+       apart because a team-strength rating that prices availability as its
+       own, strippable term (football/rankings talent -> ETSR) must read the
+       availability-free one, or a named absence is counted once inside the
+       unit and again wherever the absence itself is priced. */
+    var exSum = 0, exW = 0;
+    for (i = 0; i < participants.length; i++) {
+      if (participants[i].depth_weight > 0) { exSum += participants[i].player.epir * participants[i].depth_weight; exW += participants[i].depth_weight; }
+    }
+    var rawEx = exW > 0 ? exSum / exW : null;
+    function withContext(v) {
+      if (v == null) return null;
+      if (opts.teamContext && isNum(num(opts.teamContext[group + '_z']))) {
+        var zc = num(opts.teamContext[group + '_z']);
+        var cr = clamp(CFG.EPIR_SCALE.center + CFG.EPIR_SCALE.sd * zc, CFG.EPIR_SCALE.floor, CFG.EPIR_SCALE.ceiling);
+        var wc = contract.length ? CFG.ROLE.team_context_weight.with_production : CFG.ROLE.team_context_weight.blind;
+        v = v * (1 - wc) + cr * wc;
+      }
+      return Math.round(v * 10) / 10;
+    }
+
     var rateable = [];
     for (i = 0; i < participants.length; i++) {
       if (participants[i].effective_weight > 0) rateable.push(participants[i]);
     }
     if (!rateable.length) {
-      return emptyGroup(group, players.length, 'no rateable player is projected to take a snap in this group');
+      var eg = emptyGroup(group, players.length, 'no rateable player is projected to take a snap in this group');
+      /* everybody in the group is out: no one is EXPECTED to play, but the
+         group still has an ability, and ability is what the talent rating reads */
+      eg.rating_ex_availability = withContext(rawEx);
+      return eg;
     }
 
     var ratingSum = 0, confSum = 0, wsum = 0;
@@ -175,6 +202,7 @@
     return {
       schema: SCHEMA, group: group,
       rating: raw == null ? null : Math.round(raw * 10) / 10,
+      rating_ex_availability: withContext(rawEx),
       available: raw != null,
       confidence: Math.round(clamp(conf, 0, 1) * 1000) / 1000,
       starter_quality: starterQ == null ? null : Math.round(starterQ * 10) / 10,
@@ -211,7 +239,7 @@
   }
 
   function emptyGroup(group, rosterSize, reason) {
-    return { schema: SCHEMA, group: group, rating: null, available: false, confidence: 0,
+    return { schema: SCHEMA, group: group, rating: null, rating_ex_availability: null, available: false, confidence: 0,
       starter_quality: null, depth_quality: null, continuity: null, experience: null,
       availability: { starters_out: 0, unavailable_share: 0, unknown_share: 1, basis: 'no projected participant' },
       roster_size: rosterSize || 0, projected: [], team_context: null,

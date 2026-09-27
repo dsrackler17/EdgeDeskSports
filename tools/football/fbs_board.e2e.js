@@ -341,9 +341,12 @@ function serve(handler) {
      header through text-transform:uppercase, and Chromium's innerText hands
      back the TRANSFORMED text — so a case-sensitive search for a section
      title finds nothing even though it is on screen. */
+  /* the WHOLE card: the research summary sections (why EdgeDesk leans, the
+     projection's status, the best available line) sit above the matchup
+     block by design, so a fixed-length prefix no longer reaches it */
   const card = await page.evaluate(() => {
     const open = document.querySelector('[id^="p4gate-"][data-open]');
-    return open ? open.textContent.slice(0, 6000) : '';
+    return open ? open.textContent : '';
   });
   chk('a row opens its research card', card.length > 200, card.length);
   chk('the card names the matchup type', /Conference game|Non-conference FBS|FBS vs FCS/.test(card), card.slice(0, 300));

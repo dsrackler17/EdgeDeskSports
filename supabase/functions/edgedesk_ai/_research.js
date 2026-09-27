@@ -805,6 +805,9 @@
       starters: starters, injuries: injuries, coaching: coaching, profiles: profiles, ratings: ratings,
       previous_games: previous_games, comparables: comparables, evidence: evidence,
       unknowns: uniq(unknowns.concat(o.unknowns || [])), completeness: completeness, confidence: confidence,
+      /* non-QB personnel availability (football/personnel): a 0-100
+         measurement that moves no number; quotable, never priced */
+      personnel: o.personnel || null,
       label: null, sources: [], packet_id: null, packet_hash: null
     };
     packet.label = classifyResearch(packet, o.thresholds);
@@ -1141,6 +1144,14 @@
     L.push('**' + PROSE_SECTIONS[4].heading + '**');
     if (pd.current_price) L.push('- Price: ' + pd.current_price + (pd.playable_to ? '; playable to ' + pd.playable_to : '') + (pd.price_needed ? '; ' + pd.price_needed + ' or better would be needed' : '') + '.');
     ['home', 'away'].forEach(function (s) { var st = p.starters && p.starters[s]; if (st && !st.missing && st.player_name) L.push('- ' + (s === 'home' ? (g.home || 'Home') : (g.away || 'Away')) + ' projected starter: ' + st.player_name + ' (' + String(st.status || '').toLowerCase().replace(/_/g, ' ') + (st.confirmed ? ', confirmed' : ', not confirmed') + ').'); });
+    var pa = p.personnel;
+    if (pa && pa.answer) L.push('- Personnel availability: ' + pa.answer);
+    else if (pa && (pa.home || pa.away)) {
+      L.push('- Personnel availability (non-QB, a 0-100 measurement, not points): ' + ['away', 'home'].map(function (s) {
+        var t = pa[s]; if (!t) return null;
+        return t.team + ' ' + (t.impact != null ? t.impact + '/100 ' + t.classification : String(t.status || '').toLowerCase().replace(/_/g, ' '));
+      }).filter(Boolean).join(', ') + '. Projection effect: not enabled (0.0 points).');
+    }
     (p.unknowns || []).slice(0, 4).forEach(function (u) { L.push('- ' + u); });
     return L.join('\n');
   }
@@ -1171,6 +1182,7 @@
       why_the_number: { prose: sec('why'), drivers: p.drivers || [], model_drivers: p.model && p.model.drivers ? p.model.drivers : null },
       matchup: p.matchup ? Object.assign({}, p.matchup, { profiles: p.profiles || null, ratings: p.ratings || null, coaching: p.coaching || null }) : (p.profiles || p.ratings ? { profiles: p.profiles || null, ratings: p.ratings || null, coaching: p.coaching || null } : null),
       availability: p.availability || null, starters: p.starters || null, injuries: p.injuries || null, situation: p.situation || null,
+      personnel: p.personnel || null,
       case_for_each_side: { prose: sec('sides'), for_favourite: p.evidence ? p.evidence.for_favourite : [], for_underdog: p.evidence ? p.evidence.for_underdog : [] },
       what_could_break_it: { prose: sec('wrong'), contradictions: p.evidence ? p.evidence.contradictions : [], unknowns: p.unknowns || [], falsifiers: p.evidence ? p.evidence.falsifiers : [] },
       price_discipline: Object.assign(priceDiscipline(p), { prose: sec('limits') }),

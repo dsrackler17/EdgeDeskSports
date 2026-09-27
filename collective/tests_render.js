@@ -211,6 +211,11 @@ vm.createContext(sandbox);
    it, first, into the same context. */
 try{vm.runInContext(fs.readFileSync(path.join(__dirname,'week.js'),'utf8'),sandbox,{timeout:20000});}
 catch(e){console.log('[boot week.js] '+e.message);}
+/* ...and the canonical research libraries, which it also loads by src */
+['research_core.js','research_eval.js'].forEach(function(f){
+  try{vm.runInContext(fs.readFileSync(path.join(__dirname,'..','lib',f),'utf8'),sandbox,{timeout:20000});}
+  catch(e){console.log('[boot '+f+'] '+e.message);}
+});
 try{vm.runInContext(CODE,sandbox,{timeout:20000});}
 catch(e){console.log('[boot] '+e.message);}
 
@@ -328,6 +333,23 @@ var S=sandbox;
         && /<td class="num" style="color:var\(--(dim|warn)\)"[^>]*>[1-9]/.test(win);
     },
     {board:boardSlice(rank,'>Win %','>Margin MAE').slice(0,400)});
+  /* The research panels are drawn from the canonical evaluator. They must
+     appear, carry intervals and per-metric samples, and never rank. */
+  chk('the rankings page draws the market diagnostics from the canonical evaluator',
+    function(){
+      var i=rank.indexOf('Market diagnostics');
+      if(i<0)return false;
+      var seg=rank.slice(i,i+20000);
+      return /descriptive research, not a ranking/.test(seg) && /Wilson/.test(seg)
+        && /Median CLV/.test(seg) && /Brier skill/.test(seg) && /n=\d/.test(seg);
+    },{found:rank.indexOf('Market diagnostics')});
+  chk('the independence panel never states an effective count it could not measure',
+    function(){
+      var i=rank.indexOf('Model independence');
+      if(i<0)return true;   /* fewer than two models with residuals: nothing drawn */
+      var seg=rank.slice(i,i+20000);
+      return /not measurable yet/.test(seg)||/Effective independent models<\/div><div class="v">[0-9]/.test(seg);
+    });
   chk('every model is tracked in the live standings',
     rank.indexOf('Live standings')>=0
       && rank.indexOf('Must Be Moose')>=0 && rank.indexOf('Blerm')>=0

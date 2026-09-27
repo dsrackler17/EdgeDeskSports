@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>EdgeDesk sample research — the fair line, the market and the evidence</title>
+<meta name="description" content="A public sample of EdgeDesk's matchup research: EdgeDesk's fair line beside the market, the gap, reliability and the measured evidence behind the number. Research, not picks.">
+<!-- The numbers here change hour to hour and the page is drawn from a live
+     research state, so it is not an indexable article: the indexable half of
+     EdgeDesk is /articles/. -->
+<meta name="robots" content="noindex,follow">
+<link rel="canonical" href="https://edgedesksports.com/research/sample/">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:title" content="EdgeDesk sample research">
+<meta property="og:description" content="EdgeDesk's fair line beside the market, the gap, reliability and the evidence. Research, not picks.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:site" content="@edgedesksports">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     PUBLIC SAMPLE RESEARCH — one game's research, readable without an account.
+
+     WHICH GAMES. Only the ones an admin made public in /admin/growth/
+     (supabase/growth.sql public_sample_games). Any other game answers "not
+     public" and the page says so.
+
+     WHAT IT SHOWS. public_sample_research() returns a SUBSET of the shared
+     research state the football module wrote: EdgeDesk's fair line, the
+     market number it was compared to (book and capture time), the gap,
+     reliability, the key reason, at most three of the engine's measured
+     drivers, quarterback confirmation and availability counts. Everything
+     subscriber-only — win probability, the research-priority ranking, the
+     full driver list, line movement, the rest of the board, the reader's
+     watchlist, alerts and journal, the AI desk — never leaves the database for
+     this page; `locked` names it so the page can say what is behind the
+     account instead of pretending it does not exist.
+
+     NOTHING HERE COMPUTES A NUMBER. Every figure is the state's own.
+
+     Research, not picks: no pick, no stake, no outcome language.
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#887e70;
+      --accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--mdl:#d274b0;--gold:#e3b84d;
+      --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;--sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;color-scheme:dark;overflow-x:hidden}
+a{color:var(--accent)}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(16,14,10,.94);position:sticky;top:0;z-index:5}
+.brand{font-weight:800;font-size:17px;letter-spacing:-.02em;color:var(--text);text-decoration:none}
+.tag{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(47,167,154,.5);border-radius:12px;padding:2px 8px;font-weight:700}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font:700 14px var(--sans);padding:11px 18px;text-decoration:none;cursor:pointer;min-height:42px}
+.btn.sm{font-size:12.5px;padding:8px 12px;min-height:34px}
+.btn.ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.wrap{max-width:900px;margin:0 auto;padding:18px 16px 56px}
+.ey{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+h1{font-size:clamp(26px,5vw,38px);line-height:1.15;letter-spacing:-.02em;margin:6px 0 4px}
+h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:26px 0 10px;font-weight:700}
+.sub{font-size:13px;color:var(--faint)}
+.banner{border:1px solid rgba(217,154,43,.5);color:var(--warn);background:rgba(217,154,43,.06);border-radius:10px;padding:9px 12px;font-size:13px;margin:12px 0}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0 4px}
+.st{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 13px;min-width:0}
+.st i{display:block;font-style:normal;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.st b{display:block;font-size:22px;font-weight:800;margin:4px 0 2px;overflow-wrap:anywhere}
+.st .mdl{color:var(--mdl)}
+.st small{display:block;font-size:11.5px;color:var(--dim);line-height:1.4}
+@media(max-width:720px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:0 0 10px}
+.card p{margin:0 0 8px}
+.card ul{margin:6px 0 0;padding-left:18px}
+.card li{margin:3px 0}
+.pts{font:700 12.5px var(--mono);color:var(--mdl)}
+.locked ul{list-style:none;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
+.locked li{color:var(--dim);font-size:13.5px}
+.locked li::before{content:'🔒';margin-right:7px;font-size:12px}
+@media(max-width:560px){.locked ul{grid-template-columns:1fr}}
+.cta{background:linear-gradient(180deg,rgba(47,167,154,.10),rgba(47,167,154,.02));border:1px solid rgba(47,167,154,.45);border-radius:14px;padding:18px;text-align:center;margin:22px 0 10px}
+.cta p{margin:10px 0 0;font-size:13px;color:var(--dim)}
+.cta .offer{color:var(--text);font-weight:700}
+.list a.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;text-decoration:none;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:0 0 8px}
+.list a.row b{font-size:15px}
+.list .n{font-size:12.5px;color:var(--dim)}
+.list .n .mdl{color:var(--mdl);font-weight:700}
+.foot{font-size:11.5px;color:var(--faint);line-height:1.6;margin-top:22px;border-top:1px solid var(--border);padding-top:12px}
+.empty{color:var(--dim);font-size:14px;padding:14px 0}
+</style>
+</head>
+<body>
+<header class="hd">
+  <a class="brand" href="/">EdgeDesk</a><span class="tag">Sample research</span><span class="sp"></span>
+  <a class="btn sm" id="ctaTop" href="/#subscribe">Research the full board</a>
+</header>
+<main class="wrap" id="main"><div class="empty">Loading EdgeDesk’s research…</div></main>
+
+<script src="/lib/edgedesk_pricing.js?v=20260926g"></script>
+<script>
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+(function () {
+  'use strict';
+  var X = window.EDPricing;
+  var CTA_LINE = X ? X.CTA_LINE : '7-day free trial. $79.99/month after trial. Cancel anytime.';
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function num(x) { return typeof x === 'number' && isFinite(x) ? x : null; }
+  function signed(v) { return v === 0 ? 'PK' : (v > 0 ? '+' : '') + v.toFixed(1); }
+  function fav(g, h) { h = num(h); if (h == null) return null; if (h === 0) return 'pick’em'; return h < 0 ? g.home + ' ' + signed(h) : g.away + ' ' + signed(-h); }
+  function utc(iso) {
+    var t = Date.parse(iso); if (!isFinite(t)) return '—';
+    try { return new Date(t).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }); }
+    catch (_) { return new Date(t).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; }
+  }
+  function ago(iso) { var t = Date.parse(iso); if (!isFinite(t)) return ''; var s = (Date.now() - t) / 1000; return s < 3600 ? Math.max(1, Math.round(s / 60)) + 'm ago' : (s < 86400 ? Math.round(s / 3600) + 'h ago' : Math.round(s / 86400) + 'd ago'); }
+  function q(name) { try { return new URLSearchParams(location.search).get(name); } catch (_) { return null; } }
+  function clean(v, max) { if (v == null) return null; v = String(v).toLowerCase().replace(/[^a-z0-9_.-]/g, '').slice(0, max || 64); return v || null; }
+  function rpc(fn, body) {
+    return fetch(SB_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify(body || {}) })
+      .then(function (r) { if (!r.ok) throw new Error('db ' + r.status); return r.text(); }).then(function (t) { return t ? JSON.parse(t) : null; });
+  }
+  function ev(name, p) { try { if (typeof gtag === 'function') gtag('event', name, p || {}); } catch (_) { } }
+
+  /* a partner code or campaign arriving here travels on to the landing page,
+     where the first-touch credit rule is applied (index.html attrCapture) */
+  var REF = clean(q('ref') || q('via') || q('partner'), 32);
+  var UTM = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].map(function (k) { var v = clean(q(k)); return v ? k + '=' + encodeURIComponent(v) : null; }).filter(Boolean);
+  var CTA_HREF = '/' + ((REF || UTM.length) ? '?' + [REF ? 'ref=' + encodeURIComponent(REF) : null].concat(UTM).filter(Boolean).join('&') : '') + '#subscribe';
+  $('ctaTop').href = CTA_HREF;
+
+  /* ACQUISITION (supabase/growth.sql): the visit, with the signals it came
+     with. The server classifies; only a hash of the visitor id is kept. */
+  (function track() {
+    var v = null;
+    try {
+      v = localStorage.getItem('edgedesk_visitor');
+      if (!v || !/^[A-Za-z0-9_-]{16,64}$/.test(v)) {
+        var a = new Uint8Array(18); (window.crypto || window.msCrypto).getRandomValues(a);
+        v = Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+        localStorage.setItem('edgedesk_visitor', v);
+      }
+    } catch (_) { v = null; }
+    if (!v) return;
+    var host = null; try { host = document.referrer ? new URL(document.referrer).hostname.slice(0, 120) : null; } catch (_) { host = null; }
+    rpc('acq_track_visit', { p_visitor: v, p_touch: { ref: REF, utm_source: clean(q('utm_source')), utm_medium: clean(q('utm_medium')),
+      utm_campaign: clean(q('utm_campaign')), referrer_host: host, landing: location.pathname.slice(0, 120) } }).catch(function () { });
+  })();
+
+  function ctaHTML(extra) {
+    return '<div class="cta"><a class="btn" href="' + esc(CTA_HREF) + '" onclick="try{gtag(\'event\',\'sample_cta\',{})}catch(_){}">Research the full board</a>'
+      + '<p class="offer" data-ed-price="cta">' + esc(CTA_LINE) + '</p>'
+      + '<p>' + (extra ? esc(extra) + ' ' : '') + 'Research, not picks · 21+ · 1-800-GAMBLER</p></div>';
+  }
+  var METHOD = '<h2>How EdgeDesk builds this</h2><div class="card">'
+    + '<p><b>The fair line</b> is the spread EdgeDesk’s football model projects for this game. In college football it is the sum of measured terms — team strength from opponent-adjusted results, the quarterback, the stylistic matchup, home field, travel and reported availability — and the drivers above are the largest of those terms on the side the fair line favours, with their points.</p>'
+    + '<p><b>The market line</b> is a sportsbook number EdgeDesk captured, shown with its book and capture time. A stale quote is labelled stale, and a consensus reference is labelled as one.</p>'
+    + '<p><b>The gap</b> is the distance in points between the two. The largest gaps come most often from the thinnest data, so a gap is a reason to research, never a verdict.</p>'
+    + '<p><b>Reliability</b> (0–100, college football) scores how complete, fresh and stable the inputs under the projection are. It is not a probability. The NFL model publishes no reliability score, and the page says so rather than inventing one.</p>'
+    + '<p>Every pregame EdgeDesk number is graded against the closing line on the <a href="/record.html">public record</a> — whether it flatters EdgeDesk or not.</p></div>';
+
+  function gameHTML(g) {
+    var f = g.fair || {}, m = g.market || {}, gp = g.gap || {}, r = g.reliability || {}, qb = g.qb || {}, av = g.availability || {};
+    var fairT = f.text || fav(g, f.home_line) || '—';
+    var mktCur = num(m.home_line) != null && !m.stale;
+    /* the side EdgeDesk's number is more favourable to, from the two lines */
+    var toward = mktCur && num(f.home_line) != null && Math.abs(f.home_line - m.home_line) >= 0.05 ? (f.home_line < m.home_line ? 'home' : 'away') : null;
+    var mktT = num(m.home_line) != null ? (m.text || fav(g, m.home_line)) : 'No market number';
+    var league = g.sport === 'nfl' ? 'NFL' : (g.sport === 'cfb' ? 'College football' : String(g.sport || '').toUpperCase());
+    var drivers = (g.drivers || []).filter(function (d) { return d && d.text; });
+    var leanTeam = num(f.home_line) == null ? null : (f.home_line < 0 ? g.home : (f.home_line > 0 ? g.away : null));
+    function qbLine(side) { var x = qb[side] || {}; return esc(g[side]) + ': ' + (x.name ? esc(x.name) : 'starter not named') + ' — ' + (x.confirmed ? 'confirmed' : 'not yet confirmed'); }
+    function avLine(side) {
+      var x = av[side] || {};
+      if (x.known === false || x.known == null) return esc(g[side]) + ': no availability report on file';
+      var bits = []; if (x.out) bits.push(x.out + ' out'); if (x.doubtful) bits.push(x.doubtful + ' doubtful'); if (x.questionable) bits.push(x.questionable + ' questionable');
+      return esc(g[side]) + ': ' + (bits.length ? bits.join(', ') : 'nobody listed');
+    }
+    var h = '<div class="ey">' + esc(league) + ' · ' + esc(utc(g.kickoff_at)) + ' · public sample</div>'
+      + '<h1>' + esc(g.away) + ' @ ' + esc(g.home) + '</h1>'
+      + '<div class="sub">EdgeDesk research state as of ' + esc(utc(g.computed_at)) + (g.model_version ? ' · ' + esc(g.model_version) : '') + '</div>'
+      + (g.started ? '<div class="banner">This game has started. The numbers below are EdgeDesk’s last pregame research, kept as it stood.</div>' : '')
+      + '<div class="stats">'
+      + '<div class="st"><i>EdgeDesk fair line</i><b class="mdl">' + esc(fairT) + '</b><small>' + (num(f.total) != null ? 'fair total ' + esc(f.total.toFixed(1)) : 'no fair total published') + '</small></div>'
+      + '<div class="st"><i>Market</i><b>' + esc(mktT) + '</b><small>' + (num(m.home_line) == null ? 'nothing captured to compare' : esc([m.kind === 'consensus' ? 'consensus reference' : (m.book || 'captured quote'), m.captured_at ? 'captured ' + ago(m.captured_at) : null, m.stale ? 'stale' : null].filter(Boolean).join(' · '))) + (num(m.total) != null ? '<br>total ' + esc(m.total) : '') + '</small></div>'
+      + '<div class="st"><i>Model–market gap</i><b>' + (mktCur && num(gp.points) != null ? esc(gp.points.toFixed(1)) + ' pts' : '—') + '</b><small>' + (toward ? 'EdgeDesk more favourable to ' + esc(g[toward]) : (mktCur ? 'EdgeDesk and the market agree' : 'no current market')) + '</small></div>'
+      + '<div class="st"><i>Reliability</i><b>' + (num(r.score) != null ? esc(Math.round(r.score)) : 'Not scored') + '</b><small>' + (num(r.score) != null ? esc(String(r.grade || '').toLowerCase()) + (r.grade ? ' · ' : '') + '0–100, not a probability' : esc(r.note || (g.sport === 'nfl' ? 'the NFL model publishes no reliability score' : 'not measured for this game'))) + '</small></div>'
+      + '</div>'
+      + '<h2>Key matchup evidence</h2><div class="card">'
+      + (g.key_reason ? '<p><b>Why EdgeDesk and the market differ:</b> ' + esc(g.key_reason) + '</p>' : '')
+      + (drivers.length ? '<p><b>The largest measured terms behind EdgeDesk’s number' + (leanTeam ? ' (toward ' + esc(leanTeam) + ')' : '') + ':</b></p><ul>'
+        + drivers.map(function (d) { return '<li>' + (num(d.points) != null ? '<span class="pts">+' + esc(d.points.toFixed(1)) + ' pts</span> ' : '') + esc(d.text) + '</li>'; }).join('') + '</ul>'
+        : '<p>This game’s research state carries no itemised drivers' + (g.sport === 'nfl' ? ' (the NFL model’s fair line is not published term by term)' : '') + '.</p>')
+      + (r.main_deduction ? '<p><b>Reliability’s main deduction:</b> ' + esc(r.main_deduction) + '</p>' : '')
+      + '<p><b>Quarterbacks.</b> ' + qbLine('away') + ' · ' + qbLine('home') + '</p>'
+      + '<p><b>Availability.</b> ' + avLine('away') + ' · ' + avLine('home') + '</p></div>'
+      + '<h2>In the full terminal</h2><div class="card locked"><ul>' + (g.locked || []).map(function (x) { return '<li>' + esc(x.charAt(0).toUpperCase() + x.slice(1)) + '</li>'; }).join('') + '</ul></div>'
+      + ctaHTML('Every NFL and FBS game on the board, researched the same way.')
+      + METHOD
+      + '<div class="foot">EdgeDesk is a research tool, not a sportsbook and not betting advice. Nothing on this page is a pick, a recommendation or a promise of any outcome. 21+. Gamble responsibly — 1-800-GAMBLER.</div>';
+    return h;
+  }
+  function listHTML(list) {
+    return '<div class="ey">Public sample research</div><h1>See how EdgeDesk researches a game</h1>'
+      + '<div class="sub">A few games, chosen by EdgeDesk, with the fair line, the market, the gap, reliability and the evidence — no account needed.</div>'
+      + '<h2>Sample games</h2><div class="list">' + (list.length ? list.map(function (g) {
+        return '<a class="row" href="?game=' + encodeURIComponent(g.game_key) + (REF ? '&ref=' + encodeURIComponent(REF) : '') + '"><b>' + esc(g.away) + ' @ ' + esc(g.home) + '</b>'
+          + '<span class="n">' + esc(utc(g.kickoff_at)) + ' · <span class="mdl">EdgeDesk ' + esc(g.fair_text || fav(g, g.fair_home_line) || '—') + '</span> · market ' + esc(g.market_text || fav(g, g.market_home_line) || '—') + '</span></a>';
+      }).join('') : '<div class="empty">No sample game is public right now. The full board has every NFL and FBS game.</div>') + '</div>'
+      + ctaHTML() + METHOD;
+  }
+  function notPublicHTML() {
+    return '<div class="ey">Sample research</div><h1>This game’s research isn’t public</h1>'
+      + '<div class="sub">EdgeDesk makes a few games public as samples. This one is on the full board for subscribers.</div>'
+      + '<p><a href="/research/sample/">See the public sample games</a></p>' + ctaHTML();
+  }
+  var game = q('game');
+  var main = $('main');
+  (game ? rpc('public_sample_research', { p_game_key: game }) : rpc('public_sample_list', {}))
+    .then(function (d) {
+      if (game) {
+        if (!d || !d.ok) { main.innerHTML = notPublicHTML(); ev('sample_not_public', {}); return; }
+        main.innerHTML = gameHTML(d);
+        document.title = d.away + ' @ ' + d.home + ' — EdgeDesk sample research';
+        ev('sample_view', { game_key: d.game_key });
+      } else main.innerHTML = listHTML(Array.isArray(d) ? d : []);
+      try { if (X) X.apply(document); } catch (_) { }
+    })
+    .catch(function () { main.innerHTML = '<div class="empty">EdgeDesk’s research could not be reached just now. Try again in a minute.</div>' + ctaHTML(); });
+})();
+</script>
+</body>
+</html>

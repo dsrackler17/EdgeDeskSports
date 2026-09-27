@@ -109,11 +109,29 @@ if (top) has(html, esc(top.team), 'and it is on the board');
 /* ======================================================================== */
 /* 2. UNRANKED IS SHOWN AS UNRANKED, NEVER AS A RANK OR A ZERO              */
 /* ======================================================================== */
-const unrankedCat = Object.keys(DATA.ranks).find(c => DATA.ranks[c].ranked === 0);
-chk('the artifact has at least one category nothing could be ranked in', !!unrankedCat,
+/* The committed artifact is live data. While no conference availability
+   report covered a whole roster, "availability" was a category nothing could
+   be ranked in, and this section leaned on that. Once comprehensive reports
+   arrive it ranks teams, so when the artifact has no unrankable category the
+   check builds one from the artifact itself — exactly the shape the build
+   publishes for one (a null per team, ranked 0 of 0) — rather than waiting
+   for the data to supply it. */
+let RDATA = DATA;
+let unrankedCat = Object.keys(DATA.ranks).find(c => DATA.ranks[c].ranked === 0);
+if (!unrankedCat && DATA.ranks.availability) {
+  RDATA = JSON.parse(JSON.stringify(DATA));
+  unrankedCat = 'availability';
+  RDATA.ranks.availability = { ranked: 0, listed: 0 };
+  Object.values(RDATA.teams).forEach(t => {
+    if (t.ranks) t.ranks.availability = null;
+    if (t.availability) t.availability.rating = null;
+  });
+}
+chk('an unrankable category is available to render (from the artifact, or built from it)', !!unrankedCat,
   'ranks: ' + JSON.stringify(DATA.ranks).slice(0, 200));
 if (unrankedCat) {
   const U = makeCtx();
+  U.FB.rk.data = RDATA;
   U.FB.rk.tab = unrankedCat;
   const h = { innerHTML: '' };
   U.fbRkRender(h);

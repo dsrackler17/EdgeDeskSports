@@ -60,6 +60,24 @@ football/
                 beat the Power 4 rating core out of sample, so it ships with
                 `points_applied:false` and is published as research.
                 See players/README.md.
+
+  cfb_v2/       the CFB V2 ENGINE, in SHADOW beside cfb_p4 — joint Bayesian
+                opponent adjustment of play-by-play efficiency at every weekly
+                freeze, preseason priors as distributions, matchup features, a
+                QB value model, a two-model (ridge + GBM) walk-forward ensemble,
+                calibrated heteroskedastic intervals, and a SEPARATE market
+                decision layer. v2.1.0 (red-teamed, hardened) beats V1 on the
+                2024-25 holdout (MAE 12.38 vs 12.65), still loses to the opener
+                (12.10) and the close (12.01); BET disabled. See
+                cfb_v2/README.md and docs/cfb-v2/REDTEAM.md.
+
+  personnel/    NON-QB PERSONNEL AVAILABILITY — how much worse a team is with
+                the expected replacement playing instead of each non-QB
+                absence: player quality, replacement quality, usage, position
+                and matchup leverage and unit concentration, scored 0-100 with
+                its confidence and evidence, frozen write-once beside every
+                pregame projection. A measurement: projection adjustment 0
+                until a coefficient is trained. See personnel/README.md.
 ```
 
 ## The honesty contract

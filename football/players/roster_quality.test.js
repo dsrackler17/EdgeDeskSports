@@ -154,15 +154,28 @@ const LAYER = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'players', 
 
 /* =================== 6. the board and the artifact agree on the arithmetic */
 {
-  /* app.html carries its own ES5 copy of summarise() because the browser
-     cannot require() the node module. The copy is only honest if it computes
-     the same thing, so it is extracted and run against the same rows. */
+  /* app.html used to carry its own ES5 copy of summarise() because the
+     browser could not require() the node module, and this section extracted
+     that copy and ran it against the offline one. There is no copy any more:
+     the contract and its arithmetic live in football/matchup/contract.js,
+     which the build requires and the board loads with a plain <script>. So
+     the proof is that there is ONE function, and that the file the browser
+     runs computes the same thing. */
   const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
-  const start = APP.indexOf('function fbP4Summarise(rows){');
-  chk('app.html still carries its summarise copy', start > 0);
-  const end = APP.indexOf('\n}', start);
-  const src = APP.slice(start, end + 2);
-  const appSummarise = new Function(src + '; return fbP4Summarise;')();
+  chk('app.html no longer carries a summarise copy of its own', APP.indexOf('function fbP4Summarise(') < 0);
+  chk('it loads the shared contract instead', /fbScript\('football\/matchup\/contract\.js'\)/.test(APP));
+  const CONTRACT = require(path.join(ROOT, 'football', 'matchup', 'contract.js'));
+  chk('and the offline assembly\'s summarise IS the shared one', IN.summarise === CONTRACT.summarise);
+  /* the browser's copy of the file, run as the browser runs it: no module,
+     no require, a window */
+  const vm = require('vm');
+  const win = { console };
+  win.window = win;
+  vm.createContext(win);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'football', 'matchup', 'contract.js'), 'utf8'), win,
+    { filename: 'contract.js' });
+  chk('the shared file runs as a browser script', !!(win.EDInputContract && win.EDInputContract.summarise));
+  const appSummarise = win.EDInputContract.summarise;
 
   const rows = [
     { field: 'a', side: 'home', state: 'USABLE' }, { field: 'a', side: 'away', state: 'USABLE' },

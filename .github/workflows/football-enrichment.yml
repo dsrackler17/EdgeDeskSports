@@ -1,0 +1,72 @@
+# EdgeDesk Football — the enrichment refresh.
+#
+# QB certainty and availability change fastest approaching kickoff, and the
+# conference reports arrive on their own clocks (availability-sync.yml reads
+# them at :05). This job re-reads the evidence and RE-SCORES RELIABILITY from
+# it, between the full weekly builds, on the refresh windows the scheduler
+# publishes (football/enrichment/core/scheduler.js):
+#
+#   Saturday, and Saturday night ET       hourly, twenty minutes after the
+#                                          availability sync
+#   Friday                                every two hours
+#   Sunday to Thursday                    every six hours
+#
+# It moves NO projection: nothing in football/enrichment is an engine input,
+# and football/fbs/build_coverage.js proves the priced numbers it republishes
+# are the ones the replay produces. Games that have kicked off are frozen in
+# the evidence artifact exactly as last published.
+#
+# A provider that refuses is a recorded provider failure, never a failed job:
+# the build falls back to the evidence cache (marked STALE) and says so.
+name: Football enrichment refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '25 * * 9-12,1 6'        # Saturday, hourly
+    - cron: '25 0-5 * 9-12,1 0'      # Saturday night ET, hourly
+    - cron: '25 */2 * 9-12,1 5'      # Friday, every two hours
+    - cron: '25 */6 * 9-12,1 0-4'    # Sunday to Thursday, every six hours
+
+permissions:
+  contents: write
+
+# the same group as the weekly build: the two never write the slate at once
+concurrency:
+  group: football-weekly-build
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The rules must pass before anything is allowed to write
+        run: node football/enrichment/enrichment.test.js && node tools/football/reliability.test.js
+
+      - name: Enrichment evidence packages
+        run: node football/enrichment/build_enrichment.js
+
+      - name: Re-score reliability from the evidence (and the self-audit)
+        run: node football/fbs/build_coverage.js
+
+      - name: The self-audit
+        run: node football/enrichment/audit.js || true
+
+      - name: Commit
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh "${GITHUB_REF_NAME}" \
+            "enrichment: evidence packages, provider health and reliability re-scored" -- \
+            football/enrichment \
+            football/fbs/coverage.json football/fbs/slate.json football/fbs/reliability.json \
+            football/venues/forecasts.json

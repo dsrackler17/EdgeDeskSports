@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_extra_markets_v1",
- "generated_at": "2026-09-17T13:34:03.669Z",
+ "generated_at": "2026-09-23T14:20:09.891Z",
  "source": "tools/intelligence/validate_extra_markets.js",
  "markets": [],
  "refused": [
@@ -14,7 +14,7 @@
     "close.home_team_total_over_odds"
    ],
    "outcome_available": "home_points and away_points, which the archive already carries",
-   "games_in_archive": 7324,
+   "games_in_archive": 7340,
    "games_with_the_line": 0,
    "fields_the_archive_has": [
     "away_moneyline",
@@ -26,7 +26,7 @@
     "total",
     "under_odds"
    ],
-   "why": "the archive carries no home_team_total / away_team_total / home_team_total_over_odds on any of its 7324 games, so there is no history to hold out, no record to grade and no tier to award",
+   "why": "the archive carries no home_team_total / away_team_total / home_team_total_over_odds on any of its 7340 games, so there is no history to hold out, no record to grade and no tier to award",
    "what_would_change_it": "collect and commit the closing team totals line per game into football/pricing/lines_nfl.json; this script then holds it out season by season and awards a tier only if it clears the same floors the game markets clear"
   },
   {
@@ -56,7 +56,7 @@
     "close.player_props[]"
    ],
    "outcome_available": "a per-player box-score line, which no archive in this repository stores per game and per market",
-   "games_in_archive": 7324,
+   "games_in_archive": 7340,
    "games_with_the_line": 0,
    "fields_the_archive_has": [
     "away_moneyline",
@@ -68,7 +68,7 @@
     "total",
     "under_odds"
    ],
-   "why": "the archive carries no player_props on any of its 7324 games, so there is no history to hold out, no record to grade and no tier to award",
+   "why": "the archive carries no player_props on any of its 7340 games, so there is no history to hold out, no record to grade and no tier to award",
    "what_would_change_it": "collect and commit the closing player props line per game into football/pricing/lines_nfl.json; this script then holds it out season by season and awards a tier only if it clears the same floors the game markets clear"
   }
  ],

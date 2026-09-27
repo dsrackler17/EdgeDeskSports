@@ -162,11 +162,54 @@ decoration. Today it does not: `npm run stake:validate` keeps the NFL spread
 and total in SHADOW and both college markets in RESEARCH ONLY, and the desk
 says so. See `docs/runbooks/staking.md`.
 
+Slice 9 (the desk) makes the answer short and direct. "What's the best market
+line value today?", "Is Maryland -2.5 worth betting?", "Why?", "What if it
+drops to +2.5?", "Compare that to Maryland ML", "Anything safer?" get the answer
+first, then the price, the reason and the risk, in a few sentences.
+Every number comes from one typed-evidence contract per game
+(`supabase/functions/edgedesk_ai/_desk.js` over `lib/game_research.js` and the
+pricing kernel), for college football and the NFL alike. The board is ranked by
+the documented board score, never by the writing model. A price boundary comes
+from the same verdict rule at every half point ("+3.5 is attractive, +1.5 is
+still playable, at +1 or worse pass"). Stale and reference-only prices are
+never current opportunities, and "nothing stands out" is a normal answer. The
+conversation keeps the bet under discussion. Every focus selection is frozen
+pregame in `desk_prediction_history`, so Similar Situations can be measured
+honestly once 150 settled predictions exist; until then it says "building
+history". See `docs/intelligence-architecture.md` §15 and
+`docs/odds-helpers-audit.md`.
+
 - `docs/intelligence-audit.md` — what was found before the change
 - `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
 - `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`
 - `npm run intel:test` — the kernel, the evaluation harness, the migrations
 - `npm run intel:stake` · `npm run stake:validate` — the sizing rules, and whether they beat flat staking
+
+## The personal research terminal
+A reader's own research now lives on their account: a **watchlist** (the star on
+every game card and on the Top 5), **research-condition alerts** under the bell
+(a fair line moving, a quarterback confirmed, the market converging — never
+"bet" alerts), a **Top 5 Games to Research** list ordered by research-worthiness
+rather than by gap, a **decision journal** that freezes EdgeDesk's numbers at
+decision time and grades the reader's number against the close (process and
+result kept apart, no profit figure anywhere), first-run **onboarding**, live
+**activity counts** from real rows, a **partner program** tracked from Stripe's own
+events, and an AI desk that answers "what changed in my watchlist?" or "how has
+my CLV looked this month?" from those rows — and says so when a row is missing.
+No model methodology changed. See
+[`docs/personal-research-terminal.md`](docs/personal-research-terminal.md).
+
+On top of it, the growth upgrade adds **Compare My Number** (a reader's own
+fair spread and total beside EdgeDesk's and the market's, the measured inputs
+the difference runs through, saved write-once to the journal and set against
+the close), **research cards** sized for X from real current data only,
+**trial activation** states from deduplicated actions (internal, with
+configurable thresholds and an admin report), **acquisition attribution**
+(first touch frozen, last touch kept apart, the affiliate ledger untouched),
+a one-question **persona** that reorders the desk without hiding anything,
+**public sample research** for games an admin chooses, and per-code **creator
+campaigns** whose discount Stripe confirms. See
+[`docs/growth-upgrade.md`](docs/growth-upgrade.md).
 
 ## The weekly research email
 Twice a week the same research goes out as an email nobody sends: **College
