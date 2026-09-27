@@ -765,6 +765,8 @@
       break_even: d ? pct(d.break_even_probability, 1) : null,
       edge: d && isNum(d.probability_edge) ? (d.probability_edge >= 0 ? '+' : '') + (100 * d.probability_edge).toFixed(1) + ' percentage points' : null,
       decision: g ? (g.status === 'NO_BET' ? 'NO BET' : g.status) : 'NO BET',
+      /* a BET says WHEN (the engine's validated timing); nothing else has one */
+      timing: g && g.status === 'BET' && d ? (d.timing === 'WAIT' ? 'WAIT' : 'BET NOW') : null,
       bettable_to: g && g.best_quote && g.best_quote.bettable_to_line != null ? fmtLine(g.best_quote.bettable_to_line) : null,
       confidence: conf.charAt(0) + conf.slice(1).toLowerCase(),
       why: explain(d),
