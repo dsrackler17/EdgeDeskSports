@@ -21,6 +21,7 @@ const path = require('path');
 const L = require('./lab_core.js');
 const G = require('./ledger.js');
 const GOV = require('./governance.js');
+const I = require('./integrity.js');
 
 const U = L.util;
 const CFG = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
@@ -33,6 +34,7 @@ function load(store) {
   const cur = new Map();
   evalsAll.slice().sort((a, b) => U.ms(a.evaluated_at) - U.ms(b.evaluated_at)).forEach((e) => cur.set(e.prediction_id, e));
   return { preds, evals: [...cur.values()], evalsAll, results: store.results(), lines: store.lines(), quotes: store.quotes(),
+    quarantine: typeof store.quarantine === 'function' ? store.quarantine() : [],
     reviews: store.missReviews(), roles: store.gov('model_roles'), experiments: store.gov('experiments'),
     audit: store.gov('audit_log'), partitions: store.gov('partitions'), queue: store.gov('research_queue') };
 }
@@ -283,6 +285,25 @@ function alerts(D, now, roles) {
     .forEach(([check, kind]) => { const s = share(check); if (s > 0.25) out.push(L.alert(kind, 'warn', Math.round(s * 100) + '% of snapshots within 72 h fail ' + check, { share: U.r(s, 3) })); });
   const lastRunRed = up.length ? up.filter((p) => p.data_quality_status === 'RED').length / up.length : 0;
   if (lastRunRed > 0.10) out.push(L.alert('missing_data', 'warn', Math.round(lastRunRed * 100) + '% of current snapshots are data-quality RED', null));
+  /* BET-volume anomaly (docs/cfb-production/MARKET_INTEGRITY.md §9): each
+     model's official BETs in its latest week against its earlier weeks. A
+     flag asks a person to look; it never cancels a bet. */
+  groupBy(D.preds.filter(official), (p) => p.model_version).forEach((ps, mv) => {
+    const wk = new Map();
+    ps.forEach((p) => { const k = (p.season || 0) * 100 + (p.week || 0); wk.set(k, (wk.get(k) || 0) + (p.decision_class === 'BET' ? 1 : 0)); });
+    const keys = [...wk.keys()].sort((a, b) => a - b);
+    if (!keys.length) return;
+    const last = keys[keys.length - 1];
+    const v = I.betVolume(wk.get(last), keys.slice(0, -1).map((k) => wk.get(k)));
+    if (v.flag) out.push(L.alert('bet_volume_anomaly', 'warn', mv + ' week ' + (last % 100) + ': ' + v.message + ' — review the inputs; nothing is cancelled', { model_version: mv, week: last % 100, count: v.count, limit: v.limit }));
+  });
+  /* market integrity: quotes refused or quarantined in the last 72 h (one
+     alert, with the reasons; the rows are in quarantine.jsonl) */
+  const qz = (D.quarantine || []).filter((x) => U.ms(x.detected_at) > t - 72 * 3600000);
+  if (qz.length) {
+    const why = {}; qz.forEach((x) => (x.reasons || []).forEach((r) => { why[r] = (why[r] || 0) + 1; }));
+    out.push(L.alert('market_quotes_quarantined', 'warn', qz.length + ' quote(s) refused or quarantined in the last 72 h (' + Object.keys(why).sort().map((k) => k + ' ' + why[k]).join(', ') + ')', { count: qz.length, reasons: why }));
+  }
   return out;
 }
 

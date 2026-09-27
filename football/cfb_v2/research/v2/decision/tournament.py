@@ -321,13 +321,15 @@ def oos_metrics(Sc, mask, B=2000):
     return card
 
 
-def fixed_threshold_table(Sc, cid):
+def fixed_threshold_table(Sc, cid, gates=()):
     """§55 robustness: every grid value applied as a fixed threshold to the evaluated seasons."""
     spec = CANDIDATES[cid]
     ev = Sc.season.isin(EVAL).values
     rows = []
     for t in spec['grid']:
         m = ev & spec['mask'](Sc, t)
+        for g in gates:
+            m = m & GATES[g](Sc)
         d = Sc[m]
         row = {'t': t, 'n': int(len(d))}
         if len(d):
@@ -794,8 +796,8 @@ def derive_policy(res, sel, Sc, lean, sat, timing, tier, rank, slate, prereg_sha
         'prereg_sha256': prereg_sha, 'calibration_artifact': 'cfb_decision_calibration_v1', 'baseline': 'cfb_decision_baseline_001',
         'min_probability_edge': min_pe, 'min_ev': 0.0, 'ideal_probability_edge': round(2 * min_pe, 4),
         'max_price': -125, 'reference_price': -110, 'stale_minutes': 180, 'max_dispersion_iqr': 1.5, 'min_books': 3,
-        'min_football_confidence': 40 if ('reliability_40' in gates or True) else None,
-        'max_ensemble_sd': 6.0,
+        'min_football_confidence': 40,
+        'max_ensemble_sd': ENS_TERCILE_EDGE if 'low_disagreement' in gates else 6.0,
         'min_bet_confidence': (100 * res['clv_model']['final_dev']['choice']) if valid['clv_model']['verdict'] == 'BET-VALID' else None,
         'extreme_gap_pts': 10, 'extreme_ev': 0.12, 'extreme_max_age_minutes': 60, 'extreme_cover_probability': 0.60,
         'orientation_gap': 21, 'orientation_reconcile': 7,
@@ -823,10 +825,6 @@ def derive_policy(res, sel, Sc, lean, sat, timing, tier, rank, slate, prereg_sha
                        'declared_not_fitted': ['stale_minutes', 'min_books', 'max_dispersion_iqr', 'max_price', 'reference_price',
                                                'extreme_*', 'orientation_*']},
     }
-    if 'reliability_40' not in gates:
-        P['min_football_confidence'] = 40
-    if 'low_disagreement' in gates:
-        P['max_ensemble_sd'] = ENS_TERCILE_EDGE
     return P
 
 
@@ -845,12 +843,14 @@ def main(freeze=False):
     icc = PF.cross_game_icc(Sc)
     icc_hi = max(icc['week']['ci95'][1] or 0, icc['conference_week']['ci95'][1] or 0, 0.0)
     fixed_rows = {cid: fixed_threshold_table(Sc, cid) for cid in CANDIDATES}
+    mvf = res['multivariate']['final_dev']['choice']
+    fixed_rows['multivariate'] = fixed_threshold_table(Sc, 'edge', gates=tuple(mvf[1]) if mvf else ())
     base_mask = sel['baseline_001']
     cards, valid, risks = {}, {}, {}
     for cid, m in sel.items():
         cards[cid] = oos_metrics(Sc, m)
         risks[cid] = risk_block(Sc, m, icc_hi)
-        valid[cid] = bet_valid(cid, Sc, m, res, cards[cid], fixed_rows.get(cid if cid != 'multivariate' else 'edge'),
+        valid[cid] = bet_valid(cid, Sc, m, res, cards[cid], fixed_rows.get(cid),
                                base_mask, risks[cid])
         print('[tournament] %-14s n %4d  CLV %s  close-EV %s  ROI %s %s  -> %s' % (
             cid, cards[cid]['bet_count'], cards[cid].get('avg_clv'), cards[cid].get('close_implied_ev'), cards[cid].get('roi'),

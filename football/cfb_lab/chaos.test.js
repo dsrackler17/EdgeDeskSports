@@ -250,6 +250,28 @@ const q = (o) => MK.baseQuote(Object.assign({ game_id: 'g1', season: 2026, week:
     chk('a postponed game with no prediction is not settled here (only predicted games are)', postponed.results === 0);
   }
 
+  /* ═══ 6. the report flags an absurd BET count and quarantined quotes ═══ */
+  {
+    const RP = require('./report.js');
+    const GOV = require('./governance.js');
+    const d = tmp(); const s = store(d); GOV.seed(s);
+    const bet = () => ({ status: 'BET', side: 'HOME', decision_source: 'test', reason: 'r', cover_probability: 0.55, break_even_probability: 0.5238, estimated_ev: 0.05, edge_quality: 60, betting_reliability: 80, threshold_distance: null, bet_enabled: true });
+    const ok = { rule: 'r', status: 'OK', actionable_status: 'ACTIONABLE', reasons: [], n_books: 3, newest_true_age_h: 0.5 };
+    const rows = [];
+    [[3, 2], [4, 3], [5, 2], [6, 25]].forEach(([wk, n]) => { for (let i = 0; i < n; i++) {
+      const kick = new Date(U.ms(K) + (wk - 6) * 7 * 86400000 + i * 60000).toISOString();
+      const p = proj({ game_id: 'w' + wk + 'g' + i, kickoff: kick, margin: 5 }); p.game.week = wk;
+      rows.push(CP.buildRow(p, 'T24', true, null, bet(), { status: 'GREEN', checks: [] }, { now: new Date(U.ms(kick) - 20 * 3600000).toISOString(), role: 'champion', origin: 'LIVE', integrity: ok }));
+    } });
+    s.appendPredictions(rows);
+    s.append('quarantine', MK.screenCandidates([], [q({ game_id: 'w6g0', home_line: 450, observed_at: h(-30) })], { now: h(-29) }).quarantined, 'quarantine_id');
+    const B = RP.build(s, h(-25));
+    const bv = B.alerts.find((a) => a.kind === 'bet_volume_anomaly');
+    chk('report: 25 official BETs in a week against 2 / 3 / 2 before is flagged for review (never cancelled)', bv && /25 BET decisions/.test(bv.message) && /nothing is cancelled/.test(bv.message) && s.predictions().filter((p) => p.decision_class === 'BET').length === 32, B.alerts.map((a) => a.kind));
+    const qa = B.alerts.find((a) => a.kind === 'market_quotes_quarantined');
+    chk('report: quarantined quotes of the last 72 h raise one alert with their reasons', qa && qa.detail.count === 1 && qa.detail.reasons.SPREAD_OUT_OF_BOUNDS === 1, qa);
+  }
+
   fails.forEach((f) => console.log('FAIL | ' + f));
   console.log((fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

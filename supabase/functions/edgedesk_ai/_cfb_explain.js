@@ -164,7 +164,8 @@
       var q = facts.qb[side], team = facts.game[side];
       if (q.status === 'CONFIRMED') return;
       var names = [team, q.name].filter(Boolean).map(esc).join('|');
-      var sentences = t.split(/(?<=[.!?])\s+/);
+      /* judged clause by clause: "Mateer is confirmed, but the Texas QB is not" names two players */
+      var sentences = t.split(/(?<=[.!?;])\s+|,\s*(?:but|and|while|whereas)?\s*|\s+(?:but|while|whereas)\s+/i);
       sentences.forEach(function (s) {
         var mentions = /\b(QB|quarterback|starter|under center)\b/i.test(s) || (q.name && new RegExp(esc(q.name), 'i').test(s));
         /* "not confirmed", "unconfirmed", "isn't confirmed" are the honest statement, not a claim */
@@ -205,7 +206,9 @@
   function signed(x) { return isNum(x) ? (x > 0 ? '+' : '') + x : '—'; }
   function render(facts) {
     var g = facts.game, m = facts.model, d = facts.decision, s = [];
-    s.push('EdgeDesk\'s ' + (m.model_version || 'model') + ' projects ' + (g.home || 'the home team') + ' ' + signed(m.home_margin) + ' as the home margin (fair line ' + (m.fair_line_display || '—') + '), with a '
+    var fav = isNum(m.home_margin) ? (m.home_margin > 0 ? g.home : (m.home_margin < 0 ? g.away : null)) : null;
+    s.push('EdgeDesk\'s ' + (m.model_version || 'model') + ' projects ' + (fav ? fav + ' by ' + Math.abs(m.home_margin) : (isNum(m.home_margin) ? 'a pick\'em' : 'no margin'))
+      + ' (a home margin of ' + signed(m.home_margin) + ' for ' + (g.home || 'the home team') + '; fair line ' + (m.fair_line_display || '—') + '), with a '
       + pct(m.home_win_probability) + ' home win probability.');
     if (facts.market) s.push('The market home line is ' + signed(facts.market.home_line) + (facts.market.actionable_status && facts.market.actionable_status !== 'ACTIONABLE' ? ' and is ' + facts.market.actionable_status.replace('MARKET_', '').toLowerCase() : '') + '.');
     else s.push('No market line is available.');

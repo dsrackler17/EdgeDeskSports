@@ -17,7 +17,7 @@ import math
 
 import numpy as np
 import pandas as pd
-from scipy import stats
+from scipy import special, stats
 
 from .. import config as C
 from . import core
@@ -239,7 +239,7 @@ def risk_of_ruin(wins, losses, push_p, week_counts, rho, bankrolls=(25, 50, 100)
             k = counts[rng.integers(0, len(counts), size=paths)]
             z = sq * rng.standard_normal(paths)[:, None] + sr * rng.standard_normal((paths, K))
             push = rng.random((paths, K)) < push_p
-            win = stats.norm.cdf(z) < p[:, None]
+            win = special.ndtr(z) < p[:, None]
             u = np.where(push, 0.0, np.where(win, B110, -1.0))
             active = np.arange(K)[None, :] < k[:, None]
             scale = np.ones(paths) if slate_cap is None else np.where(k > slate_cap, slate_cap / np.maximum(k, 1), 1.0)
@@ -298,7 +298,7 @@ def choose_slate_cap(blocks, wins, losses, push_p, rho, caps=(3, 5, 8, 10, 15), 
     table = []
     for cap in caps:
         sb = season_bootstrap(blocks, sims=10000, slate_cap=cap)
-        rr = risk_of_ruin(wins, losses, push_p, counts, rho, bankrolls=(bankroll,), paths=10000, slate_cap=cap)
+        rr = risk_of_ruin(wins, losses, push_p, counts, rho, bankrolls=(bankroll,), paths=20000, slate_cap=cap)
         ror = rr['by_bankroll'][str(bankroll)]['p025']['ror']
         ok = sb['max_drawdown_p95'] <= dd_max and ror <= ror_max
         table.append({'cap': cap, 'max_drawdown_p95': sb['max_drawdown_p95'], 'ror_p025': ror, 'passes': bool(ok)})

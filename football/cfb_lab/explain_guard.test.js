@@ -96,7 +96,7 @@ const variants = [snapshot(), snapshot({ status: 'LEAN' }), snapshot({ status: '
 const fails5 = variants.map((v) => { const f = X.cfbFacts(v); const t = X.render(f); const a = X.auditExplanation(t, f); return a.ok ? null : { t, issues: a.issues }; }).filter(Boolean);
 chk('render(): the deterministic text passes its own audit for every status, side, QB and market case (' + variants.length + ')', fails5.length === 0, fails5[0]);
 const road = X.render(X.cfbFacts(snapshot({ margin: -10, line: 7, side: 'AWAY', p_home: 0.24 })));
-chk('render(): a road favourite reads as a negative home margin and names the away fair line', /Texas -10 as the home margin/.test(road) && /Oklahoma -10\.0/.test(road), road);
+chk('render(): a road favourite names the favourite, the negative home margin and the away fair line', /projects Oklahoma by 10/.test(road) && /home margin of -10 for Texas/.test(road) && /Oklahoma -10\.0/.test(road), road);
 
 /* ═══ 6. explain(): the LLM cannot change the decision ═════════════════ */
 (async () => {
