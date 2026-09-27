@@ -80,7 +80,7 @@ on:
         type: boolean
         default: false
       apply_cfb_lab:
-        description: 'Apply supabase/cfb_lab.sql (the CFB Live Model Lab tables, append-only triggers, market-rule functions and public record views), then supabase/cfb_lab_cron.sql (the hourly pg_cron poke of cfb-lab.yml), then supabase/cfb_weekly.sql (the weekly refresh engine run table, state tables and its pg_cron dispatch), then supabase/cfb_personnel.sql (the roster intelligence tables). Each skips its schedule where pg_cron / pg_net are missing; all idempotent; nothing else needed first.'
+        description: 'Apply supabase/cfb_lab.sql (the CFB Live Model Lab tables, append-only triggers, market-rule functions and public record views), then supabase/cfb_lab_cron.sql (the hourly pg_cron poke of cfb-lab.yml), then supabase/cfb_weekly.sql (the weekly refresh engine run table, state tables and its pg_cron dispatch), then supabase/cfb_personnel.sql (the roster intelligence tables), then supabase/cfb_decision.sql (the wagering decision tables). Each skips its schedule where pg_cron / pg_net are missing; all idempotent; nothing else needed first.'
         type: boolean
         default: false
 
@@ -299,6 +299,16 @@ jobs:
           # versions; append-only, internal (no anon access). Tested by
           # football/cfb_personnel/sql.test.js; ends in a report.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_personnel.sql
+
+      - name: Apply the CFB wagering decision contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Decision snapshots, eligibility, results (process and outcome apart),
+          # calibration, policies, bankroll, exposure, experiments, manual wagers;
+          # append-only and internal. Tested by football/cfb_decision/sql.test.js.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_decision.sql
 
       - name: Say what is skipped, rather than leaving it unsaid
         if: always()

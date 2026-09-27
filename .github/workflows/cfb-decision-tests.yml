@@ -1,0 +1,49 @@
+# EdgeDesk CFB wagering decision engine — run its suites on the pull request.
+#
+# The decision engine decides whether real money is risked. A change that
+# stops it failing closed (missing calibration, stale market, version
+# mismatch), assumes a price, lets a narrative change a status, mixes a
+# manual wager into the official record, or loosens a stake cap must fail on
+# the PR that makes it. Offline; the SQL suite builds a throwaway Postgres.
+name: CFB decision engine tests
+
+on:
+  pull_request:
+    paths:
+      - 'football/cfb_decision/**'
+      - 'football/cfb_v2/artifacts/decision/**'
+      - 'football/cfb_v2/engine.js'
+      - 'football/cfb_v2/params.js'
+      - 'supabase/cfb_decision.sql'
+      - '.github/workflows/cfb-decision-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/cfb_decision/*.js'
+      - 'football/cfb_v2/artifacts/decision/**'
+      - 'supabase/cfb_decision.sql'
+      - '.github/workflows/cfb-decision-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-decision-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Decision engine (vig, EV, calibration, thresholds, PASS reasons, fail-closed, staking, exposure, parity)
+        run: node football/cfb_decision/tests.js
+      - name: The decision Postgres contract
+        env:
+          CFB_DECISION_SQL_REQUIRED: '1'
+        run: node football/cfb_decision/sql.test.js
