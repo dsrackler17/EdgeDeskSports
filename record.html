@@ -126,6 +126,39 @@ footer a:hover{color:var(--text)}
 .edrec-note{font-size:11.5px;color:var(--faint);line-height:1.55;margin-top:12px}
 @media(max-width:560px){.edrec-pick{grid-template-columns:56px minmax(0,1fr)}.edrec-res{grid-column:2;text-align:left;max-width:none}.edrec-bh .m{margin-left:0}}
 /*__EDREC_CSS_END__*/
+/*__EDLAB_PUB_CSS_START__*/
+/* ---- CFB Model Lab: every official prediction, graded, losses included ---- */
+#cfb-model-lab{scroll-margin-top:64px}
+.edlab-rules{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:14px 16px;margin-top:18px;display:grid;grid-template-columns:minmax(120px,160px) minmax(0,1fr);gap:7px 16px;font-size:13px;line-height:1.55}
+.edlab-rules dt{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);padding-top:3px}
+.edlab-rules dd{margin:0;color:var(--dim);overflow-wrap:anywhere}
+.edlab-rules dd b{color:var(--text);font-weight:600}
+.edlab-sl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(227,184,77,.4);border-radius:6px;padding:0 5px;margin-left:4px;white-space:nowrap}
+.edlab-week{border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-top:12px;overflow:hidden}
+.edlab-week>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:11px 14px;font-weight:800;font-size:14px;letter-spacing:-.01em}
+.edlab-week>summary{list-style:none}
+.edlab-week>summary::-webkit-details-marker{display:none}
+.edlab-week>summary::before{content:'\25B8';color:var(--faint);font-size:11px;transition:transform .15s}
+.edlab-week[open]>summary::before{transform:rotate(90deg)}
+.edlab-week[open]>summary{border-bottom:1px solid var(--border)}
+.edlab-week>summary .m{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:500;color:var(--faint);margin-left:auto}
+.edlab-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.edlab-t{width:100%;border-collapse:collapse;font-size:12px}
+.edlab-t th{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);font-weight:700;white-space:nowrap}
+.edlab-t td{padding:7px 8px;border-bottom:1px solid rgba(51,42,27,.55);text-align:right;font-family:'JetBrains Mono',monospace;white-space:nowrap;vertical-align:top}
+.edlab-t th.l,.edlab-t td.l{text-align:left}
+.edlab-t td.g{font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;white-space:normal;min-width:170px;overflow-wrap:anywhere}
+.edlab-t td.k{color:var(--faint)}
+.edlab-t tr:last-child td{border-bottom:none}
+.edlab-d{font-weight:800;font-size:10.5px;letter-spacing:.08em}
+.edlab-d.bet{color:var(--pos)}.edlab-d.lean{color:var(--warn)}.edlab-d.research{color:#d274b0}.edlab-d.pass{color:var(--faint)}
+.edlab-r{font-weight:700}
+.edlab-r.win{color:var(--pos)}.edlab-r.loss{color:var(--neg)}.edlab-r.push{color:var(--warn)}
+.edlab-np{color:var(--faint)}
+.edlab-np .edlab-r{color:var(--faint);font-weight:500}
+.edlab-np small{display:block;font-size:9px;letter-spacing:.04em}
+@media(max-width:560px){.edlab-rules{grid-template-columns:minmax(0,1fr)}.edlab-rules dt{padding-top:6px}.edlab-week>summary .m{margin-left:0}}
+/*__EDLAB_PUB_CSS_END__*/
 </style>
 </head>
 <body>
@@ -135,6 +168,7 @@ footer a:hover{color:var(--text)}
     <a class="logo" href="./index.html"><span class="mk"></span>EdgeDesk <small>record</small></a>
     <span class="nav-sp"></span>
     <a class="nlink hideS" href="#briefs">Published briefs</a>
+    <a class="nlink hideS" href="#cfb-model-lab">CFB Model Lab</a>
     <a class="nlink hideS" href="./curriculum.html">Curriculum</a>
     <span class="pill" id="dbPill">loading</span>
     <a class="btn ghost" href="./index.html">The terminal</a>
@@ -180,6 +214,15 @@ footer a:hover{color:var(--text)}
     <div class="kpis" id="recBriefKpis"></div>
     <div id="recBriefs"></div>
     <div class="edrec-note" id="recBriefNote"></div>
+  </div>
+</section>
+
+<section class="sec" id="cfb-model-lab">
+  <div class="wrap">
+    <span class="ey">College football · Model Lab · graded after every game</span>
+    <h2>Every official college football prediction, and how it graded</h2>
+    <p class="sub">The Model Lab writes down each model's number at fixed times before kickoff, in a ledger that only ever grows. One of those numbers counts: the <b>official prediction</b>, the champion model's snapshot taken 12 to 24 hours before kickoff. After the game it is graded against the final score and the closing line and listed here, losses and pushes included. Every figure below is copied from the file the lab writes and commits; this page calculates nothing of its own.</p>
+    <div id="labPub"><div class="edrec-empty">Loading the Model Lab record…</div></div>
   </div>
 </section>
 
@@ -4132,6 +4175,130 @@ footer a:hover{color:var(--text)}
   if(typeof document!=='undefined'&&document.getElementById('recBriefs')) window.EDREC.load();
 })();
 /*__EDREC_END__*/
+</script>
+<script>
+/*__EDLAB_PUB_START__*/
+/* ===========================================================================
+   CFB MODEL LAB — the public record of every official college football
+   prediction, graded.
+
+   Reads record/football/cfb_model_lab.json (edgedesk_cfb_model_lab_public_v1),
+   which football/cfb_lab/report.js writes from the append-only ledger and the
+   hourly job commits. Nothing here computes a metric: every number is
+   formatted from that file (lines 1 dp, errors 2 dp, probabilities 3 dp,
+   percents 1 dp). Every graded game is listed, losses and pushes included.
+   A missing file renders the empty state; the rest of the page is untouched.
+   Rendering is pure (data in, HTML out) so
+   football/cfb_lab/record_section.test.js runs this very block offline.
+   =========================================================================== */
+(function(){
+  'use strict';
+  var D='—', STARTED='2026-09-27', FILE='./record/football/cfb_model_lab.json';
+  function isNum(x){ return typeof x==='number'&&isFinite(x); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function tidy(s,k){ return Number(s)===0?(0).toFixed(k):s; }
+  function fx(x,k){ return isNum(x)?tidy(x.toFixed(k),k):D; }
+  function sg(x,k){ if(!isNum(x)) return D; var s=tidy(x.toFixed(k),k); return (Number(s)>0?'+':'')+s; }
+  /* a line: 1 dp; 2 dp only for a quarter point, never rounded into a number no book offered */
+  function ln(x){ if(!isNum(x)) return D; var q=Math.abs(x*4-Math.round(x*4))<1e-9&&Math.abs(x*2-Math.round(x*2))>1e-9; return sg(x,q?2:1); }
+  function pc(x){ return isNum(x)?tidy((100*x).toFixed(1),1)+'%':D; }
+  function it(x){ return isNum(x)?String(Math.round(x)):D; }
+  function sl(label){ return label?'<span class="edlab-sl">'+esc(label)+'</span>':''; }
+  function when(t){
+    var v=Date.parse(t); if(!isFinite(v)) return D;
+    try { return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(v))+' ET'; }
+    catch(e){ return new Date(v).toISOString().slice(0,16).replace('T',' ')+' UTC'; }
+  }
+  var RULES=[['official_prediction','Official prediction'],['closing_line','Closing line'],['ats','ATS'],['clv','CLV'],['nothing_removed','Nothing removed']];
+  function rulesHTML(pub){
+    var R=(pub&&pub.rules)||{}, keys=RULES.map(function(r){ return r[0]; });
+    Object.keys(R).forEach(function(k){ if(keys.indexOf(k)<0) keys.push(k); });
+    var h=keys.filter(function(k){ return R[k]!=null&&R[k]!==''; }).map(function(k){
+      var t=null; RULES.forEach(function(r){ if(r[0]===k) t=r[1]; });
+      return '<dt>'+esc(t||k.replace(/_/g,' '))+'</dt><dd>'+esc(R[k])+'</dd>'; }).join('');
+    return h?'<dl class="edlab-rules">'+h+'</dl>':'';
+  }
+  /* two lines per tile, like the briefs above: what the number means, then
+     the term of art and the population it is computed over */
+  function kpi(n,l,s){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>'; }
+  function kpisHTML(pub){
+    if(!pub) return '';
+    var c=pub.counts||{}, a=pub.accuracy||{}, r=pub.research_positions||{}, lab=sl(c.label), n=isNum(a.n)?a.n:c.graded;
+    return '<div class="kpis">'
+      +kpi(it(c.official_predictions),'official predictions made','champion T24 snapshots, LIVE only')
+      +kpi(it(c.graded),'graded so far','settled official predictions'+lab)
+      +kpi(fx(a.spread_mae,2),'average miss on the margin, in points','spread MAE · of the '+it(n)+' graded'+lab)
+      +kpi(fx(a.rmse,2),'typical miss, big misses weigh more','RMSE · points'+lab)
+      +kpi(sg(a.bias,2),'actual minus predicted home margin, on average','bias · + = home did better than predicted'+lab)
+      +kpi(fx(a.win_brier,3),'win-probability score, lower is better','win Brier · 0.250 is a coin flip'+lab)
+      +kpi(pc(a.coverage_80),'finals inside the 80% range','80% interval coverage · target 80%'+lab)
+      +kpi(esc(r.record||D),'research positions, won-lost-push','LEAN and BET at the snapshot number · of '+it(r.n)+sl(r.label))
+      +kpi(pc(r.ats_pct),'against the spread','ATS % · wins ÷ (wins + losses), pushes out'+sl(r.label))
+      +kpi(sg(r.clv_mean,2),'points the close moved toward us, on average','mean CLV · research positions'+sl(r.label))
+      +kpi(pc(r.positive_clv_pct),'positions the close moved toward','positive CLV %'+sl(r.label))
+      +'</div>'+(r.note?'<div class="edrec-note">'+esc(r.note)+'</div>':'');
+  }
+  function emptyHTML(pub){
+    var started=(pub&&typeof pub.lab_started_at==='string'&&/^\d{4}-\d\d-\d\d/.test(pub.lab_started_at))?pub.lab_started_at.slice(0,10):STARTED;
+    return '<div class="edrec-empty"><b style="color:var(--text)">No official prediction has been graded yet.</b><br>The Model Lab began recording on '+esc(started)+'; official predictions are graded after each game settles.</div>';
+  }
+  var DEC={BET:'bet',LEAN:'lean',RESEARCH:'research',PASS:'pass'}, RES={WIN:'win',LOSS:'loss',PUSH:'push'};
+  function gameRow(g){
+    var teams=String(g.matchup||'').split(' @ '), away=teams.length===2?teams[0]:null, home=teams.length===2?teams[1]:null;
+    var pos=g.decision==='LEAN'||g.decision==='BET';
+    var side=g.side==='HOME'&&home!=null?home:(g.side==='AWAY'&&away!=null?away:g.side);
+    var res=g.result?'<span class="edlab-r '+(RES[g.result]||'')+'">'+esc(g.result)+'</span>':D;
+    return '<tr class="edlab-g'+(pos?'':' edlab-np')+'"'+(pos?'':' title="Not a position: how the side the model leaned would have graded at its number"')+'>'
+      +'<td class="l k">'+esc(when(g.kickoff))+'</td>'
+      +'<td class="l g">'+esc(g.matchup||D)+'</td>'
+      +'<td class="l">'+esc(g.official_line||D)+'</td>'
+      +'<td>'+pc(g.home_win_probability)+'</td>'
+      +'<td>'+esc(g.final||D)+'</td>'
+      +'<td>'+fx(g.abs_error,1)+'</td>'
+      +'<td class="l"><span class="edlab-d '+(DEC[g.decision]||'')+'">'+esc(g.decision||D)+'</span></td>'
+      +'<td class="l">'+(side?esc(side):D)+'</td>'
+      +'<td>'+ln(g.line)+'</td>'
+      +'<td class="l">'+res+(pos||!g.result?'':'<small>no position</small>')+'</td>'
+      +'<td>'+ln(g.clv)+'</td></tr>';
+  }
+  var HEAD='<thead><tr><th class="l">Kickoff</th><th class="l">Game (away @ home)</th><th class="l">Official line</th><th>Home win</th><th>Final</th><th>Abs error</th><th class="l">Decision</th><th class="l">Side</th><th>Line</th><th class="l">Result</th><th>CLV</th></tr></thead>';
+  function gamesHTML(pub){
+    var games=((pub&&pub.games)||[]).slice();
+    if(!games.length) return emptyHTML(pub);
+    /* newest first; one block per week, the latest open */
+    games.sort(function(a,b){ return (Date.parse(b.kickoff)||0)-(Date.parse(a.kickoff)||0); });
+    var weeks=[], by={};
+    games.forEach(function(g){ var k=String(g.week==null?'?':g.week); if(!by[k]){ by[k]=[]; weeks.push(k); } by[k].push(g); });
+    return weeks.map(function(k,i){
+      var gs=by[k];
+      return '<details class="edlab-week"'+(i===0?' open':'')+'><summary>Week '+esc(k)+'<span class="m">'+gs.length+' graded</span></summary>'
+        +'<div class="edlab-scroll"><table class="edlab-t">'+HEAD+'<tbody>'+gs.map(gameRow).join('')+'</tbody></table></div></details>';
+    }).join('');
+  }
+  function noteHTML(pub){
+    var n=['Lines are the side’s own number; the official line is the model’s fair spread. CLV is in points: positive means the closing line moved toward the side. Final is away–home.',
+      'A PASS row is not a position: it shows how the side the model leaned would have graded at its number, and it is not in the won-lost record. A canceled game is void and is not graded.'];
+    if(pub&&pub.generated_at) n.push('Last written '+esc(when(pub.generated_at))+' by football/cfb_lab/report.js from the append-only ledger and committed to the repository; the history of that file is the history of this record. Exact definitions: docs/cfb-lab/METRICS.md.');
+    if(pub&&pub.schema&&pub.schema!=='edgedesk_cfb_model_lab_public_v1') n.push('This page expects edgedesk_cfb_model_lab_public_v1 and read '+esc(pub.schema)+'.');
+    return '<div class="edrec-note">'+n.join(' ')+'</div>';
+  }
+  function sectionHTML(pub){
+    if(!pub||typeof pub!=='object') return emptyHTML(null)+'<div class="edrec-note">The Model Lab record file has not been published yet, so there is nothing to show rather than something made up.</div>';
+    return rulesHTML(pub)+kpisHTML(pub)+gamesHTML(pub)+noteHTML(pub);
+  }
+  window.EDLABPUB={
+    /* pure renderers, for the offline test */
+    rulesHTML:rulesHTML, kpisHTML:kpisHTML, gamesHTML:gamesHTML, gameRow:gameRow, emptyHTML:emptyHTML, noteHTML:noteHTML, sectionHTML:sectionHTML,
+    render:function(pub){ var el=document.getElementById('labPub'); if(el) el.innerHTML=sectionHTML(pub); },
+    load:function(url){
+      return fetch(url||FILE,{cache:'no-cache'}).then(function(r){ if(!r.ok) throw new Error('cfb_model_lab.json '+r.status); return r.json(); })
+        .then(function(d){ window.EDLABPUB.render(d); return d; })
+        .catch(function(){ window.EDLABPUB.render(null); return null; });
+    }
+  };
+  if(typeof document!=='undefined'&&document.getElementById('labPub')) window.EDLABPUB.load();
+})();
+/*__EDLAB_PUB_END__*/
 </script>
 <script>
 /* Anon key. Public by design and already shipped in app.html — it reads public
