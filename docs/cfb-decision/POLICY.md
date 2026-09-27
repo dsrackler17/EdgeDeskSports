@@ -67,7 +67,7 @@ Candidates: `edge` probability edge ≥ t; `decision_ev` decision EV ≥ t (at o
 
 ## §70 The untouched holdout (2024, 2025), read once
 
-Read at 2026-09-27T16:30:11Z for policy sha256 `cb9019a29de2` (calibration `389ad41f7130`, pre-registration `bd27933629b8`); logged in `holdout_access.jsonl` before the read; a second run is refused. Frozen artifact applied (w = 0.227829), frozen policy and frozen thresholds; nothing re-tuned. Rows: {'2024': 795, '2025': 806} (consensus openers, FBS).
+Read at 2026-09-27T16:30:11Z for policy sha256 `cb9019a29de2` (calibration `389ad41f7130`, pre-registration `bd27933629b8`); logged in `holdout_access.jsonl` before the read; a second run is refused. Frozen artifact applied (w = 0.227829), frozen policy and frozen thresholds; nothing re-tuned. Rows: {'2024': 795, '2025': 806} (consensus openers, FBS). After the read holdout.py wrote the results into MANIFEST.json (see `post_freeze_changes.jsonl`); the manifest the access log recorded (`e65fa284b1c1`) is rebuilt and checked by tests_policy.py.
 
 | candidate | n | W-L-P | cover [Wilson 95%] | ROI at −110 [95% CI] | CLV pts [95% CI] | +CLV | close-implied EV [95% CI] | max DD u [95%] | calib. error | 2024 / 2025 ROI | no collapse vs DEV |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -357,7 +357,7 @@ Every 2026 quote with a CAPTURED two-sided price (29, one book), decided at the 
 
 ## Files and reproduction
 
-- `football/cfb_v2/artifacts/decision/cfb_decision_policy_v1/`: `policy.json` (frozen), `evidence.json` (the tournament, the pre-holdout and post-holdout gate, the holdout results), `MANIFEST.json` (hashes of the policy, evidence, parity fixture, pre-registration, calibration, baseline, dataset and code), `holdout_access.jsonl` (append-only).
+- `football/cfb_v2/artifacts/decision/cfb_decision_policy_v1/`: `policy.json` (frozen), `evidence.json` (the tournament, the pre-holdout and post-holdout gate, the holdout results), `MANIFEST.json` (hashes of the policy, evidence, parity fixture, pre-registration, calibration, baseline, dataset and code), `holdout_access.jsonl` (append-only) and `post_freeze_changes.jsonl` (append-only: every change after the freeze, with its hashes — the holdout.py edit made before the read, the live-adapter fix in scorecard.py, and the manifest fields holdout.py wrote after the read; `tests_policy.py` rebuilds the pre-read manifest and matches the hash the access log recorded).
 - `football/cfb_v2/artifacts/decision/fixtures/policy_parity.json`: the decision cases, stakes, portfolios and games; `football/cfb_decision/tests.js` checks decision.js against it.
 - Code: `v2/decision/{policy,tournament,portfolio,scorecard,holdout,tests_policy}.py`.
 - Reproduce (byte-identical): `cd football/cfb_v2/research && export CFB_V2_DATA=$PWD/data CFB_V2_OUT=$PWD/out_h OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 && python3 -m v2.decision.tournament && python3 -m v2.decision.policy --fixture && python3 -m v2.decision.render --policy && python3 -m v2.decision.tests_policy`. The holdout is not re-run: it refuses (holdout_access.jsonl).
