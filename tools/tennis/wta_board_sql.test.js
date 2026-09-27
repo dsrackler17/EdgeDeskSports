@@ -12,16 +12,12 @@
        The wta schema answers and is empty — zero rows.
 
    The contract is now three VIEWS over the tennis record rather than a second
-   pipeline. That makes one new failure possible: the views and the page can
-   disagree about column names, and a PostgREST select of a column that does
-   not exist is a 400 the panel would report as a database fault.
+   pipeline. The Tennis panel that read them has since been retired from
+   app.html (Tennis is no longer an EdgeDesk product), so there is no page
+   field list left to cross-check; the views stay, and this suite still
+   checks their ordering columns and key/value shape.
 
-   So this suite does not check a list of columns someone typed here. It reads
-   the field names OUT OF app.html — every `r.<field>` inside the WTA module
-   and every `p.<field>` in the watchlist renderer — and requires each one to
-   be a real column of the view. A rename on either side fails this.
-
-   It then seeds one WTA match end to end (players, rankings, ratings, a live
+   It seeds one WTA match end to end (players, rankings, ratings, a live
    fixture, a registered model and a prediction) and checks the arithmetic of
    every component against hand-computed values, because a view that returns
    the right COLUMNS full of wrong NUMBERS is the worse failure.
@@ -40,7 +36,6 @@ const BILLING = path.join(ROOT, 'supabase', 'billing.sql');
 const LIVE = path.join(ROOT, 'supabase', 'tennis_live_center.sql');
 const RECORD = path.join(ROOT, 'supabase', 'tennis_record.sql');
 const WTA = path.join(ROOT, 'supabase', 'wta_board.sql');
-const APP = path.join(ROOT, 'app.html');
 const DB = 'edgedesk_wta_board_sqltest';
 
 let pass = 0, fail = 0; const failures = [];
@@ -135,13 +130,7 @@ chk('the record contract still answers after wta is applied',
   run('drop table if exists wta.meta_legacy, wta.daily_research_legacy, wta.watchlist_legacy;');
 }
 
-/* ---- 2. the page's own field list, read out of app.html ----------------- */
-const app = fs.readFileSync(APP, 'utf8');
-const wtaStart = app.indexOf('async function sbGetWta(');
-const wtaEnd = app.indexOf('function tddRenderOverview(');
-chk('the WTA module is found in app.html', wtaStart >= 0 && wtaEnd > wtaStart);
-const mod = app.slice(wtaStart, wtaEnd);
-
+/* ---- 2. the view columns a reader orders and keys by ------------------- */
 const colsOf = (rel) => new Set(q(
   `select column_name from information_schema.columns where table_schema='wta' and table_name='${rel}'`
 ).split('\n').map((s) => s.trim()).filter(Boolean));
@@ -149,21 +138,7 @@ const colsOf = (rel) => new Set(q(
 const research = colsOf('daily_research');
 const watch = colsOf('watchlist');
 
-/* Fields the module reads off a research row. `r` is the research row
-   everywhere in this module; anything it dereferences must be a column. */
-const rFields = [...new Set((mod.match(/\br\.[a-z_]+/g) || []).map((s) => s.slice(2)))];
-chk('app.html dereferences research fields at all', rFields.length >= 15, rFields.length);
-const missingR = rFields.filter((f) => !research.has(f));
-chk('EVERY field app.html reads off a research row is a column of wta.daily_research',
-  missingR.length === 0, 'missing: ' + missingR.join(', '));
-
-const pFields = [...new Set((mod.match(/\bp\.[a-z_]+/g) || []).map((s) => s.slice(2)))];
-chk('app.html dereferences watchlist fields at all', pFields.length >= 6, pFields.length);
-const missingP = pFields.filter((f) => !watch.has(f));
-chk('EVERY field app.html reads off a watchlist row is a column of wta.watchlist',
-  missingP.length === 0, 'missing: ' + missingP.join(', '));
-
-/* The page ORDERS BY these, server-side, so a missing one is a 400 rather
+/* Any reader ORDERS BY these, server-side, so a missing one is a 400 rather
    than a cosmetic difference. */
 for (const c of ['slate_date', 'research_score']) {
   chk('daily_research can be ordered by ' + c, research.has(c));
@@ -171,7 +146,7 @@ for (const c of ['slate_date', 'research_score']) {
 for (const c of ['beat_close_rate', 'clv_avg', 'reliability', 'rank']) {
   chk('watchlist can be ordered by ' + c, watch.has(c));
 }
-chk('wta.meta answers the key/value shape the page reads',
+chk('wta.meta answers the key/value shape',
   q("select count(*) from information_schema.columns where table_schema='wta' and table_name='meta' and column_name in ('key','value')") === '2');
 
 /* ---- 3. one match, end to end, with arithmetic that can be checked ------ */

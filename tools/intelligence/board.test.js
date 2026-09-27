@@ -189,10 +189,10 @@ function sportsFixture(over) {
   ];
 }
 {
-  const board = B.build({ now: NOW, scope: scopeFor('What are the best bets this week?'), question: 'What are the best bets this week?', sports: sportsFixture(), sports_not_read: [{ sport: 'tennis_wta', status: 'RETRIEVAL_FAILED', why: 'games could not be read (HTTP 500)' }] });
+  const board = B.build({ now: NOW, scope: scopeFor('What are the best bets this week?'), question: 'What are the best bets this week?', sports: sportsFixture(), sports_not_read: [{ sport: 'icehockey_nhl', status: 'RETRIEVAL_FAILED', why: 'games could not be read (HTTP 500)' }] });
   eq('one qualified opportunity, the live CFB price', board.opportunities.map((c) => c.selection), ['North Texas']);
   eq('the NFL LEAN side on a reference line is on the watchlist, not qualified', board.watchlist.map((c) => c.selection), ['Buffalo Bills']);
-  chk('coverage names every sport with its state', board.coverage.some((c) => c.sport === 'baseball_mlb' && c.status === 'NO_GAMES') && board.coverage.some((c) => c.sport === 'tennis_wta' && c.status === 'RETRIEVAL_FAILED'), board.coverage.map((c) => c.sport + ':' + c.status));
+  chk('coverage names every sport with its state', board.coverage.some((c) => c.sport === 'baseball_mlb' && c.status === 'NO_GAMES') && board.coverage.some((c) => c.sport === 'icehockey_nhl' && c.status === 'RETRIEVAL_FAILED'), board.coverage.map((c) => c.sport + ':' + c.status));
   chk('the headline counts sports evaluated, not sports read', /across 2 sports evaluated/.test(board.headline), board.headline);
   chk('the rules are printed with the board', board.rules.length >= 7 && board.rules.every((r) => r.id && r.text));
   chk('the ranking is labelled an unvalidated heuristic', /UNVALIDATED/.test(board.rules.find((r) => r.id === 'R6_ORDER').text));
@@ -202,7 +202,7 @@ function sportsFixture(over) {
   const text = B.render(board);
   chk('the deterministic answer leads with the answer', text.indexOf(board.headline) === 0);
   chk('and shows book, price, capture time, fair, threshold and counter for the pick', /DraftKings -105, captured/.test(text) && /playable to -112/.test(text) && /Against:/.test(text), text.slice(0, 600));
-  chk('and states coverage with the failed sport named', /WTA tennis — retrieval failed/.test(text), text);
+  chk('and states coverage with the failed sport named', /NHL — retrieval failed/.test(text), text);
   /* nothing qualifies */
   const none = B.build({ now: NOW, scope: scopeFor('best bets this week'), question: 'best bets this week', sports: sportsFixture({ decisions: [decision({ decision: 'PASS', why: 'below the floor', gates: Object.assign({}, decision().gates, { price: { pass: false } }) })] }) });
   eq('nothing is forced when nothing qualifies', none.opportunities.length, 0);

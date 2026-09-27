@@ -21788,7 +21788,8 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
   /* The sports the product can put on a board, with the pricing methods each
      one can actually reach. `season` months are the calendar months (1-12,
      inclusive, wrapping) in which the sport has a card at all; a sport out of
-     season is reported as such rather than read for nothing. */
+     season is reported as such rather than read for nothing. Tennis is no
+     longer an EdgeDesk product, so it is not a board sport. */
   var SUPPORTED = {
     americanfootball_nfl: { label: 'NFL', methods: ['MARKET_DEVIG', 'MODEL_BLEND'], window: 'this_week', season: [8, 2], family: 'football' },
     americanfootball_ncaaf: { label: 'college football', methods: ['MARKET_DEVIG', 'MODEL_BLEND'], window: 'this_week', season: [8, 1], family: 'football' },
@@ -21797,8 +21798,7 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
     basketball_wnba: { label: 'WNBA', methods: ['MARKET_DEVIG'], window: 'today', season: [5, 10], family: 'other' },
     basketball_ncaab: { label: 'college basketball', methods: ['MARKET_DEVIG'], window: 'today', season: [11, 4], family: 'other' },
     icehockey_nhl: { label: 'NHL', methods: ['MARKET_DEVIG'], window: 'today', season: [10, 6], family: 'other' },
-    mma_mixed_martial_arts: { label: 'UFC', methods: ['MARKET_DEVIG'], window: 'this_week', season: [1, 12], family: 'other' },
-    tennis_wta: { label: 'WTA tennis', methods: ['MARKET_DEVIG'], window: 'today', season: [1, 11], family: 'other' }
+    mma_mixed_martial_arts: { label: 'UFC', methods: ['MARKET_DEVIG'], window: 'this_week', season: [1, 12], family: 'other' }
   };
   var SPORT_WORDS = [
     ['americanfootball_nfl', /\bnfl\b|\bpro football\b/i],
@@ -21808,8 +21808,7 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
     ['basketball_wnba', /\bwnba\b/i],
     ['basketball_ncaab', /\b(college basketball|cbb|ncaab|college hoops)\b/i],
     ['icehockey_nhl', /\bnhl\b|\bhockey\b/i],
-    ['mma_mixed_martial_arts', /\bufc\b|\bmma\b/i],
-    ['tennis_wta', /\btennis\b|\bwta\b/i]
+    ['mma_mixed_martial_arts', /\bufc\b|\bmma\b/i]
   ];
   /* Capture's own sanity ceilings per market (LEARN_EDGE_MAX): an EV past
      these is a data question before it is a bet. */
@@ -32097,7 +32096,7 @@ function mlbStartersFromResearch(research: ResearchOut | null): { label: string;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-26-r18-numbers";
+export const BUILD = "edgedesk_ai-2026-09-27-r19-board-no-tennis";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
