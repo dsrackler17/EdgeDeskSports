@@ -40,6 +40,18 @@ function hashFile(p) { try { return sha(fs.readFileSync(p)); } catch (e) { retur
 function hashObj(o) { return sha(G.canonical(o)); }
 function ageH(asOf, now) { const a = U.ms(asOf), b = U.ms(now); return (a === null || b === null) ? null : (b - a) / 3600000; }
 
+/* The ensemble a V2 model version runs: the stack weights of ITS artifact's
+   models.json (params.js carries none, so hashing params gave every V2
+   version the hash of {}). Hashed exactly as the production manifest hashes
+   them (compat.js), so the lab and the manifest name the same ensemble. A
+   version whose artifact cannot be read records null, never a guess. */
+const COMPAT = require(path.join(G.REPO, 'football', 'cfb_production', 'compat.js'));
+function ensembleVersion(mv, modelsJson) {
+  const A = readJson(modelsJson);
+  if (!A || !A.stack_weights || (A.model_version && A.model_version !== mv)) return null;
+  return mv + ':' + COMPAT.hashObj(A.stack_weights).slice(0, 12);
+}
+
 /* An engine instance with its OWN params (candidate 001 must not see v2.1.0's). */
 function loadEngine(paramsFile) {
   const ctx = { console, Math, Date, JSON, isFinite, Number, Object, Array, String, parseFloat };
@@ -194,7 +206,8 @@ function v2Adapter(which, opts) {
   const mv = P.model_version;
   const label = (cand || direct) ? 'V2 · candidate 001' : 'V2.1 · hardened';
   const calV = mv + ':' + hashObj({ win: P.calibration && P.calibration.win, cover: P.cover }).slice(0, 12);
-  const ensV = mv + ':' + hashObj(P.stack_weights || P.ensemble || {}).slice(0, 12);
+  const ensV = ensembleVersion(mv, (cand || direct) ? path.join(V2DIR, 'candidates', 'cfb_v2_candidate_001', 'artifacts', 'models.json')
+    : path.join(V2DIR, 'artifacts', mv, 'models.json'));
   const out = new Map();
   const unavailable = [];
   ((cur && cur.rows) || []).forEach((row0) => {
@@ -281,4 +294,4 @@ function loadModels(which, opts) {
   return out;
 }
 
-module.exports = { loadEngine, v1Adapter, v2Adapter, loadModels, dataQuality, qbCertainty, injuryCertainty, teamDataCoverage, SUBMODEL_MAP, hashFile, hashObj, readJson };
+module.exports = { loadEngine, v1Adapter, v2Adapter, loadModels, dataQuality, qbCertainty, injuryCertainty, teamDataCoverage, SUBMODEL_MAP, hashFile, hashObj, readJson, ensembleVersion };
