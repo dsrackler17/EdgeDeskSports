@@ -231,6 +231,24 @@ says so. The editor path is `parts/cfb_weekly.part*-of-*.sql`; the `Deploy
 intelligence` workflow's `apply_cfb_lab` input applies it after the lab files.
 Tested against a real PostgreSQL by `football/cfb_weekly/sql.test.js`.
 
+### `cfb_personnel.sql` — the CFB player-level roster intelligence system
+Needs nothing else first. The canonical player registry (`cfb_players`, one row per
+player and registry version, `player_id = 'espn:<athlete id>'` enforced;
+`cfb_player_aliases`; `cfb_transfer_history`), player-game performance
+(`cfb_player_performance`), `cfb_player_week_state` (role, expected usage share,
+starter probability, availability, value mean / SD, replacement), the usage-derived
+depth chart (`cfb_depth_chart_state`; a provider source is refused because none
+exists), `cfb_personnel_unit_state` (baseline lineup, expected lineup, lineup delta
+in points with its SD; KNOWN / INFERRED / UNKNOWN), `cfb_player_events`,
+`cfb_personnel_game_snapshot` (lineup scenarios, which must sum to one, written
+before kickoff) and `cfb_personnel_model_versions` (no CHAMPION without a person and
+the evidence). Append-only like `cfb_weekly.sql`; exactly-once keys with correction
+versions; authenticated reads, anon reads nothing. Mirrored insert-only by
+`football/cfb_personnel/sync_supabase.js`. The editor path is
+`parts/cfb_personnel.part*-of-*.sql`; the `Deploy intelligence` workflow's
+`apply_cfb_lab` input applies it after the weekly engine's file. Tested against a
+real PostgreSQL by `football/cfb_personnel/sql.test.js`.
+
 ### `ufc_live_center.sql` — the UFC Live Fight Center contract
 The Fight Center used to read a live layer no file in this repository ever
 created (`ufc.live_events`, `ufc.live_fights`, `ufc.live_event_state`,

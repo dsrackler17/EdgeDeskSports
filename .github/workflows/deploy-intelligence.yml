@@ -80,7 +80,7 @@ on:
         type: boolean
         default: false
       apply_cfb_lab:
-        description: 'Apply supabase/cfb_lab.sql (the CFB Live Model Lab tables, append-only triggers, market-rule functions and public record views), then supabase/cfb_lab_cron.sql (the hourly pg_cron poke of cfb-lab.yml), then supabase/cfb_weekly.sql (the weekly refresh engine run table, state tables and its pg_cron dispatch). Each skips its schedule where pg_cron / pg_net are missing; all idempotent; nothing else needed first.'
+        description: 'Apply supabase/cfb_lab.sql (the CFB Live Model Lab tables, append-only triggers, market-rule functions and public record views), then supabase/cfb_lab_cron.sql (the hourly pg_cron poke of cfb-lab.yml), then supabase/cfb_weekly.sql (the weekly refresh engine run table, state tables and its pg_cron dispatch), then supabase/cfb_personnel.sql (the roster intelligence tables). Each skips its schedule where pg_cron / pg_net are missing; all idempotent; nothing else needed first.'
         type: boolean
         default: false
 
@@ -288,6 +288,17 @@ jobs:
           # 10:05 weekly, Tue 12:07 freeze, Wed-Sat 10:47 daily). Tested by
           # football/cfb_weekly/sql.test.js; ends in a report.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_weekly.sql
+
+      - name: Apply the CFB personnel (roster intelligence) contract
+        if: ${{ inputs.apply_cfb_lab && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Independent tables: the player registry, player-week state, unit
+          # personnel state, player events, game snapshots and personnel model
+          # versions; append-only, internal (no anon access). Tested by
+          # football/cfb_personnel/sql.test.js; ends in a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_personnel.sql
 
       - name: Say what is skipped, rather than leaving it unsaid
         if: always()
