@@ -342,6 +342,13 @@ def _artifact_or_none():
 _CORE_CACHE = {}
 
 
+def clear_cache():
+    """Forget the per-process season frames and the loaded artifact (call after the
+    PBP / schedule files or the artifact change inside one process)."""
+    _CORE_CACHE.clear()
+    _ARTIFACT_CACHE.clear()
+
+
 def _core(season):
     """Every final in-scope game of the season (no time cut), per team-game, without
     anything that depends on the artifact. Cached per process."""
@@ -519,6 +526,10 @@ def game_performance(season, T=None, validation=None):
     else:
         TG['validation_status'] = None
         TG['pbp_completeness_score'] = np.nan
+    # every numeric field is finite or null with a reason: a game without PBP has null
+    # play metrics; a rate whose denominator is 0 (e.g. points per opportunity with no
+    # opportunity) is null by definition
+    TG['null_reason'] = np.where(TG.has_pbp, None, 'no_pbp')
     TG['as_of'] = ids.ts(T) if T is not None else None
     TG['perf_version'] = PERF_VERSION
     TG['artifact_sha256'] = art['sha256'] if art is not None else None
