@@ -100,18 +100,28 @@ def history_frame(M):
     return pd.concat([h, a], ignore_index=True).sort_values(['kickoff_ts', 'game_id']).reset_index(drop=True)
 
 
+_W_CACHE = {}
+
+
 def whitening(vectors, cols):
-    """Mahalanobis whitening from FBS team vectors at each dev season's last freeze (dev only)."""
+    """Mahalanobis whitening from FBS team vectors at the last freeze of EVERY dev season (2016-2023),
+    whatever seasons the caller loaded: a live one-season call gets the identical frozen matrix the
+    backtest and the holdout used (dev seasons missing from `vectors` are built here)."""
+    key = tuple(cols)
+    if key in _W_CACHE:
+        return _W_CACHE[key]
     rows = []
-    for S, V in vectors.items():
-        if S not in C.DEV_SEASONS:
-            continue
+    for S in C.DEV_SEASONS:
+        V = vectors.get(S)
+        if V is None:
+            V = team_vectors(S)
         last = V[V.fbs & V.prediction_ts.eq(V.prediction_ts.max())]
         rows.append(last[cols].dropna().values)
     A = np.vstack(rows)
     cov = np.cov(A, rowvar=False) + 1e-6 * np.eye(A.shape[1])
     w, U = np.linalg.eigh(cov)
-    return U @ np.diag(1.0 / np.sqrt(w)) @ U.T
+    _W_CACHE[key] = U @ np.diag(1.0 / np.sqrt(w)) @ U.T
+    return _W_CACHE[key]
 
 
 def kernel(Q, x, metric, h, Wm=None):
