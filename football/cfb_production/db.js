@@ -114,17 +114,36 @@ function headers(key, extra) {
   return Object.assign({ apikey: key, authorization: 'Bearer ' + key, 'content-type': 'application/json' }, extra || {});
 }
 
+/* PostgREST refuses a bulk body whose objects do not all carry the same keys
+   (PGRST102 "All object keys must match"). A ledger row legitimately omits a
+   key it has no value for (the column then takes its default), so a chunk is
+   split into runs of identical key sets, first appearance first — each row is
+   inserted exactly as it would be alone. (This failure stopped the hourly Model
+   Lab mirror on 2026-09-27: cfb_lab_evaluations rows with and without
+   tie_vs_open / tie_vs_close.) */
+function keyGroups(rows) {
+  const groups = new Map();
+  for (const r of rows) {
+    const sig = Object.keys(r).sort().join('\u0001');
+    if (!groups.has(sig)) groups.set(sig, []);
+    groups.get(sig).push(r);
+  }
+  return Array.from(groups.values());
+}
+
 /* Insert-only mirror: chunked POSTs, ignore-duplicates, classified bounded retry per chunk. Returns rows sent. */
 async function postRows(url, key, table, onConflict, rows, opts) {
   opts = opts || {};
   const size = opts.chunk || DEFAULTS.chunk;
   let sent = 0;
   for (let i = 0; i < rows.length; i += size) {
-    const chunk = rows.slice(i, i + size);
-    await withRetry(() => request(url + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
-      method: 'POST', headers: headers(key, { prefer: 'resolution=ignore-duplicates,return=minimal' }), body: JSON.stringify(chunk) }, opts),
-    Object.assign({ label: table + ' rows ' + i + '-' + (i + chunk.length - 1) }, opts));
-    sent += chunk.length;
+    const slice = rows.slice(i, i + size);
+    for (const chunk of keyGroups(slice)) {
+      await withRetry(() => request(url + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
+        method: 'POST', headers: headers(key, { prefer: 'resolution=ignore-duplicates,return=minimal' }), body: JSON.stringify(chunk) }, opts),
+      Object.assign({ label: table + ' rows ' + i + '-' + (i + slice.length - 1) }, opts));
+      sent += chunk.length;
+    }
   }
   return sent;
 }
@@ -166,4 +185,4 @@ function incidentSink(o) {
   };
 }
 
-module.exports = { withRetry, backoff, request, postRows, rpc, headers, incidentSink, DEFAULTS, sleep };
+module.exports = { withRetry, backoff, request, postRows, keyGroups, rpc, headers, incidentSink, DEFAULTS, sleep };

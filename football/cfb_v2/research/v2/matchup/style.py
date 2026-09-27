@@ -144,12 +144,31 @@ def extract_plays(S):
     return out.reset_index(drop=True)
 
 
+def pbp_signature(S):
+    """The season's PBP file identity (size, mtime): a changed file (a live season's new games, a provider
+    correction) invalidates every cache derived from it."""
+    f = common.data_path('pbp', 'play_by_play_%d.parquet' % S)
+    st = os.stat(f)
+    return {'file': os.path.basename(f), 'size': int(st.st_size), 'mtime_ns': int(st.st_mtime_ns),
+            'style_version': STYLE_VERSION}
+
+
+def _cache_ok(f, S):
+    sf = f.replace('.parquet', '.sig.json')
+    return os.path.exists(f) and os.path.exists(sf) and json.load(open(sf)) == pbp_signature(S)
+
+
+def _cache_write(frame, f, S):
+    frame.to_parquet(f, index=False)
+    common.write_json(f.replace('.parquet', '.sig.json'), pbp_signature(S))
+
+
 def plays(S, refresh=False):
     f = style_dir('cache', 'plays_%d.parquet' % S)
-    if os.path.exists(f) and not refresh:
+    if not refresh and _cache_ok(f, S):
         return pd.read_parquet(f)
     P = extract_plays(S)
-    P.to_parquet(f, index=False)
+    _cache_write(P, f, S)
     return P
 
 
@@ -327,10 +346,10 @@ def team_game_sums(S, P=None, models=None):
 
 def team_games(S, refresh=False):
     f = style_dir('cache', 'team_game_%d.parquet' % S)
-    if os.path.exists(f) and not refresh:
+    if not refresh and _cache_ok(f, S):
         return pd.read_parquet(f)
     T = team_game_sums(S)
-    T.to_parquet(f, index=False)
+    _cache_write(T, f, S)
     return T
 
 

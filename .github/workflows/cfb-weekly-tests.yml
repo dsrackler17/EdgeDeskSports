@@ -20,6 +20,8 @@ on:
       - 'supabase/cfb_weekly.sql'
       - 'supabase/cfb_personnel.sql'
       - 'football/cfb_personnel/**'
+      - 'supabase/cfb_matchup.sql'
+      - 'football/cfb_matchup/**'
       - '.github/workflows/cfb-weekly-tests.yml'
       - '.github/workflows/cfb-v2-shadow.yml'
   push:
@@ -29,6 +31,10 @@ on:
       - 'football/cfb_v2/research/v2/personnel/**'
       - 'football/cfb_weekly/*.js'
       - 'football/cfb_personnel/*.js'
+      - 'football/cfb_matchup/*.js'
+      - 'football/cfb_matchup/fixtures/**'
+      - 'football/cfb_v2/research/v2/matchup/**'
+      - 'supabase/cfb_matchup.sql'
       - 'supabase/cfb_weekly.sql'
       - 'supabase/cfb_personnel.sql'
       - '.github/workflows/cfb-weekly-tests.yml'
@@ -82,6 +88,17 @@ jobs:
           CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
           OMP_NUM_THREADS: '1'
         run: python3 -m v2.personnel.tests_units --fast
+      - name: Scheme and matchup intelligence (style, interactions, residual model, hook; no data needed)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+          OMP_NUM_THREADS: '1'
+        run: python3 -m v2.matchup.tests_matchup --fast
+      - name: The matchup Postgres contract (style, snapshots, similar matchups, events, versions, monitor)
+        env:
+          CFB_MATCHUP_SQL_REQUIRED: '1'
+        run: node football/cfb_matchup/sql.test.js
       - name: The Postgres contract (tables, write-once triggers, exactly-once keys, the poke)
         env:
           CFB_WEEKLY_SQL_REQUIRED: '1'

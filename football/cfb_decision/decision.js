@@ -731,7 +731,8 @@
     var problems = [], t = String(text || '');
     BANNED_ALWAYS.forEach(function (re) { if (re.test(t)) problems.push('forbidden claim: ' + re); });
     if (!d || d.status !== 'BET') BET_ONLY.forEach(function (re) { if (re.test(t)) problems.push('"' + re.source + '" on a ' + (d ? d.status : 'missing') + ' decision'); });
-    if (/value|edge|advantage/i.test(t) && !/\d/.test(t)) problems.push('claims value without a supporting number');
+    /* whole words: "EdgeDesk" is the product's name, not a value claim */
+    if (/\b(value|edge|advantage)\b/i.test(t) && !/\d/.test(t)) problems.push('claims value without a supporting number');
     if (d && d.status !== 'BET' && /\b(bet|play|take)\b.*\bnow\b/i.test(t)) problems.push('tells the reader to bet on a ' + d.status);
     return { ok: problems.length === 0, problems: problems };
   }
