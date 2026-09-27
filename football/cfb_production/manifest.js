@@ -45,8 +45,8 @@ const REPO = C.REPO;
 const OUT = path.join(__dirname, 'manifest.json');
 const CONTENT_EXCLUDE = ['deployed_at', 'git_commit', 'git_dirty', 'git_dirty_paths', 'manifest_id', 'content_sha256', 'recorded_by', 'supersedes', 'reason'];
 
-function git(args, repo) {
-  try { return cp.execFileSync('git', args, { cwd: repo || REPO, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' }).trim(); } catch (e) { return null; }
+function git(args, repo, raw) {
+  try { const o = cp.execFileSync('git', args, { cwd: repo || REPO, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' }); return raw ? o : o.trim(); } catch (e) { return null; }
 }
 function gitBlob(file) {
   return git(['hash-object', file]);
@@ -81,6 +81,7 @@ function artifactFiles(f, repo) {
   add('football/cfb_v2/artifacts/weekly/expected_margin_v1.json');
   if (f.decision_policy) add('football/cfb_v2/artifacts/decision/' + f.decision_policy.dir + '/policy.json');
   if (f.decision_baseline) add('football/cfb_v2/artifacts/decision/' + f.decision_baseline.dir + '/MANIFEST.json');
+  if (f.decision_calibration) ['MANIFEST.json', 'calibration.json'].forEach((x) => add('football/cfb_v2/artifacts/decision/' + f.decision_calibration.version + '/' + x));
   add('football/cfb_decision/decision.js');
   add('football/cfb_p4/params.js');                     // V1: the champion and fallback
   add('football/cfb_production/compatibility.json');
@@ -156,6 +157,7 @@ function build(opts) {
     decision_policy_version: f.decision_policy && f.decision_policy.version,
     decision_policy: f.decision_policy,
     decision_engine_version: f.decision_engine_version,
+    decision_calibration: f.decision_calibration ? { version: f.decision_calibration.version, base_model_version: f.decision_calibration.base_model_version, ok: f.decision_calibration.ok } : null,
     decision_baseline: f.decision_baseline ? { version: f.decision_baseline.version, base_model_version: f.decision_baseline.base_model_version, ok: f.decision_baseline.ok } : null,
     model_lab_versions: { ensemble_version_recorded_by_lab: f.lab_ensemble_version,
       note: f.lab_ensemble_version !== f.ensemble_version ? 'the Model Lab derives ensemble_version from params.js, which carries no stack weights: its value is the hash of {} and identifies no ensemble (VERSIONING.md §5); this manifest hashes models.json stack_weights' : null },
@@ -180,7 +182,7 @@ function build(opts) {
   m.migration_version = mig.version;
   m.migrations = mig.files;
   const head = git(['rev-parse', 'HEAD'], repo);
-  const dirty = (git(['status', '--porcelain'], repo) || '').split('\n').filter(Boolean);
+  const dirty = (git(['status', '--porcelain'], repo, true) || '').split('\n').filter(Boolean);
   m.git_commit = head;
   m.git_dirty = dirty.length > 0;
   m.git_dirty_paths = dirty.slice(0, 50).map((l) => l.slice(3));
@@ -279,11 +281,13 @@ function compatFile(opts) {
     evidence: 'artifact ' + f.artifact.dir + ' verifies against its MANIFEST.json; params.promotion ' + f.promotion_decision
       + ' (backtest gates G1-G7 passed, report in params.js); decision baseline ' + (f.decision_baseline && f.decision_baseline.version)
       + ' was frozen on this model (base_model_version) with policy ' + (f.decision_policy && f.decision_policy.version)
-      + ' (' + (f.decision_policy && f.decision_policy.status) + ', betting disabled). No Model Championship was run.',
+      + ' (' + (f.decision_policy && f.decision_policy.status) + ', betting disabled) and calibration ' + (f.decision_calibration && f.decision_calibration.version)
+      + ' (base ' + (f.decision_calibration && f.decision_calibration.base_model_version) + '). No Model Championship was run.',
     decided_by: opts.decidedBy || 'cfb production hardening (football/cfb_production/manifest.js --write-compat)',
     decided_at: at });
   if (!f.artifact.ok) throw new Error('refusing to pin an artifact that does not verify: ' + f.artifact.reason);
   if (f.decision_baseline && !f.decision_baseline.ok) throw new Error('refusing to pin a decision baseline whose files do not verify');
+  if (f.decision_calibration && !f.decision_calibration.ok) throw new Error('refusing to pin a decision calibration whose files do not verify');
   return {
     schema: 'cfb_compatibility_matrix_v1',
     rule: 'An inference, a calibration, a decision policy or a market engine runs only as an explicitly COMPATIBLE tuple pinned here. Anything else fails (football/cfb_production/compat.js check()).',
