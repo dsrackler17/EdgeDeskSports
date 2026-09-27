@@ -49,6 +49,14 @@ const SCHEMA = 'cfb_canonical_projections_v1';
 const HORIZON_H = 24 * 10;
 const OFFICIAL_POLICY = 'cfb_decision_policy_v1';
 const OFFICIAL_ENGINE = 'cfb_decision_engine_v1';
+/* the governed policy's own betting switch: an official BET is published only when
+   it is on (audit F-30). An unreadable policy counts as off. */
+const POLICY_BET_ENABLED = (function () {
+  try {
+    const p = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'cfb_v2', 'artifacts', 'decision', OFFICIAL_POLICY, 'policy.json'), 'utf8'));
+    return p.bet_enabled === true;
+  } catch (e) { return false; }
+})();
 /* decideGame's summary order (football/cfb_decision/decision.js): the game's
    status is its best book's, BET > RESEARCH > LEAN > PASS > NO_BET */
 const ORDER = { BET: 5, RESEARCH: 4, LEAN: 3, PASS: 2, NO_BET: 1 };
@@ -84,6 +92,27 @@ function officialDecision(rows, asOfMs) {
     reason_codes: top.reason_codes, books: per.length,
     closing_line_tendency: bc || top.p_positive_clv != null ? { label: bc ? bc.label : null, p_positive_clv: bc ? bc.p_positive_clv : top.p_positive_clv, note: TENDENCY_NOTE } : null,
   };
+}
+
+/* what is published as THE decision of a game:
+   - level 4 (nothing to show): UNAVAILABLE;
+   - level 3 (the V1 number is the fallback): no governed decision, since the decision
+     was made from a V2.1 projection the page is not showing (audit F-31);
+   - a decision that breaks the governed policy (a BET while its betting switch is off,
+     a BET without side, line and price): refused, NO_DECISION with the alarm, never
+     published as a BET (audit F-30; health.js raises the same row as CRITICAL). */
+function officialFor(off, resolved, betEnabled) {
+  if (resolved.level === 4) return { status: 'UNAVAILABLE', basis: OFFICIAL_POLICY, reason: resolved.reason };
+  if (resolved.level === 3) {
+    return { status: 'NO_DECISION', basis: OFFICIAL_POLICY, reason: 'the V2.1 projection is unavailable and the V1 number shown is the fallback (level 3): no governed decision is published beside it',
+      withheld_decision_id: off.decision_id || null };
+  }
+  const bad = N.policyConsistency({ status: off.status, side: off.side, recommended_line: off.line_for_side, recommended_price: off.price }, { bet_enabled: betEnabled });
+  if (bad.length) {
+    return { status: 'NO_DECISION', basis: OFFICIAL_POLICY, alarm: bad, refused_decision_id: off.decision_id || null,
+      reason: 'a ' + off.status + ' decision that breaks the governed policy (' + bad.join(', ') + ') was refused, not published' };
+  }
+  return off;
 }
 
 function build(opts) {
@@ -152,7 +181,7 @@ function build(opts) {
     const resolved = CANON.resolve(snap, v);
     if (dupRow) resolved.reason = 'two different V2.1 rows for this game in current.json: neither is used';
     const off = officialDecision(decByGame.get(gid) || [], asOfMs);
-    const official = resolved.level === 4 ? { status: 'UNAVAILABLE', basis: OFFICIAL_POLICY, reason: resolved.reason } : off;
+    const official = officialFor(off, resolved, opts.bet_enabled != null ? !!opts.bet_enabled : POLICY_BET_ENABLED);
     const research = L2 ? { status: L2.decision_class, engine_status: L2.status, basis: L2.decision_source && /^engine:/.test(L2.decision_source) ? RESEARCH_BASIS : 'the Model Lab\'s ' + (L2.decision_source || 'rule') + ' (research, not the governed policy)',
       stage8_ev_strength: L2.edge_quality, stage8_ev_strength_note: 'engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality',
       prediction_id: L2.prediction_id, checkpoint_type: L2.checkpoint_type, prediction_ts: L2.prediction_ts, row_hash: L2.row_hash,
@@ -209,7 +238,7 @@ function build(opts) {
   return out;
 }
 
-module.exports = { build, officialDecision, OUT, TRACES_OUT, SCHEMA, ORDER, RESEARCH_BASIS, TENDENCY_NOTE };
+module.exports = { officialFor, build, officialDecision, OUT, TRACES_OUT, SCHEMA, ORDER, RESEARCH_BASIS, TENDENCY_NOTE };
 
 if (require.main === module) {
   const a = process.argv.slice(2);

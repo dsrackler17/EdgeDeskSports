@@ -53614,7 +53614,7 @@ function fbV2ShadowHTML(u,p){
   if(od.closing_line_tendency&&od.closing_line_tendency.label)
     L+='<div class="gd-line"><span class="l">Closing-line tendency</span><span class="v mut">'+fbEsc(od.closing_line_tendency.label)+' — ranks how the close tends to move, not bet quality</span></div>';
   if(rs)L+='<div class="gd-line"><span class="l">Research only</span><span class="v mut">'+fbEsc(rs.status||'—')+' — the stage-8 rule, not the governed decision</span></div>';
-  L+='<div class="gd-modelnote">Research, not picks. Probabilities are estimates with measured error; nothing here is certain. V2 beats V1 on the 2024–25 data and still trails the opening and closing lines; betting is disabled.</div>';
+  L+='<div class="gd-modelnote">Research, not picks. Probabilities are estimates with measured error; nothing here is certain. V2 was more accurate than V1 on 2024–25 data that informed its development (inspected, not an untouched holdout) and still trails the opening and closing lines; betting is disabled.</div>';
   return L;
 }
 /* THE EVIDENCE PACKET for a 7+ gap: what EdgeDesk says, what the market

@@ -89,6 +89,24 @@ const AS_OF = '2026-09-28T12:00:00.000Z';
     { engine_role: 'CHALLENGER', engine_version: 'cfb_decision_engine_v1', policy_version: 'cfb_decision_policy_v1', status: 'PASS', book: 'a', observed_at: '2026-09-28T10:00:00Z', reason_codes: ['PASS_PRICE'] }], Date.parse(AS_OF));
   chk('F-22: the stored official decision comes from the governed policy (CHALLENGER rows), never the stage-8 CURRENT rows', official.status === 'PASS' && /cfb_decision_policy_v1/.test(official.basis));
   chk('F-22: with no governed decision the stored status is NO_DECISION, not the research status', PR.officialDecision([{ engine_role: 'CURRENT', status: 'LEAN', observed_at: AS_OF }], Date.parse(AS_OF)).status === 'NO_DECISION');
+  /* audit F-30 / F-31: what is published as THE decision (officialFor) */
+  const betRow = PR.officialDecision([{ engine_role: 'CHALLENGER', engine_version: 'cfb_decision_engine_v1', policy_version: 'cfb_decision_policy_v1', status: 'BET',
+    side: 'HOME', line_for_side: -3.5, price: -110, book: 'a', decision_id: 'd-bet', observed_at: '2026-09-28T10:00:00Z' }], Date.parse(AS_OF));
+  const lv = (level) => ({ level, reason: 'r' });
+  const refusedBet = PR.officialFor(betRow, lv(1), false);
+  chk('F-30: a BET row while the governed policy has betting off is refused (NO_DECISION with the alarm), never published',
+    betRow.status === 'BET' && refusedBet.status === 'NO_DECISION' && refusedBet.alarm.indexOf('BET_WHILE_BETTING_DISABLED') >= 0 && refusedBet.refused_decision_id === 'd-bet', refusedBet);
+  chk('F-30: a BET without side, line and price is refused even with betting on',
+    PR.officialFor(Object.assign({}, betRow, { price: null }), lv(1), true).status === 'NO_DECISION');
+  chk('F-30: a complete BET under a policy with betting on is published as it is', PR.officialFor(betRow, lv(1), true).status === 'BET');
+  chk('F-30: the committed policy has betting off, so build() refuses a BET row by default',
+    PR.build({ now: AS_OF, decisions: [], predictions: [] }) && PR.officialFor(betRow, lv(2), undefined).status === 'NO_DECISION');
+  const lean = Object.assign({}, betRow, { status: 'LEAN' });
+  chk('F-30: a governed LEAN passes through unchanged', PR.officialFor(lean, lv(2), false) === lean);
+  const atFallback = PR.officialFor(lean, lv(3), false);
+  chk('F-31: at level 3 (the V1 number is the fallback) no decision made from V2.1 is published beside it',
+    atFallback.status === 'NO_DECISION' && /level 3/.test(atFallback.reason) && atFallback.withheld_decision_id === 'd-bet', atFallback);
+  chk('F-31: level 4 stays UNAVAILABLE', PR.officialFor(lean, lv(4), false).status === 'UNAVAILABLE');
   const labPage = read('admin/cfb-lab/index.html');
   chk('F-22: the Lab page labels its classes research (never "Decision")', /'Research class','Research position'/.test(labPage) && !/'Gap','Decision','Position'/.test(labPage));
   chk('F-23: no display calls the stage-8 EV strength or the P(positive CLV) tier "edge quality" or "bet quality"',

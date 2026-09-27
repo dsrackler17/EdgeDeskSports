@@ -65,6 +65,14 @@ chk('F-22: a stage-8 engine.decide() output passed as the decision is not govern
   decision: { layer: 'market_decision_projection', status: 'LEAN', side: 'HOME' } }).decision.status === 'NO BET');
 chk('F-22: a decision.js output under policy v1 is governed', X.cfbFacts({ pure: { home: 'Texas', away: 'Oklahoma', projected_margin: 7, home_win_prob: 0.68 },
   decision: { engine: 'edgedesk_cfb_decision', engine_version: 'cfb_decision_engine_v1', policy_version: 'cfb_decision_policy_v1', status: 'LEAN', side: 'HOME', line_for_side: -3.5, reason_codes: ['NO_BET_BETTING_DISABLED'] } }).decision.status === 'LEAN');
+/* audit F-30: a governed BET crosses only when the decision says betting is on */
+const betOff = X.cfbFacts(snapshot(), OFF('BET'));
+chk('F-30: a governed BET while betting is disabled is refused: the facts say NO BET and why',
+  betOff.decision.status === 'NO BET' && betOff.decision.refused === 'BET_WHILE_BETTING_DISABLED' && /betting is disabled/.test(betOff.decision.reason)
+  && betOff.decision.bet_enabled === false, betOff.decision);
+chk('F-30: the refused case still renders text that passes its own audit', X.auditExplanation(X.render(betOff), betOff).ok === true, X.auditExplanation(X.render(betOff), betOff));
+chk('F-30: the prompt never hands the model a BET that betting-disabled refused', !/official decision is BET/.test(X.buildPrompt(betOff).system));
+chk('F-30: a governed BET that carries bet_enabled crosses as BET', X.cfbFacts(snapshot(), OFF('BET', { bet_enabled: true })).decision.status === 'BET');
 /* the research terminal's page status crosses as a RESEARCH status, never as a decision; its BET never crosses ungoverned */
 const termSrc = (st) => ({ pure: { home: 'Texas', away: 'Oklahoma', projected_margin: 7, home_win_prob: 0.68 }, decision: { status: st, side: 'HOME', reasons: ['a named reason'], bet_enabled: false } });
 const tw = X.cfbFacts(termSrc('WAIT'));

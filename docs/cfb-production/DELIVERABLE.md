@@ -614,3 +614,12 @@ All of these are green:
 | `gate.js start --job cfb_lab_hourly` (no `SB_URL`) | proceed, decisions true |
 
 The Python suites were run with empty temporary `CFB_V2_DATA` and `CFB_V2_OUT`.
+
+## After the hostile audit (phase 3)
+The final audit classified the system **B, approved for shadow mode only** (`docs/cfb-audit/FINDINGS.md`, phase 3). It found two medium defects in the stored projections, both now fixed:
+- **F-30:** a BET row that breaks the governed policy is refused and never published: NO_DECISION with the alarm. This is done in `projections.officialFor()`, and the AI facts (`cfbFacts`) let a BET through only when the decision says betting is on.
+- **F-31:** at fallback level 3, no official decision is published beside V1's number.
+
+Tests: `canonical.test.js` 124, `explain_guard.test.js` 52.
+
+F-32 to F-37 are LOW and open. Each is listed there with its reproduction.

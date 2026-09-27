@@ -25805,6 +25805,10 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     var pure = canon ? Object.assign({}, canon.projection, { home: canon.home, away: canon.away, kickoff: canon.kickoff, neutral_site: canon.neutral_site,
       week: canon.week, season: canon.season, model_version: canon.model_version }) : (src.pure || {});
     var off = governed(official) || governed(src.official_decision) || governed(src.decision);
+    /* a BET crosses only when the decision itself says betting is on (audit F-30): the
+       governed policy has it off, so a BET row here is a corrupt or foreign row */
+    var refused = off && off.status === 'BET' && off.bet_enabled !== true;
+    if (refused) off = null;
     var rs = off ? null : researchStatus(src.decision);
     var f = { version: VERSION, game: {}, model: {}, market: null, decision: {}, qb: {}, data_quality: {}, degraded: [], allowed_metrics: {} };
     f.game = { home: row ? row.home_team : (pure.home || null), away: row ? row.away_team : (pure.away || null), kickoff: row ? row.kickoff_ts : (pure.kickoff || null),
@@ -25829,7 +25833,9 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       : rs ? { status: RESEARCH_STATUS[rs.status], kind: 'RESEARCH_STATUS', side: rs.side || null, line: null, price: null,
         cover_probability: r(num(rs.cover_probability), 3), reason: (rs.reasons || [])[0] || rs.reason || null, bet_enabled: false, policy: OFFICIAL_POLICY }
       : { status: 'NO BET', kind: 'OFFICIAL', side: null, line: null, price: null, cover_probability: null,
-        reason: 'no governed decision (' + OFFICIAL_POLICY + ') for this game', bet_enabled: false, policy: OFFICIAL_POLICY };
+        reason: refused ? 'a wager status was refused because betting is disabled under ' + OFFICIAL_POLICY : 'no governed decision (' + OFFICIAL_POLICY + ') for this game',
+        refused: refused ? 'BET_WHILE_BETTING_DISABLED' : undefined,
+        bet_enabled: false, policy: OFFICIAL_POLICY };
     var qbx = (row && row.inputs_ref && row.inputs_ref.qb_expected) || src.qb || {};
     f.qb = { home: qbStatus(qbx.home), away: qbStatus(qbx.away) };
     var dq = row ? { status: row.data_quality_status, issues: (row.data_quality_issues || []).map(function (c) { return c.check + ':' + c.status; }) } : (src.data_quality || { status: null, issues: [] });
