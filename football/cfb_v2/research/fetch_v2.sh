@@ -19,10 +19,15 @@
 # Idempotent: an existing non-empty file is never re-downloaded, except the
 # CURRENT season's files, which change daily and are always refreshed.
 set -uo pipefail
-D="${1:-data}"; FIRST="${2:-2009}"; LAST="${3:-$(date -u +%Y)}"
+# The football SEASON, not the calendar year: January games (bowls, the
+# playoff) belong to the season that began the previous August. Using
+# `date +%Y` stopped refreshing the live season's files every January.
+MONTH=$(date -u +%-m); YEAR=$(date -u +%Y)
+SEASON_NOW=$(( MONTH <= 2 ? YEAR - 1 : YEAR ))
+D="${1:-data}"; FIRST="${2:-2009}"; LAST="${3:-${CFB_V2_SEASON:-$SEASON_NOW}}"
 REL=https://github.com/sportsdataverse/sportsdataverse-data/releases/download
 RAW=https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main
-CUR=$(date -u +%Y)
+CUR="${CFB_V2_SEASON:-$SEASON_NOW}"         # the live season's files are always refreshed
 mkdir -p "$D"/{pbp,sched,retprod,talent,mline,betting,teaminfo}
 
 get(){  # get <url> <dest> <season>

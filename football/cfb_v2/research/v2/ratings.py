@@ -60,11 +60,20 @@ class Design:
 
 
 def solve(design, off_ids, def_ids, H, y, w, prior_o, prior_d, tau2_o, tau2_d,
-          h_prior=(0.0, 1.0), prior_weight=1.0, want_var=False):
+          h_prior=(0.0, 1.0), prior_weight=1.0, want_var=False, diag=None, x0=None,
+          system_out=None):
     """Weighted ridge / Gaussian posterior. Returns (x, var or None).
 
     w: precision weights per observation (already 1/Var(e) * recency).
-    prior_weight: multiplies every team prior precision (recency horizon)."""
+    prior_weight: multiplies every team prior precision (recency horizon).
+
+    Optional instrumentation (default off; x and var are computed by the same
+    expressions whether or not it is on, so every output is unchanged):
+      diag        a list: one convergence record is appended (solve_diagnostics)
+      x0          start of the conjugate-gradient cross-check (last week's
+                  solution); default the prior means
+      system_out  a dict: receives the normal equations A, b, the solution x,
+                  the full inverse (want_var) and the prior mean/precision"""
     from scipy import sparse
     D = design
     P = D.p
@@ -93,13 +102,120 @@ def solve(design, off_ids, def_ids, H, y, w, prior_o, prior_d, tau2_o, tau2_d,
     b[io_] += prec_o * po
     A[id_, id_] += prec_d
     b[id_] += prec_d * pdm
+    if diag is None and system_out is None:
+        if want_var:
+            try:
+                Ainv = np.linalg.inv(A)
+                return Ainv @ b, np.diag(Ainv).copy()
+            except np.linalg.LinAlgError:
+                return np.linalg.solve(A, b), np.full(P, np.nan)
+        return np.linalg.solve(A, b), None
+    # instrumented path: the same arithmetic as above, then the records
+    Ainv = None
     if want_var:
         try:
             Ainv = np.linalg.inv(A)
-            return Ainv @ b, np.diag(Ainv).copy()
+            x, var = Ainv @ b, np.diag(Ainv).copy()
         except np.linalg.LinAlgError:
-            return np.linalg.solve(A, b), np.full(P, np.nan)
-    return np.linalg.solve(A, b), None
+            Ainv = None
+            x, var = np.linalg.solve(A, b), np.full(P, np.nan)
+    else:
+        x, var = np.linalg.solve(A, b), None
+    prior_mean = np.concatenate([[0.0, float(h_prior[0])], po, pdm])
+    if diag is not None:
+        start = prior_mean if x0 is None else np.asarray(x0, dtype=float)
+        rec = solve_diagnostics(A, b, x, start, prior_mean)
+        rec['cg_start'] = 'prior_means' if x0 is None else 'prev_week'
+        diag.append(rec)
+    if system_out is not None:
+        system_out.update(A=A, b=b, x=x, Ainv=Ainv, prior_mean=prior_mean,
+                          prior_prec=np.concatenate([[1e-6, 1.0 / h_prior[1]], prec_o, prec_d]))
+    return x, var
+
+
+# convergence record thresholds (docs/cfb-weekly/METHODS_STATE.md)
+CG_TOL = 1e-10            # CG stops at this residual, relative to the evidence (see below)
+RESIDUAL_TOL = 1e-9       # the direct solution's relative residual ||Ax - b|| / ||b||
+DELTA_TOL = 1e-6          # max |x_cg - x_direct|, in rating units
+CG_REF_FLOOR = 1e-4       # the CG reference never falls below 1e-4 ||S b|| (round-off)
+
+
+def conjugate_gradient(A, b, x0, ref, tol=CG_TOL, maxiter=None):
+    """Jacobi-preconditioned conjugate gradient on A x = b (A symmetric
+    positive definite), written as plain CG on the symmetrically scaled
+    system (S A S) z = S b, S = diag(A)^-1/2, x = S z.
+
+    Stopping rule: ||S (b - A x)|| <= tol * ||S ref||, ref = b - A m with m the
+    prior means, i.e. the residual relative to the EVIDENCE the data add to
+    the prior (CG on the deviation from the prior). Relative to ||b|| the
+    rule would be meaningless for metrics whose FBS prior variance sits at its
+    1.5e-9 floor: b then carries 1e9 x prior mean on those rows and the
+    residual of every other row is invisible beside it. The reference is
+    floored at CG_REF_FLOOR x ||S b|| so the target stays above round-off when
+    the data barely move the prior (a season's first few games).
+    Deterministic: fixed order of operations, no randomness.
+    Returns (x, iterations, converged, relative residual at stop, reference used)."""
+    d = np.sqrt(np.diag(A))
+    s = 1.0 / d
+    As = A * s[:, None] * s[None, :]
+    bs = b * s
+    z = np.asarray(x0, dtype=float) * d
+    r = bs - As @ z
+    nb = float(np.linalg.norm(bs))
+    nref = float(np.linalg.norm(ref * s))
+    kind = 'evidence ||S(b - A m)||'
+    if nref < CG_REF_FLOOR * nb or nref == 0.0:
+        nref, kind = (CG_REF_FLOOR * nb) or 1.0, 'floor %.0e ||S b||' % CG_REF_FLOOR
+    p = r.copy()
+    rr = float(r @ r)
+    maxiter = maxiter or 20 * len(b)
+    it = 0
+    while np.sqrt(rr) > tol * nref and it < maxiter:
+        Ap = As @ p
+        alpha = rr / float(p @ Ap)
+        z = z + alpha * p
+        r = r - alpha * Ap
+        rr_new = float(r @ r)
+        p = r + (rr_new / rr) * p
+        rr = rr_new
+        it += 1
+    rel = float(np.linalg.norm(bs - As @ z)) / nref
+    return z * s, it, bool(rel <= tol), rel, kind
+
+
+def solve_diagnostics(A, b, x, x_start, prior_mean):
+    """Convergence record of one solve: residual, conditioning, and an
+    iterative cross-check (CG from x_start) against the direct solution."""
+    nb = float(np.linalg.norm(b)) or 1.0
+    rel_res = float(np.linalg.norm(A @ x - b)) / nb
+    cond = float(np.linalg.cond(A))
+    d = np.sqrt(np.diag(A))
+    cond_scaled = float(np.linalg.cond(A / d[:, None] / d[None, :]))
+    xc, it, ok, rel_cg, ref_kind = conjugate_gradient(A, b, x_start, b - A @ prior_mean)
+    delta = float(np.max(np.abs(xc - x))) if len(x) else 0.0
+    return {'n_params': int(len(b)), 'solved': True, 'rel_residual': rel_res,
+            'residual_threshold': RESIDUAL_TOL, 'cond': cond, 'cond_scaled': cond_scaled,
+            'cg_method': 'jacobi_pcg', 'cg_tol': CG_TOL, 'cg_tol_reference': ref_kind,
+            'cg_iters': int(it), 'cg_converged': ok, 'cg_rel_residual_evidence': rel_cg,
+            'cg_rel_residual': float(np.linalg.norm(A @ xc - b)) / nb,
+            'delta_max_abs': delta, 'delta_threshold': DELTA_TOL,
+            'converged': bool(rel_res < RESIDUAL_TOL and ok and delta < DELTA_TOL)}
+
+
+def start_vector(design, x0, prior_o, prior_d, h_prior):
+    """A full parameter vector from a {'mu', 'h', 'off', 'def'} solution; a
+    missing or non-finite entry falls back to its prior mean (mu: 0)."""
+    def pick(v, fallback):
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            return fallback
+        return v if np.isfinite(v) else fallback
+    off, dfn = x0.get('off', {}), x0.get('def', {})
+    return np.concatenate([
+        [pick(x0.get('mu'), 0.0), pick(x0.get('h'), float(h_prior[0]))],
+        [pick(off.get(t), prior_o[t][0]) for t in design.teams],
+        [pick(dfn.get(t), prior_d[t][0]) for t in design.teams]])
 
 
 def metric_obs(tg, num, den, kind):
@@ -119,12 +235,19 @@ def obs_weights(n, s2_play, s2_game):
 
 
 def fit_metric(tg, metric, spec, varcomp, prior, horizon='season', T=None,
-               halflife_weeks=None, want_var=False):
+               halflife_weeks=None, want_var=False, diag=None, x0=None, system_out=None):
     """Fit one metric on the rows in `tg` (all kicked off before T).
 
     tg columns: team_id, opp_id, H, kickoff_ts, + metric num/den.
     prior: dict with 'o' {team:(mean,)}, 'd', 'tau2_o' {team:var}, 'tau2_d', 'h' (mean,var).
-    Returns DataFrame indexed by team: off, def, off_var, def_var, mu, h, n_obs, n_eff."""
+    Returns DataFrame indexed by team: off, def, off_var, def_var, mu, h, n_obs, n_eff.
+
+    Optional, default off (outputs unchanged): `diag` (list) receives this
+    solve's convergence record, tagged with metric/horizon; `x0` is the CG
+    start as {'mu', 'h', 'off': {team: v}, 'def': {team: v}} (last week's
+    solution; a team or value it lacks starts at its prior mean);
+    `system_out` (dict) receives the normal equations and the observation
+    rows (see solve)."""
     num, den, kind = spec
     y, n, ok = metric_obs(tg, num, den, kind)
     sub = tg[ok]
@@ -149,8 +272,20 @@ def fit_metric(tg, metric, spec, varcomp, prior, horizon='season', T=None,
             tau_d[t] = prior['tau2_default_d']
     po = {t: (prior['o'].get(t, (prior.get('default_o', 0.0),))[0],) for t in teams}
     pd_ = {t: (prior['d'].get(t, (prior.get('default_d', 0.0),))[0],) for t in teams}
-    x, var = solve(D, sub.team_id.values, sub.opp_id.values, sub.H.values, y.values, w,
-                   po, pd_, tau_o, tau_d, h_prior=prior['h'], prior_weight=pw, want_var=want_var)
+    if diag is None and system_out is None:
+        x, var = solve(D, sub.team_id.values, sub.opp_id.values, sub.H.values, y.values, w,
+                       po, pd_, tau_o, tau_d, h_prior=prior['h'], prior_weight=pw, want_var=want_var)
+    else:
+        xs = None if x0 is None else start_vector(D, x0, po, pd_, prior['h'])
+        x, var = solve(D, sub.team_id.values, sub.opp_id.values, sub.H.values, y.values, w,
+                       po, pd_, tau_o, tau_d, h_prior=prior['h'], prior_weight=pw, want_var=want_var,
+                       diag=diag, x0=xs, system_out=system_out)
+        if diag is not None:
+            diag[-1].update(metric=metric, horizon=horizon, n_obs=int(len(y)))
+        if system_out is not None:
+            system_out.update(design=D, rows=sub.index.values, y=y.values.astype(float),
+                              n=n.values.astype(float), w=np.asarray(w, dtype=float),
+                              prior_weight=pw, horizon=horizon, metric=metric)
     mu, h = x[0], x[1]
     out = pd.DataFrame(index=pd.Index(teams, name='team_id'))
     out['off'] = [x[D.o(t)] for t in teams]

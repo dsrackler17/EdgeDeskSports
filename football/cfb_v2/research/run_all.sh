@@ -14,7 +14,8 @@ MODE="${1:-live}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 export CFB_V2_DATA="${CFB_V2_DATA:-$HERE/data}" CFB_V2_OUT="${CFB_V2_OUT:-$HERE/out}"
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
-SEASON="${CFB_V2_SEASON:-$(date -u +%Y)}"
+# the football season (January belongs to the season that began in August)
+SEASON="${CFB_V2_SEASON:-$(( $(date -u +%-m) <= 2 ? $(date -u +%Y) - 1 : $(date -u +%Y) ))}"
 cd "$HERE"
 
 bash fetch_v2.sh "$CFB_V2_DATA" 2009 "$SEASON"

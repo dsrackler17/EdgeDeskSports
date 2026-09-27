@@ -1,0 +1,10 @@
+# The exact versions V2.1 and the weekly engine were validated with (Python 3.11).
+# Pinned because a LightGBM or pandas upgrade can change a projection: an
+# upgrade is a governed change, made here and verified by the replay test
+# (python3 -m v2.weekly.replay) before it reaches production.
+pandas==3.0.6
+numpy==2.4.6
+pyarrow==25.0.1
+scipy==1.17.1
+scikit-learn==1.9.1
+lightgbm==4.7.0

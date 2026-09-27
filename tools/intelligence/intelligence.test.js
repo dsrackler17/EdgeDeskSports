@@ -1581,12 +1581,20 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     };
 
     const good = runCard(linesFor(1.5, false));
+    /* THE SAME MAGIC-CONSTANT TRAP AS THE COUNT CAPS ABOVE. `lined > 50` held
+       while the rolling card carried 60+ lined games and failed the day it
+       carried 60 games in all (48 lined: a fifth carry no line by
+       construction). How many games a Saturday has is the calendar's
+       business; what this guards is that EVERY game the fixture gives a line
+       reads as lined, which is exact arithmetic on the card itself. */
+    const expectLined = Object.keys(linesFor(1.5, false)).length;
     eq('every game on the card is accounted for', good.lined + good.none, slate.games.length);
-    chk('most of the card carries a market NUMBER, as the board shows', good.lined > 50, good);
+    chk('most of the card carries a market NUMBER, as the board shows',
+      good.lined === expectLined && good.lined > slate.games.length / 2, Object.assign({ expectLined }, good));
     eq('and none of it carries an executable price without a captured quote', good.priced, 0);
     eq('a correctly oriented card produces no convention faults', good.faults, 0);
     chk('a two-sided consensus moneyline IS de-vigged, because both sides are real',
-      good.devig === good.lined && good.devig > 50, good);
+      good.devig === good.lined && good.devig === expectLined, good);
     eq('and NO spread price is ever mirrored from the other side of a handicap', good.mirrored, 0);
 
     /* The same card stored the wrong way round. The guard must catch the rows

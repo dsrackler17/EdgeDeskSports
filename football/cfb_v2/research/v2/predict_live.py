@@ -228,8 +228,18 @@ def candidate_projections(X, cid='cfb_v2_candidate_001'):
     A = json.load(open(os.path.join(d, 'models.json')))
     gbm = lgb.Booster(model_file=os.path.join(d, A['submodels']['D_gbm']['file']))
     D = predict(X, A, gbm)
-    return {int(g): {'ens_pred': round(float(e), 3), 'sigma': round(float(sg), 3), 'model_version': A['model_version']}
-            for g, e, sg in zip(D.game_id, D.ens_pred, D.sigma)}
+    # Its submodel predictions and their spread travel with it, so the CFB
+    # Model Lab can score the candidate's components the way it scores the
+    # live model's (instrumentation only: nothing here changes a prediction).
+    ks = [k for k in A['stack_weights'] if ('pred_' + k) in D.columns]
+    out = {}
+    for i in D.index:
+        r = D.loc[i]
+        out[int(r['game_id'])] = {'ens_pred': round(float(r['ens_pred']), 3), 'sigma': round(float(r['sigma']), 3),
+                                  'model_version': A['model_version'],
+                                  'components': {k: round(float(r['pred_' + k]), 3) for k in ks},
+                                  'ens_sd': round(float(r['ens_sd']), 3)}
+    return out
 
 
 def freeze(rows, season, now, version, base=None):
@@ -292,9 +302,20 @@ def main():
     now = pd.Timestamp(a.now) if a.now else pd.Timestamp.now(tz='UTC')
     if now.tzinfo is None:
         now = now.tz_localize('UTC')
-    A, gbm = load_artifacts(a.version)
-    X = pd.read_parquet(common.out_path('stage5', 'cfb_model_training_snapshots.parquet'))
-    X = X[X.season.eq(a.season)]
+    rows = build_rows(a.season, now, a.version)
+    log = publish(rows, a.season, now, a.version, replay_history=a.replay_history)
+    print('[live] %d rows (%d upcoming); freeze log %s' % (len(rows), log['upcoming'], log['freeze']))
+
+
+def build_rows(season, now, version, X=None, A=None, gbm=None):
+    """Every row of the season scored with the frozen artifact, with its shadow
+    context. Pure: nothing is written (the weekly engine gates these rows
+    before `publish`)."""
+    if A is None or gbm is None:
+        A, gbm = load_artifacts(version)
+    if X is None:
+        X = pd.read_parquet(common.out_path('stage5', 'cfb_model_training_snapshots.parquet'))
+        X = X[X.season.eq(season)]
     D = predict(X, A, gbm)
     rows = [row_json(r) for _, r in D.iterrows()]
     # shadow context, frozen WITH the row: V1 (the champion), the frozen
@@ -303,7 +324,7 @@ def main():
     v1 = v1_projections()
     pr = pregame_reports()
     c1 = candidate_projections(X)
-    mk = SH.market_now(a.season) if os.path.exists(common.out_path('stage2', 'market.parquet')) else {}
+    mk = SH.market_now(season) if os.path.exists(common.out_path('stage2', 'market.parquet')) else {}
     for r in rows:
         gid = r['game_id']
         m = mk.get(gid)
@@ -315,27 +336,32 @@ def main():
                        'captured_at': common.iso(now.to_pydatetime()),
                        'note': 'captured by the run that froze this row (at or after the freeze time); '
                                'BOOK home lines (- = home favoured); V1 and candidate 001 are home margins'}
-    log = freeze(rows, a.season, now, a.version)
+    return rows
+
+
+def publish(rows, season, now, version, replay_history=False, base=None, current_path=None):
+    """Freeze what is due (write-once) and write current.json."""
+    log = freeze(rows, season, now, version, base=base)
     horizon = now + pd.Timedelta(days=10)
     upcoming = [r for r in rows if now < pd.Timestamp(r['kickoff']) <= horizon]
     for r in upcoming:
         r['state'] = 'FROZEN' if pd.Timestamp(r['prediction_ts']) <= now else 'PROVISIONAL'
-    cur = {'model_version': a.version, 'generated_at': common.iso(now.to_pydatetime()),
-           'mode': 'shadow', 'champion': 'V1', 'season': a.season,
+    cur = {'model_version': version, 'generated_at': common.iso(now.to_pydatetime()),
+           'mode': 'shadow', 'champion': 'V1', 'season': season,
            'note': 'V2 runs in SHADOW beside V1. Pure projections only; the market decision is computed '
                    'at read time by engine.decide() from live prices.',
            'rows': sorted(({**r, 'shadow': {k: v for k, v in (r.get('shadow') or {}).items() if k != 'pregame_reports'}}
                            for r in upcoming), key=lambda r: (r['kickoff'], r['game_id']))}
-    with open(os.path.join(REPO_V2, 'current.json'), 'w') as fh:
+    with open(current_path or os.path.join(REPO_V2, 'current.json'), 'w') as fh:
         json.dump(cur, fh, indent=1, sort_keys=True)
-    if a.replay_history:
+    if replay_history:
         past = [dict(r, state='REPLAY') for r in rows if pd.Timestamp(r['kickoff']) <= now]
-        with open(os.path.join(REPO_V2, 'snapshots', str(a.season), 'replay_to_date.json'), 'w') as fh:
-            json.dump({'model_version': a.version, 'generated_at': common.iso(now.to_pydatetime()),
+        with open(os.path.join(base or os.path.join(REPO_V2, 'snapshots'), str(season), 'replay_to_date.json'), 'w') as fh:
+            json.dump({'model_version': version, 'generated_at': common.iso(now.to_pydatetime()),
                        'label': 'REPLAY: point-in-time features and models trained through %d, generated '
                                 'after these games were played. Evidence of method, not of live foresight.'
-                                % (a.season - 1), 'rows': past}, fh, indent=1, sort_keys=True)
-    print('[live] %d rows (%d upcoming); freeze log %s' % (len(rows), len(upcoming), log))
+                                % (season - 1), 'rows': past}, fh, indent=1, sort_keys=True)
+    return {'freeze': log, 'upcoming': len(upcoming), 'rows': len(rows)}
 
 
 if __name__ == '__main__':

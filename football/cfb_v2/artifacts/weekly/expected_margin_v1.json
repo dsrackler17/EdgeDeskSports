@@ -1,0 +1,109 @@
+{
+ "artifact_version": "cfb_expected_margin_v1",
+ "constants": {
+  "explosive_dep_half_plays": 215.047777861,
+  "explosive_dep_k": 644.266115934,
+  "explosive_dep_league": 0.451078008653,
+  "explosive_dep_split_half_r": 0.250255208736,
+  "fumble_lost_share": 0.517491354084,
+  "fumbles": 15036,
+  "fumbles_lost": 7781,
+  "int_rate_per_dropback": 0.0248925813765,
+  "int_shrinkage_k": 1208.62101684,
+  "int_team_rate_sd_true": 0.00448142494325,
+  "points_per_turnover": 4.15736080529,
+  "turnover_plays": 17418
+ },
+ "model": {
+  "coef": {
+   "em_drive_epa": 4.69031811286,
+   "em_epa": 21.6879784192,
+   "em_expl": -13.272597304,
+   "em_havoc": 0.924508785855,
+   "em_so_rate": 2.5104917383,
+   "em_sr": 4.34429544511,
+   "em_start_fp": -0.353265694473
+  },
+  "feature_definitions": {
+   "em_drive_epa": "home off_drive_epa minus away off_drive_epa, non-garbage (V2 garbage weight 0)",
+   "em_epa": "home off_epa_pp minus away off_epa_pp, non-garbage (V2 garbage weight 0)",
+   "em_expl": "home off_expl_rate minus away off_expl_rate, non-garbage (V2 garbage weight 0)",
+   "em_havoc": "home off_havoc_rate minus away off_havoc_rate, non-garbage (V2 garbage weight 0)",
+   "em_so_rate": "home off_so_rate minus away off_so_rate, non-garbage (V2 garbage weight 0)",
+   "em_sr": "home off_sr minus away off_sr, non-garbage (V2 garbage weight 0)",
+   "em_start_fp": "home off_start_fp minus away off_start_fp, non-garbage (V2 garbage weight 0)"
+  },
+  "features": [
+   "em_epa",
+   "em_sr",
+   "em_drive_epa",
+   "em_so_rate",
+   "em_start_fp",
+   "em_havoc",
+   "em_expl"
+  ],
+  "games_filter": "final, at least one FBS team, validation FINAL_VALIDATED, all features finite",
+  "intercept": 1.00265469703,
+  "mae": 6.457666931,
+  "method": "OLS with intercept (numpy normal equations)",
+  "n": 6431,
+  "r2": 0.855602241275,
+  "residual_sd": 8.50616344703
+ },
+ "perf_version": "cfb_perf_v1",
+ "sha256": "8bf9a71f3fd536b9f869046b2ebb8119d72a2ffbf5b0a3826e4f267b10523b36",
+ "target": "home_points - away_points (internal margin convention)",
+ "training_data": [
+  {
+   "pbp_sha256": "e0d60b20e345c192128aae3d113b133c4567edc2cf8a58680b7f356eb3a3f55a",
+   "sched_sha256": "28e5101e5534fd8bc9f42309b5e86614248821107f9df9e626ca4275d737b209",
+   "season": 2016
+  },
+  {
+   "pbp_sha256": "25c5e773f4ec8403d4feea568f4aad5c256ea984c489de7eaf033a086f9de1bf",
+   "sched_sha256": "03f06fb774d346b49944c0936c88e32ccc2eb0529809795b176d04a10835a48c",
+   "season": 2017
+  },
+  {
+   "pbp_sha256": "6db97a2fd13b9e10b0237408edae7663e085efb46fcab44bf80af8f108148d3c",
+   "sched_sha256": "81089900c0a94d38500190d710a21f1dd4a613c62da8fcfd9ad5e691d05ec5f1",
+   "season": 2018
+  },
+  {
+   "pbp_sha256": "d683cd317c80937a243b17c8f5a1ffe661037dfafd7c6161c24bce392f725a4e",
+   "sched_sha256": "1317e2e7c90c41d83113a3564d5edd7dd2d0a8069b6d63ff8361f925327f9c75",
+   "season": 2019
+  },
+  {
+   "pbp_sha256": "285eb74675fa6abd9b623b6a7c17c8b425a295de332618ce1778e818a7eafcc0",
+   "sched_sha256": "d53d5413d573b8c07d98600268ecc8c1d1261bf38aea43cf48f59acc12123ba2",
+   "season": 2020
+  },
+  {
+   "pbp_sha256": "bc00390948b827d3f1e134a69a91546858264ebaa0281baa936e03602a093bf4",
+   "sched_sha256": "1a2ddf16e91d845768d52ae06e13cec161576b115df2af127f9c08f9848f0306",
+   "season": 2021
+  },
+  {
+   "pbp_sha256": "c592cf3c8eb6c5e6c55979ffcba92665e01816672ad0e168ec4a5ede7f9dacd1",
+   "sched_sha256": "59f15308408d165e26ffd0d6491af6d8f47a9c5dab51953f1c22a645e16df80b",
+   "season": 2022
+  },
+  {
+   "pbp_sha256": "0a6f11dcd0790580a71ece68e9da54d00245e87588b0e56209f03782bf1944e6",
+   "sched_sha256": "8cc272eafc992218603503f19aeba8a0679015fe743020f3d3a5bea17fdd2bbc",
+   "season": 2023
+  }
+ ],
+ "training_seasons": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023
+ ],
+ "validation_rule": "cfb_game_validation_v1"
+}

@@ -9,6 +9,11 @@
   },
   "scripts": {
     "cfb:sync": "node football/rosters/fetch_rosters.js",
+    "cfb:lab": "node football/cfb_lab/run.js",
+    "cfb:lab:verify": "node football/cfb_lab/ledger.js verify",
+    "cfb:lab:test": "node football/cfb_lab/tests.js && node football/cfb_lab/capture_feed.test.js && node football/cfb_lab/sql.test.js && node football/cfb_lab/ui.test.js && node football/cfb_lab/record_section.test.js",
+    "cfb:lab:sync": "node football/cfb_lab/sync_supabase.js",
+    "cfb:lab:gov": "node football/cfb_lab/governance.js",
     "cfb:box": "node football/data/build_box.js",
     "cfb:players": "node football/players/build_players.js",
     "cfb:ratings": "node football/rating/build_rating.js",

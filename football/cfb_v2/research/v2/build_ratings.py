@@ -186,14 +186,8 @@ def ridge_fit(X, y, w, alpha):
 
 
 # ------------------------------------------------------------------ main
-def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=None, verbose=True):
-    t0 = time.time()
-    specs = metric_specs()
-    if metrics:
-        specs = {k: v for k, v in specs.items() if k in metrics}
-    prior_scale = C.RATING_PRIOR_SCALE if prior_scale is None else prior_scale
-    halflife = C.RECENT_HALFLIFE_WEEKS if halflife is None else halflife
-    all_seasons = list(range(C.FIRST_PBP_SEASON, C.LIVE_SEASON + 1))
+def _setup(specs, all_seasons, write):
+    """Steps 1-2 of run(), which do not depend on the season being built."""
     TG, G = load_team_games(all_seasons)
     FBS = fbs_teams_by_season(G)
     RP, TT, CO = load_prior_inputs()
@@ -261,32 +255,90 @@ def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=N
         a = np.array(lst[:3]) if lst else np.array([[1, 1, 0, 0]])
         true_var[m] = (max(1e-8, np.mean(a[:, 0] - a[:, 2])), max(1e-8, np.mean(a[:, 1] - a[:, 3])))
 
+    return {'TG': TG, 'G': G, 'FBS': FBS, 'RP': RP, 'TT': TT, 'CO': CO, 'varcomp': varcomp,
+            'typ_n': typ_n, 'final_do': final_do, 'true_var': true_var}
+
+
+def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=None, verbose=True,
+        only_ts=None, diag=None, warm=None, explain=None, ctx=None, return_frames=False):
+    """Stage 3. With the defaults this is the production build; the optional
+    arguments are all off by default and never change a number:
+
+      only_ts        list of prediction timestamps: build just those freeze
+                     times (any T, in or out of the schedule). With write=True
+                     the season files are MERGED (the rows of those T replaced);
+                     varcomp / final_dataonly / priors are not rewritten.
+      diag           list: one convergence record per solve (ratings.solve_diagnostics),
+                     tagged season / prediction_ts / metric / horizon; a freeze with
+                     no game yet records 'solved': False (the posterior is the prior)
+      warm           CG start for the first T built: the previous freeze's
+                     (ratings, league) frames, or {metric: {'season': x0, 'recent': x0}};
+                     each later T of the same call starts from the T before it
+      explain        dict: {(season, metric): build_prior's explain record}
+      ctx            dict: caches the season-independent setup and the priors
+                     across calls in one process (not used when writing a full build)
+      return_frames  return {'ratings': {S: df}, 'league': {S: df}, 'priors': {S: {m: prior}},
+                     'teams', 'varcomp', 'typ_n', 'final_do', 'fbs', 'true_var'}
+                     instead of final_do
+    """
+    t0 = time.time()
+    specs = metric_specs()
+    if metrics:
+        specs = {k: v for k, v in specs.items() if k in metrics}
+    prior_scale = C.RATING_PRIOR_SCALE if prior_scale is None else prior_scale
+    halflife = C.RECENT_HALFLIFE_WEEKS if halflife is None else halflife
+    all_seasons = list(range(C.FIRST_PBP_SEASON, C.LIVE_SEASON + 1))
+    write_all = write and only_ts is None
+    setup_key = (tuple(specs), C.OUT, C.DATA)
+    if ctx is not None and not write_all and ctx.get('setup_key') == setup_key:
+        su = ctx['setup']
+    else:
+        su = _setup(specs, all_seasons, write_all)
+        if ctx is not None:
+            ctx.clear()
+            ctx.update(setup_key=setup_key, setup=su, priors={})
+    TG, G, FBS, RP, TT, CO = su['TG'], su['G'], su['FBS'], su['RP'], su['TT'], su['CO']
+    varcomp, typ_n, final_do, true_var = su['varcomp'], su['typ_n'], su['final_do'], su['true_var']
+
     # ---- 3 + 4. per season: priors, then every prediction timestamp
     seasons_out = seasons_out or list(range(C.FIRST_SNAPSHOT_SEASON, C.LIVE_SEASON + 1))
     prior_records = []
+    frames = {'ratings': {}, 'league': {}, 'priors': {}, 'teams': {}}
+    ps_key = repr(sorted(prior_scale.items())) if isinstance(prior_scale, dict) else repr(prior_scale)
     for S in seasons_out:
         fbs = FBS.get(S, set())
         tg_s = TG[TG.g_season.eq(S)]
         g_s = G[G.season.eq(S)]
         teams_s = sorted(set(g_s.home_id) | set(g_s.away_id))
         season_start = g_s.kickoff_ts.min() - pd.Timedelta(days=3)
-        priors = {}
-        for m, spec in specs.items():
-            ps = prior_scale.get(m, prior_scale.get('_default', 2.0)) \
-                if isinstance(prior_scale, dict) else prior_scale
-            priors[m] = build_prior(S, m, teams_s, fbs, final_do, FBS, RP, TT, CO,
-                                    true_var[m], ps, season_start, TG)
-            for side in ('o', 'd'):
-                for t, (mv,) in priors[m][side].items():
-                    prior_records.append((S, m, side, t, mv,
-                                          priors[m]['tau2_' + side].get(t)))
+        cached = ctx['priors'].get((S, ps_key)) if ctx is not None else None
+        if cached is not None:
+            priors, recs_S, expl_S = cached
+            prior_records.extend(recs_S)
+            if explain is not None:
+                explain.update(expl_S)
+        else:
+            priors, recs_S, expl_S = _season_priors(S, specs, prior_scale, teams_s, fbs, final_do, FBS,
+                                                    RP, TT, CO, true_var, season_start, TG,
+                                                    explain is not None or ctx is not None)
+            prior_records.extend(recs_S)
+            if explain is not None:
+                explain.update(expl_S)
+            if ctx is not None:
+                ctx['priors'][(S, ps_key)] = (priors, recs_S, expl_S)
         # prediction timestamps: every distinct freeze time among this season's games
         pts = sorted(g_s.prediction_ts.unique())
+        if only_ts is not None:
+            known = {pd.Timestamp(x): x for x in pts}
+            unit = G.prediction_ts.dt.unit
+            pts = sorted(known.get(_utc(t), _utc(t).as_unit(unit)) for t in only_ts)
+        warm_prev = _warm_dict(warm)
         out_rows, league_rows = [], []
         for T in pts:
             T = pd.Timestamp(T)
             obs = tg_s[tg_s.kickoff_ts < T]
             assert (obs.kickoff_ts < T).all()
+            warm_next = {}
             for m, spec in specs.items():
                 s2p, s2g = varcomp[m]
                 pr = priors[m]
@@ -300,10 +352,32 @@ def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=N
                     df['n_obs_off'] = 0.0; df['n_obs_def'] = 0.0; df['n_eff_off'] = 0.0
                     mu, h = np.nan, pr['h'][0]
                     res = None
-                else:
+                    if diag is not None:
+                        for hz in ('season', 'recent'):
+                            diag.append({'season': S, 'prediction_ts': T, 'metric': m, 'horizon': hz,
+                                         'n_obs': 0, 'solved': False, 'converged': True,
+                                         'note': 'no game before T: the posterior is the prior'})
+                elif diag is None:
                     fit, res = R.fit_metric(obs, m, spec, (s2p, s2g), pr, want_var=True)
                     rec, _ = R.fit_metric(obs, m, spec, (s2p, s2g), pr, horizon='recent', T=T,
                                           halflife_weeks=halflife)
+                    df = fit
+                    df['off_rec'] = rec.off.reindex(df.index)
+                    df['def_rec'] = rec['def'].reindex(df.index)
+                    mu, h = fit.attrs['mu'], fit.attrs['h']
+                else:
+                    ws = warm_prev.get(m, {})
+                    fit, res = R.fit_metric(obs, m, spec, (s2p, s2g), pr, want_var=True,
+                                            diag=diag, x0=ws.get('season'))
+                    diag[-1].update(season=S, prediction_ts=T)
+                    rec, _ = R.fit_metric(obs, m, spec, (s2p, s2g), pr, horizon='recent', T=T,
+                                          halflife_weeks=halflife, diag=diag, x0=ws.get('recent'))
+                    diag[-1].update(season=S, prediction_ts=T)
+                    warm_next[m] = {
+                        'season': {'mu': fit.attrs['mu'], 'h': fit.attrs['h'],
+                                   'off': fit.off.copy(), 'def': fit['def'].copy()},
+                        'recent': {'mu': rec.attrs['mu'], 'h': rec.attrs['h'],
+                                   'off': rec.off.copy(), 'def': rec['def'].copy()}}
                     df = fit
                     df['off_rec'] = rec.off.reindex(df.index)
                     df['def_rec'] = rec['def'].reindex(df.index)
@@ -331,29 +405,101 @@ def run(seasons_out=None, prior_scale=None, halflife=None, write=True, metrics=N
                 df['prior_def'] = df.team_id.map(lambda t: pr['d'].get(t, (pr['default_d'],))[0])
                 out_rows.append(df)
                 league_rows.append((T, m, mu, h, len(obs)))
+            if warm_next:
+                warm_prev = warm_next
         R_S = pd.concat(out_rows, ignore_index=True)
         R_S['season'] = S
         L_S = pd.DataFrame(league_rows, columns=['prediction_ts', 'metric', 'mu', 'h', 'n_rows'])
         L_S['season'] = S
-        if write:
+        if write_all:
             R_S.to_parquet(common.out_path('stage3', 'ratings_%d.parquet' % S), index=False)
             L_S.to_parquet(common.out_path('stage3', 'league_%d.parquet' % S), index=False)
+        elif write:
+            _merge_write(common.out_path('stage3', 'ratings_%d.parquet' % S), R_S)
+            _merge_write(common.out_path('stage3', 'league_%d.parquet' % S), L_S)
+        if return_frames:
+            frames['ratings'][S], frames['league'][S] = R_S, L_S
+            frames['priors'][S], frames['teams'][S] = priors, teams_s
         if verbose:
             print('[stage3] %d: %d timestamps, %d rows, %.0fs' % (S, len(pts), len(R_S), time.time() - t0))
-    if write:
+    if write_all:
         pd.DataFrame(prior_records, columns=['season', 'metric', 'side', 'team_id', 'prior_mean',
                                              'prior_var']).to_parquet(
             common.out_path('stage3', 'priors.parquet'), index=False)
+    if return_frames:
+        frames.update(final_do=final_do, varcomp=varcomp, typ_n=typ_n, fbs=FBS, true_var=true_var)
+        return frames
     return final_do
 
 
+def _season_priors(S, specs, prior_scale, teams_s, fbs, final_do, FBS, RP, TT, CO, true_var,
+                   season_start, TG, want_explain):
+    """The per-season prior loop of run(), unchanged; optionally collecting
+    build_prior's explain records."""
+    priors, recs, expl = {}, [], {}
+    for m, spec in specs.items():
+        ps = prior_scale.get(m, prior_scale.get('_default', 2.0)) \
+            if isinstance(prior_scale, dict) else prior_scale
+        ex = {} if want_explain else None
+        priors[m] = build_prior(S, m, teams_s, fbs, final_do, FBS, RP, TT, CO,
+                                true_var[m], ps, season_start, TG, explain=ex)
+        if ex is not None:
+            expl[(S, m)] = ex
+        for side in ('o', 'd'):
+            for t, (mv,) in priors[m][side].items():
+                recs.append((S, m, side, t, mv,
+                             priors[m]['tau2_' + side].get(t)))
+    return priors, recs, expl
+
+
+def _utc(t):
+    t = pd.Timestamp(t)
+    return t.tz_localize('UTC') if t.tzinfo is None else t.tz_convert('UTC')
+
+
+def _warm_dict(warm):
+    """CG start vectors per metric from (ratings, league) frames of one freeze."""
+    if warm is None:
+        return {}
+    if isinstance(warm, dict):
+        return warm
+    Rp, Lp = warm
+    lg = Lp.set_index('metric') if Lp is not None else None
+    out = {}
+    for m, g in Rp.groupby('metric'):
+        g = g.set_index('team_id')
+        mu = float(lg.mu.get(m, np.nan)) if lg is not None else np.nan
+        h = float(lg.h.get(m, np.nan)) if lg is not None else np.nan
+        out[m] = {'season': {'mu': mu, 'h': h, 'off': g['off'], 'def': g['def']},
+                  'recent': {'mu': mu, 'h': h, 'off': g['off_rec'], 'def': g['def_rec']}}
+    return out
+
+
+def _merge_write(path, new):
+    """Replace the rows of the rebuilt freeze times in a season file, keeping
+    the file's column order and the season's time order."""
+    if os.path.exists(path):
+        old = pd.read_parquet(path)
+        old = old[~old.prediction_ts.isin(new.prediction_ts.unique())]
+        cols = list(old.columns) + [c for c in new.columns if c not in old.columns]
+        out = pd.concat([old.reindex(columns=cols), new.reindex(columns=cols)], ignore_index=True)
+        out = out.sort_values('prediction_ts', kind='mergesort').reset_index(drop=True)
+    else:
+        out = new
+    out.to_parquet(path, index=False)
+
+
 def build_prior(S, m, teams_s, fbs, final_do, FBS, RP, TT, CO, true_var, prior_scale,
-                season_start, TG):
+                season_start, TG, explain=None):
     """Preseason prior (mean, variance) for every team of season S, metric m.
 
     FBS teams: ridge prior model trained on target seasons < S.
     Non-FBS teams: the pooled FCS mean/variance of previous seasons' data-only
-    ratings — one prior shared by the group, never a team-specific guess."""
+    ratings — one prior shared by the group, never a team-specific guess.
+
+    explain (optional dict, default off): receives, per side, the ridge
+    coefficients, the current season's design rows and the prior variances,
+    so a prior mean can be decomposed into its inputs (accounting only)."""
     tvo, tvd = true_var
     pr = {'o': {}, 'd': {}, 'tau2_o': {}, 'tau2_d': {}, 'season_start': season_start}
     # home effect prior: mean of previous seasons' fitted h (from data-only fits is not
@@ -388,10 +534,17 @@ def build_prior(S, m, teams_s, fbs, final_do, FBS, RP, TT, CO, true_var, prior_s
         rows['v_off'] = rows.team_id.map(tgt['off_var']); rows['v_def'] = rows.team_id.map(tgt['def_var'])
         train.append(rows)
     cur = prior_frame(S, fb, final_do, m, RP, TT, CO)
+    if explain is not None:
+        explain.update(season=S, metric=m, fcs_mean_o=pr['default_o'], fcs_mean_d=pr['default_d'],
+                       fcs_tau2_o=pr['tau2_default_o'], fcs_tau2_d=pr['tau2_default_d'],
+                       fbs=list(fb), n_train_seasons=len(train))
     for side, key, tv in (('off', 'o', tvo), ('def', 'd', tvd)):
         if not train:
             for t in fb:
                 pr[key][t] = (0.0,); pr['tau2_' + key][t] = tv * prior_scale
+            if explain is not None:
+                explain[side] = {'beta': None, 'cols': ['const'] + PRIOR_COLS, 'X': None,
+                                 'tau2': tv * prior_scale, 'tau2_miss': tv * prior_scale}
             continue
         tr = pd.concat(train, ignore_index=True).dropna(subset=['y_' + side])
         X = prior_design(tr, side).values
@@ -414,6 +567,11 @@ def build_prior(S, m, teams_s, fbs, final_do, FBS, RP, TT, CO, true_var, prior_s
         for t, p, mi in zip(cur.team_id.values, pc, cmiss):
             pr[key][t] = (float(p),)
             pr['tau2_' + key][t] = float((tau2_miss if mi else tau2) * prior_scale)
+        if explain is not None:
+            explain[side] = {'beta': np.asarray(beta, dtype=float).copy(), 'cols': ['const'] + PRIOR_COLS,
+                             'X': pd.DataFrame(Xc, index=cur.team_id.values, columns=PRIOR_COLS),
+                             'raw': cur.set_index('team_id').copy(),
+                             'tau2': float(tau2 * prior_scale), 'tau2_miss': float(tau2_miss * prior_scale)}
     return pr
 
 

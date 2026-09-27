@@ -89,7 +89,19 @@ def estimate_shrinkage(A, seasons):
             'replacement_mean': repl, 'seasons': list(seasons)}
 
 
-def team_features(Q, Apast, G, shrink, seasons_out):
+def team_features(Q, Apast, G, shrink, seasons_out, only_ts=None, detail=None, ratings=None,
+                  league=None):
+    """Per team x prediction timestamp QB features (see the module docstring).
+
+    Optional, default off (the output is unchanged when unused):
+      only_ts   list of prediction timestamps to compute (instead of every
+                freeze of the season)
+      detail    dict: receives {(season, T): {'rating', 'den', 'career_db',
+                'starts', 'cur'}} — the per-QB posterior mean, its decayed
+                dropback count, career dropbacks/starts and the adjusted
+                current-season games, exactly as used below
+      ratings / league   {season: frame} used instead of reading the stage-3
+                files (a freshly rebuilt freeze)"""
     k, repl = shrink['k_dropbacks'], shrink['replacement_mean']
     rows = []
     for S in seasons_out:
@@ -101,13 +113,22 @@ def team_features(Q, Apast, G, shrink, seasons_out):
         den0 = wp.groupby(prev.qb_id).sum()
         cdb0 = prev.groupby('qb_id').db.sum()
         st0 = prev[prev.starter].groupby('qb_id').size()
-        R = pd.read_parquet(common.out_path('stage3', 'ratings_%d.parquet' % S),
-                            columns=['prediction_ts', 'team_id', 'metric', 'def'])
+        if ratings is not None and S in ratings:
+            R = ratings[S][['prediction_ts', 'team_id', 'metric', 'def']]
+        else:
+            R = pd.read_parquet(common.out_path('stage3', 'ratings_%d.parquet' % S),
+                                columns=['prediction_ts', 'team_id', 'metric', 'def'])
         R = R[R.metric.eq('epa_pass')]
-        L = pd.read_parquet(common.out_path('stage3', 'league_%d.parquet' % S))
+        if league is not None and S in league:
+            L = league[S]
+        else:
+            L = pd.read_parquet(common.out_path('stage3', 'league_%d.parquet' % S))
         L = L[L.metric.eq('epa_pass')].set_index('prediction_ts').h.fillna(0.0)
         qs = Q[Q.g_season.eq(S)]
-        for T in sorted(g_s.prediction_ts.unique()):
+        pts = sorted(g_s.prediction_ts.unique())
+        if only_ts is not None:
+            pts = sorted(pd.Timestamp(t) for t in only_ts)
+        for T in pts:
             T = pd.Timestamp(T)
             rT = R[R.prediction_ts.eq(T)].set_index('team_id')['def']
             cur = current_season_adjust(qs[qs.kickoff_ts < T], rT, float(L.get(T, 0.0))) \
@@ -117,6 +138,9 @@ def team_features(Q, Apast, G, shrink, seasons_out):
             rating = (num + k * repl) / (den + k)
             career_db = cdb0.add(cur.groupby('qb_id').db.sum(), fill_value=0)
             starts = st0.add(cur[cur.starter].groupby('qb_id').size(), fill_value=0)
+            if detail is not None:
+                detail[(S, T)] = {'rating': rating, 'den': den, 'career_db': career_db,
+                                  'starts': starts, 'cur': cur}
             for t in teams:
                 ct = cur[cur.team_id.eq(t)]
                 r = {'season': S, 'prediction_ts': T, 'team_id': t}
