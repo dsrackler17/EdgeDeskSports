@@ -1,9 +1,9 @@
 {
   "schema": "edgedesk_research_memory_v1",
-  "generated_at": "2026-09-27T03:00:23.508Z",
+  "generated_at": "2026-09-27T03:10:23.464Z",
   "min_sample": 8,
   "lessons": 31,
-  "graded_games": 18,
+  "graded_games": 19,
   "categories": [
     {
       "category": "scoring",
@@ -22,7 +22,7 @@
       "contradiction_rate": 50
     },
     {
-      "category": "rushing",
+      "category": "passing",
       "lessons": 3,
       "contradicted": 3,
       "confirmed": 0,
@@ -38,11 +38,19 @@
       "contradiction_rate": null
     },
     {
-      "category": "passing",
+      "category": "rushing",
       "lessons": 3,
       "contradicted": 3,
       "confirmed": 0,
       "reviews": 0,
+      "contradiction_rate": null
+    },
+    {
+      "category": "variance",
+      "lessons": 1,
+      "contradicted": 1,
+      "confirmed": 0,
+      "reviews": 1,
       "contradiction_rate": null
     },
     {
@@ -62,14 +70,6 @@
       "contradiction_rate": null
     },
     {
-      "category": "variance",
-      "lessons": 1,
-      "contradicted": 1,
-      "confirmed": 0,
-      "reviews": 1,
-      "contradiction_rate": null
-    },
-    {
       "category": "data_quality",
       "lessons": 5,
       "contradicted": 0,
@@ -83,15 +83,15 @@
     "right_wrong": 2,
     "wrong_right": 1,
     "wrong_wrong": 2,
-    "untested": 5,
+    "untested": 6,
     "ungraded": 0
   },
   "answers": {
     "Do EdgeDesk’s winning numbers come from the mechanisms it named?": "Not enough graded wins yet (2 of 8).",
     "What share of winning wagers had incorrect reasoning?": "Not enough graded wins yet (2 of 8).",
     "What share of losing wagers still showed a defensible process?": "Not enough graded losses yet (3 of 8).",
-    "Which model drivers fail most often?": "scoring (6 contradicted of 6), market (4 contradicted of 8), rushing (3 contradicted of 3)",
-    "Where does EdgeDesk disagree with the market, and is it worth anything?": "under 2 points: 3 games, too few to rate; 2 to 4 points: 4 games, too few to rate; 4 to 7 points: 6 games, too few to rate; 7 points or more: 5 games, too few to rate",
+    "Which model drivers fail most often?": "scoring (6 contradicted of 6), market (4 contradicted of 8), passing (3 contradicted of 3)",
+    "Where does EdgeDesk disagree with the market, and is it worth anything?": "under 2 points: 3 games, too few to rate; 2 to 4 points: 5 games, too few to rate; 4 to 7 points: 6 games, too few to rate; 7 points or more: 5 games, too few to rate",
     "Has the market moved toward EdgeDesk after publication?": "Average +1.16 points of line movement toward EdgeDesk’s side across 8 games with a captured close."
   },
   "disagreement_buckets": [
@@ -105,9 +105,9 @@
     },
     {
       "label": "2 to 4 points",
-      "n": 4,
+      "n": 5,
       "wins": 1,
-      "losses": 3,
+      "losses": 4,
       "hit_rate": null,
       "note": "not enough graded games in this bucket to say anything"
     },
