@@ -1,0 +1,90 @@
+# EdgeDesk CFB V2 — shadow-mode refresh.
+#
+# V2 runs BESIDE V1 and replaces nothing. Each run rebuilds the live season's
+# point-in-time features with the same code the backtest used, predicts with
+# the FROZEN artifacts of the current model version (no refit), and writes:
+#   football/cfb_v2/current.json          upcoming games, FROZEN or PROVISIONAL
+#   football/cfb_v2/snapshots/<season>/   write-once pregame snapshots, one file
+#                                         per Tuesday 12:00 UTC freeze
+# Retraining is NOT scheduled here: it is an offseason, manually dispatched
+# job (mode=retrain) that produces a new model_version for review.
+name: CFB V2 shadow
+
+on:
+  schedule:
+    - cron: '17 13 * 8-12,1 2'    # Tuesday 13:17 UTC — first run after the weekly freeze
+    - cron: '47 10 * 8-12,1 *'    # daily in season — provisional rows, late-schedule games
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'live (default) or retrain (offseason; produces a new model version for review)'
+        required: false
+        default: 'live'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cfb-v2-shadow
+  cancel-in-progress: false
+
+jobs:
+  shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Python deps
+        run: pip install --quiet pandas numpy pyarrow scipy scikit-learn lightgbm
+      - name: Cache raw data
+        uses: actions/cache@v4
+        with:
+          path: football/cfb_v2/research/data
+          key: cfb-v2-data-${{ github.run_id }}
+          restore-keys: cfb-v2-data-
+      - name: Run
+        working-directory: football/cfb_v2/research
+        run: bash run_all.sh "${{ github.event.inputs.mode || 'live' }}"
+      - name: Weekly learning + snapshot integrity (live only)
+        if: ${{ (github.event.inputs.mode || 'live') == 'live' }}
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ github.workspace }}/football/cfb_v2/research/data
+          CFB_V2_OUT: ${{ github.workspace }}/football/cfb_v2/research/out
+        run: |
+          python3 -m v2.learn_week
+          python3 -m v2.predict_live --verify
+      - name: Engine tests
+        run: node football/cfb_v2/tests.js
+      - name: Insert-only copy to Supabase (when secrets are configured)
+        if: ${{ (github.event.inputs.mode || 'live') == 'live' }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node football/cfb_v2/sync_supabase.js
+      - name: Publish (live only)
+        if: ${{ (github.event.inputs.mode || 'live') == 'live' }}
+        run: |
+          git config user.name "edgedesk-bot"
+          git config user.email "edgedesk-bot@users.noreply.github.com"
+          tools/ci/push_generated.sh main "cfb v2 shadow: frozen pregame snapshots" -- \
+            football/cfb_v2/current.json football/cfb_v2/snapshots \
+            football/cfb_v2/learning football/cfb_v2/monitoring.json
+      - name: Keep the retrain for review (never auto-promoted)
+        if: ${{ github.event.inputs.mode == 'retrain' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfb-v2-retrain
+          path: |
+            football/cfb_v2/artifacts
+            football/cfb_v2/params.js
+            football/cfb_v2/research/report
+            docs/cfb-v2

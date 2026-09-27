@@ -51902,6 +51902,24 @@ var FBP4_LOOKAHEAD_D = 10;
 function FBP4_URL_SCHED(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_'+y+'.csv';}
 function FBP4_URL_ROSTER(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/rosters/csv/cfb_rosters_'+y+'.csv';}
 
+/* CFB V2 SHADOW LOADER — part of the engine-loading chain, never the card:
+   the card renders from what this loaded and fetches nothing of its own. */
+var FBV2={rows:null,loading:null,err:null};
+function fbV2On(){
+  try{return /[?&]cfbv2=1(&|$)/.test(location.search)||localStorage.getItem('edgedesk_cfb_v2')==='1';}
+  catch(e){return false;}
+}
+function fbV2Ensure(){
+  if(!fbV2On())return Promise.resolve(null);
+  if(FBV2.loading)return FBV2.loading;
+  FBV2.loading=fbScript('football/cfb_v2/params.js')
+    .then(function(){return fbScript('football/cfb_v2/engine.js');})
+    .then(function(){return fetch('football/cfb_v2/current.json',{cache:'no-store'});})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(j){FBV2.rows={};FBV2.meta=j;((j&&j.rows)||[]).forEach(function(r){FBV2.rows[String(r.game_id)]=r;});return FBV2;})
+    .catch(function(e){FBV2.err=(e&&e.message)||'V2 failed to load';return null;});
+  return FBV2.loading;
+}
 function fbP4Ensure(){
   if(window.EDCfbP4&&window.EDCfbP4Params&&window.EDFbs)return Promise.resolve();
   return fbScript('football/cfb_p4/params.js')
@@ -51944,6 +51962,9 @@ function fbP4Ensure(){
        off-field register reader both share */
     .then(function(){return fbScript('football/offfield/reader.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/contract.js').catch(function(){});})
+    /* CFB V2 in SHADOW: loaded only when the reader opts in, optional like the
+       layers above, and it changes no V1 number anywhere on the card. */
+    .then(function(){return fbV2Ensure();})
     .then(function(){ if(!window.EDCfbP4||!window.EDCfbP4Params)throw new Error('FBS engine loaded but globals missing');
       if(!window.EDFbs)throw new Error('the FBS universe (team identity + conferences) failed to load'); });
 }
@@ -56533,6 +56554,43 @@ function fbGxExplain(u,p){
   }).join('')
   +'<div class="gx-foot">Every line is a stored field with its type. Nothing here is written by a language model and nothing is a recommendation.</div>';
 }
+/* ===========================================================================
+   CFB V2 — SHADOW PANEL (opt-in: ?cfbv2=1 or localStorage edgedesk_cfb_v2='1').
+   V2 is evaluated beside V1 and replaces nothing: the V1 lines above it are
+   untouched. The panel shows V2's PURE projection (football only) and, apart
+   from it, V2's market decision against the market number V1 already joined.
+   No price is captured on this card, so the decision says EV is not
+   computable rather than assuming -110. See football/cfb_v2 and docs/cfb-v2.
+   =========================================================================== */
+function fbV2ShadowHTML(u,p){
+  var V=window.EDCfbV2,row=FBV2.rows&&FBV2.rows[String(u.g.game_id)];
+  if(!V||!FBV2.rows)return '<div class="gd-nodata">V2 not loaded'+(FBV2.err?' — '+fbEsc(FBV2.err):'')+'</div>';
+  if(!row)return '<div class="gd-nodata">No frozen V2 snapshot for this game yet.</div>';
+  var pu=V.pure(row,{});
+  if(pu.status!=='PREDICTED')return '<div class="gd-nodata">'+fbEsc(pu.status)+': '+fbEsc(pu.reason||'')+'</div>';
+  var mk=(p&&p.market)||{},cur=null;
+  if(mk.spread_line!=null)cur={home_line:-mk.spread_line,ts:mk.as_of||null};
+  var d=V.decide(pu,cur?{current:cur}:null,{row:row});
+  var c=V.card(pu,d),h=fbEsc(u.g.home_team),L='';
+  L+='<div class="gd-sec model">EdgeDesk pure projection <span class="unproven">SHADOW · '+fbEsc(pu.model_version)+' · '+fbEsc(row.state||'')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Fair spread</span><span class="v mdl">'+fbEsc(c.pure.fair_spread||'—')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Win probability</span><span class="v">'+h+' '+(pu.home_win_prob*100).toFixed(1)+'% · '+fbEsc(u.g.away_team)+' '+(pu.away_win_prob*100).toFixed(1)+'%</span></div>';
+  L+='<div class="gd-line"><span class="l">Projected margin</span><span class="v">'+h+' '+fbPts(pu.projected_margin)+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Prediction range (80%)</span><span class="v mut">'+fbPts(pu.intervals.p80[0])+' to '+fbPts(pu.intervals.p80[1])+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Model confidence</span><span class="v">'+pu.football_prediction_confidence+'/100 <span class="mut">how trustworthy the data and prediction are — not how much EdgeDesk likes the game</span></span></div>';
+  var w=c.why;
+  L+='<div class="gd-sec">Why</div>';
+  L+='<div class="gd-line"><span class="l">Primary matchup edge</span><span class="v mut">'+(w.primary_matchup_edge?fbEsc(w.primary_matchup_edge.label)+' → '+fbEsc(w.primary_matchup_edge.favours)+' ('+w.primary_matchup_edge.points+' pts)':'—')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Secondary matchup edge</span><span class="v mut">'+(w.secondary_matchup_edge?fbEsc(w.secondary_matchup_edge.label)+' → '+fbEsc(w.secondary_matchup_edge.favours)+' ('+w.secondary_matchup_edge.points+' pts)':'—')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Main uncertainty</span><span class="v mut">'+fbEsc(w.main_uncertainty||'—')+'</span></div>';
+  L+='<div class="gd-sec">Market (separate layer)</div>';
+  L+='<div class="gd-line"><span class="l">Current spread</span><span class="v">'+(d.current_home_line!=null?h+' '+fbPts(d.current_home_line):'<span class="mut">none joined</span>')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">EdgeDesk disagreement</span><span class="v">'+(d.raw_gap_pts!=null?fbPts(d.raw_gap_pts)+' pts':'—')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Cover probability</span><span class="v mut">'+(d.cover_probability!=null?(d.cover_probability*100).toFixed(1)+'% '+fbEsc(d.side||''):'—')+'</span></div>';
+  L+='<div class="gd-line"><span class="l">Research status</span><span class="v"><b>'+fbEsc(c.research_status)+'</b> <span class="mut">'+fbEsc((c.reasons||[]).join(' · '))+'</span></span></div>';
+  L+='<div class="gd-modelnote">'+fbEsc(c.language)+' V2 beats V1 on the 2024–25 holdout and still trails the opening and closing lines; BET is disabled because no betting rule survived out-of-sample testing.</div>';
+  return L;
+}
 function fbP4Card(u){
   var g=u.g,E=window.EDCfbP4,m=u.meta;
   var p=FB.p4._proj&&FB.p4._proj[String(g.game_id)];
@@ -56632,6 +56690,8 @@ function fbP4Card(u){
       'who is playing, on one all-FBS scale')
     +fbGxSec(gid,'research','The research read',fbGxResearchRead(u,p),true,
       'model vs market in points, in σ and in probability — research, not a pick')
+    +(fbV2On()?fbGxSec(gid,'v2','EdgeDesk V2 · shadow',fbV2ShadowHTML(u,p),false,
+      'evaluated beside V1 · V1 remains the priced number'):'')
     +fbGxSec(gid,'decomp','Fair-line decomposition',fbGxDecomp(u,p),true,
       'every term the engine priced, exactly as it sums')
     +fbGxSec(gid,'venue','Venue and game-time forecast',fbGxWeather(u),true,
