@@ -306,6 +306,27 @@ create table if not exists public.cfb_source_health (
     ('HEALTHY','STALE','DEGRADED','MISSING','NOT_CONFIGURED','NOT_USED_BY_MODEL'))
 );
 
+-- Misses: games the pure projection missed by 14+ points, decomposed with postgame data
+-- (performance gap + scoreboard gap) and a data-based primary driver. Never a narrative.
+create table if not exists public.cfb_weekly_misses (
+  miss_id            text primary key,
+  game_id            text not null,
+  season             int,
+  week               int,
+  rule_version       text not null,
+  projected_margin   numeric,
+  actual_margin      numeric,
+  error              numeric not null,
+  performance_gap    numeric,
+  scoreboard_gap     numeric,
+  primary_driver     text not null,
+  payload            jsonb not null,
+  recorded_at        timestamptz not null default now(),
+  constraint cfb_weekly_misses_driver check (primary_driver in ('TURNOVER_LUCK','SPECIAL_TEAMS','SCOREBOARD_OTHER',
+    'QB_CHANGE','PERSONNEL','EXPLOSIVE_VARIANCE','TEAM_PERFORMANCE','UNEXPLAINED')),
+  constraint cfb_weekly_misses_size check (abs(error) >= 14)
+);
+
 -- ===================================================== append-only + access
 create or replace function public.cfb_weekly_append_only()
 returns trigger language plpgsql
@@ -330,7 +351,7 @@ declare
 begin
   foreach t in array array['cfb_pipeline_runs','cfb_pipeline_stage_log','cfb_game_validation','cfb_game_performance',
     'cfb_team_week_state','cfb_qb_week_state','cfb_unit_week_state','cfb_qb_events','cfb_upcoming_game_features',
-    'cfb_weekly_projections','cfb_projection_changes','cfb_weekly_research','cfb_source_health']
+    'cfb_weekly_projections','cfb_projection_changes','cfb_weekly_research','cfb_source_health','cfb_weekly_misses']
   loop
     execute format('drop trigger if exists %I on public.%I', t || '_no_update_trg', t);
     execute format('create trigger %I before update on public.%I for each row execute function public.cfb_weekly_append_only()', t || '_no_update_trg', t);
@@ -494,7 +515,7 @@ with tables(t) as (
   values ('cfb_pipeline_runs'),('cfb_pipeline_stage_log'),('cfb_game_validation'),('cfb_game_performance'),
          ('cfb_team_week_state'),('cfb_qb_week_state'),('cfb_unit_week_state'),('cfb_qb_events'),
          ('cfb_upcoming_game_features'),('cfb_weekly_projections'),('cfb_projection_changes'),
-         ('cfb_weekly_research'),('cfb_source_health')
+         ('cfb_weekly_research'),('cfb_source_health'),('cfb_weekly_misses')
 )
 select check_name, status from (
   select 1 as ord, 'table ' || t || ': exists, append-only, row level security' as check_name,

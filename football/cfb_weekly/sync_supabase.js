@@ -31,6 +31,7 @@ const TABLES = [
   ['projections.jsonl', 'cfb_weekly_projections', 'projection_id'],
   ['projection_changes.jsonl', 'cfb_projection_changes', 'change_id'],
   ['research.jsonl', 'cfb_weekly_research', 'item_id'],
+  ['misses.jsonl', 'cfb_weekly_misses', 'miss_id'],
 ];
 
 let COLS = null;

@@ -29,6 +29,7 @@ KINDS = {
     'projections': ('projections.jsonl', 'projection_id', None, None),
     'projection_changes': ('projection_changes.jsonl', 'change_id', None, None),
     'research': ('research.jsonl', 'item_id', None, None),
+    'misses': ('misses.jsonl', 'miss_id', None, None),
 }
 # fields that never make two versions "different" (provenance, not content)
 # (the source versions are provenance too: a re-run on a newer data version that computes the same

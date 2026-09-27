@@ -274,4 +274,23 @@ if '--fast' not in sys.argv:
     chk('projections: an unchanged game makes no new projection (idempotent, no contradictions)', len(recs) == len(D) and not recs2 and not ch2)
     shutil.rmtree(tmp, ignore_errors=True)
 
+# ---------------------------------------------------------------- miss classification
+from . import misses as MS
+hp = {'margin': -14, 'expected_performance_margin': 5.0, 'turnover_luck_game': -10.0, 'st_net_epa': 0.5, 'has_pbp': True,
+      'return_tds': 0, 'pace_plays': 70, 'explosive_execution': 0.1}
+ap = {'turnover_luck_game': 5.0, 'return_tds': 0, 'pace_plays': 70, 'explosive_execution': 0.1}
+chk('misses: a small error is not a miss', MS.classify_game({'game_id': 1, 'ens_pred': 7}, dict(hp, margin=0), ap) is None)
+m1 = MS.classify_game({'game_id': 1, 'ens_pred': 7}, hp, ap)
+chk('misses: a turnover-driven miss names TURNOVER_LUCK with its points', m1['primary_driver'] == 'TURNOVER_LUCK'
+    and m1['components']['TURNOVER_LUCK'] == -15.0 and abs(m1['performance_gap'] + m1['scoreboard_gap'] - m1['error']) < 1e-9, m1)
+m2 = MS.classify_game({'game_id': 2, 'ens_pred': 7}, dict(hp, expected_performance_margin=-12.0, turnover_luck_game=0.0), dict(ap, turnover_luck_game=0.0),
+                      qb_events=[{'event_type': 'NEW_STARTER'}])
+chk('misses: a performance miss with a QB change names QB_CHANGE', m2['primary_driver'] == 'QB_CHANGE', m2)
+m3 = MS.classify_game({'game_id': 3, 'ens_pred': 7}, dict(hp, expected_performance_margin=-12.0, turnover_luck_game=0.0), dict(ap, turnover_luck_game=0.0))
+chk('misses: a performance miss with no measured cause is TEAM_PERFORMANCE', m3['primary_driver'] == 'TEAM_PERFORMANCE', m3)
+m4 = MS.classify_game({'game_id': 4, 'ens_pred': 7}, dict(hp, expected_performance_margin=None, has_pbp=False), ap)
+chk('misses: no play-by-play is UNEXPLAINED, never a guess', m4['primary_driver'] == 'UNEXPLAINED', m4)
+m5 = MS.classify_game({'game_id': 5, 'ens_pred': 7}, dict(hp, turnover_luck_game=-2.0), dict(ap, turnover_luck_game=0.0))
+chk('misses: a turnover part under one turnover never leads', m5['primary_driver'] != 'TURNOVER_LUCK', m5)
+
 done()

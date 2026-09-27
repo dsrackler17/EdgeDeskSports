@@ -515,9 +515,22 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
             _sub([sys.executable, '-m', 'v2.learn_week', '--season', str(season)])
         ctx['previous_week'] = _lab_week_metrics(season, sw)
         rec['counts'].update({k: v for k, v in (ctx['previous_week'] or {}).items() if not isinstance(v, (dict, list))})
+        # miss classification (postgame data, never a narrative): the source week's frozen projections
+        from . import misses as MS
+        proj = [p for p in store.read('projections') if p.get('week') == sw]
+        P = ctx.get('performance')
+        if proj and P is not None and len(P):
+            src = G[G.season.eq(season) & G.week.eq(sw)]
+            units = AV.snapshot(season, sw, src, now) if len(src) else None
+            ms = MS.classify_week(proj, P, ctx.get('qb_events'), units, ctx.get('team_rows'))
+            ctx['misses'] = ms
+            rec['counts'].update(misses=len(ms), misses_added=store.append_unique('misses', ms))
+        else:
+            ctx['misses'] = []
+            rec['counts'].update(misses=0, miss_note='no frozen projections for week %s in this state root' % sw)
         return {}
 
-    run.stage('GRADE_PREVIOUS', grade, needs=('INGEST_FINAL_SCORES',))
+    run.stage('GRADE_PREVIOUS', grade, needs=('INGEST_FINAL_SCORES', 'GAME_PERFORMANCE', 'PLAYER_QB_METRICS'))
 
     def research(rec):
         from . import research as RS
