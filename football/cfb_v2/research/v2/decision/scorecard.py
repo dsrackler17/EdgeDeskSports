@@ -196,13 +196,14 @@ def from_shadow(season_dir):
     if dec.empty:
         return dec
     if not res.empty:
-        dec = dec.merge(res[['decision_id', 'ats_result', 'units', 'clv_pts', 'positive_clv']], on='decision_id', how='left')
+        dec = dec.merge(res[[c for c in ('decision_id', 'ats_result', 'units', 'clv_pts', 'positive_clv') if c in res]],
+                        on='decision_id', how='left')
     for c in ('ats_result', 'units', 'clv_pts'):
         if c not in dec:
             dec[c] = np.nan
     dec['ats_win'] = dec.ats_result.map({'W': 1.0, 'L': 0.0})
     dec['is_push'] = dec.ats_result.eq('P').astype(float)
-    b = dec.price.map(lambda a: core.american_to_payout(a) if a is not None and np.isfinite(a) else np.nan) \
+    b = pd.to_numeric(dec.price, errors='coerce').map(lambda a: core.american_to_payout(a) if np.isfinite(a) else np.nan) \
         if 'price' in dec else np.nan
     hyp = np.where(dec.ats_result.eq('W'), b, np.where(dec.ats_result.eq('L'), -1.0, np.where(dec.ats_result.eq('P'), 0.0, np.nan)))
     dec['units'] = np.where(dec.units.notna(), dec.units, hyp).astype(float)
