@@ -24,6 +24,8 @@ global.window = global.window || global;
 require(path.join(__dirname, 'params.js'));
 const E = require(path.join(__dirname, 'engine.js'));
 const P = global.window.EDCfbV2Params;
+/* the one canonical pathway to a V2 projection: input contract, the engine, numeric checks */
+const CANON = require(path.join(__dirname, '..', 'cfb_production', 'canonical.js'));
 
 const DB = require(path.join(__dirname, '..', 'cfb_production', 'db.js'));
 const LOG = require(path.join(__dirname, '..', 'cfb_production', 'log.js'));
@@ -35,7 +37,7 @@ function rowsFor(snap) {
   for (const x of snap.rows) {
     const r = x.row;
     if (r.priced === false) continue;                 // FCS: tracked in the snapshot, not published
-    const p = E.pure(r, {});
+    const p = CANON.pure(r, { engine: E, params: P, row_model_version: snap.model_version });
     if (p.status !== 'PREDICTED') continue;
     const key = { game_id: r.game_id, prediction_ts: r.prediction_ts, model_version: snap.model_version };
     preds.push(Object.assign({}, key, {

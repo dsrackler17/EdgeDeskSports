@@ -42,9 +42,16 @@ const GOV = require('./governance.js');
 const I = require('./integrity.js');
 const ID = require('./identity.js');
 const DIS = require('../../lib/cfb_disagreement.js');
+const CANON = require('../cfb_production/canonical.js');
 
 const U = L.util;
 const HORIZON_H = 24 * 10;      // the board and current.json publish ~10 days ahead
+/* EVENT-TRIGGERED SNAPSHOTS (brief §3): inside the checkpoint zone, a V2 row
+   whose canonical inputs changed since the game's last LIVE snapshot (a
+   correction, a re-freeze) is recorded at once as an ADHOC row that names the
+   row it supersedes: a new version, never an edit. Earlier than 72 h the
+   provisional rows change daily by design and the next window records them. */
+const EVENT_H = 72;
 
 function roleOf(roles, mv) { const r = roles[mv]; return r ? r.role : 'candidate'; }
 
@@ -121,6 +128,22 @@ function buildRow(model, checkpointType, isFirst, market, decision, dq, ctx) {
     params_hash: model.params_hash, expected_params_hash: ctx.expectedParamsHash || null, model_version: model.model_version });
   const gate = I.betGate(decClass, mi, review);
   if (gate.gated) { decClass = gate.decision_class; passReason = gate.reason; }
+  /* the canonical verdict (docs/cfb-production/CANONICAL.md): the input contract,
+     the degraded modes (the row's own and this snapshot's evidence) and the
+     fallback level travel with the snapshot; a decision computed on an
+     incomplete decision input (engine.decide() would read a silent default)
+     never stands as a BET */
+  let canon = null;
+  if (model.canonical) {
+    const ev = CANON.modes(null, { market_integrity: mi || null, qb_certainty: M.qbCertainty(model.slateGame),
+      injury_certainty: M.injuryCertainty(model.slateGame, ctx.now), pbp_completeness: U.num(model.state && model.state.pbp_completeness) });
+    const dm = CANON.mergeModes(model.canonical.row_modes, ev.modes);
+    canon = { rule: model.canonical.rule, contract_version: model.canonical.contract_version, contract_ok: model.canonical.contract_ok,
+      contract_degrade: (model.canonical.contract_degrade || []).slice(0, 5), decision_inputs_complete: model.canonical.decision_inputs_complete,
+      input_hash: model.canonical.input_hash, row_state: model.canonical.row_state, degraded_modes: dm.modes, primary_mode: dm.primary,
+      fallback_level: dm.football.length ? 2 : 1 };
+    if (decClass === 'BET' && !model.canonical.decision_inputs_complete) { decClass = 'PASS'; passReason = 'decision inputs incomplete (input contract: ' + (model.canonical.contract_degrade || []).slice(0, 2).join('; ') + ')'; }
+  }
   const recLine = side && U.isNum(snapHomeLine) ? L.conv.sideLine(side, snapHomeLine) : null;
   const recPrice = side ? (side === 'HOME' ? U.num(market && market.consensus_price_home) : U.num(market && market.consensus_price_away)) : null;
   const gap = U.isNum(snapHomeLine) ? U.r(P.margin - L.conv.bookToMargin(snapHomeLine), 3) : null;
@@ -184,7 +207,9 @@ function buildRow(model, checkpointType, isFirst, market, decision, dq, ctx) {
       review.required ? { extreme_review: { rule: review.rule, triggers: review.triggers, ok: review.ok, failures: review.failures } } : {},
       gate.gated ? { bet_gate: { rule: I.RULES.consensus, engine_class: L.decisionClass(status), reason: gate.reason } } : {},
       ctx.kickoffBasis ? { kickoff_basis: ctx.kickoffBasis } : {},
-      ctx.reschedule ? { reschedule: ctx.reschedule } : {}),
+      ctx.reschedule ? { reschedule: ctx.reschedule } : {},
+      canon ? { canonical: canon } : {},
+      ctx.event ? { event: ctx.event } : {}),
   };
   /* the gate's verdict (V1 rows with a market only); the verified gap IS the
      row's raw gap, so the two can never disagree (cfb_lab_pred_verified_gap) */
@@ -293,6 +318,16 @@ function run(opts) {
         ct = 'ADHOC';
         reschedule = { window: w, original_kickoff: U.iso(prior.filter((r) => I.rescheduled(r.kickoff_ts, p.game.kickoff))[0].kickoff_ts), note: 'rescheduled game: ADHOC stands in for the ' + w + ' window and is never official' };
       } else ct = L.dueCheckpoint(h, prior.map((r) => r.checkpoint_type));
+      let event = null;
+      if (!ct && !opts.adhoc && p.canonical && h <= EVENT_H && prior.length) {
+        const last = prior.slice().sort((a, b) => U.ms(a.prediction_ts) - U.ms(b.prediction_ts))[prior.length - 1];
+        const lh = last.inputs_ref && last.inputs_ref.canonical && last.inputs_ref.canonical.input_hash;
+        if (lh && lh !== p.canonical.input_hash) {
+          ct = 'ADHOC';
+          event = { kind: 'INPUT_CHANGED', from_input_hash: lh, to_input_hash: p.canonical.input_hash, supersedes: last.prediction_id,
+            note: 'the model inputs changed after the last snapshot: a new version, never official, the earlier row kept' };
+        }
+      }
       if (!ct) continue;
       log.due++;
       const gq = qByGame.get(p.game.game_id) || [];
@@ -301,7 +336,8 @@ function run(opts) {
       const dq = M.dataQuality({ slateGame: p.slateGame, model: p, market, hours: h, now, dupPairs: dup });
       const decision = p.decide(market, now);
       const row = buildRow(p, ct, prior.length === 0, market, decision, dq, { now, role: roleOf(roles, m.model_version), origin: 'LIVE', integrity, kickoffBasis, reschedule,
-        disagreement: disagreementFor(p, market, now, models) });
+        disagreement: disagreementFor(p, market, now, models), event });
+      if (event) log.event_adhoc = (log.event_adhoc || 0) + 1;
       if (row.inputs_ref.bet_gate) log.bet_gated++;
       if (reschedule) log.rescheduled_adhoc++;
       rows.push(row);

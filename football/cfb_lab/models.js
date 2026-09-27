@@ -27,6 +27,9 @@ const L = require('./lab_core.js');
 const G = require('./ledger.js');
 const ID = require('./identity.js');
 const REC = require(path.join(G.REPO, 'tools', 'record', 'football_record_core.js'));
+/* the one canonical pathway to a V2 projection (docs/cfb-production/CANONICAL.md):
+   input contract, the engine, numeric checks, degraded modes */
+const CANON = require(path.join(G.REPO, 'football', 'cfb_production', 'canonical.js'));
 
 const U = L.util;
 const V2DIR = path.join(G.REPO, 'football', 'cfb_v2');
@@ -193,17 +196,27 @@ function v2Adapter(which, opts) {
   const calV = mv + ':' + hashObj({ win: P.calibration && P.calibration.win, cover: P.cover }).slice(0, 12);
   const ensV = mv + ':' + hashObj(P.stack_weights || P.ensemble || {}).slice(0, 12);
   const out = new Map();
+  const unavailable = [];
   ((cur && cur.rows) || []).forEach((row0) => {
     let row = row0;
     if (cand) {
       const c = row0.shadow && row0.shadow.candidate_001;
       if (!c || !U.isNum(c.ens_pred) || !U.isNum(c.sigma)) return;
-      row = Object.assign({}, row0, { ens_pred: c.ens_pred, sigma: c.sigma, components: c.components || null, ens_sd: c.ens_sd != null ? c.ens_sd : null });
+      /* the row now says whose numbers it carries: the candidate's, never v2.1's */
+      row = Object.assign({}, row0, { ens_pred: c.ens_pred, sigma: c.sigma, components: c.components || null, ens_sd: c.ens_sd != null ? c.ens_sd : null,
+        model_version: c.model_version || mv });
     }
     /* FBS-vs-FCS: projected (kept for accuracy), never priced (docs/cfb-v2/MODEL_CARD.md §8) */
     const notPriced = row.priced === false;
-    const pure = E.engine.pure(row);
-    if (!pure || pure.status !== 'PREDICTED') return;
+    const pure = CANON.pure(row, { engine: E.engine, params: P, row_model_version: opts.rowModelVersion });
+    if (!pure || pure.status !== 'PREDICTED') {
+      if (pure && pure.status === 'UNAVAILABLE') unavailable.push({ game_id: String(row.game_id), reason: pure.reason });
+      return;
+    }
+    const contract = CANON.checkRow(row, { model_version: mv, row_model_version: opts.rowModelVersion });
+    const canonical = { rule: CANON.SCHEMA, contract_version: contract.version, contract_ok: contract.ok, contract_degrade: contract.degrade,
+      decision_inputs_complete: contract.decision_inputs_complete, input_hash: CANON.inputHash(row), row_state: row.state || null,
+      row_modes: CANON.modes(row, {}).modes };
     const g = slateById.get(String(row.game_id)) || null;
     const comps = row.components || null;
     const iv = pure.intervals || {};
@@ -226,7 +239,7 @@ function v2Adapter(which, opts) {
       explain: { primary_edge: why[0] || null, secondary_edge: why[1] || null,
         primary_uncertainty: (row.uncertainty_drivers || [])[0] || null,
         disagreement_summary: comps ? Object.keys(comps).map((k) => k + ' ' + comps[k]).join(', ') + (U.isNum(csd) ? ' (SD ' + csd.toFixed(2) + ')' : '') : null },
-      slateGame: g,
+      slateGame: g, canonical,
       inputs: { current_generated_at: cur.generated_at, current_sha256: opts.currentHash || hashFile(path.join(V2DIR, 'current.json')), row_prediction_ts: row.prediction_ts },
       decide(market, now) {
         if (notPriced) {
@@ -254,7 +267,7 @@ function v2Adapter(which, opts) {
       },
     });
   });
-  return { model_version: mv, label, projections: out, generated_at: cur && cur.generated_at };
+  return { model_version: mv, label, projections: out, generated_at: cur && cur.generated_at, unavailable };
 }
 
 /* Submodel columns (METRICS §13 / SCHEMA): the V2 components by what they are. */

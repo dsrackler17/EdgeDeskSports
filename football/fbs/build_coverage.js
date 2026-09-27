@@ -64,16 +64,18 @@ const V2 = (function () {
     require(path.join(ROOT, 'football', 'cfb_v2', 'params.js'));
     const eng = require(path.join(ROOT, 'football', 'cfb_v2', 'engine.js'));
     const cur = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'current.json'), 'utf8'));
+    /* the one canonical pathway to a V2 projection (input contract, engine, numeric checks) */
+    const canon = require(path.join(ROOT, 'football', 'cfb_production', 'canonical.js'));
     const byId = {};
     (cur.rows || []).forEach(function (r) { byId[String(r.game_id)] = r; });
-    return { eng: eng, byId: byId, version: cur.model_version, generated_at: cur.generated_at };
+    return { eng: eng, canon: canon, byId: byId, version: cur.model_version, generated_at: cur.generated_at };
   } catch (e) { return null; }
 })();
 function v2Shadow(gameId) {
   if (!V2) return null;
   const row = V2.byId[String(gameId)];
   if (!row) return null;
-  const p = V2.eng.pure(row, {});
+  const p = V2.canon.pure(row, { engine: V2.eng, params: global.window && global.window.EDCfbV2Params, row_model_version: V2.version });
   if (p.status !== 'PREDICTED') {
     return { model_version: V2.version, state: row.state || null, status: p.status, reason: p.reason || null };
   }

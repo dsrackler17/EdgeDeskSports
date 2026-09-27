@@ -31,6 +31,8 @@ global.window = global.window || global;
 require(path.join(REPO, 'football', 'cfb_v2', 'params.js'));
 const E = require(path.join(REPO, 'football', 'cfb_v2', 'engine.js'));
 const D = require('./decision.js');
+/* the one canonical pathway to a V2 projection: input contract, the engine, numeric checks */
+const CANON = require(path.join(REPO, 'football', 'cfb_production', 'canonical.js'));
 /* the market-integrity rules (consensus, freshness, outliers); absent, the engine's own gates still apply */
 const INTEG = (() => { try { return require(path.join(REPO, 'football', 'cfb_lab', 'integrity.js')); } catch (e) { return null; } })();
 
@@ -101,7 +103,7 @@ function decideAll(season, nowMs) {
     /* only a projection frozen BEFORE the quote can decide it: replayed rows were computed later (hindsight) */
     if (g.origin !== 'LIVE') continue;
     if (g.row.prediction_ts && t < L.util.ms(g.row.prediction_ts)) continue;          /* a quote before the freeze */
-    const pure = E.pure(g.row, {});
+    const pure = CANON.pure(g.row, { engine: E, params: global.window.EDCfbV2Params, row_model_version: g.model_version });
     const books = Object.values(latestByGameBook[q.game_id]).map((x) => ({ home_line: x.home_line }));
     const xs = books.map((b) => b.home_line).sort((a, b) => a - b);
     const iqr = xs.length >= 2 ? xs[Math.ceil((xs.length - 1) * 0.75)] - xs[Math.floor((xs.length - 1) * 0.25)] : null;

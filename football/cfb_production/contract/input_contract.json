@@ -805,7 +805,8 @@
    "type": "object",
    "critical": true,
    "null_policy": "REFUSE",
-   "rule": "every stack-weight component present and finite; the ensemble equals their weighted sum"
+   "rule": "every stack-weight component of the contract model present and finite; the ensemble equals their weighted sum (checked only for the contract model: a candidate carries its own components)",
+   "model_specific": true
   },
   {
    "field": "ens_sd",

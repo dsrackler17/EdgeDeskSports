@@ -15,6 +15,8 @@ global.window = global.window || global;
 require(path.join(__dirname, 'params.js'));
 const E = require(path.join(__dirname, 'engine.js'));
 const P = global.window.EDCfbV2Params;
+/* the one canonical pathway to a V2 projection: input contract, the engine, numeric checks */
+const CANON = require(path.join(__dirname, '..', 'cfb_production', 'canonical.js'));
 const i = process.argv.indexOf('--season');
 const SEASON = i > 0 ? process.argv[i + 1] : String(new Date().getUTCFullYear());
 const dir = path.join(__dirname, 'snapshots', SEASON);
@@ -25,7 +27,7 @@ for (const f of files) {
   const j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   for (const x of j.rows) {
     const r = x.row;
-    const p = E.pure(r, {});
+    const p = CANON.pure(r, { engine: E, params: P, row_model_version: j.model_version });
     const m = r.shadow && r.shadow.market_at_freeze;
     const market = m && typeof m.current_home_line === 'number'
       ? { current: { home_line: m.current_home_line, ts: r.shadow.captured_at },
