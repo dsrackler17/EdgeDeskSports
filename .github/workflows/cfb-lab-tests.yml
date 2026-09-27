@@ -25,6 +25,10 @@ on:
       - 'football/fbs/fbs.js'
       - 'supabase/cfb_lab.sql'
       - 'supabase/cfb_lab_cron.sql'
+      - 'supabase/cfb_market_integrity.sql'
+      - 'supabase/functions/edgedesk_ai/_cfb_explain.js'
+      - 'football/cfb_decision/decision.js'
+      - 'app.html'
       - 'admin/cfb-lab/**'
       - 'record.html'
       - 'docs/cfb-lab/**'
@@ -38,7 +42,11 @@ on:
       - 'football/cfb_lab/fixtures/**'
       - 'supabase/cfb_lab.sql'
       - 'supabase/cfb_lab_cron.sql'
+      - 'supabase/cfb_market_integrity.sql'
       - 'supabase/functions/capture/index.ts'
+      - 'supabase/functions/edgedesk_ai/_cfb_explain.js'
+      - 'football/cfb_decision/decision.js'
+      - 'app.html'
       - 'admin/cfb-lab/**'
       - '.github/workflows/cfb-lab-tests.yml'
   workflow_dispatch:
@@ -53,7 +61,7 @@ concurrency:
 jobs:
   suites:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -71,5 +79,21 @@ jobs:
         run: node football/cfb_lab/ui.test.js
       - name: Public record section
         run: node football/cfb_lab/record_section.test.js
+      - name: Market integrity (quote rules, outliers, consensus, freshness, settlement validity, BET gate)
+        run: node football/cfb_lab/integrity.test.js
+      - name: Chaos (provider outages, bad scores, postponements, settle 1x/2x/3x)
+        run: node football/cfb_lab/chaos.test.js
+      - name: Provider contracts (schema drift, retries, circuit breakers)
+        run: node football/cfb_lab/providers.test.js
+      - name: Sign conventions (spreads, prices, ATS, CLV, home/away)
+        run: node football/cfb_lab/sign_suite.test.js
+      - name: Frontend contract (the V2 panel, decision card, public record)
+        run: node football/cfb_lab/frontend_contract.test.js
+      - name: AI explanation boundary (facts only, refused claims)
+        run: node football/cfb_lab/explain_guard.test.js
+      - name: Market-integrity Postgres contract (shared rule fixture)
+        env:
+          CFB_LAB_SQL_REQUIRED: '1'
+        run: node football/cfb_lab/integrity_sql.test.js
       - name: The committed ledger is intact
         run: node football/cfb_lab/ledger.js verify
