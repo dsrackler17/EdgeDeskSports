@@ -56568,6 +56568,14 @@ function fbV2ShadowHTML(u,p){
   if(!row)return '<div class="gd-nodata">No frozen V2 snapshot for this game yet.</div>';
   var pu=V.pure(row,{});
   if(pu.status!=='PREDICTED')return '<div class="gd-nodata">'+fbEsc(pu.status)+': '+fbEsc(pu.reason||'')+'</div>';
+  /* SIGN CONTRACT (docs/cfb-production/MARKET_INTEGRITY.md §1): the fair line
+     is the negated home margin and the two win probabilities sum to one. A
+     panel that cannot vouch for its own sign shows nothing rather than a
+     reversed side. It checks; it never recomputes a number. Both numbers are
+     rounded to 0.01 independently, so they may disagree by 0.01. */
+  if(!(typeof pu.projected_margin==='number'&&typeof pu.fair_spread_home_line==='number'&&Math.abs(pu.fair_spread_home_line+pu.projected_margin)<0.015
+    &&typeof pu.home_win_prob==='number'&&Math.abs(pu.home_win_prob+pu.away_win_prob-1)<1e-3))
+    return '<div class="gd-nodata">V2 sign contract failed for this game — nothing is shown rather than a possibly reversed side.</div>';
   var mk=(p&&p.market)||{},cur=null;
   if(mk.spread_line!=null)cur={home_line:-mk.spread_line,ts:mk.as_of||null};
   var d=V.decide(pu,cur?{current:cur}:null,{row:row});

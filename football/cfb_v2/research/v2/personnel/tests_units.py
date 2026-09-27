@@ -442,7 +442,7 @@ def r_point_in_time_panel():
         d = fa0(season)
         if season == S:
             d = d.copy()
-            d.loc[d.kickoff_ts >= T, 'made'] = 0.0
+            d.loc[pd.to_datetime(d.kickoff_ts, utc=True) >= T, 'made'] = 0.0
         return d
     try:
         U.player_games, U.team_games, V.fg_attempts = pg_, tg_, fa_
@@ -495,8 +495,10 @@ def r_live_2026():
             ol = s[s.unit.eq('OL')]
             chk('live_ol_rows_not_estimated', ol.value_status.str.startswith('NOT_ESTIMATED').all() and len(ol) > 0)
             rep = tid[tid.unit.isin(['RB', 'WR_TE'])]
-            chk('live_known_absence_delta_nonpositive', (rep.absence_delta_use.fillna(0) <= 1e-12).all() and
-                (rep.absence_delta_use.fillna(0) < 0).any(), rep[['unit', 'absence_delta_use']].to_dict('records'))
+            # a reported absence moves the known-absence delta (either way: a low-usage player's share goes to
+            # higher-usage teammates under the usage-revealed value)
+            chk('live_known_absence_delta_moves_for_reported_team', (rep.absence_delta_use.fillna(0).abs() > 0).any(),
+                rep[['unit', 'absence_delta_use']].to_dict('records'))
             chk('live_unreported_known_absence_zero', (other.absence_delta_use.fillna(0).abs() < 1e-12).all()
                 if len(other) else True)
             found = True

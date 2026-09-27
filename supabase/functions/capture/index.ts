@@ -992,6 +992,10 @@ export function priceEvent(ev: any, cfg: Config, nowMs: number): PriceEventResul
       if (!mkey) { out.malformed++; continue; }
       const rawOutcomes: any[] = Array.isArray(mk?.outcomes) ? mk.outcomes : [];
       if (rawOutcomes.length < 2) { out.malformed++; continue; }
+      /* A handicap market without a handicap is a schema fault (a provider that
+         drops `point`), never a market with no point: refuse it rather than
+         price it as a two-way without a line. strictNum never reads null as 0. */
+      if ((mkey === "spreads" || mkey === "totals") && !rawOutcomes.every((o) => strictNum(o?.point) != null)) { out.malformed++; continue; }
 
       const method = policyLookup(cfg.devigPolicy, sportGroup(sportKey), mkey) ?? "shin";
 
@@ -1592,6 +1596,14 @@ export function dropColumns(rows: any[], cols: Set<string>): any[] {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const ODDS_BASE = "https://api.the-odds-api.com/v4";
+/* Every provider call has a deadline (docs/cfb-production/PROVIDERS.md): a
+   hung request must not eat the whole run budget. The billed /odds call is
+   NOT retried here (a retry is a second billed request; the next scheduled
+   run is the retry); a timeout reports status 0 with a TIMEOUT detail. */
+export const ODDS_TIMEOUT_MS = 20000;
+export function deadline(ms: number): AbortSignal | undefined {
+  try { return (AbortSignal as any).timeout(ms); } catch { return undefined; }
+}
 
 export interface OddsResult {
   data: any[]; ok: boolean; status: number; detail: string;
@@ -1617,7 +1629,7 @@ export async function fetchOdds(key: string, sport: string, cfg: Config): Promis
   const u = `${ODDS_BASE}/sports/${encodeURIComponent(sport)}/odds/?apiKey=${encodeURIComponent(key)}`
     + `&${sel}&markets=${encodeURIComponent(cfg.markets)}&oddsFormat=decimal&dateFormat=iso`;
   try {
-    const r = await fetch(u);
+    const r = await fetch(u, { signal: deadline(ODDS_TIMEOUT_MS) });
     const h = (n: string) => r.headers.get(n) ?? "";
     const meta = { quotaRemaining: h("x-requests-remaining"), quotaUsed: h("x-requests-used"), lastCost: h("x-requests-last") };
     if (!r.ok) {
@@ -1627,7 +1639,9 @@ export async function fetchOdds(key: string, sport: string, cfg: Config): Promis
     const data = await r.json();
     return { data: Array.isArray(data) ? data : [], ok: true, status: 200, detail: "", ...meta };
   } catch (e) {
-    return { data: [], ok: false, status: 0, detail: String((e as Error)?.message ?? e), quotaRemaining: "", quotaUsed: "", lastCost: "" };
+    const name = String((e as Error)?.name ?? "");
+    const timeout = name === "TimeoutError" || name === "AbortError";
+    return { data: [], ok: false, status: 0, detail: (timeout ? "TIMEOUT after " + ODDS_TIMEOUT_MS + " ms: " : "") + String((e as Error)?.message ?? e), quotaRemaining: "", quotaUsed: "", lastCost: "" };
   }
 }
 
@@ -1647,7 +1661,7 @@ export async function fetchOdds(key: string, sport: string, cfg: Config): Promis
  */
 export async function fetchEvents(key: string, sport: string): Promise<{ commences: number[]; ok: boolean }> {
   try {
-    const r = await fetch(`${ODDS_BASE}/sports/${encodeURIComponent(sport)}/events/?apiKey=${encodeURIComponent(key)}`);
+    const r = await fetch(`${ODDS_BASE}/sports/${encodeURIComponent(sport)}/events/?apiKey=${encodeURIComponent(key)}`, { signal: deadline(ODDS_TIMEOUT_MS) });
     if (!r.ok) return { commences: [], ok: false };
     const list = await r.json();
     if (!Array.isArray(list)) return { commences: [], ok: false };
@@ -1657,7 +1671,7 @@ export async function fetchEvents(key: string, sport: string): Promise<{ commenc
 
 export async function fetchActiveSports(key: string): Promise<{ keys: string[]; ok: boolean; detail: string }> {
   try {
-    const r = await fetch(`${ODDS_BASE}/sports/?apiKey=${encodeURIComponent(key)}`);
+    const r = await fetch(`${ODDS_BASE}/sports/?apiKey=${encodeURIComponent(key)}`, { signal: deadline(ODDS_TIMEOUT_MS) });
     if (!r.ok) return { keys: [], ok: false, detail: `HTTP ${r.status}: ${(await r.text().catch(() => "")).slice(0, 160)}` };
     const list = await r.json();
     return { keys: (list ?? []).filter((s: any) => s.active && !s.has_outrights).map((s: any) => s.key), ok: true, detail: "" };
@@ -1847,6 +1861,64 @@ const json = (o: unknown, status = 200) =>
    ========================================================================== */
 export const CFB_LAB_SPORT = "americanfootball_ncaaf";
 
+/* A number, strictly: null, undefined, "" and non-numeric text are NOT 0.
+   (`Number(null) === 0` is how a provider that drops `point` would have
+   become a pick'em spread and a zero total.) */
+export function strictNum(v: unknown): number | null {
+  if (v === null || v === undefined || typeof v === "boolean") return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  const t = String(v).trim();
+  if (!/^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(t)) return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+/* The lab's hard market rules (football/cfb_lab/integrity.js validateQuote,
+   cfb_market_quote_integrity_v1; the shared cases are
+   football/cfb_lab/fixtures/integrity_rules.json). A quote that fails is NOT
+   sent to cfb_lab_ingest_quotes: it goes to the quarantine RPC with its
+   reasons, kept for investigation and never part of any consensus. */
+export const CFB_QUOTE_BOUNDS = {
+  SPREAD_ABS_MAX: 70, TOTAL_MIN: 20, TOTAL_MAX: 100, AMERICAN_ABS_MIN: 100, SIDE_PRICE_ABS_MAX: 1000,
+  MONEYLINE_ABS_MAX: 100000, TWO_WAY_IMPLIED_MIN: 0.99, TWO_WAY_IMPLIED_MAX: 1.30, FUTURE_TOLERANCE_MIN: 5,
+};
+function impliedAm(a: number | null): number | null {
+  if (a == null || !Number.isFinite(a) || Math.abs(a) < CFB_QUOTE_BOUNDS.AMERICAN_ABS_MIN) return null;
+  return a > 0 ? 100 / (a + 100) : (-a) / (-a + 100);
+}
+export function cfbQuoteProblems(q: any, nowMs: number): string[] {
+  const B = CFB_QUOTE_BOUNDS, out: string[] = [];
+  const cols = q.market_type === "total" ? ["price_over", "price_under"] : ["price_home", "price_away"];
+  for (const c of ["home_line", "total_points", "price_home", "price_away", "price_over", "price_under"]) {
+    if (q[c] != null && q[c] !== "" && strictNum(q[c]) == null) out.push("NON_NUMERIC_" + c.toUpperCase());
+  }
+  const hl = strictNum(q.home_line), tp = strictNum(q.total_points);
+  if (q.market_type === "spread" && hl != null && Math.abs(hl) > B.SPREAD_ABS_MAX) out.push("SPREAD_OUT_OF_BOUNDS");
+  if (q.market_type === "total" && tp != null && (tp < B.TOTAL_MIN || tp > B.TOTAL_MAX)) out.push("TOTAL_OUT_OF_BOUNDS");
+  const maxAbs = q.market_type === "moneyline" ? B.MONEYLINE_ABS_MAX : B.SIDE_PRICE_ABS_MAX;
+  for (const c of cols) {
+    const a = strictNum(q[c]);
+    if (a == null) continue;
+    if (a === 0) out.push("PRICE_ZERO");
+    else if (Math.abs(a) < B.AMERICAN_ABS_MIN) out.push("PRICE_NOT_AMERICAN");
+    else if (Math.abs(a) > maxAbs) out.push("PRICE_OUT_OF_BOUNDS");
+    else if (Math.round(a) !== a) out.push("PRICE_NOT_INTEGER");
+  }
+  const p1 = impliedAm(strictNum(q[cols[0]])), p2 = impliedAm(strictNum(q[cols[1]]));
+  if (p1 != null && p2 != null) {
+    const sum = p1 + p2;
+    if (strictNum(q[cols[0]]) === strictNum(q[cols[1]]) && sum > B.TWO_WAY_IMPLIED_MAX) out.push("IDENTICAL_SIDE_PRICES");
+    else if (sum > B.TWO_WAY_IMPLIED_MAX) out.push("TWO_WAY_HOLD_TOO_HIGH");
+    if (sum < B.TWO_WAY_IMPLIED_MIN) out.push("TWO_WAY_BELOW_FAIR");
+  }
+  const tol = B.FUTURE_TOLERANCE_MIN * 60000;
+  const obs = parseStamp(q.observed_at), upd = parseStamp(q.provider_updated_at);
+  if (obs != null && obs > nowMs + tol) out.push("OBSERVED_IN_FUTURE");
+  if (upd != null && obs != null && upd > obs + tol) out.push("PROVIDER_TS_AFTER_OBSERVED");
+  if (q.provider_updated_at != null && q.provider_updated_at !== "" && upd == null) out.push("PROVIDER_TS_UNPARSEABLE");
+  return [...new Set(out)];
+}
+
 /* decimal -> American, rounded half away from zero (the lab's price rule) */
 export function decimalToAmerican(d: unknown): number | null {
   const x = Number(d);
@@ -1856,8 +1928,9 @@ export function decimalToAmerican(d: unknown): number | null {
   return r === 0 ? null : r;
 }
 
-export function cfbLabQuotes(events: any[], nowIso: string, nowMs: number): { quotes: any[]; skipped: Record<string, number> } {
+export function cfbLabQuotes(events: any[], nowIso: string, nowMs: number): { quotes: any[]; skipped: Record<string, number>; quarantined: any[] } {
   const quotes: any[] = [];
+  const quarantined: any[] = [];
   const skipped: Record<string, number> = {};
   const skip = (why: string) => { skipped[why] = (skipped[why] ?? 0) + 1; };
   const lower = (x: unknown) => String(x ?? "").trim().toLowerCase();
@@ -1879,36 +1952,44 @@ export function cfbLabQuotes(events: any[], nowIso: string, nowMs: number): { qu
         const outs: any[] = Array.isArray(m?.outcomes) ? m.outcomes : [];
         const upd = parseStamp(m?.last_update) ?? parseStamp(bk?.last_update);
         const base = { ...common, book, provider_updated_at: upd == null ? null : new Date(upd).toISOString() };
+        let q: any = null;
         if (m?.key === "spreads") {
           const h = outs.find((o) => lower(o?.name) === home), a = outs.find((o) => lower(o?.name) === away);
-          const hp = Number(h?.point), ap = Number(a?.point);
-          if (!h || !a || !Number.isFinite(hp) || !Number.isFinite(ap)) { skip("spread without both sides"); continue; }
+          const hp = strictNum(h?.point), ap = strictNum(a?.point);
+          if (!h || !a) { skip("spread without both sides"); continue; }
+          if (hp == null || ap == null) { skip("spread point missing (schema: never read as 0)"); continue; }
           if (Math.abs(hp + ap) > 1e-9) { skip("spread sides disagree about the number"); continue; }
-          quotes.push({ ...base, market_type: "spread", home_line: hp, price_home: decimalToAmerican(h.price), price_away: decimalToAmerican(a.price) });
+          q = { ...base, market_type: "spread", home_line: hp, price_home: decimalToAmerican(strictNum(h.price)), price_away: decimalToAmerican(strictNum(a.price)) };
         } else if (m?.key === "totals") {
           const o = outs.find((x) => lower(x?.name) === "over"), u = outs.find((x) => lower(x?.name) === "under");
-          const op = Number(o?.point), up = Number(u?.point);
-          if (!o || !u || !Number.isFinite(op) || !Number.isFinite(up)) { skip("total without both sides"); continue; }
+          const op = strictNum(o?.point), up = strictNum(u?.point);
+          if (!o || !u) { skip("total without both sides"); continue; }
+          if (op == null || up == null) { skip("total point missing (schema: never read as 0)"); continue; }
           if (Math.abs(op - up) > 1e-9) { skip("total sides disagree about the number"); continue; }
-          quotes.push({ ...base, market_type: "total", total_points: op, price_over: decimalToAmerican(o.price), price_under: decimalToAmerican(u.price) });
+          q = { ...base, market_type: "total", total_points: op, price_over: decimalToAmerican(strictNum(o.price)), price_under: decimalToAmerican(strictNum(u.price)) };
         } else if (m?.key === "h2h") {
           const h = outs.find((o) => lower(o?.name) === home), a = outs.find((o) => lower(o?.name) === away);
-          const ph = decimalToAmerican(h?.price), pa = decimalToAmerican(a?.price);
+          const ph = decimalToAmerican(strictNum(h?.price)), pa = decimalToAmerican(strictNum(a?.price));
           if (ph == null && pa == null) { skip("moneyline without a price"); continue; }
-          quotes.push({ ...base, market_type: "moneyline", price_home: ph, price_away: pa });
+          q = { ...base, market_type: "moneyline", price_home: ph, price_away: pa };
         }
+        if (!q) continue;
+        const problems = cfbQuoteProblems(q, nowMs);
+        if (problems.length) quarantined.push({ ...q, reasons: problems, rule_version: "cfb_market_quote_integrity_v1" });
+        else quotes.push(q);
       }
     }
   }
-  return { quotes, skipped };
+  return { quotes, skipped, quarantined };
 }
 
-async function sendCfbLab(url: string, key: string, quotes: any[]): Promise<{ ok: boolean; result?: any; error?: string }> {
+async function sendCfbLab(url: string, key: string, quotes: any[], rpc = "cfb_lab_ingest_quotes"): Promise<{ ok: boolean; result?: any; error?: string }> {
   try {
-    const r = await fetch(url.replace(/\/+$/, "") + "/rest/v1/rpc/cfb_lab_ingest_quotes", {
+    const r = await fetch(url.replace(/\/+$/, "") + "/rest/v1/rpc/" + rpc, {
       method: "POST",
       headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" },
       body: JSON.stringify({ p_quotes: quotes }),
+      signal: deadline(ODDS_TIMEOUT_MS),
     });
     const text = await r.text().catch(() => "");
     if (!r.ok) return { ok: false, error: `HTTP ${r.status}: ${text.slice(0, 240)}` };
@@ -2079,7 +2160,8 @@ export async function handle(req: Request): Promise<Response> {
   const perSegment: Record<string, { candidates: number; actionable: number }> = {};
   let quotaRemaining = "", quotaUsed = "", quotaSpent = 0;
   /* the CFB Model Lab feed (see cfbLabQuotes); never part of the run status */
-  const cfbLab: any = { enabled: cfg.cfbLab, sent: 0, skipped: {}, results: [] as any[], errors: [] as string[] };
+  const cfbLab: any = { enabled: cfg.cfbLab, sent: 0, skipped: {}, results: [] as any[], errors: [] as string[],
+    quarantined: 0, quarantine_reasons: {} as Record<string, number>, quarantine_errors: [] as string[] };
   /* THE FUNNEL. Every one of these answers a question the brief asks to be
      answerable from a single run, in order, without inference. */
   const funnel: any = {
@@ -2129,6 +2211,14 @@ export async function handle(req: Request): Promise<Response> {
           const r = await sendCfbLab(SB_URL, SB_KEY, chunk);
           if (r.ok) { cfbLab.sent += chunk.length; cfbLab.results.push(r.result); }
           else { cfbLab.errors.push(r.error); break; }
+        }
+        /* quotes that failed the integrity rules: kept for investigation
+           (supabase/cfb_market_integrity.sql), fail-soft like the feed itself */
+        if (lab.quarantined.length && !outOfTime()) {
+          cfbLab.quarantined += lab.quarantined.length;
+          for (const q of lab.quarantined) for (const x of q.reasons) cfbLab.quarantine_reasons[x] = (cfbLab.quarantine_reasons[x] ?? 0) + 1;
+          const r = await sendCfbLab(SB_URL, SB_KEY, lab.quarantined, "cfb_market_quarantine_quotes");
+          if (!r.ok) cfbLab.quarantine_errors.push(r.error);
         }
       } catch (e) { cfbLab.errors.push(String((e as Error)?.message ?? e)); }
     }

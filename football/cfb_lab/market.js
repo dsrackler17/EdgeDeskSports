@@ -286,7 +286,7 @@ function screenCandidates(stored, candidates, opts) {
   return { accepted, quarantined };
 }
 function qRow(q, severity, reasons, evidence, now, rule) {
-  const r = { quarantine_id: null, stage: 'INGEST', severity, reasons: reasons.slice(), rule_version: rule, status: 'OPEN',
+  const r = { quarantine_id: null, stage: 'INGEST', severity, reasons: reasons.slice(), rule_version: rule,
     quote_id: q.quote_id, source: q.source, book: q.book, game_id: q.game_id || null, provider_event_id: q.provider_event_id || null,
     market_type: q.market_type, season: q.season == null ? null : q.season, week: q.week == null ? null : q.week,
     home_line: q.home_line == null ? null : q.home_line, total_points: q.total_points == null ? null : q.total_points,

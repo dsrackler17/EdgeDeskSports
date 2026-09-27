@@ -314,13 +314,19 @@ function validateCfbfastrHeader(text) {
   return POLICIES.cfbfastr_schedule.required.filter((c) => !cols.includes(c));
 }
 
-/* A schema incident, as it is logged in last_run.json and provider_health.json. */
+/* The shared production error taxonomy (football/cfb_production/taxonomy.js,
+   docs/cfb-production/JOBS.md §4): each provider class maps to one code, so
+   an incident here reads the same as one from the weekly engine. */
+const TAXONOMY = { TIMEOUT: 'PROVIDER_TRANSIENT', NETWORK: 'PROVIDER_TRANSIENT', TRANSIENT: 'PROVIDER_TRANSIENT', RATE_LIMIT: 'PROVIDER_RATE_LIMIT',
+  AUTH: 'AUTH', PERMANENT: 'PROVIDER_REJECTED', SCHEMA: 'PROVIDER_SCHEMA', UNKNOWN: 'UNKNOWN', CIRCUIT_OPEN: 'PROVIDER_TRANSIENT' };
+function taxonomyCode(cls) { return TAXONOMY[cls] || 'UNKNOWN'; }
+/* A provider incident, as it is logged in last_run.json and provider_health.json. */
 function incident(provider, kind, detail, now) {
-  return { at: now || new Date().toISOString(), provider, error_class: kind, detail: Array.isArray(detail) ? detail.slice(0, 20) : detail };
+  return { at: now || new Date().toISOString(), provider, error_class: kind, error_code: taxonomyCode(kind), detail: Array.isArray(detail) ? detail.slice(0, 20) : detail };
 }
 
 module.exports = {
   ERROR, POLICIES, ProviderError, SchemaError, classify, classifyStatus, retryable, backoffMs, withRetry,
   Breaker, newBreakerState, guarded, httpText,
-  validateEspnScoreboard, validateOddsApiEvents, validateCfbdLineRow, validateCfbfastrHeader, incident,
+  validateEspnScoreboard, validateOddsApiEvents, validateCfbdLineRow, validateCfbfastrHeader, incident, taxonomyCode, TAXONOMY,
 };

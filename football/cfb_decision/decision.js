@@ -171,6 +171,21 @@
     var pa = americanToPayout(a), pb = americanToPayout(b);
     return pa != null && pb != null && pa >= pb - 1e-12;
   }
+  function nextBetterPrice(a) { return a < 0 ? (a + 1 > -100 ? 101 : a + 1) : a + 1; }   /* one cent better */
+  /* the smallest decision EV whose calibrated (curve-mapped) EV reaches minEv, through the curve
+     sideNumbers reads: -Infinity when every decision EV does, null when none does */
+  function decisionEvFloor(A, minEv) {
+    var cT = A.ev_curve && A.ev_curve.input === 'theoretical_ev' ? A.ev_curve : null;
+    var c = A.ev_curve_decision || (A.ev_curve && !cT ? A.ev_curve : null);
+    if (!c) return cT ? null : minEv;
+    var xs = c.x, ys = c.y, i;
+    if (!xs || !xs.length) return minEv;
+    if (ys[0] >= minEv) return -Infinity;
+    for (i = 1; i < xs.length; i++) {
+      if (ys[i] >= minEv) return xs[i - 1] + (minEv - ys[i - 1]) / ((ys[i] - ys[i - 1]) || 1) * (xs[i] - xs[i - 1]);
+    }
+    return null;
+  }
 
   /* --------------------------------------- the calibration artifact (D1) */
   function applyMap(map, p) {
@@ -372,7 +387,8 @@
       pure_cover_prob: pPure, gap_pts: gapSide, abs_gap_pts: Math.abs(gapSide),
       sigma: pure.sigma, ens_sd: isNum(pure.ensemble_sd) ? pure.ensemble_sd : row.ens_sd,
       reliability: pure.football_prediction_confidence, week: wk,
-      early_season: row.early_season ? 1 : (isNum(wk) && wk <= 3 ? 1 : 0),
+      /* an explicit 0 is an answer, not a missing value: postseason games carry schedule week 1 */
+      early_season: row.early_season != null ? (row.early_season ? 1 : 0) : (isNum(wk) && wk <= 3 ? 1 : 0),
       qb_unsettled: row.qb_unsettled_any ? 1 : 0, qb_missing: row.qb_missing_any ? 1 : 0,
       dispersion: mc && isNum(mc.dispersion_iqr) ? mc.dispersion_iqr : null, books: mc ? mc.books : null,
       quote_age_min: mc ? mc.age_minutes : null, is_home_side: side === 'HOME' ? 1 : 0,
@@ -531,7 +547,9 @@
     if (pe > (L.min_probability_edge || 0) && Math.abs(s.gap_pts) >= (L.min_gap_pts || 1) && !research.length) {
       return fin('LEAN', ['LEAN_DIRECTIONAL']);
     }
-    if (research.length && s.pure_cover_probability - s.break_even_probability >= P.min_probability_edge) return fin('RESEARCH', research);
+    /* RESEARCH = a potential edge on the DECISION probability (what LEAN needs) held back by unresolved
+       uncertainty; the pure probability is overconfident and never labels a quote on its own */
+    if (research.length && pe > (L.min_probability_edge || 0) && Math.abs(s.gap_pts) >= (L.min_gap_pts || 1)) return fin('RESEARCH', research);
     return fin('PASS', [pe <= 0 ? 'PASS_PRICE' : 'PASS_INSUFFICIENT_EV']);
   }
 
@@ -564,7 +582,19 @@
     function clears(n) { return isNum(n.probability_edge) && isNum(n.empirical_ev) && n.probability_edge >= P.min_probability_edge && n.empirical_ev >= P.min_ev; }
     var curPrice = side === 'HOME' ? quote.price_home : quote.price_away;
     var cur = atLine(lineSide, isNum(curPrice) ? curPrice : ref);
-    var minPrice = minimumPrice(cur.decision_cover_probability, cur.push_probability, P.min_ev);
+    /* the price floor at this line reads the SAME gates decideQuote does: the probability edge and
+       the calibrated (curve-mapped) EV. null when no price clears (e.g. an EV curve that never
+       reaches min_ev): a bettable-to price is never shown for a quote no price could make a BET */
+    var evFloor = decisionEvFloor(A, P.min_ev), pc = cur.decision_cover_probability, pp = cur.push_probability;
+    var minPrice = evFloor === null || !isNum(pc) ? null : (evFloor === -Infinity ? null : minimumPrice(pc, pp, evFloor));
+    var cands = [], floorOk = evFloor !== null && isNum(pc);
+    if (floorOk && evFloor !== -Infinity) { if (isNum(minPrice)) cands.push(minPrice); else floorOk = false; }
+    var beMax = isNum(pc) ? pc - P.min_probability_edge : null;
+    if (floorOk) { if (isNum(beMax) && beMax > 0 && beMax < 1) cands.push(payoutToAmerican((1 - beMax) / beMax)); else floorOk = false; }
+    var cand = null, k;
+    for (k = 0; floorOk && k < cands.length; k++) if (cand === null || priceBetterOrEqual(cands[k], cand)) cand = cands[k];
+    for (k = 0; cand !== null && k < 5 && !clears(atLine(lineSide, cand)); k++) cand = nextBetterPrice(cand);   /* rounding */
+    if (cand !== null && !clears(atLine(lineSide, cand))) cand = null;
     /* the edge only shrinks as the line worsens for our side (a lower line-for-side), so the
        WORST line that still clears is found by walking down from ten points better */
     function worst(pred) {
@@ -579,7 +609,7 @@
     var idealEdge = isNum(P.ideal_probability_edge) ? P.ideal_probability_edge : 2 * P.min_probability_edge;
     var ideal = worst(function (n) { return isNum(n.probability_edge) && n.probability_edge >= idealEdge && clears(n); });
     var worstAllowed = P.max_price;
-    var floor = isNum(minPrice) && (!isNum(worstAllowed) || priceBetterOrEqual(minPrice, worstAllowed)) ? minPrice : worstAllowed;
+    var floor = cand === null ? null : (!isNum(worstAllowed) || priceBetterOrEqual(cand, worstAllowed) ? cand : worstAllowed);
     return { side: side, current_line: lineSide, reference_price: ref,
       bettable_to_price: floor, bettable_to_line: bettable, ideal_entry_line: ideal,
       acceptable_entry: bettable != null ? { line: bettable, price: ref } : null,
@@ -610,6 +640,8 @@
      (spread, moneyline, alternates, team totals, game total), weighted by the
      policy's correlation assumptions; the slate and any conference cluster are
      capped. Stakes are scaled down, never up, and eligibility never changes. */
+  /* a scaled-down stake rounds DOWN (3 dp), so rounding can never push a total past its cap */
+  function down3(x) { return Math.floor(x * 1000 + 1e-9) / 1000; }
   function applyExposure(positions, P) {
     var E = P.exposure || {}, byGame = {}, i, k;
     var list = positions.map(function (x) { return Object.assign({}, x, { stake_u: x.stake_u || 0, scaled_by: [] }); });
@@ -620,7 +652,7 @@
       /* correlated sum: sqrt(sum s_i^2 + 2 rho sum_{i<j} s_i s_j) (rho = 1 -> the plain sum) */
       for (i = 0; i < g.length; i++) { v += g[i].stake_u * g[i].stake_u; for (var j = i + 1; j < g.length; j++) v += 2 * rho * g[i].stake_u * g[j].stake_u; }
       var eff = Math.sqrt(Math.max(0, v)), cap = isNum(E.max_game_u) ? E.max_game_u : 1.5;
-      if (eff > cap && eff > 0) g.forEach(function (x) { x.stake_u = r(x.stake_u * cap / eff, 3); x.scaled_by.push('game cap ' + cap + 'u'); });
+      if (eff > cap && eff > 0) g.forEach(function (x) { x.stake_u = down3(x.stake_u * cap / eff); x.scaled_by.push('game cap ' + cap + 'u'); });
     }
     function capGroup(key, capU, label) {
       if (!isNum(capU)) return;
@@ -628,7 +660,7 @@
       list.forEach(function (x) { var g = key(x); if (g != null) (groups[g] = groups[g] || []).push(x); });
       Object.keys(groups).forEach(function (g) {
         var s = groups[g].reduce(function (a, x) { return a + x.stake_u; }, 0);
-        if (s > capU) groups[g].forEach(function (x) { x.stake_u = r(x.stake_u * capU / s, 3); x.scaled_by.push(label + ' ' + capU + 'u'); });
+        if (s > capU) groups[g].forEach(function (x) { x.stake_u = down3(x.stake_u * capU / s); x.scaled_by.push(label + ' ' + capU + 'u'); });
       });
     }
     capGroup(function (x) { return x.conference_cluster || null; }, E.max_cluster_u, 'cluster cap');
@@ -657,11 +689,16 @@
       });
     var bets = per.filter(function (d) { return d.status === 'BET'; });
     var rank = function (d) { return isNum(d.empirical_ev) ? d.empirical_ev : -1; };
-    var best = bets.sort(function (x, y) { return rank(y) - rank(x); })[0] || null;
+    /* ties in the calibrated EV (a flat EV curve maps every quote to one value) go to the better
+       price: the higher decision EV at the quote's own line and price */
+    var tie = function (d) { return isNum(d.decision_ev) ? d.decision_ev : -1; };
+    var better = function (x, y) { return (rank(y) - rank(x)) || (tie(y) - tie(x)); };
+    var best = bets.sort(better)[0] || null;
     var order = { BET: 5, RESEARCH: 4, LEAN: 3, PASS: 2, NO_BET: 1 };
-    var top = per.slice().sort(function (x, y) { return (order[y.status] - order[x.status]) || (rank(y) - rank(x)); })[0] || null;
+    var top = per.slice().sort(function (x, y) { return (order[y.status] - order[x.status]) || better(x, y); })[0] || null;
     var out = { engine: ENGINE_ID, engine_version: ENGINE_VERSION, game_id: pure && pure.game_id,
       status: best ? 'BET' : (top ? top.status : 'NO_BET'),
+      summary_index: best ? per.indexOf(best) : (top ? per.indexOf(top) : null),
       best_quote: best ? { book: best.book, side: best.side, line: best.line_for_side, price: best.price,
                            bettable_to_line: best.price_targets.bettable_to_line, bettable_to_price: best.price_targets.bettable_to_price } : null,
       reason_codes: best ? best.reason_codes : (top ? top.reason_codes : ['NO_BET_COMPUTATION']),
@@ -718,8 +755,8 @@
 
   /* ------------------------------------------------------ public output */
   function publicCard(pure, g, names) {
-    var d = g && g.status === 'BET' ? g.decisions.filter(function (x) { return x.status === 'BET' && x.book === g.best_quote.book; })[0]
-      : (g && g.decisions && g.decisions[0]);
+    /* the decision behind the game's status (its best quote), never simply the first book */
+    var d = g && g.decisions && g.decisions.length ? (isNum(g.summary_index) ? g.decisions[g.summary_index] : g.decisions[0]) : null;
     var team = function (side) { return side === 'HOME' ? (names && names.home) || pure.home : (names && names.away) || pure.away; };
     var fmtLine = function (l) { return l > 0 ? '+' + l : String(l); };
     var conf = d && d.bet_confidence ? d.bet_confidence.label : 'UNKNOWN';
@@ -730,6 +767,8 @@
       break_even: d ? pct(d.break_even_probability, 1) : null,
       edge: d && isNum(d.probability_edge) ? (d.probability_edge >= 0 ? '+' : '') + (100 * d.probability_edge).toFixed(1) + ' percentage points' : null,
       decision: g ? (g.status === 'NO_BET' ? 'NO BET' : g.status) : 'NO BET',
+      /* a BET says WHEN (the engine's validated timing); nothing else has one */
+      timing: g && g.status === 'BET' && d ? (d.timing === 'WAIT' ? 'WAIT' : 'BET NOW') : null,
       bettable_to: g && g.best_quote && g.best_quote.bettable_to_line != null ? fmtLine(g.best_quote.bettable_to_line) : null,
       confidence: conf.charAt(0) + conf.slice(1).toLowerCase(),
       why: explain(d),
