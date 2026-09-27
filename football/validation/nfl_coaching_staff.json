@@ -1,0 +1,5758 @@
+{
+ "schema": "edgedesk_nfl_coaching_staff_validation_v1",
+ "sport": "americanfootball_nfl",
+ "status": "CANDIDATE",
+ "affects_projection": false,
+ "selected_cap": 0,
+ "selected_reliability_k": 4,
+ "tuned_cap": 1,
+ "tune_selection": {
+  "k": 4,
+  "cap": 1,
+  "reason": "lowest tune MAE among arms clearing minimum effect, RMSE and residual-direction guards"
+ },
+ "verdict": {
+  "feature": "nfl_coaching_staff_cap_1_0",
+  "status": "CANDIDATE",
+  "may_move_lines": false,
+  "effect_size": 0.014,
+  "effect_units": "points of spread MAE improvement on the holdout",
+  "p_value": 0.4305,
+  "brier_delta": -0.00027,
+  "worst_season": 2022,
+  "worst_season_delta": 0.063,
+  "conditions_passed": [
+   "holdout_breadth",
+   "season_stability",
+   "calibration",
+   "leakage"
+  ],
+  "conditions_failed": [
+   "pooled_improvement",
+   "significance"
+  ],
+  "reasons": [
+   "pooled MAE improved by only 0.014 points, against a 0.02 bar",
+   "paired p = 0.430, above the 0.05 bar"
+  ],
+  "holdout_results": {
+   "baseline": {
+    "n": 2761,
+    "spread_mae": 10.2,
+    "rmse": 13.153,
+    "brier": 0.22311,
+    "feature": "nfl_coaching_staff_cap_0",
+    "ats_vs_close": {
+     "0.5": {
+      "n": 2310,
+      "wins": 1125,
+      "losses": 1185,
+      "pushes": 56,
+      "win_pct": 0.487,
+      "clears_110_break_even": false
+     },
+     "1.0": {
+      "n": 1962,
+      "wins": 960,
+      "losses": 1002,
+      "pushes": 46,
+      "win_pct": 0.4893,
+      "clears_110_break_even": false
+     },
+     "1.5": {
+      "n": 1615,
+      "wins": 790,
+      "losses": 825,
+      "pushes": 31,
+      "win_pct": 0.4892,
+      "clears_110_break_even": false
+     },
+     "2.0": {
+      "n": 1319,
+      "wins": 647,
+      "losses": 672,
+      "pushes": 23,
+      "win_pct": 0.4905,
+      "clears_110_break_even": false
+     },
+     "3.0": {
+      "n": 870,
+      "wins": 442,
+      "losses": 428,
+      "pushes": 15,
+      "win_pct": 0.508,
+      "clears_110_break_even": false
+     }
+    }
+   },
+   "arm": {
+    "n": 2761,
+    "spread_mae": 10.186,
+    "rmse": 13.105,
+    "brier": 0.22284,
+    "paired": {
+     "n": 2761,
+     "mean_diff": 0.014,
+     "t": 0.7883,
+     "p": 0.4305
+    },
+    "predictive_residual": {
+     "n": 2626,
+     "slope": 1.2005,
+     "correlation": 0.0888,
+     "mean_adjustment": 0.0256,
+     "mean_base_residual": -0.2591
+    },
+    "ats_vs_close": {
+     "0.5": {
+      "n": 2274,
+      "wins": 1099,
+      "losses": 1175,
+      "pushes": 50,
+      "win_pct": 0.4833,
+      "clears_110_break_even": false
+     },
+     "1.0": {
+      "n": 1866,
+      "wins": 908,
+      "losses": 958,
+      "pushes": 42,
+      "win_pct": 0.4866,
+      "clears_110_break_even": false
+     },
+     "1.5": {
+      "n": 1541,
+      "wins": 746,
+      "losses": 795,
+      "pushes": 30,
+      "win_pct": 0.4841,
+      "clears_110_break_even": false
+     },
+     "2.0": {
+      "n": 1246,
+      "wins": 603,
+      "losses": 643,
+      "pushes": 25,
+      "win_pct": 0.4839,
+      "clears_110_break_even": false
+     },
+     "3.0": {
+      "n": 772,
+      "wins": 388,
+      "losses": 384,
+      "pushes": 17,
+      "win_pct": 0.5026,
+      "clears_110_break_even": false
+     }
+    },
+    "per_season": [
+     {
+      "season": 2016,
+      "n": 267,
+      "mae_before": 9.498,
+      "mae_after": 9.435,
+      "rmse_before": 12.141,
+      "rmse_after": 12.071
+     },
+     {
+      "season": 2017,
+      "n": 267,
+      "mae_before": 10.691,
+      "mae_after": 10.635,
+      "rmse_before": 13.802,
+      "rmse_after": 13.729
+     },
+     {
+      "season": 2018,
+      "n": 267,
+      "mae_before": 10.136,
+      "mae_after": 10.091,
+      "rmse_before": 13.286,
+      "rmse_after": 13.219
+     },
+     {
+      "season": 2019,
+      "n": 267,
+      "mae_before": 10.591,
+      "mae_after": 10.531,
+      "rmse_before": 13.543,
+      "rmse_after": 13.456
+     },
+     {
+      "season": 2020,
+      "n": 269,
+      "mae_before": 10.126,
+      "mae_after": 10.083,
+      "rmse_before": 13.086,
+      "rmse_after": 13.008
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "mae_before": 11.192,
+      "mae_after": 11.206,
+      "rmse_before": 14.108,
+      "rmse_after": 14.069
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "mae_before": 9.008,
+      "mae_after": 9.071,
+      "rmse_before": 11.734,
+      "rmse_after": 11.755
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "mae_before": 10.479,
+      "mae_after": 10.527,
+      "rmse_before": 13.658,
+      "rmse_after": 13.67
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "mae_before": 10.112,
+      "mae_after": 10.091,
+      "rmse_before": 13.057,
+      "rmse_after": 12.994
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "mae_before": 10.166,
+      "mae_after": 10.175,
+      "rmse_before": 12.935,
+      "rmse_after": 12.899
+     }
+    ],
+    "leakage_clean": true,
+    "feature": "nfl_coaching_staff_cap_1_0",
+    "label": "NFL Coaching / Staff ±1.0 team points",
+    "coefficient": 1,
+    "version": "nfl_coaching_staff_v1",
+    "k": 4,
+    "cap": 1,
+    "reliability_buckets": {
+     "lt_025": {
+      "n": 28,
+      "range": [
+       0,
+       0.25
+      ],
+      "mae_before": 10.056,
+      "mae_after": 9.98,
+      "improvement": 0.076
+     },
+     "025_040": {
+      "n": 198,
+      "range": [
+       0.25,
+       0.4
+      ],
+      "mae_before": 9.544,
+      "mae_after": 9.579,
+      "improvement": -0.035
+     },
+     "040_055": {
+      "n": 689,
+      "range": [
+       0.4,
+       0.55
+      ],
+      "mae_before": 10.037,
+      "mae_after": 10.093,
+      "improvement": -0.056
+     },
+     "ge_055": {
+      "n": 1846,
+      "range": [
+       0.55,
+       null
+      ],
+      "mae_before": 10.333,
+      "mae_after": 10.289,
+      "improvement": 0.044
+     }
+    }
+   }
+  },
+  "fitted_coefficient": 1,
+  "date_validated": null,
+  "version": "nfl_coaching_staff_v1",
+  "rules": {
+   "min_holdout_seasons": 2,
+   "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+   "p_max": 0.05,
+   "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+   "min_pooled_improvement": 0.02,
+   "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+   "max_season_degradation": 0.15,
+   "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+   "max_brier_degradation": 0.002,
+   "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+   "require_leakage_clean": true,
+   "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+  }
+ },
+ "extra_guards": {
+  "rmse_not_worse_by_more_than_0_01": true,
+  "positive_predictive_residual_direction": true
+ },
+ "reason": "the frozen tune-selected arm did not clear every NFL holdout promotion condition; Coaching / Staff remains research-only",
+ "experiment": {
+  "schema": "edgedesk_nfl_coaching_staff_experiment_v1",
+  "sport": "americanfootball_nfl",
+  "frame": {
+   "tune": "2003-2015",
+   "holdout": "2016-2025",
+   "leakage": "every coaching/staff value is emitted before the current game residual is observed",
+   "base_model": "nfl_oos.csv model_spread from train_nfl.py",
+   "market": "nflverse closing consensus is benchmark-only and is never an input to the coaching/staff residual"
+  },
+  "policy": {
+   "sport_specific": true,
+   "caps_tested": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1,
+    1.5,
+    2
+   ],
+   "reliability_k_tested": [
+    4,
+    8,
+    12,
+    16
+   ],
+   "tune_min_mae_improvement": 0.02,
+   "rmse_tolerance": 0.01,
+   "holdout_cannot_change_tune_choice": true,
+   "ats_thresholds_fixed_before_holdout": [
+    0.5,
+    1,
+    1.5,
+    2,
+    3
+   ]
+  },
+  "tune": {
+   "seasons": [
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015
+   ],
+   "baseline": {
+    "n": 3471,
+    "spread_mae": 10.857,
+    "rmse": 13.961,
+    "brier": 0.2202
+   },
+   "arms": [
+    {
+     "k": 4,
+     "cap": 0.25,
+     "eligible": true,
+     "improvement": 0.024,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.833,
+      "rmse": 13.917,
+      "brier": 0.21936,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0248,
+       "t": 4.5177,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 2257,
+       "slope": 6.179,
+       "correlation": 0.1783,
+       "mean_adjustment": 0.0009,
+       "mean_base_residual": 0.1789
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2909,
+        "wins": 1530,
+        "losses": 1379,
+        "pushes": 76,
+        "win_pct": 0.526,
+        "clears_110_break_even": true
+       },
+       "1.0": {
+        "n": 2481,
+        "wins": 1281,
+        "losses": 1200,
+        "pushes": 58,
+        "win_pct": 0.5163,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 2058,
+        "wins": 1050,
+        "losses": 1008,
+        "pushes": 50,
+        "win_pct": 0.5102,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1669,
+        "wins": 862,
+        "losses": 807,
+        "pushes": 40,
+        "win_pct": 0.5165,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 1096,
+        "wins": 556,
+        "losses": 540,
+        "pushes": 23,
+        "win_pct": 0.5073,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.942,
+        "rmse_before": 14.185,
+        "rmse_after": 14.117
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.657,
+        "rmse_before": 13.357,
+        "rmse_after": 13.328
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.693,
+        "rmse_before": 13.803,
+        "rmse_after": 13.75
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.797,
+        "rmse_before": 13.825,
+        "rmse_after": 13.788
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.086,
+        "rmse_before": 13.943,
+        "rmse_after": 13.879
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.203,
+        "rmse_before": 14.16,
+        "rmse_after": 14.114
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.513,
+        "rmse_before": 14.76,
+        "rmse_after": 14.713
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.785,
+        "rmse_before": 13.956,
+        "rmse_after": 13.938
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.638,
+        "rmse_before": 14.003,
+        "rmse_after": 13.962
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.029,
+        "rmse_before": 14.358,
+        "rmse_after": 14.303
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 10.027,
+        "rmse_before": 13.199,
+        "rmse_after": 13.136
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.427,
+        "rmse_before": 14.777,
+        "rmse_after": 14.773
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.028,
+        "rmse_before": 13.041,
+        "rmse_after": 12.999
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 4,
+     "cap": 0.5,
+     "eligible": true,
+     "improvement": 0.041,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.816,
+      "rmse": 13.882,
+      "brier": 0.21874,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0419,
+       "t": 4.1449,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 2728,
+       "slope": 3.5024,
+       "correlation": 0.1701,
+       "mean_adjustment": -0.0015,
+       "mean_base_residual": -0.1873
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2901,
+        "wins": 1512,
+        "losses": 1389,
+        "pushes": 77,
+        "win_pct": 0.5212,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2437,
+        "wins": 1267,
+        "losses": 1170,
+        "pushes": 57,
+        "win_pct": 0.5199,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 2012,
+        "wins": 1029,
+        "losses": 983,
+        "pushes": 48,
+        "win_pct": 0.5114,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1630,
+        "wins": 850,
+        "losses": 780,
+        "pushes": 39,
+        "win_pct": 0.5215,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 1015,
+        "wins": 521,
+        "losses": 494,
+        "pushes": 26,
+        "win_pct": 0.5133,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.924,
+        "rmse_before": 14.185,
+        "rmse_after": 14.071
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.639,
+        "rmse_before": 13.357,
+        "rmse_after": 13.311
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.656,
+        "rmse_before": 13.803,
+        "rmse_after": 13.697
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.792,
+        "rmse_before": 13.825,
+        "rmse_after": 13.759
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.052,
+        "rmse_before": 13.943,
+        "rmse_after": 13.83
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.182,
+        "rmse_before": 14.16,
+        "rmse_after": 14.067
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.491,
+        "rmse_before": 14.76,
+        "rmse_after": 14.665
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.782,
+        "rmse_before": 13.956,
+        "rmse_after": 13.929
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.624,
+        "rmse_before": 14.003,
+        "rmse_after": 13.928
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.008,
+        "rmse_before": 14.358,
+        "rmse_after": 14.252
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 10,
+        "rmse_before": 13.199,
+        "rmse_after": 13.087
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.418,
+        "rmse_before": 14.777,
+        "rmse_after": 14.771
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.033,
+        "rmse_before": 13.041,
+        "rmse_after": 12.975
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 4,
+     "cap": 0.75,
+     "eligible": true,
+     "improvement": 0.054,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.803,
+      "rmse": 13.855,
+      "brier": 0.21827,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0548,
+       "t": 3.9517,
+       "p": 0.0001
+      },
+      "predictive_residual": {
+       "n": 3024,
+       "slope": 2.6381,
+       "correlation": 0.1674,
+       "mean_adjustment": -0.0007,
+       "mean_base_residual": -0.0963
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2877,
+        "wins": 1497,
+        "losses": 1380,
+        "pushes": 77,
+        "win_pct": 0.5203,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2392,
+        "wins": 1245,
+        "losses": 1147,
+        "pushes": 55,
+        "win_pct": 0.5205,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1975,
+        "wins": 1019,
+        "losses": 956,
+        "pushes": 48,
+        "win_pct": 0.5159,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1584,
+        "wins": 820,
+        "losses": 764,
+        "pushes": 39,
+        "win_pct": 0.5177,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 970,
+        "wins": 493,
+        "losses": 477,
+        "pushes": 27,
+        "win_pct": 0.5082,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.916,
+        "rmse_before": 14.185,
+        "rmse_after": 14.048
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.632,
+        "rmse_before": 13.357,
+        "rmse_after": 13.298
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.619,
+        "rmse_before": 13.803,
+        "rmse_after": 13.644
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.792,
+        "rmse_before": 13.825,
+        "rmse_after": 13.737
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.031,
+        "rmse_before": 13.943,
+        "rmse_after": 13.8
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.159,
+        "rmse_before": 14.16,
+        "rmse_after": 14.03
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.481,
+        "rmse_before": 14.76,
+        "rmse_after": 14.633
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.785,
+        "rmse_before": 13.956,
+        "rmse_after": 13.926
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.616,
+        "rmse_before": 14.003,
+        "rmse_after": 13.902
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 10.99,
+        "rmse_before": 14.358,
+        "rmse_after": 14.211
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.971,
+        "rmse_before": 13.199,
+        "rmse_after": 13.037
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.409,
+        "rmse_before": 14.777,
+        "rmse_after": 14.765
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.032,
+        "rmse_before": 13.041,
+        "rmse_after": 12.953
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 4,
+     "cap": 1,
+     "eligible": true,
+     "improvement": 0.063,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.794,
+      "rmse": 13.833,
+      "brier": 0.21795,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0639,
+       "t": 3.7859,
+       "p": 0.0002
+      },
+      "predictive_residual": {
+       "n": 3204,
+       "slope": 2.2215,
+       "correlation": 0.1672,
+       "mean_adjustment": -0.0001,
+       "mean_base_residual": -0.0527
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2869,
+        "wins": 1496,
+        "losses": 1373,
+        "pushes": 78,
+        "win_pct": 0.5214,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2383,
+        "wins": 1241,
+        "losses": 1142,
+        "pushes": 57,
+        "win_pct": 0.5208,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1940,
+        "wins": 1009,
+        "losses": 931,
+        "pushes": 49,
+        "win_pct": 0.5201,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1558,
+        "wins": 805,
+        "losses": 753,
+        "pushes": 39,
+        "win_pct": 0.5167,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 915,
+        "wins": 469,
+        "losses": 446,
+        "pushes": 26,
+        "win_pct": 0.5126,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.911,
+        "rmse_before": 14.185,
+        "rmse_after": 14.029
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.626,
+        "rmse_before": 13.357,
+        "rmse_after": 13.281
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.59,
+        "rmse_before": 13.803,
+        "rmse_after": 13.606
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.794,
+        "rmse_before": 13.825,
+        "rmse_after": 13.722
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.024,
+        "rmse_before": 13.943,
+        "rmse_after": 13.776
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.14,
+        "rmse_before": 14.16,
+        "rmse_after": 14.001
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.478,
+        "rmse_before": 14.76,
+        "rmse_after": 14.607
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.785,
+        "rmse_before": 13.956,
+        "rmse_after": 13.922
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.602,
+        "rmse_before": 14.003,
+        "rmse_after": 13.878
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 10.982,
+        "rmse_before": 14.358,
+        "rmse_after": 14.187
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.939,
+        "rmse_before": 13.199,
+        "rmse_after": 12.991
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.406,
+        "rmse_before": 14.777,
+        "rmse_after": 14.761
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.038,
+        "rmse_before": 13.041,
+        "rmse_after": 12.943
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 4,
+     "cap": 1.5,
+     "eligible": true,
+     "improvement": 0.063,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.794,
+      "rmse": 13.815,
+      "brier": 0.21766,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0634,
+       "t": 3.0288,
+       "p": 0.0025
+      },
+      "predictive_residual": {
+       "n": 3408,
+       "slope": 1.7613,
+       "correlation": 0.1608,
+       "mean_adjustment": 0.0044,
+       "mean_base_residual": -0.087
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2893,
+        "wins": 1501,
+        "losses": 1392,
+        "pushes": 77,
+        "win_pct": 0.5188,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2358,
+        "wins": 1223,
+        "losses": 1135,
+        "pushes": 58,
+        "win_pct": 0.5187,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1886,
+        "wins": 982,
+        "losses": 904,
+        "pushes": 53,
+        "win_pct": 0.5207,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1539,
+        "wins": 797,
+        "losses": 742,
+        "pushes": 41,
+        "win_pct": 0.5179,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 891,
+        "wins": 460,
+        "losses": 431,
+        "pushes": 27,
+        "win_pct": 0.5163,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.917,
+        "rmse_before": 14.185,
+        "rmse_after": 14.021
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.621,
+        "rmse_before": 13.357,
+        "rmse_after": 13.264
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.574,
+        "rmse_before": 13.803,
+        "rmse_after": 13.571
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.807,
+        "rmse_before": 13.825,
+        "rmse_after": 13.712
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.015,
+        "rmse_before": 13.943,
+        "rmse_after": 13.737
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.136,
+        "rmse_before": 14.16,
+        "rmse_after": 13.97
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.49,
+        "rmse_before": 14.76,
+        "rmse_after": 14.601
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.782,
+        "rmse_before": 13.956,
+        "rmse_after": 13.915
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.571,
+        "rmse_before": 14.003,
+        "rmse_after": 13.84
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.013,
+        "rmse_before": 14.358,
+        "rmse_after": 14.194
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.904,
+        "rmse_before": 13.199,
+        "rmse_after": 12.938
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.421,
+        "rmse_before": 14.777,
+        "rmse_after": 14.771
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.072,
+        "rmse_before": 13.041,
+        "rmse_after": 12.934
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 4,
+     "cap": 2,
+     "eligible": true,
+     "improvement": 0.056,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.801,
+      "rmse": 13.812,
+      "brier": 0.21761,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.057,
+       "t": 2.4768,
+       "p": 0.0133
+      },
+      "predictive_residual": {
+       "n": 3449,
+       "slope": 1.5657,
+       "correlation": 0.1568,
+       "mean_adjustment": 0.0071,
+       "mean_base_residual": -0.0752
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2875,
+        "wins": 1489,
+        "losses": 1386,
+        "pushes": 80,
+        "win_pct": 0.5179,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2342,
+        "wins": 1205,
+        "losses": 1137,
+        "pushes": 59,
+        "win_pct": 0.5145,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1880,
+        "wins": 975,
+        "losses": 905,
+        "pushes": 55,
+        "win_pct": 0.5186,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1526,
+        "wins": 792,
+        "losses": 734,
+        "pushes": 43,
+        "win_pct": 0.519,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 872,
+        "wins": 445,
+        "losses": 427,
+        "pushes": 25,
+        "win_pct": 0.5103,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.925,
+        "rmse_before": 14.185,
+        "rmse_after": 14.023
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.62,
+        "rmse_before": 13.357,
+        "rmse_after": 13.26
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.586,
+        "rmse_before": 13.803,
+        "rmse_after": 13.566
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.814,
+        "rmse_before": 13.825,
+        "rmse_after": 13.712
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.009,
+        "rmse_before": 13.943,
+        "rmse_after": 13.717
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.146,
+        "rmse_before": 14.16,
+        "rmse_after": 13.956
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.5,
+        "rmse_before": 14.76,
+        "rmse_after": 14.6
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.779,
+        "rmse_before": 13.956,
+        "rmse_after": 13.911
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.567,
+        "rmse_before": 14.003,
+        "rmse_after": 13.832
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.037,
+        "rmse_before": 14.358,
+        "rmse_after": 14.206
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.894,
+        "rmse_before": 13.199,
+        "rmse_after": 12.911
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.433,
+        "rmse_before": 14.777,
+        "rmse_after": 14.781
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.097,
+        "rmse_before": 13.041,
+        "rmse_after": 12.941
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 8,
+     "cap": 0.25,
+     "eligible": true,
+     "improvement": 0.024,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.833,
+      "rmse": 13.917,
+      "brier": 0.21936,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0246,
+       "t": 4.5457,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 2364,
+       "slope": 6.3127,
+       "correlation": 0.1751,
+       "mean_adjustment": 0.0007,
+       "mean_base_residual": 0.1046
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2909,
+        "wins": 1527,
+        "losses": 1382,
+        "pushes": 76,
+        "win_pct": 0.5249,
+        "clears_110_break_even": true
+       },
+       "1.0": {
+        "n": 2477,
+        "wins": 1278,
+        "losses": 1199,
+        "pushes": 58,
+        "win_pct": 0.5159,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 2062,
+        "wins": 1052,
+        "losses": 1010,
+        "pushes": 51,
+        "win_pct": 0.5102,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1670,
+        "wins": 863,
+        "losses": 807,
+        "pushes": 40,
+        "win_pct": 0.5168,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 1090,
+        "wins": 552,
+        "losses": 538,
+        "pushes": 23,
+        "win_pct": 0.5064,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.947,
+        "rmse_before": 14.185,
+        "rmse_after": 14.121
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.657,
+        "rmse_before": 13.357,
+        "rmse_after": 13.33
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.693,
+        "rmse_before": 13.803,
+        "rmse_after": 13.749
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.796,
+        "rmse_before": 13.825,
+        "rmse_after": 13.788
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.086,
+        "rmse_before": 13.943,
+        "rmse_after": 13.88
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.202,
+        "rmse_before": 14.16,
+        "rmse_after": 14.113
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.513,
+        "rmse_before": 14.76,
+        "rmse_after": 14.712
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.785,
+        "rmse_before": 13.956,
+        "rmse_after": 13.938
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.638,
+        "rmse_before": 14.003,
+        "rmse_after": 13.961
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.028,
+        "rmse_before": 14.358,
+        "rmse_after": 14.303
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 10.028,
+        "rmse_before": 13.199,
+        "rmse_after": 13.138
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.426,
+        "rmse_before": 14.777,
+        "rmse_after": 14.773
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.029,
+        "rmse_before": 13.041,
+        "rmse_after": 13
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 8,
+     "cap": 0.5,
+     "eligible": true,
+     "improvement": 0.041,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.816,
+      "rmse": 13.883,
+      "brier": 0.21877,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0414,
+       "t": 4.2461,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 2853,
+       "slope": 3.667,
+       "correlation": 0.1678,
+       "mean_adjustment": -0.0016,
+       "mean_base_residual": -0.1649
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2891,
+        "wins": 1508,
+        "losses": 1383,
+        "pushes": 78,
+        "win_pct": 0.5216,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2444,
+        "wins": 1270,
+        "losses": 1174,
+        "pushes": 57,
+        "win_pct": 0.5196,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 2012,
+        "wins": 1028,
+        "losses": 984,
+        "pushes": 48,
+        "win_pct": 0.5109,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1627,
+        "wins": 848,
+        "losses": 779,
+        "pushes": 39,
+        "win_pct": 0.5212,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 1021,
+        "wins": 520,
+        "losses": 501,
+        "pushes": 26,
+        "win_pct": 0.5093,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.931,
+        "rmse_before": 14.185,
+        "rmse_after": 14.087
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.643,
+        "rmse_before": 13.357,
+        "rmse_after": 13.312
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.655,
+        "rmse_before": 13.803,
+        "rmse_after": 13.694
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.792,
+        "rmse_before": 13.825,
+        "rmse_after": 13.759
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.054,
+        "rmse_before": 13.943,
+        "rmse_after": 13.834
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.18,
+        "rmse_before": 14.16,
+        "rmse_after": 14.067
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.492,
+        "rmse_before": 14.76,
+        "rmse_after": 14.666
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.782,
+        "rmse_before": 13.956,
+        "rmse_after": 13.93
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.625,
+        "rmse_before": 14.003,
+        "rmse_after": 13.929
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.008,
+        "rmse_before": 14.358,
+        "rmse_after": 14.253
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.999,
+        "rmse_before": 13.199,
+        "rmse_after": 13.087
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.416,
+        "rmse_before": 14.777,
+        "rmse_after": 14.768
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.033,
+        "rmse_before": 13.041,
+        "rmse_after": 12.975
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 8,
+     "cap": 0.75,
+     "eligible": true,
+     "improvement": 0.054,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.803,
+      "rmse": 13.857,
+      "brier": 0.21832,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0544,
+       "t": 4.1434,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 3151,
+       "slope": 2.8372,
+       "correlation": 0.1673,
+       "mean_adjustment": -0.0004,
+       "mean_base_residual": -0.1194
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2880,
+        "wins": 1506,
+        "losses": 1374,
+        "pushes": 77,
+        "win_pct": 0.5229,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2395,
+        "wins": 1245,
+        "losses": 1150,
+        "pushes": 58,
+        "win_pct": 0.5198,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1978,
+        "wins": 1015,
+        "losses": 963,
+        "pushes": 48,
+        "win_pct": 0.5131,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1594,
+        "wins": 825,
+        "losses": 769,
+        "pushes": 38,
+        "win_pct": 0.5176,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 974,
+        "wins": 497,
+        "losses": 477,
+        "pushes": 27,
+        "win_pct": 0.5103,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.92,
+        "rmse_before": 14.185,
+        "rmse_after": 14.064
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.633,
+        "rmse_before": 13.357,
+        "rmse_after": 13.294
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.62,
+        "rmse_before": 13.803,
+        "rmse_after": 13.646
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.792,
+        "rmse_before": 13.825,
+        "rmse_after": 13.74
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.041,
+        "rmse_before": 13.943,
+        "rmse_after": 13.807
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.153,
+        "rmse_before": 14.16,
+        "rmse_after": 14.029
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.486,
+        "rmse_before": 14.76,
+        "rmse_after": 14.636
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.781,
+        "rmse_before": 13.956,
+        "rmse_after": 13.923
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.612,
+        "rmse_before": 14.003,
+        "rmse_after": 13.901
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 10.991,
+        "rmse_before": 14.358,
+        "rmse_after": 14.216
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.969,
+        "rmse_before": 13.199,
+        "rmse_after": 13.039
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.41,
+        "rmse_before": 14.777,
+        "rmse_after": 14.761
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.033,
+        "rmse_before": 13.041,
+        "rmse_after": 12.955
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 8,
+     "cap": 1,
+     "eligible": true,
+     "improvement": 0.061,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.796,
+      "rmse": 13.84,
+      "brier": 0.21802,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.061,
+       "t": 3.8898,
+       "p": 0.0001
+      },
+      "predictive_residual": {
+       "n": 3297,
+       "slope": 2.3947,
+       "correlation": 0.1652,
+       "mean_adjustment": 0.0004,
+       "mean_base_residual": -0.0641
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2864,
+        "wins": 1499,
+        "losses": 1365,
+        "pushes": 76,
+        "win_pct": 0.5234,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2383,
+        "wins": 1242,
+        "losses": 1141,
+        "pushes": 58,
+        "win_pct": 0.5212,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1949,
+        "wins": 1007,
+        "losses": 942,
+        "pushes": 51,
+        "win_pct": 0.5167,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1559,
+        "wins": 806,
+        "losses": 753,
+        "pushes": 38,
+        "win_pct": 0.517,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 937,
+        "wins": 480,
+        "losses": 457,
+        "pushes": 26,
+        "win_pct": 0.5123,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.917,
+        "rmse_before": 14.185,
+        "rmse_after": 14.054
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.63,
+        "rmse_before": 13.357,
+        "rmse_after": 13.283
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.599,
+        "rmse_before": 13.803,
+        "rmse_after": 13.618
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.794,
+        "rmse_before": 13.825,
+        "rmse_after": 13.726
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.03,
+        "rmse_before": 13.943,
+        "rmse_after": 13.777
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.142,
+        "rmse_before": 14.16,
+        "rmse_after": 14.007
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.487,
+        "rmse_before": 14.76,
+        "rmse_after": 14.62
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.778,
+        "rmse_before": 13.956,
+        "rmse_after": 13.917
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.595,
+        "rmse_before": 14.003,
+        "rmse_after": 13.879
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 10.993,
+        "rmse_before": 14.358,
+        "rmse_after": 14.205
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.937,
+        "rmse_before": 13.199,
+        "rmse_after": 12.994
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.411,
+        "rmse_before": 14.777,
+        "rmse_after": 14.76
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.042,
+        "rmse_before": 13.041,
+        "rmse_after": 12.948
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 8,
+     "cap": 1.5,
+     "eligible": true,
+     "improvement": 0.058,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.799,
+      "rmse": 13.827,
+      "brier": 0.2178,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0586,
+       "t": 3.1346,
+       "p": 0.0017
+      },
+      "predictive_residual": {
+       "n": 3437,
+       "slope": 1.9536,
+       "correlation": 0.1587,
+       "mean_adjustment": 0.005,
+       "mean_base_residual": -0.0845
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2877,
+        "wins": 1496,
+        "losses": 1381,
+        "pushes": 75,
+        "win_pct": 0.52,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2356,
+        "wins": 1218,
+        "losses": 1138,
+        "pushes": 59,
+        "win_pct": 0.517,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1906,
+        "wins": 986,
+        "losses": 920,
+        "pushes": 53,
+        "win_pct": 0.5173,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1539,
+        "wins": 797,
+        "losses": 742,
+        "pushes": 42,
+        "win_pct": 0.5179,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 923,
+        "wins": 476,
+        "losses": 447,
+        "pushes": 27,
+        "win_pct": 0.5157,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.921,
+        "rmse_before": 14.185,
+        "rmse_after": 14.053
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.627,
+        "rmse_before": 13.357,
+        "rmse_after": 13.272
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.599,
+        "rmse_before": 13.803,
+        "rmse_after": 13.597
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.805,
+        "rmse_before": 13.825,
+        "rmse_after": 13.722
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.028,
+        "rmse_before": 13.943,
+        "rmse_after": 13.751
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.137,
+        "rmse_before": 14.16,
+        "rmse_after": 13.976
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.503,
+        "rmse_before": 14.76,
+        "rmse_after": 14.621
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.768,
+        "rmse_before": 13.956,
+        "rmse_after": 13.908
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.572,
+        "rmse_before": 14.003,
+        "rmse_after": 13.847
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.018,
+        "rmse_before": 14.358,
+        "rmse_after": 14.214
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.911,
+        "rmse_before": 13.199,
+        "rmse_after": 12.952
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.426,
+        "rmse_before": 14.777,
+        "rmse_after": 14.77
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.069,
+        "rmse_before": 13.041,
+        "rmse_after": 12.938
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 8,
+     "cap": 2,
+     "eligible": true,
+     "improvement": 0.054,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.803,
+      "rmse": 13.825,
+      "brier": 0.21777,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0546,
+       "t": 2.7355,
+       "p": 0.0062
+      },
+      "predictive_residual": {
+       "n": 3453,
+       "slope": 1.794,
+       "correlation": 0.1558,
+       "mean_adjustment": 0.0067,
+       "mean_base_residual": -0.0682
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2870,
+        "wins": 1487,
+        "losses": 1383,
+        "pushes": 76,
+        "win_pct": 0.5181,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2349,
+        "wins": 1207,
+        "losses": 1142,
+        "pushes": 60,
+        "win_pct": 0.5138,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1890,
+        "wins": 977,
+        "losses": 913,
+        "pushes": 54,
+        "win_pct": 0.5169,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1536,
+        "wins": 795,
+        "losses": 741,
+        "pushes": 43,
+        "win_pct": 0.5176,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 908,
+        "wins": 466,
+        "losses": 442,
+        "pushes": 26,
+        "win_pct": 0.5132,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.921,
+        "rmse_before": 14.185,
+        "rmse_after": 14.053
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.626,
+        "rmse_before": 13.357,
+        "rmse_after": 13.273
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.606,
+        "rmse_before": 13.803,
+        "rmse_after": 13.597
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.793,
+        "rmse_before": 13.825,
+        "rmse_after": 13.708
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.019,
+        "rmse_before": 13.943,
+        "rmse_after": 13.732
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.153,
+        "rmse_before": 14.16,
+        "rmse_after": 13.972
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.513,
+        "rmse_before": 14.76,
+        "rmse_after": 14.621
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.77,
+        "rmse_before": 13.956,
+        "rmse_after": 13.906
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.577,
+        "rmse_before": 14.003,
+        "rmse_after": 13.845
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.036,
+        "rmse_before": 14.358,
+        "rmse_after": 14.226
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.903,
+        "rmse_before": 13.199,
+        "rmse_after": 12.936
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.433,
+        "rmse_before": 14.777,
+        "rmse_after": 14.773
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.087,
+        "rmse_before": 13.041,
+        "rmse_after": 12.945
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 12,
+     "cap": 0.25,
+     "eligible": true,
+     "improvement": 0.024,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.833,
+      "rmse": 13.918,
+      "brier": 0.21937,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0244,
+       "t": 4.5888,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 2464,
+       "slope": 6.4507,
+       "correlation": 0.173,
+       "mean_adjustment": 0.0004,
+       "mean_base_residual": 0.0046
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2913,
+        "wins": 1528,
+        "losses": 1385,
+        "pushes": 76,
+        "win_pct": 0.5245,
+        "clears_110_break_even": true
+       },
+       "1.0": {
+        "n": 2476,
+        "wins": 1278,
+        "losses": 1198,
+        "pushes": 58,
+        "win_pct": 0.5162,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 2062,
+        "wins": 1052,
+        "losses": 1010,
+        "pushes": 51,
+        "win_pct": 0.5102,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1675,
+        "wins": 864,
+        "losses": 811,
+        "pushes": 40,
+        "win_pct": 0.5158,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 1092,
+        "wins": 553,
+        "losses": 539,
+        "pushes": 23,
+        "win_pct": 0.5064,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.949,
+        "rmse_before": 14.185,
+        "rmse_after": 14.124
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.658,
+        "rmse_before": 13.357,
+        "rmse_after": 13.331
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.692,
+        "rmse_before": 13.803,
+        "rmse_after": 13.748
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.796,
+        "rmse_before": 13.825,
+        "rmse_after": 13.788
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.087,
+        "rmse_before": 13.943,
+        "rmse_after": 13.881
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.201,
+        "rmse_before": 14.16,
+        "rmse_after": 14.112
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.512,
+        "rmse_before": 14.76,
+        "rmse_after": 14.711
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.785,
+        "rmse_before": 13.956,
+        "rmse_after": 13.938
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.638,
+        "rmse_before": 14.003,
+        "rmse_after": 13.961
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.028,
+        "rmse_before": 14.358,
+        "rmse_after": 14.302
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 10.028,
+        "rmse_before": 13.199,
+        "rmse_after": 13.139
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.426,
+        "rmse_before": 14.777,
+        "rmse_after": 14.773
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.03,
+        "rmse_before": 13.041,
+        "rmse_after": 13.001
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 12,
+     "cap": 0.5,
+     "eligible": true,
+     "improvement": 0.041,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.816,
+      "rmse": 13.885,
+      "brier": 0.21878,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0411,
+       "t": 4.3554,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 2966,
+       "slope": 3.8335,
+       "correlation": 0.1667,
+       "mean_adjustment": -0.0013,
+       "mean_base_residual": -0.1523
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2895,
+        "wins": 1511,
+        "losses": 1384,
+        "pushes": 78,
+        "win_pct": 0.5219,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2444,
+        "wins": 1270,
+        "losses": 1174,
+        "pushes": 57,
+        "win_pct": 0.5196,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 2018,
+        "wins": 1032,
+        "losses": 986,
+        "pushes": 48,
+        "win_pct": 0.5114,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1632,
+        "wins": 846,
+        "losses": 786,
+        "pushes": 39,
+        "win_pct": 0.5184,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 1025,
+        "wins": 523,
+        "losses": 502,
+        "pushes": 26,
+        "win_pct": 0.5102,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.934,
+        "rmse_before": 14.185,
+        "rmse_after": 14.095
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.645,
+        "rmse_before": 13.357,
+        "rmse_after": 13.312
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.654,
+        "rmse_before": 13.803,
+        "rmse_after": 13.694
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.791,
+        "rmse_before": 13.825,
+        "rmse_after": 13.759
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.057,
+        "rmse_before": 13.943,
+        "rmse_after": 13.838
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.178,
+        "rmse_before": 14.16,
+        "rmse_after": 14.067
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.494,
+        "rmse_before": 14.76,
+        "rmse_after": 14.667
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.782,
+        "rmse_before": 13.956,
+        "rmse_after": 13.931
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.625,
+        "rmse_before": 14.003,
+        "rmse_after": 13.93
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.008,
+        "rmse_before": 14.358,
+        "rmse_after": 14.254
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.997,
+        "rmse_before": 13.199,
+        "rmse_after": 13.087
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.415,
+        "rmse_before": 14.777,
+        "rmse_after": 14.766
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.033,
+        "rmse_before": 13.041,
+        "rmse_after": 12.975
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 12,
+     "cap": 0.75,
+     "eligible": true,
+     "improvement": 0.053,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.804,
+      "rmse": 13.859,
+      "brier": 0.21835,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0536,
+       "t": 4.2825,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 3221,
+       "slope": 3.0063,
+       "correlation": 0.1672,
+       "mean_adjustment": -0.0006,
+       "mean_base_residual": -0.0952
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2882,
+        "wins": 1508,
+        "losses": 1374,
+        "pushes": 77,
+        "win_pct": 0.5232,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2406,
+        "wins": 1256,
+        "losses": 1150,
+        "pushes": 59,
+        "win_pct": 0.522,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1983,
+        "wins": 1019,
+        "losses": 964,
+        "pushes": 48,
+        "win_pct": 0.5139,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1596,
+        "wins": 826,
+        "losses": 770,
+        "pushes": 38,
+        "win_pct": 0.5175,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 986,
+        "wins": 502,
+        "losses": 484,
+        "pushes": 28,
+        "win_pct": 0.5091,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.924,
+        "rmse_before": 14.185,
+        "rmse_after": 14.077
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.635,
+        "rmse_before": 13.357,
+        "rmse_after": 13.296
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.623,
+        "rmse_before": 13.803,
+        "rmse_after": 13.651
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.791,
+        "rmse_before": 13.825,
+        "rmse_after": 13.742
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.046,
+        "rmse_before": 13.943,
+        "rmse_after": 13.809
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.151,
+        "rmse_before": 14.16,
+        "rmse_after": 14.031
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.489,
+        "rmse_before": 14.76,
+        "rmse_after": 14.64
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.776,
+        "rmse_before": 13.956,
+        "rmse_after": 13.921
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.61,
+        "rmse_before": 14.003,
+        "rmse_after": 13.901
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 10.993,
+        "rmse_before": 14.358,
+        "rmse_after": 14.223
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.966,
+        "rmse_before": 13.199,
+        "rmse_after": 13.038
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.411,
+        "rmse_before": 14.777,
+        "rmse_after": 14.76
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.035,
+        "rmse_before": 13.041,
+        "rmse_after": 12.959
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 12,
+     "cap": 1,
+     "eligible": true,
+     "improvement": 0.057,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.8,
+      "rmse": 13.847,
+      "brier": 0.21812,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0575,
+       "t": 3.9146,
+       "p": 0.0001
+      },
+      "predictive_residual": {
+       "n": 3353,
+       "slope": 2.5392,
+       "correlation": 0.1629,
+       "mean_adjustment": 0.0011,
+       "mean_base_residual": -0.0436
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2873,
+        "wins": 1503,
+        "losses": 1370,
+        "pushes": 76,
+        "win_pct": 0.5231,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2389,
+        "wins": 1250,
+        "losses": 1139,
+        "pushes": 59,
+        "win_pct": 0.5232,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1958,
+        "wins": 1013,
+        "losses": 945,
+        "pushes": 50,
+        "win_pct": 0.5174,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1568,
+        "wins": 812,
+        "losses": 756,
+        "pushes": 38,
+        "win_pct": 0.5179,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 951,
+        "wins": 484,
+        "losses": 467,
+        "pushes": 26,
+        "win_pct": 0.5089,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.924,
+        "rmse_before": 14.185,
+        "rmse_after": 14.074
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.633,
+        "rmse_before": 13.357,
+        "rmse_after": 13.288
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.608,
+        "rmse_before": 13.803,
+        "rmse_after": 13.63
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.793,
+        "rmse_before": 13.825,
+        "rmse_after": 13.731
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.038,
+        "rmse_before": 13.943,
+        "rmse_after": 13.782
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.143,
+        "rmse_before": 14.16,
+        "rmse_after": 14.012
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.496,
+        "rmse_before": 14.76,
+        "rmse_after": 14.635
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.772,
+        "rmse_before": 13.956,
+        "rmse_after": 13.912
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.591,
+        "rmse_before": 14.003,
+        "rmse_after": 13.878
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.002,
+        "rmse_before": 14.358,
+        "rmse_after": 14.221
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.942,
+        "rmse_before": 13.199,
+        "rmse_after": 13.002
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.415,
+        "rmse_before": 14.777,
+        "rmse_after": 14.761
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.044,
+        "rmse_before": 13.041,
+        "rmse_after": 12.949
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 12,
+     "cap": 1.5,
+     "eligible": true,
+     "improvement": 0.055,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.802,
+      "rmse": 13.838,
+      "brier": 0.21795,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.055,
+       "t": 3.2298,
+       "p": 0.0012
+      },
+      "predictive_residual": {
+       "n": 3447,
+       "slope": 2.121,
+       "correlation": 0.1567,
+       "mean_adjustment": 0.0044,
+       "mean_base_residual": -0.081
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2877,
+        "wins": 1495,
+        "losses": 1382,
+        "pushes": 76,
+        "win_pct": 0.5196,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2363,
+        "wins": 1231,
+        "losses": 1132,
+        "pushes": 60,
+        "win_pct": 0.5209,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1919,
+        "wins": 992,
+        "losses": 927,
+        "pushes": 52,
+        "win_pct": 0.5169,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1545,
+        "wins": 795,
+        "losses": 750,
+        "pushes": 40,
+        "win_pct": 0.5146,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 939,
+        "wins": 475,
+        "losses": 464,
+        "pushes": 27,
+        "win_pct": 0.5059,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.923,
+        "rmse_before": 14.185,
+        "rmse_after": 14.074
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.63,
+        "rmse_before": 13.357,
+        "rmse_after": 13.283
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.616,
+        "rmse_before": 13.803,
+        "rmse_after": 13.62
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.796,
+        "rmse_before": 13.825,
+        "rmse_after": 13.725
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.034,
+        "rmse_before": 13.943,
+        "rmse_after": 13.762
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.143,
+        "rmse_before": 14.16,
+        "rmse_after": 13.987
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.506,
+        "rmse_before": 14.76,
+        "rmse_after": 14.631
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.763,
+        "rmse_before": 13.956,
+        "rmse_after": 13.905
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.578,
+        "rmse_before": 14.003,
+        "rmse_after": 13.857
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.023,
+        "rmse_before": 14.358,
+        "rmse_after": 14.23
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.922,
+        "rmse_before": 13.199,
+        "rmse_after": 12.967
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.428,
+        "rmse_before": 14.777,
+        "rmse_after": 14.769
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.068,
+        "rmse_before": 13.041,
+        "rmse_after": 12.946
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 12,
+     "cap": 2,
+     "eligible": true,
+     "improvement": 0.052,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.805,
+      "rmse": 13.836,
+      "brier": 0.21795,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0521,
+       "t": 2.9159,
+       "p": 0.0035
+      },
+      "predictive_residual": {
+       "n": 3454,
+       "slope": 1.9866,
+       "correlation": 0.1541,
+       "mean_adjustment": 0.0068,
+       "mean_base_residual": -0.0631
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2878,
+        "wins": 1492,
+        "losses": 1386,
+        "pushes": 76,
+        "win_pct": 0.5184,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2359,
+        "wins": 1221,
+        "losses": 1138,
+        "pushes": 62,
+        "win_pct": 0.5176,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1914,
+        "wins": 990,
+        "losses": 924,
+        "pushes": 52,
+        "win_pct": 0.5172,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1540,
+        "wins": 791,
+        "losses": 749,
+        "pushes": 42,
+        "win_pct": 0.5136,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 934,
+        "wins": 473,
+        "losses": 461,
+        "pushes": 26,
+        "win_pct": 0.5064,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.923,
+        "rmse_before": 14.185,
+        "rmse_after": 14.074
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.63,
+        "rmse_before": 13.357,
+        "rmse_after": 13.283
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.616,
+        "rmse_before": 13.803,
+        "rmse_after": 13.618
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.783,
+        "rmse_before": 13.825,
+        "rmse_after": 13.71
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.027,
+        "rmse_before": 13.943,
+        "rmse_after": 13.744
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.157,
+        "rmse_before": 14.16,
+        "rmse_after": 13.986
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.516,
+        "rmse_before": 14.76,
+        "rmse_after": 14.636
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.767,
+        "rmse_before": 13.956,
+        "rmse_after": 13.904
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.584,
+        "rmse_before": 14.003,
+        "rmse_after": 13.857
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.038,
+        "rmse_before": 14.358,
+        "rmse_after": 14.241
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.915,
+        "rmse_before": 13.199,
+        "rmse_after": 12.959
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.432,
+        "rmse_before": 14.777,
+        "rmse_after": 14.77
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.081,
+        "rmse_before": 13.041,
+        "rmse_after": 12.953
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 16,
+     "cap": 0.25,
+     "eligible": true,
+     "improvement": 0.024,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.833,
+      "rmse": 13.918,
+      "brier": 0.21938,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0243,
+       "t": 4.6276,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 2541,
+       "slope": 6.5797,
+       "correlation": 0.1709,
+       "mean_adjustment": 0.0002,
+       "mean_base_residual": -0.037
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2912,
+        "wins": 1526,
+        "losses": 1386,
+        "pushes": 77,
+        "win_pct": 0.524,
+        "clears_110_break_even": true
+       },
+       "1.0": {
+        "n": 2481,
+        "wins": 1285,
+        "losses": 1196,
+        "pushes": 58,
+        "win_pct": 0.5179,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 2062,
+        "wins": 1054,
+        "losses": 1008,
+        "pushes": 51,
+        "win_pct": 0.5112,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1674,
+        "wins": 863,
+        "losses": 811,
+        "pushes": 40,
+        "win_pct": 0.5155,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 1094,
+        "wins": 554,
+        "losses": 540,
+        "pushes": 23,
+        "win_pct": 0.5064,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.951,
+        "rmse_before": 14.185,
+        "rmse_after": 14.127
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.659,
+        "rmse_before": 13.357,
+        "rmse_after": 13.331
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.691,
+        "rmse_before": 13.803,
+        "rmse_after": 13.748
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.796,
+        "rmse_before": 13.825,
+        "rmse_after": 13.788
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.087,
+        "rmse_before": 13.943,
+        "rmse_after": 13.882
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.2,
+        "rmse_before": 14.16,
+        "rmse_after": 14.111
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.512,
+        "rmse_before": 14.76,
+        "rmse_after": 14.711
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.785,
+        "rmse_before": 13.956,
+        "rmse_after": 13.938
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.638,
+        "rmse_before": 14.003,
+        "rmse_after": 13.96
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.028,
+        "rmse_before": 14.358,
+        "rmse_after": 14.302
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 10.028,
+        "rmse_before": 13.199,
+        "rmse_after": 13.14
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.426,
+        "rmse_before": 14.777,
+        "rmse_after": 14.773
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.031,
+        "rmse_before": 13.041,
+        "rmse_after": 13.002
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 16,
+     "cap": 0.5,
+     "eligible": true,
+     "improvement": 0.04,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.817,
+      "rmse": 13.885,
+      "brier": 0.2188,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0407,
+       "t": 4.4441,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 3045,
+       "slope": 3.9994,
+       "correlation": 0.1665,
+       "mean_adjustment": -0.001,
+       "mean_base_residual": -0.1504
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2896,
+        "wins": 1509,
+        "losses": 1387,
+        "pushes": 77,
+        "win_pct": 0.5211,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2444,
+        "wins": 1271,
+        "losses": 1173,
+        "pushes": 56,
+        "win_pct": 0.52,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 2022,
+        "wins": 1035,
+        "losses": 987,
+        "pushes": 48,
+        "win_pct": 0.5119,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1630,
+        "wins": 844,
+        "losses": 786,
+        "pushes": 39,
+        "win_pct": 0.5178,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 1038,
+        "wins": 528,
+        "losses": 510,
+        "pushes": 26,
+        "win_pct": 0.5087,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.937,
+        "rmse_before": 14.185,
+        "rmse_after": 14.101
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.646,
+        "rmse_before": 13.357,
+        "rmse_after": 13.311
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.655,
+        "rmse_before": 13.803,
+        "rmse_after": 13.694
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.79,
+        "rmse_before": 13.825,
+        "rmse_after": 13.76
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.06,
+        "rmse_before": 13.943,
+        "rmse_after": 13.841
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.175,
+        "rmse_before": 14.16,
+        "rmse_after": 14.067
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.497,
+        "rmse_before": 14.76,
+        "rmse_after": 14.669
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.782,
+        "rmse_before": 13.956,
+        "rmse_after": 13.93
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.624,
+        "rmse_before": 14.003,
+        "rmse_after": 13.93
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.008,
+        "rmse_before": 14.358,
+        "rmse_after": 14.255
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.997,
+        "rmse_before": 13.199,
+        "rmse_after": 13.088
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.414,
+        "rmse_before": 14.777,
+        "rmse_after": 14.765
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.032,
+        "rmse_before": 13.041,
+        "rmse_after": 12.975
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 16,
+     "cap": 0.75,
+     "eligible": true,
+     "improvement": 0.051,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.806,
+      "rmse": 13.863,
+      "brier": 0.2184,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0518,
+       "t": 4.3255,
+       "p": 0
+      },
+      "predictive_residual": {
+       "n": 3272,
+       "slope": 3.1475,
+       "correlation": 0.1661,
+       "mean_adjustment": -0.0007,
+       "mean_base_residual": -0.0567
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2891,
+        "wins": 1511,
+        "losses": 1380,
+        "pushes": 78,
+        "win_pct": 0.5227,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2415,
+        "wins": 1260,
+        "losses": 1155,
+        "pushes": 59,
+        "win_pct": 0.5217,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1996,
+        "wins": 1028,
+        "losses": 968,
+        "pushes": 49,
+        "win_pct": 0.515,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1599,
+        "wins": 833,
+        "losses": 766,
+        "pushes": 38,
+        "win_pct": 0.521,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 999,
+        "wins": 507,
+        "losses": 492,
+        "pushes": 28,
+        "win_pct": 0.5075,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.93,
+        "rmse_before": 14.185,
+        "rmse_after": 14.089
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.64,
+        "rmse_before": 13.357,
+        "rmse_after": 13.3
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.628,
+        "rmse_before": 13.803,
+        "rmse_after": 13.658
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.79,
+        "rmse_before": 13.825,
+        "rmse_after": 13.743
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.05,
+        "rmse_before": 13.943,
+        "rmse_after": 13.81
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.151,
+        "rmse_before": 14.16,
+        "rmse_after": 14.033
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.494,
+        "rmse_before": 14.76,
+        "rmse_after": 14.645
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.774,
+        "rmse_before": 13.956,
+        "rmse_after": 13.919
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.607,
+        "rmse_before": 14.003,
+        "rmse_after": 13.902
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 10.997,
+        "rmse_before": 14.358,
+        "rmse_after": 14.23
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.965,
+        "rmse_before": 13.199,
+        "rmse_after": 13.039
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.413,
+        "rmse_before": 14.777,
+        "rmse_after": 14.76
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.037,
+        "rmse_before": 13.041,
+        "rmse_after": 12.962
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 16,
+     "cap": 1,
+     "eligible": true,
+     "improvement": 0.054,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.803,
+      "rmse": 13.852,
+      "brier": 0.2182,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0542,
+       "t": 3.9101,
+       "p": 0.0001
+      },
+      "predictive_residual": {
+       "n": 3397,
+       "slope": 2.6721,
+       "correlation": 0.1609,
+       "mean_adjustment": 0.0012,
+       "mean_base_residual": -0.1089
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2874,
+        "wins": 1499,
+        "losses": 1375,
+        "pushes": 77,
+        "win_pct": 0.5216,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2405,
+        "wins": 1260,
+        "losses": 1145,
+        "pushes": 59,
+        "win_pct": 0.5239,
+        "clears_110_break_even": true
+       },
+       "1.5": {
+        "n": 1967,
+        "wins": 1014,
+        "losses": 953,
+        "pushes": 49,
+        "win_pct": 0.5155,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1571,
+        "wins": 815,
+        "losses": 756,
+        "pushes": 37,
+        "win_pct": 0.5188,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 972,
+        "wins": 496,
+        "losses": 476,
+        "pushes": 27,
+        "win_pct": 0.5103,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.929,
+        "rmse_before": 14.185,
+        "rmse_after": 14.089
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.637,
+        "rmse_before": 13.357,
+        "rmse_after": 13.293
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.618,
+        "rmse_before": 13.803,
+        "rmse_after": 13.641
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.793,
+        "rmse_before": 13.825,
+        "rmse_after": 13.737
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.046,
+        "rmse_before": 13.943,
+        "rmse_after": 13.79
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.142,
+        "rmse_before": 14.16,
+        "rmse_after": 14.014
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.503,
+        "rmse_before": 14.76,
+        "rmse_after": 14.645
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.769,
+        "rmse_before": 13.956,
+        "rmse_after": 13.911
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.589,
+        "rmse_before": 14.003,
+        "rmse_after": 13.879
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.008,
+        "rmse_before": 14.358,
+        "rmse_after": 14.231
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.946,
+        "rmse_before": 13.199,
+        "rmse_after": 13.01
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.418,
+        "rmse_before": 14.777,
+        "rmse_after": 14.761
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.044,
+        "rmse_before": 13.041,
+        "rmse_after": 12.951
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 16,
+     "cap": 1.5,
+     "eligible": true,
+     "improvement": 0.051,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.806,
+      "rmse": 13.846,
+      "brier": 0.21809,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0516,
+       "t": 3.2848,
+       "p": 0.001
+      },
+      "predictive_residual": {
+       "n": 3452,
+       "slope": 2.2805,
+       "correlation": 0.1552,
+       "mean_adjustment": 0.0042,
+       "mean_base_residual": -0.0738
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2877,
+        "wins": 1494,
+        "losses": 1383,
+        "pushes": 78,
+        "win_pct": 0.5193,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2382,
+        "wins": 1240,
+        "losses": 1142,
+        "pushes": 60,
+        "win_pct": 0.5206,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1943,
+        "wins": 1003,
+        "losses": 940,
+        "pushes": 52,
+        "win_pct": 0.5162,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1556,
+        "wins": 801,
+        "losses": 755,
+        "pushes": 38,
+        "win_pct": 0.5148,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 956,
+        "wins": 485,
+        "losses": 471,
+        "pushes": 28,
+        "win_pct": 0.5073,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.929,
+        "rmse_before": 14.185,
+        "rmse_after": 14.089
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.635,
+        "rmse_before": 13.357,
+        "rmse_after": 13.292
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.626,
+        "rmse_before": 13.803,
+        "rmse_after": 13.637
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.786,
+        "rmse_before": 13.825,
+        "rmse_after": 13.725
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.041,
+        "rmse_before": 13.943,
+        "rmse_after": 13.77
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.148,
+        "rmse_before": 14.16,
+        "rmse_after": 13.997
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.511,
+        "rmse_before": 14.76,
+        "rmse_after": 14.642
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.763,
+        "rmse_before": 13.956,
+        "rmse_after": 13.903
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.583,
+        "rmse_before": 14.003,
+        "rmse_after": 13.865
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.028,
+        "rmse_before": 14.358,
+        "rmse_after": 14.243
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.932,
+        "rmse_before": 13.199,
+        "rmse_after": 12.982
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.429,
+        "rmse_before": 14.777,
+        "rmse_after": 14.768
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.065,
+        "rmse_before": 13.041,
+        "rmse_after": 12.952
+       }
+      ],
+      "leakage_clean": true
+     }
+    },
+    {
+     "k": 16,
+     "cap": 2,
+     "eligible": true,
+     "improvement": 0.049,
+     "metrics": {
+      "n": 3471,
+      "spread_mae": 10.808,
+      "rmse": 13.845,
+      "brier": 0.2181,
+      "paired": {
+       "n": 3471,
+       "mean_diff": 0.0498,
+       "t": 3.062,
+       "p": 0.0022
+      },
+      "predictive_residual": {
+       "n": 3454,
+       "slope": 2.1707,
+       "correlation": 0.1531,
+       "mean_adjustment": 0.0064,
+       "mean_base_residual": -0.0631
+      },
+      "ats_vs_close": {
+       "0.5": {
+        "n": 2876,
+        "wins": 1490,
+        "losses": 1386,
+        "pushes": 79,
+        "win_pct": 0.5181,
+        "clears_110_break_even": false
+       },
+       "1.0": {
+        "n": 2381,
+        "wins": 1237,
+        "losses": 1144,
+        "pushes": 62,
+        "win_pct": 0.5195,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 1937,
+        "wins": 1000,
+        "losses": 937,
+        "pushes": 52,
+        "win_pct": 0.5163,
+        "clears_110_break_even": false
+       },
+       "2.0": {
+        "n": 1547,
+        "wins": 794,
+        "losses": 753,
+        "pushes": 40,
+        "win_pct": 0.5133,
+        "clears_110_break_even": false
+       },
+       "3.0": {
+        "n": 958,
+        "wins": 487,
+        "losses": 471,
+        "pushes": 28,
+        "win_pct": 0.5084,
+        "clears_110_break_even": false
+       }
+      },
+      "per_season": [
+       {
+        "season": 2003,
+        "n": 267,
+        "mae_before": 10.988,
+        "mae_after": 10.929,
+        "rmse_before": 14.185,
+        "rmse_after": 14.089
+       },
+       {
+        "season": 2004,
+        "n": 267,
+        "mae_before": 10.682,
+        "mae_after": 10.635,
+        "rmse_before": 13.357,
+        "rmse_after": 13.292
+       },
+       {
+        "season": 2005,
+        "n": 267,
+        "mae_before": 10.735,
+        "mae_after": 10.625,
+        "rmse_before": 13.803,
+        "rmse_after": 13.637
+       },
+       {
+        "season": 2006,
+        "n": 267,
+        "mae_before": 10.809,
+        "mae_after": 10.778,
+        "rmse_before": 13.825,
+        "rmse_after": 13.714
+       },
+       {
+        "season": 2007,
+        "n": 267,
+        "mae_before": 11.128,
+        "mae_after": 11.033,
+        "rmse_before": 13.943,
+        "rmse_after": 13.753
+       },
+       {
+        "season": 2008,
+        "n": 267,
+        "mae_before": 11.219,
+        "mae_after": 11.156,
+        "rmse_before": 14.16,
+        "rmse_after": 13.995
+       },
+       {
+        "season": 2009,
+        "n": 267,
+        "mae_before": 11.541,
+        "mae_after": 11.517,
+        "rmse_before": 14.76,
+        "rmse_after": 14.647
+       },
+       {
+        "season": 2010,
+        "n": 267,
+        "mae_before": 10.795,
+        "mae_after": 10.767,
+        "rmse_before": 13.956,
+        "rmse_after": 13.905
+       },
+       {
+        "season": 2011,
+        "n": 267,
+        "mae_before": 10.663,
+        "mae_after": 10.589,
+        "rmse_before": 14.003,
+        "rmse_after": 13.866
+       },
+       {
+        "season": 2012,
+        "n": 267,
+        "mae_before": 11.05,
+        "mae_after": 11.038,
+        "rmse_before": 14.358,
+        "rmse_after": 14.25
+       },
+       {
+        "season": 2013,
+        "n": 267,
+        "mae_before": 10.06,
+        "mae_after": 9.925,
+        "rmse_before": 13.199,
+        "rmse_after": 12.977
+       },
+       {
+        "season": 2014,
+        "n": 267,
+        "mae_before": 11.434,
+        "mae_after": 11.433,
+        "rmse_before": 14.777,
+        "rmse_after": 14.769
+       },
+       {
+        "season": 2015,
+        "n": 267,
+        "mae_before": 10.043,
+        "mae_after": 10.075,
+        "rmse_before": 13.041,
+        "rmse_after": 12.958
+       }
+      ],
+      "leakage_clean": true
+     }
+    }
+   ],
+   "selection": {
+    "k": 4,
+    "cap": 1,
+    "reason": "lowest tune MAE among arms clearing minimum effect, RMSE and residual-direction guards"
+   }
+  },
+  "holdout": {
+   "baseline": {
+    "n": 2761,
+    "spread_mae": 10.2,
+    "rmse": 13.153,
+    "brier": 0.22311,
+    "feature": "nfl_coaching_staff_cap_0",
+    "ats_vs_close": {
+     "0.5": {
+      "n": 2310,
+      "wins": 1125,
+      "losses": 1185,
+      "pushes": 56,
+      "win_pct": 0.487,
+      "clears_110_break_even": false
+     },
+     "1.0": {
+      "n": 1962,
+      "wins": 960,
+      "losses": 1002,
+      "pushes": 46,
+      "win_pct": 0.4893,
+      "clears_110_break_even": false
+     },
+     "1.5": {
+      "n": 1615,
+      "wins": 790,
+      "losses": 825,
+      "pushes": 31,
+      "win_pct": 0.4892,
+      "clears_110_break_even": false
+     },
+     "2.0": {
+      "n": 1319,
+      "wins": 647,
+      "losses": 672,
+      "pushes": 23,
+      "win_pct": 0.4905,
+      "clears_110_break_even": false
+     },
+     "3.0": {
+      "n": 870,
+      "wins": 442,
+      "losses": 428,
+      "pushes": 15,
+      "win_pct": 0.508,
+      "clears_110_break_even": false
+     }
+    }
+   },
+   "arms": [
+    {
+     "n": 2761,
+     "spread_mae": 10.189,
+     "rmse": 13.131,
+     "brier": 0.22281,
+     "paired": {
+      "n": 2761,
+      "mean_diff": 0.0113,
+      "t": 1.901,
+      "p": 0.0573
+     },
+     "predictive_residual": {
+      "n": 1833,
+      "slope": 3.3951,
+      "correlation": 0.0989,
+      "mean_adjustment": 0.0095,
+      "mean_base_residual": -0.163
+     },
+     "ats_vs_close": {
+      "0.5": {
+       "n": 2317,
+       "wins": 1119,
+       "losses": 1198,
+       "pushes": 54,
+       "win_pct": 0.483,
+       "clears_110_break_even": false
+      },
+      "1.0": {
+       "n": 1917,
+       "wins": 937,
+       "losses": 980,
+       "pushes": 39,
+       "win_pct": 0.4888,
+       "clears_110_break_even": false
+      },
+      "1.5": {
+       "n": 1572,
+       "wins": 770,
+       "losses": 802,
+       "pushes": 31,
+       "win_pct": 0.4898,
+       "clears_110_break_even": false
+      },
+      "2.0": {
+       "n": 1288,
+       "wins": 627,
+       "losses": 661,
+       "pushes": 24,
+       "win_pct": 0.4868,
+       "clears_110_break_even": false
+      },
+      "3.0": {
+       "n": 823,
+       "wins": 421,
+       "losses": 402,
+       "pushes": 14,
+       "win_pct": 0.5115,
+       "clears_110_break_even": false
+      }
+     },
+     "per_season": [
+      {
+       "season": 2016,
+       "n": 267,
+       "mae_before": 9.498,
+       "mae_after": 9.475,
+       "rmse_before": 12.141,
+       "rmse_after": 12.118
+      },
+      {
+       "season": 2017,
+       "n": 267,
+       "mae_before": 10.691,
+       "mae_after": 10.66,
+       "rmse_before": 13.802,
+       "rmse_after": 13.768
+      },
+      {
+       "season": 2018,
+       "n": 267,
+       "mae_before": 10.136,
+       "mae_after": 10.116,
+       "rmse_before": 13.286,
+       "rmse_after": 13.265
+      },
+      {
+       "season": 2019,
+       "n": 267,
+       "mae_before": 10.591,
+       "mae_after": 10.557,
+       "rmse_before": 13.543,
+       "rmse_after": 13.499
+      },
+      {
+       "season": 2020,
+       "n": 269,
+       "mae_before": 10.126,
+       "mae_after": 10.099,
+       "rmse_before": 13.086,
+       "rmse_after": 13.044
+      },
+      {
+       "season": 2021,
+       "n": 285,
+       "mae_before": 11.192,
+       "mae_after": 11.182,
+       "rmse_before": 14.108,
+       "rmse_after": 14.088
+      },
+      {
+       "season": 2022,
+       "n": 284,
+       "mae_before": 9.008,
+       "mae_after": 9.026,
+       "rmse_before": 11.734,
+       "rmse_after": 11.737
+      },
+      {
+       "season": 2023,
+       "n": 285,
+       "mae_before": 10.479,
+       "mae_after": 10.496,
+       "rmse_before": 13.658,
+       "rmse_after": 13.669
+      },
+      {
+       "season": 2024,
+       "n": 285,
+       "mae_before": 10.112,
+       "mae_after": 10.106,
+       "rmse_before": 13.057,
+       "rmse_after": 13.029
+      },
+      {
+       "season": 2025,
+       "n": 285,
+       "mae_before": 10.166,
+       "mae_after": 10.163,
+       "rmse_before": 12.935,
+       "rmse_after": 12.914
+      }
+     ],
+     "leakage_clean": true,
+     "feature": "nfl_coaching_staff_cap_0_25",
+     "label": "NFL Coaching / Staff ±0.25 team points",
+     "coefficient": 0.25,
+     "version": "nfl_coaching_staff_v1",
+     "k": 4,
+     "cap": 0.25,
+     "reliability_buckets": {
+      "lt_025": {
+       "n": 28,
+       "range": [
+        0,
+        0.25
+       ],
+       "mae_before": 10.056,
+       "mae_after": 9.988,
+       "improvement": 0.068
+      },
+      "025_040": {
+       "n": 198,
+       "range": [
+        0.25,
+        0.4
+       ],
+       "mae_before": 9.544,
+       "mae_after": 9.547,
+       "improvement": -0.003
+      },
+      "040_055": {
+       "n": 689,
+       "range": [
+        0.4,
+        0.55
+       ],
+       "mae_before": 10.037,
+       "mae_after": 10.047,
+       "improvement": -0.01
+      },
+      "ge_055": {
+       "n": 1846,
+       "range": [
+        0.55,
+        null
+       ],
+       "mae_before": 10.333,
+       "mae_after": 10.313,
+       "improvement": 0.02
+      }
+     }
+    },
+    {
+     "n": 2761,
+     "spread_mae": 10.183,
+     "rmse": 13.114,
+     "brier": 0.22265,
+     "paired": {
+      "n": 2761,
+      "mean_diff": 0.017,
+      "t": 1.564,
+      "p": 0.1178
+     },
+     "predictive_residual": {
+      "n": 2222,
+      "slope": 2.0206,
+      "correlation": 0.0987,
+      "mean_adjustment": 0.015,
+      "mean_base_residual": -0.1531
+     },
+     "ats_vs_close": {
+      "0.5": {
+       "n": 2296,
+       "wins": 1110,
+       "losses": 1186,
+       "pushes": 50,
+       "win_pct": 0.4834,
+       "clears_110_break_even": false
+      },
+      "1.0": {
+       "n": 1915,
+       "wins": 933,
+       "losses": 982,
+       "pushes": 40,
+       "win_pct": 0.4872,
+       "clears_110_break_even": false
+      },
+      "1.5": {
+       "n": 1539,
+       "wins": 751,
+       "losses": 788,
+       "pushes": 29,
+       "win_pct": 0.488,
+       "clears_110_break_even": false
+      },
+      "2.0": {
+       "n": 1261,
+       "wins": 618,
+       "losses": 643,
+       "pushes": 26,
+       "win_pct": 0.4901,
+       "clears_110_break_even": false
+      },
+      "3.0": {
+       "n": 786,
+       "wins": 405,
+       "losses": 381,
+       "pushes": 15,
+       "win_pct": 0.5153,
+       "clears_110_break_even": false
+      }
+     },
+     "per_season": [
+      {
+       "season": 2016,
+       "n": 267,
+       "mae_before": 9.498,
+       "mae_after": 9.455,
+       "rmse_before": 12.141,
+       "rmse_after": 12.096
+      },
+      {
+       "season": 2017,
+       "n": 267,
+       "mae_before": 10.691,
+       "mae_after": 10.646,
+       "rmse_before": 13.802,
+       "rmse_after": 13.746
+      },
+      {
+       "season": 2018,
+       "n": 267,
+       "mae_before": 10.136,
+       "mae_after": 10.103,
+       "rmse_before": 13.286,
+       "rmse_after": 13.244
+      },
+      {
+       "season": 2019,
+       "n": 267,
+       "mae_before": 10.591,
+       "mae_after": 10.538,
+       "rmse_before": 13.543,
+       "rmse_after": 13.475
+      },
+      {
+       "season": 2020,
+       "n": 269,
+       "mae_before": 10.126,
+       "mae_after": 10.083,
+       "rmse_before": 13.086,
+       "rmse_after": 13.017
+      },
+      {
+       "season": 2021,
+       "n": 285,
+       "mae_before": 11.192,
+       "mae_after": 11.182,
+       "rmse_before": 14.108,
+       "rmse_after": 14.067
+      },
+      {
+       "season": 2022,
+       "n": 284,
+       "mae_before": 9.008,
+       "mae_after": 9.04,
+       "rmse_before": 11.734,
+       "rmse_after": 11.739
+      },
+      {
+       "season": 2023,
+       "n": 285,
+       "mae_before": 10.479,
+       "mae_after": 10.519,
+       "rmse_before": 13.658,
+       "rmse_after": 13.676
+      },
+      {
+       "season": 2024,
+       "n": 285,
+       "mae_before": 10.112,
+       "mae_after": 10.09,
+       "rmse_before": 13.057,
+       "rmse_after": 12.998
+      },
+      {
+       "season": 2025,
+       "n": 285,
+       "mae_before": 10.166,
+       "mae_after": 10.163,
+       "rmse_before": 12.935,
+       "rmse_after": 12.901
+      }
+     ],
+     "leakage_clean": true,
+     "feature": "nfl_coaching_staff_cap_0_5",
+     "label": "NFL Coaching / Staff ±0.5 team points",
+     "coefficient": 0.5,
+     "version": "nfl_coaching_staff_v1",
+     "k": 4,
+     "cap": 0.5,
+     "reliability_buckets": {
+      "lt_025": {
+       "n": 28,
+       "range": [
+        0,
+        0.25
+       ],
+       "mae_before": 10.056,
+       "mae_after": 9.991,
+       "improvement": 0.065
+      },
+      "025_040": {
+       "n": 198,
+       "range": [
+        0.25,
+        0.4
+       ],
+       "mae_before": 9.544,
+       "mae_after": 9.559,
+       "improvement": -0.015
+      },
+      "040_055": {
+       "n": 689,
+       "range": [
+        0.4,
+        0.55
+       ],
+       "mae_before": 10.037,
+       "mae_after": 10.06,
+       "improvement": -0.023
+      },
+      "ge_055": {
+       "n": 1846,
+       "range": [
+        0.55,
+        null
+       ],
+       "mae_before": 10.333,
+       "mae_after": 10.298,
+       "improvement": 0.035
+      }
+     }
+    },
+    {
+     "n": 2761,
+     "spread_mae": 10.183,
+     "rmse": 13.107,
+     "brier": 0.22271,
+     "paired": {
+      "n": 2761,
+      "mean_diff": 0.0167,
+      "t": 1.1306,
+      "p": 0.2582
+     },
+     "predictive_residual": {
+      "n": 2464,
+      "slope": 1.4799,
+      "correlation": 0.0939,
+      "mean_adjustment": 0.0211,
+      "mean_base_residual": -0.2317
+     },
+     "ats_vs_close": {
+      "0.5": {
+       "n": 2272,
+       "wins": 1099,
+       "losses": 1173,
+       "pushes": 50,
+       "win_pct": 0.4837,
+       "clears_110_break_even": false
+      },
+      "1.0": {
+       "n": 1881,
+       "wins": 922,
+       "losses": 959,
+       "pushes": 39,
+       "win_pct": 0.4902,
+       "clears_110_break_even": false
+      },
+      "1.5": {
+       "n": 1542,
+       "wins": 749,
+       "losses": 793,
+       "pushes": 29,
+       "win_pct": 0.4857,
+       "clears_110_break_even": false
+      },
+      "2.0": {
+       "n": 1256,
+       "wins": 613,
+       "losses": 643,
+       "pushes": 26,
+       "win_pct": 0.4881,
+       "clears_110_break_even": false
+      },
+      "3.0": {
+       "n": 775,
+       "wins": 391,
+       "losses": 384,
+       "pushes": 16,
+       "win_pct": 0.5045,
+       "clears_110_break_even": false
+      }
+     },
+     "per_season": [
+      {
+       "season": 2016,
+       "n": 267,
+       "mae_before": 9.498,
+       "mae_after": 9.442,
+       "rmse_before": 12.141,
+       "rmse_after": 12.08
+      },
+      {
+       "season": 2017,
+       "n": 267,
+       "mae_before": 10.691,
+       "mae_after": 10.64,
+       "rmse_before": 13.802,
+       "rmse_after": 13.736
+      },
+      {
+       "season": 2018,
+       "n": 267,
+       "mae_before": 10.136,
+       "mae_after": 10.097,
+       "rmse_before": 13.286,
+       "rmse_after": 13.231
+      },
+      {
+       "season": 2019,
+       "n": 267,
+       "mae_before": 10.591,
+       "mae_after": 10.536,
+       "rmse_before": 13.543,
+       "rmse_after": 13.465
+      },
+      {
+       "season": 2020,
+       "n": 269,
+       "mae_before": 10.126,
+       "mae_after": 10.077,
+       "rmse_before": 13.086,
+       "rmse_after": 13.002
+      },
+      {
+       "season": 2021,
+       "n": 285,
+       "mae_before": 11.192,
+       "mae_after": 11.193,
+       "rmse_before": 14.108,
+       "rmse_after": 14.063
+      },
+      {
+       "season": 2022,
+       "n": 284,
+       "mae_before": 9.008,
+       "mae_after": 9.056,
+       "rmse_before": 11.734,
+       "rmse_after": 11.745
+      },
+      {
+       "season": 2023,
+       "n": 285,
+       "mae_before": 10.479,
+       "mae_after": 10.527,
+       "rmse_before": 13.658,
+       "rmse_after": 13.676
+      },
+      {
+       "season": 2024,
+       "n": 285,
+       "mae_before": 10.112,
+       "mae_after": 10.085,
+       "rmse_before": 13.057,
+       "rmse_after": 12.99
+      },
+      {
+       "season": 2025,
+       "n": 285,
+       "mae_before": 10.166,
+       "mae_after": 10.167,
+       "rmse_before": 12.935,
+       "rmse_after": 12.897
+      }
+     ],
+     "leakage_clean": true,
+     "feature": "nfl_coaching_staff_cap_0_75",
+     "label": "NFL Coaching / Staff ±0.75 team points",
+     "coefficient": 0.75,
+     "version": "nfl_coaching_staff_v1",
+     "k": 4,
+     "cap": 0.75,
+     "reliability_buckets": {
+      "lt_025": {
+       "n": 28,
+       "range": [
+        0,
+        0.25
+       ],
+       "mae_before": 10.056,
+       "mae_after": 9.995,
+       "improvement": 0.061
+      },
+      "025_040": {
+       "n": 198,
+       "range": [
+        0.25,
+        0.4
+       ],
+       "mae_before": 9.544,
+       "mae_after": 9.569,
+       "improvement": -0.025
+      },
+      "040_055": {
+       "n": 689,
+       "range": [
+        0.4,
+        0.55
+       ],
+       "mae_before": 10.037,
+       "mae_after": 10.079,
+       "improvement": -0.042
+      },
+      "ge_055": {
+       "n": 1846,
+       "range": [
+        0.55,
+        null
+       ],
+       "mae_before": 10.333,
+       "mae_after": 10.291,
+       "improvement": 0.042
+      }
+     }
+    },
+    {
+     "n": 2761,
+     "spread_mae": 10.186,
+     "rmse": 13.105,
+     "brier": 0.22284,
+     "paired": {
+      "n": 2761,
+      "mean_diff": 0.014,
+      "t": 0.7883,
+      "p": 0.4305
+     },
+     "predictive_residual": {
+      "n": 2626,
+      "slope": 1.2005,
+      "correlation": 0.0888,
+      "mean_adjustment": 0.0256,
+      "mean_base_residual": -0.2591
+     },
+     "ats_vs_close": {
+      "0.5": {
+       "n": 2274,
+       "wins": 1099,
+       "losses": 1175,
+       "pushes": 50,
+       "win_pct": 0.4833,
+       "clears_110_break_even": false
+      },
+      "1.0": {
+       "n": 1866,
+       "wins": 908,
+       "losses": 958,
+       "pushes": 42,
+       "win_pct": 0.4866,
+       "clears_110_break_even": false
+      },
+      "1.5": {
+       "n": 1541,
+       "wins": 746,
+       "losses": 795,
+       "pushes": 30,
+       "win_pct": 0.4841,
+       "clears_110_break_even": false
+      },
+      "2.0": {
+       "n": 1246,
+       "wins": 603,
+       "losses": 643,
+       "pushes": 25,
+       "win_pct": 0.4839,
+       "clears_110_break_even": false
+      },
+      "3.0": {
+       "n": 772,
+       "wins": 388,
+       "losses": 384,
+       "pushes": 17,
+       "win_pct": 0.5026,
+       "clears_110_break_even": false
+      }
+     },
+     "per_season": [
+      {
+       "season": 2016,
+       "n": 267,
+       "mae_before": 9.498,
+       "mae_after": 9.435,
+       "rmse_before": 12.141,
+       "rmse_after": 12.071
+      },
+      {
+       "season": 2017,
+       "n": 267,
+       "mae_before": 10.691,
+       "mae_after": 10.635,
+       "rmse_before": 13.802,
+       "rmse_after": 13.729
+      },
+      {
+       "season": 2018,
+       "n": 267,
+       "mae_before": 10.136,
+       "mae_after": 10.091,
+       "rmse_before": 13.286,
+       "rmse_after": 13.219
+      },
+      {
+       "season": 2019,
+       "n": 267,
+       "mae_before": 10.591,
+       "mae_after": 10.531,
+       "rmse_before": 13.543,
+       "rmse_after": 13.456
+      },
+      {
+       "season": 2020,
+       "n": 269,
+       "mae_before": 10.126,
+       "mae_after": 10.083,
+       "rmse_before": 13.086,
+       "rmse_after": 13.008
+      },
+      {
+       "season": 2021,
+       "n": 285,
+       "mae_before": 11.192,
+       "mae_after": 11.206,
+       "rmse_before": 14.108,
+       "rmse_after": 14.069
+      },
+      {
+       "season": 2022,
+       "n": 284,
+       "mae_before": 9.008,
+       "mae_after": 9.071,
+       "rmse_before": 11.734,
+       "rmse_after": 11.755
+      },
+      {
+       "season": 2023,
+       "n": 285,
+       "mae_before": 10.479,
+       "mae_after": 10.527,
+       "rmse_before": 13.658,
+       "rmse_after": 13.67
+      },
+      {
+       "season": 2024,
+       "n": 285,
+       "mae_before": 10.112,
+       "mae_after": 10.091,
+       "rmse_before": 13.057,
+       "rmse_after": 12.994
+      },
+      {
+       "season": 2025,
+       "n": 285,
+       "mae_before": 10.166,
+       "mae_after": 10.175,
+       "rmse_before": 12.935,
+       "rmse_after": 12.899
+      }
+     ],
+     "leakage_clean": true,
+     "feature": "nfl_coaching_staff_cap_1_0",
+     "label": "NFL Coaching / Staff ±1.0 team points",
+     "coefficient": 1,
+     "version": "nfl_coaching_staff_v1",
+     "k": 4,
+     "cap": 1,
+     "reliability_buckets": {
+      "lt_025": {
+       "n": 28,
+       "range": [
+        0,
+        0.25
+       ],
+       "mae_before": 10.056,
+       "mae_after": 9.98,
+       "improvement": 0.076
+      },
+      "025_040": {
+       "n": 198,
+       "range": [
+        0.25,
+        0.4
+       ],
+       "mae_before": 9.544,
+       "mae_after": 9.579,
+       "improvement": -0.035
+      },
+      "040_055": {
+       "n": 689,
+       "range": [
+        0.4,
+        0.55
+       ],
+       "mae_before": 10.037,
+       "mae_after": 10.093,
+       "improvement": -0.056
+      },
+      "ge_055": {
+       "n": 1846,
+       "range": [
+        0.55,
+        null
+       ],
+       "mae_before": 10.333,
+       "mae_after": 10.289,
+       "improvement": 0.044
+      }
+     }
+    },
+    {
+     "n": 2761,
+     "spread_mae": 10.192,
+     "rmse": 13.107,
+     "brier": 0.22323,
+     "paired": {
+      "n": 2761,
+      "mean_diff": 0.0079,
+      "t": 0.3636,
+      "p": 0.7162
+     },
+     "predictive_residual": {
+      "n": 2731,
+      "slope": 0.9488,
+      "correlation": 0.0846,
+      "mean_adjustment": 0.0331,
+      "mean_base_residual": -0.2099
+     },
+     "ats_vs_close": {
+      "0.5": {
+       "n": 2263,
+       "wins": 1092,
+       "losses": 1171,
+       "pushes": 52,
+       "win_pct": 0.4825,
+       "clears_110_break_even": false
+      },
+      "1.0": {
+       "n": 1877,
+       "wins": 906,
+       "losses": 971,
+       "pushes": 42,
+       "win_pct": 0.4827,
+       "clears_110_break_even": false
+      },
+      "1.5": {
+       "n": 1551,
+       "wins": 744,
+       "losses": 807,
+       "pushes": 32,
+       "win_pct": 0.4797,
+       "clears_110_break_even": false
+      },
+      "2.0": {
+       "n": 1253,
+       "wins": 608,
+       "losses": 645,
+       "pushes": 26,
+       "win_pct": 0.4852,
+       "clears_110_break_even": false
+      },
+      "3.0": {
+       "n": 776,
+       "wins": 384,
+       "losses": 392,
+       "pushes": 17,
+       "win_pct": 0.4948,
+       "clears_110_break_even": false
+      }
+     },
+     "per_season": [
+      {
+       "season": 2016,
+       "n": 267,
+       "mae_before": 9.498,
+       "mae_after": 9.427,
+       "rmse_before": 12.141,
+       "rmse_after": 12.067
+      },
+      {
+       "season": 2017,
+       "n": 267,
+       "mae_before": 10.691,
+       "mae_after": 10.632,
+       "rmse_before": 13.802,
+       "rmse_after": 13.733
+      },
+      {
+       "season": 2018,
+       "n": 267,
+       "mae_before": 10.136,
+       "mae_after": 10.098,
+       "rmse_before": 13.286,
+       "rmse_after": 13.215
+      },
+      {
+       "season": 2019,
+       "n": 267,
+       "mae_before": 10.591,
+       "mae_after": 10.527,
+       "rmse_before": 13.543,
+       "rmse_after": 13.444
+      },
+      {
+       "season": 2020,
+       "n": 269,
+       "mae_before": 10.126,
+       "mae_after": 10.089,
+       "rmse_before": 13.086,
+       "rmse_after": 13.01
+      },
+      {
+       "season": 2021,
+       "n": 285,
+       "mae_before": 11.192,
+       "mae_after": 11.22,
+       "rmse_before": 14.108,
+       "rmse_after": 14.079
+      },
+      {
+       "season": 2022,
+       "n": 284,
+       "mae_before": 9.008,
+       "mae_after": 9.1,
+       "rmse_before": 11.734,
+       "rmse_after": 11.78
+      },
+      {
+       "season": 2023,
+       "n": 285,
+       "mae_before": 10.479,
+       "mae_after": 10.527,
+       "rmse_before": 13.658,
+       "rmse_after": 13.665
+      },
+      {
+       "season": 2024,
+       "n": 285,
+       "mae_before": 10.112,
+       "mae_after": 10.097,
+       "rmse_before": 13.057,
+       "rmse_after": 12.992
+      },
+      {
+       "season": 2025,
+       "n": 285,
+       "mae_before": 10.166,
+       "mae_after": 10.187,
+       "rmse_before": 12.935,
+       "rmse_after": 12.901
+      }
+     ],
+     "leakage_clean": true,
+     "feature": "nfl_coaching_staff_cap_1_5",
+     "label": "NFL Coaching / Staff ±1.5 team points",
+     "coefficient": 1.5,
+     "version": "nfl_coaching_staff_v1",
+     "k": 4,
+     "cap": 1.5,
+     "reliability_buckets": {
+      "lt_025": {
+       "n": 28,
+       "range": [
+        0,
+        0.25
+       ],
+       "mae_before": 10.056,
+       "mae_after": 9.974,
+       "improvement": 0.082
+      },
+      "025_040": {
+       "n": 198,
+       "range": [
+        0.25,
+        0.4
+       ],
+       "mae_before": 9.544,
+       "mae_after": 9.603,
+       "improvement": -0.059
+      },
+      "040_055": {
+       "n": 689,
+       "range": [
+        0.4,
+        0.55
+       ],
+       "mae_before": 10.037,
+       "mae_after": 10.116,
+       "improvement": -0.079
+      },
+      "ge_055": {
+       "n": 1846,
+       "range": [
+        0.55,
+        null
+       ],
+       "mae_before": 10.333,
+       "mae_after": 10.287,
+       "improvement": 0.046
+      }
+     }
+    },
+    {
+     "n": 2761,
+     "spread_mae": 10.199,
+     "rmse": 13.114,
+     "brier": 0.22365,
+     "paired": {
+      "n": 2761,
+      "mean_diff": 0.0009,
+      "t": 0.0364,
+      "p": 0.971
+     },
+     "predictive_residual": {
+      "n": 2754,
+      "slope": 0.8215,
+      "correlation": 0.0797,
+      "mean_adjustment": 0.035,
+      "mean_base_residual": -0.2175
+     },
+     "ats_vs_close": {
+      "0.5": {
+       "n": 2263,
+       "wins": 1090,
+       "losses": 1173,
+       "pushes": 52,
+       "win_pct": 0.4817,
+       "clears_110_break_even": false
+      },
+      "1.0": {
+       "n": 1892,
+       "wins": 915,
+       "losses": 977,
+       "pushes": 43,
+       "win_pct": 0.4836,
+       "clears_110_break_even": false
+      },
+      "1.5": {
+       "n": 1566,
+       "wins": 749,
+       "losses": 817,
+       "pushes": 31,
+       "win_pct": 0.4783,
+       "clears_110_break_even": false
+      },
+      "2.0": {
+       "n": 1266,
+       "wins": 608,
+       "losses": 658,
+       "pushes": 27,
+       "win_pct": 0.4803,
+       "clears_110_break_even": false
+      },
+      "3.0": {
+       "n": 777,
+       "wins": 382,
+       "losses": 395,
+       "pushes": 16,
+       "win_pct": 0.4916,
+       "clears_110_break_even": false
+      }
+     },
+     "per_season": [
+      {
+       "season": 2016,
+       "n": 267,
+       "mae_before": 9.498,
+       "mae_after": 9.424,
+       "rmse_before": 12.141,
+       "rmse_after": 12.071
+      },
+      {
+       "season": 2017,
+       "n": 267,
+       "mae_before": 10.691,
+       "mae_after": 10.638,
+       "rmse_before": 13.802,
+       "rmse_after": 13.75
+      },
+      {
+       "season": 2018,
+       "n": 267,
+       "mae_before": 10.136,
+       "mae_after": 10.122,
+       "rmse_before": 13.286,
+       "rmse_after": 13.227
+      },
+      {
+       "season": 2019,
+       "n": 267,
+       "mae_before": 10.591,
+       "mae_after": 10.529,
+       "rmse_before": 13.543,
+       "rmse_after": 13.441
+      },
+      {
+       "season": 2020,
+       "n": 269,
+       "mae_before": 10.126,
+       "mae_after": 10.081,
+       "rmse_before": 13.086,
+       "rmse_after": 13.004
+      },
+      {
+       "season": 2021,
+       "n": 285,
+       "mae_before": 11.192,
+       "mae_after": 11.235,
+       "rmse_before": 14.108,
+       "rmse_after": 14.095
+      },
+      {
+       "season": 2022,
+       "n": 284,
+       "mae_before": 9.008,
+       "mae_after": 9.112,
+       "rmse_before": 11.734,
+       "rmse_after": 11.787
+      },
+      {
+       "season": 2023,
+       "n": 285,
+       "mae_before": 10.479,
+       "mae_after": 10.539,
+       "rmse_before": 13.658,
+       "rmse_after": 13.675
+      },
+      {
+       "season": 2024,
+       "n": 285,
+       "mae_before": 10.112,
+       "mae_after": 10.104,
+       "rmse_before": 13.057,
+       "rmse_after": 12.997
+      },
+      {
+       "season": 2025,
+       "n": 285,
+       "mae_before": 10.166,
+       "mae_after": 10.19,
+       "rmse_before": 12.935,
+       "rmse_after": 12.905
+      }
+     ],
+     "leakage_clean": true,
+     "feature": "nfl_coaching_staff_cap_2_0",
+     "label": "NFL Coaching / Staff ±2.0 team points",
+     "coefficient": 2,
+     "version": "nfl_coaching_staff_v1",
+     "k": 4,
+     "cap": 2,
+     "reliability_buckets": {
+      "lt_025": {
+       "n": 28,
+       "range": [
+        0,
+        0.25
+       ],
+       "mae_before": 10.056,
+       "mae_after": 9.956,
+       "improvement": 0.1
+      },
+      "025_040": {
+       "n": 198,
+       "range": [
+        0.25,
+        0.4
+       ],
+       "mae_before": 9.544,
+       "mae_after": 9.637,
+       "improvement": -0.093
+      },
+      "040_055": {
+       "n": 689,
+       "range": [
+        0.4,
+        0.55
+       ],
+       "mae_before": 10.037,
+       "mae_after": 10.133,
+       "improvement": -0.096
+      },
+      "ge_055": {
+       "n": 1846,
+       "range": [
+        0.55,
+        null
+       ],
+       "mae_before": 10.333,
+       "mae_after": 10.288,
+       "improvement": 0.045
+      }
+     }
+    }
+   ]
+  },
+  "seed_summary": {
+   "teams": 32,
+   "reliability_k": 4
+  }
+ }
+}
