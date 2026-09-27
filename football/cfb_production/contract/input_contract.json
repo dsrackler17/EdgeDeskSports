@@ -11,7 +11,7 @@
   "range": "HARD range (CRITICAL outside it) = the training [min, max] widened by half the span on each side, intersected with the declared natural bounds (binary {0,1}, min 0, rest_diff clipped to [-14, 14]). SOFT range = the training [p01, p99]: values outside it are legitimate extremes, counted by the feature monitor, never refused.",
   "type": "number: finite float; binary: exactly 0 or 1; anything else (text, inf) is CRITICAL.",
   "timestamps": "feature_ts <= kickoff_ts and prediction_ts <= kickoff_ts (UTC); a snapshot whose inputs post-date kickoff is CRITICAL.",
-  "monitor": "The feature monitor compares a slate with the training reference of its season phase (mean shift in reference SDs, SD ratio, share outside the soft range, missingness). It flags; it never refits, clips or changes an input."
+  "monitor": "The feature monitor compares a slate (FBS vs FBS, at least 20 games) with the training slates of the same week of the season (w0-w16, post): its mean, SD, share outside the soft range and missing share must stay inside the envelope the training slates spanned, widened by that envelope's width on each side and by at least half a training SD (means and SDs); a tail share must also exceed 0.10 and a missing share the training maximum by 0.20. It flags; it never refits, clips or changes an input."
  },
  "model_inputs": [
   {

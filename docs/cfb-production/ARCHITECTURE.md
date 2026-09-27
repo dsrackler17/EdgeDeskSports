@@ -5,7 +5,8 @@ wrong one. Companion documents: [DEPLOYMENT](DEPLOYMENT.md) (staged release,
 migration safety), [ROLLBACK](ROLLBACK.md), [JOBS](JOBS.md) (schedules, locks,
 taxonomy, logging), [VERSIONING](VERSIONING.md) (manifest, compatibility,
 semantics), [OPERATIONS](OPERATIONS.md) (transactions, health, alerts, load,
-storage, cost), [RUNBOOK](RUNBOOK.md). The market-integrity layer is documented
+storage, cost), [RUNBOOK](RUNBOOK.md), [CANONICAL](CANONICAL.md) (the one prediction
+pathway, input contract, numeric safety, stored reads, trace, replay). The market-integrity layer is documented
 by its own set: [MARKET_INTEGRITY](MARKET_INTEGRITY.md),
 [PROVIDERS](PROVIDERS.md), [IDENTITY](IDENTITY.md), [SETTLEMENT](SETTLEMENT.md),
 [SECURITY](SECURITY.md).
@@ -52,8 +53,14 @@ without the championship's evidence.
 ```
 
 The repository ledgers are the source of truth; Postgres is an insert-only
-mirror. Pages read stored artifacts (current.json, lab.json, ops.json) and
-compute nothing; no user request triggers a model computation.
+mirror. Every V2 number passes through ONE service, `football/cfb_production/canonical.js`
+(the input contract, the engine, the numeric checks, the degraded modes, the
+fallback level, the public display policy); the hourly job stores its output in
+`football/cfb_production/reports/projections.json` (and the per-game trace in
+`traces.json`). Pages read stored artifacts (projections.json, current.json,
+lab.json, ops.json) and compute nothing; no user request triggers a model
+computation. `canonical.test.js` fails when any consumer calls the engine itself
+(CANONICAL.md §1).
 
 ## 3. The guards, by failure
 
@@ -79,6 +86,13 @@ Explicit, in the manifest (`fallback_hierarchy`):
    `project.py` MODE_CAPS): the mode is displayed, reliability capped, never BET.
 3. **FALLBACK_MODEL** — V1, the previous stable (and governance) champion.
 4. **UNAVAILABLE** — "prediction unavailable"; never a substitute number.
+
+The canonical service names the modes the brief lists — FULL, NO_PLAYER_DATA,
+NO_ADVANCED_PBP, QB_UNCERTAIN, MARKET_DEGRADED, FALLBACK_MODEL — from the weekly
+engine's modes and the snapshot's own evidence, and stores them with each
+projection and each Model Lab snapshot. MARKET_DEGRADED never lowers the football
+level (it gates actionability); a public page shows a degraded mode in words and
+never its confidence score (CANONICAL.md §11).
 
 The weekly engine's own `FALLBACK` mode (cap 0) marks an artifact failure: the
 inference stage fails and nothing is published from it. Candidate 001 is never
@@ -131,15 +145,27 @@ views `cfb_production_manifest_current`, `cfb_compatibility_current`,
 | `health.js`, `anomaly.js`, `reports/ops.json` | the operations report and its anomaly rules |
 | `migration_review.js`, `perf.js`, `reports/*.json` | migration safety and load / index / storage evidence |
 | `tests.js`, `sql.test.js`, `ui.test.js`, `pgrest.js` | the suites (pgrest.js: a PostgREST stand-in for real-Postgres tests) |
+| `canonical.js`, `contract/` | THE prediction service: input contract, engine, numeric checks, modes, fallback, display |
+| `numeric.js` | bounds, consistency, precision, UTC and explicit as_of_ts |
+| `projections.js`, `trace.js`, `reports/projections.json`, `reports/traces.json` | the stored canonical projections and the per-game prediction trace |
+| `promotion.js` | the promotion guard `governance.js promote` runs |
+| `golden.js`, `golden/` | the golden-game set (CI) |
+| `reproduce.js`, `replay_week.js` | re-running stored predictions from their inputs; a played week replayed schedule to settlement |
+| `canonical.test.js`, `final_hardening.test.js`, `replay.test.js`, `debug_ui.test.js`, `security.test.js` | the pathway, final hardening, replay, debug view and security suites |
 | `../../tools/cfb/release_check.js` | the release checklist |
+| `../../tools/cfb/secret_audit.js` | the secret audit (every PR) |
 | `../../admin/cfb-ops/index.html` | the operational dashboard |
+| `../../admin/cfb-debug/index.html` | the internal game-level debug view |
 
-## 8. What is not built here (and where it is)
+## 8. Where the rest lives
 
-The canonical-prediction, snapshot immutability, provider, identity, market,
-settlement, explanation and security items of the hardening brief were owned
-by the parallel hardening work (see its documents listed at the top). This
-set covers the manifest, transactions, locks, idempotency, versioning,
-deployment, rollback, flags, fallback, jobs, taxonomy, logging, health,
-alerts, anomalies, audit, corrections, load, indexes, storage, backup,
-release checks, the dashboard, cost and the runbook.
+The canonical prediction service, snapshot immutability, the input contract and
+feature monitor, numeric safety, stored reads, golden games, property tests,
+replay, the trace and debug view, and the final hardening test are documented in
+[CANONICAL](CANONICAL.md). Providers, identity, market integrity, settlement and
+security have their own documents (listed at the top). This document covers the
+manifest, transactions, locks, idempotency, versioning, deployment, rollback,
+flags, fallback, jobs, taxonomy, logging, health, alerts, anomalies, audit,
+corrections, load, indexes, storage, backup, release checks, the dashboard, cost
+and the runbook. [DELIVERABLE](DELIVERABLE.md) maps every item of the hardening
+brief to where it lives and its status.

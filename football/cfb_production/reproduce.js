@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
-   CFB production — reproducibility (brief §66-67; docs/cfb-production/CANONICAL.md §6).
+   CFB production — reproducibility (brief §66-67; docs/cfb-production/CANONICAL.md §8).
 
    Re-runs preserved historical predictions from the exact inputs they were
    made from and requires the same numbers:
