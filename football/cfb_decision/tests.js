@@ -214,6 +214,37 @@ chk('public card: fair line, best market, probability, break-even, edge, decisio
   card.fair_line === 'Texas Tech -9.5' && /Texas Tech -3/.test(card.best_market) && card.decision === 'BET' && card.bettable_to && /\d/.test(card.why), card);
 chk('public card never promises profit', D.auditLanguage(JSON.stringify(card), d0).ok);
 
+/* ------------------------------ fixes found by the decision-policy study */
+/* the bettable-to price reads the same gates as the decision (edge AND calibrated EV) */
+const tb = d0.price_targets.bettable_to_price;
+const oneSided = (price) => quote({ price_home: price, price_away: null });
+const worse1 = (a) => (a > 0 ? (a - 1 < 100 ? -101 : a - 1) : a - 1);
+chk('bettable-to price: the quote clears at that price and not one cent worse',
+  typeof tb === 'number' && D.decideQuote(p0, oneSided(tb), ctx()).status === 'BET'
+  && D.decideQuote(p0, oneSided(worse1(tb)), ctx()).status !== 'BET', { tb, s: D.decideQuote(p0, oneSided(tb), ctx()).reason_codes });
+const LOOSE = Object.assign({}, POL, { max_price: -200 });
+const tbl = D.decideQuote(p0, quote(), ctx({ policy: LOOSE })).price_targets.bettable_to_price;
+chk('bettable-to price below a loose price limit: clears there, not one cent worse (the edge or EV gate binds)',
+  typeof tbl === 'number' && D.decideQuote(p0, oneSided(tbl), ctx({ policy: LOOSE })).status === 'BET'
+  && D.decideQuote(p0, oneSided(worse1(tbl)), ctx({ policy: LOOSE })).status !== 'BET', tbl);
+const FLAT = Object.assign({}, ART, { ev_curve: undefined, ev_curve_decision: { input: 'decision_ev', x: [-0.03, 0.06], y: [-0.03, -0.03] } });
+const dFlat = D.decideQuote(p0, quote(), ctx({ artifact: FLAT }));
+chk('an EV curve that never reaches min_ev: no bettable-to price, no minimum-EV entry, do not bet at any price',
+  dFlat.status !== 'BET' && dFlat.price_targets.bettable_to_price === null && dFlat.price_targets.minimum_ev_entry === null
+  && dFlat.price_targets.do_not_bet.any === true
+  && [100, 150, 250].every((pr) => D.decideQuote(p0, oneSided(pr), ctx({ artifact: FLAT })).status !== 'BET'), dFlat.price_targets);
+/* a flat EV curve ties every quote: the game summary and the card use the better price */
+const gFlat = D.decideGame(p0, { books: 6, dispersion_iqr: 0.5, quotes: [quote({ book: 'A', home_line: -8.5 }), quote({ book: 'B', home_line: -3.5 }), quote({ book: 'C', home_line: -6.0 })] },
+  ctx({ artifact: FLAT }));
+const topD = gFlat.decisions[gFlat.summary_index];
+chk('ties in the calibrated EV go to the better price (the higher decision EV)', topD && topD.book === 'B' && topD.status === gFlat.status, { idx: gFlat.summary_index, b: gFlat.by_book });
+const cFlat = D.publicCard(p0, gFlat);
+chk('the public card shows the decision behind the game status, not the first book', /-3\.5/.test(cFlat.best_market) && cFlat.why.indexOf(gFlat.status) === 0, cFlat);
+/* an explicit early_season = 0 is honoured (postseason games carry schedule week 1) */
+chk('features: an explicit early_season 0 is not overridden by week <= 3',
+  D.sideNumbers(pure({ week: 1 }), quote(), 'HOME', { policy: POL, artifact: ART, row: { early_season: 0 }, _mc: {} }).features.early_season === 0
+  && D.sideNumbers(pure({ week: 2 }), quote(), 'HOME', { policy: POL, artifact: ART, row: {}, _mc: {} }).features.early_season === 1);
+
 /* -------------------------------------------- parity with the Python reference */
 const FIX = path.join(__dirname, '..', 'cfb_v2', 'artifacts', 'decision', 'fixtures', 'decision_parity.json');
 const CAL = path.join(__dirname, '..', 'cfb_v2', 'artifacts', 'decision', 'cfb_decision_calibration_v1', 'calibration.json');
