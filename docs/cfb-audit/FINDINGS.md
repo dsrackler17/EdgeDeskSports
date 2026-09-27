@@ -281,7 +281,15 @@ Audited on main at dbbf9ec0d or later.
   - The sigma input `to_dependence` is prior-only too.
   - This explains phase 1's 0.97 correlation between `edge_expl_pass` and `edge_prior_sr`.
 - **What it is not:** it is not a leak. It is lost information, plus labels that overstate what the model knows in-season.
-- **Unknown:** the accuracy impact is unmeasured.
+- **Unknown at the time of the audit:** the accuracy impact.
+- **Status: FIXED in challenger `edgedesk_cfb_v2.1.2`** ([PATCH_v2.1.2.md](PATCH_v2.1.2.md)). The fix is rule `cfb_v2_between_var_v2`, declared before any outcome was read:
+  - keep the burn-in moment where it is positive;
+  - else use the split-half (odd/even weeks) covariance;
+  - else refuse.
+- **What the fix found and changed:**
+  - Nine rating-sides were pinned, not four metrics: the defence side of `sack_rate` was pinned too, and the audit's check read only the offence columns. All nine now move in-season.
+  - Accuracy is unchanged within noise. Dev MAE −0.0013 [−0.0054, +0.0030]; holdout (inspected) −0.0020 [−0.0070, +0.0030].
+- Production stays v2.1.0 (legacy rule, bit-identical) until the owner switches.
 - **Reproduce:** key `core_prior_pinned_metrics`.
 - The personnel audit found the same for `fg_value` and `st_net` (`docs/cfb-personnel/DELIVERABLE.md`, remaining limitations).
 
@@ -561,7 +569,7 @@ Degraded-mode behaviour: **PENDING_H3**.
 
 - **No final release version is assigned.**
 - The shadow candidate is `edgedesk_cfb_v2.1.1`, through the governed switch in PATCH_v2.1.1 §9.
-- The F-21 fix follows the audit brief's bug rule: fix, a new patch version, re-run all affected evaluations, document the difference. It is not a production switch. Promotion stays with the owner.
+- The F-21 fix followed the audit brief's bug rule: fix, a new patch version (`edgedesk_cfb_v2.1.2`), re-run all affected evaluations, document the difference ([PATCH_v2.1.2.md](PATCH_v2.1.2.md)). It is not a production switch. If production is switched, switch to v2.1.2 rather than v2.1.1. Promotion stays with the owner.
 - Release manifest: **PENDING_H3**.
 
 ## 111–118. Policies
@@ -620,7 +628,7 @@ Degraded-mode behaviour: **PENDING_H3**.
 - 2024–25 inspected at least 12 times; no untouched history.
 - No prospective V2 row yet.
 - Provider immutability untestable; EP model fit through 2025.
-- F-21 (four prior-pinned ratings).
+- F-21 (prior-pinned ratings) in production v2.1.0 and challenger v2.1.1; fixed in challenger v2.1.2.
 - F-24 (the snapshot ignores QB identity).
 - Interval and reliability structure decorative.
 - No historical injury, weather or depth data.
@@ -652,7 +660,7 @@ Do not claim:
 ## 121. Research backlog (evidence-cited, not implemented)
 
 **HIGH:**
-- F-21 (being patched as v2.1.2, see above);
+- F-21 (fixed in challenger v2.1.2; switching is the owner's call);
 - a QB-identity-aware snapshot or a game-day overlay keyed to `qb_id` (F-24: −1.85 / −3.29 first-start bias);
 - multi-book, timestamped live capture (F-14, F-25);
 - one decision engine (F-22).
