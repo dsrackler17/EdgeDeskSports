@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-09-27T12:28:58.000Z",
+ "generated_at": "2026-09-27T15:07:15.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,57 +46,4625 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 0,
-    "latest_snapshot_at": null,
-    "upcoming_games": 0,
-    "avg_confidence_upcoming": null
+    "snapshots": 60,
+    "latest_snapshot_at": "2026-09-27T15:07:15.000Z",
+    "upcoming_games": 60,
+    "avg_confidence_upcoming": 79.3
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 0,
-    "latest_snapshot_at": null,
-    "upcoming_games": 0,
-    "avg_confidence_upcoming": null
+    "snapshots": 57,
+    "latest_snapshot_at": "2026-09-27T15:07:15.000Z",
+    "upcoming_games": 57,
+    "avg_confidence_upcoming": 79.4
    },
    {
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 0,
-    "latest_snapshot_at": null,
-    "upcoming_games": 0,
-    "avg_confidence_upcoming": null
+    "snapshots": 57,
+    "latest_snapshot_at": "2026-09-27T15:07:15.000Z",
+    "upcoming_games": 57,
+    "avg_confidence_upcoming": 79.7
    }
   ],
   "data_quality": {
-   "games": 0,
+   "games": 60,
    "counts": {
-    "GREEN": 0,
-    "YELLOW": 0,
+    "GREEN": 29,
+    "YELLOW": 31,
     "RED": 0
    },
-   "by_check": {},
-   "not_green": [],
+   "by_check": {
+    "odds_freshness": {
+     "YELLOW": 31,
+     "RED": 0
+    },
+    "pbp_freshness": {
+     "YELLOW": 3,
+     "RED": 0
+    }
+   },
+   "not_green": [
+    {
+     "game_id": "401871049",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-02T00:00:00.000Z",
+     "matchup": "Western Kentucky @ New Mexico State"
+    },
+    {
+     "game_id": "401871050",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-02T23:00:00.000Z",
+     "matchup": "Liberty @ Delaware"
+    },
+    {
+     "game_id": "401856807",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T16:00:00.000Z",
+     "matchup": "Middle Tennessee @ Kansas"
+    },
+    {
+     "game_id": "401856822",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T16:00:00.000Z",
+     "matchup": "West Virginia @ Iowa State"
+    },
+    {
+     "game_id": "401858246",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T16:00:00.000Z",
+     "matchup": "Boston College @ SMU"
+    },
+    {
+     "game_id": "401858252",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T16:00:00.000Z",
+     "matchup": "Syracuse @ UConn"
+    },
+    {
+     "game_id": "401866432",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T17:00:00.000Z",
+     "matchup": "Western Michigan @ Buffalo"
+    },
+    {
+     "game_id": "401858247",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T19:30:00.000Z",
+     "matchup": "California @ UNLV"
+    },
+    {
+     "game_id": "401862787",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T19:30:00.000Z",
+     "matchup": "Memphis @ Charlotte"
+    },
+    {
+     "game_id": "401862793",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      },
+      {
+       "check": "pbp_freshness",
+       "status": "YELLOW",
+       "detail": "team play-by-play coverage 47%"
+      }
+     ],
+     "kickoff": "2026-10-03T19:30:00.000Z",
+     "matchup": "Samford @ UAB"
+    },
+    {
+     "game_id": "401864515",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T19:30:00.000Z",
+     "matchup": "Wyoming @ North Dakota State"
+    },
+    {
+     "game_id": "401866430",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T19:30:00.000Z",
+     "matchup": "Akron @ Central Michigan"
+    },
+    {
+     "game_id": "401866433",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T19:30:00.000Z",
+     "matchup": "Eastern Michigan @ Massachusetts"
+    },
+    {
+     "game_id": "401866477",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T19:30:00.000Z",
+     "matchup": "Bowling Green @ Miami (OH)"
+    },
+    {
+     "game_id": "401864514",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T20:00:00.000Z",
+     "matchup": "UTEP @ New Mexico"
+    },
+    {
+     "game_id": "401858472",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T20:15:00.000Z",
+     "matchup": "Purdue @ Illinois"
+    },
+    {
+     "game_id": "401860899",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T22:00:00.000Z",
+     "matchup": "Oregon State @ Colorado State"
+    },
+    {
+     "game_id": "401862790",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      },
+      {
+       "check": "pbp_freshness",
+       "status": "YELLOW",
+       "detail": "team play-by-play coverage 47%"
+      }
+     ],
+     "kickoff": "2026-10-03T22:00:00.000Z",
+     "matchup": "Texas Southern @ Florida Atlantic"
+    },
+    {
+     "game_id": "401856711",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T23:00:00.000Z",
+     "matchup": "Arkansas @ Texas A&M"
+    },
+    {
+     "game_id": "401869942",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T23:00:00.000Z",
+     "matchup": "Georgia Southern @ Coastal Carolina"
+    },
+    {
+     "game_id": "401871089",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T23:00:00.000Z",
+     "matchup": "UL Monroe @ South Alabama"
+    },
+    {
+     "game_id": "401856821",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T23:30:00.000Z",
+     "matchup": "Texas Tech @ Colorado"
+    },
+    {
+     "game_id": "401860898",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T23:30:00.000Z",
+     "matchup": "Utah State @ Boise State"
+    },
+    {
+     "game_id": "401869842",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-03T23:30:00.000Z",
+     "matchup": "Army @ Louisiana Tech"
+    },
+    {
+     "game_id": "401856706",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      },
+      {
+       "check": "pbp_freshness",
+       "status": "YELLOW",
+       "detail": "team play-by-play coverage 44%"
+      }
+     ],
+     "kickoff": "2026-10-03T23:45:00.000Z",
+     "matchup": "McNeese @ LSU"
+    },
+    {
+     "game_id": "401869932",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-04T00:00:00.000Z",
+     "matchup": "Arkansas State @ Louisiana"
+    },
+    {
+     "game_id": "401860921",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-04T01:30:00.000Z",
+     "matchup": "Fresno State @ Washington State"
+    },
+    {
+     "game_id": "401856817",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-04T02:30:00.000Z",
+     "matchup": "Baylor @ Arizona State"
+    },
+    {
+     "game_id": "401860900",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-04T02:30:00.000Z",
+     "matchup": "Texas State @ San Diego State"
+    },
+    {
+     "game_id": "401864513",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-04T03:59:00.000Z",
+     "matchup": "San José State @ Hawai'i"
+    },
+    {
+     "game_id": "401871090",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-07T00:00:00.000Z",
+     "matchup": "Southern Miss @ Troy"
+    }
+   ],
    "feeds": {
-    "last_quote_at": "2026-09-27T07:23:14.227Z",
-    "quotes_total": 604,
-    "last_result_at": "2026-09-27T12:28:58.000Z"
+    "last_quote_at": "2026-09-27T15:07:15.000Z",
+    "quotes_total": 805,
+    "last_result_at": "2026-09-27T15:07:15.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 510,
-   "live_predictions": 0,
-   "quotes": 604,
+   "predictions": 684,
+   "live_predictions": 174,
+   "quotes": 805,
    "lines": 1066,
-   "results": 231,
-   "evaluations": 459,
+   "results": 282,
+   "evaluations": 510,
    "miss_reviews": 0
   }
  },
- "this_week": [],
+ "this_week": [
+  {
+   "game_id": "401871049",
+   "week": 5,
+   "kickoff": "2026-10-02T00:00:00.000Z",
+   "home": "New Mexico State",
+   "away": "Western Kentucky",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 1.39,
+     "fair": "New Mexico State -1.5",
+     "p_home": 0.5372,
+     "sigma": 14.885,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -1.83,
+     "fair": "Western Kentucky -2.0",
+     "p_home": 0.4541,
+     "sigma": 15.986,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -1.81,
+     "fair": "Western Kentucky -2.0",
+     "p_home": 0.455,
+     "sigma": 16.122,
+     "conf": 74,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401862786",
+   "week": 5,
+   "kickoff": "2026-10-02T01:00:00.000Z",
+   "home": "Tulsa",
+   "away": "North Texas",
+   "market": {
+    "current": -1.5,
+    "open": -1.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -8.98,
+     "fair": "North Texas -9.0",
+     "p_home": 0.2725,
+     "sigma": 14.836,
+     "conf": 79,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -10.48,
+     "line": 1.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -4.14,
+     "fair": "North Texas -4.0",
+     "p_home": 0.3992,
+     "sigma": 16.337,
+     "conf": 68,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -5.64,
+     "line": 1.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -3.63,
+     "fair": "North Texas -3.5",
+     "p_home": 0.4122,
+     "sigma": 16.489,
+     "conf": 63,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -5.13,
+     "line": 1.5
+    }
+   }
+  },
+  {
+   "game_id": "401858245",
+   "week": 5,
+   "kickoff": "2026-10-02T23:00:00.000Z",
+   "home": "Virginia Tech",
+   "away": "Pittsburgh",
+   "market": {
+    "current": -5.5,
+    "open": -5.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 1.19,
+     "fair": "Virginia Tech -1.0",
+     "p_home": 0.5319,
+     "sigma": 14.866,
+     "conf": 87,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -4.31,
+     "line": 5.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 1.81,
+     "fair": "Virginia Tech -2.0",
+     "p_home": 0.5455,
+     "sigma": 15.962,
+     "conf": 80,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -3.69,
+     "line": 5.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 2.02,
+     "fair": "Virginia Tech -2.0",
+     "p_home": 0.5507,
+     "sigma": 15.949,
+     "conf": 80,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -3.48,
+     "line": 5.5
+    }
+   }
+  },
+  {
+   "game_id": "401871050",
+   "week": 5,
+   "kickoff": "2026-10-02T23:00:00.000Z",
+   "home": "Delaware",
+   "away": "Liberty",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -3.29,
+     "fair": "Liberty -3.5",
+     "p_home": 0.4122,
+     "sigma": 14.827,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -6.82,
+     "fair": "Liberty -7.0",
+     "p_home": 0.3331,
+     "sigma": 15.931,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -6.58,
+     "fair": "Liberty -6.5",
+     "p_home": 0.3394,
+     "sigma": 16,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401858476",
+   "week": 5,
+   "kickoff": "2026-10-03T00:00:00.000Z",
+   "home": "Northwestern",
+   "away": "Penn State",
+   "market": {
+    "current": 4.5,
+    "open": 4.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -0.1,
+     "fair": "PICK",
+     "p_home": 0.4973,
+     "sigma": null,
+     "conf": 79,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 4.4,
+     "line": 4.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -4.02,
+     "fair": "Penn State -4.0",
+     "p_home": 0.3981,
+     "sigma": 15.68,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": 0.48,
+     "line": -4.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -3.75,
+     "fair": "Penn State -4.0",
+     "p_home": 0.4042,
+     "sigma": 15.59,
+     "conf": 91,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": 0.75,
+     "line": -4.5
+    }
+   }
+  },
+  {
+   "game_id": "401856707",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "Mississippi State",
+   "away": "Alabama",
+   "market": {
+    "current": 4.5,
+    "open": 4.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -4.47,
+     "fair": "Alabama -4.5",
+     "p_home": 0.3817,
+     "sigma": 14.85,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 0.03,
+     "line": 4.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -9.38,
+     "fair": "Alabama -9.5",
+     "p_home": 0.2709,
+     "sigma": 15.476,
+     "conf": 95,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -4.88,
+     "line": -4.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -9.52,
+     "fair": "Alabama -9.5",
+     "p_home": 0.2682,
+     "sigma": 15.49,
+     "conf": 95,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -5.02,
+     "line": -4.5
+    }
+   }
+  },
+  {
+   "game_id": "401856807",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "Kansas",
+   "away": "Middle Tennessee",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 19.03,
+     "fair": "Kansas -19.0",
+     "p_home": 0.8969,
+     "sigma": 15.054,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 13.9,
+     "fair": "Kansas -14.0",
+     "p_home": 0.8096,
+     "sigma": 15.956,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 14.04,
+     "fair": "Kansas -14.0",
+     "p_home": 0.8135,
+     "sigma": 15.85,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401856819",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "Houston",
+   "away": "UCF",
+   "market": {
+    "current": -11.5,
+    "open": -11.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 8.45,
+     "fair": "Houston -8.5",
+     "p_home": 0.7153,
+     "sigma": 14.852,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -3.05,
+     "line": 11.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 10.08,
+     "fair": "Houston -10.0",
+     "p_home": 0.7382,
+     "sigma": 15.902,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -1.42,
+     "line": 11.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 10.19,
+     "fair": "Houston -10.0",
+     "p_home": 0.7418,
+     "sigma": 15.8,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -1.31,
+     "line": 11.5
+    }
+   }
+  },
+  {
+   "game_id": "401856822",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "Iowa State",
+   "away": "West Virginia",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 10.58,
+     "fair": "Iowa State -10.5",
+     "p_home": 0.762,
+     "sigma": 14.844,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 4,
+     "fair": "Iowa State -4.0",
+     "p_home": 0.6007,
+     "sigma": 15.804,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 4.51,
+     "fair": "Iowa State -4.5",
+     "p_home": 0.6133,
+     "sigma": 15.773,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401858246",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "SMU",
+   "away": "Boston College",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 19.43,
+     "fair": "SMU -19.5",
+     "p_home": 0.9047,
+     "sigma": 14.846,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 23.33,
+     "fair": "SMU -23.5",
+     "p_home": 0.9321,
+     "sigma": 15.673,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 23.06,
+     "fair": "SMU -23.0",
+     "p_home": 0.9309,
+     "sigma": 15.585,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401858250",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "North Carolina",
+   "away": "Notre Dame",
+   "market": {
+    "current": 21.5,
+    "open": 21.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -22.51,
+     "fair": "Notre Dame -22.5",
+     "p_home": 0.0674,
+     "sigma": 15.052,
+     "conf": 85,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -1.01,
+     "line": -21.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -22.98,
+     "fair": "Notre Dame -23.0",
+     "p_home": 0.0617,
+     "sigma": 14.94,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -1.48,
+     "line": -21.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -21.96,
+     "fair": "Notre Dame -22.0",
+     "p_home": 0.0721,
+     "sigma": 15.073,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -0.46,
+     "line": -21.5
+    }
+   }
+  },
+  {
+   "game_id": "401858251",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "Wake Forest",
+   "away": "Stanford",
+   "market": {
+    "current": -12.5,
+    "open": -12.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 15.74,
+     "fair": "Wake Forest -15.5",
+     "p_home": 0.8555,
+     "sigma": 14.845,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 3.24,
+     "line": -12.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 16.19,
+     "fair": "Wake Forest -16.0",
+     "p_home": 0.849,
+     "sigma": 15.764,
+     "conf": 86,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 3.69,
+     "line": -12.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 16.23,
+     "fair": "Wake Forest -16.0",
+     "p_home": 0.8481,
+     "sigma": 15.859,
+     "conf": 83,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 3.73,
+     "line": -12.5
+    }
+   }
+  },
+  {
+   "game_id": "401858252",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "UConn",
+   "away": "Syracuse",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 12.52,
+     "fair": "UConn -12.5",
+     "p_home": 0.7972,
+     "sigma": 15.054,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -3.05,
+     "fair": "Syracuse -3.0",
+     "p_home": 0.4234,
+     "sigma": 15.925,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -2.49,
+     "fair": "Syracuse -2.5",
+     "p_home": 0.4376,
+     "sigma": 15.974,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401858474",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "Minnesota",
+   "away": "Michigan",
+   "market": {
+    "current": 6.5,
+    "open": 6.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -1.12,
+     "fair": "Michigan -1.0",
+     "p_home": 0.4699,
+     "sigma": 14.83,
+     "conf": 85,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 5.38,
+     "line": 6.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -8.2,
+     "fair": "Michigan -8.0",
+     "p_home": 0.2918,
+     "sigma": 15.066,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -1.7,
+     "line": -6.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -8.49,
+     "fair": "Michigan -8.5",
+     "p_home": 0.2868,
+     "sigma": 15.199,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -1.99,
+     "line": -6.5
+    }
+   }
+  },
+  {
+   "game_id": "401862791",
+   "week": 5,
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "home": "Air Force",
+   "away": "Navy",
+   "market": {
+    "current": -1.5,
+    "open": -1.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 0.28,
+     "fair": "Air Force -0.5",
+     "p_home": 0.5073,
+     "sigma": null,
+     "conf": 77,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -1.22,
+     "line": 1.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 3.14,
+     "fair": "Air Force -3.0",
+     "p_home": 0.5779,
+     "sigma": 16.076,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 1.64,
+     "line": -1.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 3.13,
+     "fair": "Air Force -3.0",
+     "p_home": 0.5768,
+     "sigma": 16.292,
+     "conf": 69,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 1.63,
+     "line": -1.5
+    }
+   }
+  },
+  {
+   "game_id": "401858479",
+   "week": 5,
+   "kickoff": "2026-10-03T16:30:00.000Z",
+   "home": "Wisconsin",
+   "away": "Michigan State",
+   "market": {
+    "current": -10,
+    "open": -10,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 7.42,
+     "fair": "Wisconsin -7.5",
+     "p_home": 0.6915,
+     "sigma": 14.837,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -2.58,
+     "line": 10
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 9.93,
+     "fair": "Wisconsin -10.0",
+     "p_home": 0.742,
+     "sigma": 15.397,
+     "conf": 97,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -0.07,
+     "line": 10
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 9.79,
+     "fair": "Wisconsin -10.0",
+     "p_home": 0.741,
+     "sigma": 15.254,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -0.21,
+     "line": 10
+    }
+   }
+  },
+  {
+   "game_id": "401856705",
+   "week": 5,
+   "kickoff": "2026-10-03T16:45:00.000Z",
+   "home": "Georgia",
+   "away": "Vanderbilt",
+   "market": {
+    "current": -24.5,
+    "open": -24.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 16.58,
+     "fair": "Georgia -16.5",
+     "p_home": 0.868,
+     "sigma": 14.844,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -7.92,
+     "line": 24.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 26.57,
+     "fair": "Georgia -26.5",
+     "p_home": 0.9599,
+     "sigma": 15.184,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 2.07,
+     "line": -24.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 26.27,
+     "fair": "Georgia -26.5",
+     "p_home": 0.9569,
+     "sigma": 15.312,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 1.77,
+     "line": -24.5
+    }
+   }
+  },
+  {
+   "game_id": "401866432",
+   "week": 5,
+   "kickoff": "2026-10-03T17:00:00.000Z",
+   "home": "Buffalo",
+   "away": "Western Michigan",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -9.49,
+     "fair": "Western Michigan -9.5",
+     "p_home": 0.2613,
+     "sigma": 14.843,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -11.44,
+     "fair": "Western Michigan -11.5",
+     "p_home": 0.2326,
+     "sigma": 15.768,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -11.25,
+     "fair": "Western Michigan -11.5",
+     "p_home": 0.2362,
+     "sigma": 15.757,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401866431",
+   "week": 5,
+   "kickoff": "2026-10-03T18:00:00.000Z",
+   "home": "Ball State",
+   "away": "Toledo",
+   "market": {
+    "current": 17.5,
+    "open": 17.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -20.35,
+     "fair": "Toledo -20.5",
+     "p_home": 0.0852,
+     "sigma": 14.844,
+     "conf": 79,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -2.85,
+     "line": -17.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -15.53,
+     "fair": "Toledo -15.5",
+     "p_home": 0.1666,
+     "sigma": 16.139,
+     "conf": 74,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 1.97,
+     "line": 17.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -15.32,
+     "fair": "Toledo -15.5",
+     "p_home": 0.1719,
+     "sigma": 16.267,
+     "conf": 70,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 2.18,
+     "line": 17.5
+    }
+   }
+  },
+  {
+   "game_id": "401856708",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Missouri",
+   "away": "Florida",
+   "market": {
+    "current": 4.5,
+    "open": 4.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 0.04,
+     "fair": "PICK",
+     "p_home": 0.501,
+     "sigma": null,
+     "conf": 79,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 4.54,
+     "line": 4.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -3.77,
+     "fair": "Florida -4.0",
+     "p_home": 0.4032,
+     "sigma": 15.509,
+     "conf": 94,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 0.73,
+     "line": 4.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -4,
+     "fair": "Florida -4.0",
+     "p_home": 0.3973,
+     "sigma": 15.485,
+     "conf": 95,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": 0.5,
+     "line": -4.5
+    }
+   }
+  },
+  {
+   "game_id": "401856710",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Tennessee",
+   "away": "Auburn",
+   "market": {
+    "current": -7.5,
+    "open": -7.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 8.99,
+     "fair": "Tennessee -9.0",
+     "p_home": 0.7276,
+     "sigma": 14.846,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 1.49,
+     "line": -7.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 12,
+     "fair": "Tennessee -12.0",
+     "p_home": 0.7851,
+     "sigma": 15.283,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 4.5,
+     "line": -7.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 11.96,
+     "fair": "Tennessee -12.0",
+     "p_home": 0.7846,
+     "sigma": 15.271,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 4.46,
+     "line": -7.5
+    }
+   }
+  },
+  {
+   "game_id": "401858247",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "UNLV",
+   "away": "California",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 10.19,
+     "fair": "UNLV -10.0",
+     "p_home": 0.7537,
+     "sigma": 14.85,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 7.62,
+     "fair": "UNLV -7.5",
+     "p_home": 0.6872,
+     "sigma": 15.726,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 7.79,
+     "fair": "UNLV -8.0",
+     "p_home": 0.6919,
+     "sigma": 15.649,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401858248",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "NC State",
+   "away": "Louisville",
+   "market": {
+    "current": 5.5,
+    "open": 5.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -0.18,
+     "fair": "PICK",
+     "p_home": 0.4952,
+     "sigma": null,
+     "conf": 79,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 5.32,
+     "line": 5.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 3.65,
+     "fair": "NC State -3.5",
+     "p_home": 0.5904,
+     "sigma": 16.068,
+     "conf": 76,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 9.15,
+     "line": 5.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 3.43,
+     "fair": "NC State -3.5",
+     "p_home": 0.5854,
+     "sigma": 16.028,
+     "conf": 77,
+     "dq": "GREEN",
+     "decision": "RESEARCH",
+     "status": "REVIEW",
+     "side": "HOME",
+     "gap": 8.93,
+     "line": 5.5
+    }
+   }
+  },
+  {
+   "game_id": "401858253",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Florida State",
+   "away": "Virginia",
+   "market": {
+    "current": 3,
+    "open": 3,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -3.95,
+     "fair": "Virginia -4.0",
+     "p_home": 0.3951,
+     "sigma": 14.847,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -0.95,
+     "line": -3
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 4.28,
+     "fair": "Florida State -4.5",
+     "p_home": 0.6087,
+     "sigma": 15.631,
+     "conf": 90,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 7.28,
+     "line": 3
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 3.95,
+     "fair": "Florida State -4.0",
+     "p_home": 0.5984,
+     "sigma": 15.958,
+     "conf": 80,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 6.95,
+     "line": 3
+    }
+   }
+  },
+  {
+   "game_id": "401858473",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Iowa",
+   "away": "Ohio State",
+   "market": {
+    "current": 14,
+    "open": 14,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -6.81,
+     "fair": "Ohio State -7.0",
+     "p_home": 0.3232,
+     "sigma": 14.844,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 7.19,
+     "line": 14
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -10.11,
+     "fair": "Ohio State -10.0",
+     "p_home": 0.2485,
+     "sigma": 14.982,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 3.89,
+     "line": 14
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -10.68,
+     "fair": "Ohio State -10.5",
+     "p_home": 0.2382,
+     "sigma": 15.088,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 3.32,
+     "line": 14
+    }
+   }
+  },
+  {
+   "game_id": "401862787",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Charlotte",
+   "away": "Memphis",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -17.29,
+     "fair": "Memphis -17.5",
+     "p_home": 0.122,
+     "sigma": 14.841,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -17.77,
+     "fair": "Memphis -18.0",
+     "p_home": 0.1308,
+     "sigma": 15.895,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -17.35,
+     "fair": "Memphis -17.5",
+     "p_home": 0.137,
+     "sigma": 15.939,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401862793",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "UAB",
+   "away": "Samford",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 21.01,
+     "fair": "UAB -21.0",
+     "p_home": 0.9215,
+     "sigma": 14.846,
+     "conf": 59,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401864515",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "North Dakota State",
+   "away": "Wyoming",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 15.22,
+     "fair": "North Dakota State -15.0",
+     "p_home": 0.8474,
+     "sigma": 14.844,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 12.78,
+     "fair": "North Dakota State -13.0",
+     "p_home": 0.7983,
+     "sigma": 15.385,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 12.89,
+     "fair": "North Dakota State -13.0",
+     "p_home": 0.8017,
+     "sigma": 15.291,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401866430",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Central Michigan",
+   "away": "Akron",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 8.74,
+     "fair": "Central Michigan -8.5",
+     "p_home": 0.722,
+     "sigma": 14.844,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 5.18,
+     "fair": "Central Michigan -5.0",
+     "p_home": 0.6297,
+     "sigma": 15.749,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 5.29,
+     "fair": "Central Michigan -5.5",
+     "p_home": 0.6327,
+     "sigma": 15.729,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401866433",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Massachusetts",
+   "away": "Eastern Michigan",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 9.24,
+     "fair": "Massachusetts -9.0",
+     "p_home": 0.7332,
+     "sigma": 14.843,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 8.04,
+     "fair": "Massachusetts -8.0",
+     "p_home": 0.6954,
+     "sigma": 15.83,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 7.42,
+     "fair": "Massachusetts -7.5",
+     "p_home": 0.6792,
+     "sigma": 16.052,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401866434",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Kent State",
+   "away": "Ohio",
+   "market": {
+    "current": 5.5,
+    "open": 5.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -7.31,
+     "fair": "Ohio -7.5",
+     "p_home": 0.3111,
+     "sigma": 14.836,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -1.81,
+     "line": -5.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -9.17,
+     "fair": "Ohio -9.0",
+     "p_home": 0.2846,
+     "sigma": 16.223,
+     "conf": 71,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -3.67,
+     "line": -5.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -9.49,
+     "fair": "Ohio -9.5",
+     "p_home": 0.279,
+     "sigma": 16.305,
+     "conf": 69,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -3.99,
+     "line": -5.5
+    }
+   }
+  },
+  {
+   "game_id": "401866477",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Miami (OH)",
+   "away": "Bowling Green",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 19.07,
+     "fair": "Miami (OH) -19.0",
+     "p_home": 0.9005,
+     "sigma": 14.847,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 16.9,
+     "fair": "Miami (OH) -17.0",
+     "p_home": 0.8625,
+     "sigma": 15.552,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 16.58,
+     "fair": "Miami (OH) -16.5",
+     "p_home": 0.8584,
+     "sigma": 15.524,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401869956",
+   "week": 5,
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "home": "Georgia State",
+   "away": "Old Dominion",
+   "market": {
+    "current": 1.5,
+    "open": 1.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 4.27,
+     "fair": "Georgia State -4.5",
+     "p_home": 0.6131,
+     "sigma": 14.857,
+     "conf": 85,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 5.77,
+     "line": 1.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 4.13,
+     "fair": "Georgia State -4.0",
+     "p_home": 0.6036,
+     "sigma": 15.837,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 5.63,
+     "line": 1.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 3.95,
+     "fair": "Georgia State -4.0",
+     "p_home": 0.5978,
+     "sigma": 16.068,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 5.45,
+     "line": 1.5
+    }
+   }
+  },
+  {
+   "game_id": "401869962",
+   "week": 5,
+   "kickoff": "2026-10-03T19:45:00.000Z",
+   "home": "James Madison",
+   "away": "Marshall",
+   "market": {
+    "current": -14,
+    "open": -14,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 26.23,
+     "fair": "James Madison -26.0",
+     "p_home": 0.9614,
+     "sigma": 14.843,
+     "conf": 79,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 12.23,
+     "line": -14
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 14.25,
+     "fair": "James Madison -14.5",
+     "p_home": 0.8143,
+     "sigma": 16.037,
+     "conf": 77,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": 0.25,
+     "line": 14
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 14.31,
+     "fair": "James Madison -14.5",
+     "p_home": 0.8176,
+     "sigma": 15.878,
+     "conf": 82,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": 0.31,
+     "line": 14
+    }
+   }
+  },
+  {
+   "game_id": "401858475",
+   "week": 5,
+   "kickoff": "2026-10-03T20:00:00.000Z",
+   "home": "Nebraska",
+   "away": "Maryland",
+   "market": {
+    "current": -12.5,
+    "open": -12.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 19.75,
+     "fair": "Nebraska -20.0",
+     "p_home": 0.9084,
+     "sigma": 14.839,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 7.25,
+     "line": -12.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 16.41,
+     "fair": "Nebraska -16.5",
+     "p_home": 0.8542,
+     "sigma": 15.632,
+     "conf": 90,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 3.91,
+     "line": -12.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 16.47,
+     "fair": "Nebraska -16.5",
+     "p_home": 0.8557,
+     "sigma": 15.598,
+     "conf": 91,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 3.97,
+     "line": -12.5
+    }
+   }
+  },
+  {
+   "game_id": "401864514",
+   "week": 5,
+   "kickoff": "2026-10-03T20:00:00.000Z",
+   "home": "New Mexico",
+   "away": "UTEP",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 27.93,
+     "fair": "New Mexico -28.0",
+     "p_home": 0.9701,
+     "sigma": 14.839,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 20.72,
+     "fair": "New Mexico -20.5",
+     "p_home": 0.8997,
+     "sigma": 16.246,
+     "conf": 71,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 20.77,
+     "fair": "New Mexico -21.0",
+     "p_home": 0.9022,
+     "sigma": 16.104,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401856709",
+   "week": 5,
+   "kickoff": "2026-10-03T20:15:00.000Z",
+   "home": "South Carolina",
+   "away": "Kentucky",
+   "market": {
+    "current": -3.5,
+    "open": -3.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 2.6,
+     "fair": "South Carolina -2.5",
+     "p_home": 0.5696,
+     "sigma": 14.827,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -0.9,
+     "line": 3.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 2.54,
+     "fair": "South Carolina -2.5",
+     "p_home": 0.5666,
+     "sigma": 15.263,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -0.96,
+     "line": 3.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 1.98,
+     "fair": "South Carolina -2.0",
+     "p_home": 0.5511,
+     "sigma": 15.545,
+     "conf": 93,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -1.52,
+     "line": 3.5
+    }
+   }
+  },
+  {
+   "game_id": "401858472",
+   "week": 5,
+   "kickoff": "2026-10-03T20:15:00.000Z",
+   "home": "Illinois",
+   "away": "Purdue",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 14.88,
+     "fair": "Illinois -15.0",
+     "p_home": 0.842,
+     "sigma": 14.84,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 14.09,
+     "fair": "Illinois -14.0",
+     "p_home": 0.8087,
+     "sigma": 16.23,
+     "conf": 71,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 14.19,
+     "fair": "Illinois -14.0",
+     "p_home": 0.8128,
+     "sigma": 16.067,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401860899",
+   "week": 5,
+   "kickoff": "2026-10-03T22:00:00.000Z",
+   "home": "Colorado State",
+   "away": "Oregon State",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -1.75,
+     "fair": "Oregon State -2.0",
+     "p_home": 0.4532,
+     "sigma": 14.883,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -0.64,
+     "fair": "Oregon State -0.5",
+     "p_home": 0.4844,
+     "sigma": 16.559,
+     "conf": 61,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -0.29,
+     "fair": "Oregon State -0.5",
+     "p_home": 0.493,
+     "sigma": 16.535,
+     "conf": 61,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401862790",
+   "week": 5,
+   "kickoff": "2026-10-03T22:00:00.000Z",
+   "home": "Florida Atlantic",
+   "away": "Texas Southern",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 24.62,
+     "fair": "Florida Atlantic -24.5",
+     "p_home": 0.9514,
+     "sigma": 14.844,
+     "conf": 59,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401856711",
+   "week": 5,
+   "kickoff": "2026-10-03T23:00:00.000Z",
+   "home": "Texas A&M",
+   "away": "Arkansas",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 11.37,
+     "fair": "Texas A&M -11.5",
+     "p_home": 0.7781,
+     "sigma": 14.847,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 19.52,
+     "fair": "Texas A&M -19.5",
+     "p_home": 0.9007,
+     "sigma": 15.237,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 18.67,
+     "fair": "Texas A&M -18.5",
+     "p_home": 0.8913,
+     "sigma": 15.19,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401856818",
+   "week": 5,
+   "kickoff": "2026-10-03T23:00:00.000Z",
+   "home": "TCU",
+   "away": "BYU",
+   "market": {
+    "current": 6.5,
+    "open": 6.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -4.76,
+     "fair": "BYU -5.0",
+     "p_home": 0.3759,
+     "sigma": 15.051,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 1.74,
+     "line": 6.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -9.53,
+     "fair": "BYU -9.5",
+     "p_home": 0.2639,
+     "sigma": 15.193,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -3.03,
+     "line": -6.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -9.68,
+     "fair": "BYU -9.5",
+     "p_home": 0.2642,
+     "sigma": 15.46,
+     "conf": 96,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -3.18,
+     "line": -6.5
+    }
+   }
+  },
+  {
+   "game_id": "401862788",
+   "week": 5,
+   "kickoff": "2026-10-03T23:00:00.000Z",
+   "home": "Rice",
+   "away": "UTSA",
+   "market": {
+    "current": 12.5,
+    "open": 12.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -8.66,
+     "fair": "UTSA -8.5",
+     "p_home": 0.2797,
+     "sigma": 14.836,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 3.84,
+     "line": 12.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -10.8,
+     "fair": "UTSA -11.0",
+     "p_home": 0.2509,
+     "sigma": 16.188,
+     "conf": 72,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 1.7,
+     "line": 12.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -10.64,
+     "fair": "UTSA -10.5",
+     "p_home": 0.2538,
+     "sigma": 16.158,
+     "conf": 73,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": 1.86,
+     "line": -12.5
+    }
+   }
+  },
+  {
+   "game_id": "401869942",
+   "week": 5,
+   "kickoff": "2026-10-03T23:00:00.000Z",
+   "home": "Coastal Carolina",
+   "away": "Georgia Southern",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -0.39,
+     "fair": "Georgia Southern -0.5",
+     "p_home": 0.4896,
+     "sigma": null,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -5,
+     "fair": "Georgia Southern -5.0",
+     "p_home": 0.3779,
+     "sigma": 16.202,
+     "conf": 72,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -4.83,
+     "fair": "Georgia Southern -5.0",
+     "p_home": 0.3811,
+     "sigma": 16.076,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401871089",
+   "week": 5,
+   "kickoff": "2026-10-03T23:00:00.000Z",
+   "home": "South Alabama",
+   "away": "UL Monroe",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 16.9,
+     "fair": "South Alabama -17.0",
+     "p_home": 0.8725,
+     "sigma": 14.847,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 9.93,
+     "fair": "South Alabama -10.0",
+     "p_home": 0.7305,
+     "sigma": 16.28,
+     "conf": 70,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 10.31,
+     "fair": "South Alabama -10.5",
+     "p_home": 0.7397,
+     "sigma": 16.15,
+     "conf": 74,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401856821",
+   "week": 5,
+   "kickoff": "2026-10-03T23:30:00.000Z",
+   "home": "Colorado",
+   "away": "Texas Tech",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -16.25,
+     "fair": "Texas Tech -16.5",
+     "p_home": 0.1368,
+     "sigma": 14.843,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -8.97,
+     "fair": "Texas Tech -9.0",
+     "p_home": 0.2812,
+     "sigma": 15.597,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -9.42,
+     "fair": "Texas Tech -9.5",
+     "p_home": 0.2734,
+     "sigma": 15.735,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401858249",
+   "week": 5,
+   "kickoff": "2026-10-03T23:30:00.000Z",
+   "home": "Clemson",
+   "away": "Miami",
+   "market": {
+    "current": 17.5,
+    "open": 17.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -14.22,
+     "fair": "Miami -14.0",
+     "p_home": 0.1689,
+     "sigma": 14.835,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 3.28,
+     "line": 17.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -17.56,
+     "fair": "Miami -17.5",
+     "p_home": 0.1195,
+     "sigma": 14.974,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -0.06,
+     "line": -17.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -16.59,
+     "fair": "Miami -16.5",
+     "p_home": 0.1331,
+     "sigma": 14.992,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 0.91,
+     "line": 17.5
+    }
+   }
+  },
+  {
+   "game_id": "401858478",
+   "week": 5,
+   "kickoff": "2026-10-03T23:30:00.000Z",
+   "home": "USC",
+   "away": "Washington",
+   "market": {
+    "current": -10,
+    "open": -10,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 6.68,
+     "fair": "USC -6.5",
+     "p_home": 0.6737,
+     "sigma": 14.839,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -3.32,
+     "line": 10
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 14.03,
+     "fair": "USC -14.0",
+     "p_home": 0.825,
+     "sigma": 15.093,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 4.03,
+     "line": -10
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 14.29,
+     "fair": "USC -14.5",
+     "p_home": 0.8266,
+     "sigma": 15.271,
+     "conf": 100,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 4.29,
+     "line": -10
+    }
+   }
+  },
+  {
+   "game_id": "401860898",
+   "week": 5,
+   "kickoff": "2026-10-03T23:30:00.000Z",
+   "home": "Boise State",
+   "away": "Utah State",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 17.04,
+     "fair": "Boise State -17.0",
+     "p_home": 0.8745,
+     "sigma": 14.844,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 20.4,
+     "fair": "Boise State -20.5",
+     "p_home": 0.9038,
+     "sigma": 15.7,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 20.17,
+     "fair": "Boise State -20.0",
+     "p_home": 0.9029,
+     "sigma": 15.585,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401862792",
+   "week": 5,
+   "kickoff": "2026-10-03T23:30:00.000Z",
+   "home": "South Florida",
+   "away": "Temple",
+   "market": {
+    "current": -6.5,
+    "open": -6.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 15.64,
+     "fair": "South Florida -15.5",
+     "p_home": 0.854,
+     "sigma": 14.842,
+     "conf": 87,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 9.14,
+     "line": -6.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 12.29,
+     "fair": "South Florida -12.5",
+     "p_home": 0.7779,
+     "sigma": 16.161,
+     "conf": 73,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 5.79,
+     "line": -6.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 12.74,
+     "fair": "South Florida -12.5",
+     "p_home": 0.7859,
+     "sigma": 16.179,
+     "conf": 73,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 6.24,
+     "line": -6.5
+    }
+   }
+  },
+  {
+   "game_id": "401869842",
+   "week": 5,
+   "kickoff": "2026-10-03T23:30:00.000Z",
+   "home": "Louisiana Tech",
+   "away": "Army",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -6.12,
+     "fair": "Army -6.0",
+     "p_home": 0.3422,
+     "sigma": 15.057,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 1.62,
+     "fair": "Louisiana Tech -1.5",
+     "p_home": 0.5412,
+     "sigma": 15.75,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 1.63,
+     "fair": "Louisiana Tech -1.5",
+     "p_home": 0.5407,
+     "sigma": 16.013,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401856706",
+   "week": 5,
+   "kickoff": "2026-10-03T23:45:00.000Z",
+   "home": "LSU",
+   "away": "McNeese",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 42.47,
+     "fair": "LSU -42.5",
+     "p_home": 0.9979,
+     "sigma": null,
+     "conf": 59,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401858477",
+   "week": 5,
+   "kickoff": "2026-10-04T00:00:00.000Z",
+   "home": "Rutgers",
+   "away": "Indiana",
+   "market": {
+    "current": 23.5,
+    "open": 23.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -19.34,
+     "fair": "Indiana -19.5",
+     "p_home": 0.0963,
+     "sigma": 14.844,
+     "conf": 86,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 4.16,
+     "line": 23.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -16.41,
+     "fair": "Indiana -16.5",
+     "p_home": 0.1488,
+     "sigma": 15.83,
+     "conf": 75,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 7.09,
+     "line": 23.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -17.11,
+     "fair": "Indiana -17.0",
+     "p_home": 0.147,
+     "sigma": 16.386,
+     "conf": 66,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 6.39,
+     "line": 23.5
+    }
+   }
+  },
+  {
+   "game_id": "401869932",
+   "week": 5,
+   "kickoff": "2026-10-04T00:00:00.000Z",
+   "home": "Louisiana",
+   "away": "Arkansas State",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 7.02,
+     "fair": "Louisiana -7.0",
+     "p_home": 0.6818,
+     "sigma": 14.85,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 6.45,
+     "fair": "Louisiana -6.5",
+     "p_home": 0.662,
+     "sigma": 15.55,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 6.69,
+     "fair": "Louisiana -6.5",
+     "p_home": 0.6669,
+     "sigma": 15.625,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401860921",
+   "week": 5,
+   "kickoff": "2026-10-04T01:30:00.000Z",
+   "home": "Washington State",
+   "away": "Fresno State",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 2.56,
+     "fair": "Washington State -2.5",
+     "p_home": 0.5684,
+     "sigma": 14.858,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 0.66,
+     "fair": "Washington State -0.5",
+     "p_home": 0.5171,
+     "sigma": 15.597,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 0.87,
+     "fair": "Washington State -1.0",
+     "p_home": 0.5223,
+     "sigma": 15.669,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401856817",
+   "week": 5,
+   "kickoff": "2026-10-04T02:30:00.000Z",
+   "home": "Arizona State",
+   "away": "Baylor",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 5.93,
+     "fair": "Arizona State -6.0",
+     "p_home": 0.6531,
+     "sigma": 15.062,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 6.34,
+     "fair": "Arizona State -6.5",
+     "p_home": 0.6591,
+     "sigma": 15.566,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 7,
+     "fair": "Arizona State -7.0",
+     "p_home": 0.6735,
+     "sigma": 15.677,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401860900",
+   "week": 5,
+   "kickoff": "2026-10-04T02:30:00.000Z",
+   "home": "San Diego State",
+   "away": "Texas State",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -5.14,
+     "fair": "Texas State -5.0",
+     "p_home": 0.3644,
+     "sigma": 14.825,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -7.6,
+     "fair": "Texas State -7.5",
+     "p_home": 0.3164,
+     "sigma": 16.028,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": -7.02,
+     "fair": "Texas State -7.0",
+     "p_home": 0.3296,
+     "sigma": 16.028,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  },
+  {
+   "game_id": "401856820",
+   "week": 5,
+   "kickoff": "2026-10-04T03:00:00.000Z",
+   "home": "Arizona",
+   "away": "Cincinnati",
+   "market": {
+    "current": -8.5,
+    "open": -8.5,
+    "books": 1,
+    "as_of": "2026-09-27T15:07:15.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 8.18,
+     "fair": "Arizona -8.0",
+     "p_home": 0.7091,
+     "sigma": 14.852,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": -0.32,
+     "line": 8.5
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 11.62,
+     "fair": "Arizona -11.5",
+     "p_home": 0.7742,
+     "sigma": 15.536,
+     "conf": 93,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 3.12,
+     "line": -8.5
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 11.52,
+     "fair": "Arizona -11.5",
+     "p_home": 0.7724,
+     "sigma": 15.525,
+     "conf": 94,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 3.02,
+     "line": -8.5
+    }
+   }
+  },
+  {
+   "game_id": "401864513",
+   "week": 5,
+   "kickoff": "2026-10-04T03:59:00.000Z",
+   "home": "Hawai'i",
+   "away": "San José State",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 7.27,
+     "fair": "Hawai'i -7.5",
+     "p_home": 0.6877,
+     "sigma": 14.857,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 1.6,
+     "fair": "Hawai'i -1.5",
+     "p_home": 0.5408,
+     "sigma": 15.736,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-09-27T15:07:15.000Z",
+     "margin": 1.76,
+     "fair": "Hawai'i -2.0",
+     "p_home": 0.545,
+     "sigma": 15.703,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null
+    }
+   }
+  }
+ ],
  "performance": {
   "edgedesk_cfb_p4_v1.0.0": {
    "label": "V1",
@@ -3785,6 +8353,63 @@
   ],
   "audit_tail": [
    {
+    "event_type": "MODEL_REGISTERED",
+    "subject": "edgedesk_cfb_v2.0.0",
+    "before": null,
+    "after": {
+     "facts": {
+      "feature_version": "cfb_v2_fv1",
+      "calibration_version": "edgedesk_cfb_v2.0.0:bee46247817b",
+      "ensemble_version": "edgedesk_cfb_v2.0.0:44136fa355b3",
+      "params_hash": "26ee96cabd335406cfe7f30f0d61dca2b67ed4ada5fd21c7d81178a381637e27",
+      "engine_id": "edgedesk_cfb_v2",
+      "source": "football/cfb_v2/current.json (shadow.candidate_001)"
+     }
+    },
+    "reason": "first seen by the Model Lab",
+    "actor": "automation",
+    "created_at": "2026-09-27T15:07:15.000Z",
+    "event_id": "cfbg_82f21ac04d198b09f269e5e6"
+   },
+   {
+    "event_type": "MODEL_REGISTERED",
+    "subject": "edgedesk_cfb_v2.1.0",
+    "before": null,
+    "after": {
+     "facts": {
+      "feature_version": "cfb_v2_fv2",
+      "calibration_version": "edgedesk_cfb_v2.1.0:97cadb764756",
+      "ensemble_version": "edgedesk_cfb_v2.1.0:44136fa355b3",
+      "params_hash": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
+      "engine_id": "edgedesk_cfb_v2",
+      "source": "football/cfb_v2/current.json"
+     }
+    },
+    "reason": "first seen by the Model Lab",
+    "actor": "automation",
+    "created_at": "2026-09-27T15:07:15.000Z",
+    "event_id": "cfbg_3ce04f5477edc92048a3039d"
+   },
+   {
+    "event_type": "MODEL_REGISTERED",
+    "subject": "edgedesk_cfb_p4_v1.0.0",
+    "before": null,
+    "after": {
+     "facts": {
+      "feature_version": "cfb_p4_fv1",
+      "calibration_version": "edgedesk_cfb_p4_v1.0.0",
+      "ensemble_version": "edgedesk_cfb_p4_v1.0.0",
+      "params_hash": "fac5ae0e37d5ea7319a407e4de70baa728741687e54a3f7649d15a0053dd4b0b",
+      "engine_id": "edgedesk_cfb_p4",
+      "source": "football/fbs/slate.json"
+     }
+    },
+    "reason": "first seen by the Model Lab",
+    "actor": "automation",
+    "created_at": "2026-09-27T15:07:15.000Z",
+    "event_id": "cfbg_a2acc173b8328232f4a246e9"
+   },
+   {
     "event_type": "EXPERIMENT_CREATED",
     "subject": "EXP-004",
     "before": null,
@@ -4166,122 +8791,122 @@
     ],
     "note": "the last pre-kickoff number of each game",
     "errors": {
-     "n": 164,
+     "n": 215,
      "label": null,
-     "mae": 11.266,
-     "rmse": 14.428,
-     "median_ae": 9.215,
-     "bias": -0.706,
-     "p90_ae": 23.677,
-     "p95_ae": 27.736,
-     "mae_se": 0.706,
-     "favorite_bias": 1.396,
-     "favorite_bias_se": 1.125,
-     "total_mae": 11.936,
-     "winner_accuracy": 0.8049,
-     "brier": 0.14939,
-     "log_loss": 0.46316,
-     "coverage_50": 0.5305,
-     "coverage_80": 0.8659,
-     "coverage_95": 0.9573,
-     "n_intervals": 164
+     "mae": 12.167,
+     "rmse": 15.384,
+     "median_ae": 10.54,
+     "bias": 0.46,
+     "p90_ae": 25.268,
+     "p95_ae": 29.98,
+     "mae_se": 0.644,
+     "favorite_bias": 1.953,
+     "favorite_bias_se": 1.043,
+     "total_mae": 12.347,
+     "winner_accuracy": 0.8093,
+     "brier": 0.14489,
+     "log_loss": 0.45271,
+     "coverage_50": 0.5116,
+     "coverage_80": 0.8326,
+     "coverage_95": 0.9535,
+     "n_intervals": 215
     },
     "win_calibration": {
-     "n": 164,
+     "n": 215,
      "label": null,
      "buckets": [
       {
        "bucket": "50-55",
-       "n": 22,
-       "predicted": 0.5294,
-       "observed": 0.6818,
+       "n": 25,
+       "predicted": 0.5293,
+       "observed": 0.68,
        "label": "small sample",
-       "difference": 0.1524
+       "difference": 0.1507
       },
       {
        "bucket": "55-60",
-       "n": 20,
-       "predicted": 0.5706,
+       "n": 26,
+       "predicted": 0.5717,
        "observed": 0.5,
        "label": "small sample",
-       "difference": -0.0706
+       "difference": -0.0717
       },
       {
        "bucket": "60-65",
-       "n": 22,
-       "predicted": 0.624,
-       "observed": 0.7727,
+       "n": 25,
+       "predicted": 0.6253,
+       "observed": 0.76,
        "label": "small sample",
-       "difference": 0.1487
+       "difference": 0.1347
       },
       {
        "bucket": "65-70",
-       "n": 16,
-       "predicted": 0.6789,
-       "observed": 0.875,
+       "n": 21,
+       "predicted": 0.6788,
+       "observed": 0.9048,
        "label": "small sample",
-       "difference": 0.1961
+       "difference": 0.226
       },
       {
        "bucket": "70-75",
-       "n": 15,
-       "predicted": 0.7255,
-       "observed": 0.7333,
+       "n": 20,
+       "predicted": 0.7223,
+       "observed": 0.7,
        "label": "small sample",
-       "difference": 0.0078
+       "difference": -0.0223
       },
       {
        "bucket": "75-80",
-       "n": 13,
+       "n": 17,
        "predicted": 0.7789,
-       "observed": 0.9231,
+       "observed": 0.8824,
        "label": "small sample",
-       "difference": 0.1442
+       "difference": 0.1035
       },
       {
        "bucket": "80+",
-       "n": 56,
-       "predicted": 0.9076,
-       "observed": 0.9464,
+       "n": 81,
+       "predicted": 0.911,
+       "observed": 0.9506,
        "label": "provisional",
-       "difference": 0.0388
+       "difference": 0.0396
       }
      ],
-     "ece": 0.0935,
-     "brier": 0.14939,
-     "slope": null,
-     "slope_note": "insufficient sample (n < 200)"
+     "ece": 0.0891,
+     "brier": 0.14489,
+     "slope": 0.9478,
+     "slope_note": null
     },
     "intervals": {
      "p50": {
       "nominal": 0.5,
-      "n": 164,
-      "coverage": 0.5305,
+      "n": 215,
+      "coverage": 0.5116,
       "band": [
-       0.4235,
-       0.5765
+       0.4332,
+       0.5668
       ],
       "label": null,
       "verdict": "within band"
      },
      "p80": {
       "nominal": 0.8,
-      "n": 164,
-      "coverage": 0.8659,
+      "n": 215,
+      "coverage": 0.8326,
       "band": [
-       0.7388,
-       0.8612
+       0.7465,
+       0.8535
       ],
       "label": null,
-      "verdict": "UNDERCONFIDENT"
+      "verdict": "within band"
      },
      "p95": {
       "nominal": 0.95,
-      "n": 164,
-      "coverage": 0.9573,
+      "n": 215,
+      "coverage": 0.9535,
       "band": [
-       0.9166,
-       0.9834
+       0.9209,
+       0.9791
       ],
       "label": null,
       "verdict": "within band"

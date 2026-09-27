@@ -1,5 +1,5 @@
 {
- "started_at": "2026-09-27T12:28:58.000Z",
+ "started_at": "2026-09-27T15:07:15.000Z",
  "season": 2026,
  "steps": {
   "seed": {
@@ -7,54 +7,109 @@
    "roles": 0,
    "experiments": 0,
    "partitions": 0,
-   "ms": 1
+   "ms": 0
   },
   "supabase_pull": {
-   "skipped": true
+   "ok": true,
+   "quotes": 0,
+   "ms": 677
   },
   "market": {
-   "skipped": true
+   "ok": true,
+   "log": {
+    "espn": {
+     "days": 12,
+     "errors": [],
+     "candidates": 145
+    },
+    "cfbd": {
+     "ledger_rows": 66,
+     "candidates": 56
+    },
+    "supabase": {
+     "candidates": 0,
+     "unmapped_events": 0,
+     "mapped_now": 0,
+     "refused": 0,
+     "refusal_reasons": {},
+     "unresolved_names": []
+    }
+   },
+   "dedupe": {
+    "received": 201,
+    "written": 201,
+    "duplicates": 0,
+    "refused": 0,
+    "refusals": {}
+   },
+   "written": 201,
+   "conflicts": [],
+   "ms": 1092
   },
   "freeze_import": {
-   "skipped": true
+   "ok": true,
+   "files": 0,
+   "imported": 0,
+   "skipped": [],
+   "ms": 37
   },
   "checkpoints": {
-   "skipped": true
+   "ok": true,
+   "now": "2026-09-27T15:07:15.000Z",
+   "season": 2026,
+   "due": 174,
+   "taken": 174,
+   "skipped_no_projection": 0,
+   "by_model": {
+    "edgedesk_cfb_p4_v1.0.0": 60,
+    "edgedesk_cfb_v2.1.0": 57,
+    "edgedesk_cfb_v2.0.0": 57
+   },
+   "by_checkpoint": {
+    "OPEN": 174
+   },
+   "refused_duplicate_checkpoint": [],
+   "ms": 353
   },
   "audit": {
-   "skipped": true
+   "ok": true,
+   "events": 3,
+   "ms": 1
   },
   "settle": {
    "ok": true,
-   "now": "2026-09-27T12:28:58.000Z",
+   "now": "2026-09-27T15:07:15.000Z",
    "season": 2026,
-   "used_record_fallback": true,
-   "results": 231,
+   "readings": [
+    146,
+    331
+   ],
+   "results": 51,
    "result_disagreements": [],
    "lines": {
-    "derived": 1066,
-    "written": 1066,
+    "derived": 0,
+    "written": 0,
     "conflicts": []
    },
-   "evaluations": 459,
+   "evaluations": 51,
    "miss_reviews": 0,
-   "ms": 212
+   "ms": 854
   },
   "report": {
    "ok": true,
-   "now": "2026-09-27T12:28:58.000Z",
+   "now": "2026-09-27T15:07:15.000Z",
    "weekly_written": [],
    "research_events": 0,
    "alerts": 0,
    "public_graded": 0,
-   "ms": 83
+   "ms": 42
   },
   "verify": {
    "ok": true,
    "problems": 0,
-   "ms": 75
+   "ms": 112
   }
  },
- "finished_at": "2026-09-27T12:28:58.525Z",
+ "finished_at": "2026-09-27T15:07:18.744Z",
  "ok": true
 }
