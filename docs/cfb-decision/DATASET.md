@@ -45,8 +45,8 @@ Established by execution on `data/betting/cfb_line_odds.csv.gz` (the raw cfbfast
 | holdout \| BOOK_OPEN | 4706 | 1690 | 4438 | 4706 | 4706 | 4706 | 4706 |
 | holdout \| CONSENSUS_OPEN | 1795 | 1795 | 1606 | 1795 | 1795 | 1795 | 1795 |
 | holdout \| NONE | 59 | 59 | 1 | 0 | 0 | 59 | 0 |
-| live \| LIVE_BOOK_QUOTE | 71 | 71 | 58 | 71 | 0 | 64 | 71 |
-| live \| LIVE_CFBD_OPEN | 281 | 281 | 281 | 281 | 0 | 208 | 281 |
+| live \| LIVE_BOOK_QUOTE | 71 | 71 | 58 | 71 | 0 | 64 | 64 |
+| live \| LIVE_CFBD_OPEN | 281 | 281 | 281 | 281 | 0 | 208 | 274 |
 | live \| NONE | 594 | 594 | 480 | 0 | 0 | 103 | 0 |
 
 ## Push table (empirical, integer lines, FBS openers 2014-2023; the frozen table)
@@ -164,10 +164,10 @@ Layers: **pure** never reads a market column (the quote enters a pure-model quan
 | `close_line_margin` | outcome | 12865 | closing line, internal convention (archive consensus close; ledger provider close live) |
 | `close_home_line` | outcome | 12865 | closing line, book convention |
 | `close_source` | outcome | 12865 | where the close came from |
-| `clv_pts` | outcome | 12865 | side-oriented closing-line value in points: (close - quote) * side_sign; > 0 = the market moved to the side taken |
-| `positive_clv` | outcome | 12865 | 1 if clv_pts > 0 (no move counts as 0) |
-| `line_moved` | outcome | 12865 | 1 if close != quote |
-| `moved_toward_model` | outcome | 11130 | among moved lines: 1 if the close moved toward the side the model took |
+| `clv_pts` | outcome | 12851 | side-oriented closing-line value in points: (close - quote) * side_sign; > 0 = the market moved to the side taken |
+| `positive_clv` | outcome | 12851 | 1 if clv_pts > 0 (no move counts as 0) |
+| `line_moved` | outcome | 12851 | 1 if close != quote |
+| `moved_toward_model` | outcome | 11117 | among moved lines: 1 if the close moved toward the side the model took |
 | `pinnacle_close_margin` | outcome | 2781 | Pinnacle's closing line (2012-2019 only; the archive has no Pinnacle opener) |
 | `clv_pts_pinnacle` | outcome | 2775 | side-oriented CLV against Pinnacle's close (consensus-opener rows, 2016-2019) |
 | `abs_error_model` | outcome | 13708 | \|final_margin - pure_margin\| |
