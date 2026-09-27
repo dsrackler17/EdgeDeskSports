@@ -33,6 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      # the line ledger (shadow/<season>/lines.jsonl) is append-only: it is only
+      # ever extended by this job and committed back, never rewritten
       - uses: actions/checkout@v5
         with:
           ref: main
@@ -62,6 +64,16 @@ jobs:
         run: |
           python3 -m v2.learn_week
           python3 -m v2.predict_live --verify
+      - name: Shadow records, research statuses, monitoring + health warnings (live only)
+        if: ${{ (github.event.inputs.mode || 'live') == 'live' }}
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ github.workspace }}/football/cfb_v2/research/data
+          CFB_V2_OUT: ${{ github.workspace }}/football/cfb_v2/research/out
+        run: |
+          python3 -m v2.shadow
+          node ../shadow_decisions.js
+          python3 -m v2.monitor
       - name: Engine tests
         run: node football/cfb_v2/tests.js
       - name: Insert-only copy to Supabase (when secrets are configured)
@@ -76,7 +88,7 @@ jobs:
           git config user.name "edgedesk-bot"
           git config user.email "edgedesk-bot@users.noreply.github.com"
           tools/ci/push_generated.sh main "cfb v2 shadow: frozen pregame snapshots" -- \
-            football/cfb_v2/current.json football/cfb_v2/snapshots \
+            football/cfb_v2/current.json football/cfb_v2/snapshots football/cfb_v2/shadow \
             football/cfb_v2/learning football/cfb_v2/monitoring.json
       - name: Keep the retrain for review (never auto-promoted)
         if: ${{ github.event.inputs.mode == 'retrain' }}

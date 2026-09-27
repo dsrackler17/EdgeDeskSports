@@ -75,8 +75,19 @@ chk('confirmed starter: no QB variance beyond ~0', conf.overlays.qb_home.var_pts
 if (P.qb.applied) chk('starter OUT moves the line toward the backup', out.projected_margin < conf.projected_margin - 0.5);
 else chk('starter OUT without a validated coefficient moves nothing', near(out.projected_margin, conf.projected_margin, 1e-9));
 chk('questionable widens the distribution more than confirmed', q.sigma > conf.sigma);
-chk('OUT is certain: less variance than questionable', out.overlays.qb_home.var_pts < q.overlays.qb_home.var_pts);
-chk('unknown status widens vs confirmed (never assumed active)', unk.sigma > conf.sigma);
+if (P.qb.model === 'level') {
+  var base = E.pure(ROW, {});
+  chk('QB level model: no report = the measured baseline, no shift and no extra variance (no double count)',
+    base.overlays.qb_home.mean_pts === 0 && base.overlays.qb_home.var_pts === 0 && unk.overlays.qb_home.mean_pts === 0);
+  chk('QB level model: OUT shifts by the measured change effect relative to the baseline',
+    near(out.overlays.qb_home.mean_pts, (P.qb.baseline_same_starter - 0) * P.qb.change_delta_pts, 1e-3));
+  chk('QB level model: a confirmed starter removes the baseline change risk (small upward shift)',
+    conf.overlays.qb_home.mean_pts > 0 && conf.overlays.qb_home.mean_pts < 0.5);
+  chk('QB level model: a backup-QB game carries the measured excess variance', out.overlays.qb_home.var_pts > 0);
+} else {
+  chk('OUT is certain: less variance than questionable', out.overlays.qb_home.var_pts < q.overlays.qb_home.var_pts);
+  chk('unknown status widens vs confirmed (never assumed active)', unk.sigma > conf.sigma);
+}
 chk('questionable caps confidence', q.football_prediction_confidence <= P.reliability.caps.qb_unsettled);
 var noHist = E.pure(Object.assign(clone(ROW), { qb: { home: null, away: null } }), {});
 chk('no QB history: no invented QB point value', noHist.overlays.qb_home.mean_pts === 0);
@@ -94,6 +105,21 @@ chk('injuries never move the mean (no trained coefficient)', many.mean_pts === 0
 chk('injuries widen the distribution', E.pure(ROW, { injuries: { home: ol3 } }).sigma > p.sigma);
 chk('unknown injury status is a coin flip, not active',
   E._internal.injuryOverlay([{ unit: 'SKILL', usage_share: 0.4, status: '??' }], P).units.SKILL > 0.1);
+
+var one = E._internal.injuryOverlay([{ unit: 'OL', usage_share: 0.2, status: 'OUT' }], P).units.OL;
+var two = E._internal.injuryOverlay([{ unit: 'OL', usage_share: 0.2, status: 'OUT' }, { unit: 'OL', usage_share: 0.2, status: 'OUT' }], P).units.OL;
+var three = E._internal.injuryOverlay([{ unit: 'OL', usage_share: 0.2, status: 'OUT' }, { unit: 'OL', usage_share: 0.2, status: 'OUT' },
+  { unit: 'OL', usage_share: 0.2, status: 'OUT' }], P).units.OL;
+chk('each additional absence in a unit costs less than the one before (diminishing)', two - one < one && three - two < two - one);
+chk('a unit never exceeds its cap however many are out', E._internal.injuryOverlay(ol3.concat(ol3), P).units.OL < P.injury.unit_caps.OL);
+var deep = E._internal.injuryOverlay([{ unit: 'SKILL', usage_share: 0.4, status: 'OUT', replacement_quality: 0.8 }], P).units.SKILL;
+var thin = E._internal.injuryOverlay([{ unit: 'SKILL', usage_share: 0.4, status: 'OUT', replacement_quality: 0 }], P).units.SKILL;
+chk('a like-for-like backup reduces the loss (replacement depth)', deep < thin / 2);
+var late = E.pure(ROW, { as_of: '2026-10-03T20:00:00Z', qb_status: { home: 'out' }, injuries: { home: ol3 } });
+chk('a status report stamped after kickoff is refused, not applied (hindsight)',
+  late.overlay_refused && late.projected_margin === E.pure(ROW, {}).projected_margin && late.sigma === E.pure(ROW, {}).sigma);
+var early = E.pure(ROW, { as_of: '2026-10-02T20:00:00Z', injuries: { home: ol3 } });
+chk('a pregame status report is applied', !early.overlay_refused && early.sigma > p.sigma);
 
 /* --------------------------------------------------------- weather */
 chk('dome: weather adds nothing', E._internal.weatherOverlay({ dome: true, wind_mph: 30 }, P).var_pts === 0);
@@ -127,6 +153,47 @@ chk('dispersed books are a PASS', disp.status === 'PASS');
 chk('decision never mutates the pure projection', p.projected_margin === E.pure(ROW, {}).projected_margin);
 chk('BET is never emitted while the rule is not validated',
   P.market.bet_enabled || [d1, d2].every(function (d) { return d.status !== 'BET'; }));
+
+/* ------------------------------------------- sign scenarios (audit) */
+/* The same scenarios as research/v2/tests_signs.py, through the production
+   decision path. Model margins are INTERNAL (+ = home wins by that many);
+   lines are BOOK (home -7 = home laying 7). */
+var SCEN = [
+  /* name, open home line, current home line, model margin, neutral, side, gap, moved */
+  ['home favourite', -7, -8.5, 10, false, 'HOME', 1.5, 'toward EdgeDesk'],
+  ['road favourite', 7, 8.5, -10, false, 'AWAY', -1.5, 'toward EdgeDesk'],
+  ['neutral-site favourite', -7, -8.5, 10, true, 'HOME', 1.5, 'toward EdgeDesk'],
+  ['home favourite, model takes the dog', -7, -8, 3, false, 'AWAY', -5, 'away from EdgeDesk'],
+  ['favourite flip', -2, 1.5, -3, false, 'AWAY', -1.5, 'toward EdgeDesk'],
+  /* a small gap can be overruled by the learned home-cover intercept (home sides
+     cover 48.6% historically), so the pick'em case uses an unambiguous gap */
+  ["pick'em", 0, -1, 4, false, 'HOME', 3, 'toward EdgeDesk']
+];
+SCEN.forEach(function (s) {
+  var pp = E.pure(Object.assign(clone(ROW), { ens_pred: s[3], neutral_site: s[4] }),
+    { qb_status: { home: 'confirmed', away: 'confirmed' } });
+  var d = E.decide(pp, { current: { home_line: s[2], ts: '2026-10-01T14:30:00Z' }, open: { home_line: s[1] },
+    price_home: -110, price_away: -110 }, { now: NOW, row: ROW });
+  chk('sign scenario ' + s[0] + ': market margin is the negated current line', d.current_market_margin === -s[2]);
+  chk('sign scenario ' + s[0] + ': gap = model - market (' + s[6] + ')', near(d.raw_gap_pts, pp.projected_margin + s[2], 1e-9)
+    && Math.sign(d.raw_gap_pts) === Math.sign(s[6]));
+  chk('sign scenario ' + s[0] + ': side ' + s[5], d.side === s[5]);
+  chk('sign scenario ' + s[0] + ': line move ' + s[7], d.market_moved === s[7]);
+  chk('sign scenario ' + s[0] + ': expected CLV has the sign of the move toward the side',
+    d.clv_opportunity_pts === null || Math.sign(d.clv_opportunity_pts) === (Math.abs(d.raw_gap_pts) < 1e-9 ? 0 : 1));
+  chk('sign scenario ' + s[0] + ': EV > 0 only if cover probability beats break-even',
+    (d.expected_value_per_unit > 0) === (d.cover_probability * (1 - d.push_probability) * (100 / 110)
+      - (1 - d.cover_probability) * (1 - d.push_probability) > 0));
+});
+var mirror = E.decide(E.pure(Object.assign(clone(ROW), { ens_pred: -6 }), { qb_status: { home: 'confirmed', away: 'confirmed' } }),
+  mkt(3), { now: NOW, row: ROW });
+var direct = E.decide(E.pure(Object.assign(clone(ROW), { ens_pred: 6 }), { qb_status: { home: 'confirmed', away: 'confirmed' } }),
+  mkt(-3), { now: NOW, row: ROW });
+chk('mirror: swapping home/away flips the side and keeps the cover probability',
+  mirror.side !== direct.side && near(mirror.cover_probability, direct.cover_probability, 0.02));
+var alt = E.decide(p, { books: [{ home_line: -3 }, { home_line: -3.5 }, { home_line: -3 }, { home_line: 10, alternate: true }],
+  ts: '2026-10-01T14:30:00Z', price_home: -110, price_away: -110 }, { now: NOW, row: ROW });
+chk('alternate spreads never enter the consensus', alt.current_home_line === -3 && alt.books === 3);
 
 /* ------------------------------------------------------ monotonicity */
 var probs = [-14, -7, -3, 0, 3, 7, 14].map(function (m) {

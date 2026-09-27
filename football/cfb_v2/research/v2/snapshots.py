@@ -157,8 +157,9 @@ def build_season(S, G, qb, elo):
                                  + g['a_epa__off_var'] + g['a_epa__def_var']) / ns('epa')
     g['weeks_in'] = (g.prediction_ts - g.groupby('season').kickoff_ts.transform('min')).dt.days / 7.0
     g['early_season'] = (g.weeks_in < 5).astype(float)
-    g['vol_sum'] = (g['h_epa__vol'].fillna(g['h_epa__vol'].median())
-                    + g['a_epa__vol'].fillna(g['a_epa__vol'].median())) / ns('epa')
+    # point-in-time by construction: stage 3 gives every team its prior
+    # volatility before its first game (no whole-season median fill)
+    g['vol_sum'] = (g['h_epa__vol'] + g['a_epa__vol']) / ns('epa')
     g['to_dependence'] = (g['h_to_rate__off'].abs() + g['a_to_rate__off'].abs()) / ns('to_rate')
     g['qb_missing_any'] = g[['h_qb_missing', 'a_qb_missing']].fillna(1).max(axis=1)
     g['qb_unsettled_any'] = g[['h_qb_unsettled', 'a_qb_unsettled']].fillna(0).max(axis=1)

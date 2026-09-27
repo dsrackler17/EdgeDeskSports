@@ -132,6 +132,25 @@
        measured historical probability that the most recent starter starts
        again — never assumed to be 1. */
     var Q = P.qb || {}, key = status ? STATUS_KEYS[String(status).toUpperCase()] : null;
+    if (Q.model === 'level') {
+      /* hardened: a measured LEVEL effect of a starter change (dev 2016-2023),
+         applied RELATIVE to the baseline change rate the training data already
+         contains. No report = the baseline = no shift and no extra variance
+         (candidate 001 shifted the mean for the baseline risk too: a double count). */
+      var common = P.qb_common || {};
+      var ps = key ? (common.status_start_prob || {})[key] : null;
+      var p0 = Q.baseline_same_starter, d = Q.change_delta_pts, ex = Q.change_excess_var_pts2 || 0;
+      if (!isNum(ps) || !isNum(p0) || !isNum(d)) {
+        return { side: side, status: key || 'no report', start_prob: null, mean_pts: 0, var_pts: 0, applied: true,
+          basis: 'no status report: the projection already carries the historical ' +
+            Math.round(100 * (1 - (isNum(p0) ? p0 : 0.86))) + '% chance of a starter change' };
+      }
+      var v = function (q) { return q * (1 - q) * d * d + (1 - q) * ex; };
+      return { side: side, status: key, start_prob: ps, mean_pts: r2((p0 - ps) * d, 3),
+        var_pts: Math.max(0, v(ps) - v(p0)), change_delta_pts: d, applied: true,
+        basis: 'reported status ' + key + ': start probability ' + ps + ' vs the ' + p0 + ' baseline; a change costs '
+          + r2(-d, 2) + ' pts (measured)' };
+    }
     var p = key ? Q.status_start_prob[key] : Q.same_starter_prob;
     var drop = (snap && isNum(snap.exp_rating) && isNum(snap.backup_rating))
       ? snap.backup_rating - snap.exp_rating : null;       /* EPA/dropback, usually < 0 */
@@ -160,20 +179,29 @@
        pressure penalty. No position coefficient was trainable from public
        data, so the mean moves 0 points and the capped value WIDENS the
        distribution (params.injury.points_applied === false). */
-    var I = P.injury || {}, caps = I.unit_caps || {}, lost = {}, total = 0, u;
-    UNITS.forEach(function (k) { lost[k] = 0; });
+    /* Diminishing marginal effect (red-team hardening): within a unit the
+       expected lost usage x is mapped through cap * (1 - exp(-x / cap)), so
+       every additional absence costs less than the one before and the unit
+       can never exceed its cap; the team total uses the same saturating form.
+       replacement_quality (0 = no usable backup .. 1 = like-for-like backup)
+       shrinks a player's contribution when depth information is supplied. */
+    var I = P.injury || {}, caps = I.unit_caps || {}, raw = {}, lost = {}, total = 0, u;
+    UNITS.forEach(function (k) { raw[k] = 0; lost[k] = 0; });
     (list || []).forEach(function (x) {
       var unit = String(x.unit || '').toUpperCase();
-      if (lost[unit] == null) return;
+      if (raw[unit] == null) return;
       var po = OUT_PROB[String(x.status || '').toUpperCase()];
       if (!isNum(po)) po = 0.5;              /* unknown status: a coin flip, never assumed active */
-      lost[unit] += clamp(isNum(x.usage_share) ? x.usage_share : 0, 0, 1) * po;
+      var rq = isNum(x.replacement_quality) ? clamp(x.replacement_quality, 0, 1) : 0;
+      raw[unit] += clamp(isNum(x.usage_share) ? x.usage_share : 0, 0, 1) * po * (1 - rq);
     });
-    for (u in lost) if (lost.hasOwnProperty(u)) {
-      lost[u] = Math.min(lost[u], isNum(caps[u]) ? caps[u] : 1);
+    for (u in raw) if (raw.hasOwnProperty(u)) {
+      var cu = isNum(caps[u]) ? caps[u] : 1;
+      lost[u] = cu * (1 - Math.exp(-raw[u] / cu));
       total += lost[u];
     }
-    total = Math.min(total, isNum(I.team_cap) ? I.team_cap : 1.5);
+    var tc = isNum(I.team_cap) ? I.team_cap : 1.5;
+    total = tc * (1 - Math.exp(-total / tc));
     var sdPts = (I.var_pts_per_unit || 0) * total;
     return { units: lost, capped_total: r2(total, 3), mean_pts: 0, var_pts: sdPts * sdPts,
       supplied: !!(list && list.length), points_applied: !!I.points_applied };
@@ -203,6 +231,13 @@
         model_version: P.model_version };
     }
     overlays = overlays || {};
+    /* hindsight guard: a status report stamped at/after kickoff (a final
+       inactive list, a postgame injury report) is refused, never applied */
+    var refused = null;
+    if (overlays.as_of && row.kickoff && Date.parse(overlays.as_of) >= Date.parse(row.kickoff)) {
+      refused = 'overlays stamped ' + overlays.as_of + ' are at/after kickoff: refused (hindsight)';
+      overlays = {};
+    }
     var qH = qbOverlay('home', row.qb && row.qb.home, overlays.qb_status && overlays.qb_status.home, P);
     var qA = qbOverlay('away', row.qb && row.qb.away, overlays.qb_status && overlays.qb_status.away, P);
     var iH = injuryOverlay(overlays.injuries && overlays.injuries.home, P);
@@ -236,7 +271,8 @@
       football_prediction_confidence: rel.score, confidence_basis: rel.basis,
       drivers: row.drivers || [], uncertainty_drivers: row.uncertainty_drivers || [],
       overlays: { qb_home: qH, qb_away: qA, injuries_home: iH, injuries_away: iA, weather: wx },
-      data_quality: row.data_quality || null
+      data_quality: row.data_quality || null,
+      overlay_refused: refused
     };
     return deepFreeze(out);
   }
@@ -259,7 +295,9 @@
 
   /* ================================================== MARKET DECISION */
   function consensus(books) {
-    var xs = (books || []).map(function (b) { return b.home_line; }).filter(isNum).sort(function (a, b) { return a - b; });
+    /* main lines only: an alternate spread is a different bet, never a consensus input */
+    var xs = (books || []).filter(function (b) { return b && !b.alternate; })
+      .map(function (b) { return b.home_line; }).filter(isNum).sort(function (a, b) { return a - b; });
     if (!xs.length) return null;
     var mid = Math.floor(xs.length / 2);
     var med = xs.length % 2 ? xs[mid] : (xs[mid - 1] + xs[mid]) / 2;
@@ -280,7 +318,8 @@
   function coverDesign(pure, row, pRaw) {
     var x = logit(pRaw);
     var ensSd = ((row && isNum(row.ens_sd)) ? row.ens_sd : 3) - 3;
-    var rsd = ((row && isNum(row.rating_sd_sum)) ? row.rating_sd_sum : 1) - 1;
+    var fill = (params().cover && isNum(params().cover.rsd_fill)) ? params().cover.rsd_fill : 1;
+    var rsd = ((row && isNum(row.rating_sd_sum)) ? row.rating_sd_sum : fill) - 1;
     var early = row && row.early_season ? 1 : 0;
     var qbu = (row && row.qb_unsettled_any ? 1 : 0) + (row && row.qb_missing_any ? 1 : 0);
     return [1, x, x * ensSd / 2, x * rsd, x * early, x * qbu];

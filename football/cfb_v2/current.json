@@ -1,24 +1,21 @@
 {
  "champion": "V1",
- "generated_at": "2026-09-27T04:49:24Z",
+ "generated_at": "2026-09-27T09:32:42Z",
  "mode": "shadow",
- "model_version": "edgedesk_cfb_v2.0.0",
+ "model_version": "edgedesk_cfb_v2.1.0",
  "note": "V2 runs in SHADOW beside V1. Pure projections only; the market decision is computed at read time by engine.decide() from live prices.",
  "rows": [
   {
    "away": "Western Kentucky",
    "away_id": 98,
    "components": {
-    "A_adj_eff": 6.49,
-    "B_elo": -3.335,
-    "C_ridge": -0.723,
-    "D_gbm": -3.959,
-    "E_drive": 1.736
+    "C_ridge": -0.671,
+    "D_gbm": -2.984
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -2.25
+     "points": -2.27
     },
     {
      "feature": "edge_epa",
@@ -30,8 +27,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": -1.886,
-   "ens_sd": 4.256,
+   "ens_pred": -1.828,
+   "ens_sd": 1.636,
    "fair_total": 51.0,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -42,6 +39,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.4541,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -61,30 +59,52 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.1915,
-   "reliability_base": 74.3,
+   "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 16.128,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -1.886,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.118
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.5332208789787725,
+     "margin": 1.26,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.986,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "lopsided matchup (blowout variance)"
+    "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "North Texas",
    "away_id": 249,
    "components": {
-    "A_adj_eff": 4.876,
-    "B_elo": -9.803,
-    "C_ridge": -3.397,
-    "D_gbm": -4.83,
-    "E_drive": 3.276
+    "C_ridge": -3.445,
+    "D_gbm": -4.834
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -4.19
+     "points": -4.24
     },
     {
      "feature": "edge_epa",
@@ -96,8 +116,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": -3.794,
-   "ens_sd": 6.04,
+   "ens_pred": -4.14,
+   "ens_sd": 0.982,
    "fair_total": 56.2,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -108,6 +128,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.3993,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -127,30 +148,52 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.2007,
-   "reliability_base": 62.8,
+   "reliability_base": 67.8,
    "season": 2026,
-   "sigma": 16.49,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -3.794,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.481
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.30627066771574607,
+     "margin": -7.62,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.337,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "model disagreement"
+    "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Pittsburgh",
    "away_id": 221,
    "components": {
-    "A_adj_eff": 6.737,
-    "B_elo": 1.247,
-    "C_ridge": 2.335,
-    "D_gbm": 1.331,
-    "E_drive": 5.097
+    "C_ridge": 2.456,
+    "D_gbm": 1.162
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -0.87
+     "points": -0.88
     },
     {
      "feature": "match_mix_edge",
@@ -162,8 +205,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 2.048,
-   "ens_sd": 2.452,
+   "ens_pred": 1.809,
+   "ens_sd": 0.915,
    "fair_total": 55.7,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -174,6 +217,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.5455,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -193,43 +237,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1768,
-   "reliability_base": 80.2,
+   "reliability_base": 79.6,
    "season": 2026,
-   "sigma": 15.942,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 2.048,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.932
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": -6.0,
+     "open_home_line": -5.5,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 56.5,
+     "total_open": 56.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.5319045670925042,
+     "margin": 1.19,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.962,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "lopsided matchup (blowout variance)",
-    "uncertain team ratings"
+    "uncertain team ratings",
+    "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Liberty",
    "away_id": 2335,
    "components": {
-    "A_adj_eff": -7.252,
-    "B_elo": 3.565,
-    "C_ridge": -7.363,
-    "D_gbm": -6.4,
-    "E_drive": -0.009
+    "C_ridge": -7.175,
+    "D_gbm": -6.475
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": -3.38
+     "points": -3.36
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.34
+     "points": 1.33
     },
     {
      "feature": "elo_diff",
-     "points": -0.17
+     "points": -0.18
     }
    ],
    "early_season": true,
-   "ens_pred": -6.493,
-   "ens_sd": 4.988,
+   "ens_pred": -6.825,
+   "ens_sd": 0.495,
    "fair_total": 51.3,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -240,6 +306,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.333,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -259,34 +326,56 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1729,
-   "reliability_base": 78.1,
+   "reliability_base": 80.6,
    "season": 2026,
-   "sigma": 16.009,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -6.493,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.997
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.5380140797517972,
+     "margin": 1.44,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.931,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Penn State",
    "away_id": 213,
    "components": {
-    "A_adj_eff": -1.944,
-    "B_elo": -4.183,
-    "C_ridge": -3.882,
-    "D_gbm": -4.19,
-    "E_drive": 0.79
+    "C_ridge": -4.051,
+    "D_gbm": -3.989
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -2.5
+     "points": -2.53
     },
     {
      "feature": "edge_epa",
-     "points": -2.17
+     "points": -2.16
     },
     {
      "feature": "match_mix_edge",
@@ -294,8 +383,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": -3.817,
-   "ens_sd": 2.155,
+   "ens_pred": -4.02,
+   "ens_sd": 0.044,
    "fair_total": 49.1,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -306,6 +395,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.3981,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -325,43 +415,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2204,
-   "reliability_base": 91.9,
+   "reliability_base": 88.4,
    "season": 2026,
-   "sigma": 15.576,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -3.817,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.564
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": 7.0,
+     "open_home_line": 7.0,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 48.5,
+     "total_open": 48.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.36275672117325797,
+     "margin": -5.29,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.68,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "lopsided matchup (blowout variance)",
+    "model disagreement",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Vanderbilt",
    "away_id": 238,
    "components": {
-    "A_adj_eff": 29.223,
-    "B_elo": 15.13,
-    "C_ridge": 27.268,
-    "D_gbm": 25.489,
-    "E_drive": 31.386
+    "C_ridge": 27.411,
+    "D_gbm": 25.727
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 4.94
+     "points": 4.91
     },
     {
      "feature": "match_mix_edge",
-     "points": -3.94
+     "points": -3.92
     },
     {
      "feature": "elo_diff",
-     "points": 3.3
+     "points": 3.34
     }
    ],
    "early_season": true,
-   "ens_pred": 26.525,
-   "ens_sd": 6.304,
+   "ens_pred": 26.569,
+   "ens_sd": 1.191,
    "fair_total": 54.9,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -372,6 +484,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.9599,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -393,41 +506,63 @@
    "rating_sd_sum": 1.2105,
    "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 15.298,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 26.525,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.288
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": -23.5,
+     "open_home_line": -23.5,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 57.5,
+     "total_open": 57.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.8067015174971175,
+     "margin": 13.03,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.184,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "model disagreement",
-    "uncertain team ratings"
+    "uncertain team ratings",
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Alabama",
    "away_id": 333,
    "components": {
-    "A_adj_eff": -5.713,
-    "B_elo": -8.182,
-    "C_ridge": -10.779,
-    "D_gbm": -8.297,
-    "E_drive": -4.785
+    "C_ridge": -10.502,
+    "D_gbm": -8.258
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -3.71
+     "points": -3.75
     },
     {
      "feature": "edge_epa",
-     "points": -2.73
+     "points": -2.71
     },
     {
      "feature": "match_mix_edge",
-     "points": 2.73
+     "points": 2.71
     }
    ],
    "early_season": true,
-   "ens_pred": -9.561,
-   "ens_sd": 2.366,
+   "ens_pred": -9.38,
+   "ens_sd": 1.587,
    "fair_total": 58.9,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -438,6 +573,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.2709,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -457,43 +593,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1964,
-   "reliability_base": 94.9,
+   "reliability_base": 94.8,
    "season": 2026,
-   "sigma": 15.483,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -9.561,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.473
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": 3.5,
+     "open_home_line": 3.0,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 59.5,
+     "total_open": 58.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.41027741309561494,
+     "margin": -3.41,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.476,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "high-scoring environment",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Miami",
    "away_id": 2390,
    "components": {
-    "A_adj_eff": -11.774,
-    "B_elo": -12.452,
-    "C_ridge": -18.222,
-    "D_gbm": -15.971,
-    "E_drive": -12.062
+    "C_ridge": -18.506,
+    "D_gbm": -16.611
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -4.99
+     "points": -5.05
     },
     {
      "feature": "edge_epa",
-     "points": -4.39
+     "points": -4.37
     },
     {
      "feature": "match_mix_edge",
-     "points": 2.35
+     "points": 2.33
     }
    ],
    "early_season": true,
-   "ens_pred": -17.021,
-   "ens_sd": 2.862,
+   "ens_pred": -17.558,
+   "ens_sd": 1.34,
    "fair_total": 48.8,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -504,6 +662,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.1195,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -525,41 +684,63 @@
    "rating_sd_sum": 1.1842,
    "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 14.97,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -17.021,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 14.96
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": 17.5,
+     "open_home_line": 7.0,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 50.5,
+     "total_open": 55.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.13988166361756504,
+     "margin": -16.27,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 14.974,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
     "quarterback unsettled"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Notre Dame",
    "away_id": 87,
    "components": {
-    "A_adj_eff": -16.523,
-    "B_elo": -20.635,
-    "C_ridge": -20.763,
-    "D_gbm": -24.694,
-    "E_drive": -19.566
+    "C_ridge": -20.983,
+    "D_gbm": -24.976
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -7.45
+     "points": -7.54
     },
     {
      "feature": "edge_epa",
-     "points": -5.3
+     "points": -5.27
     },
     {
      "feature": "match_mix_edge",
-     "points": 3.58
+     "points": 3.56
     }
    ],
    "early_season": true,
-   "ens_pred": -22.182,
-   "ens_sd": 2.93,
+   "ens_pred": -22.98,
+   "ens_sd": 2.823,
    "fair_total": 49.4,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -570,6 +751,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.0617,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -591,28 +773,50 @@
    "rating_sd_sum": 1.222,
    "reliability_base": 100.0,
    "season": 2026,
-   "sigma": 15.051,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -22.182,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.04
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": 21.5,
+     "open_home_line": 23.5,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 50.5,
+     "total_open": 55.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.06740882172265389,
+     "margin": -22.51,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 14.94,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
-    "volatile teams"
+    "quarterback unknown"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Middle Tennessee",
    "away_id": 2393,
    "components": {
-    "A_adj_eff": 11.489,
-    "B_elo": 14.852,
-    "C_ridge": 14.465,
-    "D_gbm": 12.867,
-    "E_drive": 16.127
+    "C_ridge": 14.566,
+    "D_gbm": 13.24
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 3.22
+     "points": 3.26
     },
     {
      "feature": "match_mix_edge",
@@ -620,12 +824,12 @@
     },
     {
      "feature": "edge_epa",
-     "points": 0.84
+     "points": 0.83
     }
    ],
    "early_season": true,
-   "ens_pred": 13.942,
-   "ens_sd": 1.806,
+   "ens_pred": 13.903,
+   "ens_sd": 0.938,
    "fair_total": 51.0,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -636,6 +840,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.8096,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -655,43 +860,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2105,
-   "reliability_base": 82.9,
+   "reliability_base": 79.8,
    "season": 2026,
-   "sigma": 15.86,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 13.942,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.848
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.8845527155312513,
+     "margin": 18.04,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.956,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "UCF",
    "away_id": 2116,
    "components": {
-    "A_adj_eff": 14.473,
-    "B_elo": 8.791,
-    "C_ridge": 10.367,
-    "D_gbm": 10.478,
-    "E_drive": 13.745
+    "C_ridge": 10.302,
+    "D_gbm": 9.851
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 1.58
+     "points": 1.57
     },
     {
      "feature": "elo_diff",
-     "points": 1.4
+     "points": 1.41
     },
     {
      "feature": "match_mix_edge",
-     "points": -0.88
+     "points": -0.87
     }
    ],
    "early_season": true,
-   "ens_pred": 10.512,
-   "ens_sd": 2.425,
+   "ens_pred": 10.076,
+   "ens_sd": 0.319,
    "fair_total": 52.8,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -702,6 +929,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.7382,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -723,28 +951,50 @@
    "rating_sd_sum": 1.1703,
    "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 15.794,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 10.512,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.783
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.7204206581636784,
+     "margin": 8.79,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.902,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "turnover-dependent teams",
-    "uncertain team ratings"
+    "uncertain team ratings",
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "West Virginia",
    "away_id": 277,
    "components": {
-    "A_adj_eff": 1.353,
-    "B_elo": 3.844,
-    "C_ridge": 4.722,
-    "D_gbm": 3.764,
-    "E_drive": 7.74
+    "C_ridge": 4.606,
+    "D_gbm": 3.4
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": -1.34
+     "points": -1.33
     },
     {
      "feature": "match_mix_edge",
@@ -756,8 +1006,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 4.467,
-   "ens_sd": 2.302,
+   "ens_pred": 4.003,
+   "ens_sd": 0.853,
    "fair_total": 51.9,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -768,6 +1018,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.6007,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -787,43 +1038,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2089,
-   "reliability_base": 85.4,
+   "reliability_base": 84.5,
    "season": 2026,
-   "sigma": 15.779,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 4.467,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.766
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.7261906205875517,
+     "margin": 9.05,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.804,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "lopsided matchup (blowout variance)"
+    "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Boston College",
    "away_id": 103,
    "components": {
-    "A_adj_eff": 25.964,
-    "B_elo": 18.938,
-    "C_ridge": 23.736,
-    "D_gbm": 23.081,
-    "E_drive": 25.213
+    "C_ridge": 23.896,
+    "D_gbm": 22.765
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 4.45
+     "points": 4.5
     },
     {
      "feature": "edge_epa",
-     "points": 3.88
+     "points": 3.86
     },
     {
      "feature": "match_mix_edge",
-     "points": -1.3
+     "points": -1.29
     }
    ],
    "early_season": true,
-   "ens_pred": 23.455,
-   "ens_sd": 2.738,
+   "ens_pred": 23.33,
+   "ens_sd": 0.8,
    "fair_total": 50.3,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -834,6 +1107,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.9321,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -853,34 +1127,56 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1904,
-   "reliability_base": 92.0,
+   "reliability_base": 88.6,
    "season": 2026,
-   "sigma": 15.574,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 23.455,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.563
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.9405534348389091,
+     "margin": 23.48,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.673,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Stanford",
    "away_id": 24,
    "components": {
-    "A_adj_eff": 21.701,
-    "B_elo": 9.712,
-    "C_ridge": 17.171,
-    "D_gbm": 15.147,
-    "E_drive": 20.555
+    "C_ridge": 17.198,
+    "D_gbm": 15.183
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 3.03
+     "points": 3.01
     },
     {
      "feature": "elo_diff",
-     "points": 1.68
+     "points": 1.69
     },
     {
      "feature": "match_mix_edge",
@@ -888,8 +1184,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 16.401,
-   "ens_sd": 4.775,
+   "ens_pred": 16.19,
+   "ens_sd": 1.425,
    "fair_total": 52.2,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -900,6 +1196,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.849,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -919,43 +1216,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1793,
-   "reliability_base": 82.9,
+   "reliability_base": 85.8,
    "season": 2026,
-   "sigma": 15.859,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 16.401,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.847
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.8365027102654068,
+     "margin": 14.76,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.764,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Syracuse",
    "away_id": 183,
    "components": {
-    "A_adj_eff": -2.051,
-    "B_elo": 8.326,
-    "C_ridge": -2.677,
-    "D_gbm": -2.695,
-    "E_drive": 0.567
+    "C_ridge": -2.778,
+    "D_gbm": -3.327
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": -2.05
+     "points": -2.04
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.95
+     "points": 1.94
     },
     {
      "feature": "elo_diff",
-     "points": 1.26
+     "points": 1.27
     }
    ],
    "early_season": true,
-   "ens_pred": -2.335,
-   "ens_sd": 4.686,
+   "ens_pred": -3.053,
+   "ens_sd": 0.388,
    "fair_total": 52.9,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -966,6 +1285,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.4234,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -985,43 +1305,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2059,
-   "reliability_base": 78.9,
+   "reliability_base": 80.7,
    "season": 2026,
-   "sigma": 15.983,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -2.335,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.971
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.7971762896099146,
+     "margin": 12.52,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.925,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "lopsided matchup (blowout variance)",
+    "model disagreement",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Michigan",
    "away_id": 130,
    "components": {
-    "A_adj_eff": -4.177,
-    "B_elo": -9.603,
-    "C_ridge": -9.711,
-    "D_gbm": -7.476,
-    "E_drive": -0.984
+    "C_ridge": -9.538,
+    "D_gbm": -6.861
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -4.13
+     "points": -4.18
     },
     {
      "feature": "edge_epa",
-     "points": -2.62
+     "points": -2.6
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.83
+     "points": 1.82
     }
    ],
    "early_season": true,
-   "ens_pred": -8.526,
-   "ens_sd": 3.764,
+   "ens_pred": -8.2,
+   "ens_sd": 1.893,
    "fair_total": 48.2,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1032,6 +1374,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.2919,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1053,32 +1396,54 @@
    "rating_sd_sum": 1.2163,
    "reliability_base": 100.0,
    "season": 2026,
-   "sigma": 15.193,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -8.526,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.182
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": 7.5,
+     "open_home_line": 8.5,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 42.5,
+     "total_open": 44.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.4565800879639254,
+     "margin": -1.64,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.066,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
     "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Navy",
    "away_id": 2426,
    "components": {
-    "A_adj_eff": 9.452,
-    "B_elo": -4.63,
-    "C_ridge": 4.82,
-    "D_gbm": 1.275,
-    "E_drive": 5.023
+    "C_ridge": 4.635,
+    "D_gbm": 1.64
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -2.64
+     "points": -2.67
     },
     {
      "feature": "edge_epa",
-     "points": 0.52
+     "points": 0.51
     },
     {
      "feature": "match_mix_edge",
@@ -1086,8 +1451,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 3.315,
-   "ens_sd": 5.245,
+   "ens_pred": 3.137,
+   "ens_sd": 2.118,
    "fair_total": 54.2,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1098,6 +1463,7 @@
    "min_games": 2.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.5779,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1117,34 +1483,56 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.2804,
-   "reliability_base": 68.7,
+   "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 16.303,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 3.315,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.287
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.5022384540253948,
+     "margin": 0.09,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.076,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Michigan State",
    "away_id": 127,
    "components": {
-    "A_adj_eff": 13.529,
-    "B_elo": 11.141,
-    "C_ridge": 9.623,
-    "D_gbm": 10.108,
-    "E_drive": 11.791
+    "C_ridge": 9.958,
+    "D_gbm": 9.91
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 2.11
+     "points": 2.13
     },
     {
      "feature": "edge_epa",
-     "points": 1.51
+     "points": 1.5
     },
     {
      "feature": "match_mix_edge",
@@ -1152,8 +1540,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 9.921,
-   "ens_sd": 1.537,
+   "ens_pred": 9.934,
+   "ens_sd": 0.034,
    "fair_total": 46.0,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1164,6 +1552,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.742,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1183,43 +1572,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1709,
-   "reliability_base": 100.0,
+   "reliability_base": 97.3,
    "season": 2026,
-   "sigma": 15.246,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 9.921,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.235
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.5381336439568976,
+     "margin": 1.44,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.397,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "uncertain team ratings",
-    "lopsided matchup (blowout variance)"
+    "model disagreement",
+    "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Western Michigan",
    "away_id": 2711,
    "components": {
-    "A_adj_eff": -3.191,
-    "B_elo": -9.238,
-    "C_ridge": -11.61,
-    "D_gbm": -11.763,
-    "E_drive": -3.323
+    "C_ridge": -11.624,
+    "D_gbm": -11.261
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -4.02
+     "points": -4.07
     },
     {
      "feature": "edge_epa",
-     "points": -2.46
+     "points": -2.45
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.51
+     "points": 1.5
     }
    ],
    "early_season": true,
-   "ens_pred": -11.289,
-   "ens_sd": 4.288,
+   "ens_pred": -11.442,
+   "ens_sd": 0.257,
    "fair_total": 48.9,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1230,6 +1641,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.2326,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1251,41 +1663,63 @@
    "rating_sd_sum": 1.192,
    "reliability_base": 75.0,
    "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -11.289,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.757
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.26129542321678945,
+     "margin": -9.49,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
    "sigma": 15.768,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "uncertain team ratings"
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Toledo",
    "away_id": 2649,
    "components": {
-    "A_adj_eff": -4.836,
-    "B_elo": -15.631,
-    "C_ridge": -16.691,
-    "D_gbm": -14.328,
-    "E_drive": -8.574
+    "C_ridge": -16.629,
+    "D_gbm": -14.437
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -5.95
+     "points": -6.01
     },
     {
      "feature": "edge_epa",
-     "points": -2.7
+     "points": -2.69
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.17
+     "points": 1.16
     }
    ],
    "early_season": true,
-   "ens_pred": -15.463,
-   "ens_sd": 5.091,
+   "ens_pred": -15.533,
+   "ens_sd": 1.55,
    "fair_total": 55.9,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1296,6 +1730,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.1666,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1315,30 +1750,52 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.1996,
-   "reliability_base": 69.7,
+   "reliability_base": 74.0,
    "season": 2026,
-   "sigma": 16.271,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -15.463,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.26
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.08522710260475602,
+     "margin": -20.35,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.139,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Florida",
    "away_id": 57,
    "components": {
-    "A_adj_eff": 0.284,
-    "B_elo": -1.616,
-    "C_ridge": -4.536,
-    "D_gbm": -3.786,
-    "E_drive": -0.033
+    "C_ridge": -4.321,
+    "D_gbm": -3.225
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -1.73
+     "points": -1.75
     },
     {
      "feature": "edge_epa",
@@ -1346,12 +1803,12 @@
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.51
+     "points": 1.5
     }
    ],
    "early_season": true,
-   "ens_pred": -4.018,
-   "ens_sd": 2.17,
+   "ens_pred": -3.773,
+   "ens_sd": 0.775,
    "fair_total": 54.5,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1362,6 +1819,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.4032,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1381,43 +1839,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2037,
-   "reliability_base": 94.9,
+   "reliability_base": 93.8,
    "season": 2026,
-   "sigma": 15.483,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -4.018,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.471
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": 3.0,
+     "open_home_line": 2.5,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 54.5,
+     "total_open": 53.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.6347446728320583,
+     "margin": 5.19,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.509,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "lopsided matchup (blowout variance)",
-    "uncertain team ratings"
+    "uncertain team ratings",
+    "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Auburn",
    "away_id": 2,
    "components": {
-    "A_adj_eff": 17.114,
-    "B_elo": 9.046,
-    "C_ridge": 11.289,
-    "D_gbm": 12.191,
-    "E_drive": 18.785
+    "C_ridge": 11.802,
+    "D_gbm": 12.188
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 1.77
+     "points": 1.76
     },
     {
      "feature": "elo_diff",
-     "points": 1.48
+     "points": 1.49
     },
     {
      "feature": "match_mix_edge",
-     "points": -1.3
+     "points": -1.29
     }
    ],
    "early_season": true,
-   "ens_pred": 11.88,
-   "ens_sd": 4.101,
+   "ens_pred": 11.995,
+   "ens_sd": 0.273,
    "fair_total": 52.3,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1428,6 +1908,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.7851,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1449,32 +1930,54 @@
    "rating_sd_sum": 1.1414,
    "reliability_base": 100.0,
    "season": 2026,
-   "sigma": 15.279,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 11.88,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.267
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": -7.5,
+     "open_home_line": -7.5,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 56.5,
+     "total_open": 57.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.6928849569439064,
+     "margin": 7.59,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.283,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
     "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "California",
    "away_id": 25,
    "components": {
-    "A_adj_eff": 12.281,
-    "B_elo": 8.612,
-    "C_ridge": 7.898,
-    "D_gbm": 7.358,
-    "E_drive": 9.953
+    "C_ridge": 8.163,
+    "D_gbm": 7.076
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 1.34
+     "points": 1.36
     },
     {
      "feature": "edge_epa",
-     "points": 0.85
+     "points": 0.84
     },
     {
      "feature": "match_mix_edge",
@@ -1482,8 +1985,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 7.792,
-   "ens_sd": 1.968,
+   "ens_pred": 7.619,
+   "ens_sd": 0.768,
    "fair_total": 48.3,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1494,6 +1997,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.6872,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1513,34 +2017,56 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1396,
-   "reliability_base": 89.3,
+   "reliability_base": 87.0,
    "season": 2026,
-   "sigma": 15.657,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 7.792,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.647
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.7537279307475555,
+     "margin": 10.19,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.726,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Louisville",
    "away_id": 97,
    "components": {
-    "A_adj_eff": 5.026,
-    "B_elo": -1.335,
-    "C_ridge": 3.3,
-    "D_gbm": 3.787,
-    "E_drive": 6.569
+    "C_ridge": 3.452,
+    "D_gbm": 3.843
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -1.65
+     "points": -1.67
     },
     {
      "feature": "edge_epa",
-     "points": -0.36
+     "points": -0.35
     },
     {
      "feature": "match_mix_edge",
@@ -1548,8 +2074,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 3.52,
-   "ens_sd": 2.968,
+   "ens_pred": 3.647,
+   "ens_sd": 0.276,
    "fair_total": 57.3,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1560,6 +2086,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.5904,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1579,43 +2106,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1941,
-   "reliability_base": 77.8,
+   "reliability_base": 76.3,
    "season": 2026,
-   "sigma": 16.019,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 3.52,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.009
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": 7.5,
+     "open_home_line": 7.5,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 59.5,
+     "total_open": 59.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.561098908873804,
+     "margin": 2.31,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.068,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "lopsided matchup (blowout variance)",
+    "model disagreement",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Virginia",
    "away_id": 258,
    "components": {
-    "A_adj_eff": 10.618,
-    "B_elo": -5.173,
-    "C_ridge": 2.494,
-    "D_gbm": 6.194,
-    "E_drive": 10.17
+    "C_ridge": 2.647,
+    "D_gbm": 5.915
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -2.8
+     "points": -2.83
     },
     {
      "feature": "match_mix_edge",
-     "points": -2.23
+     "points": -2.22
     },
     {
      "feature": "edge_epa",
-     "points": 0.59
+     "points": 0.58
     }
    ],
    "early_season": true,
-   "ens_pred": 4.03,
-   "ens_sd": 6.508,
+   "ens_pred": 4.281,
+   "ens_sd": 2.311,
    "fair_total": 53.6,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1626,6 +2175,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.6087,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1645,43 +2195,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1703,
-   "reliability_base": 79.6,
+   "reliability_base": 90.0,
    "season": 2026,
-   "sigma": 15.963,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 4.03,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.952
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.4425335747262038,
+     "margin": -2.18,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.631,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "model disagreement",
+    "uncertain team ratings",
     "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Ohio State",
    "away_id": 194,
    "components": {
-    "A_adj_eff": -7.914,
-    "B_elo": -4.085,
-    "C_ridge": -12.093,
-    "D_gbm": -9.487,
-    "E_drive": -11.978
+    "C_ridge": -11.278,
+    "D_gbm": -8.941
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": -3.63
+     "points": -3.61
     },
     {
      "feature": "match_mix_edge",
-     "points": 2.75
+     "points": 2.73
     },
     {
      "feature": "elo_diff",
-     "points": -2.47
+     "points": -2.5
     }
    ],
    "early_season": true,
-   "ens_pred": -10.955,
-   "ens_sd": 3.315,
+   "ens_pred": -10.11,
+   "ens_sd": 1.652,
    "fair_total": 49.5,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1692,6 +2264,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.2485,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1713,32 +2286,54 @@
    "rating_sd_sum": 1.1837,
    "reliability_base": 100.0,
    "season": 2026,
-   "sigma": 15.047,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -10.955,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.037
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": 14.5,
+     "open_home_line": 14.0,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 44.5,
+     "total_open": 44.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.32317498118770704,
+     "margin": -6.81,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 14.982,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
     "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Memphis",
    "away_id": 235,
    "components": {
-    "A_adj_eff": -5.858,
-    "B_elo": -17.449,
-    "C_ridge": -17.936,
-    "D_gbm": -17.65,
-    "E_drive": -9.136
+    "C_ridge": -17.975,
+    "D_gbm": -17.561
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -6.49
+     "points": -6.57
     },
     {
      "feature": "edge_epa",
-     "points": -3.06
+     "points": -3.05
     },
     {
      "feature": "match_mix_edge",
@@ -1746,8 +2341,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": -17.469,
-   "ens_sd": 5.698,
+   "ens_pred": -17.768,
+   "ens_sd": 0.293,
    "fair_total": 51.5,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1758,6 +2353,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.1308,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1777,43 +2373,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1878,
-   "reliability_base": 80.1,
+   "reliability_base": 81.7,
    "season": 2026,
-   "sigma": 15.946,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -17.469,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.935
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.18079142952479965,
+     "margin": -13.73,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.895,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Samford",
    "away_id": 2535,
    "components": {
-    "A_adj_eff": 21.483,
-    "B_elo": 7.681,
-    "C_ridge": 10.336,
-    "D_gbm": 16.077,
-    "E_drive": 16.958
+    "C_ridge": 11.116,
+    "D_gbm": 16.262
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 2.95
+     "points": 2.93
     },
     {
      "feature": "match_mix_edge",
-     "points": -2.31
+     "points": -2.3
     },
     {
      "feature": "elo_diff",
-     "points": 1.06
+     "points": 1.08
     }
    ],
    "early_season": true,
-   "ens_pred": 12.693,
-   "ens_sd": 5.503,
+   "ens_pred": 13.689,
+   "ens_sd": 3.639,
    "fair_total": 55.9,
    "fcs_game": true,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1823,7 +2441,8 @@
    "kickoff": "2026-10-03T19:30:00Z",
    "min_games": 0.0,
    "neutral_site": false,
-   "not_priced_reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias -6.5 pts on the 2024-25 holdout)",
+   "not_priced_reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)",
+   "p_home": 0.7734,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": false,
    "qb": {
@@ -1838,34 +2457,49 @@
    "qb_missing_any": 1.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 2.7564,
-   "reliability_base": 0.0,
+   "reliability_base": 4.3,
    "season": 2026,
-   "sigma": 18.7,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 12.693,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 18.723
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": null,
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.9215096005470577,
+     "margin": 21.01,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 18.364,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "FCS opponent data",
     "few games played"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Wyoming",
    "away_id": 2751,
    "components": {
-    "A_adj_eff": 15.214,
-    "B_elo": 13.717,
-    "C_ridge": 13.334,
-    "D_gbm": 12.222,
-    "E_drive": 16.142
+    "C_ridge": 13.225,
+    "D_gbm": 12.331
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 2.88
+     "points": 2.91
     },
     {
      "feature": "edge_epa",
-     "points": 1.89
+     "points": 1.88
     },
     {
      "feature": "match_mix_edge",
@@ -1873,8 +2507,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 13.038,
-   "ens_sd": 1.555,
+   "ens_pred": 12.778,
+   "ens_sd": 0.633,
    "fair_total": 44.2,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1885,6 +2519,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.7983,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1904,30 +2539,52 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.3043,
-   "reliability_base": 100.0,
+   "reliability_base": 97.7,
    "season": 2026,
-   "sigma": 15.298,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 13.038,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.287
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.8473625594909194,
+     "margin": 15.22,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.385,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "uncertain team ratings"
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Akron",
    "away_id": 2006,
    "components": {
-    "A_adj_eff": 11.001,
-    "B_elo": 8.449,
-    "C_ridge": 4.434,
-    "D_gbm": 6.202,
-    "E_drive": 10.415
+    "C_ridge": 4.584,
+    "D_gbm": 5.77
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 1.3
+     "points": 1.31
     },
     {
      "feature": "edge_epa",
@@ -1939,8 +2596,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 5.413,
-   "ens_sd": 2.781,
+   "ens_pred": 5.177,
+   "ens_sd": 0.839,
    "fair_total": 46.8,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -1951,6 +2608,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.6297,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -1972,32 +2630,54 @@
    "rating_sd_sum": 1.2088,
    "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 15.737,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 5.413,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.727
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.7684505191596818,
+     "margin": 11.05,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.749,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "lopsided matchup (blowout variance)"
+    "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Eastern Michigan",
    "away_id": 2199,
    "components": {
-    "A_adj_eff": 18.215,
-    "B_elo": 0.703,
-    "C_ridge": 6.747,
-    "D_gbm": 9.109,
-    "E_drive": 5.845
+    "C_ridge": 6.87,
+    "D_gbm": 9.199
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 2.58
+     "points": 2.57
     },
     {
      "feature": "elo_diff",
-     "points": -1.03
+     "points": -1.05
     },
     {
      "feature": "match_mix_edge",
@@ -2005,8 +2685,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 7.474,
-   "ens_sd": 6.422,
+   "ens_pred": 8.035,
+   "ens_sd": 1.647,
    "fair_total": 52.0,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2017,6 +2697,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.6954,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2036,43 +2717,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2051,
-   "reliability_base": 76.5,
+   "reliability_base": 83.7,
    "season": 2026,
-   "sigma": 16.059,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 7.474,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.05
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.5787366967473074,
+     "margin": 2.99,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.83,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "model disagreement",
-    "turnover-dependent teams"
+    "turnover-dependent teams",
+    "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Ohio",
    "away_id": 195,
    "components": {
-    "A_adj_eff": -1.21,
-    "B_elo": -8.281,
-    "C_ridge": -10.317,
-    "D_gbm": -8.588,
-    "E_drive": -4.053
+    "C_ridge": -10.321,
+    "D_gbm": -8.022
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -3.74
+     "points": -3.78
     },
     {
      "feature": "edge_epa",
-     "points": -1.91
+     "points": -1.9
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.0
+     "points": 0.99
     }
    ],
    "early_season": true,
-   "ens_pred": -9.381,
-   "ens_sd": 3.744,
+   "ens_pred": -9.172,
+   "ens_sd": 1.626,
    "fair_total": 57.4,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2083,6 +2786,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.2846,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2102,43 +2806,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.1889,
-   "reliability_base": 68.4,
+   "reliability_base": 71.4,
    "season": 2026,
-   "sigma": 16.313,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -9.381,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.301
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.31114149205402086,
+     "margin": -7.31,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.223,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Bowling Green",
    "away_id": 189,
    "components": {
-    "A_adj_eff": 21.052,
-    "B_elo": 15.715,
-    "C_ridge": 16.072,
-    "D_gbm": 18.068,
-    "E_drive": 15.738
+    "C_ridge": 15.951,
+    "D_gbm": 17.849
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 3.48
+     "points": 3.52
     },
     {
      "feature": "edge_epa",
-     "points": 3.2
+     "points": 3.18
     },
     {
      "feature": "match_mix_edge",
-     "points": -1.19
+     "points": -1.18
     }
    ],
    "early_season": true,
-   "ens_pred": 16.798,
-   "ens_sd": 2.298,
+   "ens_pred": 16.9,
+   "ens_sd": 1.342,
    "fair_total": 46.1,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2149,6 +2875,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.8625,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2168,34 +2895,56 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2204,
-   "reliability_base": 93.6,
+   "reliability_base": 92.4,
    "season": 2026,
-   "sigma": 15.525,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 16.798,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.515
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.8983593923687696,
+     "margin": 19.15,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.552,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Old Dominion",
    "away_id": 295,
    "components": {
-    "A_adj_eff": 12.626,
-    "B_elo": -4.873,
-    "C_ridge": 3.475,
-    "D_gbm": 5.301,
-    "E_drive": 5.397
+    "C_ridge": 3.189,
+    "D_gbm": 5.069
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -2.71
+     "points": -2.74
     },
     {
      "feature": "edge_epa",
-     "points": 1.56
+     "points": 1.55
     },
     {
      "feature": "match_mix_edge",
@@ -2203,8 +2952,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 4.068,
-   "ens_sd": 6.252,
+   "ens_pred": 4.129,
+   "ens_sd": 1.329,
    "fair_total": 51.2,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2215,6 +2964,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.6036,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2236,32 +2986,54 @@
    "rating_sd_sum": 1.182,
    "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 16.075,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 4.068,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.062
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.45514151261299973,
+     "margin": -1.7,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.837,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "model disagreement"
+    "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Marshall",
    "away_id": 276,
    "components": {
-    "A_adj_eff": 13.408,
-    "B_elo": 17.603,
-    "C_ridge": 14.002,
-    "D_gbm": 14.377,
-    "E_drive": 13.809
+    "C_ridge": 14.365,
+    "D_gbm": 14.141
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 4.05
+     "points": 4.1
     },
     {
      "feature": "edge_epa",
-     "points": 1.31
+     "points": 1.3
     },
     {
      "feature": "match_mix_edge",
@@ -2269,8 +3041,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 14.206,
-   "ens_sd": 1.693,
+   "ens_pred": 14.253,
+   "ens_sd": 0.158,
    "fair_total": 54.0,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2281,6 +3053,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.8143,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2300,43 +3073,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1759,
-   "reliability_base": 82.1,
+   "reliability_base": 77.2,
    "season": 2026,
-   "sigma": 15.883,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 14.206,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.871
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.9178766370276752,
+     "margin": 20.94,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.037,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "uncertain team ratings"
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Maryland",
    "away_id": 120,
    "components": {
-    "A_adj_eff": 20.75,
-    "B_elo": 15.27,
-    "C_ridge": 17.38,
-    "D_gbm": 15.19,
-    "E_drive": 16.426
+    "C_ridge": 17.489,
+    "D_gbm": 15.327
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 3.35
+     "points": 3.39
     },
     {
      "feature": "edge_epa",
-     "points": 2.97
+     "points": 2.95
     },
     {
      "feature": "match_mix_edge",
-     "points": -1.26
+     "points": -1.25
     }
    ],
    "early_season": true,
-   "ens_pred": 16.482,
-   "ens_sd": 2.281,
+   "ens_pred": 16.408,
+   "ens_sd": 1.529,
    "fair_total": 54.2,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2347,6 +3142,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.8542,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2366,34 +3162,56 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1892,
-   "reliability_base": 91.5,
+   "reliability_base": 89.9,
    "season": 2026,
-   "sigma": 15.588,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 16.482,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.58
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.8819886103003551,
+     "margin": 17.84,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.632,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
     "volatile teams"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "UTEP",
    "away_id": 2638,
    "components": {
-    "A_adj_eff": 13.75,
-    "B_elo": 22.364,
-    "C_ridge": 20.558,
-    "D_gbm": 21.018,
-    "E_drive": 20.654
+    "C_ridge": 20.633,
+    "D_gbm": 20.801
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 5.48
+     "points": 5.54
     },
     {
      "feature": "edge_epa",
-     "points": 1.31
+     "points": 1.3
     },
     {
      "feature": "match_mix_edge",
@@ -2401,8 +3219,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 20.77,
-   "ens_sd": 3.387,
+   "ens_pred": 20.717,
+   "ens_sd": 0.119,
    "fair_total": 55.8,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2413,6 +3231,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.8997,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2432,43 +3251,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2602,
-   "reliability_base": 74.7,
+   "reliability_base": 70.7,
    "season": 2026,
-   "sigma": 16.116,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 20.77,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.104
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.9404443408947116,
+     "margin": 23.46,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.246,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "uncertain team ratings"
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Kentucky",
    "away_id": 96,
    "components": {
-    "A_adj_eff": 8.042,
-    "B_elo": -3.417,
-    "C_ridge": 0.485,
-    "D_gbm": 3.951,
-    "E_drive": 10.766
+    "C_ridge": 0.848,
+    "D_gbm": 4.235
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -2.27
+     "points": -2.3
     },
     {
      "feature": "match_mix_edge",
-     "points": -1.4
+     "points": -1.39
     },
     {
      "feature": "edge_epa",
-     "points": -0.15
+     "points": -0.14
     }
    ],
    "early_season": true,
-   "ens_pred": 2.112,
-   "ens_sd": 5.69,
+   "ens_pred": 2.541,
+   "ens_sd": 2.395,
    "fair_total": 48.0,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2479,6 +3320,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.5666,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2498,30 +3340,52 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1904,
-   "reliability_base": 92.9,
+   "reliability_base": 100.0,
    "season": 2026,
-   "sigma": 15.545,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 2.112,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.537
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": -6.0,
+     "open_home_line": -7.0,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 49.5,
+     "total_open": 49.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.6874221320266951,
+     "margin": 7.35,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.263,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "lopsided matchup (blowout variance)",
-    "model disagreement"
+    "uncertain team ratings",
+    "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Purdue",
    "away_id": 2509,
    "components": {
-    "A_adj_eff": 12.495,
-    "B_elo": 17.939,
-    "C_ridge": 14.038,
-    "D_gbm": 14.127,
-    "E_drive": 16.373
+    "C_ridge": 14.017,
+    "D_gbm": 14.161
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 4.15
+     "points": 4.2
     },
     {
      "feature": "match_mix_edge",
@@ -2529,12 +3393,12 @@
     },
     {
      "feature": "edge_epa",
-     "points": 0.97
+     "points": 0.96
     }
    ],
    "early_season": true,
-   "ens_pred": 14.242,
-   "ens_sd": 2.15,
+   "ens_pred": 14.089,
+   "ens_sd": 0.102,
    "fair_total": 60.0,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2545,6 +3409,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.8087,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2564,25 +3429,47 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1761,
-   "reliability_base": 76.5,
+   "reliability_base": 71.2,
    "season": 2026,
-   "sigma": 16.06,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 14.242,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.05
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.8419935161434047,
+     "margin": 14.88,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.23,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "high-scoring environment",
-    "uncertain team ratings"
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Oregon State",
    "away_id": 204,
    "components": {
-    "A_adj_eff": 6.997,
-    "B_elo": 4.201,
-    "C_ridge": -0.424,
-    "D_gbm": -1.419,
-    "E_drive": 5.515
+    "C_ridge": -0.47,
+    "D_gbm": -0.817
    },
    "drivers": [
     {
@@ -2599,8 +3486,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": -0.467,
-   "ens_sd": 3.708,
+   "ens_pred": -0.643,
+   "ens_sd": 0.245,
    "fair_total": 58.0,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2611,6 +3498,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.4844,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2630,43 +3518,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.1996,
-   "reliability_base": 61.0,
+   "reliability_base": 60.9,
    "season": 2026,
-   "sigma": 16.544,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -0.467,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.531
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.527769548495797,
+     "margin": 1.05,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.559,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "lopsided matchup (blowout variance)"
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Texas Southern",
    "away_id": 2640,
    "components": {
-    "A_adj_eff": 32.473,
-    "B_elo": 20.745,
-    "C_ridge": 33.394,
-    "D_gbm": 31.667,
-    "E_drive": 33.237
+    "C_ridge": 34.085,
+    "D_gbm": 32.128
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 5.17
+     "points": 5.14
     },
     {
      "feature": "elo_diff",
-     "points": 4.99
+     "points": 5.05
     },
     {
      "feature": "match_mix_edge",
-     "points": -4.39
+     "points": -4.36
     }
    ],
    "early_season": true,
-   "ens_pred": 32.491,
-   "ens_sd": 5.387,
+   "ens_pred": 33.107,
+   "ens_sd": 1.384,
    "fair_total": 63.6,
    "fcs_game": true,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2676,7 +3586,8 @@
    "kickoff": "2026-10-03T22:00:00Z",
    "min_games": 1.0,
    "neutral_site": false,
-   "not_priced_reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias -6.5 pts on the 2024-25 holdout)",
+   "not_priced_reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)",
+   "p_home": 0.966,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": false,
    "qb": {
@@ -2696,43 +3607,58 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 2.1829,
-   "reliability_base": 18.2,
+   "reliability_base": 11.6,
    "season": 2026,
-   "sigma": 17.885,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 32.491,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 17.868
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": null,
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.9297703392272281,
+     "margin": 22.19,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 18.131,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "FCS opponent data",
     "high-scoring environment"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Arkansas",
    "away_id": 8,
    "components": {
-    "A_adj_eff": 19.352,
-    "B_elo": 13.283,
-    "C_ridge": 19.658,
-    "D_gbm": 17.441,
-    "E_drive": 23.912
+    "C_ridge": 19.848,
+    "D_gbm": 19.186
    },
    "drivers": [
     {
      "feature": "match_mix_edge",
-     "points": -3.16
+     "points": -3.15
     },
     {
      "feature": "edge_epa",
-     "points": 2.88
+     "points": 2.87
     },
     {
      "feature": "elo_diff",
-     "points": 2.75
+     "points": 2.78
     }
    ],
    "early_season": true,
-   "ens_pred": 18.872,
-   "ens_sd": 3.855,
+   "ens_pred": 19.517,
+   "ens_sd": 0.468,
    "fair_total": 49.5,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2743,6 +3669,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.9007,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2764,41 +3691,63 @@
    "rating_sd_sum": 1.2354,
    "reliability_base": 100.0,
    "season": 2026,
-   "sigma": 15.183,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 18.872,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.175
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.9034721448367213,
+     "margin": 19.59,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.237,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "volatile teams",
-    "uncertain team ratings"
+    "model disagreement",
+    "volatile teams"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "BYU",
    "away_id": 252,
    "components": {
-    "A_adj_eff": -4.95,
-    "B_elo": -7.909,
-    "C_ridge": -11.97,
-    "D_gbm": -7.423,
-    "E_drive": -1.956
+    "C_ridge": -11.997,
+    "D_gbm": -7.065
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -3.62
+     "points": -3.67
     },
     {
      "feature": "edge_epa",
-     "points": -2.84
+     "points": -2.82
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.27
+     "points": 1.26
     }
    ],
    "early_season": true,
-   "ens_pred": -9.791,
-   "ens_sd": 3.716,
+   "ens_pred": -9.531,
+   "ens_sd": 3.488,
    "fair_total": 49.6,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2809,6 +3758,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.2639,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2828,43 +3778,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2257,
-   "reliability_base": 95.9,
+   "reliability_base": 100.0,
    "season": 2026,
-   "sigma": 15.451,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -9.791,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.44
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": 6.5,
+     "open_home_line": 5.5,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 52.5,
+     "total_open": 52.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.37587312824036606,
+     "margin": -4.76,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.193,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
     "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "UTSA",
    "away_id": 2636,
    "components": {
-    "A_adj_eff": -3.603,
-    "B_elo": -12.378,
-    "C_ridge": -10.73,
-    "D_gbm": -11.057,
-    "E_drive": -5.481
+    "C_ridge": -10.421,
+    "D_gbm": -11.186
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -4.97
+     "points": -5.02
     },
     {
      "feature": "edge_epa",
-     "points": -2.5
+     "points": -2.49
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.25
+     "points": 1.24
     }
    ],
    "early_season": true,
-   "ens_pred": -10.676,
-   "ens_sd": 3.858,
+   "ens_pred": -10.803,
+   "ens_sd": 0.541,
    "fair_total": 54.6,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2875,6 +3847,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.2509,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2894,43 +3867,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2215,
-   "reliability_base": 73.0,
+   "reliability_base": 72.5,
    "season": 2026,
-   "sigma": 16.168,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -10.676,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.156
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.3007318600396276,
+     "margin": -7.86,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.188,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "uncertain team ratings"
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Georgia Southern",
    "away_id": 290,
    "components": {
-    "A_adj_eff": -1.701,
-    "B_elo": -3.346,
-    "C_ridge": -5.263,
-    "D_gbm": -4.931,
-    "E_drive": 0.001
+    "C_ridge": -4.987,
+    "D_gbm": -5.018
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -2.25
+     "points": -2.28
     },
     {
      "feature": "edge_epa",
-     "points": -1.99
+     "points": -1.98
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.39
+     "points": 1.38
     }
    ],
    "early_season": true,
-   "ens_pred": -4.891,
-   "ens_sd": 2.216,
+   "ens_pred": -5.003,
+   "ens_sd": 0.022,
    "fair_total": 54.0,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -2941,6 +3936,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.3779,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -2960,30 +3956,52 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1555,
-   "reliability_base": 75.8,
+   "reliability_base": 72.1,
    "season": 2026,
-   "sigma": 16.081,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -4.891,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.07
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.4103261287086047,
+     "margin": -3.41,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.202,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "uncertain team ratings"
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "UL Monroe",
    "away_id": 2433,
    "components": {
-    "A_adj_eff": 11.366,
-    "B_elo": 16.469,
-    "C_ridge": 9.93,
-    "D_gbm": 9.888,
-    "E_drive": 13.136
+    "C_ridge": 9.755,
+    "D_gbm": 10.112
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 3.71
+     "points": 3.75
     },
     {
      "feature": "edge_epa",
@@ -2995,8 +4013,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 10.172,
-   "ens_sd": 2.752,
+   "ens_pred": 9.934,
+   "ens_sd": 0.252,
    "fair_total": 54.1,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3007,6 +4025,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.7305,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3026,43 +4045,65 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.1938,
-   "reliability_base": 73.4,
+   "reliability_base": 69.6,
    "season": 2026,
-   "sigma": 16.157,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 10.172,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.148
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.8035019233457922,
+     "margin": 12.86,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.28,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "uncertain team ratings"
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Texas Tech",
    "away_id": 2641,
    "components": {
-    "A_adj_eff": -0.376,
-    "B_elo": -19.642,
-    "C_ridge": -8.646,
-    "D_gbm": -9.838,
-    "E_drive": -8.258
+    "C_ridge": -8.743,
+    "D_gbm": -9.207
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -7.15
+     "points": -7.23
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.5
+     "points": 1.49
     },
     {
      "feature": "edge_epa",
-     "points": -1.43
+     "points": -1.42
     }
    ],
    "early_season": true,
-   "ens_pred": -9.294,
-   "ens_sd": 6.863,
+   "ens_pred": -8.975,
+   "ens_sd": 0.328,
    "fair_total": 51.2,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3073,6 +4114,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.2812,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3094,32 +4136,54 @@
    "rating_sd_sum": 1.161,
    "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 15.745,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -9.294,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.732
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.13675574427450587,
+     "margin": -16.25,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.597,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "model disagreement",
-    "uncertain team ratings"
+    "uncertain team ratings",
+    "model disagreement"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Washington",
    "away_id": 264,
    "components": {
-    "A_adj_eff": 16.773,
-    "B_elo": 5.124,
-    "C_ridge": 15.305,
-    "D_gbm": 13.401,
-    "E_drive": 17.548
+    "C_ridge": 15.178,
+    "D_gbm": 12.882
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 2.2
+     "points": 2.18
     },
     {
      "feature": "match_mix_edge",
-     "points": -1.23
+     "points": -1.22
     },
     {
      "feature": "elo_diff",
@@ -3127,8 +4191,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 14.48,
-   "ens_sd": 5.011,
+   "ens_pred": 14.03,
+   "ens_sd": 1.624,
    "fair_total": 50.7,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3139,6 +4203,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.825,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3160,41 +4225,63 @@
    "rating_sd_sum": 1.1919,
    "reliability_base": 100.0,
    "season": 2026,
-   "sigma": 15.234,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 14.48,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.222
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": -10.0,
+     "open_home_line": -10.0,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 57.5,
+     "total_open": 57.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.6283399330959231,
+     "margin": 4.93,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.093,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
-    "model disagreement"
+    "quarterback unknown"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Utah State",
    "away_id": 328,
    "components": {
-    "A_adj_eff": 19.202,
-    "B_elo": 21.731,
-    "C_ridge": 19.631,
-    "D_gbm": 21.609,
-    "E_drive": 20.442
+    "C_ridge": 19.534,
+    "D_gbm": 21.261
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 5.29
+     "points": 5.35
     },
     {
      "feature": "edge_epa",
-     "points": 2.51
+     "points": 2.5
     },
     {
      "feature": "match_mix_edge",
-     "points": -1.42
+     "points": -1.41
     }
    ],
    "early_season": true,
-   "ens_pred": 20.444,
-   "ens_sd": 1.138,
+   "ens_pred": 20.398,
+   "ens_sd": 1.221,
    "fair_total": 52.7,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3205,6 +4292,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.9038,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3224,30 +4312,52 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2053,
-   "reliability_base": 91.7,
+   "reliability_base": 87.8,
    "season": 2026,
-   "sigma": 15.583,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 20.444,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.573
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.8575436609799424,
+     "margin": 16.1,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.7,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Temple",
    "away_id": 218,
    "components": {
-    "A_adj_eff": 7.492,
-    "B_elo": 18.386,
-    "C_ridge": 13.246,
-    "D_gbm": 11.339,
-    "E_drive": 14.068
+    "C_ridge": 12.984,
+    "D_gbm": 11.599
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 4.28
+     "points": 4.33
     },
     {
      "feature": "match_mix_edge",
@@ -3259,8 +4369,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 12.668,
-   "ens_sd": 3.977,
+   "ens_pred": 12.292,
+   "ens_sd": 0.979,
    "fair_total": 55.9,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3271,6 +4381,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.7779,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3290,30 +4401,52 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.1791,
-   "reliability_base": 72.6,
+   "reliability_base": 73.3,
    "season": 2026,
-   "sigma": 16.182,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 12.668,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.171
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.9028156198656191,
+     "margin": 19.54,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.161,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Army",
    "away_id": 349,
    "components": {
-    "A_adj_eff": 6.712,
-    "B_elo": -3.733,
-    "C_ridge": 3.689,
-    "D_gbm": -1.613,
-    "E_drive": 1.993
+    "C_ridge": 3.94,
+    "D_gbm": -0.705
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -2.37
+     "points": -2.39
     },
     {
      "feature": "match_mix_edge",
@@ -3321,12 +4454,12 @@
     },
     {
      "feature": "edge_epa",
-     "points": -0.34
+     "points": -0.33
     }
    ],
    "early_season": true,
-   "ens_pred": 1.492,
-   "ens_sd": 4.16,
+   "ens_pred": 1.618,
+   "ens_sd": 3.285,
    "fair_total": 47.5,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3337,6 +4470,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.5412,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3358,41 +4492,63 @@
    "rating_sd_sum": 1.2568,
    "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 16.022,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 1.492,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.011
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.34221177462709373,
+     "margin": -6.12,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.75,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
-    "lopsided matchup (blowout variance)"
+    "volatile teams"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "McNeese",
    "away_id": 2377,
    "components": {
-    "A_adj_eff": 46.417,
-    "B_elo": 31.484,
-    "C_ridge": 42.972,
-    "D_gbm": 42.159,
-    "E_drive": 42.557
+    "C_ridge": 43.183,
+    "D_gbm": 41.913
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 8.76
+     "points": 8.71
     },
     {
      "feature": "elo_diff",
-     "points": 8.22
+     "points": 8.32
     },
     {
      "feature": "match_mix_edge",
-     "points": -6.69
+     "points": -6.66
     }
    ],
    "early_season": true,
-   "ens_pred": 42.423,
-   "ens_sd": 5.646,
+   "ens_pred": 42.548,
+   "ens_sd": 0.898,
    "fair_total": 50.0,
    "fcs_game": true,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3402,7 +4558,8 @@
    "kickoff": "2026-10-03T23:45:00Z",
    "min_games": 0.0,
    "neutral_site": false,
-   "not_priced_reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias -6.5 pts on the 2024-25 holdout)",
+   "not_priced_reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)",
+   "p_home": 0.9916,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": false,
    "qb": {
@@ -3417,43 +4574,58 @@
    "qb_missing_any": 1.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 2.7672,
-   "reliability_base": 28.7,
+   "reliability_base": 25.5,
    "season": 2026,
-   "sigma": 17.556,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 42.423,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 17.581
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": null,
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.9967079769830247,
+     "margin": 40.9,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 17.687,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "FCS opponent data",
     "few games played"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Indiana",
    "away_id": 84,
    "components": {
-    "A_adj_eff": -6.205,
-    "B_elo": -34.891,
-    "C_ridge": -18.688,
-    "D_gbm": -15.044,
-    "E_drive": -10.717
+    "C_ridge": -18.535,
+    "D_gbm": -14.286
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": -11.74
+     "points": -11.87
     },
     {
      "feature": "edge_epa",
-     "points": -3.25
+     "points": -3.23
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.56
+     "points": 1.55
     }
    ],
    "early_season": true,
-   "ens_pred": -17.331,
-   "ens_sd": 10.985,
+   "ens_pred": -16.411,
+   "ens_sd": 3.004,
    "fair_total": 58.1,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3464,6 +4636,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.1488,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3483,34 +4656,56 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.1819,
-   "reliability_base": 66.6,
+   "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 16.368,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -17.331,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.359
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.09627629442987795,
+     "margin": -19.34,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.83,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
-    "model disagreement",
-    "high-scoring environment"
+    "high-scoring environment",
+    "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Arkansas State",
    "away_id": 2032,
    "components": {
-    "A_adj_eff": 13.283,
-    "B_elo": 2.839,
-    "C_ridge": 5.79,
-    "D_gbm": 7.988,
-    "E_drive": 10.685
+    "C_ridge": 5.71,
+    "D_gbm": 7.191
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": 1.49
+     "points": 1.48
     },
     {
      "feature": "elo_diff",
-     "points": -0.39
+     "points": -0.4
     },
     {
      "feature": "match_mix_edge",
@@ -3518,8 +4713,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 6.748,
-   "ens_sd": 4.08,
+   "ens_pred": 6.451,
+   "ens_sd": 1.047,
    "fair_total": 46.2,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3530,6 +4725,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.662,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3549,34 +4745,56 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2064,
-   "reliability_base": 90.1,
+   "reliability_base": 92.5,
    "season": 2026,
-   "sigma": 15.634,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 6.748,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.624
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.5734346609765133,
+     "margin": 2.79,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.55,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Fresno State",
    "away_id": 278,
    "components": {
-    "A_adj_eff": -1.004,
-    "B_elo": 4.874,
-    "C_ridge": 1.899,
-    "D_gbm": -1.317,
-    "E_drive": 1.898
+    "C_ridge": 1.95,
+    "D_gbm": -0.625
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": -1.67
+     "points": -1.66
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.16
+     "points": 1.15
     },
     {
      "feature": "elo_diff",
@@ -3584,8 +4802,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 0.756,
-   "ens_sd": 2.532,
+   "ens_pred": 0.663,
+   "ens_sd": 1.821,
    "fair_total": 45.1,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3596,6 +4814,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.5171,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3615,25 +4834,47 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2501,
-   "reliability_base": 88.7,
+   "reliability_base": 91.0,
    "season": 2026,
-   "sigma": 15.676,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 0.756,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.666
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.6268090409870011,
+     "margin": 4.87,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.597,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Baylor",
    "away_id": 239,
    "components": {
-    "A_adj_eff": 7.35,
-    "B_elo": 6.619,
-    "C_ridge": 8.316,
-    "D_gbm": 4.773,
-    "E_drive": 10.646
+    "C_ridge": 8.283,
+    "D_gbm": 4.39
    },
    "drivers": [
     {
@@ -3650,8 +4891,8 @@
     }
    ],
    "early_season": true,
-   "ens_pred": 7.051,
-   "ens_sd": 2.167,
+   "ens_pred": 6.337,
+   "ens_sd": 2.753,
    "fair_total": 50.9,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3662,6 +4903,7 @@
    "min_games": 3.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.6591,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3683,41 +4925,63 @@
    "rating_sd_sum": 1.191,
    "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 15.684,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 7.051,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.672
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.6530585351165361,
+     "margin": 5.93,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.566,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
     "lopsided matchup (blowout variance)"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Texas State",
    "away_id": 326,
    "components": {
-    "A_adj_eff": -4.127,
-    "B_elo": -5.21,
-    "C_ridge": -7.68,
-    "D_gbm": -7.494,
-    "E_drive": 0.289
+    "C_ridge": -7.148,
+    "D_gbm": -8.057
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": -2.9
+     "points": -2.89
     },
     {
      "feature": "elo_diff",
-     "points": -2.81
+     "points": -2.84
     },
     {
      "feature": "match_mix_edge",
-     "points": 1.36
+     "points": 1.35
     }
    ],
    "early_season": true,
-   "ens_pred": -7.243,
-   "ens_sd": 3.243,
+   "ens_pred": -7.603,
+   "ens_sd": 0.643,
    "fair_total": 55.5,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3728,6 +4992,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.3164,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3747,25 +5012,47 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1675,
-   "reliability_base": 77.4,
+   "reliability_base": 77.5,
    "season": 2026,
-   "sigma": 16.031,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": -7.243,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.018
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.3261653804084846,
+     "margin": -6.78,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.028,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Cincinnati",
    "away_id": 2132,
    "components": {
-    "A_adj_eff": 9.972,
-    "B_elo": 6.901,
-    "C_ridge": 12.59,
-    "D_gbm": 10.662,
-    "E_drive": 10.718
+    "C_ridge": 12.638,
+    "D_gbm": 10.61
    },
    "drivers": [
     {
@@ -3778,12 +5065,12 @@
     },
     {
      "feature": "elo_diff",
-     "points": 0.83
+     "points": 0.84
     }
    ],
    "early_season": true,
-   "ens_pred": 11.682,
-   "ens_sd": 2.069,
+   "ens_pred": 11.624,
+   "ens_sd": 1.434,
    "fair_total": 49.1,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3794,6 +5081,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.7742,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3813,30 +5101,52 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.2233,
-   "reliability_base": 93.7,
+   "reliability_base": 92.9,
    "season": 2026,
-   "sigma": 15.519,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 11.682,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.51
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.7366861789782251,
+     "margin": 9.53,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.536,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "San Jos\u00e9 State",
    "away_id": 23,
    "components": {
-    "A_adj_eff": 4.257,
-    "B_elo": 6.568,
-    "C_ridge": 1.61,
-    "D_gbm": 1.531,
-    "E_drive": 6.897
+    "C_ridge": 1.874,
+    "D_gbm": 1.326
    },
    "drivers": [
     {
      "feature": "edge_epa",
-     "points": -0.99
+     "points": -0.98
     },
     {
      "feature": "match_mix_edge",
@@ -3844,12 +5154,12 @@
     },
     {
      "feature": "elo_diff",
-     "points": 0.73
+     "points": 0.74
     }
    ],
    "early_season": true,
-   "ens_pred": 1.89,
-   "ens_sd": 2.584,
+   "ens_pred": 1.6,
+   "ens_sd": 0.388,
    "fair_total": 48.6,
    "fcs_game": false,
    "feature_ts": "2026-09-29T12:00:00Z",
@@ -3860,6 +5170,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.5408,
    "prediction_ts": "2026-09-29T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3879,34 +5190,56 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.1335,
-   "reliability_base": 87.8,
+   "reliability_base": 86.7,
    "season": 2026,
-   "sigma": 15.704,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 1.89,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.692
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.6877385752563923,
+     "margin": 7.27,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.736,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 5
+   "week": 5,
+   "weeks_in": 4.29
   },
   {
    "away": "Southern Miss",
    "away_id": 2572,
    "components": {
-    "A_adj_eff": 17.172,
-    "B_elo": 12.376,
-    "C_ridge": 10.403,
-    "D_gbm": 12.332,
-    "E_drive": 15.041
+    "C_ridge": 10.575,
+    "D_gbm": 12.416
    },
    "drivers": [
     {
      "feature": "elo_diff",
-     "points": 2.48
+     "points": 2.51
     },
     {
      "feature": "edge_epa",
-     "points": 2.38
+     "points": 2.37
     },
     {
      "feature": "match_mix_edge",
@@ -3914,8 +5247,8 @@
     }
    ],
    "early_season": false,
-   "ens_pred": 11.348,
-   "ens_sd": 2.649,
+   "ens_pred": 11.495,
+   "ens_sd": 1.302,
    "fair_total": 46.3,
    "fcs_game": false,
    "feature_ts": "2026-10-06T12:00:00Z",
@@ -3926,6 +5259,7 @@
    "min_games": 4.0,
    "neutral_site": false,
    "not_priced_reason": null,
+   "p_home": 0.7703,
    "prediction_ts": "2026-10-06T12:00:00Z",
    "priced": true,
    "qb": {
@@ -3947,13 +5281,38 @@
    "rating_sd_sum": 1.2128,
    "reliability_base": 75.0,
    "season": 2026,
-   "sigma": 15.635,
+   "shadow": {
+    "candidate_001": {
+     "ens_pred": 11.348,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.624
+    },
+    "captured_at": "2026-09-27T09:32:42Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-09-27T07:22:30Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.7835153703464178,
+     "margin": 11.8,
+     "slate_generated_at": "2026-09-27T05:30:07.294Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.632,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
    ],
-   "week": 6
+   "week": 6,
+   "weeks_in": 5.29
   }
  ],
  "season": 2026

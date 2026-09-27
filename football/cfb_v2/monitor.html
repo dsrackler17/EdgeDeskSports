@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CFB V2 Shadow Monitor</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#f7f7f5;--surface:#fff;--text:#1b1d21;--dim:#5d636e;--line:#e3e4e8;--pos:#1f7a4d;--neg:#b3261e;--warn:#9a6700;--accent:#2f5bd3;--chip:#eef1f8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1115;--surface:#171a20;--text:#e7e9ee;--dim:#9aa1ad;--line:#272b33;--pos:#4cc38a;--neg:#ff6b61;--warn:#e3b341;--accent:#7aa2ff;--chip:#1f2430}}
+:root[data-theme="dark"]{--bg:#0f1115;--surface:#171a20;--text:#e7e9ee;--dim:#9aa1ad;--line:#272b33;--pos:#4cc38a;--neg:#ff6b61;--warn:#e3b341;--accent:#7aa2ff;--chip:#1f2430}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:28px 0 10px}
+.sub{color:var(--dim);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.k{font-size:12px;color:var(--dim)}.v{font-size:20px;font-variant-numeric:tabular-nums}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--chip);font-size:12px;margin-right:6px}
+.ok{color:var(--pos)}.err{color:var(--neg)}.warn{color:var(--warn)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--dim);font-weight:600}
+ul.alerts{list-style:none;padding:0;margin:0}ul.alerts li{padding:8px 0;border-bottom:1px solid var(--line)}
+.empty{color:var(--dim);font-style:italic}
+</style>
+</head>
+<body>
+<main>
+  <h1>CFB V2 · shadow monitor</h1>
+  <div class="sub" id="meta">loading monitoring.json…</div>
+  <div class="sub">V2 runs <b>beside</b> V1 and replaces nothing. Frozen pregame projections only; warnings inform a person and never retrain or disable anything.</div>
+
+  <h2>Health warnings</h2>
+  <div class="card"><ul class="alerts" id="alerts"></ul></div>
+
+  <h2>Season to date</h2>
+  <div class="grid" id="tiles"></div>
+
+  <h2>By week (frozen, priced games)</h2>
+  <div class="card scroll"><table id="weeks"></table></div>
+
+  <h2>Largest misses</h2>
+  <div class="card scroll"><table id="misses"></table></div>
+
+  <h2>Research statuses and drift</h2>
+  <div class="grid" id="status"></div>
+</main>
+<script>
+(function () {
+  function el(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function n(x, k) { return (typeof x === 'number' && isFinite(x)) ? x.toFixed(k == null ? 2 : k) : '—'; }
+  function pct(x) { return (typeof x === 'number' && isFinite(x)) ? (100 * x).toFixed(1) + '%' : '—'; }
+  function tile(k, v, cls) { return '<div class="card"><div class="k">' + esc(k) + '</div><div class="v ' + (cls || '') + '">' + v + '</div></div>'; }
+  fetch('monitoring.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
+    el('meta').innerHTML = esc(m.model_version) + ' · season ' + esc(m.season) + ' · generated ' + esc(m.generated_at)
+      + ' · <span class="' + (m.ok ? 'ok' : 'err') + '">' + (m.ok ? 'no errors' : 'errors present') + '</span>';
+    var al = m.alerts || [];
+    el('alerts').innerHTML = al.length ? al.map(function (a) {
+      var cls = a.level === 'error' ? 'err' : (a.level === 'warn' ? 'warn' : '');
+      return '<li><span class="chip ' + cls + '">' + esc(a.level) + '</span><b>' + esc(a.kind) + '</b> — ' + esc(a.message) + '</li>';
+    }).join('') : '<li class="empty">No warnings.</li>';
+    var s = m.season_to_date || {}, ref = m.reference || {};
+    el('tiles').innerHTML = tile('frozen games', s.frozen_games != null ? s.frozen_games : 0)
+      + tile('graded', s.final != null ? s.final : 0)
+      + tile('V2 MAE', n(s.mae))
+      + tile('backtest MAE (holdout)', n(ref.mae))
+      + tile('BET enabled', m.bet_enabled ? 'yes' : 'no', m.bet_enabled ? 'warn' : '')
+      + tile('pass rate', pct(m.pass_rate));
+    var W = m.by_week || [];
+    var cols = [['week', 'wk', 0], ['frozen_games', 'frozen', 0], ['final', 'graded', 0], ['mae', 'V2 MAE'], ['rmse', 'RMSE'],
+      ['bias', 'bias'], ['brier', 'Brier', 3], ['mae_v1_same_games', 'V1 MAE'], ['mae_candidate_001_same_games', '001 MAE'],
+      ['mae_line_at_freeze', 'line@freeze MAE'], ['mae_close', 'close MAE'], ['clv_mean', 'CLV'],
+      ['ats_at_freeze_line', 'ATS@freeze', 'p'], ['ats_at_close', 'ATS@close', 'p'], ['disagreement_c_d_mean', '|C−D|']];
+    el('weeks').innerHTML = W.length ? '<tr>' + cols.map(function (c) { return '<th>' + c[1] + '</th>'; }).join('') + '</tr>'
+      + W.map(function (r) { return '<tr>' + cols.map(function (c) {
+        return '<td>' + (c[2] === 'p' ? pct(r[c[0]]) : (c[2] === 0 ? esc(r[c[0]]) : n(r[c[0]], c[2]))) + '</td>'; }).join('') + '</tr>'; }).join('')
+      : '<tr><td class="empty">No frozen week yet. The first freeze is the Tuesday 12:00 UTC after this build; weeks appear once their games are final.</td></tr>';
+    var M = [];
+    W.forEach(function (r) { (r.largest_misses || []).forEach(function (x) { M.push([r.week, x]); }); });
+    el('misses').innerHTML = M.length ? '<tr><th>week</th><th>game</th><th>V2</th><th>final</th><th>|error|</th></tr>'
+      + M.map(function (p) { return '<tr><td>' + p[0] + '</td><td style="text-align:left">' + esc(p[1].game) + '</td><td>' + n(p[1].v2, 1)
+        + '</td><td>' + esc(p[1].final) + '</td><td>' + n(p[1].abs_error, 1) + '</td></tr>'; }).join('')
+      : '<tr><td class="empty">None yet.</td></tr>';
+    var c = m.research_status_counts || {}, d = m.feature_drift_psi || {};
+    el('status').innerHTML = ['BET', 'LEAN', 'REVIEW', 'PASS'].map(function (k) { return tile(k, c[k] || 0); }).join('')
+      + Object.keys(d).filter(function (k) { return typeof d[k] === "number" && k.indexOf("_noise") < 0; }).map(function (k) { return tile('drift PSI · ' + k, n(d[k], 3), d[k] > 0.25 ? 'warn' : ''); }).join('');
+  }).catch(function (e) { el('meta').textContent = 'monitoring.json could not be read: ' + e; });
+})();
+</script>
+</body>
+</html>

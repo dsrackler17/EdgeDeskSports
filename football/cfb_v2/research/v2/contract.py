@@ -26,7 +26,7 @@ DICT_CSV = os.path.join(HERE, '..', 'contract', 'edgedesk_feature_dictionary.csv
 TARGET_COLS = {'home_points', 'away_points', 'margin', 'total_pts', 'home_winner', 'away_winner'}
 EVALUATION_COLS = {'close_margin', 'total_close', 'clv_pts', 'bet_result', 'bet_units', 'line_move',
                    'gap_close', 'spread_close', 'spread_close_pin', 'spread_close_sd', 'has_close',
-                   'market_dispersion'}
+                   'market_dispersion', 'eval_open_close_flip', 'eval_open_close_jump'}
 MARKET_COLS = {'open_margin', 'total_open', 'spread_open', 'spread_open_pin', 'spread_books', 'has_open',
                'source', 'line', 'gap_open', 'pc_home_raw', 'pc_home_cal', 'p_side', 'ev', 'push_p',
                'clv_exp', 'pred_ma', 'ma_weight_model', 'side', 'status_research', 'current_margin',
@@ -40,13 +40,33 @@ CONTEXT_COLS = {'game_id', 'season', 'week', 'season_type', 'start_date', 'compl
 # context columns that ARE legitimate pure inputs (knowable from the schedule)
 CONTEXT_FEATURES = {'neutral_site', 'conference_game', 'is_postseason', 'fcs_game'}
 
-PURE_PATTERNS = [r'^[ha]_[a-z0-9_]+__', r'^lg_', r'^edge_', r'^match_', r'^x_', r'^exp_', r'^drive_',
-                 r'^eff_pts_raw$', r'^[ha]_qb_', r'^qb_', r'^elo_', r'^form_', r'^l[24]_edge_',
-                 r'^(rest_diff|travel_miles|travel_miles_log|tz_shift|altitude_diff_ft|altitude_kft)$',
-                 r'^(home_field|home_games|away_games|min_games|rating_sd_sum|weeks_in|early_season|'
-                 r'vol_sum|to_dependence|conference_game_f|is_postseason_f|inv_games|fcs_game_f)$',
-                 r'^pred_(A_adj_eff|B_elo|C_ridge|D_gbm|E_drive|total)$',
-                 r'^(ens_pred|ens_sd|ens_range|ens_equal|sigma|abs_pred|exp_total_z|reliability)$']
+# The PURE allowlist is EXACT, generated from the metric registry, never a
+# prefix pattern. Candidate 001 used prefixes ('^edge_', '^qb_', ...), so a new
+# column named 'edge_closing_line' or 'qb_status_final' would have been
+# classified pure by its name alone (red-team finding; tests_leakage probes it).
+_METRIC_NAMES = ([m[0] for m in C.METRICS] + [m[0] for m in C.PACE_METRICS] + [m[0] for m in C.ST_METRICS])
+_M = '(' + '|'.join(sorted(_METRIC_NAMES, key=len, reverse=True)) + ')'
+_SIDE = '(off|def|off_var|def_var|off_rec|def_rec|prior_off|prior_def|l4_off|l4_def|l2_off|l2_def|vol|' \
+        'n_obs_off|n_obs_def|n_eff_off)'
+_QB = '(missing|delta|drop|changed|unsettled|backup_rating|exp_rating|exp_starts|exp_db_log|team_rating)'
+PURE_PATTERNS = [
+    r'^[ha]_%s__%s$' % (_M, _SIDE), r'^lg_%s__(mu|h)$' % _M,
+    r'^edge_(rec_|prior_)?%s$' % _M, r'^form_%s$' % _M, r'^[ha]_qb_%s$' % _QB,
+]
+PURE_NAMES = {
+    'match_pass_edge', 'match_rush_edge', 'match_mix_edge', 'match_trench_edge', 'match_havoc_edge',
+    'match_sack_edge', 'match_explosive_edge', 'match_early_down_edge', 'match_passing_down_edge',
+    'match_finishing_edge', 'match_field_pos_edge', 'match_st_edge',
+    'x_pass_h', 'x_pass_a', 'x_rush_h', 'x_rush_a', 'x_sack_h', 'x_sack_a',
+    'exp_plays_total', 'exp_drives_home', 'exp_drives_away', 'drive_pts_home', 'drive_pts_away',
+    'drive_margin_raw', 'drive_total_raw', 'eff_pts_raw', 'l4_edge_epa', 'l2_edge_epa',
+    'qb_delta_edge', 'qb_exp_edge', 'qb_missing_any', 'qb_unsettled_any', 'elo_home', 'elo_away', 'elo_diff',
+    'rest_diff', 'travel_miles', 'travel_miles_log', 'tz_shift', 'altitude_diff_ft', 'altitude_kft',
+    'home_field', 'home_games', 'away_games', 'min_games', 'rating_sd_sum', 'weeks_in', 'early_season',
+    'vol_sum', 'to_dependence', 'conference_game_f', 'is_postseason_f', 'inv_games', 'fcs_game_f',
+    'pred_A_adj_eff', 'pred_B_elo', 'pred_C_ridge', 'pred_D_gbm', 'pred_E_drive', 'pred_total',
+    'ens_pred', 'ens_sd', 'ens_range', 'ens_equal', 'sigma', 'abs_pred', 'exp_total_z', 'reliability',
+}
 
 
 def layer_of(col):
@@ -60,6 +80,8 @@ def layer_of(col):
         return 'pure'
     if col in CONTEXT_COLS:
         return 'context'
+    if col in PURE_NAMES:
+        return 'pure'
     for p in PURE_PATTERNS:
         if re.match(p, col):
             return 'pure'

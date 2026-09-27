@@ -185,12 +185,15 @@ def build_market(G, v1_market_csv, mline_dir):
         bad = M[col].abs() > 60
         M.loc[bad, 'market_qa'] += col + '_implausible;'
         M.loc[bad, col] = np.nan
+    # Candidate 001 DROPPED openers that were sign-flipped or > 14 pts away from
+    # the close: that decides which openers exist by looking at a number that
+    # did not exist yet (red-team finding). They are now FLAGGED for evaluation
+    # only and kept. A genuinely flipped opener is caught at decision time the
+    # way production catches it: the orientation guard (model vs market sign)
+    # routes it to REVIEW, never to an edge.
     mv = (M.spread_close - M.spread_open).abs()
-    flip = ((M.spread_open + M.spread_close).abs() <= 3) & (mv > 10)
-    jump = (mv > 14) & ~flip
-    M.loc[flip, 'market_qa'] += 'open_sign_flipped_vs_close;'
-    M.loc[jump, 'market_qa'] += 'open_to_close_jump_gt_14;'
-    M.loc[flip | jump, 'spread_open'] = np.nan
+    M['eval_open_close_flip'] = ((M.spread_open + M.spread_close).abs() <= 3) & (mv > 10)
+    M['eval_open_close_jump'] = (mv > 14) & ~M.eval_open_close_flip
     # the archive's opener is missing for all of 2020 and before 2012; never imputed
     M['has_open'] = M.spread_open.notna()
     M['has_close'] = M.spread_close.notna()

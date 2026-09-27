@@ -76,7 +76,7 @@ def load_artifacts(version):
 
 
 def sigma_from_art(D, S):
-    Z = WF.sigma_design(D)
+    Z = WF.sigma_design(D, S.get('fill'))
     mu = np.array([S['mu'][c] for c in S['cols']]); sd = np.array([S['sd'][c] for c in S['cols']])
     Zs = (Z[S['cols']].values - mu) / sd
     b = np.array([S['coef']['intercept']] + [S['coef'][c] for c in S['cols']])
@@ -88,15 +88,19 @@ def predict(X, A, gbm):
     X = MD.add_derived(X)
     P = pd.DataFrame(index=X.index)
     lin = {k: LinearArt(v) for k, v in A['submodels'].items() if k not in ('D_gbm',)}
-    for k in ('A_adj_eff', 'B_elo', 'C_ridge', 'E_drive'):
-        P['pred_' + k] = lin[k].predict(X)
-    P['pred_D_gbm'] = gbm.predict(X[A['submodels']['D_gbm']['cols']].astype(float).values)
+    active = [k for k in A['stack_weights']]
+    for k in active:
+        if k != 'D_gbm':
+            P['pred_' + k] = lin[k].predict(X)
+    if 'D_gbm' in active:
+        P['pred_D_gbm'] = gbm.predict(X[A['submodels']['D_gbm']['cols']].astype(float).values)
     P['pred_total'] = lin['TotalE'].predict(X)
     W = A['stack_weights']
     D = X.join(P)
-    D['ens_sd'] = D[['pred_' + k for k in WF.SUB]].std(axis=1)
+    D['ens_sd'] = D[['pred_' + k for k in active]].std(axis=1)
     D['ens_pred'] = sum(W[k] * D['pred_' + k] for k in W)
     D['sigma'], sc = sigma_from_art(D, A['sigma_model'])
+    D['p_home'] = 1.0 - WF.t_cdf(-D.ens_pred.values / D.sigma.values, A['t_df'])
     lo, hi = A['reliability_range']
     D['reliability'] = REL.score(D, lo, hi)
     cc = lin['C_ridge'].contributions(X)
@@ -116,7 +120,7 @@ def predict(X, A, gbm):
 def row_json(r):
     def f(x, k=4):
         return None if x is None or (isinstance(x, float) and np.isnan(x)) else round(float(x), k)
-    comps = {k: f(r['pred_' + k], 3) for k in WF.SUB}
+    comps = {k: f(r['pred_' + k], 3) for k in WF.SUB if ('pred_' + k) in r}
     qb = {}
     for side, pre in (('home', 'h_'), ('away', 'a_')):
         if r.get(pre + 'qb_missing', 1) == 0:
@@ -132,24 +136,100 @@ def row_json(r):
         'prediction_ts': common.iso(r['prediction_ts'].to_pydatetime()),
         'feature_ts': common.iso(r['feature_ts'].to_pydatetime()),
         'ens_pred': f(r['ens_pred'], 3), 'sigma': f(r['sigma'], 3), 'ens_sd': f(r['ens_sd'], 3),
+        'p_home': f(r.get('p_home'), 4),
         'fair_total': f(r['pred_total'], 1), 'rating_sd_sum': f(r['rating_sd_sum']),
-        'min_games': f(r['min_games'], 0), 'early_season': bool(r['early_season']),
+        'min_games': f(r['min_games'], 0), 'early_season': bool(r['early_season']), 'weeks_in': f(r['weeks_in'], 2),
         'qb_unsettled_any': f(r['qb_unsettled_any'], 0), 'qb_missing_any': f(r['qb_missing_any'], 0),
         'reliability_base': f(r['reliability'], 1),
         'components': comps, 'drivers': r['drivers'], 'uncertainty_drivers': r['uncertainty_drivers'],
         'qb': qb,
         # FBS-vs-FCS games are NOT PRICED: the submodels are trained on FBS-vs-FBS
-        # games only and the walk-forward shows a growing bias on FCS games
-        # (dev -2.9, holdout -6.5, 2026 -9.0 pts; 80% coverage 0.68-0.81). The
-        # numbers stay in the snapshot so the weakness stays measured.
+        # games only and the walk-forward shows a growing bias against the FBS
+        # side of FCS games (v2.1.0: dev -2.8, holdout -6.1, 2026 -8.8 pts;
+        # report/redteam/hardened/phase10_uncertainty.json). The numbers stay
+        # in the snapshot so the weakness stays measured.
         'priced': not bool(r['fcs_game']),
-        'not_priced_reason': ('FBS-vs-FCS: V2 has no validated FCS model (measured bias -6.5 pts on the '
-                              '2024-25 holdout)') if bool(r['fcs_game']) else None,
+        'not_priced_reason': ('FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS '
+                              'side -6.1 pts on the 2024-25 holdout)') if bool(r['fcs_game']) else None,
     }
 
 
 def canonical_hash(obj):
     return hashlib.sha256(json.dumps(obj, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def pure_part(row):
+    """The projection itself: everything except the shadow block (market,
+    V1 and candidate-001 context captured at the run that froze the row)."""
+    return {k: v for k, v in row.items() if k != 'shadow'}
+
+
+def v1_projections():
+    """V1 (the champion) as published on the FBS board: football/fbs/slate.json."""
+    f = os.path.join(REPO_V2, '..', 'fbs', 'slate.json')
+    if not os.path.exists(f):
+        return {}
+    s = json.load(open(f))
+    out = {}
+    for g in s.get('games', []):
+        try:
+            gid = int(g['game_id'])
+        except (KeyError, TypeError, ValueError):
+            continue
+        out[gid] = {'margin': g.get('model_home_margin'), 'home_win_prob': g.get('model_home_win_prob'),
+                    'status': g.get('model_status'), 'slate_generated_at': s.get('generated_at'),
+                    'source': 'football/fbs/slate.json (V1, cfb_p4 engine)'}
+    return out
+
+
+REPORT_FIELDS = ('availability', 'qb_availability', 'qb_starter')
+STARTER_KEYS = ('player_id', 'player_name', 'status', 'confirmed', 'published_at', 'retrieved_at')
+
+
+def pregame_reports():
+    """The pregame availability and QB-status evidence the V1 board held when
+    this row was frozen: its per-side input-contract entries (state, source,
+    timestamps, a short detail), the named starters, and the digest of the
+    availability sync it came from (football/availability/current.json, which
+    git keeps in full). Recorded only, never used by V2: this is the
+    point-in-time record an injury or QB-status validation will need."""
+    f = os.path.join(REPO_V2, '..', 'fbs', 'slate.json')
+    if not os.path.exists(f):
+        return {}
+    s = json.load(open(f))
+    af = os.path.join(REPO_V2, '..', 'availability', 'current.json')
+    av = json.load(open(af)) if os.path.exists(af) else {}
+    sync = {'digest': av.get('digest'), 'generated_at': av.get('generated_at'),
+            'file': 'football/availability/current.json'} if av else None
+    out = {}
+    for g in s.get('games', []):
+        try:
+            gid = int(g['game_id'])
+        except (KeyError, TypeError, ValueError):
+            continue
+        rep = [{'field': c.get('field'), 'side': c.get('side'), 'state': c.get('state'), 'source': c.get('source'),
+                'as_of': c.get('as_of'), 'observed_at': c.get('observed_at'), 'priced_by_v1': c.get('priced'),
+                'detail': (c.get('detail') or '')[:120]}
+               for c in (g.get('input_contract') or []) if c.get('field') in REPORT_FIELDS]
+        st = {side: ({k: (g.get(side + '_starter') or {}).get(k) for k in STARTER_KEYS}
+                     if g.get(side + '_starter') else None) for side in ('home', 'away')}
+        out[gid] = {'reports': rep, 'starters': st, 'availability_sync': sync,
+                    'slate_generated_at': s.get('generated_at')}
+    return out
+
+
+def candidate_projections(X, cid='cfb_v2_candidate_001'):
+    """The frozen candidate's projection for the same snapshot rows, from its
+    own hash-locked artifacts (football/cfb_v2/candidates/<id>/artifacts)."""
+    d = os.path.join(REPO_V2, 'candidates', cid, 'artifacts')
+    if not os.path.exists(os.path.join(d, 'models.json')):
+        return {}
+    import lightgbm as lgb
+    A = json.load(open(os.path.join(d, 'models.json')))
+    gbm = lgb.Booster(model_file=os.path.join(d, A['submodels']['D_gbm']['file']))
+    D = predict(X, A, gbm)
+    return {int(g): {'ens_pred': round(float(e), 3), 'sigma': round(float(sg), 3), 'model_version': A['model_version']}
+            for g, e, sg in zip(D.game_id, D.ens_pred, D.sigma)}
 
 
 def freeze(rows, season, now, version, base=None):
@@ -169,16 +249,18 @@ def freeze(rows, season, now, version, base=None):
             old = json.load(open(f))
             have = {x['row']['game_id']: x for x in old['rows']}
             for r in rs:
-                h = canonical_hash(r)
+                h = canonical_hash(pure_part(r))
                 if r['game_id'] in have:
                     log['already_frozen'] += 1
-                    if have[r['game_id']]['hash'] != h:
+                    prev = have[r['game_id']]
+                    if prev.get('pure_hash', prev['hash']) != h:
                         log['refused_overwrites'].append({'game_id': r['game_id'], 'prediction_ts': ts})
                 # a game newly visible for an already-written freeze time is NOT
                 # added: its freeze has passed without it, so it waits for the
                 # next freeze rather than being back-dated
             continue
-        body['rows'] = [{'hash': canonical_hash(r), 'row': r} for r in sorted(rs, key=lambda x: x['game_id'])]
+        body['rows'] = [{'hash': canonical_hash(r), 'pure_hash': canonical_hash(pure_part(r)), 'row': r}
+                        for r in sorted(rs, key=lambda x: x['game_id'])]
         with open(f, 'w') as fh:
             json.dump(body, fh, indent=1, sort_keys=True)
         log['frozen_new'] += len(rs)
@@ -215,6 +297,24 @@ def main():
     X = X[X.season.eq(a.season)]
     D = predict(X, A, gbm)
     rows = [row_json(r) for _, r in D.iterrows()]
+    # shadow context, frozen WITH the row: V1 (the champion), the frozen
+    # candidate 001, and the market as observed by this run
+    from . import shadow as SH
+    v1 = v1_projections()
+    pr = pregame_reports()
+    c1 = candidate_projections(X)
+    mk = SH.market_now(a.season) if os.path.exists(common.out_path('stage2', 'market.parquet')) else {}
+    for r in rows:
+        gid = r['game_id']
+        m = mk.get(gid)
+        r['shadow'] = {'v1': v1.get(gid), 'candidate_001': c1.get(gid),
+                       'market_at_freeze': ({k: m[k] for k in ('open_home_line', 'current_home_line', 'total_open',
+                                                                'total_current', 'source', 'retrieved_at')}
+                                            if m else None),
+                       'pregame_reports': pr.get(gid),
+                       'captured_at': common.iso(now.to_pydatetime()),
+                       'note': 'captured by the run that froze this row (at or after the freeze time); '
+                               'BOOK home lines (- = home favoured); V1 and candidate 001 are home margins'}
     log = freeze(rows, a.season, now, a.version)
     horizon = now + pd.Timedelta(days=10)
     upcoming = [r for r in rows if now < pd.Timestamp(r['kickoff']) <= horizon]
@@ -224,7 +324,8 @@ def main():
            'mode': 'shadow', 'champion': 'V1', 'season': a.season,
            'note': 'V2 runs in SHADOW beside V1. Pure projections only; the market decision is computed '
                    'at read time by engine.decide() from live prices.',
-           'rows': sorted(upcoming, key=lambda r: (r['kickoff'], r['game_id']))}
+           'rows': sorted(({**r, 'shadow': {k: v for k, v in (r.get('shadow') or {}).items() if k != 'pregame_reports'}}
+                           for r in upcoming), key=lambda r: (r['kickoff'], r['game_id']))}
     with open(os.path.join(REPO_V2, 'current.json'), 'w') as fh:
         json.dump(cur, fh, indent=1, sort_keys=True)
     if a.replay_history:

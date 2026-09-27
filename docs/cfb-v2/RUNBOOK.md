@@ -10,9 +10,13 @@ cd football/cfb_v2/research
 pip install pandas numpy pyarrow scipy scikit-learn lightgbm
 export CFB_V2_DATA=$PWD/data CFB_V2_OUT=$PWD/out
 bash run_all.sh live                       # fetch -> stages 1-5 for the live season -> tests -> predict_live
-python3 -m v2.learn_week --season 2026     # errors, major-miss classes, football/cfb_v2/monitoring.json
+python3 -m v2.learn_week --season 2026     # errors, major-miss classes, football/cfb_v2/learning/2026_summary.json
 python3 -m v2.predict_live --verify        # every frozen row still matches its stored hash
-node ../tests.js                           # engine: 55 checks
+python3 -m v2.shadow --season 2026         # append the line ledger; rebuild shadow/2026/outcomes.json
+node ../shadow_decisions.js                # engine.decide() on the frozen rows -> shadow/2026/decisions.json
+python3 -m v2.monitor --season 2026        # football/cfb_v2/monitoring.json: by-week metrics + health warnings
+node ../tests.js                           # engine: 100 checks
+node ../candidates.test.js                 # the frozen candidate still matches its manifest hashes
 SB_URL=... SB_SERVICE_ROLE=... node ../sync_supabase.js --season 2026   # optional: insert-only DB copy
 ```
 
@@ -26,6 +30,52 @@ PROVISIONAL rows; FBS-vs-FCS rows flagged `priced:false`).
 
 Nothing is refit in season. A surprising weekend changes ratings (that is data), never
 coefficients.
+
+## Shadow records (what is kept, and the rule for each)
+
+| file | rule | contents |
+|---|---|---|
+| `snapshots/<season>/<freeze>.json` | **write-once, hashed** (`hash` = whole row, `pure_hash` = the pure projection) | V2.1.0 projection, distribution, components; frozen with it: candidate 001's projection, V1's published projection (`football/fbs/slate.json`), the market at the freeze, and the board's pregame availability / QB-availability / named-starter evidence with the availability sync digest (recorded only, never read by V2) |
+| `shadow/<season>/lines.jsonl` | **append-only** | one line per game whenever the observed opener / current number / total changes, stamped with the observation time |
+| `shadow/<season>/outcomes.json` | derived, rebuilt every run | closing number (last pre-kickoff ledger line), final result, each model's error, CLV, ATS at the freeze line and at the close |
+| `shadow/<season>/decisions.json` | derived, rebuilt every run | the research status (BET / LEAN / REVIEW / PASS) the production engine gives each frozen row against the market at the freeze |
+
+A frozen row is never edited. `predict_live --verify` fails if any stored row no longer
+matches its hash, and a re-run that would produce a different pure projection for an
+already-frozen game is refused and logged, not written.
+
+## Monitoring and health warnings
+
+`football/cfb_v2/monitor.html` renders `monitoring.json`. Per frozen week: MAE, RMSE,
+bias, Brier, V1 and candidate 001 on the same games, the line at the freeze and the
+close, CLV, ATS, C/D disagreement, largest misses; statuses and pass rate. Warnings:
+
+| warning | fires when |
+|---|---|
+| `mae_spike` | a week's MAE is above the backtest expectation + 2 standard errors |
+| `calibration` | season-to-date win-probability miscalibration is beyond sampling noise |
+| `missing_pbp` | a final FBS game older than 48 h has no play-by-play rows |
+| `stale_odds` | the line source was last retrieved more than 36 h ago, or games within 72 h have no line observation |
+| `stale_injury_source` | an upcoming game's availability source is more than 72 h old |
+| `bet_count` | any BET while BET is disabled, or BET on more than 10% of games |
+| `ensemble_weights` | the live weights differ from the exported artifact |
+| `disagreement` | C and D disagree beyond the backtest's 99th percentile |
+| `pipeline_stale` | `current.json` is more than 36 h old in season |
+| `feature_drift` | week-matched PSI of an output (ens_pred, sigma, ens_sd, pred_total) exceeds both 0.25 and the 99th percentile of its sampling-noise null |
+
+**A warning informs a person. Nothing retrains, re-weights or disables itself.**
+
+## Frozen candidates
+
+`football/cfb_v2/candidates/<id>/` holds a frozen model: manifest (code commit, feature
+version, parameters, windows, data versions, seeds, file hashes), the predictions it
+made, its artifacts and `params.js`. `cfb_v2_candidate_001` is the baseline every
+change is compared against.
+
+```bash
+python3 -m v2.freeze_candidate cfb_v2_candidate_002 --commit <sha> --artifacts <version>   # refuses to overwrite
+node football/cfb_v2/candidates.test.js                                                     # re-hash every candidate
+```
 
 ## Offseason retrain — manual
 
@@ -43,12 +93,19 @@ The workflow uploads the result as an artifact for review; it does not commit it
 ## Promotion (a person decides)
 
 1. Read `docs/cfb-v2/BACKTEST.md` → "Promotion decision". Every gate must PASS.
-2. Watch at least three frozen in-season weeks in `football/cfb_v2/monitoring.json`.
-3. To make V2 the displayed number: set `is_champion = true` for the version in
+2. Read `docs/cfb-v2/CHAMPION_CHALLENGER.md` (V1 vs candidate 001 vs the current
+   version on the same games) and `docs/cfb-v2/REDTEAM.md` §24.
+3. Watch frozen in-season weeks in `monitor.html`: V2 must stay ahead of V1 on the
+   frozen 2026 games, with no open health warning, before anyone switches.
+4. To make V2 the displayed number: set `is_champion = true` for the version in
    `cfb_model_versions` (only flags may change there) and switch the board to read
    `v2_shadow` instead of the V1 fields. BET additionally requires
    `params.market.bet_enabled === true`, which only the reality-checked dev rule plus a
-   passing holdout can produce — it is `false` for `edgedesk_cfb_v2.0.0`.
+   passing holdout can produce. It is `false` for `edgedesk_cfb_v2.1.0`.
+
+A new version must also beat or equal the frozen candidate it replaces on development
+data under rules written down first (`docs/cfb-v2/HARDENING_PREREG.md`); a change that
+only raises historical ATS is not a reason to adopt it.
 
 ## Rollback
 
@@ -72,7 +129,14 @@ V2 is additive; nothing V1 reads was changed.
 
 | purpose | command |
 |---|---|
-| leakage / sign / determinism / immutability tests | `python3 -m v2.tests_leakage` |
+| leakage / determinism / immutability tests | `python3 -m v2.tests_leakage` |
+| sign-convention scenarios | `python3 -m v2.tests_signs` |
+| future-poisoning end-to-end leakage test | `python3 -m v2.tests_poison --season 2019 --cut-week 7` |
+| leakage audit table | `python3 -m v2.leakage_audit` |
+| red-team phases (candidate 001 / hardened) | `python3 -m v2.redteam --phases 4,5,6,9,10 [--config hardened]` |
+| hardening decisions (pre-registered rules) | `python3 -m v2.harden` |
+| champion / challenger report | `python3 -m v2.champion_report --c001 out_c001 --hard out_h` |
+| red-team report | `python3 -m v2.rt_report` |
 | database triggers against a real Postgres | `CFB_V2_PG="-h … -p … -U …" python3 -m v2.tests_sql` |
 | engine tests | `node football/cfb_v2/tests.js` |
 | rebuild report only | `python3 -m v2.report` |

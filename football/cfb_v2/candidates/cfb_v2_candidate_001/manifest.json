@@ -1,0 +1,3786 @@
+{
+ "betting_rule": {
+  "bet_enabled": false,
+  "bet_ev": 0.0,
+  "bet_gap": 3.0,
+  "bet_min_rel": 65.0,
+  "dev_best": {
+   "ats": 0.5677966101694916,
+   "bet_ev": 0.0,
+   "bet_gap": 3.0,
+   "bet_min_rel": 65.0,
+   "clv": 0.29293628808864264,
+   "exclude_early": false,
+   "n": 361.0,
+   "review_gap": 7.0,
+   "roi": 0.08234701586502133,
+   "roi_lb90": 0.0011457182729897042
+  },
+  "exclude_early": false,
+  "grid_size": 297,
+  "lean_ev": 0.0,
+  "lean_gap": 0.0,
+  "reality_check": {
+   "null_best_lb90_q95": 0.04377097124930474,
+   "null_worlds": 500,
+   "p_value_best_rule": 0.196,
+   "rules_with_positive_lb90": 3
+  },
+  "review_gap": 7.0,
+  "selection": "max lower 90% bound of ROI/bet on DEV seasons (n>=150) over 297 rules; BET enabled only if that bound beats the 95th percentile of the same search on 500 coin-flip worlds AND mean CLV > 0"
+ },
+ "candidate_id": "cfb_v2_candidate_001",
+ "code": {
+  "commit": "24f5842a5afa0f330f916b9f50cd855a5b42409c",
+  "reproduced_from_scratch_at": "2026-09-27T07:38:19Z",
+  "tree_football_cfb_v2": "c88f0c08e3f4ce67daec66b7ffa97743fb48be0c",
+  "tree_supabase_sql": "9e64587d94539564d260231416145f7c267ad6e0"
+ },
+ "config": {
+  "COVID_SEASON": 2020,
+  "DATA": "/home/user/EdgeDeskSports/football/cfb_v2/research/data",
+  "DEV_SEASONS": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023
+  ],
+  "ELO_CARRY": 1.0,
+  "ELO_HFA": 70.0,
+  "ELO_K": 50.0,
+  "ELO_MOV_CAP": 35.0,
+  "ELO_PTS_PER_ELO": 0.04,
+  "FCS_POOL": "FCS",
+  "FEATURE_VERSION": "cfb_v2_fv1",
+  "FIRST_CAL_SEASON": 2017,
+  "FIRST_OOF_SEASON": 2014,
+  "FIRST_PBP_SEASON": 2009,
+  "FIRST_SNAPSHOT_SEASON": 2012,
+  "FIRST_STACK_SEASON": 2016,
+  "GARBAGE_MARGIN_BY_QTR": {
+   "1": null,
+   "2": 38,
+   "3": 28,
+   "4": 22
+  },
+  "GARBAGE_WEIGHT": 0.0,
+  "GBM_PARAMS": {
+   "alpha": 14.0,
+   "bagging_fraction": 0.8,
+   "bagging_freq": 1,
+   "deterministic": true,
+   "feature_fraction": 0.7,
+   "force_row_wise": true,
+   "lambda_l2": 10.0,
+   "learning_rate": 0.03,
+   "min_data_in_leaf": 100,
+   "n_estimators": 250,
+   "num_leaves": 7,
+   "num_threads": 1,
+   "objective": "huber",
+   "verbose": -1
+  },
+  "HOLDOUT_SEASONS": [
+   2024,
+   2025
+  ],
+  "INTERVALS": [
+   0.5,
+   0.8,
+   0.95
+  ],
+  "LIVE_SEASON": 2026,
+  "METRICS": [
+   [
+    "epa",
+    "epa_sum",
+    "n_plays",
+    "rate",
+    "adj_eff"
+   ],
+   [
+    "epa_pass",
+    "epa_pass_sum",
+    "n_db",
+    "rate",
+    "adj_eff"
+   ],
+   [
+    "epa_rush",
+    "epa_rush_sum",
+    "n_rush",
+    "rate",
+    "adj_eff"
+   ],
+   [
+    "sr",
+    "succ",
+    "n_plays",
+    "rate",
+    "adj_eff"
+   ],
+   [
+    "sr_pass",
+    "succ_pass",
+    "n_db",
+    "rate",
+    "adj_eff"
+   ],
+   [
+    "sr_rush",
+    "succ_rush",
+    "n_rush",
+    "rate",
+    "adj_eff"
+   ],
+   [
+    "sr_early",
+    "succ_early",
+    "n_early",
+    "rate",
+    "situational"
+   ],
+   [
+    "sr_pd",
+    "succ_pd",
+    "n_pd",
+    "rate",
+    "situational"
+   ],
+   [
+    "expl",
+    "expl",
+    "n_plays",
+    "rate",
+    "explosive"
+   ],
+   [
+    "expl_pass",
+    "expl_pass",
+    "n_db",
+    "rate",
+    "explosive"
+   ],
+   [
+    "expl_rush",
+    "expl_rush",
+    "n_rush",
+    "rate",
+    "explosive"
+   ],
+   [
+    "line_yds",
+    "line_yds",
+    "n_rush",
+    "rate",
+    "trench"
+   ],
+   [
+    "stuff",
+    "stuff",
+    "n_rush",
+    "rate",
+    "trench"
+   ],
+   [
+    "opp_rate",
+    "opp_run",
+    "n_rush",
+    "rate",
+    "trench"
+   ],
+   [
+    "havoc",
+    "havoc",
+    "n_plays",
+    "rate",
+    "havoc"
+   ],
+   [
+    "sack_rate",
+    "sacks",
+    "n_db",
+    "rate",
+    "havoc"
+   ],
+   [
+    "to_rate",
+    "turnovers",
+    "n_plays",
+    "rate",
+    "volatile"
+   ],
+   [
+    "ppd",
+    "drive_pts",
+    "n_drives",
+    "drive",
+    "drive"
+   ],
+   [
+    "so_rate",
+    "scoring_opps",
+    "n_drives",
+    "drive",
+    "drive"
+   ],
+   [
+    "pts_per_opp",
+    "opp_pts",
+    "scoring_opps",
+    "drive",
+    "drive"
+   ],
+   [
+    "start_fp",
+    "start_ytg_sum",
+    "n_drives",
+    "drive",
+    "field_pos"
+   ],
+   [
+    "drive_epa",
+    "drive_epa_sum",
+    "n_drives",
+    "drive",
+    "drive"
+   ],
+   [
+    "sr_3rd",
+    "conv_3rd",
+    "n_3rd",
+    "rate",
+    "situational"
+   ],
+   [
+    "pass_rate",
+    "n_db",
+    "n_plays",
+    "rate",
+    "style"
+   ]
+  ],
+  "MODEL_ID": "edgedesk_cfb_v2",
+  "MODEL_VERSION": "edgedesk_cfb_v2.0.0",
+  "OUT": "/home/user/EdgeDeskSports/football/cfb_v2/research/out",
+  "PACE_METRICS": [
+   [
+    "plays_pg",
+    "n_plays_all"
+   ],
+   [
+    "drives_pg",
+    "n_drives_all"
+   ]
+  ],
+  "RATING_PRIOR_SCALE": {
+   "_default": 2.0,
+   "drive_epa": 8.0,
+   "drives_pg": 1.0,
+   "epa": 4.0,
+   "epa_pass": 8.0,
+   "epa_rush": 2.0,
+   "expl": 1.0,
+   "expl_pass": 1.0,
+   "expl_rush": 1.0,
+   "fg_value": 1.0,
+   "havoc": 2.0,
+   "line_yds": 1.0,
+   "opp_rate": 1.0,
+   "pass_rate": 1.0,
+   "plays_pg": 1.0,
+   "ppd": 8.0,
+   "pts_per_opp": 1.0,
+   "sack_rate": 8.0,
+   "so_rate": 4.0,
+   "sr": 2.0,
+   "sr_3rd": 1.0,
+   "sr_early": 2.0,
+   "sr_pass": 2.0,
+   "sr_pd": 2.0,
+   "sr_rush": 1.0,
+   "st_net": 1.0,
+   "start_fp": 1.0,
+   "stuff": 2.0,
+   "to_rate": 1.0
+  },
+  "RECENT_HALFLIFE_WEEKS": 8.0,
+  "RECENT_PRIOR_SCALE": 0.35,
+  "RIDGE_ALPHA": 30.0,
+  "SEED": 20260927,
+  "STANDARD_JUICE_FOR_BACKTEST": -110,
+  "ST_METRICS": [
+   [
+    "st_net",
+    "st_net_epa"
+   ],
+   [
+    "fg_value",
+    "fg_epa"
+   ]
+  ],
+  "VIG_DEFAULT_AMERICAN": null
+ },
+ "data_files": {
+  "betting/cfb_line_odds.csv.gz": {
+   "bytes": 7047701,
+   "sha256": "7ae899d9035750dccf22470d7923087a2659052aeb37a44204c35fbf6bf38d4d"
+  },
+  "mline/ml_2015.parquet": {
+   "bytes": 657578,
+   "sha256": "9c40d440893f346aa25c91a09f1b583026822d62bd38a4c0386db9ac883c1298"
+  },
+  "mline/ml_2016.parquet": {
+   "bytes": 653513,
+   "sha256": "84221377667ca5dbf9f0ab764c8ab62bd2693db9473eafa9f14ea52d84c5831f"
+  },
+  "mline/ml_2017.parquet": {
+   "bytes": 669266,
+   "sha256": "d6eb8fb8f5b2319b8e8fa31a67ea321af50f8002806a3fed3081b1f60dab8d5d"
+  },
+  "mline/ml_2018.parquet": {
+   "bytes": 666804,
+   "sha256": "514720bad108b29cd7701215b1151501ec1d921aec4b2c8c673d9040d177a181"
+  },
+  "mline/ml_2019.parquet": {
+   "bytes": 667713,
+   "sha256": "196b8aa27e0926982750cb01ceca74121f8850d3b6036778db5f02839198f1e5"
+  },
+  "mline/ml_2020.parquet": {
+   "bytes": 519166,
+   "sha256": "5d72965ebb04f8947de993dc396b44178d68ab6eccc0faa59a1a14a4a9090a96"
+  },
+  "mline/ml_2021.parquet": {
+   "bytes": 666486,
+   "sha256": "310a60ef048a22b96c70fc82e2c036bca752aa2145c82af6bc3720ff02638b01"
+  },
+  "mline/ml_2022.parquet": {
+   "bytes": 671787,
+   "sha256": "9b7d56bf317d4e15de8d738bba7954ef46e969bde2c97cd2fcd9e25aa86f00f3"
+  },
+  "mline/ml_2023.parquet": {
+   "bytes": 681180,
+   "sha256": "46fd0334f0601bc0b06a22cb81bd8b9ef318268cd9e751d2cc97e8746c05cc5c"
+  },
+  "mline/ml_2024.parquet": {
+   "bytes": 691911,
+   "sha256": "063a1135f275b0cc1a2622acacf3240b4025eba0f25a654499551ea486841708"
+  },
+  "mline/ml_2025.parquet": {
+   "bytes": 699736,
+   "sha256": "dbe9d4911988bc6ee281628e15510cf4b89c2d9b628e24dcb4815d5cb99549b8"
+  },
+  "mline/ml_2026.parquet": {
+   "bytes": 536546,
+   "sha256": "a72a5dbda185306a138d0d841d458e04ecacdfaec8d44204cdda6e8e2ff053e1"
+  },
+  "pbp/play_by_play_2009.parquet": {
+   "bytes": 47585667,
+   "sha256": "f70b8d3e912a7a9bed983a066844a2160ddff1b1d66267199a5850c70935048c"
+  },
+  "pbp/play_by_play_2010.parquet": {
+   "bytes": 47731423,
+   "sha256": "6a125adaf6d265f3e2d7850c81026fb68f64456514c4c3b8f894932f7d8f917e"
+  },
+  "pbp/play_by_play_2011.parquet": {
+   "bytes": 49472078,
+   "sha256": "9d155c10201df20a7c397c46ee8b68e587ed8d7a8a3e081db8f9db4672223419"
+  },
+  "pbp/play_by_play_2012.parquet": {
+   "bytes": 51940765,
+   "sha256": "8c030e02b3ca7f164c9f6d51877db1c59e96be56b034e8510d558def88bb6473"
+  },
+  "pbp/play_by_play_2013.parquet": {
+   "bytes": 52978409,
+   "sha256": "de4002b8188404c2de020d9a1909424340490ff9c3d4da90e3b010b54b994b7f"
+  },
+  "pbp/play_by_play_2014.parquet": {
+   "bytes": 52960635,
+   "sha256": "5ccc7f0e8ae47c16d85a3156dfd186da354b26f7514dfb31f38d2159bdb19554"
+  },
+  "pbp/play_by_play_2015.parquet": {
+   "bytes": 53094005,
+   "sha256": "5da948720cb936062920c6a113f48e599307d28a16051fde4f061578d579bb2e"
+  },
+  "pbp/play_by_play_2016.parquet": {
+   "bytes": 52341027,
+   "sha256": "e0d60b20e345c192128aae3d113b133c4567edc2cf8a58680b7f356eb3a3f55a"
+  },
+  "pbp/play_by_play_2017.parquet": {
+   "bytes": 52008540,
+   "sha256": "25c5e773f4ec8403d4feea568f4aad5c256ea984c489de7eaf033a086f9de1bf"
+  },
+  "pbp/play_by_play_2018.parquet": {
+   "bytes": 52769696,
+   "sha256": "6db97a2fd13b9e10b0237408edae7663e085efb46fcab44bf80af8f108148d3c"
+  },
+  "pbp/play_by_play_2019.parquet": {
+   "bytes": 52343714,
+   "sha256": "d683cd317c80937a243b17c8f5a1ffe661037dfafd7c6161c24bce392f725a4e"
+  },
+  "pbp/play_by_play_2020.parquet": {
+   "bytes": 33571179,
+   "sha256": "285eb74675fa6abd9b623b6a7c17c8b425a295de332618ce1778e818a7eafcc0"
+  },
+  "pbp/play_by_play_2021.parquet": {
+   "bytes": 49398212,
+   "sha256": "bc00390948b827d3f1e134a69a91546858264ebaa0281baa936e03602a093bf4"
+  },
+  "pbp/play_by_play_2022.parquet": {
+   "bytes": 50095093,
+   "sha256": "c592cf3c8eb6c5e6c55979ffcba92665e01816672ad0e168ec4a5ede7f9dacd1"
+  },
+  "pbp/play_by_play_2023.parquet": {
+   "bytes": 51087417,
+   "sha256": "0a6f11dcd0790580a71ece68e9da54d00245e87588b0e56209f03782bf1944e6"
+  },
+  "pbp/play_by_play_2024.parquet": {
+   "bytes": 55548055,
+   "sha256": "6405f37bdcd1576451c46d803725adc0c01fce5e1f5e9666b7208991bcc16b3a"
+  },
+  "pbp/play_by_play_2025.parquet": {
+   "bytes": 59625343,
+   "sha256": "740566c0d034fa767008a40797dd491acb91dee47934cefb4225494f71c42853"
+  },
+  "pbp/play_by_play_2026.parquet": {
+   "bytes": 20338342,
+   "sha256": "9ba211aa4e4413f793d20aa4f6c2a52ab3580996583839723606b14245e8b248"
+  },
+  "retprod/rp_2009.parquet": {
+   "bytes": 5945,
+   "sha256": "3245d2d17210540c6a44030c7389f7715af5c589e0368dd2f493d4bb29ace2a2"
+  },
+  "retprod/rp_2010.parquet": {
+   "bytes": 6016,
+   "sha256": "7636bf3df0e0711b7969a53410e65a8cffadf5db98ee5da75e5a7ac0d182b9ad"
+  },
+  "retprod/rp_2011.parquet": {
+   "bytes": 5981,
+   "sha256": "90fc5ee2503f918f201aec3da246266a5d93bc168483de66d749a0125344c5f7"
+  },
+  "retprod/rp_2012.parquet": {
+   "bytes": 6093,
+   "sha256": "57f5842c34d67af0911eb40ad34473a4a666da40a188106252c02e423a747285"
+  },
+  "retprod/rp_2013.parquet": {
+   "bytes": 6185,
+   "sha256": "ba778827b4fc82838badd0a4c28b2021c42505e8620abca9ded959f07efe4f4c"
+  },
+  "retprod/rp_2014.parquet": {
+   "bytes": 6354,
+   "sha256": "d99f6c7e64e0dbf4c7c26f7a50dd949206dfa104c0c88d1a4a63cf02cd4e2d2d"
+  },
+  "retprod/rp_2015.parquet": {
+   "bytes": 6240,
+   "sha256": "7f860c21b45af8de37bef77b6585106032ffac1c566abfe66ca0ae1b3c8b9f24"
+  },
+  "retprod/rp_2016.parquet": {
+   "bytes": 6248,
+   "sha256": "de4981f5c470bb80eb79e78289b8641f41c77f3941a0df7fb3780bd0b3526ea6"
+  },
+  "retprod/rp_2017.parquet": {
+   "bytes": 7127,
+   "sha256": "5beb8bb3897b66d8cd977c1eb9dacd2d20e392da7e567433b6436116b2edf594"
+  },
+  "retprod/rp_2018.parquet": {
+   "bytes": 6987,
+   "sha256": "a3744f70c283d380ef161fa13d620d2f3b4454d2ee92bf7cb47d56e88b3d1c2d"
+  },
+  "retprod/rp_2019.parquet": {
+   "bytes": 6820,
+   "sha256": "46ab5854f9e3fa45e3f26b27a050956876f0b4672dbddd67c9c9d156ae5c70d0"
+  },
+  "retprod/rp_2020.parquet": {
+   "bytes": 5716,
+   "sha256": "09fbdcc278910aa0fc8274189d94f50e2ee706a4bc14ee29a922fe7cd941bfe0"
+  },
+  "retprod/rp_2021.parquet": {
+   "bytes": 5658,
+   "sha256": "00f27783533647a19c6362ac3e3802ca4f32550d876f53dfe9bc8145ed3dc162"
+  },
+  "retprod/rp_2022.parquet": {
+   "bytes": 7811,
+   "sha256": "c4924d060f0ba62ef76f4a5e716b330a7bd20b40408ec72cbb89bf28cd140c68"
+  },
+  "retprod/rp_2023.parquet": {
+   "bytes": 7443,
+   "sha256": "7ad6d072ac36226794e034a26f65203a2350919a206161f0b65f4411ce2ece99"
+  },
+  "retprod/rp_2024.parquet": {
+   "bytes": 7927,
+   "sha256": "1b4fdb5608ab0776e18e292f85171f37e24375cfae2ef6238174d575a2ca1527"
+  },
+  "retprod/rp_2025.parquet": {
+   "bytes": 8577,
+   "sha256": "b9de637074faf96409ecd62477ce4c0a53523b666c50970ff3a92218ca9fc596"
+  },
+  "retprod/rp_2026.parquet": {
+   "bytes": 9474,
+   "sha256": "2e7992c0bc46c578aec5658825a9be978c734f55f3d9187183957753e2e033ac"
+  },
+  "sched/cfb_schedules_2009.parquet": {
+   "bytes": 47077,
+   "sha256": "0bd01f20fc368e354195010fd8e2583b16e23e1f19482313e74b84693a1903d6"
+  },
+  "sched/cfb_schedules_2010.parquet": {
+   "bytes": 47061,
+   "sha256": "bbd8bb4c0a94ebd9c0ff3b592a5241c8af14c3bd80e39e0cfdaf57d74c4c2fd5"
+  },
+  "sched/cfb_schedules_2011.parquet": {
+   "bytes": 47745,
+   "sha256": "561c5498c10fb967b67befc2ca7a6aec3285a03c6cfc625e28a7a2e62a7686d6"
+  },
+  "sched/cfb_schedules_2012.parquet": {
+   "bytes": 49062,
+   "sha256": "d6b31428955913a40647a7a4f273198399a5bc5bfb0fdb9c76c1fd4de75ef3c9"
+  },
+  "sched/cfb_schedules_2013.parquet": {
+   "bytes": 52495,
+   "sha256": "75d2163296905e3e025c59042ff74909503903819e85e8bff9ba3cd9fed20481"
+  },
+  "sched/cfb_schedules_2014.parquet": {
+   "bytes": 53011,
+   "sha256": "e8e5a3cf631778588cd452a712ef3431fab213400ec12f57ad4ef9edd66cdfe6"
+  },
+  "sched/cfb_schedules_2015.parquet": {
+   "bytes": 51881,
+   "sha256": "8245290ccf58895a4ca1c8d5740371fedf63460e77f9bc64ef6c4b767b9ec4f4"
+  },
+  "sched/cfb_schedules_2016.parquet": {
+   "bytes": 61471,
+   "sha256": "28e5101e5534fd8bc9f42309b5e86614248821107f9df9e626ca4275d737b209"
+  },
+  "sched/cfb_schedules_2017.parquet": {
+   "bytes": 60656,
+   "sha256": "03f06fb774d346b49944c0936c88e32ccc2eb0529809795b176d04a10835a48c"
+  },
+  "sched/cfb_schedules_2018.parquet": {
+   "bytes": 61772,
+   "sha256": "81089900c0a94d38500190d710a21f1dd4a613c62da8fcfd9ad5e691d05ec5f1"
+  },
+  "sched/cfb_schedules_2019.parquet": {
+   "bytes": 62149,
+   "sha256": "1317e2e7c90c41d83113a3564d5edd7dd2d0a8069b6d63ff8361f925327f9c75"
+  },
+  "sched/cfb_schedules_2020.parquet": {
+   "bytes": 58594,
+   "sha256": "d53d5413d573b8c07d98600268ecc8c1d1261bf38aea43cf48f59acc12123ba2"
+  },
+  "sched/cfb_schedules_2021.parquet": {
+   "bytes": 69922,
+   "sha256": "1a2ddf16e91d845768d52ae06e13cec161576b115df2af127f9c08f9848f0306"
+  },
+  "sched/cfb_schedules_2022.parquet": {
+   "bytes": 97148,
+   "sha256": "59f15308408d165e26ffd0d6491af6d8f47a9c5dab51953f1c22a645e16df80b"
+  },
+  "sched/cfb_schedules_2023.parquet": {
+   "bytes": 97108,
+   "sha256": "8cc272eafc992218603503f19aeba8a0679015fe743020f3d3a5bea17fdd2bbc"
+  },
+  "sched/cfb_schedules_2024.parquet": {
+   "bytes": 101660,
+   "sha256": "f74768cfe074a986d3a0e96da013f3c02e869e2675322ec02da7ced5a4969f61"
+  },
+  "sched/cfb_schedules_2025.parquet": {
+   "bytes": 101502,
+   "sha256": "a9b131aec16fa32540882f9438c81feb5a57c3279ee4b9fa6c95d91675e02a3c"
+  },
+  "sched/cfb_schedules_2026.parquet": {
+   "bytes": 88599,
+   "sha256": "b9e744455f608f06358adec89fac82891c82b26d07cb0f697e860fa10d21b8e8"
+  },
+  "talent/tt_2009.parquet": {
+   "bytes": 6732,
+   "sha256": "4c2357525dae84aaad70fea6e5b664faa8205845cfc4e6cf27a9cdb8911d8bc7"
+  },
+  "talent/tt_2010.parquet": {
+   "bytes": 6968,
+   "sha256": "4864b96b54ecc4ed97442fb7ef9e2038a1167c4f019cb99dede03514b319eb92"
+  },
+  "talent/tt_2011.parquet": {
+   "bytes": 7295,
+   "sha256": "3ab40cabefb631dc191d588b380aab2c61850e6a363ce00bf97569be2ef97361"
+  },
+  "talent/tt_2012.parquet": {
+   "bytes": 8052,
+   "sha256": "414f0434f6ce5e4d0382b7cfeb2f7edf04320a73d13ca913616bd60920521ca2"
+  },
+  "talent/tt_2013.parquet": {
+   "bytes": 8849,
+   "sha256": "921f45624534954998860d80e66b7e998b3f818388a3d08f13223d5aa5419a06"
+  },
+  "talent/tt_2014.parquet": {
+   "bytes": 9688,
+   "sha256": "23e80a2b7e0a64cafc490e21dbb547a37c111096b77b17642460d7001aa201ab"
+  },
+  "talent/tt_2015.parquet": {
+   "bytes": 10101,
+   "sha256": "36fa9091957abfb4d8890f117d7bd76bdbcc25df17d7fd3220366a0d8a6e63d9"
+  },
+  "talent/tt_2016.parquet": {
+   "bytes": 10557,
+   "sha256": "2af57e26d2c30831bb4a811b3d85b1e9d4e9693cbb28cd5d534f68b8a1b37eb6"
+  },
+  "talent/tt_2017.parquet": {
+   "bytes": 10701,
+   "sha256": "e60bd46ea5ee5db1765059afb9a107691ebd7030d88af314566298afe4cf347d"
+  },
+  "talent/tt_2018.parquet": {
+   "bytes": 10588,
+   "sha256": "cf99cd8a512fbcd575638d1005b520713cfa4bfb36a63d3c85c1b5726d7d3549"
+  },
+  "talent/tt_2019.parquet": {
+   "bytes": 10595,
+   "sha256": "39995eda9dba43efb640a1b673f92d3a7c71ace9ef47d8aba8b6613a6d1cfe82"
+  },
+  "talent/tt_2020.parquet": {
+   "bytes": 10615,
+   "sha256": "03580a3bd44d11b6f3c6c8963a1678beb307cf53b69f6e39987d64c0a478d5f4"
+  },
+  "talent/tt_2021.parquet": {
+   "bytes": 10668,
+   "sha256": "090352cd6a666824c6dabdc7cdba623882e114951a9338060a5e5387a493f25b"
+  },
+  "talent/tt_2022.parquet": {
+   "bytes": 10766,
+   "sha256": "8534953607eb6e4a37edb9d3a22112de34a460e6677b3d4b8558c52b130597d2"
+  },
+  "talent/tt_2023.parquet": {
+   "bytes": 10903,
+   "sha256": "bbf8bb471be0337afb1894dcd96c536a8c5b4d85a5a8e19161531b1f1ef27404"
+  },
+  "talent/tt_2024.parquet": {
+   "bytes": 11106,
+   "sha256": "7df0c091bfe277454f561a74d324a7642dd65d825e0049c4ade3738ffbebf0d9"
+  },
+  "talent/tt_2025.parquet": {
+   "bytes": 11112,
+   "sha256": "448bef20a83952737efc3fee42d35f6ffa32c83df4dddb657902df862cf7e0d2"
+  },
+  "talent/tt_2026.parquet": {
+   "bytes": 10879,
+   "sha256": "2dd38a1537e6982f2888d1672070b39b81c98140224a1041f1299b42d14079ed"
+  },
+  "teaminfo/ti_2009.parquet": {
+   "bytes": 87132,
+   "sha256": "c3214bc8c82452610656173b295cb88750fd0b832987758efc61d1773b7e4b63"
+  },
+  "teaminfo/ti_2010.parquet": {
+   "bytes": 88215,
+   "sha256": "3ef8a7b6421d1aec378454a68074d570f62bb36b17f507b5dc7f79baa70e7da8"
+  },
+  "teaminfo/ti_2011.parquet": {
+   "bytes": 88884,
+   "sha256": "3bb7f4c123e447a3bd75311ff5490d9528d1bc15f902d00d5f9b95fe1a71506e"
+  },
+  "teaminfo/ti_2012.parquet": {
+   "bytes": 88880,
+   "sha256": "ad46b0c2ca318f9d4aeec38fb13070a363433db41859180da09a9e35d279b117"
+  },
+  "teaminfo/ti_2013.parquet": {
+   "bytes": 89825,
+   "sha256": "b35ddb0518968537774ae5b993d63f0f2492a40eb13a3e2c152688b66cb02a9c"
+  },
+  "teaminfo/ti_2014.parquet": {
+   "bytes": 177861,
+   "sha256": "0f2d76a81befb04ecd8ab561c4d339c59c430f38b0537efaf37cadd594964bba"
+  },
+  "teaminfo/ti_2015.parquet": {
+   "bytes": 177944,
+   "sha256": "87ff2ae5529f16af750ee32694ca39f8b3965d57aae4e1f2ad4cd0c6c0a4d94f"
+  },
+  "teaminfo/ti_2016.parquet": {
+   "bytes": 178029,
+   "sha256": "3c5e48fedace3627a295d82c3260a4c6f7ee7f6dba744175ca524b9e48adede0"
+  },
+  "teaminfo/ti_2017.parquet": {
+   "bytes": 178432,
+   "sha256": "35426dd277d1412402d9c05ad685dc30dd19383aa879de274ad9cc4a2b6debe5"
+  },
+  "teaminfo/ti_2018.parquet": {
+   "bytes": 178446,
+   "sha256": "32412dda0b079072acf2d614def1b8a878a2714c6a3e166f0380a8a206223d66"
+  },
+  "teaminfo/ti_2019.parquet": {
+   "bytes": 178043,
+   "sha256": "72d56b2dc00d91fd0a7fa63e92be84e54379a350fb6411f4364c886f63da6cdd"
+  },
+  "teaminfo/ti_2020.parquet": {
+   "bytes": 168677,
+   "sha256": "789c35dfee6a5c7bddbc96a0df5cf414ef3f4dd5816aae7c972b5c48b5f942a0"
+  },
+  "teaminfo/ti_2021.parquet": {
+   "bytes": 176944,
+   "sha256": "632227e92761d940bee298726a218326c7d81773c71ac87a997628657d5a8b47"
+  },
+  "teaminfo/ti_2022.parquet": {
+   "bytes": 177176,
+   "sha256": "7589ed8e266300b887a33a7fa6d3d85559c4e8337eea80223b66fa69901edccb"
+  },
+  "teaminfo/ti_2023.parquet": {
+   "bytes": 176753,
+   "sha256": "91e5dd6d29c95d5eda7eee6296b37c06740a8913446085b8e6fda04be44dbe42"
+  },
+  "teaminfo/ti_2024.parquet": {
+   "bytes": 177449,
+   "sha256": "1225957b9f9b37e689c8e413921a39e9978ac61f5eca165c799e9bca8c125f45"
+  },
+  "teaminfo/ti_2025.parquet": {
+   "bytes": 177877,
+   "sha256": "208f2f6f13d111011c5883cf0790b04588c8697a2decd3af08acaaf436c54bf4"
+  },
+  "v1/betting/cfb_line_odds.csv.gz": {
+   "bytes": 7047701,
+   "sha256": "7ae899d9035750dccf22470d7923087a2659052aeb37a44204c35fbf6bf38d4d"
+  },
+  "v1/pbp/pbp_2002.parquet": {
+   "bytes": 253930,
+   "sha256": "14f05bd56ae78422566e01d104a7f598a3cb1993a1bfd7d3ffb9da2a1b06e21c"
+  },
+  "v1/pbp/pbp_2003.parquet": {
+   "bytes": 41983983,
+   "sha256": "4dfc1d15388d75772037ebc2d6c2dc12e6f6f7fee617805a138cf745d634ddff"
+  },
+  "v1/pbp/pbp_2004.parquet": {
+   "bytes": 20954540,
+   "sha256": "24b97530674acd52ebb8d991ad7ca0780a9f86e32364838004e5c67b513775a3"
+  },
+  "v1/pbp/pbp_2005.parquet": {
+   "bytes": 27341890,
+   "sha256": "7cab37030640ab4b6e2d5905c7bcd8423482fe25f1cba27123f68cc2014a9832"
+  },
+  "v1/pbp/pbp_2006.parquet": {
+   "bytes": 28917990,
+   "sha256": "67356ceb5135c6b1d990d7d6ed5edfe053e00771dbb39944faf0ba28f04d9ae9"
+  },
+  "v1/pbp/pbp_2007.parquet": {
+   "bytes": 33644845,
+   "sha256": "02ec32dae00fe24f1c3a7cf9df2565a8a82f101bb902a9da00c9be4e08f85690"
+  },
+  "v1/pbp/pbp_2008.parquet": {
+   "bytes": 36339771,
+   "sha256": "442d0101e61faf405ba09912eb07ca55fabcae3a2ce70ecf490ed9f77afb44f3"
+  },
+  "v1/pbp/pbp_2009.parquet": {
+   "bytes": 37914020,
+   "sha256": "693d37b97bc2bfb9e1ed6f7dede3c545eb37eec4f262debacf1392136bc943c7"
+  },
+  "v1/pbp/pbp_2010.parquet": {
+   "bytes": 24585872,
+   "sha256": "fee8024ee1f062e29dc3d11bc2fd54b3f2dee2c7fe2cc935e69306d5b6f06c9b"
+  },
+  "v1/pbp/pbp_2011.parquet": {
+   "bytes": 51327641,
+   "sha256": "0be6b656396aa804eaa992e320fa0593b60e21f11537a6f4b2925b3e99b4c782"
+  },
+  "v1/pbp/pbp_2012.parquet": {
+   "bytes": 41037792,
+   "sha256": "8e40df530db3d67417954926b1a28e10a70f8d35bb3a7ab45d0a1367bf7a71ae"
+  },
+  "v1/pbp/pbp_2013.parquet": {
+   "bytes": 42152624,
+   "sha256": "a1af1b54a7446955f01713083416d1c79b44a207b1c84fcb67eda76036ff24c2"
+  },
+  "v1/pbp/pbp_2014.parquet": {
+   "bytes": 41413214,
+   "sha256": "07ca60474a1631def4ab6b01239849720f96eae42e8b89782aeea7e35dbe44e6"
+  },
+  "v1/pbp/pbp_2015.parquet": {
+   "bytes": 40740503,
+   "sha256": "9edd8df83a0e8091bfceed7ecd982efbdd56b135d98a7e423ecbf70e83deb2ee"
+  },
+  "v1/pbp/pbp_2016.parquet": {
+   "bytes": 40229199,
+   "sha256": "32166810bc985902bfaebfe2c0af4a43ac1351c86f7c0ac4c77156f21b3c986c"
+  },
+  "v1/pbp/pbp_2017.parquet": {
+   "bytes": 39890846,
+   "sha256": "357280a69df123655317e620b847d0f1373758f401a756ce98e8547f65702aac"
+  },
+  "v1/pbp/pbp_2018.parquet": {
+   "bytes": 40059209,
+   "sha256": "8afb21aae73d4644e34f833948be59475cf152ed06bb3871d77f62595a13406e"
+  },
+  "v1/pbp/pbp_2019.parquet": {
+   "bytes": 39843452,
+   "sha256": "9eacad23f229b94fc2eeeebebda1aa1d0102395105461c1c3f47c21aa6dbdd50"
+  },
+  "v1/pbp/pbp_2020.parquet": {
+   "bytes": 36476557,
+   "sha256": "48e3aa3ae95b9d83e613f5455863c9f9b49716411bfb4fb18c420130a93894b2"
+  },
+  "v1/pbp/pbp_2021.parquet": {
+   "bytes": 37832122,
+   "sha256": "97bb44eae06cb36765ea6ea6924eb66cf75f2676b7aa6c567bee159acb190131"
+  },
+  "v1/pbp/pbp_2022.parquet": {
+   "bytes": 37605463,
+   "sha256": "63562c52050b0b4522ee0181b48a772d595cc6e1430e5a54f56707f52c65d77e"
+  },
+  "v1/pstats/pstats_2014.csv": {
+   "bytes": 31499415,
+   "sha256": "ce9a423ff5abcf70be849607b352eb5fb5f1bbbca6ad035c6bb58bcc87900d95"
+  },
+  "v1/pstats/pstats_2015.csv": {
+   "bytes": 31953430,
+   "sha256": "517990cf97f95122cae17d0535bdeeb4432799e4d262a3c6156f4c21d02948f5"
+  },
+  "v1/pstats/pstats_2016.csv": {
+   "bytes": 32473281,
+   "sha256": "b48d7df8a1e3e3d9fb0d399caca3879719bcda030c7b284cdf074a569046b4ec"
+  },
+  "v1/pstats/pstats_2017.csv": {
+   "bytes": 32763345,
+   "sha256": "ce6e05fdf788a279cec3624adc0ce8100fd9ccefc5345f36af6e27ce1f737a41"
+  },
+  "v1/pstats/pstats_2018.csv": {
+   "bytes": 32954871,
+   "sha256": "52d0c2790f09928e5a8102baa910518f674aa9cf1bd4a1a11f0c3e9a18c55830"
+  },
+  "v1/pstats/pstats_2019.csv": {
+   "bytes": 33144301,
+   "sha256": "11792ebbc0a411d026371ddbe632d0befc0927a008be0d2c36a61e2157875bd8"
+  },
+  "v1/pstats/pstats_2020.csv": {
+   "bytes": 20328932,
+   "sha256": "d9fc7a33b1ccaaba172c0971d7bfd991ee95da7c1b5a9ab92b080ff83a328bd8"
+  },
+  "v1/pstats/pstats_2021.csv": {
+   "bytes": 29864671,
+   "sha256": "259c77f27a0aa49a7efc31dcd0aa58ba8efb6e6769fcde764b1bf30a6f7537be"
+  },
+  "v1/pstats/pstats_2022.csv": {
+   "bytes": 48238345,
+   "sha256": "e142a07ef24966526c441615273ad1627e629adf21f4fa52579f918801721fee"
+  },
+  "v1/pstats/pstats_2023.csv": {
+   "bytes": 51337361,
+   "sha256": "61582f4bed01f266f919674279c7346d88877ccdaf4ef61daca75754c29a2b8d"
+  },
+  "v1/pstats/pstats_2024.csv": {
+   "bytes": 55543427,
+   "sha256": "8c42b153ac1f8159d4176bc80e23ef7fcec4d28852abbca2c220dff0090726a8"
+  },
+  "v1/pstats/pstats_2025.csv": {
+   "bytes": 59644745,
+   "sha256": "74326def56d36f3d5eb07747b6696a25951673b0b598f0971373dc914d0610e9"
+  },
+  "v1/roster/roster_2004.csv": {
+   "bytes": 532697,
+   "sha256": "7f00d894e57e43a248bcc95117f92b151acb15c22457c1708ca83a1460e0cb6b"
+  },
+  "v1/roster/roster_2005.csv": {
+   "bytes": 612308,
+   "sha256": "61ccb32c699cfe413bcc01bd244e94b002727e13beb9297e8845da996da2f876"
+  },
+  "v1/roster/roster_2006.csv": {
+   "bytes": 659912,
+   "sha256": "7abccb664ba62b33e0468256ba6caefd5e8f4a8eba6dced345da44f298f37ce6"
+  },
+  "v1/roster/roster_2007.csv": {
+   "bytes": 732603,
+   "sha256": "77c8bb63cf56e56da3037237872c5503708163b474ef9b0c1aec3d0074c346f4"
+  },
+  "v1/roster/roster_2008.csv": {
+   "bytes": 778518,
+   "sha256": "d6d982344a7cbfd04e2e791183c0caa499b223698318cd93cb8e04b2eb114a08"
+  },
+  "v1/roster/roster_2009.csv": {
+   "bytes": 2406705,
+   "sha256": "5bc7adc6c5c0a078a50ce553a65d42bb39d4ea0b7d266c4a058d6ec5f4897224"
+  },
+  "v1/roster/roster_2010.csv": {
+   "bytes": 2496075,
+   "sha256": "d7ff10801d09ec504d84913bd22b0b180a05e747dbce583597f40c1f56633452"
+  },
+  "v1/roster/roster_2011.csv": {
+   "bytes": 2542265,
+   "sha256": "a3e455a4df7a10de382aa474fce3b03691a8fce410beab0a7a844d88b79b9a9a"
+  },
+  "v1/roster/roster_2012.csv": {
+   "bytes": 2622209,
+   "sha256": "87aedceeb0f072686290f40c3d67c06bd10533c9ff9fa2368929099c2b55db37"
+  },
+  "v1/roster/roster_2013.csv": {
+   "bytes": 2725496,
+   "sha256": "958d03d4c50fd8799d79aa23c6e858dc9098ee77fbf3cd78826221763dc2450a"
+  },
+  "v1/roster/roster_2014.csv": {
+   "bytes": 2839972,
+   "sha256": "683417052c7f942d112a75c73d7c4237c9bdcebd02cef86df908b5c072b666d9"
+  },
+  "v1/roster/roster_2015.csv": {
+   "bytes": 2892155,
+   "sha256": "c2d4892d10b2b577d9e344cf453fb1989fed9f70c143a457907418167b25e8b9"
+  },
+  "v1/roster/roster_2016.csv": {
+   "bytes": 3175281,
+   "sha256": "75b20be00e1ec0f5f83dc1e873c695a4f9968b9967d2db9a7dc3883f354b41e5"
+  },
+  "v1/roster/roster_2017.csv": {
+   "bytes": 3171318,
+   "sha256": "2ba651f1b90d5ead76141feb21fed4ba0e4eef529c2de34c8899af05777c9403"
+  },
+  "v1/roster/roster_2018.csv": {
+   "bytes": 3153104,
+   "sha256": "4e3c9a084fd9310cb433b87cec4e0e25d608f2b6257da1cb127e2e563d6746db"
+  },
+  "v1/roster/roster_2019.csv": {
+   "bytes": 3288168,
+   "sha256": "c36d6c18c73b6ce15481bc7a305c593f61cc680d4362cda3b33cddf2a802944f"
+  },
+  "v1/roster/roster_2020.csv": {
+   "bytes": 2876850,
+   "sha256": "ffa138205924ee0eeba717250ddeecd7cb70287b5c2ca176ec9ce73be84873fb"
+  },
+  "v1/roster/roster_2021.csv": {
+   "bytes": 3262266,
+   "sha256": "6652e08ddf88436befb68490063c9de904e5605de05c57fa83735bdcbc89564d"
+  },
+  "v1/roster/roster_2022.csv": {
+   "bytes": 5318996,
+   "sha256": "f260ad7de3105453245f3e3b63dda7b1b023009bee51c0e95d2ac01afc65d105"
+  },
+  "v1/roster/roster_2023.csv": {
+   "bytes": 3907224,
+   "sha256": "0f300603c94e48bf1967893f84fc124fa675013d6e2adf78199a0717735ec99b"
+  },
+  "v1/roster/roster_2024.csv": {
+   "bytes": 3971031,
+   "sha256": "d137e777e3d0391da61b7068cc484ffde488056457f7d97c8aaef2bc39ca8620"
+  },
+  "v1/roster/roster_2025.csv": {
+   "bytes": 5248115,
+   "sha256": "918b4bd5f51de1403cf2676371c1223ea735204aeda13220ad28aaaf4e61764a"
+  },
+  "v1/sched/sched_2001.csv": {
+   "bytes": 132383,
+   "sha256": "c8ccf1786e1a46d341ff7293ed225468ad4a5429d2ef9240045fb3855ff01d2d"
+  },
+  "v1/sched/sched_2002.csv": {
+   "bytes": 145067,
+   "sha256": "cad41175d46b4262be952b32fedda1e5d084270d0775ea7ac01ee8f57f9b34b6"
+  },
+  "v1/sched/sched_2003.csv": {
+   "bytes": 145965,
+   "sha256": "1ab868d1c8553d8cc294c1754b3db1fb341725ddda5f22c95dac4f196b2b3d24"
+  },
+  "v1/sched/sched_2004.csv": {
+   "bytes": 133162,
+   "sha256": "466c87606cef55f75e05275162f930a8f835792f5e5e358f3356b4ec2c18da06"
+  },
+  "v1/sched/sched_2005.csv": {
+   "bytes": 132830,
+   "sha256": "ea98d357995c06d9bd6c6f10a8faad814cfb919c17631d92d798583882fa4a7c"
+  },
+  "v1/sched/sched_2006.csv": {
+   "bytes": 149081,
+   "sha256": "8ed38b4cd69849649ad90a9e421fcc74cbd5c42852320e0c3d030ec011874869"
+  },
+  "v1/sched/sched_2007.csv": {
+   "bytes": 150454,
+   "sha256": "6b4a87e86c60a91fd57f0a3ddba056ef05c3e2f2f5d4d259b2b198889c47b022"
+  },
+  "v1/sched/sched_2008.csv": {
+   "bytes": 152172,
+   "sha256": "7c3c9e9c9a30846c95af14f975fa61f691c3f1ca73b573450d780c7e1fd79517"
+  },
+  "v1/sched/sched_2009.csv": {
+   "bytes": 149628,
+   "sha256": "69d32eef2f43c8879eea53470b8361227c078aa98f559500d768d55d678d7e53"
+  },
+  "v1/sched/sched_2010.csv": {
+   "bytes": 174248,
+   "sha256": "375c0ad0a028f6e4876846de0645e2aebb2bfe4e4c67b52f82d5932d8098147a"
+  },
+  "v1/sched/sched_2011.csv": {
+   "bytes": 175490,
+   "sha256": "1de613eaf815c49b40539805c25edc50ec5007c8b3c6a13ea4466fa2d05d9a49"
+  },
+  "v1/sched/sched_2012.csv": {
+   "bytes": 184862,
+   "sha256": "b74561c0054182d048f14959906db23f7556e828e04c15951f05f778dc52a3b5"
+  },
+  "v1/sched/sched_2013.csv": {
+   "bytes": 187859,
+   "sha256": "8ce379ae3ba10ce5b003130460c4cff2d1bbd7602253821e4a41f85f7b9f8354"
+  },
+  "v1/sched/sched_2014.csv": {
+   "bytes": 362190,
+   "sha256": "5b1a1f78bc63114c1e076b10e0d9316d079091afa9ac798982048fce6ce5a128"
+  },
+  "v1/sched/sched_2015.csv": {
+   "bytes": 353251,
+   "sha256": "3044e8911721a711202f976133230a0c2cb557cfaf621cb1f3c21722cfd86fe9"
+  },
+  "v1/sched/sched_2016.csv": {
+   "bytes": 379791,
+   "sha256": "f60e57cdab028d2d35bd589c46139a6dce11ee8c52c3f4ca975c5d98522f403c"
+  },
+  "v1/sched/sched_2017.csv": {
+   "bytes": 383955,
+   "sha256": "c5a6f47dc1b121e366c0e9ef6cf1524e6ea54f58cf997874bf6d818e46fa3b26"
+  },
+  "v1/sched/sched_2018.csv": {
+   "bytes": 388878,
+   "sha256": "a4d4c2ccd06f933c1b6848b3ef4fddbc56695f6b066c9376b1249bfb9d29c00f"
+  },
+  "v1/sched/sched_2019.csv": {
+   "bytes": 404815,
+   "sha256": "d8665fa0aced3d02d59405c8b9ff157ba00ef128a90c1c5eab31d268d917abac"
+  },
+  "v1/sched/sched_2020.csv": {
+   "bytes": 166315,
+   "sha256": "f902a845a7e79199ab15dff7c3ed91ee7ef1cb54d32ef80fed5aad5c0ac6c316"
+  },
+  "v1/sched/sched_2021.csv": {
+   "bytes": 561913,
+   "sha256": "91616be40e7f4d611a6e714ee7284cdd7372249888287b05b790019e9397d5fd"
+  },
+  "v1/sched/sched_2022.csv": {
+   "bytes": 863335,
+   "sha256": "bfee92544d7269f764dcb5726ce5c037837cb100a8c6326e0e4c7103a2e6656d"
+  },
+  "v1/sched/sched_2023.csv": {
+   "bytes": 884855,
+   "sha256": "7ffc245da1242fc44c021dae724029074aece78544ba498937cc7703417f0dff"
+  },
+  "v1/sched/sched_2024.csv": {
+   "bytes": 905442,
+   "sha256": "3e4f3cab542657015ff73d1b527c41df58e6a17acf5fbe7d6fb518a1aabcac61"
+  },
+  "v1/sched/sched_2025.csv": {
+   "bytes": 840928,
+   "sha256": "bfecf10bc5a8ffd2e3b6a76b5f0b03b406e17c1a0e03b2000bdf7e2263712db4"
+  },
+  "v1/teaminfo/ti_2001.parquet": {
+   "bytes": 84341,
+   "sha256": "451b622b5b982d5a07567fdfee353aaaa635149b0ff8370fe7059499ac82c279"
+  },
+  "v1/teaminfo/ti_2002.parquet": {
+   "bytes": 84573,
+   "sha256": "f79da52cfbb3d438d51116b81aea59b5bca46351e891787b80e642ba7b1893e3"
+  },
+  "v1/teaminfo/ti_2003.parquet": {
+   "bytes": 86872,
+   "sha256": "eb1d7b0053677f8b30ab6281fa243598ed12f187a9bc20b036b8545581cf494b"
+  },
+  "v1/teaminfo/ti_2004.parquet": {
+   "bytes": 86029,
+   "sha256": "82cf1ed1100e8120762ed6d43b0931b7ade385e73bad155ef40b0f06dadc67a5"
+  },
+  "v1/teaminfo/ti_2005.parquet": {
+   "bytes": 86077,
+   "sha256": "b56220ac4b86ab299b95c9e38ea21b79bbaa3632787617ec4572ecd7147f62dc"
+  },
+  "v1/teaminfo/ti_2006.parquet": {
+   "bytes": 86604,
+   "sha256": "b0e4fcc539c3583f39742c12baa59f2decc48e94e3b4346772c2f63a82736ffd"
+  },
+  "v1/teaminfo/ti_2007.parquet": {
+   "bytes": 86185,
+   "sha256": "8a8c567fa414935cc54f74f406a3fc2ab01445654ab2b63f457540a6edaedd84"
+  },
+  "v1/teaminfo/ti_2008.parquet": {
+   "bytes": 86238,
+   "sha256": "eea6e762eb8e541e54a1960c3092ddb5f3d114bb6acf85319f9a1aba8dacc6c8"
+  },
+  "v1/teaminfo/ti_2009.parquet": {
+   "bytes": 87132,
+   "sha256": "c3214bc8c82452610656173b295cb88750fd0b832987758efc61d1773b7e4b63"
+  },
+  "v1/teaminfo/ti_2010.parquet": {
+   "bytes": 88215,
+   "sha256": "3ef8a7b6421d1aec378454a68074d570f62bb36b17f507b5dc7f79baa70e7da8"
+  },
+  "v1/teaminfo/ti_2011.parquet": {
+   "bytes": 88884,
+   "sha256": "3bb7f4c123e447a3bd75311ff5490d9528d1bc15f902d00d5f9b95fe1a71506e"
+  },
+  "v1/teaminfo/ti_2012.parquet": {
+   "bytes": 88880,
+   "sha256": "ad46b0c2ca318f9d4aeec38fb13070a363433db41859180da09a9e35d279b117"
+  },
+  "v1/teaminfo/ti_2013.parquet": {
+   "bytes": 89825,
+   "sha256": "b35ddb0518968537774ae5b993d63f0f2492a40eb13a3e2c152688b66cb02a9c"
+  },
+  "v1/teaminfo/ti_2014.parquet": {
+   "bytes": 177861,
+   "sha256": "0f2d76a81befb04ecd8ab561c4d339c59c430f38b0537efaf37cadd594964bba"
+  },
+  "v1/teaminfo/ti_2015.parquet": {
+   "bytes": 177944,
+   "sha256": "87ff2ae5529f16af750ee32694ca39f8b3965d57aae4e1f2ad4cd0c6c0a4d94f"
+  },
+  "v1/teaminfo/ti_2016.parquet": {
+   "bytes": 178029,
+   "sha256": "3c5e48fedace3627a295d82c3260a4c6f7ee7f6dba744175ca524b9e48adede0"
+  },
+  "v1/teaminfo/ti_2017.parquet": {
+   "bytes": 178432,
+   "sha256": "35426dd277d1412402d9c05ad685dc30dd19383aa879de274ad9cc4a2b6debe5"
+  },
+  "v1/teaminfo/ti_2018.parquet": {
+   "bytes": 178446,
+   "sha256": "32412dda0b079072acf2d614def1b8a878a2714c6a3e166f0380a8a206223d66"
+  },
+  "v1/teaminfo/ti_2019.parquet": {
+   "bytes": 178043,
+   "sha256": "72d56b2dc00d91fd0a7fa63e92be84e54379a350fb6411f4364c886f63da6cdd"
+  },
+  "v1/teaminfo/ti_2020.parquet": {
+   "bytes": 168677,
+   "sha256": "789c35dfee6a5c7bddbc96a0df5cf414ef3f4dd5816aae7c972b5c48b5f942a0"
+  },
+  "v1/teaminfo/ti_2021.parquet": {
+   "bytes": 176944,
+   "sha256": "632227e92761d940bee298726a218326c7d81773c71ac87a997628657d5a8b47"
+  },
+  "v1/teaminfo/ti_2022.parquet": {
+   "bytes": 177176,
+   "sha256": "7589ed8e266300b887a33a7fa6d3d85559c4e8337eea80223b66fa69901edccb"
+  },
+  "v1/teaminfo/ti_2023.parquet": {
+   "bytes": 176753,
+   "sha256": "91e5dd6d29c95d5eda7eee6296b37c06740a8913446085b8e6fda04be44dbe42"
+  },
+  "v1/teaminfo/ti_2024.parquet": {
+   "bytes": 177449,
+   "sha256": "1225957b9f9b37e689c8e413921a39e9978ac61f5eca165c799e9bca8c125f45"
+  },
+  "v1/teaminfo/ti_2025.parquet": {
+   "bytes": 177877,
+   "sha256": "208f2f6f13d111011c5883cf0790b04588c8697a2decd3af08acaaf436c54bf4"
+  },
+  "v1/teams/teams_colors_logos.csv": {
+   "bytes": 160709,
+   "sha256": "d559f26ad046e7995ceba9403730cde862b5c6d4cdb750fecd7d94733efc7294"
+  }
+ },
+ "data_sources": {
+  "betting": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/betting/csv/cfb_line_odds.csv.gz",
+  "mline": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/cfb_matchup_line/cfb_matchup_line_<S>.parquet",
+  "pbp": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_cfb_pbp/play_by_play_<S>.parquet",
+  "retprod": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/cfb_returning_production/cfb_returning_production_<S>.parquet",
+  "sched": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/cfb_schedules/cfb_schedules_<S>.parquet",
+  "talent": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/cfb_team_talent/cfb_team_talent_<S>.parquet",
+  "teaminfo": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/team_info/parquet/cfb_team_info_<S>.parquet",
+  "v1": "football/cfb_p4/research/fetch_data.sh (V1 inputs: schedules, rosters, player stats, pbp, line archive)"
+ },
+ "ensemble_weights_by_season": {
+  "2016": {
+   "A_adj_eff": 0.007921448541530363,
+   "B_elo": 1.953647897761387e-14,
+   "C_ridge": 0.3980653092607636,
+   "D_gbm": 0.44665611370289365,
+   "E_drive": 0.14735712849479268
+  },
+  "2017": {
+   "A_adj_eff": 0.0,
+   "B_elo": 0.0,
+   "C_ridge": 0.5900634621504947,
+   "D_gbm": 0.3095666160790158,
+   "E_drive": 0.10036992177049693
+  },
+  "2018": {
+   "A_adj_eff": 0.0,
+   "B_elo": 6.125984363552699e-15,
+   "C_ridge": 0.5465721632779476,
+   "D_gbm": 0.3844919913014623,
+   "E_drive": 0.0689358454205929
+  },
+  "2019": {
+   "A_adj_eff": 1.789755200512317e-13,
+   "B_elo": 7.731635550795387e-14,
+   "C_ridge": 0.5213736975753845,
+   "D_gbm": 0.398716755223132,
+   "E_drive": 0.07990954720123715
+  },
+  "2020": {
+   "A_adj_eff": 0.0,
+   "B_elo": 0.012228581896745685,
+   "C_ridge": 0.5059079654150448,
+   "D_gbm": 0.3852609138923917,
+   "E_drive": 0.09660253879582707
+  },
+  "2021": {
+   "A_adj_eff": 0.0,
+   "B_elo": 0.017643434745014137,
+   "C_ridge": 0.490568082442151,
+   "D_gbm": 0.38576646076957233,
+   "E_drive": 0.10602202204326619
+  },
+  "2022": {
+   "A_adj_eff": 0.0,
+   "B_elo": 0.04560377031919527,
+   "C_ridge": 0.5212284833379636,
+   "D_gbm": 0.37382985158206655,
+   "E_drive": 0.05933789476077489
+  },
+  "2023": {
+   "A_adj_eff": 5.747916452245274e-16,
+   "B_elo": 0.04824013485664588,
+   "C_ridge": 0.5412767513640991,
+   "D_gbm": 0.3576499288619632,
+   "E_drive": 0.052833184917291345
+  },
+  "2024": {
+   "A_adj_eff": 7.428286674089061e-15,
+   "B_elo": 0.04049325711938575,
+   "C_ridge": 0.560016838445961,
+   "D_gbm": 0.3548603074933551,
+   "E_drive": 0.04462959694129082
+  },
+  "2025": {
+   "A_adj_eff": 1.6372087003495276e-15,
+   "B_elo": 0.02510114602461164,
+   "C_ridge": 0.5773711980210138,
+   "D_gbm": 0.3584688718677812,
+   "E_drive": 0.03905878408659162
+  },
+  "2026": {
+   "A_adj_eff": 4.212421742510481e-15,
+   "B_elo": 0.019891845615774874,
+   "C_ridge": 0.5665713134095504,
+   "D_gbm": 0.3736850676434537,
+   "E_drive": 0.03985177333122387
+  }
+ },
+ "feature_version": "cfb_v2_fv1",
+ "files": {
+  "artifacts/gbm_D.txt": "553f6d168b666b6010b0c6472a97e5a343009d385c77d654f6a3e2c7df255ffb",
+  "artifacts/meta.json": "f39b529c7c251209df9cd5a6c206472c9c2c31c9495a27a2e55358aba1521f6b",
+  "artifacts/models.json": "562a8e30700647614403073967873f75a6c7feb39630d44c85aa8ebecb8f7e8d",
+  "params.js": "26ee96cabd335406cfe7f30f0d61dca2b67ed4ada5fd21c7d81178a381637e27",
+  "predictions.csv.gz": "9d37171193dfdf38a700c1f93b58e2f9666c500c6fa1ec6ad0dc711cfb43514e"
+ },
+ "frozen_at": "2026-09-27T07:38:19Z",
+ "headline": {
+  "beats_closing_line": false,
+  "beats_opening_line": false,
+  "holdout_brier": 0.1829573742874896,
+  "holdout_brier_v1": 0.1857482539063342,
+  "holdout_coverage": {
+   "50": 0.5084007467330429,
+   "80": 0.8164281269446173,
+   "95": 0.9489732420659615
+  },
+  "holdout_mae": {
+   "base_cfbd_elo": 13.031006421798425,
+   "base_hfa": 15.940706907310702,
+   "base_v1": 12.646917242939685,
+   "close_margin": 12.010117493472585,
+   "ens_pred": 12.386140838944453,
+   "line": 12.092852480417754,
+   "pred_B_elo": 13.173459092495914
+  },
+  "holdout_n_common": 1532
+ },
+ "market_layer_by_season": {
+  "2018": {
+   "clv_beta": 0.15019512805923355,
+   "cover_cal": [
+    -0.19031282739770833,
+    -0.24022581327746068,
+    -0.15277124024646804,
+    0.05569118405999813,
+    0.6052757656139582,
+    0.17351034820649294
+   ],
+   "ma_coef": [
+    -0.8525514573470057,
+    -0.2758972141305318,
+    1.3285600793734023,
+    0.7300748176006788,
+    -0.7355214280733218,
+    -0.04431912740238104,
+    0.039624221062196735
+   ],
+   "n_train": 769,
+   "push_table": {
+    "0-2.5": 0.02,
+    "13.5-99": 0.031055900621118012,
+    "2.5-3.5": 0.02,
+    "3.5-6.5": 0.02,
+    "6.5-7.5": 0.02,
+    "7.5-13.5": 0.01
+   }
+  },
+  "2019": {
+   "clv_beta": 0.11345302177925762,
+   "cover_cal": [
+    -0.11697015121878607,
+    -0.003766625282302234,
+    -0.15088765470923507,
+    -0.03698966606015019,
+    0.36890723432531536,
+    0.199271928428911
+   ],
+   "ma_coef": [
+    -0.8016627150085768,
+    0.07503540745151183,
+    0.9541005490017822,
+    0.2759981653428699,
+    -0.25199880086465076,
+    -0.07107205715012639,
+    0.0756074989755784
+   ],
+   "n_train": 1568,
+   "push_table": {
+    "0-2.5": 0.0,
+    "13.5-99": 0.033846153846153845,
+    "2.5-3.5": 0.08695652173913043,
+    "3.5-6.5": 0.0196078431372549,
+    "6.5-7.5": 0.06557377049180328,
+    "7.5-13.5": 0.03723404255319149
+   }
+  },
+  "2020": {
+   "clv_beta": 0.11464214219214129,
+   "cover_cal": [
+    -0.08203097899458686,
+    -0.10290396013079589,
+    -0.017930151864869372,
+    -0.09032004835631181,
+    0.1912517600285749,
+    0.4126196359000723
+   ],
+   "ma_coef": [
+    -0.43647247360316205,
+    0.1344771029175288,
+    0.905673187488124,
+    0.13540125157054528,
+    -0.10184016044839177,
+    -0.03629652919133996,
+    0.03648382555508309
+   ],
+   "n_train": 2356,
+   "push_table": {
+    "0-2.5": 0.008264462809917356,
+    "13.5-99": 0.032454361054766734,
+    "2.5-3.5": 0.08333333333333333,
+    "3.5-6.5": 0.013245033112582781,
+    "6.5-7.5": 0.05319148936170213,
+    "7.5-13.5": 0.034220532319391636
+   }
+  },
+  "2021": {
+   "clv_beta": 0.11464214219214129,
+   "cover_cal": [
+    -0.08203097899458686,
+    -0.10290396013079589,
+    -0.017930151864869372,
+    -0.09032004835631181,
+    0.1912517600285749,
+    0.4126196359000723
+   ],
+   "ma_coef": [
+    -0.43647247360316205,
+    0.1344771029175288,
+    0.905673187488124,
+    0.13540125157054528,
+    -0.10184016044839177,
+    -0.03629652919133996,
+    0.03648382555508309
+   ],
+   "n_train": 2356,
+   "push_table": {
+    "0-2.5": 0.008264462809917356,
+    "13.5-99": 0.032454361054766734,
+    "2.5-3.5": 0.08333333333333333,
+    "3.5-6.5": 0.013245033112582781,
+    "6.5-7.5": 0.05319148936170213,
+    "7.5-13.5": 0.034220532319391636
+   }
+  },
+  "2022": {
+   "clv_beta": 0.09541250948690125,
+   "cover_cal": [
+    -0.048699567233175874,
+    0.019875839147380555,
+    -0.04283502606858766,
+    -0.09458045110783987,
+    0.030571939933831154,
+    0.3026016404166226
+   ],
+   "ma_coef": [
+    -0.46739574172229054,
+    0.21238625425581936,
+    0.8205643126777569,
+    -0.01824828104975413,
+    0.03673452777701884,
+    -0.0366588855423353,
+    0.03728678201246477
+   ],
+   "n_train": 3195,
+   "push_table": {
+    "0-2.5": 0.011560693641618497,
+    "13.5-99": 0.028315946348733235,
+    "2.5-3.5": 0.08496732026143791,
+    "3.5-6.5": 0.01809954751131222,
+    "6.5-7.5": 0.040983606557377046,
+    "7.5-13.5": 0.031609195402298854
+   }
+  },
+  "2023": {
+   "clv_beta": 0.08185309429654072,
+   "cover_cal": [
+    -0.03771310583381923,
+    0.016307195608934504,
+    0.012406395777764138,
+    -0.07138570808987128,
+    -0.010320181209915371,
+    0.21025117392517934
+   ],
+   "ma_coef": [
+    -0.3996065778768344,
+    0.17498173697289898,
+    0.8337344294654213,
+    -0.048052683959208316,
+    0.07489339649591775,
+    -0.0029436122591255786,
+    0.009136955102327883
+   ],
+   "n_train": 3972,
+   "push_table": {
+    "0-2.5": 0.014285714285714285,
+    "13.5-99": 0.029304029304029304,
+    "2.5-3.5": 0.09183673469387756,
+    "3.5-6.5": 0.017421602787456445,
+    "6.5-7.5": 0.053691275167785234,
+    "7.5-13.5": 0.03233256351039261
+   }
+  },
+  "2024": {
+   "clv_beta": 0.08147961346366454,
+   "cover_cal": [
+    -0.036138234508471506,
+    0.17861234442184754,
+    -0.038130555806110696,
+    -0.03719069317270194,
+    -0.09491340891369282,
+    0.14780326157177268
+   ],
+   "ma_coef": [
+    -0.3411833437227852,
+    0.3074160812068526,
+    0.7043327491582589,
+    -0.14320413482492955,
+    0.16770807315247888,
+    -0.032382732529534275,
+    0.03436975023871395
+   ],
+   "n_train": 4818,
+   "push_table": {
+    "0-2.5": 0.012552301255230125,
+    "13.5-99": 0.027262813522355506,
+    "2.5-3.5": 0.09174311926605505,
+    "3.5-6.5": 0.018575851393188854,
+    "6.5-7.5": 0.04878048780487805,
+    "7.5-13.5": 0.030425963488843813
+   }
+  },
+  "2025": {
+   "clv_beta": 0.07300528566311756,
+   "cover_cal": [
+    -0.03045028509149821,
+    0.1269500477923515,
+    -0.04746011147876227,
+    0.00040650410903735984,
+    -0.0754486197171155,
+    0.15862317939871387
+   ],
+   "ma_coef": [
+    -0.23017153671617016,
+    0.2945290912968378,
+    0.715191809011136,
+    -0.12239903605217305,
+    0.1475638052105555,
+    -0.033484225348025934,
+    0.03731174131478837
+   ],
+   "n_train": 5679,
+   "push_table": {
+    "0-2.5": 0.01079136690647482,
+    "13.5-99": 0.028846153846153848,
+    "2.5-3.5": 0.09266409266409266,
+    "3.5-6.5": 0.018134715025906734,
+    "6.5-7.5": 0.05235602094240838,
+    "7.5-13.5": 0.0313588850174216
+   }
+  },
+  "2026": {
+   "clv_beta": 0.07158084747998247,
+   "cover_cal": [
+    -0.01096016456832942,
+    0.1594891000747296,
+    -0.04481708545732893,
+    -0.0016995131167644058,
+    -0.10040434755999135,
+    0.14251405124224756
+   ],
+   "ma_coef": [
+    -0.12245209038590528,
+    0.29304615360313,
+    0.722256250520287,
+    -0.11547006357863153,
+    0.14720557469710507,
+    -0.02394752640983198,
+    0.02667128382143363
+   ],
+   "n_train": 6611,
+   "push_table": {
+    "0-2.5": 0.010135135135135136,
+    "13.5-99": 0.028495102404274265,
+    "2.5-3.5": 0.09302325581395349,
+    "3.5-6.5": 0.01627906976744186,
+    "6.5-7.5": 0.057692307692307696,
+    "7.5-13.5": 0.03257328990228013
+   }
+  }
+ },
+ "model_version": "edgedesk_cfb_v2.0.0",
+ "note": "The first V2 implementation as merged in PR #356 (edgedesk_cfb_v2.0.0). Reproduced from scratch on 2026-09-27: every dev/holdout metric identical to the committed backtest within optimizer tolerance (max relative difference 2e-4 on a calibration coefficient); LightGBM model byte-identical; linear coefficients within 8e-7. Baseline for every later change.",
+ "preprocessing": {
+  "fcs": "FBS-vs-FCS rows are predicted but never priced",
+  "garbage_time": "declared: |score diff| > 38 (Q2), 28 (Q3), 22 (Q4); weight 0; no WP columns",
+  "market_qa": "drop |line| > 60; drop openers sign-flipped vs close or > 14 pts from close (uses the close: see REDTEAM audit)",
+  "qb_shrinkage": {
+   "k_dropbacks": 150.56960715837127,
+   "noise_per_game_db": 2.7645818870064165,
+   "replacement_mean": -0.056583544418282346,
+   "same_starter_prob": 0.8767884194580037,
+   "seasons": [
+    2009,
+    2010,
+    2011,
+    2012,
+    2013
+   ],
+   "true_var": 0.018360822872431286
+  },
+  "sacks_untagged_seasons": [
+   2013
+  ],
+  "trench_havoc": "recomputed from statYardage (provider flags drift)",
+  "variance_components": {
+   "drive_epa": [
+    21.903467966702042,
+    1e-06
+   ],
+   "drives_pg": [
+    1e-09,
+    2.5067041266285175
+   ],
+   "epa": [
+    3.8723447270593976,
+    1e-06
+   ],
+   "epa_pass": [
+    6.122975155357876,
+    1e-06
+   ],
+   "epa_rush": [
+    1.8526799508219574,
+    1e-06
+   ],
+   "expl": [
+    0.06487775663179417,
+    1e-06
+   ],
+   "expl_pass": [
+    0.18980882730998716,
+    1e-06
+   ],
+   "expl_rush": [
+    0.03806122739132256,
+    1.4722281024585104e-05
+   ],
+   "fg_value": [
+    1e-09,
+    7.22375337175441
+   ],
+   "havoc": [
+    0.10323047202062412,
+    1e-06
+   ],
+   "line_yds": [
+    13.138446949783058,
+    1e-06
+   ],
+   "opp_rate": [
+    0.22538948027789696,
+    1e-06
+   ],
+   "pass_rate": [
+    0.07913776922292891,
+    0.006072651078998115
+   ],
+   "plays_pg": [
+    1e-09,
+    85.15696496895539
+   ],
+   "ppd": [
+    21.508250608059853,
+    1e-06
+   ],
+   "pts_per_opp": [
+    8.106396614470963,
+    1e-06
+   ],
+   "sack_rate": [
+    0.13657239413077088,
+    1e-06
+   ],
+   "so_rate": [
+    0.36057504173232136,
+    1e-06
+   ],
+   "sr": [
+    0.4700189960446862,
+    1e-06
+   ],
+   "sr_3rd": [
+    0.1975760733073929,
+    1e-06
+   ],
+   "sr_early": [
+    0.33628846797636297,
+    1e-06
+   ],
+   "sr_pass": [
+    0.31257084326265977,
+    1e-06
+   ],
+   "sr_pd": [
+    0.2955879335730393,
+    1e-06
+   ],
+   "sr_rush": [
+    0.2519814808909392,
+    1e-06
+   ],
+   "st_net": [
+    1e-09,
+    51.80525828354738
+   ],
+   "start_fp": [
+    140.19773209784717,
+    12.524643312149555
+   ],
+   "stuff": [
+    0.2044008702185332,
+    1e-06
+   ],
+   "to_rate": [
+    0.032045777630077356,
+    1e-06
+   ]
+  }
+ },
+ "promotion": {
+  "bet_allowed": false,
+  "champion": "V1 (V2 is eligible; the switch is a person setting the flag)",
+  "decision": "ELIGIBLE_FOR_PROMOTION",
+  "failed": [],
+  "passed": [
+   "G1_mae",
+   "G2_rmse",
+   "G3_brier",
+   "G4_calibration",
+   "G5_coverage",
+   "G6_stability",
+   "G7_subgroups"
+  ]
+ },
+ "reliability_ranges": {
+  "2018": [
+   14.77477915442538,
+   19.53482087068334
+  ],
+  "2019": [
+   15.151269133172391,
+   19.189181909094756
+  ],
+  "2020": [
+   15.235929109016004,
+   19.125200239212568
+  ],
+  "2021": [
+   15.296267533916591,
+   18.95659584438343
+  ],
+  "2022": [
+   15.311796565892699,
+   18.688501012218932
+  ],
+  "2023": [
+   15.373168237005427,
+   18.58468748423584
+  ],
+  "2024": [
+   15.382518407591299,
+   18.560974578623625
+  ],
+  "2025": [
+   15.348236134084953,
+   18.49569369737082
+  ],
+  "2026": [
+   15.322939962708734,
+   18.455095954979118
+  ]
+ },
+ "seeds": {
+  "bootstrap": 20260927,
+  "global": 20260927,
+  "lightgbm": 20260927,
+  "reality_check": 20260927
+ },
+ "selected_families": {
+  "C": [
+   "base",
+   "adj_eff",
+   "trench_havoc",
+   "matchup",
+   "form",
+   "context"
+  ],
+  "D": [
+   "base",
+   "adj_eff",
+   "matchup",
+   "form",
+   "special_teams",
+   "qb"
+  ]
+ },
+ "training_rows_fbs_final_by_season": {
+  "2014": 760,
+  "2015": 765,
+  "2016": 760,
+  "2017": 776,
+  "2018": 772,
+  "2019": 774,
+  "2020": 534,
+  "2021": 770,
+  "2022": 776,
+  "2023": 792,
+  "2024": 799,
+  "2025": 808,
+  "2026": 208
+ },
+ "uncertainty_and_win_calibration_by_season": {
+  "2017": {
+   "abs_z_quantiles": {
+    "0.5": 0.6402195401174123,
+    "0.8": 1.2885095887997031,
+    "0.95": 1.9313823224520832
+   },
+   "iso_x": [
+    0.061952311801975246,
+    0.07681180403660726,
+    0.07711348178302313,
+    0.09524422727033566,
+    0.09801652605559596,
+    0.12040381254783938,
+    0.12302583737588635,
+    0.1440893749008516,
+    0.152480788265266,
+    0.15736293312284722,
+    0.15774197413854063,
+    0.3316402983182172,
+    0.3341918595274428,
+    0.34231864234434917,
+    0.34303028293728355,
+    0.4240190857903743,
+    0.42520563395558286,
+    0.43387889008272884,
+    0.4345711909713674,
+    0.5541680982422089,
+    0.5549470719119755,
+    0.644615095151007,
+    0.6452237384008231,
+    0.7657716380905918,
+    0.7665187169930419,
+    0.82514726766269,
+    0.8258865847546422,
+    0.9383825655554536,
+    0.938408658424534,
+    0.9498298063264335,
+    0.9505282403607521,
+    0.9999271395214495
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.07692307692307693,
+    0.07692307692307693,
+    0.14285714285714285,
+    0.14285714285714285,
+    0.16666666666666666,
+    0.16666666666666666,
+    0.2,
+    0.2,
+    0.27586206896551724,
+    0.27586206896551724,
+    0.3,
+    0.3,
+    0.34782608695652173,
+    0.34782608695652173,
+    0.5,
+    0.5,
+    0.5377358490566037,
+    0.5377358490566037,
+    0.5975609756097561,
+    0.5975609756097561,
+    0.6875,
+    0.6875,
+    0.7681159420289855,
+    0.7681159420289855,
+    0.9281045751633987,
+    0.9281045751633987,
+    0.95,
+    0.95,
+    0.995,
+    0.995
+   ],
+   "n_train": 873,
+   "platt": [
+    0.06677418716658723,
+    0.9762544407808694
+   ],
+   "sigma_coef": {
+    "abs_pred": 0.033344722341324164,
+    "early_season": -0.003980727507716263,
+    "ens_sd": -0.01641697062068423,
+    "exp_total_z": 0.06771278679809402,
+    "fcs_game_f": -0.1922062553768908,
+    "intercept": 5.665309471850763,
+    "inv_games": -0.3660415634448792,
+    "qb_missing_any": 0.3184532341279109,
+    "qb_unsettled_any": -0.0530449090626035,
+    "rating_sd_sum": 0.2641993056895253,
+    "to_dependence": -0.0012853828347930256,
+    "vol_sum": 0.002079169727580043
+   },
+   "sigma_mu": {
+    "abs_pred": 1.3158499443558989,
+    "early_season": 0.4009163802978236,
+    "ens_sd": 3.5625407961642765,
+    "exp_total_z": 0.46186082312962484,
+    "fcs_game_f": 0.12943871706758306,
+    "inv_games": 0.31657400446060235,
+    "qb_missing_any": 0.15349369988545247,
+    "qb_unsettled_any": 0.2646048109965636,
+    "rating_sd_sum": 1.29403148964827,
+    "to_dependence": 0.463928606864523,
+    "vol_sum": 2.761879181082946
+   },
+   "sigma_sd": {
+    "abs_pred": 0.9992575079740315,
+    "early_season": 0.4903650424739316,
+    "ens_sd": 2.179133449991178,
+    "exp_total_z": 0.8498849532963159,
+    "fcs_game_f": 0.3358773001364875,
+    "inv_games": 0.3133248303746878,
+    "qb_missing_any": 0.36066936403750344,
+    "qb_unsettled_any": 0.4413754157600741,
+    "rating_sd_sum": 0.6464032721453339,
+    "to_dependence": 0.32484361455121613,
+    "vol_sum": 0.3520767290631876
+   },
+   "t_df": 30
+  },
+  "2018": {
+   "abs_z_quantiles": {
+    "0.5": 0.6291784629149122,
+    "0.8": 1.28843402918333,
+    "0.95": 1.962533895644393
+   },
+   "iso_x": [
+    0.02967821886559685,
+    0.053182041321879314,
+    0.055830747711756,
+    0.07048265968100353,
+    0.07169616567307024,
+    0.1555505613700071,
+    0.15760372416261859,
+    0.27201053672569264,
+    0.27244430467694614,
+    0.32685410794142133,
+    0.32698370494067297,
+    0.33724376348932794,
+    0.3385890508839364,
+    0.4012827096463165,
+    0.4015208648493884,
+    0.41661855083477894,
+    0.4169244135426331,
+    0.5515801949489595,
+    0.5523185398664967,
+    0.5526106799865087,
+    0.5529082568220578,
+    0.5863335463523506,
+    0.5870632261515589,
+    0.6115972815496501,
+    0.6116472948999045,
+    0.6184973733374535,
+    0.6193615565966731,
+    0.6313367481042248,
+    0.63163699308629,
+    0.6810628390536015,
+    0.6813197373013566,
+    0.6849491248045363,
+    0.6854868896133685,
+    0.6888323279687105,
+    0.6897544354824119,
+    0.7749934441125494,
+    0.775173967093608,
+    0.8291698899275651,
+    0.8294664762177005,
+    0.870725934181056,
+    0.8707818052449392,
+    0.9396783698019506,
+    0.9397052181147042,
+    0.9585017014254595,
+    0.9585133325379486,
+    0.9989607473540354
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.06666666666666667,
+    0.06666666666666667,
+    0.09333333333333334,
+    0.09333333333333334,
+    0.23664122137404583,
+    0.23664122137404583,
+    0.2604166666666667,
+    0.2604166666666667,
+    0.3333333333333333,
+    0.3333333333333333,
+    0.34579439252336447,
+    0.34579439252336447,
+    0.45,
+    0.45,
+    0.4956896551724138,
+    0.4956896551724138,
+    0.5,
+    0.5,
+    0.5483870967741935,
+    0.5483870967741935,
+    0.5833333333333334,
+    0.5833333333333334,
+    0.6,
+    0.6,
+    0.6071428571428571,
+    0.6071428571428571,
+    0.6363636363636364,
+    0.6363636363636364,
+    0.6666666666666666,
+    0.6666666666666666,
+    0.7142857142857143,
+    0.7142857142857143,
+    0.7297297297297297,
+    0.7297297297297297,
+    0.7835820895522388,
+    0.7835820895522388,
+    0.8942307692307693,
+    0.8942307692307693,
+    0.9381443298969072,
+    0.9381443298969072,
+    0.9591836734693877,
+    0.9591836734693877,
+    0.995,
+    0.995
+   ],
+   "n_train": 1747,
+   "platt": [
+    0.0019196097882470315,
+    1.0413609566418107
+   ],
+   "sigma_coef": {
+    "abs_pred": -0.00036465016790599613,
+    "early_season": -0.039114671334003086,
+    "ens_sd": 0.008586797017779358,
+    "exp_total_z": 0.07359888166190656,
+    "fcs_game_f": -0.1676523566678814,
+    "intercept": 5.642703248012078,
+    "inv_games": -0.19496552093936068,
+    "qb_missing_any": 0.0795602019271308,
+    "qb_unsettled_any": -0.017617408494455276,
+    "rating_sd_sum": 0.3383256055265557,
+    "to_dependence": 0.007568700881854196,
+    "vol_sum": -0.03524517700295231
+   },
+   "sigma_mu": {
+    "abs_pred": 1.2951994974817256,
+    "early_season": 0.3949627933600458,
+    "ens_sd": 3.5608908144296,
+    "exp_total_z": 0.34818523372935994,
+    "fcs_game_f": 0.12077847738981111,
+    "inv_games": 0.3134003184375251,
+    "qb_missing_any": 0.1505437893531769,
+    "qb_unsettled_any": 0.2919290211791643,
+    "rating_sd_sum": 1.2799614617145063,
+    "to_dependence": 0.439706119863482,
+    "vol_sum": 2.738123364089349
+   },
+   "sigma_sd": {
+    "abs_pred": 0.9809692326824745,
+    "early_season": 0.4889826691550556,
+    "ens_sd": 2.0813452943606623,
+    "exp_total_z": 0.802192907592081,
+    "fcs_game_f": 0.3259629678320981,
+    "inv_games": 0.3114303909788838,
+    "qb_missing_any": 0.35770602278972413,
+    "qb_unsettled_any": 0.4547800087477477,
+    "rating_sd_sum": 0.6412881937026352,
+    "to_dependence": 0.3101559630637305,
+    "vol_sum": 0.32398329521692554
+   },
+   "t_df": 30
+  },
+  "2019": {
+   "abs_z_quantiles": {
+    "0.5": 0.6434934299551137,
+    "0.8": 1.292225071269105,
+    "0.95": 1.9393585006031062
+   },
+   "iso_x": [
+    0.012849934404390417,
+    0.02405737834381605,
+    0.02611072171606399,
+    0.0696381641792082,
+    0.07077793030698432,
+    0.154018192270991,
+    0.15453622360509167,
+    0.19831566938730472,
+    0.1984098836463597,
+    0.28587658985507747,
+    0.2866059868591786,
+    0.3281517261514344,
+    0.3289920232029109,
+    0.34266936724206354,
+    0.34282847297957164,
+    0.35730993922289933,
+    0.3574587912769027,
+    0.39934344774777175,
+    0.3996609381886249,
+    0.4201805165668573,
+    0.42024307011045137,
+    0.4230523378449518,
+    0.4232150391620322,
+    0.49201398708068345,
+    0.4929361265752219,
+    0.5515022309793938,
+    0.5515623186949612,
+    0.5825413536231021,
+    0.582985382801549,
+    0.5848544232388846,
+    0.584968826107874,
+    0.5859674255903443,
+    0.5861896732975875,
+    0.6709519438073044,
+    0.6711007586563713,
+    0.6764166310732194,
+    0.6770741716965312,
+    0.6904331376851189,
+    0.6905373500653649,
+    0.6931983644463926,
+    0.693431455233692,
+    0.7510889538193125,
+    0.7510895263627517,
+    0.7713107358348099,
+    0.7718923626845486,
+    0.7816381890513613,
+    0.7818439619404891,
+    0.8019533733342581,
+    0.8020723773883911,
+    0.8299887328319391,
+    0.8300606928777222,
+    0.8527370041138407,
+    0.8535018459600521,
+    0.8835566177459907,
+    0.8835779867184594,
+    0.8887722630627125,
+    0.8891874341260799,
+    0.9285211309190461,
+    0.928846666250594,
+    0.9452432779772282,
+    0.9454528460500549,
+    0.9506481076809108,
+    0.9511404775802448,
+    0.9982454230277694
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.07142857142857142,
+    0.07142857142857142,
+    0.07339449541284404,
+    0.07339449541284404,
+    0.23809523809523808,
+    0.23809523809523808,
+    0.25,
+    0.25,
+    0.2571428571428571,
+    0.2571428571428571,
+    0.29411764705882354,
+    0.29411764705882354,
+    0.358974358974359,
+    0.358974358974359,
+    0.38461538461538464,
+    0.38461538461538464,
+    0.39285714285714285,
+    0.39285714285714285,
+    0.42857142857142855,
+    0.42857142857142855,
+    0.4896907216494845,
+    0.4896907216494845,
+    0.5136986301369864,
+    0.5136986301369864,
+    0.5324675324675324,
+    0.5324675324675324,
+    0.5714285714285714,
+    0.5714285714285714,
+    0.6,
+    0.6,
+    0.6124031007751938,
+    0.6124031007751938,
+    0.6190476190476191,
+    0.6190476190476191,
+    0.7021276595744681,
+    0.7021276595744681,
+    0.7142857142857143,
+    0.7142857142857143,
+    0.7513513513513513,
+    0.7513513513513513,
+    0.7719298245614035,
+    0.7719298245614035,
+    0.7954545454545454,
+    0.7954545454545454,
+    0.8088235294117647,
+    0.8088235294117647,
+    0.8415841584158416,
+    0.8415841584158416,
+    0.8666666666666667,
+    0.8666666666666667,
+    0.8952380952380953,
+    0.8952380952380953,
+    0.9166666666666666,
+    0.9166666666666666,
+    0.9319727891156463,
+    0.9319727891156463,
+    0.9342105263157895,
+    0.9342105263157895,
+    0.96875,
+    0.96875,
+    0.995,
+    0.995
+   ],
+   "n_train": 2631,
+   "platt": [
+    0.020802849549966147,
+    1.067080618937247
+   ],
+   "sigma_coef": {
+    "abs_pred": -0.04079736747840713,
+    "early_season": -0.04499777623766078,
+    "ens_sd": 0.04729108768852699,
+    "exp_total_z": 0.08475944984422441,
+    "fcs_game_f": -0.03699332585175323,
+    "intercept": 5.640559017666425,
+    "inv_games": -0.06133618714289038,
+    "qb_missing_any": 0.03376251914871539,
+    "qb_unsettled_any": 0.009880517357272698,
+    "rating_sd_sum": 0.1519550895920882,
+    "to_dependence": 0.008157726655280383,
+    "vol_sum": -0.008689183781951059
+   },
+   "sigma_mu": {
+    "abs_pred": 1.3041814346711693,
+    "early_season": 0.3960471303686811,
+    "ens_sd": 3.5904380478270306,
+    "exp_total_z": 0.34247550637337243,
+    "fcs_game_f": 0.12276700874192323,
+    "inv_games": 0.3138614215296085,
+    "qb_missing_any": 0.1516533637400228,
+    "qb_unsettled_any": 0.298365640440897,
+    "rating_sd_sum": 1.28235598542445,
+    "to_dependence": 0.41829986807093955,
+    "vol_sum": 2.728987088285552
+   },
+   "sigma_sd": {
+    "abs_pred": 0.9946279562534875,
+    "early_season": 0.48916740397197583,
+    "ens_sd": 2.079045052357808,
+    "exp_total_z": 0.7601220069254444,
+    "fcs_game_f": 0.3282319592581798,
+    "inv_games": 0.31241168621122695,
+    "qb_missing_any": 0.3587527548510334,
+    "qb_unsettled_any": 0.45762777818495715,
+    "rating_sd_sum": 0.6396891975253081,
+    "to_dependence": 0.3048267311797108,
+    "vol_sum": 0.3249770112364545
+   },
+   "t_df": 50
+  },
+  "2020": {
+   "abs_z_quantiles": {
+    "0.5": 0.6502723745091114,
+    "0.8": 1.28570307156908,
+    "0.95": 1.9379670811105283
+   },
+   "iso_x": [
+    0.005545463758093172,
+    0.025692556952025547,
+    0.027664514298059606,
+    0.1456953978355371,
+    0.1469778252286318,
+    0.20037929595497483,
+    0.20062679328717903,
+    0.26555002276017037,
+    0.2659588282523151,
+    0.32540456977487886,
+    0.3254697644593867,
+    0.332044005504728,
+    0.3321704670176584,
+    0.3402820683336675,
+    0.34085553068300256,
+    0.3502756431364271,
+    0.35064211914240573,
+    0.35569348739298423,
+    0.35601552441115336,
+    0.41906401774321544,
+    0.4192193253195433,
+    0.4419134597970198,
+    0.44216252925053245,
+    0.4427712918721812,
+    0.443291942950904,
+    0.5334969008249417,
+    0.5337607033995619,
+    0.5591761613657072,
+    0.5598461427945582,
+    0.5853324163289281,
+    0.5856878191635739,
+    0.5883778399621338,
+    0.588545966531034,
+    0.6764764563791057,
+    0.6767132139513171,
+    0.685260679032971,
+    0.685352425178589,
+    0.70573732578978,
+    0.7058686734707997,
+    0.7241407662237048,
+    0.7241845856377462,
+    0.7534406647104236,
+    0.7538419868833315,
+    0.7544066026398198,
+    0.7547968016100941,
+    0.7840264651598228,
+    0.7845773363414794,
+    0.8044532389463525,
+    0.8045943700084848,
+    0.8330935404918111,
+    0.8344510462101615,
+    0.8376621112712422,
+    0.8379396264658083,
+    0.8641141272483304,
+    0.8643101053929053,
+    0.8722848083277275,
+    0.8724695720799892,
+    0.8949966390666059,
+    0.8954049969634268,
+    0.9364869049958773,
+    0.9366454950429296,
+    0.9469919115096265,
+    0.9471149046280172,
+    0.9546268474328644,
+    0.9546477291912323,
+    0.9998171955441383
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.08791208791208792,
+    0.08791208791208792,
+    0.1919191919191919,
+    0.1919191919191919,
+    0.24358974358974358,
+    0.24358974358974358,
+    0.2594594594594595,
+    0.2594594594594595,
+    0.3076923076923077,
+    0.3076923076923077,
+    0.36666666666666664,
+    0.36666666666666664,
+    0.375,
+    0.375,
+    0.38095238095238093,
+    0.38095238095238093,
+    0.39903846153846156,
+    0.39903846153846156,
+    0.44871794871794873,
+    0.44871794871794873,
+    0.5,
+    0.5,
+    0.5154320987654321,
+    0.5154320987654321,
+    0.5376344086021505,
+    0.5376344086021505,
+    0.5529411764705883,
+    0.5529411764705883,
+    0.5625,
+    0.5625,
+    0.6366279069767442,
+    0.6366279069767442,
+    0.7105263157894737,
+    0.7105263157894737,
+    0.7142857142857143,
+    0.7142857142857143,
+    0.7205882352941176,
+    0.7205882352941176,
+    0.746268656716418,
+    0.746268656716418,
+    0.75,
+    0.75,
+    0.7868852459016393,
+    0.7868852459016393,
+    0.84375,
+    0.84375,
+    0.8615384615384616,
+    0.8615384615384616,
+    0.8666666666666667,
+    0.8666666666666667,
+    0.8702290076335878,
+    0.8702290076335878,
+    0.8780487804878049,
+    0.8780487804878049,
+    0.889763779527559,
+    0.889763779527559,
+    0.9400921658986175,
+    0.9400921658986175,
+    0.9516129032258065,
+    0.9516129032258065,
+    0.9591836734693877,
+    0.9591836734693877,
+    0.995,
+    0.995
+   ],
+   "n_train": 3519,
+   "platt": [
+    0.05727117672415619,
+    1.055189494143796
+   ],
+   "sigma_coef": {
+    "abs_pred": -0.05276707808377871,
+    "early_season": -0.010123543709921851,
+    "ens_sd": 0.026046423017195047,
+    "exp_total_z": 0.07492449639739589,
+    "fcs_game_f": -0.04992453473642256,
+    "intercept": 5.618595005753023,
+    "inv_games": -0.0851952183660185,
+    "qb_missing_any": 0.01686630339600003,
+    "qb_unsettled_any": 0.008331507718606758,
+    "rating_sd_sum": 0.18481385117949362,
+    "to_dependence": -0.00024595596913695717,
+    "vol_sum": -0.0027799192920805373
+   },
+   "sigma_mu": {
+    "abs_pred": 1.321298316387446,
+    "early_season": 0.3927252060244388,
+    "ens_sd": 3.5792862360898146,
+    "exp_total_z": 0.3190934279006743,
+    "fcs_game_f": 0.12418300653594772,
+    "inv_games": 0.31325815181313904,
+    "qb_missing_any": 0.1517476555839727,
+    "qb_unsettled_any": 0.30008525149190113,
+    "rating_sd_sum": 1.2922052414344918,
+    "to_dependence": 0.4145080157862896,
+    "vol_sum": 2.744548923926924
+   },
+   "sigma_sd": {
+    "abs_pred": 1.0099356892139641,
+    "early_season": 0.4884259519501786,
+    "ens_sd": 2.0426419118321752,
+    "exp_total_z": 0.738618840712033,
+    "fcs_game_f": 0.32983708579789733,
+    "inv_games": 0.3121239271106728,
+    "qb_missing_any": 0.35882710832144876,
+    "qb_unsettled_any": 0.45835989792677684,
+    "rating_sd_sum": 0.6314217107025444,
+    "to_dependence": 0.29952861394880637,
+    "vol_sum": 0.3186726811660049
+   },
+   "t_df": 50
+  },
+  "2021": {
+   "abs_z_quantiles": {
+    "0.5": 0.6514918301624075,
+    "0.8": 1.2931382365322532,
+    "0.95": 1.9399129312817678
+   },
+   "iso_x": [
+    0.005213341548487738,
+    0.028268491112203642,
+    0.028929371283770378,
+    0.06478453887857294,
+    0.06680243694071519,
+    0.13733417236891976,
+    0.1373538876771917,
+    0.14578135589121366,
+    0.1464138377953258,
+    0.1732873621035277,
+    0.17342587064209636,
+    0.1993071639814904,
+    0.19952892544745682,
+    0.20308890274307834,
+    0.20388043847589699,
+    0.26226581013032535,
+    0.26235637821729907,
+    0.26442499350181037,
+    0.26487301537643404,
+    0.31756590327024903,
+    0.31774009423658556,
+    0.32708312026394015,
+    0.3274088448326985,
+    0.34017570666350894,
+    0.3403562672763496,
+    0.35979614262254067,
+    0.35982754988082033,
+    0.416332149191018,
+    0.41634592442911966,
+    0.41883035576638183,
+    0.4189441385175885,
+    0.44192618255753224,
+    0.44199733850904255,
+    0.4926807755340117,
+    0.4928228890649682,
+    0.5593055943553529,
+    0.5596544140538549,
+    0.5889595487811252,
+    0.5894593078772085,
+    0.6769268005610303,
+    0.6776554375195469,
+    0.6841839944576338,
+    0.6844888823028581,
+    0.7188342695517635,
+    0.7188858970977157,
+    0.7213911637165289,
+    0.7215335524678537,
+    0.7428155008545749,
+    0.7428268408429615,
+    0.7550495434868617,
+    0.7556277675462786,
+    0.7818214981668372,
+    0.7820059424132563,
+    0.7825903165287982,
+    0.7827014229495366,
+    0.8048075527132654,
+    0.804824825370782,
+    0.8432776802168485,
+    0.8433018065299593,
+    0.8445450533312859,
+    0.8448472771734681,
+    0.8642437628892893,
+    0.8643062677945175,
+    0.8866825207887172,
+    0.8867130860831001,
+    0.8987655877674169,
+    0.8991968011301812,
+    0.9346280223807406,
+    0.9348253014518371,
+    0.9569903235052762,
+    0.9572205184738899,
+    0.9998458466185489
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.0784313725490196,
+    0.0784313725490196,
+    0.08088235294117647,
+    0.08088235294117647,
+    0.09090909090909091,
+    0.09090909090909091,
+    0.19298245614035087,
+    0.19298245614035087,
+    0.19642857142857142,
+    0.19642857142857142,
+    0.2,
+    0.2,
+    0.23809523809523805,
+    0.23809523809523805,
+    0.25,
+    0.25,
+    0.2634408602150538,
+    0.2634408602150538,
+    0.2857142857142857,
+    0.2857142857142857,
+    0.3488372093023256,
+    0.3488372093023256,
+    0.3902439024390244,
+    0.3902439024390244,
+    0.39069767441860465,
+    0.39069767441860465,
+    0.4166666666666667,
+    0.4166666666666667,
+    0.43157894736842106,
+    0.43157894736842106,
+    0.509090909090909,
+    0.509090909090909,
+    0.5274725274725275,
+    0.5274725274725275,
+    0.6,
+    0.6,
+    0.6419753086419753,
+    0.6419753086419753,
+    0.6774193548387096,
+    0.6774193548387096,
+    0.6946107784431138,
+    0.6946107784431138,
+    0.7,
+    0.7,
+    0.75,
+    0.75,
+    0.7714285714285715,
+    0.7714285714285715,
+    0.78125,
+    0.78125,
+    0.8,
+    0.8,
+    0.8512396694214877,
+    0.8512396694214877,
+    0.8556701030927835,
+    0.8556701030927835,
+    0.8571428571428571,
+    0.8571428571428571,
+    0.8623853211009175,
+    0.8623853211009175,
+    0.8913043478260869,
+    0.8913043478260869,
+    0.9014084507042254,
+    0.9014084507042254,
+    0.9311926605504587,
+    0.9311926605504587,
+    0.9432624113475178,
+    0.9432624113475178,
+    0.995,
+    0.995
+   ],
+   "n_train": 4089,
+   "platt": [
+    0.051248437507322823,
+    1.0475616305220514
+   ],
+   "sigma_coef": {
+    "abs_pred": -0.04825720089094844,
+    "early_season": -0.00967746581426293,
+    "ens_sd": 0.02209902906135101,
+    "exp_total_z": 0.0682923713851071,
+    "fcs_game_f": -0.04415807521533228,
+    "intercept": 5.619061567313943,
+    "inv_games": -0.04956587685622538,
+    "qb_missing_any": 0.018596179209058084,
+    "qb_unsettled_any": 0.006705594770860147,
+    "rating_sd_sum": 0.14600491058507695,
+    "to_dependence": 0.0021413847052071822,
+    "vol_sum": -0.010172745341977013
+   },
+   "sigma_mu": {
+    "abs_pred": 1.3004791769335797,
+    "early_season": 0.37221814624602595,
+    "ens_sd": 3.611063420043899,
+    "exp_total_z": 0.3142241380058597,
+    "fcs_game_f": 0.115676204450966,
+    "inv_games": 0.32142638956652164,
+    "qb_missing_any": 0.15407190022010273,
+    "qb_unsettled_any": 0.3008070432868672,
+    "rating_sd_sum": 1.2888345393207452,
+    "to_dependence": 0.4197037609009625,
+    "vol_sum": 2.751705676973766
+   },
+   "sigma_sd": {
+    "abs_pred": 1.0029032360314765,
+    "early_season": 0.4834552288179496,
+    "ens_sd": 2.0316437111615917,
+    "exp_total_z": 0.7247882261981672,
+    "fcs_game_f": 0.3198753561426555,
+    "inv_games": 0.31197429538450266,
+    "qb_missing_any": 0.3610618116270331,
+    "qb_unsettled_any": 0.45866503536526815,
+    "rating_sd_sum": 0.6002276516286325,
+    "to_dependence": 0.2977217704404221,
+    "vol_sum": 0.31918582515505467
+   },
+   "t_df": 50
+  },
+  "2022": {
+   "abs_z_quantiles": {
+    "0.5": 0.6620203709813011,
+    "0.8": 1.2975699311450737,
+    "0.95": 1.9475348919051259
+   },
+   "iso_x": [
+    0.004609855944043173,
+    0.032878423793641476,
+    0.03361270971835839,
+    0.06900494876237384,
+    0.06933783131124316,
+    0.1366714446031413,
+    0.136840598286479,
+    0.14240177123315223,
+    0.14338240686315618,
+    0.16432095312712136,
+    0.16434921011083603,
+    0.17898769211355847,
+    0.17943266630602206,
+    0.19111560342934297,
+    0.19162265578159043,
+    0.2633763371626945,
+    0.2634076164947805,
+    0.2669849809807512,
+    0.2671131227392667,
+    0.26847861089027836,
+    0.26855611091072185,
+    0.33613846210058296,
+    0.336170687789741,
+    0.41710164494296254,
+    0.4173643780057339,
+    0.4227341233475359,
+    0.42283799840715874,
+    0.44166325089699043,
+    0.4424936218052228,
+    0.4923181751389105,
+    0.49283267043880397,
+    0.4929139302130139,
+    0.49316938667172017,
+    0.5335072543880983,
+    0.5335750581963077,
+    0.5473168687777776,
+    0.5473328329260666,
+    0.5587000461855748,
+    0.5589713438309813,
+    0.5848165429211009,
+    0.5849665073279455,
+    0.5904634992402341,
+    0.5904787518929895,
+    0.6765513868208586,
+    0.6765776610523272,
+    0.6792351297493375,
+    0.6796849014539852,
+    0.719385962082771,
+    0.7195651309073929,
+    0.7411879426487489,
+    0.7414459202653056,
+    0.753819885382112,
+    0.7539003463636902,
+    0.7571943669619362,
+    0.7573416420911906,
+    0.7811329628747125,
+    0.7812646651447477,
+    0.83486294732361,
+    0.8349830384514781,
+    0.8384825125990917,
+    0.8384965244336451,
+    0.8642533171239364,
+    0.8642649371312259,
+    0.8862805232081618,
+    0.8863160586014246,
+    0.9377932639716449,
+    0.9381416330745453,
+    0.9548221911439319,
+    0.954981009354829,
+    0.9801029211847602,
+    0.9802148062248438,
+    0.9998773995983614
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.08064516129032258,
+    0.08064516129032258,
+    0.08125,
+    0.08125,
+    0.125,
+    0.125,
+    0.13636363636363635,
+    0.13636363636363635,
+    0.17142857142857143,
+    0.17142857142857143,
+    0.2,
+    0.2,
+    0.24472573839662448,
+    0.24472573839662448,
+    0.25,
+    0.25,
+    0.26666666666666666,
+    0.26666666666666666,
+    0.28771929824561404,
+    0.28771929824561404,
+    0.38522427440633245,
+    0.38522427440633245,
+    0.4230769230769231,
+    0.4230769230769231,
+    0.44086021505376344,
+    0.44086021505376344,
+    0.4962962962962963,
+    0.4962962962962963,
+    0.5,
+    0.5,
+    0.5121951219512194,
+    0.5121951219512194,
+    0.5185185185185185,
+    0.5185185185185185,
+    0.5510204081632653,
+    0.5510204081632653,
+    0.5862068965517241,
+    0.5862068965517241,
+    0.6129032258064516,
+    0.6129032258064516,
+    0.6328600405679512,
+    0.6328600405679512,
+    0.6875,
+    0.6875,
+    0.729957805907173,
+    0.729957805907173,
+    0.7401574803149606,
+    0.7401574803149606,
+    0.7721518987341772,
+    0.7721518987341772,
+    0.7727272727272727,
+    0.7727272727272727,
+    0.7945205479452054,
+    0.7945205479452054,
+    0.8314285714285714,
+    0.8314285714285714,
+    0.8571428571428571,
+    0.8571428571428571,
+    0.8636363636363636,
+    0.8636363636363636,
+    0.8881987577639752,
+    0.8881987577639752,
+    0.9335106382978723,
+    0.9335106382978723,
+    0.9577464788732394,
+    0.9577464788732394,
+    0.9799196787148594,
+    0.9799196787148594,
+    0.995,
+    0.995
+   ],
+   "n_train": 4976,
+   "platt": [
+    0.04683676016155054,
+    1.0424213334593606
+   ],
+   "sigma_coef": {
+    "abs_pred": -0.027608772678293137,
+    "early_season": 0.01268504682652305,
+    "ens_sd": 0.011891763639904821,
+    "exp_total_z": 0.05069787263779877,
+    "fcs_game_f": 0.025694940455394825,
+    "intercept": 5.615562060857993,
+    "inv_games": -0.027237349279864088,
+    "qb_missing_any": 0.027075922433441504,
+    "qb_unsettled_any": -0.005091064787266552,
+    "rating_sd_sum": 0.0508803375586336,
+    "to_dependence": -0.01410025065465624,
+    "vol_sum": -0.011690369378792179
+   },
+   "sigma_mu": {
+    "abs_pred": 1.2963409466461677,
+    "early_season": 0.38062700964630225,
+    "ens_sd": 3.600440983843881,
+    "exp_total_z": 0.258706112579282,
+    "fcs_game_f": 0.11856913183279742,
+    "inv_games": 0.3268472969286876,
+    "qb_missing_any": 0.16177652733118972,
+    "qb_unsettled_any": 0.30365755627009644,
+    "rating_sd_sum": 1.2992768445402882,
+    "to_dependence": 0.42441832162216103,
+    "vol_sum": 2.7768124361553617
+   },
+   "sigma_sd": {
+    "abs_pred": 1.0027665249363118,
+    "early_season": 0.4855898229232299,
+    "ens_sd": 2.0139453757797465,
+    "exp_total_z": 0.7138304921278676,
+    "fcs_game_f": 0.32331331544408615,
+    "inv_games": 0.3172742688988457,
+    "qb_missing_any": 0.36828269006114284,
+    "qb_unsettled_any": 0.459882753787673,
+    "rating_sd_sum": 0.598737057953426,
+    "to_dependence": 0.28878296530325137,
+    "vol_sum": 0.3372858128359559
+   },
+   "t_df": 100
+  },
+  "2023": {
+   "abs_z_quantiles": {
+    "0.5": 0.6637960181712956,
+    "0.8": 1.2908544674934712,
+    "0.95": 1.940997986332206
+   },
+   "iso_x": [
+    0.004415774166910746,
+    0.032124163157219776,
+    0.03217220283472888,
+    0.04219950891073854,
+    0.043103308621663006,
+    0.0689953468225718,
+    0.06943452216648816,
+    0.13159017369727122,
+    0.13189883488475795,
+    0.13758295165396361,
+    0.1377195074956853,
+    0.13964290867647833,
+    0.1397467018290609,
+    0.17165678314176458,
+    0.17201637333916464,
+    0.1906411833594036,
+    0.1907172149623272,
+    0.19868009848195534,
+    0.1989614824042396,
+    0.2649696696725774,
+    0.2649943743850469,
+    0.30676107201893255,
+    0.30679208307979966,
+    0.33435049626167157,
+    0.3346420452819744,
+    0.33665589212672764,
+    0.33706454805077524,
+    0.3577345696084626,
+    0.3580502079811658,
+    0.4225086905027595,
+    0.4225116686756467,
+    0.42951553832160605,
+    0.42955818465444295,
+    0.4406950879036651,
+    0.4407062309554768,
+    0.4905071062012042,
+    0.49056560699939245,
+    0.4929849390973803,
+    0.4931124903942832,
+    0.5342446259397166,
+    0.5344003736979033,
+    0.5590299370982517,
+    0.5594670045025587,
+    0.5855189797845226,
+    0.5856946233001113,
+    0.6763198631577318,
+    0.6763559390890361,
+    0.6780063895568414,
+    0.6780365519565277,
+    0.7203503628654842,
+    0.7205250581653496,
+    0.7409034021954803,
+    0.7412144774368438,
+    0.7589590664266885,
+    0.7591672306684926,
+    0.7704157735002317,
+    0.7704587957495976,
+    0.7780746997264136,
+    0.7780869186484176,
+    0.7829389830697645,
+    0.783066926681882,
+    0.7997131383190289,
+    0.7999734530294811,
+    0.8366149230052329,
+    0.8366260127299205,
+    0.8798557757370451,
+    0.8799125428326884,
+    0.8890714927655124,
+    0.8891457710572449,
+    0.8955546619895471,
+    0.8955874796429575,
+    0.939217586652097,
+    0.9392519530732578,
+    0.9515503471988241,
+    0.9515503646313199,
+    0.9567361337855697,
+    0.9567900420681348,
+    0.979705289795652,
+    0.9798787840566009,
+    0.9998327374317263
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.058823529411764705,
+    0.058823529411764705,
+    0.06666666666666667,
+    0.06666666666666667,
+    0.08333333333333333,
+    0.08333333333333333,
+    0.09090909090909091,
+    0.09090909090909091,
+    0.125,
+    0.125,
+    0.16091954022988506,
+    0.16091954022988506,
+    0.2,
+    0.2,
+    0.21052631578947367,
+    0.21052631578947367,
+    0.24045801526717558,
+    0.24045801526717558,
+    0.2761904761904762,
+    0.2761904761904762,
+    0.29285714285714287,
+    0.29285714285714287,
+    0.3333333333333333,
+    0.3333333333333333,
+    0.38333333333333336,
+    0.38333333333333336,
+    0.3959537572254335,
+    0.3959537572254335,
+    0.4222222222222222,
+    0.4222222222222222,
+    0.4558823529411765,
+    0.4558823529411765,
+    0.496794871794872,
+    0.496794871794872,
+    0.5,
+    0.5,
+    0.5183673469387756,
+    0.5183673469387756,
+    0.5202702702702703,
+    0.5202702702702703,
+    0.5777777777777777,
+    0.5777777777777777,
+    0.6375404530744335,
+    0.6375404530744335,
+    0.7058823529411765,
+    0.7058823529411765,
+    0.7314487632508834,
+    0.7314487632508834,
+    0.7391304347826086,
+    0.7391304347826086,
+    0.7591240875912408,
+    0.7591240875912408,
+    0.7678571428571429,
+    0.7678571428571429,
+    0.7727272727272727,
+    0.7727272727272727,
+    0.78,
+    0.78,
+    0.8222222222222222,
+    0.8222222222222222,
+    0.8277027027027027,
+    0.8277027027027027,
+    0.8614958448753463,
+    0.8614958448753463,
+    0.9135802469135802,
+    0.9135802469135802,
+    0.9166666666666666,
+    0.9166666666666666,
+    0.9340369393139841,
+    0.9340369393139841,
+    0.9558823529411765,
+    0.9558823529411765,
+    0.98,
+    0.98,
+    0.9809160305343512,
+    0.9809160305343512,
+    0.995,
+    0.995
+   ],
+   "n_train": 5872,
+   "platt": [
+    0.04302590129640182,
+    1.0308298307884571
+   ],
+   "sigma_coef": {
+    "abs_pred": -0.022324949316919907,
+    "early_season": 0.0031393899662534724,
+    "ens_sd": 0.009033179396521557,
+    "exp_total_z": 0.052312956688221876,
+    "fcs_game_f": 0.05025619770701801,
+    "intercept": 5.612467387391069,
+    "inv_games": -0.004744632313357347,
+    "qb_missing_any": 0.03346079790874789,
+    "qb_unsettled_any": -0.0005818285208431033,
+    "rating_sd_sum": 0.02109408782045024,
+    "to_dependence": -0.017253223986502954,
+    "vol_sum": -0.0063528812111898455
+   },
+   "sigma_mu": {
+    "abs_pred": 1.2909084002260252,
+    "early_season": 0.3867506811989101,
+    "ens_sd": 3.5860649103865208,
+    "exp_total_z": 0.2390066298704215,
+    "fcs_game_f": 0.12091280653950953,
+    "inv_games": 0.3285824369015786,
+    "qb_missing_any": 0.1643392370572207,
+    "qb_unsettled_any": 0.3077316076294278,
+    "rating_sd_sum": 1.3086433649110645,
+    "to_dependence": 0.4155571365038495,
+    "vol_sum": 2.7834394386285273
+   },
+   "sigma_sd": {
+    "abs_pred": 0.9998086954076464,
+    "early_season": 0.4870472147945765,
+    "ens_sd": 2.004500392880653,
+    "exp_total_z": 0.7016120645339157,
+    "fcs_game_f": 0.3260536834469833,
+    "inv_games": 0.3190525796629185,
+    "qb_missing_any": 0.3706146837097267,
+    "qb_unsettled_any": 0.461594140900401,
+    "rating_sd_sum": 0.6008873460580066,
+    "to_dependence": 0.28460353685832585,
+    "vol_sum": 0.33447222467851434
+   },
+   "t_df": 100
+  },
+  "2024": {
+   "abs_z_quantiles": {
+    "0.5": 0.6619561582845049,
+    "0.8": 1.2918438345007395,
+    "0.95": 1.9363851903480704
+   },
+   "iso_x": [
+    0.00478884082770914,
+    0.029265810852946106,
+    0.02944705573399009,
+    0.04383287999572938,
+    0.04472801939887994,
+    0.05842703610097222,
+    0.05873000644595572,
+    0.07036127483926191,
+    0.07067159828024816,
+    0.130224194417363,
+    0.13053844510922408,
+    0.14227102457120033,
+    0.14248241280750817,
+    0.14354855657283883,
+    0.14358514838579195,
+    0.1654218411165974,
+    0.16545606808197277,
+    0.1869257853709404,
+    0.18751408881177312,
+    0.1971060019905525,
+    0.19718009019559135,
+    0.20008078847396837,
+    0.20021484770386233,
+    0.2651118746490617,
+    0.26512348409000897,
+    0.2655403051140719,
+    0.2655492585486732,
+    0.3299589965942574,
+    0.33034000877255343,
+    0.33377125810825703,
+    0.333783118861237,
+    0.357526358157652,
+    0.3575552726139819,
+    0.38366477459434933,
+    0.3838626794346075,
+    0.42754263319533015,
+    0.42760510871784707,
+    0.43986463782648855,
+    0.4399460295907034,
+    0.4924691182439025,
+    0.49267331656438285,
+    0.5603494043264279,
+    0.5604194105246132,
+    0.5895609888846303,
+    0.589567526762574,
+    0.5946362068348967,
+    0.5947439016551843,
+    0.6775260546616899,
+    0.6776579620414965,
+    0.709531603450853,
+    0.7096902453324581,
+    0.7499450708791422,
+    0.7499612697385087,
+    0.7671256032589329,
+    0.7672105384356742,
+    0.7861308289818132,
+    0.7862940045258433,
+    0.8351542762134385,
+    0.8352425780233995,
+    0.8696864809128955,
+    0.869792147557915,
+    0.882652655218058,
+    0.8827267613391641,
+    0.8875909005354641,
+    0.8878475290838711,
+    0.9037476450383993,
+    0.9037514683209271,
+    0.9396917832218239,
+    0.9397359330603238,
+    0.9427004941232734,
+    0.9427815220066045,
+    0.9517923263517851,
+    0.95197494535843,
+    0.9781129134989208,
+    0.9781476342753394,
+    0.9997159139053402
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.041666666666666664,
+    0.041666666666666664,
+    0.05263157894736842,
+    0.05263157894736842,
+    0.058823529411764705,
+    0.058823529411764705,
+    0.07738095238095238,
+    0.07738095238095238,
+    0.12244897959183673,
+    0.12244897959183673,
+    0.14285714285714285,
+    0.14285714285714285,
+    0.14814814814814814,
+    0.14814814814814814,
+    0.1797752808988764,
+    0.1797752808988764,
+    0.2,
+    0.2,
+    0.23529411764705882,
+    0.23529411764705882,
+    0.24232081911262798,
+    0.24232081911262798,
+    0.25,
+    0.25,
+    0.2833787465940054,
+    0.2833787465940054,
+    0.3333333333333333,
+    0.3333333333333333,
+    0.34177215189873417,
+    0.34177215189873417,
+    0.39634146341463417,
+    0.39634146341463417,
+    0.4070175438596491,
+    0.4070175438596491,
+    0.45569620253164556,
+    0.45569620253164556,
+    0.4881266490765171,
+    0.4881266490765171,
+    0.524416135881104,
+    0.524416135881104,
+    0.5844155844155844,
+    0.5844155844155844,
+    0.5882352941176471,
+    0.5882352941176471,
+    0.6458966565349545,
+    0.6458966565349545,
+    0.7427385892116183,
+    0.7427385892116183,
+    0.7446808510638298,
+    0.7446808510638298,
+    0.746268656716418,
+    0.746268656716418,
+    0.7840909090909091,
+    0.7840909090909091,
+    0.8295964125560538,
+    0.8295964125560538,
+    0.8716417910447761,
+    0.8716417910447761,
+    0.8740740740740741,
+    0.8740740740740741,
+    0.9019607843137255,
+    0.9019607843137255,
+    0.9056603773584906,
+    0.9056603773584906,
+    0.9344262295081968,
+    0.9344262295081968,
+    0.9473684210526315,
+    0.9473684210526315,
+    0.9572649572649573,
+    0.9572649572649573,
+    0.9817073170731707,
+    0.9817073170731707,
+    0.995,
+    0.995
+   ],
+   "n_train": 6782,
+   "platt": [
+    0.04100451923142022,
+    1.0429899441775463
+   ],
+   "sigma_coef": {
+    "abs_pred": -0.015553301804272406,
+    "early_season": -0.014315638270667187,
+    "ens_sd": 0.01104822005144354,
+    "exp_total_z": 0.06069557287012387,
+    "fcs_game_f": 0.08704842336446375,
+    "intercept": 5.597960373141019,
+    "inv_games": 0.02659932741623596,
+    "qb_missing_any": 0.03804582029406671,
+    "qb_unsettled_any": 0.0032344326682752075,
+    "rating_sd_sum": -0.0462128917838101,
+    "to_dependence": -0.024212528930702068,
+    "vol_sum": -6.735192931710912e-06
+   },
+   "sigma_mu": {
+    "abs_pred": 1.2854666993148598,
+    "early_season": 0.3908876437629018,
+    "ens_sd": 3.5775718778748464,
+    "exp_total_z": 0.18631892819781692,
+    "fcs_game_f": 0.12208787968150987,
+    "inv_games": 0.32766488320159803,
+    "qb_missing_any": 0.16440578000589798,
+    "qb_unsettled_any": 0.3131819522264819,
+    "rating_sd_sum": 1.3139216269660767,
+    "to_dependence": 0.4131349785336621,
+    "vol_sum": 2.7787597751295388
+   },
+   "sigma_sd": {
+    "abs_pred": 0.9992980668905752,
+    "early_season": 0.48798525153901023,
+    "ens_sd": 1.9951784593295634,
+    "exp_total_z": 0.6983501868409664,
+    "fcs_game_f": 0.32741141642124455,
+    "inv_games": 0.31950054403392103,
+    "qb_missing_any": 0.37067071443805477,
+    "qb_unsettled_any": 0.46382188161646376,
+    "rating_sd_sum": 0.606412129747761,
+    "to_dependence": 0.27980456065664555,
+    "vol_sum": 0.34641555384563905
+   },
+   "t_df": 100
+  },
+  "2025": {
+   "abs_z_quantiles": {
+    "0.5": 0.6638230563706777,
+    "0.8": 1.2888108262188567,
+    "0.95": 1.9454425867041267
+   },
+   "iso_x": [
+    0.0042012995555421595,
+    0.030124461773454292,
+    0.030530104460969487,
+    0.04226093578384549,
+    0.04341358039719123,
+    0.06815452812977307,
+    0.06853979742918725,
+    0.09546195134948321,
+    0.0955596632787944,
+    0.12824448198357397,
+    0.12848613628901273,
+    0.13687640045917715,
+    0.13717732591539156,
+    0.1712813762275357,
+    0.17145046974420652,
+    0.1797940616785123,
+    0.1800215031376422,
+    0.18972682093443916,
+    0.18983562949290034,
+    0.19917547861613205,
+    0.19931389702351,
+    0.24437093807656796,
+    0.24452475910416416,
+    0.2637779481339846,
+    0.2638218960010754,
+    0.30607120040946256,
+    0.30607773512585257,
+    0.32864539584505903,
+    0.32894979763067367,
+    0.33107798584672654,
+    0.3311630927455469,
+    0.34020583802154225,
+    0.340224575056417,
+    0.35784558582249026,
+    0.357997950615365,
+    0.38235431488397986,
+    0.382474995609284,
+    0.4223378739144479,
+    0.4224933736495159,
+    0.4293775429370662,
+    0.4300209174737145,
+    0.4402155186491653,
+    0.44022407863584145,
+    0.4782604748694974,
+    0.478413614060174,
+    0.49254530818178655,
+    0.4926132090292329,
+    0.5348155400657106,
+    0.53486025133414,
+    0.559397417375049,
+    0.5596788465731339,
+    0.5690076290250002,
+    0.5691283113653605,
+    0.5953375613102354,
+    0.5955061764247063,
+    0.6380783600903555,
+    0.6380829687015214,
+    0.6744879511369697,
+    0.6745169486778027,
+    0.6785925105612751,
+    0.6786083294875895,
+    0.6846407142428331,
+    0.6846571777822092,
+    0.7512675738075171,
+    0.7513275502624464,
+    0.7671499046870748,
+    0.7672118936295219,
+    0.7829254813071955,
+    0.7829988763272768,
+    0.7841950105940412,
+    0.7844536115462353,
+    0.7847264536526046,
+    0.7847348566657631,
+    0.8368558150723071,
+    0.8368815884263482,
+    0.8395165407731413,
+    0.8395657324007664,
+    0.8763408596715319,
+    0.8764177169943984,
+    0.8907053986354955,
+    0.8908922965916148,
+    0.9016028828261127,
+    0.9016067669399087,
+    0.9406565480873246,
+    0.9407040749160844,
+    0.9476632407364277,
+    0.9476885472357507,
+    0.9527495621494065,
+    0.9529599813551548,
+    0.9795495974391129,
+    0.9796068800665514,
+    0.9997039703164192
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.043478260869565216,
+    0.043478260869565216,
+    0.07042253521126761,
+    0.07042253521126761,
+    0.07228915662650602,
+    0.07228915662650602,
+    0.09,
+    0.09,
+    0.125,
+    0.125,
+    0.14285714285714285,
+    0.14285714285714285,
+    0.15384615384615385,
+    0.15384615384615385,
+    0.1836734693877551,
+    0.1836734693877551,
+    0.2,
+    0.2,
+    0.2534562211981567,
+    0.2534562211981567,
+    0.25423728813559326,
+    0.25423728813559326,
+    0.29259259259259257,
+    0.29259259259259257,
+    0.3076923076923077,
+    0.3076923076923077,
+    0.3157894736842105,
+    0.3157894736842105,
+    0.3225806451612903,
+    0.3225806451612903,
+    0.35507246376811596,
+    0.35507246376811596,
+    0.3701657458563536,
+    0.3701657458563536,
+    0.3971631205673759,
+    0.3971631205673759,
+    0.421875,
+    0.421875,
+    0.45945945945945954,
+    0.45945945945945954,
+    0.48437500000000017,
+    0.48437500000000017,
+    0.48672566371681414,
+    0.48672566371681414,
+    0.503125,
+    0.503125,
+    0.5229357798165138,
+    0.5229357798165138,
+    0.5806451612903226,
+    0.5806451612903226,
+    0.5930735930735931,
+    0.5930735930735931,
+    0.6349206349206347,
+    0.6349206349206347,
+    0.6637168141592921,
+    0.6637168141592921,
+    0.6666666666666666,
+    0.6666666666666666,
+    0.6904761904761905,
+    0.6904761904761905,
+    0.7332214765100671,
+    0.7332214765100671,
+    0.7533333333333333,
+    0.7533333333333333,
+    0.7911392405063293,
+    0.7911392405063293,
+    0.8,
+    0.8,
+    0.8333333333333334,
+    0.8333333333333334,
+    0.8377358490566038,
+    0.8377358490566038,
+    0.8529411764705882,
+    0.8529411764705882,
+    0.8725,
+    0.8725,
+    0.8988095238095238,
+    0.8988095238095238,
+    0.9224806201550387,
+    0.9224806201550387,
+    0.9373601789709173,
+    0.9373601789709173,
+    0.9494949494949495,
+    0.9494949494949495,
+    0.963855421686747,
+    0.963855421686747,
+    0.9844155844155844,
+    0.9844155844155844,
+    0.995,
+    0.995
+   ],
+   "n_train": 7702,
+   "platt": [
+    0.040583784103023296,
+    1.0484553289768617
+   ],
+   "sigma_coef": {
+    "abs_pred": -0.019077081710342038,
+    "early_season": -0.002894554604983024,
+    "ens_sd": 0.010284712169098757,
+    "exp_total_z": 0.05759853975050811,
+    "fcs_game_f": 0.10173982287767247,
+    "intercept": 5.593189110522657,
+    "inv_games": 0.06317246870047435,
+    "qb_missing_any": 0.010301485078658797,
+    "qb_unsettled_any": 0.0063951750925077865,
+    "rating_sd_sum": -0.069188091841529,
+    "to_dependence": -0.025240461458148677,
+    "vol_sum": 0.0013441469992464387
+   },
+   "sigma_mu": {
+    "abs_pred": 1.2758262395915299,
+    "early_season": 0.39106725525837444,
+    "ens_sd": 3.5432659719262745,
+    "exp_total_z": 0.14504148578281928,
+    "fcs_game_f": 0.12321474941573617,
+    "inv_games": 0.3262311356377833,
+    "qb_missing_any": 0.1628148532848611,
+    "qb_unsettled_any": 0.31004933783432875,
+    "rating_sd_sum": 1.3088118399437743,
+    "to_dependence": 0.41345092910917536,
+    "vol_sum": 2.766065249618255
+   },
+   "sigma_sd": {
+    "abs_pred": 0.9973777644575569,
+    "early_season": 0.4880210851552753,
+    "ens_sd": 1.9823428042785658,
+    "exp_total_z": 0.6910820841838229,
+    "fcs_game_f": 0.32870488795236913,
+    "inv_games": 0.31856667437191527,
+    "qb_missing_any": 0.3692206340887549,
+    "qb_unsettled_any": 0.46254353740010423,
+    "rating_sd_sum": 0.6068436198761313,
+    "to_dependence": 0.28177127678942,
+    "vol_sum": 0.347572770660344
+   },
+   "t_df": 100
+  },
+  "2026": {
+   "abs_z_quantiles": {
+    "0.5": 0.6643956437493761,
+    "0.8": 1.2838516143309744,
+    "0.95": 1.9512002804440187
+   },
+   "iso_x": [
+    0.004340697513951386,
+    0.031054353773402266,
+    0.03113172351142779,
+    0.04280697498063768,
+    0.043001171861739684,
+    0.128692468648965,
+    0.12893192612065874,
+    0.13596581562171495,
+    0.1359814687250862,
+    0.1602750468499352,
+    0.1606632162641164,
+    0.17495710813151633,
+    0.1750813248771923,
+    0.18991675581444634,
+    0.18995392210799034,
+    0.24226225010761826,
+    0.2423346102467503,
+    0.26244124748787545,
+    0.26253541745953557,
+    0.30478099462737573,
+    0.3048660693731948,
+    0.3347089825331251,
+    0.33471404403066707,
+    0.34064292035997745,
+    0.34077830264331677,
+    0.3566748931982101,
+    0.3567088584045073,
+    0.3598340295405935,
+    0.35993762732761314,
+    0.3813462845391493,
+    0.381572865124178,
+    0.416055616724081,
+    0.416115858674347,
+    0.43981705147608907,
+    0.4398207539592319,
+    0.49248481121819254,
+    0.49255621688579065,
+    0.5347910579135668,
+    0.5348319867846186,
+    0.534914053114214,
+    0.5350142846346353,
+    0.5586804179091269,
+    0.5587890290655799,
+    0.5675016942210008,
+    0.5675043807703757,
+    0.5873246049753238,
+    0.5873601135916395,
+    0.5894375875619092,
+    0.5896131597267316,
+    0.5935354634855139,
+    0.5935811393475687,
+    0.5969218437132198,
+    0.5969301053815269,
+    0.6125827880797132,
+    0.6126218029362974,
+    0.6753107157550295,
+    0.6754102385936795,
+    0.6808099772435545,
+    0.6812967985711407,
+    0.6842036010244841,
+    0.6842783327970288,
+    0.6866923943332977,
+    0.6867302430032654,
+    0.7524944375804006,
+    0.7527276327177697,
+    0.7616836465562207,
+    0.7617156687705002,
+    0.7676882652849792,
+    0.7677043414811215,
+    0.7829866258536397,
+    0.782992100847183,
+    0.784216503686116,
+    0.7842166242045935,
+    0.8365542825285689,
+    0.8365943126807364,
+    0.8408601641951917,
+    0.8409457356976099,
+    0.841446826613039,
+    0.8415391142159757,
+    0.8801634766633413,
+    0.8801927524193386,
+    0.8815488971601686,
+    0.8815955222146061,
+    0.891785258635787,
+    0.8917897835736289,
+    0.8926409339158389,
+    0.8926502413842434,
+    0.9030167191656356,
+    0.9031811148953983,
+    0.9397795870519434,
+    0.9400471246110684,
+    0.9529947669841399,
+    0.9531650151658845,
+    0.9626655907366322,
+    0.9627413889643319,
+    0.9713379568898258,
+    0.9713460272929214,
+    0.9797510091470707,
+    0.9797803590891373,
+    0.9996956319372405
+   ],
+   "iso_y": [
+    0.005,
+    0.005,
+    0.043478260869565216,
+    0.043478260869565216,
+    0.08088235294117647,
+    0.08088235294117647,
+    0.10344827586206896,
+    0.10344827586206896,
+    0.12631578947368421,
+    0.12631578947368421,
+    0.13333333333333333,
+    0.13333333333333333,
+    0.17721518987341772,
+    0.17721518987341772,
+    0.23722627737226276,
+    0.23722627737226276,
+    0.2755905511811024,
+    0.2755905511811024,
+    0.2871621621621621,
+    0.2871621621621621,
+    0.3261802575107296,
+    0.3261802575107296,
+    0.32653061224489793,
+    0.32653061224489793,
+    0.3458646616541353,
+    0.3458646616541353,
+    0.34782608695652173,
+    0.34782608695652173,
+    0.3687150837988827,
+    0.3687150837988827,
+    0.3892857142857143,
+    0.3892857142857143,
+    0.4427083333333333,
+    0.4427083333333333,
+    0.482897384305835,
+    0.482897384305835,
+    0.49999999999999967,
+    0.49999999999999967,
+    0.5,
+    0.5,
+    0.5427350427350428,
+    0.5427350427350428,
+    0.5652173913043478,
+    0.5652173913043478,
+    0.5756097560975609,
+    0.5756097560975609,
+    0.6111111111111112,
+    0.6111111111111112,
+    0.6170212765957448,
+    0.6170212765957448,
+    0.64,
+    0.64,
+    0.6459627329192547,
+    0.6459627329192547,
+    0.6541353383458647,
+    0.6541353383458647,
+    0.6909090909090909,
+    0.6909090909090909,
+    0.7,
+    0.7,
+    0.71875,
+    0.71875,
+    0.7361319340329837,
+    0.7361319340329837,
+    0.75,
+    0.75,
+    0.7777777777777778,
+    0.7777777777777778,
+    0.7823529411764706,
+    0.7823529411764706,
+    0.8333333333333334,
+    0.8333333333333334,
+    0.835016835016835,
+    0.835016835016835,
+    0.8518518518518519,
+    0.8518518518518519,
+    0.875,
+    0.875,
+    0.8803418803418803,
+    0.8803418803418803,
+    0.9,
+    0.9,
+    0.9047619047619048,
+    0.9047619047619048,
+    0.9090909090909091,
+    0.9090909090909091,
+    0.9185185185185185,
+    0.9185185185185185,
+    0.9360341151385928,
+    0.9360341151385928,
+    0.9615384615384616,
+    0.9615384615384616,
+    0.9863945578231292,
+    0.9863945578231292,
+    0.9864864864864865,
+    0.9864864864864865,
+    0.9867549668874173,
+    0.9867549668874173,
+    0.995,
+    0.995
+   ],
+   "n_train": 8636,
+   "platt": [
+    0.04459257100720722,
+    1.0542900873160788
+   ],
+   "sigma_coef": {
+    "abs_pred": -0.01577829825532811,
+    "early_season": -0.0024134587366932574,
+    "ens_sd": 0.012885393767340934,
+    "exp_total_z": 0.048709082357160226,
+    "fcs_game_f": 0.09611789676427936,
+    "intercept": 5.5833682442209565,
+    "inv_games": 0.059657207035267064,
+    "qb_missing_any": 0.007271978113462453,
+    "qb_unsettled_any": 0.0020801221624499188,
+    "rating_sd_sum": -0.060220423715978695,
+    "to_dependence": -0.033022981780942935,
+    "vol_sum": 0.004684641320037762
+   },
+   "sigma_mu": {
+    "abs_pred": 1.2718824798783552,
+    "early_season": 0.3909217230199166,
+    "ens_sd": 3.536890114074616,
+    "exp_total_z": 0.1089730910469738,
+    "fcs_game_f": 0.1244789254284391,
+    "inv_games": 0.32476865406607186,
+    "qb_missing_any": 0.1616489115331172,
+    "qb_unsettled_any": 0.304886521537749,
+    "rating_sd_sum": 1.3054605536883686,
+    "to_dependence": 0.40820674878197816,
+    "vol_sum": 2.7535768423607565
+   },
+   "sigma_sd": {
+    "abs_pred": 1.002173268898989,
+    "early_season": 0.4879851468456316,
+    "ens_sd": 1.969222186661123,
+    "exp_total_z": 0.6836046402464387,
+    "fcs_game_f": 0.33014624598270254,
+    "inv_games": 0.3181043646286936,
+    "qb_missing_any": 0.3681497453914919,
+    "qb_unsettled_any": 0.46038600515800987,
+    "rating_sd_sum": 0.6042378639475648,
+    "to_dependence": 0.28212817887169406,
+    "vol_sum": 0.3476123485733943
+   },
+   "t_df": 100
+  }
+ },
+ "win_calibration_choice": {
+  "dev_log_loss": {
+   "iso": 0.5351182610043961,
+   "platt": 0.5301383147242841,
+   "raw": 0.529763089374246
+  },
+  "method": "raw"
+ },
+ "windows": {
+  "artifacts_trained_through": 2025,
+  "burn_in": [
+   2009,
+   2011
+  ],
+  "calibration_from": 2017,
+  "development_tuning": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023
+  ],
+  "holdout": [
+   2024,
+   2025
+  ],
+  "live": 2026,
+  "oof_from": 2014,
+  "snapshots_from": 2012,
+  "stack_from": 2016,
+  "training_rule": "every fit for season S uses seasons < S only (expanding window)"
+ }
+}

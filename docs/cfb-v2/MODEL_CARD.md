@@ -1,12 +1,20 @@
-# Model card — EdgeDesk CFB V2 (`edgedesk_cfb_v2.0.0`, features `cfb_v2_fv1`)
+# Model card — EdgeDesk CFB V2 (`edgedesk_cfb_v2.1.0`, features `cfb_v2_fv2`)
 
-Status on 2026-09-27: **SHADOW**. V2 passed every pre-registered accuracy gate on the
-2024–2025 holdout and is **eligible** for promotion; V1 (`edgedesk_cfb_p4_v1.0.0`)
-remains the priced champion until a person switches the flag. **BET status is
-disabled**: no betting threshold survived out-of-sample testing.
+Status on 2026-09-27: **SHADOW**. V1 (`edgedesk_cfb_p4_v1.0.0`) remains the priced
+champion. V2.1.0 passes every pre-registered accuracy gate against V1 on the
+2024–2025 holdout and is **eligible** for promotion; promotion is a person's decision
+after frozen 2026 shadow weeks confirm it. **BET is disabled**: no betting threshold
+survived the reality check or the holdout.
 
-Numbers below are from `docs/cfb-v2/BACKTEST.md` (generated). Where this card and the
-generated report differ, the report wins.
+`edgedesk_cfb_v2.1.0` is the **hardened** successor of the frozen baseline
+`cfb_v2_candidate_001` (= `edgedesk_cfb_v2.0.0`, kept byte-for-byte in
+`football/cfb_v2/candidates/cfb_v2_candidate_001/`). It was produced by the adversarial
+red team (`docs/cfb-v2/REDTEAM.md`) applying rules written down before any result was
+seen (`docs/cfb-v2/HARDENING_PREREG.md`). No feature was added.
+
+Numbers come from generated reports: `BACKTEST.md` (v2.1.0 walk-forward and gates),
+`CHAMPION_CHALLENGER.md` (V1 vs candidate 001 vs v2.1.0 on identical games) and
+`REDTEAM.md` (the audit). Where this card and a generated report differ, the report wins.
 
 ## 1. What it predicts
 
@@ -25,7 +33,10 @@ Two outputs are kept apart everywhere (engine, JSON, database):
 Sign convention: internal margins are home-positive; book lines are home-negative
 (`-7` = home laying 7). Conversion happens once at ingestion
 (`common.book_home_line_to_margin`, `engine.conv.bookToMargin`, and a generated
-column in `cfb_market_snapshots`). Tests pin it at every layer.
+column in `cfb_market_snapshots`). `v2/tests_signs.py` grades nine explicit scenarios
+(home and road favourite, the model taking the dog, a favourite flip, pick'em win and
+push, a half-point hook, a whole-number push) against a longhand truth at every
+layer, and `football/cfb_v2/tests.js` repeats them in the production engine.
 
 ## 2. Data
 
@@ -40,171 +51,169 @@ column in `cfb_market_snapshots`). Tests pin it at every layer.
 
 Excluded or altered, with reasons:
 
-* **2013 pass/rush splits and sack/havoc rates are MISSING** — the ESPN feed tags 32 sacks that season (~3,000 real).
-* Provider stuffed-run / line-yard / opportunity / havoc flags are **not used** (they drift across seasons); V2 recomputes them from raw rushing yardage and uses front havoc = sacks + run TFLs.
+* **2013 pass/rush splits and sack/havoc rates are MISSING**: the ESPN feed tags 32 sacks that season (~3,000 real).
+* Provider stuffed-run / line-yard / opportunity / havoc flags are **not used** (they drift across seasons); V2 recomputes them from raw rushing yardage.
 * Provider win-probability columns are **forbidden at load time** (the WP model reads the pregame spread).
-* Market rows: 31 implausible or sign-flipped openers/closes **dropped** at ingestion (never repaired). No openers exist for 2020 or before 2012.
+* **Market QA is point-in-time (v2.1.0).** Only openers with |line| > 60 are dropped at ingestion. An opener that disagrees in sign with the close or jumps far from it is kept and flagged (`eval_open_close_flip`, `eval_open_close_jump`) for evaluation only, because the close is not known when the opener is used. In production, a gap over 21 points where V2 and the line nearly agree in size routes the game to REVIEW (orientation guard in `engine.decide`).
 * Postponed/cancelled games (`NOT_PLAYED`) are never absorbed or scored.
 * **FBS-vs-FCS games are projected but NOT PRICED** (see §8).
 
 The provider's EP model was fitted on 2004–2025, so historical EPA values embed a
-model that "saw" later seasons. It is a function of game state only (down, distance,
-field position, time, score) and carries no team or outcome information about the
-game being predicted; it is a definition-level look-ahead, disclosed, not removable
-without refitting EP.
+model that "saw" later seasons. It is a function of game state only and carries no
+team or outcome information about the game being predicted; it is a definition-level
+look-ahead, disclosed, not removable without refitting EP.
 
 ## 3. Point-in-time discipline
 
 Every game is predicted from a **frozen snapshot at Tuesday 12:00 UTC** of its week,
-using only games that kicked off before that instant (a Thursday result cannot
-inform a Saturday prediction). Training rows (`cfb_model_training_snapshots`,
-PK `(game_id, prediction_ts, feature_version)`) contain no market column; market data
-lives in `cfb_market_training_snapshots`. `v2.contract.assert_pure` is called inside
-every model's `fit()` and refuses market, evaluation, target and unknown columns.
-`v2/tests_leakage.py` injects closing lines, final scores, future games and
-post-kickoff quarterback knowledge and fails if any of them reaches training.
+using only games that kicked off before that instant. Training rows contain no market
+column. `v2.contract.assert_pure` is called inside every model's `fit()` and accepts
+only an **exact allowlist** of model columns (named columns plus patterns generated
+from the metric registry); anything else is refused.
 
-## 4. Features (what survived)
+The red team added two end-to-end checks on top of the injection tests
+(`v2/tests_leakage.py`, 27 tests, including final score, closing spread, future
+opponent rating, future season average, future injury status, postgame EPA and
+postseason ranking injected into every model):
 
-**Opponent adjustment first.** For each of 31 metrics, offence and defence ratings are
-solved jointly at every freeze as one Gaussian posterior
-(`y = mu + o_off + d_def + h·H + e`, `Var(e) = s²_play/n + s²_game`), with a preseason
-prior per team whose variance is estimated from history and scaled by a per-metric
-factor tuned by next-game prediction on dev seasons. No SOS multipliers, no iteration counts.
+* **Future poisoning** (`v2/tests_poison.py`): a season is rebuilt with every
+  post-cutoff input randomised; every pre-cutoff feature must be bit-identical.
+  It found four leaks, all fixed in v2.1.0: a volatility fill from the season median,
+  batch-level fills, close-based market QA, and a prefix-based layer contract.
+* **Row independence**: a row's features do not change when other rows are removed.
 
-Metrics: EPA/play, pass EPA/dropback, rush EPA/rush, success (overall, pass, rush,
-early-down, passing-down, 3rd-down), explosive-play rates (overall/pass/rush), line
-yards, stuff rate, opportunity rate, front havoc, sack rate, turnover rate, points
-per drive, scoring-opportunity rate, points per opportunity, drive EPA, starting field
-position, pass rate (style), plays and drives per game (pace), net special-teams EPA,
-field-goal value.
+The live overlays refuse any report stamped at or after kickoff.
 
-**Time horizons**, kept separate: preseason prior, season-to-date posterior, recent
-posterior (half-life 8 weeks, tuned — at that setting recent form beats season-long
-next-game error by 0.2%), last-4 and last-2 residual form (shrunk).
+## 4. Features
 
-**Priors** (a distribution per team): ridge on last season's and the prior season's
-data-only ratings, returning production, 247 talent, head-coach change and
-coordinator change (2015+), each missing value imputed with an explicit flag; FCS teams
-share one pooled prior.
+Opponent adjustment, time horizons, priors, matchups and the QB model are unchanged
+from candidate 001 (see `REDTEAM.md` §1 and the feature dictionary). For each of 31
+metrics, offence and defence ratings are solved jointly at every freeze as one
+Gaussian posterior with a per-team preseason prior; recent form uses an 8-week
+half-life; priors come from last season's data-only ratings, returning production,
+247 talent and coaching continuity.
 
-**Matchups** from standardized ratings (never ranks): pass/rush edges, play-mix-weighted
-edge, trench, havoc, sack, explosive, early-down, passing-down, finishing,
-field-position and special-teams edges, strength×weakness products, expected plays and
-possessions.
-
-**QB model**: opponent-adjusted EPA/dropback per passer, career-shrunk
-(k = 150 dropbacks toward a replacement mean of −0.057), expected starter = most recent
-starter, plus team-QB delta, backup drop-off, experience, changed/unsettled flags.
-
-Feature families kept by the dev-only grouped ablation (forward keep + backward
-elimination, `docs/cfb-v2/BACKTEST.md`):
-
-| model | families kept | dev MAE |
-|---|---|---|
-| C ridge | base (priors, home field, Elo), adjusted efficiency, trench/havoc, matchup, form, context | 12.806 |
-| D GBM | base, adjusted efficiency, matchup, form, special teams, QB | 12.895 |
+**Removed in v2.1.0** (pre-registered rule R4, development seasons only):
+`edge_havoc`, `edge_sack_rate`, `x_sack_h`, `x_sack_a` (grouped ablation: removing
+the havoc/sack group improved development MAE) and `drive_margin_raw` (its component
+was dropped). The joint development MAE of the simplified model is 12.7991 against
+candidate 001's 12.8024. The list lives in `config.DROPPED_FEATURES` and applies to
+production paths only; the red team's reconstruction of candidate 001 is explicit.
 
 ## 5. Algorithms and ensemble
 
-| submodel | what it is | stack weight (2026) |
+| submodel | what it is | weight |
 |---|---|---|
-| A adjusted-efficiency | net adjusted EPA/play × expected plays + ST + home field | 0.00 |
-| B dynamic Elo | results-only Elo, MOV multiplier, K 50 / HFA 70 / carry 1.0 (tuned) | 0.02 |
-| C ridge | standardized ridge (α 30) over the kept families | 0.57 |
-| D LightGBM | Huber loss, 7 leaves, 250 trees, seeded, single-threaded | 0.37 |
-| E drive | expected points/drive × expected drives, + ST, + home field | 0.04 |
+| C ridge | standardized ridge (α 30) over base, adjusted efficiency, trench, matchup, form, context | 0.5 |
+| D LightGBM | Huber loss, 7 leaves, 250 trees, seeded, single-threaded; base, adjusted efficiency, matchup, form, special teams, QB | 0.5 |
 
-Each submodel for season S is fit on FBS-vs-FBS games of seasons < S. Stacking weights
-are non-negative, sum to one, and are fit on those submodels' **out-of-fold**
-predictions of earlier seasons only. Every component prediction is stored
-(`cfb_model_component_predictions`, `components` in each snapshot row), and their
-standard deviation (`ens_sd`) is a published disagreement measure that feeds the error
-model and the cover calibration.
+v2.1.0 is **C + D, equal weights** (rules R2 and R3). The three other components of
+candidate 001 (A adjusted efficiency, B dynamic Elo, E drive model) each changed
+development MAE by at most 0.005 points when removed, and a learned stack was no better
+than the mean. C and D residuals correlate at about 0.99: the ensemble is effectively
+one model fitted two ways, and their disagreement (`ens_sd`) is published.
+
+Each submodel for season S is fit on FBS-vs-FBS games of seasons < S. The independent
+re-implementation (`v2/rt_walkforward.py`) reproduces candidate 001's frozen
+predictions to the precision they are stored at (`report/redteam/phase04_reproduction.json`).
 
 ## 6. Uncertainty and calibration
 
 * **Error model**: `E[r²] = exp(Xb)` (Gamma GLM, log link) on out-of-fold residuals of
-  earlier seasons, with early season, games played, rating posterior width, model
-  disagreement, lopsidedness, expected total, FCS, QB unknown/unsettled, team
-  volatility and turnover dependence.
-* **Shape**: standardized Student-t (df fit on past residuals) for probabilities;
-  **split-conformal** |z| quantiles for 50/80/95% intervals.
-* **Win probability**: raw, Platt and isotonic were compared on dev log loss; **raw**
-  won (0.5298 vs Platt 0.5301 vs isotonic 0.5351) and ships.
-* **Cover probability**: conditional Platt on the model's cover logit with slope
-  terms for disagreement, rating uncertainty, early season and QB uncertainty (the
-  dynamic no-bet zone), fit walk-forward. On the holdout it is essentially a coin
-  flip (Brier 0.2501 vs 0.2500 for 0.5): the market is efficient and V2 knows it.
-* **Reliability** (`football_prediction_confidence`, 0–100) is the error model's
-  sigma mapped onto its historical range, with caps (FCS 50, no game yet 70, QB
-  unsettled 75, QB unknown 65). It never reads the market, the gap or EV.
-  `betting_edge_strength` is separate (EV-based).
+  earlier seasons. Missing inputs are filled with values learned on the training rows
+  (`sigma.fill`), never with statistics of the rows being predicted.
+* **Shape**: standardized Student-t for probabilities; split-conformal |z| quantiles for
+  intervals. Holdout coverage 0.508 / 0.814 / 0.951 at 50 / 80 / 95%.
+* **Win probability**: raw, Platt, isotonic and beta calibration were compared on
+  development log loss; **raw** ships (holdout ECE 0.020).
+* **Cover probability**: a plain Platt calibration of the model's cover probability
+  (rule R6). **It has no skill**: holdout log loss equals a coin flip's. It is published
+  for transparency and does not gate anything.
+* **Reliability** (0–100) is the error model's sigma mapped onto its historical range,
+  with caps. It never reads the market. Treat it as "not bad" vs "bad", not as a fine grade.
+
+**Live overlays** (engine only; historical point-in-time data does not exist):
+
+* **QB status**: a level model measured on development seasons. An unexpected starter
+  change cost 1.16 points [−2.01, −0.22] relative to same-starter games, applied
+  relative to the 85.7% baseline same-starter rate that the training data already
+  contains (so no report means no shift), plus the measured extra variance of
+  backup-QB games. Candidate 001's 7.74 points per EPA/dropback rating-gap coefficient
+  was not supported and is gone.
+* **Injuries / availability**: never move the mean. They widen the interval and cap
+  reliability, with diminishing marginal effects within a position group
+  (`cap·(1 − e^(−raw/cap))`) and a replacement-quality input. Declared, not validated.
+* **Weather**: shown; narrows or widens the weather uncertainty term; moves no points.
 
 ## 7. Performance (FBS-vs-FBS, common game sets, 95% bootstrap CIs)
 
-| window | n | V2 MAE | V1 | opener | close | V2 Brier | V1 Brier | 50/80/95% coverage |
-|---|---|---|---|---|---|---|---|---|
-| dev 2016–23 | 4,970 | **12.69** | 13.07 | 12.44 | 12.31 | 0.1784 | 0.1825 | 0.50 / 0.81 / 0.96 |
-| holdout 2024–25 | 1,532 | **12.39** | 12.65 | 12.09 | 12.01 | 0.1830 | 0.1857 | 0.51 / 0.82 / 0.95 |
-| live 2026 (replay, wk 0–4) | 181 | **12.03** | 12.23 | 11.17 | 10.92 | 0.142 | 0.139 | 0.53 / 0.85 / 0.95 |
+From `BACKTEST.md`:
 
-* V2 − V1 on the holdout: **−0.26 pts [−0.46, −0.07]**; better than V1 in both
-  holdout seasons, 7 of 8 dev seasons, and every dev and holdout week bucket. In the
-  2026 replay V1 is ahead in weeks 3–5 (10.14 vs 10.35 on 83 games) and on Brier.
-* V2 − opener on the holdout: **+0.29 [+0.13, +0.46]**; V2 − close **+0.38**.
-  **V2 does not beat the market.** The gap is largest in weeks 0–2 and nearly closes
-  after week 10 (holdout: 12.37 vs opener 12.30).
-* Simple Elo 13.17, CFBD Elo 13.03, naive home field 15.94 (holdout).
-* The **market-adjusted challenger** (V2 + opener, weights learned walk-forward; mean
-  model weight 0.26) scores 12.07 on the holdout — the same as the opener. It is
-  published as a separate, labelled projection, never as the EdgeDesk fair line.
-* The close moved toward V2 on **53.6%** of holdout games where it moved (58.3% dev),
-  mean CLV **+0.29 pts [0.19, 0.40]** — V2 carries information the market later
-  prices, but not enough to clear the vig: every-game ATS vs the opener 50.5%, ROI
-  −3.5% at −110 (holdout), 49.9% at the close.
-* Edge buckets: no bucket is reliably profitable on both dev and holdout (tables in the report).
-* The BET rule chosen on dev (gap ≥ 3, reliability ≥ 65, review above 7 pts) went
-  56.2% on 469 dev plays but **49.5% on 184 holdout plays (ROI −5.5%)**; the reality
-  check (500 coin-flip worlds) had already rated it p = 0.196. BET is disabled.
+| window | n | V2.1.0 MAE | V1 | opener | close | V2 Brier | V1 Brier | 50/80/95% coverage |
+|---|---|---|---|---|---|---|---|---|
+| dev 2016–23 | 4,984 | **12.685** | 13.062 | 12.458 | 12.308 | 0.1782 | 0.1825 | 0.50 / 0.81 / 0.96 |
+| holdout 2024–25 | 1,534 | **12.376** | 12.652 | 12.097 | 12.013 | 0.1829 | 0.1857 | 0.51 / 0.81 / 0.95 |
+| live 2026 (replay, to date) | 208 | **11.607** | — | 10.844 | 10.649 | 0.1419 | — | 0.54 / 0.85 / 0.95 |
+
+* V2.1.0 − V1 on the holdout: **−0.276 [−0.467, −0.087]** (gate G1), better in both
+  holdout seasons and 7 of 8 development seasons. `CHAMPION_CHALLENGER.md` gives
+  −0.280 [−0.477, −0.093] on its own common set, and V2.1.0 − candidate 001 = −0.012
+  (rule R10: equal accuracy with fewer parts).
+* **V2 does not beat the market**: V2 − opener on the holdout +0.263 [0.103, 0.426];
+  V2 − close +0.371. On 2026 to date V2 trails the opener by 0.76.
+* The close moves toward V2 (55% of holdout moves; CLV about +0.2 to +0.5 points), but
+  every-game ATS against the opener is 51.0% on the holdout (ROI −2.6% at −110) and
+  50.0% at the close.
+* No betting rule chosen on development passes the reality check (500 coin-flip
+  worlds), and the chosen rule loses at the close on the holdout. BET is disabled.
 
 ## 8. Known weaknesses, biases, failure cases
 
-1. **Worse than the market** (≈ 0.3 pts of MAE vs the opener on the holdout).
-2. **Early season** (weeks 0–2): gap to the opener 0.6–0.9 pts — the market knows
-   transfers, QB battles and depth charts that no reachable feed carries.
-3. **FBS-vs-FCS**: bias −2.9 (dev), −6.5 (holdout), −9.0 (2026) pts and 80% coverage
-   0.68–0.81. **Not priced**; kept in snapshots for monitoring.
-4. **Postseason** (dev, 42 FBS games): 16.6 MAE — opt-outs and bowl motivation are invisible.
-5. **Non-QB injuries, weather and pregame QB status** have no historical point-in-time
-   data. Status and forecasts are live overlays with DECLARED mappings; injuries and
-   weather widen the distribution only. None of them is validated.
-6. **Home bias**: holdout bias −0.46 (V2 slightly under-rates home teams); 2026 −0.97.
-7. **2013** lacks sacks; **2020** has no openers and a COVID schedule (reported, not dropped).
-8. **Reliability does not rank-order above 60.** It isolates the worst games
-   (< 40: holdout MAE 14.0 vs 12.0–12.9 elsewhere) but the 90+ tier (MAE 12.59, 80%
-   coverage 0.77) is no better than 75–90 (MAE 12.01, coverage 0.83). The score is
-   an inverted sigma, and the lowest-sigma games are close matchups whose errors are
-   not smaller. **Treat reliability as "not bad" vs "bad", not as a fine grade.** Fix
-   for the next version (dev seasons only): map the score to each bucket's
-   walk-forward MAE and coverage instead of the sigma range.
-9. Historical CLV/ROI assume a Tuesday bet at the opener at −110; the archive has no
-   spread prices and no intra-week lines, so the at-close grading is the lower bound.
+The full list with numbers is `REDTEAM.md` §22. In short:
 
-## 9. Refresh and retraining policy
+1. **Less accurate than the market** in every window.
+2. **Prior fade has the wrong shape**: preseason information is under-used in weeks
+   0–2 and over-used in weeks 7–10; the model under-reacts to sustained efficiency.
+3. **P4 side of P4-vs-G5 games underrated** (about −2.6 development, −3.3 holdout),
+   and market favourites of more than 21 points.
+4. **No cover skill.**
+5. **No historical pregame QB-status, injury or weather data**: overlays are measured
+   (QB) or declared (injury, weather), never validated on pregame reports. The shadow
+   rows now store the board's pregame reports so that validation can start.
+6. **FBS-vs-FCS**: the mean is biased against the FBS side (about −6 on the holdout,
+   −9 in 2026); intervals are honest only because they are very wide. **Not priced.**
+7. **The 2024–2025 holdout is no longer pristine**; 2026 onward is the clean test.
+8. **No historical spread prices after 2019**: ROI for 2020–2025 assumes −110.
+9. **2013** lacks sacks; **2020** has no openers and a COVID schedule.
 
-* **Daily / Tuesday** (`.github/workflows/cfb-v2-shadow.yml`, `run_all.sh live`): current-season
-  features rebuilt with the backtest's own code; predictions from frozen artifacts;
-  write-once snapshots per Tuesday freeze; `current.json` for the next 10 days.
-* **Weekly learning** (`python3 -m v2.learn_week`): errors, major-miss classification,
-  `football/cfb_v2/monitoring.json`. Monitoring only; no parameter changes in season.
-* **Retrain**: once per offseason (`run_all.sh retrain`, manual dispatch) → a new
-  `model_version`, a new backtest, the same gates. Never after a single weekend.
+## 9. Shadow mode, monitoring and retraining policy
+
+* **Daily** (`.github/workflows/cfb-v2-shadow.yml`): current-season features rebuilt
+  with the backtest's own code; predictions from frozen artifacts; write-once, hashed
+  snapshot rows per Tuesday freeze. Each frozen row also records candidate 001's
+  projection, V1's published projection, the market as seen at the freeze, and the
+  board's pregame availability / QB evidence (recorded only; V2 does not read it).
+* **Line ledger** (`football/cfb_v2/shadow/<season>/lines.jsonl`): append-only,
+  timestamped line observations, so edge decay by time becomes measurable.
+* **Outcomes and decisions** (`shadow/<season>/outcomes.json`, `decisions.json`):
+  derived every run from the frozen rows, the ledger and final scores. The frozen rows
+  are never modified.
+* **Monitoring** (`football/cfb_v2/monitoring.json`, `monitor.html`): per-week MAE,
+  RMSE, Brier, V1 / candidate 001 / V2 on the same games, CLV and ATS, statuses, largest
+  misses, and health warnings (MAE spike, calibration, missing play-by-play, stale
+  odds, stale availability source, BET while disabled, ensemble weights, C/D
+  disagreement, stale pipeline, week-matched output drift against a noise null).
+  **A warning informs a person; nothing retrains automatically.**
+* **Retrain**: once per offseason (manual dispatch) → a new `model_version`, a new
+  backtest, the same gates, compared against the frozen candidate. Never after a
+  single weekend.
 
 ## 10. Versioning
 
-`artifacts/edgedesk_cfb_v2.0.0/` holds the exact fitted models (JSON coefficients,
-LightGBM text model, stacking weights, error model, calibration, market rule) and
-`meta.json` (seed 20260927, windows, tuning, promotion record). Every snapshot row
-carries `model_version`, `feature_version`, `prediction_ts`, `feature_ts` and a
-content hash.
+`football/cfb_v2/artifacts/edgedesk_cfb_v2.1.0/` holds the exact fitted models (JSON
+coefficients, LightGBM text model, weights, error model, calibration, overlays,
+monitoring reference) and `meta.json` (seed 20260927, windows, tuning, promotion
+record). Frozen candidates live in `football/cfb_v2/candidates/<id>/` with a manifest
+of hashes that `candidates.test.js` re-checks; `freeze_candidate.py` refuses to
+overwrite one. Every snapshot row carries `model_version`, `feature_version`,
+`prediction_ts`, `feature_ts` and a content hash.

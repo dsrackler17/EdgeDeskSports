@@ -165,7 +165,9 @@ def main():
            if 'classification' in lab else {},
            'sources': fin.source.value_counts().to_dict(),
            'policy': 'monitoring only: no parameter changes between scheduled offseason retrains'}
-    with open(os.path.join(REPO_V2, 'monitoring.json'), 'w') as fh:
+    # monitoring.json is owned by v2.monitor (shadow metrics + health warnings);
+    # the weekly learning summary lives next to the miss classifications
+    with open(os.path.join(REPO_V2, 'learning', '%d_summary.json' % a.season), 'w') as fh:
         json.dump(mon, fh, indent=1, default=common._json_default, sort_keys=True)
     print('[learn]', {k: mon[k] for k in ('games_scored', 'mae', 'bias', 'major_miss_share', 'miss_classes')})
 
