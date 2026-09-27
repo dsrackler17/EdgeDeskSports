@@ -22,9 +22,10 @@
 name: Tennis sync
 
 on:
-  schedule:
-    - cron: '23 */6 * * *'     # the draw, the players, the market
-    - cron: '53 8 * * 1'       # Mondays: every player's baseline, not just the ones in the window
+  # RETIRED 2026-09-27. Tennis is no longer an EdgeDesk product
+  # (lib/edgedesk_sports.js), so this workflow no longer runs on a schedule.
+  # Nothing it wrote is deleted; the tennis tables and history stay as they
+  # are. workflow_dispatch remains for a deliberate manual run.
   # A pull request that touches the tennis pipeline runs the suites and PROBES
   # THE SOURCE on a real runner, writing nothing. This is not decoration: the
   # UFC adapter shipped correct-looking code that ESPN's edge answered 403 to

@@ -103,7 +103,7 @@ lacks(APP, 'data-sub="tennis"', 'and so is its Research tab');
 chk('the Research sub-nav reads Desk | Football | UFC | Baseball | Stats | Lab',
     JSON.stringify((APP.match(/<div class="stseg research-sub"[^\n]*?<\/div>/) || [''])[0].match(/data-sub="[a-z]+"/g))
       === JSON.stringify(['rdesk','football','ufc','baseball','stats','lab'].map(s => 'data-sub="' + s + '"')));
-has(APP, "var RS_RETIRED={tennis:'football',wta:'football'};", 'old tennis routes have a destination');
+has(APP, "var RS_RETIRED=EDSPORTS.retiredModuleRoutes();", 'old tennis routes have a destination (lib/edgedesk_sports.js)');
 has(APP, "if(RS_RETIRED[sub])sub=RS_RETIRED[sub];", 'researchGo sends a retired module there');
 has(APP, "if(m&&RS_RETIRED[m[1]])return {sub:RS_RETIRED[m[1]],entity:null,retired:true};",
     'and a #research/tennis/… deep link resolves there instead of being ignored');

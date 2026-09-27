@@ -68,7 +68,7 @@ rule.
 | `CAPTURE_FLAG_FLOOR` | `0.005` | *removed* | Replaced by `EDGE_FLOOR`, segmented on sport × market × tier. Override with `CAPTURE_EDGE_FLOOR` (JSON). |
 | `LEARN_EDGE_MAX` | `0.25` for everything | *per market* | 10% on spreads and totals, 20% on moneylines. Override with `CAPTURE_EDGE_SANE_MAX` (JSON). |
 | `SHARP_BOOK` | `pinnacle` (substring match) | *removed* | Replaced by `CAPTURE_REFERENCE_BOOKS`, an exact-match priority list. Substring matching meant an empty value matched every book. |
-| `CAPTURE_AUTO_PREFIXES` | force-appended NFL | honours the value you set | Setting it to `""` used to still pull in every active NFL key, including preseason, on top of an explicit `CAPTURE_SPORTS`. Now `""` means none. Unset means `tennis_`, NFL and NCAAF. |
+| `CAPTURE_AUTO_PREFIXES` | force-appended NFL | honours the value you set | Setting it to `""` used to still pull in every active NFL key, including preseason, on top of an explicit `CAPTURE_SPORTS`. Now `""` means none. Unset means NFL and NCAAF (`tennis_` was removed on 2026-09-27 when Tennis was retired). |
 
 ### New in v9
 
@@ -125,6 +125,10 @@ The other levers, in order of size:
 1. **The sports list.** `CAPTURE_SPORTS` is the biggest dial, and
    `CAPTURE_AUTO_PREFIXES` now actually honours being turned off — it used to
    force-append NFL whatever you set.
+   **Retired sports are never requested**, whatever either variable or the
+   `/sports` discovery says: capture drops any key `lib/edgedesk_sports.js`
+   marks retired (today, every `tennis_*` key) before it makes an odds request,
+   and reports them as `retired_sports_skipped` in the run summary.
 2. **Cadence.** The odds endpoint returns the whole board per call, so a far-out
    game costs nothing extra; what costs is calling often for sports with nothing
    to price. `CAPTURE_NEAR_HOURS` uses the **free** `/events` index to skip the

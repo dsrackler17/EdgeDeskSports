@@ -35,19 +35,10 @@
 name: Tennis record
 
 on:
-  schedule:
-    # nightly: rebuild the point-in-time features and the rating layer, in that
-    # order, because the ratings read the features
-    - cron: '35 5 * * *'
-    # every two hours through the tennis day: price the board and settle what
-    # finished. Deliberately not every 20 minutes — a rating layer rebuilt
-    # nightly does not move in between, so a faster board would republish the
-    # same number under a new timestamp and make the record look busier than it is.
-    - cron: '15 */2 * * *'
-    # weekly: the venue and weather backfill, and the model's calibration review
-    - cron: '20 7 * * 1'
-    # hourly: the monitor. Reads, never writes.
-    - cron: '50 * * * *'
+  # RETIRED 2026-09-27. Tennis is no longer an EdgeDesk product
+  # (lib/edgedesk_sports.js), so this workflow no longer runs on a schedule.
+  # Nothing it wrote is deleted; the tennis tables and history stay as they
+  # are. workflow_dispatch remains for a deliberate manual run.
   workflow_dispatch:
     inputs:
       job:
