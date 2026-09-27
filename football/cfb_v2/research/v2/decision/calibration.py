@@ -100,11 +100,15 @@ def fit_shrink(p, y, p_mkt=0.5, bounded=True):
     wb = optimize.minimize_scalar(f, bounds=(0.0, 1.0), method='bounded', options={'xatol': 1e-7}).x
     wu = optimize.minimize_scalar(f, bounds=(-2.0, 4.0), method='bounded', options={'xatol': 1e-7}).x
     lmin = f(wu)
-    grid = np.linspace(wu - 1.5, wu + 1.5, 3001)
-    prof = np.array([f(g) for g in grid])
-    inside = grid[prof - lmin <= 1.92]
+    g = lambda w: f(w) - lmin - 1.920729                  # chi2(1) 95% / 2
+    lo = hi = None
+    for step in (0.25, 0.5, 1.0, 2.0, 4.0):
+        if lo is None and g(wu - step) > 0:
+            lo = optimize.brentq(g, wu - step, wu, xtol=1e-7)
+        if hi is None and g(wu + step) > 0:
+            hi = optimize.brentq(g, wu, wu + step, xtol=1e-7)
     return {'w': float(np.clip(wb, 0, 1)) if bounded else float(wu), 'w_unbounded': float(wu),
-            'w_ci95_profile': [float(inside.min()), float(inside.max())],
+            'w_ci95_profile': [float(lo) if lo is not None else None, float(hi) if hi is not None else None],
             'lr_w0': float(2 * (f(0.0) - lmin)), 'lr_w1': float(2 * (f(1.0) - lmin)), 'n': int(len(y))}
 
 
@@ -138,35 +142,40 @@ def _hat_basis(x, knots):
 
 
 def fit_logit_pwl(p, y, knots_p=PWL_KNOTS_P, lam=PWL_LAMBDA):
-    """Symmetric piecewise-linear map in logit space: the value at logit 0 is
-    fixed at 0 (f(0.5) = 0.5), free values at the other knots, a smoothness
-    penalty on second differences; exported mirrored over [-x_K, x_K]."""
+    """Symmetric, monotone piecewise-linear map in logit space: the value at
+    logit 0 is pinned to 0 (f(0.5) = 0.5), the other knot values are cumulative
+    sums of NON-NEGATIVE increments (so the map never decreases), with a
+    smoothness penalty on second differences; exported mirrored over [-x_K, x_K]."""
     kx = core.logit(np.asarray(knots_p))
     kx[0] = 0.0
     B = _hat_basis(core.logit(p), kx)[:, 1:]            # value at knot 0 is pinned to 0
     K = B.shape[1]
+    T = np.tril(np.ones((K, K)))                         # v = T d, d >= 0
     D = np.diff(np.eye(K + 1), n=2, axis=0)[:, 1:]       # second differences incl. the pinned 0
 
-    def f(v):
-        z = B @ v
-        pen = lam * np.sum((D @ v) ** 2)
-        return nll(z, y) + pen
+    def f(d):
+        v = T @ d
+        return nll(B @ v, y) + lam * np.sum((D @ v) ** 2)
 
-    def g(v):
-        z = B @ v
-        return B.T @ (core.sigmoid(z) - y) + 2 * lam * D.T @ (D @ v)
+    def g(d):
+        v = T @ d
+        gv = B.T @ (core.sigmoid(B @ v) - y) + 2 * lam * D.T @ (D @ v)
+        return T.T @ gv
 
-    v0 = kx[1:].copy()
-    v = optimize.minimize(f, v0, jac=g, method='L-BFGS-B').x
+    d0 = np.diff(np.concatenate([[0.0], kx[1:]]))
+    d = optimize.minimize(f, d0, jac=g, method='L-BFGS-B', bounds=[(0.0, None)] * K).x
+    v = T @ d
     xs = list(-kx[:0:-1]) + list(kx)
     ys = list(-v[::-1]) + [0.0] + list(v)
     return {'method': 'logit_pwl', 'x': [float(a) for a in xs], 'y': [float(b) for b in ys]}
 
 
 def fit_isotonic_symmetric(p, y):
-    """Isotonic on the side-oriented probability, reflected so f(1-p) = 1 - f(p)."""
+    """Isotonic on the side-oriented probability, bounded below by 0.5 (a monotone
+    side-symmetric map cannot put the preferred side below a coin flip), then
+    reflected so f(1-p) = 1 - f(p)."""
     from sklearn.isotonic import IsotonicRegression
-    m = IsotonicRegression(increasing=True, y_min=1e-3, y_max=1 - 1e-3, out_of_bounds='clip').fit(p, y)
+    m = IsotonicRegression(increasing=True, y_min=0.5, y_max=1 - 1e-3, out_of_bounds='clip').fit(p, y)
     x, v = np.asarray(m.X_thresholds_, float), np.asarray(m.y_thresholds_, float)
     keep = x > 0.5
     x, v = x[keep], v[keep]

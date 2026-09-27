@@ -293,4 +293,13 @@ chk('misses: no play-by-play is UNEXPLAINED, never a guess', m4['primary_driver'
 m5 = MS.classify_game({'game_id': 5, 'ens_pred': 7}, dict(hp, turnover_luck_game=-2.0), dict(ap, turnover_luck_game=0.0))
 chk('misses: a turnover part under one turnover never leads', m5['primary_driver'] != 'TURNOVER_LUCK', m5)
 
+# ---------------------------------------------------------------- report tables
+from . import report as RP
+Gr = pd.DataFrame({'season': [2026, 2026], 'home_id': [1, 3], 'away_id': [2, 4], 'home_team': ['A', 'C'], 'away_team': ['B (FCS)', 'D'],
+                   'home_fbs': [True, True], 'away_fbs': [False, True]})
+Sr = pd.DataFrame({'team_id': [1, 2, 3, 4], 'record': ['1-0', '0-1', '1-0', '0-1'], 'scoreboard_margin': [40.0, -40.0, 3.0, -3.0],
+                   'performance_margin': [10.0, -70.0, 1.0, -1.0]})
+pt = RP._perf_table(Sr, names=RP._fbs_names(Gr, 2026))
+chk('report: record-vs-performance ranks FBS teams only, by name', [r['team'] for r in pt] == ['A', 'C', 'D'], pt)
+
 done()
