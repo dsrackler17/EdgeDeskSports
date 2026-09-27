@@ -51965,18 +51965,23 @@ function FBP4_URL_ROSTER(y){return 'https://raw.githubusercontent.com/sportsdata
    football/cfb_production/canonical.js). No engine is loaded here: the page
    never computes a fair line, a probability, a reliability or a decision
    (docs/cfb-production/CANONICAL.md; canonical.test.js holds it to that). */
-var FBV2={games:null,loading:null,err:null};
+/* Stored reads (CANONICAL.md §6): one request, a 10 s timeout (a slow file is
+   an error, never a hung panel), kept for an hour then read again, and a file
+   whose as_of_ts is over 3 h old is labelled stale on the card. */
+var FBV2={games:null,loading:null,err:null,loadedAt:0,TIMEOUT_MS:10000,TTL_MS:3600000,STALE_MS:3*3600000};
 function fbV2On(){
   try{return /[?&]cfbv2=1(&|$)/.test(location.search)||localStorage.getItem('edgedesk_cfb_v2')==='1';}
   catch(e){return false;}
 }
 function fbV2Ensure(){
   if(!fbV2On())return Promise.resolve(null);
-  if(FBV2.loading)return FBV2.loading;
-  FBV2.loading=fetch('football/cfb_production/reports/projections.json',{cache:'no-store'})
-    .then(function(r){if(!r.ok)throw new Error('projections.json '+r.status);return r.json();})
-    .then(function(j){FBV2.games={};FBV2.meta=j;((j&&j.games)||[]).forEach(function(g){FBV2.games[String(g.game_id)]=g;});return FBV2;})
-    .catch(function(e){FBV2.err=(e&&e.message)||'V2 failed to load';return null;});
+  if(FBV2.loading&&Date.now()-FBV2.loadedAt<FBV2.TTL_MS)return FBV2.loading;
+  FBV2.loadedAt=Date.now();FBV2.err=null;
+  var timeout=new Promise(function(_,rej){setTimeout(function(){rej(new Error('projections.json did not arrive within '+(FBV2.TIMEOUT_MS/1000)+' s'));},FBV2.TIMEOUT_MS);});
+  FBV2.loading=Promise.race([fetch('football/cfb_production/reports/projections.json',{cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('projections.json '+r.status);return r.json();}),timeout])
+    .then(function(j){var gs={};((j&&j.games)||[]).forEach(function(g){gs[String(g.game_id)]=g;});FBV2.games=gs;FBV2.meta=j;return FBV2;})
+    .catch(function(e){FBV2.err=(e&&e.message)||'V2 failed to load';FBV2.loadedAt=Date.now()-FBV2.TTL_MS+300000;return null;});   /* a failure is retried after 5 min */
   return FBV2.loading;
 }
 function fbP4Ensure(){
@@ -56653,11 +56658,15 @@ function fbV2ShadowHTML(u,p){
   var h=fbEsc(u.g.home_team),a=fbEsc(u.g.away_team),L='',dm=(s.degraded&&s.degraded.modes)||['FULL'],dp=s.display||{},mk=e.market||null;
   var od=e.official_decision||{status:'NO_DECISION'},rs=e.research||null,iv=pu.intervals||{},w=pu.why||{};
   var sidePts=function(side,line){return (side==='HOME'?h:(side==='AWAY'?a:''))+' '+fbPts(line);};
-  L+='<div class="gd-sec model">EdgeDesk pure projection <span class="unproven">SHADOW · '+fbEsc(s.model_version)+' · '+fbEsc(s.row_state||'')+' · stored '+fbEsc(String(s.as_of_ts||'').slice(0,16).replace('T',' '))+'Z</span></div>';
+  var storedAge=Date.now()-Date.parse(s.as_of_ts||'');
+  L+='<div class="gd-sec model">EdgeDesk pure projection <span class="unproven">SHADOW · '+fbEsc(s.model_version)+' · '+fbEsc(s.row_state||'')+' · stored '+fbEsc(String(s.as_of_ts||'').slice(0,16).replace('T',' '))+'Z'
+    +(isFinite(storedAge)&&storedAge>FBV2.STALE_MS?' · STALE: not refreshed for '+Math.round(storedAge/3600000)+' h':'')+'</span></div>';
   L+='<div class="gd-line"><span class="l">Data mode</span><span class="v">'+dm.map(function(m){return '<b>'+fbEsc(m)+'</b>';}).join(' · ')
     +' <span class="mut">level '+fbEsc(String(rv.level==null?'—':rv.level))+' of the fallback order · '+fbEsc(dm.map(function(m){return FB_V2_MODE_WORDS[m]||m;}).join('; '))+'</span></span></div>';
   L+='<div class="gd-line"><span class="l">Fair spread</span><span class="v mdl">'+fbEsc(pu.fair_spread_display||'—')+'</span></div>';
-  L+='<div class="gd-line"><span class="l">Win probability</span><span class="v">'+h+' '+(pu.home_win_prob*100).toFixed(1)+'% · '+a+' '+(pu.away_win_prob*100).toFixed(1)+'%</span></div>';
+  /* the stored display policy's wording (canonical.display): whole percent at most, and a
+     degraded strong favourite in words, never a precise number (brief §48) */
+  L+='<div class="gd-line"><span class="l">Win probability</span><span class="v">'+(pu.home_win_prob>=0.5?h:a)+' '+fbEsc(dp.win_probability_text||'—')+'</span></div>';
   L+='<div class="gd-line"><span class="l">Projected margin</span><span class="v">'+h+' '+fbPts(pu.projected_margin)+'</span></div>';
   L+='<div class="gd-line"><span class="l">Prediction range (80%)</span><span class="v mut">'+(iv.p80?fbPts(iv.p80[0])+' to '+fbPts(iv.p80[1]):'—')+'</span></div>';
   L+='<div class="gd-line"><span class="l">Model confidence</span><span class="v">'+(dp.show_confidence_score&&typeof pu.football_prediction_confidence==='number'

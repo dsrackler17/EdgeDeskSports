@@ -114,14 +114,17 @@ function build(opts) {
   for (const d of decisions) { const k = String(d.game_id); if (!decByGame.has(k)) decByGame.set(k, []); decByGame.get(k).push(d); }
   /* V1: the board's own stored number (the fallback level), through the same
      reading the public record and the Model Lab use */
-  let v1 = new Map();
+  let v1 = new Map(), v1Error = null;
   try {
     const M = require(path.join(REPO, 'football', 'cfb_lab', 'models.js'));
     const a = M.v1Adapter({ slate });
     v1 = new Map([...a.projections.entries()].map(([k, p]) => [k, { status: 'PREDICTED', model_version: p.model_version, margin: p.pure.margin,
       home_win_prob: p.pure.p_home, fair_total: p.pure.total, source: p.source, slate_generated_at: slate.generated_at, kickoff: p.game.kickoff,
       home: p.game.home, away: p.game.away, week: p.game.week, season: p.game.season }]));
-  } catch (e) { v1 = new Map(); }
+  } catch (e) {
+    /* never silent: without the V1 board no game can fall back to level 3; the report says so */
+    v1 = new Map(); v1Error = 'the V1 board could not be read (' + String(e && e.message).slice(0, 160) + '): level 3 (FALLBACK_MODEL) is unavailable this run';
+  }
   /* one row per game: two DIFFERENT rows for one game (a duplicated game, a
      half-written file) use neither: the game falls to the next level */
   const rows = new Map(), dups = new Set();
@@ -196,7 +199,7 @@ function build(opts) {
     },
     sources: { current_json: { generated_at: cur.generated_at || null, sha256: opts.files ? null : sha(path.join(REPO, 'football', 'cfb_v2', 'current.json')), rows: (cur.rows || []).length },
       slate_json: { generated_at: slate.generated_at || null, sha256: opts.files ? null : sha(path.join(REPO, 'football', 'fbs', 'slate.json')) },
-      lab_predictions: preds.length, decision_rows: decisions.length },
+      lab_predictions: preds.length, decision_rows: decisions.length, v1_games: v1.size, v1_error: v1Error },
     counts,
     games,
   };
@@ -219,5 +222,6 @@ if (require.main === module) {
     fs.writeFileSync(out, JSON.stringify(r, null, 1) + '\n');
     fs.writeFileSync(arg('--traces-out', out === OUT ? TRACES_OUT : out.replace(/\.json$/, '') + '.traces.json'), JSON.stringify(r.traces) + '\n');
   }
+  if (r.sources.v1_error) console.error('::warning::' + r.sources.v1_error);
   console.log(JSON.stringify({ as_of_ts: r.as_of_ts, counts: r.counts }));
 }

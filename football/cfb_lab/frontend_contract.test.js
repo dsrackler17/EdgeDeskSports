@@ -72,14 +72,17 @@ const text = (h) => String(h).replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').re
   chk('V2 panel: projected margin is the HOME margin, signed (+7.0 = Texas by 7)', /Projected margin Texas \+7\.0/.test(h1));
   chk('V2 panel: the market spread is the stored HOME line (-3.0)', /Current spread Texas -3\.0/.test(h1), h1);
   chk('V2 panel: model +7 vs market home -3 is a +4.0 disagreement toward HOME', /EdgeDesk disagreement \+4\.0 pts toward Texas/.test(h1), h1);
-  const probs = /Win probability Texas ([\d.]+)% · Oklahoma ([\d.]+)%/.exec(h1);
-  chk('V2 panel: the two win probabilities sum to 100%', probs && Math.abs(Number(probs[1]) + Number(probs[2]) - 100) < 0.11 && Number(probs[1]) > 50, probs);
+  /* the stored display wording (brief §48): the favourite and its whole-percent probability */
+  const probs = /Win probability (Texas|Oklahoma) (\d+)%/.exec(h1);
+  chk('V2 panel: the win probability names the favourite (home by 7: Texas) with the stored whole-percent wording',
+    probs && probs[1] === 'Texas' && Number(probs[2]) > 50 && probs[2] + '%' === entry(r1, -3).canonical.display.win_probability_text, probs);
   /* road favourite by 10; the market has the away team -7 (home line +7) */
   const r2 = row('2', -10), h2 = text(panel(entry(r2, 7), r2));
   chk('V2 panel: road favourite fair line names the AWAY team: "Oklahoma -10.0"', /Fair spread Oklahoma -10\.0/.test(h2), h2.slice(0, 200));
   chk('V2 panel: road favourite margin is negative for the home team (Texas -10.0)', /Projected margin Texas -10\.0/.test(h2));
   chk('V2 panel: the market home line is +7.0 (Oklahoma -7)', /Current spread Texas \+7\.0/.test(h2));
   chk('V2 panel: model -10 vs market home +7 leans AWAY by 3', /EdgeDesk disagreement -3\.0 pts toward Oklahoma/.test(h2), h2);
+  chk('V2 panel: the road favourite\'s win probability names the AWAY team', /Win probability Oklahoma \d+%/.test(h2) && !/Win probability Texas/.test(h2), h2);
   /* F-22: the OFFICIAL status is the governed policy's; the stage-8 status is research only */
   chk('V2 panel: the official decision is the governed policy\'s (NO DECISION here), never the stage-8 status', /Official decision NO DECISION/.test(h1) && !/Official decision LEAN/.test(h1), h1);
   chk('V2 panel: the stage-8 status appears only as a labelled research field', /Research only LEAN — the stage-8 rule, not the governed decision/.test(h1));

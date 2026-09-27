@@ -34,7 +34,8 @@ const ctx = { window: {}, location: { search: '' }, localStorage: { getItem: () 
   console, JSON, Math, Object, Array, String, Date, Promise };
 ctx.window = ctx; ctx.globalThis = ctx;
 vm.createContext(ctx);
-vm.runInContext('var FBV2={games:null,loading:null,err:null};', ctx);
+const fbv2Decl = /var FBV2=\{[^;]*\};/.exec(app);
+vm.runInContext(fbv2Decl ? fbv2Decl[0] : 'var FBV2={games:null,loading:null,err:null};', ctx);
 const words = /var FB_V2_MODE_WORDS=\{[^;]*\};/.exec(app);
 if (words) vm.runInContext(words[0], ctx);
 ['_escHtml', 'fbEsc', 'fbPts', 'fbV2On', 'fbV2ShadowHTML'].forEach(function (f) {
@@ -77,5 +78,43 @@ if (fcs) {
   ok(/NOT_PRICED/.test(h2) && !/Fair spread/.test(h2), 'FBS-vs-FCS row renders NOT_PRICED, no number');
 }
 ok(/No stored V2 projection/.test(ctx.fbV2ShadowHTML({ g: { game_id: 1 } }, null)), 'a game with no stored projection says so');
-console.log((n - fail) + '/' + n + ' passed');
-process.exit(fail ? 1 : 0);
+
+/* the public display policy (brief §48): the stored wording, never a precise degraded number */
+ok(html.indexOf('Win probability</span><span class="v">' + (priced.canonical.projection.home_win_prob >= 0.5 ? priced.home : priced.away) + ' ' + priced.canonical.display.win_probability_text) >= 0
+  && !/Win probability<\/span><span class="v">[^<]*\d+\.\d%/.test(html), 'win probability is the stored display wording (whole percent at most)');
+const strong = rep.games.find(function (g) { return g.canonical && g.canonical.status === 'PREDICTED' && g.canonical.degraded.football.length
+  && Math.max(g.canonical.projection.home_win_prob, 1 - g.canonical.projection.home_win_prob) >= 0.85; });
+if (strong) {
+  const hs = ctx.fbV2ShadowHTML({ g: { game_id: strong.game_id, home_team: strong.home, away_team: strong.away } }, null);
+  ok(/Win probability<\/span><span class="v">[^<]*strong favourite \(/.test(hs) && !/Win probability<\/span><span class="v">[^<]*\d%/.test(hs) && !/Model confidence<\/span><span class="v">\d/.test(hs),
+    'a degraded strong favourite is said in words, with no percentage and no confidence score');
+}
+/* stored reads: a stale file is labelled, a slow file times out, a fresh load is cached for an hour */
+const old = JSON.parse(JSON.stringify(priced));
+old.canonical.as_of_ts = new Date(Date.now() - 5 * 3600000).toISOString();
+ctx.FBV2.games[String(old.game_id)] = old;
+ok(/STALE: not refreshed for 5 h/.test(ctx.fbV2ShadowHTML(u, null)), 'a stored projection over 3 h old is labelled STALE');
+ctx.FBV2.games[String(priced.game_id)] = priced;
+vm.runInContext(cut('fbV2Ensure'), ctx);
+let fetches = 0;
+ctx.fetch = function () { fetches++; return new Promise(function () {}); };                 // never answers
+ctx.setTimeout = function (fn) { fn(); return 0; };                                           // the timeout fires at once
+const saved = { games: ctx.FBV2.games, loading: ctx.FBV2.loading, loadedAt: ctx.FBV2.loadedAt };
+ctx.FBV2.loading = null; ctx.FBV2.loadedAt = 0;
+ctx.fbV2Ensure().then(function (r) {
+  ok(r === null && /did not arrive within 10 s/.test(ctx.FBV2.err) && fetches === 1, 'a file that never arrives times out (10 s) and the panel says so');
+  ctx.fbV2Ensure();
+  ok(fetches === 1, 'a failed read is not retried on every render (it waits 5 min)');
+  ctx.fetch = function () { fetches++; return Promise.resolve({ ok: true, json: function () { return { games: [priced] }; } }); };
+  ctx.FBV2.loading = null; ctx.FBV2.loadedAt = 0; ctx.setTimeout = function () { return 0; };
+  return ctx.fbV2Ensure();
+}).then(function () {
+  const before = fetches;
+  ctx.fbV2Ensure();
+  ok(ctx.FBV2.games[String(priced.game_id)] && fetches === before, 'a loaded file is reused within the hour');
+  ctx.FBV2.loadedAt = Date.now() - 2 * 3600000; ctx.fbV2Ensure();
+  ok(fetches === before + 1, 'after an hour it is read again (the job refreshes it hourly)');
+  Object.assign(ctx.FBV2, saved);
+  console.log((n - fail) + '/' + n + ' passed');
+  process.exit(fail ? 1 : 0);
+});
