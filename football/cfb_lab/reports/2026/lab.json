@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-09-27T17:07:53.000Z",
+ "generated_at": "2026-09-27T18:07:29.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -508,8 +508,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-09-27T17:07:53.000Z",
-    "quotes_total": 953,
+    "last_quote_at": "2026-09-27T18:07:29.000Z",
+    "quotes_total": 1007,
     "last_result_at": "2026-09-27T15:07:15.000Z"
    }
   },
@@ -517,7 +517,7 @@
   "ledger": {
    "predictions": 684,
    "live_predictions": 174,
-   "quotes": 953,
+   "quotes": 1007,
    "lines": 1066,
    "results": 282,
    "evaluations": 510,
@@ -8297,6 +8297,77 @@
     ]
    }
   }
+ },
+ "major_disagreement": {
+  "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
+  "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
+  "games_with_market": 29,
+  "games_with_verdict": 0,
+  "raw_major_disagreements": 6,
+  "verified_major_disagreements": 0,
+  "verified_10plus": 0,
+  "verified_15plus": 0,
+  "investigate": 0,
+  "data_fault": 0,
+  "market_fault": 0,
+  "verification_not_run": 6,
+  "average_raw_gap": 4.128,
+  "average_raw_gap_7plus": 9.035,
+  "market_movement_toward_verified_pct": null,
+  "market_movement_toward_unverified_pct": null,
+  "verified_gap_mae": null,
+  "verified_gap_clv": null,
+  "false_extreme_rate_raw_pct": null,
+  "false_extreme_rate_verified_pct": null,
+  "graded": {
+   "raw_7plus": {
+    "n": 6,
+    "settled": 0,
+    "mae": null,
+    "market_mae_at_snapshot": null,
+    "moved_toward_pct": null,
+    "clv_points": null,
+    "false_extreme_rate_pct": null,
+    "false_extremes": 0
+   },
+   "verified": {
+    "n": 0,
+    "settled": 0,
+    "mae": null,
+    "market_mae_at_snapshot": null,
+    "moved_toward_pct": null,
+    "clv_points": null,
+    "false_extreme_rate_pct": null,
+    "false_extremes": 0
+   },
+   "unverified": {
+    "n": 6,
+    "settled": 0,
+    "mae": null,
+    "market_mae_at_snapshot": null,
+    "moved_toward_pct": null,
+    "clv_points": null,
+    "false_extreme_rate_pct": null,
+    "false_extremes": 0
+   }
+  },
+  "root_causes_unverified": {
+   "NOT_RUN": 6
+  },
+  "by_week": {
+   "5": {
+    "raw_7plus": 6,
+    "raw_10plus": 2,
+    "raw_15plus": 0,
+    "verified": 0,
+    "investigate": 0,
+    "data_fault": 0,
+    "market_fault": 0,
+    "not_run": 6,
+    "favorite_flips": 1
+   }
+  },
+  "note": "VERIFIED is not a bet. The counts are what the gate found, never a quota."
  },
  "governance": {
   "experiments": [

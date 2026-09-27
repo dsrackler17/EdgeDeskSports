@@ -1,0 +1,899 @@
+{
+ "schema": "cfb_ops_v1",
+ "generated_at": "2026-09-27T18:07:33.818Z",
+ "season": 2026,
+ "in_season": true,
+ "reads": [
+  "football/cfb_production/manifest.json",
+  "football/cfb_weekly/2026/runs.jsonl",
+  "football/cfb_weekly/2026/source_health.json",
+  "football/cfb_lab/reports/2026/provider_health.json",
+  "football/cfb_lab/reports/2026/lab.json",
+  "football/cfb_lab/ledger/2026/quotes",
+  "football/cfb_lab/reports/2026/last_run.json",
+  "football/cfb_v2/current.json",
+  "football/cfb_v2/shadow/2026/decisions.json",
+  "football/cfb_decision/2026/decisions.jsonl",
+  "football/fbs/slate.json"
+ ],
+ "sections": {
+  "model_version": {
+   "status": "OK",
+   "manifest_id": "cfbm_7310d74d666888ad86216e43",
+   "deployed_at": "2026-09-27T17:48:22.967Z",
+   "champion": "edgedesk_cfb_p4_v1.0.0",
+   "champion_selection": "NOT_RUN",
+   "production_model": "edgedesk_cfb_v2.1.0",
+   "production_status": "ELIGIBLE_FOR_PROMOTION; governance role challenger",
+   "feature_version": "cfb_v2_fv2",
+   "calibration_version": "edgedesk_cfb_v2.1.0:97cadb764756",
+   "ensemble_version": "edgedesk_cfb_v2.1.0:e105ca1727a6",
+   "decision_policy_version": "cfb_decision_policy_v1",
+   "git_commit": "d04141bab18a0038f57df8212714136bed697a7b",
+   "git_dirty": false,
+   "manifest_problems": [],
+   "compatibility": [
+    {
+     "check": "versions agree (config.py, params.js, models.json)",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "feature schema agrees (config.py, params.js, models.json)",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "artifact files verify against MANIFEST.json",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "the compatibility matrix has a COMPATIBLE entry for edgedesk_cfb_v2.1.0",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "feature schema is the one the entry names",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "artifact MANIFEST is the one the entry pins",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "params.js is the one the entry pins (calibration, market rule, gates)",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "engine.js is the one the entry pins",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "calibration version matches the entry",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "ensemble version matches the entry",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "market engine version matches the entry",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "the decision policy the engine would load is the pinned one",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "decision policy content is the pinned content",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "decision baseline belongs to this model and its pinned files verify",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "decision calibration is the pinned one, belongs to this model and verifies",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "decision engine version is the pinned one",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "betting stays disabled unless the pinned policy enables it",
+     "ok": true,
+     "code": null,
+     "detail": null
+    },
+    {
+     "check": "the fallback (V1 champion) is present and pinned",
+     "ok": true,
+     "code": null,
+     "detail": null
+    }
+   ],
+   "fallback_hierarchy": [
+    {
+     "level": 1,
+     "mode": "FULL",
+     "model_version": "edgedesk_cfb_v2.1.0",
+     "when": "V2.1 artifact verifies, inputs pass the contract, every source fresh",
+     "display": "FULL"
+    },
+    {
+     "level": 2,
+     "mode": "DEGRADED",
+     "model_version": "edgedesk_cfb_v2.1.0",
+     "when": "a validated degraded mode of the weekly engine (DEGRADED_PBP / DEGRADED_AVAILABILITY / DEGRADED_MARKET): reliability capped, BET never issued",
+     "display": "the mode, always shown"
+    },
+    {
+     "level": 3,
+     "mode": "FALLBACK_MODEL",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "when": "V2.1 inference unavailable (artifact / compatibility / input contract failure): the previous stable champion (governance champion V1, football/fbs/slate.json)",
+     "display": "FALLBACK_MODEL — V1"
+    },
+    {
+     "level": 4,
+     "mode": "UNAVAILABLE",
+     "model_version": null,
+     "when": "neither model can produce a trustworthy projection",
+     "display": "Prediction unavailable (never a substitute number)"
+    }
+   ]
+  },
+  "last_weekly_run": {
+   "status": "CRITICAL",
+   "detail": "no weekly-engine run is recorded for 2026 (football/cfb_weekly/2026/runs.jsonl absent): the V2.1 weekly refresh has not run yet",
+   "run_id": null,
+   "mode": null,
+   "run_status": null,
+   "started_at": null,
+   "completed_at": null,
+   "last_published_at": null,
+   "age_minutes": null,
+   "stage_groups": null,
+   "errors": [],
+   "runs_recorded": 0
+  },
+  "source_health": {
+   "status": "OK",
+   "sources": [
+    {
+     "source": "espn_scoreboard",
+     "origin": "Model Lab circuit breaker",
+     "status": "HEALTHY",
+     "last_success": "2026-09-27T18:07:29.000Z",
+     "age_minutes": 0,
+     "error_rate": 0,
+     "incident": null
+    },
+    {
+     "source": "cfbfastr_schedule",
+     "origin": "Model Lab circuit breaker",
+     "status": "HEALTHY",
+     "last_success": "2026-09-27T18:07:29.000Z",
+     "age_minutes": 0,
+     "error_rate": 0,
+     "incident": null
+    }
+   ],
+   "detail": "no weekly-engine source_health.json for 2026; the Model Lab breakers are shown"
+  },
+  "odds_age": {
+   "status": "OK",
+   "newest_quote_at": "2026-09-27T18:07:29.000Z",
+   "age_minutes": 0,
+   "stale_after_minutes": 180,
+   "games_within_48h": 0,
+   "games_marked_stale": 30,
+   "games_this_week": 59,
+   "rule": "decisions fail closed (MARKET_STALE) past 180 min (decision policy cfb_decision_policy_v1); football projections still display"
+  },
+  "pbp_age": {
+   "status": "WARNING",
+   "pbp_status": null,
+   "last_success": null,
+   "age_minutes": null,
+   "coverage": null,
+   "error_rate": null,
+   "detail": "no weekly-engine PBP health recorded for 2026",
+   "rule": "incomplete PBP never becomes zero EPA: the game is FINAL_PARTIAL_DATA and the weekly engine degrades (DEGRADED_PBP) or holds"
+  },
+  "failed_jobs": {
+   "status": "OK",
+   "failed": [],
+   "lab_last_run_at": "2026-09-27T18:07:29.000Z",
+   "lab_last_run_age_minutes": 0,
+   "note": "Mirror / workflow failures and heartbeats live in Postgres (cfb_job_heartbeat_status, cfb_incidents_current) and GitHub Actions; this file sees what the jobs committed."
+  },
+  "degraded_games": {
+   "status": "OK",
+   "v21_rows": 60,
+   "degraded": [
+    {
+     "game_id": "401871049",
+     "home": "New Mexico State",
+     "away": "Western Kentucky",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401862786",
+     "home": "Tulsa",
+     "away": "North Texas",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858245",
+     "home": "Virginia Tech",
+     "away": "Pittsburgh",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401871050",
+     "home": "Delaware",
+     "away": "Liberty",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858476",
+     "home": "Northwestern",
+     "away": "Penn State",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856705",
+     "home": "Georgia",
+     "away": "Vanderbilt",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856707",
+     "home": "Mississippi State",
+     "away": "Alabama",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858249",
+     "home": "Clemson",
+     "away": "Miami",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858250",
+     "home": "North Carolina",
+     "away": "Notre Dame",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856807",
+     "home": "Kansas",
+     "away": "Middle Tennessee",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856819",
+     "home": "Houston",
+     "away": "UCF",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856822",
+     "home": "Iowa State",
+     "away": "West Virginia",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858246",
+     "home": "SMU",
+     "away": "Boston College",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858251",
+     "home": "Wake Forest",
+     "away": "Stanford",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858252",
+     "home": "UConn",
+     "away": "Syracuse",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858474",
+     "home": "Minnesota",
+     "away": "Michigan",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401862791",
+     "home": "Air Force",
+     "away": "Navy",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858479",
+     "home": "Wisconsin",
+     "away": "Michigan State",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401866432",
+     "home": "Buffalo",
+     "away": "Western Michigan",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401866431",
+     "home": "Ball State",
+     "away": "Toledo",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856708",
+     "home": "Missouri",
+     "away": "Florida",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856710",
+     "home": "Tennessee",
+     "away": "Auburn",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858247",
+     "home": "UNLV",
+     "away": "California",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858248",
+     "home": "NC State",
+     "away": "Louisville",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858253",
+     "home": "Florida State",
+     "away": "Virginia",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858473",
+     "home": "Iowa",
+     "away": "Ohio State",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401862787",
+     "home": "Charlotte",
+     "away": "Memphis",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401862793",
+     "home": "UAB",
+     "away": "Samford",
+     "modes": [
+      "NOT_PRICED",
+      "QB_MISSING",
+      "EARLY_SEASON"
+     ],
+     "reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)"
+    },
+    {
+     "game_id": "401864515",
+     "home": "North Dakota State",
+     "away": "Wyoming",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401866430",
+     "home": "Central Michigan",
+     "away": "Akron",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401866433",
+     "home": "Massachusetts",
+     "away": "Eastern Michigan",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401866434",
+     "home": "Kent State",
+     "away": "Ohio",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401866477",
+     "home": "Miami (OH)",
+     "away": "Bowling Green",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401869956",
+     "home": "Georgia State",
+     "away": "Old Dominion",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401869962",
+     "home": "James Madison",
+     "away": "Marshall",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858475",
+     "home": "Nebraska",
+     "away": "Maryland",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401864514",
+     "home": "New Mexico",
+     "away": "UTEP",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856709",
+     "home": "South Carolina",
+     "away": "Kentucky",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858472",
+     "home": "Illinois",
+     "away": "Purdue",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401860899",
+     "home": "Colorado State",
+     "away": "Oregon State",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401862790",
+     "home": "Florida Atlantic",
+     "away": "Texas Southern",
+     "modes": [
+      "NOT_PRICED",
+      "EARLY_SEASON"
+     ],
+     "reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)"
+    },
+    {
+     "game_id": "401856711",
+     "home": "Texas A&M",
+     "away": "Arkansas",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856818",
+     "home": "TCU",
+     "away": "BYU",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401862788",
+     "home": "Rice",
+     "away": "UTSA",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401869942",
+     "home": "Coastal Carolina",
+     "away": "Georgia Southern",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401871089",
+     "home": "South Alabama",
+     "away": "UL Monroe",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856821",
+     "home": "Colorado",
+     "away": "Texas Tech",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401858478",
+     "home": "USC",
+     "away": "Washington",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401860898",
+     "home": "Boise State",
+     "away": "Utah State",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401862792",
+     "home": "South Florida",
+     "away": "Temple",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401869842",
+     "home": "Louisiana Tech",
+     "away": "Army",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856706",
+     "home": "LSU",
+     "away": "McNeese",
+     "modes": [
+      "NOT_PRICED",
+      "QB_MISSING",
+      "EARLY_SEASON"
+     ],
+     "reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)"
+    },
+    {
+     "game_id": "401858477",
+     "home": "Rutgers",
+     "away": "Indiana",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401869932",
+     "home": "Louisiana",
+     "away": "Arkansas State",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401860921",
+     "home": "Washington State",
+     "away": "Fresno State",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856817",
+     "home": "Arizona State",
+     "away": "Baylor",
+     "modes": [
+      "QB_UNSETTLED",
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401860900",
+     "home": "San Diego State",
+     "away": "Texas State",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401856820",
+     "home": "Arizona",
+     "away": "Cincinnati",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401864513",
+     "home": "Hawai'i",
+     "away": "San José State",
+     "modes": [
+      "EARLY_SEASON"
+     ],
+     "reason": null
+    },
+    {
+     "game_id": "401871090",
+     "home": "Troy",
+     "away": "Southern Miss",
+     "modes": [
+      "QB_UNSETTLED"
+     ],
+     "reason": null
+    }
+   ],
+   "degraded_count": 60,
+   "lab_data_quality": {
+    "GREEN": 29,
+    "YELLOW": 31,
+    "RED": 0
+   }
+  },
+  "predictions": {
+   "status": "OK",
+   "v21_current_generated_at": "2026-09-27T09:32:42Z",
+   "v21_current_age_minutes": 515,
+   "v21_rows": 60,
+   "v21_mode": "shadow",
+   "frozen_snapshot_files": 0,
+   "lab_models": [
+    {
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "label": "V1",
+     "role": "champion",
+     "snapshots": 60,
+     "latest_snapshot_at": "2026-09-27T15:07:15.000Z",
+     "upcoming_games": 60,
+     "avg_confidence_upcoming": 79.3
+    },
+    {
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "label": "V2 · candidate 001",
+     "role": "candidate",
+     "snapshots": 57,
+     "latest_snapshot_at": "2026-09-27T15:07:15.000Z",
+     "upcoming_games": 57,
+     "avg_confidence_upcoming": 79.4
+    },
+    {
+     "model_version": "edgedesk_cfb_v2.1.0",
+     "label": "V2.1 · hardened",
+     "role": "challenger",
+     "snapshots": 57,
+     "latest_snapshot_at": "2026-09-27T15:07:15.000Z",
+     "upcoming_games": 57,
+     "avg_confidence_upcoming": 79.7
+    }
+   ],
+   "lab_games_this_week": 59
+  },
+  "bet_decisions": {
+   "status": "OK",
+   "betting_enabled": false,
+   "policy": "cfb_decision_policy_v1",
+   "policy_status": "SHADOW",
+   "decision_rows": 0,
+   "by_role_status": {},
+   "shadow_counts": {
+    "BET": 0,
+    "LEAN": 0,
+    "REVIEW": 0,
+    "PASS": 0
+   },
+   "bets": 0,
+   "rule": "a BET while the policy has betting disabled is a fail-safe breach (CRITICAL); an unusual BET count is reviewed, never auto-cancelled"
+  },
+  "warnings": {
+   "status": "OK",
+   "warnings": [],
+   "anomaly_rows": 56,
+   "anomaly_baseline_weeks": 1
+  },
+  "incidents": {
+   "status": "UNKNOWN",
+   "open": [],
+   "detail": "incidents live in Postgres (cfb_incidents_current); this build had no database credentials"
+  }
+ },
+ "system": {
+  "status": "CRITICAL",
+  "by_section": {
+   "model_version": "OK",
+   "last_weekly_run": "CRITICAL",
+   "source_health": "OK",
+   "odds_age": "OK",
+   "pbp_age": "WARNING",
+   "failed_jobs": "OK",
+   "degraded_games": "OK",
+   "predictions": "OK",
+   "bet_decisions": "OK",
+   "warnings": "OK",
+   "incidents": "UNKNOWN"
+  },
+  "rule": "the worst section decides; UNKNOWN is never reported as OK"
+ }
+}
