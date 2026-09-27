@@ -493,6 +493,7 @@ export interface Config {
   referenceBooks: string[];
   ticks: boolean;
   bookQuotes: boolean;
+  cfbLab: boolean;
   flagMax: number;
   flagConcurrency: number;
   budgetMs: number;
@@ -624,6 +625,8 @@ export function defaultConfig(env: EnvGet): Config {
      appends a history row for each change. The actionable set is small and is
      exactly the population a book-bias study is about. */
   bookQuotes: bool("CAPTURE_BOOK_QUOTES", true),
+    /* forward per-book college odds to the CFB Model Lab (fail-soft) */
+    cfbLab: bool("CAPTURE_CFB_LAB", true),
     flagMax: num("CAPTURE_FLAG_MAX", 600),
     flagConcurrency: Math.max(1, num("CAPTURE_FLAG_CONCURRENCY", 25)),
     budgetMs: num("CAPTURE_MAX_MS", 110000),
@@ -1824,6 +1827,95 @@ export function flagRow(c: Candidate, v: Verdict, nowIso: string): any {
 const json = (o: unknown, status = 200) =>
   new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json" } });
 
+/* ==========================================================================
+   THE CFB MODEL LAB FEED. The lab (football/cfb_lab/, docs/cfb-lab/) keeps a
+   permanent, append-only market history for every college game it predicts:
+   each sportsbook's spread, total and moneyline as observed, so it can derive
+   the opener, the close, CLV and the market at every snapshot. This board
+   already pays for the per-book college odds, so it forwards them, UNCHANGED
+   IN MEANING, to public.cfb_lab_ingest_quotes() (supabase/cfb_lab.sql), which
+   applies the lab's own de-duplication rule and resolves the provider event to
+   a game through cfb_lab_event_map.
+
+   Conventions are the LAB's, not this file's: American prices, the spread as
+   the HOME team's line (negative = home favoured), the total's over/under
+   prices, and nothing observed at or after kickoff. A market whose two sides
+   disagree about the number (home -3.5 against away +3) is skipped, never
+   averaged. The feed is FAIL-SOFT: a missing function or a failed call is
+   reported under `cfb_lab` in the run log and changes nothing else about the
+   run's status.
+   ========================================================================== */
+export const CFB_LAB_SPORT = "americanfootball_ncaaf";
+
+/* decimal -> American, rounded half away from zero (the lab's price rule) */
+export function decimalToAmerican(d: unknown): number | null {
+  const x = Number(d);
+  if (!Number.isFinite(x) || x <= 1) return null;
+  const a = x >= 2 ? (x - 1) * 100 : -100 / (x - 1);
+  const r = Math.sign(a) * Math.floor(Math.abs(a) + 0.5);
+  return r === 0 ? null : r;
+}
+
+export function cfbLabQuotes(events: any[], nowIso: string, nowMs: number): { quotes: any[]; skipped: Record<string, number> } {
+  const quotes: any[] = [];
+  const skipped: Record<string, number> = {};
+  const skip = (why: string) => { skipped[why] = (skipped[why] ?? 0) + 1; };
+  const lower = (x: unknown) => String(x ?? "").trim().toLowerCase();
+  for (const ev of events ?? []) {
+    const kick = parseStamp(ev?.commence_time);
+    if (!ev?.id || kick == null || !ev?.home_team || !ev?.away_team) { skip("event without id, teams or kickoff"); continue; }
+    if (nowMs >= kick) { skip("started (in-play numbers are never recorded)"); continue; }
+    const home = lower(ev.home_team), away = lower(ev.away_team);
+    const common = {
+      game_id: null, source: "odds_api", provider_event_id: String(ev.id),
+      observed_at: nowIso, retrieved_at: nowIso, kickoff_ts: new Date(kick).toISOString(),
+      home_team: String(ev.home_team), away_team: String(ev.away_team),
+      is_pregame: true, is_provider_open: false, is_provider_close: false,
+    };
+    for (const bk of ev?.bookmakers ?? []) {
+      const book = lower(bk?.key).replace(/[^a-z0-9]+/g, "");
+      if (!book) { skip("bookmaker without a key"); continue; }
+      for (const m of bk?.markets ?? []) {
+        const outs: any[] = Array.isArray(m?.outcomes) ? m.outcomes : [];
+        const upd = parseStamp(m?.last_update) ?? parseStamp(bk?.last_update);
+        const base = { ...common, book, provider_updated_at: upd == null ? null : new Date(upd).toISOString() };
+        if (m?.key === "spreads") {
+          const h = outs.find((o) => lower(o?.name) === home), a = outs.find((o) => lower(o?.name) === away);
+          const hp = Number(h?.point), ap = Number(a?.point);
+          if (!h || !a || !Number.isFinite(hp) || !Number.isFinite(ap)) { skip("spread without both sides"); continue; }
+          if (Math.abs(hp + ap) > 1e-9) { skip("spread sides disagree about the number"); continue; }
+          quotes.push({ ...base, market_type: "spread", home_line: hp, price_home: decimalToAmerican(h.price), price_away: decimalToAmerican(a.price) });
+        } else if (m?.key === "totals") {
+          const o = outs.find((x) => lower(x?.name) === "over"), u = outs.find((x) => lower(x?.name) === "under");
+          const op = Number(o?.point), up = Number(u?.point);
+          if (!o || !u || !Number.isFinite(op) || !Number.isFinite(up)) { skip("total without both sides"); continue; }
+          if (Math.abs(op - up) > 1e-9) { skip("total sides disagree about the number"); continue; }
+          quotes.push({ ...base, market_type: "total", total_points: op, price_over: decimalToAmerican(o.price), price_under: decimalToAmerican(u.price) });
+        } else if (m?.key === "h2h") {
+          const h = outs.find((o) => lower(o?.name) === home), a = outs.find((o) => lower(o?.name) === away);
+          const ph = decimalToAmerican(h?.price), pa = decimalToAmerican(a?.price);
+          if (ph == null && pa == null) { skip("moneyline without a price"); continue; }
+          quotes.push({ ...base, market_type: "moneyline", price_home: ph, price_away: pa });
+        }
+      }
+    }
+  }
+  return { quotes, skipped };
+}
+
+async function sendCfbLab(url: string, key: string, quotes: any[]): Promise<{ ok: boolean; result?: any; error?: string }> {
+  try {
+    const r = await fetch(url.replace(/\/+$/, "") + "/rest/v1/rpc/cfb_lab_ingest_quotes", {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" },
+      body: JSON.stringify({ p_quotes: quotes }),
+    });
+    const text = await r.text().catch(() => "");
+    if (!r.ok) return { ok: false, error: `HTTP ${r.status}: ${text.slice(0, 240)}` };
+    try { return { ok: true, result: JSON.parse(text) }; } catch { return { ok: true, result: text.slice(0, 240) }; }
+  } catch (e) { return { ok: false, error: String((e as Error)?.message ?? e) }; }
+}
+
 function explainWriteError(phase: string, e: string): string {
   const low = String(e).toLowerCase();
   if (low.includes("null value") && low.includes("first_")) {
@@ -1986,6 +2078,8 @@ export async function handle(req: Request): Promise<Response> {
   const tierCounts: Record<string, number> = { A: 0, B: 0, PASS: 0 };
   const perSegment: Record<string, { candidates: number; actionable: number }> = {};
   let quotaRemaining = "", quotaUsed = "", quotaSpent = 0;
+  /* the CFB Model Lab feed (see cfbLabQuotes); never part of the run status */
+  const cfbLab: any = { enabled: cfg.cfbLab, sent: 0, skipped: {}, results: [] as any[], errors: [] as string[] };
   /* THE FUNNEL. Every one of these answers a question the brief asks to be
      answerable from a single run, in order, without inference. */
   const funnel: any = {
@@ -2025,6 +2119,19 @@ export async function handle(req: Request): Promise<Response> {
     if (!res.ok) { errored.push({ sport, status: res.status, detail: res.detail }); perSport[sport] = 0; continue; }
 
     perSportEvents[sport] = res.data.length;
+
+    if (cfg.cfbLab && !diag && sport === CFB_LAB_SPORT) {
+      try {
+        const lab = cfbLabQuotes(res.data, nowIso, nowMs);
+        for (const k in lab.skipped) cfbLab.skipped[k] = (cfbLab.skipped[k] ?? 0) + lab.skipped[k];
+        for (let i = 0; i < lab.quotes.length && !outOfTime(); i += 1000) {
+          const chunk = lab.quotes.slice(i, i + 1000);
+          const r = await sendCfbLab(SB_URL, SB_KEY, chunk);
+          if (r.ok) { cfbLab.sent += chunk.length; cfbLab.results.push(r.result); }
+          else { cfbLab.errors.push(r.error); break; }
+        }
+      } catch (e) { cfbLab.errors.push(String((e as Error)?.message ?? e)); }
+    }
     funnel.events_returned += res.data.length;
 
     /* PRIOR STATE for persistence, in ONE read per sport. A candidate whose prior
@@ -2349,6 +2456,7 @@ export async function handle(req: Request): Promise<Response> {
     ...(malformedMarkets ? { malformed_markets_skipped: malformedMarkets } : {}),
     ticks_enabled: cfg.ticks, ticks_written: ticksWritten, ticks_written_is_exact: ticksExact,
     book_quotes_enabled: cfg.bookQuotes, book_quotes_written: quotesWritten,
+    cfb_lab: cfbLab,
     ...(quoteErrors ? { book_quote_write_failures: quoteErrors } : {}),
     ...(tickErrors ? { tick_write_failures: tickErrors } : {}),
     ...(writeErrors.length ? { write_errors: writeErrors } : {}),
