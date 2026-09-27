@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "Samford vs. UAB: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Samford vs. UAB 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Samford at UAB at UAB -21.0. UAB wins 92% of simulations. Data confidence 43%. Model status NO MARKET. Research, not picks.",
-  "excerpt": "UAB carries a full EdgeDesk team rating at -2.8; Samford is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it UAB -21.0 before any sportsbook number is consulted,…",
+  "seo_description": "EdgeDesk prices Samford at UAB at UAB -21.0. UAB wins 92% of simulations. Data confidence 48%. Model status NO MARKET. Research, not picks.",
+  "excerpt": "UAB carries a full EdgeDesk team rating at -2.5; Samford is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it UAB -21.0 before any sportsbook number is consulted,…",
   "home_team": "UAB",
   "away_team": "Samford",
   "venue": "Protective Stadium",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-03T19:30:00.000Z",
   "game_when_label": "2026-10-03 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-27T11:55:10.560Z",
-  "generated_at": "2026-09-27T11:55:10.560Z",
+  "updated_at": "2026-09-26T23:32:03.201Z",
+  "generated_at": "2026-09-26T23:32:03.201Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 43,
+  "confidence": 48,
   "priced": true,
   "fair_spread_text": "UAB -21.0",
   "fair_total": null,
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-27. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-26. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -63,10 +63,10 @@
       "home_conference": "American Athletic"
     },
     "lede": [
-      "UAB carries a full EdgeDesk team rating at -2.8; Samford is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
+      "UAB carries a full EdgeDesk team rating at -2.5; Samford is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
       "EdgeDesk makes it UAB -21.0 before any sportsbook number is consulted, with UAB winning 92% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; Samford is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 43% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 48% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -104,20 +104,20 @@
         "volatility_discriminates": false,
         "note": "Quoted from UAB’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 43,
-      "inputs_reached_pct": 44,
+      "confidence_pct": 48,
+      "inputs_reached_pct": 42,
       "input_contract": {
         "fields": 26,
-        "applicable": 25,
-        "known": 11,
+        "applicable": 24,
+        "known": 10,
         "priced": 7,
-        "priced_coverage_pct": 28,
+        "priced_coverage_pct": 29,
         "by_state": {
           "USABLE": 7,
-          "RESEARCH_ONLY": 4,
+          "RESEARCH_ONLY": 3,
           "STALE": 0,
           "CONFLICTING": 0,
-          "NOT_APPLICABLE": 1,
+          "NOT_APPLICABLE": 2,
           "NOT_REQUIRED": 2,
           "NOT_DUE_YET": 0,
           "FETCH_FAILED": 0,
@@ -149,16 +149,16 @@
             "why": "Samford is outside the FBS field the player layer rates, so no composite is measured for it. The engine charges for the gap, so the contract counts it as one"
           },
           {
+            "field": "qb_starter",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no starter evidence of any kind reached this team. — unknown: nothing EdgeDesk can read names a starter for this team. Retrieved and published as research; the priced QB layer is not fed from it until the starter layer has an out-of-sample record of its own"
+          },
+          {
             "field": "qb_availability",
             "side": "away",
             "state": "UNAVAILABLE",
             "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. EdgeDesk has not researched an availability-reporting policy for Southern; that is an open question, not a finding that none exists"
-          },
-          {
-            "field": "qb_efficiency_history",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "Gabarri Johnson has thrown no FBS pass inside this history — an empty sample, never an average one"
           },
           {
             "field": "team_rating",
@@ -207,11 +207,11 @@
     "starters": {
       "away": {
         "team": "Samford",
-        "status": "PREVIOUS_GAME",
+        "status": "UNKNOWN",
         "confirmed": false,
-        "player": "Gabarri Johnson",
-        "player_id": "4870864",
-        "label": "Gabarri Johnson — started the last game; no announcement for this one.",
+        "player": null,
+        "player_id": null,
+        "label": "no starter evidence of any kind reached this team.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -220,17 +220,7 @@
           "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
           "source_url": null
         },
-        "experience": {
-          "starts": 5,
-          "dropbacks": 260,
-          "seasons_observed": 2,
-          "seasons_read": [
-            2025,
-            2026
-          ],
-          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
-          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
-        },
+        "experience": null,
         "competition": {
           "contested": false,
           "games": 2,
@@ -238,31 +228,38 @@
             {
               "player_id": "4870864",
               "player_name": "Gabarri Johnson",
-              "dropbacks": 79,
-              "share": 0.832
-            },
-            {
-              "player_id": "5085644",
-              "player_name": "Coulter Cleland",
-              "dropbacks": 4,
-              "share": 0.042
-            },
-            {
-              "player_id": "5302501",
-              "player_name": "Ian Reynolds",
-              "dropbacks": 4,
-              "share": 0.042
+              "dropbacks": 86,
+              "share": 0.956
             },
             {
               "player_id": "5027925",
               "player_name": "Jax Leatherwood",
               "dropbacks": 3,
-              "share": 0.032
+              "share": 0.033
+            },
+            {
+              "player_id": "5441449",
+              "player_name": "Will Shields",
+              "dropbacks": 1,
+              "share": 0.011
             }
           ]
         },
         "conflicts": 0,
         "history": [
+          {
+            "week": 1,
+            "game_id": "401868149",
+            "opponent": "North Alabama",
+            "dropbacks": 33,
+            "starter": {
+              "player_id": "4870864",
+              "player_name": "Gabarri Johnson",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
           {
             "week": 2,
             "game_id": "401868386",
@@ -275,21 +272,12 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
-          },
-          {
-            "week": 4,
-            "game_id": "401868387",
-            "opponent": "VMI",
-            "dropbacks": 38,
-            "starter": null,
-            "settled": false,
-            "why": "the player who took the first dropback threw 11% of the dropbacks; the usage leader was Gabarri Johnson"
           }
         ],
-        "source": "cfbfastR-data player_stats — play attribution",
-        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "source": null,
+        "source_url": null,
         "published_at": null,
-        "retrieved_at": "2026-09-27T08:21:25.682Z"
+        "retrieved_at": null
       },
       "home": {
         "team": "UAB",
@@ -367,9 +355,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-25T23:00:00.000Z",
-        "retrieved_at": "2026-09-27T08:21:25.682Z"
+        "retrieved_at": "2026-09-26T21:18:19.405Z"
       },
-      "generated_at": "2026-09-27T08:22:09.747Z",
+      "generated_at": "2026-09-26T21:19:06.572Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -413,10 +401,10 @@
                 "note": null
               },
               "h": {
-                "v": "-2.8",
-                "n": -2.77,
-                "rank": "#93 of 135",
-                "rank_n": 93,
+                "v": "-2.5",
+                "n": -2.5,
+                "rank": "#95 of 136",
+                "rank_n": 95,
                 "note": null
               },
               "edge": null
@@ -433,10 +421,10 @@
                 "note": null
               },
               "h": {
-                "v": "38.2",
-                "n": 38.2,
-                "rank": "#124 of 135",
-                "rank_n": 124,
+                "v": "37.9",
+                "n": 37.9,
+                "rank": "#123 of 136",
+                "rank_n": 123,
                 "note": null
               },
               "edge": null
@@ -453,10 +441,10 @@
                 "note": null
               },
               "h": {
-                "v": "45.9",
-                "n": 45.9,
-                "rank": "#88 of 135",
-                "rank_n": 88,
+                "v": "46.5",
+                "n": 46.5,
+                "rank": "#86 of 136",
+                "rank_n": 86,
                 "note": null
               },
               "edge": null
@@ -475,8 +463,8 @@
               "h": {
                 "v": "46.3",
                 "n": 46.3,
-                "rank": "#133 of 135",
-                "rank_n": 133,
+                "rank": "#134 of 136",
+                "rank_n": 134,
                 "note": null
               },
               "edge": null
@@ -498,10 +486,10 @@
                 "note": null
               },
               "h": {
-                "v": "43.2",
-                "n": 43.2,
-                "rank": "#118 of 135",
-                "rank_n": 118,
+                "v": "43.8",
+                "n": 43.8,
+                "rank": "#115 of 136",
+                "rank_n": 115,
                 "note": null
               },
               "edge": null
@@ -518,10 +506,10 @@
                 "note": null
               },
               "h": {
-                "v": "52.8",
-                "n": 52.8,
-                "rank": "#49 of 135",
-                "rank_n": 49,
+                "v": "52.7",
+                "n": 52.7,
+                "rank": "#55 of 136",
+                "rank_n": 55,
                 "note": null
               },
               "edge": null
@@ -538,10 +526,10 @@
                 "note": null
               },
               "h": {
-                "v": "48.5",
-                "n": 48.5,
-                "rank": "#114 of 128",
-                "rank_n": 114,
+                "v": "48.8",
+                "n": 48.8,
+                "rank": "#110 of 129",
+                "rank_n": 110,
                 "note": null
               },
               "edge": null
@@ -558,10 +546,10 @@
                 "note": null
               },
               "h": {
-                "v": "47.1",
-                "n": 47.1,
-                "rank": "#88 of 135",
-                "rank_n": 88,
+                "v": "48.8",
+                "n": 48.8,
+                "rank": "#75 of 136",
+                "rank_n": 75,
                 "note": null
               },
               "edge": null
@@ -578,10 +566,10 @@
                 "note": null
               },
               "h": {
-                "v": "39.8",
-                "n": 39.8,
-                "rank": "#119 of 134",
-                "rank_n": 119,
+                "v": "39.5",
+                "n": 39.5,
+                "rank": "#123 of 135",
+                "rank_n": 123,
                 "note": null
               },
               "edge": null
@@ -598,10 +586,10 @@
                 "note": null
               },
               "h": {
-                "v": "43.9",
-                "n": 43.9,
-                "rank": "#94 of 135",
-                "rank_n": 94,
+                "v": "41.8",
+                "n": 41.8,
+                "rank": "#98 of 136",
+                "rank_n": 98,
                 "note": null
               },
               "edge": null
@@ -618,10 +606,10 @@
                 "note": null
               },
               "h": {
-                "v": "59.4",
-                "n": 59.4,
-                "rank": "#23 of 135",
-                "rank_n": 23,
+                "v": "60.3",
+                "n": 60.3,
+                "rank": "#20 of 136",
+                "rank_n": 20,
                 "note": null
               },
               "edge": null
@@ -643,10 +631,10 @@
                 "note": null
               },
               "h": {
-                "v": "54.5",
-                "n": 54.5,
-                "rank": "#119 of 135",
-                "rank_n": 119,
+                "v": "54.2",
+                "n": 54.2,
+                "rank": "#120 of 136",
+                "rank_n": 120,
                 "note": null
               },
               "edge": null
@@ -665,8 +653,8 @@
               "h": {
                 "v": "53.1",
                 "n": 53.1,
-                "rank": "#48 of 135",
-                "rank_n": 48,
+                "rank": "#50 of 136",
+                "rank_n": 50,
                 "note": null
               },
               "edge": null
@@ -685,8 +673,8 @@
               "h": {
                 "v": "54.5",
                 "n": 54.5,
-                "rank": "#104 of 135",
-                "rank_n": 104,
+                "rank": "#105 of 136",
+                "rank_n": 105,
                 "note": null
               },
               "edge": null
@@ -723,10 +711,10 @@
                 "note": null
               },
               "h": {
-                "v": "55.9",
-                "n": 55.9,
-                "rank": "#76 of 135",
-                "rank_n": 76,
+                "v": "56.0",
+                "n": 56,
+                "rank": "#72 of 136",
+                "rank_n": 72,
                 "note": null
               },
               "edge": null
@@ -743,9 +731,9 @@
                 "note": null
               },
               "h": {
-                "v": "45.0",
-                "n": 45,
-                "rank": "#134 of 135",
+                "v": "45.1",
+                "n": 45.1,
+                "rank": "#134 of 136",
                 "rank_n": 134,
                 "note": null
               },
@@ -765,8 +753,8 @@
               "h": {
                 "v": "46.8",
                 "n": 46.8,
-                "rank": "#133 of 135",
-                "rank_n": 133,
+                "rank": "#134 of 136",
+                "rank_n": 134,
                 "note": null
               },
               "edge": null
@@ -785,8 +773,8 @@
               "h": {
                 "v": "49.9",
                 "n": 49.9,
-                "rank": "#101 of 135",
-                "rank_n": 101,
+                "rank": "#103 of 136",
+                "rank_n": 103,
                 "note": null
               },
               "edge": null
@@ -803,10 +791,10 @@
                 "note": null
               },
               "h": {
-                "v": "57.6",
-                "n": 57.6,
-                "rank": "#11 of 135",
-                "rank_n": 11,
+                "v": "57.3",
+                "n": 57.3,
+                "rank": "#21 of 136",
+                "rank_n": 21,
                 "note": null
               },
               "edge": null
@@ -830,8 +818,8 @@
               "h": {
                 "v": "53.4",
                 "n": 53.4,
-                "rank": "#101 of 135",
-                "rank_n": 101,
+                "rank": "#100 of 136",
+                "rank_n": 100,
                 "note": null
               },
               "edge": null
@@ -850,7 +838,7 @@
               "h": {
                 "v": "43.4",
                 "n": 43.4,
-                "rank": "#75 of 135",
+                "rank": "#75 of 136",
                 "rank_n": 75,
                 "note": null
               },
@@ -865,13 +853,7 @@
     "advantages": {
       "away": [],
       "home": [],
-      "measured": [
-        {
-          "k": "K room",
-          "team": "UAB",
-          "text": "UAB 57.6 · #11 of 135 ranked."
-        }
-      ],
+      "measured": [],
       "measured_note": "UAB’s strongest measured components, chosen by the build from its own component ranks. Samford carries no rating in any of them, so each line is a measurement of one team rather than a comparison.",
       "unproven": [
         "EdgeDesk has incomplete opponent roster information: Samford is not in the FBS player and rating dataset, so nothing about it is measured here.",
@@ -892,12 +874,12 @@
         "def": {
           "team": "UAB",
           "label": "pass defense",
-          "v": "59.4",
-          "rank": "#23 of 135",
+          "v": "60.3",
+          "rank": "#20 of 136",
           "note": null
         },
         "complete": false,
-        "read": "UAB’s pass defense is measurable at 59.4 (#23 of 135). Samford’s pass offense is not, so the pairing cannot be scored."
+        "read": "UAB’s pass defense is measurable at 60.3 (#20 of 136). Samford’s pass offense is not, so the pairing cannot be scored."
       },
       {
         "title": "Samford run offense vs UAB run defense",
@@ -911,20 +893,20 @@
         "def": {
           "team": "UAB",
           "label": "run defense",
-          "v": "43.9",
-          "rank": "#94 of 135",
+          "v": "41.8",
+          "rank": "#98 of 136",
           "note": null
         },
         "complete": false,
-        "read": "UAB’s run defense is measurable at 43.9 (#94 of 135). Samford’s run offense is not, so the pairing cannot be scored."
+        "read": "UAB’s run defense is measurable at 41.8 (#98 of 136). Samford’s run offense is not, so the pairing cannot be scored."
       },
       {
         "title": "UAB pass offense vs Samford pass defense",
         "att": {
           "team": "UAB",
           "label": "pass offense",
-          "v": "39.8",
-          "rank": "#119 of 134",
+          "v": "39.5",
+          "rank": "#123 of 135",
           "note": null
         },
         "def": {
@@ -935,15 +917,15 @@
           "note": null
         },
         "complete": false,
-        "read": "UAB’s pass offense is measurable at 39.8 (#119 of 134). Samford’s pass defense is not, so the pairing cannot be scored."
+        "read": "UAB’s pass offense is measurable at 39.5 (#123 of 135). Samford’s pass defense is not, so the pairing cannot be scored."
       },
       {
         "title": "UAB run offense vs Samford run defense",
         "att": {
           "team": "UAB",
           "label": "run offense",
-          "v": "47.1",
-          "rank": "#88 of 135",
+          "v": "48.8",
+          "rank": "#75 of 136",
           "note": null
         },
         "def": {
@@ -954,7 +936,7 @@
           "note": null
         },
         "complete": false,
-        "read": "UAB’s run offense is measurable at 47.1 (#88 of 135). Samford’s run defense is not, so the pairing cannot be scored."
+        "read": "UAB’s run offense is measurable at 48.8 (#75 of 136). Samford’s run defense is not, so the pairing cannot be scored."
       },
       {
         "title": "Samford QB room vs UAB secondary",
@@ -969,19 +951,19 @@
           "team": "UAB",
           "label": "secondary",
           "v": "49.9",
-          "rank": "#101 of 135",
+          "rank": "#103 of 136",
           "note": null
         },
         "complete": false,
-        "read": "UAB’s secondary is measurable at 49.9 (#101 of 135). Samford’s QB room is not, so the pairing cannot be scored."
+        "read": "UAB’s secondary is measurable at 49.9 (#103 of 136). Samford’s QB room is not, so the pairing cannot be scored."
       },
       {
         "title": "UAB QB room vs Samford secondary",
         "att": {
           "team": "UAB",
           "label": "QB room",
-          "v": "54.5",
-          "rank": "#119 of 135",
+          "v": "54.2",
+          "rank": "#120 of 136",
           "note": null
         },
         "def": {
@@ -992,7 +974,7 @@
           "note": null
         },
         "complete": false,
-        "read": "UAB’s QB room is measurable at 54.5 (#119 of 135). Samford’s secondary is not, so the pairing cannot be scored."
+        "read": "UAB’s QB room is measurable at 54.2 (#120 of 136). Samford’s secondary is not, so the pairing cannot be scored."
       },
       {
         "title": "Samford offensive line vs UAB defensive line",
@@ -1006,12 +988,12 @@
         "def": {
           "team": "UAB",
           "label": "defensive line",
-          "v": "45.0",
-          "rank": "#134 of 135",
+          "v": "45.1",
+          "rank": "#134 of 136",
           "note": null
         },
         "complete": false,
-        "read": "UAB’s defensive line is measurable at 45.0 (#134 of 135). Samford’s offensive line is not, so the pairing cannot be scored."
+        "read": "UAB’s defensive line is measurable at 45.1 (#134 of 136). Samford’s offensive line is not, so the pairing cannot be scored."
       },
       {
         "title": "UAB offensive line vs Samford defensive line",
@@ -1019,7 +1001,7 @@
           "team": "UAB",
           "label": "offensive line",
           "v": "53.1",
-          "rank": "#48 of 135",
+          "rank": "#50 of 136",
           "note": null
         },
         "def": {
@@ -1030,7 +1012,7 @@
           "note": null
         },
         "complete": false,
-        "read": "UAB’s offensive line is measurable at 53.1 (#48 of 135). Samford’s defensive line is not, so the pairing cannot be scored."
+        "read": "UAB’s offensive line is measurable at 53.1 (#50 of 136). Samford’s defensive line is not, so the pairing cannot be scored."
       },
       {
         "title": "Samford running backs vs UAB linebackers",
@@ -1045,19 +1027,19 @@
           "team": "UAB",
           "label": "linebackers",
           "v": "46.8",
-          "rank": "#133 of 135",
+          "rank": "#134 of 136",
           "note": null
         },
         "complete": false,
-        "read": "UAB’s linebackers is measurable at 46.8 (#133 of 135). Samford’s running backs is not, so the pairing cannot be scored."
+        "read": "UAB’s linebackers is measurable at 46.8 (#134 of 136). Samford’s running backs is not, so the pairing cannot be scored."
       },
       {
         "title": "UAB running backs vs Samford linebackers",
         "att": {
           "team": "UAB",
           "label": "running backs",
-          "v": "55.9",
-          "rank": "#76 of 135",
+          "v": "56.0",
+          "rank": "#72 of 136",
           "note": null
         },
         "def": {
@@ -1068,7 +1050,7 @@
           "note": null
         },
         "complete": false,
-        "read": "UAB’s running backs is measurable at 55.9 (#76 of 135). Samford’s linebackers is not, so the pairing cannot be scored."
+        "read": "UAB’s running backs is measurable at 56.0 (#72 of 136). Samford’s linebackers is not, so the pairing cannot be scored."
       },
       {
         "title": "Samford receivers vs UAB secondary",
@@ -1083,11 +1065,11 @@
           "team": "UAB",
           "label": "secondary",
           "v": "49.9",
-          "rank": "#101 of 135",
+          "rank": "#103 of 136",
           "note": null
         },
         "complete": false,
-        "read": "UAB’s secondary is measurable at 49.9 (#101 of 135). Samford’s receivers is not, so the pairing cannot be scored."
+        "read": "UAB’s secondary is measurable at 49.9 (#103 of 136). Samford’s receivers is not, so the pairing cannot be scored."
       },
       {
         "title": "UAB receivers vs Samford secondary",
@@ -1095,7 +1077,7 @@
           "team": "UAB",
           "label": "receivers",
           "v": "54.5",
-          "rank": "#104 of 135",
+          "rank": "#105 of 136",
           "note": null
         },
         "def": {
@@ -1106,7 +1088,7 @@
           "note": null
         },
         "complete": false,
-        "read": "UAB’s receivers is measurable at 54.5 (#104 of 135). Samford’s secondary is not, so the pairing cannot be scored."
+        "read": "UAB’s receivers is measurable at 54.5 (#105 of 136). Samford’s secondary is not, so the pairing cannot be scored."
       }
     ],
     "roster": {
@@ -1168,14 +1150,14 @@
           "k": "Starter quality",
           "note": "projected starters, weighted by position value",
           "a": null,
-          "h": "54.7",
+          "h": "54.6",
           "edge": null
         },
         {
           "k": "Rotation quality",
           "note": null,
           "a": null,
-          "h": "52.0",
+          "h": "51.9",
           "edge": null
         },
         {
@@ -1277,7 +1259,7 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "away starting quarterback (Gabarri Johnson) is not corroborated against the current roster",
+          "text": "away starting quarterback unknown — no starter resolved",
           "widening": null
         },
         {
@@ -1378,7 +1360,7 @@
         "key": "LOW_RELIABILITY",
         "label": "LOW RELIABILITY",
         "rule": "reliability",
-        "means": "Reliability is 59 (LOW), THIN DATA, under the 60 bar below which EdgeDesk argues against its own number. Why: Samford is not rated by the model (priced from a shared floor): THIN DATA, not research-grade; the projected spread moves ±7.83 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±8 pts); Samford is priced from the shared FCS floor rating — one number for every FCS programme, not a rating of this team. A large gap on low reliability is more suspicious, not less."
+        "means": "Reliability is 55 (LOW), THIN DATA, under the 60 bar below which EdgeDesk argues against its own number. Why: the projected spread moves ±7.83 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±8 pts); Samford is priced from the shared FCS floor rating — one number for every FCS programme, not a rating of this team; the stylistic pairing needs a measured profile for BOTH sides and Samford is outside the FBS field the profiles cover. A large gap on low reliability is more suspicious, not less."
       },
       "fair": {
         "line_text": "UAB -21.0",
@@ -1394,16 +1376,16 @@
         "reason": "no market line is joined to this game"
       },
       "confidence": {
-        "score": 43,
+        "score": 48,
         "tier": "MODERATE",
         "label": "Moderate"
       },
       "reliability": {
-        "pct": 59,
+        "pct": 55,
         "tier": "LOW",
-        "text": "59 · LOW",
-        "sub": "main deduction: Samford is not rated by the model (priced from a shared floor)",
-        "score": 59,
+        "text": "55 · LOW",
+        "sub": "main deduction: the projected spread moves ±7.83 pts (1 SD) across 64 perturbation scenarios (largest source",
+        "score": 55,
         "grade": "LOW",
         "grade_label": "LOW",
         "gate_label": "THIN DATA",
@@ -1417,7 +1399,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 8.3,
+            "score": 5.6,
             "max": 20
           },
           {
@@ -1429,13 +1411,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12,
+            "score": 11.4,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14,
             "max": 15
           },
           {
@@ -1445,10 +1427,8 @@
             "max": 10
           }
         ],
-        "main_deduction": "Samford is not rated by the model (priced from a shared floor): THIN DATA, not research-grade",
-        "capped_by": [
-          "THIN_DATA"
-        ],
+        "main_deduction": "the projected spread moves ±7.83 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±8 pts)",
+        "capped_by": [],
         "next_actions": [
           {
             "action": "Wire an FCS team-rating source (Samford)",
@@ -1458,12 +1438,12 @@
           {
             "action": "Restore an injury/availability source for Samford",
             "potential_gain": 4,
-            "text": "up to +4 once wire an FCS team-rating source (Samford) is done"
+            "text": "up to +4"
           },
           {
             "action": "Register a school availability release for UAB",
             "potential_gain": 4,
-            "text": "up to +4 once wire an FCS team-rating source (Samford) is done"
+            "text": "up to +4"
           }
         ],
         "stability": {
@@ -1551,109 +1531,109 @@
         {
           "k": "ETSR (overall)",
           "a": null,
-          "h": "-2.8  #93",
+          "h": "-2.5  #95",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
           "a": null,
-          "h": "38.2  #124",
+          "h": "37.9  #123",
           "note": null
         },
         {
           "k": "Performance",
           "a": null,
-          "h": "45.9  #88",
+          "h": "46.5  #86",
           "note": null
         },
         {
           "k": "Offense",
           "a": null,
-          "h": "43.2  #118",
+          "h": "43.8  #115",
           "note": null
         },
         {
           "k": "Defense",
           "a": null,
-          "h": "52.8  #49",
+          "h": "52.7  #55",
           "note": null
         },
         {
           "k": "Special teams",
           "a": null,
-          "h": "48.5  #114",
+          "h": "48.8  #110",
           "note": null
         },
         {
           "k": "Run offense",
           "a": null,
-          "h": "47.1  #88",
+          "h": "48.8  #75",
           "note": null
         },
         {
           "k": "Pass offense",
           "a": null,
-          "h": "39.8  #119",
+          "h": "39.5  #123",
           "note": null
         },
         {
           "k": "Run defense",
           "a": null,
-          "h": "43.9  #94",
+          "h": "41.8  #98",
           "note": null
         },
         {
           "k": "Pass defense",
           "a": null,
-          "h": "59.4  #23",
+          "h": "60.3  #20",
           "note": null
         },
         {
           "k": "QB room",
           "a": null,
-          "h": "54.5  #119",
+          "h": "54.2  #120",
           "note": null
         },
         {
           "k": "Offensive line",
           "a": null,
-          "h": "53.1  #48",
+          "h": "53.1  #50",
           "note": null
         },
         {
           "k": "Receivers",
           "a": null,
-          "h": "54.5  #104",
+          "h": "54.5  #105",
           "note": null
         },
         {
           "k": "Running backs",
           "a": null,
-          "h": "55.9  #76",
+          "h": "56.0  #72",
           "note": null
         },
         {
           "k": "Defensive line",
           "a": null,
-          "h": "45.0  #134",
+          "h": "45.1  #134",
           "note": null
         },
         {
           "k": "Linebackers",
           "a": null,
-          "h": "46.8  #133",
+          "h": "46.8  #134",
           "note": null
         },
         {
           "k": "Secondary",
           "a": null,
-          "h": "49.9  #101",
+          "h": "49.9  #103",
           "note": null
         },
         {
           "k": "Depth",
           "a": null,
-          "h": "53.4  #101",
+          "h": "53.4  #100",
           "note": null
         },
         {
@@ -1671,7 +1651,7 @@
         {
           "k": "Δ national rank, this week",
           "a": null,
-          "h": "down 1",
+          "h": "down 3",
           "note": "differenced from last week’s committed snapshot"
         }
       ]
@@ -1681,22 +1661,21 @@
       "UAB wins 92% of the time in EdgeDesk’s simulation, Samford 8%.",
       "Eight games in ten land between -1.0 and +41.0 for UAB. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Samford quarterback: Gabarri Johnson — started the last game; no announcement for this one.",
       "UAB quarterback: Ryder Burton — started the last game; no announcement for this one."
     ],
     "missing": [
       "No projected score: no total published — EdgeDesk can price the side but cannot responsibly split it into a projected score.",
       "Samford is not one of the 138 FBS programmes EdgeDesk rates, so it carries no team rating. Nothing is estimated in its place.",
-      "No availability report reached Gabarri Johnson — unknown is carried as unknown, never as healthy.",
+      "No starting-quarterback evidence reached Samford.",
       "No availability report reached Ryder Burton — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-27. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-26. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-27T11:55:10.560Z"
+    "at": "2026-09-26T23:32:03.201Z"
   }
 }
