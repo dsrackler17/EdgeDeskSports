@@ -1093,6 +1093,20 @@ begin
   end if;
 end $blk$;
 
+-- ============================================================ evidence-based indexes
+-- Only where a measured read path missed its budget (football/cfb_production/perf.js,
+-- reports/perf.json, OPERATIONS.md §3): the weekly decision summary (Model Lab
+-- scorecard, dashboards) seq-scans cfb_decision_snapshots — p95 299 ms under write
+-- load at ONE season (624 000 rows) against a 200 ms budget. Created once, only when
+-- missing (a re-apply takes no lock); the first build holds a SHARE lock on the
+-- table for about a second per million rows (inserts wait, reads do not).
+do $blk$
+begin
+  if to_regclass('public.cfb_decision_snapshots') is not null and to_regclass('public.cfb_prod_decision_week_idx') is null then
+    execute 'create index cfb_prod_decision_week_idx on public.cfb_decision_snapshots (season, week)';
+  end if;
+end $blk$;
+
 -- ============================================================ health
 create or replace function public.cfb_prod_age_status(p_age_min numeric, p_source text, p_applies boolean)
 returns text language sql stable

@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-27T17:20:11.216Z",
+ "generated_at": "2026-09-27T17:22:11.524Z",
  "server": "16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)",
  "volume": {
   "cfb_lab_predictions": 3990,
@@ -13,49 +13,49 @@
   "reps": 30,
   "queries": {
    "health": {
-    "p50_ms": 92.79,
-    "p95_ms": 132.21,
-    "max_ms": 151.99
+    "p50_ms": 107.02,
+    "p95_ms": 126.93,
+    "max_ms": 135.75
    },
    "weekly_projections_week": {
-    "p50_ms": 2.26,
-    "p95_ms": 5.61,
-    "max_ms": 9.82
+    "p50_ms": 2.88,
+    "p95_ms": 4,
+    "max_ms": 6.91
    },
    "team_state_week": {
-    "p50_ms": 1.09,
-    "p95_ms": 1.54,
-    "max_ms": 4.18
+    "p50_ms": 2.44,
+    "p95_ms": 3.11,
+    "max_ms": 6.03
    },
    "quotes_latest_per_book": {
-    "p50_ms": 0.35,
-    "p95_ms": 2.7,
-    "max_ms": 5.52
+    "p50_ms": 0.44,
+    "p95_ms": 0.97,
+    "max_ms": 4.16
    },
    "lab_game_quotes_fn": {
-    "p50_ms": 0.74,
-    "p95_ms": 1.04,
-    "max_ms": 3.44
+    "p50_ms": 0.68,
+    "p95_ms": 1.07,
+    "max_ms": 3.42
    },
    "decisions_game": {
-    "p50_ms": 0.03,
-    "p95_ms": 0.1,
-    "max_ms": 1.87
+    "p50_ms": 0.09,
+    "p95_ms": 0.23,
+    "max_ms": 1.92
    },
    "decisions_week_summary": {
-    "p50_ms": 40.96,
-    "p95_ms": 58.46,
-    "max_ms": 63.1
+    "p50_ms": 92.43,
+    "p95_ms": 98.27,
+    "max_ms": 101.01
    },
    "lab_predictions_week": {
-    "p50_ms": 0.02,
-    "p95_ms": 0.05,
-    "max_ms": 1.71
+    "p50_ms": 0.61,
+    "p95_ms": 1.22,
+    "max_ms": 3.31
    },
    "odds_newest": {
-    "p50_ms": 0,
-    "p95_ms": 0.02,
-    "max_ms": 1.15
+    "p50_ms": 51.81,
+    "p95_ms": 64.95,
+    "max_ms": 74.89
    }
   }
  },
@@ -64,108 +64,110 @@
   "reps": 30,
   "queries": {
    "health": {
-    "p50_ms": 226.45,
-    "p95_ms": 724.32,
-    "max_ms": 834.8
+    "p50_ms": 241.01,
+    "p95_ms": 308.86,
+    "max_ms": 316.42
    },
    "weekly_projections_week": {
-    "p50_ms": 2.46,
-    "p95_ms": 7.76,
-    "max_ms": 15.94
+    "p50_ms": 6.64,
+    "p95_ms": 15.21,
+    "max_ms": 20.1
    },
    "team_state_week": {
-    "p50_ms": 1.55,
-    "p95_ms": 1.85,
-    "max_ms": 5.19
+    "p50_ms": 2.18,
+    "p95_ms": 6.78,
+    "max_ms": 7.94
    },
    "quotes_latest_per_book": {
-    "p50_ms": 0.34,
-    "p95_ms": 0.62,
-    "max_ms": 3.55
+    "p50_ms": 0.44,
+    "p95_ms": 4.64,
+    "max_ms": 6.81
    },
    "lab_game_quotes_fn": {
-    "p50_ms": 0.8,
-    "p95_ms": 2.24,
-    "max_ms": 3.55
+    "p50_ms": 1.17,
+    "p95_ms": 18.69,
+    "max_ms": 26.45
    },
    "decisions_game": {
-    "p50_ms": 0.03,
-    "p95_ms": 0.07,
-    "max_ms": 1.92
+    "p50_ms": 0.08,
+    "p95_ms": 0.94,
+    "max_ms": 8.37
    },
    "decisions_week_summary": {
-    "p50_ms": 47.65,
-    "p95_ms": 65.4,
-    "max_ms": 80.08
+    "p50_ms": 113.74,
+    "p95_ms": 298.98,
+    "max_ms": 376.05
    },
    "lab_predictions_week": {
-    "p50_ms": 0.01,
-    "p95_ms": 0.03,
-    "max_ms": 1.41
+    "p50_ms": 0.56,
+    "p95_ms": 1.77,
+    "max_ms": 4.64
    },
    "odds_newest": {
-    "p50_ms": 0.01,
-    "p95_ms": 0.02,
-    "max_ms": 1.18
+    "p50_ms": 53.11,
+    "p95_ms": 67.26,
+    "max_ms": 73.28
    }
   },
-  "writer_exit": 3
+  "writer_output": "",
+  "rows_written": 40000,
+  "writer_exit": 0
  },
  "explain": {
   "health": {
-   "execution_ms": 97.818,
+   "execution_ms": 136.656,
    "scans": [
     "Function Scan rows=14"
    ]
   },
   "weekly_projections_week": {
-   "execution_ms": 5.11,
+   "execution_ms": 5.582,
    "scans": [
     "Seq Scan cfb_weekly_projections rows=325",
     "Seq Scan cfb_pipeline_runs rows=100"
    ]
   },
   "team_state_week": {
-   "execution_ms": 2.337,
+   "execution_ms": 1.938,
    "scans": [
     "Seq Scan cfb_team_week_state rows=136",
     "Seq Scan cfb_pipeline_runs rows=100"
    ]
   },
   "quotes_latest_per_book": {
-   "execution_ms": 1.228,
+   "execution_ms": 1.653,
    "scans": [
     "Bitmap Heap Scan cfb_lab_market_quotes rows=240",
     "Bitmap Index Scan (cfb_lab_quote_game_idx) rows=240"
    ]
   },
   "lab_game_quotes_fn": {
-   "execution_ms": 3.459,
+   "execution_ms": 3.283,
    "scans": [
     "Function Scan rows=240"
    ]
   },
   "decisions_game": {
-   "execution_ms": 0.154,
+   "execution_ms": 0.167,
    "scans": [
     "Index Scan cfb_decision_snapshots (cfb_decision_snapshots_game) rows=50"
    ]
   },
   "decisions_week_summary": {
-   "execution_ms": 42.519,
+   "execution_ms": 64.046,
    "scans": [
     "Seq Scan cfb_decision_snapshots rows=10400"
    ]
   },
   "lab_predictions_week": {
-   "execution_ms": 0.785,
+   "execution_ms": 1.042,
    "scans": [
     "Bitmap Heap Scan cfb_lab_predictions rows=174",
     "Bitmap Index Scan (cfb_lab_pred_week_idx) rows=174"
    ]
   },
   "odds_newest": {
-   "execution_ms": 31.223,
+   "execution_ms": 57.881,
    "scans": [
     "Seq Scan cfb_lab_market_quotes rows=61187"
    ]
@@ -178,14 +180,14 @@
    "bytes_per_row": 2254
   },
   "cfb_lab_market_quotes": {
-   "rows": 312953,
-   "total_bytes": 116539392,
+   "rows": 312973,
+   "total_bytes": 116555776,
    "bytes_per_row": 372
   },
   "cfb_decision_snapshots": {
-   "rows": 624000,
-   "total_bytes": 308322304,
-   "bytes_per_row": 494
+   "rows": 664000,
+   "total_bytes": 321454080,
+   "bytes_per_row": 484
   },
   "cfb_team_week_state": {
    "rows": 13600,
