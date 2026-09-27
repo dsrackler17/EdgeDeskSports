@@ -672,9 +672,15 @@ def live_2026(season=2026):
         R.to_parquet(os.path.join(out_dir(), 'live_%d.parquet' % season), index=False)
         for when, x in R.groupby('when'):
             rep = x[x.knowledge.eq('REPORTED')]
+            sk = x[x.unit.isin(['RB', 'WR_TE'])]
+            ka = sk[sk.absence_delta_use.fillna(0) < 0]
             out[when] = {'team_units': int(len(x)), 'reported_team_units': int(len(rep)),
-                         'games_with_nonzero_skill_delta': int(rep[rep.unit.isin(['RB', 'WR_TE']) &
-                                                                   rep.delta_pts.abs().gt(0.05)].game_id.nunique()),
+                         'games_with_anchored_skill_delta_over_0.05': int(rep[rep.unit.isin(['RB', 'WR_TE']) &
+                                                                               rep.delta_pts.abs().gt(0.05)].game_id.nunique()),
+                         'games_with_known_skill_absence': int(ka.game_id.nunique()),
+                         'known_absence_pts': {'n_team_units': int(len(ka)),
+                                               'mean': float(ka.absence_delta_pts.mean()) if len(ka) else None,
+                                               'min': float(ka.absence_delta_pts.min()) if len(ka) else None},
                          'ol_teams_with_listed_ol': int((x[x.unit.eq('OL')].ol_listed.fillna(0) > 0).sum()),
                          'ol_expected_missing_total': float(x[x.unit.eq('OL')].ol_expected_missing.fillna(0).sum())}
         # OL: variance inflation evaluated on completed games (coverage / log loss vs V2.1's sigma)
@@ -694,6 +700,14 @@ def live_2026(season=2026):
             def ll(p):
                 p = np.clip(p, 1e-6, 1 - 1e-6)
                 return float(-np.mean(yw * np.log(p) + (1 - yw) * np.log(1 - p)))
+            # the report-path candidate on the completed report-covered games (tiny n: evidence, not a test)
+            k1 = R[R.when.eq('kickoff_minus_1m') & R.unit.isin(['RB', 'WR_TE'])].copy()
+            k1['s'] = np.where(k1.home, 1.0, -1.0)
+            adj = (k1.absence_delta_pts.fillna(0.0) * k1.s).groupby(k1.game_id).sum()
+            mu1 = mu + Bc.game_id.map(adj).fillna(0.0).values
+            out['report_path_eval'] = {'n_completed': int(len(Bc)), 'n_adjusted': int((Bc.game_id.map(adj).fillna(0) != 0).sum()),
+                                       'mae_base': float(np.mean(np.abs(y - mu))), 'mae_report_path': float(np.mean(np.abs(y - mu1))),
+                                       'logloss_base': ll(p_home(mu, s0, df)), 'logloss_report_path': ll(p_home(mu1, s0, df))}
             out['ol_eval'] = {'n_completed': int(len(Bc)), 'n_with_ol_listed': int((Bc.infl > 0).sum()),
                               'mean_inflation_pts2': float(Bc.infl.mean()),
                               'coverage80_base': float(np.mean(np.abs(y - mu) <= q80 * s0)),

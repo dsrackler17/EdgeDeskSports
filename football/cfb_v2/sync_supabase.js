@@ -11,6 +11,11 @@
    delete, or anything dated at/after kickoff (supabase/cfb_v2_model.sql), so a
    frozen prediction cannot be rewritten from here even by mistake.
    Without SB_URL / SB_SERVICE_ROLE the script says so and exits 0.
+
+   Writes go through football/cfb_production/db.js (chunked, classified bounded
+   retry, incidents); the parent rows (cfb_predictions) are written before the
+   intervals and components that reference them. It is a module too
+   (plan / sync), so football/cfb_production/sql.test.js can run it 1x, 2x, 3x.
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -20,10 +25,10 @@ require(path.join(__dirname, 'params.js'));
 const E = require(path.join(__dirname, 'engine.js'));
 const P = global.window.EDCfbV2Params;
 
+const DB = require(path.join(__dirname, '..', 'cfb_production', 'db.js'));
+const LOG = require(path.join(__dirname, '..', 'cfb_production', 'log.js'));
+
 function arg(n, d) { const i = process.argv.indexOf('--' + n); return i < 0 ? d : (process.argv[i + 1] || true); }
-const SEASON = parseInt(arg('season', new Date().getUTCFullYear()), 10);
-const DRY = process.argv.includes('--dry-run');
-const URL_ = process.env.SB_URL, KEY = process.env.SB_SERVICE_ROLE;
 
 function rowsFor(snap) {
   const preds = [], ints = [], comps = [];
@@ -52,20 +57,10 @@ function rowsFor(snap) {
   return { preds, ints, comps };
 }
 
-async function post(table, rows, conflict) {
-  if (!rows.length) return 0;
-  const res = await fetch(URL_ + '/rest/v1/' + table + '?on_conflict=' + conflict, {
-    method: 'POST',
-    headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json',
-      Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    body: JSON.stringify(rows) });
-  if (!res.ok) throw new Error(table + ': ' + res.status + ' ' + (await res.text()).slice(0, 300));
-  return rows.length;
-}
-
-(async function main() {
-  const dir = path.join(__dirname, 'snapshots', String(SEASON));
-  const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.json') && f !== 'replay_to_date.json') : [];
+function plan(season, opts) {
+  opts = opts || {};
+  const dir = opts.dir || path.join(__dirname, 'snapshots', String(season));
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.json') && f !== 'replay_to_date.json').sort() : [];
   const all = { preds: [], ints: [], comps: [] };
   for (const f of files) {
     const s = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
@@ -74,14 +69,33 @@ async function post(table, rows, conflict) {
     const r = rowsFor(s);
     all.preds.push(...r.preds); all.ints.push(...r.ints); all.comps.push(...r.comps);
   }
-  console.log('[sync] %d files, %d predictions, %d intervals, %d components', files.length,
-    all.preds.length, all.ints.length, all.comps.length);
-  if (DRY || !URL_ || !KEY) { console.log(DRY ? '[sync] dry run' : '[sync] SB_URL/SB_SERVICE_ROLE not set: nothing sent'); return; }
-  await post('cfb_model_versions', [{ model_version: P.model_version, feature_version: P.feature_version,
+  const version = { model_version: P.model_version, feature_version: P.feature_version,
     trained_through: P.trained_through, params: {}, validation: P.validation_summary || {},
-    promotion_decision: P.promotion.decision }], 'model_version');
-  await post('cfb_predictions', all.preds, 'game_id,prediction_ts,model_version');
-  await post('cfb_prediction_intervals', all.ints, 'game_id,prediction_ts,model_version,level');
-  await post('cfb_model_component_predictions', all.comps, 'game_id,prediction_ts,model_version,component');
-  console.log('[sync] done');
-})().catch(e => { console.error(e.message); process.exit(1); });
+    promotion_decision: P.promotion.decision };
+  return { files, version, preds: all.preds, ints: all.ints, comps: all.comps };
+}
+
+async function sync(season, opts) {
+  opts = opts || {};
+  const url = process.env.SB_URL, key = process.env.SB_SERVICE_ROLE;
+  const p = plan(season, opts);
+  if (!opts.quiet) console.log('[sync] %d files, %d predictions, %d intervals, %d components', p.files.length, p.preds.length, p.ints.length, p.comps.length);
+  if (opts.dryRun || !url || !key) { if (!opts.quiet) console.log(opts.dryRun ? '[sync] dry run' : '[sync] SB_URL/SB_SERVICE_ROLE not set: nothing sent'); return { skipped: true }; }
+  const log = opts.log || LOG.logger({ job: 'cfb_weekly_refresh' }, { sink: opts.quiet ? () => {} : undefined });
+  const io = Object.assign({ log, fetch: opts.fetch, onIncident: DB.incidentSink({ url, key, log, fetch: opts.fetch }) }, opts.io || {});
+  const out = {};
+  out.cfb_model_versions = await DB.postRows(url, key, 'cfb_model_versions', 'model_version', [p.version], io);
+  out.cfb_predictions = await DB.postRows(url, key, 'cfb_predictions', 'game_id,prediction_ts,model_version', p.preds, io);
+  out.cfb_prediction_intervals = await DB.postRows(url, key, 'cfb_prediction_intervals', 'game_id,prediction_ts,model_version,level', p.ints, io);
+  out.cfb_model_component_predictions = await DB.postRows(url, key, 'cfb_model_component_predictions', 'game_id,prediction_ts,model_version,component', p.comps, io);
+  if (!opts.quiet) console.log('[sync] done');
+  return out;
+}
+
+module.exports = { plan, sync, rowsFor };
+
+if (require.main === module) {
+  const SEASON = parseInt(arg('season', new Date().getUTCFullYear()), 10);
+  sync(SEASON, { dryRun: process.argv.includes('--dry-run') })
+    .catch(e => { console.error(e.message); process.exit(1); });
+}

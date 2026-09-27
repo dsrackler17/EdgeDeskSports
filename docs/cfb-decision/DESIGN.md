@@ -100,15 +100,35 @@ Eligibility never depends on bankroll.
 
 ## What the data allows
 
-- **Historical market archive:** opening and closing consensus lines for 2013–2025 (no openers in 2020), a book
-  count and closing dispersion, and Pinnacle for 2013–2019. It carries **no prices**, so the historical study
-  prices every decision at an explicitly labelled assumed −110 (`price_source = ASSUMED_-110`), and CLV is
-  opener → close.
-- **Live 2026 Model Lab capture:** 604 quotes so far, all from one book, none with a price.
+- **Historical market archive (`market.parquet`):** opening and closing consensus lines for 2013–2025 (no openers
+  in 2020), a book count and closing dispersion, and the Pinnacle close for 2012–2019 (there is no Pinnacle
+  opener). The consensus opener is a single book in most seasons: 5Dimes 2012–2019, Bovada 2021–22, Bovada and
+  DraftKings 2023. `market.parquet` carries no prices, so the historical study prices every decision at an
+  explicitly labelled assumed −110 (`price_source = ASSUMED_-110`), and CLV is opener → close.
+- **The raw archive does carry prices.** `data/betting/cfb_line_odds.csv.gz` holds every book's closing price for
+  2006–2019 and the 5Dimes opening price for 2012–2019. The calibration study uses them as a sensitivity check:
+  - 93.8 % of openers are −110 on both sides;
+  - ROI at the real price minus ROI at −110 is +0.0004 [−0.0002, +0.0009].
+- **Live 2026 Model Lab capture:** 805 quotes as of 2026-09-27, from one book (DraftKings). Two-sided prices were
+  first captured on 2026-09-27 for 29 week-5 spread quotes; none of those games is final yet.
   - Every priced live rule (the price limit, bettable-to price, vig removal, per-book statuses) is implemented and
-    tested, but it cannot be validated until priced quotes accumulate.
-  - Until then no live decision can be a BET (`PASS_PRICE`).
-  - That is the intended behavior, not a gap to paper over.
+    tested. It can be validated only as priced quotes settle.
+  - An uncaptured price is `PASS_PRICE`, never an assumed −110.
+
+## What the calibration found (`cfb_decision_calibration_v1`, [CALIBRATION.md](CALIBRATION.md))
+
+- **The pure cover probability is overconfident.** Its log loss is significantly worse than a coin flip.
+- **The fix is shrinkage toward the market.** Shrinking the cover logit about 77 % toward the de-vigged market
+  (`w_model` = 0.228) makes it calibrated, but the gain over a coin flip is not significant out of sample.
+- **No conditional map was supported.**
+- **The EV curves never reach zero.**
+  - The decision EV's empirical curve (`ev_curve_decision`, what the thresholds read) is flat at −3.2 % per bet.
+  - The theoretical EV's curve (`ev_curve`, reported only) rises from −5.7 % to −2.0 %.
+  - Under this artifact no quote is a BET at any price, because the curve is fit on −110 history and clamped
+    outside its range. That is the evidence, not a setting, and it is conservative by design: a better price does
+    not earn a BET until priced history shows the EV curve rising with it.
+- **Closing-line value is what the model predicts.** CLV rises from 0.08 to 0.96 points across gap buckets;
+  bet confidence ranks CLV, not wins.
 
 ## Shadow mode (brief §68)
 
@@ -130,7 +150,8 @@ Replayed projections are never used, because they were computed after the quotes
 ## Files
 
 - `football/cfb_decision/decision.js`: the engine, ES5 for the browser and node.
-- `football/cfb_decision/tests.js`: 80 checks plus parity with the Python reference once the artifact exists.
+- `football/cfb_decision/tests.js`: 83 checks, including parity with the Python reference (`v2/decision/reference.py`)
+  on every number of the chosen side, over 46 frozen cases.
 - `supabase/cfb_decision.sql`: 11 append-only tables and the Model Lab views.
 - `football/cfb_decision/sql.test.js`: 44 checks on a real Postgres.
 - `football/cfb_decision/sync_supabase.js`: the insert-only mirror.

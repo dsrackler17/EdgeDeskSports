@@ -16,6 +16,9 @@ const G = require('./ledger.js');
 const L = require('./lab_core.js');
 
 const U = L.util;
+/* one write path for every CFB mirror: classified bounded retry, incidents (docs/cfb-production/OPERATIONS.md §1) */
+const DB = require(path.join(G.REPO, 'football', 'cfb_production', 'db.js'));
+const LOG = require(path.join(G.REPO, 'football', 'cfb_production', 'log.js'));
 const TABLES = [
   ['cfb_lab_model_roles', 'model_roles', 'event_id', true],
   ['cfb_lab_experiments', 'experiments', 'event_id', true],
@@ -61,18 +64,11 @@ function shape(table, row, dropped) {
   return o;
 }
 
-async function post(url, key, table, onConflict, rows) {
-  let sent = 0;
-  for (let i = 0; i < rows.length; i += 500) {
-    const chunk = rows.slice(i, i + 500);
-    const res = await fetch(url + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
-      method: 'POST', headers: { apikey: key, authorization: 'Bearer ' + key, 'content-type': 'application/json', prefer: 'resolution=ignore-duplicates,return=minimal' },
-      body: JSON.stringify(chunk),
-    });
-    if (!res.ok) throw new Error(table + ': HTTP ' + res.status + ' ' + (await res.text()).slice(0, 300));
-    sent += chunk.length;
-  }
-  return sent;
+/* insert-only, chunked; deadlock / lock-timeout / transient answers retried with bounded
+   jitter, every other error raised at once with its class. The lab's copy used
+   to have no retry at all: one 503 lost the whole hourly mirror. */
+function post(url, key, table, onConflict, rows, opts) {
+  return DB.postRows(url, key, table, onConflict, rows, opts);
 }
 
 async function sync(season, opts) {
@@ -95,8 +91,10 @@ async function sync(season, opts) {
       + (Object.keys(p.dropped).length ? ' (ledger-only keys not sent: ' + Object.keys(p.dropped).join(', ') + ')' : '')));
     return { skipped: true, plan: plan.map((p) => ({ table: p.table, rows: p.rows.length, dropped: p.dropped })) };
   }
+  const log = opts.log || LOG.logger({ job: 'cfb_lab_hourly' }, { sink: opts.quiet ? () => {} : undefined });
+  const io = Object.assign({ log, fetch: opts.fetch, onIncident: DB.incidentSink({ url, key, log, fetch: opts.fetch }) }, opts.io || {});
   const out = {};
-  for (const p of plan) out[p.table] = await post(url, key, p.table, p.id, p.rows);
+  for (const p of plan) out[p.table] = await post(url, key, p.table, p.id, p.rows, io);
   return out;
 }
 
@@ -109,8 +107,7 @@ async function pullQuotes(season, now) {
   const since = have.reduce((m, q) => Math.max(m, U.ms(q.retrieved_at) || 0), 0);
   const q = url + '/rest/v1/cfb_lab_market_quotes?select=*&source=eq.odds_api&season=eq.' + season +
     (since ? '&retrieved_at=gt.' + encodeURIComponent(new Date(since).toISOString()) : '') + '&order=observed_at.asc&limit=20000';
-  const res = await fetch(q, { headers: { apikey: key, authorization: 'Bearer ' + key } });
-  if (!res.ok) throw new Error('pull cfb_lab_market_quotes: HTTP ' + res.status);
+  const res = await DB.withRetry(() => DB.request(q, { headers: { apikey: key, authorization: 'Bearer ' + key } }), { label: 'pull cfb_lab_market_quotes' });
   const rows = await res.json();
   /* Postgres renders timestamps as "+00:00" and numerics as numbers or
      strings; the ledger's ids hash the canonical forms (SCHEMA.md rule 4) */

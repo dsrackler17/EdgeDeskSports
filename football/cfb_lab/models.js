@@ -25,6 +25,7 @@ const vm = require('vm');
 const crypto = require('crypto');
 const L = require('./lab_core.js');
 const G = require('./ledger.js');
+const ID = require('./identity.js');
 const REC = require(path.join(G.REPO, 'tools', 'record', 'football_record_core.js'));
 
 const U = L.util;
@@ -87,13 +88,22 @@ function dataQuality(ctx) {
   const add = (check, status, detail) => out.push({ check, status, detail: detail || null });
   const kick = model.game.kickoff, home = model.game.home, away = model.game.away;
   add('schedule_integrity', kick && home && away ? 'GREEN' : 'RED', kick && home && away ? null : 'kickoff or a team is missing');
-  if (g) {
-    const sh = normName(g.home_team), sa = normName(g.away_team), mh = normName(home), ma = normName(away);
-    if (sh === ma && sa === mh && sh !== sa) add('team_mapping', 'RED', 'the model has home and away swapped against the schedule');
-    else if ((sh && mh && !(sh === mh || sh.includes(mh) || mh.includes(sh))) || (sa && ma && !(sa === ma || sa.includes(ma) || ma.includes(sa)))) add('team_mapping', 'RED', 'model teams ' + home + ' / ' + away + ' do not match the schedule ' + g.home_team + ' / ' + g.away_team);
-    else add('team_mapping', 'GREEN');
+  /* Team identity through the identity master (identity.js): provider ids and
+     names resolve to one internal team id; nothing is matched by substring
+     ("Miami" must never pass for "Miami (OH)"). A pair that cannot be verified
+     is RED: an unknown mapping fails the game safely, it is not guessed. */
+  const idv = ID.validateGame({ home_team: home, away_team: away, home_id: model.game.home_id, away_id: model.game.away_id });
+  if (idv.problems.some((p) => /^SAME_TEAM/.test(p))) add('team_mapping', 'RED', 'home and away are the same team (' + idv.problems.filter((p) => /^SAME_TEAM/.test(p)).join('; ') + ')');
+  else if (g) {
+    const mH = { id: model.game.home_id, name: home }, mA = { id: model.game.away_id, name: away };
+    const sH = { id: g.home_team_id, name: g.home_team }, sA = { id: g.away_team_id, name: g.away_team };
+    const hh = ID.sameTeam(mH, sH), aa = ID.sameTeam(mA, sA), ha = ID.sameTeam(mH, sA), ah = ID.sameTeam(mA, sH);
+    if (hh === true && aa === true) add('team_mapping', 'GREEN');
+    else if (ha === true && ah === true) add('team_mapping', 'RED', 'the model has home and away swapped against the schedule');
+    else if (hh === false || aa === false) add('team_mapping', 'RED', 'model teams ' + home + ' / ' + away + ' do not match the schedule ' + g.home_team + ' / ' + g.away_team);
+    else add('team_mapping', 'RED', 'model teams ' + home + ' / ' + away + ' could not be verified against the schedule ' + g.home_team + ' / ' + g.away_team + ' (unknown mapping: fail safely)');
   } else add('team_mapping', 'YELLOW', 'the game is not on the published board, so its teams could not be cross-checked');
-  const pair = [normName(home), normName(away)].sort().join('|');
+  const pair = ID.pairKey(home, away, model.game.home_id, model.game.away_id);
   add('duplicate_game', dupPairs && dupPairs.get(pair) > 1 ? 'RED' : 'GREEN', dupPairs && dupPairs.get(pair) > 1 ? 'the same pair appears twice this week' : null);
   add('model_input', U.isNum(model.pure.margin) && (U.isNum(model.pure.sigma) || U.isNum(model.pure.p_home)) ? 'GREEN' : 'RED',
     U.isNum(model.pure.margin) ? null : 'the model row has no projection');

@@ -219,9 +219,14 @@ function numStr(x) { return isNum(x) || (isStr(x) && /^\s*[+-]?\d+(\.\d+)?\s*$/.
 
 /* ESPN scoreboard: { ok, events (the valid ones), rejected, problems }. A
    payload without events[] is rejected whole. An event missing a required
-   field is rejected alone (the others still count). */
-function validateEspnScoreboard(json) {
-  const out = { provider: 'espn_scoreboard', ok: true, events: [], rejected: [], problems: [] };
+   field is rejected alone (the others still count). opts.use: 'quotes' (the
+   market capture: the game state and each side's abbreviation, which orients
+   the line) or 'results' (settlement: the completed flag, the status name and,
+   on a final, both scores). A date is required only with opts.requireDate. */
+function validateEspnScoreboard(json, opts) {
+  opts = opts || {};
+  const use = opts.use || 'quotes';
+  const out = { provider: 'espn_scoreboard', use, ok: true, events: [], rejected: [], problems: [] };
   if (!json || typeof json !== 'object' || !Array.isArray(json.events)) { out.ok = false; out.problems.push('payload has no events[] array'); return out; }
   json.events.forEach((ev, i) => {
     const p = [];
@@ -230,9 +235,9 @@ function validateEspnScoreboard(json) {
     const comp = ev && Array.isArray(ev.competitions) ? ev.competitions[0] : null;
     if (!comp || typeof comp !== 'object') p.push('competitions[0] missing');
     else {
-      if (!isTs(comp.date) && !isTs(ev.date)) p.push('no parseable date');
+      if (opts.requireDate && !isTs(comp.date) && !isTs(ev.date)) p.push('no parseable date');
       const st = comp.status && comp.status.type;
-      if (!st || !['pre', 'in', 'post'].includes(st.state)) p.push('status.type.state missing or unknown');
+      if (use === 'quotes' && (!st || !['pre', 'in', 'post'].includes(st.state))) p.push('status.type.state missing or unknown');
       if (!st || typeof st.completed !== 'boolean') p.push('status.type.completed missing');
       if (!st || !isStr(st.name)) p.push('status.type.name missing');
       const cs = Array.isArray(comp.competitors) ? comp.competitors : [];
@@ -240,9 +245,9 @@ function validateEspnScoreboard(json) {
       if (h.length !== 1 || a.length !== 1) p.push('competitors: need exactly one home and one away');
       else {
         [['home', h[0]], ['away', a[0]]].forEach(([s, c]) => {
-          if (!c.team || !(isStr(c.team.displayName) || isStr(c.team.location))) p.push(s + ' team name missing');
-          if ((comp.odds || []).length && !(c.team && isStr(c.team.abbreviation))) p.push(s + ' team abbreviation missing (odds orientation cannot be checked)');
-          if (st && st.completed === true && /FINAL/i.test(String(st.name || '')) && !numStr(c.score)) p.push(s + ' score missing on a completed game');
+          if (use === 'quotes' && !(c.team && (isStr(c.team.displayName) || isStr(c.team.location)))) p.push(s + ' team name missing');
+          if (use === 'quotes' && (comp.odds || []).length && !(c.team && isStr(c.team.abbreviation))) p.push(s + ' team abbreviation missing (odds orientation cannot be checked)');
+          if (use === 'results' && st && st.completed === true && /FINAL/i.test(String(st.name || '')) && !numStr(c.score)) p.push(s + ' score missing on a completed game');
         });
         if (h[0].team && a[0].team && h[0].team.id != null && String(h[0].team.id) === String(a[0].team.id)) p.push('home and away are the same team id');
       }

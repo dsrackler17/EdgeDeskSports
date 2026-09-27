@@ -98,6 +98,8 @@ function resolveTeam(ref, M) {
    (at least one side does not resolve and the raw names differ). */
 function sameTeam(x, y, M) {
   const a = resolveTeam(x, M), b = resolveTeam(y, M);
+  /* one side's own id and name disagree: that is a mapping fault, never a match */
+  if (a.conflict || b.conflict) return false;
   if (a.internal_team_id && b.internal_team_id) return a.internal_team_id === b.internal_team_id;
   const nx = typeof x === 'object' && x ? x.name : x, ny = typeof y === 'object' && y ? y.name : y;
   if (nx != null && ny != null && F.normKey(nx) && F.normKey(nx) === F.normKey(ny)) return true;
@@ -165,4 +167,12 @@ function findDuplicates(games, opts) {
   return out;
 }
 
-module.exports = { VERSION, loadTeamMaster, master, resolveTeam, sameTeam, sameTeamFn, validateGame, gameIdentity, findDuplicates, DUP_WINDOW_H };
+/* an unordered matchup key for duplicate checks: canonical ids when both
+   resolve, the normalised names otherwise */
+function pairKey(home, away, homeId, awayId, M) {
+  const h = resolveTeam({ id: homeId, name: home }, M), a = resolveTeam({ id: awayId, name: away }, M);
+  const k = (r, n) => r.internal_team_id || ('name:' + String(n || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, ''));
+  return [k(h, home), k(a, away)].sort().join('|');
+}
+
+module.exports = { VERSION, pairKey, loadTeamMaster, master, resolveTeam, sameTeam, sameTeamFn, validateGame, gameIdentity, findDuplicates, DUP_WINDOW_H };

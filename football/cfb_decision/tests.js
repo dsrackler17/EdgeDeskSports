@@ -234,6 +234,35 @@ if (fs.existsSync(FIX) && fs.existsSync(CAL)) {
     if (want != null && Math.abs(got.decision - want) > 1e-6) bad.push({ id: c.id, got: got.decision, want });
   }
   chk('parity with the Python reference on the frozen artifact (' + cases.length + ' cases)', bad.length === 0, bad.slice(0, 5));
+  // every number of sideNumbers on the chosen side. Names: the reference's empirical_ev maps the theoretical
+  // EV (JS empirical_ev_theoretical); its empirical_ev_decision is what the JS thresholds read (JS empirical_ev).
+  const MAP = { pure_cover_prob: 'pure_cover_probability', calibrated_cover_prob: 'calibrated_cover_probability',
+    decision_cover_prob: 'decision_cover_probability', market_implied_prob: 'market_implied_probability', w_model: 'w_model',
+    push_prob: 'push_probability', break_even_prob: 'break_even_probability', probability_edge: 'probability_edge',
+    theoretical_ev: 'theoretical_ev', decision_ev: 'decision_ev', empirical_ev: 'empirical_ev_theoretical',
+    empirical_ev_decision: 'empirical_ev', expected_clv_pts: 'expected_clv_pts', gap_pts: 'gap_pts' };
+  let full = [], nFull = 0;
+  for (const c of cases) {
+    const inp = c.inputs || {}, exp = c.expected || {};
+    if (inp.pure_margin == null || !exp.side) continue;
+    const pure = { projected_margin: inp.pure_margin, sigma: inp.sigma, t_df: inp.t_df, week: inp.week,
+      ensemble_sd: inp.ens_sd, football_prediction_confidence: inp.reliability };
+    const quote = { home_line: inp.home_line, price_home: inp.price_home, price_away: inp.price_away };
+    const row = { early_season: inp.early_season, qb_unsettled_any: inp.qb_unsettled, qb_missing_any: inp.qb_missing };
+    const mc = { dispersion_iqr: inp.dispersion, books: inp.books, age_minutes: (inp.features || {}).quote_age_min };
+    const got = D.sideNumbers(pure, quote, exp.side, { policy: {}, artifact: A, row: row, _mc: mc });
+    nFull++;
+    for (const k in MAP) {
+      const w = exp[k], g = got[MAP[k]];
+      if (w == null && g == null) continue;
+      if (typeof w !== 'number' || typeof g !== 'number' || Math.abs(w - g) > 1e-9) full.push({ id: c.id, field: k, want: w, got: g });
+    }
+  }
+  chk('parity: every number of the chosen side matches the Python reference (' + nFull + ' cases)', nFull > 0 && full.length === 0, full.slice(0, 5));
+  chk('the frozen artifact validates for edgedesk_cfb_v2.1.0', D.validateArtifact(A, 'edgedesk_cfb_v2.1.0').ok);
+  const noDec = Object.assign({}, A); delete noDec.ev_curve_decision;
+  chk('an artifact whose only EV curve maps the theoretical EV fails closed (NO_BET_CALIBRATION)',
+    noDec.ev_curve && noDec.ev_curve.input === 'theoretical_ev' ? D.validateArtifact(noDec, 'edgedesk_cfb_v2.1.0').code === 'NO_BET_CALIBRATION' : true);
 } else {
   chk('parity fixture pending (the frozen artifact is not built yet)', true);
 }

@@ -65,7 +65,7 @@ from . import usage as U
 from . import values as V
 
 RULE = 'cfb_personnel_units_v1'
-PANEL_VERSION = 'personnel_units_panel_v5'
+PANEL_VERSION = 'personnel_units_panel_v6'
 
 # ------------------------------------------------------------------ groups
 # share groups: a player's share of the team's attributed non-garbage events of the group's kind.
@@ -480,7 +480,9 @@ def panel(season, freezes, const=None, oracle=True):
                     else:                               # week 1: last season's usage at the team
                         e_ = pr.copy()
                         h_ = np.where(ret[K], pr_h[K], 0.0)
-                        tot = float(prior_share.sum())  # the whole unit incl. departed players
+                        # the unit total is the returning players' healthy shares: the departed players'
+                        # usage goes to unseen replacements (V = 0), never pro rata to the returners
+                        tot = float(h_.sum())
                         per_game = dict(per_prev)
                         den_pg = den_prev
                     prod_share = np.full(n, np.nan)
