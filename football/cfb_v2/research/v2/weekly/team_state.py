@@ -362,44 +362,39 @@ def prior_accounting(priors, explain, Wt, fbs, season, metrics=None, plays=None)
     centred on the FBS mean of each group (the intercept is common to every FBS
     team and cancels on the points scale). effective_weight = prior_weight x
     |centred group contribution| share. Accounting only: nothing changes the model."""
-    rows = []
+    frames = []
     metrics = metrics or sorted(Wt)
     for m in metrics:
         pr, W = priors[m], Wt[m]
         ex = explain.get((season, m), {})
         for side, key in (('off', 'o'), ('def', 'd')):
-            tau2 = pd.Series({t: pr['tau2_' + key].get(t, pr['tau2_default_' + key]) for t in W.index})
-            pv = W['%s_var' % side]
-            pw = (pv / tau2).clip(upper=1.0)
+            f = pd.DataFrame(index=W.index)
+            f['metric'], f['side'] = m, side
+            f['tau2'] = [pr['tau2_' + key].get(t, pr['tau2_default_' + key]) for t in W.index]
+            f['posterior_var'] = W['%s_var' % side]
+            f['prior_weight'] = (f.posterior_var / f.tau2).clip(upper=1.0)
+            f['prior_mean'] = W['prior_%s' % side]
+            f['pool'] = np.where(W.index.isin(list(fbs)), 'none', 'fcs_pooled')
             e = ex.get(side) if ex else None
-            contrib = None
             if e is not None and e.get('beta') is not None:
-                Xc = e['X']
-                beta = e['beta']
+                Xc, beta = e['X'], e['beta']
                 c = pd.DataFrame({'baseline': float(beta[0])}, index=Xc.index)
                 for g, cols in PRIOR_GROUPS.items():
                     c[g] = sum(beta[1 + BR.PRIOR_COLS.index(col)] * Xc[col] for col in cols)
-                c['prior_mean_check'] = c.sum(axis=1)
-                contrib = c
-            for t in W.index:
-                r = {'team_id': t, 'metric': m, 'side': side, 'tau2': float(tau2[t]),
-                     'posterior_var': float(pv[t]), 'prior_weight': float(pw[t]),
-                     'prior_mean': float(W.loc[t, 'prior_%s' % side])}
-                if contrib is not None and t in contrib.index:
-                    r['pool'] = 'fbs_ridge'
-                    fb = contrib.index.intersection(list(fbs))
-                    cen = {g: float(contrib.loc[t, g] - contrib.loc[fb, g].mean()) for g in PRIOR_GROUPS}
-                    tot = sum(abs(v) for v in cen.values())
-                    for g, v in cen.items():
-                        share = abs(v) / tot if tot > 0 else 0.0
-                        r['contrib_' + g] = v
-                        r['share_' + g] = share
-                        r['eff_weight_' + g] = float(pw[t]) * share
-                    r['decomposition_error'] = float(contrib.loc[t, 'prior_mean_check'] - r['prior_mean'])
-                else:
-                    r['pool'] = 'fcs_pooled' if t not in fbs else 'none'
-                rows.append(r)
-    return pd.DataFrame(rows)
+                check = c.sum(axis=1)
+                fb = c.index.intersection(list(fbs))
+                cen = c[list(PRIOR_GROUPS)] - c.loc[fb, list(PRIOR_GROUPS)].mean()
+                tot = cen.abs().sum(axis=1)
+                share = cen.abs().div(tot.where(tot > 0), axis=0).fillna(0.0)
+                j = f.index.intersection(c.index)
+                f.loc[j, 'pool'] = 'fbs_ridge'
+                for g in PRIOR_GROUPS:
+                    f.loc[j, 'contrib_' + g] = cen.loc[j, g]
+                    f.loc[j, 'share_' + g] = share.loc[j, g]
+                    f.loc[j, 'eff_weight_' + g] = f.loc[j, 'prior_weight'] * share.loc[j, g]
+                f.loc[j, 'decomposition_error'] = check.loc[j] - f.loc[j, 'prior_mean']
+            frames.append(f)
+    return pd.concat(frames).rename_axis('team_id').reset_index()
 
 
 # ============================================================ explanations
@@ -677,7 +672,10 @@ def build(season, T, prev=None, ratings=None, league=None, with_qb=True):
         rt, vr, hfa_ev, hfa_meta = None, {}, None, {}
     # ---- prior accounting
     PA = prior_accounting(priors, cur['explain'], W1, fbs, season)
-    pwt = PA.pivot_table(index='team_id', columns=['metric', 'side'], values='prior_weight')
+    metrics_all = sorted(PA.metric.unique())
+    PA_by_team = {}
+    for r in PA.to_dict('records'):
+        PA_by_team.setdefault(r['team_id'], {})[(r['metric'], r['side'])] = r
     # ---- QB context
     qb_rows = qb_events = None
     if with_qb:
@@ -717,26 +715,25 @@ def build(season, T, prev=None, ratings=None, league=None, with_qb=True):
         p = P1.loc[t]
         fcs = t not in fbs
         ng = int(n_games.get(t, 0))
-        pw_off = _num(pwt.get(('epa', 'off'), pd.Series(dtype=float)).get(t))
-        pw_def = _num(pwt.get(('epa', 'def'), pd.Series(dtype=float)).get(t))
-        pw_st = _num(np.mean([pwt[('st_net', 'off')].get(t), pwt[('st_net', 'def')].get(t)]))
-        pa_t = PA[PA.team_id.eq(t)]
+        pa_t = PA_by_team.get(t, {})
+        pwg = lambda m, sd: _num(pa_t[(m, sd)]['prior_weight']) if (m, sd) in pa_t else None
+        pw_off, pw_def = pwg('epa', 'off'), pwg('epa', 'def')
+        pw_st = _num(np.mean([pwg('st_net', 'off'), pwg('st_net', 'def')]))
         comps = {}
         for unit, (m, side) in (('offense', ('epa', 'off')), ('defense', ('epa', 'def')),
                                 ('pass_off', ('epa_pass', 'off')), ('rush_off', ('epa_rush', 'off')),
                                 ('pass_def', ('epa_pass', 'def')), ('rush_def', ('epa_rush', 'def')),
                                 ('st', ('st_net', 'off'))):
-            r = pa_t[pa_t.metric.eq(m) & pa_t.side.eq(side)]
-            if not len(r):
+            r = pa_t.get((m, side))
+            if r is None:
                 continue
-            r = r.iloc[0]
             if r['pool'] == 'fbs_ridge':
-                comps[unit] = {'prior_weight': _num(r.prior_weight), 'pool': 'fbs_ridge',
+                comps[unit] = {'prior_weight': _num(r['prior_weight']), 'pool': 'fbs_ridge',
                                'effective_weight': {g: _num(r['eff_weight_' + g]) for g in PRIOR_GROUPS},
                                'contribution': {g: _num(r['contrib_' + g]) for g in PRIOR_GROUPS}}
             else:
-                comps[unit] = {'prior_weight': _num(r.prior_weight), 'pool': r['pool'],
-                               'effective_weight': {'fcs_pool': _num(r.prior_weight)}}
+                comps[unit] = {'prior_weight': _num(r['prior_weight']), 'pool': r['pool'],
+                               'effective_weight': {'fcs_pool': _num(r['prior_weight'])}}
         thin = []
         if ng < THIN_GAMES:
             thin.append('%d games before T' % ng)
@@ -760,8 +757,7 @@ def build(season, T, prev=None, ratings=None, league=None, with_qb=True):
         if m_r > 1 and np.isfinite(vol_season) and vol_season > 0:
             vol_z = (vrec - vol_season) / (vol_season / np.sqrt(2.0 * (m_r - 1 + VOL_SHRINK_K)))
         flags = _flags(p, z_off, z_def, vol_z, ng, lu)
-        pwd = {m: [_num(pwt[(m, 'off')].get(t)), _num(pwt[(m, 'def')].get(t))]
-               for m in sorted(set(c[0] for c in pwt.columns))}
+        pwd = {m: [pwg(m, 'off'), pwg(m, 'def')] for m in metrics_all}
         hfa_by_metric = {
             'epa': _num(2 * lg1['epa'][1] * p.exp_plays),
             'epa_pass': _num(lg1['epa_pass'][1] * (p.exp_dropbacks + p.exp_opp_dropbacks)),

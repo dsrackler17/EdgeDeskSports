@@ -156,7 +156,7 @@ def pbp_qb_stats(season):
     out = P.join(Rr, how='outer').fillna(0.0).reset_index()
     nm = p.dropna(subset=['passer_player_name']).groupby(p.pid.astype('int64')) \
         .passer_player_name.agg(lambda x: x.value_counts().index[0]) if len(p) else pd.Series(dtype=str)
-    out.attrs['names'] = nm.to_dict()
+    _CACHE[('names', season, C.DATA)] = nm.to_dict()     # kept out of DataFrame.attrs (deep-copied by pandas)
     _CACHE[key] = out
     return out
 
@@ -406,7 +406,7 @@ def build(season, T, ratings=None, league=None, Q=None):
     starts = det.get('starts', pd.Series(dtype=float))
     cur = det.get('cur', pd.DataFrame(columns=['team_id', 'qb_id', 'adj', 'db_ng']))
     stats = pbp_qb_stats(season)
-    names = stats.attrs.get('names', {}) if stats is not None else {}
+    names = _CACHE.get(('names', season, C.DATA), {})
     if stats is not None:
         stats = stats[stats.game_id.isin(set(qs.game_id))]
     T_prev = _prev_freeze(G, season, T)

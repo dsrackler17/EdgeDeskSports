@@ -223,6 +223,17 @@ def _str_array(s):
     return s.astype(object).where(s.notna(), None).to_numpy()
 
 
+def _inversions(s):
+    """Decreases along the given order, compared exactly (18-digit play ids do not
+    survive a float64 cast, so the values stay integers when they parse as such)."""
+    s = s[s.notna()]
+    v = pd.to_numeric(s, errors='coerce')
+    v = v[v.notna()]
+    if len(v) < 2:
+        return None
+    return int((np.diff(v.to_numpy()) < 0).sum())
+
+
 def check_game_pbp(g, home_id, away_id, home_pts, away_pts, ref_plays):
     """All PBP checks for one final game. `g` = that game's PBP rows (any order).
     Returns a dict: checks, detail, issues, pbp_plays, periods, overtime,
@@ -284,10 +295,9 @@ def check_game_pbp(g, home_id, away_id, home_pts, away_pts, ref_plays):
     inv = []
     for col in ('sequenceNumber', 'id'):
         if col in c:
-            q = _as_int_array(c[col])[not_to]
-            q = q[~np.isnan(q)]
-            if len(q) > 1:
-                inv.append(int((np.diff(q) < 0).sum()))
+            k = _inversions(c[col][not_to])
+            if k is not None:
+                inv.append(k)
     seq_inv = min(inv) if inv else 0
     period_back = int((per < np.maximum.accumulate(per)).sum())
     n_periods = len(np.unique(per))

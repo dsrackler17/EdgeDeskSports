@@ -516,7 +516,8 @@ def game_performance(season, T=None, validation=None):
     TG['explosive_execution'] = _div(TG.off_expl_epa, TG.off_expl)
     TG['explosive_dependency_raw'] = TG.off_expl_epa_share
     if K is not None:
-        TG['explosive_dependency_score'] = _shrink_dep(TG.off_expl_epa, TG.off_pos_epa, TG.off_n_plays, K)
+        TG['explosive_dependency_score'] = np.where(
+            TG.has_pbp, _shrink_dep(TG.off_expl_epa, TG.off_pos_epa, TG.off_n_plays, K), np.nan)
     else:
         TG['explosive_dependency_score'] = np.nan
     # ---------------------------------------------------------- drives (non-garbage)

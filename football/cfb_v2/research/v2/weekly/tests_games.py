@@ -458,6 +458,12 @@ def test_data_perf_T_and_determinism():
     chk('[data] overperformance = margin - expected',
         float((GT.scoreboard_overperformance - (GT.margin - GT.expected_performance_margin)).abs().max()) < 1e-9)
     chk('[data] league takeaways == giveaways', float(G.takeaways.sum()) == float(G.giveaways.sum()))
+    G24 = PF.game_performance(2024)
+    nop = G24[~G24.has_pbp]
+    chk('[data] a game without PBP invents nothing (null metrics, reason no_pbp)',
+        len(nop) > 0 and nop.off_epa_pp.isna().all() and nop.expected_performance_margin.isna().all() and
+        nop.explosive_dependency_score.isna().all() and nop.turnover_luck_game.isna().all() and
+        nop.null_reason.eq('no_pbp').all() and nop.expected_margin_null_reason.eq('no_pbp').all())
     PF._CORE_CACHE.clear()
     G2 = PF.game_performance(2025)
     chk('[data] game_performance twice (cache cleared) -> identical frames',
