@@ -228,8 +228,18 @@ def candidate_projections(X, cid='cfb_v2_candidate_001'):
     A = json.load(open(os.path.join(d, 'models.json')))
     gbm = lgb.Booster(model_file=os.path.join(d, A['submodels']['D_gbm']['file']))
     D = predict(X, A, gbm)
-    return {int(g): {'ens_pred': round(float(e), 3), 'sigma': round(float(sg), 3), 'model_version': A['model_version']}
-            for g, e, sg in zip(D.game_id, D.ens_pred, D.sigma)}
+    # Its submodel predictions and their spread travel with it, so the CFB
+    # Model Lab can score the candidate's components the way it scores the
+    # live model's (instrumentation only: nothing here changes a prediction).
+    ks = [k for k in A['stack_weights'] if ('pred_' + k) in D.columns]
+    out = {}
+    for i in D.index:
+        r = D.loc[i]
+        out[int(r['game_id'])] = {'ens_pred': round(float(r['ens_pred']), 3), 'sigma': round(float(r['sigma']), 3),
+                                  'model_version': A['model_version'],
+                                  'components': {k: round(float(r['pred_' + k]), 3) for k in ks},
+                                  'ens_sd': round(float(r['ens_sd']), 3)}
+    return out
 
 
 def freeze(rows, season, now, version, base=None):
