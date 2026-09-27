@@ -20,6 +20,7 @@ import errno
 import fcntl
 import json
 import os
+import re
 import sys
 import time
 import traceback
@@ -71,6 +72,12 @@ class StageError(Exception):
         self.retryable = klass in ('TRANSIENT', 'RATE_LIMIT') if retryable is None else retryable
 
 
+def _status(s, codes):
+    """An HTTP status as a number on its own: '401628374' (an ESPN game id) is not a
+    401 and team '2503' is not a 503 (football/cfb_production/taxonomy.js hasStatus)."""
+    return re.search(r'(?<![0-9])(%s)(?![0-9])' % '|'.join(codes), s) is not None
+
+
 def classify_error(e):
     """Map an exception to an error class. Retrying makes sense only for
     TRANSIENT and RATE_LIMIT; a schema or data-quality error is permanent
@@ -78,12 +85,15 @@ def classify_error(e):
     if isinstance(e, StageError):
         return e.klass
     s = (type(e).__name__ + ' ' + str(e)).lower()
-    if any(k in s for k in ('429', 'rate limit', 'too many requests')):
+    if _status(s, ('429',)) or any(k in s for k in ('rate limit', 'too many requests')):
         return 'RATE_LIMIT'
-    if any(k in s for k in ('401', '403', 'unauthor', 'forbidden', 'permission denied', 'auth')):
+    if _status(s, ('401', '403')) or any(k in s for k in ('unauthor', 'forbidden', 'permission denied', 'authentication', 'authoriz')) \
+            or re.search(r'\bauth\b', s):
         return 'AUTH'
-    if any(k in s for k in ('timed out', 'timeout', 'connection', 'temporarily', '502', '503', '504',
-                            'reset by peer', 'name resolution', 'network', 'econn')):
+    if any(k in s for k in ('deadlock', '40p01')):
+        return 'DATABASE'
+    if _status(s, ('502', '503', '504')) or any(k in s for k in ('timed out', 'timeout', 'connection', 'temporarily',
+                                                                  'reset by peer', 'name resolution', 'network', 'econn')):
         return 'TRANSIENT'
     if any(k in s for k in ('keyerror', 'no such column', 'column', 'schema', 'arrowinvalid', 'dtype')):
         return 'SCHEMA'

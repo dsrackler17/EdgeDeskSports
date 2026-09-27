@@ -107,6 +107,23 @@ def always():
     calls.append(1)
     raise TimeoutError('timed out')
 chk('retry: bounded (4 attempts, then raise)', throws(lambda: RL.retry(always, sleep=slept.append)) and len(calls) == 4 and slept == [2.0, 4.0, 8.0])
+chk('classify: a number inside an id is not an HTTP status (ESPN game 401628374, team 2503)',
+    RL.classify_error(KeyError('401628374')) != 'AUTH' and RL.classify_error(ValueError('team 2503 missing from mapping')) != 'TRANSIENT'
+    and RL.classify_error(ValueError('column author_id missing')) != 'AUTH' and RL.classify_error(Exception('HTTP 503 Service Unavailable')) == 'TRANSIENT'
+    and RL.classify_error(Exception('HTTP 401 Unauthorized')) == 'AUTH' and RL.classify_error(Exception('ERROR: 40P01: deadlock detected')) == 'DATABASE')
+chk('classify: a permanent mapping error is never retried as transient',
+    throws(lambda: RL.retry(lambda: (_ for _ in ()).throw(ValueError('team 2503 missing from mapping')), sleep=lambda s: None)))
+chk('compatibility: the production artifact is a COMPATIBLE tuple of the matrix', PJ.verify_compatibility(C.MODEL_VERSION)['ok'],
+    PJ.verify_compatibility(C.MODEL_VERSION).get('reason'))
+_mx = os.path.join(tempfile.mkdtemp(), 'compat.json')
+_M = json.load(open(PJ.COMPATIBILITY))
+json.dump({'entries': [dict(e, feature_version='cfb_v2_fv1') if e.get('model_version') == C.MODEL_VERSION else e for e in _M['entries']]}, open(_mx, 'w'))
+chk('compatibility: an entry pinning another feature schema is refused', not PJ.verify_compatibility(C.MODEL_VERSION, _mx)['ok'])
+json.dump({'entries': [e for e in _M['entries'] if e.get('model_version') != C.MODEL_VERSION]}, open(_mx, 'w'))
+chk('compatibility: a model version with no COMPATIBLE entry is refused', not PJ.verify_compatibility(C.MODEL_VERSION, _mx)['ok'])
+json.dump({'entries': [dict(e, params_sha256='0' * 64) if e.get('model_version') == C.MODEL_VERSION else e for e in _M['entries']]}, open(_mx, 'w'))
+chk('compatibility: a params.js (calibration) other than the pinned one is refused', not PJ.verify_compatibility(C.MODEL_VERSION, _mx)['ok'])
+chk('compatibility: the candidate 001 artifact (feature schema fv1) is not runnable as production', not PJ.verify_compatibility('edgedesk_cfb_v2.0.0')['ok'])
 chk('classify: rate limit / auth / database / data quality',
     RL.classify_error(Exception('HTTP 429 too many requests')) == 'RATE_LIMIT' and RL.classify_error(Exception('403 forbidden')) == 'AUTH'
     and RL.classify_error(Exception('deadlock detected 40P01')) == 'DATABASE'
