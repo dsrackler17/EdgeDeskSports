@@ -799,7 +799,8 @@
     if (!art || !isNum(art.w_pure) || !isNum(pureMargin) || !isNum(marketMargin)) return null;
     return freeze({ model: 'market_adjusted_projection', artifact: art.artifact, role: 'challenger',
       market_adjusted_projection: r(marketMargin + art.w_pure * (pureMargin - marketMargin), 3), w_pure: art.w_pure,
-      label: 'CHALLENGER (Model Lab only): not the EdgeDesk fair line' });
+      label: 'MARKET-INFORMED CHALLENGER (Model Lab only)',
+      note: 'a separate Lab model: it never replaces, alters or feeds the EdgeDesk fair line' });
   }
   function decisionLatency(observedAt, decidedAt, storedAt) {
     var o = ms(observedAt), d = ms(decidedAt), s = ms(storedAt);

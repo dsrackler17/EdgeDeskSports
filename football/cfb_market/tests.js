@@ -286,7 +286,7 @@ const PURE = { status: 'PREDICTED', game_id: 'G1', home: 'Texas Tech', away: 'Ba
   const ma = M.marketMaturity(snapA, op, at(1)), mb = M.marketMaturity(snapB, op, at(1));
   chk('maturity: more books in agreement read as a more mature market; flagged unvalidated', mb.market_maturity_score > ma.market_maturity_score && mb.validated === false);
   const ch = M.challengerMargin(8, 3, { artifact: 't', w_pure: 0.2 });
-  chk('challenger: market + w (pure - market), labelled a challenger, frozen', ch.market_adjusted_projection === 4 && ch.role === 'challenger' && /not the EdgeDesk fair line/.test(ch.label) && Object.isFrozen(ch));
+  chk('challenger: market + w (pure - market), labelled a challenger, frozen', ch.market_adjusted_projection === 4 && ch.role === 'challenger' && /never replaces/.test(ch.note) && !/fair line|pure/i.test(ch.label) && Object.isFrozen(ch));
   chk('challenger: the frozen artifact weight is a DEV fit in [0, 1]', M.artifacts.challenger.w_pure > 0 && M.artifacts.challenger.w_pure < 1);
   const lt = M.decisionLatency(at(0), '2026-10-01T12:00:01.250Z', '2026-10-01T12:00:02.000Z');
   chk('latency: decision_latency_ms and storage latency', lt.decision_latency_ms === 1250 && lt.storage_latency_ms === 750);
@@ -382,6 +382,29 @@ const PURE = { status: 'PREDICTED', game_id: 'G1', home: 'Texas Tech', away: 'Ba
   chk('Lab ledger: every captured game replays without error (' + games + ' games)', ok && (games > 0 || rows.length === 0));
   chk('Lab ledger: the consensus equals lab_core.marketAt on the live quotes', parity);
   chk('Lab ledger: every live quote maps to the canonical home margin exactly as the Lab converts it', canon);
+}
+
+/* ------------------------------------------- the runner over the Lab ledger */
+{
+  const RUN = require('./run.js');
+  const os = require('os');
+  const now = '2026-12-31T00:00:00.000Z';
+  const a = RUN.build(2026, now), b = RUN.build(2026, now);
+  chk('runner: deterministic (the same ledger gives the same rows and ids)', JSON.stringify(a) === JSON.stringify(b));
+  chk('runner: every snapshot is before kickoff and carries integrity.js\'s actionable code', a.snapshots.every((x) => Date.parse(x.as_of) < Date.parse(x.kickoff_ts)
+    && ['ACTIONABLE', 'MARKET_STALE', 'MARKET_DEGRADED', 'MARKET_INVALID', 'MARKET_MISSING'].indexOf(x.actionable_status) >= 0));
+  chk('runner: a one-book market is never ACTIONABLE', a.snapshots.filter((x) => x.n_active_books < 2).every((x) => x.actionable_status !== 'ACTIONABLE'));
+  chk('runner: challenger rows are role challenger, never labelled pure or fair line', a.predictions.every((x) => x.role === 'challenger' && !/pure|fair line/i.test(x.label)));
+  const early = RUN.build(2026, '2026-09-20T00:00:00.000Z');
+  chk('runner: point in time (a snapshot never sees a quote observed after `now`)', early.snapshots.every((x) => Date.parse(x.as_of) <= Date.parse('2026-09-20T00:00:00.000Z')));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cfbmkt-'));
+  const w1 = RUN.write(2026, a, dir), w2 = RUN.write(2026, a, dir);
+  chk('runner: append-only and idempotent (a re-run writes nothing)', w1.snapshots === a.snapshots.length && Object.values(w2).every((n) => n === 0));
+  fs.rmSync(dir, { recursive: true, force: true });
+  const labQuotes = path.join(REPO, 'football', 'cfb_lab', 'ledger', '2026', 'quotes');
+  const before = fs.existsSync(labQuotes) ? fs.readdirSync(labQuotes).map((f) => fs.statSync(path.join(labQuotes, f)).size).join() : '';
+  RUN.build(2026, now);
+  chk('runner: the Lab ledger is read-only to this job', before === (fs.existsSync(labQuotes) ? fs.readdirSync(labQuotes).map((f) => fs.statSync(path.join(labQuotes, f)).size).join() : ''));
 }
 
 failures.forEach((f) => console.log('FAIL | ' + f));

@@ -83,7 +83,10 @@ function makeFetch(db, opts) {
       const table = p;
       if (!/^[a-z_][a-z0-9_]*$/.test(table)) return response(404, JSON.stringify({ code: 'PGRST205', message: 'bad table' }));
       const rows = Array.isArray(body) ? body : [body];
-      const cols = Array.from(rows.reduce((s, r) => { Object.keys(r).forEach((k) => s.add(k)); return s; }, new Set()));
+      /* PostgREST: every object of a bulk body must carry the same keys */
+      const sig = (r) => Object.keys(r).sort().join(',');
+      if (rows.some((r) => sig(r) !== sig(rows[0]))) return response(400, JSON.stringify({ code: 'PGRST102', message: 'All object keys must match', details: null, hint: null }));
+      const cols = Object.keys(rows[0] || {});
       const conflict = u.searchParams.get('on_conflict');
       const ignore = /resolution=ignore-duplicates/.test(String((init && init.headers && (init.headers.prefer || init.headers.Prefer)) || ''));
       const qcols = cols.map((c) => '"' + c.replace(/"/g, '""') + '"').join(', ');
