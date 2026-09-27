@@ -103,7 +103,7 @@ function dataQuality(ctx) {
     else if (hh === false || aa === false) add('team_mapping', 'RED', 'model teams ' + home + ' / ' + away + ' do not match the schedule ' + g.home_team + ' / ' + g.away_team);
     else add('team_mapping', 'RED', 'model teams ' + home + ' / ' + away + ' could not be verified against the schedule ' + g.home_team + ' / ' + g.away_team + ' (unknown mapping: fail safely)');
   } else add('team_mapping', 'YELLOW', 'the game is not on the published board, so its teams could not be cross-checked');
-  const pair = [normName(home), normName(away)].sort().join('|');
+  const pair = ID.pairKey(home, away, model.game.home_id, model.game.away_id);
   add('duplicate_game', dupPairs && dupPairs.get(pair) > 1 ? 'RED' : 'GREEN', dupPairs && dupPairs.get(pair) > 1 ? 'the same pair appears twice this week' : null);
   add('model_input', U.isNum(model.pure.margin) && (U.isNum(model.pure.sigma) || U.isNum(model.pure.p_home)) ? 'GREEN' : 'RED',
     U.isNum(model.pure.margin) ? null : 'the model row has no projection');

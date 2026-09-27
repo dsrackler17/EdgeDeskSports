@@ -167,4 +167,12 @@ function findDuplicates(games, opts) {
   return out;
 }
 
-module.exports = { VERSION, loadTeamMaster, master, resolveTeam, sameTeam, sameTeamFn, validateGame, gameIdentity, findDuplicates, DUP_WINDOW_H };
+/* an unordered matchup key for duplicate checks: canonical ids when both
+   resolve, the normalised names otherwise */
+function pairKey(home, away, homeId, awayId, M) {
+  const h = resolveTeam({ id: homeId, name: home }, M), a = resolveTeam({ id: awayId, name: away }, M);
+  const k = (r, n) => r.internal_team_id || ('name:' + String(n || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, ''));
+  return [k(h, home), k(a, away)].sort().join('|');
+}
+
+module.exports = { VERSION, pairKey, loadTeamMaster, master, resolveTeam, sameTeam, sameTeamFn, validateGame, gameIdentity, findDuplicates, DUP_WINDOW_H };
