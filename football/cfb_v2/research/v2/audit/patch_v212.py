@@ -249,20 +249,22 @@ def predictions(OLD, NEW):
 
 
 # ------------------------------------------------------------------ B
-def _coverage(y, pred, sigma, tdf):
-    from scipy import stats
-    z = (y - pred) / sigma
+def _coverage(j, y, v):
+    """Shipped interval coverage (the pipeline's lo_q / hi_q columns), rows with an interval only."""
     out = {}
-    for q in (0.5, 0.8, 0.95):
-        k = stats.t.ppf(0.5 + q / 2, tdf) if tdf else stats.norm.ppf(0.5 + q / 2)
-        out['%d' % int(q * 100)] = r(float((np.abs(z) <= k).mean()), 4)
+    for q in (50, 80, 95):
+        lo, hi = j['lo_%d_%s' % (q, v)].values, j['hi_%d_%s' % (q, v)].values
+        ok = np.isfinite(lo) & np.isfinite(hi)
+        out[str(q)] = r(float(((y[ok] >= lo[ok]) & (y[ok] <= hi[ok])).mean()), 4) if ok.any() else None
+    out['n'] = int((np.isfinite(j['lo_50_' + v].values)).sum())
     return out
 
 
 def _window(Mo, Mn, ss, tdf_old, tdf_new, calib=True):
     n_ = Mn[Mn.season.isin(ss) & Mn.status.eq('FINAL') & ~Mn.fcs_game & Mn.margin.notna() & Mn.ens_pred.notna()]
-    j = n_[['game_id', 'season', 'week', 'weeks_in', 'margin', 'ens_pred', 'p_home_raw', 'sigma']].merge(
-        Mo[['game_id', 'ens_pred', 'p_home_raw', 'sigma']], on='game_id', suffixes=('_new', '_old'))
+    IV = ['lo_50', 'hi_50', 'lo_80', 'hi_80', 'lo_95', 'hi_95']
+    j = n_[['game_id', 'season', 'week', 'weeks_in', 'margin', 'ens_pred', 'p_home_raw', 'sigma'] + IV].merge(
+        Mo[['game_id', 'ens_pred', 'p_home_raw', 'sigma'] + IV], on='game_id', suffixes=('_new', '_old'))
     y = j.margin.values
     pr = _io.paired(y, j.ens_pred_new.values, j.ens_pred_old.values)
     jp = j[j.p_home_raw_new.notna() & j.p_home_raw_old.notna()]
@@ -278,8 +280,7 @@ def _window(Mo, Mn, ss, tdf_old, tdf_new, calib=True):
            'cluster_week_mae': {k: (rl(v, 5) if isinstance(v, list) else v) for k, v in
                                 _io.cluster_paired_mae(y, j.ens_pred_new.values, j.ens_pred_old.values,
                                                        j.season.astype(str) + '-' + j.week.astype(str)).items()},
-           'coverage': {'v211': _coverage(y, j.ens_pred_old.values, j.sigma_old.values, tdf_old),
-                        'v212': _coverage(y, j.ens_pred_new.values, j.sigma_new.values, tdf_new)},
+           'coverage': {'v211': _coverage(j, y, 'old'), 'v212': _coverage(j, y, 'new')},
            'moved': int((np.abs(j.ens_pred_new - j.ens_pred_old) > 1e-9).sum())}
     if calib and len(jp) > 200:
         yw = (jp.margin.values > 0).astype(float)
@@ -417,9 +418,9 @@ def market(OLD, NEW):
             dd = (j[k + '_n'] - j[k + '_o']).values
             blk[k + '_diff'] = r(dd.mean(), 5)
             blk[k + '_diff_ci'] = rl(_io.ci(dd[I].mean(axis=1)), 5)
-        blk['same_side_share'] = r(float((np.sign(wo.set_index('game_id').reindex(j.game_id).side.values) ==
-                                          np.sign(wn.set_index('game_id').reindex(j.game_id).side.values)).mean())
-                                   if 'side' in wo else np.nan, 4)
+        so_ = wo.drop_duplicates('game_id').set_index('game_id').reindex(j.game_id).side.astype(str).values
+        sn_ = wn.drop_duplicates('game_id').set_index('game_id').reindex(j.game_id).side.astype(str).values
+        blk['same_side_share'] = r(float((so_ == sn_).mean()), 4)
         out.setdefault('paired_v212_minus_v211', {})[wname] = blk
     out['rule'] = {'v211': {k: bo['rule'][k] for k in ('review_gap', 'bet_gap', 'bet_ev', 'bet_min_rel', 'exclude_early', 'bet_enabled')},
                    'v212': {k: bn['rule'][k] for k in ('review_gap', 'bet_gap', 'bet_ev', 'bet_min_rel', 'exclude_early', 'bet_enabled')},
@@ -452,7 +453,8 @@ def holdout_reeval(OLD, NEW):
     policy = json.load(open(os.path.join(T.POLICY_DIR, 'policy.json')))
     ev = json.load(open(os.path.join(T.POLICY_DIR, 'evidence.json')))
     tour = ev['tournament']
-    ORIG = os.path.join(RESEARCH, 'out_h')                 # the frozen DEV apparatus lives with v2.1.0
+    # the frozen DEV apparatus lives with the v2.1.0 build (out_h, beside the parent build)
+    ORIG = os.environ.get('CFB_V2_ORIG') or os.path.join(os.path.dirname(os.path.abspath(OLD)), 'out_h')
     old_out = C.OUT
     try:
         C.OUT = ORIG
@@ -513,7 +515,9 @@ def features(OLD, NEW):
     for v, ver, d in (('v211', OLD_VERSION, OLD), ('v212', NEW_VERSION, NEW)):
         A = json.load(open(os.path.join(V2DIR, 'artifacts', ver, 'models.json')))
         cC = A['submodels']['C_ridge']['cols']
-        beta = dict(zip(cC, A['submodels']['C_ridge']['beta']))
+        bl = A['submodels']['C_ridge']['beta']
+        beta = dict(zip(cC, bl[1:] if A['submodels']['C_ridge'].get('intercept') else bl))   # beta[0] is the intercept
+        brank = sorted(cC, key=lambda c: -abs(beta[c]))
         sd = dict(zip(cC, A['submodels']['C_ridge']['sd']))
         gain = A['submodels']['D_gbm'].get('importance_gain_top20', {})
         import lightgbm as lgb
@@ -524,7 +528,7 @@ def features(OLD, NEW):
         X = MD.add_derived(rd(d, 'stage5', 'cfb_model_training_snapshots.parquet'))
         X = X[X.season.isin(DEV) & ~X.fcs_game.astype(bool)] if 'fcs_game' in X else X[X.season.isin(DEV)]
         watch = [c for c in sorted(set(cC) | set(bst.feature_name())) if any(m in c for m in FALLBACK)] + ['to_dependence']
-        blk = {'ridge_C': {c: {'beta_per_sd': r(beta[c] if A['submodels']['C_ridge'].get('intercept') is not None else beta[c], 5)}
+        blk = {'ridge_C': {c: {'beta_per_sd': r(beta[c], 5), 'rank_abs_beta': brank.index(c) + 1, 'of': len(cC)}
                            for c in cC if any(m in c for m in FALLBACK)},
                'gbm_D_gain_share': {c: r(g.get(c, 0.0) / tot, 5) for c in watch if c in g},
                'gbm_D_gain_rank': {c: rank.index(c) + 1 for c in watch if c in g},
@@ -557,15 +561,100 @@ def features(OLD, NEW):
     return out
 
 
+# ------------------------------------------------------------------ MANIFEST
+def _sha(p):
+    import hashlib
+    return hashlib.sha256(open(p, 'rb').read()).hexdigest()
+
+
+def write_manifest(OLD, NEW, ev):
+    """artifacts/edgedesk_cfb_v2.1.2/MANIFEST.json (after export; never overwrites one)."""
+    from v2 import common
+    adir = os.path.join(V2DIR, 'artifacts', NEW_VERSION)
+    mp = os.path.join(adir, 'MANIFEST.json')
+    if os.path.exists(mp):
+        raise SystemExit('refused: %s exists (a released artifact is never rewritten)' % mp)
+    pdir = os.path.join(V2DIR, 'artifacts', OLD_VERSION)
+    parent = json.load(open(os.path.join(pdir, 'MANIFEST.json')))
+    art = json.load(open(os.path.join(adir, 'models.json')))
+    stamp = json.load(open(os.path.join(NEW, 'BUILD.json')))['stages']
+    Rr, S, A = ev['R_rule'], ev['S_identity'], ev['A_predictions']
+    frozen = {f: _sha(os.path.join(NEW, 'report', f)) for f in ('ablation.json', 'selected_families.json', 'tuning_ratings.json',
+                                                                 'tuning_models_C.json', 'tuning_models_D.json', 'tuning_models_D2.json')}
+    m = {
+        'model_version': NEW_VERSION,
+        'parent_version': OLD_VERSION,
+        'parent_manifest_sha256': _sha(os.path.join(pdir, 'MANIFEST.json')),
+        'kind': 'PATCH: same code recipe, same hyper-parameters, one corrected stage-3 variance rule '
+                '(docs/cfb-audit/PATCH_v2.1.2.md)',
+        'bugs_fixed': {'F-21': 'stage 3 floored the burn-in between-team variance at 1e-8 when its method-of-moments '
+                               'estimate was <= 0, so the prior variance was 1.5e-9 x scale and expl_pass, fg_value, st_net, '
+                               'to_rate (both sides) and sack_rate (defence) never left their preseason prior. Rule '
+                               'cfb_v2_between_var_v2: the moment where positive (every other metric bit-identical), else '
+                               'the split-half (odd/even weeks) covariance on the same burn-in seasons 2009-2011, else refuse.'},
+        'bugs_that_change_this_artifact': ['F-21'],
+        'between_var_rule': art.get('between_var_rule'),
+        'recipe': {
+            'build_dir': 'football/cfb_v2/research/out_p2 (git-ignored)',
+            'build_stamp': stamp,
+            'stages_1_2': 'copied unchanged from the v2.1.1 build (out_p): stage2/games.parquet sha256 %s, market.parquet %s'
+                          % (_sha(os.path.join(NEW, 'stage2', 'games.parquet')), _sha(os.path.join(NEW, 'stage2', 'market.parquet'))),
+            'code': 'v2.build_ratings, v2.qb, v2.elo, v2.snapshots, v2.tests_leakage, v2.pipeline, v2.export (the V2.1 '
+                    'recipe), no re-tuning',
+            'environment': 'CFB_V2_BETWEEN_VAR_RULE=cfb_v2_between_var_v2, CFB_V2_MODEL_VERSION=%s, '
+                           'CFB_V2_V1_RECORDS=data/v1/out/v1_records.json (unchanged), single-threaded BLAS' % NEW_VERSION,
+            'config_py_sha256': _sha(os.path.join(RESEARCH, 'v2', 'config.py')),
+            'config_py_note': 'unchanged: identical to the file v2.1.0 and v2.1.1 were built with and to the one '
+                              'cfb_decision_baseline_001 pins',
+            'seed': art.get('seed') or 20260927,
+            'feature_version': art['feature_version'],
+            'trained_through': art['trained_through'],
+            'frozen_tuning_inputs_copied_from_v2.1.1_build': frozen,
+            'frozen_tuning_identical_to_parent': frozen == parent['recipe'].get('frozen_tuning_inputs_copied_from_v2.1.0_build'),
+            'stack_weights': art['stack_weights'], 't_df': art['t_df'], 'families': art['families'],
+            'market_rule': {k: art['rule'].get(k) for k in ('review_gap', 'bet_gap', 'bet_ev', 'bet_min_rel', 'exclude_early',
+                                                            'bet_enabled')},
+            'elo_tuning': 'v2.elo re-derives its dev tuning each run (stage 4 does not read stage 3)'},
+        'data_diff': {
+            'stage1_stage2': 'identical to v2.1.1 (copied)',
+            'stage3_metric_sides_changed': Rr['changed_metric_sides'],
+            'stage3_between_var_tv': {m: {s: {'v2.1.1': v[s]['tv_old'], 'v2.1.2': v[s]['tv_new'], 'source': v[s]['source']}
+                                          for s in ('off', 'def')}
+                                      for m, v in Rr['metrics'].items() if m in FALLBACK},
+            'stage3_priors_identical_outside_fallback_metrics': Rr['priors_identical_outside_fallback'],
+            'stage3_ratings_metrics_changed': sorted({m for v in S['stage3_ratings'].values() for m in v['metrics_changed']}),
+            'stage3_varcomp_identical': S['varcomp.json_identical'],
+            'stage3_final_dataonly_identical': S['final_dataonly_identical'],
+            'stage4_identical': {k: v for k, v in S.items() if k.startswith('stage4_')},
+            'stage5_columns_changed': S['stage5_columns_changed'],
+            'stage5_market_identical': S['stage5_market_identical'],
+            'predictions_2016_2026': A['all_2016_2026'],
+        },
+        'data_provenance_sha256': parent.get('data_provenance_sha256'),
+        'evidence': 'football/cfb_v2/research/out_p2/audit/patch_v212.json (python3 -m v2.audit.patch_v212); '
+                    'docs/cfb-audit/PATCH_v2.1.2.md',
+        'files': {f: _sha(os.path.join(adir, f)) for f in sorted(os.listdir(adir)) if f != 'MANIFEST.json'},
+        'created_by': 'EdgeDesk CFB audit patch engineer (v2.1.2)',
+        'status': 'CHALLENGER_NOT_PROMOTED: not in football/cfb_production/compatibility.json; production stays '
+                  'edgedesk_cfb_v2.1.0 until the owner switches (PATCH_v2.1.2.md, section 9)',
+    }
+    common.write_json(mp, m)
+    return _sha(mp)
+
+
 # ------------------------------------------------------------------ main
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--old', default=os.path.join(RESEARCH, 'out_p'))
     ap.add_argument('--sections', default='R,M,S,A,B,C,D,E,F,G,I')
+    ap.add_argument('--manifest', action='store_true', help='write artifacts/%s/MANIFEST.json and stop' % NEW_VERSION)
     a = ap.parse_args()
     NEW, OLD = _io.out_dir(), a.old
     p = _io.audit_path('patch_v212.json')
     out = json.load(open(p)) if os.path.exists(p) else {}
+    if a.manifest:
+        print('[patch_v212] MANIFEST sha256', write_manifest(OLD, NEW, out))
+        return
     out.update({'doc': __doc__, 'old': OLD, 'new': NEW})
     fns = {'R': ('R_rule', rule), 'M': ('M_movement', movement), 'S': ('S_identity', identity),
            'A': ('A_predictions', predictions), 'B': ('B_accuracy', accuracy), 'C': ('C_live_2026', live2026),
