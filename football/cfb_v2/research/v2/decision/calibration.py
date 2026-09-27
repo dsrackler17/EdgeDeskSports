@@ -100,11 +100,15 @@ def fit_shrink(p, y, p_mkt=0.5, bounded=True):
     wb = optimize.minimize_scalar(f, bounds=(0.0, 1.0), method='bounded', options={'xatol': 1e-7}).x
     wu = optimize.minimize_scalar(f, bounds=(-2.0, 4.0), method='bounded', options={'xatol': 1e-7}).x
     lmin = f(wu)
-    grid = np.linspace(wu - 1.5, wu + 1.5, 3001)
-    prof = np.array([f(g) for g in grid])
-    inside = grid[prof - lmin <= 1.92]
+    g = lambda w: f(w) - lmin - 1.920729                  # chi2(1) 95% / 2
+    lo = hi = None
+    for step in (0.25, 0.5, 1.0, 2.0, 4.0):
+        if lo is None and g(wu - step) > 0:
+            lo = optimize.brentq(g, wu - step, wu, xtol=1e-7)
+        if hi is None and g(wu + step) > 0:
+            hi = optimize.brentq(g, wu, wu + step, xtol=1e-7)
     return {'w': float(np.clip(wb, 0, 1)) if bounded else float(wu), 'w_unbounded': float(wu),
-            'w_ci95_profile': [float(inside.min()), float(inside.max())],
+            'w_ci95_profile': [float(lo) if lo is not None else None, float(hi) if hi is not None else None],
             'lr_w0': float(2 * (f(0.0) - lmin)), 'lr_w1': float(2 * (f(1.0) - lmin)), 'n': int(len(y))}
 
 
