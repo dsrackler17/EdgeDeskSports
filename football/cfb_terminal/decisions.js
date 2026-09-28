@@ -3,9 +3,11 @@
    docs/bettor-decision/DESIGN.md §10
 
    For every pregame game the build already priced (build.js quoteEvOf), this
-   stage asks the one bettor-facing question — BET / WAIT / PASS / NO DECISION —
-   through lib/edgedesk_decision.js, on the SAME model, quotes and evaluation
-   the quote-level EV used. It then keeps the record honest:
+   stage asks the one bettor-facing question — BET / LEAN / WATCH / PASS /
+   NO DECISION — through lib/edgedesk_decision.js (the unified football
+   engine), on the SAME model, quotes and evaluation the quote-level EV used.
+   NO DECISION is reserved for genuinely missing or invalid essential data.
+   It then keeps the record honest:
 
      decisions/<season>/snapshots.jsonl   one frozen snapshot per change of a
                                           game's decision (append-only; a
@@ -89,8 +91,10 @@ function decideGame(ctx, o, read, ev, quoteEv) {
 /* the compact row the board carries (the full object lives in decisions.json) */
 function compact(d, t) {
   if (!d) return null;
-  return { decision: d.decision, label: d.decision_label, reason_code: d.action_reason_code, reason: d.action_reason_text,
-    side: d.side, side_key: d.side_key, line: d.selected_line, odds: d.selected_odds, book: d.selected_book, units: d.recommended_units, strength: d.strength,
+  return { decision: d.decision, label: d.decision_label, display: d.decision_display, qualifier: d.decision_qualifier, reason_code: d.action_reason_code, reason: d.action_reason_text,
+    evaluation_status: d.evaluation_status, blocker_codes: d.blocker_codes || [], probability_source: d.probability_source, decision_confidence: d.decision_confidence,
+    edge_pp: d.edge_pp, decision_ev_pct: d.decision_ev_pct, trigger: d.action ? d.action.trigger : null,
+    side: d.side, side_key: d.side_key, line: d.selected_line, odds: d.selected_odds, book: d.selected_book, units: d.recommended_units, strength: d.strength, tier: d.tier,
     playable: d.playable ? d.playable.short : null, max_playable_line: d.max_playable_line, max_acceptable_odds: d.max_acceptable_odds,
     calibrated_ev_pct: d.calibrated_ev_pct, raw_ev_pct: d.raw_ev_pct, reliability: d.reliability_score, market_quality: d.market_quality,
     reference: d.reference_quote ? d.reference_quote.label : null, waiting_on: (d.waiting_on || []).map((w) => w.text), evaluated_at: d.evaluated_at,
@@ -142,7 +146,7 @@ function ledger(season, results, ctx, now) {
 }
 
 function counts(ds) {
-  const c = { BET: 0, WAIT: 0, PASS: 0, NO_DECISION: 0 }, reasons = {};
+  const c = { BET: 0, LEAN: 0, WATCH: 0, PASS: 0, NO_DECISION: 0 }, reasons = {};
   ds.forEach((d) => { c[d.decision] = (c[d.decision] || 0) + 1; reasons[d.action_reason_code] = (reasons[d.action_reason_code] || 0) + 1; });
   return { decisions: c, reasons: reasons, total: ds.length };
 }
@@ -151,29 +155,33 @@ function artifact(meta, results, DL) {
   const cfg = BD.config();
   return Object.assign({ schema: 'edgedesk_bettor_decisions_v1' }, meta, {
     engine: BD.VERSION, config_version: cfg.version, validation_state: cfg.validation_state,
-    rule: 'One bettor-facing decision per game from lib/edgedesk_decision.js, on the same model, quotes and evaluation as the quote-level EV. Research status is never a decision; a BET needs every gate, a fresh two-sided quote and a calibrated EV above the action floor.',
-    validation: { rules: cfg.validation_state, sizing: (cfg.sizing.validated_tiers || []).length ? 'TIERS_VALIDATED:' + cfg.sizing.validated_tiers.join(',') : BD.UNVALIDATED,
-      max_active_units: cfg.sizing.max_active_units_unvalidated, shadow: ['1.00U tier (no live validation)', 'every threshold (conservative defaults)'],
+    rule: 'One bettor-facing decision per game from lib/edgedesk_decision.js (the unified football decision engine), on the same model, quotes and evaluation as the quote-level EV. Layer A decides whether the wager can be evaluated (NO DECISION only for missing or invalid essential data, with blocker codes); Layer B decides BET / LEAN / WATCH / PASS at the exact price. Research status is never a decision; a BET needs the edge and EV thresholds on the decision probability, and its stake is capped by the probability source.',
+    validation: { rules: cfg.validation_state, sizing: BD.UNVALIDATED, max_units: cfg.sizing.max_units, source_caps: cfg.sizing.source_caps,
+      thresholds: cfg.thresholds, shadow: ['every threshold (conservative defaults)', 'stake caps by probability source until live validation improves'],
       note: 'The thresholds and stake tiers are conservative, configurable defaults, not empirically validated yet; the per-tier record below is how they will be.' },
     config: cfg, counts: counts(ds), exposure: BK.exposure(ds, {}),
     decisions: ds, tracks: results.reduce((o, x) => { if (x.track && x.decision) o[x.decision.game_id] = x.track; return o; }, {}),
     performance: DL ? DL.performance : null, ledger: DL ? DL.paths : null, n_snapshots: DL ? DL.all.length : null, n_grades: DL ? DL.grades.length : null
   });
 }
-/* build refusals: a BET the engine itself should never have produced */
+/* build refusals: a decision the engine itself should never have produced */
 function problems(results) {
-  const out = [], cfg = BD.config();
+  const out = [], cfg = BD.config(), T = cfg.thresholds.bet;
   results.forEach((x) => {
     const d = x.decision; if (!d) return;
+    if (BD.DECISION_KEYS.indexOf(d.decision) < 0) out.push(d.game_id + ': an unknown decision ' + d.decision);
     if (d.decision === 'BET') {
       if (!d.bet_price || d.selected_line == null || d.selected_odds == null) out.push(d.game_id + ': a BET without an exact quote');
       if (!d.playable) out.push(d.game_id + ': a BET without a playable boundary');
-      if (!(d.calibrated_ev_pct >= 100 * cfg.action.min_calibrated_ev - 1e-6)) out.push(d.game_id + ': a BET below the calibrated action floor');
-      if (['DATA_FAULT', 'INVESTIGATE', 'MARKET_FAULT'].indexOf(d.research_status) >= 0) out.push(d.game_id + ': a BET on research status ' + d.research_status);
-      if (d.recommended_units > cfg.sizing.max_active_units_unvalidated + 1e-9 && !(cfg.sizing.validated_tiers || []).length) out.push(d.game_id + ': a BET above the unvalidated unit cap');
+      if (!(d.edge_pp >= T.min_edge_pp - 1e-6) || !(d.decision_ev_pct >= 100 * T.min_ev - 1e-6)) out.push(d.game_id + ': a BET below the edge / EV thresholds');
+      if (d.recommended_units > (cfg.sizing.source_caps[d.probability_source] || 0) + 1e-9) out.push(d.game_id + ': a BET above its probability-source cap');
+      if (d.recommended_units > cfg.sizing.max_units + 1e-9) out.push(d.game_id + ': a BET above ' + cfg.sizing.max_units + 'U');
       if (d.bet_price && d.bet_price.tail === 'NOT_VALIDATED') out.push(d.game_id + ': a BET on an unvalidated alternate tail');
+      if (d.anomaly && d.anomaly.open) out.push(d.game_id + ': a BET on an unverified price anomaly');
     }
     if (d.decision !== 'BET' && d.recommended_units > 0) out.push(d.game_id + ': units on a non-BET decision');
+    if (d.decision === 'NO_DECISION' && !(d.blocker_codes || []).length) out.push(d.game_id + ': a NO DECISION without a blocker code');
+    if (d.decision !== 'NO_DECISION' && d.evaluation_status !== 'EVALUABLE') out.push(d.game_id + ': a decision on a wager that was not evaluable');
   });
   return out;
 }

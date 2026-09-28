@@ -93,8 +93,8 @@ function siteHandler(req, res) {
 }
 
 /* the synthetic BET, built in the page by the REAL engine and the REAL quote-EV
-   arithmetic on a normal margin model (raw fair NC State −1, calibrated shrunk
-   to NC State +5.5 against a +6.5 market): no number is typed in */
+   arithmetic on a normal margin model (raw fair Wake Forest −4, calibrated
+   Wake Forest −4.4, against NC State +6.5): no number is typed in */
 const BET_BUILDER = () => {
   const Q = window.EDQuoteEV, D = window.EDDecision;
   function Phi(z) { const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2); const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - p : p; }
@@ -102,7 +102,7 @@ const BET_BUILDER = () => {
     Object.keys(pmf).forEach((k) => { pmf[k] /= tot; });
     return (t) => { let win = 0, push = 0; for (let k = -90; k <= 90; k++) { if (Math.abs(k - t) < 1e-9) push += pmf[k]; else if (k > t) win += pmf[k]; } return { win, push, lose: 1 - win - push }; }; }
   const now = Date.now(), at = new Date(now - 8 * 60000).toISOString(), kick = new Date(now + 2 * 864e5).toISOString();
-  const cc = cover(5.5, 14);
+  const cc = cover(4.4, 14);
   const model = { sport: 'CFB', available: true, model_version: 'synthetic_e2e', fair_home_margin: 4, home_cover: cover(4, 14), tail: { validated_within_pts: 3 },
     adjusted: { available: true, label: 'CALIBRATED', version: 'synthetic_cal', maturity: 'SHADOW', side_prob: (s, l) => Q.sideProb(cc, s, l) } };
   const q = (side, line, am, book) => ({ game_id: 'e2e-bet', side, line, american: am, book: book || 'FanDuel', captured_at: at, fresh: true, n_books: 1 });
@@ -183,7 +183,7 @@ const BET_BUILDER = () => {
       bets: chips.filter((c) => /^BET/.test(c.querySelector('b').textContent)).length };
   });
   chk('every priced FBS row carries the decision chip beside its EV line', board.subs > 0 && board.chips === board.subs, board);
-  chk('chips speak only the four decision words', board.labels.every((l) => /^(BET · \d|WAIT|PASS|NO DECISION)/.test(l)), board.labels.slice(0, 10));
+  chk('chips speak only the five decision words', board.labels.every((l) => /^(BET · \d|LEAN|WATCH|PASS|NO DECISION)/.test(l)), board.labels.slice(0, 10));
   chk('no BET on the live slate while every calibrated EV is negative', board.bets === 0, board);
 
   /* a priced game: the action card above the research, and one decision on the page */
@@ -218,7 +218,7 @@ const BET_BUILDER = () => {
   chk('a $2,500 bankroll shows a $25 unit as it is typed', unitNow === '$25.00', unitNow);
   await page.click('[data-edd-act="onb-next"]');
   const onb3 = await page.evaluate(() => document.getElementById('eddModal').textContent.replace(/\s+/g, ' '));
-  chk('page 3 reads the four actions', ['BET', 'WAIT', 'PASS', 'NO DECISION'].every((w) => onb3.indexOf(w) >= 0) && /Do not bet yet/i.test(onb3));
+  chk('page 3 reads the five actions', ['BET', 'LEAN', 'WATCH', 'PASS', 'NO DECISION'].every((w) => onb3.indexOf(w) >= 0) && /Do not bet yet/i.test(onb3));
   await page.click('[data-edd-act="onb-next"]');
   const onb4 = await page.evaluate(() => document.getElementById('eddModal').textContent.replace(/\s+/g, ' '));
   chk('page 4: price matters', /PRICE MATTERS/.test(onb4) && /\+4\.5/.test(onb4) && /do not use the earlier recommendation/.test(onb4));
@@ -231,9 +231,9 @@ const BET_BUILDER = () => {
     const k = Array.from(h.querySelectorAll('.edd-kpi b')).map((b) => b.textContent);
     return { t: t.slice(0, 400), kpis: k, rows: h.querySelectorAll('.edd-row').length, n: window.EDDecisionUI.mergedDecisions().length };
   });
-  chk('the card page renders the header counts', /EDGEDESK CARD/.test(cp.t) && cp.kpis.length === 5, cp);
-  chk('every decided game appears exactly once under BET / WATCHING / PASS / NO DECISION', cp.rows === cp.n && cp.n > 0, cp);
-  chk('an empty BET section says so plainly', /No current price clears EdgeDesk’s requirements/.test(await page.evaluate(() => document.getElementById('eddCardHost').textContent)));
+  chk('the card page renders the header counts', /EDGEDESK CARD/.test(cp.t) && cp.kpis.length === 6, cp);
+  chk('every decided game appears exactly once under BET / LEAN / WATCHING / PASS / NO DECISION', cp.rows === cp.n && cp.n > 0, cp);
+  chk('an empty BET section says so plainly', /No current price clears EdgeDesk’s betting thresholds/.test(await page.evaluate(() => document.getElementById('eddCardHost').textContent)));
 
   /* a BET, from the engine, on the card and as an action card */
   const bet = await page.evaluate((src) => { const f = eval('(' + src + ')'); const d = f(); window.EDDecisionUI.observe(d); return d; }, BET_BUILDER.toString());
@@ -244,8 +244,8 @@ const BET_BUILDER = () => {
   chk('the BET row shows units, side, line, price, book, dollars and playable-to', cb.row && /0\.50U NC State \+6\.5 \(-102\) FanDuel \$12\.50/.test(cb.row) && /Playable to: [+−-]?\d/.test(cb.row), cb);
   chk('the header counts the bet and its exposure in units and dollars', cb.kpi === '1' && /0\.50U/.test(cb.exp) && /\$12\.50/.test(cb.exp), cb);
   await page.click('[data-edd-act="filter"][data-edd-v="watching"]');
-  const onlyWait = await page.evaluate(() => Array.from(document.querySelectorAll('#eddCardHost .edd-row')).every((r) => r.classList.contains('edd-r-wait')));
-  chk('the Watching filter shows only WAIT rows', onlyWait);
+  const onlyWait = await page.evaluate(() => Array.from(document.querySelectorAll('#eddCardHost .edd-row')).every((r) => r.classList.contains('edd-r-watch')));
+  chk('the Watching filter shows only WATCH rows', onlyWait);
   await page.click('[data-edd-act="filter"][data-edd-v="bets"]');
   const onlyBet = await page.evaluate(() => { const rs = Array.from(document.querySelectorAll('#eddCardHost .edd-row')); return rs.length === 1 && rs[0].classList.contains('edd-r-bet'); });
   chk('the Bets filter shows only BET rows', onlyBet);
@@ -256,7 +256,7 @@ const BET_BUILDER = () => {
   chk('BET · 0.5U, the selection in capitals, price and book', /BET · 0\.5U/.test(ac) && /NC STATE \+6\.5/.test(ac) && /-102 · FanDuel/.test(ac), ac.slice(0, 300));
   chk('the dollars, based on the reader’s unit', /\$12\.50 based on your \$25\.00 unit/.test(ac), ac.match(/\$[\d.]+ based on your[^.]*/));
   chk('PLAYABLE TO names the worst line and price', /PLAYABLE TO\?? [+−-]?\d+(\.5)? · max [+−-]\d+/.test(ac), ac.match(/PLAYABLE TO.{0,60}/));
-  chk('strength, model fair, calibrated EV, reliability, market and projection', ['EDGE STRENGTH', 'MODEL FAIR', 'CALIBRATED EV', 'RELIABILITY', 'MARKET', 'PROJECTION'].every((w) => ac.indexOf(w) >= 0));
+  chk('stake tier, decision confidence, probability source, model fair, calibrated EV, reliability, market and projection', ['STAKE TIER', 'DECISION CONFIDENCE', 'PROBABILITY', 'MODEL FAIR', 'CALIBRATED EV', 'RELIABILITY', 'MARKET', 'PROJECTION'].every((w) => ac.indexOf(w) >= 0));
   chk('why it qualifies and what cancels it', /WHY IT QUALIFIES/.test(ac) && /WHAT CANCELS IT/.test(ac) && /material QB change/.test(ac));
   chk('every price type is named apart', ['BEST AVAILABLE', 'CONSENSUS', 'EDGEDESK BET PRICE', 'PLAYABLE TO', 'MODEL FAIR'].every((w) => ac.indexOf(w) >= 0));
   await page.click('#eddTestHost [data-edd-act="placed"]');
@@ -275,13 +275,14 @@ const BET_BUILDER = () => {
   await page.uncheck('#eddCardHost [data-edd-act="beginner"]');
   chk('no page errors on desktop', A.errors.length === 0, A.errors);
 
-  /* the NFL: no calibration → NO DECISION with its reason */
+  /* the NFL: decided by the same engine — never NO DECISION for want of calibration */
   await page.evaluate(() => { window.researchGo('football'); window.fbSetSport('nfl'); });
   await page.waitForFunction(() => document.querySelectorAll('[id^="fbg-nfl-"]').length > 0, null, { timeout: 45000 }).catch(() => {});
   await page.waitForTimeout(800);
   const nfl = await page.evaluate(() => { const c = document.querySelector('[id^="fbg-nfl-"] .edd-act'); return c ? c.textContent.replace(/\s+/g, ' ') : null; });
   chk('an NFL card carries the action card', !!nfl, nfl);
-  chk('the NFL says NO DECISION (no validated calibration, or no current market) and never BET', nfl && /NO DECISION/.test(nfl) && !/BET ·/.test(nfl), nfl && nfl.slice(0, 300));
+  chk('the NFL action card decides (BET / LEAN / WATCH / PASS), or names an essential blocker', nfl && (/\b(BET|LEAN|WATCH|PASS)\b/.test(nfl.slice(0, 200)) || (/NO DECISION/.test(nfl) && /BLOCKER/.test(nfl))) && !/no NFL decision engine/.test(nfl), nfl && nfl.slice(0, 300));
+  chk('the NFL card never says calibration is missing as a reason not to decide', nfl && !/No validated probability calibration/.test(nfl));
   await A.ctx.close();
 
   console.log('\n== phone 390 ==');

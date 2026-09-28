@@ -158,7 +158,7 @@ create table if not exists public.bettor_decision_snapshots (
   away_team                text,
   kickoff                  timestamptz,
   evaluated_at             timestamptz not null,
-  decision                 text not null check (decision in ('BET', 'WAIT', 'PASS', 'NO_DECISION')),
+  decision                 text not null,
   reason_code              text not null,
   side                     text check (side is null or side in ('home', 'away')),
   line                     numeric,
@@ -180,6 +180,10 @@ create table if not exists public.bettor_decision_snapshots (
   synced_at                timestamptz not null default now(),
   check ((decision = 'BET') = (units > 0))
 );
+-- v2 engine: BET / LEAN / WATCH / PASS / NO_DECISION (WAIT kept for v1 rows)
+alter table public.bettor_decision_snapshots drop constraint if exists bettor_decision_snapshots_decision_check;
+alter table public.bettor_decision_snapshots add constraint bettor_decision_snapshots_decision_check
+  check (decision in ('BET', 'LEAN', 'WATCH', 'WAIT', 'PASS', 'NO_DECISION'));
 comment on table public.bettor_decision_snapshots is
   'EdgeDesk''s bettor decisions, one frozen row per change (football/cfb_terminal/decisions/<season>/snapshots.jsonl). Write-once, never deleted, evaluated before kickoff.';
 create index if not exists bettor_snapshots_game_idx on public.bettor_decision_snapshots (sport, game_id, evaluated_at);

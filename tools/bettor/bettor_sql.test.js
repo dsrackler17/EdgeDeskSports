@@ -107,6 +107,13 @@ try {
   chk('units on a non-BET snapshot are refused', db.mustFail(() => db.service(snap('s4', 'PASS', 0.5, iso(-60e3), KICK, 4.5, -110))) !== null);
   chk('a BET above 1.00U is refused', db.mustFail(() => db.service(snap('s5', 'BET', 1.5, iso(-60e3), KICK, 6.5, -102))) !== null);
   chk('a reader cannot insert a decision', db.mustFail(() => db.as(A, snap('s6', 'BET', 0.25, iso(-60e3), KICK, 6.5, -102))) !== null);
+  /* the v2 engine's vocabulary: LEAN and WATCH are decisions (never with units); v1 WAIT rows still read */
+  db.service(snap('s7', 'LEAN', 0, iso(-3000e3), KICK, 6.5, -110));
+  db.service(snap('s8', 'WATCH', 0, iso(-2900e3), KICK, 6.5, -110));
+  chk('LEAN and WATCH snapshots are accepted (v2 engine)', db.sql("select count(*) from public.bettor_decision_snapshots where decision in ('LEAN', 'WATCH');") === '2');
+  chk('a LEAN never carries units', db.mustFail(() => db.service(snap('s9', 'LEAN', 0.25, iso(-2800e3), KICK, 6.5, -110))) !== null);
+  chk('an unknown decision word is refused', db.mustFail(() => db.service(snap('s10', 'MAYBE', 0, iso(-2700e3), KICK, 6.5, -110))) !== null);
+  chk('the decision constraint is re-runnable with v2 rows on file (the file applies again, all ok)', (() => { try { return !/CHECK THIS/.test(db.applyFileAtomic(FILE)); } catch (e) { return false; } })());
   const tr = db.as(A, "select coalesce(from_decision,'—') || '>' || to_decision || '|' || coalesce(from_line::text,'') || '>' || to_line from public.bettor_decision_transitions where snapshot_id = 's2';");
   chk('the transition view reads BET → PASS with the line move', tr === 'BET>PASS|6.5>4.5', tr);
   db.service("insert into public.bettor_decision_grades (snapshot_id, units, odds, line, close_line, clv_points, result, units_won, calibrated_cover, graded_at) values ('s1', 0.5, -102, 6.5, 4.5, 2, 'win', 0.49, 0.53, now());");

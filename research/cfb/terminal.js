@@ -100,7 +100,7 @@
   var K = window.EDCanon || null;
   var RTONE = { VERIFIED_MAJOR: 'verified', INVESTIGATE: 'investigate', MARKET_FAULT: 'investigate', WORTH_RESEARCHING: 'research', NEAR_PICKEM: 'pass',
     MARKET_ALIGNED: 'pass', LIMITED_DATA: 'nomarket', NO_MARKET: 'nomarket', DATA_FAULT: 'fault' };
-  var DTONE = { BET: 'bet', WAIT: 'wait', PASS: 'pass', NO_DECISION: 'nomarket' };
+  var DTONE = { BET: 'bet', LEAN: 'research', WATCH: 'wait', WAIT: 'wait', PASS: 'pass', NO_DECISION: 'nomarket' };
   function rsChip(key, label) {
     var d = K && K.RESEARCH_STATUS[key];
     if (!d) return '';
@@ -113,13 +113,22 @@
     return '<span class="st dec ' + (DTONE[key] || 'pass') + '" title="' + esc('DECISION · ' + d.means + (reason ? ' — ' + reason : '')) + '"><i></i>DECISION: ' + esc(d.label) + (key === 'BET' && units ? ' · ' + esc(units) + 'U' : '') + '</span>';
   }
   /* THE BETTOR DECISION (lib/edgedesk_decision.js), carried on every board row
-     as `bettor` by the build: the one BET / WAIT / PASS / NO DECISION answer the
+     as `bettor` by the build: the one BET / LEAN / WATCH / PASS / NO DECISION answer the
      app's EDGEDESK ACTION card shows. The governed engine's verdict remains the
      fallback for a board built before the decision layer existed. */
   function bettorOf(gid) { var r = S.board && (S.board.rows || []).filter(function (x) { return String(x.game_id) === String(gid); })[0]; return r && r.bettor ? r.bettor : null; }
+  /* the bettor decision speaks its own vocabulary (BET / LEAN / WATCH / PASS /
+     NO DECISION, lib/edgedesk_decision.js); only the governed fallback reads
+     EDCanon's */
+  function bettorChip(bd) {
+    var k = bd.decision === 'WAIT' ? 'WATCH' : bd.decision;
+    var label = bd.display || bd.label || String(k).replace(/_/g, ' ');
+    var why = (bd.reason || '') + (bd.trigger ? ' — ' + bd.trigger : '') + (bd.blocker_codes && bd.blocker_codes.length ? ' [' + bd.blocker_codes.join(', ') + ']' : '');
+    return '<span class="st dec ' + (DTONE[k] || 'pass') + '" title="' + esc('DECISION · ' + why) + '"><i></i>DECISION: ' + esc(label) + (k === 'BET' && bd.units && !bd.display ? ' · ' + esc(bd.units) + 'U' : '') + '</span>';
+  }
   function decChip(gid, fallbackKey, fallbackReason) {
     var bd = bettorOf(gid);
-    return bd ? dsChip(bd.decision, bd.reason, bd.units) : dsChip(fallbackKey, fallbackReason);
+    return bd ? bettorChip(bd) : dsChip(fallbackKey, fallbackReason);
   }
   function flipBadge() { return K ? '<span class="xbadge flip" title="' + esc(K.FAVORITE_FLIP.means) + '">FAVORITE FLIP</span>' : ''; }
   function priceBadge(key, label) {

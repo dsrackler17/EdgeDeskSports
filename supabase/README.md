@@ -144,7 +144,9 @@ service role (`tools/personal/research_state.js --only bets`).
 `bettor_decision_snapshots` / `bettor_decision_grades` mirror EdgeDesk's own
 frozen decisions (`football/cfb_terminal/decisions/<season>/*.jsonl`, synced by
 `football/cfb_terminal/decisions_sync.js`): write-once, never deleted, refused
-at or after kickoff, units only on a BET and never above 1.00U, readable by
+at or after kickoff, decisions BET / LEAN / WATCH / PASS / NO_DECISION (WAIT
+kept for v1 rows; re-running the file replaces the constraint), units only on a
+BET and never above 1.00U, readable by
 signed-in readers. Views: `bettor_decision_transitions`,
 `bettor_decision_performance` (per unit tier; `sufficient_sample` false under
 50 settled bets) and `user_bet_clv`. Tested against a real PostgreSQL by
