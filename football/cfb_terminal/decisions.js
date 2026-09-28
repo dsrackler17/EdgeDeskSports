@@ -17,6 +17,15 @@
                                           once after the Lab's consensus close
                                           and the final: CLV at the recorded
                                           number and units at the recorded price
+     decisions/<season>/evaluations.jsonl one graded row for the FIRST snapshot
+                                          of EVERY decision class per game (BET,
+                                          LEAN, WATCH, PASS): opening, evaluated,
+                                          bet and closing lines, CLV in points
+                                          and price-equivalent, the result at
+                                          the evaluated number, and the versions
+                                          that made the call — so BET can be
+                                          tested against LEAN against PASS
+                                          (lib/edgedesk_validation.js)
      decisions.json                       the current decisions, their tracks
                                           (replayed from the snapshots), the
                                           card counts and exposure in units, the
@@ -48,16 +57,35 @@ function iso(t) { const v = ms(t); return v == null ? null : new Date(v).toISOSt
 function base(season) { return 'football/cfb_terminal/decisions/' + season; }
 /* the ledger, and each game's track replayed from its own snapshots */
 function load(season) {
-  const snaps = readJsonl(base(season) + '/snapshots.jsonl'), grades = readJsonl(base(season) + '/grades.jsonl');
+  const snaps = readJsonl(base(season) + '/snapshots.jsonl'), grades = readJsonl(base(season) + '/grades.jsonl'), evaluations = readJsonl(base(season) + '/evaluations.jsonl');
   const byGame = new Map();
   snaps.forEach((s) => { const k = String(s.game_id); if (!byGame.has(k)) byGame.set(k, []); byGame.get(k).push(s); });
   byGame.forEach((a) => a.sort((x, y) => ms(x.evaluated_at) - ms(y.evaluated_at)));
-  return { season: season, snaps: snaps, grades: grades, byGame: byGame };
+  return { season: season, snaps: snaps, grades: grades, evaluations: evaluations, byGame: byGame };
 }
 function trackOf(L, gid) {
   let t = null;
   ((L && L.byGame.get(String(gid))) || []).forEach((s) => { t = BT.track(t, s); });
   return t;
+}
+
+/* the closing market's own distribution: the empirical margin shape at the
+   closing number, re-centred EXACTLY on the close (EDQuoteEV.cfbConditionedCover
+   with fair = the close), so a CLV in points can also be read as the entry's
+   EV if the close was right. A shape keyed and centred on the close carries
+   the real key-number mass and no model opinion. */
+let _closing = null;
+function closingDistribution() {
+  if (_closing !== null) return _closing || null;
+  try {
+    global.window = global.window || global;
+    if (!global.window.EDCfbP4Params) require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
+    const QEV = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
+    const D = global.window.EDCfbP4Params && global.window.EDCfbP4Params.distributions;
+    if (!D || !D.margin_pmf_by_spread) throw new Error('no CFB margin distribution');
+    _closing = (centre, side, line) => { const hc = QEV.cfbConditionedCover(D, centre, centre); return hc ? QEV.sideProb(hc, side, line) : null; };
+  } catch (e) { _closing = false; }
+  return _closing || null;
 }
 
 /* the governance the engine records on every decision */
@@ -139,10 +167,25 @@ function ledger(season, results, ctx, now) {
     gradedIds.add(s.snapshot_id);
   });
   const grades = L.grades.concat(newGrades);
-  return { new_snaps: newSnaps, new_grades: newGrades, all: all, grades: grades,
+  /* every decision class, graded the same way (first snapshot per class per game) */
+  const evalIds = new Set((L.evaluations || []).map((e) => e.snapshot_id)), opens = {};
+  if (ctx.ledger && ctx.ledger.lines) ctx.ledger.lines.forEach((ls, gid) => { const o = ls.filter((l) => l.kind === 'OPEN' && l.book === 'CONSENSUS' && l.market_type === 'spread' && num(l.home_line) != null)[0]; if (o) opens[String(gid)] = o; });
+  const coverAt = closingDistribution();
+  const newEvals = [];
+  BT.firstPerClass(all).forEach((s) => {
+    if (evalIds.has(s.snapshot_id)) return;
+    const r = res[String(s.game_id)], c = closes[String(s.game_id)];
+    if (!r || r.status !== 'FINAL' || num(r.final_margin) == null || !c) return;
+    const o = opens[String(s.game_id)];
+    const e = BT.gradeEvaluation(s, { open: o ? o.home_line : null, close: c.home_line, close_captured_at: c.observed_at || null, close_sharp: null },
+      { home_margin: r.final_margin }, { coverAt: coverAt, now: now });
+    if (e) { newEvals.push(e); evalIds.add(s.snapshot_id); }
+  });
+  const evaluations = (L.evaluations || []).concat(newEvals);
+  return { new_snaps: newSnaps, new_grades: newGrades, new_evaluations: newEvals, all: all, grades: grades, evaluations: evaluations,
     performance: BT.performance(grades.map((g) => ({ units: g.units, odds: g.odds, result: g.result, clv_points: g.clv_points, calibrated_cover: g.calibrated_cover,
       model_version: g.model_version, sport: g.sport, market_type: g.market_type, strength: g.strength }))),
-    paths: { snapshots: base(season) + '/snapshots.jsonl', grades: base(season) + '/grades.jsonl' } };
+    paths: { snapshots: base(season) + '/snapshots.jsonl', grades: base(season) + '/grades.jsonl', evaluations: base(season) + '/evaluations.jsonl' } };
 }
 
 function counts(ds) {
@@ -161,7 +204,11 @@ function artifact(meta, results, DL) {
       note: 'The thresholds and stake tiers are conservative, configurable defaults, not empirically validated yet; the per-tier record below is how they will be.' },
     config: cfg, counts: counts(ds), exposure: BK.exposure(ds, {}),
     decisions: ds, tracks: results.reduce((o, x) => { if (x.track && x.decision) o[x.decision.game_id] = x.track; return o; }, {}),
-    performance: DL ? DL.performance : null, ledger: DL ? DL.paths : null, n_snapshots: DL ? DL.all.length : null, n_grades: DL ? DL.grades.length : null
+    performance: DL ? DL.performance : null, ledger: DL ? DL.paths : null, n_snapshots: DL ? DL.all.length : null, n_grades: DL ? DL.grades.length : null,
+    n_evaluations: DL && DL.evaluations ? DL.evaluations.length : null,
+    /* the historical analytics live in their own cached artifact, rebuilt by
+       a separate job — never recomputed when the page renders */
+    model_health: 'football/validation/model_health.json (npm run validation:health)'
   });
 }
 /* build refusals: a decision the engine itself should never have produced */
@@ -187,9 +234,10 @@ function problems(results) {
 }
 function writeLedger(season, DL) {
   const b = path.join(ROOT, base(season));
-  if (DL.new_snaps.length || DL.new_grades.length) fs.mkdirSync(b, { recursive: true });
+  if (DL.new_snaps.length || DL.new_grades.length || (DL.new_evaluations || []).length) fs.mkdirSync(b, { recursive: true });
+  if ((DL.new_evaluations || []).length) fs.appendFileSync(path.join(b, 'evaluations.jsonl'), DL.new_evaluations.map((x) => JSON.stringify(x)).join('\n') + '\n');
   if (DL.new_snaps.length) fs.appendFileSync(path.join(b, 'snapshots.jsonl'), DL.new_snaps.map((x) => JSON.stringify(x)).join('\n') + '\n');
   if (DL.new_grades.length) fs.appendFileSync(path.join(b, 'grades.jsonl'), DL.new_grades.map((x) => JSON.stringify(x)).join('\n') + '\n');
 }
 
-module.exports = { load: load, trackOf: trackOf, governanceOf: governanceOf, decideGame: decideGame, compact: compact, ledger: ledger, artifact: artifact, problems: problems, writeLedger: writeLedger, counts: counts, OUT: OUT };
+module.exports = { closingDistribution: closingDistribution, load: load, trackOf: trackOf, governanceOf: governanceOf, decideGame: decideGame, compact: compact, ledger: ledger, artifact: artifact, problems: problems, writeLedger: writeLedger, counts: counts, OUT: OUT };
