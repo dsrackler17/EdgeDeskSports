@@ -256,6 +256,8 @@ section('12. watchlist, personal books, brief, record helpers');
   ok('the watch diff names a changed research status, decision and favourite flip', ['RESEARCH_STATUS', 'DECISION_STATUS', 'FAVORITE_FLIP'].every((k) => d2.some((x) => x.kind === k)), d2);
   const old = Object.assign({}, e); delete old.research_status; delete old.decision_status; delete old.price_state; delete old.favorite_flip;
   ok('an entry saved before the canonical fields claims nothing about them', !T.watchDiff(old, o).some((x) => /RESEARCH_STATUS|DECISION_STATUS|PRICE_STATE|FAVORITE_FLIP/.test(x.kind)));
+  const card = T.exportCard(o);
+  ok('the copied card prints the canonical research status and a separate decision, never the older one-word status', /\nResearch status: /.test(card) && /\nDecision: /.test(card) && !/\nStatus: /.test(card), card);
   const mine = T.bestForBooks(o, ['bookB']);
   ok('personal books: the best price comes only from the reader’s books', mine.home && mine.home.book === 'bookB');
   const none = T.bestForBooks(o, ['nobook']);

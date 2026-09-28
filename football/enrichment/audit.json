@@ -1,29 +1,29 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-09-27T21:29:59.324Z",
+ "generated_at": "2026-09-28T00:53:47.573Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-09-27T21:29:59.324Z",
-  "reliability_generated_at": "2026-09-27T21:29:59.324Z",
-  "enrichment_generated_at": "2026-09-27T21:29:53.212Z",
+  "at": "2026-09-28T00:53:47.573Z",
+  "reliability_generated_at": "2026-09-28T00:53:47.573Z",
+  "enrichment_generated_at": "2026-09-28T00:53:39.985Z",
   "counts": {
-   "games": 60,
+   "games": 62,
    "mean": 84.3,
    "median": 87,
    "by_band": {
-    "STRONG": 48,
+    "STRONG": 50,
     "LOW": 3,
     "ADEQUATE": 8,
     "CAUTION": 1
    },
-   "missing_qb_status": 119,
+   "missing_qb_status": 123,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 10,
+   "games_lacking_injury_information": 12,
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 60,
-   "stale_evidence_records": 76,
+   "games_under_two_market_sources": 62,
+   "stale_evidence_records": 75,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -1369,6 +1369,49 @@
      "away": "PROVIDER_FAILED"
     }
    },
+   "401871051": {
+    "game": "Jacksonville State @ Kennesaw State",
+    "score": 87,
+    "grade": "STRONG",
+    "fam": {
+     "availability": 6,
+     "qb_status": 4,
+     "rating_sample": 1,
+     "stability": 0.6,
+     "qb_identity": 0.8,
+     "transfer_turnover": 0.3
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
+    }
+   },
+   "401871066": {
+    "game": "New Mexico State @ Florida International",
+    "score": 82,
+    "grade": "STRONG",
+    "fam": {
+     "availability": 6,
+     "qb_identity": 4,
+     "qb_status": 4,
+     "venue": 1.4,
+     "stability": 1,
+     "rating_sample": 1.4,
+     "transfer_turnover": 0.6
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
+    }
+   },
    "401871089": {
     "game": "UL Monroe @ South Alabama",
     "score": 85,
@@ -1414,7 +1457,7 @@
   }
  },
  "previous": {
-  "at": "2026-09-27T21:19:07.651Z",
+  "at": "2026-09-27T21:29:59.324Z",
   "counts": {
    "games": 60,
    "mean": 84.3,
@@ -1438,9 +1481,17 @@
   },
   "baseline_of": null
  },
- "what_improved": [],
- "what_degraded": [],
- "why": [],
+ "what_improved": [
+  "-1 stale evidence records (76 → 75)"
+ ],
+ "what_degraded": [
+  "+4 QB statuses missing (119 → 123)",
+  "+2 games lacking injury information (10 → 12)",
+  "+2 games under two market sources (60 → 62)"
+ ],
+ "why": [
+  "the slate itself changed: 2 games entered the window, 0 left it (kicked off or rolled out)"
+ ],
  "history": [
   {
    "at": "2026-09-25T19:38:31.100Z",
@@ -2254,6 +2305,30 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 60,
     "stale_evidence_records": 76,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-09-28T00:53:47.573Z",
+   "counts": {
+    "games": 62,
+    "mean": 84.3,
+    "median": 87,
+    "by_band": {
+     "STRONG": 50,
+     "LOW": 3,
+     "ADEQUATE": 8,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 123,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 12,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 62,
+    "stale_evidence_records": 75,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }

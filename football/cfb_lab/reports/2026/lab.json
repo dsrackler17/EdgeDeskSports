@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-09-28T00:07:24.000Z",
+ "generated_at": "2026-09-28T01:07:17.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,10 +46,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 60,
-    "latest_snapshot_at": "2026-09-27T15:07:15.000Z",
-    "upcoming_games": 60,
-    "avg_confidence_upcoming": 79.3
+    "snapshots": 62,
+    "latest_snapshot_at": "2026-09-28T01:07:17.000Z",
+    "upcoming_games": 62,
+    "avg_confidence_upcoming": 79.2
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
@@ -71,15 +71,15 @@
    }
   ],
   "data_quality": {
-   "games": 60,
+   "games": 62,
    "counts": {
     "GREEN": 29,
-    "YELLOW": 31,
+    "YELLOW": 33,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 31,
+     "YELLOW": 33,
      "RED": 0
     },
     "pbp_freshness": {
@@ -505,19 +505,45 @@
      ],
      "kickoff": "2026-10-07T00:00:00.000Z",
      "matchup": "Southern Miss @ Troy"
+    },
+    {
+     "game_id": "401871051",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-07T23:00:00.000Z",
+     "matchup": "Jacksonville State @ Kennesaw State"
+    },
+    {
+     "game_id": "401871066",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-07T23:30:00.000Z",
+     "matchup": "New Mexico State @ Florida International"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-09-28T00:07:24.000Z",
-    "quotes_total": 1348,
+    "last_quote_at": "2026-09-28T01:07:17.000Z",
+    "quotes_total": 1397,
     "last_result_at": "2026-09-27T15:07:15.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 684,
-   "live_predictions": 174,
-   "quotes": 1348,
+   "predictions": 686,
+   "live_predictions": 176,
+   "quotes": 1397,
    "lines": 1066,
    "results": 282,
    "evaluations": 510,

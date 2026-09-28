@@ -91,7 +91,7 @@ Current build (week 4):
 - **LARGE teams:** UL Monroe, UTEP, Alabama, Purdue, Fresno State, Indiana, James Madison, Northern Illinois, Iowa, Sacramento State, Duke, Boise State, Miami, Syracuse.
 - **Explanations:** every team carries a `why[]` list. For example, "the pricing state is 80% the long-run trained state (−22.2) and 20% this season's own track (−27.4) at 4 games played". A large divergence is mostly the learned prior curve, which is working as designed: early in a season the pricing state trusts the long-run state.
 - **Unseeded:** North Dakota State and Sacramento State have no trained seed. Their pricing state comes only from this season's absorbed games, and the monitor names this.
-- **Per game:** the terminal board carries `rating_divergence {value, band}`. The band is NORMAL, MODERATE or LARGE, with cut-offs from the backtest (§4). Current slate: 19 NORMAL, 22 MODERATE, 16 LARGE, 3 unavailable.
+- **Per game:** the terminal board carries `rating_divergence {value, band}`. The band is NORMAL, MODERATE or LARGE, with cut-offs from the backtest (§4). Current slate: 20 NORMAL, 23 MODERATE, 16 LARGE, 3 unavailable.
 - **Diagnostic only:** nothing reads this value back into a price.
 
 ## 4. Divergence backtest
@@ -133,13 +133,13 @@ Before this change the two surfaces counted different things:
 
 Both now show one hierarchy that sums up, built by `EDCanon.counterHierarchy`:
 
-Week-5 slate, board of 2026-09-28 00:32 UTC:
+Week-5 slate, board of 2026-09-28 01:07 UTC:
 
 ```
-ALL GAMES 60 ─┬─ RESEARCH READY 36 ─── ACTIONABLE RESEARCH SIGNALS 25
-              └─ per sport: CFB 60 / 36 / 25
-CFB buckets:  VERIFIED MAJOR 0 · INVESTIGATE 5 · WORTH RESEARCHING 25 · MARKET ALIGNED 6 · NO MARKET / LIMITED 24 · DATA FAULT 0
-Decisions:    BET 0 · WAIT 0 · PASS 36 · NO DECISION 24   (betting disabled by policy)
+ALL GAMES 62 ─┬─ RESEARCH READY 46 ─── ACTIONABLE RESEARCH SIGNALS 30
+              └─ per sport: CFB 62 / 46 / 30
+CFB buckets:  VERIFIED MAJOR 0 · INVESTIGATE 5 · WORTH RESEARCHING 30 · MARKET ALIGNED 11 · NO MARKET / LIMITED 16 · DATA FAULT 0
+Decisions:    BET 0 · WAIT 0 · PASS 46 · NO DECISION 16   (betting disabled by policy)
 ```
 
 The hierarchy carries a `reconciles` flag: buckets sum to ALL GAMES, and actionable ≤ ready ≤ all. It is tested in `tools/validation/canon.test.js` and `football/cfb_terminal/tests.js`. The app (`fbCanonCountersHTML`) and the terminal (`countersHTML`) render the same hierarchy.
@@ -199,7 +199,7 @@ Rules that hold everywhere:
 - WAIT is shown only if the policy's timing rule is enabled. It is not.
 - Every PASS prints its blocker.
 
-Current slate: 0 BET · 0 WAIT · 36 PASS · 24 NO DECISION. The CSV exports carry `decision_status` and never export BET; `tools/football/fbs_board_ui.test.js` checks this.
+Current slate: 0 BET · 0 WAIT · 46 PASS · 16 NO DECISION. The research terminal's EdgeDesk Read card prints the same canonical decision on its "Decision:" line, and the Read's own verdict is its READ chip. The CSV exports carry `decision_status` and never export BET; `tools/football/fbs_board_ui.test.js` checks this.
 
 ## 9. Maturity taxonomy
 
@@ -475,7 +475,7 @@ Snapshots now carry `components`, `games_played`, `pricing_fingerprint`, `qb` an
 | NO INITIAL EDGE | there was no research-sized disagreement to begin with |
 | PRICE HISTORY UNKNOWN | only one moment on file |
 
-Current slate: 26 available, 12 partial, 4 mostly priced in, 14 no initial edge, 4 unknown. The state is a badge on the row and game page and a CSV column.
+Current slate: 27 available, 11 partial, 3 mostly priced in, 1 no longer attractive, 14 no initial edge, 6 unknown. The state is a badge on the row and game page and a CSV column.
 
 ## 28. Cleanest-research view
 
@@ -543,7 +543,7 @@ The terminal's `disagreementView` now stores the full checks, tier, calibrated g
 
 `football/cfb_validation/slate_audit.json` covers every named game plus every 7+ gap on the week-5 slate. Each requirement is shown as PASS, FAIL or NOT IMPLEMENTED; a requirement that isn't implemented downgrades the status.
 
-The table uses the board of 2026-09-28 00:32 UTC. Statuses move as quotes age, and the audit is rebuilt with every validation build.
+The table uses the board of 2026-09-28 01:07 UTC. Statuses move as quotes age, and the audit is rebuilt with every validation build.
 
 | Game | EdgeDesk | Market (books) | Gap | Status | Failed checks |
 |---|---|---|---|---|---|
@@ -552,7 +552,7 @@ The table uses the board of 2026-09-28 00:32 UTC. Statuses move as quotes age, a
 | Temple @ South Florida | USF −16.0 | USF −5.5 (1) | 10.5 | MARKET FAULT | multi-book consensus |
 | Marshall @ James Madison | JMU −25.7 | JMU −17.5 (1) | 8.2 | MARKET FAULT | multi-book consensus, availability, submodel support, football-only calibration |
 | Vanderbilt @ Georgia | Georgia −16.7 | Georgia −24.5 (1) | 7.8 | MARKET FAULT | multi-book consensus, submodel support |
-| West Virginia @ Iowa State | ISU −10.2 | ISU −2.5 (1) | 7.7 | MARKET FAULT | multi-book consensus, submodel support, football-only calibration |
+| West Virginia @ Iowa State | ISU −10.2 | ISU −3.0 (1) | 7.2 | MARKET FAULT | multi-book consensus, submodel support, football-only calibration |
 | California @ UNLV | UNLV −10.2 | UNLV −2.5 (0 fresh) | 7.7 | NO MARKET | — (quote aged out) |
 | Ohio State @ Iowa | Ohio State −6.8 | Ohio State −13.5 (1) | 6.7 | WORTH RESEARCHING | under 7 pts: no gate required |
 | Miami @ Clemson | Miami −14.8 | Miami −17.5 (1) | 2.7 | WORTH RESEARCHING | under 7 pts: no gate required |
@@ -575,7 +575,7 @@ The table uses the board of 2026-09-28 00:32 UTC. Statuses move as quotes age, a
 
 `EDCanon.favoriteFlip` marks a game where EdgeDesk and the market favour different teams. The board shows a **FAVORITE FLIP** badge, `snapshotRow` records `favorite_flip` in history, `signals.json.favorite_flips` scores the flips as their own group, and the CSV exports carry a `favorite_flip` column.
 
-This week has 5 flips:
+This week has 4 flips:
 
 | Game | Research status |
 |---|---|
@@ -583,7 +583,6 @@ This week has 5 flips:
 | Penn State @ Northwestern | WORTH RESEARCHING |
 | North Texas @ Tulsa | MARKET FAULT |
 | Syracuse @ UConn | NO MARKET |
-| Fresno State @ Washington State | NO MARKET |
 
 ## 34. Model maturity page
 
@@ -808,5 +807,7 @@ Screenshots are in [`screens/`](screens/).
 5. **ETSR stays SHADOW** until its point-scale calibration is measured.
 6. **Attribution of older snapshots.** History rows written before this change carry no component split. Moves between them read TERMS_NOT_RECORDED rather than being guessed.
 7. **The games layer's committed challenges** were re-labelled in place, with the same inputs and the shipped classifier. The next scheduled games build regenerates them from source.
-8. **Two decision answers on the game page since the EdgeDesk Read merged (#392).** The Read has its own price-timing vocabulary (READ BET EARLY / BET / WAIT / PRICE TARGET / RESEARCH / PRICE GONE / PASS / INVESTIGATE / NO DECISION) and its own `decision_status` mapping. The research statuses agree with the canon, but the decisions can differ. On Temple @ USF, the Read card says "Decision: NO DECISION", because it maps an unverified 7+ gap to no decision, while the canonical chip says "DECISION: PASS", because the governed engine evaluated the price and passed. Both say "do not act", but it is one idea with two words. Unifying them is an open decision, not done in this change.
+8. **The EdgeDesk Read's stored decision field (merged from #392).** The Read has its own price-timing vocabulary (READ BET EARLY / BET / WAIT / PRICE TARGET / RESEARCH / PRICE GONE / PASS / INVESTIGATE / NO DECISION). Its research statuses agree with the canon, but it maps timing to its own `decision_status`: an unverified 7+ gap becomes NO DECISION, where the governed engine says PASS.
+   - **Fixed in this change:** on the game page and in the copied card, one decision word per game. The Read card's "Decision:" line and the Read export's parenthetical print the canonical decision, the same word as the DECISION chip. The Read's verdict stays in its own READ chip. The copied card's "Status:" line, which could say WAIT, is replaced by "Research status:" and "Decision:".
+   - **Still open:** the Read's stored `decision_status` in `read/<season>/reads.jsonl`, `read.csv` and the Read record keeps its own mapping. That field is hashed into each read's id, so it was deliberately not rewritten here.
 9. **Supabase-hosted surfaces** (the Collective server-side views, the Model Lab sync) were not changed. The canonical CSV tail is additive, and the Collective ignores it by design (§37).

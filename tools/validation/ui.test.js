@@ -106,6 +106,11 @@ lacks(html, 'NaN', 'no NaN reaches the page');
 lacks(html, 'undefined', 'no undefined reaches the page');
 chk('a missing artifact says so rather than rendering empty success', /did not load/.test(E.render({})));
 
+/* 4b. one decision per game on the research page: the Read card's decision
+   line is the canonical decision, the word the DECISION chip prints */
+has(TJS, "Decision: <b>' + esc(readDecisionLabel(o, R))", 'the Read card prints the canonical decision');
+lacks(TJS, "Decision: <b>' + esc(R.decision_status", 'and never the Read’s own stored decision beside it');
+
 /* 5. the Collective: the canonical CSV tail rides at the end of both exports
    and the Collective maps a column only by exact synonym, so none of the new
    columns can be mistaken for a projection, a line or a pick. */

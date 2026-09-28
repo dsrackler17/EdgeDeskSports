@@ -313,6 +313,15 @@
   function sgn(x, dp) { return num(x) ? (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(dp == null ? 1 : dp) : '—'; }
   function evs(x) { return num(x) ? (x >= 0 ? '+' : '−') + Math.abs(100 * x).toFixed(1) + '%' : '—'; }
   function tag(t, cls) { return '<span class="rtag' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>'; }
+  /* ONE DECISION PER GAME ON THE PAGE. The decision line is the canonical
+     decision status (lib/edgedesk_canon.js: the governed decision engine's
+     answer), the same word the research card's DECISION chip prints; the
+     Read's own verdict is its READ chip (INVESTIGATE, RESEARCH, PRICE TARGET…).
+     Without the canonical field the Read's stored decision is shown as before. */
+  function readDecisionLabel(o, R) {
+    if (o && o.decision_status && o.decision_status.label) return o.decision_status.label;
+    return String(R.decision_status || 'NO_DECISION').replace(/_/g, ' ');
+  }
   function readCard(o, R) {
     if (!R) return '<section class="rd-card"><div class="rd-h"><span class="rd-t">EDGEDESK READ</span></div><div class="empty">No EdgeDesk Read for this game in this build.</div></section>';
     var s = R.selected, g = o.game, inv = R.timing_read === 'INVESTIGATE', raw = R.probability_basis === 'RAW';
@@ -326,7 +335,7 @@
       + '<option value="mine"' + (v.mode === 'mine' ? ' selected' : '') + '>My books' + (store.get(KB, []).length ? ' (' + store.get(KB, []).length + ')' : ' (none set)') + '</option></select></label>';
     var h = '<section class="rd-card t-' + (RD_TONE[R.timing_read] || 'pass') + '" id="read" aria-label="EdgeDesk Read">'
       + '<div class="rd-h"><span class="rd-t">EDGEDESK READ</span>' + viewSel + '</div>'
-      + '<div class="rd-top"><div class="rd-state">' + rdChip(R.timing_read) + '<span class="rd-dec">Decision: <b>' + esc(R.decision_status.replace(/_/g, ' ')) + '</b> · Research: <b>' + esc(R.research_status.label) + '</b></span></div>'
+      + '<div class="rd-top"><div class="rd-state">' + rdChip(R.timing_read) + '<span class="rd-dec">Decision: <b>' + esc(readDecisionLabel(o, R)) + '</b> · Research: <b>' + esc(R.research_status.label) + '</b></span></div>'
       + '<div class="rd-best"><div class="l">' + (v.mode === 'mine' ? 'Best price for you' : (v.mode === 'consensus' ? 'Consensus price' : (R.best_value_market.type !== 'NONE' && !R.research_status.blocks_action ? 'Best value' : 'Current price'))) + '</div>'
       + '<div class="v">' + (s ? esc(s.label) + (s.price && s.price.approximate_american ? ' <span class="mut" title="converted from the source’s implied percentage">≈</span>' : '') : '<span class="mut">no live price</span>') + '</div>'
       + '<div class="n">' + (s ? esc((s.book || '') + (s.alternate ? ' · alternate' : '') + (num(s.age_minutes) ? ' · ' + s.age_minutes + ' min old' : '') + (s.freshness && s.freshness !== 'FRESH' ? ' · ' + s.freshness.toLowerCase() : '')) : esc(R.timing_reason)) + '</div></div></div>';
