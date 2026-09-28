@@ -355,6 +355,116 @@ chk('the card page counts BET / LEAN / WATCHING / PASS / NO DECISION', /BET <sma
 chk('the chips: BET · units, LEAN, WATCH', /BET · 0\.25U/.test(U.chipHTML(A1)) && /LEAN/.test(U.chipHTML(oneSided)) && /WATCH/.test(U.chipHTML(Hu)));
 
 /* ======================================================================== */
+section('review regressions (each was reproduced before its fix)');
+/* 1. a canonical (published-board) DATA FAULT keeps its kind on the page */
+chk('fault kind: live rules map guard → GUARD, orientation → ORIENTATION, integrity/fault/gate → FAULT',
+  I.labelFaultKind({ rule: 'guard' }) === 'GUARD' && I.labelFaultKind({ rule: 'orientation' }) === 'ORIENTATION' && ['integrity', 'fault', 'gate_data_fault', undefined].every((r) => I.labelFaultKind({ rule: r }) === 'FAULT'));
+chk('fault kind: a canonical label carries the build\'s kind, else the facts\', else the live rule it replaced, else FAULT',
+  I.labelFaultKind({ rule: 'canonical', fault_kind: 'GUARD' }) === 'GUARD' && I.labelFaultKind({ rule: 'canonical', fault_kind: 'FAULT' }) === 'FAULT'
+  && I.labelFaultKind({ rule: 'canonical' }, { integrity: { data_fault: true, data_fault_kind: 'GUARD' } }) === 'GUARD'
+  && I.labelFaultKind({ rule: 'canonical', live_key: 'DATA_FAULT', live_rule: 'guard' }) === 'GUARD' && I.labelFaultKind({ rule: 'canonical' }) === 'FAULT');
+{
+  const gv = { research_label: { key: 'DATA_FAULT', label: 'DATA FAULT', rule: 'canonical', means: 'guard', canonical: true, fault_kind: 'GUARD' } };
+  const base = { schema: 'x', sport: 'CFB', game: {}, research: {}, integrity: { data_fault: true, data_fault_kind: 'GUARD', gates: [] }, market: {}, reliability: {}, confidence: {}, projection: {}, qb: { known: true }, availability: { known: true }, support: { by_side: { home: 0, away: 0 } }, anomaly: {} };
+  chk('page: a canonical guard DATA FAULT stays a GUARD (the build\'s WATCH, not NO DECISION)', I.factsFromView(gv, base, {}).integrity.data_fault_kind === 'GUARD');
+  const fv = { research_label: Object.assign({}, gv.research_label, { fault_kind: 'FAULT' }) };
+  chk('page: a canonical integrity DATA FAULT stays a FAULT (blocks)', I.factsFromView(fv, base, {}).integrity.data_fault_kind === 'FAULT');
+  const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
+  chk('page: the quote-EV board withholds EV on exactly the FAULT kind (fbQevCtx asks labelFaultKind)', /var hardFault=key==='DATA_FAULT'&&\(I&&I\.labelFaultKind\?I\.labelFaultKind\(L,null\)/.test(APP));
+  chk('page: the canonical label carries the build\'s fault kind and the live rule it replaced', /live_rule:v\.research_label\?v\.research_label\.rule\|\|null:null,fault_kind:fk/.test(APP));
+}
+/* 2. an alternate whose tail is UNKNOWN (no main line on file for its side) is not validated */
+{
+  const qs = [q('away', 3, -115), q('away', 3, -118, { book: 'FanDuel' }),
+    q('home', -4.5, 120, { market_type: 'alternate_spread', n_books: 1 }), q('home', -4.5, 118, { market_type: 'alternate_spread', book: 'FanDuel', n_books: 1 }),
+    q('away', 4.5, -150, { market_type: 'alternate_spread', n_books: 1 }), q('away', 4.5, -148, { market_type: 'alternate_spread', book: 'FanDuel', n_books: 1 })];
+  const d = nflDecide({ fair: 7, quotes: qs });
+  chk('tail: no BET on an alternate whose tail is UNKNOWN', !(d.decision === 'BET' && d.bet_price && d.bet_price.tail === 'UNKNOWN' && !d.bet_price.is_main_line), brief(d));
+  chk('tail: such a quote is capped (TAIL_UNVALIDATED), not dropped', d.decision !== 'NO_DECISION' && d.candidates.some((c) => c.tail === 'UNKNOWN' && c.classification === 'LEAN'), d.candidates.map((c) => c.label + ' ' + c.tail + ' ' + c.classification));
+}
+{
+  const DJ = require(path.join(ROOT, 'football', 'cfb_terminal', 'decisions.js'));
+  const fake = { game_id: 'x', decision: 'BET', evaluation_status: 'EVALUABLE', blocker_codes: [], bet_price: { tail: 'UNKNOWN', is_main_line: false, line: -4.5, odds: 120 }, selected_line: -4.5, selected_odds: 120,
+    playable: {}, edge_pp: 9, decision_ev_pct: 20, recommended_units: 0.25, probability_source: 'model_estimated', anomaly: null };
+  chk('tail: the build refuses to publish a BET on an UNKNOWN-tail alternate', DJ.problems([{ decision: fake }]).some((x) => /unvalidated alternate tail/.test(x)), DJ.problems([{ decision: fake }]));
+}
+/* 3. a side the engine cannot read is dropped, never thrown on */
+{
+  let threw = null, d1 = null, d2 = null;
+  try {
+    d1 = nflDecide({ fair: 7, quotes: book2(-3, -105, -115).map((x) => Object.assign({}, x, { side: x.side.toUpperCase() })) });
+    d2 = nflDecide({ fair: 7, quotes: book2(-3, -105, -115).concat([q('over', 44.5, -110), q('under', 44.5, -110)]), fairTotal: 47 });
+    D.decide(Object.assign({}, cfbInput({}), { quotes: cfbMain(6.5, -102).concat([cq('left', 6.5, -110)]) }));
+  } catch (e) { threw = String(e && e.message || e); }
+  chk('sides: HOME / AWAY in capitals, an over/under without market_type, an unreadable side — none throws', threw === null, threw);
+  chk('sides: capitalised sides decide exactly as lower-case ones', d1 && d1.decision === nflDecide({ fair: 7 }).decision && d1.selected_line === nflDecide({ fair: 7 }).selected_line, d1 && brief(d1));
+  chk('sides: an over/under quote without market_type is a total, not a spread', d2 && d2.markets.total && d2.markets.total.decision !== 'NO_DECISION' && d2.markets.spread.decision === nflDecide({ fair: 7 }).decision, d2 && d2.markets);
+}
+/* 4. the tracker keeps the reason the previous decision had */
+{
+  const w = nflDecide({ fair: 7, homeLine: -3, qbKnown: false }), b = nflDecide({ fair: 7, homeLine: -3, now: NOW + 60000 });
+  let t = T.track(null, w); t = T.track(t, b);
+  const last = t.transitions[t.transitions.length - 1];
+  chk('track: WATCH · QB UNKNOWN → BET at the same price is INFORMATION RESOLVED, not PRICE IMPROVED', w.decision === 'WATCH' && b.decision === 'BET' && last.kind === 'INFORMATION_RESOLVED', [w.action_reason_code, b.decision, last.kind]);
+}
+/* 5. a quote that failed price verification is neither QUALIFIES nor an alternative */
+{
+  const qs = cfbMain(6.5, -102).concat(cfbMain(6.5, -105, -115, 'DraftKings')).concat([cq('away', 8.5, 105, { market_type: 'alternate_spread', n_books: 1 })]);
+  const inp = cfbInput({ quotes: qs });
+  const d = D.decide(inp);
+  const G = Q.evaluateGame(inp.model, qs, { now: NOW, game: inp.game, max_age_minutes: 90 });
+  const skipped = (d.anomaly && d.anomaly.skipped_quotes) || [];
+  const st = G.sides.away.quotes.map((o) => ({ l: o.label + ' @ ' + o.sportsbook, s: D.quoteStatus(d, o).status }));
+  chk('unverified: the fixture does skip anomalous quotes', skipped.length > 0, skipped);
+  chk('unverified: a skipped quote reads WATCH on the board, never QUALIFIES', st.filter((x) => skipped.indexOf(x.l) >= 0).every((x) => x.s === 'WATCH'), st);
+  const A = d.alternatives || {};
+  chk('unverified: BEST PRICE / SAFER VALUE / MAIN never advertise a skipped quote', [A.best_price, A.safer, A.main, A.better_value].filter(Boolean).every((x) => skipped.indexOf(x.label + ' @ ' + x.book) < 0), A);
+}
+/* 6. an NFL guard game: the board names the card's decision for the card's quote */
+{
+  const model = nflModel(20), qs = book2(-3, -105, -115);
+  const ctx = { now: NOW, game: { game_id: 'nfl_g', home: 'Chicago Bears', away: 'New York Jets', kickoff: KICK }, research_status: 'DATA_FAULT', data_fault: true, orientation: { ok: true }, market_stale: false, reliability: null, max_age_minutes: 90 };
+  const G = Q.evaluateGame(model, qs, ctx);
+  const v = { gid: 'nfl_g', home: 'Chicago Bears', away: 'New York Jets', g: G, model, ctx, qs, dq: { status: 'OK', warnings: [] }, qb: { home: true, away: true }, gap: null };
+  const d = D.decide(I.inputFromFacts(I.nflFacts(v), { model, quotes: qs, qev_ctx: ctx, evaluation: G }, { now: NOW, sport: 'NFL' }));
+  const sel = d.bet_price || d.reference_quote;
+  const o = G.sides[d.side_key].quotes.filter((x) => x.line === sel.line && x.sportsbook === sel.book && x.american_odds === sel.odds)[0];
+  chk('guard: the card decides (WATCH · PRICE ANOMALY), not NO DECISION', d.decision === 'WATCH' && d.action_reason_code === 'PRICE_ANOMALY', brief(d));
+  chk('guard: the board shows the card\'s decision on the card\'s exact quote', !!o && D.quoteStatus(d, o).status === d.decision, o && D.quoteStatus(d, o));
+}
+/* 7/8. WATCH only near a trigger for totals too; no trigger when the price already clears */
+{
+  const inp = I.inputFromFacts(I.nflFacts({ gid: 'nfl_g', home: 'Chicago Bears', away: 'New York Jets', g: null, model: nflModel(3, { fairTotal: 44.6 }), ctx: {}, qs: [], dq: { status: 'OK', warnings: [] }, qb: { home: true, away: true }, gap: null }),
+    { model: nflModel(3, { fairTotal: 44.6 }), quotes: [q('over', 44.5, -110, { market_type: 'total' }), q('under', 44.5, -110, { market_type: 'total' }), q('over', 44.5, -112, { market_type: 'total', book: 'FanDuel' }), q('under', 44.5, -108, { market_type: 'total', book: 'FanDuel' })] },
+    { now: NOW, sport: 'NFL' });
+  inp.game = { game_id: 'nfl_g', home: 'Chicago Bears', away: 'New York Jets', kickoff: KICK };
+  inp.market_type = 'total';
+  const t = D.decide(inp);
+  chk('totals: a small edge whose trigger is far is PASS (as for spreads), not WATCH · NEAR THRESHOLD', t.decision === 'PASS' && t.action_reason_code === 'EDGE_TOO_SMALL' && t.bet_trigger && typeof t.bet_trigger.price_move_cents === 'number' && t.bet_trigger.price_move_cents > 10, [t.decision, t.action_reason_code, t.bet_trigger && t.bet_trigger.price_move_cents]);
+  chk('totals: the trigger reads Over 44.5 / Under 44.5, never "over +44.5"', !t.bet_trigger || !t.bet_trigger.short || /^(Over|Under) 44\.5 \(/.test(t.bet_trigger.short), t.bet_trigger && t.bet_trigger.short);
+  const thin = nflDecide({ fair: 7, quotes: [q('home', -3, -105, { n_books: 1 }), q('away', 3.5, -115, { n_books: 1, book: 'FanDuel' })] });
+  chk('trigger: a capped LEAN whose price already clears names no worse "BET at" price', thin.decision === 'LEAN' && thin.bet_trigger && thin.bet_trigger.already_clears === true && thin.bet_trigger.short === null && !(thin.bet_trigger.price_move_cents < 0), [thin.decision, thin.action_reason_code, thin.bet_trigger]);
+  const html = U.cardPageHTML([thin], { view: { filter: 'all', sort: 'kickoff', showLean: true } });
+  chk('trigger: the Card page LEAN row prints no BET-at price for it', !/BET at Chicago Bears -2\.5/.test(html));
+}
+/* 9. LEAN's "same direction" is the model's side of the market, not cover ≥ 50% */
+{
+  const qs = book2(-3, -105, -115).concat([q('home', -8.5, 175, { market_type: 'alternate_spread', n_books: 1 }), q('away', 8.5, -230, { market_type: 'alternate_spread', n_books: 1 })]);
+  const m = nflModel(7); m.tail = { validated_within_pts: 10 };
+  const d = nflDecide({ model: m, quotes: qs, cfg: { thresholds: { bet: { min_edge_pp: 40, min_ev: 0.9 } } } });
+  const alt = d.candidates.filter((c) => c.line === -8.5)[0];
+  chk('direction: a plus-money alternate on the model\'s side (cover < 50%, edge ≥ 2 pp, EV > 0) can LEAN', alt && alt.decision_cover < 0.5 && alt.edge_pp >= 2 && alt.classification === 'LEAN', alt);
+  const ml = (px) => cfb({ market_type: 'moneyline', model: cfbModel(-3, null, null, { moneyline: { home_win_prob: 0.40, calibration: { validated: false } } }),
+    quotes: [cq('home', null, px, { market_type: 'moneyline' }), cq('away', null, -px - 20, { market_type: 'moneyline' }), cq('home', null, px - 3, { market_type: 'moneyline', book: 'DK' }), cq('away', null, -px - 25, { market_type: 'moneyline', book: 'DK' })] });
+  chk('direction: a moneyline underdog with edge ≥ 2 pp and EV > 0 is LEAN, not WATCH', ml(170).decision === 'LEAN', brief(ml(170)));
+}
+/* cosmetic: a STALE_QUOTE's last known quote is named */
+{
+  const staleQ = book2(-3, -105, -115).map((x) => Object.assign({}, x, { fresh: false, captured_at: '2026-10-04T02:00:00Z' }));
+  const d = nflDecide({ fair: 7, quotes: staleQ, previous: { decision: 'BET', bet_price: { side: 'away', line: 3, odds: -110, book: 'FanDuel' } } });
+  chk('stale: the last known quote carries a team and a label (no "undefined")', d.decision === 'NO_DECISION' && d.reference_quote && d.reference_quote.team === 'New York Jets' && /^New York Jets \+3 \(-110\)$/.test(d.reference_quote.label) && !/undefined/.test(d.action.selection || ''), [d.reference_quote, d.action && d.action.selection]);
+}
+
 section('REAL PAYLOADS · NFL (football/nfl/slate.json: the real model, the real consensus line)');
 const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'nfl', 'slate.json'), 'utf8'));
 const nflReal = [];

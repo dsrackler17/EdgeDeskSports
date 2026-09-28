@@ -24,7 +24,7 @@ to evaluate this wager"** far more often than it should have. The root causes:
 | Optional facts as blockers | `RELIABILITY_UNMEASURED`, `INSUFFICIENT_MODEL_DATA` (football confidence < 35), `NO_TWO_SIDED_MARKET`, `MARKET_FAULT`, `UNVERIFIED_LARGE_GAP` | NO DECISION | lower decision confidence and a class cap (LEAN / WATCH) |
 | Per-book mirror check on best-price-per-number rows | `mirrorFault` | a book that moved (−3 at 10:00, +3.5 at 10:40) read as "the home/away orientation or spread sign failed its check" for the whole game | the older number is superseded; a mislabelled sign is repaired from the other books; only a genuinely unresolvable book is dropped |
 | A sign heuristic killed team-labelled quotes | `fbQevCtx` (`spread_fault` → `orientation.ok=false`), build `quoteEvOf` (circuit breaker `SIGN_ORIENTATION`) | every quote EV unavailable → ORIENTATION_FAULT | quotes are priced (their side comes from the team name); the sign doubt is a **price anomaly** to verify (`SIGN_SUSPECT` flag, WATCH · PRICE ANOMALY) |
-| The gap guard called a suspicion corruption | research `DATA_FAULT` (rule `guard` / `orientation`), NFL `FB_GUARD` | NO DECISION | WATCH · PRICE ANOMALY (only an integrity DATA FAULT still blocks) |
+| The gap guard called a suspicion corruption | research `DATA_FAULT` (rule `guard` / `orientation`), NFL `FB_GUARD` | NO DECISION | WATCH · PRICE ANOMALY (only an integrity DATA FAULT still blocks). A published-board (canonical) label keeps the build's fault kind (`decision_facts.integrity.data_fault_kind`, read by `EDDecisionInputs.labelFaultKind`), so the page and the build agree, and the quote-EV board withholds EV on exactly the FAULT kind |
 | NFL kickoff parsed in the viewer's time zone | `app.html` NFL loader | a UTC browser closed 8:15 PM ET games four hours early (GAME_STARTED) | `fbNflKickMs` parses nflverse `gameday`/`gametime` as US Eastern |
 
 ## 2. Two layers
@@ -58,15 +58,17 @@ provided its price verifies (§6); then the class is capped by uncertainty (§5)
 | Class | Price rule (configurable, `thresholds`) | Stake |
 |---|---|---|
 | **BET** | edge ≥ **+4.0 pp** and EV ≥ **+5%** | 0.25–1.00U (§7) |
-| **LEAN** | edge ≥ +2.0 pp, EV > 0, the model and the price point the same way | 0 |
-| **WATCH** | a potential edge that is not yet a bet: the BET trigger is within the league's watch window (CFB 1 pt / 15¢, NFL 0.5 pt / 10¢), or a meaningful model–market disagreement (CFB ≥ 2, NFL ≥ 1 pt), or a BET/LEAN-quality price held by unresolved QB / availability information or an unverified price anomaly | 0 |
+| **LEAN** | edge ≥ +2.0 pp, EV > 0, the model and the price point the same way: the decision model's fair line (blended / calibrated when it has one) sits on this side of the market. A plus-money alternate on the model's side agrees even though its cover is under 50%; a far alternate on the other side does not. A moneyline agrees when its edge is positive (the break-even carries the vig) | 0 |
+| **WATCH** | a potential edge that is not yet a bet: the BET trigger is within the league's watch window (CFB 1 pt / 15¢, NFL 0.5 pt / 10¢), or a meaningful model–market disagreement (CFB ≥ 2, NFL ≥ 1 pt; spreads only), or a BET/LEAN-quality price held by unresolved QB / availability information or an unverified price anomaly. Totals and moneylines use the same trigger window: a small edge far from it is PASS | 0 |
 | **PASS** | evaluable, not worth a wager: `CALIBRATED_EV_NEGATIVE`, `MARKET_ALIGNED`, `JUICE_CONSUMES_EDGE`, `NO_MODEL_EDGE`, `EDGE_TOO_SMALL`, `PRICE_MOVED`, `PROJECTION_CHANGED` | 0 |
 
 Edge = decision cover probability (pushes excluded) − break-even; its sign
 always equals EV's. Every non-BET names its **BET trigger**: the line at the
 same price, or the price at the same line, at which this side clears the BET
 thresholds (`WATCH — Chicago Bears becomes BET at -2.5 (-110) or -3 (-106) or
-better`).
+better`). When the price already clears and a cap holds the class back (a thin
+market, low reliability, QB information), the trigger says so
+(`already_clears`) and names no price to wait for.
 
 Research status (MARKET ALIGNED, WORTH RESEARCHING, VERIFIED MAJOR,
 INVESTIGATE…) is carried apart as `research_status` and never decides:
@@ -115,7 +117,7 @@ ORIENTATION_FAULT.
 | QB unknown / unresolved · availability pending | class capped at **WATCH** (a projection built on a QB who is OUT is `QB_PROJECTION_INVALID`, a blocker) |
 | personnel / availability not loaded | warning `PERSONNEL_LOW_CONFIDENCE`, confidence |
 | unverified price anomaly | class capped at **WATCH · PRICE ANOMALY** |
-| alternate beyond the validated tail | that quote capped at LEAN |
+| alternate beyond the validated tail, or with no main line on file for its side to measure from (tail `UNKNOWN`) | that quote capped at LEAN; the build refuses to publish a BET on either |
 | totals / moneylines (no validated skill) | market capped at LEAN; each market decides alone (`markets.total`, `markets.moneyline`) |
 
 `decision_confidence` (0–100, High ≥ 80 · Moderate ≥ 60 · Low ≥ 40 · Very
@@ -136,8 +138,10 @@ agreement, ladder consistency (monotone cover, no book pricing more points at
 a better price), neighbouring alternate prices, book corroboration, book
 agreement, no arbitrage, market integrity, gap verified, gap plausible (UNKNOWN
 beyond the league outlier band), circuit breaker verified. Any FAIL → the next
-candidate is tried; if none verifies → **WATCH · PRICE ANOMALY**. UNKNOWN never
-blocks; it lowers confidence. A cleared review proceeds, capped at 0.50U
+candidate is tried; if none verifies → **WATCH · PRICE ANOMALY**. A quote that
+failed is marked `price_unverified`: the board reads it WATCH, and it is never
+offered as BEST PRICE, SAFER VALUE or MAIN. UNKNOWN never blocks; it lowers
+confidence. A cleared review proceeds, capped at 0.50U
 (0.25U when severe) — never boosted.
 
 ## 7. Units
