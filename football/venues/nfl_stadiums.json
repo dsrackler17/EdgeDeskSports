@@ -1,11 +1,11 @@
 {
   "schema": "edgedesk_nfl_stadiums_v1",
-  "generated_at": "2026-09-16T00:00:00Z",
+  "generated_at": "2026-09-28T00:00:00Z",
   "source": "EdgeDesk curated table, HAND-ENTERED from public stadium records; no reachable geocoder or reference API from the build environment. Every row is verified by tools/football/verify_nfl_stadiums.js against the venue register where a stadium also hosts college games, against nflverse games.csv for roof and surface, and against the home club's state. A row that fails a check is refused by the venue build.",
   "precision": "stadium centre to roughly 0.5 km; adequate for a kickoff forecast, not for anything finer",
   "verification": "run tools/football/verify_nfl_stadiums.js; the result is written to football/venues/nfl_stadiums.verification.json",
   "stadiums": [
-    { "name": "Highmark Stadium", "aliases": ["New Era Field", "Bills Stadium", "Ralph Wilson Stadium"], "club": "BUF", "city": "Orchard Park, NY", "state": "NY", "lat": 42.7738, "lon": -78.7870, "roof": "outdoors", "surface": "a_turf", "tz_name": "America/New_York" },
+    { "name": "Highmark Stadium", "aliases": ["New Era Field", "Bills Stadium", "Ralph Wilson Stadium"], "club": "BUF", "city": "Orchard Park, NY", "state": "NY", "lat": 42.7738, "lon": -78.7870, "roof": "outdoors", "surface": "grass", "tz_name": "America/New_York" },
     { "name": "Hard Rock Stadium", "aliases": [], "club": "MIA", "city": "Miami Gardens, FL", "state": "FL", "lat": 25.9580, "lon": -80.2389, "roof": "outdoors", "surface": "grass", "tz_name": "America/New_York" },
     { "name": "Gillette Stadium", "aliases": [], "club": "NE", "city": "Foxborough, MA", "state": "MA", "lat": 42.0909, "lon": -71.2643, "roof": "outdoors", "surface": "a_turf", "tz_name": "America/New_York" },
     { "name": "MetLife Stadium", "aliases": [], "club": "NYJ", "clubs": ["NYJ", "NYG"], "city": "East Rutherford, NJ", "state": "NJ", "lat": 40.8135, "lon": -74.0745, "roof": "outdoors", "surface": "a_turf", "tz_name": "America/New_York" },
