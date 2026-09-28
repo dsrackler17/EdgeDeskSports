@@ -35,7 +35,11 @@ chk('it names its dependency', /apply supabase\/bettor_decisions\.sql first/.tes
 chk('every column the sync sends exists in the table', SYNC.EVAL_COLS.every((c) => new RegExp('\\n\\s+' + c + '\\s').test(SQL)), SYNC.EVAL_COLS.filter((c) => !new RegExp('\\n\\s+' + c + '\\s').test(SQL)));
 
 const db = PG.start('decval');
-if (db.skip) { console.log('NOTE | ' + db.skip + ' — LIVE layer skipped'); process.exit(T.done()); }
+if (db.skip) {
+  /* CI sets the flag: there, a missing Postgres is a failure, not a skip */
+  if (process.env.DECISION_VALIDATION_SQL_REQUIRED === '1') chk('a PostgreSQL cluster starts (required in CI)', false, db.skip);
+  console.log('NOTE | ' + db.skip + ' — LIVE layer skipped'); process.exit(T.done());
+}
 
 const DAY = 86400000;
 const iso = (ms) => new Date(Date.now() + ms).toISOString();

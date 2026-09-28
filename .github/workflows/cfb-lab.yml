@@ -166,6 +166,15 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: node football/cfb_validation/build.js || echo "::warning::the live validation build did not run; the last published files stay up"
 
+      # Model health (tools/validation/model_health.js): the cached validation
+      # report the Card page reads — live decisions graded by class, the Lab's
+      # modes apart, walk-forward, the model record, research alerts. Rebuilt
+      # from the decision ledger this run just wrote; it changes no threshold,
+      # calibration or model. A failure warns; the last report stays up.
+      - name: Model health (football/validation/model_health.json)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node tools/validation/model_health.js --write || echo "::warning::model health could not be rebuilt; the last report stays up"
+
       - name: Operations report (football/cfb_production/reports/ops.json, admin/cfb-ops)
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         env:
@@ -186,7 +195,8 @@ jobs:
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
             football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
-            football/cfb_production/reports/traces.json football/cfb_terminal football/cfb_validation football/markets
+            football/cfb_production/reports/traces.json football/cfb_terminal football/cfb_validation football/markets \
+            football/validation/model_health.json
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}

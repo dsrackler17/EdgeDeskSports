@@ -4,33 +4,55 @@
  "generated_by": "tools/validation/model_health.js",
  "as_of": "2026-09-28T21:07:35.319Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
+ "inputs_key": "d1d8f138c3622cbc",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
    "rows": 76,
-   "mode": "LIVE"
+   "mode": "LIVE",
+   "sha1": "192c6214f3fd"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
    "rows": 0,
-   "mode": "LIVE"
+   "mode": "LIVE",
+   "sha1": null
   },
   {
    "file": "football/cfb_lab/ledger/2026/evaluations.jsonl",
    "rows": 510,
-   "mode": "LIVE_RECONSTRUCTED / BACKTEST"
+   "mode": "LIVE_RECONSTRUCTED / BACKTEST",
+   "sha1": "6d309af730eb"
   },
   {
    "file": "football/validation/pricing_nfl.json",
-   "mode": "WALK_FORWARD"
+   "mode": "WALK_FORWARD",
+   "sha1": "87c960666ef3"
   },
   {
    "file": "football/validation/pricing_cfb.json",
-   "mode": "WALK_FORWARD"
+   "mode": "WALK_FORWARD",
+   "sha1": "3578f5d58d4f"
   },
   {
    "file": "record/football/summary.json",
-   "mode": "LIVE (model record)"
+   "mode": "LIVE (model record)",
+   "sha1": "b224c41168c0"
+  },
+  {
+   "file": "football/params.js",
+   "mode": "DISTRIBUTION (NFL margin shapes)",
+   "sha1": "ecc05c6f23c0"
+  },
+  {
+   "file": "football/cfb_p4/params.js",
+   "mode": "DISTRIBUTION (CFB margin shapes)",
+   "sha1": "2ea7c9ec50f4"
+  },
+  {
+   "file": "football/validation/key_numbers.json",
+   "mode": "DESCRIPTIVE (final margins)",
+   "sha1": "864fe467411e"
   }
  ],
  "maturity": [

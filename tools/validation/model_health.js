@@ -28,6 +28,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const ROOT = path.resolve(__dirname, '..', '..');
 global.window = global.window || global;
 require(path.join(ROOT, 'lib', 'research_core.js'));
@@ -160,6 +161,17 @@ function distributionAudit() {
   return out;
 }
 
+function fingerprint(f) { try { return crypto.createHash('sha1').update(fs.readFileSync(f)).digest('hex').slice(0, 12); } catch (_) { return null; } }
+/* CURRENT: the committed report is exactly what this code builds from these
+   inputs. CODE_CHANGED: same inputs, different report — someone changed the
+   code without rebuilding (a failure). INPUTS_MOVED: the data moved on since
+   the report was built; the hourly job rebuilds it (not a failure). */
+function staleness(committed, fresh) {
+  if (!committed) return 'MISSING';
+  if (JSON.stringify(committed) === JSON.stringify(fresh)) return 'CURRENT';
+  return committed.inputs_key && committed.inputs_key === fresh.inputs_key ? 'CODE_CHANGED' : 'INPUTS_MOVED';
+}
+
 /* ------------------------------------------------------------------ build */
 function build() {
   const sources = [], alerts = [];
@@ -186,7 +198,14 @@ function build() {
   const rec = modelRecord();
   sources.push({ file: rec.source, mode: 'LIVE (model record)' });
   const dist = distributionAudit();
+  sources.push({ file: 'football/params.js', mode: 'DISTRIBUTION (NFL margin shapes)' }, { file: 'football/cfb_p4/params.js', mode: 'DISTRIBUTION (CFB margin shapes)' });
   const keys = readJson(path.join(ROOT, 'football', 'validation', 'key_numbers.json'));
+  sources.push({ file: 'football/validation/key_numbers.json', mode: 'DESCRIPTIVE (final margins)' });
+  /* a fingerprint of every input, so a check can tell "the code changed and
+     the report was not rebuilt" (a failure) from "the hourly jobs moved the
+     data on since the last rebuild" (expected until the next run) */
+  sources.forEach((x) => { x.sha1 = fingerprint(path.join(ROOT, x.file)); });
+  const inputsKey = crypto.createHash('sha1').update(sources.map((x) => x.file + ':' + x.sha1).join('\n')).digest('hex').slice(0, 16);
   /* alerts, gathered */
   Object.keys(liveRep.modes).forEach((m) => liveRep.modes[m].expectations.alerts.forEach((a) => alerts.push(Object.assign({ source: 'decision ledger · ' + m }, a))));
   Object.keys(labRep.modes).forEach((m) => labRep.modes[m].expectations.alerts.forEach((a) => alerts.push(Object.assign({ source: 'CFB Lab · ' + m }, a))));
@@ -219,7 +238,7 @@ function build() {
     schema: 'edgedesk_model_health_v1', engine: V.VERSION, generated_by: 'tools/validation/model_health.js',
     as_of: times.length ? new Date(Math.max.apply(null, times)).toISOString() : null,
     rule: 'Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.',
-    sources, maturity,
+    inputs_key: inputsKey, sources, maturity,
     live_decisions: { issued_snapshots: snaps.length, issued_by_decision: issued, graded_rows: evals.length, unit_of_analysis: 'the first snapshot of each decision class per game', report: liveRep, dashboard: dashboard(liveRep) },
     cfb_lab: { level: 'model (fair line) and its research classes, CFB only', rows: lab.length, report: labRep, dashboard: dashboard(labRep) },
     walk_forward: wf, live_model_record: rec, distribution_audit: dist,
@@ -245,13 +264,15 @@ if (require.main === module) {
   const H = build();
   const a = process.argv.slice(2);
   if (a.includes('--check')) {
-    const cur = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : null;
-    const next = JSON.stringify(H, null, 1) + '\n';
-    if (cur !== next) { console.error('model_health.json is stale: run npm run validation:health:write'); process.exit(1); }
-    console.log('model_health.json is current');
+    /* --check fails when the code changed without a rebuild; --strict also
+       fails when only the inputs moved on */
+    const cur = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null, st = staleness(cur, H);
+    if (st === 'CURRENT') console.log('model_health.json is current');
+    else if (st === 'INPUTS_MOVED' && !a.includes('--strict')) console.log('NOTE | model_health.json was built from older inputs (' + (cur.inputs_key || 'no key') + ' → ' + H.inputs_key + '); the hourly job rebuilds it. The code builds cleanly.');
+    else { console.error('model_health.json is stale (' + st + '): run npm run validation:health:write'); process.exit(1); }
   } else {
     summaryLines(H).forEach((l) => console.log(l));
     if (a.includes('--write')) { fs.writeFileSync(OUT, JSON.stringify(H, null, 1) + '\n'); console.log('wrote ' + REL(OUT)); }
   }
 }
-module.exports = { build, dashboard, distributionAudit, walkForward, modelRecord, summaryLines, stable };
+module.exports = { build, staleness, fingerprint, dashboard, distributionAudit, walkForward, modelRecord, summaryLines, stable };

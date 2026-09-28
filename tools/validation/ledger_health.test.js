@@ -100,7 +100,16 @@ section('model health: cached, current, honest');
 {
   const H = MH.build();
   const committed = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'model_health.json'), 'utf8'));
-  chk('the committed model_health.json is current (npm run validation:health:check)', JSON.stringify(committed) === JSON.stringify(H));
+  const st = MH.staleness(committed, H);
+  chk('the committed model_health.json is not stale for these inputs (npm run validation:health:check)', st === 'CURRENT' || st === 'INPUTS_MOVED', st);
+  if (st === 'INPUTS_MOVED') console.log('    NOTE | the inputs moved on since model_health.json was built; the hourly job rebuilds it');
+  chk('the committed report carries the same sections as a fresh build', Object.keys(committed).join() === Object.keys(H).join(), [Object.keys(committed), Object.keys(H)]);
+  chk('every input is fingerprinted and keyed', H.inputs_key && H.sources.every((x) => x.sha1 === null || /^[0-9a-f]{12}$/.test(x.sha1)) && H.sources.filter((x) => x.sha1).length >= 6, H.sources);
+  {
+    const moved = JSON.parse(JSON.stringify(H)); moved.inputs_key = 'other'; moved.as_of = '2000-01-01T00:00:00.000Z';
+    const edited = JSON.parse(JSON.stringify(H)); edited.alerts = [];
+    chk('staleness: data moved on is INPUTS_MOVED; the same inputs with a different report is CODE_CHANGED', MH.staleness(moved, H) === 'INPUTS_MOVED' && MH.staleness(edited, H) === 'CODE_CHANGED' && MH.staleness(H, H) === 'CURRENT' && MH.staleness(null, H) === 'MISSING');
+  }
   chk('its as-of time is the newest input, not the clock (reproducible)', H.as_of && JSON.stringify(MH.build().as_of) === JSON.stringify(H.as_of));
   chk('modes are separate sections: the Lab has BACKTEST and LIVE_RECONSTRUCTED apart', H.cfb_lab.report.modes.BACKTEST && H.cfb_lab.report.modes.LIVE_RECONSTRUCTED);
   chk('walk-forward is its own section, as published', H.walk_forward.NFL.mode === 'WALK_FORWARD' && H.walk_forward.NFL.markets.spread.tier);
