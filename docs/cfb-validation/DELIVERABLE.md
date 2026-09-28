@@ -133,7 +133,7 @@ Before this change the two surfaces counted different things:
 
 Both now show one hierarchy that sums up, built by `EDCanon.counterHierarchy`:
 
-Week-5 slate, board of 2026-09-28 00:07 UTC:
+Week-5 slate, board of 2026-09-28 00:32 UTC:
 
 ```
 ALL GAMES 60 ─┬─ RESEARCH READY 36 ─── ACTIONABLE RESEARCH SIGNALS 25
@@ -543,7 +543,7 @@ The terminal's `disagreementView` now stores the full checks, tier, calibrated g
 
 `football/cfb_validation/slate_audit.json` covers every named game plus every 7+ gap on the week-5 slate. Each requirement is shown as PASS, FAIL or NOT IMPLEMENTED; a requirement that isn't implemented downgrades the status.
 
-The table uses the board of 2026-09-28 00:07 UTC. Statuses move as quotes age, and the audit is rebuilt with every validation build.
+The table uses the board of 2026-09-28 00:32 UTC. Statuses move as quotes age, and the audit is rebuilt with every validation build.
 
 | Game | EdgeDesk | Market (books) | Gap | Status | Failed checks |
 |---|---|---|---|---|---|
@@ -808,4 +808,5 @@ Screenshots are in [`screens/`](screens/).
 5. **ETSR stays SHADOW** until its point-scale calibration is measured.
 6. **Attribution of older snapshots.** History rows written before this change carry no component split. Moves between them read TERMS_NOT_RECORDED rather than being guessed.
 7. **The games layer's committed challenges** were re-labelled in place, with the same inputs and the shipped classifier. The next scheduled games build regenerates them from source.
-8. **Supabase-hosted surfaces** (the Collective server-side views, the Model Lab sync) were not changed. The canonical CSV tail is additive, and the Collective ignores it by design (§37).
+8. **Two decision answers on the game page since the EdgeDesk Read merged (#392).** The Read has its own price-timing vocabulary (READ BET EARLY / BET / WAIT / PRICE TARGET / RESEARCH / PRICE GONE / PASS / INVESTIGATE / NO DECISION) and its own `decision_status` mapping. The research statuses agree with the canon, but the decisions can differ. On Temple @ USF, the Read card says "Decision: NO DECISION", because it maps an unverified 7+ gap to no decision, while the canonical chip says "DECISION: PASS", because the governed engine evaluated the price and passed. Both say "do not act", but it is one idea with two words. Unifying them is an open decision, not done in this change.
+9. **Supabase-hosted surfaces** (the Collective server-side views, the Model Lab sync) were not changed. The canonical CSV tail is additive, and the Collective ignores it by design (§37).

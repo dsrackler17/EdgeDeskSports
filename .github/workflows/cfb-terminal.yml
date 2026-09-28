@@ -15,6 +15,7 @@ on:
   pull_request:
     paths:
       - 'lib/cfb_terminal.js'
+      - 'lib/edgedesk_read.js'
       - 'football/cfb_terminal/**'
       - 'research/cfb/**'
       - 'supabase/cfb_terminal_analytics.sql'
@@ -30,6 +31,7 @@ on:
     branches: [main]
     paths:
       - 'lib/cfb_terminal.js'
+      - 'lib/edgedesk_read.js'
       - 'football/cfb_terminal/*.js'
       - 'research/cfb/**'
       - 'supabase/cfb_terminal_analytics.sql'
@@ -66,6 +68,8 @@ jobs:
         run: node football/cfb_terminal/build.js --check
       - name: The terminal's rules (synthetic cases + the real slate + the page's boundaries)
         run: node football/cfb_terminal/tests.js
+      - name: The EdgeDesk Read (odds math, signs, pushes, alternates, stale quotes, price gone, wait, investigate, the real slate, the page)
+        run: node football/cfb_terminal/read.test.js
       - name: The internal user test (answerability audit, 20 games)
         run: node football/cfb_terminal/user_test.js
       - name: The explanation boundary still refuses what it must

@@ -6,8 +6,13 @@
 (function () {
   'use strict';
   var T = window.EDCfbTerminal;
+  var RD = window.EDRead || null;
   var DATA = '/football/cfb_terminal/';
-  var S = { board: null, games: null, record: null, brief: null, filters: [], status: null, sort: 'queue', recFilters: [], recPage: 1 };
+  /* ?asof=ISO pins the Read's clock (review and demo builds); otherwise every read is re-priced at the reader's own clock,
+     so a quote that has aged past the freshness rule stops being a price the moment it does */
+  var ASOF = (function () { var m = /[?&]asof=([^&#]+)/.exec(location.search); var t = m ? Date.parse(decodeURIComponent(m[1])) : NaN; return isFinite(t) ? t : null; })();
+  function nowMs() { return ASOF != null ? ASOF : Date.now(); }
+  var S = { board: null, games: null, record: null, brief: null, filters: [], readFilters: [], status: null, sort: 'queue', recFilters: [], recPage: 1 };
   var cache = {};
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -34,7 +39,7 @@
     get: function (k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   };
-  var KW = 'edcfb_watch_v1', KB = 'edcfb_books_v1', KE = 'edcfb_events_v1', KV = 'edcfb_vid';
+  var KW = 'edcfb_watch_v1', KB = 'edcfb_books_v1', KE = 'edcfb_events_v1', KV = 'edcfb_vid', KRV = 'edcfb_read_view_v1';
 
   /* ---------------------------------------------------------- analytics
      UX analytics only: which pages and sections people use. It is stored
@@ -142,6 +147,7 @@
       if (r === 'brief') return renderBrief();
       if (r === 'watch') return renderWatch();
       if (r === 'record') return renderRecord();
+      if (r === 'read') return renderReadRecord();
       if (r === 'why') return renderWhy();
       if (r === 'terms') return renderTerms();
       if (r === 'cleanest') return renderLens('cleanest');
@@ -155,7 +161,7 @@
   window.addEventListener('hashchange', route);
 
   /* ================================================================ QUEUE */
-  var SORTS = { queue: 'Research queue (default)', kickoff: 'Kickoff', gap: 'Raw gap (secondary)', uncertain: 'Most uncertain' };
+  var SORTS = { queue: 'Research queue (default)', read: 'Cleanest price first', kickoff: 'Kickoff', gap: 'Raw gap (secondary)', uncertain: 'Most uncertain' };
   /* ONE COUNTER HIERARCHY (lib/edgedesk_canon.js COUNTERS). Every counter
      names its population, threshold, sport and status in its tooltip, and
      the CFB buckets sum to the slate. */
@@ -179,13 +185,23 @@
       + (S.board.decision.bet_enabled ? '' : ' · betting disabled by policy') + (c.favorite_flips ? ' · <span class="mut">' + c.favorite_flips + ' favorite flip' + (c.favorite_flips === 1 ? '' : 's') + '</span>' : '') + '</div>';
     return h;
   }
+  /* the Read's queue order: price quality, never the raw gap (an unverified 20-point gap never outranks a clean 4-point price) */
+  function readRank(r) {
+    var x = r.read; if (!x) return -99;
+    var s0 = { BET_EARLY: 60, BET: 55, RESEARCH: 40, WAIT: 30, PRICE_TARGET: 25, PRICE_GONE: 10, PASS: 5, INVESTIGATE: -20, NO_DECISION: -30 }[x.timing] || 0;
+    if (x.flags && x.flags.cleanest_price) s0 += 30;
+    if (x.flags && x.flags.fresh_market) s0 += 5;
+    return s0 + (typeof x.ev === 'number' ? Math.max(-5, Math.min(5, x.ev * 20)) : 0);
+  }
   function renderQueue() {
     track('board_view');
     var b = S.board, rows = b.rows.slice();
     var watch = store.get(KW, {});
     if (S.status) rows = rows.filter(function (r) { return K ? K.CFB_BUCKET[r.research_status] === S.status : r.status === S.status; });
     S.filters.forEach(function (k) { rows = rows.filter(function (r) { return r.flags && r.flags[k]; }); });
-    if (S.sort === 'kickoff') rows.sort(function (a, c) { return Date.parse(a.kickoff) - Date.parse(c.kickoff); });
+    S.readFilters.forEach(function (k) { rows = rows.filter(function (r) { return r.read && r.read.flags && r.read.flags[k]; }); });
+    if (S.sort === 'read') rows.sort(function (a, c) { return readRank(c) - readRank(a); });
+    else if (S.sort === 'kickoff') rows.sort(function (a, c) { return Date.parse(a.kickoff) - Date.parse(c.kickoff); });
     else if (S.sort === 'gap') rows.sort(function (a, c) { return (c.gap || 0) - (a.gap || 0); });
     else if (S.sort === 'uncertain') rows.sort(function (a, c) { return c.uncertainty - a.uncertainty; });
     var c = b.counts;
@@ -195,11 +211,17 @@
     h += countersHTML(c);    h += '<div class="filters">' + b.filters.map(function (f) {
       return '<button class="fchip' + (S.filters.indexOf(f.key) >= 0 ? ' on' : '') + '" data-f="' + f.key + '">' + esc(f.label) + '<span class="n">' + f.n + '</span></button>';
     }).join('') + '</div>';
+    if (b.read_filters && b.read_filters.length) {
+      h += '<div class="filters rfil"><span class="flab">EdgeDesk Read</span>' + b.read_filters.map(function (f) {
+        return '<button class="fchip' + (S.readFilters.indexOf(f.key) >= 0 ? ' on' : '') + '" data-rf="' + f.key + '">' + esc(f.label) + '<span class="n">' + f.n + '</span></button>';
+      }).join('') + '</div>';
+    }
     h += '<div class="sortbar">Sort <select id="sort">' + Object.keys(SORTS).map(function (k) { return '<option value="' + k + '"' + (S.sort === k ? ' selected' : '') + '>' + SORTS[k] + '</option>'; }).join('') + '</select>'
       + '<span>' + rows.length + ' of ' + b.rows.length + ' games · week ' + esc(String(b.rows.length ? b.rows[0].week : '—')) + '</span></div>';
     h += '<div class="board">' + (rows.length ? rows.map(function (r) { return rowHTML(r, !!watch[r.game_id]); }).join('') : '<div class="empty">No game matches these filters.</div>') + '</div>';
     $('view').innerHTML = h;
     Array.prototype.forEach.call(document.querySelectorAll('[data-st]'), function (x) { x.onclick = function () { S.status = S.status === x.getAttribute('data-st') ? null : x.getAttribute('data-st'); track('filter_apply', { detail: 'status:' + S.status }); renderQueue(); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rf]'), function (x) { x.onclick = function () { var k = x.getAttribute('data-rf'), i = S.readFilters.indexOf(k); if (i >= 0) S.readFilters.splice(i, 1); else S.readFilters.push(k); track('filter_apply', { detail: 'read:' + k }); renderQueue(); }; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-f]'), function (x) { x.onclick = function () { var k = x.getAttribute('data-f'), i = S.filters.indexOf(k); if (i >= 0) S.filters.splice(i, 1); else S.filters.push(k); track('filter_apply', { detail: k }); renderQueue(); }; });
     $('sort').onchange = function () { S.sort = this.value; renderQueue(); };
     Array.prototype.forEach.call(document.querySelectorAll('.rh'), function (x) { x.onclick = function (e) { if (e.target.closest('.star')) return; x.parentNode.classList.toggle('open'); }; });
@@ -219,7 +241,7 @@
       + '<div class="c mk"><div class="l">Market</div><div class="v">' + esc(r.market || '—') + (r.market_stale ? ' <span class="mut">stale</span>' : '') + '</div></div>'
       + '<div class="c gap"><div class="l">Gap</div><div class="v">' + gap + '</div></div>'
       + '<div class="s">' + (r.research_status ? rsChip(r.research_status) + dsChip(r.decision_status, r.decision_reason) : stChip(r.status, r.status_label) + (r.verified ? vBadge() : (r.gap_class === 'MAJOR' ? '<span class="ubadge">UNVERIFIED</span>' : '')))
-      + (r.favorite_flip ? flipBadge() : '') + priceBadge(r.price_state, r.price_state_label) + divBadge(r.rating_divergence) + '</div>'
+      + (r.favorite_flip ? flipBadge() : '') + priceBadge(r.price_state, r.price_state_label) + divBadge(r.rating_divergence) + (r.read ? rdChip(r.read.timing, true) : '') + '</div>'
       + '<div class="mini"><span><b>ED</b>' + esc(r.fair || '—') + '</span><span><b>MKT</b>' + esc(r.market || '—') + (r.market_stale ? '*' : '') + '</span><span><b>GAP</b>' + gap + '</span></div>'
       + '</div>'
       + '<div class="rx">'
@@ -227,6 +249,7 @@
       + '<div class="ln"><span class="l">Why</span><span>' + esc(s.why || '—') + '</span></div>'
       + '<div class="ln"><span class="l">Risk</span><span>' + esc(s.risk || '—') + '</span></div>'
       + '<div class="ln"><span class="l">Price</span><span>' + esc(s.price || '—') + '</span></div>'
+      + (r.read ? '<div class="ln"><span class="l">Read</span><span>' + esc(readLine(r.read)) + '</span></div>' : '')
       + '<div class="ln"><span class="l">Research</span><span>' + esc(r.research_reason || r.status_reason || '') + '</span></div>'
       + (r.decision_reason ? '<div class="ln"><span class="l">Decision</span><span>' + esc(r.decision_reason) + '</span></div>' : '')
       + '<div class="ln"><span class="l">Quality</span><span class="mono">confidence ' + (r.confidence == null ? '—' : r.confidence) + ' · reliability ' + (r.reliability == null ? '—' : r.reliability) + ' · models ' + esc(r.agreement || '—') + (r.model_sd != null ? ' (SD ' + r.model_sd.toFixed(1) + ')' : '') + ' · interest ' + r.research_interest + '</span></div>'
@@ -241,10 +264,259 @@
         if (w[id]) { delete w[id]; store.set(KW, w); x.classList.remove('on'); track('watch_remove', { game_id: id }); return; }
         load('games').then(function (G) {
           var o = G.games[id]; if (!o) return;
-          w[id] = T.watchEntry(o, {}); store.set(KW, w); x.classList.add('on'); track('watch_add', { game_id: id });
+          w[id] = T.watchEntry(o, readWatchOpts(o)); store.set(KW, w); x.classList.add('on'); track('watch_add', { game_id: id });
         });
       };
     });
+  }
+
+  /* ================================================================ THE EDGEDESK READ
+     The page never computes a football number. It re-prices the stored read
+     inputs (the champion's probability at every half point, every captured
+     quote, the policy's thresholds) through lib/edgedesk_read.js — for the
+     reader's clock, their book, a typed quote, a moved line — exactly as the
+     build does. BET and BET EARLY exist only when the governed decision engine
+     certified that exact quote at build time. */
+  var RD_TONE = { BET_EARLY: 'bet', BET: 'bet', RESEARCH: 'research', WAIT: 'wait', PRICE_TARGET: 'wait', PASS: 'pass', PRICE_GONE: 'pass', INVESTIGATE: 'investigate', NO_DECISION: 'nomarket' };
+  function rdChip(key, small) {
+    var k = String(key || 'NO_DECISION');
+    return '<span class="st rd ' + (RD_TONE[k] || 'pass') + (small ? ' sm' : '') + '" title="' + esc(RD && RD.TIMING[k] ? RD.TIMING[k] : '') + '"><i></i>' + esc((small ? 'READ ' : '') + k.replace(/_/g, ' ')) + '</span>';
+  }
+  function readLine(r) {
+    var parts = [String(r.timing).replace(/_/g, ' ')];
+    if (r.selected) parts.push(r.selected);
+    if (num(r.cover) && num(r.break_even)) parts.push('cover ' + pct(r.cover, 1) + (r.basis === 'RAW' ? ' raw' : '') + ' vs ' + pct(r.break_even, 1));
+    if (r.bettable_to != null) parts.push((r.bettable_label === 'NEEDS' ? 'needs ' : 'bettable to ') + bk(r.bettable_to));
+    if (r.target != null) parts.push('target ' + bk(r.target));
+    return parts.join(' · ');
+  }
+  function readWatchOpts(o) {
+    var r = S.read && S.read.game_id === o.game_id ? S.read : o.read;
+    if (!r || !r.side) return {};
+    if (r.target_price) return { side: r.side, target_line: r.target_price.line, target_price: r.target_price.price };
+    if (r.bettable_to && r.bettable_to.line != null) return { side: r.side, target_line: r.bettable_to.line, target_price: r.bettable_to.reference_price };
+    return { side: r.side };
+  }
+  function readView() {
+    var v = store.get(KRV, { mode: 'best' });
+    if (v.mode === 'mine') v.books = store.get(KB, []);
+    return v;
+  }
+  function readInput(o, extra) {
+    extra = extra || {};
+    return RD.fromTerminal(o, o.read_inputs, { now: nowMs(), view: extra.view || readView(), user_quotes: extra.user_quotes || [], integrity: window.EDCfbIntegrity || null });
+  }
+  function liveRead(o) {
+    if (!RD || !o.read_inputs) return o.read || null;
+    try { return RD.read(readInput(o)); } catch (e) { return o.read || null; }
+  }
+  function sgn(x, dp) { return num(x) ? (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(dp == null ? 1 : dp) : '—'; }
+  function evs(x) { return num(x) ? (x >= 0 ? '+' : '−') + Math.abs(100 * x).toFixed(1) + '%' : '—'; }
+  function tag(t, cls) { return '<span class="rtag' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>'; }
+  function readCard(o, R) {
+    if (!R) return '<section class="rd-card"><div class="rd-h"><span class="rd-t">EDGEDESK READ</span></div><div class="empty">No EdgeDesk Read for this game in this build.</div></section>';
+    var s = R.selected, g = o.game, inv = R.timing_read === 'INVESTIGATE', raw = R.probability_basis === 'RAW';
+    var books = {};
+    ((o.read_inputs && o.read_inputs.market && o.read_inputs.market.quotes) || []).forEach(function (q) { if (q.book && !/consensus/i.test(q.book)) books[q.book] = 1; });
+    var v = R.view || { mode: 'best' };
+    var viewSel = '<label class="rd-view">Price from <select id="rdView">'
+      + '<option value="best"' + (v.mode === 'best' ? ' selected' : '') + '>Best available (every book)</option>'
+      + '<option value="consensus"' + (v.mode === 'consensus' ? ' selected' : '') + '>Market consensus</option>'
+      + Object.keys(books).sort().map(function (b) { return '<option value="book:' + esc(b) + '"' + (v.mode === 'book' && v.book === b ? ' selected' : '') + '>' + esc(b) + ' only</option>'; }).join('')
+      + '<option value="mine"' + (v.mode === 'mine' ? ' selected' : '') + '>My books' + (store.get(KB, []).length ? ' (' + store.get(KB, []).length + ')' : ' (none set)') + '</option></select></label>';
+    var h = '<section class="rd-card t-' + (RD_TONE[R.timing_read] || 'pass') + '" id="read" aria-label="EdgeDesk Read">'
+      + '<div class="rd-h"><span class="rd-t">EDGEDESK READ</span>' + viewSel + '</div>'
+      + '<div class="rd-top"><div class="rd-state">' + rdChip(R.timing_read) + '<span class="rd-dec">Decision: <b>' + esc(R.decision_status.replace(/_/g, ' ')) + '</b> · Research: <b>' + esc(R.research_status.label) + '</b></span></div>'
+      + '<div class="rd-best"><div class="l">' + (v.mode === 'mine' ? 'Best price for you' : (v.mode === 'consensus' ? 'Consensus price' : (R.best_value_market.type !== 'NONE' && !R.research_status.blocks_action ? 'Best value' : 'Current price'))) + '</div>'
+      + '<div class="v">' + (s ? esc(s.label) + (s.price && s.price.approximate_american ? ' <span class="mut" title="converted from the source’s implied percentage">≈</span>' : '') : '<span class="mut">no live price</span>') + '</div>'
+      + '<div class="n">' + (s ? esc((s.book || '') + (s.alternate ? ' · alternate' : '') + (num(s.age_minutes) ? ' · ' + s.age_minutes + ' min old' : '') + (s.freshness && s.freshness !== 'FRESH' ? ' · ' + s.freshness.toLowerCase() : '')) : esc(R.timing_reason)) + '</div></div></div>';
+    var cell = function (l, v2, n, cls) { return '<div class="rc' + (cls ? ' ' + cls : '') + '"><div class="l">' + l + '</div><div class="v">' + v2 + '</div>' + (n ? '<div class="n">' + n + '</div>' : '') + '</div>'; };
+    h += '<div class="rd-grid' + (inv ? ' inv' : '') + '">'
+      + cell('EdgeDesk fair', R.fair_spread ? esc(R.fair_spread.text) : '—', R.projected_score ? esc(g.away + ' ' + R.projected_score.away + ' – ' + g.home + ' ' + R.projected_score.home) : (R.fair_total != null ? 'total ' + f1(R.fair_total) : null), 'ed')
+      + cell('Market', R.market_consensus_spread ? esc(R.market_consensus_spread.text) : '—', R.market_consensus_spread ? esc(R.market_consensus_spread.n_books + ' book' + (R.market_consensus_spread.n_books === 1 ? '' : 's') + (R.market_consensus_spread.stale ? ' · stale' : '')) : null, 'mk')
+      + cell('Model cushion', s && num(s.cushion) ? sgn(s.cushion) + ' pts' : (R.model_market_gap ? R.model_market_gap.points.toFixed(1) + ' pts' : '—'), R.model_market_gap ? 'gap toward ' + esc(R.model_market_gap.toward_team || '—') : null)
+      + cell('Cover', s && num(s.cover_used) ? pct(s.cover_used, 1) + (raw ? ' ' + tag('RAW', 'warn') : '') : '—', s && s.probability ? 'push ' + pct(s.probability.push, 1) + ' · loss ' + pct(s.probability.loss, 1) : null)
+      + cell('Break-even', s && num(s.break_even) ? pct(s.break_even, 1) : '—', s && s.price ? 'at ' + esc(T.format.priceText(s.price.american)) + (s.price.precision === 'IMPLIED_PERCENT' ? ' (source %)' : '') : null)
+      + cell('Est. EV', s && num(s.ev) ? '<span class="' + (raw ? 'rawv' : '') + '">' + evs(s.ev) + '</span>' + (raw ? ' ' + tag('RAW', 'warn') : '') : '—', raw ? 'calibration pending: research, not a decision number' : (s && num(s.ev_threshold) ? 'after buffer ' + evs(s.ev_threshold) : null))
+      + cell(esc(R.bettable_to ? R.bettable_to.label : 'Bettable to'), R.bettable_to && R.bettable_to.line != null ? esc(R.side_team + ' ' + bk(R.bettable_to.line)) + ' <span class="mut">' + esc(T.format.priceText(R.bettable_to.reference_price)) + '</span>' : '<span class="mut">no nearby number</span>',
+        R.bettable_to && R.bettable_to.price_at_current_line != null && s ? 'at ' + esc(bk(s.line)) + ': ' + esc(T.format.priceText(R.bettable_to.price_at_current_line)) + (R.bettable_to.current_clears ? ' or better' : ' needed') : null)
+      + cell('Price', esc(R.price_status.label), R.target_price ? 'target ' + esc(R.target_price.text) : (R.price_is_gone && R.price_is_gone.state === 'MOSTLY_GONE' ? 'most of the price is gone' : null))
+      + '</div>';
+    if (inv) h += '<div class="banner warn"><b>Not priced until verified.</b> The numbers above are what EdgeDesk’s distribution says <i>if</i> its number is right. ' + esc(String(R.research_status.reason).replace(/[\s.]+$/, '')) + '.</div>';
+    h += '<div class="rd-lines">'
+      + '<div class="ln"><span class="l">Timing</span><span>' + esc(R.timing_reason) + '</span></div>'
+      + '<div class="ln"><span class="l">Market</span><span>' + esc(R.market_movement_summary.text || '—') + '</span></div>'
+      + (R.edge_kind ? '<div class="ln"><span class="l">Edge</span><span>' + esc(R.edge_kind.text) + '</span></div>' : '')
+      + '<div class="ln"><span class="l">Alt</span><span>' + esc(R.main_vs_alt_summary.text || '—') + '</span></div>'
+      + (R.market_quote_check.length ? '<div class="ln qc"><span class="l">Quote check</span><span>' + R.market_quote_check.map(function (c) { return '<b>MARKET QUOTE CHECK</b> · ' + esc((c.stored_label || c.kind) + ' showed ' + g.home + ' ' + bk(c.stored_home_line) + '; ' + c.book + ' now ' + bk(c.current_home_line) + ' (' + c.difference_pts + ' pts). ' + c.resolution); }).join('<br>') + '</span></div>' : '')
+      + '</div>';
+    h += '<div class="rd-badges">' + R.maturity.filter(function (m) { return ['Cover probability', 'Timing (bet early / wait)', 'Alternate value', 'Betting'].indexOf(m.item) >= 0; })
+      .map(function (m) { return '<span class="mbadge' + (/PENDING|DISABLED|EXPERIMENTAL|SHADOW/.test(m.status) ? ' pend' : '') + '" title="' + esc(m.note) + '"><b>' + esc(m.item.toUpperCase()) + '</b> ' + esc(m.status) + '</span>'; }).join('') + '</div>';
+    h += '<div class="rd-more">' + readWhy(o, R) + readRisk(R) + readMarket(o, R) + readAlts(o, R) + readCurve(o, R) + readTools(o, R) + readAdvanced(o, R) + '</div>';
+    h += '<div class="note">' + esc(R.principle) + ' Research, not advice: an edge is an expected value and any single game can lose.' + (ASOF != null ? ' · clock pinned to ' + esc(new Date(ASOF).toISOString()) : '') + '</div>';
+    return h + '</section>';
+  }
+  function rsec(id, title, teaser, body) { return '<details class="rx-sec" data-rsec="' + id + '"><summary><span class="caret">▶</span><b>' + esc(title) + '</b><span class="x">' + esc(teaser || '') + '</span></summary><div class="b">' + body + '</div></details>'; }
+  function rows2(list) { return '<table class="t kvt">' + list.filter(Boolean).map(function (x) { return '<tr><th>' + esc(x.k) + '</th><td>' + esc(x.v) + '</td></tr>'; }).join('') + '</table>'; }
+  function readWhy(o, R) {
+    var W = R.why_edgedesk_differs, b = '';
+    if (R.why_bet_early) b += '<div class="sub"><h3>Why bet early?</h3>' + rows2(R.why_bet_early) + '</div>';
+    if (R.why_wait) b += '<div class="sub"><h3>Why wait?</h3>' + rows2(R.why_wait) + '</div>';
+    if (R.why_not_bet.length) b += '<div class="sub"><h3>' + (R.timing_read === 'PASS' || R.timing_read === 'PRICE_GONE' ? 'Why EdgeDesk passes' : 'Why not bet?') + '</h3><ul class="l">' + R.why_not_bet.map(function (x) { return '<li>' + esc(x.text) + '</li>'; }).join('') + '</ul></div>';
+    b += '<div class="sub"><h3>Why EdgeDesk differs</h3>' + (W.available ? '<table class="t">' + W.rows.map(function (r) { return '<tr><td>' + esc(r.label) + '</td><td class="n">' + esc(r.text) + '</td></tr>'; }).join('') + (W.final_fair ? '<tr class="cur"><td><b>EdgeDesk fair</b></td><td class="n"><b>' + esc(W.final_fair) + '</b></td></tr>' : '') + '</table>'
+      + (W.market_implied ? '<div class="note">' + esc(W.market_implied) + '</div>' : '') + (W.unpriced && W.unpriced.length ? '<div class="note">Not priced today: ' + esc(W.unpriced.join(', ')) + '.</div>' : '') : '<div class="empty">' + esc(W.text) + '</div>') + '<div class="note">' + esc(W.note || '') + '</div></div>';
+    return rsec('why', 'Why', R.why_bet_early ? 'why bet early' : (R.why_wait ? 'why wait' : 'why not bet · why EdgeDesk differs'), b);
+  }
+  function readRisk(R) {
+    var b = R.risk_summary.length ? '<ul class="l">' + R.risk_summary.map(function (x) { return '<li><span class="sev ' + (x.severity === 'high' ? 'high' : (x.severity === 'moderate' ? 'moderate' : '')) + '">' + esc(x.severity) + '</span>' + esc(x.text) + ' <span class="mut">· ' + esc(x.source) + '</span></li>'; }).join('') + '</ul>' : '<div class="empty">No structured risk on file.</div>';
+    b += '<div class="note">Only EdgeDesk’s structured data: quarterback state, model disagreement, what would have to be wrong, the error model, the integrity gate and the calibration. Nothing is inferred from narratives.</div>';
+    return rsec('risk', 'Risk · what could make EdgeDesk wrong', R.risk_summary.length + ' item' + (R.risk_summary.length === 1 ? '' : 's'), b);
+  }
+  function readMarket(o, R) {
+    var M = R.market_movement_summary, C = R.consensus, F = R.quote_freshness, g = o.game;
+    var b = rows2([
+      { k: 'Open', v: M.open ? g.home + ' ' + bk(M.open.home_line) + (M.open.at ? ' · ' + when(M.open.at) : '') : 'no opener captured' },
+      { k: 'Consensus', v: C.available ? g.home + ' ' + bk(C.home_line) + ' · ' + C.method.replace(/_/g, ' ').toLowerCase() + ' · ' + C.n_books + ' book' + (C.n_books === 1 ? '' : 's') + (C.stale ? ' · STALE' : '') : (C.reason || '—') },
+      { k: 'Best available', v: R.best_available ? R.best_available.label + ' · ' + R.best_available.book : '—' },
+      { k: 'Selected', v: R.selected ? R.selected.label + ' · ' + (R.selected.book || '') : '—' },
+      { k: 'Direction', v: M.text || '—' },
+      { k: 'Edge decay', v: R.edge_decay.available ? (R.edge_decay.decay_pct != null ? 'EDGE DECAY ' + Math.round(100 * R.edge_decay.decay_pct) + '% · ' : '') + R.edge_decay.text : R.edge_decay.text },
+      { k: 'Price', v: R.price_is_gone.text || R.price_is_gone.state },
+      { k: 'Market freshness', v: R.market_freshness.score == null ? 'unknown' : R.market_freshness.score + '/100 ' + R.market_freshness.label + (R.market_freshness.basis && R.market_freshness.basis.length ? ' · ' + R.market_freshness.basis.join(', ') : '') + ' — separate from football confidence' }
+    ]);
+    b += '<div class="note">' + esc(C.weighting || '') + ' · outlier screen: ' + esc(C.outlier_screen || '') + (C.duplicate_feeds_merged && C.duplicate_feeds_merged.length ? ' · merged duplicate feeds: ' + esc(C.duplicate_feeds_merged.join(', ')) : '') + (C.excluded && C.excluded.length ? ' · excluded: ' + esc(C.excluded.map(function (x) { return x.book + ' (' + x.reason + ')'; }).join('; ')) : '') + '</div>';
+    b += '<div class="sub"><h3>Line shopping · ' + esc(R.side_team || '—') + '</h3>' + (R.line_shopping.length ? '<div class="tscroll"><table class="t"><tr><th>Book</th><th>Price</th><th>Cover</th><th>Break-even</th><th>EV</th><th>Age</th></tr>'
+      + R.line_shopping.map(function (x) { return '<tr' + (R.selected && x.label === R.selected.label && x.book === R.selected.book ? ' class="cur"' : '') + '><td>' + esc(x.book || '—') + '</td><td class="n">' + esc(bk(x.line) + ' ' + T.format.priceText(x.price ? x.price.american : null)) + '</td><td class="n">' + pct(x.cover_used, 1) + '</td><td class="n">' + pct(x.break_even, 1) + '</td><td class="n">' + evs(x.ev) + '</td><td class="n">' + (num(x.age_minutes) ? x.age_minutes + 'm' : '—') + (x.fresh ? '' : ' <span class="mut">stale</span>') + '</td></tr>'; }).join('') + '</table></div>'
+      : '<div class="empty">No priced quote on EdgeDesk’s side.</div>') + '<div class="note">Ranked by EdgeDesk’s expected value at each book’s own line and price — not by the biggest number or the lowest juice alone.</div></div>';
+    b += '<div class="sub"><h3>Quote freshness</h3><div class="tscroll"><table class="t"><tr><th>Book</th><th>Source</th><th>' + esc(g.home) + ' line</th><th>Prices</th><th>Captured</th><th>Age</th><th>Status</th></tr>'
+      + F.quotes.slice().sort(function (a, c) { return Date.parse(c.captured_at || 0) - Date.parse(a.captured_at || 0); }).slice(0, 12).map(function (q) { return '<tr><td>' + esc(q.book || '—') + (q.alternate ? ' <span class="mut">alt</span>' : '') + '</td><td>' + esc(q.source || '') + '</td><td class="n">' + esc(bk(q.home_line)) + '</td><td class="n">' + esc(T.format.priceText(q.price_home) + ' / ' + T.format.priceText(q.price_away)) + '</td><td class="n">' + esc(q.captured_at ? when(q.captured_at) : '—') + '</td><td class="n">' + (q.age_minutes == null ? '—' : q.age_minutes + 'm') + '</td><td>' + tag(q.status, q.status === 'STALE' ? 'neg' : (q.status === 'AGING' ? 'warn' : '')) + '</td></tr>'; }).join('')
+      + '</table></div><div class="note">' + esc(F.rule) + '</div></div>';
+    return rsec('market', 'Market', (M.direction && M.direction !== 'UNKNOWN' ? M.direction.toLowerCase() + ' · ' : '') + (C.available ? C.n_books + ' book' + (C.n_books === 1 ? '' : 's') : 'no market') + (R.market_quote_check.length ? ' · QUOTE CHECK' : ''), b);
+  }
+  function readAlts(o, R) {
+    var A = R.alternates, S2 = R.main_vs_alt_summary;
+    var b = rows2([{ k: 'Main line', v: S2.main_line || '—' }, { k: 'Best value', v: S2.best_value || 'nothing clears' }, { k: 'Best alternate', v: S2.best_alt || '—' }, { k: 'Safest alternate', v: S2.safest_alt ? S2.safest_alt + ' (safest is never “preferred” for being safer)' : '—' }]);
+    if (A.rows.length) b += '<div class="tscroll"><table class="t"><tr><th>Alternate</th><th>Book</th><th>+pts</th><th>Cover gain</th><th>Break-even rise</th><th>EV change</th><th>Read</th></tr>' + A.rows.map(function (x) {
+      var c = x.vs_main || {};
+      return '<tr><td class="n">' + esc(x.option.label) + '</td><td>' + esc(x.option.book || '') + '</td><td class="n">' + (num(c.line_change) ? sgn(c.line_change) : '—') + '</td><td class="n">' + (num(c.cover_probability_change) ? pp(c.cover_probability_change) : '—') + '</td><td class="n">' + (num(c.break_even_change) ? pp(c.break_even_change) : '—') + '</td><td class="n">' + (num(c.ev_change_after_buffer) ? evs(c.ev_change_after_buffer) : '—') + '</td><td>' + esc(x.text) + '</td></tr>'
+        + (c.why ? '<tr class="why"><td colspan="7">' + esc(c.why) + (c.key_numbers_crossed && c.key_numbers_crossed.length ? ' ' + esc(c.key_numbers_crossed.map(function (k) { return k.text; }).join(' ')) : '') + '</td></tr>' : '');
+    }).join('') + '</table></div>';
+    else b += '<div class="empty">' + esc(S2.note) + '</div>';
+    if (R.frontier) b += '<div class="sub"><h3>Alternate price frontier · ' + esc(R.side_team || '') + '</h3>' + frontierChart(R) + (R.frontier.text ? '<div class="note">' + esc(R.frontier.text) + '</div>' : '') + '</div>';
+    b += '<div class="edu"><b>Buying points.</b> Buying points increases your chance of covering, but sportsbooks charge for that protection. EdgeDesk compares the model’s additional cover probability with the additional price required — the break-even the new price demands — plus the same uncertainty buffer every price has to clear. A safer line is never better just because it is safer.</div>';
+    return rsec('alts', 'Alternates', S2.captured ? S2.captured + ' captured · ' + (S2.alt_verdict ? S2.alt_verdict.replace(/_/g, ' ').toLowerCase() : '') : 'none captured · price one below', b);
+  }
+  function readCurve(o, R) {
+    var P = R.price_curve;
+    if (!P) return rsec('curve', 'Price curve', 'no side', '<div class="empty">No side to price: EdgeDesk matches the market or has no number.</div>');
+    var row = function (x) { return '<tr' + (x.read === 'BEST VALUE' ? ' class="cur"' : '') + '><td class="n">' + esc(bk(x.line)) + '</td><td class="n">' + esc(T.format.priceText(x.price)) + (x.approximate_price ? '≈' : '') + '</td><td>' + esc(x.kind === 'REFERENCE' ? 'reference' : (x.book || '') + (x.kind === 'ALTERNATE' ? ' · alt' : '')) + '</td><td class="n">' + pct(x.break_even, 1) + '</td><td class="n">' + pct(x.cover, 1) + '</td><td class="n">' + (x.push ? pct(x.push, 1) : '—') + '</td><td class="n">' + evs(x.ev) + '</td><td>' + tag(x.read, /VALUE/.test(x.read) ? 'pos' : (x.read === 'MARGINAL' ? 'warn' : '')) + '</td></tr>'; };
+    var head = '<tr><th>Line</th><th>Price</th><th>Source</th><th>Break-even</th><th>Model cover</th><th>Push</th><th>EV</th><th>Read</th></tr>';
+    var b = '<div class="sub" style="margin-top:0"><h3>Offered prices · ' + esc(P.team) + '</h3>' + (P.offered.length ? '<div class="tscroll"><table class="t">' + head + P.offered.map(row).join('') + '</table></div>' : '<div class="empty">No fresh priced quote on this side.</div>') + '</div>'
+      + '<div class="sub"><h3>Reference ladder · ' + esc(T.format.priceText(P.reference_price)) + ' at every half point</h3><div class="tscroll"><table class="t">' + head + P.ladder.map(row).join('') + '</table></div><div class="note">' + esc(P.note) + ' Cover is ' + (R.probability_basis === 'RAW' ? 'the raw champion distribution (calibration pending).' : 'the calibrated decision probability.') + '</div></div>';
+    return rsec('curve', 'Price curve', P.offered.length + ' offered · ' + P.ladder.length + ' reference rows', b);
+  }
+  function readTools(o, R) {
+    var team = R.side_team || o.game.home, ex = R.selected ? team + ' ' + bk(R.selected.line) + ' ' + T.format.priceText(R.selected.price ? R.selected.price.american : -110) : team + ' +3.5 -110';
+    var b = '<div class="tool"><h3>Enter a price</h3><div class="note" style="margin-top:0">A USER QUOTE: priced with EdgeDesk’s distribution and the same threshold, never stored as consensus and never a certified bet.</div>'
+      + '<div class="askrow"><input id="rdMan" placeholder="e.g. ' + esc(ex) + ' draftkings" value=""><button class="btn pri" id="rdManGo">Read it</button></div><div id="rdManOut"></div></div>'
+      + '<div class="tool"><h3>Compare lines</h3><div class="note" style="margin-top:0">One price per line, same team. The first line is the baseline.</div>'
+      + '<textarea id="rdCmp" rows="3">' + esc(ex + (R.selected ? '\n' + team + ' ' + bk(R.selected.line + 1) + ' ' : '')) + '</textarea><div class="askrow"><span class="mut" style="font-size:11.5px">Add the price for each line, then</span><button class="btn pri" id="rdCmpGo">Compare</button></div><div id="rdCmpOut"></div></div>'
+      + '<div class="tool"><h3>What if this line moves?</h3><div class="askrow"><span>' + esc(team) + '</span><input id="rdWiL" type="number" step="0.5" value="' + (R.selected ? R.selected.line : '') + '" style="max-width:90px"><input id="rdWiP" type="number" step="1" value="-110" style="max-width:90px"><button class="btn pri" id="rdWiGo">Recalculate</button></div><div id="rdWiOut"></div></div>';
+    return rsec('tools', 'Tools · enter a price · compare · what if', 'instant, from the stored distribution', b);
+  }
+  function readAdvanced(o, R) {
+    var ag = R.model_agreement, b = '';
+    b += '<div class="sub" style="margin-top:0"><h3>Model agreement · ' + esc(ag.label) + '</h3>' + (ag.available ? '<div>' + esc(ag.basis || '') + '</div>' + (ag.side_support ? '<div class="note">' + esc(ag.side_support) + '</div>' : '') + '<table class="t">' + ag.components.map(function (c) { return '<tr><td>' + esc(c.label) + (c.independent ? '' : ' <span class="mut">(not independent)</span>') + '</td><td class="n">' + esc(c.text) + '</td><td class="n">' + (num(c.vs_market) ? sgn(c.vs_market) + ' vs mkt' : '—') + '</td></tr>'; }).join('') + '</table>' + (ag.why_disagree || []).map(function (t) { return '<div class="note">' + esc(t) + '</div>'; }).join('') : '<div class="empty">' + esc(ag.text) + '</div>') + '</div>';
+    b += '<div class="sub"><h3>Calibration</h3>' + rows2([{ k: 'Status', v: R.calibration.status }, { k: 'Artifact', v: (R.calibration.version || '—') + ' (for ' + (R.calibration.base_model_version || '—') + ')' }, { k: 'Why', v: R.calibration.reason || 'validated for this model version' }, { k: 'Probability used', v: R.probability_basis === 'RAW' ? 'raw champion distribution — no decision is certified on it' : 'calibrated decision probability; EV after the calibration’s 95% interval on the model weight' }]) + '</div>';
+    b += '<div class="sub"><h3>Maturity</h3><table class="t">' + R.maturity.map(function (m) { return '<tr><td>' + esc(m.item) + '</td><td>' + tag(m.status, /PENDING|DISABLED|EXPERIMENTAL|SHADOW|RESEARCH/.test(m.status) ? 'warn' : 'pos') + '</td><td class="mut">' + esc(m.note) + '</td></tr>'; }).join('') + '</table></div>';
+    var ml = R.markets.moneyline;
+    b += '<div class="sub"><h3>Other markets</h3>' + rows2([{ k: 'Spread', v: R.markets.spread.status + ' · ' + R.markets.spread.probability }, { k: 'Total', v: R.markets.total.status + ' · ' + R.markets.total.reason }, { k: 'Team total', v: R.markets.team_total.status + ' · ' + R.markets.team_total.reason },
+      { k: 'Moneyline', v: ml.status + (ml.fair ? ' · fair ' + o.game.home + ' ' + T.format.priceText(ml.fair.home) + ' / ' + o.game.away + ' ' + T.format.priceText(ml.fair.away) : '') + (ml.book ? ' · ' + ml.book.book + ' ' + T.format.priceText(ml.book.price_home) + ' / ' + T.format.priceText(ml.book.price_away) + ' (no-vig ' + o.game.home + ' ' + pct(ml.book.no_vig_home, 1) + ')' : '') + ' · ' + ml.reason }]) + '</div>';
+    b += '<div class="sub"><h3>Provenance</h3>' + rows2([{ k: 'Read', v: R.version + ' · built ' + R.generated_at }, { k: 'Model', v: R.model_version || '—' }, { k: 'Probability curve', v: (o.read_inputs && o.read_inputs.curve ? o.read_inputs.curve.basis + ' (half points ' + o.read_inputs.curve.lo + ' to ' + (o.read_inputs.curve.lo + (o.read_inputs.curve.n - 1) * 0.5) + ', home margin)' : 'not stored') },
+      { k: 'Thresholds', v: 'edge ≥ ' + (100 * R.config.min_probability_edge).toFixed(0) + ' pp (ideal ' + (100 * R.config.ideal_probability_edge).toFixed(0) + ' pp), EV ≥ ' + R.config.min_ev + ', quotes ≤ ' + R.config.stale_minutes + ' min, reference ' + R.config.reference_price + ', typical move ' + R.config.typical_move_pts + ' pts' }, { k: 'Valid until', v: R.valid_until ? when(R.valid_until) + ' (the quote’s age limit)' : '—' }]) + '</div>';
+    b += '<details><summary class="mut" style="cursor:pointer;font-size:12px">The full read object</summary><pre class="raw">' + esc(JSON.stringify(R, null, 1)) + '</pre></details>';
+    return rsec('adv', 'Advanced', 'model components · calibration · maturity · other markets · provenance', b);
+  }
+  /* THE FRONTIER: protection (the side's line) on x, probability on y — the
+     model's cover probability as a line (EdgeDesk colour), each offered
+     price's break-even as a dot (market colour), the reference price's
+     break-even dashed. Where the orange dots sit above the blue line, the
+     book charges more for the points than EdgeDesk thinks they are worth. */
+  function frontierChart(R) {
+    var F = R.frontier, pts = F.points || [];
+    var lad = pts.filter(function (p) { return p.kind === 'REFERENCE' && num(p.cover); });
+    var off = pts.filter(function (p) { return p.kind !== 'REFERENCE' && num(p.break_even); });
+    if (lad.length < 2) return '<div class="empty">Not enough of the curve to draw.</div>';
+    var W = 640, H = 230, ml = 44, mr = 14, mt = 14, mb = 34;
+    var xs = lad.map(function (p) { return p.line; }).concat(off.map(function (p) { return p.line; }));
+    var marks = [];
+    if (num(R.fair_line_for_side)) marks.push({ x: R.fair_line_for_side, t: 'FAIR' });
+    if (R.selected) marks.push({ x: R.selected.line, t: 'CURRENT' });
+    if (R.bettable_to && R.bettable_to.line != null) marks.push({ x: R.bettable_to.line, t: R.bettable_to.label === 'NEEDS' ? 'NEEDS' : 'BETTABLE TO' });
+    if (R.target_price) marks.push({ x: R.target_price.line, t: 'TARGET' });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var ys = lad.map(function (p) { return p.cover; }).concat(lad.map(function (p) { return p.break_even; })).concat(off.map(function (p) { return p.break_even; })).concat(off.map(function (p) { return p.cover; }).filter(num));
+    var y0 = Math.max(0, Math.floor(Math.min.apply(null, ys) * 20) / 20 - 0.02), y1 = Math.min(1, Math.ceil(Math.max.apply(null, ys) * 20) / 20 + 0.02);
+    var sx = function (x) { return ml + (x - x0) / ((x1 - x0) || 1) * (W - ml - mr); }, sy = function (y) { return mt + (1 - (y - y0) / ((y1 - y0) || 1)) * (H - mt - mb); };
+    var svg = '<svg class="fr" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Model cover probability and break-even by line">';
+    for (var gy = Math.ceil(y0 * 20) / 20; gy <= y1 + 1e-9; gy += 0.05) svg += '<line class="grid" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + sy(gy).toFixed(1) + '" y2="' + sy(gy).toFixed(1) + '"/><text class="ax" x="' + (ml - 6) + '" y="' + (sy(gy) + 3.5).toFixed(1) + '" text-anchor="end">' + Math.round(gy * 100) + '%</text>';
+    lad.forEach(function (p, i) { if (i % 2 === 0) svg += '<text class="ax" x="' + sx(p.line).toFixed(1) + '" y="' + (H - mb + 16) + '" text-anchor="middle">' + esc(bk(p.line)) + '</text>'; });
+    marks.forEach(function (m, i) { if (m.x < x0 || m.x > x1) return; svg += '<line class="mk mk-' + m.t.replace(/ /g, '') + '" x1="' + sx(m.x).toFixed(1) + '" x2="' + sx(m.x).toFixed(1) + '" y1="' + mt + '" y2="' + (H - mb) + '"/><text class="mkt" x="' + (sx(m.x) + 3).toFixed(1) + '" y="' + (mt + 10 + 11 * (i % 3)) + '">' + esc(m.t) + '</text>'; });
+    var refBe = lad[0].break_even;
+    svg += '<line class="ref" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + sy(refBe).toFixed(1) + '" y2="' + sy(refBe).toFixed(1) + '"/>';
+    svg += '<path class="cov" d="' + lad.map(function (p, i) { return (i ? 'L' : 'M') + sx(p.line).toFixed(1) + ' ' + sy(p.cover).toFixed(1); }).join(' ') + '"/>';
+    off.forEach(function (p) { svg += '<circle class="be" cx="' + sx(p.line).toFixed(1) + '" cy="' + sy(p.break_even).toFixed(1) + '" r="5"/>'; });
+    /* hit targets: one column per half point, the readout lists every series there */
+    var step = (W - ml - mr) / Math.max(1, (x1 - x0) / 0.5);
+    lad.forEach(function (p) {
+      var at = off.filter(function (q) { return Math.abs(q.line - p.line) < 1e-9; });
+      var tip = '<b>' + esc(R.side_team + ' ' + bk(p.line)) + '</b><br>model cover ' + pct(p.cover, 1) + '<br>break-even at ' + esc(T.format.priceText(R.config.reference_price)) + ' ' + pct(p.break_even, 1)
+        + at.map(function (q) { return '<br>' + esc((q.book || '') + ' ' + T.format.priceText(q.price)) + ': break-even ' + pct(q.break_even, 1) + ', EV ' + evs(q.ev); }).join('');
+      svg += '<rect class="hit" x="' + (sx(p.line) - step / 2).toFixed(1) + '" y="' + mt + '" width="' + step.toFixed(1) + '" height="' + (H - mt - mb) + '" data-tip="' + esc(tip) + '"/>';
+    });
+    svg += '</svg>';
+    var lab = '<div class="lgd"><span><i class="k cov"></i>EdgeDesk cover probability' + (R.probability_basis === 'RAW' ? ' (raw)' : '') + '</span><span><i class="k be"></i>Break-even of an offered price</span><span><i class="k ref"></i>Break-even at ' + esc(T.format.priceText(R.config.reference_price)) + '</span></div>';
+    return lab + '<div class="frw">' + svg + '</div><div class="note">Where an orange dot sits above the blue line, the book charges more for those points than EdgeDesk thinks they are worth. The table view is the price curve above.</div>';
+  }
+  function bindRead(o) {
+    if (!RD || !o.read_inputs) return;
+    var sel = $('rdView');
+    if (sel) sel.onchange = function () {
+      var v = this.value, view = v.indexOf('book:') === 0 ? { mode: 'book', book: v.slice(5) } : { mode: v };
+      store.set(KRV, view); track('section_open', { game_id: o.game_id, section: 'read_view', detail: view.mode });
+      S.read = liveRead(o);
+      $('rdWrap').innerHTML = readCard(o, S.read); bindRead(o);
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('details.rx-sec'), function (d) { d.addEventListener('toggle', function () { if (d.open) track('section_open', { game_id: o.game_id, section: 'read_' + d.getAttribute('data-rsec') }); }); });
+    var inp = function () { return readInput(o); };
+    function optLine(x) { return x.problem ? esc(x.problem) : '<b>' + esc(x.label) + '</b> · cover ' + pct(x.cover_used, 1) + (x.cover_basis === 'RAW' ? ' (raw)' : '') + ' · break-even ' + pct(x.break_even, 1) + ' · edge ' + pp(x.edge) + ' · EV ' + evs(x.ev) + ' · ' + esc(x.threshold ? x.threshold.text : x.grade); }
+    var man = $('rdManGo');
+    if (man) man.onclick = function () {
+      var r = RD.manual(inp(), $('rdMan').value);
+      track('ask', { game_id: o.game_id, detail: 'read_manual' });
+      $('rdManOut').innerHTML = '<div class="ans">' + (r.ok ? optLine(r.option) + (r.quote_check ? '<div class="banner warn">' + esc(r.quote_check.text) + '</div>' : '') + (r.whatif && r.whatif.text ? '<div class="note">' + esc(r.whatif.label + ': ' + r.whatif.text) + '</div>' : '') + '<div class="note">' + esc(r.note) + '</div>' : '<span class="unk">' + esc(r.problem) + '</span>') + '</div>';
+    };
+    var cmp = $('rdCmpGo');
+    if (cmp) cmp.onclick = function () {
+      var lines = $('rdCmp').value.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      var specs = [], bad = [];
+      lines.forEach(function (l) { var p = RD.parseQuoteText(l, o.game); if (p.ok && p.price && p.price.valid) specs.push({ side: p.side || (S.read && S.read.side) || 'home', line: p.line, price: p.price, book: p.book }); else bad.push(l + ': ' + (p.problem || 'add the price')); });
+      var r = specs.length >= 2 ? RD.compare(inp(), specs) : { ok: false, problem: 'Enter at least two complete prices (line and juice).' };
+      track('ask', { game_id: o.game_id, detail: 'read_compare' });
+      var h2 = bad.length ? '<div class="banner warn">' + esc(bad.join(' · ')) + '</div>' : '';
+      if (!r.ok) { $('rdCmpOut').innerHTML = h2 + '<div class="ans"><span class="unk">' + esc(r.problem) + '</span></div>'; return; }
+      h2 += '<div class="ans"><div><b>RESULT: ' + esc(r.result) + '</b></div><ul class="l">' + r.options.map(function (x) { return '<li>' + optLine(x) + '</li>'; }).join('') + '</ul>'
+        + r.comparisons.filter(Boolean).map(function (c) { return rows2([{ k: 'From → to', v: c.from + ' → ' + c.to }, { k: 'Additional points', v: sgn(c.line_change) }, { k: 'Break-even change', v: pp(c.break_even_change) }, { k: 'Cover probability change', v: pp(c.cover_probability_change) }, { k: 'Juice', v: (c.juice_cost_cents == null ? '—' : (c.juice_cost_cents === 0 ? 'same price' : Math.abs(c.juice_cost_cents) + ' cents ' + (c.juice_cost_cents > 0 ? 'more' : 'less'))) }, { k: 'EV difference', v: evs(c.ev_change_after_buffer) }, { k: 'Read', v: c.why + (c.key_numbers_crossed.length ? ' ' + c.key_numbers_crossed.map(function (k) { return k.text; }).join(' ') : '') }]); }).join('')
+        + '<div class="note">Basis: ' + esc(r.basis) + '.</div></div>';
+      $('rdCmpOut').innerHTML = h2;
+    };
+    var wi = $('rdWiGo');
+    if (wi) wi.onclick = function () {
+      var L = parseFloat($('rdWiL').value), P2 = parseFloat($('rdWiP').value), side = S.read && S.read.side ? S.read.side : 'home';
+      var r = RD.whatIf(inp(), { side: side, line: L, price: isFinite(P2) ? P2 : -110 });
+      track('ask', { game_id: o.game_id, detail: 'read_whatif' });
+      $('rdWiOut').innerHTML = '<div class="ans"><b>' + esc(r.status) + '</b> · ' + optLine(r.option) + (r.bettable_to && r.bettable_to.text ? '<div class="note">' + esc(r.bettable_to.label + ': ' + r.bettable_to.text) + '</div>' : '') + '<div class="note">' + esc(r.note) + '</div></div>';
+    };
   }
 
   /* ================================================================ GAME */
@@ -269,6 +541,9 @@
         + '<button class="fchip" data-flag="Wrong or missing data" data-what="bad market quote">Bad market quote</button>'
         + '<button class="fchip" data-flag="Confusing or hard to use" data-what="confusing explanation">Confusing explanation</button>'
         + '<span class="mut" style="font-size:11.5px">Reports go to review. They never change EdgeDesk’s data or model by themselves.</span></div></div>';
+      /* THE EDGEDESK READ — first, before everything else on the page */
+      S.read = liveRead(o);
+      h += '<div id="rdWrap">' + readCard(o, S.read) + '</div>';
       /* THE 15-SECOND SUMMARY */
       h += '<div class="sum' + (C.verified ? ' verified' : '') + '">'
         + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'
@@ -291,6 +566,7 @@
       h += secA(o) + secB(o) + secC(o) + secD(o) + secE(o) + secF(o) + secG(o) + secH(o) + secAsk(o) + secAdv(o);
       $('view').innerHTML = h;
       bindGame(o);
+      bindRead(o);
     });
   }
   /* THE SIX QUESTIONS, answered in one block (lib/edgedesk_canon.js SIX_QUESTIONS) */
@@ -505,11 +781,11 @@
     var id = o.game_id;
     $('watchBtn').onclick = function () {
       var w = store.get(KW, {});
-      if (w[id]) { delete w[id]; track('watch_remove', { game_id: id }); } else { w[id] = T.watchEntry(o, {}); track('watch_add', { game_id: id }); }
+      if (w[id]) { delete w[id]; track('watch_remove', { game_id: id }); } else { w[id] = T.watchEntry(o, readWatchOpts(o)); track('watch_add', { game_id: id }); }
       store.set(KW, w); this.textContent = w[id] ? '★ Watching' : '☆ Watch';
     };
     $('expBtn').onclick = function () {
-      var txt = T.exportCard(o);
+      var txt = T.exportCard(S.read ? Object.assign({}, o, { read: S.read }) : o);
       try { navigator.clipboard.writeText(txt); this.textContent = 'Copied'; } catch (e) { window.prompt('Research card', txt); }
       track('export', { game_id: id });
     };
@@ -528,7 +804,8 @@
       d.addEventListener('toggle', function () { if (d.open) track('section_open', { game_id: id, section: d.getAttribute('data-sec') }); });
     });
     function ask(q) {
-      var a = T.ask(q, o, null);
+      /* the assistant reads the Read the reader is looking at: their clock, their book */
+      var a = T.ask(q, S.read ? Object.assign({}, o, { read: S.read }) : o, null);
       track('ask', { game_id: id, detail: a.intent });
       var body = esc(a.text).replace(/^UNKNOWN\./, '<span class="unk">UNKNOWN.</span>');
       if (a.facts && a.facts.length) body += '<details><summary>Sources for ' + a.facts.length + ' claim' + (a.facts.length === 1 ? '' : 's') + '</summary><table class="t"><tr><th>Claim</th><th>Source</th><th>Updated</th><th>Confidence</th></tr>'
@@ -782,7 +1059,8 @@
     var r = p.record, pm = p.postmortem;
     var h = '<div class="sec" style="padding:12px 14px"><div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><b>' + esc(p.matchup) + '</b><span class="mut">' + esc(p.final) + '</span><span class="fchip">' + esc(r.quadrant) + '</span>' + (pm.available ? '<span class="fchip">' + esc(pm.class.replace(/_/g, ' ')) + '</span>' : '') + (full ? '' : '<a href="#/game/' + esc(p.game_id) + '" style="margin-left:auto">Open →</a>') + '</div>'
       + '<div class="note">Frozen fair ' + esc(r.home) + ' ' + bk(r.frozen_home_line) + ' · close ' + bk(r.close_home_line) + ' · side ' + esc(r.side_team || '—') + ' · ' + esc(r.ats) + (r.clv != null ? ' · CLV ' + T.util.signed(r.clv, 1) : '') + '</div>'
-      + (pm.available ? '<div>' + esc(pm.text) + '</div>' : '');
+      + (pm.available ? '<div>' + esc(pm.text) + '</div>' : '')
+      + readAtDecision(p);
     if (full) {
       h += '<div class="sub"><h3>EdgeDesk vs market before kickoff</h3>' + timeline(p.timeline, { home: r.home, away: r.away }) + '</div>';
       if (p.edge_decay.available) h += '<div class="sub"><h3>Edge decay</h3><b>' + esc(p.edge_decay.verdict_text || '') + '</b> ' + esc(p.edge_decay.text || '') + '</div>';
@@ -841,6 +1119,43 @@
       h += '<div class="sub"><h3>What each badge requires</h3><table class="t">' + Object.keys(M.badge_rules).map(function (k) { return '<tr><td class="mono">' + esc(M.badge_rules[k].label) + '</td><td>' + esc(M.badge_rules[k].rule) + '</td></tr>'; }).join('') + '</table></div>';
       $('view').innerHTML = h;
     }).catch(function (e) { $('view').innerHTML = '<div class="banner warn">The maturity page could not be loaded (' + esc(e.message) + '). Nothing is shown rather than a guess.</div>'; });
+  }
+
+  /* the EdgeDesk Read AT THE TIME OF DECISION — the frozen snapshot, never a hindsight value */
+  function readAtDecision(p) {
+    var x = p.read_at_decision, gr = p.read_grade;
+    if (!x) return '';
+    return '<div class="rad"><span class="l">EdgeDesk Read at the time of decision</span> ' + rdChip(x.timing_read, true) + ' '
+      + esc((x.team || '—') + ' ' + (x.line == null ? '' : bk(x.line)) + ' ' + T.format.priceText(x.price) + (x.book ? ' · ' + x.book : '') + ' · cover ' + pct(x.cover_probability, 1) + (x.probability_basis === 'RAW' ? ' raw' : '') + ' vs ' + pct(x.break_even, 1)
+        + (x.target_line != null ? ' · target ' + bk(x.target_line) : '') + (x.bettable_to_line != null ? ' · bettable to ' + bk(x.bettable_to_line) : '') + ' · frozen ' + when(x.recorded_at))
+      + (gr ? ' <span class="mut">· graded: ' + esc((gr.result ? gr.result + ' at the recorded number' : 'no result') + (gr.clv_pts != null ? ', CLV ' + T.util.signed(gr.clv_pts, 1) + ' pts' : '') + (gr.hypothetical ? ' (hypothetical)' : '')) + '</span>' : '') + '</div>';
+  }
+  /* THE READ RECORD — every frozen read and the validation dashboard */
+  function renderReadRecord() {
+    track('record_view');
+    load('record').then(function (R) {
+      var RR = R.read_record || { validation: null, reads: [], grades: [] }, V = RR.validation || {};
+      var gi = {}; (RR.grades || []).forEach(function (g) { gi[g.read_id] = g; });
+      var h = '<div class="gh"><h1>EdgeDesk Read record</h1><div class="meta">Every price-specific read EdgeDesk froze, graded once against the close and the final at the number it recorded. Timing is validated by CLV and entry quality — not by whether BET EARLY reads happened to win.</div></div>';
+      var blk = function (b, extra) {
+        if (!b) return '';
+        return '<tr><td>' + esc(b.label) + '</td><td class="n">' + b.n + '</td><td class="n">' + b.graded + '</td><td class="n">' + (b.rates_shown ? T.util.signed(b.mean_clv_pts, 2) : '<span class="mut">n ' + b.clv_n + '</span>') + '</td><td class="n">' + (b.rates_shown && b.positive_clv_rate != null ? pct(b.positive_clv_rate, 0) : '—') + '</td><td class="n">' + (b.rates_shown && b.ats_rate != null ? pct(b.ats_rate, 0) : '—') + '</td><td class="mut">' + (extra || '') + '</td></tr>';
+      };
+      h += '<div class="sub"><h3>Validation dashboard</h3><div class="tscroll"><table class="t"><tr><th>Read</th><th>n</th><th>Graded</th><th>Avg CLV</th><th>+CLV</th><th>ATS</th><th>Also</th></tr>'
+        + blk(V.bet_early, V.bet_early && V.bet_early.rates_shown ? 'later worse ' + pct(V.bet_early.later_worse_rate, 0) + ' · line preserved ' + T.util.signed(V.bet_early.mean_line_preserved_pts, 2) : 'later-worse rate and line preserved print at n ≥ ' + (V.min_n_for_rates || 30))
+        + blk(V.bet) + blk(V.wait, V.wait ? 'all waits ' + V.wait.n_all_waits + (V.wait.mean_price_improvement_pts != null ? ' · avg improvement ' + T.util.signed(V.wait.mean_price_improvement_pts, 2) + ' pts' : '') + (V.wait.wait_success_rate != null ? ' · wait success ' + pct(V.wait.wait_success_rate, 0) : '') + (V.wait.target_reached_rate != null ? ' · target reached ' + pct(V.wait.target_reached_rate, 0) : '') : '')
+        + blk(V.research) + blk(V.pass, 'counterfactual: never a wager') + blk(V.price_gone, 'counterfactual')
+        + '</table></div><div class="note">' + esc(V.rule || '') + ' Reads frozen: ' + (V.n_reads || 0) + ' · graded: ' + (V.n_grades || 0) + ' · reads with alternates: ' + (V.alternates ? V.alternates.n_reads_with_alts : 0) + '.</div></div>';
+      h += '<div class="sub"><h3>Frozen reads (newest first)</h3>' + (RR.reads.length ? '<div class="tscroll"><table class="t"><tr><th>Frozen</th><th>Game</th><th>Read</th><th>Price</th><th>Cover / BE</th><th>EV</th><th>Bettable / target</th><th>Grade</th></tr>'
+        + RR.reads.slice().reverse().slice(0, 150).map(function (x) {
+          var g = gi[x.read_id];
+          return '<tr><td class="n">' + esc(when(x.recorded_at)) + '</td><td>' + esc(x.away + ' @ ' + x.home) + '</td><td>' + rdChip(x.timing_read) + '</td><td class="n">' + esc((x.team || '') + ' ' + (x.line == null ? '' : bk(x.line)) + ' ' + T.format.priceText(x.price)) + '<div class="mut">' + esc(x.book || '') + '</div></td>'
+            + '<td class="n">' + pct(x.cover_probability, 1) + (x.probability_basis === 'RAW' ? ' raw' : '') + ' / ' + pct(x.break_even, 1) + '</td><td class="n">' + (num(x.estimated_ev) ? (x.estimated_ev >= 0 ? '+' : '−') + Math.abs(100 * x.estimated_ev).toFixed(1) + '%' : '—') + '</td>'
+            + '<td class="n">' + (x.bettable_to_line != null ? bk(x.bettable_to_line) : '—') + (x.target_line != null ? ' / ' + bk(x.target_line) : '') + '</td><td>' + (g ? esc((g.result || '—') + (g.clv_pts != null ? ' · CLV ' + T.util.signed(g.clv_pts, 1) : '') + (g.hypothetical ? ' · hyp.' : '')) : '<span class="mut">pending</span>') + '</td></tr>';
+        }).join('') + '</table></div>' : '<div class="empty">No read has been frozen yet.</div>') + '</div>';
+      h += '<ul class="l note">' + (RR.rules || []).map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>';
+      $('view').innerHTML = h;
+    });
   }
 
   /* ================================================================ WHY / TERMS */

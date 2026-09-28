@@ -25849,8 +25849,25 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     if (f.market && f.market.actionable_status && f.market.actionable_status !== 'ACTIONABLE') f.degraded.push('market ' + f.market.actionable_status);
     if (!f.market) f.degraded.push('no market line');
     (src.allowed_metrics || []).forEach(function (m) { f.allowed_metrics[m] = true; });
+    f.read = readFacts(src.read);
     f.numbers = allowedNumbers(f);
     return f;
+  }
+  /* THE EDGEDESK READ as facts: only what its deterministic functions produced.
+     The LLM may explain the read; the words it may use for the read's state
+     are the read's own timing and decision words, nothing else. */
+  function readFacts(R) {
+    if (!R || !R.timing_read) return null;
+    var s = R.selected || null;
+    return { timing: String(R.timing_read).replace(/_/g, ' '), decision: String(R.decision_status || 'NO_DECISION').replace(/_/g, ' '),
+      research_status: R.research_status ? String(R.research_status.status).replace(/_/g, ' ') : null, actionable: !!R.actionable,
+      side: R.side_team || null, book: s ? s.book || null : null, line: s ? num(s.line) : null, price: s && s.price ? num(s.price.american) : null,
+      cover_probability: r(num(R.cover_probability), 3), probability_basis: R.probability_basis || null, break_even: r(num(R.break_even_probability), 3),
+      estimated_ev: r(num(R.estimated_ev), 3), bettable_to_line: R.bettable_to && isNum(num(R.bettable_to.line)) ? num(R.bettable_to.line) : null,
+      bettable_label: R.bettable_to ? R.bettable_to.label || null : null, target_line: R.target_price ? num(R.target_price.line) : null,
+      reference_price: R.bettable_to ? num(R.bettable_to.reference_price) : null, price_status: R.price_status ? R.price_status.label : null,
+      alt_verdict: R.main_vs_alt_summary ? R.main_vs_alt_summary.alt_verdict || null : null, calibration: R.calibration ? R.calibration.status : null,
+      reason: R.timing_reason || null, market_direction: R.market_movement_summary ? R.market_movement_summary.direction : null };
   }
   function allowedNumbers(f) {
     var xs = [];
@@ -25862,6 +25879,11 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     add(f.decision.line); add(f.decision.price);
     if (isNum(f.decision.cover_probability)) { add(r(100 * f.decision.cover_probability, 1)); add(r(100 * f.decision.cover_probability, 0)); }
     add(f.game.week); add(f.game.season);
+    if (f.read) {
+      var R = f.read;
+      [R.line, R.price, R.bettable_to_line, R.target_line, R.reference_price].forEach(add);
+      [R.cover_probability, R.break_even, R.estimated_ev].forEach(function (p) { if (isNum(p)) { add(r(100 * p, 1)); add(r(100 * p, 0)); } });
+    }
     var m = /(-?\d+(\.\d+)?)/.exec(f.model.fair_line_display || ''); if (m) add(Number(m[1]));
     return xs;
   }
@@ -25879,9 +25901,11 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       'State the uncertainty plainly' + (facts.degraded.length ? ': ' + facts.degraded.join('; ') + '.' : '.'),
       'Never promise an outcome. An edge is an expected value and any single game can lose.',
       'Home margin is from the home team\'s side: positive means the home team is expected to win by that many. A home line of -7 means the home team is favoured by 7.'
-    ].join('\n');
+    ].concat(facts.read ? ['The EdgeDesk Read (READ) is a price-specific research read. Its timing is ' + facts.read.timing + ' and its decision is ' + facts.read.decision + '. You may use those words for the read and no other; '
+      + (facts.read.actionable ? 'it is certified.' : 'it is not a certified bet, so never describe it as one.') + ' Do not compute a probability, EV, break-even or price: use READ\'s numbers as written.'
+      + (facts.read.probability_basis === 'RAW' ? ' Its cover probability is RAW (calibration pending): say so if you use it.' : '')] : []).join('\n');
     var user = 'FACTS (' + VERSION + '):\n' + JSON.stringify({ game: facts.game, model: facts.model, market: facts.market, decision: facts.decision, qb: facts.qb,
-      data_quality: facts.data_quality, degraded: facts.degraded }, null, 1) + '\n\nWrite at most four sentences.';
+      data_quality: facts.data_quality, degraded: facts.degraded, read: facts.read || undefined }, null, 1) + '\n\nWrite at most four sentences.';
     return { system: system, user: user, tools: [], version: VERSION };
   }
 
@@ -25896,7 +25920,10 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       if (/\bBET\b/.test(t.replace(/NO BET/g, ''))) add('BET_CLAIM_NOT_OFFICIAL', 'FAIL', 'the word BET appears while the official decision is ' + st);
     }
     /* status words are UPPERCASE in EdgeDesk copy ("pass defense" is football) */
-    STATUSES.filter(function (w) { return w !== 'BET' && w !== st; }).forEach(function (w) {
+    /* the read's own timing and decision words are allowed when it is on file */
+    var readWords = facts.read ? [facts.read.timing, facts.read.decision].concat(/RESEARCH ONLY/.test(facts.read.decision) ? ['RESEARCH'] : []) : [];
+    if (facts.read && !facts.read.actionable && /\bcertified\b/i.test(t.replace(/\b(not|never|isn'?t|is not)\s+(a\s+)?certified\b/gi, ' '))) add('READ_CERTIFIED_CLAIM', 'FAIL', 'calls the read certified; it is ' + facts.read.decision);
+    STATUSES.filter(function (w) { return w !== 'BET' && w !== st && readWords.indexOf(w) < 0; }).forEach(function (w) {
       if (new RegExp('\\b' + esc(w) + '\\b').test(t)) add('STATUS_MISMATCH', 'FAIL', 'names status ' + w + '; the official decision is ' + st);
     });
     if (st === 'BET' && /\bNO BET\b/.test(t)) add('STATUS_MISMATCH', 'FAIL', 'says NO BET; the official decision is BET');
@@ -25956,6 +25983,12 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     s.push((d.kind === 'RESEARCH_STATUS' ? 'Research status: ' : 'Official decision: ') + d.status + (d.status === 'BET' && sideTeam ? ' on ' + sideTeam + ' ' + signed(d.line) : '') + (d.reason && d.status !== 'BET' ? ' (' + d.reason.replace(/[0-9]+(\.[0-9]+)?/g, '').replace(/\s+/g, ' ').trim().slice(0, 120) + ')' : '') + '.');
     var qbNote = ['home', 'away'].filter(function (x) { return facts.qb[x].status !== 'CONFIRMED'; }).map(function (x) { return g[x] + ' quarterback status is ' + facts.qb[x].status.toLowerCase(); });
     if (facts.degraded.length) s.push('Uncertainty: ' + (qbNote.length ? qbNote.join('; ') + '; ' : '') + facts.degraded.filter(function (x) { return !/quarterback/.test(x); }).join('; ') + (facts.degraded.length ? '.' : ''));
+    if (facts.read && facts.read.line != null) {
+      var R = facts.read;
+      s.push('EdgeDesk Read: ' + R.timing + ' (' + R.decision.toLowerCase() + ') on ' + R.side + ' ' + signed(R.line) + (isNum(R.price) ? ' ' + signed(R.price) : '') + (R.book ? ' at ' + R.book : '')
+        + ', cover ' + pct(R.cover_probability) + (R.probability_basis === 'RAW' ? ' (raw, calibration pending)' : '') + ' against a ' + pct(R.break_even) + ' break-even'
+        + (isNum(R.target_line) ? '; target ' + signed(R.target_line) : (isNum(R.bettable_to_line) ? '; ' + (R.bettable_label === 'NEEDS' ? 'needs ' : 'bettable to ') + signed(R.bettable_to_line) : '')) + '.');
+    }
     s.push('This is a probability, not a promise: any single game can go either way.');
     return s.join(' ').replace(/;\s*\./g, '.').replace(/:\s*\./g, '.');
   }
@@ -25974,7 +26007,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     }, function (e) { return fallback([{ code: 'LLM_ERROR', severity: 'FAIL', detail: String(e && e.message || e).slice(0, 160) }]); });
   }
 
-  return { VERSION: VERSION, cfbFacts: cfbFacts, buildPrompt: buildPrompt, auditExplanation: auditExplanation, render: render, explain: explain, qbStatus: qbStatus,
+  return { VERSION: VERSION, cfbFacts: cfbFacts, readFacts: readFacts, buildPrompt: buildPrompt, auditExplanation: auditExplanation, render: render, explain: explain, qbStatus: qbStatus,
     governed: governed, OFFICIAL_POLICY: OFFICIAL_POLICY };
 }));
 /*__EDCFBEXPLAIN_END__*/
