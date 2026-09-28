@@ -185,6 +185,37 @@ history". See `docs/intelligence-architecture.md` §15 and
 - `npm run intel:test` — the kernel, the evaluation harness, the migrations
 - `npm run intel:stake` · `npm run stake:validate` — the sizing rules, and whether they beat flat staking
 
+## The bettor decision layer — BET / WAIT / PASS / NO DECISION
+
+Research status says whether a matchup deserves investigation; the **bet
+decision** says whether the current price qualifies. They are never merged.
+`lib/edgedesk_decision.js` reads what the research, pricing, calibration,
+integrity, QB, availability and market systems already produce and returns one
+deterministic object per game — the decision, the exact side / line / price /
+book, units (0.25–0.75U; 1.00U shadow-only until validated), the playable-to
+boundary (worst line and worst juice together), calibrated vs raw EV, the
+reasons, what would cancel it, and every version. Every number comes from
+`lib/edgedesk_quote_ev.js` on the model the page and build already priced; the
+engine adds no probability math. Hierarchy: integrity → market quality → price
+→ calibrated advantage → sizing; a huge EV never overrides an integrity
+failure, and a big edge gets more scrutiny, never a bigger stake.
+
+Surfaces: an EDGEDESK ACTION card above the research on every CFB and NFL game,
+a decision chip on every FBS board row, and the **EdgeDesk Card** page (`#card`)
+with counts, exposure, filters, the reader's recorded bets and CLV, and the
+per-tier record. Bankroll → dollars (1 unit = 1% by default), a four-page
+onboarding, beginner mode. Today the CFB calibrated EV is about minus the vig at
+every main-line price and the NFL has no calibration, so the honest output is
+mostly PASS and NO DECISION — by design, not by default. Every threshold is a
+labelled, configurable, conservative default that is **not yet empirically
+validated**. See [`docs/bettor-decision/DESIGN.md`](docs/bettor-decision/DESIGN.md),
+the audit in `docs/bettor-decision/AUDIT.md` and the engineering report in
+`docs/bettor-decision/REPORT.md`.
+
+- `npm run bettor:test` — the engine, tracks, bankroll, inputs and renderers
+- `npm run bettor:sql` — `supabase/bettor_decisions.sql` against a real PostgreSQL
+- `npm run bettor:e2e` — the layer in Chromium, desktop and a 390 px phone
+
 ## The personal research terminal
 A reader's own research now lives on their account: a **watchlist** (the star on
 every game card and on the Top 5), **research-condition alerts** under the bell

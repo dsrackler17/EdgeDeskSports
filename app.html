@@ -2861,6 +2861,7 @@ body.focus .dk-focusnote{display:block}
 </style>
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260926g">
+<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260928d">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3135,6 +3136,11 @@ body.focus .dk-focusnote{display:block}
     <div class="flbanner demo" id="newsBanner">Checking feed…</div>
     <div id="newsFeed"><div class="empty">Loading news…</div></div>
   </section>
+
+  <!-- EDGEDESK CARD — the current actionable betting state (lib/edgedesk_decision_ui.js).
+       The Research Board finds interesting games; this page says which current
+       prices qualify: BET / WAIT (watching) / PASS / NO DECISION. -->
+  <section id="v-card" class="view hide"><div id="eddCardHost"></div></section>
 
   <!-- RESEARCH — single shell: one sub-nav rendered once, six module panels.
        Panels keep their original ids so every existing $() lookup and render
@@ -3810,6 +3816,14 @@ window.mcRefresh=function(){
      counter hierarchy, maturity and pricing impact. tools/validation/canon.test.js
      and tools/validation/ui.test.js hold it. -->
 <script src="/lib/edgedesk_canon.js?v=20260928a"></script>
+<!-- THE BETTOR DECISION LAYER (docs/bettor-decision/DESIGN.md): one BET / WAIT / PASS /
+     NO DECISION answer per game, from the quote-level EV the board already prices.
+     edgedesk_decision.js reads window.EDQuoteEV at call time (loaded lazily with the board). -->
+<script src="/lib/edgedesk_bankroll.js?v=20260928d"></script>
+<script src="/lib/edgedesk_decision.js?v=20260928d"></script>
+<script src="/lib/edgedesk_decision_track.js?v=20260928d"></script>
+<script src="/lib/edgedesk_decision_inputs.js?v=20260928d"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20260928d"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -5084,9 +5098,9 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
      their own; they are reached through More (or the header health control),
      so More is the tab that reads active while one of them is open. Without
      this the bar shows nothing active and a reader loses their place. */
-  var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',ledger:'more',news:'more'};var navOn=NAV_OWNER[v]||v;
+  var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',ledger:'more',news:'more',card:'more'};var navOn=NAV_OWNER[v]||v;
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){b[j].classList.toggle('on',b[j].dataset.v===navOn);if(b[j].dataset.v===navOn)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard($('eddCardHost'));}catch(_){}}/*ADDED: the EdgeDesk Card (bettor decision layer)*/
   if(v==='social')loadSocial();else plStop();}
 
 /* ===== RESEARCH shell: one sub-nav, one module registry ==================
@@ -19819,6 +19833,7 @@ function loadMore(){
   /* the destinations that left the bottom bar come first: they are product,
      not plumbing, and each opens its own untouched view */
   var dest=[];
+  if($('v-card'))dest.push(moreItem(IC.ledger,'EdgeDesk Card','Current actionable betting state: BET, WAIT, PASS or NO DECISION for every priced game, with units and playable ranges.','show(\'card\')'));
   if($('v-collective'))dest.push(moreItem(IC.collective,'Collective','Independent model creators, one independently graded record.','show(\'collective\')'));
   if($('v-ledger'))dest.push(moreItem(IC.ledger,'Ledger','The market\u2019s moves tracked automatically, plus the bets you log by hand.','show(\'ledger\')'));
   if($('v-news'))dest.push(moreItem(IC.news,'News','News that touches a tracked team or a structural rule, with Moat Alerts.','show(\'news\')'));
@@ -19860,7 +19875,8 @@ try{applyPrefs();renderAvatar();loadSubStatus();
     if(_m)_m.textContent=_u.email||'';}
   var _p=prefs();var _t=_p.rememberTab?(_p.lastTab||_p.defaultTab):_p.defaultTab;
   var _rh=null;try{_rh=researchParseHash();}catch(__){}
-  if(_rh){ /* a #research/<module>[/<entity>] deep link beats the remembered tab */
+  if((location.hash||'')==='#card')show('card'); /* the EdgeDesk Card deep link */
+  else if(_rh){ /* a #research/<module>[/<entity>] deep link beats the remembered tab */
     researchGo(_rh.sub);
     if(_rh.entity!=null){(function(rm,ent){
       var w=(rm&&rm._&&rm._.loading)?rm._.loading:Promise.resolve();
@@ -48260,6 +48276,7 @@ function fbGameCardNfl(u){
   /* QUOTE-LEVEL EV: the best exact captured price, both sides, every number
      — RAW EV only (no EV calibration exists for the NFL) */
   var qv=null;try{qv=fbQevGameNfl(u,p,M);}catch(_){qv=null;}
+  var dn=null;try{dn=fbDecisionNfl(u,p,M);}catch(_){dn=null;}
   if(qv)lines+='<div class="gd-sec">Price · expected value</div>'+fbQevRowHTML(qv)
     +'<details class="qev-more"><summary>Price evaluation · both sides · alternate spreads</summary>'+fbQevCardHTML(qv)
     +'<div class="gd-sec">Alternate spread value</div>'+fbQevLadderHTML(qv)+'</details>';
@@ -48267,7 +48284,7 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
-    +lines+fbNflCoachingHTML(g)+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
+    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -52333,10 +52350,15 @@ function fbGxSummary(u,p,gid){
     +(cz&&cz.favorite_flip&&KC?' <span class="gx-xb flip" title="'+fbEsc(KC.FAVORITE_FLIP.means)+'">FAVORITE FLIP</span>':'')
     +(cz&&cz.price_state&&['PRICED_IN','GONE','PARTIAL'].indexOf(cz.price_state)>=0?' <span class="gx-xb price" title="'+fbEsc(KC&&KC.PRICE_STATE[cz.price_state]?KC.PRICE_STATE[cz.price_state].means:'')+'">'+fbEsc(cz.price_state_label)+'</span>':''),'',
     cz?(cz.stale?'live estimate · the research page’s build is '+Math.round(cz.age_h)+' h old':'how interesting · same status on the research page'):'EdgeDesk’s own read, not advice');
-  out+=cell('Decision',cz&&cz.decision?('<span class="gx-st '+(cz.decision==='BET'?'ok':'mut')+'">'+fbEsc(cz.decision_label||cz.decision)+'</span>')
-    :'<span class="gx-st mut">NO DECISION</span>','',
-    (cz&&cz.decision_reason?fbEsc(cz.decision_reason):'only the decision engine produces BET, WAIT or PASS')
-    +(cz&&/two-sided priced quote/.test(cz.decision_reason||'')?' · that is the engine’s market-state rule; the quote-level EV beside it is still exact arithmetic on one fresh quote':''));
+  /* the ONE bettor decision (lib/edgedesk_decision.js), the same answer as the
+     EDGEDESK ACTION card above; the governed engine's shadow verdict stays as
+     its audit line */
+  var bd=null;try{bd=fbDecisionCfb(u,p);}catch(_){bd=null;}
+  out+=cell('Decision',bd?('<span class="gx-st '+({BET:'ok',WAIT:'warn',PASS:'mut',NO_DECISION:'mut'}[bd.decision]||'mut')+'">'+fbEsc(bd.decision==='BET'?'BET · '+window.EDDecision.unitsText(bd.recommended_units):bd.decision_label)+'</span>')
+    :(cz&&cz.decision?('<span class="gx-st '+(cz.decision==='BET'?'ok':'mut')+'">'+fbEsc(cz.decision_label||cz.decision)+'</span>'):'<span class="gx-st mut">NO DECISION</span>'),'',
+    bd?(fbEsc(bd.action_reason_text)+(cz&&cz.decision?' · governed engine (shadow): '+fbEsc(cz.decision_label||cz.decision):''))
+    :((cz&&cz.decision_reason?fbEsc(cz.decision_reason):'only the decision engine produces BET, WAIT or PASS')
+    +(cz&&/two-sided priced quote/.test(cz.decision_reason||'')?' · that is the engine’s market-state rule; the quote-level EV beside it is still exact arithmetic on one fresh quote':'')));
   /* QUOTE-LEVEL EV: the best exact price's EV, kept apart from the decision */
   var qv=null;try{qv=fbQevGameCfb(u,p);}catch(_){qv=null;}
   if(qv){
@@ -53685,6 +53707,64 @@ function fbQevGameNfl(u,p,M){
   return v;
 }
 
+/* ═══ THE BETTOR DECISION (lib/edgedesk_decision.js) ═══════════════════════
+   One BET / WAIT / PASS / NO DECISION answer per game. The pricing is the
+   quote-level EV this board already computed (fbQevGameCfb / fbQevGameNfl):
+   the same model object, the same live quotes, the same evaluation. The facts
+   apart from the price (QB, availability, support, integrity gates) come from
+   the research build's board row (decision_facts, board.json), overlaid with
+   this page's live research view. Nothing here decides anything: the engine
+   does, and lib/edgedesk_decision_ui.js prints what it decided. */
+function fbDecReady(){return !!(window.EDDecision&&window.EDDecisionInputs&&fbQevReady());}
+function fbDecisionCfb(u,p){
+  if(!fbDecReady()||!u||!p||p.status!=='PREDICTED')return null;
+  var v=null;try{v=fbQevGameCfb(u,p);}catch(_){v=null;}
+  if(!v)return null;
+  if(u._dec&&u._dec.v===v)return u._dec.d;
+  var DI=window.EDDecisionInputs,UI=window.EDDecisionUI,cz=v.rv&&v.rv.canonical,row=cz&&cz.row?cz.row:null;
+  var facts=DI.factsFromView(v.rv,row&&row.decision_facts?row.decision_facts:null,{
+    game:{game_id:v.gid,home:v.home,away:v.away,kickoff:v.ctx&&v.ctx.game?v.ctx.game.kickoff:null,orientation_ok:!(v.ctx&&v.ctx.orientation&&v.ctx.orientation.ok===false)},
+    market:DI.marketFromEvaluation(v.g,{stale:!!(v.ctx&&v.ctx.market_stale)})});
+  var input=DI.inputFromFacts(facts,{model:v.model,qev_ctx:v.ctx,evaluation:v.g},{now:Date.now(),sport:'CFB',previous:UI?UI.previous(v.gid):null,track:UI?UI.trackFor(v.gid):null});
+  var d=null;try{d=window.EDDecision.decide(input);}catch(e){d=null;FBQEV.lastErr=String(e&&e.stack||e).slice(0,400);}
+  /* a decision made while the calibration artifact is still loading is
+     provisional: it is shown, never recorded in the reader's history */
+  var loading=!FBQEV.cal&&!FBQEV.err;
+  if(d&&loading)d.provisional=true;
+  if(d&&UI&&!loading)UI.observe(d);
+  u._dec={v:v,d:d};
+  return d;
+}
+function fbDecisionNfl(u,p,M){
+  if(!fbDecReady()||!u||!p||p.status!=='PREDICTED')return null;
+  var v=null;try{v=fbQevGameNfl(u,p,M);}catch(_){v=null;}
+  if(!v)return null;
+  if(u._dec&&u._dec.v===v)return u._dec.d;
+  var DI=window.EDDecisionInputs,UI=window.EDDecisionUI;
+  var input=DI.inputFromFacts(DI.nflFacts(v),{model:v.model,qev_ctx:v.ctx,evaluation:v.g},{now:Date.now(),sport:'NFL',previous:UI?UI.previous(v.gid):null,track:UI?UI.trackFor(v.gid):null});
+  var d=null;try{d=window.EDDecision.decide(input);}catch(e){d=null;FBQEV.lastErr=String(e&&e.stack||e).slice(0,400);}
+  if(d&&UI)UI.observe(d);
+  u._dec={v:v,d:d};
+  return d;
+}
+function fbDecCardHTML(d){
+  if(!d||!window.EDDecisionUI)return '';
+  try{return window.EDDecisionUI.actionCardHTML(d,{mobile:(window.innerWidth||1024)<=560});}catch(e){FBQEV.lastErr=String(e&&e.stack||e).slice(0,400);return '';}
+}
+/* every game the boards have loaded, decided (the EdgeDesk Card's live overlay) */
+window.fbDecisionsLive=function(){
+  var out=[];
+  try{if(FB.p4&&FB.p4.loadedAt&&!FB.p4.engineErr&&window.EDCfbP4)FB.p4.up.forEach(function(u){var c=fbP4ProjCached(u);if(c&&c.p&&c.p.status==='PREDICTED'){var d=fbDecisionCfb(u,c.p);if(d)out.push(d);}});}catch(_){}
+  try{if(FB.at&&FB.nfl.state&&window.EDFootball)FB.nfl.up.forEach(function(u){var g=u.g,M=fbNflMarketFor(g,u.t),p=fbPredict('nfl',fbNflGameReq(g),M.mkt,fbNum(g.season));if(p&&p.status==='PREDICTED'){var d=fbDecisionNfl(u,p,M);if(d)out.push(d);}});}catch(_){}
+  return out;
+};
+window.fbDecisionRepaint=function(){fbQevRepaint();};
+window.fbDecisionFor=function(gid){var m=window.EDDecisionUI&&window.EDDecisionUI._state?window.EDDecisionUI._state.registry[String(gid)]:null;return m||null;};
+function fbDecBannerHTML(){
+  if(!window.EDDecisionUI)return '';
+  try{window.fbDecisionsLive();window.EDDecisionUI.ensureBuild();return window.EDDecisionUI.bannerHTML();}catch(_){return '';}
+}
+
 /* ── DISPLAY ──────────────────────────────────────────────────────────── */
 function fbQevPct(x,d){return x==null?'<span class="gx-miss">—</span>':(100*x).toFixed(d==null?1:d)+'%';}
 function fbQevEv(x,cls){
@@ -54609,6 +54689,11 @@ function fbP4Card(u){
     +fbGxSec(gid,'edr','EdgeDesk rating · research context',edr,false,'not the number this line is priced from')
     +fbGxSec(gid,'quality','Data quality and methodology',compl+why,false,'the engine’s own notes')
     +hth;
+  /* EDGEDESK ACTION first (the bettor decision, lib/edgedesk_decision.js); the
+     full research below it, untouched — collapsed only when the reader chose
+     beginner mode, and one tap ("VIEW FULL RESEARCH") away even then */
+  var dec=null;try{dec=fbDecisionCfb(u,p);}catch(_){dec=null;}
+  body=fbDecCardHTML(dec)+'<div data-edd-research="'+fbEsc(gid)+'" class="'+(dec&&window.EDDecisionUI&&window.EDDecisionUI.beginner()?'edd-collapsed':'')+'">'+body+'</div>';
   return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+body+'</div></div>';
 }
 function fbP4EdgeTag(cls){
@@ -55655,7 +55740,8 @@ function fbP4ConfBadge(side){
 function fbP4QevSub(r){
   var v=null;try{v=fbQevGameCfb(r.u,r.p);}catch(e){v=null;FBQEV.lastErr=String(e&&e.stack||e).slice(0,400);}
   if(!v)return '';
-  return '<div class="qev-sub" onclick="fbP4Gate(\''+fbEsc(r.gid)+'\')">'+fbQevRowHTML(v)+'</div>';
+  var dc=null;try{dc=fbDecisionCfb(r.u,r.p);}catch(_){dc=null;}
+  return '<div class="qev-sub" onclick="fbP4Gate(\''+fbEsc(r.gid)+'\')">'+(dc&&window.EDDecisionUI?window.EDDecisionUI.chipHTML(dc):'')+fbQevRowHTML(v)+'</div>';
 }
 function fbP4BoardHTML(){
   var S=FB.p4;
@@ -56883,6 +56969,8 @@ function fbOverviewHTML(){
       +(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''))
       :'The canonical counters did not load (lib/edgedesk_canon.js).',
     foot:fbCanonCountersHTML(H,s)+fbStartHereHTML()});
+  /* the EdgeDesk Card: what the current prices say, before the research reading order */
+  html+=fbDecBannerHTML();
   /* where to start: the reading order first, the raw signals folded under it */
   html+='<div id="fbWr">'+fbWrInner(rows)+'</div>';
   html+='<div class="fb-sechd"><span>Today in football</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+fbEsc(ago(FB.at))+'</span></div>';
