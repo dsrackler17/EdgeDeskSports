@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-09-28T17:07:29.338Z",
+ "generated_at": "2026-09-28T18:07:31.441Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
@@ -11,7 +11,7 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-09-28T00:53:47.573Z",
-    "to": "2026-09-28T15:37:08.285Z"
+    "to": "2026-09-28T17:50:57.810Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -23,7 +23,7 @@
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
     "from": 74,
-    "to": 48
+    "to": 29
    }
   ],
   "summary": "FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -31,10 +31,10 @@
  "games": [
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": -8.98,
-   "new_fair": -10.59,
-   "change": -1.61,
+   "new_fair": -10.77,
+   "change": -1.79,
    "material": true,
    "causes": [
     {
@@ -52,15 +52,15 @@
    "market_now": -1.5,
    "market_change": 0,
    "status_then": "INVESTIGATE",
-   "status_now": "MARKET_FAULT",
+   "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -0.1,
-   "new_fair": 0.78,
-   "change": 0.88,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 2.56,
+   "new_fair": 1.1,
+   "change": -1.46,
    "material": true,
    "causes": [
     {
@@ -72,21 +72,21 @@
      "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401858476",
-   "game": "Penn State @ Northwestern",
-   "market_then": 3,
-   "market_now": 2.5,
-   "market_change": -0.5,
-   "status_then": "RESEARCH",
+   "game_id": "401860921",
+   "game": "Fresno State @ Washington State",
+   "market_then": -1.5,
+   "market_now": -1.37,
+   "market_change": 0.13,
+   "status_then": "PASS",
    "status_now": "NO_MARKET",
-   "price_state": "PART OF THE EDGE PRICED IN"
+   "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 1.39,
-   "new_fair": 0.52,
-   "change": -0.87,
+   "new_fair": 0.42,
+   "change": -0.97,
    "material": true,
    "causes": [
     {
@@ -109,10 +109,62 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T14:31:51.421Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -0.1,
+   "new_fair": 0.86,
+   "change": 0.96,
+   "material": true,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401858476",
+   "game": "Penn State @ Northwestern",
+   "market_then": 3,
+   "market_now": 2.5,
+   "market_change": -0.5,
+   "status_then": "RESEARCH",
+   "status_now": "NO_MARKET",
+   "price_state": "PART OF THE EDGE PRICED IN"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -6.81,
+   "new_fair": -7.69,
+   "change": -0.88,
+   "material": true,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401858473",
+   "game": "Ohio State @ Iowa",
+   "market_then": 14.5,
+   "market_now": 13.5,
+   "market_change": -1,
+   "status_then": "INVESTIGATE",
+   "status_now": "NO_MARKET",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 19.75,
-   "new_fair": 19.06,
-   "change": -0.69,
+   "new_fair": 19.04,
+   "change": -0.71,
    "material": true,
    "causes": [
     {
@@ -127,18 +179,18 @@
    "game_id": "401858475",
    "game": "Maryland @ Nebraska",
    "market_then": -13.5,
-   "market_now": -14.5,
-   "market_change": -1,
+   "market_now": -13.87,
+   "market_change": -0.37,
    "status_then": "RESEARCH",
-   "status_now": "WORTH_RESEARCHING",
+   "status_now": "NO_MARKET",
    "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 8.74,
-   "new_fair": 8.07,
-   "change": -0.67,
+   "new_fair": 8.12,
+   "change": -0.62,
    "material": true,
    "causes": [
     {
@@ -161,10 +213,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": -14.22,
-   "new_fair": -14.81,
-   "change": -0.59,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 8.87,
+   "new_fair": 8.25,
+   "change": -0.62,
    "material": true,
    "causes": [
     {
@@ -172,51 +224,29 @@
      "detail": "a completed game was absorbed into a team state"
     },
     {
+     "cause": "QB_STATUS",
+     "detail": "away: Landry Lyddy (PREVIOUS_GAME) → Landry Lyddy (COMPETITION)"
+    },
+    {
      "cause": "TERMS_NOT_RECORDED",
      "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401858249",
-   "game": "Miami @ Clemson",
-   "market_then": 17.5,
-   "market_now": 17.5,
-   "market_change": 0,
+   "game_id": "401871090",
+   "game": "Southern Miss @ Troy",
+   "market_then": null,
+   "market_now": null,
+   "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE NO LONGER ATTRACTIVE"
+   "status_now": "NO_MARKET",
+   "price_state": "PRICE HISTORY UNKNOWN"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": 19.03,
-   "new_fair": 19.57,
-   "change": 0.54,
-   "material": true,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401856807",
-   "game": "Middle Tennessee @ Kansas",
-   "market_then": -20.5,
-   "market_now": -20.75,
-   "market_change": -0.25,
-   "status_then": "PASS",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "PRICE NO LONGER ATTRACTIVE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": -3.29,
-   "new_fair": -3.81,
-   "change": -0.52,
+   "new_fair": -3.88,
+   "change": -0.59,
    "material": true,
    "causes": [
     {
@@ -239,10 +269,166 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -17.29,
-   "new_fair": -17.8,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -14.22,
+   "new_fair": -14.8,
+   "change": -0.58,
+   "material": true,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401858249",
+   "game": "Miami @ Clemson",
+   "market_then": 17.5,
+   "market_now": 17.5,
+   "market_change": 0,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE NO LONGER ATTRACTIVE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 27.93,
+   "new_fair": 28.5,
+   "change": 0.57,
+   "material": true,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401864514",
+   "game": "UTEP @ New Mexico",
+   "market_then": -21,
+   "market_now": -22.12,
+   "market_change": -1.12,
+   "status_then": "WAIT",
+   "status_now": "NO_MARKET",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -8.66,
+   "new_fair": -8.11,
+   "change": 0.55,
+   "material": true,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401862788",
+   "game": "UTSA @ Rice",
+   "market_then": 11.5,
+   "market_now": 11.5,
+   "market_change": 0,
+   "status_then": "RESEARCH",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 17.04,
+   "new_fair": 16.51,
+   "change": -0.53,
+   "material": true,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401860898",
+   "game": "Utah State @ Boise State",
+   "market_then": -21,
+   "market_now": -19.5,
+   "market_change": 1.5,
+   "status_then": "RESEARCH",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 19.03,
+   "new_fair": 19.55,
+   "change": 0.52,
+   "material": true,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401856807",
+   "game": "Middle Tennessee @ Kansas",
+   "market_then": -20.5,
+   "market_now": -18.5,
+   "market_change": 2,
+   "status_then": "PASS",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "PRICE NO LONGER ATTRACTIVE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 10.58,
+   "new_fair": 10.07,
    "change": -0.51,
+   "material": true,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401856822",
+   "game": "West Virginia @ Iowa State",
+   "market_then": -1.5,
+   "market_now": -3.25,
+   "market_change": -1.75,
+   "status_then": "INVESTIGATE",
+   "status_now": "NO_MARKET",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -17.29,
+   "new_fair": -17.79,
+   "change": -0.5,
    "material": true,
    "causes": [
     {
@@ -265,62 +451,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -8.66,
-   "new_fair": -8.16,
-   "change": 0.5,
-   "material": true,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401862788",
-   "game": "UTSA @ Rice",
-   "market_then": 11.5,
-   "market_now": 10.5,
-   "market_change": -1,
-   "status_then": "RESEARCH",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T14:31:51.421Z",
-   "old_fair": 26.23,
-   "new_fair": 25.74,
-   "change": -0.49,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401869962",
-   "game": "Marshall @ James Madison",
-   "market_then": -15.5,
-   "market_now": -18.5,
-   "market_change": -3,
-   "status_then": "INVESTIGATE",
-   "status_now": "MARKET_FAULT",
-   "price_state": "PART OF THE EDGE PRICED IN"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 2.6,
-   "new_fair": 2.12,
-   "change": -0.48,
+   "new_fair": 2.13,
+   "change": -0.47,
    "material": false,
    "causes": [
     {
@@ -335,70 +469,18 @@
    "game_id": "401856709",
    "game": "Kentucky @ South Carolina",
    "market_then": -3.5,
-   "market_now": -3,
-   "market_change": 0.5,
+   "market_now": -2.75,
+   "market_change": 0.75,
    "status_then": "PASS",
-   "status_now": "MARKET_ALIGNED",
+   "status_now": "NO_MARKET",
    "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 10.58,
-   "new_fair": 10.18,
-   "change": -0.4,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401856822",
-   "game": "West Virginia @ Iowa State",
-   "market_then": -1.5,
-   "market_now": -3.25,
-   "market_change": -1.75,
-   "status_then": "INVESTIGATE",
-   "status_now": "NO_MARKET",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -0.18,
-   "new_fair": 0.2,
-   "change": 0.38,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401858248",
-   "game": "Louisville @ NC State",
-   "market_then": 6,
-   "market_now": 5.75,
-   "market_change": -0.25,
-   "status_then": "RESEARCH",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 15.64,
-   "new_fair": 16.02,
-   "change": 0.38,
+   "new_fair": 16.11,
+   "change": 0.47,
    "material": false,
    "causes": [
     {
@@ -421,10 +503,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": 27.93,
-   "new_fair": 28.27,
-   "change": 0.34,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 26.23,
+   "new_fair": 25.78,
+   "change": -0.45,
    "material": false,
    "causes": [
     {
@@ -436,47 +518,73 @@
      "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401864514",
-   "game": "UTEP @ New Mexico",
-   "market_then": -21,
-   "market_now": -22.12,
-   "market_change": -1.12,
-   "status_then": "WAIT",
+   "game_id": "401869962",
+   "game": "Marshall @ James Madison",
+   "market_then": -15.5,
+   "market_now": -17,
+   "market_change": -1.5,
+   "status_then": "INVESTIGATE",
+   "status_now": "NO_MARKET",
+   "price_state": "PART OF THE EDGE PRICED IN"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -0.18,
+   "new_fair": 0.22,
+   "change": 0.4,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401858248",
+   "game": "Louisville @ NC State",
+   "market_then": 6,
+   "market_now": 5.5,
+   "market_change": -0.5,
+   "status_then": "RESEARCH",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -1.75,
+   "new_fair": -1.37,
+   "change": 0.38,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401860899",
+   "game": "Oregon State @ Colorado State",
+   "market_then": 3.5,
+   "market_now": 5,
+   "market_change": 1.5,
+   "status_then": "PASS",
    "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": 7.02,
-   "new_fair": 6.68,
-   "change": -0.34,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401869932",
-   "game": "Arkansas State @ Louisiana",
-   "market_then": -4,
-   "market_now": -5.87,
-   "market_change": -1.87,
-   "status_then": "WAIT",
-   "status_now": "NO_MARKET",
-   "price_state": "EDGE MOSTLY PRICED IN"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 16.9,
-   "new_fair": 17.23,
-   "change": 0.33,
+   "new_fair": 17.26,
+   "change": 0.36,
    "material": false,
    "causes": [
     {
@@ -499,10 +607,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 2.56,
-   "new_fair": 2.23,
-   "change": -0.33,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 12.52,
+   "new_fair": 12.17,
+   "change": -0.35,
    "material": false,
    "causes": [
     {
@@ -514,73 +622,21 @@
      "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401860921",
-   "game": "Fresno State @ Washington State",
-   "market_then": -1.5,
-   "market_now": -1.37,
-   "market_change": 0.13,
-   "status_then": "PASS",
-   "status_now": "NO_MARKET",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -5.14,
-   "new_fair": -5.47,
-   "change": -0.33,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401860900",
-   "game": "Texas State @ San Diego State",
-   "market_then": 4.5,
-   "market_now": 3.5,
-   "market_change": -1,
-   "status_then": "PASS",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": 11.37,
-   "new_fair": 11.08,
-   "change": -0.29,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401856711",
-   "game": "Arkansas @ Texas A&M",
-   "market_then": -14.5,
-   "market_now": -14.12,
-   "market_change": 0.38,
-   "status_then": "WAIT",
+   "game_id": "401858252",
+   "game": "Syracuse @ UConn",
+   "market_then": 6.5,
+   "market_now": 5.75,
+   "market_change": -0.75,
+   "status_then": "INVESTIGATE",
    "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T14:31:51.421Z",
-   "old_fair": 8.18,
-   "new_fair": 8.46,
-   "change": 0.28,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 7.02,
+   "new_fair": 6.72,
+   "change": -0.3,
    "material": false,
    "causes": [
     {
@@ -592,21 +648,21 @@
      "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401856820",
-   "game": "Cincinnati @ Arizona",
-   "market_then": -7,
-   "market_now": -7,
-   "market_change": 0,
-   "status_then": "PASS",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
+   "game_id": "401869932",
+   "game": "Arkansas State @ Louisiana",
+   "market_then": -4,
+   "market_now": -5.87,
+   "market_change": -1.87,
+   "status_then": "WAIT",
+   "status_now": "NO_MARKET",
+   "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 8.45,
-   "new_fair": 8.72,
-   "change": 0.27,
+   "new_fair": 8.74,
+   "change": 0.29,
    "material": false,
    "causes": [
     {
@@ -629,10 +685,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 9.24,
-   "new_fair": 8.99,
-   "change": -0.25,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 11.37,
+   "new_fair": 11.09,
+   "change": -0.28,
    "material": false,
    "causes": [
     {
@@ -644,21 +700,21 @@
      "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401866433",
-   "game": "Eastern Michigan @ Massachusetts",
-   "market_then": -4,
-   "market_now": -4.87,
-   "market_change": -0.87,
-   "status_then": "RESEARCH",
+   "game_id": "401856711",
+   "game": "Arkansas @ Texas A&M",
+   "market_then": -14.5,
+   "market_now": -14.12,
+   "market_change": 0.38,
+   "status_then": "WAIT",
    "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -0.39,
-   "new_fair": -0.64,
-   "change": -0.25,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 0.04,
+   "new_fair": -0.23,
+   "change": -0.27,
    "material": false,
    "causes": [
     {
@@ -670,21 +726,21 @@
      "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401869942",
-   "game": "Georgia Southern @ Coastal Carolina",
-   "market_then": 1.5,
-   "market_now": 1.38,
-   "market_change": -0.12,
-   "status_then": "PASS",
-   "status_now": "NO_MARKET",
-   "price_state": "NO INITIAL EDGE"
+   "game_id": "401856708",
+   "game": "Florida @ Missouri",
+   "market_then": 5.5,
+   "market_now": 4.5,
+   "market_change": -1,
+   "status_then": "RESEARCH",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T14:31:51.421Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 8.99,
-   "new_fair": 9.23,
-   "change": 0.24,
+   "new_fair": 9.26,
+   "change": 0.27,
    "material": false,
    "causes": [
     {
@@ -707,10 +763,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": -3.95,
-   "new_fair": -4.19,
-   "change": -0.24,
+   "new_fair": -4.2,
+   "change": -0.25,
    "material": false,
    "causes": [
     {
@@ -725,37 +781,11 @@
    "game_id": "401858253",
    "game": "Virginia @ Florida State",
    "market_then": 3,
-   "market_now": 2.5,
-   "market_change": -0.5,
+   "market_now": 2.25,
+   "market_change": -0.75,
    "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
+   "status_now": "NO_MARKET",
    "price_state": "PART OF THE EDGE PRICED IN"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": 19.07,
-   "new_fair": 19.31,
-   "change": 0.24,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401866477",
-   "game": "Bowling Green @ Miami (OH)",
-   "market_then": -15.5,
-   "market_now": -15.25,
-   "market_change": 0.25,
-   "status_then": "RESEARCH",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
@@ -785,36 +815,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 0.04,
-   "new_fair": -0.19,
-   "change": -0.23,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401856708",
-   "game": "Florida @ Missouri",
-   "market_then": 5.5,
-   "market_now": 4.5,
-   "market_change": -1,
-   "status_then": "RESEARCH",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T14:31:51.421Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 0.28,
-   "new_fair": 0.07,
-   "change": -0.21,
+   "new_fair": 0.06,
+   "change": -0.22,
    "material": false,
    "causes": [
     {
@@ -829,18 +833,18 @@
    "game_id": "401862791",
    "game": "Navy @ Air Force",
    "market_then": -1.5,
-   "market_now": -3.5,
-   "market_change": -2,
+   "market_now": -2.75,
+   "market_change": -1.25,
    "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
+   "status_now": "NO_MARKET",
    "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T14:31:51.421Z",
-   "old_fair": 4.27,
-   "new_fair": 4.46,
-   "change": 0.19,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 7.27,
+   "new_fair": 7.48,
+   "change": 0.21,
    "material": false,
    "causes": [
     {
@@ -848,51 +852,29 @@
      "detail": "a completed game was absorbed into a team state"
     },
     {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401869956",
-   "game": "Old Dominion @ Georgia State",
-   "market_then": 1.5,
-   "market_now": -1.5,
-   "market_change": -3,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 7.42,
-   "new_fair": 7.6,
-   "change": 0.18,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
+     "cause": "QB_STATUS",
+     "detail": "away: Luke Weaver (PREVIOUS_GAME) → Luke Weaver (COMPETITION)"
     },
     {
      "cause": "TERMS_NOT_RECORDED",
      "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401858479",
-   "game": "Michigan State @ Wisconsin",
-   "market_then": -10,
-   "market_now": -10.5,
-   "market_change": -0.5,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
+   "game_id": "401864513",
+   "game": "San José State @ Hawai'i",
+   "market_then": -4.5,
+   "market_now": -3.37,
+   "market_change": 1.13,
+   "status_then": "RESEARCH",
+   "status_now": "NO_MARKET",
+   "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 15.74,
-   "new_fair": 15.91,
-   "change": 0.17,
+   "new_fair": 15.94,
+   "change": 0.2,
    "material": false,
    "causes": [
     {
@@ -915,7 +897,85 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 9.24,
+   "new_fair": 9.05,
+   "change": -0.19,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401866433",
+   "game": "Eastern Michigan @ Massachusetts",
+   "market_then": -4,
+   "market_now": -4.87,
+   "market_change": -0.87,
+   "status_then": "RESEARCH",
+   "status_now": "NO_MARKET",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 8.18,
+   "new_fair": 8.37,
+   "change": 0.19,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401856820",
+   "game": "Cincinnati @ Arizona",
+   "market_then": -7,
+   "market_now": -7.37,
+   "market_change": -0.37,
+   "status_then": "PASS",
+   "status_now": "NO_MARKET",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 7.42,
+   "new_fair": 7.59,
+   "change": 0.17,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401858479",
+   "game": "Michigan State @ Wisconsin",
+   "market_then": -10,
+   "market_now": -10.5,
+   "market_change": -0.5,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": -1.12,
    "new_fair": -1.26,
    "change": -0.14,
@@ -936,15 +996,15 @@
    "market_now": 5.5,
    "market_change": -1.5,
    "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
+   "status_now": "NO_MARKET",
    "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T14:31:51.421Z",
-   "old_fair": -1.75,
-   "new_fair": -1.86,
-   "change": -0.11,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 4.27,
+   "new_fair": 4.41,
+   "change": 0.14,
    "material": false,
    "causes": [
     {
@@ -956,21 +1016,21 @@
      "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401860899",
-   "game": "Oregon State @ Colorado State",
-   "market_then": 3.5,
-   "market_now": 5.5,
-   "market_change": 2,
-   "status_then": "PASS",
+   "game_id": "401869956",
+   "game": "Old Dominion @ Georgia State",
+   "market_then": 1.5,
+   "market_now": -1.5,
+   "market_change": -3,
+   "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
+   "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": 16.58,
-   "new_fair": 16.67,
-   "change": 0.09,
+   "new_fair": 16.71,
+   "change": 0.13,
    "material": false,
    "causes": [
     {
@@ -993,36 +1053,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T01:53:11.055Z",
-   "old_fair": 24.62,
-   "new_fair": 24.7,
-   "change": 0.08,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401862790",
-   "game": "Texas Southern @ Florida Atlantic",
-   "market_then": null,
-   "market_now": null,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "PRICE HISTORY UNKNOWN"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": -4.47,
-   "new_fair": -4.41,
-   "change": 0.06,
+   "new_fair": -4.35,
+   "change": 0.12,
    "material": false,
    "causes": [
     {
@@ -1045,76 +1079,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -7.31,
-   "new_fair": -7.32,
-   "change": -0.01,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401866434",
-   "game": "Ohio @ Kent State",
-   "market_then": 5.5,
-   "market_now": 4,
-   "market_change": -1.5,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 6.68,
-   "new_fair": 6.69,
-   "change": 0.01,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401858478",
-   "game": "Washington @ USC",
-   "market_then": -9.75,
-   "market_now": -8.5,
-   "market_change": 1.25,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": 17.04,
-   "new_fair": 17.03,
-   "change": -0.01,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401860898",
-   "game": "Utah State @ Boise State",
-   "market_then": -21,
-   "market_now": -20.25,
-   "market_change": 0.75,
-   "status_then": "RESEARCH",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 8.87,
-   "new_fair": 8.86,
-   "change": -0.01,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 10.19,
+   "new_fair": 10.3,
+   "change": 0.11,
    "material": false,
    "causes": [
     {
@@ -1122,12 +1090,168 @@
      "detail": "a completed game was absorbed into a team state"
     },
     {
-     "cause": "QB_STATUS",
-     "detail": "away: Landry Lyddy (PREVIOUS_GAME) → Landry Lyddy (COMPETITION)"
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401871090",
-   "game": "Southern Miss @ Troy",
+   "game_id": "401858247",
+   "game": "California @ UNLV",
+   "market_then": -1.5,
+   "market_now": -2.12,
+   "market_change": -0.62,
+   "status_then": "INVESTIGATE",
+   "status_now": "NO_MARKET",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -0.39,
+   "new_fair": -0.48,
+   "change": -0.09,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401869942",
+   "game": "Georgia Southern @ Coastal Carolina",
+   "market_then": 1.5,
+   "market_now": 1.38,
+   "market_change": -0.12,
+   "status_then": "PASS",
+   "status_now": "NO_MARKET",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -16.25,
+   "new_fair": -16.17,
+   "change": 0.08,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401856821",
+   "game": "Texas Tech @ Colorado",
+   "market_then": 14.5,
+   "market_now": 13.75,
+   "market_change": -0.75,
+   "status_then": "NO_MARKET",
+   "status_now": "NO_MARKET",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 19.07,
+   "new_fair": 19.14,
+   "change": 0.07,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401866477",
+   "game": "Bowling Green @ Miami (OH)",
+   "market_then": -15.5,
+   "market_now": -13.5,
+   "market_change": 2,
+   "status_then": "RESEARCH",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 5.93,
+   "new_fair": 5.86,
+   "change": -0.07,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401856817",
+   "game": "Baylor @ Arizona State",
+   "market_then": -4,
+   "market_now": -3.75,
+   "market_change": 0.25,
+   "status_then": "PASS",
+   "status_now": "NO_MARKET",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 15.22,
+   "new_fair": 15.28,
+   "change": 0.06,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401864515",
+   "game": "Wyoming @ North Dakota State",
+   "market_then": -20.5,
+   "market_now": -19.5,
+   "market_change": 1,
+   "status_then": "RESEARCH",
+   "status_now": "NO_MARKET",
+   "price_state": "PART OF THE EDGE PRICED IN"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 24.62,
+   "new_fair": 24.68,
+   "change": 0.06,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401862790",
+   "game": "Texas Southern @ Florida Atlantic",
    "market_then": null,
    "market_now": null,
    "market_change": null,
@@ -1137,98 +1261,10 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 1.19,
-   "new_fair": 1.19,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401858245",
-   "game": "Pittsburgh @ Virginia Tech",
-   "market_then": -5.75,
-   "market_now": -3.62,
-   "market_change": 2.13,
-   "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "PART OF THE EDGE PRICED IN"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": -22.51,
-   "new_fair": -22.51,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401858250",
-   "game": "Notre Dame @ North Carolina",
-   "market_then": 22.5,
-   "market_now": 21,
-   "market_change": -1.5,
-   "status_then": "PASS",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 12.52,
-   "new_fair": 12.52,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401858252",
-   "game": "Syracuse @ UConn",
-   "market_then": 6.5,
-   "market_now": 5.75,
-   "market_change": -0.75,
-   "status_then": "INVESTIGATE",
-   "status_now": "NO_MARKET",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": -9.49,
-   "new_fair": -9.49,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401866432",
-   "game": "Western Michigan @ Buffalo",
-   "market_then": 16.5,
-   "market_now": 14.63,
-   "market_change": -1.87,
-   "status_then": "INVESTIGATE",
-   "status_now": "NO_MARKET",
-   "price_state": "PART OF THE EDGE PRICED IN"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": -20.35,
-   "new_fair": -20.35,
-   "change": 0,
+   "new_fair": -20.4,
+   "change": -0.05,
    "material": false,
    "causes": [
     {
@@ -1247,32 +1283,36 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 10.19,
-   "new_fair": 10.19,
-   "change": 0,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 14.88,
+   "new_fair": 14.83,
+   "change": -0.05,
    "material": false,
    "causes": [
     {
      "cause": "NEW_GAME_ABSORBED",
      "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
     }
    ],
-   "game_id": "401858247",
-   "game": "California @ UNLV",
-   "market_then": -1.5,
-   "market_now": -2.12,
-   "market_change": -0.62,
-   "status_then": "INVESTIGATE",
+   "game_id": "401858472",
+   "game": "Purdue @ Illinois",
+   "market_then": -10,
+   "market_now": -10,
+   "market_change": 0,
+   "status_then": "NO_MARKET",
    "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -6.81,
-   "new_fair": -6.81,
-   "change": 0,
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -6.12,
+   "new_fair": -6.16,
+   "change": -0.04,
    "material": false,
    "causes": [
     {
@@ -1280,14 +1320,168 @@
      "detail": "a completed game was absorbed into a team state"
     }
    ],
-   "game_id": "401858473",
-   "game": "Ohio State @ Iowa",
-   "market_then": 14.5,
-   "market_now": 13.5,
+   "game_id": "401869842",
+   "game": "Army @ Louisiana Tech",
+   "market_then": 3.5,
+   "market_now": 2.5,
    "market_change": -1,
-   "status_then": "INVESTIGATE",
-   "status_now": "NO_MARKET",
+   "status_then": "WAIT",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -22.51,
+   "new_fair": -22.48,
+   "change": 0.03,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    }
+   ],
+   "game_id": "401858250",
+   "game": "Notre Dame @ North Carolina",
+   "market_then": 22.5,
+   "market_now": 21,
+   "market_change": -1.5,
+   "status_then": "PASS",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -9.49,
+   "new_fair": -9.52,
+   "change": -0.03,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    }
+   ],
+   "game_id": "401866432",
+   "game": "Western Michigan @ Buffalo",
+   "market_then": 16.5,
+   "market_now": 13.5,
+   "market_change": -3,
+   "status_then": "INVESTIGATE",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PART OF THE EDGE PRICED IN"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -5.14,
+   "new_fair": -5.17,
+   "change": -0.03,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    }
+   ],
+   "game_id": "401860900",
+   "game": "Texas State @ San Diego State",
+   "market_then": 4.5,
+   "market_now": 4.5,
+   "market_change": 0,
+   "status_then": "PASS",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -7.31,
+   "new_fair": -7.29,
+   "change": 0.02,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    }
+   ],
+   "game_id": "401866434",
+   "game": "Ohio @ Kent State",
+   "market_then": 5.5,
+   "market_now": 4.25,
+   "market_change": -1.25,
+   "status_then": "NO_MARKET",
+   "status_now": "NO_MARKET",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": -4.76,
+   "new_fair": -4.78,
+   "change": -0.02,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    }
+   ],
+   "game_id": "401856818",
+   "game": "BYU @ TCU",
+   "market_then": 6.5,
+   "market_now": 6.38,
+   "market_change": -0.12,
+   "status_then": "NO_MARKET",
+   "status_now": "NO_MARKET",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 6.68,
+   "new_fair": 6.66,
+   "change": -0.02,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    }
+   ],
+   "game_id": "401858478",
+   "game": "Washington @ USC",
+   "market_then": -9.75,
+   "market_now": -9.5,
+   "market_change": 0.25,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
+   "old_fair": 1.19,
+   "new_fair": 1.18,
+   "change": -0.01,
+   "material": false,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    }
+   ],
+   "game_id": "401858245",
+   "game": "Pittsburgh @ Virginia Tech",
+   "market_then": -5.75,
+   "market_now": -3.62,
+   "market_change": 2.13,
+   "status_then": "NO_MARKET",
+   "status_now": "NO_MARKET",
+   "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
@@ -1313,116 +1507,6 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T14:31:51.421Z",
-   "old_fair": 15.22,
-   "new_fair": 15.22,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401864515",
-   "game": "Wyoming @ North Dakota State",
-   "market_then": -20.5,
-   "market_now": -18.5,
-   "market_change": 2,
-   "status_then": "RESEARCH",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PART OF THE EDGE PRICED IN"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": 14.88,
-   "new_fair": 14.88,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401858472",
-   "game": "Purdue @ Illinois",
-   "market_then": -10,
-   "market_now": -10,
-   "market_change": 0,
-   "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": -4.76,
-   "new_fair": -4.76,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401856818",
-   "game": "BYU @ TCU",
-   "market_then": 6.5,
-   "market_now": 6.38,
-   "market_change": -0.12,
-   "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -16.25,
-   "new_fair": -16.25,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401856821",
-   "game": "Texas Tech @ Colorado",
-   "market_then": 14.5,
-   "market_now": 13.75,
-   "market_change": -0.75,
-   "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T05:39:41.960Z",
-   "old_fair": -6.12,
-   "new_fair": -6.12,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401869842",
-   "game": "Army @ Louisiana Tech",
-   "market_then": 3.5,
-   "market_now": 3.25,
-   "market_change": -0.25,
-   "status_then": "WAIT",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
    "to_at": "2026-09-28T01:53:11.055Z",
    "old_fair": 42.47,
    "new_fair": 42.47,
@@ -1445,7 +1529,7 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
+   "to_at": "2026-09-28T17:50:57.810Z",
    "old_fair": -19.34,
    "new_fair": -19.34,
    "change": 0,
@@ -1464,54 +1548,6 @@
    "status_then": "NO_MARKET",
    "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T14:31:51.421Z",
-   "old_fair": 5.93,
-   "new_fair": 5.93,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "game_id": "401856817",
-   "game": "Baylor @ Arizona State",
-   "market_then": -4,
-   "market_now": -4,
-   "market_change": 0,
-   "status_then": "PASS",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-09-28T15:37:08.285Z",
-   "old_fair": 7.27,
-   "new_fair": 7.27,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: Luke Weaver (PREVIOUS_GAME) → Luke Weaver (COMPETITION)"
-    }
-   ],
-   "game_id": "401864513",
-   "game": "San José State @ Hawai'i",
-   "market_then": -4.5,
-   "market_now": -2.5,
-   "market_change": 2,
-   "status_then": "RESEARCH",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-09-28T00:53:47.573Z",
