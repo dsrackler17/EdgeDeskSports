@@ -4,9 +4,10 @@
    with the shared research layer and a REAL CFB P4 projection. The card's
    helpers it calls (fbEsc, fbPts, fbP4Market, fbP4ContractFor) are the page's
    own where they are pure, and stubs only for the two that read board state.
-   Pins: the answer-first cells, the exact decomposition, EV that is N/A with
-   no market and priced from the model's own distribution with one, the data
-   quality breakdown, and no pick language anywhere.
+   Pins: the answer-first cells, the exact decomposition, EV that is
+   unavailable (with its reason, never 0.0%) without a captured quote and
+   priced at the EXACT captured quote's own odds with one (never a −110
+   reference), the data quality breakdown, and no pick language anywhere.
    Run: node tools/research/cockpit_ui.test.js */
 'use strict';
 const fs = require('fs');
@@ -42,11 +43,19 @@ function lineSrc(name) {
 const c = { console, Date, Math, JSON, String, Number, Object, Array, isFinite, RegExp, Error, parseFloat };
 c.window = c; c.self = c; c.globalThis = c;
 vm.createContext(c);
-['research_core.js', 'research_eval.js', 'game_research.js'].forEach((f) =>
+['research_core.js', 'research_eval.js', 'game_research.js', 'edgedesk_quote_ev.js'].forEach((f) =>
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8'), c));
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'football', 'cfb_p4', 'params.js'), 'utf8'), c);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'), 'utf8'), c);
-vm.runInContext(lineSrc('_escHtml') + '\n' + lineSrc('fbEsc') + '\n' + lineSrc('fbPts') + '\n' + APP.slice(START, END), c);
+/* the quote-EV state the board loads (its loaders return early without fetch) */
+const QEV_AT = APP.indexOf('/* QUOTE-LEVEL EV: the state and the static artifacts'), QEV_END = APP.indexOf('function fbP4Ensure(){', QEV_AT);
+vm.runInContext(lineSrc('_escHtml') + '\n' + lineSrc('fbEsc') + '\n' + lineSrc('fbPts') + '\n' + lineSrc('fbNorm') + '\n' + lineSrc('fbNum') + '\n'
+  + APP.slice(QEV_AT, QEV_END) + '\n' + APP.slice(START, END), c);
+/* the board state the quote-EV block reads: no captured board until a test sets one */
+c.FB = { p4: { _mkt: {} }, canon: null };
+c.fbP4ViewFor = () => null;
+let EVENT = null;
+c.fbP4EventFor = () => EVENT;
 chk('the page helpers resolved', typeof c.fbEsc === 'function' && typeof c.fbPts === 'function' && typeof c.fbGxResearchRead === 'function');
 
 const P = c.EDCfbP4Params, E = c.EDCfbP4;
@@ -82,9 +91,24 @@ const dec = c.fbGxDecomp(u, p);
 chk('decomposition lists the engine terms and states they sum exactly', /terms sum exactly to the published number/.test(dec)
   && /quarterback/i.test(dec) && /home-field/i.test(dec), dec.slice(0, 300));
 chk('missing terms read "missing · 0" with a reason, never a silent zero', /missing · 0/.test(dec));
+/* the captured board: the home side at +3.5 −104 (BetMGM) and the away side at −3.5 −118 (DraftKings), captured 4 minutes ago */
+const at = new Date(Date.now() - 4 * 60000).toISOString();
+const decOf = (a) => (a > 0 ? 1 + a / 100 : 1 + 100 / -a);
+EVENT = { home: HOME, away: AWAY, rows: [
+  { event_id: 'ev_c1', market: 'spreads', selection: HOME, point: 3.5, best_dec: +decOf(-104).toFixed(4), best_book: 'BetMGM', n_books: 3, last_seen_at: at },
+  { event_id: 'ev_c1', market: 'spreads', selection: AWAY, point: -3.5, best_dec: +decOf(-118).toFixed(4), best_book: 'DraftKings', n_books: 3, last_seen_at: at }] };
 const price = c.fbGxPrice(u, p);
-chk('the price panel uses the model cover probability at the market line', /Model cover/.test(price) && /%<\/td>/.test(price) && !/n\/a<\/span><\/td><td class="num"><span class="gx-miss">n\/a/.test(price), price.slice(0, 600));
-chk('the price is labelled a REFERENCE price, not the market\'s', /reference/.test(price) && /not the market/.test(price));
+const v = c.fbQevFor('1'), H = v && v.g.sides.home.quotes[0];
+chk('the price panel prices the EXACT captured quote: its line, its price, its book', !!H && H.line === 3.5 && H.american_odds === -104 && H.sportsbook === 'BetMGM'
+  && price.indexOf('BetMGM') >= 0 && /−104|-104/.test(price), H && { line: H.line, odds: H.american_odds, book: H.sportsbook });
+chk('never the −110 reference price the panel used to print', !/reference price|-110 reference|−110 reference|not the market/i.test(price));
+chk('EV at that quote = win·(d−1) − loss from the model distribution, push-aware', H && H.ev_available
+  && Math.abs(H.expected_value - (H.model_win_probability * (H.decimal_odds - 1) - H.model_loss_probability)) < 1e-5
+  && Math.abs(H.model_win_probability + H.model_push_probability + H.model_loss_probability - 1) < 1e-5
+  && Math.abs(H.break_even_probability - 1 / H.decimal_odds) < 1e-5, H && { ev: H.expected_value, be: H.break_even_probability });
+chk('the card states cover, push, break-even, probability edge and EV', ['EdgeDesk cover probability', 'Push probability', 'Break-even probability', 'Probability edge'].every((k) => price.indexOf(k) >= 0) && /Expected value/i.test(price));
+chk('the fair line is untouched by the quote: the same projection priced with and without it', (() => {
+  const a = project({ spread_line: 3.5, total_line: 52.5 }).model.fair_spread; return a === p.model.fair_spread; })());
 const dq = c.fbGxQuality(u, p);
 chk('data quality shows each category with its status', /UNAVAILABLE/.test(dq) && /PARTIAL/.test(dq) && /injuries/.test(dq) && /mean credit/.test(dq));
 chk('research-only weather is AVAILABLE with a note that it is not priced', /research only: retrieved, not priced/.test(dq));
@@ -95,11 +119,15 @@ setMarket({ spread_line: null, total_line: null, quotes_h2h: null, book: null, a
 const u0 = unit('2');
 const read0 = c.fbGxResearchRead(u0, p0);
 chk('no market: the market cell says none joined and no gap is printed', /no market joined/.test(read0) && !/\d\.\d\dσ/.test(read0));
-chk('no market: the price panel says there is nothing to assess', /no price to assess/.test(c.fbGxPrice(u0, p0)));
+EVENT = null;
+const price0 = c.fbGxPrice(u0, p0);
+chk('no captured quote: EV is unavailable with its reason, never 0.0%', /EV —|EV UNAVAILABLE|unavailable/i.test(price0) && !/[+−-]?0\.0%/.test(price0.replace(/Push probability[^%]*%/g, '')), price0.slice(0, 400));
 chk('no market: flagged NO MARKET', /no market/.test(read0));
 
 /* ---- language ---- */
-const all = read + dec + price + dq + read0;
+/* the EV tooltip's own disclaimer ("does not guarantee future profit") is
+   the opposite of a guarantee; every other use of the word still fails */
+const all = (read + dec + price + dq + read0 + price0).replace(/does not guarantee/gi, '');
 chk('no pick language anywhere on the cockpit', !/\b(LOCK|BEST BET|BET NOW|GUARANTEE|SMASH|HAMMER)\b/i.test(all));
 
 /* ---- the shared layer is optional ---- */
@@ -232,9 +260,9 @@ chk('explain tags every line with its evidence type and flags unanswerable quest
 })();
 
 /* ---- the card mounts it, and the page loads the layer ---- */
-chk('fbP4Card mounts the cockpit sections', ['fbGxResearchRead(u,p)', 'fbGxDecomp(u,p)', 'fbGxPrice(u,p)', 'fbGxQuality(u,p)', 'fbGxScenarios(u,p)', 'fbGxWatch(u,p)', 'fbGxExplain(u,p)']
+chk('fbP4Card mounts the cockpit sections', ['fbGxResearchRead(u,p)', 'fbGxDecomp(u,p)', 'fbGxPrice(u,p)', 'fbGxAlts(u,p)', 'fbGxQuality(u,p)', 'fbGxScenarios(u,p)', 'fbGxWatch(u,p)', 'fbGxExplain(u,p)']
   .every((k) => fnSrc('fbP4Card').indexOf(k) >= 0));
-chk('every new section has a toggle default so the first click does what it shows', /research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false/.test(APP));
+chk('every new section has a toggle default so the first click does what it shows', /research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false/.test(APP));
 chk('the board loads the shared research layer', ['lib/research_core.js', 'lib/research_eval.js', 'lib/game_research.js']
   .every((k) => fnSrc('fbP4Ensure').indexOf(k) >= 0));
 done();

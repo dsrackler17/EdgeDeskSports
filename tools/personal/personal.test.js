@@ -145,6 +145,22 @@ live.fair.home_line = -9; live.reliability.score = 40;
 chk('the snapshot is a copy: the live state moving does not move it', snap.snap_fair_home_line === 1.7 && snap.snapshot.fair.home_line === 1.7 && snap.snap_reliability_score === 88);
 chk('the snapshot carries QB, availability and the model version', snap.snap_qb.confirmed_both === true && snap.snap_injuries.away.out.length === 1 && snap.snap_model_version === 'cfb_p4/1');
 eq('the snapshot hash is stable for the same information', P.journalSnapshot(st()).snapshot.state_hash, snap.snapshot.state_hash);
+/* the frozen quote EV rides inside the snapshot, as a copy */
+{
+  const Q = require('../../lib/edgedesk_quote_ev.js');
+  const o = Q.priceQuote({ sport: 'CFB', available: true, model_version: 'm', projection_timestamp: '2026-09-28T10:00:00Z', home_cover: (t) => ({ win: t < -7 ? 0.62 : 0.4, push: 0, lose: t < -7 ? 0.38 : 0.6 }) },
+    { game_id: 'g', side: 'away', line: 7.5, american: -110, book: 'DraftKings', captured_at: '2026-09-28T11:55:00Z', fresh: true }, { now: Date.parse('2026-09-28T12:00:00Z'), game: { game_id: 'g', home: 'H', away: 'A' } });
+  const qev = Q.freeze(o, { origin: 'CAPTURED_QUOTE' });
+  const sn = P.journalSnapshot(st(), qev);
+  chk('the frozen quote EV is saved inside the snapshot', sn.snapshot.quote_ev && sn.snapshot.quote_ev.expected_value === qev.expected_value && sn.snapshot.quote_ev.sportsbook === 'DraftKings');
+  chk('it is a copy, not the live object', sn.snapshot.quote_ev !== qev);
+  chk('the hash covers it', sn.snapshot_hash !== P.journalSnapshot(st()).snapshot_hash);
+  const e = { decision: 'wagered', market_type: 'spread', selection: 'away', line: 7.5, price_american: -110, result: 'win', clv_points: 0.5, snapshot: sn.snapshot };
+  chk('an entry reads its frozen EV back', P.entryEv(e).expected_value === qev.expected_value);
+  const B = P.evBuckets([e, Object.assign({}, e, { snapshot: {} })]);
+  chk('EV buckets count only entries with a frozen EV', B && B.n === 1 && B.buckets.length === 6);
+  chk('the journal\'s EV buckets carry calibration and CLV but no profit figure', !/roi|realized|units/i.test(JSON.stringify(B)) && B.buckets.some((b) => b.n === 1 && b.win_rate === 1));
+}
 
 /* ── the close and the grade ───────────────────────────────────────────── */
 const KO = '2026-09-18T00:15:00.000Z';

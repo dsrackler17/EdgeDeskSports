@@ -17,6 +17,10 @@ on:
       - 'lib/cfb_terminal.js'
       - 'lib/edgedesk_read.js'
       - 'lib/edgedesk_ev.js'
+      - 'lib/edgedesk_quote_ev.js'
+      - 'lib/research_core.js'
+      - 'tools/football/quote_ev.test.js'
+      - 'tools/football/quote_ev_ui.e2e.js'
       - 'football/cfb_ev/**'
       - 'football/cfb_terminal/**'
       - 'research/cfb/**'
@@ -35,6 +39,7 @@ on:
       - 'lib/cfb_terminal.js'
       - 'lib/edgedesk_read.js'
       - 'lib/edgedesk_ev.js'
+      - 'lib/edgedesk_quote_ev.js'
       - 'football/cfb_ev/**'
       - 'football/cfb_terminal/*.js'
       - 'research/cfb/**'
@@ -76,6 +81,10 @@ jobs:
         run: node football/cfb_terminal/read.test.js
       - name: The EdgeDesk EV engine (formulas, settlement, calibration contract, fixtures, property tests, the tournament's governance, the real slate, the page)
         run: node football/cfb_ev/ev.test.js
+      - name: Quote-level EV (exact-quote cover/push/loss, break-even, EV, best line/price/EV, alternate ladders, sanity guards, parity with the engines)
+        run: node tools/football/quote_ev.test.js
+      - name: Alternate-spread capture (parse, change-only ledger, browser feed, budget and credit controls; stubbed provider)
+        run: node football/cfb_terminal/alternates.test.js
       - name: The EV calibration tournament reproduces from the committed dataset (DEV only, writes nothing)
         run: node football/cfb_ev/tournament.js --check > /dev/null
       - name: The internal user test (answerability audit, 20 games)

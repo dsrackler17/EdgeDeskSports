@@ -22748,7 +22748,10 @@ const EDSPORTS: any = (globalThis as any).EDSPORTS;
 /*__EDRCORE_START__*/
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.EDResearch = factory();
+  /* EDResearchCore is the collision-free name: app.html's AI desk also
+     publishes a window.EDResearch (its tool primitives), so a reader that
+     needs THIS arithmetic asks for it by the name nothing else uses */
+  else { var api = factory(); root.EDResearch = api; root.EDResearchCore = api; }
 })(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this), function () {
   'use strict';
 
@@ -22989,18 +22992,26 @@ const EDSPORTS: any = (globalThis as any).EDSPORTS;
   /* Everything a price-aware panel shows, in one object. `prob` must be an
      explicit model probability for THIS wager at THIS line; when it is not
      available, every model-dependent field is null and `reason` says why. */
+  /* `prob` is the unconditional WIN probability; on a whole-number line a push
+     returns the stake, so the edge is measured on the no-push basis the
+     break-even lives on: cover = win / (1 - push). Its sign then always equals
+     the sign of expected_roi (lib/edgedesk_quote_ev.js carries the same rule).
+     With no push the cover IS the win probability and nothing changes. */
   R.priceAssessment = function (american, prob, pushProb) {
     var be = R.breakEven(american);
     var out = {
       american: num(american), decimal: R.americanToDecimal(american),
       implied_prob: be, break_even: be,
-      model_prob: null, prob_edge: null, expected_roi: null, reason: null
+      model_prob: null, cover_prob: null, prob_edge: null, expected_roi: null, reason: null
     };
     if (be == null) { out.reason = 'no valid price'; return out; }
-    var p = num(prob);
+    var p = num(prob), q = pushProb == null ? 0 : num(pushProb);
     if (p == null || p < 0 || p > 1) { out.reason = 'no explicit model probability for this wager'; return out; }
+    if (q == null || q < 0 || q >= 1 || p + q > 1 + EPS) { out.reason = 'the push probability does not fit the win probability'; return out; }
     out.model_prob = p;
-    out.prob_edge = p - be;
+    out.cover_prob = p / (1 - q);
+    out.break_even_unconditional = (1 - q) * be;
+    out.prob_edge = out.cover_prob - be;
     out.expected_roi = R.expectedRoi(p, american, pushProb);
     return out;
   };
@@ -23301,7 +23312,7 @@ const EDSPORTS: any = (globalThis as any).EDSPORTS;
     var R = require('./research_core.js'), E = null;
     try { E = require('./research_eval.js'); } catch (e) { E = null; }
     module.exports = factory(R, E);
-  } else root.EDGameResearch = factory(root.EDResearch, root.EDResearchEval || null);
+  } else root.EDGameResearch = factory(root.EDResearchCore || root.EDResearch, root.EDResearchEval || null);
 })(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this), function (R, E) {
   'use strict';
   if (!R) throw new Error('game_research needs research_core loaded first');
@@ -26112,7 +26123,8 @@ const EDCFBEXPLAIN: any = (globalThis as any).EDCfbExplain;
   'use strict';
   var P = { version: 'edgedesk_personal/1', SCHEMA: 'edgedesk_research_state/1' };
   var G = typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : {});
-  function RC() { return RC0 || G.EDResearch || null; }
+  /* EDResearchCore first: app.html's AI desk publishes a different window.EDResearch */
+  function RC() { return RC0 || G.EDResearchCore || (G.EDResearch && G.EDResearch.clvPoints ? G.EDResearch : null) || null; }
 
   function num(x) { return (typeof x === 'number' && isFinite(x)) ? x : null; }
   function r1(x) { return x == null ? null : Math.round(x * 10) / 10; }
@@ -26544,8 +26556,18 @@ const EDCFBEXPLAIN: any = (globalThis as any).EDCfbExplain;
     return { ok: errs.length === 0, errors: errs };
   };
   /* the information set at decision time, from the state on screen */
-  P.journalSnapshot = function (s0) {
-    if (!s0) return null;
+  /* quoteEv: the frozen quote-level EV of the exact wager being logged
+     (lib/edgedesk_quote_ev.js freeze — its line, price, book, EdgeDesk's
+     probabilities at that line, break-even, EV, fair odds, model version and
+     times). It rides INSIDE the write-once snapshot, so the database derives
+     its snap_ev_* columns from the same bytes, and nothing recomputes it later
+     with a newer model. */
+  P.journalSnapshot = function (s0, quoteEv) {
+    if (!s0 && !quoteEv) return null;
+    if (!s0) {
+      var bare = { schema: P.SCHEMA, captured_at: new Date().toISOString(), note: 'no EdgeDesk research state was available when this was saved', quote_ev: JSON.parse(JSON.stringify(quoteEv)) };
+      return { snapshot: bare, snapshot_hash: 'js1-' + P.hash(JSON.stringify(bare)) };
+    }
     /* a COPY: the live state object keeps changing on the page, the snapshot
        never does */
     var s = JSON.parse(JSON.stringify(s0));
@@ -26556,7 +26578,8 @@ const EDCFBEXPLAIN: any = (globalThis as any).EDCfbExplain;
       reliability: { score: num(rel.score), grade: rel.grade || null, tier: rel.tier || null, scored: !!rel.scored, main_deduction: rel.main_deduction || null },
       research_label: s.research_label || null, research_grade: !!s.research_grade, qb: s.qb || {}, injuries: s.injuries || {},
       movement: s.movement || {}, priority: s.priority || {}, key_reason: s.key_reason || null, state_hash: s.state_hash || P.stateHash(s),
-      computed_at: s.computed_at || null
+      computed_at: s.computed_at || null,
+      quote_ev: quoteEv ? JSON.parse(JSON.stringify(quoteEv)) : null
     };
     return {
       snap_fair_home_line: num(f.home_line), snap_fair_total: num(f.total), snap_market_home_line: num(m.home_line),
@@ -26638,6 +26661,36 @@ const EDCFBEXPLAIN: any = (globalThis as any).EDCfbExplain;
       if (x != null) out.result = Math.abs(x) < 1e-9 ? 'push' : (x > 0 ? 'win' : 'loss');
     }
     return out;
+  };
+  /* the EV frozen with an entry: the derived column when the database has
+     it, else the snapshot the page sent */
+  P.entryEv = function (e) {
+    if (!e) return null;
+    var q = e.snapshot && e.snapshot.quote_ev ? e.snapshot.quote_ev : null;
+    var ev = num(e.snap_ev) != null ? e.snap_ev : (q ? num(q.expected_value) : null);
+    if (ev == null) return null;
+    return { expected_value: ev, model_cover_probability: num(e.snap_ev_cover) != null ? e.snap_ev_cover : (q ? num(q.model_cover_probability) : null),
+      decimal_odds: q ? num(q.decimal_odds) : null, origin: q ? q.origin || null : null, model_version: q ? q.model_version || null : (e.snap_ev_model_version || null) };
+  };
+  /* DO HIGHER-EV DECISIONS HOLD UP? The graded wagers that carry a frozen EV,
+     in the six buckets of lib/edgedesk_quote_ev.js (EV < 0 … 15%+): n, the
+     win rate against the probability EdgeDesk stated, the calibration error
+     and CLV. The journal's rule stands — decision quality, never a profit
+     figure — so ROI and realized return are left out here; EdgeDesk's own EV
+     ledger (football/cfb_terminal/ev_validation.json) carries them. */
+  P.evBuckets = function (entries) {
+    var Q = G.EDQuoteEV || null;
+    if (!Q && typeof require === 'function') { try { Q = require('./edgedesk_quote_ev.js'); } catch (_) { Q = null; } }
+    if (!Q) return null;
+    var R = RC();
+    var rows = (entries || []).filter(function (e) { return e && e.decision === 'wagered' && e.market_type === 'spread'; }).map(function (e) {
+      var x = P.entryEv(e); if (!x) return null;
+      var dd = x.decimal_odds || (R && num(e.price_american) != null ? R.americanToDecimal(e.price_american) : null);
+      return { expected_value: x.expected_value, model_cover_probability: x.model_cover_probability, result: e.result || null, decimal_odds: dd, clv_points: num(e.clv_points) };
+    }).filter(Boolean);
+    var keep = ['bucket', 'key', 'n', 'n_settled', 'n_decided', 'avg_stated_ev', 'win_rate', 'avg_predicted_probability', 'calibration_error', 'avg_clv_points', 'positive_clv_rate', 'sufficient_n', 'note'];
+    return { n: rows.length, buckets: Q.evBuckets(rows, { min_n: 30 }).map(function (b) { var o = {}; keep.forEach(function (k) { o[k] = b[k]; }); return o; }),
+      note: 'Stated EV is the pregame EV frozen with each entry — never recomputed with a later model. Rates carry n; under 30 settled wagers a bucket is shown, not evidence.' };
   };
 
   /* ---------------------------------------------------------- analytics
@@ -26730,6 +26783,7 @@ const EDCFBEXPLAIN: any = (globalThis as any).EDCfbExplain;
           clv_points: num(e.clv_points), clv_price: num(e.clv_price), beat_close: e.beat_close == null ? null : !!e.beat_close,
           result: e.result || null, reliability: num(e.snap_reliability_score) };
       }),
+      ev_buckets: P.evBuckets(all),
       versus_edgedesk: { with_edgedesk: summary(withEd), against_edgedesk: summary(againstEd), no_side: noSide,
         against_games: againstEd.slice(0, 10).map(function (e) {
           var ed = P.edgedeskSide(e.snap_fair_home_line, e.snap_market_home_line);

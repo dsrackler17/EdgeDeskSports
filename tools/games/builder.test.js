@@ -279,7 +279,14 @@ if (good.json) {
        x-cron-secret does not match, its own scheduler included. The PRIMARY
        scheduler is pg_cron (supabase/capture_cron.sql) and needs no GitHub
        secret at all — it reads the value from the database. */
-    'CAPTURE_CRON_SECRET'];
+    'CAPTURE_CRON_SECRET',
+    /* The alternate-spread capture (football/cfb_terminal/alternates.js, the
+       opt-in step in cfb-lab.yml). Same rule as the deploy credentials: the
+       step runs only when the READ_ALT_CAPTURE variable is 'on', checks the
+       key for PRESENCE first, and an empty key prints a ::warning:: and a run
+       summary line naming what was not captured. Never a silent no-op, never
+       an invented price. */
+    'ODDS_API_KEY'];
   let files = [];
   try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
   chk('the workflow directory could be read', files.length > 0, String(files.length));

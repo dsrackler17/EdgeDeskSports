@@ -329,6 +329,23 @@ section('13. the real slate, from the committed production artifacts');
   });
   ok('the price curve’s distribution equals the engine’s coverProbSpread at the market number (' + checked + ' games)', checked > 0 && bad.length === 0, bad);
   ok('every price curve is monotone', objs.every((o) => !o.price.available || o.price.curve.every((r, i, a) => i === 0 || r.cover <= a[i - 1].cover + 1e-9)));
+  /* quote-level EV (lib/edgedesk_quote_ev.js), held on the same fresh build */
+  const qe = board.rows.map((r) => ({ r, q: r.quote_ev }));
+  ok('every board row carries a quote-EV block', qe.every((x) => x.q && typeof x.q.ev_available === 'boolean'));
+  ok('unavailable EV is null with a reason, never 0', qe.every((x) => x.q.ev_available || (x.q.expected_value_pct === null && !!x.q.ev_unavailable_reason)));
+  ok('available EV = win·(d−1) − loss at its own exact price, and the edge has the same sign', qe.filter((x) => x.q.ev_available).every(({ q }) => {
+    const a = q.best_price, d = a > 0 ? 1 + a / 100 : 1 + 100 / -a, c = q.model_cover_probability, p = q.model_push_probability;
+    const ev = c * (1 - p) * (d - 1) - (1 - c) * (1 - p);
+    return Math.abs(ev * 100 - q.expected_value_pct) < 0.01 && Math.abs(q.break_even_probability - 1 / d) < 1e-5 && Math.sign(q.probability_edge_pp) === Math.sign(q.expected_value_pct);
+  }));
+  ok('the quote the EV engine decided carries the board decision; no other quote inherits it', qe.filter((x) => x.q.ev_available && x.r.ev && x.r.ev.selected).every(({ r, q }) => {
+    const m = /^(.*)\s([+-]?\d+(?:\.\d+)?|PK)\s([+-]\d+)$/.exec(r.ev.selected);
+    const same = m && m[1] === q.best_team && (m[2] === 'PK' ? 0 : +m[2]) === q.best_spread && +m[3] === q.best_price && String(r.ev.book || '').toLowerCase() === String(q.best_book || '').toLowerCase();
+    return same ? q.decision_status === r.decision_status : q.decision_status === 'NOT_EVALUATED' || q.decision_status === 'NO_DECISION';
+  }));
+  ok('at most one exact quote per game is marked evaluated', objs.every((o) => { const g = o.quote_ev; if (!g) return true;
+    const all = [].concat(g.home && g.home.quotes || [], g.away && g.away.quotes || []);
+    return all.filter((x) => x.decision_evaluated).length <= 1; }));
   ok('the build refuses to write when a rule breaks (check mode runs clean)', require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'build.js'), '--check'], { encoding: 'utf8' }).status === 0);
   const hist = path.join(__dirname, 'history', String(slate.season), 'snapshots.jsonl');
   if (fs.existsSync(hist)) {

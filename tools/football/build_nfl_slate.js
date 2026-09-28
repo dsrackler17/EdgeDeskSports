@@ -394,7 +394,12 @@ function pricingBlock(games) {
   if (validation) EDPRICE.loadValidation(sport, validation);
   const ranked = EDPRICE.rankSlate({ sport, top: 8, games: games.map((g) => ({ game_id: g.game_id, home: g.home_team, away: g.away_team, kickoff: g.kickoff, model_home_line: g.model_home_line, market_home_line: g.reference_market ? g.reference_market.home_line : null, completeness: g.data_quality && num(g.data_quality.completeness) != null ? num(g.data_quality.completeness) : (g.qb_known === false ? 0.6 : 0.8), market_source: g.reference_market ? g.reference_market.source : null })) });
   return Object.assign(ranked, { validation: validation ? { artifact: 'football/validation/pricing_nfl.json', generated_at: validation.generated_at, spread_tier: validation.markets.spread.tier, required_edge_points: validation.markets.spread.required_edge_points, tier_basis: validation.markets.spread.tier_basis } : { artifact: null, error: 'no pricing validation on file; every side is CONDITIONAL' },
-    price_basis: 'reference market at an assumed -110; a captured book price re-prices the side at read time', rows: ranked.rows });
+    price_basis: 'reference market at an assumed -110; a captured book price re-prices the side at read time',
+    /* QUOTE-LEVEL EV (lib/edgedesk_quote_ev.js) needs an EXACT book price: the
+       reference line has none, so every row states that EV is unavailable and
+       why — never a 0, and never an EV off the assumed -110 */
+    rows: (ranked.rows || []).map((r) => Object.assign({}, r, { ev_available: false, expected_value_pct: null,
+      ev_unavailable_reason: 'no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time' })) });
 }
 
 async function main() {

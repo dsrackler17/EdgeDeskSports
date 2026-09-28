@@ -188,9 +188,18 @@ var FBS_HEAD = ['home_team_id', 'away_team_id', 'home_conference_id', 'away_conf
    FROZEN pregame record is record/football/cfb_<season>.json. */
 var CANON_HEAD = ['prediction_timestamp', 'research_status', 'decision_status', 'market_snapshot_home_line', 'market_snapshot_at',
   'price_state', 'favorite_flip', 'row_kind'];
-var HEAD = NFL_HEAD.concat(P4_HEAD).concat(FBS_HEAD).concat(CANON_HEAD);
+/* the quote-level EV block, byte-identical to app.html's FB_QEV_HEAD: the
+   best-EV main-market quote and its EV. Offline there is no live board, so it
+   is read from the terminal build (board.json rows[].quote_ev, priced by
+   lib/edgedesk_quote_ev.js at build time) and says so in ev_source; a game the
+   build did not price exports ev_available=false with the reason. */
+var EV_HEAD = ['best_spread', 'best_price', 'best_book', 'best_quote_timestamp', 'model_cover_probability', 'model_push_probability',
+  'break_even_probability', 'probability_edge_pp', 'expected_value_pct', 'calibrated_expected_value_pct', 'model_fair_odds',
+  'ev_available', 'ev_unavailable_reason', 'ev_state', 'quote_decision_status', 'best_ev_team', 'ev_source'];
+var HEAD = NFL_HEAD.concat(P4_HEAD).concat(FBS_HEAD).concat(CANON_HEAD).concat(EV_HEAD);
 var FBS_AT = NFL_HEAD.length + P4_HEAD.length;
 var CANON_AT = FBS_AT + FBS_HEAD.length;
+var EV_AT = CANON_AT + CANON_HEAD.length;
 var CANON = (function () { try { return require(path.join(HERE, '..', '..', 'lib', 'edgedesk_canon.js')); } catch (e) { return null; } })();
 var CANON_BOARD = (function () {
   try { var b = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'cfb_terminal', 'board.json'), 'utf8')), by = {}; (b.rows || []).forEach(function (r) { by[String(r.game_id)] = r; }); return by; }
@@ -203,6 +212,16 @@ function canonTail(g, p, mkt) {
     mkt && mkt.spread_line != null ? mkt.spread_line : '', (mkt && mkt.as_of) || '', cr ? cr.price_state || '' : '',
     CANON && fm != null && mm != null ? String(CANON.favoriteFlip(fm, mm)) : '',
     'OFFLINE_EXPORT: recomputed at export time; the frozen pregame record is record/football/cfb_' + (g.season || '') + '.json'];
+}
+
+function evTail(g) {
+  var cr = CANON_BOARD[String(g.game_id)] || null, x = cr && cr.quote_ev;
+  var src = 'OFFLINE_EXPORT: football/cfb_terminal/board.json quote_ev (priced at build time)';
+  if (!x) return ['', '', '', '', '', '', '', '', '', '', '', 'false', cr ? 'the terminal build carries no quote EV for this game' : 'the game is not on the terminal build', 'UNAVAILABLE', cr ? (cr.decision_status || 'NO_DECISION') : 'NO_DECISION', '', src];
+  var v = function (k) { return x[k] == null ? '' : x[k]; };
+  return [v('best_spread'), v('best_price'), v('best_book'), v('best_quote_timestamp'), v('model_cover_probability'), v('model_push_probability'),
+    v('break_even_probability'), v('probability_edge_pp'), v('expected_value_pct'), v('calibrated_expected_value_pct'), v('model_fair_odds'),
+    String(!!x.ev_available), v('ev_unavailable_reason'), v('ev_state'), v('decision_status'), v('best_team'), src];
 }
 
 /* the board's own operational read, restated here so the file and the screen
@@ -358,6 +377,7 @@ function csvRow(g, p, mkt, refSource, basis, universe) {
     row[FBS_AT - 1] = (p && (p.reason || (p.missing || []).join('; '))) || '';
     fbsTail(g, p, mkt, universe).forEach(function (v, i) { row[FBS_AT + i] = v; });
     canonTail(g, p, mkt).forEach(function (v, i) { row[CANON_AT + i] = v; });
+    evTail(g).forEach(function (v, i) { row[EV_AT + i] = v; });
     return row.map(q).join(',');
   }
 
@@ -414,7 +434,7 @@ function csvRow(g, p, mkt, refSource, basis, universe) {
     /* the FBS block and the canonical tail on PREDICTED rows too: a predicted
        row used to stop 19 columns short of the header, so every column after
        data_quality_notes was mis-aligned for exactly the rows that matter */
-  ]).concat(fbsTail(g, p, mkt, universe)).concat(canonTail(g, p, mkt)).map(q).join(',');
+  ]).concat(fbsTail(g, p, mkt, universe)).concat(canonTail(g, p, mkt)).concat(evTail(g)).map(q).join(',');
 }
 
 /* ----------------------------------------------------------------- main */

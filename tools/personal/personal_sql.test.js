@@ -209,6 +209,17 @@ try {
   err = db.mustFail(() => db.as(A, `insert into public.research_journal (game_key, decision, my_home_line, snapshot, snapshot_hash) values ('cfb|401862779','researching', 180, '{}','cmp3');`));
   chk('an impossible number is refused', !!err && /research_journal_my_numbers/.test(err));
   chk('B cannot read A\'s numbers', db.as(B, `select count(*) from public.research_journal where my_home_line is not null;`) === '0');
+  /* THE FROZEN QUOTE EV: derived from the snapshot the page sent, never from the columns, and write-once */
+  db.as(A, `insert into public.research_journal (game_key, decision, market_type, selection, sportsbook, line, price_american, snap_ev, snapshot, snapshot_hash)
+    values ('cfb|401862779','wagered','spread','away','DraftKings', 7, -110, 0.99,
+      '{"quote_ev":{"expected_value":0.1036,"model_cover_probability":0.578,"model_push_probability":0.02,"break_even_probability":0.52381,"model_fair_odds":-137,"line":7,"american_odds":-110,"sportsbook":"DraftKings","captured_at":"2026-09-28T11:52:00.000Z","projection_timestamp":"2026-09-28T10:00:00.000Z","model_version":"edgedesk_cfb_p4_v1.0.0","origin":"CAPTURED_QUOTE","decision_status":"NOT_EVALUATED"}}','qev1');`);
+  chk('the EV columns are derived from the snapshot, not from what the client sent',
+    db.as(A, `select snap_ev || '|' || snap_ev_cover || '|' || snap_ev_fair_odds || '|' || snap_ev_price || '|' || snap_ev_book || '|' || snap_ev_origin || '|' || snap_ev_decision from public.research_journal where snapshot_hash = 'qev1';`)
+      === '0.1036|0.578|-137|-110|DraftKings|CAPTURED_QUOTE|NOT_EVALUATED');
+  err = db.mustFail(() => db.service(`update public.research_journal set snap_ev = 0.5 where snapshot_hash = 'qev1';`));
+  chk('the frozen EV is write-once, even for the grading job', !!err && /write-once/.test(err));
+  db.as(A, `insert into public.research_journal (game_key, decision, snapshot, snapshot_hash) values ('cfb|401862779','researching','{}','qev2');`);
+  chk('an entry without a priced wager carries no EV (null, never 0)', db.as(A, `select coalesce(snap_ev::text, 'null') from public.research_journal where snapshot_hash = 'qev2';`) === 'null');
 
   /* ── persona ───────────────────────────────────────────────────────────── */
   db.as(A, `insert into public.user_preferences (leagues, persona) values ('{cfb}', 'model_builder') on conflict (user_id) do update set persona = excluded.persona;`);

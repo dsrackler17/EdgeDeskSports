@@ -64,6 +64,7 @@ const T = require(path.join(ROOT, 'lib', 'cfb_terminal.js'));
    game, from the same champion distribution, stored as a probability curve */
 const RD = require(path.join(ROOT, 'lib', 'edgedesk_read.js'));
 const EV = require(path.join(ROOT, 'lib', 'edgedesk_ev.js'));
+const QEV = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
 const INTEG = (() => { try { return require(path.join(ROOT, 'football', 'cfb_lab', 'integrity.js')); } catch (e) { return null; } })();
 
 function arg(name, dflt) { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : dflt; }
@@ -133,40 +134,11 @@ function typicalMove() {
    only the threshold. At threshold == market margin this reproduces the
    engine's own coverProbSpread exactly (tests pin it). With no market, the
    engine's own call is used unchanged. */
-function pmfEntries(pmf) {
-  const out = [];
-  Object.keys(pmf || {}).forEach((k) => out.push([parseInt(k, 10), pmf[k]]));
-  return out.sort((a, b) => a[0] - b[0]);
-}
+/* the conditioned shape lives in lib/edgedesk_quote_ev.js (cfbConditionedCover),
+   where the app's price ladder reads the SAME distribution; this name stays for
+   the callers here and in football/cfb_ev/dataset.js */
 function v1CoverConditioned(fair, condMargin, sigma, sigmaBase) {
-  const D = window.EDCfbP4Params.distributions || {};
-  const tab = D.margin_pmf_by_spread, rng = D.pmf_spread_range;
-  if (num(condMargin) == null || !tab || !rng || condMargin < rng[0] || condMargin > rng[1]) return null;
-  let key = (Math.round(condMargin * 2) / 2).toFixed(1);
-  if (key === '-0.0') key = '0.0';
-  const pmf = tab[key] || tab[Math.round(condMargin).toFixed(1)];
-  if (!pmf) return null;
-  const es = pmfEntries(pmf);
-  let em = 0, ew = 0;
-  es.forEach((e) => { em += e[0] * e[1]; ew += e[1]; });
-  const shift = ew > 0 ? Math.round(fair - em / ew) : 0;
-  const stretch = (num(sigma) && num(sigmaBase) && sigmaBase > 0) ? sigma / sigmaBase : 1;
-  const pts = es.map((e) => {
-    const m = e[0] + shift;
-    let w = e[1];
-    if (Math.abs(stretch - 1) >= 0.02) {
-      const z0 = (m - fair) / (sigmaBase || 1), z1 = (m - fair) / (sigma || 1);
-      w = e[1] * Math.exp(-0.5 * (z1 * z1 - z0 * z0)) / stretch;
-    }
-    return [m, w];
-  });
-  const tot = pts.reduce((s, x) => s + x[1], 0);
-  if (!(tot > 0)) return null;
-  return function (threshold) {
-    let win = 0, push = 0;
-    pts.forEach((x) => { if (Math.abs(x[0] - threshold) < 1e-9) push += x[1]; else if (x[0] > threshold) win += x[1]; });
-    return { win: win / tot, push: push / tot, lose: 1 - (win + push) / tot };
-  };
+  return QEV.cfbConditionedCover(window.EDCfbP4Params.distributions, fair, condMargin, sigma, sigmaBase);
 }
 function v1Dist(margin, sigma, marketMargin) {
   const P = window.EDCfbP4Params, base = (P.volatility && P.volatility.sigma_base) || (P.distributions && P.distributions.sigma_margin) || 15;
@@ -261,7 +233,7 @@ function contractField(row, field, side) { return (row.input_contract || []).fin
 
 function buildGame(ctx, row) {
   const G = ctx.gov, now = ctx.now, gid = String(row.game_id);
-  ctx._governed = null;
+  ctx._governed = null; ctx._governedTop = null; ctx._governedQuotes = null;
   const labRows = (ctx.ledger.preds.get(gid) || []).filter((r) => ms(r.prediction_ts) != null && ms(r.prediction_ts) <= now);
   const champRows = labRows.filter((r) => r.model_version === G.champion).sort((a, b) => ms(a.prediction_ts) - ms(b.prediction_ts));
   const latestChamp = champRows[champRows.length - 1] || null;
@@ -392,6 +364,12 @@ function buildGame(ctx, row) {
       ctx._governed = { engine: DEC.ENGINE_ID + ' ' + DEC.ENGINE_VERSION, policy_version: G.policy ? G.policy.version : null, by_quote: {} };
       (gd.decisions || []).forEach((d) => { if (d.quote_id) ctx._governed.by_quote[d.quote_id] = { status: d.status, reason_codes: (d.reason_codes || []).slice(), timing: d.timing, book: d.book, line: d.line_for_side, side: d.side }; });
       const top = gd.decisions && gd.decisions.length ? gd.decisions[gd.summary_index == null ? 0 : gd.summary_index] : null;
+      /* for quote-level EV only (never stored): the engine states sides as
+         HOME / AWAY, quote EV as home / away, and carries the price it decided on */
+      const sideOf = (x) => (x ? String(x).toLowerCase() : null);
+      ctx._governedQuotes = (gd.decisions || []).filter((d) => d.quote_id).map((d) => ({ quote_id: d.quote_id, status: d.status, reason_codes: (d.reason_codes || []).slice(),
+        book: d.book, line: d.line_for_side, side: sideOf(d.side), price: num(d.price) }));
+      ctx._governedTop = top ? { side: sideOf(top.side), line: top.line_for_side, book: top.book, price: num(top.price), quote_id: top.quote_id } : null;
       decision = { engine: DEC.ENGINE_ID + ' ' + DEC.ENGINE_VERSION, status: gd.status, reason_codes: (top ? top.reason_codes : gd.reason_codes) || [],
         reasons: ((top ? top.reason_codes : gd.reason_codes) || []).map((c) => DEC.REASON[c] || c), detail: top ? top.detail || null : null, model_version: model.model_version };
       /* EVALUATED: the engine saw at least one fresh two-sided priced quote.
@@ -468,8 +446,140 @@ function buildGame(ctx, row) {
     try { ev = EV.evRead(rin, read, { artifact: ctx.ev.artifact, policy: ctx.ev.policy, now: now, history: evHistory, typical_move_pts: ctx.cfg.typical_move_pts }); }
     catch (e) { ev = null; ctx.warnings.push('EdgeDesk EV failed for ' + gid + ': ' + e.message); }
   }
-  ctx._governed = null;
-  return { object: o, read: read, read_inputs: readInputs, ev: ev, ev_history: evHistory, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
+  /* QUOTE-LEVEL EV: every captured quote, both sides, priced one by one */
+  let quoteEv = null;
+  try { quoteEv = quoteEvOf(ctx, o, rin, read, ev); } catch (e) { quoteEv = null; ctx.warnings.push('Quote EV failed for ' + gid + ': ' + e.message); }
+  ctx._governed = null; ctx._governedTop = null; ctx._governedQuotes = null;
+  return { object: o, read: read, read_inputs: readInputs, ev: ev, ev_history: evHistory, quote_ev: quoteEv, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
+}
+
+/* ------------------------------------------------------------ QUOTE-LEVEL EV
+   Every captured quote a game has (each book's latest main line, and every
+   alternate on file), BOTH sides, priced through lib/edgedesk_quote_ev.js on
+   the SAME stored curve the EV read prices from, with the calibrated
+   probability read off the EV read's own market-line anchor. The decision
+   engine's verdict is attached only to the exact quotes it evaluated; every
+   other quote is priced, never decided. What the API carries: board.json
+   rows[].quote_ev, games.json games[].quote_ev, quote_ev.csv. */
+function curveCover(curve) {
+  return function (t) {
+    if (!curve || !curve.win) return null;
+    const i = (t - curve.lo) / curve.step;
+    if (Math.abs(i - Math.round(i)) > 1e-6 || i < -1e-9 || Math.round(i) >= curve.win.length) return null;
+    const k = Math.round(i), w = curve.win[k], p = curve.push[k] || 0;
+    return { win: w, push: p, lose: Math.max(0, 1 - w - p) };
+  };
+}
+function quoteEvOf(ctx, o, rin, read, ev) {
+  if (!rin || !rin.model || !rin.model.available || !rin.curve) return null;
+  const P = EV.policyOf(ctx.ev.policy), kick = o.kickoff || null;
+  const game = { game_id: o.game_id, home: o.game.home, away: o.game.away, kickoff: kick };
+  const live = RD.latestQuotes((rin.market.quotes || []).map((q, i) => RD.normalizeQuote(q, i))).filter((q) => q.market_type === 'spread' && num(q.home_line) != null && !q.pseudo);
+  const quotes = [];
+  live.forEach((q) => {
+    const ttl = EV.ttlFor(P, 'spread', 'LEDGER', !!q.alternate, kick, ctx.now, false).minutes;
+    const age = ms(q.observed_at) != null ? (ctx.now - ms(q.observed_at)) / 60000 : null;
+    const fresh = age == null ? null : (age >= -5 && age <= ttl);
+    ['home', 'away'].forEach((s) => {
+      const pr = s === 'home' ? q.price_home : q.price_away;
+      quotes.push({ game_id: o.game_id, side: s, line: s === 'home' ? q.home_line : -q.home_line, american: num(pr), book: q.book, captured_at: q.observed_at,
+        fresh: fresh, freshness_state: fresh == null ? 'UNKNOWN' : (fresh ? 'FRESH' : 'STALE'), market_type: q.alternate ? 'alternate_spread' : 'spread',
+        quote_id: q.quote_id || null, provider_market_key: q.source || null, n_books: 1 });
+    });
+  });
+  const anchor = ev && ev.calibration_anchor && !ev.calibration_anchor.problem && num(ev.calibration_anchor.delta_pts) != null ? ev.calibration_anchor : null;
+  const tc = { validated: false, reason: 'the calibration tournament (' + (ctx.ev.calibration_version || '?') + ') has no totals task; totals EV is NOT ACTIVATED (lib/edgedesk_ev.js MARKETS.total)' };
+  const mlCal = ctx.ev.artifact && ctx.ev.artifact.calibrators ? ctx.ev.artifact.calibrators['cfb|moneyline|close'] : null;
+  const model = { sport: 'CFB', available: true, model_version: rin.model.model_version, projection_timestamp: rin.model.prediction_ts || null,
+    fair_home_margin: rin.model.home_margin, home_cover: curveCover(rin.curve), basis: rin.curve.basis || null,
+    adjusted: anchor ? { available: true, label: 'CALIBRATED', method: ev.calibration.method, version: ev.calibrator_version, maturity: ev.calibration.maturity,
+      side_prob: (side, line) => EV.shiftedSide(rin.curve, side, line, anchor.delta_pts) }
+      : { available: false, reason: ev && ev.calibration ? (ev.calibration.reason || (ev.calibration_anchor && ev.calibration_anchor.problem) || 'no fresh consensus line to anchor the calibrator') : 'no EV read' },
+    tail: ctx.qevTail, key_mass: (window.EDCfbP4Params.distributions || {}).abs_margin_key_mass || null,
+    total_calibration: tc,
+    moneyline: { home_win_prob: rin.model.home_win_prob, calibration: { validated: !!(mlCal && (mlCal.status === 'PROMOTED' || mlCal.status === 'IDENTITY_VALIDATED')), reason: mlCal ? 'moneyline calibrator ' + mlCal.status + (mlCal.reason ? ': ' + mlCal.reason : '') : 'no moneyline calibrator' } } };
+  const rs = o.research_status ? o.research_status.key : null;
+  const orient = ev && ev.circuit_breaker && (ev.circuit_breaker.checks || []).some((c) => c.id === 'SIGN_ORIENTATION' && c.status === 'FAIL');
+  const qctx = { now: ctx.now, game: game, research_status: rs, data_fault: rs === 'DATA_FAULT',
+    orientation: orient ? { ok: false, reason: 'the market number looks flipped relative to the model (EV circuit breaker)' } : { ok: true },
+    market_check_failed: !!(read && read.integrity_status && read.integrity_status.quote_check_blocks), market_check_reason: 'two current numbers for one book disagree',
+    market_stale: !!o.market.stale, reliability: num(o.data_quality && o.data_quality.reliability), qb_unresolved: !!(read && read.qb_status && read.qb_status.resolved === false) };
+  const G = QEV.evaluateGame(model, quotes, qctx);
+  const ds = o.decision_status || {};
+  const two = /two-sided priced quote/.test(ds.reason || '');
+  /* the quote the verdict was reached on: the governed engine's when it chose
+     a side; when it failed closed before choosing one (an artifact or policy
+     mismatch), the exact quote the EV engine selected and decided */
+  const sel = ev && ev.selected ? ev.selected : null;
+  const evalQ = ctx._governedTop && ctx._governedTop.side ? ctx._governedTop
+    : (sel && sel.side && num(sel.line) != null ? { side: String(sel.side).toLowerCase(), line: sel.line, book: sel.book || null,
+      price: sel.odds ? num(sel.odds.american) : null, team: sel.team || null, source: 'EV engine' } : null);
+  const D = { status: ds.key || 'NO_DECISION', reason: ds.reason || null, evaluated_quote: evalQ,
+    requires: two ? 'the decision engine only decides on a fresh quote with both sides priced at the same line by one book, and none is on file' : null };
+  const govq = ctx._governedQuotes || [];
+  const pol = { bet_enabled: !!(ctx.gov.policy && ctx.gov.policy.bet_enabled), wait_enabled: !!(ctx.gov.policy && ctx.gov.policy.wait && ctx.gov.policy.wait.enabled) };
+  /* the engine's own quote ids are not the ledger's: a decision belongs to a
+     priced quote when it names the same side, line, book and price */
+  const sameBook = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase();
+  const govFor = (q, src) => {
+    const byId = src && src.quote_id ? govq.find((g) => g.quote_id === src.quote_id && g.side === q.side) : null;
+    if (byId) return byId;
+    const px = src ? src.american : null;
+    return govq.find((g) => g.side === q.side && num(g.line) != null && Math.abs(g.line - q.line) < 1e-9
+      && sameBook(g.book, q.sportsbook) && (g.price == null || px == null || g.price === px)) || null;
+  };
+  ['home', 'away'].forEach((s) => (G.sides[s] ? G.sides[s].quotes : []).forEach((q) => {
+    const src = quotes.find((x) => x.side === q.side && x.book === q.sportsbook && x.line === q.line && x.captured_at && iso(x.captured_at) === q.captured_at);
+    const gv = govFor(q, src);
+    if (gv && gv.side === q.side && q.ev_available && T.Canon) {
+      const c = T.Canon.decisionStatus({ status: gv.status, reasons: (gv.reason_codes || []).map((k) => DEC.REASON[k] || k) }, pol, true);
+      q.decision_status = c.key; q.decision_reason = c.reason; q.decision_evaluated = true;
+    } else { const d = QEV.decisionFor(q, D); q.decision_status = d.status; q.decision_reason = d.reason; q.decision_evaluated = !!d.evaluated; }
+  }));
+  return { game: G, decision: D };
+}
+function iso(t) { const v = ms(t); return v == null ? null : new Date(v).toISOString(); }
+/* the API fields a board row carries (the names the export contract uses) */
+function quoteEvRow(x) {
+  if (!x || !x.game) return { ev_available: false, ev_unavailable_reason: 'no projection distribution', best_spread: null, best_price: null, best_book: null, best_quote_timestamp: null,
+    model_cover_probability: null, model_push_probability: null, break_even_probability: null, probability_edge_pp: null, expected_value_pct: null, model_fair_odds: null, decision_status: null };
+  const G = x.game, b = G.best_ev_quote;
+  const side = b ? G.sides[b.side] : null, L = side ? side.ladder : null;
+  return { ev_available: !!b, ev_unavailable_reason: b ? null : G.ev_unavailable_reason, ev_state: b ? b.ev_state : 'UNAVAILABLE',
+    best_team: b ? b.team : null, best_side: b ? b.side : null, best_spread: b ? b.line : null, best_price: b ? b.american_odds : null, best_book: b ? b.sportsbook : null,
+    best_quote_timestamp: b ? b.captured_at : null, quote_age_minutes: b ? b.quote_age_minutes : null,
+    model_cover_probability: b ? b.model_cover_probability : null, model_push_probability: b ? b.model_push_probability : null,
+    break_even_probability: b ? b.break_even_probability : null, probability_edge_pp: b ? b.probability_edge_pp : null,
+    expected_value_pct: b ? b.expected_value_pct : null, model_fair_odds: b ? b.model_fair_odds : null,
+    calibrated_expected_value_pct: b && b.adjusted && b.adjusted.available ? b.adjusted.expected_value_pct : null,
+    decision_status: b ? b.decision_status : x.decision.status, decision_reason: b ? b.decision_reason : x.decision.reason,
+    max_ev: L && L.max_ev ? { label: L.max_ev.label, book: L.max_ev.sportsbook, expected_value_pct: L.max_ev.expected_value_pct, cover: L.max_ev.model_cover_probability, tail: L.max_ev.tail ? L.max_ev.tail.status : null } : null,
+    safest_positive_ev: L && L.safest_positive_ev ? { label: L.safest_positive_ev.label, book: L.safest_positive_ev.sportsbook, expected_value_pct: L.safest_positive_ev.expected_value_pct, cover: L.safest_positive_ev.model_cover_probability } : null,
+    n_quotes_priced: ['home', 'away'].reduce((n, s) => n + (G.sides[s] ? G.sides[s].n_available : 0), 0), n_quotes: G.n_quotes,
+    flags: G.flags.concat(b ? b.flags : []).map((f) => f.code) };
+}
+function quoteEvCsvRow(o, q) {
+  return { game_id: o.game_id, kickoff: o.kickoff, home: o.game.home, away: o.game.away, team: q.team, side: q.side, market_type: q.market_type, spread: q.line,
+    american_odds: q.american_odds, decimal_odds: q.decimal_odds, sportsbook: q.sportsbook, captured_at: q.captured_at, quote_age_minutes: q.quote_age_minutes, quote_status: q.quote_status,
+    model_cover_probability: q.model_cover_probability, model_push_probability: q.model_push_probability, model_loss_probability: q.model_loss_probability,
+    break_even_probability: q.break_even_probability, probability_edge_pp: q.probability_edge_pp, expected_value_pct: q.expected_value_pct, model_fair_odds: q.model_fair_odds,
+    calibrated_expected_value_pct: q.adjusted && q.adjusted.available ? q.adjusted.expected_value_pct : null, calibration_status: q.calibration_status,
+    ev_available: q.ev_available, ev_state: q.ev_state, ev_unavailable_reason: q.ev_unavailable_reason, tail: q.tail ? q.tail.status : null, dominated: !!q.dominated,
+    decision_status: q.decision_status, model_version: q.model_version, projection_timestamp: q.projection_timestamp, flags: (q.flags || []).map((f) => f.code).join('|') };
+}
+/* the full per-quote object a game page and an API reader get */
+function quoteEvGame(x) {
+  if (!x || !x.game) return null;
+  const G = x.game, strip = (q) => { const o = {}; Object.keys(q).forEach((k) => { if (k !== 'flags' || q.flags.length) o[k] = q[k]; }); return o; };
+  const side = (s) => { const S = G.sides[s]; if (!S) return null;
+    return { team: S.team, main_line: S.main_line, best_line: S.best_line ? S.best_line.label + ' · ' + S.best_line.sportsbook : null, best_price: S.best_price ? S.best_price.label + ' · ' + S.best_price.sportsbook : null,
+      best_ev: S.best_ev ? S.best_ev.label + ' · ' + S.best_ev.sportsbook : null, quotes: S.quotes.map(strip),
+      ladder: { frontier: S.ladder.frontier.map((q) => q.label + ' · ' + q.sportsbook), max_ev: S.ladder.max_ev ? S.ladder.max_ev.label : null,
+        safest_positive_ev: S.ladder.safest_positive_ev ? S.ladder.safest_positive_ev.label : null, main: S.ladder.main ? S.ladder.main.label : null,
+        steps: S.ladder.steps, best_balance: null, best_balance_note: S.ladder.best_balance_note } }; };
+  return { schema: QEV.VERSION, evaluated_at: G.evaluated_at, model_version: G.model_version, projection_timestamp: G.projection_timestamp, main_line: G.main_line,
+    best_ev_quote: G.best_ev_quote ? G.best_ev_quote.label + ' · ' + G.best_ev_quote.sportsbook : null, best_ev_pct: G.best_ev_pct,
+    ev_unavailable_reason: G.ev_unavailable_reason, decision: x.decision, flags: G.flags, home: side('home'), away: side('away') };
 }
 
 /* --------------------------------------------------- the Read's stored inputs
@@ -770,8 +880,26 @@ function evLedger(season, built, ctx, now) {
   const validation = EV.validation(all, allGrades, { season: season, calibrator_version: ctx.ev.calibration_version, policy_version: ctx.ev.policy_version });
   validation.n_snapshots = all.length; validation.n_grades = allGrades.length;
   validation.next100 = next100Progress(ctx.ev.next100, all, allGrades);
+  validation.quote_ev_buckets = quoteEvBuckets(all, allGrades);
   return { new_snaps: newSnaps, new_grades: newGrades, all: all, grades: allGrades, validation: validation,
     paths: { snapshots: L.base + '/ev_snapshots.jsonl', grades: L.base + '/ev_grades.jsonl' } };
+}
+/* DO HIGHER-EV READS ACTUALLY PERFORM BETTER? Every frozen EV snapshot with
+   a grade, bucketed by the EV it STATED pregame (lib/edgedesk_quote_ev.js
+   EV_BUCKETS: < 0, 0–2, 2–5, 5–10, 10–15, 15%+), raw and calibrated apart:
+   n, cover rate against the stated probability, calibration error, CLV and
+   the positive-CLV rate, ROI and realized return at the RECORDED price. Never
+   recomputed with a newer model — the snapshot's own numbers are the stated
+   ones. If +15% raw reads cover like coin flips with poor CLV, the raw
+   probability is overconfident, and this is where that shows. */
+function quoteEvBuckets(snaps, grades) {
+  const byId = {}; (grades || []).forEach((g) => { byId[g.snapshot_id] = g; });
+  const res = (g) => (!g || !g.bet_result_state ? null : (g.bet_result_state === 'FULL_WIN' ? 'win' : (g.bet_result_state === 'FULL_LOSS' ? 'loss' : 'push')));
+  const rows = (key, pkey) => (snaps || []).filter((x) => num(x[key]) != null).map((x) => { const g = byId[x.snapshot_id];
+    return { expected_value: x[key], model_cover_probability: x[pkey], result: res(g), decimal_odds: x.decimal_odds, clv_points: g ? num(g.clv_points) : null }; });
+  return { rule: 'each read is bucketed by the EV it stated pregame and graded at its recorded line and price; rates under n 30 are shown, not evidence',
+    raw: QEV.evBuckets(rows('raw_model_ev', 'p_cover_raw'), { min_n: 30 }), calibrated: QEV.evBuckets(rows('calibrated_ev', 'p_cover_calibrated'), { min_n: 30 }),
+    n_snapshots: (snaps || []).length, n_graded: (snaps || []).filter((x) => byId[x.snapshot_id] && byId[x.snapshot_id].bet_result_state).length };
 }
 /* THE PROSPECTIVE NEXT-100 (football/cfb_ev/next100_freeze.json): the first
    100 eligible EV reads after the freeze, under the frozen versions. Counted
@@ -810,6 +938,7 @@ function main() {
   const ops = readJson('football/cfb_production/reports/ops.json', null);
   const tm = typicalMove();
   const evCfg = loadEv();
+  const qevTour = evCfg.calibration_version ? readJson('football/cfb_ev/artifacts/' + evCfg.calibration_version + '/tournament.json', null) : null;
   const cfg = { stale_minutes: gov.policy ? gov.policy.stale_minutes : 180, min_books: gov.policy ? gov.policy.min_books : 3,
     max_dispersion_iqr: gov.policy ? gov.policy.max_dispersion_iqr : 1.5, max_model_sd: gov.policy ? gov.policy.max_ensemble_sd : 6,
     min_probability_edge: gov.policy ? gov.policy.min_probability_edge : 0.01, ideal_probability_edge: gov.policy ? gov.policy.ideal_probability_edge : 0.02,
@@ -825,6 +954,7 @@ function main() {
     metrics: readJson('football/matchup/metrics.json', { teams: {} }), history: loadHistory(season), cfg: cfg,
     etsr: loadEtsr(season), divergenceCut: divergenceCut(), pricingFingerprint: pricingFingerprint(),
     evNote: calibratedEvNote(gov.artifact, gov.policy), warnings: warnings, ev: evCfg, evLedger: evLedgerLoad(season),
+    qevTail: QEV.tailDomain(qevTour && qevTour.alternate_line_domain),
     degraded: ops && ops.system ? { status: ops.system.status, rule: ops.system.rule } : null,
     sources: [
       { id: 'slate', path: 'football/fbs/slate.json', updated_at: slate.generated_at, what: 'champion projections, reliability, QB context' },
@@ -896,7 +1026,10 @@ function main() {
   const board = Object.assign({ schema: 'edgedesk_cfb_terminal_board_v1' }, meta, {
     counts: T.counts(objs), terms: T.TERMS, statuses: T.STATUS, status_order: T.STATUS_KEYS,
     filters: Object.keys(T.FILTERS).map((k) => ({ key: k, label: T.FILTERS[k].label, n: objs.filter((o) => o.flags[k]).length })),
-    rows: objs.map((o) => Object.assign(boardRow(o), { read: readRow(readOf[o.game_id] && readOf[o.game_id].read), ev: evRow(readOf[o.game_id] && readOf[o.game_id].ev) })),
+    rows: objs.map((o) => Object.assign(boardRow(o), { read: readRow(readOf[o.game_id] && readOf[o.game_id].read), ev: evRow(readOf[o.game_id] && readOf[o.game_id].ev),
+      quote_ev: quoteEvRow(readOf[o.game_id] && readOf[o.game_id].quote_ev) })),
+    quote_ev: { engine: QEV.VERSION, tooltip: QEV.TOOLTIP, tail_domain: ctx.qevTail,
+      rule: 'EV at each exact quote (its line, its price, its book) from EdgeDesk’s own distribution; RAW and calibrated kept apart; a decision attaches only to the quote the decision engine evaluated.' },
     ev_counts: (() => { const c = {}; objs.forEach((o) => { const e = readOf[o.game_id] && readOf[o.game_id].ev; const k = e ? e.decision_status : 'NO_EV'; c[k] = (c[k] || 0) + 1; }); return c; })(),
     ev: { engine: EV.VERSION, calibration: evCfg.calibration_version, policy: evCfg.policy_version, policy_maturity: evCfg.policy ? evCfg.policy.maturity : null,
       spread_calibrator: evCfg.artifact && evCfg.artifact.calibrators ? { status: evCfg.artifact.calibrators['cfb|spread|close'].status, method: evCfg.artifact.calibrators['cfb|spread|close'].method } : null },
@@ -906,7 +1039,7 @@ function main() {
     record_headline: { n: rec.n, ats: rec.ats, clv: rec.clv, versions: rec.versions }
   });
   const games = Object.assign({ schema: 'edgedesk_cfb_terminal_games_v1' }, meta, { games: {} });
-  objs.forEach((o) => { const x = readOf[o.game_id] || {}; games.games[o.game_id] = Object.assign({}, o, { read: x.read || null, read_inputs: x.read_inputs || null, ev: x.ev || null, ev_history: x.ev_history || [] }); });
+  objs.forEach((o) => { const x = readOf[o.game_id] || {}; games.games[o.game_id] = Object.assign({}, o, { read: x.read || null, read_inputs: x.read_inputs || null, ev: x.ev || null, ev_history: x.ev_history || [], quote_ev: quoteEvGame(x.quote_ev) }); });
   games.read = { version: RD.VERSION, timing_vocabulary: RD.TIMING, research_vocabulary: RD.RESEARCH_STATUS, validation: RL.validation, ledger: RL.paths };
   /* what the page needs to re-price the EV read on the reader's clock: the pinned calibrator artifact and policy */
   games.ev = { engine: EV.VERSION, artifact: evCfg.artifact || null, policy: evCfg.policy || null, decision_vocabulary: EV.DECISION, tooltip: EV.TOOLTIP, validation: EVL.validation, ledger: EVL.paths };
@@ -990,6 +1123,15 @@ function main() {
     const cell = (v) => { if (v == null) return ''; const t = String(v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
     fs.writeFileSync(path.join(outDir, 'ev.csv'), cols.join(',') + '\n' + evRows.map((r) => cols.map((c) => cell(r[c])).join(',')).join('\n') + '\n');
   }
+  /* every priced quote, one row each: the quote-level EV export */
+  const qevRows = [];
+  objs.forEach((o) => { const x = readOf[o.game_id] && readOf[o.game_id].quote_ev; if (!x || !x.game) return;
+    ['home', 'away'].forEach((s) => (x.game.sides[s] ? x.game.sides[s].quotes : []).forEach((q) => qevRows.push(quoteEvCsvRow(o, q)))); });
+  if (qevRows.length) {
+    const cols = Object.keys(qevRows[0]);
+    const cell = (v) => { if (v == null) return ''; const t = String(v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    fs.writeFileSync(path.join(outDir, 'quote_ev.csv'), cols.join(',') + '\n' + qevRows.map((r) => cols.map((c) => cell(r[c])).join(',')).join('\n') + '\n');
+  }
   w('read_validation.json', Object.assign({ schema: 'edgedesk_read_validation_file_v1', generated_at: new Date(now).toISOString(), season: season }, RL.validation));
   /* the Read for spreadsheets and API readers: one row per game (lib/edgedesk_read.js exportRow) */
   const csvRows = objs.map((o) => readOf[o.game_id] && readOf[o.game_id].read).filter(Boolean).map(RD.exportRow);
@@ -1002,4 +1144,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { buildGame, boardRow, snapshotRow, v1Dist, v2Dist, v1Sigma, loadGovernance, calibratedEvNote, typicalMove, loadEv, evRow, next100Progress };
+module.exports = { buildGame, boardRow, snapshotRow, v1Dist, v2Dist, v1Sigma, loadGovernance, calibratedEvNote, typicalMove, loadEv, evRow, next100Progress, quoteEvOf, quoteEvRow, quoteEvGame, curveCover };

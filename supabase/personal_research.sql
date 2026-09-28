@@ -671,6 +671,26 @@ do $c$ begin
       and (my_total is null or my_total between 0 and 400));
   end if;
 end $c$;
+-- THE PRICE OF THE WAGER AT DECISION TIME (lib/edgedesk_quote_ev.js freeze):
+-- the exact line, price and book, EdgeDesk's probabilities at that line, the
+-- break-even, the EV and the fair odds, with the model and quote times. The
+-- page sends it INSIDE the write-once snapshot (snapshot.quote_ev); the insert
+-- trigger derives these columns from those bytes, so a client can never send
+-- one number in the column and another in the snapshot, and nothing is ever
+-- recomputed later with a newer model. Part of the information set: write-once.
+alter table public.research_journal add column if not exists snap_ev                    numeric;
+alter table public.research_journal add column if not exists snap_ev_cover              numeric;
+alter table public.research_journal add column if not exists snap_ev_push               numeric;
+alter table public.research_journal add column if not exists snap_ev_break_even         numeric;
+alter table public.research_journal add column if not exists snap_ev_fair_odds          int;
+alter table public.research_journal add column if not exists snap_ev_line               numeric;
+alter table public.research_journal add column if not exists snap_ev_price              int;
+alter table public.research_journal add column if not exists snap_ev_book               text;
+alter table public.research_journal add column if not exists snap_ev_quote_captured_at  timestamptz;
+alter table public.research_journal add column if not exists snap_ev_projection_at      timestamptz;
+alter table public.research_journal add column if not exists snap_ev_model_version      text;
+alter table public.research_journal add column if not exists snap_ev_origin             text;
+alter table public.research_journal add column if not exists snap_ev_decision           text;
 create index if not exists research_journal_user_idx on public.research_journal (user_id, created_at desc);
 -- entries carrying the reader's own number are closed like wagers, so "your
 -- number, EdgeDesk's number, the close" can be read side by side
@@ -702,6 +722,29 @@ begin
   else
     new.server_state := null; new.server_state_hash := null; new.server_state_at := null;
   end if;
+  -- the frozen quote EV: read from the snapshot the page sent, never from the columns
+  declare q jsonb := new.snapshot->'quote_ev';
+  begin
+    if q is not null and jsonb_typeof(q) = 'object' then
+      new.snap_ev := case when jsonb_typeof(q->'expected_value') = 'number' then (q->>'expected_value')::numeric end;
+      new.snap_ev_cover := case when jsonb_typeof(q->'model_cover_probability') = 'number' then (q->>'model_cover_probability')::numeric end;
+      new.snap_ev_push := case when jsonb_typeof(q->'model_push_probability') = 'number' then (q->>'model_push_probability')::numeric end;
+      new.snap_ev_break_even := case when jsonb_typeof(q->'break_even_probability') = 'number' then (q->>'break_even_probability')::numeric end;
+      new.snap_ev_fair_odds := case when jsonb_typeof(q->'model_fair_odds') = 'number' then round((q->>'model_fair_odds')::numeric)::int end;
+      new.snap_ev_line := case when jsonb_typeof(q->'line') = 'number' then (q->>'line')::numeric end;
+      new.snap_ev_price := case when jsonb_typeof(q->'american_odds') = 'number' then round((q->>'american_odds')::numeric)::int end;
+      new.snap_ev_book := left(q->>'sportsbook', 60);
+      new.snap_ev_quote_captured_at := case when q->>'captured_at' ~ '^\d{4}-\d{2}-\d{2}T' then (q->>'captured_at')::timestamptz end;
+      new.snap_ev_projection_at := case when q->>'projection_timestamp' ~ '^\d{4}-\d{2}-\d{2}T' then (q->>'projection_timestamp')::timestamptz end;
+      new.snap_ev_model_version := left(q->>'model_version', 80);
+      new.snap_ev_origin := left(q->>'origin', 40);
+      new.snap_ev_decision := left(q->>'decision_status', 40);
+    else
+      new.snap_ev := null; new.snap_ev_cover := null; new.snap_ev_push := null; new.snap_ev_break_even := null; new.snap_ev_fair_odds := null;
+      new.snap_ev_line := null; new.snap_ev_price := null; new.snap_ev_book := null; new.snap_ev_quote_captured_at := null;
+      new.snap_ev_projection_at := null; new.snap_ev_model_version := null; new.snap_ev_origin := null; new.snap_ev_decision := null;
+    end if;
+  end;
   new.close_home_line := null; new.close_total := null; new.close_ml_home := null; new.close_ml_away := null;
   new.close_captured_at := null; new.close_source := null; new.close_fair_home_line := null;
   new.clv_points := null; new.clv_price := null; new.beat_close := null;
@@ -725,7 +768,10 @@ begin
       new.snap_reliability_score, new.snap_reliability_grade, new.snap_research_label, new.snap_qb,
       new.snap_injuries, new.snap_model_version, new.snapshot, new.snapshot_hash,
       new.server_state, new.server_state_hash, new.server_state_at, new.after_kickoff,
-      new.my_home_line, new.my_total)
+      new.my_home_line, new.my_total,
+      new.snap_ev, new.snap_ev_cover, new.snap_ev_push, new.snap_ev_break_even, new.snap_ev_fair_odds, new.snap_ev_line,
+      new.snap_ev_price, new.snap_ev_book, new.snap_ev_quote_captured_at, new.snap_ev_projection_at, new.snap_ev_model_version,
+      new.snap_ev_origin, new.snap_ev_decision)
      is distinct from
      (old.entry_id, old.user_id, old.created_at, old.game_key, old.home, old.away, old.kickoff_at,
       old.decision, old.market_type, old.selection, old.sportsbook, old.line, old.price_american, old.stake,
@@ -734,7 +780,10 @@ begin
       old.snap_reliability_score, old.snap_reliability_grade, old.snap_research_label, old.snap_qb,
       old.snap_injuries, old.snap_model_version, old.snapshot, old.snapshot_hash,
       old.server_state, old.server_state_hash, old.server_state_at, old.after_kickoff,
-      old.my_home_line, old.my_total) then
+      old.my_home_line, old.my_total,
+      old.snap_ev, old.snap_ev_cover, old.snap_ev_push, old.snap_ev_break_even, old.snap_ev_fair_odds, old.snap_ev_line,
+      old.snap_ev_price, old.snap_ev_book, old.snap_ev_quote_captured_at, old.snap_ev_projection_at, old.snap_ev_model_version,
+      old.snap_ev_origin, old.snap_ev_decision) then
     raise exception 'research_journal: entry % is write-once — the decision and the information set behind it cannot be edited', old.entry_id
       using errcode = 'restrict_violation';
   end if;
