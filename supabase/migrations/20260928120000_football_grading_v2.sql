@@ -76,11 +76,27 @@ insert into collective.fg2_config (key, value, note) values
   ('book_priority', '["consensus","median","pinnacle","circa","draftkings","fanduel","betmgm","caesars","williamhill_us","espnbet","bet365","pointsbetus","betrivers","bovada","betonlineag","mybookieag","lowvig","unibet_us","wynnbet","superbook"]'::jsonb,
    'Inside one capture pass carrying several books, which book''s line is the close.'),
   ('snapshot_relations', '[]'::jsonb,
-   'Operator-declared snapshot relations, used before discovery: [{"relation":"odds.x","source":"collective_odds","event_col":"event_id","time_col":"captured_at","line_col":"point","line_kind":"side","side_col":"outcome","market_col":"market","book_col":"book","id_col":"id"}]. line_kind is home | away | side.')
+   'Operator-declared snapshot relations, used before discovery: [{"relation":"odds.x","source":"collective_odds","event_col":"event_id","time_col":"captured_at","line_col":"point","line_kind":"side","side_col":"outcome","market_col":"market","book_col":"book","id_col":"id"}]. line_kind is home | away | side.'),
+  ('snapshot_import_margin_minutes', '120'::jsonb,
+   'Timed price history is copied from [kickoff - (close window + margin), kickoff + margin] of its own event. Nothing outside the close window can ever be a close; the margin keeps the in-game and just-stale rows a game''s close class is read from. Widen the window and re-run the rebuild to copy older rows.')
 on conflict (key) do nothing;
+
+-- Which revision of THIS file is installed. It is re-applied in place (every
+-- statement is idempotent), so the revision is how a caller knows the
+-- database carries the functions it expects.
+insert into collective.fg2_config (key, value, note) values
+  ('install_revision', '2'::jsonb,
+   'Revision of supabase/migrations/20260928120000_football_grading_v2.sql installed here. 2: window-bounded, index-driven snapshot import; breadth tie-break; fg2_refresh.')
+on conflict (key) do update set value = excluded.value, note = excluded.note;
 
 create or replace function collective.fg2_cfg(p_key text) returns jsonb
 language sql stable as $fn$ select value from collective.fg2_config where key = p_key $fn$;
+
+create or replace function collective.fg2_install_revision() returns integer
+language sql stable as $fn$ select coalesce((collective.fg2_cfg('install_revision') #>> '{}')::int, 1) $fn$;
+
+create or replace function collective.fg2_import_margin_minutes() returns numeric
+language sql stable as $fn$ select coalesce((collective.fg2_cfg('snapshot_import_margin_minutes') #>> '{}')::numeric, 120) $fn$;
 
 create or replace function collective.fg2_version() returns text
 language sql stable as $fn$ select coalesce(collective.fg2_cfg('grading_version') #>> '{}', 'football-v2') $fn$;
@@ -113,7 +129,8 @@ begin
 end $fn$;
 
 insert into fg2_install_report (step, outcome, detail) values
-  ('0 config', 'ok', 'fg2_config present; grading version ' || collective.fg2_version() ||
+  ('0 config', 'ok', 'fg2_config present; install revision ' || collective.fg2_install_revision() ||
+   '; grading version ' || collective.fg2_version() ||
    '; lock ' || collective.fg2_lock_minutes() || ' min; close window NFL ' || collective.fg2_window_minutes('NFL') ||
    ' / CFB ' || collective.fg2_window_minutes('CFB') || ' min');
 
@@ -788,6 +805,36 @@ begin
   end if;
 end $do$;
 
+-- The views above key every row by id::text, so every per-game lookup
+-- (a game, its predictions, a prediction's legacy grade) filters on a cast
+-- the tables' own indexes cannot serve: without these, settling ONE game
+-- scans collective.projections once per model. Indexes on exactly those
+-- expressions let the planner use them. Additive only; each is reported.
+do $do$
+declare
+  r record;
+  gr regclass := to_regclass('collective.grades');
+  pg regclass := to_regclass('collective.projection_grades');
+begin
+  for r in
+    select * from (values
+      ('fg2_games_id_text_idx', 'collective.games'::regclass, 'id'),
+      ('fg2_projections_game_text_idx', to_regclass('collective.projections'), 'game_id'),
+      ('fg2_projections_id_text_idx', to_regclass('collective.projections'), 'id'),
+      ('fg2_grades_projection_text_idx', gr, 'projection_id'),
+      ('fg2_projection_grades_projection_text_idx', pg, 'projection_id')) v(name, rel, col)
+     where v.rel is not null and collective.fg2_col(v.rel, array[v.col]) is not null
+  loop
+    begin
+      execute format('create index if not exists %I on %s ((%I::text))', r.name, r.rel, r.col);
+      insert into fg2_install_report (step, outcome, detail) values ('3 lookup index', 'ok', r.rel::text || ' (' || r.col || '::text)');
+    exception when others then
+      insert into fg2_install_report (step, outcome, detail) values ('3 lookup index', 'NOT CREATED',
+        r.rel::text || ' (' || r.col || '::text): ' || sqlerrm || ' - per-game lookups fall back to scans');
+    end;
+  end loop;
+end $do$;
+
 -- 4 ---- the canonical tables ----------------------------------------------
 create table if not exists collective.fg2_team_registry (
   league  text not null,
@@ -831,6 +878,8 @@ create table if not exists collective.fg2_market_events (
   updated_at       timestamptz not null default now(),
   primary key (source, source_event_id)
 );
+-- linking reads each event's same-source neighbours inside the kickoff window
+create index if not exists fg2_market_events_scope_idx on collective.fg2_market_events (league, source, kickoff_at);
 
 create table if not exists collective.fg2_event_links (
   source            text not null,
@@ -1237,18 +1286,43 @@ begin
   return jsonb_build_object('source', 'legacy_results_close', 'new', n_new, 'updated', n_upd);
 end $fn$;
 
+-- Revision 2 gave the importers and the linker a kickoff lower bound (the
+-- hourly refresh); the old signatures go first so no call is ambiguous.
+drop function if exists collective.fg2_import_relation(jsonb, text, integer);
+drop function if exists collective.fg2_import_collective_odds(text, integer);
+drop function if exists collective.fg2_import_edgedesk_capture(text, integer);
+drop function if exists collective.fg2_import_snapshots(text, integer);
+drop function if exists collective.fg2_link_events(text, integer);
+
+-- The kickoff range an import reads: the season, cut at p_from when a
+-- refresh only needs recent games.
+create or replace function collective.fg2_import_range(p_season integer, p_from timestamptz, out lo timestamptz, out hi timestamptz)
+language sql stable as $fn$
+  select greatest((collective.fg2_season_bounds(p_season)).lo, coalesce(p_from, '-infinity'::timestamptz)),
+         (collective.fg2_season_bounds(p_season)).hi
+$fn$;
+
 -- One declared snapshot relation into the canonical store. spec keys:
 -- relation, source, event_col, time_col, line_col, line_kind (home|away|side),
 -- side_col, market_col, book_col, id_col, events (the events relation spec).
-create or replace function collective.fg2_import_relation(p_spec jsonb, p_league text, p_season integer) returns jsonb
+-- Timed rows are copied from [kickoff - (window + margin), kickoff + margin]
+-- of their own event: nothing earlier can be a close, and the margin keeps
+-- the rows a close class is read from. A declared close relation is untimed
+-- and copied whole.
+create or replace function collective.fg2_import_relation(p_spec jsonb, p_league text, p_season integer,
+  p_from timestamptz default null) returns jsonb
 language plpgsql as $fn$
 declare
   rel regclass := to_regclass(p_spec->>'relation');
   ev jsonb := p_spec->'events';
   erel regclass := to_regclass(ev->>'relation');
-  sql text; line_expr text; mkt_filter text; mkt_expr text; id_expr text; time_expr text; n int := 0;
+  lo_ts timestamptz; hi_ts timestamptz;
+  before_min numeric := collective.fg2_window_minutes(p_league) + collective.fg2_import_margin_minutes();
+  after_min numeric := collective.fg2_import_margin_minutes();
+  sql text; line_expr text; mkt_filter text; mkt_expr text; id_expr text; time_expr text; time_bound text; n int := 0;
   lv text[];
 begin
+  select r.lo, r.hi into lo_ts, hi_ts from collective.fg2_import_range(p_season, p_from) r;
   if rel is null or erel is null then
     return jsonb_build_object('relation', p_spec->>'relation', 'skipped', 'relation or its events relation not found');
   end if;
@@ -1273,28 +1347,32 @@ begin
   id_expr := case when p_spec->>'id_col' is not null then format('s.%I::text', p_spec->>'id_col')
     else 'md5(row_to_json(s)::text)' end;
   time_expr := format('s.%I::timestamptz', p_spec->>'time_col');
+  time_bound := case when p_spec->>'source' = 'collective_odds_close' then ''
+    else format(' and (%1$s is null or (%1$s >= e.%2$I::timestamptz - make_interval(mins => %3$s)
+                                     and %1$s <  e.%2$I::timestamptz + make_interval(mins => %4$s)))',
+                time_expr, ev->>'kickoff_col', ceil(before_min)::int, ceil(after_min)::int) end;
   sql := format($q$
     insert into collective.fg2_market_snapshots (source, source_snapshot_id, source_event_id, canonical_game_id,
       book, market_type, home_line, observed_at, event_kickoff_at, raw)
     select %1$L, %2$L || ':' || %3$s, e.%4$I::text, null, %5$s, %15$s, case when %15$s = 'spread' then x.line end,
            case when %1$L = 'collective_odds_close' and %6$s >= e.%7$I::timestamptz then null else %6$s end,
            e.%7$I::timestamptz, jsonb_build_object('relation', %2$L, 'observed_raw', %6$s, 'row', to_jsonb(s))
-      from %8$s s
-      join %9$s e on e.%4$I::text = s.%10$I::text
+      from %9$s e
+      join %8$s s on s.%10$I::text = e.%4$I::text
       cross join lateral (select %11$s as line) x
      where true
-       and e.%7$I::timestamptz >= (collective.fg2_season_bounds(%12$s)).lo
-       and e.%7$I::timestamptz <  (collective.fg2_season_bounds(%12$s)).hi
-       %13$s %14$s
+       and e.%7$I::timestamptz >= %12$L::timestamptz
+       and e.%7$I::timestamptz <  %16$L::timestamptz
+       %13$s %14$s %17$s
     on conflict (source, source_snapshot_id) do nothing
   $q$,
     p_spec->>'source', rel::text, id_expr, ev->>'id_col',
     case when p_spec->>'book_col' is not null then format('s.%I::text', p_spec->>'book_col') else '''feed''' end,
-    time_expr, ev->>'kickoff_col', rel::text, erel::text, p_spec->>'event_col', line_expr, p_season,
+    time_expr, ev->>'kickoff_col', rel::text, erel::text, p_spec->>'event_col', line_expr, lo_ts,
     mkt_filter,
     case when ev->>'league_col' is not null and cardinality(lv) > 0
       then format(' and lower(e.%I::text) = any(%L::text[])', ev->>'league_col', lv) else '' end,
-    mkt_expr);
+    mkt_expr, hi_ts, time_bound);
   execute sql;
   get diagnostics n = row_count;
   return jsonb_build_object('relation', rel::text, 'source', p_spec->>'source', 'new_snapshots', n,
@@ -1303,7 +1381,8 @@ end $fn$;
 
 -- The Collective's own odds feed (schema odds): its events, and every
 -- relation in that schema shaped like a price history, found by its columns.
-create or replace function collective.fg2_import_collective_odds(p_league text, p_season integer) returns jsonb
+create or replace function collective.fg2_import_collective_odds(p_league text, p_season integer,
+  p_from timestamptz default null) returns jsonb
 language plpgsql as $fn$
 declare
   e regclass := to_regclass('odds.events');
@@ -1317,7 +1396,9 @@ declare
   c_ev text; c_time text; c_line text; c_side text; c_mkt text; c_book text; c_sid text; kind text;
   n int;
   sql text;
+  lo_ts timestamptz; hi_ts timestamptz;
 begin
+  select r.lo, r.hi into lo_ts, hi_ts from collective.fg2_import_range(p_season, p_from) r;
   if e is null then
     return jsonb_build_object('source', 'collective_odds', 'skipped', 'odds.events not found');
   end if;
@@ -1346,8 +1427,8 @@ begin
     select 'collective_odds', e.%1$I::text, %2$L, %3$s, %4$s, e.%5$I::text, e.%6$I::text, e.%7$I::timestamptz, %8$s,
            jsonb_build_object('relation', 'odds.events')
       from odds.events e
-     where e.%7$I::timestamptz >= (collective.fg2_season_bounds(%3$s)).lo
-       and e.%7$I::timestamptz <  (collective.fg2_season_bounds(%3$s)).hi %9$s
+     where e.%7$I::timestamptz >= %10$L::timestamptz
+       and e.%7$I::timestamptz <  %11$L::timestamptz %9$s
     on conflict (source, source_event_id) do update
       set home_name = excluded.home_name, away_name = excluded.away_name, kickoff_at = excluded.kickoff_at,
           existing_game_id = excluded.existing_game_id, provider_ref = excluded.provider_ref, updated_at = now()
@@ -1355,7 +1436,8 @@ begin
     case when c_ref is null then 'null' else format('e.%I::text', c_ref) end,
     c_home, c_away, c_kick,
     case when c_link is null then 'null' else format('e.%I::text', c_link) end,
-    case when c_league is null then '' else format(' and lower(e.%I::text) = any(%L::text[])', c_league, lv) end);
+    case when c_league is null then '' else format(' and lower(e.%I::text) = any(%L::text[])', c_league, lv) end,
+    lo_ts, hi_ts);
   execute sql;
   get diagnostics n = row_count;
   out_ := out_ || jsonb_build_object('events', n);
@@ -1374,11 +1456,12 @@ begin
              e.%3$I::timestamptz, jsonb_build_object('relation', 'odds.events', 'closing', e.%1$I)
         from odds.events e
        where jsonb_typeof(e.%1$I::jsonb) = 'object' and e.%1$I->'spread:home'->>'line' is not null
-         and e.%3$I::timestamptz >= (collective.fg2_season_bounds(%4$s)).lo
-         and e.%3$I::timestamptz <  (collective.fg2_season_bounds(%4$s)).hi %5$s
+         and e.%3$I::timestamptz >= %6$L::timestamptz
+         and e.%3$I::timestamptz <  %7$L::timestamptz %5$s
       on conflict (source, source_snapshot_id) do nothing
     $q$, c_close, c_id, c_kick, p_season,
-      case when c_league is null then '' else format(' and lower(e.%I::text) = any(%L::text[])', c_league, lv) end);
+      case when c_league is null then '' else format(' and lower(e.%I::text) = any(%L::text[])', c_league, lv) end,
+      lo_ts, hi_ts);
     begin
       execute sql;
       get diagnostics n = row_count;
@@ -1429,7 +1512,7 @@ begin
   end loop;
   for s in select * from jsonb_array_elements(specs) loop
     begin
-      out_ := out_ || collective.fg2_import_relation(s, p_league, p_season);
+      out_ := out_ || collective.fg2_import_relation(s, p_league, p_season, p_from);
     exception when others then
       out_ := out_ || jsonb_build_object('relation', s->>'relation', 'error', sqlerrm);
     end;
@@ -1438,18 +1521,29 @@ begin
 end $fn$;
 
 -- EdgeDesk's own capture (public.signals + public.signal_ticks): a
--- first-party, timestamped price history of the same markets.
-create or replace function collective.fg2_import_edgedesk_capture(p_league text, p_season integer) returns jsonb
+-- first-party, timestamped price history of the same markets. A signal is
+-- one (event, market, selection, point); a tick is one capture pass that saw
+-- it, stamped with the pass's instant and how many books quoted that point.
+-- Ticks are read per signal through (sig_key, created_at), inside
+-- [kickoff - (window + margin), kickoff + margin] of the signal's own
+-- kickoff: nothing earlier can be a close. signal_ticks holds every sport's
+-- history, so it is never scanned whole.
+create or replace function collective.fg2_import_edgedesk_capture(p_league text, p_season integer,
+  p_from timestamptz default null) returns jsonb
 language plpgsql as $fn$
 declare
   s regclass := to_regclass('public.signals');
   t regclass := to_regclass('public.signal_ticks');
-  c_ev text; c_sport text; c_mkt text; c_sel text; c_pt text; c_kick text; c_home text; c_away text; c_seen text; c_book text;
-  t_time text; t_pt text;
+  c_ev text; c_sport text; c_mkt text; c_sel text; c_pt text; c_kick text; c_home text; c_away text; c_seen text; c_book text; c_nb text;
+  t_time text; t_pt text; t_id text; t_book text; t_nb text;
   sk text[];
+  lo_ts timestamptz; hi_ts timestamptz;
+  before_min int := ceil(collective.fg2_window_minutes(p_league) + collective.fg2_import_margin_minutes())::int;
+  after_min int := ceil(collective.fg2_import_margin_minutes())::int;
   sql text; n_e int := 0; n_s int := 0; n_t int := 0;
 begin
   if s is null then return jsonb_build_object('source', 'edgedesk_capture', 'skipped', 'public.signals not found'); end if;
+  select r.lo, r.hi into lo_ts, hi_ts from collective.fg2_import_range(p_season, p_from) r;
   c_ev    := collective.fg2_col(s, array['event_id']);
   c_sport := collective.fg2_col(s, array['sport_key', 'sport']);
   c_mkt   := collective.fg2_col(s, array['market', 'market_key']);
@@ -1460,6 +1554,7 @@ begin
   c_away  := collective.fg2_col(s, array['away_team', 'away']);
   c_seen  := collective.fg2_col(s, array['last_seen_at', 'updated_at', 'captured_at']);
   c_book  := collective.fg2_col(s, array['best_book', 'book']);
+  c_nb    := collective.fg2_col(s, array['n_books', 'total_books']);
   if c_ev is null or c_sport is null or c_mkt is null or c_sel is null or c_pt is null or c_kick is null
      or c_home is null or c_away is null then
     return jsonb_build_object('source', 'edgedesk_capture', 'skipped',
@@ -1472,71 +1567,99 @@ begin
            s.%6$I::timestamptz, jsonb_build_object('relation', 'public.signals')
       from public.signals s
      where s.%7$I::text = any(%8$L::text[])
-       and s.%6$I::timestamptz >= (collective.fg2_season_bounds(%3$s)).lo and s.%6$I::timestamptz < (collective.fg2_season_bounds(%3$s)).hi
+       and s.%6$I::timestamptz >= %9$L::timestamptz and s.%6$I::timestamptz < %10$L::timestamptz
      order by s.%1$I::text, s.%6$I::timestamptz desc
     on conflict (source, source_event_id) do update
       set home_name = excluded.home_name, away_name = excluded.away_name, kickoff_at = excluded.kickoff_at, updated_at = now()
-  $q$, c_ev, p_league, p_season, c_home, c_away, c_kick, c_sport, sk);
+  $q$, c_ev, p_league, p_season, c_home, c_away, c_kick, c_sport, sk, lo_ts, hi_ts);
   get diagnostics n_e = row_count;
+
+  -- the spread signals of this league and range, each oriented to its own
+  -- event's home team once (+1 home selection, -1 away, null neither)
+  drop table if exists pg_temp.fg2_sig;
+  execute format($q$
+    create temp table fg2_sig on commit drop as
+    select s.sig_key::text as sig_key, s.%1$I::text as event_id, s.%2$I::timestamptz as kickoff_at,
+           s.%3$I::numeric as point, s.%4$I::text as selection, s.%12$I::text as market,
+           case when collective.fg2_team_key(s.%4$I::text) = collective.fg2_team_key(s.%5$I::text) then 1
+                when collective.fg2_team_key(s.%4$I::text) = collective.fg2_team_key(s.%6$I::text) then -1 end as sgn,
+           %7$s as seen_at, %8$s as book, %9$s as n_books
+      from public.signals s
+     where s.%10$I::text = any(%11$L::text[]) and lower(s.%12$I::text) in ('spreads', 'spread')
+       and s.%2$I::timestamptz >= %13$L::timestamptz and s.%2$I::timestamptz < %14$L::timestamptz
+  $q$, c_ev, c_kick, c_pt, c_sel, c_home, c_away,
+    case when c_seen is null then 'null::timestamptz' else format('s.%I::timestamptz', c_seen) end,
+    case when c_book is null then '''edgedesk''::text' else format('s.%I::text', c_book) end,
+    case when c_nb is null then 'null::numeric' else format('s.%I::numeric', c_nb) end,
+    c_sport, sk, c_mkt, lo_ts, hi_ts);
+
   -- the signal row itself, as seen at its last capture pass
   if c_seen is not null then
-    execute format($q$
+    execute $q$
       insert into collective.fg2_market_snapshots (source, source_snapshot_id, source_event_id, canonical_game_id,
         book, market_type, home_line, observed_at, event_kickoff_at, raw)
-      select 'edgedesk_capture', 'signals:' || md5(s.%1$I::text || '|' || s.%2$I::text || '|' || s.%3$I::text || '|' || s.%4$I::text || '|' || s.%5$I::text),
-             s.%1$I::text, null, %6$s, 'spread',
-             case when collective.fg2_team_key(s.%2$I::text) = collective.fg2_team_key(s.%7$I::text) then s.%4$I::numeric
-                  when collective.fg2_team_key(s.%2$I::text) = collective.fg2_team_key(s.%8$I::text) then -(s.%4$I::numeric) end,
-             s.%5$I::timestamptz, s.%9$I::timestamptz, jsonb_build_object('relation', 'public.signals', 'selection', s.%2$I, 'point', s.%4$I)
-        from public.signals s
-       where s.%10$I::text = any(%11$L::text[]) and lower(s.%3$I::text) in ('spreads', 'spread')
-         and s.%5$I is not null and s.%4$I is not null
-         and s.%9$I::timestamptz >= (collective.fg2_season_bounds(%12$s)).lo and s.%9$I::timestamptz < (collective.fg2_season_bounds(%12$s)).hi
+      select 'edgedesk_capture', 'signals:' || md5(g.event_id || '|' || g.selection || '|' || g.market || '|' || g.point::text || '|' || g.seen_at::text),
+             g.event_id, null, g.book, 'spread',
+             case when g.sgn = 1 then g.point when g.sgn = -1 then -g.point end,
+             g.seen_at, g.kickoff_at,
+             jsonb_build_object('relation', 'public.signals', 'selection', g.selection, 'point', g.point, 'n_books', g.n_books)
+        from fg2_sig g
+       where g.seen_at is not null and g.point is not null
       on conflict (source, source_snapshot_id) do nothing
-    $q$, c_ev, c_sel, c_mkt, c_pt, c_seen,
-      case when c_book is null then '''edgedesk''' else format('s.%I::text', c_book) end,
-      c_home, c_away, c_kick, c_sport, sk, p_season);
+    $q$;
     get diagnostics n_s = row_count;
   end if;
-  -- the tick history: every recorded pass, at its own timestamp
+
+  -- the tick history: every recorded pass inside the window, at its own instant
   if t is not null and collective.fg2_col(t, array['sig_key']) is not null and collective.fg2_col(s, array['sig_key']) is not null then
     t_time := collective.fg2_col(t, array['created_at', 'seen_at', 'captured_at']);
-    t_pt := collective.fg2_col(t, array['point', 'line']);
+    t_pt   := collective.fg2_col(t, array['point', 'line']);
+    t_id   := collective.fg2_col(t, array['id', 'tick_id']);
+    t_book := collective.fg2_col(t, array['book_key', 'book']);
+    t_nb   := collective.fg2_col(t, array['n_books', 'total_books']);
     if t_time is not null then
       execute format($q$
         insert into collective.fg2_market_snapshots (source, source_snapshot_id, source_event_id, canonical_game_id,
           book, market_type, home_line, observed_at, event_kickoff_at, raw)
-        select 'edgedesk_capture', 'signal_ticks:' || md5(k.sig_key::text || '|' || k.%1$I::text || '|' || coalesce(to_jsonb(k)->>'id', '')),
-               s.%2$I::text, null, coalesce(to_jsonb(k)->>'book_key', 'edgedesk'), 'spread',
-               case when collective.fg2_team_key(s.%3$I::text) = collective.fg2_team_key(s.%4$I::text) then %5$s
-                    when collective.fg2_team_key(s.%3$I::text) = collective.fg2_team_key(s.%6$I::text) then -(%5$s) end,
-               k.%1$I::timestamptz, s.%7$I::timestamptz, jsonb_build_object('relation', 'public.signal_ticks', 'sig_key', k.sig_key)
-          from public.signal_ticks k
-          join public.signals s on s.sig_key = k.sig_key
-         where s.%8$I::text = any(%9$L::text[]) and lower(s.%10$I::text) in ('spreads', 'spread')
-           and %5$s is not null
-           and s.%7$I::timestamptz >= (collective.fg2_season_bounds(%11$s)).lo and s.%7$I::timestamptz < (collective.fg2_season_bounds(%11$s)).hi
+        select 'edgedesk_capture', 'signal_ticks:' || md5(k.sig_key::text || '|' || k.%1$I::text || '|' || %2$s),
+               g.event_id, null, %3$s, 'spread',
+               case when g.sgn = 1 then %4$s when g.sgn = -1 then -(%4$s) end,
+               k.%1$I::timestamptz, g.kickoff_at,
+               jsonb_build_object('relation', 'public.signal_ticks', 'sig_key', k.sig_key, 'n_books', %5$s)
+          from fg2_sig g
+          join lateral (
+            select * from public.signal_ticks k
+             where k.sig_key = g.sig_key
+               and k.%1$I >= g.kickoff_at - make_interval(mins => %6$s)
+               and k.%1$I <  g.kickoff_at + make_interval(mins => %7$s)) k on true
+         where %4$s is not null
         on conflict (source, source_snapshot_id) do nothing
-      $q$, t_time, c_ev, c_sel, c_home,
-        case when t_pt is null then format('s.%I::numeric', c_pt) else format('coalesce(k.%I, s.%I)::numeric', t_pt, c_pt) end,
-        c_away, c_kick, c_sport, sk, c_mkt, p_season);
+      $q$, t_time,
+        case when t_id is null then '''''' else format('coalesce(k.%I::text, '''')', t_id) end,
+        case when t_book is null then '''edgedesk''' else format('coalesce(k.%I::text, ''edgedesk'')', t_book) end,
+        case when t_pt is null then 'g.point' else format('coalesce(k.%I::numeric, g.point)', t_pt) end,
+        case when t_nb is null then 'null::numeric' else format('k.%I::numeric', t_nb) end,
+        before_min, after_min);
       get diagnostics n_t = row_count;
     end if;
   end if;
-  return jsonb_build_object('source', 'edgedesk_capture', 'events', n_e, 'signal_snapshots', n_s, 'tick_snapshots', n_t);
+  drop table if exists pg_temp.fg2_sig;
+  return jsonb_build_object('source', 'edgedesk_capture', 'events', n_e, 'signal_snapshots', n_s, 'tick_snapshots', n_t,
+    'tick_window_minutes', jsonb_build_object('before_kickoff', before_min, 'after_kickoff', after_min));
 end $fn$;
 
-create or replace function collective.fg2_import_snapshots(p_league text, p_season integer) returns jsonb
+create or replace function collective.fg2_import_snapshots(p_league text, p_season integer,
+  p_from timestamptz default null) returns jsonb
 language plpgsql as $fn$
 declare out_ jsonb := '[]'::jsonb; r jsonb;
 begin
   begin r := collective.fg2_import_legacy(p_league, p_season);
   exception when others then r := jsonb_build_object('source', 'legacy_results_close', 'error', sqlerrm); end;
   out_ := out_ || jsonb_build_array(r);
-  begin r := collective.fg2_import_collective_odds(p_league, p_season);
+  begin r := collective.fg2_import_collective_odds(p_league, p_season, p_from);
   exception when others then r := jsonb_build_object('source', 'collective_odds', 'error', sqlerrm); end;
   out_ := out_ || jsonb_build_array(r);
-  begin r := collective.fg2_import_edgedesk_capture(p_league, p_season);
+  begin r := collective.fg2_import_edgedesk_capture(p_league, p_season, p_from);
   exception when others then r := jsonb_build_object('source', 'edgedesk_capture', 'error', sqlerrm); end;
   out_ := out_ || jsonb_build_array(r);
   return out_;
@@ -1593,7 +1716,8 @@ begin
   return n;
 end $fn$;
 
-create or replace function collective.fg2_link_events(p_league text, p_season integer) returns jsonb
+create or replace function collective.fg2_link_events(p_league text, p_season integer,
+  p_from timestamptz default null) returns jsonb
 language plpgsql as $fn$
 declare
   tol numeric := collective.fg2_tolerance_minutes();
@@ -1601,7 +1725,9 @@ declare
   st text; gid text; meth text; ori text; why text; ex text;
   n_link int := 0; n_un int := 0; n_conf int := 0;
 begin
-  for ev in select * from collective.fg2_market_events where league = p_league and season = p_season loop
+  for ev in select * from collective.fg2_market_events
+             where league = p_league and season = p_season
+               and (p_from is null or kickoff_at >= p_from) loop
     select array_agg(x.nm) into uni
       from (select e2.home_name as nm from collective.fg2_market_events e2
              where e2.source = ev.source and e2.league = p_league and e2.kickoff_at is not null and ev.kickoff_at is not null
@@ -1667,14 +1793,19 @@ begin
    where source = 'legacy_results_close' and canonical_game_id = any(members)
    order by (canonical_game_id = p_game_id) desc, source_snapshot_id limit 1;
 
-  if to_regclass('pg_temp.fg2_cand') is null then
-  create temp table fg2_cand (
+  -- (fg2_cand2: revision 2 added n_books; a session that ran revision 1
+  -- keeps its old fg2_cand)
+  if to_regclass('pg_temp.fg2_cand2') is null then
+  create temp table fg2_cand2 (
     source text, source_snapshot_id text, source_event_id text, book text, market_type text, observed_at timestamptz,
     home numeric, link_method text, matched_game_id text, existing_game_id text, prio int, untimed_ok boolean,
-    book_rank int, rejection text);
+    book_rank int, n_books numeric, rejection text);
   end if;
-  truncate fg2_cand;
-  insert into fg2_cand
+  truncate fg2_cand2;
+  -- the game's snapshots: those stamped with it (or an alias of it), and
+  -- those whose market event is linked to it. Two index lookups, never a
+  -- scan of the whole store.
+  insert into fg2_cand2
   select s2.source, s2.source_snapshot_id, s2.source_event_id, s2.book, s2.market_type, s2.observed_at,
          case when l.orientation = 'swapped' then -coalesce(s2.home_line, -s2.away_line) else coalesce(s2.home_line, -s2.away_line) end,
          l.method, l.matched_game_id,
@@ -1682,12 +1813,18 @@ begin
          (select (x.value->>'priority')::int from jsonb_array_elements(srcs) x where x.value->>'name' = s2.source limit 1),
          coalesce((select (x.value->>'untimed')::boolean from jsonb_array_elements(srcs) x where x.value->>'name' = s2.source limit 1), false),
          coalesce((select (o.ord - 1)::int from jsonb_array_elements_text(books) with ordinality o(b, ord) where o.b = lower(coalesce(s2.book, '')) limit 1), 999),
+         case when jsonb_typeof(s2.raw->'n_books') = 'number' then (s2.raw->>'n_books')::numeric end,
          null
-    from collective.fg2_market_snapshots s2
-    left join collective.fg2_event_links l on l.source = s2.source and l.source_event_id = s2.source_event_id and l.status = 'linked'
-   where s2.canonical_game_id = any(members) or l.canonical_game_id = p_game_id;
+    from (select x.source, x.source_snapshot_id from collective.fg2_market_snapshots x
+           where x.canonical_game_id = any(members)
+          union
+          select x.source, x.source_snapshot_id from collective.fg2_event_links l0
+            join collective.fg2_market_snapshots x on x.source = l0.source and x.source_event_id = l0.source_event_id
+           where l0.canonical_game_id = p_game_id and l0.status = 'linked') ids
+    join collective.fg2_market_snapshots s2 on s2.source = ids.source and s2.source_snapshot_id = ids.source_snapshot_id
+    left join collective.fg2_event_links l on l.source = s2.source and l.source_event_id = s2.source_event_id and l.status = 'linked';
 
-  update fg2_cand set rejection = case
+  update fg2_cand2 set rejection = case
       when lower(coalesce(market_type, 'spread')) not in ('spread', 'spreads', 'spread:home', 'point_spread', 'handicap', 'ats') then 'NOT_SPREAD'
       when home is null then 'BAD_LINE'
       when prio is null then 'SOURCE_DISABLED'
@@ -1696,13 +1833,13 @@ begin
       when observed_at is not null and observed_at >= kick then 'AFTER_KICKOFF'
       when observed_at is not null and observed_at < kick - make_interval(secs => win * 60) then 'STALE'
     end;
-  select count(*) into total from fg2_cand;
+  select count(*) into total from fg2_cand2;
   select jsonb_build_object(
     'NOT_SPREAD', count(*) filter (where rejection = 'NOT_SPREAD'), 'BAD_LINE', count(*) filter (where rejection = 'BAD_LINE'),
     'AFTER_KICKOFF', count(*) filter (where rejection = 'AFTER_KICKOFF'), 'STALE', count(*) filter (where rejection = 'STALE'),
     'UNTIMED', count(*) filter (where rejection = 'UNTIMED'), 'SOURCE_DISABLED', count(*) filter (where rejection = 'SOURCE_DISABLED'),
     'ORIENTATION_CONFLICT', 0, 'NO_KICKOFF', count(*) filter (where rejection = 'NO_KICKOFF'))
-    into rej from fg2_cand;
+    into rej from fg2_cand2;
 
   -- timed snapshots first, sources in priority order; an untimed close only
   -- when no source has a valid timed one
@@ -1713,14 +1850,14 @@ begin
       select c.home, c.source, c.source_snapshot_id, c.source_event_id, c.book, c.observed_at, c.link_method,
              c.matched_game_id, c.existing_game_id
         into b_home, b_source, b_snap, b_event, b_book, b_obs, b_link, b_matched, b_existing
-        from fg2_cand c
+        from fg2_cand2 c
        where c.rejection is null and c.source = s->>'name' and (c.observed_at is not null) = pass
-       order by c.observed_at desc nulls last, c.book_rank, c.source_snapshot_id collate "C"
+       order by c.observed_at desc nulls last, coalesce(c.n_books, 0) desc, c.book_rank, c.source_snapshot_id collate "C"
        limit 1;
       continue when b_home is null;
       if legacy is not null and abs(legacy) >= 1 and s->>'name' <> 'legacy_results_close'
          and abs(b_home + legacy) <= 0.5 and abs(b_home - legacy) >= 2 then
-        select count(*) into n_src from fg2_cand c where c.rejection is null and c.source = s->>'name' and (c.observed_at is not null) = pass;
+        select count(*) into n_src from fg2_cand2 c where c.rejection is null and c.source = s->>'name' and (c.observed_at is not null) = pass;
         rej := jsonb_set(rej, '{ORIENTATION_CONFLICT}', to_jsonb((rej->>'ORIENTATION_CONFLICT')::int + n_src));
         continue;
       end if;
@@ -2120,26 +2257,46 @@ insert into fg2_install_report (step, outcome, detail) values
 -- Safe to rerun: every write is an upsert on a deterministic key, snapshots
 -- are insert-only, and an unchanged settlement writes nothing and audits
 -- nothing. Without p_commit the whole run is rolled back after the report.
-create or replace function collective.fg2_rebuild(p_sport text, p_season integer, p_commit boolean default false) returns jsonb
+-- The ordered rebuild. p_recent_days null = the whole season (what the
+-- regrade runs); a number = the hourly refresh: the games that kicked off in
+-- the last p_recent_days days, plus every finished game the settlement has
+-- never processed, and only the market rows that can bear on them. Same
+-- functions, same order, same audit; the scope is in the report.
+create or replace function collective.fg2_rebuild_run(p_sport text, p_season integer, p_commit boolean,
+  p_recent_days numeric) returns jsonb
 language plpgsql as $fn$
 declare
   lg text := collective.fg2_league(p_sport);
   run uuid := gen_random_uuid();
-  rep jsonb := jsonb_build_object('run_id', run, 'sport', lg, 'season', p_season, 'grading_version', collective.fg2_version(),
-    'committed', p_commit, 'started_at', now());
+  rep jsonb;
   gid text; n int := 0; nc int := 0;
   diag jsonb;
+  scope_from timestamptz;
+  import_from timestamptz;
 begin
   if lg not in ('NFL', 'CFB') then raise exception 'fg2_rebuild: % is not a football sport', p_sport; end if;
   perform pg_advisory_xact_lock(hashtext('fg2_rebuild:' || lg || ':' || p_season));
+  if p_recent_days is not null then
+    select least(now() - make_interval(secs => p_recent_days * 86400), min(g.kickoff_at)) into scope_from
+      from collective.fg2_src_games g
+     where collective.fg2_league(g.sport) = lg and g.season = p_season and g.kickoff_at <= now()
+       and not exists (select 1 from collective.fg2_game_alias a where a.game_id = g.game_id)
+       and not exists (select 1 from collective.fg2_official_closes c where c.canonical_game_id = g.game_id);
+    -- a market event may list the game up to the kickoff tolerance away
+    import_from := scope_from - make_interval(secs => collective.fg2_tolerance_minutes() * 60);
+  end if;
+  rep := jsonb_build_object('run_id', run, 'sport', lg, 'season', p_season, 'grading_version', collective.fg2_version(),
+    'install_revision', collective.fg2_install_revision(), 'committed', p_commit, 'started_at', now(),
+    'scope', case when scope_from is null then 'season' else 'games from ' || scope_from end);
   insert into collective.fg2_rebuild_runs (run_id, sport, season, committed) values (run, lg, p_season, p_commit);
   rep := rep || jsonb_build_object('1_duplicates_aliased', collective.fg2_detect_duplicates(lg, p_season));
   rep := rep || jsonb_build_object('registry', collective.fg2_build_registry(lg));
-  rep := rep || jsonb_build_object('2_sources', collective.fg2_import_snapshots(lg, p_season));
-  rep := rep || jsonb_build_object('3_links', collective.fg2_link_events(lg, p_season));
+  rep := rep || jsonb_build_object('2_sources', collective.fg2_import_snapshots(lg, p_season, import_from));
+  rep := rep || jsonb_build_object('3_links', collective.fg2_link_events(lg, p_season, import_from));
   for gid in
     select g.game_id from collective.fg2_src_games g
      where collective.fg2_league(g.sport) = lg and g.season = p_season and g.kickoff_at <= now()
+       and (scope_from is null or g.kickoff_at >= scope_from)
        and not exists (select 1 from collective.fg2_game_alias a where a.game_id = g.game_id)
      order by g.kickoff_at, g.game_id
   loop
@@ -2170,6 +2327,24 @@ begin
     raise exception using errcode = 'P0001', message = 'fg2_dry_run', detail = rep::text;
   end if;
   return rep;
+end $fn$;
+
+-- The whole season. Run it from psql with statement_timeout raised
+-- (tools/collective/football_rebuild.js does): a season of capture history
+-- is more than an API request's timeout.
+create or replace function collective.fg2_rebuild(p_sport text, p_season integer, p_commit boolean default false) returns jsonb
+language plpgsql as $fn$
+begin
+  return collective.fg2_rebuild_run(p_sport, p_season, p_commit, null);
+end $fn$;
+
+-- The hourly refresh the settle job calls through the API: always commits,
+-- bounded to recent and never-processed games.
+create or replace function collective.fg2_refresh(p_sport text, p_season integer, p_recent_days integer default 4) returns jsonb
+language plpgsql as $fn$
+begin
+  if p_recent_days is null or p_recent_days < 1 then raise exception 'fg2_refresh: p_recent_days must be at least 1'; end if;
+  return collective.fg2_rebuild_run(p_sport, p_season, true, p_recent_days);
 end $fn$;
 
 -- The dry run: the whole rebuild inside a subtransaction that is rolled
@@ -2211,7 +2386,7 @@ begin
 end $fn$;
 
 insert into fg2_install_report (step, outcome, detail) values
-  ('11 rebuild', 'ok', 'fg2_rebuild(sport, season, commit) / fg2_rebuild_preview(sport, season) / fg2_settle_one(game)');
+  ('11 rebuild', 'ok', 'fg2_rebuild(sport, season, commit) / fg2_rebuild_preview(sport, season) / fg2_refresh(sport, season, days) / fg2_settle_one(game)');
 
 -- 12 ---- the views every reader uses --------------------------------------------
 create or replace view collective.fg2_grading_trace as
@@ -2668,6 +2843,9 @@ begin
 end $do$;
 
 commit;
+
+-- the API serves new function signatures only after it re-reads the schema
+notify pgrst, 'reload schema';
 
 select n, step, outcome, detail from fg2_install_report order by n;
 

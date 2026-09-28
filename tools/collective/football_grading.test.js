@@ -123,6 +123,18 @@ function snap(id, at, line, extra) {
   const books = G.selectClose([snap('f', '2026-09-13T18:55:00Z', -7, { book: 'fanduel' }),
     snap('d', '2026-09-13T18:55:00Z', -6.5, { book: 'draftkings' })], { kickoffAt: K });
   chk('close: one capture pass, several books -> book priority decides', books.close.book === 'draftkings');
+  // EdgeDesk capture stamps every point a pass saw with the pass's instant:
+  // at the final pregame instant the line the most books quoted is the close,
+  // whatever the snapshot ids happen to sort as.
+  const cap = (id, at, line, n) => snap(id, at, line, { source: 'edgedesk_capture', book: 'edgedesk', raw: { n_books: n } });
+  const breadth = G.selectClose([cap('a-minority', '2026-09-13T18:50:00Z', -6.5, 1),
+    cap('z-majority', '2026-09-13T18:50:00Z', -7, 6)], { kickoffAt: K });
+  chk('close: one capture pass, several points -> the point the most books quoted', breadth.close.snapshot_id === 'z-majority' &&
+    breadth.close.home_spread === -7, breadth.close);
+  const later = G.selectClose([cap('m', '2026-09-13T18:40:00Z', -7, 9), cap('n', '2026-09-13T18:50:00Z', -6.5, 1)], { kickoffAt: K });
+  chk('close: breadth never outranks a later observation', later.close.snapshot_id === 'n');
+  const flat = G.selectClose([snap('b1', '2026-09-13T18:50:00Z', -7, { n_books: 4 }), snap('a1', '2026-09-13T18:50:00Z', -6.5)], { kickoffAt: K });
+  chk('close: n_books is read off the snapshot itself too; a row without it counts 0', flat.close.snapshot_id === 'b1');
   const prio = G.selectClose([snap('e', '2026-09-13T18:58:00Z', -6, { source: 'edgedesk_capture' }),
     snap('o', '2026-09-13T17:00:00Z', -7)], { kickoffAt: K });
   chk("close: the Collective's own feed outranks a fresher first-party capture", prio.close.source === 'collective_odds' && prio.close.home_spread === -7);

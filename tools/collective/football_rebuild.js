@@ -27,6 +27,11 @@
      --apply-migration apply the migration first (--pg only; idempotent)
      --out <dir>       where the report goes (default collective/reports)
      --sample <n>      graded model-games to sample per sport (default 20)
+     --statement-timeout <interval>  how long one rebuild may run (--pg;
+                       default 25min). A season of capture history is more
+                       than a pooled connection's default limit (2 min on
+                       Supabase), so each rebuild runs in its own transaction
+                       with SET LOCAL: the limit is raised for that call only.
 
    Exit 0 ok · 2 an ERROR-level diagnostic or a sample that does not re-derive
         1 could not run
@@ -39,6 +44,10 @@ const ROOT = path.join(__dirname, '..', '..');
 const G = require(path.join(ROOT, 'lib', 'football_grading.js'));
 const I = require(path.join(ROOT, 'lib', 'football_identity.js'));
 const MIGRATION = path.join(ROOT, 'supabase', 'migrations', '20260928120000_football_grading_v2.sql');
+/* The migration is re-applied in place, so fg2_config.install_revision says
+   which functions the database carries. Revision 2 made the snapshot import
+   window-bounded and index-driven; a revision-1 database times out. */
+const REQUIRED_REVISION = 2;
 
 const CLASS_TEXT = {
   A: 'valid captured close already linked to the game',
@@ -58,7 +67,7 @@ const REASON_TEXT = Object.assign({}, G.REASON_TEXT);
 
 function parseArgs(argv) {
   const a = { mode: null, sports: [], season: 2026, commit: false, apply: false, out: path.join(ROOT, 'collective', 'reports'),
-    sample: 20, pgUrl: process.env.SB_DB_URL || process.env.PGURL || process.env.SUPABASE_DB_URL || '' };
+    sample: 20, statementTimeout: '25min', pgUrl: process.env.SB_DB_URL || process.env.PGURL || process.env.SUPABASE_DB_URL || '' };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--pg') a.mode = 'pg';
@@ -71,21 +80,32 @@ function parseArgs(argv) {
     else if (v === '--apply-migration') a.apply = true;
     else if (v === '--out') a.out = argv[++i];
     else if (v === '--sample') a.sample = Number(argv[++i]);
+    else if (v === '--statement-timeout') a.statementTimeout = String(argv[++i]);
   }
   if (!a.sports.length) a.sports = ['NFL', 'CFB'];
   return a;
 }
 
 /* ---- the database doors ------------------------------------------------- */
-function pgRunner(url) {
+/* One statement, in its own transaction, with the time limit raised for
+   that transaction only (SET LOCAL: nothing leaks into a pooled connection). */
+function pgStatement(sql, statementTimeout) {
+  if (!/^\d+\s*(ms|s|min|h)?$/.test(String(statementTimeout))) throw new Error('bad --statement-timeout: ' + statementTimeout);
+  return `set client_min_messages = warning; begin; set local statement_timeout = '${statementTimeout}'; ` +
+    `set local lock_timeout = '2min'; ${sql} commit;`;
+}
+function pgRunner(url, statementTimeout) {
   if (!url) throw new Error('--pg needs a connection string ($SB_DB_URL or --pg-url).');
   const psql = (args, input) => cp.execFileSync('psql', [url, '-v', 'ON_ERROR_STOP=1', ...args],
     { encoding: 'utf8', input, maxBuffer: 256 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] });
   return {
     apply() { return psql(['-f', MIGRATION]); },
     json(sql) {
-      const out = psql(['-qAt', '-c', 'set client_min_messages = warning; ' + sql]).trim();
+      const out = psql(['-qAt', '-c', pgStatement(sql, statementTimeout || '25min')]).trim();
       return out ? JSON.parse(out.split('\n').filter(Boolean).pop()) : null;
+    },
+    revision() {
+      return this.json(`select to_json(coalesce((select (value #>> '{}')::int from collective.fg2_config where key = 'install_revision'), 1));`);
     },
   };
 }
@@ -94,7 +114,18 @@ function restRunner() {
   const cfg = S.directConfig();
   if (!cfg) throw new Error('--rest needs EDGD_SB_SERVICE and EDGD_SB_URL.');
   const db = S.dbClient(cfg);
-  return { rpc: (fn, args) => db.rpc(fn, args) };
+  return {
+    rpc: (fn, args) => db.rpc(fn, args),
+    async revision() {
+      try { return Number(await db.rpc('fg2_install_revision', {})) || 1; }
+      catch (e) { if (S.isFg2Missing(e)) return 1; throw e; }
+    },
+  };
+}
+function revisionProblem(rev) {
+  return rev >= REQUIRED_REVISION ? null :
+    `the database carries revision ${rev} of the football-v2 migration; this tool needs ${REQUIRED_REVISION}. ` +
+    'Re-apply supabase/migrations/20260928120000_football_grading_v2.sql (the Football regrade workflow with apply_migration: true, or --apply-migration).';
 }
 
 async function rebuildOne(runner, mode, sport, season, commit, sample) {
@@ -298,12 +329,14 @@ async function main() {
     console.log(offlineMarkdown(o));
     return 0;
   }
-  const runner = args.mode === 'pg' ? pgRunner(args.pgUrl) : restRunner();
+  const runner = args.mode === 'pg' ? pgRunner(args.pgUrl, args.statementTimeout) : restRunner();
   if (args.apply) {
     if (args.mode !== 'pg') throw new Error('--apply-migration needs --pg');
     const out = runner.apply();
     console.log(out.split('\n').filter(l => /\|/.test(l)).join('\n'));
   }
+  const problem = revisionProblem(await runner.revision());
+  if (problem) throw new Error(problem);
   const all = { mode: args.mode, committed: args.commit, generated_at: new Date().toISOString(), sports: {} };
   const md = [`# football-v2 reconciliation — ${args.season}`, '', `Generated ${all.generated_at} (${args.commit ? 'committed' : 'preview: rolled back'}).`, ''];
   let bad = 0;
@@ -324,7 +357,8 @@ async function main() {
   return bad ? 2 : 0;
 }
 
-module.exports = { parseArgs, verifySample, markdownFor, offline, offlineMarkdown, CLASS_TEXT };
+module.exports = { parseArgs, verifySample, markdownFor, offline, offlineMarkdown, CLASS_TEXT,
+  REQUIRED_REVISION, revisionProblem, pgStatement };
 
 if (require.main === module) {
   main().then(c => process.exit(c)).catch(e => { console.error('[football_rebuild] ' + e.message); process.exit(1); });

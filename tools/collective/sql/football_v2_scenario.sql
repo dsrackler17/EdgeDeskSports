@@ -228,12 +228,23 @@ insert into odds.lines (event_id, book, market, outcome, point, price, captured_
   ('E25', 'draftkings', 'spreads', 'Ole Miss Rebels', -6.5, -110, '2026-09-19T15:50:00Z');
 
 -- ---- EdgeDesk's own capture ---------------------------------------------------------
-insert into public.signals (sig_key, event_id, sport_key, market, selection, point, commence_time, home_team, away_team, last_seen_at) values
-  ('S4-DET', 'oa-n4', 'americanfootball_nfl', 'spreads', 'Detroit Lions', -6.5, '2026-09-27T17:00:00Z', 'Detroit Lions', 'New York Jets', '2026-09-27T16:40:00Z'),
-  ('S4-NYJ', 'oa-n4', 'americanfootball_nfl', 'spreads', 'New York Jets', 6.5, '2026-09-27T17:00:00Z', 'Detroit Lions', 'New York Jets', '2026-09-27T16:40:00Z');
-insert into public.signal_ticks (sig_key, created_at, point) values
-  ('S4-DET', '2026-09-27T16:10:00Z', -6), ('S4-DET', '2026-09-27T16:40:00Z', -6.5), ('S4-DET', '2026-09-27T17:10:00Z', -9),
-  ('S4-NYJ', '2026-09-27T16:40:00Z', 6.5);
+-- One capture pass stamps every point it saw with the pass's instant: at the
+-- final pregame pass (16:40) six books quote DET -6.5 and one quotes -7, so
+-- -6.5 is the close. The 09-25 tick is two days out: never a close, never copied.
+insert into public.signals (sig_key, event_id, sport_key, market, selection, point, commence_time, home_team, away_team, last_seen_at, n_books) values
+  ('oa-n4|spreads|Detroit Lions|-6.5', 'oa-n4', 'americanfootball_nfl', 'spreads', 'Detroit Lions', -6.5, '2026-09-27T17:00:00Z', 'Detroit Lions', 'New York Jets', '2026-09-27T16:40:00Z', 6),
+  ('oa-n4|spreads|New York Jets|6.5', 'oa-n4', 'americanfootball_nfl', 'spreads', 'New York Jets', 6.5, '2026-09-27T17:00:00Z', 'Detroit Lions', 'New York Jets', '2026-09-27T16:40:00Z', 6),
+  ('oa-n4|spreads|Detroit Lions|-7', 'oa-n4', 'americanfootball_nfl', 'spreads', 'Detroit Lions', -7, '2026-09-27T17:00:00Z', 'Detroit Lions', 'New York Jets', '2026-09-27T16:40:00Z', 1);
+-- (insertion order fixes the tick ids; with these, ordering the 16:40 rows by
+-- snapshot id alone would put the one-book -7 first: the test proves breadth
+-- is what picks -6.5)
+insert into public.signal_ticks (sig_key, created_at, point, n_books) values
+  ('oa-n4|spreads|Detroit Lions|-6.5', '2026-09-25T12:00:00Z', -5, 5),
+  ('oa-n4|spreads|Detroit Lions|-6.5', '2026-09-27T16:10:00Z', -6, 5),
+  ('oa-n4|spreads|Detroit Lions|-6.5', '2026-09-27T17:10:00Z', -9, 6),
+  ('oa-n4|spreads|Detroit Lions|-6.5', '2026-09-27T16:40:00Z', -6.5, 6),
+  ('oa-n4|spreads|New York Jets|6.5', '2026-09-27T16:40:00Z', 6.5, 6),
+  ('oa-n4|spreads|Detroit Lions|-7', '2026-09-27T16:40:00Z', -7, 1);
 
 -- ---- the legacy grade, as production has it ------------------------------------------
 select collective.grade_game(game_id) from public.fx_games where tag in ('N1', 'N2', 'N14', 'C1');
