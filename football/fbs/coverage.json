@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-28T15:37:08.285Z",
+ "generated_at": "2026-09-28T17:50:57.810Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -164,13 +164,22 @@
   "efficiency_replay": {
    "source_schema": "edgedesk_cfb_engine_efficiency_v1",
    "season": 2026,
-   "artifact_games_with_stats": 582,
-   "artifact_team_game_rows": 1152,
-   "games_absorbed_with_stats": 330,
-   "team_rows_absorbed": 544,
-   "final_games_without_play_stats": 1,
+   "artifact_games_with_stats": 576,
+   "artifact_team_game_rows": 1139,
+   "games_absorbed_with_stats": 321,
+   "team_rows_absorbed": 531,
+   "final_games_without_play_stats": 10,
    "missing_game_ids": [
-    "401856881"
+    "401866408",
+    "401866409",
+    "401860889",
+    "401860890",
+    "401858471",
+    "401861963",
+    "401860885",
+    "401860887",
+    "401860886",
+    "401860888"
    ],
    "measured_features": [
     "success_rate",
@@ -217,10 +226,10 @@
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
-  "games_in_artifact": 582,
+  "games_in_artifact": 576,
   "completed_games_replayed": 331,
-  "completed_games_with_both_team_efficiency": 214,
-  "missing_count": 117,
+  "completed_games_with_both_team_efficiency": 210,
+  "missing_count": 121,
   "problem": null
  },
  "checks": [
@@ -414,12 +423,18 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 117,
+   "count": 121,
    "detail": [
+    {
+     "game_id": "401866408",
+     "game": "Sacramento State @ Eastern Michigan",
+     "home": false,
+     "away": false
+    },
     {
      "game_id": "401866409",
      "game": "UAlbany @ Buffalo",
-     "home": true,
+     "home": false,
      "away": false
     },
     {
@@ -467,12 +482,6 @@
     {
      "game_id": "401858435",
      "game": "Indiana State @ Purdue",
-     "home": true,
-     "away": false
-    },
-    {
-     "game_id": "401856769",
-     "game": "Long Island University @ Kansas",
      "home": true,
      "away": false
     }
