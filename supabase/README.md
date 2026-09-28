@@ -129,6 +129,27 @@ CLV, result, profit at the recommended size **and** at a flat 0.5u and a flat
 Tested against a real PostgreSQL by `tools/intelligence/stake_sql.test.js`;
 the runbook is `docs/runbooks/staking.md`.
 
+### `bettor_decisions.sql` — the bettor decision layer's storage
+Apply **after** `bankroll_and_stakes.sql` (the file stops with a message naming
+it otherwise). `bankroll_settings` gains the bettor's unit convention:
+`unit_mode` (`percent` → 1 unit = `unit_percent` × bankroll, default 1%;
+`fixed` → `base_unit_amount`; on the first run a reader who already typed a
+base unit keeps it as `fixed`), `max_active_exposure_units` (default 5, a
+warning), `exposure_limit_enabled` (default off), `beginner_mode` and
+`decision_onboarding_at`. `user_bets` holds what a reader says they placed
+("BET PLACED"), apart from EdgeDesk's recommendation: owner-only RLS, the
+entry and the recommendation snapshot taken at placement are write-once (only
+`notes` and void `status` change), and the grade columns belong to the
+service role (`tools/personal/research_state.js --only bets`).
+`bettor_decision_snapshots` / `bettor_decision_grades` mirror EdgeDesk's own
+frozen decisions (`football/cfb_terminal/decisions/<season>/*.jsonl`, synced by
+`football/cfb_terminal/decisions_sync.js`): write-once, never deleted, refused
+at or after kickoff, units only on a BET and never above 1.00U, readable by
+signed-in readers. Views: `bettor_decision_transitions`,
+`bettor_decision_performance` (per unit tier; `sufficient_sample` false under
+50 settled bets) and `user_bet_clv`. Tested against a real PostgreSQL by
+`tools/bettor/bettor_sql.test.js`; the design is `docs/bettor-decision/DESIGN.md`.
+
 ### `research_packets.sql` — the prediction ledger of EdgeDesk Intelligence
 One row per normalised research packet the desk built before kickoff: the
 projection and its version, the price it was compared against (and the

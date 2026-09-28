@@ -1,0 +1,414 @@
+#!/usr/bin/env node
+/* ============================================================================
+   THE BETTOR DECISION LAYER — the rules.
+
+     node tools/bettor/decision.test.js
+
+   lib/edgedesk_decision.js (the engine), lib/edgedesk_decision_track.js
+   (transitions, tracks, snapshots, CLV, performance), lib/edgedesk_bankroll.js
+   (units → dollars, exposure), lib/edgedesk_decision_inputs.js (the facts
+   adapter) and lib/edgedesk_decision_ui.js (the renderers), on synthetic
+   games whose every probability comes from EDQuoteEV on a discretised normal
+   margin model — and on the REAL committed slate.
+
+   1  the hierarchy: integrity → market quality → price → calibrated advantage → sizing
+   2  BET / WAIT / PASS / NO DECISION, each from the spec's own examples
+   3  sizing: 0.25 / 0.50 / 0.75 U, the 1.00U cap, raw EV never sizes, no results
+   4  playable-to: the corner clears, one step beyond does not (line and juice)
+   5  transitions and tracks: price moved, price improved, new information
+   6  anomalies, orientation, duplicates, cancellation, postponement
+   7  bankroll, exposure, correlation, guardrails
+   8  snapshots, CLV, the reader's entry, per-tier performance
+   9  the real slate: facts adapter, build parity, the governance labels
+   10 the renderers: four states, beginner mode, tooltips, no tout language
+   ========================================================================== */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const ROOT = path.resolve(__dirname, '..', '..');
+global.window = global.window || global;
+const R = require(path.join(ROOT, 'lib', 'research_core.js'));
+const Q = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
+const D = require(path.join(ROOT, 'lib', 'edgedesk_decision.js'));
+const T = require(path.join(ROOT, 'lib', 'edgedesk_decision_track.js'));
+const B = require(path.join(ROOT, 'lib', 'edgedesk_bankroll.js'));
+const I = require(path.join(ROOT, 'lib', 'edgedesk_decision_inputs.js'));
+const U = require(path.join(ROOT, 'lib', 'edgedesk_decision_ui.js'));
+void R;
+
+let pass = 0, fail = 0; const failures = [];
+function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; failures.push(name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 500) : '')); }
+function section(t) { console.log('  · ' + t); }
+
+/* ------------------------------------------------------------ the fixture */
+function Phi(z) { const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2); const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - p : p; }
+const COVER = {};
+function normalCover(mu, sd) {
+  const key = mu + '|' + sd; if (COVER[key]) return COVER[key];
+  const pmf = {}; let tot = 0;
+  for (let k = -90; k <= 90; k++) { const p = Phi((k + 0.5 - mu) / sd) - Phi((k - 0.5 - mu) / sd); pmf[k] = p; tot += p; }
+  Object.keys(pmf).forEach((k) => { pmf[k] /= tot; });
+  COVER[key] = (t) => { let win = 0, push = 0; for (let k = -90; k <= 90; k++) { if (Math.abs(k - t) < 1e-9) push += pmf[k]; else if (k > t) win += pmf[k]; } return { win, push, lose: 1 - win - push }; };
+  return COVER[key];
+}
+const NOW = Date.parse('2026-10-03T12:00:00Z'), FRESH = '2026-10-03T11:52:00Z', KICK = '2026-10-03T19:30:00Z';
+/* home = Wake Forest, away = NC State; market Wake −6.5. raw: Wake by `fair`; calibrated: Wake by `cal` */
+function model(fair, cal, extra) {
+  const cc = normalCover(cal, 14);
+  return Object.assign({ sport: 'CFB', available: true, model_version: 'test_v1', fair_home_margin: fair, home_cover: normalCover(fair, 14), tail: { validated_within_pts: 3 },
+    adjusted: cal == null ? { available: false, reason: 'no validated calibration' } : { available: true, label: 'CALIBRATED', version: 'cal_test', maturity: 'SHADOW', side_prob: (s, l) => Q.sideProb(cc, s, l) } }, extra || {});
+}
+function q(side, line, am, extra) { return Object.assign({ game_id: 'g1', side, line, american: am, book: 'FanDuel', captured_at: FRESH, fresh: true, n_books: 1 }, extra || {}); }
+function mainQuotes(awayLine, awayPrice, homePrice, book) { return [q('away', awayLine, awayPrice, { book: book || 'FanDuel' }), q('home', -awayLine, homePrice == null ? -118 : homePrice, { book: book || 'FanDuel' })]; }
+function input(over) {
+  const base = { now: NOW, sport: 'CFB', market_type: 'spread',
+    game: { game_id: 'g1', home: 'Wake Forest', away: 'NC State', kickoff: KICK, mapping_ok: true, orientation_ok: true },
+    model: model(4, 5.5), quotes: mainQuotes(6.5, -102),
+    research: { status: 'WORTH_RESEARCHING', label: 'WORTH RESEARCHING', gap_pts: 2.5, gap_toward_side: 'away', verification: 'NOT_REQUIRED' },
+    integrity: { gates: [{ id: 'a', status: 'PASS' }, { id: 'b', status: 'PASS' }] },
+    market: { consensus_home_line: -6.5, n_books_fresh: 2, dispersion: 0, movement_pts: 0.5 },
+    reliability: { score: 79, grade: 'STRONG' }, confidence: { score: 70, label: 'HIGH' },
+    projection: { stability: 'STABLE', uncertainty_score: 20 },
+    qb: { known: true }, availability: { known: true }, support: { by_side: { away: 2, home: 0 } },
+    anomaly: { current_season: true }, governance: { policy_status: 'SHADOW', policy_bet_enabled: false } };
+  const o = JSON.parse(JSON.stringify(Object.assign({}, base, { model: null })));
+  o.model = base.model;
+  Object.keys(over || {}).forEach((k) => {
+    const v = over[k];
+    if (k === 'model' || k === 'quotes' || k === 'previous' || k === 'track' || k === 'evaluation') o[k] = v;
+    else if (v && typeof v === 'object' && !Array.isArray(v) && o[k] && typeof o[k] === 'object') o[k] = Object.assign({}, o[k], v);
+    else o[k] = v;
+  });
+  return o;
+}
+const dec = (over, cfg) => D.decide(input(over), cfg);
+
+/* ======================================================================== */
+section('1-2. the four decisions');
+const bet = dec();
+chk('good calibrated EV + strong gates = BET', bet.decision === 'BET' && bet.action_reason_code === 'QUALIFIES', { d: bet.decision, c: bet.action_reason_code, b: bet.blockers });
+chk('the BET names side, line, price and book', bet.side === 'NC State' && bet.selected_line === 6.5 && bet.selected_odds === -102 && bet.selected_book === 'FanDuel');
+chk('the BET carries a calibrated EV above the floor and a raw EV beside it', bet.calibrated_ev_pct >= 1.5 && bet.raw_ev_pct > bet.calibrated_ev_pct, { cal: bet.calibrated_ev_pct, raw: bet.raw_ev_pct });
+chk('the BET is sized, has a strength, a playable boundary and invalidation conditions', bet.recommended_units > 0 && !!bet.strength && !!bet.playable && bet.invalidation_conditions.length >= 6);
+chk('the numbers are EDQuoteEV’s: the calibrated EV equals priceQuote on the same model',
+  (() => { const o = Q.priceQuote(model(4, 5.5), q('away', 6.5, -102), { now: NOW, game: { game_id: 'g1' } }); return Math.abs(100 * o.adjusted.expected_value - bet.calibrated_ev_pct) < 0.01 && Math.abs(o.expected_value_pct - bet.raw_ev_pct) < 0.01; })());
+chk('model fair, consensus and the fair text are oriented onto the side (Wake by 4 → NC State +4)', bet.model_fair_line === 4 && bet.consensus_market_line === 6.5 && /NC State \+4/.test(bet.model_fair_text), { f: bet.model_fair_line, c: bet.consensus_market_line, t: bet.model_fair_text });
+chk('every decision is versioned and auditable', bet.decision_engine_version === D.VERSION && bet.config_version === D.CONFIG_VERSION && bet.model_version === 'test_v1' && bet.calibration_version === 'cal_test' && /^bd_/.test(bet.decision_id) && bet.pricing_model_version === Q.VERSION);
+chk('the validation state is labelled, never implied', bet.validation_state === D.UNVALIDATED && bet.warnings.some((w) => w.code === 'RULES_UNVALIDATED'));
+chk('deterministic: the same input decides the same way, with the same id', JSON.stringify(dec()) === JSON.stringify(bet));
+
+const pass1 = dec({ model: model(4, 7.5) });
+chk('positive raw EV + negative calibrated EV = PASS (the edge disappears after calibration)', pass1.decision === 'PASS' && pass1.action_reason_code === 'CALIBRATED_EV_NEGATIVE' && pass1.raw_ev_pct > 0 && pass1.calibrated_ev_pct < 0, { c: pass1.action_reason_code, raw: pass1.raw_ev_pct, cal: pass1.calibrated_ev_pct });
+chk('a PASS carries no units, no playable range, and a bet trigger', pass1.recommended_units === 0 && pass1.playable === null && pass1.bet_trigger && /Would qualify at NC State \+\d/.test(pass1.bet_trigger.text), pass1.bet_trigger);
+chk('the PASS reference sits on the side the model leans', pass1.side === 'NC State' && pass1.reference_quote && pass1.reference_quote.line === 6.5);
+const thin = dec({ model: model(4, 6.1) });
+chk('a positive calibrated EV under the floor is its own PASS', thin.decision === 'PASS' && thin.action_reason_code === 'CALIBRATED_EV_BELOW_THRESHOLD' && thin.calibrated_ev_pct > 0 && thin.calibrated_ev_pct < 1.5, { c: thin.action_reason_code, cal: thin.calibrated_ev_pct });
+const noEdge = dec({ model: model(6.5, 6.5) });
+chk('no model edge at the current prices = PASS', noEdge.decision === 'PASS' && noEdge.action_reason_code === 'NO_MODEL_EDGE', noEdge.action_reason_code);
+
+const huge = dec({ model: model(-1, 5.5), market: { fault: true, fault_reason: 'one book, stale consensus' }, research: { status: 'MARKET_FAULT', gap_pts: 5.5 } });
+chk('huge raw EV + market fault ≠ BET', huge.decision !== 'BET' && huge.raw_ev_pct > 30, { d: huge.decision, raw: huge.raw_ev_pct });
+chk('…it is WAIT on market re-verification while the raw signal is large', huge.decision === 'WAIT' && huge.action_reason_code === 'MARKET_FAULT_UNDER_REVIEW' && huge.waiting_on.length === 1);
+const faultQuiet = dec({ model: model(6.5, 6.5), market: { fault: true }, research: { status: 'MARKET_FAULT', gap_pts: 0.2 } });
+chk('a market fault with no priced opportunity is NO DECISION', faultQuiet.decision === 'NO_DECISION' && faultQuiet.action_reason_code === 'MARKET_FAULT');
+const inv = dec({ model: model(-6, 5.5), research: { status: 'INVESTIGATE', gap_pts: 12.5, verification: 'INCOMPLETE', verification_items: ['1 book behind the consensus'] } });
+chk('huge gap + unverified market = WAIT (market verification)', inv.decision === 'WAIT' && inv.action_reason_code === 'MARKET_VERIFICATION_PENDING' && /market verification/.test(inv.waiting_on[0].text), { d: inv.decision, c: inv.action_reason_code });
+chk('WAIT never carries units', inv.recommended_units === 0 && huge.recommended_units === 0);
+chk('WAIT says what EdgeDesk is waiting on and when it re-checks', inv.waiting_on.length > 0 && /re-evaluates/.test(inv.next_check));
+
+const oneSided = dec({ quotes: [q('away', 6.5, -102)] });
+chk('no two-sided market = NO DECISION', oneSided.decision === 'NO_DECISION' && oneSided.action_reason_code === 'NO_TWO_SIDED_MARKET', oneSided.action_reason_code);
+chk('…the reference market may still be shown, never as actionable', oneSided.recommended_units === 0 && /^(NC State \+6\.5|Wake Forest -6\.5)$/.test(oneSided.consensus_text), oneSided.consensus_text);
+const stale = dec({ quotes: mainQuotes(6.5, -102).map((x) => Object.assign(x, { fresh: false, captured_at: '2026-10-03T06:00:00Z' })) });
+chk('stale quote ≠ BET (NO DECISION: stale quote)', stale.decision === 'NO_DECISION' && stale.action_reason_code === 'STALE_QUOTE', stale.action_reason_code);
+const staleAfterBet = dec({ quotes: mainQuotes(6.5, -102).map((x) => Object.assign(x, { fresh: false, captured_at: '2026-10-03T06:00:00Z' })), previous: bet });
+chk('a BET whose quote goes stale becomes WAIT (quote refresh), never a silent BET', staleAfterBet.decision === 'WAIT' && staleAfterBet.action_reason_code === 'QUOTE_REFRESH_PENDING');
+const nomkt = dec({ quotes: [] });
+chk('no market = NO DECISION', nomkt.decision === 'NO_DECISION' && nomkt.action_reason_code === 'NO_MARKET');
+const nocal = dec({ model: model(4, null) });
+chk('missing calibration = NO DECISION (calibration required)', nocal.decision === 'NO_DECISION' && nocal.action_reason_code === 'CALIBRATION_UNAVAILABLE');
+chk('…the raw arithmetic stays visible as research, never as a decision', nocal.reference_quote && nocal.raw_ev_pct != null && nocal.recommended_units === 0);
+const nfl = D.decide(Object.assign(input({ model: model(4, null, { sport: 'NFL' }) }), { sport: 'NFL' }));
+chk('the NFL (no EV calibration exists) = NO DECISION', nfl.decision === 'NO_DECISION' && nfl.action_reason_code === 'CALIBRATION_UNAVAILABLE' && nfl.market_key === 'NFL:spread');
+const lowRel = dec({ reliability: { score: 55 } });
+chk('low reliability = PASS', lowRel.decision === 'PASS' && lowRel.action_reason_code === 'LOW_RELIABILITY');
+const noRel = dec({ reliability: { score: null } });
+chk('unmeasured reliability = NO DECISION', noRel.decision === 'NO_DECISION' && noRel.action_reason_code === 'RELIABILITY_UNMEASURED');
+const unstable = dec({ projection: { stability: 'UNSTABLE' } });
+chk('an unstable projection = PASS', unstable.decision === 'PASS' && unstable.action_reason_code === 'UNSTABLE_PROJECTION');
+const lowConf = dec({ confidence: { score: 20 } });
+chk('insufficient model data = NO DECISION', lowConf.decision === 'NO_DECISION' && lowConf.action_reason_code === 'INSUFFICIENT_MODEL_DATA');
+const dataFault = dec({ integrity: { data_fault: true, data_fault_reason: 'inverted spread' } });
+chk('DATA FAULT is a hard blocker (NO DECISION)', dataFault.decision === 'NO_DECISION' && dataFault.action_reason_code === 'DATA_FAULT');
+const verified = dec({ model: model(4, 7.5), research: { status: 'VERIFIED_MAJOR', gap_pts: 7.5, verification: 'PASSED' } });
+chk('VERIFIED MAJOR DISAGREEMENT never implies BET', verified.decision !== 'BET', verified.decision);
+const worth = dec({ model: model(4, 7.5), research: { status: 'WORTH_RESEARCHING', gap_pts: 5 } });
+chk('WORTH RESEARCHING never implies BET', worth.decision === 'PASS');
+const totals = D.decide(Object.assign(input(), { market_type: 'total' }));
+chk('an unsupported market = NO DECISION', totals.decision === 'NO_DECISION' && totals.action_reason_code === 'UNSUPPORTED_MARKET');
+const gov = dec({}, { markets: { 'CFB:spread': { supported: true, bet_authority: 'GOVERNED_POLICY', calibration_required: true } } });
+chk('with BET authority held by a governed policy that has not enabled betting, the price clears but no BET', gov.decision === 'PASS' && gov.action_reason_code === 'BET_AUTHORITY_DISABLED');
+const govOn = D.decide(input({ governance: { policy_bet_enabled: true } }), { markets: { 'CFB:spread': { supported: true, bet_authority: 'GOVERNED_POLICY', calibration_required: true } } });
+chk('…and BET once that policy enables it', govOn.decision === 'BET');
+
+/* ======================================================================== */
+section('3. sizing');
+const s25 = dec({ support: { by_side: { away: 0 } } });
+chk('0.25U: every gate passes, a limited edge strength', s25.decision === 'BET' && s25.recommended_units === 0.25 && s25.strength === 'QUALIFIED', { u: s25.recommended_units, t: s25.sizing && s25.sizing.tiers });
+const s25b = dec({ market: { n_books_fresh: 1 } });
+chk('0.25U: one fresh book (ACCEPTABLE market) caps the stake', s25b.recommended_units === 0.25 && s25b.market_quality === 'ACCEPTABLE', { u: s25b.recommended_units, mq: s25b.market_quality });
+chk('0.50U: calibrated EV ≈3%+, strong market, reasonable reliability, stable projection', bet.recommended_units === 0.5 && bet.strength === 'STRONG' && bet.calibrated_ev_pct >= 3, { u: bet.recommended_units, cal: bet.calibrated_ev_pct });
+const s75 = dec({ model: model(4, 5.3), reliability: { score: 85 }, projection: { stability: 'VERY_STABLE', uncertainty_score: 20 } });
+chk('0.75U: calibrated EV 5%+, strong reliability, verified market, stable, multiple independent signals', s75.recommended_units === 0.75 && s75.strength === 'VERY_STRONG' && s75.market_quality === 'VERIFIED', { u: s75.recommended_units, cal: s75.calibrated_ev_pct, t: s75.sizing && s75.sizing.tiers.map((x) => x.why) });
+const s100in = { model: model(4, 4.8), reliability: { score: 90 }, projection: { stability: 'VERY_STABLE', uncertainty_score: 10 }, support: { by_side: { away: 3 } } };
+const s100 = dec(s100in);
+chk('1.00U cap: the 1.00U tier is shadow-only until validated — recommended 0.75U, shadow 1.00U', s100.recommended_units === 0.75 && s100.shadow_units === 1 && s100.sizing.caps.some((c) => /unvalidated tier cap/.test(c)), { u: s100.recommended_units, sh: s100.shadow_units, caps: s100.sizing && s100.sizing.caps });
+const s100v = dec(s100in, { sizing: { validated_tiers: [0.25, 0.5, 0.75, 1] } });
+chk('…and 1.00U once that tier is validated', s100v.recommended_units === 1, { u: s100v.recommended_units, t: s100v.sizing && s100v.sizing.tiers.map((x) => x.why) });
+const big = dec(s100in, { sizing: { validated_tiers: [0.25, 0.5, 0.75, 1, 1.5], tiers: D.DEFAULT_CONFIG.sizing.tiers.concat([{ units: 1.5, strength: 'VERY_STRONG', min_calibrated_ev: 0.07, min_reliability: 85, min_market_quality: 'VERIFIED', min_stability: 'HIGH', min_support: 2, min_score: 0, allow_material_warnings: false }]) } });
+chk('never above 1.00U, whatever a config says', big.recommended_units === 1, big.recommended_units);
+const rawOnly = dec({ model: model(3.5, 5.5) });
+chk('raw EV never determines size: a bigger raw edge on the same calibrated probability sizes the same', rawOnly.raw_ev_pct > bet.raw_ev_pct && rawOnly.recommended_units === bet.recommended_units && rawOnly.calibrated_ev_pct === bet.calibrated_ev_pct, { raw: [rawOnly.raw_ev_pct, bet.raw_ev_pct], u: [rawOnly.recommended_units, bet.recommended_units] });
+const rawHuge = dec({ model: model(0, 5.5) });
+chk('…an extreme raw edge only ever sizes smaller (anomaly review), never larger', rawHuge.raw_ev_pct > 20 && rawHuge.recommended_units <= bet.recommended_units, { raw: rawHuge.raw_ev_pct, u: rawHuge.recommended_units, d: rawHuge.decision });
+const afterLoss = dec({ record: { last_result: 'loss', streak: -5 }, results: [{ result: 'loss' }], bankroll: { bankroll_amount: 100 } });
+chk('no loss-chasing: results and bankroll in the input change nothing', afterLoss.recommended_units === bet.recommended_units && afterLoss.decision_id === bet.decision_id);
+chk('sizing reads no past result (source check)', !/result|streak|drawdown|martingale/i.test(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_decision.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').split('function sizing(')[1].split('function warningsOf')[0]));
+chk('the composite weights sum to 1', Math.abs(Object.values(D.DEFAULT_CONFIG.sizing.weights).reduce((a, b) => a + b, 0) - 1) < 1e-9);
+
+/* ======================================================================== */
+section('4. playable-to');
+const P = bet.playable;
+chk('the BET has a playable corner (worst line, worst price there) and a frontier', P && P.frontier.length >= 1 && P.min_line <= 6.5 && P.max_odds <= -102, P);
+const atCorner = dec({ quotes: mainQuotes(P.min_line, P.max_odds) });
+chk('the corner itself still qualifies', atCorner.decision === 'BET', { d: atCorner.decision, cal: atCorner.calibrated_ev_pct, corner: [P.min_line, P.max_odds] });
+const worseLine = dec({ quotes: mainQuotes(P.min_line - 0.5, P.max_odds), previous: bet });
+chk('line worsens beyond the boundary = PASS (price moved)', worseLine.decision === 'PASS' && worseLine.action_reason_code === 'PRICE_MOVED', { d: worseLine.decision, c: worseLine.action_reason_code });
+chk('…and says from what to what', /Line moved from \+6\.5 \(-102\) to /.test(worseLine.action_reason_text), worseLine.action_reason_text);
+const worseJuice = dec({ quotes: mainQuotes(6.5, P.at_current_line_max_odds - 1), previous: bet });
+chk('juice worsens beyond the boundary = PASS', worseJuice.decision === 'PASS' && worseJuice.action_reason_code === 'PRICE_MOVED', { d: worseJuice.decision, cal: worseJuice.calibrated_ev_pct, p: P.at_current_line_max_odds });
+const atJuice = dec({ quotes: mainQuotes(6.5, P.at_current_line_max_odds) });
+chk('…while the worst juice at the current line still qualifies', atJuice.decision === 'BET', { d: atJuice.decision, p: P.at_current_line_max_odds });
+const better = dec({ quotes: mainQuotes(7.5, -102), previous: bet });
+chk('line improves = remains BET', better.decision === 'BET' && better.selected_line === 7.5);
+chk('spread and juice are evaluated together (the text states both)', /· (up to|maximum) -\d+/.test(P.text) || P.mode === 'CURRENT_PRICE_ONLY', P.text);
+const only = dec({ model: model(4, 5.95) });
+chk('an edge just above the floor reads CURRENT PRICE ONLY or a one-step range', only.decision !== 'BET' || only.playable.mode === 'CURRENT_PRICE_ONLY' || only.playable.frontier.length <= 2, only.playable);
+
+/* ======================================================================== */
+section('5. transitions and tracks');
+const tImp = T.transition(bet, better);
+chk('BET → BET / PRICE IMPROVED', tImp && tImp.kind === 'PRICE_IMPROVED' && tImp.from === 'BET' && tImp.to === 'BET', tImp);
+const tMoved = T.transition(bet, worseLine);
+chk('BET → PASS / PRICE MOVED, with both numbers', tMoved && tMoved.kind === 'PRICE_MOVED' && /\+6\.5 \(-102\)/.test(tMoved.text), tMoved);
+const qbWait = dec({ qb: { unresolved_critical: true, detail: 'NC State: competition' } });
+chk('QB becomes unresolved = BET → WAIT', qbWait.decision === 'WAIT' && qbWait.action_reason_code === 'QB_UNRESOLVED' && T.transition(bet, qbWait).kind === 'NEW_INFORMATION');
+const qbBack = dec({ previous: qbWait });
+chk('QB resolves favorably = WAIT → re-evaluated → BET', qbBack.decision === 'BET' && T.transition(qbWait, qbBack).kind === 'INFORMATION_RESOLVED');
+const qbUnknown = dec({ qb: { known: false } });
+chk('an unknown QB state is never a clean bill: WAIT when the price is attractive', qbUnknown.decision === 'WAIT' && qbUnknown.action_reason_code === 'QB_UNRESOLVED');
+const qbQuiet = dec({ model: model(4, 7.5), qb: { unresolved_critical: true } });
+chk('an unresolved QB on an unattractive price is a PASS with a warning (WAIT needs an opportunity)', qbQuiet.decision === 'PASS' && qbQuiet.warnings.some((w) => w.code === 'QB_UNRESOLVED'));
+const injured = dec({ model: model(4, 7.5), previous: bet });
+chk('an injury update that changes the projection re-evaluates: BET → PASS (projection changed, not price moved)', injured.decision === 'PASS' && injured.action_reason_code === 'PROJECTION_CHANGED' && T.transition(bet, injured).kind === 'NEW_INFORMATION', injured.action_reason_code);
+const availWait = dec({ availability: { major_uncertainty: true, detail: 'NC State: WR1 questionable' } });
+chk('a major availability uncertainty = WAIT', availWait.decision === 'WAIT' && availWait.action_reason_code === 'AVAILABILITY_PENDING');
+const mfWait = dec({ market: { fault: true }, research: { status: 'MARKET_FAULT', gap_pts: 5.5 } });
+const mfResolved = dec({ previous: mfWait });
+chk('market fault resolved = re-evaluated (WAIT → BET)', mfWait.decision === 'WAIT' && mfResolved.decision === 'BET' && T.transition(mfWait, mfResolved).kind === 'INFORMATION_RESOLVED');
+const passToBet = T.transition(pass1, bet);
+chk('PASS → BET / PRICE IMPROVED', passToBet.kind === 'PRICE_IMPROVED');
+chk('NO DECISION → BET / market available', T.transition(nomkt, bet).kind === 'MARKET_AVAILABLE');
+chk('an unchanged decision is not a transition', T.transition(bet, dec()) === null);
+let tr = null;
+[bet, better, dec({ quotes: mainQuotes(6.5, -105) }), worseLine, bet].forEach((d, i) => { tr = T.track(tr, Object.assign({}, d, { evaluated_at: new Date(NOW + i * 60000).toISOString() })); });
+chk('the track keeps the first qualified price fixed', tr.first_qualified.line === 6.5 && tr.first_qualified.odds === -102);
+chk('best observed only improves', tr.best_observed.line === 7.5);
+chk('transitions only grow, and record current and previous state', tr.transitions.length >= 3 && tr.current_decision === 'BET' && tr.previous_decision === 'PASS', tr.transitions.map((x) => x.label));
+const frozenFirst = JSON.stringify(tr.transitions[0]);
+tr = T.track(tr, Object.assign({}, pass1, { evaluated_at: new Date(NOW + 10 * 60000).toISOString() }));
+chk('a later evaluation never rewrites an earlier transition', JSON.stringify(tr.transitions[0]) === frozenFirst);
+const closed = T.close(tr, { line: 4.5, at: KICK, source: 'test' });
+chk('the close is recorded once with the first-qualified CLV', closed.closing.line === 4.5 && closed.first_qualified_clv_points === 2 && T.close(closed, { line: 9 }).closing.line === 4.5);
+
+/* ======================================================================== */
+section('6. anomalies, orientation, duplicates, schedule');
+const extremeIn = { model: model(-4, 5.5), research: { status: 'VERIFIED_MAJOR', gap_pts: 10.5, verification: 'PASSED' } };
+const extreme = dec(extremeIn);
+chk('an extreme gap triggers anomaly review', extreme.anomaly && extreme.anomaly.triggered && extreme.anomaly.triggers.some((t) => t.code === 'LARGE_GAP'), extreme.anomaly && extreme.anomaly.triggers);
+chk('…every check cleared, it proceeds, capped — a ridiculous edge is never a bigger stake', extreme.decision === 'BET' && extreme.anomaly.cleared && extreme.recommended_units <= 0.5 && extreme.warnings.some((w) => w.code === 'ANOMALY_CLEARED'), { d: extreme.decision, u: extreme.recommended_units, checks: extreme.anomaly.checks.filter((c) => c.status !== 'PASS') });
+const extremeThin = dec(Object.assign({}, extremeIn, { market: { n_books_fresh: 1 } }));
+chk('…with one book (an open check) it is WAIT: anomaly review', extremeThin.decision === 'WAIT' && extremeThin.action_reason_code === 'ANOMALY_REVIEW', { d: extremeThin.decision, c: extremeThin.action_reason_code });
+const flip = dec(Object.assign({}, extremeIn, { anomaly: { favorite_flip: true, current_season: true, circuit_breaker: { triggered: true, level: 'SEVERE', verified: true } } }));
+chk('a SEVERE circuit-breaker extreme is capped at the smallest tier', flip.decision !== 'BET' || flip.recommended_units === 0.25, { d: flip.decision, u: flip.recommended_units });
+const disagree = dec({ quotes: mainQuotes(6.5, -102).concat(mainQuotes(3.5, -110, -110, 'DraftKings')) });
+chk('multiple books disagreeing triggers anomaly review and holds the bet (WAIT)', disagree.decision === 'WAIT' && disagree.anomaly.triggers.some((t) => t.code === 'BOOK_DISPERSION') && disagree.anomaly.checks.some((c) => c.code === 'BOOK_AGREEMENT' && c.status === 'FAIL'), { d: disagree.decision, t: disagree.anomaly && disagree.anomaly.triggers });
+const arb = dec({ quotes: [q('away', 6.5, 105), q('home', -6.5, 105, { book: 'DraftKings' })] });
+chk('an arbitrage-shaped pair of quotes is never a clean BET', arb.decision !== 'BET' || !arb.anomaly.cleared, { d: arb.decision });
+const orient = dec({ game: { orientation_ok: false, orientation_reason: 'spread arrived in the opposite convention' } });
+chk('wrong team orientation protection (flagged) = NO DECISION', orient.decision === 'NO_DECISION' && orient.action_reason_code === 'ORIENTATION_FAULT');
+const mirrored = dec({ quotes: [q('away', 6.5, -102), q('home', 6.5, -118)] });
+chk('wrong team orientation protection (the two sides do not mirror) = NO DECISION', mirrored.decision === 'NO_DECISION' && mirrored.action_reason_code === 'ORIENTATION_FAULT', mirrored.action_reason_code);
+chk('duplicate event protection = NO DECISION', dec({ game: { duplicate: true } }).action_reason_code === 'DUPLICATE_GAME');
+chk('an unresolved mapping = NO DECISION', dec({ game: { mapping_ok: false } }).action_reason_code === 'INVALID_GAME');
+chk('game cancellation = NO DECISION', dec({ game: { state: 'CANCELED' } }).action_reason_code === 'GAME_CANCELLED' && dec({ game: { state: 'CANCELLED' } }).action_reason_code === 'GAME_CANCELLED');
+chk('postponement = NO DECISION', dec({ game: { state: 'POSTPONED' } }).action_reason_code === 'GAME_POSTPONED');
+chk('a started game = NO DECISION (pregame decisions close)', dec({ now: Date.parse(KICK) + 60000 }).action_reason_code === 'GAME_STARTED');
+chk('a malformed projection = NO DECISION', dec({ integrity: { malformed_projection: true } }).action_reason_code === 'MALFORMED_PROJECTION');
+chk('a failed self-check = NO DECISION', dec({ integrity: { self_check_ok: false } }).action_reason_code === 'SELF_CHECK_FAILED');
+
+section('push, pick’em, plus money, alternates');
+const intLine = dec({ quotes: mainQuotes(6, -110), model: model(3, 4.7) });
+chk('push probability: a whole-number line carries push mass and EV counts it', intLine.push_probability > 0 && intLine.bet_price == null ? intLine.reference_quote && intLine.reference_quote.push_probability > 0 : intLine.bet_price.push_probability > 0, { d: intLine.decision, p: intLine.push_probability });
+chk('…the integer line decides like any other (no push treated as a win or a loss)', ['BET', 'PASS'].indexOf(intLine.decision) >= 0);
+const pk = D.decide(input({ model: model(-1.5, -0.2), quotes: [q('away', 0, -102), q('home', 0, -118)], market: { consensus_home_line: 0 } }));
+chk('pick’em: a PK line prices and reads PK', ['BET', 'PASS'].indexOf(pk.decision) >= 0 && /PK/.test(D.selectionText(pk)), { d: pk.decision, t: D.selectionText(pk), c: pk.action_reason_code });
+const plus = dec({ model: model(0, 1.5), quotes: [q('away', 3.5, 120), q('home', -3.5, -145)], market: { consensus_home_line: -3.5 } });
+chk('plus-money spread: priced at its own payout', ['BET', 'PASS'].indexOf(plus.decision) >= 0 && (plus.selected_odds === 120 || (plus.reference_quote && plus.reference_quote.odds === 120)), { d: plus.decision, o: plus.selected_odds });
+const alts = dec({ quotes: mainQuotes(6.5, -102).concat([q('away', 7.5, -125, { market_type: 'alternate_spread' }), q('home', -7.5, 102, { market_type: 'alternate_spread' }), q('away', 3.5, 145, { market_type: 'alternate_spread' }), q('home', -3.5, -170, { market_type: 'alternate_spread' }),
+  q('away', 12.5, -260, { market_type: 'alternate_spread' }), q('home', -12.5, 210, { market_type: 'alternate_spread' })]) });
+chk('alternate line: the recommendation is the best RISK-ADJUSTED qualifying quote, inside the validated tail', alts.decision === 'BET' && alts.bet_price.tail !== 'NOT_VALIDATED', { d: alts.decision, sel: alts.bet_price && alts.bet_price.label });
+chk('…SAFER and BETTER VALUE are separate answers', alts.alternatives && alts.alternatives.note && /SAFER/.test(alts.alternatives.note));
+chk('…an alternate beyond the validated tail is never the recommendation', !alts.bet_price || alts.bet_price.line !== 12.5);
+const tailOnly = dec({ model: model(4, 7.5), quotes: mainQuotes(6.5, -102).concat([q('away', 13, -110, { market_type: 'alternate_spread' }), q('home', -13, -110, { market_type: 'alternate_spread' })]) });
+chk('only a tail alternate clearing = PASS (alternate outside the validated range)', tailOnly.decision === 'PASS' && tailOnly.action_reason_code === 'ALT_TAIL_ONLY', tailOnly.action_reason_code);
+
+/* ======================================================================== */
+section('7. bankroll, exposure, correlation');
+chk('$250 bankroll = $2.50 unit', B.unitValue({ bankroll_amount: 250 }).unit === 2.5);
+chk('$500 bankroll = $5 unit', B.unitValue({ bankroll_amount: 500 }).unit === 5);
+chk('$1,000 bankroll = $10 unit', B.unitValue({ bankroll_amount: 1000 }).unit === 10);
+chk('$2,500 bankroll = $25 unit', B.unitValue({ bankroll_amount: 2500 }).unit === 25);
+chk('bankroll dollar conversion: 0.5U on a $25 unit = $12.50', B.dollars(0.5, { bankroll_amount: 2500 }) === 12.5 && B.dollarText(0.5, { bankroll_amount: 2500 }) === '$12.50');
+chk('custom unit: a typed $40 unit wins in fixed mode', B.unitValue({ bankroll_amount: 2500, unit_mode: 'fixed', base_unit_amount: 40 }).unit === 40 && B.dollars(0.25, { unit_mode: 'fixed', base_unit_amount: 40 }) === 10);
+chk('a custom percent ("2" means 2%)', B.unitValue({ bankroll_amount: 1000, unit_percent: 2 }).unit === 20);
+chk('no bankroll: units only, with a prompt', B.unitValue({}).unit === null && /Set a bankroll/.test(B.unitValue({}).text));
+chk('bankroll never changes a unit classification (the engine has no bankroll input)', dec({ bankroll_amount: 100000 }).recommended_units === bet.recommended_units);
+chk('invalid settings fall back to defaults, never a guess', B.normalize({ unit_percent: 50, max_active_units: -3, bankroll_amount: 'abc' }).unit_percent === 0.01 && B.normalize({ max_active_units: -3 }).max_active_units === 5 && B.normalize({ bankroll_amount: 'abc' }).bankroll_amount === null);
+const mk = (gid, u, extra) => Object.assign({ game_id: gid, decision: 'BET', recommended_units: u, sport: 'CFB', side: 'Team ' + gid, side_key: 'away', market_type: 'spread', kickoff: KICK, strength: u >= 0.75 ? 'VERY_STRONG' : (u >= 0.5 ? 'STRONG' : 'QUALIFIED'), calibrated_ev_pct: 3 }, extra || {});
+const card = [mk('a', 0.5), mk('b', 0.5), mk('c', 0.25), Object.assign(mk('d', 0), { decision: 'WAIT' }), Object.assign(mk('e', 0), { decision: 'PASS' })];
+const ex = B.exposure(card, { bankroll_amount: 2500 });
+chk('3 bets · 1.25U total exposure · $31.25 on a $25 unit', ex.n_bets === 3 && ex.total_units === 1.25 && ex.total_dollars === 31.25, ex);
+chk('exposure grouped by sport, window, game, team and market', ex.by_sport.CFB.units === 1.25 && Object.keys(ex.by_game).length === 3 && Object.keys(ex.by_window).length >= 1 && ex.by_market.spread.units === 1.25);
+const corr = B.exposure([mk('a', 0.5), mk('a', 0.25, { market_type: 'total' })], {});
+chk('a correlation note when two positions ride one game outcome', corr.correlation_notes.some((n) => n.code === 'SAME_GAME' && /Do not double-count conviction/.test(n.text)), corr.correlation_notes);
+const many = Array.from({ length: 8 }, (_, i) => mk('g' + i, 0.75));
+const warnOnly = B.exposure(many, { max_active_units: 5 });
+chk('active exposure over the maximum WARNS and suppresses nothing by default', warnOnly.guardrail.exceeded && warnOnly.n_bets === 8 && warnOnly.held.length === 0);
+const limited = B.exposure(many, { max_active_units: 5, exposure_limit_enabled: true });
+chk('exposure limiting (opt-in) holds the positions beyond the limit', limited.total_units <= 5 && limited.held.length === 2 && limited.held.every((h) => h.reason === 'EXPOSURE_LIMIT'), limited);
+
+/* ======================================================================== */
+section('8. snapshots, CLV, the reader’s entry, performance');
+const snap = T.snapshot(bet, { qb_state: { known: true }, availability_state: { known: true }, integrity_gates: [{ id: 'a', status: 'PASS' }], distribution: { p10: -14, p50: 4, p90: 22 } });
+chk('the snapshot reconstructs the call (quote, probabilities, EVs, versions, gates, sizing, decision)', ['selected_line', 'selected_odds', 'selected_book', 'cover_probability', 'push_probability', 'break_even_probability', 'raw_ev_pct', 'calibrated_ev_pct', 'reliability_score',
+  'projection_stability', 'market_quality', 'recommended_units', 'max_playable_line', 'max_acceptable_odds', 'decision', 'action_reason_code', 'model_version', 'calibration_version', 'decision_engine_version', 'config_version'].every((k) => snap[k] !== undefined)
+  && snap.integrity_gates && snap.distribution && snap.sizing && snap.playable && Array.isArray(snap.warnings));
+chk('the snapshot is frozen, with a content id', Object.isFrozen(snap) && /^bds_/.test(snap.snapshot_id) && snap.snapshot_id === T.snapshot(bet).snapshot_id);
+let L = T.appendSnapshot([], snap);
+chk('a snapshot is appended once', T.appendSnapshot(L, snap).length === 1);
+const late = T.snapshot(Object.assign({}, bet, { evaluated_at: '2026-10-03T20:00:00Z', decision_id: 'x2' }));
+chk('a post-kickoff state is refused (history is not rewritten with future information)', T.appendSnapshot(L, late).length === 1);
+const early = T.snapshot(Object.assign({}, pass1, { evaluated_at: '2026-10-03T11:00:00Z' }));
+chk('an out-of-order (older) state is refused', T.appendSnapshot(L, early).length === 1);
+chk('CLV: bet +6.5, closed +4.5 = +2.0 pts', T.clvPoints('away', 6.5, 4.5) === 2);
+chk('CLV for a favourite: laid −3, closed −4.5 = +1.5 pts', T.clvPoints('home', -3, -4.5) === 1.5);
+chk('CLV is the canonical research_core implementation', T.clvPoints('home', -3, -5) === R.clvPoints('home', -3, -5));
+const g = T.grade({ side: 'away', line: 6.5, odds: -102, units: 0.5 }, { line: 4.5 }, { home_margin: 6 });
+chk('a graded bet: CLV, result and units at the recorded price', g.clv_points === 2 && g.result === 'win' && Math.abs(g.units_won - 0.4902) < 1e-3, g);
+chk('a push returns the stake', T.grade({ side: 'away', line: 6, odds: -110, units: 1 }, null, { home_margin: 6 }).units_won === 0);
+const worse = T.compareEntry({ side: 'away', line: 5, odds: -110 }, snap);
+chk('your entry worse than the playable range reads OUTSIDE EdgeDesk range', worse.status === 'OUTSIDE_RANGE' && worse.edgedesk_line === 6.5 && worse.playable_line === snap.playable.min_line, worse);
+chk('your entry at EdgeDesk’s price', T.compareEntry({ side: 'away', line: 6.5, odds: -102 }, snap).status === 'AT_EDGEDESK_PRICE');
+chk('your entry inside the range', T.compareEntry({ side: 'away', line: snap.playable.min_line, odds: snap.playable.max_odds }, snap).status === 'INSIDE_RANGE');
+chk('your entry on the other side', T.compareEntry({ side: 'home', line: -6.5, odds: -118 }, snap).status === 'OTHER_SIDE');
+chk('the recommendation compared is the one frozen at placement, not a later one', T.compareEntry({ side: 'away', line: 7.5, odds: -102 }, snap).status === 'INSIDE_RANGE');
+const perf = T.performance([{ units: 0.5, odds: -102, result: 'win', clv_points: 2, calibrated_cover: 0.53, sport: 'CFB' }, { units: 0.5, odds: -110, result: 'loss', clv_points: -0.5, calibrated_cover: 0.52, sport: 'CFB' }, { units: 0.25, odds: -105, result: 'push', clv_points: 0, calibrated_cover: 0.51, sport: 'NFL' }]);
+const t50 = perf.by_tier.filter((r) => r.group === '0.50U')[0];
+chk('per-tier performance: bets, units risked and won, ROI, CLV, observed and expected cover', t50.bets === 2 && t50.units_risked === 1 && Math.abs(t50.units_won - (0.5 * 100 / 102 - 0.5)) < 1e-2 && t50.average_clv === 0.75 && t50.observed_cover_rate === 0.5 && t50.expected_cover_rate === 0.525, t50);
+chk('short samples are labelled, never evidence', !t50.sufficient && /not evidence/.test(t50.note) && perf.by_tier.length === 4);
+chk('grouped by sport, model version, market type and strength', !!perf.by_sport && !!perf.by_model_version && !!perf.by_market_type && !!perf.by_strength);
+
+/* ======================================================================== */
+section('9. the real slate');
+const GAMES = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_terminal', 'games.json'), 'utf8'));
+const BOARD = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_terminal', 'board.json'), 'utf8'));
+const gids = Object.keys(GAMES.games);
+const facts = gids.map((id) => I.factsFromTerminal(GAMES.games[id], GAMES.games[id].read, GAMES.games[id].ev, { policy_status: 'SHADOW' }));
+chk('facts for every game on the slate', facts.length === gids.length && facts.every((f) => f.game.game_id && f.research && f.market && f.qb && f.support));
+chk('research status is carried, never converted into a decision', facts.every((f) => typeof f.research.status === 'string' && !('decision' in f.research)));
+chk('QB state reads the terminal’s own QB rows', facts.some((f) => f.qb.known) && facts.every((f) => typeof f.qb.unresolved_critical === 'boolean'));
+chk('independent support counts only independent submodels, never the champion', facts.every((f) => f.support.by_side.home + f.support.by_side.away <= f.support.total_independent));
+chk('the build carries decision_facts and the compact decision on every board row', BOARD.rows.every((r) => r.decision_facts && r.bettor && D.DECISION_KEYS.indexOf(r.bettor.decision) >= 0));
+const DEC = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_terminal', 'decisions.json'), 'utf8'));
+chk('decisions.json: one decision per board game, counts that reconcile', DEC.decisions.length === BOARD.rows.length && DEC.counts.total === DEC.decisions.length
+  && Object.keys(DEC.counts.decisions).reduce((a, k) => a + DEC.counts.decisions[k], 0) === DEC.decisions.length);
+chk('decisions.json and the board rows agree game by game', DEC.decisions.every((d) => { const r = BOARD.rows.filter((x) => x.game_id === d.game_id)[0]; return r && r.bettor.decision === d.decision && r.bettor.reason_code === d.action_reason_code; }));
+chk('the validation labels ship with the artifact', DEC.validation_state === D.UNVALIDATED && /not empirically validated/i.test(DEC.validation.note) && DEC.validation.max_active_units === 0.75);
+chk('while every calibrated EV on the slate is negative, the slate has no BET', DEC.counts.decisions.BET === 0 || DEC.decisions.filter((d) => d.decision === 'BET').every((d) => d.calibrated_ev_pct >= 1.5));
+chk('no stale-quote game is ever a BET', DEC.decisions.every((d) => d.action_reason_code !== 'STALE_QUOTE' || d.decision === 'NO_DECISION'));
+chk('every PASS on the slate names why and what would change it', DEC.decisions.filter((d) => d.decision === 'PASS').every((d) => d.action_reason_text && (d.bet_trigger || d.action_reason_code === 'LOW_RELIABILITY' || d.action_reason_code === 'UNSTABLE_PROJECTION')));
+chk('an INVESTIGATE / MARKET FAULT game is never a BET', DEC.decisions.every((d) => ['INVESTIGATE', 'MARKET_FAULT', 'DATA_FAULT'].indexOf(d.research_status) < 0 || d.decision !== 'BET'));
+/* the page path: the build's facts, re-joined with pricing, decide the same */
+const Bmod = require(path.join(ROOT, 'football', 'cfb_terminal', 'build.js'));
+void Bmod;
+const viewFacts = I.factsFromView({ research_label: { key: 'WORTH_RESEARCHING', label: 'WORTH RESEARCHING', reason: 'x' }, market_gap: { available: true, points: 4, toward_team: 'NC State', stale: false }, reliability: { scored: true, score: 81 }, confidence: { score: 66, tier: 'HIGH' } },
+  null, { game: { game_id: 'g1', home: 'Wake Forest', away: 'NC State', kickoff: KICK } });
+chk('the page’s view alone never claims a QB state it does not have', viewFacts.qb.known === false && viewFacts.research.gap_toward_side === 'away' && viewFacts.reliability.score === 81);
+const pageDec = D.decide(I.inputFromFacts(viewFacts, { model: model(4, 5.5), quotes: mainQuotes(6.5, -102) }, { now: NOW }));
+chk('…so an attractive price from the page’s facts alone is WAIT, never BET', pageDec.decision === 'WAIT', pageDec.action_reason_code);
+const liveM = I.marketFromEvaluation(Q.evaluateGame(model(4, 5.5), mainQuotes(6.5, -102), { now: NOW, game: { game_id: 'g1' } }), {});
+chk('the live market facts read the evaluation’s own main line', liveM.consensus_home_line === -6.5 && liveM.available === true, liveM);
+
+/* ======================================================================== */
+section('10. the renderers');
+const html = { BET: U.actionCardHTML(bet, { track: null, beginner: false }), WAIT: U.actionCardHTML(inv, { track: null }), PASS: U.actionCardHTML(pass1, { track: null }), NO: U.actionCardHTML(oneSided, { track: null }) };
+const text = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, '’').replace(/\s+/g, ' ');
+chk('BET card: BET · 0.5U, the selection, price · book, PLAYABLE TO, why and what cancels it', /BET · 0\.5U/.test(text(html.BET)) && /NC STATE \+6\.5/.test(text(html.BET)) && /-102 · FanDuel/.test(text(html.BET)) && /PLAYABLE TO/.test(text(html.BET)) && /WHY IT QUALIFIES/.test(text(html.BET)) && /WHAT CANCELS IT/.test(text(html.BET)), text(html.BET).slice(0, 300));
+chk('BET card: EDGE STRENGTH, MODEL FAIR, CALIBRATED EV, RELIABILITY, MARKET, PROJECTION', ['EDGE STRENGTH', 'MODEL FAIR', 'CALIBRATED EV', 'RELIABILITY', 'MARKET', 'PROJECTION'].every((w) => text(html.BET).indexOf(w) >= 0));
+chk('BET card: BEST AVAILABLE / CONSENSUS / EDGEDESK BET PRICE / PLAYABLE TO / MODEL FAIR are named apart', ['BEST AVAILABLE', 'CONSENSUS', 'EDGEDESK BET PRICE', 'PLAYABLE TO', 'MODEL FAIR'].every((w) => text(html.BET).indexOf(w) >= 0));
+chk('BET card: BET PLACED and VIEW FULL RESEARCH', /BET PLACED/.test(html.BET) && /VIEW FULL RESEARCH/.test(html.BET));
+chk('WAIT card: DO NOT BET YET, what it waits on, why, next check, no unit recommendation', /DO NOT BET YET/.test(html.WAIT) && /WAITING ON/.test(html.WAIT) && /WHY EDGEDESK IS WAITING/.test(html.WAIT) && /NEXT CHECK/.test(html.WAIT) && /No unit recommendation/.test(html.WAIT) && !/BET PLACED/.test(html.WAIT));
+chk('WAIT card leads with the disagreement, never a forecast', /currently shows a major model-market disagreement/.test(text(html.WAIT)));
+chk('PASS card: the price, model fair, raw and calibrated EV, WHY PASS, BET TRIGGER', /Current price does not justify a wager/.test(html.PASS) && /WHY PASS/.test(html.PASS) && /BET TRIGGER/.test(html.PASS) && /RAW EV/.test(html.PASS) && /CALIBRATED EV/.test(html.PASS) && /The apparent model edge disappears after calibration/.test(html.PASS));
+chk('NO DECISION card: the reason, the projection, the reference market marked non-actionable', /NO DECISION/.test(html.NO) && /REASON/.test(html.NO) && /No valid two-sided market/.test(html.NO) && /not an actionable price/.test(html.NO));
+chk('tone classes: BET bet, WAIT wait, PASS pass, NO DECISION none', /edd-act edd-bet/.test(html.BET) && /edd-act edd-wait/.test(html.WAIT) && /edd-act edd-pass/.test(html.PASS) && /edd-act edd-none/.test(html.NO));
+chk('no tout language on any card (LOCK, FREE MONEY, GUARANTEED, SAFE BET…)', Object.keys(html).every((k) => U.copyOk(html[k])));
+chk('a WAIT / PASS / NO DECISION card never prints units or dollars', ['WAIT', 'PASS', 'NO'].every((k) => !/based on your \$/.test(html[k]) && !/\d\.\d+U\b/.test(text(html[k]).replace(/0\.75U until/, ''))));
+const beg = U.actionCardHTML(bet, { beginner: true, track: null });
+chk('beginner mode: one-sentence WHY, reasoning folded', /edd-begin/.test(beg) && /WHY/.test(beg) && /Current price clears EdgeDesk’s calibrated edge and reliability requirements/.test(text(beg)) && !/<details class="edd-reason" open/.test(beg));
+chk('advanced mode keeps the reasoning open on desktop', /<details class="edd-reason" open/.test(html.BET));
+chk('the phone variant folds the reasoning behind "View reasoning"', !/<details class="edd-reason" open/.test(U.actionCardHTML(bet, { mobile: true, track: null })) && /View reasoning/.test(U.actionCardHTML(bet, { mobile: true, track: null })));
+['calibrated_ev', 'raw_ev', 'reliability', 'unit', 'playable_to', 'research_status', 'bet_decision'].forEach((k) => chk('tooltip defined: ' + k, typeof D.TOOLTIP[k] === 'string' && D.TOOLTIP[k].length > 30));
+chk('tooltip text matches the spec: calibrated EV', /after EdgeDesk adjusts model probabilities using observed out-of-sample performance\. More conservative than raw model EV\./.test(D.TOOLTIP.calibrated_ev));
+chk('tooltip text matches the spec: reliability is not a win probability', /Not a win probability/.test(D.TOOLTIP.reliability));
+chk('tooltip text matches the spec: unit', /EdgeDesk defaults 1 unit to 1% of bankroll/.test(D.TOOLTIP.unit));
+chk('the chip: BET · units and the playable short, or the decision word', /BET · 0\.5U/.test(U.chipHTML(bet)) && /to /.test(U.chipHTML(bet)) && /WAIT/.test(U.chipHTML(inv)) && /do not bet yet/.test(U.chipHTML(inv)) && /PASS/.test(U.chipHTML(pass1)));
+const page = U.cardPageHTML([bet, inv, pass1, oneSided, s25], { view: { filter: 'all', sort: 'strength' } });
+chk('the card page: header counts, sections, filters, sort, exposure', /EDGEDESK CARD/.test(page) && /BET <small>2/.test(page) && /WATCHING <small>1/.test(page) && /PASS <small>1/.test(page) && /NO DECISION <small>1/.test(page) && /0\.75U/.test(page) && /Strongest qualified edge/.test(page), text(page).slice(0, 300));
+chk('…every filter the spec names', ['All', 'Bets', 'Watching', 'Pass', 'NFL', 'CFB', '0.25U', '0.50U', '0.75U', '1.00U'].every((f) => page.indexOf('>' + f + '<') >= 0));
+chk('…and every sort', ['Kickoff', 'Strongest qualified edge', 'Calibrated EV', 'Latest change', 'Line movement'].every((s) => page.indexOf('>' + s + '<') >= 0));
+chk('…strongest first: the 0.50U BET before the 0.25U BET', page.indexOf('0.50U') < page.indexOf('0.25U</span>'));
+chk('…PASS and NO DECISION are collapsed by default', /<details class="edd-sec" data-edd-fold="showPass">/.test(page) && /<details class="edd-sec" data-edd-fold="showNone">/.test(page));
+chk('the filters select the right decisions', U.passes(bet, 'bets') && !U.passes(inv, 'bets') && U.passes(inv, 'watching') && U.passes(s25, 'u25') && !U.passes(bet, 'u25') && U.passes(bet, 'u50') && U.passes(bet, 'cfb') && !U.passes(bet, 'nfl'));
+const onb = [0, 1, 2, 3].map((i) => text(U.onboardingHTML(i)));
+chk('onboarding: four short pages in the spec’s order', /WELCOME TO EDGEDESK/.test(onb[0]) && /SET YOUR UNIT/.test(onb[1]) && /READ THE ACTION/.test(onb[2]) && /PRICE MATTERS/.test(onb[3]));
+chk('onboarding page 4 is labelled illustrative, not a recommendation', /illustrative, not a current recommendation/.test(onb[3]));
+const bf = U.bankrollFormHTML({ bankroll_amount: 2500 });
+chk('the bankroll form: bankroll, 1% default, a custom unit, the guardrail, beginner mode, and no loss-chasing', /Bankroll/.test(bf) && /% of bankroll/.test(bf) && /Custom unit/.test(bf) && /Maximum active exposure/.test(bf) && /Beginner mode/.test(bf) && /never raises a stake to chase losses/.test(bf) && /\$25\.00/.test(bf));
+const placedBet = U.makePlaced(bet, { line: '5', odds: '-110', book: 'DK', units: '0.5', stake_dollars: '12.5' }, NOW);
+chk('BET PLACED stores side, line, odds, book, units, dollars and time, apart from the recommendation', placedBet.side === 'away' && placedBet.line === 5 && placedBet.odds === -110 && placedBet.units === 0.5 && placedBet.stake_dollars === 12.5 && placedBet.placed_at && placedBet.recommendation.selected_line === 6.5 && placedBet.entry_vs_recommendation === 'OUTSIDE_RANGE');
+chk('the CSS has a phone layout and never a fixed wide width', /@media\(max-width:560px\)/.test(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_decision.css'), 'utf8')) && !/[{;]\s*(min-)?width:\s*[4-9]\d\dpx/.test(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_decision.css'), 'utf8')));
+
+section('the hourly job grades placed bets from the committed record');
+const RS = require(path.join(ROOT, 'tools', 'personal', 'research_state.js'));
+const gb = RS.gradeBet({ market_type: 'spread', side: 'away', line: 6.5, odds: -102, units: 0.5, kickoff: '2026-09-20T19:00:00Z', close_line: null }, { close: { home_line: -4.5 }, final: { home_score: 24, away_score: 20 } }, Date.parse('2026-09-28T00:00:00Z'));
+chk('a placed bet: close, CLV +2.0, result and units at the recorded price', gb.patch && gb.patch.close_line === 4.5 && gb.patch.clv_points === 2 && gb.patch.result === 'win' && Math.abs(gb.patch.units_won - 0.4902) < 1e-3, gb);
+const gbOpen = RS.gradeBet({ market_type: 'spread', side: 'home', line: -3, odds: -110, units: 1, kickoff: '2026-09-27T19:00:00Z', close_line: null }, { close: { home_line: -4.5 } }, Date.parse('2026-09-28T00:00:00Z'));
+chk('a close without a final: CLV now, the result later (not graded yet)', gbOpen.patch && gbOpen.patch.clv_points === 1.5 && !gbOpen.patch.graded_at, gbOpen);
+chk('only spreads are graded', RS.gradeBet({ market_type: 'moneyline', side: 'home' }, null, Date.now()).patch === null);
+
+/* ------------------------------------------------------------------ out */
+failures.forEach((f) => console.log('FAIL | ' + f));
+console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'bettor decision — ' + pass + ' passed, ' + fail + ' failed');
+process.exit(fail === 0 ? 0 : 1);

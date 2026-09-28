@@ -107,10 +107,19 @@
     if (key === 'VERIFIED_MAJOR') return '<span class="vbadge" title="' + esc(d.means) + '">★ ' + esc(label || d.label) + '</span>';
     return '<span class="st ' + (RTONE[key] || 'pass') + '" title="' + esc('RESEARCH STATUS · ' + d.means) + '"><i></i>' + esc(label || d.label) + '</span>';
   }
-  function dsChip(key, reason) {
+  function dsChip(key, reason, units) {
     var d = K && K.DECISION_STATUS[key];
     if (!d) return '';
-    return '<span class="st dec ' + (DTONE[key] || 'pass') + '" title="' + esc('DECISION · ' + d.means + (reason ? ' — ' + reason : '')) + '"><i></i>DECISION: ' + esc(d.label) + '</span>';
+    return '<span class="st dec ' + (DTONE[key] || 'pass') + '" title="' + esc('DECISION · ' + d.means + (reason ? ' — ' + reason : '')) + '"><i></i>DECISION: ' + esc(d.label) + (key === 'BET' && units ? ' · ' + esc(units) + 'U' : '') + '</span>';
+  }
+  /* THE BETTOR DECISION (lib/edgedesk_decision.js), carried on every board row
+     as `bettor` by the build: the one BET / WAIT / PASS / NO DECISION answer the
+     app's EDGEDESK ACTION card shows. The governed engine's verdict remains the
+     fallback for a board built before the decision layer existed. */
+  function bettorOf(gid) { var r = S.board && (S.board.rows || []).filter(function (x) { return String(x.game_id) === String(gid); })[0]; return r && r.bettor ? r.bettor : null; }
+  function decChip(gid, fallbackKey, fallbackReason) {
+    var bd = bettorOf(gid);
+    return bd ? dsChip(bd.decision, bd.reason, bd.units) : dsChip(fallbackKey, fallbackReason);
   }
   function flipBadge() { return K ? '<span class="xbadge flip" title="' + esc(K.FAVORITE_FLIP.means) + '">FAVORITE FLIP</span>' : ''; }
   function priceBadge(key, label) {
@@ -242,7 +251,7 @@
       + '<div class="c ed"><div class="l">EdgeDesk</div><div class="v">' + esc(r.fair || '—') + '</div></div>'
       + '<div class="c mk"><div class="l">Market</div><div class="v">' + esc(r.market || '—') + (r.market_stale ? ' <span class="mut">stale</span>' : '') + '</div></div>'
       + '<div class="c gap"><div class="l">Gap</div><div class="v">' + gap + '</div></div>'
-      + '<div class="s">' + (r.research_status ? rsChip(r.research_status) + dsChip(r.decision_status, r.decision_reason) : stChip(r.status, r.status_label) + (r.verified ? vBadge() : (r.gap_class === 'MAJOR' ? '<span class="ubadge">UNVERIFIED</span>' : '')))
+      + '<div class="s">' + (r.research_status ? rsChip(r.research_status) + (r.bettor ? dsChip(r.bettor.decision, r.bettor.reason, r.bettor.units) : dsChip(r.decision_status, r.decision_reason)) : stChip(r.status, r.status_label) + (r.verified ? vBadge() : (r.gap_class === 'MAJOR' ? '<span class="ubadge">UNVERIFIED</span>' : '')))
       + (r.favorite_flip ? flipBadge() : '') + priceBadge(r.price_state, r.price_state_label) + divBadge(r.rating_divergence) + (r.read ? rdChip(r.read.timing, true) : '') + '</div>'
       + '<div class="mini"><span><b>ED</b>' + esc(r.fair || '—') + '</span><span><b>MKT</b>' + esc(r.market || '—') + (r.market_stale ? '*' : '') + '</span><span><b>GAP</b>' + gap + '</span></div>'
       + '</div>'
@@ -783,7 +792,7 @@
       /* THE 15-SECOND SUMMARY */
       h += '<div class="sum' + (C.verified ? ' verified' : '') + '">'
         + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'
-        + (o.research_status ? rsChip(o.research_status.key) + dsChip(o.decision_status.key, o.decision_status.reason) : stChip(St.key, St.label) + (C.verified ? vBadge() : ''))
+        + (o.research_status ? rsChip(o.research_status.key) + decChip(o.game_id, o.decision_status.key, o.decision_status.reason) : stChip(St.key, St.label) + (C.verified ? vBadge() : ''))
         + (o.favorite_flip ? flipBadge() : '') + (o.price_state ? priceBadge(o.price_state.key, o.price_state.label) : '')
         + (o.rating_divergence && o.rating_divergence.available ? divBadge({ band: o.rating_divergence.band, value: o.rating_divergence.divergence }) : '')
         + '<span class="mut" style="font-size:12px">' + esc(o.research_status ? o.research_status.reason : St.reason) + '</span></div>'

@@ -66,6 +66,9 @@ const RD = require(path.join(ROOT, 'lib', 'edgedesk_read.js'));
 const EV = require(path.join(ROOT, 'lib', 'edgedesk_ev.js'));
 const QEV = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
 const INTEG = (() => { try { return require(path.join(ROOT, 'football', 'cfb_lab', 'integrity.js')); } catch (e) { return null; } })();
+/* THE BETTOR DECISION (lib/edgedesk_decision.js): the one BET / WAIT / PASS /
+   NO DECISION answer per game, on the same model and quotes as quote EV */
+const BDS = require(path.join(__dirname, 'decisions.js'));
 
 function arg(name, dflt) { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : dflt; }
 function flag(name) { return process.argv.indexOf('--' + name) > 0; }
@@ -450,7 +453,10 @@ function buildGame(ctx, row) {
   let quoteEv = null;
   try { quoteEv = quoteEvOf(ctx, o, rin, read, ev); } catch (e) { quoteEv = null; ctx.warnings.push('Quote EV failed for ' + gid + ': ' + e.message); }
   ctx._governed = null; ctx._governedTop = null; ctx._governedQuotes = null;
-  return { object: o, read: read, read_inputs: readInputs, ev: ev, ev_history: evHistory, quote_ev: quoteEv, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
+  /* THE BETTOR DECISION: one answer per game, from the same pricing */
+  let bettor = null;
+  try { bettor = BDS.decideGame(ctx, o, read, ev, quoteEv); } catch (e) { bettor = null; ctx.warnings.push('Bettor decision failed for ' + gid + ': ' + e.message); }
+  return { object: o, read: read, read_inputs: readInputs, ev: ev, ev_history: evHistory, quote_ev: quoteEv, bettor: bettor, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
 }
 
 /* ------------------------------------------------------------ QUOTE-LEVEL EV
@@ -536,7 +542,8 @@ function quoteEvOf(ctx, o, rin, read, ev) {
       q.decision_status = c.key; q.decision_reason = c.reason; q.decision_evaluated = true;
     } else { const d = QEV.decisionFor(q, D); q.decision_status = d.status; q.decision_reason = d.reason; q.decision_evaluated = !!d.evaluated; }
   }));
-  return { game: G, decision: D };
+  /* the model, quotes and context the bettor decision re-prices hypothetical quotes on (never serialised) */
+  return { game: G, decision: D, model: model, quotes: quotes, qctx: qctx };
 }
 function iso(t) { const v = ms(t); return v == null ? null : new Date(v).toISOString(); }
 /* the API fields a board row carries (the names the export contract uses) */
@@ -953,7 +960,7 @@ function main() {
     now: now, gov: gov, slate: slate, v2: v2, ledger: ledger, recordRows: recordRows, recordGames: recordFile.games || {},
     metrics: readJson('football/matchup/metrics.json', { teams: {} }), history: loadHistory(season), cfg: cfg,
     etsr: loadEtsr(season), divergenceCut: divergenceCut(), pricingFingerprint: pricingFingerprint(),
-    evNote: calibratedEvNote(gov.artifact, gov.policy), warnings: warnings, ev: evCfg, evLedger: evLedgerLoad(season),
+    evNote: calibratedEvNote(gov.artifact, gov.policy), warnings: warnings, ev: evCfg, evLedger: evLedgerLoad(season), decLedger: BDS.load(season),
     qevTail: QEV.tailDomain(qevTour && qevTour.alternate_line_domain),
     degraded: ops && ops.system ? { status: ops.system.status, rule: ops.system.rule } : null,
     sources: [
@@ -986,6 +993,9 @@ function main() {
      the close and the result — never a better historical line */
   const RL = readLedger(season, built, ctx, now);
   const EVL = evLedger(season, built, ctx, now);
+  /* THE BETTOR DECISION RECORD: snapshots on change, grades once, tracks replayed */
+  const bettors = built.map((x) => x.bettor).filter(Boolean);
+  const DL = BDS.ledger(season, bettors, ctx, now);
 
   /* the append-only history: one row per change */
   const newSnaps = [];
@@ -1027,7 +1037,9 @@ function main() {
     counts: T.counts(objs), terms: T.TERMS, statuses: T.STATUS, status_order: T.STATUS_KEYS,
     filters: Object.keys(T.FILTERS).map((k) => ({ key: k, label: T.FILTERS[k].label, n: objs.filter((o) => o.flags[k]).length })),
     rows: objs.map((o) => Object.assign(boardRow(o), { read: readRow(readOf[o.game_id] && readOf[o.game_id].read), ev: evRow(readOf[o.game_id] && readOf[o.game_id].ev),
-      quote_ev: quoteEvRow(readOf[o.game_id] && readOf[o.game_id].quote_ev) })),
+      quote_ev: quoteEvRow(readOf[o.game_id] && readOf[o.game_id].quote_ev),
+      decision_facts: readOf[o.game_id] && readOf[o.game_id].bettor ? readOf[o.game_id].bettor.facts : null,
+      bettor: readOf[o.game_id] && readOf[o.game_id].bettor ? BDS.compact(readOf[o.game_id].bettor.decision, readOf[o.game_id].bettor.track) : null })),
     quote_ev: { engine: QEV.VERSION, tooltip: QEV.TOOLTIP, tail_domain: ctx.qevTail,
       rule: 'EV at each exact quote (its line, its price, its book) from EdgeDesk’s own distribution; RAW and calibrated kept apart; a decision attaches only to the quote the decision engine evaluated.' },
     ev_counts: (() => { const c = {}; objs.forEach((o) => { const e = readOf[o.game_id] && readOf[o.game_id].ev; const k = e ? e.decision_status : 'NO_EV'; c[k] = (c[k] || 0) + 1; }); return c; })(),
@@ -1086,10 +1098,12 @@ function main() {
     if (ev && ev.fair_spread && o.edgedesk.available && Math.abs(ev.fair_spread.home_margin - o.edgedesk.home_margin) > 0.005) problems.push(o.game_id + ': the EV read’s fair differs from the research object');
     if (ev && ev.price_curve && ev.price_curve.coherent === false && ev.decision_status !== 'NO_DECISION') problems.push(o.game_id + ': an incoherent price curve outside NO DECISION');
   });
+  BDS.problems(bettors).forEach((p) => problems.push(p));
   if (problems.length) { console.error('terminal build refused:\n  ' + problems.join('\n  ')); process.exit(1); }
 
   const summary = { games: objs.length, counts: board.counts, read_counts: board.read_counts, new_snapshots: newSnaps.length, postgame: pg.length, record_rows: recordRows.length,
-    read_snapshots_new: RL.new_reads.length, read_grades_new: RL.new_grades.length, ev_counts: board.ev_counts, ev_snapshots_new: EVL.new_snaps.length, ev_grades_new: EVL.new_grades.length };
+    read_snapshots_new: RL.new_reads.length, read_grades_new: RL.new_grades.length, ev_counts: board.ev_counts, ev_snapshots_new: EVL.new_snaps.length, ev_grades_new: EVL.new_grades.length,
+    bettor_counts: BDS.counts(bettors.map((x) => x.decision)).decisions, bettor_snapshots_new: DL.new_snaps.length, bettor_grades_new: DL.new_grades.length };
   if (check) { console.log(JSON.stringify(summary, null, 1)); return; }
   /* --out <dir>: write the four artifacts elsewhere (demos, replays); the
      append-only history is only ever written by a normal build */
@@ -1097,6 +1111,9 @@ function main() {
   if (outDir !== OUT) fs.mkdirSync(outDir, { recursive: true });
   const w = (f, o) => fs.writeFileSync(path.join(outDir, f), JSON.stringify(o) + '\n');
   w('board.json', board); w('games.json', games); w('record.json', record); w('brief.json', briefOut);
+  w('decisions.json', BDS.artifact(meta, bettors, DL));
+  /* the bettor decision record is append-only; only a normal build writes it */
+  if (outDir === OUT) BDS.writeLedger(season, DL);
   if (newSnaps.length && outDir === OUT) {
     const hp = historyPath(season);
     fs.mkdirSync(path.dirname(hp), { recursive: true });

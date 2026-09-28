@@ -36,6 +36,12 @@
       they have no side and no price, so no CLV and no result.
    5  AFFILIATES. public.affiliate_reconcile() replays the Stripe ledger
       idempotently, where supabase/affiliates.sql is installed.
+   6  PLACED BETS. The reader's recorded bets (public.user_bets,
+      supabase/bettor_decisions.sql) whose game has kicked off get the close
+      from the same committed record, CLV in points at the recorded line and
+      — once the final is on file — the result and units at the recorded price
+      (lib/edgedesk_decision_track.js grade). The entry is never rewritten; only
+      the grade columns, which the table reserves for this job.
 
    It spends no odds-provider credit: it reads captured quotes only.
 
@@ -51,6 +57,7 @@ const vm = require('vm');
 const ROOT = path.join(__dirname, '..', '..');
 const HOST = require(path.join(ROOT, 'tools', 'articles', 'research_host.js'));
 const EDP = require(path.join(ROOT, 'lib', 'edgedesk_personal.js'));
+const EDT = require(path.join(ROOT, 'lib', 'edgedesk_decision_track.js'));
 
 function arg(name, fb) {
   const i = process.argv.indexOf('--' + name);
@@ -283,6 +290,34 @@ async function gradeJournal() {
   return { open: rows.length, closed, graded };
 }
 
+/* the reader's placed bets: close, CLV and result from the committed record */
+function gradeBet(b, rec, now) {
+  if (!b || b.market_type !== 'spread' || (b.side !== 'home' && b.side !== 'away')) return { patch: null, note: 'only spread bets are graded' };
+  const closeSide = rec && rec.close && typeof rec.close.home_line === 'number' ? (b.side === 'home' ? rec.close.home_line : -rec.close.home_line) : null;
+  const final = rec && rec.final && typeof rec.final.home_score === 'number' && typeof rec.final.away_score === 'number' ? { home_margin: rec.final.home_score - rec.final.away_score } : null;
+  const g = EDT.grade({ side: b.side, line: b.line, odds: b.odds, units: b.units }, closeSide == null ? null : { line: closeSide }, final);
+  const staleDays = (now - Date.parse(b.kickoff)) / 864e5;
+  const patch = {};
+  if (closeSide != null && b.close_line == null) Object.assign(patch, { close_line: closeSide, clv_points: g.clv_points });
+  if (g.result || staleDays > 10) Object.assign(patch, { result: g.result || null, units_won: g.units_won, graded_at: new Date(now).toISOString() });
+  return { patch: Object.keys(patch).length ? patch : null, grade: g };
+}
+async function gradeBets() {
+  const nowIso = new Date().toISOString();
+  const rows = await DB.get('user_bets?select=*&graded_at=is.null&status=eq.open&kickoff=lt.' + encodeURIComponent(nowIso) + '&order=kickoff.asc&limit=500').catch(() => null);
+  if (rows == null) { log('  bets: public.user_bets is not installed (supabase/bettor_decisions.sql) — skipped'); return { open: 0, graded: 0, missing: true }; }
+  let graded = 0;
+  for (const b of rows) {
+    const k = b.kickoff ? new Date(b.kickoff) : null;
+    const season = k ? k.getUTCFullYear() - (k.getUTCMonth() < 2 ? 1 : 0) : null;
+    const rec = season ? recordGame(String(b.sport || '').toLowerCase(), season, b.game_id) : null;
+    const r = gradeBet(b, rec, Date.now());
+    if (r.patch) { await DB.patch('user_bets', 'id=eq.' + encodeURIComponent(b.id), r.patch); if (r.patch.graded_at) graded++; }
+  }
+  log('  bets: ' + rows.length + ' open placed bet' + (rows.length === 1 ? '' : 's') + ' past kickoff · ' + graded + ' graded' + (DRY ? ' (dry)' : ''));
+  return { open: rows.length, graded };
+}
+
 /* ------------------------------------------------------------ main */
 async function main() {
   const summary = { at: new Date().toISOString(), dry: DRY, database: HAVE_DB };
@@ -302,6 +337,7 @@ async function main() {
     if (want('alerts') && HAVE_DB) summary.alerts = (await sendAlerts(changed)).created;
   }
   if (want('grade') && HAVE_DB) summary.journal = await gradeJournal();
+  if (want('bets') && HAVE_DB) summary.bets = await gradeBets();
   if (want('affiliates') && HAVE_DB) {
     const r = await DB.rpc('affiliate_reconcile', { p_days: 45 }).catch((e) => ({ error: String(e.message).slice(0, 160) }));
     summary.affiliates = r;
@@ -323,7 +359,8 @@ async function runWith(opts) {
     out.alerts = (await sendAlerts(changed)).created;
   }
   if (opts.grade) out.journal = await gradeJournal();
+  if (opts.bets) out.bets = await gradeBets();
   DB = HTTP_DB;
   return out;
 }
-module.exports = { makeReader, READ_ALLOW, runWith, recordGame };
+module.exports = { makeReader, READ_ALLOW, runWith, recordGame, gradeBet };

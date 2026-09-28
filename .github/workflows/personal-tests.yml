@@ -23,6 +23,11 @@ on:
       - 'lib/edgedesk_pricing.js'
       - 'lib/research_core.js'
       - 'supabase/personal_research.sql'
+      - 'supabase/bettor_decisions.sql'
+      - 'supabase/bankroll_and_stakes.sql'
+      - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_bankroll.js'
+      - 'tools/bettor/**'
       - 'supabase/affiliates.sql'
       - 'supabase/growth.sql'
       - 'supabase/billing.sql'
@@ -63,6 +68,8 @@ jobs:
         run: node tools/personal/growth.test.js
       - name: The AI desk answers the reader's research from their own rows
         run: node tools/intelligence/mine.test.js
+      - name: The bettor decision layer (engine, tracks, bankroll, renderers) and placed-bet grading
+        run: node tools/bettor/decision.test.js
 
   migrations:
     runs-on: ubuntu-latest
@@ -78,5 +85,7 @@ jobs:
         run: node tools/personal/personal_sql.test.js
       - name: The partner program and its campaigns track what happened and never rewrite money or credit
         run: node tools/personal/affiliates_sql.test.js
+      - name: The bettor's bankroll units and placed bets are private; EdgeDesk's frozen decisions are write-once and pregame
+        run: node tools/bettor/bettor_sql.test.js
       - name: Trial activation, acquisition attribution and public samples
         run: node tools/personal/growth_sql.test.js
