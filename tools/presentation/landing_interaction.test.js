@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   THE PUBLIC LANDING PAGE — interaction.
+   THE PUBLIC LANDING PAGE — interaction, accessibility and weight.
 
-   The page's problem was not that it said the wrong things. It was that a
-   reader met six screens of unbroken prose before anything on the page could
-   be operated, and the interactive parts sat thirteen screens down describing
-   a sport the product no longer covers.
+   The page used to explain every layer of the product at once: thirty
+   sections, eleven switchers, a self-advancing walkthrough and a reading
+   rail to find your way through it. It now tells one story in thirteen
+   blocks, and the few things a reader operates (the menu, one game's tabs,
+   the EdgeDesk EV price check) have to be worth operating. These tests hold:
 
-   These tests hold the fix:
-
-     1  every major beat above the fold is something a reader operates;
-     2  each interaction is keyboard-reachable and announces itself;
-     3  none of them animates under prefers-reduced-motion;
-     4  the page keeps the reader oriented — progress and chapters;
-     5  the sections that duplicated a better section stay deleted, and no
-        anchor is left pointing at one;
-     6  no interaction fabricates a number or reaches the network to get one.
+     1  each interaction exists, and bails out cleanly if its host is gone;
+     2  each is keyboard-operable and announces itself;
+     3  nothing moves under prefers-reduced-motion, nothing loops, and
+        nothing is hidden from a reader whose script never ran;
+     4  the sections the redesign removed stay removed, with no anchor,
+        module or CSS rule left pointing at them;
+     5  no interaction fabricates a number or reaches the network for one;
+     6  the page stays light.
 
    Run: node tools/presentation/landing_interaction.test.js
    =========================================================================== */
@@ -35,6 +35,7 @@ function lacks(hay, needle, name) { chk(name, String(hay).indexOf(needle) < 0, '
 
 const ROOT = path.join(__dirname, '..', '..');
 const IDX = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const CSS = IDX.slice(IDX.indexOf('<style>'), IDX.indexOf('</style>'));
 
 /* Slice one IIFE module out of the page by brace matching. */
 function mod(name) {
@@ -48,160 +49,168 @@ function mod(name) {
   }
   return IDX.slice(i, j + 1);
 }
+/* the presentation script: everything after the preserved production block */
+const LANDING = (function () {
+  const a = IDX.indexOf('LANDING PAGE INTERACTIONS');
+  return a < 0 ? '' : IDX.slice(a, IDX.indexOf('</script>', a));
+})();
+chk('the presentation script is found, after the production block',
+  LANDING.length > 2000 && IDX.indexOf('LANDING PAGE INTERACTIONS') > IDX.indexOf('PRESERVED PRODUCTION BLOCK'));
 
 /* ======================================================================== */
-/* 1. EVERY BEAT ABOVE THE FOLD IS OPERABLE                                 */
+/* 1. EACH INTERACTION EXISTS AND FAILS SOFT                                */
 /* ======================================================================== */
 const MODULES = {
-  heroGames: { host: 'lp-sw',      what: 'the hero switches between three research states' },
-  pile:      { host: 'pileBtns',   what: 'the Saturday pile-up is built by the reader' },
-  layers:    { host: 'layPick',    what: 'the eleven research layers are opened one at a time' },
-  stepper:   { host: 'stpRail',    what: 'the five-step read is walked' },
-  idk:       { host: 'idkPick',    what: 'the uncertainty conditions are picked' },
-  progress:  { host: 'chapRail',   what: 'the reader can see where they are' }
+  navMenu:     { host: 'id="navBurger"',  what: 'the phone menu opens and closes' },
+  gameTabs:    { host: 'role="tablist"',  what: 'one game is read tab by tab' },
+  evDemo:      { host: 'id="evSlider"',   what: 'the EdgeDesk EV price check is operated' },
+  pricingView: { host: 'id="pricing"',    what: 'reaching the price is measured' },
+  reveals:     { host: 'class="',         what: 'blocks enter once, quietly' }
 };
 Object.keys(MODULES).forEach(m => {
-  chk(MODULES[m].what, mod(m).length > 400, m + ' module is missing or a stub');
-  has(IDX, MODULES[m].host, 'and its host element exists: ' + MODULES[m].host);
+  chk(MODULES[m].what, mod(m).length > 150, m + ' module is missing or a stub');
+  has(IDX, MODULES[m].host, 'and its host exists: ' + MODULES[m].host);
 });
-
-/* each module bails out cleanly when its host is absent, so a section can be
-   removed without throwing on every page load */
-Object.keys(MODULES).forEach(m => {
-  chk(m + ' returns early if its host is gone', /if\s*\(\s*!\w+(?:\s*\|\|\s*!\w+)*\s*\)\s*return;/.test(mod(m)));
-});
-
-/* the sections that carry them */
-[['compress', 'pile'], ['getyou', 'lay'], ['steps', 'stp'], ['idk', 'idkPick']].forEach(p => {
-  const sec = IDX.slice(IDX.indexOf('id="' + p[0] + '"'), IDX.indexOf('</section>', IDX.indexOf('id="' + p[0] + '"')));
-  chk('the ' + p[0] + ' section hosts its interaction', sec.indexOf('id="' + p[1] + '"') >= 0);
-  chk('and it is not a wall of static cards any more', (sec.match(/<button/g) || []).length + (sec.match(/id="/g) || []).length > 2);
-});
+['navMenu', 'gameTabs', 'evDemo', 'pricingView'].forEach(m =>
+  chk(m + ' returns early if its host is gone', /if\s*\(\s*!\w+(?:\s*\|\|\s*!\w+)*\s*\)\s*return;/.test(mod(m))));
+chk('the EV demo survives a malformed data block', /try\{\s*D=JSON\.parse\([^)]*\);\s*\}catch\(e\)\{\s*return;\s*\}/.test(mod('evDemo')));
+chk('and says so, rather than showing stale numbers, if the engine cannot load',
+  /\.catch\(failed\)/.test(mod('evDemo')) && /UNAVAILABLE/.test(mod('evDemo')));
 
 /* ======================================================================== */
 /* 2. KEYBOARD AND SEMANTICS                                                */
 /* ======================================================================== */
-['heroGames', 'layers', 'idk'].forEach(m => {
-  chk(m + ' moves with the arrow keys', /ArrowRight/.test(mod(m)) && /ArrowLeft/.test(mod(m)));
-  chk(m + ' wraps at both ends rather than dead-ending',
-    /%\s*(?:btns|LAYERS|COND|GAMES)\.length/.test(mod(m)));
-  chk(m + ' moves focus with the selection', /\.focus\(\)/.test(mod(m)));
-  chk(m + ' reports the selection to assistive tech', /aria-selected/.test(mod(m)));
+const TABS = mod('gameTabs');
+['ArrowRight', 'ArrowLeft', 'Home', 'End'].forEach(k => chk('the game tabs answer ' + k, TABS.indexOf("'" + k + "'") >= 0));
+chk('and wrap at both ends', /%tabs\.length/.test(TABS));
+chk('focus moves with the selection', /\.focus\(\)/.test(TABS));
+chk('the selection is announced and focus is roving', /aria-selected/.test(TABS) && /tabIndex=on\?0:-1/.test(TABS));
+chk('every tab names the panel it controls and every panel names its tab', () => {
+  const tabs = [...IDX.matchAll(/role="tab" id="([^"]+)" aria-controls="([^"]+)"/g)];
+  return tabs.length === 3 && tabs.every(t => new RegExp('id="' + t[2] + '" aria-labelledby="' + t[1] + '"').test(IDX));
 });
-chk('every switcher is a real tablist', (IDX.match(/role="tablist"/g) || []).length >= 3);
-chk('and every control is a real button, never a clickable div',
-  !/<div[^>]*\sonclick=/.test(IDX));
-chk('the chapter rail labels its jumps for screen readers', /aria-label','Jump to '/.test(mod('progress')));
-chk('the progress bar itself is decorative and hidden from the tree',
-  /<div class="lp-prog" aria-hidden="true">/.test(IDX));
-/* the support answers are native disclosure, so they work without script */
-chk('the pricing questions are native <details>, not a scripted accordion',
-  (IDX.match(/<details class="ss">/g) || []).length >= 4);
-chk('every focusable control the page adds has a visible focus ring',
-  (IDX.match(/:focus-visible\{outline:2px solid var\(--obs\)/g) || []).length >= 5);
+chk('only the first panel is open to begin with', (IDX.match(/role="tabpanel"[^>]*hidden>/g) || []).length === 2);
+const NAVM = mod('navMenu');
+chk('the menu reports its state', /aria-expanded/.test(NAVM) && /aria-label/.test(NAVM));
+chk('Escape closes the menu and returns focus to its button', /'Escape'/.test(NAVM) && /btn\.focus\(\)/.test(NAVM));
+chk('a tap outside, a link inside or a wide screen closes it', /!nav\.contains\(e\.target\)/.test(NAVM) && /closest\('a,button'\)/.test(NAVM) && /innerWidth>900/.test(NAVM));
+chk('the price slider has a real label', /<label for="evSlider">/.test(IDX));
+chk('and states its value in words, not just a position', /aria-valuetext/.test(IDX) && /setAttribute\('aria-valuetext'/.test(mod('evDemo')));
+chk('the price check announces its verdict politely', /id="evState" role="status" aria-live="polite"/.test(IDX));
+chk('the three example prices are toggle buttons', (IDX.match(/<button type="button" data-price="-?\d+" aria-pressed="false">/g) || []).length === 3);
+chk('every control is a real button or link, never a clickable div', !/<(?:div|span|li)[^>]*\sonclick=/.test(IDX));
+const MARKUP = IDX.replace(/<script[\s\S]*?<\/script>/g, ' ');
+chk('every button in the markup says what kind it is', (MARKUP.match(/<button\b(?![^>]*type=)[^>]*>/g) || []).length === 0,
+  (MARKUP.match(/<button\b(?![^>]*type=)[^>]*>/g) || []).slice(0, 3).join(' '));
+chk('the answers are native <details>, so they work without script', (IDX.match(/<details>/g) || []).length >= 10);
+chk('there is a skip link to the main content', /<a class="skip" href="#main">/.test(IDX) && /<main id="main">/.test(IDX));
+chk('focus is always visible', /:focus-visible\{outline:2px solid var\(--obs\)/.test(CSS));
+chk('there is exactly one h1, and it is the hero line', (IDX.match(/<h1\b/g) || []).length === 1 && /<h1>Research the matchup\./.test(IDX));
+chk('every section is introduced by an h2', () => {
+  const secs = [...IDX.matchAll(/<section class="(?:sec[^"]*|final)" id="([a-z]+)">/g)].map(m => m[1]);
+  return secs.length >= 12 && secs.every(id => {
+    const a = IDX.indexOf('id="' + id + '"'), b = IDX.indexOf('</section>', a);
+    return /<h2\b/.test(IDX.slice(a, b));
+  });
+});
+chk('the product previews are described for a screen reader', /role="figure" aria-label="An illustrative EdgeDesk game research card"/.test(IDX));
+chk('the ladder has a caption and scoped headers', /<caption class="sr">/.test(IDX) && (IDX.match(/<th scope="col"/g) || []).length >= 5);
 
 /* ======================================================================== */
-/* 3. REDUCED MOTION IS HONOURED BY EVERY MOVING PART                       */
+/* 3. MOTION: QUIET, ONCE, AND NEVER A REASON TO MISS CONTENT               */
 /* ======================================================================== */
-['heroGames', 'pile', 'stepper', 'progress'].forEach(m =>
-  chk(m + ' checks REDUCE before animating', /REDUCE/.test(mod(m))));
-chk('the walkthrough does not self-advance under reduced motion',
-  /if\s*\(\s*!REDUCE\s*&&\s*HAS_IO\s*\)/.test(mod('stepper')));
-chk('and it stops self-advancing the moment the reader takes over',
-  /taken\s*=\s*true/.test(mod('stepper')) && /clearInterval/.test(mod('stepper')));
-chk('the self-advance runs once and then disconnects',
-  /io\.disconnect\(\)/.test(mod('stepper')));
-['.lp-sw', '.lp-pw', '.lp-stp-body', '.lp-prog', '.lp-rail', 'details.ss'].forEach(sel => {
-  const rm = IDX.match(/@media\(prefers-reduced-motion:reduce\)\{[^}]*\}[^@]*/g) || [];
-  chk('reduced motion is addressed for ' + sel,
-    IDX.indexOf('prefers-reduced-motion') >= 0 && rm.length > 0);
-});
-chk('there are reduced-motion blocks for each new component',
-  (IDX.match(/@media\(prefers-reduced-motion:reduce\)/g) || []).length >= 6,
-  'found ' + (IDX.match(/@media\(prefers-reduced-motion:reduce\)/g) || []).length);
+chk('a reduced-motion block covers the page', /@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?animation:none!important;transition:none!important/.test(CSS));
+chk('reveals are skipped under reduced motion', /if\(REDUCE\|\|!HAS_IO\)/.test(mod('reveals')));
+chk('each block reveals once and is then forgotten', /io\.unobserve\(en\.target\)/.test(mod('reveals')));
+chk('content is only hidden for a reveal once script is known to be running',
+  /\.js \.rv\{opacity:0/.test(CSS) && !/(^|[^s])\s\.rv\{opacity:0/.test(CSS.replace(/\.js \.rv/g, '')) && /documentElement\.className\+=' js'/.test(IDX));
+chk('nothing on the page animates forever', !/infinite/.test(CSS));
+chk('nothing advances on its own', !/setInterval\(/.test(LANDING));
+chk('the scroll behaviour stops being smooth under reduced motion', /prefers-reduced-motion:reduce\)\{\s*html\{scroll-behavior:auto\}/.test(CSS));
 
 /* ======================================================================== */
-/* 4. THE READER STAYS ORIENTED                                             */
+/* 4. THE REMOVED SECTIONS STAY REMOVED                                     */
 /* ======================================================================== */
-has(mod('progress'), "['top','Start']", 'the chapter rail starts at the top');
-has(mod('progress'), "['pricing','Access']", 'and ends at the pricing section');
-chk('every chapter the rail names is a section that exists', () => {
-  const chapters = [...mod('progress').matchAll(/\['([a-z]+)','[^']+'\]/g)].map(m => m[1]);
-  return chapters.length >= 8 && chapters.every(id => IDX.indexOf('id="' + id + '"') >= 0);
-});
-chk('the rail skips a chapter that is not on the page rather than throwing',
-  /if\s*\(!sec\)\s*return;/.test(mod('progress')));
-chk('scroll work is throttled to a frame, not run per scroll event',
-  /requestAnimationFrame/.test(mod('progress')) && /ticking/.test(mod('progress')));
-chk('and the scroll listener is passive so it never blocks the scroll',
-  /\{passive:\s*true\}/.test(mod('progress')));
-chk('the rail is hidden where it would crowd the content column',
-  /@media\(min-width:1240px\)\{\.lp-rail\{display:flex\}\}/.test(IDX));
-chk('its labels are out of flow so the rail stays dot-width',
-  /\.lp-rail \.lbl\{position:absolute/.test(IDX));
-
-/* ======================================================================== */
-/* 5. THE DUPLICATES STAY DELETED                                           */
-/* ======================================================================== */
-/* Each of these said something a surviving section says better, or said it
-   about baseball. Deleting them is what took the page from 32 screens to 22. */
-['problem', 'terminal', 'pass', 'stack', 'work', 'attention', 'casual', 'ladder',
- 'workflow', 'examples', 'how'].forEach(id =>
-  lacks(IDX, 'id="' + id + '"', 'the duplicate section ' + id + ' stays deleted'));
-['workflow', 'casual', 'boardToDecision'].forEach(m =>
-  chk('the orphaned ' + m + ' module went with it', mod(m) === ''));
+/* Each of these was a second or third explanation of something the page
+   now says once, or described a product the page no longer sells. */
+['compress', 'getyou', 'notpicks', 'steps', 'idk', 'ours', 'close', 'engines', 'football', 'collective', 'attack',
+ 'evidence', 'ai', 'clv', 'proof', 'bridge', 'values', 'beyond', 'price', 'chapRail', 'problem', 'terminal', 'pass',
+ 'stack', 'work', 'attention', 'casual', 'ladder', 'workflow', 'examples']
+  .forEach(id => lacks(IDX, 'id="' + id + '"', 'the removed section ' + id + ' stays removed'));
+['heroGames', 'pile', 'layers', 'stepper', 'progress', 'idk', 'heroDemo', 'thesisAttack', 'football', 'collective',
+ 'evidence', 'aiAnalyst', 'clv', 'workflow', 'casual', 'boardToDecision']
+  .forEach(m => chk('the orphaned ' + m + ' module went with it', mod(m) === ''));
+chk('the golf audience band and its reveal are gone', !/function edAudience/.test(IDX) && !/edAudience\(\)/.test(IDX) && !/id="brd/.test(IDX));
+chk('but a partner referral still attributes and is still named at consent',
+  /var PARTNERS=\{/.test(IDX) && /Referred by '\+esc\(\(PARTNERS\[r\]&&PARTNERS\[r\]\.name\)\|\|r\)/.test(IDX));
 chk('no anchor points at a section that no longer exists', () => {
   const ids = new Set([...IDX.matchAll(/id="([a-zA-Z0-9_-]+)"/g)].map(m => m[1]));
-  const bad = [...new Set([...IDX.matchAll(/href="#([a-zA-Z0-9_-]+)"/g)].map(m => m[1]))]
-    .filter(a => a !== 'top' && !ids.has(a));
+  const bad = [...new Set([...IDX.matchAll(/href="#([a-zA-Z0-9_-]+)"/g)].map(m => m[1]))].filter(a => !ids.has(a));
   return bad.length === 0;
 });
-chk('and no CSS rule is left for a class nothing carries', () => {
-  const st = IDX.indexOf('<style>'), en = IDX.indexOf('</style>');
-  const css = IDX.slice(st, en), rest = IDX.slice(0, st) + IDX.slice(en);
-  const cls = [...new Set((css.match(/\.[a-zA-Z][a-zA-Z0-9_-]+/g) || []).map(s => s.slice(1)))];
-  const dead = cls.filter(c => !new RegExp('(?<![a-zA-Z0-9_-])' + c.replace(/-/g, '\\-') + '(?![a-zA-Z0-9_-])').test(rest));
-  return dead.length === 0;
+chk('no page elsewhere on the site links to a landing anchor that is gone', () => {
+  const ids = new Set([...IDX.matchAll(/id="([a-zA-Z0-9_-]+)"/g)].map(m => m[1]));
+  const bad = [];
+  ['record.html', 'curriculum.html', 'app.html', 'terms.html', 'privacy.html', 'disclaimer.html', '404.html', 'reset.html'].forEach(f => {
+    const p = path.join(ROOT, f); if (!fs.existsSync(p)) return;
+    [...fs.readFileSync(p, 'utf8').matchAll(/(?:index\.html|href="\/)#([a-zA-Z0-9_-]+)/g)].forEach(m => { if (!ids.has(m[1])) bad.push(f + '#' + m[1]); });
+  });
+  return bad.length === 0 || (console.log('   dangling:', bad.join(', ')), false);
 });
-
-/* the football-only product no longer demonstrates itself on baseball */
-[/\bbullpen\b/i, /\bpitching\b/i, /\bpitch mix\b/i, /\bhandedness\b/i, /\bpark factor\b/i,
- /\bumpire\b/i, /\binnings?\b/i, /Reds @ Cubs/, /Dodgers/]
+chk('no CSS rule is left for a class nothing carries', () => {
+  const st = IDX.indexOf('<style>'), en = IDX.indexOf('</style>');
+  const css = IDX.slice(st, en).replace(/\/\*[\s\S]*?\*\//g, ''), rest = IDX.slice(0, st) + IDX.slice(en);
+  const cls = [...new Set((css.replace(/url\([^)]*\)/g, '').match(/\.[a-zA-Z][a-zA-Z0-9_-]+/g) || []).map(s => s.slice(1)))]
+    .filter(c => !/^\d/.test(c));
+  const dead = cls.filter(c => !new RegExp('(?<![a-zA-Z0-9_-])' + c.replace(/-/g, '\\-') + '(?![a-zA-Z0-9_-])').test(rest));
+  return dead.length === 0 || (console.log('   dead classes:', dead.join(', ')), false);
+});
+chk('no giant commented-out markup is left behind', !/<!--[^>]*<(?:section|div|article)\b[\s\S]{0,4000}?-->/.test(IDX.replace(/<script[\s\S]*?<\/script>/g, '')));
+/* the football-only product does not demonstrate itself on baseball */
+[/\bbullpen\b/i, /\bpitching\b/i, /\bpitch mix\b/i, /\bpark factor\b/i, /\bumpire\b/i, /\binnings?\b/i, /Reds @ Cubs/, /Dodgers/]
   .forEach(re => chk('no baseball copy survives: ' + re, !re.test(IDX), (re.exec(IDX) || [])[0]));
 
 /* ======================================================================== */
-/* 6. NOTHING IS FABRICATED, NOTHING NEW IS FETCHED                         */
+/* 5. NOTHING IS FABRICATED, NOTHING NEW IS FETCHED                         */
 /* ======================================================================== */
-chk('every illustrative game is labelled as one',
-  (IDX.match(/Illustrative game/g) || []).length >= 2);
-chk('the hero card says so in its own chrome',
-  /<span class="tag">Illustrative game<\/span>/.test(IDX));
-/* the only same-origin reads on the page stay the two committed
-   artifacts; everything else that fetches is the pre-existing auth and
-   billing plumbing, which this pass did not touch */
-chk('the page still makes exactly two artifact reads',
-  (IDX.match(/fetch\('football\//g) || []).length === 2,
-  'found ' + (IDX.match(/fetch\('football\//g) || []).length);
-chk('and every other fetch is the existing Supabase plumbing', () => {
+chk('every product panel that shows numbers says they are illustrative', () => {
+  const bars = [...IDX.matchAll(/<div class="panel-bar">[\s\S]*?<\/div>/g)].map(m => m[0]);
+  return bars.length >= 4 && bars.every(b => /<span class="tag">Illustrative (?:game|prices)<\/span>/.test(b));
+});
+chk('and every footer on those panels says it is not a tip',
+  (IDX.match(/Nothing here tells you what to bet/g) || []).length >= 2);
+chk('the page makes exactly its two artifact reads', (IDX.match(/fetch\('football\//g) || []).length === 2);
+chk('every other fetch is the existing Supabase plumbing', () => {
   const all = [...IDX.matchAll(/fetch\(([^,)]{0,24})/g)].map(m => m[1]);
-  return all.every(a => /^'football\//.test(a) || /^SB_URL/.test(a) || /^api\(/.test(a));
+  return all.every(a => /^'football\//.test(a) || /^SB_URL/.test(a));
 });
-['heroGames', 'pile', 'layers', 'stepper', 'idk'].forEach(m => {
-  lacks(mod(m), 'fetch(', m + ' reaches the network for nothing');
-  lacks(mod(m), 'Math.random', m + ' invents no number');
-});
-chk('no interaction writes a projected line the model did not produce',
-  !/Math\.random/.test(IDX));
+lacks(LANDING, 'fetch(', 'the presentation script reaches the network for nothing');
+chk('no number anywhere is invented at random', !/Math\.random/.test(IDX));
+/* ONE EV implementation: the presentation script carries no odds math */
+[/impliedFromAmerican/, /americanFromImplied/, /decimalFromAmerican/, /100\s*\/\s*\(\s*-?\s*a\s*\)/, /\(\s*-a\s*\)\s*\/\s*\(\(-a\)\+100\)/, /1\s*\+\s*100\s*\//]
+  .forEach(re => chk('the landing script does no odds arithmetic of its own: ' + re, !re.test(LANDING), (re.exec(LANDING) || [])[0]));
+['Q.americanToDecimal(', 'Q.expectedValue(', 'Q.breakEven(', 'Q.fairAmerican('].forEach(f =>
+  has(mod('evDemo'), f, 'it asks the terminal\'s engine: ' + f));
+has(LANDING, "var EV_LIBS=['/lib/research_core.js", 'the engine loads research_core first');
+has(LANDING, "'/lib/edgedesk_quote_ev.js", 'and then the quote-EV engine');
+chk('the engine is loaded when needed, not on first paint', /rootMargin:'700px 0px'/.test(mod('evDemo')) && !/<script[^>]*src="\/lib\/edgedesk_quote_ev/.test(IDX));
 /* the page still never tells anyone what to do */
-['heroGames', 'stepper', 'idk'].forEach(m => {
-  [/>\s*BET\s*</, /\bLOCK\b/, /\bBEST BET\b/i].forEach(re =>
-    chk(m + ' never says ' + re, !re.test(mod(m))));
-});
-has(mod('heroGames'), 'not advice', 'the research state says it is not advice');
-/* canonical wording (lib/edgedesk_canon.js): research STATUS, and it is
-   neither a recommendation nor a decision */
-has(mod('stepper'), 'A research status is not a recommendation, and not a decision',
-  'and the walkthrough ends by saying so out loud');
+[/>\s*BET\s*</, /\bLOCK\b/, /\bBEST BET\b/i, /\bPLAY\b/].forEach(re =>
+  chk('the presentation script never says ' + re, !re.test(LANDING)));
+/* measurement goes through the tag the site already has */
+chk('analytics go through the existing gtag, and no new vendor', /window\.gtag\('event'/.test(LANDING) && !/(segment|mixpanel|amplitude|hotjar|posthog|plausible)/i.test(IDX));
+['landing_page_view', 'hero_trial_click', 'hero_demo_click', 'sample_game_interaction', 'pricing_view', 'pricing_trial_click', 'public_record_click', 'login_click']
+  .forEach(e => has(IDX, e, 'the conversion event ' + e + ' can be measured'));
+chk('a Sign out click is never counted as a log in', /login_click' && \/sign out\/i/.test(LANDING));
+
+/* ======================================================================== */
+/* 6. WEIGHT                                                                */
+/* ======================================================================== */
+chk('the page is under 200 KB, preserved auth and billing block included', IDX.length < 200 * 1024, Math.round(IDX.length / 1024) + ' KB');
+chk('the presentation script is small', LANDING.length < 16 * 1024, Math.round(LANDING.length / 1024) + ' KB');
+chk('the font request asks only for the weights the page uses',
+  /Inter:wght@400;500;600;700&family=Space\+Grotesk:wght@500;600;700&family=JetBrains\+Mono:wght@400;500;700&display=swap/.test(IDX));
+chk('nothing below the fold is an image or a video', !/<(?:img|video|iframe)\b/.test(IDX));
 
 console.log('');
 failures.forEach(f => console.log('  FAIL  ' + f));
