@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-28T23:28:04.002Z",
+ "generated_at": "2026-09-28T23:51:45.169Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,20 +119,20 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 64,
+  "total": 66,
   "by_group": {
-   "other": 35,
+   "other": 37,
    "p4": 31,
    "independent": 2
   },
   "by_matchup": {
-   "conference": 55,
+   "conference": 57,
    "non_conference": 6,
    "fbs_fcs": 3
   },
   "by_conference": {
    "cusa": 7,
-   "american": 8,
+   "american": 9,
    "acc": 9,
    "bigten": 8,
    "sec": 7,
@@ -140,7 +140,7 @@
    "independents": 2,
    "mwc": 5,
    "mac": 6,
-   "sunbelt": 7,
+   "sunbelt": 8,
    "pac12": 4
   }
  },
@@ -206,24 +206,22 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 64
+  "PREDICTED": 66
  },
  "weather": {
-  "requested": 62,
-  "answered": 61,
-  "dome": 2,
+  "requested": 63,
+  "answered": 63,
+  "dome": 3,
   "no_venue": 0,
-  "failed": 1,
-  "carried": 1,
+  "failed": 0,
+  "carried": 0,
   "carry_dropped": 0,
-  "failures": {
-   "HTTP 429": 1
-  },
+  "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "61 of 62 outdoor game(s) got a forecast; 2 indoor venue(s) needed none; 0 had no coordinates to locate one; 1 request(s) failed; 1 carried the last observed forecast forward at its real age (HTTP 429 x1)"
+  "summary": "63 of 63 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 64
+  "NO_MARKET": 66
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -292,8 +290,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 33,
-    "total": 64,
+    "non_power_games": 35,
+    "total": 66,
     "example": [
      "Western Kentucky @ New Mexico State",
      "North Texas @ Tulsa",
@@ -312,7 +310,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 55,
+    "conference_games": 57,
     "wrong": 0
    }
   },
@@ -344,8 +342,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 64,
-    "audit_total": 64
+    "slate": 66,
+    "audit_total": 66
    }
   },
   {
