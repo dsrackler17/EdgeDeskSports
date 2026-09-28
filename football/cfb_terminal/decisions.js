@@ -98,6 +98,8 @@ function compact(d, t) {
     playable: d.playable ? d.playable.short : null, max_playable_line: d.max_playable_line, max_acceptable_odds: d.max_acceptable_odds,
     calibrated_ev_pct: d.calibrated_ev_pct, raw_ev_pct: d.raw_ev_pct, reliability: d.reliability_score, market_quality: d.market_quality,
     reference: d.reference_quote ? d.reference_quote.label : null, waiting_on: (d.waiting_on || []).map((w) => w.text), evaluated_at: d.evaluated_at,
+    market_state: d.market_state ? d.market_state.key : null, market_state_label: d.market_state ? d.market_state.label : null,
+    quote: d.quote ? { selection: d.quote.selection, line: d.quote.line, odds: d.quote.odds, sportsbook: d.quote.sportsbook, captured_at: d.quote.captured_at, freshness: d.quote.freshness, verification_state: d.quote.verification_state } : null,
     changed_at: t ? t.last_changed : null, previous: t ? t.previous_decision : null, decision_id: d.decision_id };
 }
 
@@ -173,6 +175,7 @@ function problems(results) {
     if (d.decision === 'BET') {
       if (!d.bet_price || d.selected_line == null || d.selected_odds == null) out.push(d.game_id + ': a BET without an exact quote');
       if (!d.playable) out.push(d.game_id + ': a BET without a playable boundary');
+      if (d.market_state && d.market_state.key !== 'LIVE_MARKET') out.push(d.game_id + ': a BET on a ' + d.market_state.label + ' (a BET needs a LIVE MARKET)');
       if (!(d.edge_pp >= T.min_edge_pp - 1e-6) || !(d.decision_ev_pct >= 100 * T.min_ev - 1e-6)) out.push(d.game_id + ': a BET below the edge / EV thresholds');
       if (d.recommended_units > (cfg.sizing.source_caps[d.probability_source] || 0) + 1e-9) out.push(d.game_id + ': a BET above its probability-source cap');
       if (d.recommended_units > cfg.sizing.max_units + 1e-9) out.push(d.game_id + ': a BET above ' + cfg.sizing.max_units + 'U');

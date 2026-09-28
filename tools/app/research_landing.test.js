@@ -240,7 +240,8 @@ has(APP, '<h2>EdgeDesk Research', 'the shell says whose research this is');
 has(APP, '<span class="rs-exp">Experimental</span>', 'and that it is experimental, as a badge beside the title');
 has(APP, '<p class="rs-sub">Model, market, roster and uncertainty in one place.</p>', 'and what it is for, in one line');
 lacks(APP, 'rs-creed', 'the paragraph above the tabs is gone, so the first screen reaches the research');
-has(APP, 'Research tool only — not betting advice.', 'research, not advice, still rides the persistent disclaimer');
+has(APP, 'Research and decision-support tool.', 'the persistent disclaimer names what the product does: research and decision support');
+lacks(APP, 'Research tool only — not betting advice.', 'and no longer contradicts the BET / LEAN / WATCH / PASS decisions it shows');
 /* the duplication the audit found is gone */
 chk('the landing no longer repeats the module name inside its own card',
   APP.indexOf("rsTkSnap({title:'',meta:'',key:'fbSnap'") >= 0);

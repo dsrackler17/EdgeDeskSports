@@ -8,6 +8,8 @@
 > market fault and an unverified gap no longer produce NO DECISION; NO DECISION
 > is reserved for missing or invalid essential data and always names its
 > blocker. The v1 text below is kept as the record of what shipped first.
+> The vocabulary, market states and card layouts in use today are in
+> [`CONSISTENCY.md`](CONSISTENCY.md).
 
 EdgeDesk is research, not picks. Once the research and pricing engines hold
 enough validated information, the product also says, in one word, whether the

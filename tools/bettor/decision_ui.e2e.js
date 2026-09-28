@@ -200,7 +200,7 @@ const BET_BUILDER = () => {
   chk('the game card opens with EDGEDESK ACTION', card && card.hasAct, card);
   chk('the action card sits above the full research', card && card.before);
   chk('the summary’s Decision cell says what the action card says', card && card.cell && card.cell.indexOf(card.badge) >= 0, { badge: card && card.badge, cell: card && card.cell });
-  chk('a PASS names the price, the calibrated and raw EV, why, and the bet trigger', card && (card.badge !== 'PASS' || (/Current price does not justify a wager/.test(card.actText) && /CALIBRATED EV/.test(card.actText) && /RAW EV/.test(card.actText) && /WHY PASS/.test(card.actText))), card && card.actText.slice(0, 500));
+  chk('a PASS names the price, the calibrated and raw EV, why, and the bet trigger', card && (card.badge !== 'PASS' || (/Current price does not justify a wager/.test(card.actText) && /CALIBRATED EV|MODEL-ESTIMATED EV/.test(card.actText) && (/RAW MODEL EV/.test(card.actText) || !/CALIBRATED EV/.test(card.actText)) && /WHY PASS/.test(card.actText) && /BEST AVAILABLE/.test(card.actText) && /BET TRIGGER/.test(card.actText))), card && card.actText.slice(0, 500));
   chk('the card says when it was last evaluated', card && /Last evaluated \d/.test(card.actText));
   chk('no tout language on the card', card && !/\b(lock|guarantee|free money|can.?t miss|safe bet|best bet)\b/i.test(card.actText));
   if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); const el = await page.$('#p4gate-' + gid + ' .edd-act'); if (el) await el.screenshot({ path: path.join(SHOTS, 'action_card_pass_desktop.png') }); }
@@ -231,16 +231,16 @@ const BET_BUILDER = () => {
     const k = Array.from(h.querySelectorAll('.edd-kpi b')).map((b) => b.textContent);
     return { t: t.slice(0, 400), kpis: k, rows: h.querySelectorAll('.edd-row').length, n: window.EDDecisionUI.mergedDecisions().length };
   });
-  chk('the card page renders the header counts', /EDGEDESK CARD/.test(cp.t) && cp.kpis.length === 6, cp);
+  chk('the card page renders the header: BET and exposure first, LEAN and WATCH second, PASS and NO DECISION subdued', /EDGEDESK CARD/.test(cp.t) && cp.kpis.length === 4 && /BETS?/.test(cp.t) && /TOTAL EXPOSURE/.test(cp.t) && /Leans?/.test(cp.t) && /Watching/.test(cp.t) && /pass(es)?\s*·\s*\d+ no decision/.test(cp.t), cp);
   chk('every decided game appears exactly once under BET / LEAN / WATCHING / PASS / NO DECISION', cp.rows === cp.n && cp.n > 0, cp);
-  chk('an empty BET section says so plainly', /No current price clears EdgeDesk’s betting thresholds/.test(await page.evaluate(() => document.getElementById('eddCardHost').textContent)));
+  chk('an empty BET section says so plainly', /No current price clears EdgeDesk’s betting threshold/.test(await page.evaluate(() => document.getElementById('eddCardHost').textContent)));
 
   /* a BET, from the engine, on the card and as an action card */
   const bet = await page.evaluate((src) => { const f = eval('(' + src + ')'); const d = f(); window.EDDecisionUI.observe(d); return d; }, BET_BUILDER.toString());
   chk('the engine produces the synthetic BET in the page', bet && bet.decision === 'BET' && bet.recommended_units > 0, bet && { d: bet.decision, code: bet.action_reason_code, u: bet.recommended_units });
   await page.evaluate(() => window.show('card'));
   await page.waitForTimeout(300);
-  const cb = await page.evaluate(() => { const h = document.getElementById('eddCardHost'); const r = h.querySelector('.edd-r-bet'); return { row: r ? r.textContent.replace(/\s+/g, ' ') : null, kpi: h.querySelector('.edd-kpi-bet b').textContent, exp: h.querySelector('.edd-kpis').textContent.replace(/\s+/g, ' ') }; });
+  const cb = await page.evaluate(() => { const h = document.getElementById('eddCardHost'); const r = h.querySelector('.edd-r-bet'); return { row: r ? r.textContent.replace(/\s+/g, ' ') : null, kpi: h.querySelector('.edd-kpi-bet b').textContent, exp: h.querySelector('.edd-kpi-main').textContent.replace(/\s+/g, ' ') }; });
   chk('the BET row shows units, side, line, price, book, dollars and playable-to', cb.row && /0\.50U NC State \+6\.5 \(-102\) FanDuel \$12\.50/.test(cb.row) && /Playable to: [+−-]?\d/.test(cb.row), cb);
   chk('the header counts the bet and its exposure in units and dollars', cb.kpi === '1' && /0\.50U/.test(cb.exp) && /\$12\.50/.test(cb.exp), cb);
   await page.click('[data-edd-act="filter"][data-edd-v="watching"]');
@@ -253,12 +253,14 @@ const BET_BUILDER = () => {
   /* the BET as an action card, then BET PLACED at a worse number */
   await page.evaluate(() => { const d = window.EDDecisionUI._state.registry['e2e-bet']; const host = document.createElement('div'); host.id = 'eddTestHost'; document.getElementById('v-card').appendChild(host); host.innerHTML = window.EDDecisionUI.actionCardHTML(d); });
   const ac = await page.evaluate(() => document.getElementById('eddTestHost').textContent.replace(/\s+/g, ' '));
-  chk('BET · 0.5U, the selection in capitals, price and book', /BET · 0\.5U/.test(ac) && /NC STATE \+6\.5/.test(ac) && /-102 · FanDuel/.test(ac), ac.slice(0, 300));
+  chk('BET · 0.50U, the selection in capitals, price and book', /BET · 0\.50U/.test(ac) && /NC STATE \+6\.5/.test(ac) && /-102 · FanDuel/.test(ac), ac.slice(0, 300));
   chk('the dollars, based on the reader’s unit', /\$12\.50 based on your \$25\.00 unit/.test(ac), ac.match(/\$[\d.]+ based on your[^.]*/));
-  chk('PLAYABLE TO names the worst line and price', /PLAYABLE TO\?? [+−-]?\d+(\.5)? · max [+−-]\d+/.test(ac), ac.match(/PLAYABLE TO.{0,60}/));
+  chk('PLAYABLE TO names the worst line and price', /PLAYABLE TO ?[+−-]?\d+(\.5)? \/ [+−-]\d+/.test(ac), ac.match(/PLAYABLE TO.{0,60}/));
+  chk('the BET answers what · where · price · how much · edge · calibrated EV · confidence · why · what could invalidate it', ['WHAT', 'WHERE', 'PRICE', 'HOW MUCH', 'EDGE', 'CALIBRATED EV', 'CONFIDENCE', 'WHY', 'WHAT COULD INVALIDATE IT'].every((w) => ac.indexOf(w) >= 0));
+  chk('the market state and the research status ride above the decision, each labelled', /MARKET ?LIVE MARKET/.test(ac) && /RESEARCH ?WORTH RESEARCHING/.test(ac) && /not a bet signal/.test(ac));
   chk('stake tier, decision confidence, probability source, model fair, calibrated EV, reliability, market and projection', ['STAKE TIER', 'DECISION CONFIDENCE', 'PROBABILITY', 'MODEL FAIR', 'CALIBRATED EV', 'RELIABILITY', 'MARKET', 'PROJECTION'].every((w) => ac.indexOf(w) >= 0));
   chk('why it qualifies and what cancels it', /WHY IT QUALIFIES/.test(ac) && /WHAT CANCELS IT/.test(ac) && /material QB change/.test(ac));
-  chk('every price type is named apart', ['BEST AVAILABLE', 'CONSENSUS', 'EDGEDESK BET PRICE', 'PLAYABLE TO', 'MODEL FAIR'].every((w) => ac.indexOf(w) >= 0));
+  chk('every price type is named apart', ['BEST CURRENT PRICE', 'CONSENSUS', 'EDGEDESK BET PRICE', 'PLAYABLE TO', 'MODEL FAIR'].every((w) => ac.indexOf(w) >= 0));
   await page.click('#eddTestHost [data-edd-act="placed"]');
   await page.fill('#eddTestHost [data-edd-in="line"]', '5');
   await page.fill('#eddTestHost [data-edd-in="odds"]', '-110');
@@ -270,8 +272,8 @@ const BET_BUILDER = () => {
   if (SHOTS) { const el = await page.$('#eddTestHost .edd-act'); if (el) await el.screenshot({ path: path.join(SHOTS, 'action_card_bet_desktop.png') }); await page.screenshot({ path: path.join(SHOTS, 'edgedesk_card_desktop.png'), fullPage: false }); }
   /* beginner mode: the decision first, the research on request */
   await page.check('#eddCardHost [data-edd-act="beginner"]');
-  const bm = await page.evaluate(() => { const d = window.EDDecisionUI._state.registry['e2e-bet']; const h = document.createElement('div'); h.innerHTML = window.EDDecisionUI.actionCardHTML(d); const s = h.querySelector('.edd-act'); return { begin: s.classList.contains('edd-begin'), open: s.querySelector('.edd-reason').open, why: /WHY Current price clears/.test(s.textContent) }; });
-  chk('beginner mode: one sentence, the reasoning behind a toggle', bm.begin && !bm.open && bm.why, bm);
+  const bm = await page.evaluate(() => { const d = window.EDDecisionUI._state.registry['e2e-bet']; const h = document.createElement('div'); h.innerHTML = window.EDDecisionUI.actionCardHTML(d); const s = h.querySelector('.edd-act'); return { begin: s.classList.contains('edd-begin'), reason: !!s.querySelector('.edd-reason'), raw: /RAW MODEL EV|Raw model EV/.test(s.textContent), adv: !!s.querySelector('[data-edd-act="advanced"]'), why: /WHY ?EdgeDesk makes it/.test(s.textContent) }; });
+  chk('beginner mode: one sentence, no diagnostics, the advanced view one tap away', bm.begin && !bm.reason && !bm.raw && bm.adv && bm.why, bm);
   await page.uncheck('#eddCardHost [data-edd-act="beginner"]');
   chk('no page errors on desktop', A.errors.length === 0, A.errors);
 
@@ -298,7 +300,7 @@ const BET_BUILDER = () => {
   const m2 = await p2.evaluate(() => { const s = document.querySelector('#eddTestHost .edd-act'), r = s.getBoundingClientRect(); return { w: r.width, right: r.right, sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, open: s.querySelector('.edd-reason').open,
     top: s.textContent.replace(/\s+/g, ' ').slice(0, 140) }; });
   chk('the phone action card fits the screen', m2.right <= m2.cw + 1 && m2.sw <= m2.cw + 1, m2);
-  chk('the phone card leads with the decision, the price and the dollars; reasoning folds', /BET · 0\.5U/.test(m2.top) && /NC STATE \+6\.5/.test(m2.top) && /\$12\.50/.test(m2.top) && m2.open === false, m2);
+  chk('the phone card leads with the decision, the price and the dollars; reasoning folds', /BET · 0\.50U · \$12\.50/.test(m2.top) && /NC STATE \+6\.5/.test(m2.top) && m2.open === false, m2);
   await p2.click('#eddTestHost .edd-reason > summary');
   const m3 = await p2.evaluate(() => ({ open: document.querySelector('#eddTestHost .edd-reason').open, sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
   chk('"View reasoning" expands in place, still without sideways scroll', m3.open && m3.sw <= m3.cw + 1, m3);

@@ -19,6 +19,9 @@ on:
       - 'lib/edgedesk_ev.js'
       - 'lib/edgedesk_quote_ev.js'
       - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_vocab.js'
+      - 'lib/cfb_research_view.js'
+      - 'lib/edgedesk_canon.js'
       - 'lib/edgedesk_bankroll.js'
       - 'tools/bettor/**'
       - 'lib/research_core.js'
@@ -49,6 +52,9 @@ on:
       - 'lib/edgedesk_ev.js'
       - 'lib/edgedesk_quote_ev.js'
       - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_vocab.js'
+      - 'lib/cfb_research_view.js'
+      - 'lib/edgedesk_canon.js'
       - 'lib/edgedesk_bankroll.js'
       - 'tools/bettor/**'
       - 'football/cfb_ev/**'
@@ -98,6 +104,8 @@ jobs:
         run: node tools/bettor/decision.test.js
       - name: The unified football decision engine, NFL and CFB (evaluability vs decision, orientation canon, alternates, anomalies, sizing caps, real NFL and CFB payloads)
         run: node tools/bettor/football_decision.test.js
+      - name: One meaning per state (a live quote never reads NO MARKET, only a live verified price BETs, WATCH names its trigger, only BET is exposure, beginner mode, extreme alternates)
+        run: node tools/bettor/consistency.test.js
       - name: Alternate-spread capture (parse, change-only ledger, browser feed, budget and credit controls; stubbed provider)
         run: node football/cfb_terminal/alternates.test.js
       - name: The EV calibration tournament reproduces from the committed dataset (DEV only, writes nothing)

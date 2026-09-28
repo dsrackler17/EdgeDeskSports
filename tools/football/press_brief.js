@@ -765,7 +765,7 @@ function buildHtml(slate, R) {
   projections come from a versioned engine with published parameters. Movement is differenced between weekly
   snapshots and "why" is assembled from component ranks — the arithmetic is available, so nothing is narrated.
   <br><br>
-  <b>Research tool only — not betting advice. Signals can be wrong. 21+. 1-800-GAMBLER.</b>
+  <b>Research and decision-support tool. Signals can be wrong. 21+. Bet responsibly. 1-800-GAMBLER.</b>
   </div>
   </section>`);
 
@@ -985,7 +985,7 @@ function rankingsBrief(R, opts) {
   punts inside the 20, extra points and blocked kicks. It is ranked, and it is deliberately not an input to ETSR.
   <br><br>
   <b>No language model produced, ranked, adjusted or explained any rating in this document.</b>
-  Research tool only — not betting advice. 21+. 1-800-GAMBLER.</div>
+  Research and decision-support tool. Signals can be wrong. 21+. 1-800-GAMBLER.</div>
   </section>`);
 
   H.push('</body></html>');

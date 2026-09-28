@@ -2,7 +2,8 @@
    EDGEDESK DECISION UI — lib/edgedesk_decision_ui.js
    A quantitative terminal, not a sportsbook: one accent per decision, no glow.
      BET          highest prominence (solid green rule, filled badge)
-     WAIT         caution (amber rule, outlined badge, DO NOT BET YET)
+     WATCH        caution (amber rule, outlined badge, DO NOT BET YET)
+     LEAN         secondary (teal rule, outlined badge, 0U)
      PASS         subdued (muted text, thin rule)
      NO DECISION  neutral information (grey, dashed rule)
    Tokens fall back to the app's palette when loaded outside app.html.
@@ -75,7 +76,6 @@
 .edd-link{background:none;border:none;padding:0;color:var(--accent,#2fa79a);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline}
 .edd-valid{margin-top:8px;font-size:10.5px;color:var(--edd-faint);line-height:1.5}
 .edd-tip{position:relative;cursor:help;border-bottom:1px dotted var(--edd-faint);outline:none}
-.edd-tip i{font-style:normal;font-size:8.5px;margin-left:3px;border:1px solid var(--edd-faint);border-radius:50%;padding:0 3px;color:var(--edd-faint);vertical-align:1px}
 .edd-tip:hover::after,.edd-tip:focus::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 6px);z-index:70;width:min(260px,76vw);white-space:normal;text-transform:none;letter-spacing:0;font-family:Inter,system-ui,sans-serif;font-size:11.5px;font-weight:400;line-height:1.45;color:var(--edd-text);background:var(--edd-bg2);border:1px solid var(--edd-line);border-radius:8px;padding:8px 10px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
 .edd-form:empty{display:none}
 .edd-pf{margin-top:10px;padding:10px;border:1px solid var(--edd-line);border-radius:10px;background:var(--edd-bg2)}
@@ -156,4 +156,53 @@ details>.edd-sech{cursor:pointer}.edd-sech small{color:var(--edd-faint);margin-l
   .edd-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .edd-pr{flex-direction:column;gap:1px}.edd-pr>span:last-child{text-align:left}
   .edd-btn{flex:1 1 auto}
+}
+/* ---- the layers the decision is NOT: market state and research status.
+   Each is a quiet, labelled strip styled apart from the decision badge, so a
+   research status can never read like a bet and a market state never like a
+   verdict. */
+.edd-layers{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.edd-layer{display:inline-flex;align-items:baseline;gap:5px;font-size:11.5px;padding:3px 8px;border-radius:999px;background:var(--edd-bg2);border:1px solid var(--edd-line);color:var(--edd-dim);max-width:100%}
+.edd-layer b{font-family:var(--edd-mono);font-size:10.5px;letter-spacing:.06em;color:var(--edd-text)}
+.edd-layer small{color:var(--edd-faint);font-size:10.5px}
+.edd-lk{font-family:var(--edd-mono);font-size:9px;letter-spacing:.12em;color:var(--edd-faint);font-weight:700}
+.edd-ms::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--edd-faint);align-self:center}
+.edd-ms-live::before{background:var(--edd-bet)}.edd-ms-thin::before{background:var(--edd-lean)}.edd-ms-stale::before{background:var(--edd-wait)}
+.edd-ms-fault{border-color:rgba(217,154,43,.55)}.edd-ms-fault::before{background:var(--edd-wait)}.edd-ms-none::before{background:transparent;border:1px solid var(--edd-faint)}
+.edd-rs{border-style:dotted;background:none}.edd-rs i{font-style:normal;font-size:11px;color:var(--edd-dim)}
+/* BET: the execution summary */
+.edd-exec{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:6px;margin:10px 0 6px}
+.edd-f1{border:1px solid var(--edd-line);border-radius:8px;padding:6px 8px;background:var(--edd-bg2);min-width:0}
+.edd-f1.pos .edd-fv b{color:var(--edd-bet)}
+.edd-fk{font-family:var(--edd-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--edd-faint);font-weight:700}
+.edd-fv{font-size:13.5px;margin-top:2px;color:var(--edd-text)}.edd-fv b{font-family:var(--edd-mono)}
+.edd-fn,.edd-mn{font-size:10px;color:var(--edd-faint);margin-top:2px;line-height:1.35}
+.edd-cancel1{font-size:12.5px;margin-top:6px}.edd-cancel1 ul,.edd-warnbox ul{margin:3px 0 0;padding-left:18px;line-height:1.5}
+/* WATCH / LEAN / PASS: one labelled line per answer */
+.edd-f2,.edd-waiting,.edd-next{font-size:12.5px;line-height:1.5;margin-top:5px}
+.edd-f2 .edd-k,.edd-waiting .edd-k,.edd-next .edd-k,.edd-trigger .edd-k,.edd-reason1 .edd-k,.edd-why1 .edd-k{display:inline-block;min-width:104px}
+.edd-tr-opt b{font-family:var(--edd-mono);color:var(--edd-text)}
+.edd-or{display:inline-block;margin:0 7px;font-family:var(--edd-mono);font-size:10px;font-weight:800;letter-spacing:.1em;color:var(--edd-faint)}
+.edd-none-trig{font-family:var(--edd-mono);font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--edd-dim)}
+.edd-mini{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:12px;color:var(--edd-dim)}.edd-mini b{font-family:var(--edd-mono);color:var(--edd-text)}
+.edd-warnbox{margin-top:8px;padding:7px 9px;border-radius:8px;border:1px solid rgba(217,154,43,.5);font-size:12px;color:var(--edd-text)}.edd-warnbox .edd-k{color:var(--edd-wait)}
+/* raw model EV: visibly diagnostic */
+.edd-m.edd-diag{border-style:dashed;background:none}.edd-m.edd-diag .edd-mv{font-weight:500}
+/* status text in place of "?" glyphs */
+.edd-sl b{font-weight:600;color:var(--edd-dim)}.edd-dot{margin:0 6px;color:var(--edd-faint)}
+.edd-valid p{margin:4px 0}
+.edd-chip-k{font-family:var(--edd-mono);font-size:8.5px;letter-spacing:.1em;color:var(--edd-faint)}
+/* the EdgeDesk Card header: BET first, then what is close, then the quiet answers */
+.edd-kpi-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:6px;margin-top:10px}
+.edd-kpi-xl b{font-size:26px}.edd-kpi-xl span{font-size:11px;letter-spacing:.08em;color:var(--edd-dim)}
+.edd-kpi-exp b{color:var(--edd-text)}.edd-kpi-usd{display:inline!important;font-size:13px!important;color:var(--edd-text)}
+.edd-kpis-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.edd-kpis-3{margin-top:6px;font-size:11.5px;color:var(--edd-faint)}.edd-kpis-3 b{font-family:var(--edd-mono);color:var(--edd-dim)}
+.edd-zero{border:1px dashed var(--edd-line);border-radius:10px;padding:10px 12px;margin-top:6px}.edd-zero b{font-family:var(--edd-mono);font-size:12px;letter-spacing:.08em}.edd-zero p{margin:4px 0 0;font-size:12px;color:var(--edd-dim);line-height:1.5}
+.edd-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 10px;margin-top:8px;font-size:11.5px}
+.edd-tierrule b{font-family:var(--edd-mono)}.edd-tierrule span{color:var(--edd-dim)}.edd-tierrule small{color:var(--edd-faint);display:block}
+@media(max-width:560px){
+  .edd-exec{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .edd-kpi-main{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .edd-f2 .edd-k,.edd-waiting .edd-k,.edd-next .edd-k,.edd-trigger .edd-k,.edd-reason1 .edd-k,.edd-why1 .edd-k{display:block;min-width:0}
 }

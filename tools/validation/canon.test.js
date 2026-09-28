@@ -159,7 +159,7 @@ chk('ETSR becomes priced only when promoted', C.pricingInputs([], { canonical_mo
 
 /* the object is frozen: no page can rewrite a definition */
 chk('the canon is frozen', Object.isFrozen(C) && Object.isFrozen(C.RESEARCH_STATUS) && Object.isFrozen(C.MODULES));
-chk('one canonical disclaimer', typeof C.DISCLAIMER === 'string' && /research tool/.test(C.DISCLAIMER));
+chk('one canonical disclaimer, naming what the product does', typeof C.DISCLAIMER === 'string' && /research and decision-support tool/.test(C.DISCLAIMER) && !/nothing on it is a recommendation to bet/.test(C.DISCLAIMER));
 
 if (fail) { console.log(failures.map((f) => 'FAIL | ' + f).join('\n')); console.log('\n' + pass + ' passed, ' + fail + ' failed'); process.exit(1); }
 console.log('ALL GREEN ' + pass + ' passed, 0 failed');

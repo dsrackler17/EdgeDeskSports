@@ -393,7 +393,7 @@ section('14. the page and its boundaries');
   });
   ok('nor any lib/ or tools/ code', off2.length === 0, off2);
   const app = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
-  ok('the terminal card links every CFB game to its research page', /function fbTermLink\(gid\)/.test(app) && /fbTermLink\(g\.game_id\)/.test(app));
+  ok('the terminal card links every CFB game to its research page', /function fbTermLink\(gid,rv\)/.test(app) && /fbTermLink\(g\.game_id,rvH\)/.test(app));
   ok('the explanation guard knows the seven canonical words', T.STATUS_KEYS.every((k) => X.render && fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', '_cfb_explain.js'), 'utf8').indexOf("'" + T.STATUS[k].label + "'") >= 0));
 }
 

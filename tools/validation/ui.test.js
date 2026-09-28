@@ -77,7 +77,7 @@ has(TJS, 'Frozen pre-KO', 'the record says what was frozen before kickoff');
 has(TJS, 'Status then', 'and the status at prediction time');
 lacks(TJS, 'home field, quarterback, matchup, travel, rest. The market never enters', 'the Why page no longer claims travel prices the game');
 has(TJS, 'Travel, rivalry, weather, player quality and the current power rating are shown, not priced', 'and says what is shown, not priced');
-chk('one canonical disclaimer in the footer', (IDX.match(/research tool/g) || []).length === 1);
+chk('one canonical disclaimer in the footer, naming research and decision support', (IDX.match(/decision-support tool/g) || []).length === 1 && IDX.indexOf(require(path.join(ROOT, 'lib', 'edgedesk_canon.js')).DISCLAIMER) >= 0);
 
 /* 3. the landing */
 const LAND = read('index.html');
