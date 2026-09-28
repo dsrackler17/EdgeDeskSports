@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_fbs_epa_index_v1",
  "version": 1,
- "generated_at": "2026-09-27T22:18:33.983Z",
+ "generated_at": "2026-09-28T14:30:20.817Z",
  "season": 2026,
  "source": {
   "repository": "https://github.com/sportsdataverse/cfbfastR-cfb-data",
@@ -12,7 +12,7 @@
   },
   "manifest": null,
   "refreshed": {
-   "at": "2026-09-27T22:18:33.983Z",
+   "at": "2026-09-28T14:30:20.817Z",
    "commit": "main",
    "season": 2026
   }
@@ -26,28 +26,28 @@
     "file": "adv_passing_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_passing/parquet/adv_passing_2026.parquet",
     "ok": true,
-    "bytes": 116417,
-    "sha256": "1a9aba7fe80caeea7d7f54852c5c509162eca5739e14958c999165ae974eebcd",
+    "bytes": 116664,
+    "sha256": "85d9af10fba9585286d587cd25c2662b50e77f68c0235db6dbf8e3fe47f008bb",
     "why": null,
-    "retrieved_at": "2026-09-27T22:18:33.983Z"
+    "retrieved_at": "2026-09-28T14:30:20.817Z"
    },
    {
     "file": "adv_team_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_team/parquet/adv_team_2026.parquet",
     "ok": true,
-    "bytes": 142544,
-    "sha256": "f1c6b399e608538da9fec26166da3b498a4939d709c795b623076978f4ffc00a",
+    "bytes": 143912,
+    "sha256": "37ea3b85cdd10a97f59a0cced0ec09fd91b22ed229144f91b1b8bca3b95e5a43",
     "why": null,
-    "retrieved_at": "2026-09-27T22:18:33.983Z"
+    "retrieved_at": "2026-09-28T14:30:20.817Z"
    },
    {
     "file": "cfb_schedules_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_schedules/parquet/cfb_schedules_2026.parquet",
     "ok": true,
-    "bytes": 89887,
-    "sha256": "542294d8ecd1ca328b11b9bb6e363e7b1158c5ddb7d354995a314ba515975a3f",
+    "bytes": 89898,
+    "sha256": "afa5d50f0cf58da9805c4026a40d182831d25cd6174466c649742c863965012f",
     "why": null,
-    "retrieved_at": "2026-09-27T22:18:33.983Z"
+    "retrieved_at": "2026-09-28T14:30:20.817Z"
    },
    {
     "file": "cfb_rosters_2026.parquet",
@@ -56,33 +56,33 @@
     "bytes": 2829768,
     "sha256": "8e95f0c8a0d6a18124e684c43855a8b4cb31714c94745da3f3431b74b057ea36",
     "why": null,
-    "retrieved_at": "2026-09-27T22:18:33.983Z"
+    "retrieved_at": "2026-09-28T14:30:20.817Z"
    }
   ],
   "built": {
    "games": 888,
-   "passer_games": 1155,
+   "passer_games": 1157,
    "team_games": 662,
    "quarantined": 0,
    "issues": {
-    "epa_denominator_consistent": 1141,
-    "identity_unique_season_team_name": 1147,
+    "epa_denominator_consistent": 1144,
+    "identity_unique_season_team_name": 1148,
     "team_or_unnamed_passing_rows_excluded": 11,
-    "identity_unmatched": 8,
-    "epa_denominator_unverified": 14
+    "identity_unmatched": 9,
+    "epa_denominator_unverified": 13
    }
   }
  },
  "freshness": {
-  "generated_at": "2026-09-27T22:18:33.983Z",
+  "generated_at": "2026-09-28T14:30:20.817Z",
   "observations_through": "2026-09-27T03:00:00.000Z",
   "last_completed_game": "2026-09-27T03:00:00.000Z",
-  "observation_age_hours": 19.309,
+  "observation_age_hours": 35.506,
   "completed_games_without_passing_data": 0,
   "coverage": "COMPLETE",
   "coverage_why": null,
   "source_commit": null,
-  "source_retrieved_at": "2026-09-27T22:18:33.983Z",
+  "source_retrieved_at": "2026-09-28T14:30:20.817Z",
   "source_age_hours": 0,
   "state": "FRESH",
   "why": null
@@ -92,26 +92,27 @@
   "scheduled_fbs_involving_games": 888,
   "completed_by_cutoff": 331,
   "completed_games_with_passing_data": 331,
-  "passer_rows": 1142,
+  "passer_rows": 1143,
   "passer_rows_with_athlete_id": 1136,
   "identity": {
    "repaired": 2,
-   "ambiguous": 0,
+   "ambiguous": 1,
    "unresolved": 6,
    "by_method": {
     "initial_surname": 2
    },
-   "resolved_at_assembly": 1147,
+   "resolved_at_assembly": 1148,
    "same_athlete_rows_merged": {
-    "groups": 13,
-    "rows_merged": 13,
+    "groups": 14,
+    "rows_merged": 14,
     "by_season": {
-     "2026": 13
+     "2026": 14
     }
    },
    "unresolved_reasons": {
     "no athlete of that name is on this team’s roster for this season": 3,
-    "no EdgeDesk roster covers this programme — it is not FBS this season, so its passers have no athlete id in any file EdgeDesk holds": 3
+    "no EdgeDesk roster covers this programme — it is not FBS this season, so its passers have no athlete id in any file EdgeDesk holds": 3,
+    "more than one roster name reduces to that initial and surname": 1
    }
   },
   "players_in_artifact": 660,
@@ -124,9 +125,9 @@
     "games": 888,
     "completed": 331,
     "fbs_teams": 138,
-    "passer_rows": 1142,
+    "passer_rows": 1143,
     "passer_rows_with_athlete_id": 1136,
-    "epa_reconciled_rows": 1128
+    "epa_reconciled_rows": 1130
    }
   },
   "starters": {
