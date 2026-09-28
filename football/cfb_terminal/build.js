@@ -53,6 +53,10 @@ const DEC = require(path.join(ROOT, 'football', 'cfb_decision', 'decision.js'));
 const CANON = require(path.join(ROOT, 'football', 'cfb_production', 'canonical.js'));
 const DIS = require(path.join(ROOT, 'lib', 'cfb_disagreement.js'));
 const T = require(path.join(ROOT, 'lib', 'cfb_terminal.js'));
+/* THE EDGEDESK READ (lib/edgedesk_read.js): the price-specific read of every
+   game, from the same champion distribution, stored as a probability curve */
+const RD = require(path.join(ROOT, 'lib', 'edgedesk_read.js'));
+const INTEG = (() => { try { return require(path.join(ROOT, 'football', 'cfb_lab', 'integrity.js')); } catch (e) { return null; } })();
 
 function arg(name, dflt) { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : dflt; }
 function flag(name) { return process.argv.indexOf('--' + name) > 0; }
@@ -204,8 +208,14 @@ function loadLedger(season) {
   listDir(base + '/quotes').forEach((f) => { if (/\.jsonl$/.test(f)) readJsonl(base + '/quotes/' + f).forEach((r) => quotes.push(r)); });
   const lines = readJsonl(base + '/lines.jsonl');
   const byGame = (rows, key) => { const m = new Map(); rows.forEach((r) => { const k = String(r[key]); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }); return m; };
-  return { preds: byGame(preds, 'game_id'), quotes: byGame(quotes.filter((q) => q.market_type === 'spread' && !q.is_heartbeat && q.is_pregame !== false), 'game_id'),
-    lines: byGame(lines, 'game_id'), n_preds: preds.length, n_quotes: quotes.length };
+  /* an alternate spread is never the book's main line: kept apart for the Read, never in the terminal's market */
+  const isAlt = (q) => !!q.alternate || q.market_type === 'alternate_spread';
+  const alts = quotes.filter((q) => isAlt(q) && !q.is_heartbeat && q.is_pregame !== false)
+    .concat(readJsonl('football/cfb_terminal/read/' + season + '/alternates.jsonl'))
+    .map((q) => Object.assign({}, q, { market_type: 'spread', alternate: true }));
+  return { preds: byGame(preds, 'game_id'), quotes: byGame(quotes.filter((q) => q.market_type === 'spread' && !isAlt(q) && !q.is_heartbeat && q.is_pregame !== false), 'game_id'),
+    alts: byGame(alts, 'game_id'), ml: byGame(quotes.filter((q) => q.market_type === 'moneyline' && !q.is_heartbeat && q.is_pregame !== false), 'game_id'),
+    lines: byGame(lines, 'game_id'), n_preds: preds.length, n_quotes: quotes.length, n_alts: alts.length };
 }
 
 /* ------------------------------------------------------------- terminal history */
@@ -233,6 +243,7 @@ function contractField(row, field, side) { return (row.input_contract || []).fin
 
 function buildGame(ctx, row) {
   const G = ctx.gov, now = ctx.now, gid = String(row.game_id);
+  ctx._governed = null;
   const labRows = (ctx.ledger.preds.get(gid) || []).filter((r) => ms(r.prediction_ts) != null && ms(r.prediction_ts) <= now);
   const champRows = labRows.filter((r) => r.model_version === G.champion).sort((a, b) => ms(a.prediction_ts) - ms(b.prediction_ts));
   const latestChamp = champRows[champRows.length - 1] || null;
@@ -297,7 +308,7 @@ function buildGame(ctx, row) {
   /* the Lab's own recorded opener when the lines ledger has none: its first snapshot's opening spread */
   const firstWithOpen = labRows.filter((r) => num(r.opening_spread) != null).sort((a, b) => ms(a.prediction_ts) - ms(b.prediction_ts))[0];
   const market = { quotes: quotes.map((q) => ({ book: q.book === 'consensus' ? q.source + ' consensus' : q.book, source: q.source, home_line: q.home_line,
-    price_home: q.price_home, price_away: q.price_away, observed_at: q.observed_at })),
+    price_home: q.price_home, price_away: q.price_away, observed_at: q.observed_at, quote_id: q.quote_id || null, provider_updated_at: q.provider_updated_at || null })),
     open_home_line: open ? open.home_line : (firstWithOpen ? firstWithOpen.opening_spread : null),
     open_at: open ? (open.observed_at || null) : (firstWithOpen ? firstWithOpen.opening_market_ts : null) };
 
@@ -354,11 +365,14 @@ function buildGame(ctx, row) {
       sigma: model.sigma, t_df: G.champion === 'edgedesk_cfb_v2.1.0' && v21pure ? v21pure.t_df : 1e6, football_prediction_confidence: model.football_confidence,
       home: game.home, away: game.away };
     const priced = cons.filter((q) => num(q.price_home) != null && num(q.price_away) != null)
-      .map((q, i) => ({ quote_id: 'term_' + gid + '_' + i, book: q.book, source: q.source, market_type: 'spread', home_line: q.home_line,
-        price_home: q.price_home, price_away: q.price_away, observed_at: q.observed_at }));
+      .map((q, i) => ({ quote_id: q.quote_id || ('term_' + gid + '_' + i), book: q.book, source: q.source, market_type: 'spread', home_line: q.home_line,
+        price_home: q.price_home, price_away: q.price_away, observed_at: q.observed_at, provider_updated_at: q.provider_updated_at || null }));
     try {
       const gd = DEC.decideGame(pure, { quotes: priced }, { policy: G.policy, artifact: G.artifact, now: now,
         row: { qb_missing_any: v21 ? v21.qb_missing_any : 0, qb_unsettled_any: v21 ? v21.qb_unsettled_any : 0 } });
+      /* the governed verdict for each exact quote: the only source of a certified BET in the Read */
+      ctx._governed = { engine: DEC.ENGINE_ID + ' ' + DEC.ENGINE_VERSION, policy_version: G.policy ? G.policy.version : null, by_quote: {} };
+      (gd.decisions || []).forEach((d) => { if (d.quote_id) ctx._governed.by_quote[d.quote_id] = { status: d.status, reason_codes: (d.reason_codes || []).slice(), timing: d.timing, book: d.book, line: d.line_for_side, side: d.side }; });
       const top = gd.decisions && gd.decisions.length ? gd.decisions[gd.summary_index == null ? 0 : gd.summary_index] : null;
       decision = { engine: DEC.ENGINE_ID + ' ' + DEC.ENGINE_VERSION, status: gd.status, reason_codes: (top ? top.reason_codes : gd.reason_codes) || [],
         reasons: ((top ? top.reason_codes : gd.reason_codes) || []).map((c) => DEC.REASON[c] || c), detail: top ? top.detail || null : null, model_version: model.model_version };
@@ -402,7 +416,66 @@ function buildGame(ctx, row) {
   const first = T.build(b);
   b.historical = T.historicalContext(ctx.recordRows, first);
   const o = T.build(b);
-  return { object: o, snapshot: snapshotRow(o, terms, qb, model) };
+  /* THE EDGEDESK READ: the stored inputs, then the read built through the same adapter the page uses */
+  const readInputs = readBase(ctx, row, game, model, dist, v21, market, quotes, lines, expErr);
+  let read = null;
+  try { read = RD.read(RD.fromTerminal(o, readInputs, { now: now, integrity: INTEG })); }
+  catch (e) { read = null; ctx.warnings.push('EdgeDesk Read failed for ' + gid + ': ' + e.message); }
+  ctx._governed = null;
+  return { object: o, read: read, read_inputs: readInputs, snapshot: snapshotRow(o, terms, qb, model) };
+}
+
+/* --------------------------------------------------- the Read's stored inputs
+   Everything the Read needs beyond the research object, stored once so the
+   page can re-price another book, an alternate, a typed quote or a moved line
+   without running a model: the champion's probability at every half point
+   (the curve), the calibration verdict, the policy numbers, every captured
+   spread quote (main lines and alternates), the opener, the numbers other
+   EdgeDesk artifacts displayed (for the quote check), the moneyline, and the
+   governed decision for each exact quote. */
+function readBase(ctx, row, game, model, dist, v21, market, quotes, lines, expErr) {
+  const G = ctx.gov, gid = game.game_id, P = G.policy || {};
+  const avail = !!(model && num(model.home_margin) != null);
+  const mkt = ctx._consMargin, fair = avail ? model.home_margin : null;
+  let curve = null;
+  if (avail && dist && typeof dist.cover === 'function') {
+    const center = mkt != null ? mkt : fair;
+    const hw = Math.min(60, Math.max(30, Math.ceil(Math.abs((fair || 0) - (center || 0))) + 24));
+    curve = RD.buildCurve(dist.cover, center, hw, { basis: dist.basis, conditioned_on: dist.conditioned_on_market_margin, model_version: model.model_version, built_at: new Date(ctx.now).toISOString() });
+  }
+  /* the decision calibration is validated for one model version: anything else is CALIBRATION PENDING */
+  const av = G.artifact && avail ? DEC.validateArtifact(G.artifact, model.model_version) : { ok: false, detail: 'no calibration artifact loaded' };
+  const A = G.artifact || {};
+  const calibration = av.ok
+    ? { status: 'VALIDATED', version: A.version, base_model_version: A.base_model_version, cover_calibration: A.cover_calibration,
+        market_shrinkage: A.market_shrinkage ? Object.assign({}, A.market_shrinkage, { w_ci95: A.market_shrinkage.w_ci95_profile_dev || null }) : null }
+    : { status: 'PENDING', version: A.version || null, base_model_version: A.base_model_version || null,
+        reason: A.version ? A.version + ' is validated for ' + A.base_model_version + '; EdgeDesk fair comes from ' + (avail ? model.model_version : 'no model') : (av.detail || 'no calibration artifact') };
+  const alts = (ctx.ledger.alts.get(gid) || []).filter((q) => ms(q.observed_at) != null && ms(q.observed_at) <= ctx.now && (!row.kickoff || ms(q.observed_at) < ms(row.kickoff)))
+    .map((q) => ({ quote_id: q.quote_id || null, book: q.book, source: q.source, alternate: true, home_line: q.home_line, price_home: q.price_home, price_away: q.price_away,
+      observed_at: q.observed_at, provider_updated_at: q.provider_updated_at || null }));
+  const mls = (ctx.ledger.ml.get(gid) || []).filter((q) => ms(q.observed_at) != null && ms(q.observed_at) <= ctx.now && num(q.price_home) != null && num(q.price_away) != null)
+    .sort((a, b) => ms(b.observed_at) - ms(a.observed_at));
+  const open = lines.find((l) => l.kind === 'OPEN' && l.market_type === 'spread' && num(l.home_line) != null) || null;
+  const stored = [];
+  const pj = ctx.projections && ctx.projections.byId[gid];
+  if (pj && pj.market && num(pj.market.home_line) != null) stored.push({ label: 'projections.json market (the app’s V2 panel)', origin: 'STORED', book: pj.market.books === 1 ? 'draftkings' : null,
+    home_line: pj.market.home_line, observed_at: pj.market.as_of || pj.market.snapshot_ts || null });
+  return {
+    model: avail ? { available: true, model_version: model.model_version, home_margin: model.home_margin, fair_total: num(model.fair_total), home_points: num(model.home_points),
+      away_points: num(model.away_points), home_win_prob: num(model.home_win_prob) } : { available: false, reason: model ? model.unavailable_reason || null : null },
+    curve: curve, calibration: calibration,
+    policy: { version: P.version || null, bet_enabled: !!P.bet_enabled, calibrated_ev_note: ctx.evNote || null, wait: P.wait ? { enabled: !!P.wait.enabled } : null },
+    market: { quotes: market.quotes.concat(alts), open: open ? { home_line: open.home_line, observed_at: open.observed_at || open.derived_at || null, source: 'Model Lab OPEN (' + (open.quality || '') + ')' }
+      : (market.open_home_line != null ? { home_line: market.open_home_line, observed_at: market.open_at, source: 'Model Lab first snapshot opener' } : null),
+      stored: stored, moneyline: mls[0] ? { book: mls[0].book, price_home: mls[0].price_home, price_away: mls[0].price_away, observed_at: mls[0].observed_at } : null },
+    governed: ctx._governed || null,
+    config: { stale_minutes: ctx.cfg.stale_minutes, min_probability_edge: ctx.cfg.min_probability_edge, ideal_probability_edge: ctx.cfg.ideal_probability_edge,
+      min_ev: P.min_ev != null ? P.min_ev : 0, max_price: P.max_price != null ? P.max_price : -125, reference_price: P.reference_price || -110,
+      min_books: ctx.cfg.min_books, max_dispersion_iqr: ctx.cfg.max_dispersion_iqr, max_model_sd: ctx.cfg.max_model_sd, typical_move_pts: ctx.cfg.typical_move_pts },
+    limits: { min_confidence: T.CONFIG.min_confidence, low_reliability: T.CONFIG.low_reliability },
+    key_mass: (window.EDCfbP4Params.distributions || {}).abs_margin_key_mass || null, expected_abs_error: num(expErr)
+  };
 }
 
 /* the append-only projection history row: what "what changed?" compares */
@@ -455,8 +528,13 @@ function postgame(ctx) {
     const cfg = T.config(ctx.cfg);
     const TL = T.timelines(b, { available: true }, cfg);
     const gapC = r.close_home_line != null && r.frozen_home_line != null ? { available: true } : { available: false };
+    /* the EdgeDesk Read AT THE TIME OF DECISION: the last frozen snapshot before kickoff, never a later value */
+    const rds = (ctx.readRows || []).filter((x) => String(x.game_id) === String(gid) && ms(x.recorded_at) < ms(r.kickoff)).sort((a, b) => ms(a.recorded_at) - ms(b.recorded_at));
+    const rAt = rds.length ? rds[rds.length - 1] : null;
+    const rGrade = rAt ? (ctx.readGrades || []).filter((g) => g.read_id === rAt.read_id)[0] || null : null;
     return { game_id: gid, week: r.week, kickoff: r.kickoff, matchup: r.matchup, final: r.final_text, record: r,
-      timeline: TL, edge_decay: T.edgeDecay(TL, gapC, cfg), postmortem: T.postmortem(r) };
+      timeline: TL, edge_decay: T.edgeDecay(TL, gapC, cfg), postmortem: T.postmortem(r),
+      read_at_decision: rAt, read_grade: rGrade, read_history_n: rds.length };
   });
 }
 
@@ -476,6 +554,61 @@ function scorecard(objs, rec, bench, cal) {
     { dimension: 'Transparency', value: 'record n=' + rec.n + ', ATS ' + (rec.ats.pct == null ? '—' : rec.ats.pct + '%') + ', CLV n=' + rec.clv.n, evidence: 'immutable record; every rate prints its n' },
     { dimension: 'Workflow speed', value: 'board: ' + 'one row per game (5 fields); game: summary first, 8 sections behind it', evidence: 'the research page' }
   ];
+}
+
+/* the board's compact Read: what the queue shows and filters on */
+function readRow(r) {
+  if (!r) return null;
+  const s = r.selected;
+  const flags = {};
+  Object.keys(RD.FILTERS).forEach((k) => { try { flags[k] = !!RD.FILTERS[k].test(r); } catch (e) { flags[k] = false; } });
+  return { timing: r.timing_read, decision: r.decision_status, research: r.research_status.status, price_status: r.price_status.key,
+    best_value: r.best_value_market.label, selected: s ? s.label : null, book: s ? s.book : null, cover: r.cover_probability, basis: r.probability_basis,
+    break_even: r.break_even_probability, ev: r.estimated_ev, bettable_to: r.bettable_to && r.bettable_to.line != null ? r.bettable_to.line : null,
+    bettable_label: r.bettable_to ? r.bettable_to.label : null, target: r.target_price ? r.target_price.line : null, alt: r.main_vs_alt_summary.alt_verdict,
+    quote_check: r.market_quote_check.length > 0, flags: flags };
+}
+
+/* ------------------------------------------------------------ the Read record
+   reads.jsonl  one frozen snapshot per change of a game's recordable read
+   grades.jsonl one grade per snapshot, written once, after the close and the
+                final exist (CLV at the recorded number; W/L at the recorded
+                line and price — never a better historical line) */
+function readLedger(season, built, ctx, now) {
+  const base = 'football/cfb_terminal/read/' + season;
+  const have = readJsonl(base + '/reads.jsonl'), graded = readJsonl(base + '/grades.jsonl');
+  const lastBy = {};
+  have.forEach((x) => { if (!lastBy[x.game_id] || ms(x.recorded_at) >= ms(lastBy[x.game_id].recorded_at)) lastBy[x.game_id] = x; });
+  const ids = new Set(have.map((x) => x.read_id));
+  const newReads = [];
+  built.forEach((b) => {
+    const r = b.read;
+    if (!r || !RD.shouldRecord(r)) return;
+    const snap = RD.snapshot(r);
+    const last = lastBy[snap.game_id];
+    if (ids.has(snap.read_id) || (last && last.read_id === snap.read_id)) return;
+    newReads.push(snap); ids.add(snap.read_id); lastBy[snap.game_id] = snap;
+  });
+  const allReads = have.concat(newReads);
+  /* grade once: needs the Lab's consensus close and a FINAL result */
+  const gradedIds = new Set(graded.map((g) => g.read_id));
+  const results = {}, closes = {};
+  readJsonl('football/cfb_lab/ledger/' + season + '/results.jsonl').forEach((x) => { results[String(x.game_id)] = x; });
+  ctx.ledger.lines.forEach((ls, gid) => { const c = ls.filter((l) => l.kind === 'CLOSE' && l.book === 'CONSENSUS' && l.market_type === 'spread' && num(l.home_line) != null).pop(); if (c) closes[gid] = c; });
+  const newGrades = [];
+  allReads.forEach((x) => {
+    if (gradedIds.has(x.read_id)) return;
+    const res = results[x.game_id], c = closes[x.game_id];
+    if (!res || res.status !== 'FINAL' || num(res.final_margin) == null || !c) return;
+    const later = (ctx.ledger.quotes.get(x.game_id) || []).filter((q) => q.book === x.book || !x.book).map((q) => ({ home_line: q.home_line, observed_at: q.observed_at }));
+    const g = RD.grade(x, { close_home_line: c.home_line, final_margin: res.final_margin, later_quotes: later });
+    g.graded_at = new Date(now).toISOString();
+    newGrades.push(g); gradedIds.add(x.read_id);
+  });
+  const validation = RD.validation(allReads, graded.concat(newGrades));
+  validation.n_reads = allReads.length; validation.n_grades = graded.length + newGrades.length;
+  return { new_reads: newReads, new_grades: newGrades, all_reads: allReads, all_grades: graded.concat(newGrades), validation: validation,
+    paths: { reads: base + '/reads.jsonl', grades: base + '/grades.jsonl', alternates: base + '/alternates.jsonl' } };
 }
 
 /* ================================================================== main */
@@ -520,11 +653,23 @@ function main() {
   };
   const metricsGen = ctx.metrics.generated_at || null;
   ctx.sources[4].updated_at = metricsGen;
+  /* the numbers other EdgeDesk artifacts display (the Read's market quote check) */
+  const pj = readJson('football/cfb_production/reports/projections.json', { games: [] });
+  ctx.projections = { byId: {} };
+  (pj.games || []).forEach((g) => { ctx.projections.byId[String(g.game_id)] = g; });
+  ctx.sources.push({ id: 'read', path: 'lib/edgedesk_read.js · football/cfb_terminal/read/' + season, updated_at: null, what: 'the EdgeDesk Read: price-specific reads, frozen read snapshots and their grades (append-only)' });
 
   /* the current slate: pregame games the champion slate carries */
   const upcoming = slate.games.filter((g) => ms(g.kickoff) != null && ms(g.kickoff) > now);
   const built = upcoming.map((row) => buildGame(ctx, row));
   const objs = T.queue(built.map((x) => x.object));
+  const readOf = {};
+  built.forEach((x) => { readOf[x.object.game_id] = x; });
+
+  /* THE READ RECORD: a frozen snapshot each time a game's read changes to a
+     recordable state (append-only, deterministic ids), then grades against
+     the close and the result — never a better historical line */
+  const RL = readLedger(season, built, ctx, now);
 
   /* the append-only history: one row per change */
   const newSnaps = [];
@@ -544,6 +689,7 @@ function main() {
     note: 'openers the Lab archived with a line; the rest are MISSING, so an opener benchmark waits for the archive' });
   const weekOf = objs.length ? objs.map((o) => o.week).sort()[0] : null;
   const brief = T.brief(objs, { generated_at: new Date(now).toISOString(), season: season, week: weekOf });
+  ctx.readRows = RL.all_reads; ctx.readGrades = RL.all_grades;
   const pg = postgame(ctx);
 
   const meta = {
@@ -559,16 +705,25 @@ function main() {
   const board = Object.assign({ schema: 'edgedesk_cfb_terminal_board_v1' }, meta, {
     counts: T.counts(objs), terms: T.TERMS, statuses: T.STATUS, status_order: T.STATUS_KEYS,
     filters: Object.keys(T.FILTERS).map((k) => ({ key: k, label: T.FILTERS[k].label, n: objs.filter((o) => o.flags[k]).length })),
-    rows: objs.map(boardRow),
+    rows: objs.map((o) => Object.assign(boardRow(o), { read: readRow(readOf[o.game_id] && readOf[o.game_id].read) })),
+    read_filters: Object.keys(RD.FILTERS).map((k) => ({ key: k, label: RD.FILTERS[k].label, n: objs.filter((o) => { const r = readOf[o.game_id] && readOf[o.game_id].read; try { return !!(r && RD.FILTERS[k].test(r)); } catch (e) { return false; } }).length })),
+    read_counts: (() => { const c = {}; objs.forEach((o) => { const r = readOf[o.game_id] && readOf[o.game_id].read; const k = r ? r.timing_read : 'NO_READ'; c[k] = (c[k] || 0) + 1; }); return c; })(),
+    read_validation: RL.validation,
     record_headline: { n: rec.n, ats: rec.ats, clv: rec.clv, versions: rec.versions }
   });
   const games = Object.assign({ schema: 'edgedesk_cfb_terminal_games_v1' }, meta, { games: {} });
-  objs.forEach((o) => { games.games[o.game_id] = o; });
+  objs.forEach((o) => { const x = readOf[o.game_id] || {}; games.games[o.game_id] = Object.assign({}, o, { read: x.read || null, read_inputs: x.read_inputs || null }); });
+  games.read = { version: RD.VERSION, timing_vocabulary: RD.TIMING, research_vocabulary: RD.RESEARCH_STATUS, validation: RL.validation, ledger: RL.paths };
   const record = Object.assign({ schema: 'edgedesk_cfb_terminal_record_v1' }, meta, {
     rows: recordRows, summary: rec, calibration: cal, benchmark: bench,
     by_version: Object.keys(rec.versions).map((v) => ({ model_version: v, summary: T.recordSummary(recordRows.filter((r) => (r.model_version || 'unknown') === v)) })),
     governance: Object.keys(gov.roles).map((k) => ({ model_version: k, role: gov.roles[k].role, label: gov.roles[k].model_label, since: gov.roles[k].effective_at, reason: gov.roles[k].reason })),
     postgame: pg, filters: Object.keys(T.RECORD_FILTERS),
+    read_record: { validation: RL.validation, reads: RL.all_reads.slice(-400), grades: RL.all_grades.slice(-400),
+      rules: ['A read is frozen the moment a game’s read changes to a recordable state: book, line, odds, time, fair, probability, EV and status.',
+        'It is graded once, against the Model Lab’s consensus close and the final, at the recorded number — never a better historical line.',
+        'Timing earns validation through CLV, entry quality and price movement on prospective reads, never because BET EARLY reads happened to win.',
+        'PASS and PRICE GONE reads are graded as counterfactuals, never counted as wagers.'] },
     rules: ['Nothing is removed. A published number is graded as published.', 'The pick is the last pregame number; the first is kept beside it.',
       'Process (the price against the close) is graded apart from the outcome (the result).', 'Model versions are never merged: every rate names the version it came from.'],
     scorecard: null
@@ -584,10 +739,17 @@ function main() {
     if (gov.champion !== 'edgedesk_cfb_v2.1.0' && o.edgedesk.available && Math.abs(o.edgedesk.home_margin - row.model_home_margin) > 0.005) problems.push(o.game_id + ': fair differs from the slate');
     if (o.market.stale && ['BET', 'RESEARCH', 'WAIT'].indexOf(o.status.key) >= 0) problems.push(o.game_id + ': actionable status on a stale market');
     if (o.status.key === 'BET' && !(gov.policy && gov.policy.bet_enabled)) problems.push(o.game_id + ': BET while betting is disabled');
+    const rd = readOf[o.game_id] && readOf[o.game_id].read;
+    if (rd && rd.actionable && !(gov.policy && gov.policy.bet_enabled)) problems.push(o.game_id + ': an actionable Read while betting is disabled');
+    if (rd && rd.actionable && rd.selected && !rd.selected.fresh) problems.push(o.game_id + ': an actionable Read on a stale quote');
+    if (rd && rd.actionable && rd.research_status.blocks_action) problems.push(o.game_id + ': an actionable Read on an unverified gap');
+    if (rd && !rd.language.ok) problems.push(o.game_id + ': Read wording ' + rd.language.problems.join('; '));
+    if (rd && o.edgedesk.available && rd.projected_margin != null && Math.abs(rd.projected_margin - o.edgedesk.home_margin) > 0.005) problems.push(o.game_id + ': the Read’s fair differs from the research object');
   });
   if (problems.length) { console.error('terminal build refused:\n  ' + problems.join('\n  ')); process.exit(1); }
 
-  const summary = { games: objs.length, counts: board.counts, new_snapshots: newSnaps.length, postgame: pg.length, record_rows: recordRows.length };
+  const summary = { games: objs.length, counts: board.counts, read_counts: board.read_counts, new_snapshots: newSnaps.length, postgame: pg.length, record_rows: recordRows.length,
+    read_snapshots_new: RL.new_reads.length, read_grades_new: RL.new_grades.length };
   if (check) { console.log(JSON.stringify(summary, null, 1)); return; }
   /* --out <dir>: write the four artifacts elsewhere (demos, replays); the
      append-only history is only ever written by a normal build */
@@ -599,6 +761,21 @@ function main() {
     const hp = historyPath(season);
     fs.mkdirSync(path.dirname(hp), { recursive: true });
     fs.appendFileSync(hp, newSnaps.map((s) => JSON.stringify(s)).join('\n') + '\n');
+  }
+  /* the Read record is append-only and, like the history, only a normal build writes it */
+  if (outDir === OUT) {
+    const rp = path.join(OUT, 'read', String(season));
+    if (RL.new_reads.length || RL.new_grades.length) fs.mkdirSync(rp, { recursive: true });
+    if (RL.new_reads.length) fs.appendFileSync(path.join(rp, 'reads.jsonl'), RL.new_reads.map((x) => JSON.stringify(x)).join('\n') + '\n');
+    if (RL.new_grades.length) fs.appendFileSync(path.join(rp, 'grades.jsonl'), RL.new_grades.map((x) => JSON.stringify(x)).join('\n') + '\n');
+  }
+  w('read_validation.json', Object.assign({ schema: 'edgedesk_read_validation_file_v1', generated_at: new Date(now).toISOString(), season: season }, RL.validation));
+  /* the Read for spreadsheets and API readers: one row per game (lib/edgedesk_read.js exportRow) */
+  const csvRows = objs.map((o) => readOf[o.game_id] && readOf[o.game_id].read).filter(Boolean).map(RD.exportRow);
+  if (csvRows.length) {
+    const cols = Object.keys(csvRows[0]);
+    const cell = (v) => { if (v == null) return ''; const t = String(v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    fs.writeFileSync(path.join(outDir, 'read.csv'), cols.join(',') + '\n' + csvRows.map((r) => cols.map((c) => cell(r[c])).join(',')).join('\n') + '\n');
   }
   console.log(JSON.stringify(summary));
 }
