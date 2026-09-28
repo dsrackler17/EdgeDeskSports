@@ -2865,8 +2865,8 @@ body.focus .dk-focusnote{display:block}
 @media (prefers-reduced-motion:reduce){.dk-skel{animation:none}}
 </style>
 
-<link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260926g">
-<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260928e">
+<link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929a">
+<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929a">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3827,11 +3827,17 @@ window.mcRefresh=function(){
 <!-- THE BETTOR DECISION LAYER (docs/bettor-decision/DESIGN.md): one BET / WAIT / PASS /
      NO DECISION answer per game, from the quote-level EV the board already prices.
      edgedesk_decision.js reads window.EDQuoteEV at call time (loaded lazily with the board). -->
-<script src="/lib/edgedesk_bankroll.js?v=20260928d"></script>
-<script src="/lib/edgedesk_decision.js?v=20260928e"></script>
-<script src="/lib/edgedesk_decision_track.js?v=20260928e"></script>
-<script src="/lib/edgedesk_decision_inputs.js?v=20260928e"></script>
-<script src="/lib/edgedesk_decision_ui.js?v=20260928e"></script>
+<!-- THE QUALITY LAYER (docs/bettor-decision/QUALITY_UPGRADE.md): the one canonical
+     market object and the execution layer the engine builds every decision on,
+     and the explain layer every surface reads its words from. -->
+<script src="/lib/edgedesk_bankroll.js?v=20260929a"></script>
+<script src="/lib/edgedesk_market.js?v=20260929a"></script>
+<script src="/lib/edgedesk_execution.js?v=20260929a"></script>
+<script src="/lib/edgedesk_decision.js?v=20260929a"></script>
+<script src="/lib/edgedesk_decision_track.js?v=20260929a"></script>
+<script src="/lib/edgedesk_decision_inputs.js?v=20260929a"></script>
+<script src="/lib/edgedesk_explain.js?v=20260929a"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20260929a"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -61089,7 +61095,7 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
-<script src="/lib/edgedesk_personal_ui.js?v=20260926g"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20260929a"></script>
 <script>
 try{
   window.EDReport.configure({url:SB_URL,key:SB_KEY,
