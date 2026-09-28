@@ -7,6 +7,7 @@
   'use strict';
   var T = window.EDCfbTerminal;
   var RD = window.EDRead || null;
+  var EVX = window.EDEV || null;
   var DATA = '/football/cfb_terminal/';
   /* ?asof=ISO pins the Read's clock (review and demo builds); otherwise every read is re-priced at the reader's own clock,
      so a quote that has aged past the freshness rule stops being a price the moment it does */
@@ -148,6 +149,7 @@
       if (r === 'watch') return renderWatch();
       if (r === 'record') return renderRecord();
       if (r === 'read') return renderReadRecord();
+      if (r === 'ev') return renderEvLab();
       if (r === 'why') return renderWhy();
       if (r === 'terms') return renderTerms();
       if (r === 'cleanest') return renderLens('cleanest');
@@ -495,6 +497,7 @@
       store.set(KRV, view); track('section_open', { game_id: o.game_id, section: 'read_view', detail: view.mode });
       S.read = liveRead(o);
       $('rdWrap').innerHTML = readCard(o, S.read); bindRead(o);
+      S.ev = liveEv(o, S.read); if ($('evWrap')) { $('evWrap').innerHTML = evCard(o, S.ev); bindEv(o); }
     };
     Array.prototype.forEach.call(document.querySelectorAll('details.rx-sec'), function (d) { d.addEventListener('toggle', function () { if (d.open) track('section_open', { game_id: o.game_id, section: 'read_' + d.getAttribute('data-rsec') }); }); });
     var inp = function () { return readInput(o); };
@@ -528,6 +531,226 @@
     };
   }
 
+  /* ================================================================ THE EDGEDESK EV CARD
+     The page never computes a probability: it re-prices the stored curve and
+     quotes through lib/edgedesk_ev.js with the pinned calibrator and policy the
+     build used (games.json ev). A policy BET is shown as RESEARCH ONLY while the
+     EV policy is in SHADOW; no card here ever says a bet is certain. */
+  var EV_TONE = { BET_EARLY: 'bet', BET: 'bet', WAIT: 'wait', PASS: 'pass', PRICE_GONE: 'pass', RESEARCH_ONLY: 'research', NO_DECISION: 'nomarket' };
+  var EVSORT_K = 'edcfb_ev_sort_v1';
+  function evBooks() { var v = readView(); return v.mode === 'mine' ? (v.books || []) : null; }
+  function liveEv(o, R, extra) {
+    extra = extra || {};
+    if (!EVX || !RD || !o.read_inputs || !S.evCfg) return o.ev || null;
+    try {
+      var inp = readInput(o, { user_quotes: extra.user_quotes || [] });
+      return EVX.evRead(inp, R || RD.read(inp), { artifact: S.evCfg.artifact, policy: S.evCfg.policy, now: nowMs(), history: o.ev_history || [], books: evBooks(), typical_move_pts: o.read_inputs.config ? o.read_inputs.config.typical_move_pts : null });
+    } catch (e) { return o.ev || null; }
+  }
+  function evChip(k) { k = String(k || 'NO_DECISION'); return '<span class="st rd ' + (EV_TONE[k] || 'pass') + '" title="' + esc(EVX && EVX.DECISION[k] ? EVX.DECISION[k] : '') + '"><i></i>' + esc(k.replace(/_/g, ' ')) + '</span>'; }
+  function evProvFacts(p) {
+    if (!p) return [];
+    return [{ claim: 'model ' + p.model_version + ' · calibrator ' + p.calibrator_version + ' (' + p.calibration_status + ') · policy ' + p.policy_version, source: 'EV provenance', updated: null, confidence: 'deterministic' },
+      { claim: 'quote ' + p.quote_id + ' · ' + p.quote_book + ' · ' + p.quote_source + ' · captured ' + p.quote_ts, source: 'quote ledger', updated: p.quote_ts !== 'UNKNOWN' ? p.quote_ts : null, confidence: 'deterministic' },
+      { claim: 'validation: ' + p.validation, source: 'calibration tournament', updated: null, confidence: 'deterministic' }];
+  }
+  function evCard(o, E) {
+    if (!E) return '<section class="rd-card ev-card"><div class="rd-h"><span class="rd-t">EDGEDESK EV</span></div><div class="empty">No EV read for this game in this build.</div></section>';
+    var s = E.selected, cal = s && s.probability_basis === 'CALIBRATED';
+    var cell = function (l, v2, n, cls, tip) { return '<div class="rc' + (cls ? ' ' + cls : '') + '"' + (tip ? ' data-tip="' + esc(tip) + '"' : '') + '><div class="l">' + l + '</div><div class="v">' + v2 + '</div>' + (n ? '<div class="n">' + n + '</div>' : '') + '</div>'; };
+    var tipTxt = E.tooltip + '<br><br><b>Calibration</b> ' + E.calibration.status + (E.calibration.method ? ' · ' + E.calibration.method : '') + ' · ' + (E.calibrator_version || '—') + '<br><b>Policy</b> ' + E.decision_policy_version + ' · ' + E.policy_maturity;
+    var h = '<section class="rd-card ev-card t-' + (EV_TONE[E.decision_status] || 'pass') + '" id="ev" aria-label="EdgeDesk EV">'
+      + '<div class="rd-h"><span class="rd-t" data-tip="' + esc(tipTxt) + '">EDGEDESK EV ⓘ</span><span class="mut" style="font-size:11.5px">' + esc(E.calibration.status === 'PROMOTED' ? 'CALIBRATED · ' + E.calibration.method + ' · ' + E.policy_maturity : 'CALIBRATION ' + E.calibration.status + ' · EXPERIMENTAL') + '</span></div>'
+      + '<div class="rd-top"><div class="rd-state">' + evChip(E.decision_status) + '<span class="rd-dec">Timing: <b>' + esc(E.timing.replace(/_/g, ' ')) + '</b> · Research: <b>' + esc(E.research.label || E.research_status) + '</b>' + (E.policy_decision !== E.decision_status ? ' · Shadow policy: <b>' + esc(E.policy_decision.replace(/_/g, ' ')) + '</b>' : '') + '</span></div>'
+      + '<div class="rd-best"><div class="l">Exact price</div><div class="v">' + (s ? esc(s.label) : '<span class="mut">no executable price</span>') + '</div><div class="n">' + (s ? esc((s.book || '') + (s.is_main_line ? '' : ' · alternate') + (s.quote_age_seconds != null ? ' · ' + Math.round(s.quote_age_seconds / 60) + ' min old (TTL ' + s.ttl_minutes + ')' : '') + ' · ' + s.market_checkpoint) : esc(E.decision_reason)) + '</div></div></div>';
+    h += '<div class="rd-grid">'
+      + cell('Fair line', E.fair_spread ? esc(E.fair_spread.text) : '—', 'EdgeDesk’s own number — no market in it', 'ed')
+      + cell('Calibrated cover', s && cal ? pct(s.p_cover_calibrated, 1) : '<span class="mut">PENDING</span>', s ? 'raw ' + pct(s.p_cover_raw, 1) + ' · push ' + pct(s.p_push_raw, 1) : null, null, E.calibration_anchor && E.calibration_anchor.text ? E.calibration_anchor.text : null)
+      + cell('Break-even', s && num(s.break_even_probability) ? pct(s.break_even_probability, 1) : '—', s && s.p_push_raw > 0 ? pct(s.break_even_unconditional, 1) + ' of all outcomes' : (s && s.odds ? 'at ' + esc(T.format.priceText(s.odds.american_display)) + ' (exact price)' : null))
+      + cell('Probability edge', s ? (cal ? pp(s.probability_edge) : '<span class="rawv">' + pp(s.raw_probability_edge) + '</span> ' + tag('RAW', 'warn')) : '—', 'cover − break-even')
+      + cell('Calibrated EV', s && cal ? evs(s.calibrated_ev) : '<span class="mut">PENDING</span>', s ? 'raw ' + evs(s.raw_model_ev) + ' (experimental)' : null)
+      + cell('Robust EV', s && num(s.conservative_ev) ? evs(s.conservative_ev) : '—', s && s.robust ? '10th pct · ' + evs(s.ev_ci_low) + ' to ' + evs(s.ev_ci_high) : null)
+      + cell('Pr(EV > 0)', s && num(s.prob_ev_positive) ? pct(s.prob_ev_positive, 0) : '—', s && s.robust ? s.robust.n + ' samples' : null)
+      + cell('Bettable to', E.bettable_to && E.bettable_to.bettable_to && E.bettable_to.clears_now ? esc(E.bettable_to.text.replace(/^BETTABLE TO /, '')) : (E.target_price ? '<span class="mut">needs</span> ' + esc(E.target_price.text.replace(/^CURRENT .*? → TARGET /, '')) : '<span class="mut">' + esc(E.bettable_to && E.bettable_to.raw_threshold ? 'raw threshold ' + (E.bettable_to.raw_threshold.line != null ? bk(E.bettable_to.raw_threshold.line) : 'none') : 'nothing clears') + '</span>'), E.bettable_to && E.bettable_to.ev_zero ? esc(E.bettable_to.ev_zero.text) : null)
+      + '</div>';
+    h += '<div class="rd-lines"><div class="ln"><span class="l">Decision</span><span>' + esc(E.decision_reason) + '</span></div>'
+      + (E.edge_kind && E.edge_kind.text ? '<div class="ln"><span class="l">Edge</span><span>' + esc(E.edge_kind.text) + '</span></div>' : '')
+      + (E.circuit_breaker && E.circuit_breaker.triggered ? '<div class="ln qc"><span class="l">Extreme EV</span><span>' + esc(E.circuit_breaker.text) + '</span></div>' : '')
+      + (E.favorite_flip.flag ? '<div class="ln"><span class="l">Flip</span><span>' + esc(E.favorite_flip.text) + '</span></div>' : '')
+      + (E.edge_decay && E.edge_decay.text ? '<div class="ln"><span class="l">Edge decay</span><span>' + esc(E.edge_decay.text) + '</span></div>' : '')
+      + '</div>';
+    if (E.blockers.length) h += '<div class="sub"><h3>Why this is not a bet</h3><ul class="l">' + E.blockers.map(function (b) { return '<li><span class="mono mut">' + esc(b.code) + '</span> ' + esc(b.text) + '</li>'; }).join('') + '</ul></div>';
+    h += '<div class="rd-badges">' + E.maturity.map(function (m) { return '<span class="mbadge' + (/PENDING|DISABLED|EXPERIMENTAL|SHADOW|RESEARCH/.test(m.status) ? ' pend' : '') + '" title="' + esc(m.note) + '"><b>' + esc(m.item.toUpperCase()) + '</b> ' + esc(m.status) + '</span>'; }).join('') + '</div>';
+    h += '<div class="rd-more">' + evUncertainty(E) + evCurve(o, E) + evAlts(o, E) + evJuice(o, E) + evTools(o, E) + evMarket(o, E) + evAdvanced(o, E) + '</div>';
+    h += '<div class="note">' + esc(E.principle) + ' ' + esc(E.tooltip) + '</div>';
+    return h + '</section>';
+  }
+  function evUncertainty(E) {
+    var s = E.selected;
+    if (!s || !s.robust) return rsec('ev-unc', 'Raw EV · uncertainty', 'no priced quote', '<div class="empty">No priced quote to sample.</div>');
+    var R = s.robust;
+    var b = rows2([{ k: 'Raw model EV', v: evs(s.raw_model_ev) + ' — the raw champion probability ' + pct(s.p_cover_raw, 1) + '; experimental, never a decision number' },
+      { k: 'Calibrated EV', v: s.calibrated_ev == null ? 'PENDING — ' + (s.calibration_unavailable || E.calibration.reason || '') : evs(s.calibrated_ev) + ' (' + E.calibration.method + ', ' + E.calibrator_version + ')' },
+      { k: 'EV interval', v: evs(R.ci_low) + ' to ' + evs(R.ci_high) + ' (' + Math.round(100 * R.interval[0]) + 'th–' + Math.round(100 * R.interval[1]) + 'th percentile of ' + R.n + ' samples)' },
+      { k: 'Robust EV', v: evs(R.conservative) + ' — the pre-registered ' + Math.round(100 * R.conservative_quantile) + 'th percentile' },
+      { k: 'Pr(EV > 0)', v: pct(R.prob_positive, 1) },
+      { k: 'Mean / median EV', v: evs(R.mean) + ' / ' + evs(R.median) },
+      { k: 'Layers', v: (R.layers || []).join(' · ') || 'none' },
+      { k: 'Break-even', v: pct(s.break_even_probability, 2) + ' (no-push basis, 1/decimal) · ' + pct(s.break_even_unconditional, 2) + ' of all outcomes ((1 − push)/decimal)' },
+      { k: 'Settlement', v: (s.settlement && s.settlement.states ? s.settlement.states.join(' / ') : '—') + ' · a push returns the stake' }]);
+    return rsec('ev-unc', 'Raw EV · uncertainty', 'interval ' + evs(R.ci_low) + ' to ' + evs(R.ci_high) + ' · Pr(EV>0) ' + pct(R.prob_positive, 0), b);
+  }
+  function evSortRows(E, key) {
+    var rows = E.price_curve.offered.slice();
+    if (key === 'BEST_MAIN') rows = rows.filter(function (x) { return x.kind === 'MAIN'; });
+    if (key === 'BEST_ALT') rows = rows.filter(function (x) { return x.kind === 'ALTERNATE'; });
+    if (key === 'SAFEST') return rows.sort(function (a, b) { return (b.win || 0) - (a.win || 0); });
+    return rows.sort(function (a, b) { var x = num(a.robust_ev) && a.basis === 'CALIBRATED' ? a.robust_ev : (num(a.ev) ? a.ev - 1 : -9), y = num(b.robust_ev) && b.basis === 'CALIBRATED' ? b.robust_ev : (num(b.ev) ? b.ev - 1 : -9); return y - x; });
+  }
+  function evCurve(o, E) {
+    var P = E.price_curve;
+    if (!P || !P.side) return rsec('ev-curve', 'Price curve · main vs alt', 'no side', '<div class="empty">No priced side.</div>');
+    var key = store.get(EVSORT_K, 'BEST_EV');
+    var head = '<tr><th>Line</th><th>Odds</th><th>Source</th><th>Cover</th><th>Push</th><th>Break-even</th><th>Model edge</th><th>EV</th><th>Robust EV</th><th>Pr&gt;0</th><th>Read</th></tr>';
+    var row = function (x) { return '<tr' + (x.read === 'BEST EV' ? ' class="cur"' : '') + '><td class="n">' + esc(bk(x.line)) + '</td><td class="n">' + esc(T.format.priceText(x.odds)) + (x.approximate_price ? '≈' : '') + '</td><td>' + esc(x.kind === 'REFERENCE' ? 'reference' : (x.book || '') + (x.kind === 'ALTERNATE' ? ' · alt' : '') + (x.kind === 'USER QUOTE' ? ' · user' : '') + (x.accessible === false ? ' · not your book' : '')) + '</td><td class="n">' + pct(x.cover, 1) + (x.basis === 'RAW' ? ' raw' : '') + '</td><td class="n">' + (x.push ? pct(x.push, 1) : '—') + '</td><td class="n">' + pct(x.break_even, 1) + '</td><td class="n">' + pp(x.model_edge) + '</td><td class="n">' + evs(x.ev) + '</td><td class="n">' + evs(x.robust_ev) + '</td><td class="n">' + (num(x.prob_ev_positive) ? pct(x.prob_ev_positive, 0) : '—') + '</td><td>' + tag(x.read, x.read === 'CLEARS' || x.read === 'BEST EV' ? 'pos' : (/MARGINAL/.test(x.read) ? 'warn' : '')) + '</td></tr>'; };
+    var sortSel = '<label class="rd-view" style="margin:0 0 6px">Sort <select id="evSort">' + P.sort_options.map(function (k) { return '<option value="' + k + '"' + (k === key ? ' selected' : '') + '>' + k.replace(/_/g, ' ') + '</option>'; }).join('') + '</select></label>';
+    var off = evSortRows(E, key);
+    var b = sortSel + '<div class="sub" style="margin-top:0"><h3>Offered prices · ' + esc(P.team) + '</h3>' + (off.length ? '<div class="tscroll"><table class="t" id="evCurveT">' + head + off.map(row).join('') + '</table></div>' : '<div class="empty">No priced quote in this view.</div>') + '</div>'
+      + '<div class="sub"><h3>Reference ladder</h3><div class="tscroll"><table class="t">' + head + P.ladder.map(row).join('') + '</table></div><div class="note">' + esc(P.note) + (P.coherent ? ' The curve is coherent: cover rises with the line.' : ' INCOHERENT CURVE: the stored distribution is not monotone — nothing here is actionable.') + '</div></div>'
+      + '<div class="note">Labels: BEST EV ' + esc(E.labels.best_ev || '—') + ' · BEST MAIN LINE ' + esc(E.labels.best_main_line || '—') + ' · BEST ALT VALUE ' + esc(E.labels.best_alt_value || '—') + ' · SAFEST LINE ' + esc(E.labels.safest_line || '—') + '. ' + esc(E.labels.note) + '</div>';
+    return rsec('ev-curve', 'Price curve · main vs alt', P.offered.length + ' offered · ' + P.ladder.length + ' reference · sort ' + key.replace(/_/g, ' ').toLowerCase(), b);
+  }
+  function evAlts(o, E) {
+    var rows = E.main_vs_alt.rows;
+    var b = rows.length ? '<div class="tscroll"><table class="t"><tr><th>Alternate</th><th>Book</th><th>+pts</th><th>Cover</th><th>Break-even</th><th>ΔEV</th><th>Pr better</th><th>Verdict</th></tr>' + rows.map(function (x) {
+      var c = x.vs_main || {};
+      return '<tr><td class="n">' + esc(x.option.label) + '</td><td>' + esc(x.option.book || '') + '</td><td class="n">' + sgn(c.points_gained) + '</td><td class="n">' + pp(c.delta_cover) + '</td><td class="n">' + pp(c.delta_break_even) + '</td><td class="n">' + evs(c.delta_ev) + '</td><td class="n">' + (num(c.pr_b_better) ? pct(c.pr_b_better, 0) : '—') + '</td><td>' + tag((c.verdict || '—').replace(/_/g, ' '), c.verdict === 'BETTER_VALUE' ? 'pos' : (c.verdict === 'WORSE_VALUE' ? 'neg' : 'warn')) + '</td></tr>'
+        + '<tr class="why"><td colspan="8">' + esc((c.explanation || []).join(' · ')) + '</td></tr>';
+    }).join('') + '</table></div>' : '<div class="empty">No alternate price on file for this game. Enter one in the calculator below; EdgeDesk prices it through the same frozen distribution.</div>';
+    return rsec('ev-alts', 'Main vs alternates', rows.length ? rows.length + ' alternate' + (rows.length === 1 ? '' : 's') : 'none on file', b);
+  }
+  function evJuice(o, E) {
+    var team = E.side_team || o.game.home, s = E.selected;
+    var a = s ? team + ' ' + bk(s.line) + ' ' + T.format.priceText(s.odds.american_display) : team + ' +3 -110', bb = s ? team + ' ' + bk(s.line + 1) + ' -130' : team + ' +4 -130';
+    var b = '<div class="note" style="margin-top:0">Two prices for the same team: the first is the baseline. The verdict compares the extra cover probability with the extra break-even the price demands, then the EV difference paired over the same uncertainty samples.</div>'
+      + '<div class="askrow"><input id="evJa" value="' + esc(a) + '"><input id="evJb" value="' + esc(bb) + '"><button class="btn pri" id="evJGo">Is the juice worth it?</button></div><div id="evJOut"></div>';
+    return rsec('ev-juice', 'Is the juice worth it?', 'BETTER VALUE / WORSE VALUE / TOO CLOSE / NO DECISION', b);
+  }
+  function evTools(o, E) {
+    var team = E.side_team || o.game.home, s = E.selected;
+    var b = '<div class="tool"><h3>What if the price changes?</h3><div class="askrow"><span>' + esc(team) + '</span><input id="evWiL" type="number" step="0.5" value="' + (s ? s.line : '') + '" style="max-width:90px"><input id="evWiP" type="text" value="' + (s && s.odds ? s.odds.american_display : -110) + '" style="max-width:90px" title="American (-110), decimal (1.91) or fractional (10/11)"><button class="btn pri" id="evWiGo">Recalculate</button></div><div id="evWiOut"></div>'
+      + '<div class="note">Only the quote changes: the football model is not re-run.</div></div>'
+      + '<div class="tool"><h3>Enter a quote</h3><div class="askrow"><input id="evMan" placeholder="e.g. ' + esc(team + ' ' + (s ? bk(s.line) : '+6.5') + ' -115 draftkings') + '"><button class="btn pri" id="evManGo">EdgeDesk read</button></div><div id="evManOut"></div>'
+      + '<div class="note">Tagged USER QUOTE: priced with the same distribution and policy, never added to the consensus, never certified.</div></div>';
+    return rsec('ev-tools', 'What-if · enter a quote', 'instant, from the stored distribution', b);
+  }
+  function evMarket(o, E) {
+    var C = E.market_consensus;
+    var b = rows2([{ k: 'Consensus', v: C ? o.game.home + ' ' + bk(C.home_line) + ' · ' + C.n_books + ' book' + (C.n_books === 1 ? '' : 's') + ' · ' + C.method : 'no fresh consensus' },
+      { k: 'Calibration anchor', v: E.calibration_anchor ? (E.calibration_anchor.text || E.calibration_anchor.problem || '—') : 'no calibrator in use' },
+      { k: 'Model vs consensus', v: E.edge_kind ? (E.edge_kind.model_vs_consensus_ev == null ? '—' : 'EV at the consensus price ' + evs(E.edge_kind.model_vs_consensus_ev) + ' (' + E.edge_kind.basis + ')') + (E.edge_kind.model_vs_consensus_points != null ? ' · ' + E.edge_kind.model_vs_consensus_points.toFixed(1) + ' pts apart' : '') : '—' },
+      { k: 'Book-specific price edge', v: E.edge_kind && E.edge_kind.book_specific_ev != null ? evs(E.edge_kind.book_specific_ev) + ' beyond the consensus price' : '—' },
+      { k: 'Limits', v: E.limits.text }, { k: 'Execution', v: E.execution.text }]);
+    b += '<div class="sub"><h3>Quote freshness · market-specific TTL</h3><div class="tscroll"><table class="t"><tr><th>Quote</th><th>Book</th><th>Origin</th><th>Captured</th><th>Age</th><th>TTL</th><th>Checkpoint</th><th>Status</th></tr>'
+      + E.quote_freshness.slice(0, 16).map(function (q) { return '<tr><td class="n">' + esc(q.label) + '</td><td>' + esc(q.book || '—') + '</td><td>' + esc(q.origin) + '</td><td class="n">' + esc(q.captured_at ? when(q.captured_at) : '—') + '</td><td class="n">' + (q.age_seconds == null ? '—' : Math.round(q.age_seconds / 60) + 'm') + '</td><td class="n">' + q.ttl_minutes + 'm</td><td>' + esc(q.checkpoint) + '</td><td>' + tag(q.freshness, q.freshness === 'STALE' ? 'neg' : (q.freshness === 'AGING' ? 'warn' : '')) + '</td></tr>'; }).join('') + '</table></div></div>';
+    if (E.broader_market.length) b += '<div class="sub"><h3>Broader market (not your books)</h3><ul class="l">' + E.broader_market.map(function (x) { return '<li>' + esc(x.label + ' · ' + x.book + ' · EV ' + evs(x.calibrated_ev != null ? x.calibrated_ev : x.raw_model_ev)) + '</li>'; }).join('') + '</ul></div>';
+    var ml = E.moneyline;
+    if (ml && ml.available) b += '<div class="sub"><h3>Moneyline · ' + esc(ml.status) + '</h3><table class="t"><tr><th>Side</th><th>Odds</th><th>Win raw</th><th>Break-even</th><th>Raw EV</th><th>Calibrated</th></tr>' + ml.sides.map(function (x) { return '<tr><td>' + esc(x.team || x.side) + '</td><td class="n">' + esc(T.format.priceText(x.odds)) + '</td><td class="n">' + pct(x.p_win_raw, 1) + '</td><td class="n">' + pct(x.break_even, 1) + '</td><td class="n">' + evs(x.raw_model_ev) + '</td><td class="n">' + (x.calibrated_ev == null ? 'not validated' : evs(x.calibrated_ev)) + '</td></tr>'; }).join('') + '</table><div class="note">' + esc(ml.note) + '</div></div>';
+    return rsec('ev-market', 'Market · consensus vs book · freshness', C ? C.n_books + ' book' + (C.n_books === 1 ? '' : 's') : 'no fresh market', b);
+  }
+  function evAdvanced(o, E) {
+    var b = rows2([{ k: 'Calibration', v: E.calibration.status + ' · ' + (E.calibration.method || '—') + ' · ' + (E.calibrator_version || '—') + (E.calibration.training_window ? ' · fitted ' + E.calibration.training_window : '') + (E.calibration.oof ? ' · OOF log loss ' + E.calibration.oof.log_loss + ' vs identity ' + E.calibration.oof.identity_log_loss + ' (n ' + E.calibration.oof.n + ')' : '') },
+      { k: 'Why', v: E.calibration.reason || 'the walk-forward tournament promoted it (docs/edgedesk-ev/DESIGN.md)' },
+      { k: 'Distribution', v: (E.distribution_artifact_id || '—') + ' · the champion’s frozen curve' },
+      { k: 'Uncertainty', v: E.uncertainty ? E.uncertainty.samples + ' samples · ' + E.uncertainty.layers.join(' · ') : '—' },
+      { k: 'Markets', v: E.markets.map(function (m) { return m.label + ' ' + m.status; }).join(' · ') }]);
+    b += '<details><summary class="mut" style="cursor:pointer;font-size:12px">The full EV object</summary><pre class="raw">' + esc(JSON.stringify(E, null, 1)) + '</pre></details>';
+    return rsec('ev-adv', 'Advanced · calibration · provenance', E.calibration.status, b);
+  }
+  function evOptLine(x) {
+    if (!x) return '';
+    if (x.problem) return esc(x.problem);
+    var cal = x.probability_basis === 'CALIBRATED';
+    return '<b>' + esc(x.label) + '</b> · cover ' + pct(cal ? x.p_cover_calibrated : x.p_cover_raw, 1) + (cal ? '' : ' raw') + ' · push ' + pct(x.p_push_raw, 1) + ' · break-even ' + pct(x.break_even_probability, 1) + ' · EV ' + evs(cal ? x.calibrated_ev : x.raw_model_ev) + ' · robust ' + evs(x.conservative_ev) + ' · Pr(EV>0) ' + pct(x.prob_ev_positive, 0);
+  }
+  function bindEv(o) {
+    if (!EVX || !S.ev) return;
+    var inp = function () { return readInput(o); }, cfg = function () { return { artifact: S.evCfg.artifact, policy: S.evCfg.policy, now: nowMs(), books: evBooks() }; };
+    var so = $('evSort');
+    if (so) so.onchange = function () { store.set(EVSORT_K, this.value); $('evWrap').innerHTML = evCard(o, S.ev); bindEv(o); var d = document.querySelector('[data-rsec="ev-curve"]'); if (d) d.open = true; };
+    var jg = $('evJGo');
+    if (jg) jg.onclick = function () {
+      var pa = RD.parseQuoteText($('evJa').value, o.game), pb = RD.parseQuoteText($('evJb').value, o.game);
+      track('ask', { game_id: o.game_id, detail: 'ev_juice' });
+      if (!pa.ok || !pb.ok || !pa.price || !pb.price || !pa.price.valid || !pb.price.valid) { $('evJOut').innerHTML = '<div class="ans"><span class="unk">Enter two complete prices (team, line and odds).</span></div>'; return; }
+      var side = pa.side || (S.ev && S.ev.side) || 'home';
+      var r = EVX.compareLines(inp(), { side: side, line: pa.line, price: pa.price.american, book: pa.book }, { side: pb.side || side, line: pb.line, price: pb.price.american, book: pb.book }, cfg());
+      $('evJOut').innerHTML = '<div class="ans"><b>' + esc(String(r.verdict).replace(/_/g, ' ')) + '</b> · ' + esc(r.why || '') + '<ul class="l">' + (r.explanation || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul><div class="note">Basis: ' + esc(r.basis || '—') + '.</div></div>';
+    };
+    var wi = $('evWiGo');
+    if (wi) wi.onclick = function () {
+      var L = parseFloat($('evWiL').value), P2 = EVX.parseOdds($('evWiP').value), side = S.ev && S.ev.side ? S.ev.side : 'home';
+      track('ask', { game_id: o.game_id, detail: 'ev_whatif' });
+      if (!P2.valid) { $('evWiOut').innerHTML = '<div class="ans"><span class="unk">' + esc(P2.problem || 'enter a price') + '</span></div>'; return; }
+      var r = EVX.whatIf(inp(), { side: side, line: L, price: P2.format === 'AMERICAN' ? P2.american : { decimal: P2.decimal } }, cfg());
+      $('evWiOut').innerHTML = '<div class="ans">' + (r.ok ? '<div class="mut" style="font-size:11px">IF ONE BOOK OFFERS IT (the market stays where it is)</div><b>' + esc(r.status) + '</b> · ' + evOptLine(r.option) + (r.if_market_moves ? '<div class="note">' + esc(r.if_market_moves.text) + '</div>' : '') + (r.bettable_to && r.bettable_to.text ? '<div class="note">' + esc(r.bettable_to.text) + '</div>' : '') : '<span class="unk">' + esc(r.problem) + '</span>') + '<div class="note">' + esc(r.note || '') + '</div></div>';
+    };
+    var mg = $('evManGo');
+    if (mg) mg.onclick = function () {
+      var r = EVX.manual(inp(), $('evMan').value, cfg());
+      track('ask', { game_id: o.game_id, detail: 'ev_manual' });
+      $('evManOut').innerHTML = '<div class="ans">' + (r.ok ? '<div class="mut" style="font-size:11px">' + esc(r.source_tag) + '</div>' + evOptLine(r.option) + '<div>' + esc(r.read) + '</div>' + (r.bettable_to && r.bettable_to.text ? '<div class="note">' + esc(r.bettable_to.text) + '</div>' : '') : '<span class="unk">' + esc(r.problem) + '</span>') + '<div class="note">' + esc(r.note || '') + '</div></div>';
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('#ev details.rx-sec'), function (d) { d.addEventListener('toggle', function () { if (d.open) track('section_open', { game_id: o.game_id, section: d.getAttribute('data-rsec') }); }); });
+  }
+
+  /* ================================================================ THE EV LAB
+     The calibration tournament, the market studies, the historical replay and
+     the live EV validation dashboard — every number from a stored artifact. */
+  function renderEvLab() {
+    track('record_view');
+    var art = '/football/cfb_ev/';
+    Promise.all([load('record'), fetch(art + 'artifacts/cfb_ev_calibration_v1/tournament.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+      fetch(art + 'reports/market_study_v1.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+      fetch(art + 'reports/replay_v1.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (X) {
+      var R = X[0], TN = X[1], MS = X[2], RP = X[3], ER = R.ev_record || { validation: null, snapshots: [], grades: [] }, V = ER.validation || {};
+      var h = '<div class="gh"><h1>EdgeDesk EV lab</h1><div class="meta">Where every EV number comes from and how it has performed: the calibration tournament, the market studies, the historical replay at prices that existed, and the live frozen EV record. Nothing here is recomputed by the page.</div></div>';
+      if (TN) {
+        var t0 = TN.tasks.filter(function (t) { return t.key === 'cfb|spread|close'; })[0];
+        h += '<div class="sub"><h3>Calibration tournament · ' + esc(t0.label) + ' · walk-forward OOF n ' + t0.n_oof + '</h3><div class="tscroll"><table class="t"><tr><th>Method</th><th>Log loss</th><th>Brier</th><th>Slope</th><th>CITL</th><th>ECE</th><th>AUC</th><th>Δ log loss vs identity (95%)</th><th>Seasons</th><th>Eligible</th></tr>'
+          + Object.keys(t0.results).map(function (m) { var x = t0.results[m], p = x.pooled, v = x.vs_identity; return '<tr' + (m === t0.chosen ? ' class="cur"' : '') + '><td>' + esc(m) + '</td><td class="n">' + p.log_loss.toFixed(4) + '</td><td class="n">' + p.brier.toFixed(4) + '</td><td class="n">' + p.slope + '</td><td class="n">' + p.citl + '</td><td class="n">' + p.ece + '</td><td class="n">' + (p.auc == null ? '—' : p.auc) + '</td><td class="n">' + (v ? v.delta_log_loss.toFixed(4) + ' [' + v.delta_log_loss_ci95[0].toFixed(4) + ', ' + v.delta_log_loss_ci95[1].toFixed(4) + ']' : 'baseline') + '</td><td class="n">' + (v ? v.seasons_no_worse : '—') + '</td><td>' + (m === 'identity' ? '—' : (x.eligible ? tag('YES', 'pos') : tag('NO', 'neg'))) + '</td></tr>'; }).join('')
+          + '</table></div><div class="note">' + esc(t0.status + ': ' + t0.why) + ' Coin flip: log loss 0.6931. Identity (the raw champion) slope ' + t0.results.identity.pooled.slope + ' ' + JSON.stringify(t0.results.identity.pooled.slope_ci95) + ' — at the market line the raw probability carries no out-of-sample information.</div></div>';
+        h += '<div class="sub"><h3>Every market</h3><table class="t"><tr><th>Market</th><th>n OOF</th><th>Verdict</th><th>Method</th><th>Holdout 2026</th></tr>' + TN.tasks.map(function (t) { var hd = TN.holdout && TN.holdout[t.key]; return '<tr><td>' + esc(t.key) + '</td><td class="n">' + t.n_oof + '</td><td>' + tag(t.status, t.status === 'NOT_VALIDATED' ? 'neg' : 'pos') + '</td><td>' + esc(t.chosen) + '</td><td>' + esc(hd ? (hd.verdict || hd.note || '—') + (hd.n ? ' (n ' + hd.n + ')' : '') : 'not read') + '</td></tr>'; }).join('') + '</table></div>';
+        var A = TN.audits, an = A.anchored;
+        h += '<div class="sub"><h3>Pushes and key numbers · 2022–2025 FBS at the close</h3><table class="t"><tr><th>Integer line</th><th>n</th><th>Raw predicted</th><th>Calibrated (anchored)</th><th>Observed (95%)</th></tr>' + ['all_integer_lines', 'line_3', 'line_7', 'line_10', 'other_integers'].map(function (k) { var x = an.push[k]; return '<tr><td>' + esc(k.replace(/_/g, ' ')) + '</td><td class="n">' + x.n + '</td><td class="n">' + pct(x.predicted_raw, 1) + '</td><td class="n">' + pct(x.predicted_anchored, 1) + '</td><td class="n">' + pct(x.observed, 1) + (x.wilson95 ? ' [' + pct(x.wilson95[0], 1) + ', ' + pct(x.wilson95[1], 1) + ']' : '') + '</td></tr>'; }).join('') + '</table><div class="note">' + esc(A.distribution.verdict) + ' Three-state log loss at integer lines: raw ' + an.three_state_log_loss.raw + ', anchored ' + an.three_state_log_loss.anchored + '.</div>'
+          + '<table class="t"><tr><th>|Margin|</th><th>Empirical</th><th>Raw mass</th><th>Anchored mass</th></tr>' + an.key_numbers.map(function (k) { return '<tr><td class="n">' + k.abs_margin + '</td><td class="n">' + pct(k.empirical, 1) + '</td><td class="n">' + pct(k.raw_mean_mass, 1) + '</td><td class="n">' + pct(k.anchored_mean_mass, 1) + '</td></tr>'; }).join('') + '</table></div>';
+        h += '<div class="sub"><h3>Alternate lines · the calibrator carried by the frozen distribution</h3><table class="t"><tr><th>Line</th><th>n</th><th>Raw log loss</th><th>Anchored log loss</th><th>Raw mean</th><th>Anchored mean</th><th>Observed</th></tr>' + TN.alternate_line_domain.map(function (x) { return '<tr><td>' + esc(x.checkpoint) + '</td><td class="n">' + x.n + '</td><td class="n">' + x.identity.log_loss.toFixed(4) + '</td><td class="n">' + x.anchored.log_loss.toFixed(4) + '</td><td class="n">' + pct(x.mean_raw_p, 1) + '</td><td class="n">' + pct(x.mean_anchored_p, 1) + '</td><td class="n">' + pct(x.observed, 1) + '</td></tr>'; }).join('') + '</table></div>';
+      }
+      if (RP) {
+        var bt = function (rows, key) { return '<table class="t"><tr><th>Stated EV</th><th>n</th><th>Avg stated</th><th>Realized ROI (95%)</th><th>Avg CLV</th></tr>' + rows.map(function (b) { return '<tr><td>' + esc(b.bucket) + '</td><td class="n">' + b.n + '</td><td class="n">' + evs(b.avg_stated_ev) + '</td><td class="n">' + evs(b.realized_roi) + (b.roi_ci95 ? ' [' + evs(b.roi_ci95[0]) + ', ' + evs(b.roi_ci95[1]) + ']' : '') + '</td><td class="n">' + (b.avg_clv_pts == null ? '—' : sgn(b.avg_clv_pts, 2)) + '</td></tr>'; }).join('') + '</table>'; };
+        h += '<div class="sub"><h3>Historical replay · moneyline 2023–2025 (out of sample, real closing prices)</h3>' + bt(RP.moneyline_2023_2025.raw_ev_buckets) + '<div class="note">Raw EV. ' + esc(RP.moneyline_2023_2025.note) + '</div></div>';
+        h += '<div class="sub"><h3>Historical replay · spread 2015–2019 closes (in sample for the champion)</h3>' + bt(RP.spread_2015_2019.close.raw_ev_buckets) + '<div class="note">' + esc(RP.spread_2015_2019.window) + '. 2022–2025 spreads: ' + esc(RP.spread_2022_2025.status + ' — ' + RP.spread_2022_2025.why) + '</div></div>';
+      }
+      if (MS) {
+        var ml = MS.by_market['moneyline|close'];
+        h += '<div class="sub"><h3>De-vig benchmark · favourite–longshot (moneyline closes, ' + ml.n + ' two-sided prices)</h3><table class="t"><tr><th>Method</th><th>Log loss</th><th>Brier</th></tr>' + Object.keys(ml.methods).map(function (m) { return '<tr' + (m === 'proportional' ? ' class="cur"' : '') + '><td>' + esc(m) + '</td><td class="n">' + ml.methods[m].log_loss.toFixed(5) + '</td><td class="n">' + ml.methods[m].brier.toFixed(5) + '</td></tr>'; }).join('') + '</table>'
+          + '<table class="t"><tr><th>Raw implied</th><th>n</th><th>De-vigged</th><th>Realized</th><th>ROI after vig</th></tr>' + ml.favorite_longshot.map(function (b) { return '<tr><td>' + esc(b.bucket) + '</td><td class="n">' + b.n + '</td><td class="n">' + pct(b.mean_devig_proportional, 1) + '</td><td class="n">' + pct(b.realized, 1) + '</td><td class="n">' + evs(b.roi_after_vig) + '</td></tr>'; }).join('') + '</table><div class="note">' + esc(MS.rule) + '</div></div>';
+      }
+      var G0 = V.groups ? V.groups.current_ev_version : null;
+      h += '<div class="sub"><h3>Live EV validation · current EV version</h3>' + (G0 ? rows2([{ k: 'EV reads frozen', v: String(G0.n_reads) + ' (actionable ' + G0.n_actionable + ', policy clears ' + G0.n_policy_clears + ')' },
+        { k: 'Graded', v: String(G0.n_graded) }, { k: 'Calibrated Brier / log loss', v: G0.probability.rates_shown ? G0.probability.calibrated.brier + ' / ' + G0.probability.calibrated.log_loss + ' (slope ' + G0.probability.calibrated.slope + ')' : 'prints at n ≥ ' + V.min_n_for_rates },
+        { k: 'CLV', v: G0.clv.mean_pts == null ? 'n ' + G0.clv.n + ' (prints at n ≥ ' + V.min_n_for_rates + ')' : sgn(G0.clv.mean_pts, 2) + ' pts · +CLV ' + pct(G0.clv.positive_rate, 0) },
+        { k: 'Shadow policy track', v: G0.shadow_policy.n + ' policy BET/BET EARLY · ' + (G0.shadow_policy.units == null ? '—' : sgn(G0.shadow_policy.units, 2) + 'u') + ' · max drawdown ' + (G0.shadow_policy.max_drawdown_units == null ? '—' : G0.shadow_policy.max_drawdown_units + 'u') },
+        { k: 'EV monotonicity', v: G0.monotone.text }, { k: 'Next-100 (prospective)', v: V.next100 ? V.next100.status + ' · ' + (V.next100.n_eligible || 0) + '/' + (V.next100.n_target || 100) + ' eligible · ' + (V.next100.n_graded || 0) + ' graded' : '—' },
+        { k: 'Research triggers', v: (V.research_triggers || []).length ? V.research_triggers.map(function (x) { return x.id; }).join(', ') : 'none' }]) : '<div class="empty">No EV read has been frozen yet.</div>') + '<div class="note">' + esc(V.rule || '') + '</div></div>';
+      var gi = {}; (ER.grades || []).forEach(function (g) { gi[g.snapshot_id] = g; });
+      h += '<div class="sub"><h3>Frozen EV reads (newest first)</h3>' + (ER.snapshots.length ? '<div class="tscroll"><table class="t"><tr><th>Frozen</th><th>Game</th><th>Decision</th><th>Exact price</th><th>Cover cal / raw</th><th>BE</th><th>EV cal / raw</th><th>Robust</th><th>Grade</th></tr>'
+        + ER.snapshots.slice().reverse().slice(0, 150).map(function (x) { var g = gi[x.snapshot_id]; return '<tr><td class="n">' + esc(when(x.decision_ts)) + '</td><td>' + esc(x.away + ' @ ' + x.home) + '</td><td>' + evChip(x.decision_status) + (x.policy_decision !== x.decision_status ? '<div class="mut">shadow ' + esc(x.policy_decision) + '</div>' : '') + '</td><td class="n">' + esc(x.label || '—') + '<div class="mut">' + esc(x.book_id || '') + '</div></td><td class="n">' + pct(x.p_cover_calibrated, 1) + ' / ' + pct(x.p_cover_raw, 1) + '</td><td class="n">' + pct(x.break_even_probability, 1) + '</td><td class="n">' + evs(x.calibrated_ev) + ' / ' + evs(x.raw_model_ev) + '</td><td class="n">' + evs(x.conservative_ev) + '</td><td>' + (g ? esc((g.bet_result_state || '—') + (g.clv_points != null ? ' · CLV ' + T.util.signed(g.clv_points, 1) : '') + (g.hypothetical ? ' · hyp.' : '')) : '<span class="mut">pending</span>') + '</td></tr>'; }).join('') + '</table></div>' : '<div class="empty">No EV read has been frozen yet.</div>') + '</div>';
+      h += '<ul class="l note">' + (ER.rules || []).map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>';
+      $('view').innerHTML = h;
+    });
+  }
+
   /* ================================================================ GAME */
   function sec(id, title, teaser, body, open) {
     return '<details class="sec" id="s-' + id + '"' + (open ? ' open' : '') + ' data-sec="' + id + '"><summary><span class="caret">▶</span><span class="t">' + esc(title) + '</span><span class="x">' + esc(teaser || '') + '</span></summary><div class="b">' + body + '</div></details>';
@@ -553,6 +776,10 @@
       /* THE EDGEDESK READ — first, before everything else on the page */
       S.read = liveRead(o);
       h += '<div id="rdWrap">' + readCard(o, S.read) + '</div>';
+      /* THE EDGEDESK EV CARD — the same stored input, priced through lib/edgedesk_ev.js on the reader's clock */
+      S.evCfg = G.ev || null;
+      S.ev = liveEv(o, S.read);
+      h += '<div id="evWrap">' + evCard(o, S.ev) + '</div>';
       /* THE 15-SECOND SUMMARY */
       h += '<div class="sum' + (C.verified ? ' verified' : '') + '">'
         + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'
@@ -576,6 +803,7 @@
       $('view').innerHTML = h;
       bindGame(o);
       bindRead(o);
+      bindEv(o);
     });
   }
   /* THE SIX QUESTIONS, answered in one block (lib/edgedesk_canon.js SIX_QUESTIONS) */
@@ -794,7 +1022,7 @@
       store.set(KW, w); this.textContent = w[id] ? '★ Watching' : '☆ Watch';
     };
     $('expBtn').onclick = function () {
-      var txt = T.exportCard(S.read ? Object.assign({}, o, { read: S.read }) : o);
+      var txt = T.exportCard(S.read ? Object.assign({}, o, { read: S.read }) : o) + (EVX && S.ev ? '\n\n' + EVX.exportText(S.ev) : '');
       try { navigator.clipboard.writeText(txt); this.textContent = 'Copied'; } catch (e) { window.prompt('Research card', txt); }
       track('export', { game_id: id });
     };
@@ -813,8 +1041,12 @@
       d.addEventListener('toggle', function () { if (d.open) track('section_open', { game_id: id, section: d.getAttribute('data-sec') }); });
     });
     function ask(q) {
-      /* the assistant reads the Read the reader is looking at: their clock, their book */
-      var a = T.ask(q, S.read ? Object.assign({}, o, { read: S.read }) : o, null);
+      /* the assistant reads the Read the reader is looking at: their clock, their book. EV questions
+         (is the alt worth the juice, bet now or wait, worst price, did we miss it, why is EV positive,
+         why not a bet despite positive raw EV) read the EV object first — never a recomputation */
+      var ea = EVX && S.ev && !/sharp|split|handle|public/i.test(q) ? EVX.ask(q, S.ev) : null;
+      var a = ea ? { intent: 'ev_' + ea.intent, text: ea.text, facts: ea.facts.map(function (f) { return { claim: f.claim, source: f.source + ' · ' + S.ev.schema, updated: S.ev.generated_at, confidence: 'deterministic' }; }).concat(evProvFacts(ea.provenance)) }
+        : T.ask(q, S.read ? Object.assign({}, o, { read: S.read }) : o, null);
       track('ask', { game_id: id, detail: a.intent });
       var body = esc(a.text).replace(/^UNKNOWN\./, '<span class="unk">UNKNOWN.</span>');
       if (a.facts && a.facts.length) body += '<details><summary>Sources for ' + a.facts.length + ' claim' + (a.facts.length === 1 ? '' : 's') + '</summary><table class="t"><tr><th>Claim</th><th>Source</th><th>Updated</th><th>Confidence</th></tr>'

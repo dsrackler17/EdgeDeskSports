@@ -175,6 +175,7 @@
     if (!f.market) f.degraded.push('no market line');
     (src.allowed_metrics || []).forEach(function (m) { f.allowed_metrics[m] = true; });
     f.read = readFacts(src.read);
+    f.ev = evFacts(src.ev);
     f.numbers = allowedNumbers(f);
     return f;
   }
@@ -194,6 +195,26 @@
       alt_verdict: R.main_vs_alt_summary ? R.main_vs_alt_summary.alt_verdict || null : null, calibration: R.calibration ? R.calibration.status : null,
       reason: R.timing_reason || null, market_direction: R.market_movement_summary ? R.market_movement_summary.direction : null };
   }
+  /* THE EDGEDESK EV READ (lib/edgedesk_ev.js) as facts, with provenance: the
+     exact quote and its source, the model / calibrator / policy versions, and
+     the tournament's validation numbers. The LLM may explain it; it never
+     computes a probability, an EV or a status, and anything missing is UNKNOWN. */
+  function evFacts(E) {
+    if (!E || !E.decision_status) return null;
+    var s = E.selected || null, cal = !!(s && s.probability_basis === 'CALIBRATED');
+    return { decision: String(E.decision_status).replace(/_/g, ' '), timing: String(E.timing || '').replace(/_/g, ' '), policy_decision: String(E.policy_decision || '').replace(/_/g, ' '),
+      actionable: !!E.actionable, research_status: E.research_status ? String(E.research_status).replace(/_/g, ' ') : null,
+      side: E.side_team || null, book: s ? s.book || null : null, line: s ? num(s.line) : null, price: s && s.odds ? num(s.odds.american_display) : null,
+      quote_id: s ? s.quote_id || 'UNKNOWN' : 'UNKNOWN', quote_ts: s ? s.quote_ts || 'UNKNOWN' : 'UNKNOWN', quote_source: s ? s.source || 'UNKNOWN' : 'UNKNOWN',
+      probability_basis: cal ? 'CALIBRATED' : 'RAW', cover_calibrated: cal ? r(num(s.p_cover_calibrated), 3) : null, cover_raw: s ? r(num(s.p_cover_raw), 3) : null,
+      push: s ? r(num(s.p_push_raw), 3) : null, break_even: s ? r(num(s.break_even_probability), 3) : null, probability_edge: cal ? r(num(s.probability_edge), 3) : null,
+      raw_ev: s ? r(num(s.raw_model_ev), 3) : null, calibrated_ev: cal ? r(num(s.calibrated_ev), 3) : null, robust_ev: s ? r(num(s.conservative_ev), 3) : null,
+      prob_ev_positive: s ? r(num(s.prob_ev_positive), 3) : null,
+      calibration: E.calibration ? E.calibration.status : 'UNKNOWN', calibrator_version: E.calibrator_version || 'UNKNOWN', model_version: E.model_version || 'UNKNOWN',
+      policy_version: E.decision_policy_version || 'UNKNOWN', policy_maturity: E.policy_maturity || 'UNKNOWN',
+      blockers: (E.blockers || []).map(function (b) { return b.code; }), reason: E.decision_reason || null,
+      validation: E.calibration && E.calibration.oof ? { n: E.calibration.oof.n, log_loss: E.calibration.oof.log_loss, identity_log_loss: E.calibration.oof.identity_log_loss } : 'UNKNOWN' };
+  }
   function allowedNumbers(f) {
     var xs = [];
     var add = function (x) { if (isNum(x)) { xs.push(x); xs.push(-x); xs.push(Math.abs(x)); } };
@@ -208,6 +229,11 @@
       var R = f.read;
       [R.line, R.price, R.bettable_to_line, R.target_line, R.reference_price].forEach(add);
       [R.cover_probability, R.break_even, R.estimated_ev].forEach(function (p) { if (isNum(p)) { add(r(100 * p, 1)); add(r(100 * p, 0)); } });
+    }
+    if (f.ev) {
+      var E = f.ev;
+      [E.line, E.price].forEach(add);
+      [E.cover_calibrated, E.cover_raw, E.push, E.break_even, E.probability_edge, E.raw_ev, E.calibrated_ev, E.robust_ev, E.prob_ev_positive].forEach(function (p) { if (isNum(p)) { add(r(100 * p, 1)); add(r(100 * p, 0)); } });
     }
     var m = /(-?\d+(\.\d+)?)/.exec(f.model.fair_line_display || ''); if (m) add(Number(m[1]));
     return xs;
@@ -228,9 +254,11 @@
       'Home margin is from the home team\'s side: positive means the home team is expected to win by that many. A home line of -7 means the home team is favoured by 7.'
     ].concat(facts.read ? ['The EdgeDesk Read (READ) is a price-specific research read. Its timing is ' + facts.read.timing + ' and its decision is ' + facts.read.decision + '. You may use those words for the read and no other; '
       + (facts.read.actionable ? 'it is certified.' : 'it is not a certified bet, so never describe it as one.') + ' Do not compute a probability, EV, break-even or price: use READ\'s numbers as written.'
-      + (facts.read.probability_basis === 'RAW' ? ' Its cover probability is RAW (calibration pending): say so if you use it.' : '')] : []).join('\n');
+      + (facts.read.probability_basis === 'RAW' ? ' Its cover probability is RAW (calibration pending): say so if you use it.' : '')] : [])
+      .concat(facts.ev ? ['The EdgeDesk EV read (EV) prices ONE exact quote (' + (facts.ev.side || '') + ' ' + (facts.ev.line == null ? '' : facts.ev.line) + ' at ' + (facts.ev.price == null ? 'no price' : facts.ev.price) + ', ' + (facts.ev.book || 'no book') + '). Its decision is ' + facts.ev.decision + (facts.ev.actionable ? '.' : ' and it is not actionable: never describe it as a bet, a play or a validated edge.')
+        + ' Distinguish raw EV (experimental) from calibrated EV; never call EV confidence, CLV or a guarantee. Use EV\'s numbers as written; if a fact is UNKNOWN, say UNKNOWN.'] : []).join('\n');
     var user = 'FACTS (' + VERSION + '):\n' + JSON.stringify({ game: facts.game, model: facts.model, market: facts.market, decision: facts.decision, qb: facts.qb,
-      data_quality: facts.data_quality, degraded: facts.degraded, read: facts.read || undefined }, null, 1) + '\n\nWrite at most four sentences.';
+      data_quality: facts.data_quality, degraded: facts.degraded, read: facts.read || undefined, ev: facts.ev || undefined }, null, 1) + '\n\nWrite at most four sentences.';
     return { system: system, user: user, tools: [], version: VERSION };
   }
 
@@ -247,6 +275,12 @@
     /* status words are UPPERCASE in EdgeDesk copy ("pass defense" is football) */
     /* the read's own timing and decision words are allowed when it is on file */
     var readWords = facts.read ? [facts.read.timing, facts.read.decision].concat(/RESEARCH ONLY/.test(facts.read.decision) ? ['RESEARCH'] : []) : [];
+    if (facts.ev) readWords = readWords.concat([facts.ev.decision, facts.ev.timing]).concat(/RESEARCH ONLY/.test(facts.ev.decision) ? ['RESEARCH'] : []);
+    /* an EV that is not actionable is never "validated", "guaranteed" or a sure edge; raw EV is never "calibrated" */
+    if (facts.ev && !facts.ev.actionable && /\b(validated|proven|certified)\s+(ev|edge|value|bet)\b/i.test(t.replace(/\b(not|never|isn'?t|is not)\s+(a\s+)?(validated|proven|certified)\b/gi, ' ')))
+      add('EV_VALIDATED_CLAIM', 'FAIL', 'calls a non-actionable EV validated; the EV decision is ' + facts.ev.decision);
+    if (facts.ev && facts.ev.probability_basis === 'RAW' && /\bcalibrated\s+(ev|probability|cover)\b/i.test(t.replace(/\b(not|never|isn'?t|is not|un)\s*calibrated\b/gi, ' ')))
+      add('EV_BASIS_MISMATCH', 'FAIL', 'calls a RAW EV calibrated');
     if (facts.read && !facts.read.actionable && /\bcertified\b/i.test(t.replace(/\b(not|never|isn'?t|is not)\s+(a\s+)?certified\b/gi, ' '))) add('READ_CERTIFIED_CLAIM', 'FAIL', 'calls the read certified; it is ' + facts.read.decision);
     STATUSES.filter(function (w) { return w !== 'BET' && w !== st && readWords.indexOf(w) < 0; }).forEach(function (w) {
       if (new RegExp('\\b' + esc(w) + '\\b').test(t)) add('STATUS_MISMATCH', 'FAIL', 'names status ' + w + '; the official decision is ' + st);

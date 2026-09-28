@@ -1,0 +1,335 @@
+{
+ "schema": "edgedesk_ev_replay_v1",
+ "built_at": "2026-09-28T03:52:22.702Z",
+ "rule": "quotes that existed at the time, at their own book and price; never the best price in hindsight",
+ "moneyline_2023_2025": {
+  "window": "2023-2025 (the champion out of sample; the walk-forward map needs a prior OOS season, so 2022 only trains)",
+  "books": [
+   "DraftKings",
+   "Bovada",
+   "ESPN Bet"
+  ],
+  "selection": "each (game, book): the side with the higher EV at THAT book’s closing price (no cross-book shopping); every row a hypothetical 1u",
+  "raw_ev_buckets": [
+   {
+    "bucket": "< −5%",
+    "n": 6,
+    "avg_stated_ev": -0.0828,
+    "realized_roi": -0.6188,
+    "roi_ci95": [
+     -1.0914,
+     -0.1462
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "−5% to 0",
+    "n": 1118,
+    "avg_stated_ev": -0.0205,
+    "realized_roi": -0.0238,
+    "roi_ci95": [
+     -0.073,
+     0.0254
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "0 to +2%",
+    "n": 537,
+    "avg_stated_ev": 0.0094,
+    "realized_roi": -0.0039,
+    "roi_ci95": [
+     -0.0941,
+     0.0863
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "+2% to +5%",
+    "n": 678,
+    "avg_stated_ev": 0.0338,
+    "realized_roi": -0.0658,
+    "roi_ci95": [
+     -0.1337,
+     0.0021
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "+5% to +10%",
+    "n": 865,
+    "avg_stated_ev": 0.0739,
+    "realized_roi": 0.0281,
+    "roi_ci95": [
+     -0.0458,
+     0.1021
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "≥ +10%",
+    "n": 2612,
+    "avg_stated_ev": 0.3623,
+    "realized_roi": -0.0567,
+    "roi_ci95": [
+     -0.1133,
+     -0.0001
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   }
+  ],
+  "calibrated_ev_buckets": [
+   {
+    "bucket": "< −5%",
+    "n": 10,
+    "avg_stated_ev": -0.0814,
+    "realized_roi": -0.3699,
+    "roi_ci95": [
+     -0.784,
+     0.0443
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "−5% to 0",
+    "n": 1124,
+    "avg_stated_ev": -0.0209,
+    "realized_roi": -0.0157,
+    "roi_ci95": [
+     -0.0777,
+     0.0463
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "0 to +2%",
+    "n": 429,
+    "avg_stated_ev": 0.0097,
+    "realized_roi": -0.0743,
+    "roi_ci95": [
+     -0.1658,
+     0.0172
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "+2% to +5%",
+    "n": 496,
+    "avg_stated_ev": 0.0351,
+    "realized_roi": -0.0245,
+    "roi_ci95": [
+     -0.1253,
+     0.0763
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "+5% to +10%",
+    "n": 703,
+    "avg_stated_ev": 0.074,
+    "realized_roi": -0.1759,
+    "roi_ci95": [
+     -0.2551,
+     -0.0968
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   },
+   {
+    "bucket": "≥ +10%",
+    "n": 3054,
+    "avg_stated_ev": 0.4202,
+    "realized_roi": -0.0525,
+    "roi_ci95": [
+     -0.1152,
+     0.0102
+    ],
+    "avg_clv_pts": null,
+    "positive_clv_rate": null
+   }
+  ],
+  "positive_raw_ev": {
+   "n": 4692,
+   "roi": -0.0364
+  },
+  "positive_cal_ev": {
+   "n": 4682,
+   "roi": -0.0701
+  },
+  "note": "RESEARCH: the moneyline calibrator is NOT validated (tournament); the \"calibrated\" column is a walk-forward Platt map shown only to see whether calibration moves EV toward realized ROI. CLV is not available: the archive carries no moneyline openers after 2019."
+ },
+ "spread_2015_2019": {
+  "window": "2015-2019 — IN SAMPLE for the champion (its PMF was fitted on 2006-2021 and layers B/C tuned on 2014-2021): mechanics and raw-EV overstatement only, never evidence of an edge",
+  "books_close": 22,
+  "opener_book": "5Dimes (the only archived opener prices)",
+  "close": {
+   "selection": "each (game, book): the side with the higher raw EV at that book’s closing line and price",
+   "raw_ev_buckets": [
+    {
+     "bucket": "< −5%",
+     "n": 23,
+     "avg_stated_ev": -0.0867,
+     "realized_roi": 0.0378,
+     "roi_ci95": [
+      -0.3172,
+      0.3929
+     ],
+     "avg_clv_pts": null,
+     "positive_clv_rate": null
+    },
+    {
+     "bucket": "−5% to 0",
+     "n": 8799,
+     "avg_stated_ev": -0.0214,
+     "realized_roi": -0.0308,
+     "roi_ci95": [
+      -0.0506,
+      -0.011
+     ],
+     "avg_clv_pts": null,
+     "positive_clv_rate": null
+    },
+    {
+     "bucket": "0 to +2%",
+     "n": 4320,
+     "avg_stated_ev": 0.009,
+     "realized_roi": -0.0887,
+     "roi_ci95": [
+      -0.1168,
+      -0.0605
+     ],
+     "avg_clv_pts": null,
+     "positive_clv_rate": null
+    },
+    {
+     "bucket": "+2% to +5%",
+     "n": 6597,
+     "avg_stated_ev": 0.0351,
+     "realized_roi": -0.082,
+     "roi_ci95": [
+      -0.1048,
+      -0.0592
+     ],
+     "avg_clv_pts": null,
+     "positive_clv_rate": null
+    },
+    {
+     "bucket": "+5% to +10%",
+     "n": 10653,
+     "avg_stated_ev": 0.0753,
+     "realized_roi": -0.049,
+     "roi_ci95": [
+      -0.0671,
+      -0.0309
+     ],
+     "avg_clv_pts": null,
+     "positive_clv_rate": null
+    },
+    {
+     "bucket": "≥ +10%",
+     "n": 35502,
+     "avg_stated_ev": 0.2293,
+     "realized_roi": -0.0672,
+     "roi_ci95": [
+      -0.0771,
+      -0.0573
+     ],
+     "avg_clv_pts": null,
+     "positive_clv_rate": null
+    }
+   ]
+  },
+  "open": {
+   "selection": "each game at the 5Dimes opener: the side with the higher raw EV; CLV to the consensus close",
+   "raw_ev_buckets": [
+    {
+     "bucket": "< −5%",
+     "n": 2,
+     "avg_stated_ev": -0.0617,
+     "realized_roi": 0.8712,
+     "roi_ci95": [
+      0.797,
+      0.9455
+     ],
+     "avg_clv_pts": -2.25,
+     "positive_clv_rate": 0
+    },
+    {
+     "bucket": "−5% to 0",
+     "n": 573,
+     "avg_stated_ev": -0.0229,
+     "realized_roi": -0.047,
+     "roi_ci95": [
+      -0.1245,
+      0.0305
+     ],
+     "avg_clv_pts": -0.085,
+     "positive_clv_rate": 0.407
+    },
+    {
+     "bucket": "0 to +2%",
+     "n": 244,
+     "avg_stated_ev": 0.0092,
+     "realized_roi": -0.1126,
+     "roi_ci95": [
+      -0.2314,
+      0.0063
+     ],
+     "avg_clv_pts": -0.123,
+     "positive_clv_rate": 0.414
+    },
+    {
+     "bucket": "+2% to +5%",
+     "n": 362,
+     "avg_stated_ev": 0.0351,
+     "realized_roi": -0.095,
+     "roi_ci95": [
+      -0.1927,
+      0.0026
+     ],
+     "avg_clv_pts": 0.249,
+     "positive_clv_rate": 0.467
+    },
+    {
+     "bucket": "+5% to +10%",
+     "n": 591,
+     "avg_stated_ev": 0.0754,
+     "realized_roi": -0.0111,
+     "roi_ci95": [
+      -0.0875,
+      0.0654
+     ],
+     "avg_clv_pts": 0.239,
+     "positive_clv_rate": 0.465
+    },
+    {
+     "bucket": "≥ +10%",
+     "n": 1648,
+     "avg_stated_ev": 0.2236,
+     "realized_roi": -0.0608,
+     "roi_ci95": [
+      -0.1065,
+      -0.0152
+     ],
+     "avg_clv_pts": 0.425,
+     "positive_clv_rate": 0.508
+    }
+   ]
+  },
+  "note": "Raw EV only: no calibrator was fitted on seasons before 2015 (they are in sample too), and a calibrator from 2022-2025 would use the future."
+ },
+ "spread_2022_2025": {
+  "status": "NOT REPLAYED",
+  "why": "the archive carries no spread prices after 2019; an assumed −110 is never used. The probability-level evaluation at the close is the calibration tournament."
+ }
+}

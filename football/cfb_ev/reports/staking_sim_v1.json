@@ -1,0 +1,190 @@
+{
+ "schema": "edgedesk_ev_staking_sim_v1",
+ "built_at": "2026-09-28T03:58:53.447Z",
+ "seed": 20260928,
+ "seasons": 4000,
+ "weeks": 12,
+ "positions_per_week": 8,
+ "price": -110,
+ "cap": 0.05,
+ "status": "STAKING DISABLED: no EV is validated; this study exists so no stake rule is read as a confidence badge",
+ "scenarios": [
+  {
+   "scenario": "stated edge is real (+3 pp), no noise, independent",
+   "true_edge": 0.03,
+   "stated_edge": 0.03,
+   "estimation_noise_sd": 0,
+   "weekly_correlation": 0,
+   "rules": {
+    "flat_1pct": {
+     "median_bankroll": 1.0089,
+     "p05_bankroll": 0.8651,
+     "median_max_drawdown": 0.0734,
+     "p95_max_drawdown": 0.1641,
+     "p_lose_half": 0
+    },
+    "kelly_quarter": {
+     "median_bankroll": 1.0039,
+     "p05_bankroll": 0.9552,
+     "median_max_drawdown": 0.0243,
+     "p95_max_drawdown": 0.0555,
+     "p_lose_half": 0
+    },
+    "kelly_half": {
+     "median_bankroll": 1.0069,
+     "p05_bankroll": 0.9113,
+     "median_max_drawdown": 0.0482,
+     "p95_max_drawdown": 0.109,
+     "p_lose_half": 0
+    },
+    "kelly_full": {
+     "median_bankroll": 1.0096,
+     "p05_bankroll": 0.8263,
+     "median_max_drawdown": 0.0953,
+     "p95_max_drawdown": 0.2095,
+     "p_lose_half": 0
+    },
+    "kelly_robust_quarter": {
+     "median_bankroll": 1.0039,
+     "p05_bankroll": 0.9552,
+     "median_max_drawdown": 0.0243,
+     "p95_max_drawdown": 0.0555,
+     "p_lose_half": 0
+    }
+   }
+  },
+  {
+   "scenario": "stated +3 pp, true +1 pp (overstated ×3), noise 2 pp, ρ 0.05",
+   "true_edge": 0.01,
+   "stated_edge": 0.03,
+   "estimation_noise_sd": 0.02,
+   "weekly_correlation": 0.05,
+   "rules": {
+    "flat_1pct": {
+     "median_bankroll": 0.9713,
+     "p05_bankroll": 0.8169,
+     "median_max_drawdown": 0.0952,
+     "p95_max_drawdown": 0.2017,
+     "p_lose_half": 0
+    },
+    "kelly_quarter": {
+     "median_bankroll": 0.9823,
+     "p05_bankroll": 0.8431,
+     "median_max_drawdown": 0.0811,
+     "p95_max_drawdown": 0.177,
+     "p_lose_half": 0
+    },
+    "kelly_half": {
+     "median_bankroll": 0.9596,
+     "p05_bankroll": 0.7076,
+     "median_max_drawdown": 0.1555,
+     "p95_max_drawdown": 0.3233,
+     "p_lose_half": 0
+    },
+    "kelly_full": {
+     "median_bankroll": 0.9211,
+     "p05_bankroll": 0.5736,
+     "median_max_drawdown": 0.2396,
+     "p95_max_drawdown": 0.4627,
+     "p_lose_half": 0.0182
+    },
+    "kelly_robust_quarter": {
+     "median_bankroll": 0.9981,
+     "p05_bankroll": 0.9523,
+     "median_max_drawdown": 0.0219,
+     "p95_max_drawdown": 0.055,
+     "p_lose_half": 0
+    }
+   }
+  },
+  {
+   "scenario": "stated +3 pp, true 0 (no edge), noise 2 pp, ρ 0.05",
+   "true_edge": 0,
+   "stated_edge": 0.03,
+   "estimation_noise_sd": 0.02,
+   "weekly_correlation": 0.05,
+   "rules": {
+    "flat_1pct": {
+     "median_bankroll": 0.9519,
+     "p05_bankroll": 0.8006,
+     "median_max_drawdown": 0.1064,
+     "p95_max_drawdown": 0.2154,
+     "p_lose_half": 0
+    },
+    "kelly_quarter": {
+     "median_bankroll": 0.9702,
+     "p05_bankroll": 0.8328,
+     "median_max_drawdown": 0.0872,
+     "p95_max_drawdown": 0.1857,
+     "p_lose_half": 0
+    },
+    "kelly_half": {
+     "median_bankroll": 0.9335,
+     "p05_bankroll": 0.6908,
+     "median_max_drawdown": 0.1669,
+     "p95_max_drawdown": 0.338,
+     "p_lose_half": 0.0003
+    },
+    "kelly_full": {
+     "median_bankroll": 0.8823,
+     "p05_bankroll": 0.5457,
+     "median_max_drawdown": 0.2575,
+     "p95_max_drawdown": 0.4877,
+     "p_lose_half": 0.0253
+    },
+    "kelly_robust_quarter": {
+     "median_bankroll": 0.9953,
+     "p05_bankroll": 0.9496,
+     "median_max_drawdown": 0.0228,
+     "p95_max_drawdown": 0.0564,
+     "p_lose_half": 0
+    }
+   }
+  },
+  {
+   "scenario": "stated +6 pp, true −1 pp (EdgeDesk raw EV today), noise 3 pp, ρ 0.10",
+   "true_edge": -0.01,
+   "stated_edge": 0.06,
+   "estimation_noise_sd": 0.03,
+   "weekly_correlation": 0.1,
+   "rules": {
+    "flat_1pct": {
+     "median_bankroll": 0.9335,
+     "p05_bankroll": 0.782,
+     "median_max_drawdown": 0.1234,
+     "p95_max_drawdown": 0.2433,
+     "p_lose_half": 0
+    },
+    "kelly_quarter": {
+     "median_bankroll": 0.8537,
+     "p05_bankroll": 0.5528,
+     "median_max_drawdown": 0.2584,
+     "p95_max_drawdown": 0.4778,
+     "p_lose_half": 0.0213
+    },
+    "kelly_half": {
+     "median_bankroll": 0.7557,
+     "p05_bankroll": 0.376,
+     "median_max_drawdown": 0.3906,
+     "p95_max_drawdown": 0.6528,
+     "p_lose_half": 0.1638
+    },
+    "kelly_full": {
+     "median_bankroll": 0.6974,
+     "p05_bankroll": 0.3075,
+     "median_max_drawdown": 0.4526,
+     "p95_max_drawdown": 0.7211,
+     "p_lose_half": 0.25
+    },
+    "kelly_robust_quarter": {
+     "median_bankroll": 0.96,
+     "p05_bankroll": 0.8065,
+     "median_max_drawdown": 0.1012,
+     "p95_max_drawdown": 0.2162,
+     "p_lose_half": 0
+    }
+   }
+  }
+ ],
+ "reading": "Full Kelly on an overstated edge is the fastest way to lose half a bankroll; robust (lower-quantile) quarter Kelly and flat staking degrade gracefully. The fourth scenario is the champion’s raw EV at the close today (stated +6 pp, true about −1 pp, pack E21/K20): every Kelly variant stakes into a negative edge."
+}
