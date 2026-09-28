@@ -275,6 +275,35 @@ const BET_BUILDER = () => {
   const bm = await page.evaluate(() => { const d = window.EDDecisionUI._state.registry['e2e-bet']; const h = document.createElement('div'); h.innerHTML = window.EDDecisionUI.actionCardHTML(d); const s = h.querySelector('.edd-act'); return { begin: s.classList.contains('edd-begin'), reason: !!s.querySelector('.edd-reason'), raw: /RAW MODEL EV|Raw model EV/.test(s.textContent), adv: !!s.querySelector('[data-edd-act="advanced"]'), why: /WHY ?EdgeDesk makes it/.test(s.textContent) }; });
   chk('beginner mode: one sentence, no diagnostics, the advanced view one tap away', bm.begin && !bm.reason && !bm.raw && bm.adv && bm.why, bm);
   await page.uncheck('#eddCardHost [data-edd-act="beginner"]');
+  /* BEGINNER / RESEARCH / LAB: one card, three depths, switched in place */
+  await page.evaluate(() => { localStorage.removeItem('edgedesk_info_level_v1'); const d = window.EDDecisionUI._state.registry['e2e-bet']; document.getElementById('eddTestHost').innerHTML = window.EDDecisionUI.actionCardHTML(d); });
+  const lvl = async () => page.evaluate(() => { const s = document.querySelector('#eddTestHost .edd-act'); const lab = s.querySelector('.edd-lab');
+    return { level: s.getAttribute('data-edd-level'), on: (s.querySelector('.edd-lv.on') || {}).textContent, lab: !!lab, labOpen: !!(lab && lab.open), answer: (s.querySelector('[data-edd-answer]') || {}).textContent || null,
+      risk: !!s.querySelector('.edd-risk'), text: s.textContent.replace(/\s+/g, ' ') }; });
+  let L0 = await lvl();
+  chk('the card opens at the Research level, with the one-line answer and the main risk', L0.level === 'research' && L0.on === 'Research' && /clears EdgeDesk’s current threshold/.test(L0.answer || '') && L0.risk && L0.lab && !L0.labOpen, L0);
+  chk('Research explains: why this stake, the market, price alternatives, what changes it', /MARKET/.test(L0.text) && /PRICE ALTERNATIVES/.test(L0.text) && /WHAT CHANGES MY MIND\?/.test(L0.text), L0.text.slice(0, 200));
+  await page.click('#eddTestHost [data-edd-act="level"][data-edd-v="lab"]');
+  await page.waitForTimeout(400);
+  const L1 = await lvl();
+  chk('one click opens the Lab in place: gates, the price curve, versions', L1.level === 'lab' && L1.labOpen && /GATES/.test(L1.text) && /PRICE CURVE/.test(L1.text) && /VERSIONS & PROVENANCE/.test(L1.text), { level: L1.level, labOpen: L1.labOpen });
+  chk('the Lab reads the cached model health (never recomputed on the page)', /HISTORICAL BUCKETS/.test(L1.text) && !/Loading model health/.test(L1.text), L1.text.match(/HISTORICAL BUCKETS.{0,160}/));
+  await page.click('#eddTestHost [data-edd-act="level"][data-edd-v="beginner"]');
+  await page.waitForTimeout(300);
+  const L2 = await lvl();
+  chk('Beginner: no Lab, the reasoning folded, the same one-line answer', L2.level === 'beginner' && !L2.lab && L2.answer === L0.answer && L2.risk, L2);
+  chk('the level is remembered on this device', await page.evaluate(() => JSON.parse(localStorage.getItem('edgedesk_info_level_v1'))) === 'beginner');
+  await page.evaluate(() => localStorage.setItem('edgedesk_info_level_v1', JSON.stringify('research')));
+  /* model health on the Card page */
+  await page.evaluate(() => window.show('card'));
+  await page.waitForTimeout(600);
+  const mh = await page.evaluate(() => { const h = document.querySelector('#eddCardHost .edd-health'); return h ? { text: h.textContent.replace(/\s+/g, ' '), stages: h.querySelectorAll('.edd-maturity > div').length, alerts: h.querySelectorAll('.edd-alert').length } : null; });
+  chk('the Card page carries MODEL HEALTH: the maturity ladder, n beside the figures, the research alerts', mh && mh.stages === 5 && /n=\d/.test(mh.text) && mh.alerts > 0, mh && { stages: mh.stages, alerts: mh.alerts, t: mh.text.slice(0, 160) });
+  if (SHOTS) {
+    await page.evaluate(() => { const h = document.querySelector('#eddCardHost .edd-health'); if (h) h.open = true; });
+    const eh = await page.$('#eddCardHost .edd-health'); if (eh) await eh.screenshot({ path: path.join(SHOTS, 'model_health_desktop.png') });
+    for (const lv of ['beginner', 'research', 'lab']) { await page.evaluate((x) => { const d = window.EDDecisionUI._state.registry['e2e-bet']; document.getElementById('eddTestHost').innerHTML = window.EDDecisionUI.actionCardHTML(d, { level: x }); }, lv); const el2 = await page.$('#eddTestHost .edd-act'); if (el2) await el2.screenshot({ path: path.join(SHOTS, 'action_card_' + lv + '.png') }); }
+  }
   chk('no page errors on desktop', A.errors.length === 0, A.errors);
 
   /* the NFL: decided by the same engine — never NO DECISION for want of calibration */
@@ -304,6 +333,11 @@ const BET_BUILDER = () => {
   await p2.click('#eddTestHost .edd-reason > summary');
   const m3 = await p2.evaluate(() => ({ open: document.querySelector('#eddTestHost .edd-reason').open, sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
   chk('"View reasoning" expands in place, still without sideways scroll', m3.open && m3.sw <= m3.cw + 1, m3);
+  await p2.evaluate(() => { const d = window.EDDecisionUI._state.registry['e2e-bet']; document.getElementById('eddTestHost').innerHTML = window.EDDecisionUI.actionCardHTML(d, { mobile: true, level: 'lab' }); const s = document.querySelector('#eddTestHost .edd-act'); s.querySelectorAll('details').forEach((x) => { x.open = true; }); });
+  await p2.waitForTimeout(300);
+  const m2l = await p2.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+  chk('the Lab, fully expanded on a phone, never scrolls the page sideways (tables scroll in their own box)', m2l.sw <= m2l.cw + 1, m2l);
+  if (SHOTS) { const el3 = await p2.$('#eddTestHost .edd-act'); if (el3) await el3.screenshot({ path: path.join(SHOTS, 'action_card_lab_phone.png') }); }
   if (SHOTS) { const el = await p2.$('#eddTestHost .edd-act'); if (el) await el.screenshot({ path: path.join(SHOTS, 'action_card_bet_phone.png') }); await p2.evaluate(() => { const h = document.getElementById('eddTestHost'); if (h) h.remove(); window.scrollTo(0, 0); }); await p2.screenshot({ path: path.join(SHOTS, 'edgedesk_card_phone.png') }); }
   chk('no page errors on the phone', B.errors.length === 0, B.errors);
   await B.ctx.close();

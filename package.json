@@ -302,6 +302,12 @@
     "football:decision:test": "node tools/bettor/football_decision.test.js",
     "bettor:sql": "node tools/bettor/bettor_sql.test.js",
     "bettor:e2e": "node tools/bettor/decision_ui.e2e.js",
-    "bettor:sync": "node football/cfb_terminal/decisions_sync.js"
+    "bettor:sync": "node football/cfb_terminal/decisions_sync.js",
+    "validation:test": "node tools/validation/market_execution.test.js && node tools/validation/validation_engine.test.js && node tools/validation/ledger_health.test.js && node tools/validation/explain.test.js && node tools/validation/info_levels_ui.test.js",
+    "validation:sql": "node tools/validation/decision_validation_sql.test.js",
+    "validation:health": "node tools/validation/model_health.js",
+    "validation:health:write": "node tools/validation/model_health.js --write",
+    "validation:health:check": "node tools/validation/model_health.js --check",
+    "validation:keys": "node tools/validation/build_key_numbers.js --write"
   }
 }

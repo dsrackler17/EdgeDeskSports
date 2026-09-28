@@ -1,0 +1,96 @@
+# EdgeDesk decision quality — the canonical market, the execution layer, the
+# validation engine, the explanations and the three information levels.
+#
+# These modules decide what a reader is told to do with money: which quote is
+# real, which price to take, whether a decision is BET / LEAN / WATCH / PASS,
+# and whether EdgeDesk's own decisions have earned any trust. A change that
+# lets one off-market quote become a BET, blends backtest with live results,
+# grades a decision with closing information, hides a losing decision, or
+# prints a percentage without its sample size has to fail on the PR that
+# makes it. Offline; the SQL suite starts a throwaway PostgreSQL cluster.
+name: Decision quality
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_market.js'
+      - 'lib/edgedesk_execution.js'
+      - 'lib/edgedesk_validation.js'
+      - 'lib/edgedesk_explain.js'
+      - 'lib/edgedesk_vocab.js'
+      - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_decision.css'
+      - 'lib/edgedesk_bankroll.js'
+      - 'lib/edgedesk_quote_ev.js'
+      - 'lib/edgedesk_personal_ui.js'
+      - 'football/engine.js'
+      - 'football/params.js'
+      - 'football/cfb_p4/params.js'
+      - 'football/cfb_terminal/decisions*.js'
+      - 'football/validation/key_numbers.json'
+      - 'football/validation/model_health.json'
+      - 'football/validation/pricing_*.json'
+      - 'tools/validation/**'
+      - 'tools/bettor/**'
+      - 'supabase/bettor_decisions.sql'
+      - 'supabase/decision_validation.sql'
+      - 'app.html'
+      - '.github/workflows/decision-quality.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_market.js'
+      - 'lib/edgedesk_execution.js'
+      - 'lib/edgedesk_validation.js'
+      - 'lib/edgedesk_explain.js'
+      - 'lib/edgedesk_decision*.js'
+      - 'tools/validation/**'
+      - 'supabase/decision_validation.sql'
+      - '.github/workflows/decision-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: decision-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Canonical market and execution (consensus, outliers, verification, quality index, movement, ladder, best execution, key numbers, engine parity)
+        run: node tools/validation/market_execution.test.js
+      - name: Validation engine (modes never blended, sample-size states, segmentation, calibration, CLV, expectations, leakage audit)
+        run: node tools/validation/validation_engine.test.js
+      - name: Every decision class graded; model health reproduces from the committed inputs
+        run: node tools/validation/ledger_health.test.js
+      - name: Explanations (one line, why not, what changes my mind, sensitivity, alerts)
+        run: node tools/validation/explain.test.js
+      - name: Beginner / Research / Lab, model health and exposure limits on the card
+        run: node tools/validation/info_levels_ui.test.js
+      - name: The model health report builds, and is not stale for its own inputs (writes nothing)
+        run: node tools/validation/model_health.js --check
+      - name: The bettor decision layer, the unified football engine and one meaning per state still hold
+        run: node tools/bettor/decision.test.js && node tools/bettor/football_decision.test.js && node tools/bettor/consistency.test.js
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      # The runner image ships PostgreSQL; the suite starts its own cluster,
+      # applies the migrations twice, and tears it down.
+      - name: Decision evaluations are write-once, pregame, and never graded with a close captured before the decision
+        env:
+          DECISION_VALIDATION_SQL_REQUIRED: '1'
+        run: node tools/validation/decision_validation_sql.test.js

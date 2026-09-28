@@ -218,7 +218,27 @@ validated**. See [`docs/bettor-decision/DESIGN.md`](docs/bettor-decision/DESIGN.
 the audit in `docs/bettor-decision/AUDIT.md` and the engineering report in
 `docs/bettor-decision/REPORT.md`.
 
+**Decision quality** ([`docs/bettor-decision/QUALITY_UPGRADE.md`](docs/bettor-decision/QUALITY_UPGRADE.md)):
+
+- Every decision reads **one canonical market** (`lib/edgedesk_market.js`), which carries:
+  - consensus, verification status, depth and a quality index that is not a probability;
+  - the sharp reference;
+  - movement that is described, never attributed.
+
+  One off-market book is named with its distance from consensus and cannot become a BET.
+- An **execution layer** (`lib/edgedesk_execution.js`) shows:
+  - the price-value curve;
+  - a ladder of only the rungs where the decision changes;
+  - best execution with its reason;
+  - empirical key numbers (`football/validation/key_numbers.json`).
+- Every decision carries **versions** and a leakage flag.
+- The build ledger grades **every class** (PASS and WATCH too) with CLV in points and in price.
+- `lib/edgedesk_validation.js` keeps backtest, walk-forward, reconstructed and live evidence apart. Every figure prints its `n` and a sample state (<50 too early · 50–199 early signal · 200–499 developing · 500+ meaningful). Research alerts never change anything automatically.
+- The Card page reads a cached **model health** report (`football/validation/model_health.json`).
+- Cards come in **Beginner / Research / Lab** levels (`lib/edgedesk_explain.js`): a one-line answer, why not, what changes my mind, and break the number.
+
 - `npm run bettor:test` — the engine, tracks, bankroll, inputs and renderers, and the unified NFL/CFB engine suite (`tools/bettor/football_decision.test.js`: cases A–L plus the real NFL and CFB payloads)
+- `npm run validation:test` — canonical market, execution, validation, ledger & model health, explanations and the three levels; `npm run validation:sql` — `supabase/decision_validation.sql` against a real PostgreSQL; `npm run validation:health` — the model health report
 - `npm run bettor:sql` — `supabase/bettor_decisions.sql` against a real PostgreSQL
 - `npm run bettor:e2e` — the layer in Chromium, desktop and a 390 px phone
 
