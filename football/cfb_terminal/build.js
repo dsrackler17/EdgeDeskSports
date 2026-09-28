@@ -862,11 +862,15 @@ function main() {
   built.forEach((x) => {
     const s = x.snapshot;
     if (!s) return;
-    const prior = (ctx.history.get(s.game_id) || []).slice().sort((a, b) => ms(a.at) - ms(b.at)).pop();
+    const rows = ctx.history.get(s.game_id) || [];
+    const prior = rows.slice().sort((a, b) => ms(a.at) - ms(b.at)).pop();
     if (prior && prior.snapshot_id === s.snapshot_id) return;
     if (prior && prior.model_version === s.model_version && Math.abs(prior.home_margin - s.home_margin) < 0.005
       && JSON.stringify(prior.terms) === JSON.stringify(s.terms) && JSON.stringify(prior.qb) === JSON.stringify(s.qb)
       && prior.research_status === s.research_status && prior.verification === s.verification) return;
+    /* a state can come back (WORTH_RESEARCHING → NO_MARKET → WORTH_RESEARCHING):
+       the return is its own row, so its id also carries when it was observed */
+    if (rows.some((r) => r.snapshot_id === s.snapshot_id)) s.snapshot_id = 'cfbt_' + sha([s.snapshot_id, s.observed_at]).slice(0, 24);
     newSnaps.push(s);
   });
 
