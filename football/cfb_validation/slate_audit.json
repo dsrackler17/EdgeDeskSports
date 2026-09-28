@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-09-28T03:07:25.338Z",
- "board_generated_at": "2026-09-28T03:07:24.871Z",
+ "generated_at": "2026-09-28T04:07:25.084Z",
+ "board_generated_at": "2026-09-28T04:07:24.681Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -15,138 +15,6 @@
   "football-only calibration preserves the major gap"
  ],
  "games": [
-  {
-   "game_id": "401856822",
-   "game": "West Virginia @ Iowa State",
-   "kickoff": "2026-10-03T16:00:00.000Z",
-   "named": true,
-   "edgedesk": "Iowa State -10.2",
-   "market": "Iowa State -3.0",
-   "books": 1,
-   "gap": 7.18,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-03T16:00:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Jack Trice Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 5.5 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Iowa State: Jaylen Raynor (previous game) · PASS: West Virginia: Michael Hawkins Jr. (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Iowa State: availability sources checked, nothing filed · PASS: West Virginia: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required)"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 5.5 — the extreme is not supported by how margins of this size have actually finished"
-    }
-   ],
-   "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; submodel support fail; football-only calibration preserves the major gap fail."
-  },
-  {
-   "game_id": "401869962",
-   "game": "Marshall @ James Madison",
-   "kickoff": "2026-10-03T19:45:00.000Z",
-   "named": true,
-   "edgedesk": "James Madison -25.7",
-   "market": "James Madison -17.5",
-   "books": 1,
-   "gap": 8.24,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-03T19:45:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Bridgeforth Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 3.5 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: James Madison: Camden Coleman (previous game) · PASS: Marshall: Khalil Wilkins (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "FAIL",
-     "detail": "FAIL: James Madison: availability feed fetch failed — abnormal missing data · FAIL: Marshall: availability feed fetch failed — abnormal missing data"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "WARN: the matchup term alone (2.1 pts) lifts the gap over 7: without it the gap is 6.2 — historically informative, flagged for scrutiny"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (3 on the market’s side; 2 required) · FAIL: the independent ensemble is 3.3 pts on the market’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6 — the extreme is not supported by how margins of this size have actually finished"
-    }
-   ],
-   "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail; football-only calibration preserves the major gap fail."
-  },
   {
    "game_id": "401858252",
    "game": "Syracuse @ UConn",
@@ -224,6 +92,72 @@
    "gap": 13.09,
    "gap_class": "MAJOR",
    "favorite_flip": true,
+   "research_status": "NO_MARKET",
+   "research_label": "NO MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "NO MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+  },
+  {
+   "game_id": "401856822",
+   "game": "West Virginia @ Iowa State",
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "named": true,
+   "edgedesk": "Iowa State -10.2",
+   "market": "Iowa State -3.0",
+   "books": 0,
+   "gap": 7.18,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
    "research_status": "NO_MARKET",
    "research_label": "NO MARKET",
    "decision_status": "NO_DECISION",
@@ -420,6 +354,72 @@
    "market": "Ohio State -14.0",
    "books": 0,
    "gap": 7.19,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "NO MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "NO MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+  },
+  {
+   "game_id": "401869962",
+   "game": "Marshall @ James Madison",
+   "kickoff": "2026-10-03T19:45:00.000Z",
+   "named": true,
+   "edgedesk": "James Madison -25.7",
+   "market": "James Madison -17.5",
+   "books": 0,
+   "gap": 8.24,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "NO_MARKET",
