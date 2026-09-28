@@ -819,7 +819,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .bottomnav button.on .ic{stroke-width:2.2}
 .bottomnav .ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;flex:none}
 .bottomnav button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px;border-radius:10px}
-/* five seats share a phone's width, so the labels stay readable at 320px */
+/* six seats share a phone's width, so the labels stay readable at 320px */
 @media(max-width:359px){.bottomnav button{font-size:10px}}
 @media(min-width:760px){.bottomnav{justify-content:center;gap:8px}.bottomnav button{flex:0 0 104px;font-size:11px}}
 /* the disclaimer sits ABOVE the nav (nav height + its own safe-area pad) as
@@ -3751,8 +3751,10 @@ window.mcRefresh=function(){
 };
 </script>
 <nav class="bottomnav" role="navigation" aria-label="Primary">
-  <!-- Five seats, in the product's order: the research people open the app
-       for, the edges that sit beside it, the AI desk, the proof, and More.
+  <!-- Six seats, in the product's order: the research people open the app
+       for, the EdgeDesk Card right beside it (what that research says to bet,
+       at what price and how many units, one tap away), the edges, the AI
+       desk, the proof, and More.
        Collective, Ledger and News left the bar but lost nothing: their views,
        routes and loaders are untouched, More lists each of them first, and
        More reads active while one of them is open (NAV_OWNER in show()).
@@ -3761,6 +3763,7 @@ window.mcRefresh=function(){
        entry points to the same panel, one of them hovering over the board,
        was the clutter. -->
   <button data-v="research" class="on" aria-current="page" aria-label="Research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
+  <button data-v="card" aria-label="EdgeDesk Card"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M14 15.5l2 2 3.5-4"/></svg>Card</button>
   <button data-v="edges" aria-label="Edges"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
   <button data-v="ai" aria-label="AI"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>AI</button>
   <button data-v="record" aria-label="Record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
@@ -5103,7 +5106,7 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
      their own; they are reached through More (or the header health control),
      so More is the tab that reads active while one of them is open. Without
      this the bar shows nothing active and a reader loses their place. */
-  var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',ledger:'more',news:'more',card:'more'};var navOn=NAV_OWNER[v]||v;
+  var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',ledger:'more',news:'more'};var navOn=NAV_OWNER[v]||v;
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){b[j].classList.toggle('on',b[j].dataset.v===navOn);if(b[j].dataset.v===navOn)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
   if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard($('eddCardHost'));}catch(_){}}/*ADDED: the EdgeDesk Card (bettor decision layer)*/
   if(v==='social')loadSocial();else plStop();}
@@ -19838,7 +19841,6 @@ function loadMore(){
   /* the destinations that left the bottom bar come first: they are product,
      not plumbing, and each opens its own untouched view */
   var dest=[];
-  if($('v-card'))dest.push(moreItem(IC.ledger,'EdgeDesk Card','Current actionable betting state: BET, WAIT, PASS or NO DECISION for every priced game, with units and playable ranges.','show(\'card\')'));
   if($('v-collective'))dest.push(moreItem(IC.collective,'Collective','Independent model creators, one independently graded record.','show(\'collective\')'));
   if($('v-ledger'))dest.push(moreItem(IC.ledger,'Ledger','The market\u2019s moves tracked automatically, plus the bets you log by hand.','show(\'ledger\')'));
   if($('v-news'))dest.push(moreItem(IC.news,'News','News that touches a tracked team or a structural rule, with Moat Alerts.','show(\'news\')'));

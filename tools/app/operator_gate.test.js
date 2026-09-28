@@ -172,7 +172,7 @@ chk('every Collective posting handler is guarded',
 /* ======================================================================== */
 /* the Collective destination itself is a customer feature and stays */
 has(APP, 'id="v-collective"', 'the Collective view is untouched');
-/* it left the bottom bar for More (five seats), not the product */
+/* it left the bottom bar for More, not the product */
 has(APP, "show(\\'collective\\')", 'and More still opens it');
 has(APP, 'function loadCollective(', 'and its loader');
 /* research surfaces are untouched */
