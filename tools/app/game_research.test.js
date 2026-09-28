@@ -166,21 +166,26 @@ eq('a gap inside the research threshold is PASS',
   C.fbGxState(proj({ spread: 7.7, mkt: 7.3 })).key, 'PASS');
 eq('a gap at the research threshold is REVIEW',
   C.fbGxState(proj({ spread: 7.7, mkt: 7.7 - MIN_GAP })).key, 'REVIEW');
-eq('a gap past the guard bound is INVESTIGATE',
-  C.fbGxState(proj({ spread: 30, mkt: 30 - GUARD - 1 })).key, 'INVESTIGATE');
+eq('a gap past the guard bound, with no gate result, is DATA FAULT (canonical)',
+  C.fbGxState(proj({ spread: 30, mkt: 30 - GUARD - 1 })).key, 'DATA_FAULT');
+eq('a 7+ gap with no gate result is INVESTIGATE (canonical: never verified by default)',
+  C.fbGxState(proj({ spread: 10, mkt: 1 })).key, 'INVESTIGATE');
+eq('the aligned state reads MARKET ALIGNED, not PASS (PASS is a decision)', C.fbGxState(proj({ spread: 7.7, mkt: 7.3 })).label, 'Market aligned');
+eq('the research-gap state reads WORTH RESEARCHING, not Review', C.fbGxState(proj({ spread: 7.7, mkt: 2 })).label, 'Worth researching');
 eq('confidence below the engine floor is THIN, whatever the gap',
   C.fbGxState(proj({ conf: MIN_CONF - 1, spread: 7.7, mkt: 7.3 })).key, 'THIN');
-eq('and THIN outranks a gap that would otherwise INVESTIGATE',
+eq('and THIN outranks a gap that would otherwise be a fault',
   C.fbGxState(proj({ conf: 5, spread: 30, mkt: 0 })).key, 'THIN');
 eq('no market number is its own state, never PASS',
   C.fbGxState(proj({ mkt: null, gap: null })).key, 'NO_MARKET');
 chk('an unknown confidence is thin, not healthy',
   C.fbGxState(proj({ conf: null })).key === 'THIN');
 /* every state explains itself in a sentence that is written, not generated */
-['PASS', 'REVIEW', 'INVESTIGATE', 'THIN', 'NO_MARKET'].forEach(k => {
+['PASS', 'REVIEW', 'INVESTIGATE', 'DATA_FAULT', 'THIN', 'NO_MARKET'].forEach(k => {
   const st = k === 'PASS' ? C.fbGxState(proj({ spread: 7.7, mkt: 7.3 }))
     : k === 'REVIEW' ? C.fbGxState(proj({ spread: 7.7, mkt: 2 }))
-    : k === 'INVESTIGATE' ? C.fbGxState(proj({ spread: 30, mkt: 0 }))
+    : k === 'INVESTIGATE' ? C.fbGxState(proj({ spread: 10, mkt: 1 }))
+    : k === 'DATA_FAULT' ? C.fbGxState(proj({ spread: 30, mkt: 0 }))
     : k === 'THIN' ? C.fbGxState(proj({ conf: 5 }))
     : C.fbGxState(proj({ mkt: null, gap: null }));
   chk('the ' + k + ' state carries a what-this-means sentence', st.means && st.means.length > 60);

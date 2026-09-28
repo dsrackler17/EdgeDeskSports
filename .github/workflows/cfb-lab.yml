@@ -133,6 +133,16 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: node football/cfb_terminal/build.js || echo "::warning::the research terminal could not be rebuilt; the last published objects stay up"
 
+      # Live validation (football/cfb_validation): the separated model / market /
+      # betting views, the since-upgrade view against the frozen champion, the
+      # 138-team rating-state divergence monitor, the verified / investigate
+      # scorecards, postmortems, research triggers and the weekly scorecard.
+      # It reads the ledger and the research objects just rebuilt; it changes
+      # no model. A pricing-code change is appended as a declared PATCH.
+      - name: Live validation (football/cfb_validation)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node football/cfb_validation/build.js || echo "::warning::the live validation build did not run; the last published files stay up"
+
       - name: Operations report (football/cfb_production/reports/ops.json, admin/cfb-ops)
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         env:
@@ -153,7 +163,7 @@ jobs:
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
             football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
-            football/cfb_production/reports/traces.json football/cfb_terminal
+            football/cfb_production/reports/traces.json football/cfb_terminal football/cfb_validation
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}

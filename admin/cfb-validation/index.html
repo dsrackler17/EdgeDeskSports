@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>CFB Live Validation</title>
+<meta name="description" content="Internal: is the current EdgeDesk CFB version actually getting better? Model, market and betting kept apart; version boundaries never blended.">
+<!--
+  THE CFB LIVE-VALIDATION DASHBOARD — internal, the Model Lab's truth source
+  for one question: IS THE CURRENT VERSION ACTUALLY GETTING BETTER?
+
+  It computes nothing. Every number is read from the committed artifacts
+  football/cfb_validation/build.js writes hourly from the append-only Model Lab
+  ledger:
+    live.json          north star, the separated views, scorecard, triggers,
+                       backlog, next 100, what changed, versions
+    signals.json       verified / investigate / favorite-flip scorecards
+    divergence.json    the 138-team rating-state divergence monitor
+    postmortems.json   loss, win and miss postmortems
+    slate_audit.json   the current slate's status audit
+    changes.json       per-game projection changes, attributed
+    maturity.json      the model maturity table
+  Definitions: docs/cfb-validation/DELIVERABLE.md. The rendering is a pure
+  block between the EDVAL markers (data in, HTML out, no DOM access), so
+  tools/validation/ui.test.js runs this page's own code against the
+  committed artifacts.
+
+  THREE SECTIONS NEVER MERGED: FOOTBALL MODEL · MARKET INTELLIGENCE · BETTING
+  DECISIONS. Version boundaries are columns, never a blend.
+-->
+<style>
+.viz-root{
+  color-scheme:dark;
+  --page:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;
+  --text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--grid:#2c2a23;--axis:#3a3326;
+  --series-1:#3987e5;--series-1-soft:rgba(57,135,229,.16);
+  --warning:#fab219;--critical:#e05252;--good:#2fb82f;
+  --warning-soft:rgba(250,178,25,.12);--critical-soft:rgba(224,82,82,.12);--good-soft:rgba(47,184,47,.12);
+}
+@media (prefers-color-scheme: light){
+  :root:where(:not([data-theme="dark"])) .viz-root{
+    color-scheme:light;
+    --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+    --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
+    --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+    --warning:#a86b00;--critical:#b42323;--good:#0b7a0b;
+    --warning-soft:rgba(168,107,0,.10);--critical-soft:rgba(180,35,35,.08);--good-soft:rgba(11,122,11,.08);
+  }
+  html:where(:not([data-theme="dark"])){background:#f9f9f7}
+}
+:root[data-theme="light"] .viz-root{
+  color-scheme:light;
+  --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+  --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
+  --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+  --warning:#a86b00;--critical:#b42323;--good:#0b7a0b;
+  --warning-soft:rgba(168,107,0,.10);--critical-soft:rgba(180,35,35,.08);--good-soft:rgba(11,122,11,.08);
+}
+*{box-sizing:border-box;margin:0}
+html{background:#100e0a}
+:root[data-theme="light"]{background:#f9f9f7}
+body.viz-root{background:var(--page);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.45;overflow-x:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px 48px}
+header{border-bottom:1px solid var(--border);padding:14px 0 10px}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:18px;font-weight:700}
+.tag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:12px;padding:2px 8px;font-weight:600}
+.sub{color:var(--dim);font-size:12.5px;margin-top:6px;max-width:860px;overflow-wrap:anywhere}
+.err{color:var(--critical);font-size:13px;margin-top:8px}
+.toc{position:sticky;top:0;z-index:5;background:var(--page);border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px 14px;padding:8px 0;margin-bottom:14px;font-size:12.5px}
+.toc a{color:var(--dim);text-decoration:none;white-space:nowrap}
+.toc a:hover,.toc a:focus{color:var(--text);text-decoration:underline}
+.stamp{font-size:11.5px;color:var(--faint);margin:0 0 12px;overflow-wrap:anywhere}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;min-width:0;scroll-margin-top:44px}
+.card>h2{font-size:15px;font-weight:700;margin-bottom:2px}
+h3{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);margin:14px 0 6px}
+h4{font-size:12.5px;font-weight:600;margin:10px 0 4px}
+.note{font-size:12px;color:var(--dim);margin:2px 0 8px;max-width:900px;overflow-wrap:anywhere}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}
+.tile{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-width:0}
+.tile .l{font-size:11px;color:var(--dim)}
+.tile .v{font-size:18px;font-weight:600;margin-top:1px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile .d{font-size:11px;color:var(--faint);margin-top:1px;overflow-wrap:anywhere}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;margin:4px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:bottom}
+td{padding:4px 7px;border-bottom:1px solid var(--grid);vertical-align:top;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.txt{white-space:normal;min-width:220px;max-width:520px;overflow-wrap:anywhere}
+tr.mkt td{color:var(--dim);font-style:italic}
+tr.grp td{border-top:1px solid var(--border)}
+tbody tr:hover td{background:var(--surface2)}
+.mv{font-size:10.5px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.dim{color:var(--dim)}
+.faint{color:var(--faint)}
+.chip{display:inline-block;font-size:9.5px;line-height:1.5;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:9px;padding:0 6px;color:var(--dim);font-weight:700;vertical-align:1px;white-space:nowrap;font-style:normal}
+.chip.good{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.chip.warn{color:var(--warning);border-color:var(--warning);background:var(--warning-soft)}
+.chip.bad{color:var(--critical);border-color:var(--critical);background:var(--critical-soft)}
+.chip.info{color:var(--series-1);border-color:var(--series-1);background:var(--series-1-soft)}
+.ss{display:inline-block;font-size:9.5px;color:var(--warning);border:1px dashed var(--warning);border-radius:8px;padding:0 5px;margin-left:4px;white-space:nowrap;font-weight:600;vertical-align:1px}
+.empty{border:1px dashed var(--border);border-radius:8px;padding:10px 12px;color:var(--dim);font-size:12.5px;margin:6px 0}
+.banner{border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:8px;padding:9px 12px;margin:6px 0 10px;font-size:12.5px;background:var(--warning-soft)}
+.banner.bad{border-left-color:var(--critical);background:var(--critical-soft)}
+.banner b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.gates{list-style:none;padding:0;margin:6px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:4px 14px;font-size:12px}
+.gates li{display:flex;gap:6px;align-items:baseline}
+.promo{border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:8px 0;background:var(--surface2)}
+details{margin:6px 0}
+details>summary{cursor:pointer;color:var(--dim);font-size:12.5px;padding:3px 0}
+details.model{border:1px solid var(--border);border-radius:8px;padding:4px 10px;margin:8px 0}
+details.model>summary{color:var(--text);font-size:13px;font-weight:600}
+.flags{margin:4px 0 6px;font-size:12px}
+.flags div{margin:2px 0}
+.quad td{text-align:right;font-variant-numeric:tabular-nums}
+.quad td:first-child,.quad th:first-child{text-align:left}
+@media(max-width:560px){.tile .v{font-size:16px}td.txt{min-width:180px}}
+</style>
+<style>
+.vw th.v{white-space:normal;min-width:92px}
+.vw td.sec{color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding-top:10px}
+.vw td.cur,.vw th.cur{background:var(--series-1-soft)}
+pre.rep{white-space:pre-wrap;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-wrap:anywhere}
+</style>
+</head>
+<body class="viz-root">
+<div class="wrap">
+  <header>
+    <div class="hd"><h1>CFB Live Validation</h1><span class="tag">Internal · Model Lab truth source</span></div>
+    <p class="sub">Is the current version actually getting better? The frozen champion is judged only on its own LIVE, frozen, official snapshots since the freeze; legacy numbers are kept beside it and never blended. Football model, market intelligence and betting decisions are three separate sections. Nothing here changes a model. <a href="../cfb-lab/">Model Lab →</a></p>
+    <p class="err" id="err" role="alert"></p>
+  </header>
+  <main id="val" aria-live="polite"><p class="empty">Loading the validation artifacts…</p></main>
+</div>
+<script>
+/*__EDVAL_START__*/
+(function(){
+  'use strict';
+  var D='\u2014';
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function n(x){ return typeof x==='number'&&isFinite(x); }
+  function fx(x,d){ return n(x)?x.toFixed(d==null?2:d):D; }
+  function pc(x,d){ return n(x)?(100*x).toFixed(d==null?1:d)+'%':D; }
+  function pv(x){ return n(x)?x.toFixed(1)+'%':D; }
+  function sg(x,d){ return n(x)?(x>0?'+':'')+x.toFixed(d==null?2:d):D; }
+  function when(t){ return t?esc(String(t).replace('T',' ').slice(0,16))+' UTC':D; }
+  function chip(t,c){ return '<span class="chip '+(c||'')+'">'+esc(t)+'</span>'; }
+  function tile(l,v,d){ return '<div class="tile"><div class="l">'+esc(l)+'</div><div class="v">'+v+'</div>'+(d?'<div class="d">'+d+'</div>':'')+'</div>'; }
+  /* t is plain text (escaped here, once); badge is already-built HTML */
+  function card(id,t,body,note,badge){ return '<section class="card" id="'+id+'"><h2>'+esc(t)+(badge?' '+badge:'')+'</h2>'+(note?'<p class="note">'+note+'</p>':'')+body+'</section>'; }
+  var SECTIONS=[['north','North star'],['views','Live validation'],['score','Saturday scorecard'],['signals','Verified vs investigate'],['div','Rating-state divergence'],
+    ['trig','Research triggers & backlog'],['pm','Postmortems'],['n100','Next 100 games'],['chg','What changed'],['audit','Current-slate audit'],['mat','Model maturity'],['ver','Versions']];
+  function navHTML(){ return '<nav class="toc" aria-label="Sections">'+SECTIONS.map(function(s,i){ return '<a href="#'+s[0]+'">'+(i+1)+' '+esc(s[1])+'</a>'; }).join('')+'</nav>'; }
+
+  function northHTML(L){
+    if(!L) return card('north','North star','<div class="banner bad"><b>live.json did not load</b>Nothing below is a finding.</div>');
+    var s=L.north_star;
+    return card('north','North star · '+L.question,'<div class="kpis">'
+      +tile('Current model version','<span class="mv">'+esc(s.current_model_version)+'</span>',esc(s.release)+' · frozen '+when(s.frozen_at))
+      +tile('Live games (settled, official)',String(s.live_games),esc(s.state))
+      +tile('Model MAE',fx(s.model_mae),'pts, since the freeze')
+      +tile('Market moved toward EdgeDesk',pv(s.market_moved_toward_edgedesk_pct),'of moved lines')
+      +tile('Average CLV',sg(s.average_clv),'pts')
+      +tile('Calibration (win ECE)',fx(s.calibration_error,3),'80% coverage '+pc(s.interval_coverage_80,0))
+      +tile('Verified major N',String(s.verified_major_n==null?D:s.verified_major_n),'gate verdicts frozen on the snapshot')
+      +tile('Qualified bet N',String(s.qualified_bet_n),'the decision engine\u2019s BET only')
+      +'</div>','generated '+when(L.generated_at)+' · '+esc(L.separation));
+  }
+  var ROWS=[
+    ['FOOTBALL MODEL',null],['games graded','football_model','n',0],['MAE','football_model','mae',2],['RMSE','football_model','rmse',2],['median abs error','football_model','median_ae',2],
+    ['tail p90 / p95','football_model',function(v){ return fx(v.p90_ae,1)+' / '+fx(v.p95_ae,1); }],['worst error','football_model','worst_ae',1],['bias','football_model','bias',2],
+    ['Brier (win)','football_model','brier',4],['calibration error (ECE)','football_model','calibration_error',3],
+    ['interval coverage 50 / 80 / 95','football_model',function(v){ var c=v.interval_coverage||{}; return pc(c.p50,0)+' / '+pc(c.p80,0)+' / '+pc(c.p95,0); }],
+    ['MARKET INTELLIGENCE',null],['opening-market MAE','market_intelligence','opening_market_mae',2],['closing-market MAE','market_intelligence','closing_market_mae',2],
+    ['EdgeDesk closer than opener','market_intelligence',function(v){ return pv(v.edgedesk_closer_than_opener_pct); }],['EdgeDesk closer than close','market_intelligence',function(v){ return pv(v.edgedesk_closer_than_close_pct); }],
+    ['market moved toward EdgeDesk','market_intelligence',function(v){ return pv(v.market_moved_toward_edgedesk_pct); }],['average CLV (pts)','market_intelligence',function(v){ return sg(v.average_clv_points); }],
+    ['positive CLV','market_intelligence',function(v){ return pv(v.positive_clv_pct); }],
+    ['BETTING DECISIONS',null],['qualified wagers','betting_decisions',function(v){ return String(v.qualified_wagers.decisions||0); }],
+    ['ATS (qualified)','betting_decisions',function(v){ var q=v.qualified_wagers; return q.decisions?(q.wins+'-'+q.losses+(q.pushes?'-'+q.pushes:'')):D; }],
+    ['ROI / drawdown','betting_decisions',function(v){ var q=v.qualified_wagers; return q.decisions?(pc(q.roi)+' / '+fx(q.max_drawdown,2)+'u'):D; }],
+    ['research leans (hypothetical)','betting_decisions',function(v){ var q=v.research_positions_hypothetical; return q.decisions?(q.wins+'-'+q.losses+' · not wagers'):D; }]
+  ];
+  function viewsHTML(L){
+    if(!L) return '';
+    var V=L.views||[];
+    var head='<tr><th>metric</th>'+V.map(function(v){ return '<th class="num v'+(v.id==='SINCE_UPGRADE'?' cur':'')+'" title="'+esc(v.note)+'">'+esc(v.label)+'</th>'; }).join('')+'</tr>';
+    var body=ROWS.map(function(r){
+      if(!r[1]) return '<tr><td class="sec" colspan="'+(V.length+1)+'">'+esc(r[0])+'</td></tr>';
+      return '<tr><td>'+esc(r[0])+'</td>'+V.map(function(v){ var o=v[r[1]]||{}, val=typeof r[2]==='function'?r[2](o):(r[3]===0?String(o[r[2]]==null?D:o[r[2]]):fx(o[r[2]],r[3])); return '<td class="num'+(v.id==='SINCE_UPGRADE'?' cur':'')+'">'+val+'</td>'; }).join('')+'</tr>';
+    }).join('');
+    return card('views','Live validation · every view, never blended','<div class="scroll"><table class="vw">'+head+body+'</table></div>',
+      'SINCE CURRENT MODEL VERSION (highlighted) is the only view that judges the current version: LIVE official snapshots of the frozen champion since '+when(L.freeze.effective_at)
+      +'. LEGACY is the reconstructed record, kept and never mixed in. ALL HISTORICAL mixes epochs and is shown only beside the separated views. Hover a column for its population.');
+  }
+  function blockRows(b){ var m=b.model_quality,k=b.market_quality,d=b.decisions;
+    return '<td class="num">'+m.games_graded+'</td><td class="num">'+fx(m.mae)+'</td><td class="num">'+fx(m.median_error)+'</td><td class="num">'+fx(m.worst_error,1)+'</td><td class="num">'+pc(m.interval_coverage_80,0)+'</td>'
+      +'<td class="num">'+k.early_disagreements+'</td><td class="num">'+pv(k.market_moved_toward_pct)+'</td><td class="num">'+sg(k.average_clv)+'</td>'
+      +'<td class="num">'+d.BET+' / '+d.WAIT+' / '+d.PASS+'</td><td class="num">'+esc(d.ats)+'</td>'; }
+  function scoreHTML(L){
+    var S=L&&L.scorecard_latest;
+    if(!S) return card('score','Saturday scorecard','<p class="empty">No week has been graded yet.</p>');
+    var g=S.research_gates||{};
+    var t='<div class="scroll"><table><tr><th>window</th><th class="num">games</th><th class="num">MAE</th><th class="num">median</th><th class="num">worst</th><th class="num">80% cov.</th><th class="num">early 2+ gaps</th><th class="num">moved toward</th><th class="num">avg CLV</th><th class="num">BET / WAIT / PASS</th><th class="num">ATS</th></tr>'
+      +[['THIS WEEK',S.this_week],['ROLLING 4 WEEKS',S.rolling_4_weeks],['SEASON',S.season_to_date],['CURRENT MODEL VERSION',S.current_model_version]].map(function(x){ return '<tr><td>'+x[0]+'</td>'+blockRows(x[1])+'</tr>'; }).join('')+'</table></div>';
+    var gates='<p class="note">Research gates this week: verified major '+(g.verified==null?D:g.verified)+' · investigate '+(g.investigate==null?D:g.investigate)+' · data faults '+(g.data_faults==null?D:g.data_faults)+(g.note?' · '+esc(g.note):'')+'</p>';
+    var files=(L.weekly_files||[]).map(function(f){ return '<a href="../../'+esc(f.md)+'">'+esc(f.file.split('/').pop().replace('.json',''))+'</a>'; }).join(' · ');
+    return card('score','Saturday scorecard · week '+S.week,t+gates+'<h3>Weekly executive report</h3><pre class="rep">'+esc(S.report.text)+'</pre>'+(files?'<p class="note">Every week, written once: '+files+'</p>':''),esc(S.epoch_note),chip(S.epoch,S.epoch==='LEGACY'?'warn':'info'));
+  }
+  function sigTable(rows){ if(!rows||!rows.length) return '<p class="empty">None on file.</p>';
+    return '<div class="scroll"><table><tr><th>game</th><th>wk</th><th class="num">EdgeDesk</th><th class="num">market then</th><th class="num">close</th><th class="num">final</th><th class="num">gap</th><th>moved toward</th><th class="num">ED err</th><th class="num">close err</th><th>ATS (hyp.)</th><th>verdict</th></tr>'
+    +rows.map(function(r){ return '<tr><td>'+esc(r.game)+(r.favorite_flip?' '+chip('flip','warn'):'')+'</td><td>'+esc(r.week)+'</td><td class="num">'+sg(r.edgedesk_fair,1)+'</td><td class="num">'+sg(r.market_at_snapshot,1)+'</td><td class="num">'+sg(r.closing_market,1)+'</td><td class="num">'+(r.final_margin==null?D:r.final_margin)+'</td><td class="num">'+fx(r.gap,1)+'</td><td>'+(r.moved_toward==null?D:(r.moved_toward?'yes':'no'))+'</td><td class="num">'+fx(r.edgedesk_error,1)+'</td><td class="num">'+fx(r.close_error,1)+'</td><td>'+esc(r.ats_hypothetical||D)+'</td><td class="mv">'+esc(r.verdict)+'</td></tr>'; }).join('')+'</table></div>'; }
+  function sumTiles(s){ return '<div class="kpis">'+tile('N',String(s.n),s.label?esc(s.label):'')+tile('average gap',fx(s.average_gap,1),'pts')+tile('market moved toward',pv(s.market_moved_toward_pct),'')+tile('positive CLV',pv(s.positive_clv_pct),'avg '+sg(s.average_clv))
+    +tile('closer than opener',pv(s.edgedesk_closer_than_opener_pct),'snapshot market')+tile('closer than close',pv(s.edgedesk_closer_than_close_pct),'')+'</div>'; }
+  function signalsHTML(G){
+    if(!G) return card('signals','Verified vs investigate','<p class="empty">signals.json did not load.</p>');
+    var c=G.comparison,h=c.historical_reference;
+    var body='<h3>Verified major disagreements</h3>'+sumTiles(G.verified.summary)+sigTable(G.verified.games)
+      +'<h3>Investigate</h3>'+sumTiles(G.investigate.summary)+'<p class="note">Outcomes: '+Object.keys(G.investigate.outcomes||{}).map(function(k){ return esc(k.replace(/_/g,' ').toLowerCase())+' '+G.investigate.outcomes[k]; }).join(' · ')+(Object.keys(G.investigate.outcomes||{}).length?'':D)+'</p>'+sigTable(G.investigate.games)
+      +'<h3>Is the gate working?</h3><p class="note">'+esc(c.reading)+'</p>'
+      +(h?'<p class="note">Historical reference ('+esc(h.source)+'): verified n '+h.verified.n+', moved toward '+pv(h.verified.close_moved_toward_pct)+', CLV '+sg(h.verified.clv)+', false extremes '+pv(h.verified.false_extreme_pct)+' · unverified n '+h.unverified.n+', moved toward '+pv(h.unverified.close_moved_toward_pct)+', CLV '+sg(h.unverified.clv)+', false extremes '+pv(h.unverified.false_extreme_pct)+'.</p>':'')
+      +'<h3>Favorite flips</h3>'+sumTiles(G.favorite_flips.summary)+sigTable(G.favorite_flips.games)
+      +(G.verdict_not_run&&G.verdict_not_run.n?'<div class="banner"><b>Not run</b>'+esc(G.verdict_not_run.note)+'</div>':'');
+    return card('signals','Verified vs investigate · favorite flips',body,esc(G.what));
+  }
+  function divHTML(M){
+    if(!M) return card('div','Rating-state divergence','<p class="empty">divergence.json did not load.</p>');
+    var t='<div class="kpis">'+tile('teams',String(M.n),'of '+(M.n+(M.missing||[]).length)+' FBS')+tile('median |divergence|',fx(M.median_abs,2),'pts')+tile('90th percentile',fx(M.p90_abs,2),'pts')+tile('flagged (LARGE)',String((M.flagged||[]).length),'≥ '+fx(M.bands&&M.bands.large,2))+tile('scale offset',sg(M.centers&&M.centers.scale_offset),'not a football difference')+'</div>'
+      +'<div class="scroll"><table><tr><th>team</th><th class="num">current rating</th><th class="num">pricing state</th><th class="num">long-run</th><th class="num">this season</th><th class="num">w</th><th class="num">gp</th><th class="num">divergence</th><th>band</th><th class="txt">why</th></tr>'
+      +(M.largest||[]).map(function(r){ return '<tr><td>'+esc(r.team)+'</td><td class="num">'+sg(r.current,1)+'</td><td class="num">'+sg(r.state,1)+'</td><td class="num">'+sg(r.carried,1)+'</td><td class="num">'+sg(r.this_season,1)+'</td><td class="num">'+pc(r.prior_weight,0)+'</td><td class="num">'+(r.games_played==null?D:r.games_played)+'</td><td class="num">'+sg(r.rating_state_divergence,1)+'</td><td>'+chip(r.band,r.band==='LARGE'?'warn':'')+'</td><td class="txt">'+esc((r.why||[]).join(' '))+'</td></tr>'; }).join('')+'</table></div>'
+      +(M.backtest?'<h3>Does divergence predict model error? '+chip(M.backtest.status,M.backtest.status==='NOT_ESTABLISHED'?'':'warn')+'</h3><p class="note">'+esc(M.backtest.reading)+'</p><p class="note"><b>Action:</b> '+esc(M.backtest.action)+'</p>':'')
+      +((M.unseeded||[]).length?'<p class="note">'+M.unseeded.map(function(u){ return esc(u.team)+': '+esc(u.note); }).join(' · ')+'</p>':'');
+    return card('div','Rating-state divergence · current rating vs pricing state',t,esc(M.definition)+' '+esc(M.diagnostic_only));
+  }
+  function trigHTML(L){
+    if(!L) return '';
+    var T=L.triggers;
+    var t='<p class="note"><b>'+esc(T.state)+'</b> · '+esc(T.rule)+'</p><div class="scroll"><table><tr><th>trigger</th><th>status</th><th class="num">n / min</th><th class="num">value</th><th class="txt">threshold</th><th>source</th></tr>'
+      +T.triggers.map(function(x){ return '<tr><td class="txt">'+esc(x.question)+'</td><td>'+chip(x.status,x.status==='FIRED'?'bad':(x.status==='QUIET'?'good':''))+'</td><td class="num">'+x.n+' / '+x.min_n+'</td><td class="num">'+(x.value==null?D:esc(x.value))+'</td><td class="txt">'+esc(x.threshold)+'</td><td>'+esc(x.source)+'</td></tr>'; }).join('')+'</table></div>'
+      +'<h3>Research backlog (never auto-implemented)</h3>'+((L.backlog.open||[]).length?'<ul class="gates">'+L.backlog.open.map(function(b){ return '<li>'+chip(b.stage,'info')+' '+esc(b.title)+' <span class="faint">'+esc(b.source)+' · '+when(b.created_at)+'</span></li>'; }).join('')+'</ul>':'<p class="empty">No open research candidate.</p>')
+      +'<p class="note">RESEARCH → CHALLENGER → WALK-FORWARD → SHADOW → PROMOTION. A weekly loss never edits production.</p>';
+    return card('trig','Research triggers & backlog',t);
+  }
+  function pmHTML(P){
+    if(!P) return card('pm','Postmortems','<p class="empty">postmortems.json did not load.</p>');
+    var s=P.summary,fmt=function(o){ var k=Object.keys(o||{}); return k.length?k.map(function(x){ return esc(x.replace(/_/g,' ').toLowerCase())+' '+o[x]; }).join(' · '):D; };
+    var t='<div class="kpis">'+tile('qualified losses',fmt(s.qualified_losses),'decision engine BET')+tile('qualified wins',fmt(s.qualified_wins),'')+tile('large misses (≥ '+P.threshold_points+')',fmt(s.large_misses),'')+tile('research leans (hyp.)',fmt(s.research_lean_losses)+' | '+fmt(s.research_lean_wins),'losses | wins')+'</div>'
+      +'<div class="scroll"><table><tr><th>kind</th><th>epoch</th><th>game</th><th class="num">err</th><th class="num">close err</th><th>ATS</th><th class="num">CLV</th><th>classification</th><th class="txt">checklist</th></tr>'
+      +(P.rows||[]).slice(0,40).map(function(r){ var c=r.checklist; return '<tr><td>'+esc(r.kind)+'</td><td>'+esc(r.epoch)+'</td><td>'+esc(r.game)+'</td><td class="num">'+fx(r.error,1)+'</td><td class="num">'+fx(r.close_error,1)+'</td><td>'+esc(r.ats||D)+'</td><td class="num">'+sg(r.clv_points,1)+'</td><td>'+chip(r.classification.replace(/_/g,' '),/BAD/.test(r.classification)?'bad':(/GOOD/.test(r.classification)?'good':''))+'</td>'
+        +'<td class="txt">'+Object.keys(c).map(function(k){ return esc(k.replace(/_/g,' '))+': '+esc(c[k].answer); }).join(' · ')+'</td></tr>'; }).join('')+'</table></div>';
+    return card('pm','Postmortems · losses, wins and misses',t,esc(P.rules.loss)+' '+esc(P.rules.win)+' '+esc(P.rules.scope));
+  }
+  function n100HTML(L){
+    var N=L&&L.next_100; if(!N) return '';
+    var m=N.monitored||[];
+    var t='<div class="kpis">'+tile('progress',N.settled+' / '+N.target,esc(N.note))+'</div><div class="scroll"><table><tr><th>metric</th><th>section</th><th class="num">legacy baseline</th><th class="num">n</th><th>better if</th><th class="num">current</th><th class="txt">baseline source</th></tr>'
+      +m.map(function(x){ var b=(N.baselines||{})[x.id]||{}; return '<tr><td>'+esc(x.label)+'</td><td>'+esc(x.section)+'</td><td class="num">'+(b.value==null?D:esc(b.value))+'</td><td class="num">'+(b.n==null?D:b.n)+'</td><td>'+esc(x.better_if)+'</td><td class="num">'+(N.measured&&N.measured[x.id]!=null?esc(N.measured[x.id]):D)+'</td><td class="txt">'+esc(b.source||'')+'</td></tr>'; }).join('')+'</table></div>';
+    return card('n100','Next 100 live games · frozen plan '+(N.plan_id||''),t,'Frozen '+when(N.frozen_at)+'. Nothing is changed to hit a number; the comparison prints at 100.');
+  }
+  function chgHTML(L,C){
+    var S=L&&L.what_changed_this_week;
+    var t='<h3>Since last week</h3>'+(S&&S.available?'<p class="note">'+esc(S.summary)+'</p>'+(S.changes.length?'<ul class="gates">'+S.changes.map(function(c){ return '<li>'+chip(c.kind,c.kind==='SOFTWARE'?'warn':'info')+' '+esc(c.what)+'</li>'; }).join('')+'</ul>':''):'<p class="empty">'+esc(S?S.reason:'not available')+'</p>');
+    var g=(C&&C.games||[]).filter(function(x){ return x.material; }).slice(0,25);
+    t+='<h3>Projection changes ≥ '+(C?C.threshold_points:0.5)+' pts, attributed</h3>'+(g.length?'<div class="scroll"><table><tr><th>game</th><th class="num">old fair</th><th class="num">new fair</th><th class="num">change</th><th class="txt">why</th><th class="num">market then → now</th><th>status then → now</th></tr>'
+      +g.map(function(x){ return '<tr><td>'+esc(x.game)+'</td><td class="num">'+sg(x.old_fair,1)+'</td><td class="num">'+sg(x.new_fair,1)+'</td><td class="num">'+sg(x.change,1)+'</td><td class="txt">'+esc(x.causes.map(function(c){ return c.cause.replace(/_/g,' ').toLowerCase()+(c.points!=null?' '+sg(c.points,1):'')+(c.detail?' ('+c.detail+')':''); }).join('; ')+(x.unexplained!=null&&Math.abs(x.unexplained)>=0.05?'; not explained by a term '+sg(x.unexplained,1):''))+'</td><td class="num">'+sg(x.market_then,1)+' → '+sg(x.market_now,1)+'</td><td>'+esc((x.status_then||D)+' → '+(x.status_now||D))+'</td></tr>'; }).join('')+'</table></div>':'<p class="empty">No material projection change on the current slate.</p>')
+      +'<p class="note">'+esc(C?C.rule:'')+'</p>';
+    return card('chg','What changed',t);
+  }
+  function auditHTML(A){
+    if(!A) return card('audit','Current-slate audit','<p class="empty">slate_audit.json did not load.</p>');
+    var t=(A.inconsistent||[]).length?'<div class="banner bad"><b>Status contradicts its checks</b>'+A.inconsistent.map(esc).join(', ')+'</div>':'<p class="note">No status contradicts its checks.</p>';
+    t+='<div class="scroll"><table><tr><th>game</th><th class="num">EdgeDesk</th><th class="num">market</th><th class="num">books</th><th class="num">gap</th><th>research</th><th>decision</th>'+A.requirements.map(function(r){ return '<th title="'+esc(r)+'">'+esc(r.split(' ').slice(0,2).join(' '))+'</th>'; }).join('')+'</tr>'
+      +A.games.map(function(g){ return '<tr><td>'+esc(g.game)+(g.named?' '+chip('named','info'):'')+(g.favorite_flip?' '+chip('flip','warn'):'')+'</td><td class="num">'+esc(g.edgedesk||D)+'</td><td class="num">'+esc(g.market||D)+'</td><td class="num">'+(g.books==null?D:g.books)+'</td><td class="num">'+fx(g.gap,1)+'</td><td>'+esc(g.research_label||D)+'</td><td>'+esc(g.decision_status||D)+'</td>'
+        +(g.requirements?g.requirements.map(function(q){ return '<td title="'+esc(q.detail)+'">'+chip(q.result,q.result==='PASS'?'good':(q.result==='FAIL'?'bad':''))+'</td>'; }).join(''):A.requirements.map(function(){ return '<td class="faint">'+D+'</td>'; }).join(''))+'</tr>'; }).join('')+'</table></div><p class="note">'+esc(A.app_path_finding)+'</p>';
+    return card('audit','Current-slate status audit',t,'board built '+when(A.board_generated_at)+' · '+esc(A.source));
+  }
+  function matHTML(M){
+    if(!M) return card('mat','Model maturity','<p class="empty">maturity.json did not load.</p>');
+    return card('mat','Model maturity','<div class="scroll"><table><tr><th>model</th><th>version</th><th>status</th><th class="num">live N</th><th>walk-forward</th><th>CLV</th><th>pricing impact</th></tr>'
+      +M.modules.map(function(m){ return '<tr><td>'+esc(m.model)+'</td><td class="mv">'+esc(m.version)+'</td><td>'+chip(m.status_label,m.status==='PRODUCTION'?'info':(m.status==='SHADOW'?'warn':''))+'</td><td class="num">'+(m.live_n==null?D:m.live_n)+'</td><td>'+esc(m.walk_forward_status)+'</td><td>'+esc(m.clv_status)+'</td><td>'+chip(m.pricing_impact,m.pricing_impact==='YES'?'good':'')+'</td></tr>'; }).join('')+'</table></div>');
+  }
+  function verHTML(L){
+    if(!L) return '';
+    var f=L.freeze;
+    return card('ver','Versions · the freeze and every patch','<p class="note">Release <span class="mv">'+esc(f.release)+'</span> · champion <span class="mv">'+esc(f.champion.model_version)+'</span> · effective '+when(f.effective_at)+' · fingerprints '+Object.keys(f.fingerprints).map(function(k){ return esc(k)+' <span class="mv">'+esc(f.fingerprints[k])+'</span>'; }).join(' · ')+'</p>'
+      +'<div class="scroll"><table><tr><th>event</th><th>kind</th><th>version</th><th>effective</th><th class="txt">reason</th></tr>'+L.versions.map(function(v){ return '<tr><td>'+esc(v.event)+'</td><td>'+esc(v.kind)+'</td><td class="mv">'+esc(v.version)+'</td><td>'+when(v.effective_at)+'</td><td class="txt">'+esc(v.reason)+'</td></tr>'; }).join('')+'</table></div>'
+      +((L.pending_patches||[]).length?'<div class="banner"><b>Pending patches</b>'+L.pending_patches.map(esc).join('<br>')+'</div>':''),'A change to any file in a path appends a PATCH, effective from the build that saw it. No historical prediction is altered.');
+  }
+  function render(d){
+    d=d||{};
+    return navHTML()+northHTML(d.live)+viewsHTML(d.live)+scoreHTML(d.live)+signalsHTML(d.signals)+divHTML(d.divergence)+trigHTML(d.live)+pmHTML(d.postmortems)+n100HTML(d.live)+chgHTML(d.live,d.changes)+auditHTML(d.audit)+matHTML(d.maturity)+verHTML(d.live);
+  }
+  var api={render:render,SECTIONS:SECTIONS,views:viewsHTML,north:northHTML,signals:signalsHTML,divergence:divHTML,triggers:trigHTML,postmortems:pmHTML,next100:n100HTML,changes:chgHTML,audit:auditHTML,maturity:matHTML,versions:verHTML};
+  if(typeof window!=='undefined') window.EDVAL=api;
+  if(typeof module!=='undefined'&&module.exports) module.exports=api;
+})();
+/*__EDVAL_END__*/
+(function(){
+  'use strict';
+  if(typeof document==='undefined') return;
+  var base='../../football/cfb_validation/', host=document.getElementById('val'), err=document.getElementById('err');
+  function get(f){ return fetch(base+f,{cache:'no-cache'}).then(function(r){ if(!r.ok) throw new Error(f+' '+r.status); return r.json(); }).catch(function(e){ err.textContent+=(err.textContent?' · ':'')+String(e&&e.message||e); return null; }); }
+  Promise.all(['live.json','signals.json','divergence.json','postmortems.json','slate_audit.json','changes.json','maturity.json'].map(get)).then(function(x){
+    host.innerHTML=window.EDVAL.render({live:x[0],signals:x[1],divergence:x[2],postmortems:x[3],audit:x[4],changes:x[5],maturity:x[6]});
+  });
+})();
+</script>
+</body>
+</html>

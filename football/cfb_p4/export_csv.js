@@ -180,8 +180,30 @@ var FBS_HEAD = ['home_team_id', 'away_team_id', 'home_conference_id', 'away_conf
      empty otherwise — an empty cell, never an invented score */
   'reliability_score', 'reliability_grade', 'projection_stability_sd', 'favorite_flip_rate'];
 
-var HEAD = NFL_HEAD.concat(P4_HEAD).concat(FBS_HEAD);
+/* the canonical tail, byte-identical to app.html's FBP4_CANON_HEAD: when the
+   number was computed, the research status and the separate decision status
+   (read from the canonical research build, football/cfb_terminal/board.json,
+   when it carries the game), the market snapshot, the price state, the
+   favorite flip, and what kind of row this is. An export is recomputed; the
+   FROZEN pregame record is record/football/cfb_<season>.json. */
+var CANON_HEAD = ['prediction_timestamp', 'research_status', 'decision_status', 'market_snapshot_home_line', 'market_snapshot_at',
+  'price_state', 'favorite_flip', 'row_kind'];
+var HEAD = NFL_HEAD.concat(P4_HEAD).concat(FBS_HEAD).concat(CANON_HEAD);
 var FBS_AT = NFL_HEAD.length + P4_HEAD.length;
+var CANON_AT = FBS_AT + FBS_HEAD.length;
+var CANON = (function () { try { return require(path.join(HERE, '..', '..', 'lib', 'edgedesk_canon.js')); } catch (e) { return null; } })();
+var CANON_BOARD = (function () {
+  try { var b = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'cfb_terminal', 'board.json'), 'utf8')), by = {}; (b.rows || []).forEach(function (r) { by[String(r.game_id)] = r; }); return by; }
+  catch (e) { return {}; }
+})();
+function canonTail(g, p, mkt) {
+  var cr = CANON_BOARD[String(g.game_id)] || null;
+  var fm = p && p.model ? p.model.fair_spread : null, mm = mkt && mkt.spread_line != null ? -mkt.spread_line : null;
+  return [(p && p.prediction_timestamp) || '', cr ? cr.research_status || '' : '', cr ? cr.decision_status || 'NO_DECISION' : 'NO_DECISION',
+    mkt && mkt.spread_line != null ? mkt.spread_line : '', (mkt && mkt.as_of) || '', cr ? cr.price_state || '' : '',
+    CANON && fm != null && mm != null ? String(CANON.favoriteFlip(fm, mm)) : '',
+    'OFFLINE_EXPORT: recomputed at export time; the frozen pregame record is record/football/cfb_' + (g.season || '') + '.json'];
+}
 
 /* the board's own operational read, restated here so the file and the screen
    cannot disagree about a game's status. Mirrors fbP4StatusFor in app.html. */
@@ -335,6 +357,7 @@ function csvRow(g, p, mkt, refSource, basis, universe) {
     row[NFL_HEAD.length + 4] = g.away_conference || '';
     row[FBS_AT - 1] = (p && (p.reason || (p.missing || []).join('; '))) || '';
     fbsTail(g, p, mkt, universe).forEach(function (v, i) { row[FBS_AT + i] = v; });
+    canonTail(g, p, mkt).forEach(function (v, i) { row[CANON_AT + i] = v; });
     return row.map(q).join(',');
   }
 
@@ -388,7 +411,10 @@ function csvRow(g, p, mkt, refSource, basis, universe) {
     (ex.counterarguments[0] || {}).text || '',
     ex.unpredictable_variables.map(function (u) { return u.item; }).join('; '),
     ex.data_quality.map(function (d) { return d.text; }).join('; ')
-  ]).map(q).join(',');
+    /* the FBS block and the canonical tail on PREDICTED rows too: a predicted
+       row used to stop 19 columns short of the header, so every column after
+       data_quality_notes was mis-aligned for exactly the rows that matter */
+  ]).concat(fbsTail(g, p, mkt, universe)).concat(canonTail(g, p, mkt)).map(q).join(',');
 }
 
 /* ----------------------------------------------------------------- main */

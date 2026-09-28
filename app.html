@@ -185,6 +185,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .gx-sc b{flex:none;font-size:17px}
 .gx-miss{color:var(--faint);font-size:12.5px;font-weight:400;font-style:italic}
 .gx-st{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--border);border-radius:6px;padding:2px 7px}
+.gx-xb{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.07em;border-radius:5px;padding:1px 5px;margin-left:4px;vertical-align:middle}
+.gx-xb.flip{background:#e98a3a;color:#1b1407}.gx-xb.price{border:1px solid var(--border);color:var(--dim)}
+.gd-two{border:1px dashed var(--border);border-radius:8px;padding:6px 8px;margin:6px 0 10px}
+.fb-canon-k{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.fb-canon-k .k{border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:11.5px;cursor:help}
+.fb-canon-k .k b{font-family:var(--mono,monospace);margin-right:4px}
+.fb-canon-k .k.vm{border-color:var(--gold)}.fb-canon-k .k.iv{border-color:var(--warn)}
 .gx-st.ok{color:var(--pos);border-color:rgba(118,189,62,.45)}
 .gx-st.warn{color:var(--warn);border-color:rgba(214,158,60,.45)}
 .gx-st.neg{color:var(--neg);border-color:rgba(226,96,68,.45)}
@@ -3745,6 +3752,12 @@ window.mcRefresh=function(){
      and only then VERIFIED MAJOR DISAGREEMENT. It reads the projection and
      never changes it. tools/football/disagreement.test.js holds it. -->
 <script src="/lib/cfb_disagreement.js?v=20260927a"></script>
+<!-- THE CANON: one name, one definition, one rule on every surface — the two
+     team-strength numbers (CURRENT FBS POWER RATING vs PRODUCTION PRICING
+     STATE), the research status kept apart from the decision status, the
+     counter hierarchy, maturity and pricing impact. tools/validation/canon.test.js
+     and tools/validation/ui.test.js hold it. -->
+<script src="/lib/edgedesk_canon.js?v=20260928a"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -47046,6 +47059,43 @@ function fbRvRelTitle(R){
   if(R.scored&&R.lines&&R.lines.length)return R.lines.join('\n');
   return 'Reliability '+R.text+' · '+R.sub+(R.legacy?' (input coverage — the pre-v2 measure)':'');
 }
+/* ═══ ONE STATUS PER GAME, EVERY SURFACE ═══════════════════════════════════
+   The canonical research page (football/cfb_terminal/board.json, rebuilt
+   hourly by the Model Lab job from dated quotes) is where a CFB game's research
+   status and decision status are decided. When that build is fresh (3 h), the
+   board, the research desk counts and the game card here show ITS label — so
+   a game can no longer read VERIFIED here and INVESTIGATE there. When it is
+   stale or missing, the live label below is shown, mapped to the same
+   vocabulary (lib/edgedesk_canon.js) and marked as a live estimate. */
+var FB_CANON_MAX_AGE_H=3;
+function fbCanonEnsure(){
+  if(typeof FB==='undefined')return;
+  FB.canon=FB.canon||{board:null,by:null,err:null,_p:null};
+  var c=FB.canon;
+  if(c.board||c._p||c.err||typeof fetch!=='function')return;
+  c._p=fetch('football/cfb_terminal/board.json',{cache:'no-cache'})
+    .then(function(r){return r.ok?r.json():Promise.reject(new Error('board.json '+r.status));})
+    .then(function(b){c.board=b;c.by={};(b.rows||[]).forEach(function(r){c.by[String(r.game_id)]=r;});c._p=null;try{window.renderFootball();}catch(_){}})
+    .catch(function(e){c.err=String(e&&e.message||e);c._p=null;});
+}
+function fbCanonRow(gid){
+  fbCanonEnsure();
+  var c=typeof FB!=='undefined'&&FB.canon;
+  return c&&c.by?(c.by[String(gid)]||null):null;
+}
+var FB_CANON_TO_VIEW={VERIFIED_MAJOR:'VERIFIED_MAJOR_DISAGREEMENT',INVESTIGATE:'INVESTIGATE',MARKET_FAULT:'MARKET_FAULT',WORTH_RESEARCHING:'WORTH_RESEARCHING',
+  NEAR_PICKEM:'NEAR_PICKEM',MARKET_ALIGNED:'MARKET_ALIGNED',LIMITED_DATA:'LIMITED_DATA',NO_MARKET:'NO_MARKET',DATA_FAULT:'DATA_FAULT'};
+function fbCanonApply(v,cr){
+  var C=window.EDCanon,V=window.EDCfbResearchView;
+  if(!v||!cr||!C||!cr.research_status||!C.RESEARCH_STATUS[cr.research_status])return v;
+  var b=FB.canon&&FB.canon.board,age=b&&b.generated_at?(Date.now()-Date.parse(b.generated_at))/36e5:null;
+  var extra={row:cr,age_h:age,decision:cr.decision_status,decision_label:cr.decision_label,decision_reason:cr.decision_reason,
+    price_state:cr.price_state,price_state_label:cr.price_state_label,favorite_flip:!!cr.favorite_flip,rating_divergence:cr.rating_divergence||null};
+  if(age==null||age>FB_CANON_MAX_AGE_H)return Object.assign({},v,{canonical:Object.assign(extra,{stale:true})});
+  var vk=FB_CANON_TO_VIEW[cr.research_status],d=C.RESEARCH_STATUS[cr.research_status],L=V&&V.LABELS&&V.LABELS[vk];
+  return Object.assign({},v,{research_label:{key:vk,label:d.label,tone:L?L.tone:'mut',rule:'canonical',means:cr.research_reason||d.means,
+    canonical:true,live_key:v.research_label?v.research_label.key:null},canonical:Object.assign(extra,{stale:false})});
+}
 function fbP4ViewFor(u,p,mkt,opts){
   var V=window.EDCfbResearchView;
   if(!V||!u||!u.g||!p)return null;
@@ -47065,7 +47115,7 @@ function fbP4ViewFor(u,p,mkt,opts){
      minutes even when nothing else about the game has changed */
   var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,
     quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,visit?visit.t:'-',par?(par.ok+':'+par.gaps.length):'-',
-    !!(FB.personnel&&FB.personnel.data),!!(FB.relArt&&FB.relArt.data),!!(FB.p4&&FB.p4.dgSub),
+    !!(FB.personnel&&FB.personnel.data),!!(FB.relArt&&FB.relArt.data),!!(FB.p4&&FB.p4.dgSub),!!(FB.canon&&FB.canon.board),
     Math.floor(Date.now()/3e5)].join('|');
   if(u[slot]&&u[slot].p===p&&u[slot].key===key)return u[slot].v;
   var v=null,rel=null,dg=null;
@@ -47078,6 +47128,7 @@ function fbP4ViewFor(u,p,mkt,opts){
       reliability:rel,coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,parity:par,now:Date.now(),
       disagreement:dg},fbP4ViewCfg());
   }catch(_){v=null;}
+  if(v&&!pub){ var cr=null;try{cr=fbCanonRow(g.game_id);}catch(_){cr=null;} if(cr)v=fbCanonApply(v,cr); }
   u[slot]={p:p,key:key,v:v};
   return v;
 }
@@ -50639,6 +50690,15 @@ var FBP4_CSV_HEAD=['season','week','game_id','kickoff_local','away_team','home_t
    grade, and the projection's dispersion and favorite-flip rate under
    perturbation (lib/cfb_reliability.js) */
 'reliability_score','reliability_grade','projection_stability_sd','favorite_flip_rate'];
+/* THE CANONICAL TAIL, appended after everything (every earlier column keeps its
+   position): when this number was computed, the research status and the
+   SEPARATE decision status every page shows (lib/edgedesk_canon.js), the market
+   snapshot it was compared with, the price state, the favorite flip — and
+   what kind of row this is. A browser export is recomputed at export time; the
+   FROZEN pregame record is record/football/cfb_<season>.json and a refreshed
+   export never replaces it (docs/cfb-validation/DELIVERABLE.md §37). */
+var FBP4_CANON_HEAD=['prediction_timestamp','research_status','decision_status','market_snapshot_home_line','market_snapshot_at','price_state','favorite_flip','row_kind'];
+FBP4_CSV_HEAD=FBP4_CSV_HEAD.concat(FBP4_CANON_HEAD);
 
 function fbP4Basis(){
   var m=window.EDCfbP4Params.validation_summary&&window.EDCfbP4Params.validation_summary.market;
@@ -50661,6 +50721,18 @@ function fbP4Contrib(p,key){
    market state — the rows the site shows and the rows a consumer downloads
    reconcile under the same filters. */
 var FBP4_FBS_TAIL_N=19;
+var FBP4_CANON_TAIL_N=8;
+function fbP4CanonTail(u,p,mkt){
+  var C=window.EDCanon,g=u.g,v=null;
+  try{v=(p&&p.status==='PREDICTED'&&typeof fbP4ViewFor==='function')?fbP4ViewFor(u,p):null;}catch(_){v=null;}
+  var cz=v&&v.canonical,fresh=cz&&!cz.stale;
+  var rs=fresh&&cz.row?cz.row.research_status:(v&&v.research_label&&C?(C.fromResearchView(v.research_label)||''):'');
+  var fm=p&&p.model?p.model.fair_spread:null,mm=mkt&&mkt.spread_line!=null?-mkt.spread_line:null;
+  return [(p&&p.prediction_timestamp)||'',rs||'',fresh&&cz.decision?cz.decision:'NO_DECISION',
+    mkt&&mkt.spread_line!=null?mkt.spread_line:'',(mkt&&mkt.as_of)||'',fresh?(cz.price_state||''):'',
+    C&&fm!=null&&mm!=null?String(C.favoriteFlip(fm,mm)):'',
+    'LIVE_EXPORT: recomputed at export time; the frozen pregame record is record/football/cfb_'+(g.season||'')+'.json'];
+}
 function fbP4FbsTail(u,p,mkt){
   var g=u.g,m=u.meta||(window.EDFbs&&FB.p4.uni?window.EDFbs.classifyGame(g,FB.p4.uni):null);
   var st=fbP4StatusFor(p,mkt||{});
@@ -50706,7 +50778,7 @@ function fbP4RowValues(u){
   try{p=window.EDCfbP4.projectGame(fbP4Request(u));}catch(e){p={status:'BLOCKED',reason:(e&&e.message)||'engine threw'};}
   var kick=String(g.start_date||'');
   var base=[g.season,g.week,g.game_id,kick?(kick.slice(0,10)+' '+kick.slice(11,16)):'',g.away_team,g.home_team];
-  var tailAt=FBP4_CSV_HEAD.length-FBP4_FBS_TAIL_N;
+  var tailAt=FBP4_CSV_HEAD.length-FBP4_FBS_TAIL_N-FBP4_CANON_TAIL_N;
   if(!p||p.status!=='PREDICTED'){
     var row=base.slice();while(row.length<FBP4_CSV_HEAD.length)row.push('');
     row[6]=window.EDCfbP4Params.model_version;row[7]=window.EDCfbP4Params.feature_version;
@@ -50715,6 +50787,7 @@ function fbP4RowValues(u){
     row[47]=g.home_conference||'';row[48]=g.away_conference||'';
     row[tailAt-1]=(p&&(p.reason||(p.missing||[]).join('; ')))||'';
     fbP4FbsTail(u,p,mkt).forEach(function(v,i){row[tailAt+i]=v;});
+    fbP4CanonTail(u,p,mkt).forEach(function(v,i){row[tailAt+FBP4_FBS_TAIL_N+i]=v;});
     return row;
   }
   var m=p.model,sc=p.scores,cov=p.cover,ov=p.over;
@@ -50756,7 +50829,7 @@ function fbP4RowValues(u){
     (ex.primary_drivers[2]||{}).text||'',(ex.counterarguments[0]||{}).text||'',
     ex.unpredictable_variables.map(function(x){return x.item;}).join('; '),
     ex.data_quality.map(function(x){return x.text;}).join('; ')
-  ]).concat(fbP4FbsTail(u,p,mkt));
+  ]).concat(fbP4FbsTail(u,p,mkt)).concat(fbP4CanonTail(u,p,mkt));
 }
 function fbP4CsvRow(u){return fbP4RowValues(u).map(fbCsvQuote).join(',');}
 window.fbP4CsvDownload=function(){
@@ -51967,7 +52040,7 @@ function fbGxState(p){
   /* THIN DATA outranks everything: a number the model does not trust cannot
      be in agreement OR in disagreement with anything. */
   if(conf==null||conf<minConf)
-    return {key:'THIN',label:'Thin data',cls:'neg',
+    return {key:'THIN',label:'Limited data',cls:'neg',
       means:'EdgeDesk does not have enough reliable information to price this matchup confidently'
         +(conf!=null?(' — its own confidence in this projection is '+Math.round(conf)+'%, below the '+minConf+'% floor it requires'):'')
         +'. Read the number as provisional, not as a disagreement with anyone.'};
@@ -51975,15 +52048,22 @@ function fbGxState(p){
     return {key:'NO_MARKET',label:'No market',cls:'mut',
       means:'No market number has joined this game yet, so there is nothing to agree or disagree with. '
         +'The projection stands on its own until a quote lands.'};
-  if(gap>=guard)
+  /* the canonical rungs (lib/edgedesk_canon.js researchStatus): with no gate
+     result, a gap past the guard is a DATA FAULT and a 7+ gap is INVESTIGATE —
+     fail closed, never verified by default */
+  if(gap>guard)
+    return {key:'DATA_FAULT',label:'Data fault',cls:'neg',
+      means:'The model and market disagree by '+gap.toFixed(1)+' points, past the '+guard+'-point guard bound, with no integrity check to explain it. '
+        +'EdgeDesk’s number is unsafe until the data problem is found.'};
+  if(gap>=7)
     return {key:'INVESTIGATE',label:'Investigate',cls:'neg',
-      means:'The model and market disagree by '+gap.toFixed(1)+' points, past the '+guard+'-point guard bound. '
+      means:'The model and market disagree by '+gap.toFixed(1)+' points and the integrity gate has not verified it. '
         +'Missing or stale information is more likely than a hidden opportunity until the gap is explained.'};
   if(gap>=minGap)
-    return {key:'REVIEW',label:'Review',cls:'warn',
+    return {key:'REVIEW',label:'Worth researching',cls:'warn',
       means:'EdgeDesk differs from the market by '+gap.toFixed(1)+' points, enough to justify deeper research, '
         +'but the disagreement has not been validated as a betting edge.'};
-  return {key:'PASS',label:'Pass',cls:'ok',
+  return {key:'PASS',label:'Market aligned',cls:'ok',
     means:'EdgeDesk and the market are effectively in agreement — '+gap.toFixed(1)+' points apart, inside the '
       +minGap+'-point research threshold. There is not enough pricing disagreement to treat this game as a research edge.'};
 }
@@ -52014,6 +52094,21 @@ function fbGxScore(m){
   return {home:home,away:away};
 }
 
+/* ── WHAT PRICES THIS GAME? ─────────────────────────────────────────────
+   The champion's production inputs, read from the engine's own
+   contributions for THIS game, beside every module that is shown but not
+   priced — each with the reason (lib/edgedesk_canon.js pricingInputs). The
+   independence statement is printed with it: the sportsbook market never
+   enters the pure fair line. */
+function fbGxPricingInputs(u,p){
+  var C=window.EDCanon;if(!C||!p)return '';
+  var P=C.pricingInputs((p.contributions||[]).map(function(t){return {key:t.key,points:t.points};}),
+    {neutral:!!(u&&u.g&&u.g.neutral_site),model_version:p.model_version||null,canonical_mode:FB.p4&&FB.p4.canonicalRatingMode});
+  var on=P.rows.filter(function(r){return r.priced;}),off=P.rows.filter(function(r){return !r.priced;});
+  return '<div class="gd-modelnote"><b>'+fbEsc(P.independence)+'</b> '+fbEsc(C.INDEPENDENCE.text)+' '+fbEsc(C.INDEPENDENCE.used_for.join(' · '))+'.</div>'
+    +on.map(function(r){return '<div class="gd-line"><span class="l">✓ '+fbEsc(r.label)+'</span><span class="v">'+(r.points==null?'<span class="mut">'+fbEsc(r.note||'')+'</span>':fbPts(r.points,2)+(r.note?' <span class="mut">'+fbEsc(r.note)+'</span>':''))+'</span></div>';}).join('')
+    +off.map(function(r){return '<div class="gd-line"><span class="l mut">✕ '+fbEsc(r.label)+'</span><span class="v mut">PRICING IMPACT: NO · '+fbEsc(r.note)+'</span></div>';}).join('');
+}
 /* ── THE SUMMARY ────────────────────────────────────────────────────────
    Everything the first thirty seconds needs, in one block. */
 function fbGxSummary(u,p,gid){
@@ -52058,8 +52153,17 @@ function fbGxSummary(u,p,gid){
   var wp=fbWinPair(m.home_win_prob);
   out+=cell('Win probability',h+' '+(wp?wp.home.text:'—'),'',
     a+' '+(wp?wp.away.text:'—')+(wp&&(wp.home.bounded||wp.away.bounded)?' · bounded, never certain':''));
-  out+=cell(st.view?'Research label':'Research state','<span class="gx-st '+st.cls+'">'+fbEsc(st.label)+'</span>','',
-    'EdgeDesk’s own read, not advice');
+  /* RESEARCH STATUS and DECISION STATUS, two cells, never one: how
+     interesting the disagreement is, and whether the price justifies action
+     (only the decision engine answers that; lib/edgedesk_canon.js) */
+  var cz=rv&&rv.canonical,KC=window.EDCanon;
+  out+=cell(st.view?'Research status':'Research state','<span class="gx-st '+st.cls+'">'+fbEsc(st.label)+'</span>'
+    +(cz&&cz.favorite_flip&&KC?' <span class="gx-xb flip" title="'+fbEsc(KC.FAVORITE_FLIP.means)+'">FAVORITE FLIP</span>':'')
+    +(cz&&cz.price_state&&['PRICED_IN','GONE','PARTIAL'].indexOf(cz.price_state)>=0?' <span class="gx-xb price" title="'+fbEsc(KC&&KC.PRICE_STATE[cz.price_state]?KC.PRICE_STATE[cz.price_state].means:'')+'">'+fbEsc(cz.price_state_label)+'</span>':''),'',
+    cz?(cz.stale?'live estimate · the research page’s build is '+Math.round(cz.age_h)+' h old':'how interesting · same status on the research page'):'EdgeDesk’s own read, not advice');
+  out+=cell('Decision',cz&&cz.decision?('<span class="gx-st '+(cz.decision==='BET'?'ok':'mut')+'">'+fbEsc(cz.decision_label||cz.decision)+'</span>')
+    :'<span class="gx-st mut">NO DECISION</span>','',
+    cz&&cz.decision_reason?fbEsc(cz.decision_reason):'only the decision engine produces BET, WAIT or PASS');
   var conf=p.scores&&p.scores.confidence!=null?Math.round(p.scores.confidence):null;
   /* COVERAGE COMES FROM THE INPUT CONTRACT, not from the engine's internal
      probe count. The probe count is a volatility driver: ten hand-picked
@@ -52894,7 +52998,9 @@ function fbGxBriefText(u,p){
   else line('Difference',mk.spread_gap!=null?(Math.abs(mk.spread_gap).toFixed(1)+' pts'):'no market number to compare');
   line('Projected score',sc?(h+' '+sc.home+', '+a+' '+sc.away+' (from the model spread and total)'):'not available — the model published no total');
   line('Win probability',h+' '+fbWinText(m.home_win_prob)+', '+a+' '+fbWinText(m.home_win_prob==null?null:1-m.home_win_prob));
-  line(st.view?'Research label':'Research state',st.label.toUpperCase());
+  line(st.view?'Research status':'Research state',st.label.toUpperCase());
+  var czB=st.view?(fbP4ViewFor(u,p)||{}).canonical:null;
+  line('Decision',czB&&czB.decision_label?(czB.decision_label+(czB.decision_reason?' — '+czB.decision_reason:'')):'NO DECISION — only the decision engine produces BET, WAIT or PASS');
   line('What this means',st.means);
   var P=window.EDCfbP4Params||{},minGap=(P.market&&P.market.min_research_gap)||2;
   line('Research bands','agreement inside '+minGap+' pts; data fault beyond '+FB_GUARD.p4.game+' pts. These are decision boundaries, not a confidence interval.');
@@ -52992,6 +53098,7 @@ function fbP4SideRating(side){
     +(t.group_rank&&t.fbs_group?(' · #'+t.group_rank+' '+fbEsc(window.EDFbs.GROUP_LABEL[t.fbs_group]||t.fbs_group)):'')
     +' · '+g+' g absorbed'
     +(C.roster&&C.roster.available?(' · roster '+fbPts(C.roster.points)):' · no roster adjustment on file')
+    +(function(){var st=fbStateFor(side.name);return st?(' · <b>pricing state '+fbPts(st.value)+'</b>'):' · no pricing state';})()
     +'</span></span>';
 }
 function fbP4MatchupHTML(u,p){
@@ -53012,9 +53119,11 @@ function fbP4MatchupHTML(u,p){
     seenConf[side.conference_id]=1;
     h+=fbP4ConfRecordHTML(side.conference_id,side.conference);
   });
-  h+='<div class="gd-sec">EdgeDesk FBS rating · one scale, every program</div>';
+  h+='<div class="gd-sec">Current FBS Power Rating · research view, one scale, every program</div>';
   h+=row(fbEsc(m.away.name),fbP4SideRating(m.away));
   h+=row(fbEsc(m.home.name),fbP4SideRating(m.home));
+  h+=row('which one prices','<span class="v mut">the PRODUCTION PRICING STATE (in bold) prices this game; the current rating is shadow research and moves no line</span>');
+  h+=fbRatingGameDivHTML(g);
   /* data completeness and market provenance, on the card rather than buried */
   var ctx=(p&&p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
   if(ctx&&ctx.information_missing!=null){
@@ -53763,7 +53872,7 @@ function fbP4Card(u){
      the order a reader meets it in, and what is open by default. */
   var rvC=fbP4ViewFor(u,p);
   var body=fbGxSummary(u,p,gid)
-    +(rvC&&rvC.disagreement?fbGxSec(gid,'forensic',(rvC.disagreement.verified?'Verified major disagreement':'Major disagreement')+' · evidence packet',
+    +(rvC&&rvC.disagreement?fbGxSec(gid,'forensic',(rvC.research_label&&rvC.research_label.key==='VERIFIED_MAJOR_DISAGREEMENT'?'Verified major disagreement':'Major disagreement')+' · evidence packet',
       fbP4ForensicHTML(u,p,rvC),true,'every integrity check this gap had to pass, and why it did or did not'):'')
     +(rvC&&rvC.strongest_drivers?fbGxSec(gid,'why','Why EdgeDesk leans '+rvC.strongest_drivers.team,fbGxWhy(u,p),true,
       'the largest measured components on that side — research, not a pick'):'')
@@ -53781,6 +53890,8 @@ function fbP4Card(u){
       'evaluated beside V1 · V1 remains the priced number'):'')
     +fbGxSec(gid,'decomp','Fair-line decomposition',fbGxDecomp(u,p),true,
       'every term the engine priced, exactly as it sums')
+    +fbGxSec(gid,'pricing','What prices this game?',fbGxPricingInputs(u,p),true,
+      'production inputs vs research context · the market is never an input')
     +fbGxSec(gid,'venue','Venue and game-time forecast',fbGxWeather(u),true,
         'surface, roof, elevation, and the forecast for kickoff and the three hours after it')
     +fbGxSec(gid,'drivers','Why EdgeDesk prices it here',fbGxDrivers(p),true)
@@ -54033,14 +54144,76 @@ function fbEdrHeadline(){
     +(c.latest&&c.latest.r2!=null?((c.latest.r2*100).toFixed(0)+'% of this one across '+c.latest.n+' teams'):'an unmeasured share')
     +' · '+fbEsc(c.note||'');
 }
+/* ═══ THE TWO TEAM-STRENGTH NUMBERS (lib/edgedesk_canon.js RATINGS) ═══════════
+   CURRENT FBS POWER RATING  football/rating/current.json (ETSR): the current
+                             team-strength RESEARCH view. Shadow: it prices
+                             nothing until its point scale is calibrated.
+   PRODUCTION PRICING STATE  the V1 engine's latent state: the long-run trained
+                             state carried into this season and updated game
+                             by game, blended with a this-season track on the
+                             learned prior-weight curve. It prices every game.
+   Wherever both appear, one explainer says what each measures, which one
+   prices, why they differ (from the engine's actual structure), whether the
+   difference is expected, and that the current rating is shadow research. */
+var FB_R_CUR='Current FBS Power Rating',FB_R_STATE='Production Pricing State';
+function fbStateFor(team){
+  var S=FB.p4,E=window.EDCfbP4;
+  if(!S||!S.state||!E||!E.strength||!E.normKey)return null;
+  try{
+    var b=E.strength.blendedRating(S.state,E.normKey(team),true,null);
+    return b&&b.value!=null&&isFinite(b.value)?{value:b.value,carried:b.carried,this_season:b.this_season,prior_weight:b.prior_weight,games_played:b.games_played}:null;
+  }catch(_){return null;}
+}
+/* the two scales' FBS means, so a divergence is the team's own and never the
+   scales' different averages; cached per state/rating build */
+function fbRatingCenters(){
+  var d=FB.edr&&FB.edr.data,S=FB.p4;
+  if(!d||!d.teams||!S||!S.state)return null;
+  var key=(d.generated_at||'')+'|'+(S.loadedAt||'');
+  if(S._rc&&S._rc.key===key)return S._rc.v;
+  var cs=[],ss=[];
+  d.teams.forEach(function(t){var st=fbStateFor(t.team);if(st&&t.rating!=null){cs.push(t.rating);ss.push(st.value);}});
+  var m=function(a){return a.length?a.reduce(function(x,y){return x+y;},0)/a.length:null;};
+  var v=cs.length?{current:m(cs),state:m(ss),n:cs.length}:null;
+  S._rc={key:key,v:v};
+  return v;
+}
+function fbRatingPair(team){
+  var C=window.EDCanon,t=fbEdrFor(team);
+  if(!C||!t)return null;
+  return C.ratingPair({team:team,current:t,state:fbStateFor(team)||{},centers:fbRatingCenters()||{}});
+}
+function fbRatingPairHTML(team){
+  var C=window.EDCanon,pr=fbRatingPair(team);
+  if(!C||!pr)return '';
+  var R=C.RATINGS;
+  var h='<div class="gd-line"><span class="l" title="'+fbEsc(R.CURRENT_FBS_POWER_RATING.measures)+'">'+fbEsc(R.CURRENT_FBS_POWER_RATING.label)+'</span><span class="v">'
+    +(pr.current==null?'—':fbPts(pr.current))+' <span class="mut">current team-strength research view · SHADOW, moves no line</span></span></div>'
+    +'<div class="gd-line"><span class="l" title="'+fbEsc(R.PRODUCTION_PRICING_STATE.measures)+'">'+fbEsc(R.PRODUCTION_PRICING_STATE.label)+'</span><span class="v">'
+    +(pr.state==null?'—':fbPts(pr.state))+' <span class="mut">latent trained state · PRICES this team’s games</span></span></div>';
+  if(pr.difference!=null)h+='<div class="gd-line"><span class="l">difference</span><span class="v">'+fbPts(pr.difference)
+    +' <span class="mut">pricing state '+(pr.difference>=0?'above':'below')+' the current rating'
+    +(pr.divergence!=null?(' · team divergence after the scales’ different averages '+fbPts(pr.divergence)):'')+'</span></span></div>';
+  if(pr.why.length)h+='<div class="gd-line"><span class="l">why they differ</span><span class="v mut">'+pr.why.map(fbEsc).join(' ')+'</span></div>';
+  if(pr.expected_text)h+='<div class="gd-line"><span class="l">expected?</span><span class="v mut">'+fbEsc(pr.expected_text)+'</span></div>';
+  return h;
+}
+function fbRatingGameDivHTML(g){
+  var C=window.EDCanon;if(!C)return '';
+  var a=fbEdrFor(g.away_team),h=fbEdrFor(g.home_team),sa=fbStateFor(g.away_team),sh=fbStateFor(g.home_team);
+  if(!a||!h||!sa||!sh)return '';
+  var d=C.gameDivergence({current_home:h.rating,current_away:a.rating,state_home:sh.value,state_away:sa.value});
+  if(!d.available)return '';
+  return '<div class="gd-line"><span class="l">rating-state divergence</span><span class="v'+(d.flag?'':' mut')+'">'+fbEsc(d.text)+'</span></div>';
+}
 /* One team's rating taken apart. Nothing here is a number without a source:
    each component says what it is, what it was worth, and what it could not
    see. */
 function fbEdrDetail(t){
   if(!t)return '';
   var C=t.components||{},h='';
-  h+='<div class="gd-line"><span class="l">EdgeDesk Rating</span><span class="v">'+fbPts(t.rating)
-    +' <span class="mut">#'+t.rank+' of '+((FB.edr.data&&FB.edr.data.team_count)||'?')+'</span></span></div>';
+  h+='<div class="gd-line"><span class="l">'+FB_R_CUR+'</span><span class="v">'+fbPts(t.rating)
+    +' <span class="mut">#'+t.rank+' of '+((FB.edr.data&&FB.edr.data.team_count)||'?')+' · research view, moves no line</span></span></div>';
   if(C.results)h+='<div class="gd-line"><span class="l">this season · '+C.results.games+' g</span>'
     +'<span class="v">'+fbPts(C.results.rating)+' <span class="mut">weighted '+(C.results.weight*100).toFixed(0)+'%</span></span></div>';
   else h+='<div class="gd-line"><span class="l">this season</span><span class="v mut">no completed game yet</span></div>';
@@ -54077,10 +54250,10 @@ function fbEdrDetail(t){
    anybody prices anything from it — which EdgeDesk does not. */
 function fbEdrGameHTML(g){
   var d=FB.edr.data;
-  if(!d)return '<div class="gd-sec">EdgeDesk Rating</div><div class="gd-line"><span class="l">rating</span>'
+  if(!d)return '<div class="gd-sec">'+FB_R_CUR+'</div><div class="gd-line"><span class="l">rating</span>'
     +'<span class="v mut">'+fbEsc(FB.edr.error?('could not be read ('+FB.edr.error+')'):'not published yet')+'</span></div>';
   var a=fbEdrFor(g.away_team),h=fbEdrFor(g.home_team);
-  var out='<div class="gd-sec">EdgeDesk Rating · research context, not a line</div>';
+  var out='<div class="gd-sec">'+FB_R_CUR+' · research context, not a line</div>';
   if(!a||!h){
     out+='<div class="gd-line"><span class="l">'+fbEsc(!a?g.away_team:g.home_team)+'</span>'
       +'<span class="v mut">not rated — EdgeDesk holds no results or roster for this program</span></div>';
@@ -54096,10 +54269,11 @@ function fbEdrGameHTML(g){
     out+='<div class="gd-line"><span class="l">confidence</span><span class="v mut">'
       +(Math.min(a.confidence,h.confidence)*100).toFixed(0)+'% — the lower of the two</span></div>';
     out+='<div class="gd-line"><span class="l">what this is</span><span class="v mut">research context. '
-      +'The line on this board comes from the engine’s own all-FBS rating state, not from this number.</span></div>';
+      +'The line on this board is priced from the '+FB_R_STATE.toUpperCase()+', not from this number.</span></div>';
+    out+=fbRatingGameDivHTML(g);
   }
-  if(h)out+='<div class="gd-sec">'+fbEsc(h.team)+'</div>'+fbEdrDetail(h);
-  if(a)out+='<div class="gd-sec">'+fbEsc(a.team)+'</div>'+fbEdrDetail(a);
+  if(h)out+='<div class="gd-sec">'+fbEsc(h.team)+'</div>'+fbRatingPairHTML(h.team)+fbEdrDetail(h);
+  if(a)out+='<div class="gd-sec">'+fbEsc(a.team)+'</div>'+fbRatingPairHTML(a.team)+fbEdrDetail(a);
   return out;
 }
 
@@ -54116,6 +54290,28 @@ function fbEdrGameHTML(g){
    filter, not the scale underneath it. The label is corrected here, the two
    panels are made to say what they actually are, and the second one is kept
    as a clearly-named DIAGNOSTIC rather than a rival ranking. */
+/* THE EXPLAINER, once, wherever both numbers are listed. The divergence
+   summary is computed here from the same two maps the rows use. */
+function fbTwoRatingsExplainer(){
+  var C=window.EDCanon,d=FB.edr&&FB.edr.data;
+  if(!C||!d||!d.teams)return '';
+  var R=C.RATINGS,ctr=fbRatingCenters(),divs=[];
+  if(ctr)d.teams.forEach(function(t){var st=fbStateFor(t.team);if(st&&t.rating!=null)divs.push({team:t.team,v:(t.rating-ctr.current)-(st.value-ctr.state)});});
+  var abs=divs.map(function(x){return Math.abs(x.v);}).sort(function(a,b){return a-b;});
+  var q=function(p){if(!abs.length)return null;var i=(abs.length-1)*p,lo=Math.floor(i),hi=Math.ceil(i);return abs[lo]+(abs[hi]-abs[lo])*(i-lo);};
+  divs.sort(function(a,b){return Math.abs(b.v)-Math.abs(a.v);});
+  var mode=FB.p4&&FB.p4.canonicalRatingMode;
+  return '<div class="gd-two">'
+    +'<div class="gd-line"><span class="l">two numbers</span><span class="v"><b>'+fbEsc(R.CURRENT_FBS_POWER_RATING.label)+'</b> <span class="mut">— '+fbEsc(R.CURRENT_FBS_POWER_RATING.measures)+'</span></span></div>'
+    +'<div class="gd-line"><span class="l"></span><span class="v"><b>'+fbEsc(R.PRODUCTION_PRICING_STATE.label)+'</b> <span class="mut">— '+fbEsc(R.PRODUCTION_PRICING_STATE.measures)+'</span></span></div>'
+    +'<div class="gd-line"><span class="l">which one prices</span><span class="v">The '+fbEsc(R.PRODUCTION_PRICING_STATE.label)+'. '
+      +'<span class="mut">'+fbEsc(mode==='PRICED_CANONICAL'?'The current rating has been promoted and supplies the Layer-1 mean.':R.CURRENT_FBS_POWER_RATING.why_not_priced)+'</span></span></div>'
+    +'<div class="gd-line"><span class="l">why they differ</span><span class="v mut">The pricing state keeps 100% of its long-run trained state through 3 games played, 80% at 4–5 and 60% from 6 (the learned prior-weight curve); the current rating weights this season’s play-level results more and adds roster/talent and availability, which production does not price. The two scales also have different FBS averages'
+      +(ctr?(' ('+fbPts(ctr.current)+' vs '+fbPts(ctr.state)+')'):'')+', which is removed before any divergence is measured.</span></div>'
+    +(abs.length?('<div class="gd-line"><span class="l">rating-state divergence</span><span class="v mut">median '+q(0.5).toFixed(1)+' pts · 90th percentile '+q(0.9).toFixed(1)+' pts across '+abs.length+' teams · largest: '
+      +divs.slice(0,3).map(function(x){return fbEsc(x.team)+' '+fbPts(x.v);}).join(', ')+'. Diagnostic only — the two numbers are never forced together; large game-level divergence is an uncertainty flag (football/cfb_validation/divergence_backtest.json).</span></div>'):'')
+    +'</div>';
+}
 function fbEdrScopeNote(sc){
   if(sc.scope==='all')return 'every active FBS program on one connected scale';
   if(sc.scope==='p4')return 'the same all-FBS scale, filtered to Power 4 programs — nothing is re-rated inside the group';
@@ -54137,7 +54333,8 @@ function fbP4Ratings(){
       var gx=GORD[x.group]==null?9:GORD[x.group],gy=GORD[y.group]==null?9:GORD[y.group];
       return gx-gy||String(x.label).localeCompare(String(y.label));
     });
-    out+='<div class="gd-sec">EdgeDesk FBS Rating — top 25 <span class="mut">· points versus an average FBS team</span></div>';
+    out+='<div class="gd-sec">Current FBS Power Rating — top 25 <span class="mut">· current team-strength research view · points versus an average FBS team</span></div>'
+      +fbTwoRatingsExplainer();
     /* SCOPE CONTROLS — a view switch, never a rebuild */
     out+='<div class="fbs-filters" style="border-top:none"><div class="fbs-frow"><span class="fbs-flab">SCOPE</span><div class="fbs-fset">';
     FBEDR_SCOPES.forEach(function(s){
@@ -54182,7 +54379,7 @@ function fbP4Ratings(){
       +fbEsc(String(d.generated_at||'').slice(0,16).replace('T',' '))+' UTC · week '+fbEsc(String(d.week==null?'—':d.week))
       +' · '+d.team_count+' active FBS programs across '+confs.length+' conferences · weekly in CI</span></div>';
   } else if(FB.edr.error){
-    out+='<div class="gd-sec">EdgeDesk FBS Rating</div><div class="gd-line"><span class="l">rating</span>'
+    out+='<div class="gd-sec">'+FB_R_CUR+'</div><div class="gd-line"><span class="l">rating</span>'
       +'<span class="v mut">could not be read ('+fbEsc(FB.edr.error)+'). Nothing is shown rather than something invented.</span></div>';
   }
   /* THE ENGINE STATE, as a diagnostic and labelled as one. It is a different
@@ -54194,26 +54391,33 @@ function fbP4Ratings(){
   var st=FB.p4.state,S=FB.p4;
   if(st){
     var srows=[],t,rated=0,fbsRated=0,uni=S.uni;
+    var E1=window.EDCfbP4;
     for(t in st.r)if(st.r.hasOwnProperty(t)){
-      srows.push([t,st.r[t],st.n[t]||0]);
+      /* the PRICED value: the engine's own blend of the carried state and the
+         this-season track (strength.blendedRating), which is what the rating
+         term of every fair spread is built from — not the carried state alone */
+      var bl=null;try{bl=E1&&E1.strength?E1.strength.blendedRating(st,t,true,null):null;}catch(_){bl=null;}
+      srows.push([t,bl&&bl.value!=null?bl.value:st.r[t],st.n[t]||0,bl]);
       rated++;
       if(uni&&uni.teams[t]&&uni.teams[t].division==='fbs')fbsRated++;
     }
     srows.sort(function(x,y){return y[1]-x[1];});
     var fbsTot=uni?uni.counts.fbs_teams:null;
-    out+='<div class="gd-sec">Engine state · diagnostic <span class="mut">· the rating the board’s lines are actually priced from</span></div>'
+    out+='<div class="gd-sec">Production Pricing State <span class="mut">· the latent trained state the board’s lines are actually priced from</span></div>'
       +'<div class="gd-line"><span class="l">scope</span><span class="v mut">'
       +rated+' programs carry a rating in this state'
       +(fbsTot!=null?(', covering '+fbsRated+' of the '+fbsTot+' active FBS programs in the '+fbEsc(String(S.schedSrc||'schedule'))+' feed'):'')
-      +'. This is not the EdgeDesk Rating above: it is the trained seed table carried forward and updated game by game, '
+      +'. This is not the Current FBS Power Rating above: it is the trained seed table carried forward and updated game by game, blended with a this-season track on the learned prior-weight curve, '
       +'on the same all-FBS scale, and it is what every spread on this board comes from. '
-      +'“g in state” is the whole sample the seed carries, not this season’s games — the rating above counts those separately.</span></div>'
+      +'“g in state” is the whole sample the seed carries, not this season’s games — the rating above counts those separately. '
+      +'Each row shows the priced value, its long-run and this-season parts, and the Current FBS Power Rating beside it.</span></div>'
       +srows.slice(0,25).map(function(r,i){
-        var u=uni?uni.teams[r[0]]:null;
+        var u=uni?uni.teams[r[0]]:null,bl=r[3],cur=u?fbEdrFor(u.name):null;
         return '<div class="gd-line"><span class="l">'+(i+1)+'. '+fbEsc(u?u.name:r[0])
           +(u&&u.conference&&u.conference.label?(' <span class="fbs-badge'+(u.group?(' g-'+u.group):'')+'">'+fbEsc(u.conference.label)+'</span>'):'')
           +'</span><span class="v mut">'+fbPts(r[1])
-          +' <span class="mut">'+r[2]+' g in state</span></span></div>';}).join('');
+          +' <span class="mut">'+(bl&&bl.prior_weight!=null?(Math.round(100*bl.prior_weight)+'% long-run '+fbPts(bl.carried)+' · this season '+fbPts(bl.this_season)+' · '):'')
+          +r[2]+' g in state'+(cur?(' · current rating '+fbPts(cur.rating)):'')+'</span></span></div>';}).join('');
     if(fbsTot!=null&&fbsRated<fbsTot){
       var missing=[];
       for(var mk in uni.teams)if(uni.teams.hasOwnProperty(mk)){
@@ -54281,14 +54485,24 @@ function fbP4DisagreementFor(u,p,mkt,rel){
     var av=function(side){var f=((A&&A.contract)||[]).filter(function(x){return x.field==='availability'&&x.side===side;})[0];return {feed_state:f?f.state:null};};
     var proj=D.fromEngine(p),rd=proj?proj.rating_detail:{};
     if(rel==null&&u._rv&&u._rv.v&&u._rv.v.reliability&&u._rv.v.reliability.scored)rel={score:u._rv.v.reliability.score};
+    /* FRESH MULTI-BOOK CONSENSUS, MEASURED ON ONE SET. The cfb.lines provider
+       rows carry no capture time, so they cannot be called fresh: counting
+       them as "books behind the consensus" while judging freshness on a
+       different, dated quote verified gaps on books nobody could date
+       (docs/cfb-validation/DELIVERABLE.md §42). The gate's book count and
+       dispersion now come from the dated, actionable captured quotes only —
+       the same rule the research terminal applies — and undated rows remain
+       reference context. */
+    var MCg=window.EDMarketConsensus,fq=(quotes||[]).filter(function(q){return q&&q.actionable===true&&typeof q.line==='number'&&q.captured_at;});
+    var consG=null;try{consG=(MCg&&fq.length)?MCg.consensus({points:fq.map(function(q){return {side:q.side,line:q.line,n_books:q.n_books,best_book:q.book,price_dec:q.price_dec,captured_at:q.captured_at};})},Date.now()):null;}catch(_){consG=null;}
     v=D.evaluate({now_ms:Date.now(),
       game:{game_id:String(g.game_id),home:g.home_team,away:g.away_team,kickoff:u.t?new Date(u.t).toISOString():(g.start_date||null),
         neutral_site:!!g.neutral_site,venue:g.venue||null,
         home_fbs:!(u.meta&&u.meta.home&&u.meta.home.is_fbs===false),away_fbs:!(u.meta&&u.meta.away&&u.meta.away.is_fbs===false)},
       mapping:{teams_resolved:!!(mkt.match||/cfb\.lines/.test(String(mkt.book||'')))},
       projection:proj,
-      market:{spread:mkt.spread_line,books:cons&&cons.books_reporting?cons.books_reporting:null,
-        range:cons&&cons.market_dispersion&&cons.market_dispersion.range!=null?cons.market_dispersion.range:null,
+      market:{spread:mkt.spread_line,books:consG&&consG.books_reporting?consG.books_reporting:0,
+        range:consG&&consG.market_dispersion&&consG.market_dispersion.range!=null?consG.market_dispersion.range:null,
         as_of:mkt.as_of||null,stale:!!mkt.stale,fault:!!mkt.spread_fault,source:mkt.book||null},
       submodels:(FB.p4.dgSub&&FB.p4.dgSub[String(g.game_id)])||null,
       qb:A?{home:qb(st.home),away:qb(st.away)}:null,
@@ -54956,6 +55170,50 @@ function fbGameRows(){
   }
   return rows;
 }
+/* ═══ ONE COUNTER HIERARCHY (lib/edgedesk_canon.js COUNTERS) ════════════════
+   ALL GAMES → RESEARCH READY → ACTIONABLE RESEARCH SIGNALS, then each sport's
+   ready share, then the CFB research statuses — which sum to the CFB total.
+   One research status per game: the canonical research page's for CFB when
+   its build is fresh, else this page's own label mapped to the same words;
+   NFL has no integrity gate, so a 7+ NFL gap reads INVESTIGATE. The old
+   "Market disagreements" counter is merged into ACTIONABLE RESEARCH SIGNALS
+   (it counted the same 2+ pt gaps without the research gates), and "Data
+   faults" is split: a faulted game is a CFB status, a failed self-check is
+   system health, not a game. */
+function fbResearchStatusOfRow(r){
+  var C=window.EDCanon;if(!C)return null;
+  if(r.sport==='p4'){
+    var cr=null;try{cr=fbCanonRow(r.gid);}catch(_){cr=null;}
+    var b=FB.canon&&FB.canon.board,age=b&&b.generated_at?(Date.now()-Date.parse(b.generated_at))/36e5:null;
+    if(cr&&cr.research_status&&age!=null&&age<=FB_CANON_MAX_AGE_H)return cr.research_status;
+    var u=null;((FB.p4&&FB.p4.up)||[]).some(function(x){if(String(x.g.game_id)===r.gid){u=x;return true;}return false;});
+    var v=null;if(u&&r.p)try{v=fbP4ViewFor(u,r.p);}catch(_){v=null;}
+    if(v&&v.research_label){var k=C.fromResearchView(v.research_label);if(k)return k;}
+  }
+  var hasMkt=r.mkt&&(r.mkt.spread_line!=null||r.mkt.total_line!=null),gap=r.gapS!=null?Math.abs(r.gapS):null;
+  if(r.fault)return 'DATA_FAULT';
+  if(!r.ok)return 'LIMITED_DATA';
+  if(!hasMkt||r.stale)return 'NO_MARKET';
+  if(r.thin)return 'LIMITED_DATA';
+  if(gap!=null&&gap>=C.THRESHOLDS.major_gap)return 'INVESTIGATE';
+  if(r.lean)return 'WORTH_RESEARCHING';
+  return 'MARKET_ALIGNED';
+}
+function fbCanonHierarchy(rows){
+  var C=window.EDCanon;if(!C)return null;
+  return C.counterHierarchy(rows.map(function(r){return {sport:r.sport==='p4'?'cfb':r.sport,research_status:fbResearchStatusOfRow(r)};}));
+}
+function fbCanonDef(k){var C=window.EDCanon,d=C&&C.COUNTERS[k];return d?(d.means+' Population: '+d.population+' · threshold: '+d.threshold+' · sport: '+d.sport+' · status: '+d.status+'.'):'';}
+function fbCanonCountersHTML(H,s){
+  var C=window.EDCanon;if(!C||!H)return '';
+  var nfl=H.by_sport.nfl||{ready:0,total:0},cfb=H.by_sport.cfb||{ready:0,total:0};
+  var order=[['VERIFIED_MAJOR','vm'],['INVESTIGATE','iv'],['WORTH_RESEARCHING',''],['MARKET_ALIGNED',''],['NO_MARKET_LIMITED',''],['DATA_FAULT','']];
+  return '<div class="fb-canon-k"><span class="k" title="'+fbEsc('NFL games that are research ready, of all NFL games on the board.')+'"><b>'+nfl.ready+'/'+nfl.total+'</b>NFL ready</span>'
+    +'<span class="k" title="'+fbEsc('CFB games that are research ready, of all CFB games on the board.')+'"><b>'+cfb.ready+'/'+cfb.total+'</b>CFB ready</span></div>'
+    +(cfb.total?('<div class="fb-canon-k">'+order.filter(function(x){return x[0]!=='DATA_FAULT'||H.cfb_buckets.DATA_FAULT;}).map(function(x){
+      return '<span class="k '+x[1]+'" title="'+fbEsc(fbCanonDef(x[0]))+'"><b>'+(H.cfb_buckets[x[0]]||0)+'</b>'+fbEsc(C.COUNTERS[x[0]].label)+'</span>';}).join('')+'</div>'):'')
+    +(s&&s.checkFails?('<div class="fb-quiet" style="margin-top:4px">System health: '+s.checkFails+' daily self-check'+(s.checkFails===1?'':'s')+' failed — see the model status below. Not a game count.</div>'):'');
+}
 function fbSnapshot(rows){
   var s={games:rows.length,cand:0,dis:0,faults:0,warn:0,checkFails:0,guard:0};
   rows.forEach(function(r){
@@ -55249,7 +55507,7 @@ function fbWrPanel(which,cands,P,tally){
       cands.length+' game'+(cands.length===1?'':'s')+' checked'+(parts.length?(': '+fbEsc(parts.join(' · '))):'')+'. Nothing is forced onto this list.'));
   }
   if(tally)tally.n+=res.items.length;
-  return card(res.eligible+' of '+cands.length+' clear the gates',
+  return card('<span title="'+fbEsc('Of the '+label+' games on the board, how many clear this list’s gates: a PREDICTED projection, a current quote, not DATA FAULT, THIN DATA or stale, and a gap to explain. Up to '+FB_WR_N+' are listed. A reading order, not a research status and not a bet.')+'">'+res.eligible+' of '+cands.length+' clear the reading-order gates</span>',
     res.items.map(fbWrRowHTML).join('')
     +(res.items.length<FB_WR_N?('<div class="fb-wr-few">Only '+res.items.length+' '+label+' game'+(res.items.length===1?' clears':'s clear')
       +' the gates right now. Nothing is added to fill the list.</div>'):''));
@@ -55260,7 +55518,10 @@ function fbWrPanel(which,cands,P,tally){
 function fbWrInner(rows){
   var P=window.EDResearchPriority,st=FB.ui.wrLayer||{};
   function head(r,n){
-    var sub=n==null?'':(n?(n+' game'+(n===1?'':'s')+' worth researching'):'No game clears the research gates right now');
+    /* "N games worth researching" read like the WORTH RESEARCHING status count
+       (a different number): this line counts the games LISTED below, in
+       reading order, and says so */
+    var sub=n==null?'':(n?(n+' game'+(n===1?'':'s')+' listed in reading order'):'No game clears the research gates right now');
     return '<div class="fb-wr-hd"><h3 class="fb-wr-t">Today&rsquo;s Research Board</h3>'
       +'<p class="fb-wr-sub"><span class="c">'+sub+'</span><span class="r">'+r+'</span></p></div>';
   }
@@ -55495,17 +55756,25 @@ function fbModelStatusHTML(){
   var isP4=FB.sport==='p4',M=null;
   try{M=isP4?(window.EDCfbP4?window.EDCfbP4.meta():null):(window.EDFootball?window.EDFootball.meta():null);}catch(_){M=null;}
   var name=isP4?'EdgeDesk CFB Power 4 Model':'EdgeDesk Football Engine';
-  var badges=[],mat=null;
-  try{mat=rsMaturity(isP4?'cfb_p4.engine_v1':'football.engine_v1');}catch(_){mat=null;}
-  badges.push(mat&&mat.label==='Validated'?['green','Validated']:['amber','Experimental']);
+  /* MATURITY FROM THE CANON (lib/edgedesk_canon.js MODULES + BADGE_RULES).
+     A badge is EARNED under its stated rule: a historical backtest is labelled
+     as one and is never "walk-forward tracked", which needs live predictions
+     frozen before kickoff; "validated" needs the sample and the evidence. The
+     CFB live evidence is read from football/cfb_validation/maturity.json. */
+  var badges=[],C=window.EDCanon,mod=C?C.module(isP4?'cfb_v1':'nfl_model'):null,MT={cls:{PRODUCTION_VALIDATED:'green',PRODUCTION:'blue',SHADOW:'amber',EXPERIMENTAL:'amber',RESEARCH_ONLY:'mut',UNVALIDATED:'red',DEPRECATED:'mut'}};
+  if(mod)badges.push([MT.cls[mod.maturity]||'mut',C.MATURITY[mod.maturity].label,C.MATURITY[mod.maturity].means]);
   var v=M&&M.validation,wf=isP4?(v&&v.market):(v&&v.nfl);
-  if(wf)badges.push(['blue','Walk-forward tracked']);
-  if(wf&&!wf.beats_closing_line)badges.push(['amber','CLV validation pending']);
-  else if(!wf)badges.push(['mut','No market backtest loaded']);
+  if(wf)badges.push(['mut','Historical backtest','A held-out historical backtest is on file. It is not prospective evidence.']);
+  else badges.push(['mut','No market backtest loaded']);
   /* the model's own live record (record/football/summary.json): loaded once,
      cached, and shown on the next render — never awaited here */
   var LR=null;try{LR=window.EDFootballRecord.summary();if(!LR)window.EDFootballRecord.load();}catch(_){LR=null;}
   var ls=LR&&LR.sports&&LR.sports[isP4?'cfb':'nfl'];
+  var mrow=null;if(isP4){try{fbMaturityEnsure();mrow=FB.mat&&FB.mat.data?(FB.mat.data.modules||[]).filter(function(m){return m.id==='cfb_v1';})[0]:null;}catch(_){mrow=null;}}
+  var tracked=isP4?!!(mrow&&/TRACKED|VALIDATED/.test(mrow.walk_forward_status)):!!(ls&&ls.counts&&ls.counts.graded);
+  if(C&&tracked)badges.push(['blue',C.BADGE_RULES.WALK_FORWARD_TRACKED.label,C.BADGE_RULES.WALK_FORWARD_TRACKED.rule]);
+  if(C)badges.push(mrow&&/CLV VALIDATED/.test(mrow.clv_status)?['green',C.BADGE_RULES.CLV_VALIDATED.label,C.BADGE_RULES.CLV_VALIDATED.rule]:['amber',C.BADGE_RULES.CLV_PENDING.label,C.BADGE_RULES.CLV_PENDING.rule]);
+  if(mod)badges.push(['mut','Pricing impact: '+(mod.pricing_impact?'YES · moves the line':'NO'),mod.reason]);
   if(ls)badges.push(ls.counts&&ls.counts.graded?['blue','Live record · '+ls.counts.graded+' graded']:['mut','Live record · recording']);
   var h=FB.health;
   if(h)badges.push(h.ok?['green','Self-check passed']:['red','Self-check failed']);
@@ -55516,10 +55785,18 @@ function fbModelStatusHTML(){
   var ver=M?(fbEsc(M.model_version)+' · trained through '+fbEsc(String(isP4?M.trained_through:(M.nfl&&M.nfl.trained_through)))+' · built '+fbEsc(String(M.built_at).slice(0,10))):'engine metadata not loaded';
   if(!isP4&&FB.nfl.qbs.length)ver+='<br>'+fbEsc(fbQbFreshLabel())+' · '+FB.nfl.qbs.length+' active QBs · '+Object.keys(FB.nfl.qbsByTeam).length+' teams';
   return '<div class="fb-card"><div class="fb-ms-h"><span class="t">Model status</span><span class="n">'+fbEsc(name)+'</span></div>'
-    +'<div class="fb-badges">'+badges.map(function(b){return '<span class="fb-badge '+b[0]+'"><i></i>'+fbEsc(b[1])+'</span>';}).join('')+'</div>'
+    +'<div class="fb-badges">'+badges.map(function(b){return '<span class="fb-badge '+b[0]+'"'+(b[2]?' title="'+fbEsc(b[2])+'"':'')+'><i></i>'+fbEsc(b[1])+'</span>';}).join('')+'</div>'
     +'<p class="fb-ms-d">'+fbEsc(desc)+'</p><div class="fb-ms-v">'+ver+'</div>'
     +'<div class="fb-ms-p"><b>Research context, not edges.</b> Nothing is counted as validated until its own graded closing-line performance supports it.</div>'
-    +'<div class="fb-btns"><button class="fb-btn" onclick="fbDrawerOpen(\'method\')">View methodology</button><button class="fb-btn pri" onclick="fbDrawerOpen(\'record\')">Track record</button></div></div>';
+    +'<div class="fb-btns"><button class="fb-btn" onclick="fbDrawerOpen(\'method\')">View methodology</button><button class="fb-btn pri" onclick="fbDrawerOpen(\'record\')">Track record</button>'
+    +'<a class="fb-btn" href="/research/cfb/#/maturity">Model maturity</a></div></div>';
+}
+/* the model maturity page's data, read once (football/cfb_validation/maturity.json) */
+function fbMaturityEnsure(){
+  FB.mat=FB.mat||{data:null,err:null,_p:null};
+  if(FB.mat.data||FB.mat._p||FB.mat.err||typeof fetch!=='function')return;
+  FB.mat._p=fetch('football/cfb_validation/maturity.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():Promise.reject(new Error('maturity '+r.status));})
+    .then(function(d){FB.mat.data=d;FB.mat._p=null;try{window.renderFootball();}catch(_){}}).catch(function(e){FB.mat.err=String(e&&e.message||e);FB.mat._p=null;});
 }
 /* ---- drawers: the long-form record and methodology, off the main flow ---- */
 function fbAtsTableHTML(tab,label){
@@ -55822,7 +56099,7 @@ function fbPqPreviewHTML(){
     +'</div>';
   /* THE DISCLOSURE. A reader must not leave this card believing the spread
      they see anywhere in EdgeDesk has player ratings inside it. It does not. */
-  h+='<p class="rs-pv-note"><b style="color:var(--warn)">Research only.</b> Player quality has not cleared walk-forward validation, so it moves <b>no</b> projected line anywhere in EdgeDesk. It changes what is shown, explained and warned about — nothing that is priced.</p>';
+  h+='<p class="rs-pv-note"><b style="color:var(--warn)">Research only · PRICING IMPACT: NO.</b> Player quality has not cleared walk-forward validation, so it moves <b>no</b> projected line anywhere in EdgeDesk. It changes what is shown, explained and warned about — nothing that is priced.</p>';
   h+='<div class="rs-start" style="margin-top:8px"><button onclick="fbStartGo(\'players\')">Explore players</button></div>';
   return h+'</div>';
 }
@@ -55836,17 +56113,21 @@ function fbOverviewHTML(){
     return '<div class="rs-state"><h4>Football engine unavailable</h4><p>'+fbEsc(FB.engineErr)+'. Nothing is shown rather than something invented.</p><button onclick="fbRefreshClick()">Try again</button></div>';
   }
   if(!FB.at)return fbSkeletonHTML();
-  var rows=fbGameRows(),s=fbSnapshot(rows),items=fbTodayItems(rows).map(function(it){return fbSigItem(it);});
+  var rows=fbGameRows(),s=fbSnapshot(rows),items=fbTodayItems(rows).map(function(it){return fbSigItem(it);}),H=fbCanonHierarchy(rows);
   /* no title: the panel header above already says FOOTBALL, and repeating it
      cost ~60px of the first screen on a phone. The scope rides the freshness
      stamp in that header instead (fbRenderFresh). */
   var html=rsTkSnap({title:'',meta:'',key:'fbSnap',
     /* the labels say what each number counts; the counts are fbSnapshot's,
        unchanged, and "How this is counted" holds the exact rule for each */
-    kpis:[{n:s.games,l:'Games'},{n:s.cand,l:'Research-ready',c:s.cand?'':'mut'},{n:s.dis,l:'Market disagreements',c:s.dis?'warn':'mut'},{n:s.faults,l:'Data faults',c:s.faults?'neg':'pos'}],
+    kpis:H?[{n:H.all,l:'All games'},{n:H.ready,l:'Research ready',c:H.ready?'':'mut'},{n:H.actionable,l:'Actionable research signals',c:H.actionable?'warn':'mut'}]
+      :[{n:s.games,l:'Games'},{n:s.cand,l:'Research-ready',c:s.cand?'':'mut'}],
     kpiCls:'fb-kpis-read',
-    how:'<b>Games</b> are the upcoming NFL games inside the next '+FB_LOOKAHEAD_D+' days, plus every game with an FBS team on the college slate once that board has been opened. <b>Research-ready</b> requires a PREDICTED projection and a spread or total joined from captured quotes or the reference line. <b>Market disagreements</b> uses the engine’s own research-lean classification: 2+ pts of disagreement between the model and the market on the spread or total — research attention, unproven by the model’s own record. <b>Data faults</b> add failed daily self-checks to games whose model–market gap exceeds the guard bound ('+FB_GUARD.nfl.game+' pts NFL, '+FB_GUARD.p4.game+' pts FBS).'+(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''),
-    foot:fbStartHereHTML()});
+    how:H?('<b>All games</b> — '+fbEsc(fbCanonDef('ALL_GAMES'))+' <b>Research ready</b> — '+fbEsc(fbCanonDef('RESEARCH_READY'))+' <b>Actionable research signals</b> — '+fbEsc(fbCanonDef('ACTIONABLE'))
+      +' The CFB statuses below sum to the CFB total; each is defined on hover and on the research page’s Terms. The research status is never a decision: whether a price justifies action is the decision engine’s separate answer.'
+      +(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''))
+      :'The canonical counters did not load (lib/edgedesk_canon.js).',
+    foot:fbCanonCountersHTML(H,s)+fbStartHereHTML()});
   /* where to start: the reading order first, the raw signals folded under it */
   html+='<div id="fbWr">'+fbWrInner(rows)+'</div>';
   html+='<div class="fb-sechd"><span>Today in football</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+fbEsc(ago(FB.at))+'</span></div>';

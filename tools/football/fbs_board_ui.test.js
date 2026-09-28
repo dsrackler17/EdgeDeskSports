@@ -173,6 +173,9 @@ function makeCtx(opts) {
   ctx.window = ctx;
   ctx.globalThis = ctx;
   ctx.window.EDCfbP4 = ENGINE;
+  /* the page loads lib/edgedesk_canon.js before the board (the rating names,
+     the explainer, the canonical statuses) */
+  ctx.window.EDCanon = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
   ctx.window.EDCfbP4Params = PARAMS;
   ctx.window.EDFbs = FBS;
   ctx.fbP4Key = name => FBS.normKey(name);
@@ -537,7 +540,7 @@ chk('the expanded card names both conferences and the matchup type', () => {
 chk('the card shows each side’s FBS rating and rank on one scale', () => {
   const r = ROWS.find(x => x.meta.fbs_sides === 2);
   const h = A.fbP4MatchupHTML(r.u, r.p);
-  return /EdgeDesk FBS rating · one scale/.test(h) && /of \d+ FBS/.test(h);
+  return /Current FBS Power Rating · research view, one scale/.test(h) && /of \d+ FBS/.test(h) && /which one prices/.test(h);
 });
 chk('the card shows games absorbed', () => {
   const r = ROWS.find(x => x.meta.fbs_sides === 2);
@@ -591,16 +594,21 @@ chk('every status the board can show is offered as a filter', () => {
 if (EDR) {
   const R = makeCtx();
   const RAT = R.fbP4Ratings();
-  has(RAT, 'EdgeDesk FBS Rating — top 25', 'the primary rating section is the FBS rating');
+  has(RAT, 'Current FBS Power Rating — top 25', 'the primary rating section is the CURRENT FBS POWER RATING (lib/edgedesk_canon.js)');
+  has(RAT, 'current team-strength research view', 'and it says it is the research view');
+  lacks(RAT, 'EdgeDesk FBS Rating', 'the retired name is gone');
   has(RAT, 'points versus an average FBS team', 'and it states the baseline');
   has(RAT, 'All FBS', 'the scope control offers All FBS');
   has(RAT, 'Power 4', 'and Power 4');
   has(RAT, 'Other FBS', 'and Other FBS');
   has(RAT, 'Conference', 'and Conference');
-  has(RAT, 'Engine state · diagnostic', 'the engine state is kept as a labelled diagnostic');
+  has(RAT, 'Production Pricing State', 'the engine state is named the PRODUCTION PRICING STATE');
+  lacks(RAT, 'Engine state · diagnostic', 'the retired name is gone');
+  has(RAT, 'which one prices', 'the explainer says which number prices');
+  has(RAT, 'why they differ', 'and why the two can differ, from the model structure');
   lacks(RAT, "Power 4 engine state · top 25", 'and no longer claims the board is priced off a Power 4 scale');
   has(RAT, 'active FBS programs across', 'the team count is stated from the dataset');
-  has(RAT, 'the rating the board’s lines are actually priced from', 'the diagnostic says what it is');
+  has(RAT, 'the latent trained state the board’s lines are actually priced from', 'the pricing state says what it is');
   has(RAT, 'covering', 'and how much of the FBS it covers');
 
   chk('the All FBS view ranks every rated program', () => {
@@ -638,7 +646,7 @@ if (EDR) {
   });
   chk('the All FBS view shows the overall rank alone', () => {
     const h = makeCtx({ edrScope: 'all' }).fbP4Ratings();
-    return !/#\d+ FBS<\/span>/.test(h.split('Engine state')[0]);
+    return !/#\d+ FBS<\/span>/.test(h.split('Production Pricing State <span')[0]);
   });
   chk('every rating row carries its conference', () => {
     const h = makeCtx().fbP4Ratings();
@@ -657,7 +665,7 @@ if (EDR) {
   });
   chk('the engine state and the rating are named as DIFFERENT quantities', () => {
     const h = makeCtx().fbP4Ratings();
-    return /This is not the EdgeDesk Rating above/.test(h);
+    return /This is not the Current FBS Power Rating above/.test(h);
   });
   chk('the engine state covers the same FBS universe the board does', () => {
     let rated = 0;
@@ -760,7 +768,7 @@ chk('the offline export declares the same columns, in the same order', () => {
     const end = cli.indexOf('];', at);
     return (cli.slice(at, end).match(/'[a-z0-9_]+'/g) || []).map(x => x.slice(1, -1));
   }
-  const all = heads('NFL_HEAD').concat(heads('P4_HEAD')).concat(heads('FBS_HEAD'));
+  const all = heads('NFL_HEAD').concat(heads('P4_HEAD')).concat(heads('FBS_HEAD')).concat(heads('CANON_HEAD'));
   return all.length === A.FBP4_CSV_HEAD.length && all.every((h, i) => h === A.FBP4_CSV_HEAD[i]);
 }, (() => {
   try {
@@ -776,10 +784,16 @@ chk('the FBS tail is exactly as long as the tail builder says', () => {
   const r = ROWS[0];
   return A.fbP4FbsTail(r.u, r.p, r.mkt).length === A.FBP4_FBS_TAIL_N;
 });
+chk('the canonical tail is exactly as long as its builder says, and never exports BET', () => {
+  const r = ROWS[0];
+  const t = A.fbP4CanonTail(r.u, r.p, r.mkt);
+  const ds = A.FBP4_CSV_HEAD.indexOf('decision_status') - (A.FBP4_CSV_HEAD.length - A.FBP4_CANON_TAIL_N);
+  return t.length === A.FBP4_CANON_TAIL_N && ROWS.every(x => A.fbP4CanonTail(x.u, x.p, x.mkt)[ds] !== 'BET');
+});
 chk('the tail carries the same classification the board rendered', () => {
   const r = ROWS.find(x => x.meta.matchup_type === 'conference');
   const tail = A.fbP4FbsTail(r.u, r.p, r.mkt);
-  const at = A.FBP4_CSV_HEAD.length - A.FBP4_FBS_TAIL_N;
+  const at = A.FBP4_CSV_HEAD.length - A.FBP4_FBS_TAIL_N - A.FBP4_CANON_TAIL_N;
   const ix = n => A.FBP4_CSV_HEAD.indexOf(n) - at;
   return tail[ix('home_conference_id')] === r.meta.home.conference_id
     && tail[ix('matchup_type')] === 'conference'
@@ -789,7 +803,7 @@ chk('the tail carries the same classification the board rendered', () => {
 chk('a game with no market exports NO MARKET, never an empty number', () => {
   const r = ROWS[0];
   const tail = A.fbP4FbsTail(r.u, r.p, { status: 'NO MARKET', spread_line: null });
-  const at = A.FBP4_CSV_HEAD.length - A.FBP4_FBS_TAIL_N;
+  const at = A.FBP4_CSV_HEAD.length - A.FBP4_FBS_TAIL_N - A.FBP4_CANON_TAIL_N;
   return tail[A.FBP4_CSV_HEAD.indexOf('market_status') - at] === 'NO MARKET';
 });
 chk('the export items are exactly the rows on screen', () => {
@@ -892,8 +906,8 @@ has(BOARD, '<span>STATUS</span>', 'and keeps its STATUS column');
 {
   const c = rvCtx();
   const h = c.fbP4BoardHTML();
-  chk('with no market anywhere, every projected row reads LIMITED DATA or LOW RELIABILITY, never a gap label',
-    c.fbP4Visible(c.fbP4Rows()).every(r => ['LIMITED_DATA', 'LOW_RELIABILITY'].indexOf(c.fbP4ViewFor(r.u, r.p, r.mkt).research_label.key) >= 0));
+  chk('with no market anywhere, every projected row reads NO MARKET, LIMITED DATA or LOW RELIABILITY, never a gap label',
+    c.fbP4Visible(c.fbP4Rows()).every(r => ['NO_MARKET', 'LIMITED_DATA', 'LOW_RELIABILITY'].indexOf(c.fbP4ViewFor(r.u, r.p, r.mkt).research_label.key) >= 0));
   chk('and nothing is worth researching against a market that is not there: no row carries the label',
     !/class="rv-cell"><span class="rv-lab accent"[^>]*>WORTH RESEARCHING/.test(h));
   has(h, '<b>0</b> <span class="rv-lab accent">WORTH RESEARCHING</span>', 'and the research desk counts zero, rather than hiding the answer');

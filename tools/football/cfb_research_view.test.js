@@ -182,17 +182,21 @@ section('STEP 3 · one research label, by rule and in order');
   eq('reliability 60% is enough', label(5, 3, { coverage: { input_coverage: 0.6 } }).key, 'WORTH_RESEARCHING');
   eq('reliability 59% is LOW RELIABILITY', label(5, 3, { coverage: { input_coverage: 0.59 } }).key, 'LOW_RELIABILITY');
   eq('an unmeasured reliability is LOW RELIABILITY', label(5, 3, { coverage: null }).key, 'LOW_RELIABILITY');
-  eq('no market line is LIMITED DATA', label(5, null).key, 'LIMITED_DATA');
-  eq('a stale-only market is LIMITED DATA', label(5, 3, { stale: true }).key, 'LIMITED_DATA');
+  /* canonical (lib/edgedesk_canon.js): a missing or stale quote is NO MARKET on every surface */
+  eq('no market line is NO MARKET', label(5, null).key, 'NO_MARKET');
+  eq('a stale-only market is NO MARKET', label(5, 3, { stale: true }).key, 'NO_MARKET');
   eq('a near pick’em is NEAR PICK’EM', label(0.4, -0.5).key, 'NEAR_PICKEM');
   eq('no projection is LIMITED DATA', label(0, 3, { projection: { status: 'INSUFFICIENT_DATA' } }).key, 'LIMITED_DATA');
 
   /* the priority order, where two rules both hold */
   eq('data problems outrank a near pick’em (low confidence)', label(0.4, 3, { conf: 20 }).key, 'LIMITED_DATA');
   eq('data problems outrank a near pick’em (low reliability)', label(0.4, 3, { coverage: { input_coverage: 0.4 } }).key, 'LOW_RELIABILITY');
-  eq('no market outranks a near pick’em', label(0.4, null).key, 'LIMITED_DATA');
+  eq('no market outranks a near pick’em', label(0.4, null).key, 'NO_MARKET');
   eq('a 7+ gap on a near pick’em is still gate-decided (INVESTIGATE)', label(-0.4, 9).key, 'INVESTIGATE');
-  eq('a near pick’em outranks worth researching', label(0.5, 3).key, 'NEAR_PICKEM');
+  /* canonical: a 2.5-pt disagreement is research whoever EdgeDesk names; NEAR PICK’EM only inside the research gap */
+  eq('a research-sized gap outranks a near pick’em', label(0.5, 3).key, 'WORTH_RESEARCHING');
+  eq('a near pick’em inside the research gap is NEAR PICK’EM', label(0.5, 1.2).key, 'NEAR_PICKEM');
+  eq('LOW RELIABILITY is displayed as LIMITED DATA', V.LABELS.LOW_RELIABILITY.label, 'LIMITED DATA');
   eq('the guard outranks thin data (a fault is named as a fault)', label(30, 3, { conf: 10 }).key, 'DATA_FAULT');
   eq('a 7+ gap on low confidence is INVESTIGATE (the gate’s confidence check), never verified', label(12, 3, { conf: 20 }).key, 'INVESTIGATE');
   eq('a 7+ gap on low reliability is INVESTIGATE, never verified', label(12, 3, { coverage: { input_coverage: 0.3 } }).key, 'INVESTIGATE');
@@ -573,10 +577,10 @@ section('STEP 10 · the research desk: label counts and what changed since');
   eq('one investigate (a 9-pt gap with no gate result)', d.counts.INVESTIGATE, 1);
   eq('no verified disagreement without a gate', d.counts.VERIFIED_MAJOR_DISAGREEMENT, 0);
   eq('one near pick’em', d.counts.NEAR_PICKEM, 1);
-  eq('one limited data (no market)', d.counts.LIMITED_DATA, 1);
+  eq('one no market', d.counts.NO_MARKET, 1);
   eq('one low reliability', d.counts.LOW_RELIABILITY, 1);
   eq('the desk lists every label, verified first, then worth researching', d.items.map(i => i.key).slice(0, 2).join(','), 'VERIFIED_MAJOR_DISAGREEMENT,WORTH_RESEARCHING');
-  eq('nine labels, no more', d.items.length, 9);
+  eq('ten labels, no more', d.items.length, 10);
   chk('and the counts sum to the board', d.items.reduce((a, i) => a + i.n, 0) === d.total);
 
   /* since this device's last visit */

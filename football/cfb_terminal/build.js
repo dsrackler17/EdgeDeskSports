@@ -376,8 +376,12 @@ function buildGame(ctx, row) {
       const top = gd.decisions && gd.decisions.length ? gd.decisions[gd.summary_index == null ? 0 : gd.summary_index] : null;
       decision = { engine: DEC.ENGINE_ID + ' ' + DEC.ENGINE_VERSION, status: gd.status, reason_codes: (top ? top.reason_codes : gd.reason_codes) || [],
         reasons: ((top ? top.reason_codes : gd.reason_codes) || []).map((c) => DEC.REASON[c] || c), detail: top ? top.detail || null : null, model_version: model.model_version };
+      /* EVALUATED: the engine saw at least one fresh two-sided priced quote.
+         Without one its NO_BET is "nothing to decide on", and the canonical
+         decision status is NO DECISION rather than a PASS it never made */
+      decision.evaluated = priced.length > 0;
       if (!priced.length) { decision.status = 'NO_BET'; decision.reason_codes = ['PASS_PRICE']; decision.reasons = ['no fresh two-sided priced quote to decide on']; }
-    } catch (e) { decision = { status: 'NO_BET', reason_codes: ['NO_BET_COMPUTATION'], reasons: ['the decision engine threw: ' + e.message] }; }
+    } catch (e) { decision = { status: 'NO_BET', evaluated: false, reason_codes: ['NO_BET_COMPUTATION'], reasons: ['the decision engine threw: ' + e.message] }; }
   }
 
   const metricsFor = (key) => (ctx.metrics.teams || {})[key] || null;
@@ -391,8 +395,26 @@ function buildGame(ctx, row) {
   const qb = { home: qbOf(row, 'home'), away: qbOf(row, 'away') };
   const extreme = (integrity && integrity.checks || []).filter((c) => c.group === 'COMPONENT' && c.status === 'FAIL').map((c) => 'Adjustment outside its validated range: ' + c.detail);
 
+  /* RATING-STATE DIVERGENCE (lib/edgedesk_canon.js gameDivergence): the
+     CURRENT FBS POWER RATING's team gap against the PRODUCTION PRICING
+     STATE's team gap. The state side is the engine's own blend for each team
+     (w·carried + (1−w)·this-season, w from that team's games played), which
+     reconciles to the priced rating term. Diagnostic only: nothing reads it
+     back into a number. */
+  let ratingDivergence = null;
+  try {
+    const rdv = row.disagreement_inputs && row.disagreement_inputs.projection && row.disagreement_inputs.projection.rating_detail;
+    const eh = ctx.etsr[row.home_team_id], ea = ctx.etsr[row.away_team_id];
+    if (rdv && eh && ea && !fcs) {
+      const curve = (window.EDCfbP4Params.blend || {}).prior_weight_by_week;
+      const blend = (c, f, gp) => { const w = T.Canon ? T.Canon.priorWeightAt(gp, curve) : null; return (num(c) != null && num(f) != null && w != null) ? w * c + (1 - w) * f : null; };
+      const sh = blend(rdv.home_carried, rdv.home_fresh, rdv.home_gp), sa = blend(rdv.away_carried, rdv.away_fresh, rdv.away_gp);
+      if (num(sh) != null && num(sa) != null) ratingDivergence = { current_home: eh.rating, current_away: ea.rating, state_home: sh, state_away: sa, cut: ctx.divergenceCut || null };
+    }
+  } catch (e) { ratingDivergence = null; }
   const b = {
     now: now, config: ctx.cfg, game: game, model: model || {}, dist: dist, fault: fault, terms: terms, calibration: calibration, rating_split: ratingSplit,
+    rating_divergence: ratingDivergence,
     expected_abs_error: expErr, market: market, integrity: integrity, decision: decision, reference_price: (G.policy && G.policy.reference_price) || -110,
     models: models, v21: v21 ? { model_version: 'edgedesk_cfb_v2.1.0', drivers: v21.drivers || [] } : null, v2params: window.EDCfbV2Params,
     stability: stab ? { dimensions: stab.dimensions || [], favorite_flip_rate: stab.favorite_flip_rate } : null,
@@ -422,7 +444,7 @@ function buildGame(ctx, row) {
   try { read = RD.read(RD.fromTerminal(o, readInputs, { now: now, integrity: INTEG })); }
   catch (e) { read = null; ctx.warnings.push('EdgeDesk Read failed for ' + gid + ': ' + e.message); }
   ctx._governed = null;
-  return { object: o, read: read, read_inputs: readInputs, snapshot: snapshotRow(o, terms, qb, model) };
+  return { object: o, read: read, read_inputs: readInputs, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
 }
 
 /* --------------------------------------------------- the Read's stored inputs
@@ -479,18 +501,56 @@ function readBase(ctx, row, game, model, dist, v21, market, quotes, lines, expEr
 }
 
 /* the append-only projection history row: what "what changed?" compares */
-function snapshotRow(o, terms, qb, model) {
+function snapshotRow(o, terms, qb, model, slateRow, ctx) {
   if (!o.edgedesk.available) return null;
   const t = {};
   (terms || []).forEach((x) => { if (num(x.points) != null) t[x.key] = Math.round(x.points * 100) / 100; });
+  /* the champion's own additive components and games played, so a later move
+     can be ATTRIBUTED (football/cfb_validation/core.js attributeChange): a new
+     game absorbed, a team-state refresh, a QB change, a matchup update — never
+     the market, which cannot enter the pure line */
+  const di = slateRow && slateRow.disagreement_inputs && slateRow.disagreement_inputs.projection;
+  const comp = {};
+  if (di && di.components) Object.keys(di.components).forEach((k) => { if (num(di.components[k]) != null) comp[k] = Math.round(di.components[k] * 100) / 100; });
+  const rdv = di && di.rating_detail;
   const row = { game_id: o.game_id, season: o.season, week: o.week, at: model.prediction_ts, model_version: model.model_version,
     home_margin: o.edgedesk.home_margin, terms: Object.keys(t).length ? t : null,
     qb: { home: qb.home ? { player: qb.home.player, status: qb.home.status } : null, away: qb.away ? { player: qb.away.player, status: qb.away.status } : null },
     market_home_line: o.market.consensus_home_line, status: o.status.key,
     cover_at_best: o.price.available && o.price.current ? o.price.current.cover : null,
-    best_line: o.price.available && o.price.current ? o.price.current.line : null, side: o.price.side || null };
-  row.snapshot_id = 'cfbt_' + sha([row.game_id, row.at, row.model_version, row.home_margin, row.terms, row.qb]).slice(0, 24);
+    best_line: o.price.available && o.price.current ? o.price.current.line : null, side: o.price.side || null,
+    components: Object.keys(comp).length ? comp : null,
+    games_played: rdv ? { home: num(rdv.home_gp), away: num(rdv.away_gp) } : null,
+    research_status: o.research_status ? o.research_status.key : null,
+    decision_status: o.decision_status ? o.decision_status.key : null,
+    verification: o.disagreement.available ? o.disagreement.verification : null,
+    favorite_flip: !!o.favorite_flip,
+    pricing_fingerprint: ctx && ctx.pricingFingerprint ? ctx.pricingFingerprint : null };
+  /* a research-status change is a change: it gets its own row (observed_at),
+     so "status then / status now" reads a stored fact, never a recomputation */
+  row.observed_at = ctx && ctx.now ? new Date(ctx.now).toISOString() : null;
+  row.snapshot_id = 'cfbt_' + sha(row.research_status == null ? [row.game_id, row.at, row.model_version, row.home_margin, row.terms, row.qb]
+    : [row.game_id, row.at, row.model_version, row.home_margin, row.terms, row.qb, row.research_status, row.verification]).slice(0, 24);
   return row;
+}
+
+/* the pricing path's fingerprint (football/cfb_validation/freeze.js): each
+   history row carries it, so a number that moved because the code changed is
+   attributed to the software, not to football */
+function pricingFingerprint() {
+  try { return require(path.join(ROOT, 'football', 'cfb_validation', 'freeze.js')).fingerprint('PRICING').sha; } catch (e) { return null; }
+}
+/* the CURRENT FBS POWER RATING by canonical key, for this season only */
+function loadEtsr(season) {
+  const d = readJson('football/rating/current.json', null), out = {};
+  if (!d || +d.season !== +season) return out;
+  (d.teams || []).forEach((t) => { const k = t.canonical_key || t.key; if (k && num(t.rating) != null) out[k] = t; });
+  return out;
+}
+/* the game-level divergence bands fitted by the backtest, when it is on file */
+function divergenceCut() {
+  const bt = readJson('football/cfb_validation/divergence_backtest.json', null);
+  return bt && bt.bands && num(bt.bands.moderate) != null && num(bt.bands.large) != null ? { moderate: bt.bands.moderate, large: bt.bands.large } : null;
 }
 
 /* compact board row: everything the board shows at first glance */
@@ -507,7 +567,15 @@ function boardRow(o) {
     confidence: o.edgedesk.available ? o.edgedesk.football_confidence.score : null, reliability: o.data_quality.reliability,
     agreement: o.consensus.available ? o.consensus.agreement.tier : null, model_sd: o.consensus.sd,
     market_direction: o.disagreement.market_direction, decay: o.edge_decay.available ? o.edge_decay.verdict : null,
-    uncertainty: o.uncertainty.score, flags: o.flags, summary: o.summary };
+    uncertainty: o.uncertainty.score, uncertainty_why: o.uncertainty.why, flags: o.flags, summary: o.summary,
+    /* the canonical split every surface prints (lib/edgedesk_canon.js) */
+    research_status: o.research_status ? o.research_status.key : null, research_label: o.research_status ? o.research_status.label : null,
+    research_reason: o.research_status ? o.research_status.reason : null,
+    decision_status: o.decision_status ? o.decision_status.key : null, decision_label: o.decision_status ? o.decision_status.label : null,
+    decision_reason: o.decision_status ? o.decision_status.reason : null,
+    price_state: o.price_state ? o.price_state.key : null, price_state_label: o.price_state ? o.price_state.label : null,
+    favorite_flip: !!o.favorite_flip,
+    rating_divergence: o.rating_divergence && o.rating_divergence.available ? { value: o.rating_divergence.divergence, band: o.rating_divergence.band } : null };
 }
 
 /* ------------------------------------------------------------ the postgame set */
@@ -640,6 +708,7 @@ function main() {
   const ctx = {
     now: now, gov: gov, slate: slate, v2: v2, ledger: ledger, recordRows: recordRows, recordGames: recordFile.games || {},
     metrics: readJson('football/matchup/metrics.json', { teams: {} }), history: loadHistory(season), cfg: cfg,
+    etsr: loadEtsr(season), divergenceCut: divergenceCut(), pricingFingerprint: pricingFingerprint(),
     evNote: calibratedEvNote(gov.artifact, gov.policy), warnings: warnings,
     degraded: ops && ops.system ? { status: ops.system.status, rule: ops.system.rule } : null,
     sources: [
@@ -679,7 +748,8 @@ function main() {
     const prior = (ctx.history.get(s.game_id) || []).slice().sort((a, b) => ms(a.at) - ms(b.at)).pop();
     if (prior && prior.snapshot_id === s.snapshot_id) return;
     if (prior && prior.model_version === s.model_version && Math.abs(prior.home_margin - s.home_margin) < 0.005
-      && JSON.stringify(prior.terms) === JSON.stringify(s.terms) && JSON.stringify(prior.qb) === JSON.stringify(s.qb)) return;
+      && JSON.stringify(prior.terms) === JSON.stringify(s.terms) && JSON.stringify(prior.qb) === JSON.stringify(s.qb)
+      && prior.research_status === s.research_status && prior.verification === s.verification) return;
     newSnaps.push(s);
   });
 

@@ -1,0 +1,62 @@
+# EdgeDesk CFB — the canonical vocabulary and the live-validation layer, on the PR.
+#
+# A change that lets VERIFIED imply BET, lets a research lean count as a wager,
+# blends a legacy row into the since-upgrade view, attributes a fair-line move
+# to the market, changes the pricing code without a declared PATCH, or lets a
+# page drift from the canonical rating names has to fail HERE — not an hour
+# after the merge, in a job publishing the Model Lab.
+name: CFB validation
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_canon.js'
+      - 'lib/cfb_terminal.js'
+      - 'lib/cfb_research_view.js'
+      - 'lib/cfb_disagreement.js'
+      - 'football/cfb_validation/**'
+      - 'football/cfb_terminal/**'
+      - 'football/cfb_p4/**'
+      - 'football/fbs/**'
+      - 'football/matchup/inputs.js'
+      - 'football/rankings/engine_efficiency.js'
+      - 'football/cfb_decision/decision.js'
+      - 'research/cfb/**'
+      - 'admin/cfb-validation/**'
+      - 'app.html'
+      - 'tools/validation/**'
+      - '.github/workflows/cfb-validation-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_canon.js'
+      - 'football/cfb_validation/*.js'
+      - 'tools/validation/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The canonical vocabulary (ratings, research vs decision status, maturity, counters)
+        run: node tools/validation/canon.test.js
+      - name: The live-validation layer (epochs, separation, divergence, triggers, patches) and its committed artifacts
+        run: node football/cfb_validation/tests.js
+      - name: The pages read the canon (app, research terminal, Model Lab page)
+        run: node tools/validation/ui.test.js
+      - name: The build runs on the committed ledger (check mode, writes nothing)
+        run: node football/cfb_validation/build.js --check
+      - name: The research terminal still builds and keeps its rules
+        run: node football/cfb_terminal/build.js --check && node football/cfb_terminal/tests.js

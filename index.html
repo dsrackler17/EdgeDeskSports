@@ -1597,14 +1597,14 @@ section.band.lp-quiet{padding:56px 0}
     <div class="atk">
       <div class="card rv">
         <div class="card-h">
-          <span class="ct">The case &middot; Baylor @ Auburn &middot; Auburn &minus;9.7</span>
+          <span class="ct">The case &middot; Baylor @ Auburn &middot; Auburn &minus;11.7</span>
           <span class="pv obs">Built</span>
         </div>
         <div class="card-b">
           <div class="claim" id="cl1">
             <div>
               <div class="cn">Model&ndash;market gap</div>
-              <div class="cd">EdgeDesk prices Auburn at &minus;9.7 against a market of &minus;8.0. The 1.7-point difference sits well inside the guard bound, so the model reads it as worth a look rather than as an error.</div>
+              <div class="cd">EdgeDesk prices Auburn at &minus;11.7 against a market of &minus;8.0. The 3.7-point difference is past the 2-point research threshold and well inside the guard bound, so the model reads it as worth a look rather than as an error.</div>
             </div>
             <span class="pv val" id="cl1t">Verified</span>
           </div>
@@ -3254,16 +3254,16 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
       model:'Duke -7.7', market:'Duke -8.5', gap:'0.8 pts', gapTone:'',
       home:'Duke', hs:27, away:'Tulane', as:19,
       wp:'Duke 71%', wp2:'Tulane 29%', conf:'68%', confTone:'', range:'-8 to +24',
-      state:'PASS', stateTone:'ok',
-      means:'EdgeDesk and the market are 0.8 points apart. That is agreement. There is nothing here to research further, and the page says so rather than manufacturing a reason to act.',
+      state:'MARKET ALIGNED', stateTone:'ok',
+      means:'EdgeDesk and the market are 0.8 points apart, inside the 2-point research threshold. That is agreement. There is nothing here to research further, and the page says so rather than manufacturing a reason to act.',
       chk:[['ok','model built'],['ok','market joined'],['ok','roster loaded'],['ok','availability'],['ok','starting quarterback'],['warn','recruiting']],
       why:[['+2.9',100,'Roster continuity strongly favours Duke this season'],['+2.4',83,'Playing at Duke &mdash; the league-wide home-field number'],['+1.8',62,'Position-group matchups lean Duke on both lines']] },
     { match:'Baylor @ Auburn', when:'Sat &middot; 7:30p &middot; Big 12 at SEC',
-      model:'Auburn -9.7', market:'Auburn -8.0', gap:'1.7 pts', gapTone:'warn',
-      home:'Auburn', hs:31, away:'Baylor', as:21,
+      model:'Auburn -11.7', market:'Auburn -8.0', gap:'3.7 pts', gapTone:'warn',
+      home:'Auburn', hs:32, away:'Baylor', as:20,
       wp:'Auburn 73%', wp2:'Baylor 27%', conf:'43%', confTone:'warn', range:'-6 to +26',
-      state:'REVIEW', stateTone:'warn',
-      means:'EdgeDesk differs from the market by 1.7 points &mdash; enough to justify deeper research, but the disagreement has not been validated as an edge.',
+      state:'WORTH RESEARCHING', stateTone:'warn',
+      means:'EdgeDesk differs from the market by 3.7 points &mdash; past the 2-point research threshold, so it is worth opening. That is a research status, not a bet: whether the price justifies action is the decision engine&rsquo;s separate answer.',
       chk:[['ok','model built'],['ok','market joined'],['ok','roster loaded'],['warn','availability'],['warn','starting quarterback'],['neg','recruiting']],
       why:[['+4.1',100,'Playing at Auburn &mdash; the league-wide home-field number'],['+3.4',83,'Conference strength differs and the in-season sample is thin'],['+2.2',54,'Stylistically the matchup favours Auburn']] },
     { match:'Oklahoma State @ Tulsa', when:'Sat &middot; 8:00p &middot; Big 12 at AAC',
@@ -3271,7 +3271,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
       home:'Tulsa', hs:26, away:'Okla State', as:27,
       wp:'Okla State 53%', wp2:'Tulsa 47%', conf:'21%', confTone:'neg', range:'-21 to +23',
       state:'INVESTIGATE', stateTone:'neg',
-      means:'The gap is 10.5 points, past EdgeDesk&rsquo;s own guard bound. A disagreement this size is read as missing information rather than as an opportunity &mdash; the likelier explanation is that something the market already knows never reached the model.',
+      means:'A 10.5-point gap that has not passed EdgeDesk&rsquo;s integrity gate. At 7+ points the likelier explanation is missing information &mdash; something the market already knows never reached the model &mdash; so it is investigated, never priced, until every check passes.',
       chk:[['ok','model built'],['ok','market joined'],['warn','roster loaded'],['neg','availability'],['neg','starting quarterback'],['neg','recruiting']],
       why:[['+4.8',100,'Conference strength differs and almost no shared opponents exist'],['+3.6',75,'Roster continuity is unusually low on both sides'],['+2.1',44,'Pace and style stretch the range of plausible scores']] }
   ];
@@ -3290,7 +3290,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
         '<span class="v sc"><i>'+g.home+'</i><b>'+g.hs+'</b></span>'+
         '<span class="v sc"><i>'+g.away+'</i><b>'+g.as+'</b></span></div>'+
       cell('Win probability',g.wp,'',g.wp2)+
-      '<div class="c"><span class="l">Research state</span><span class="st '+g.stateTone+'">'+g.state+'</span>'+
+      '<div class="c"><span class="l">Research status</span><span class="st '+g.stateTone+'">'+g.state+'</span>'+
         '<span class="s">EdgeDesk&rsquo;s own read, not advice</span></div>'+
       cell('Data confidence',g.conf,g.confTone,'of the model&rsquo;s inputs reached it')+
       cell('Outcome range',g.range,'','p10 to p90 margin');
@@ -3427,7 +3427,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
 
   var LAYERS=[
     {k:'Game research', d:'The fair spread, the projected score, the win probability, the range the game could land in &mdash; and the drivers the model assigned points to, so the number is arguable rather than announced.',
-     f:['EdgeDesk spread','Projected score','Win probability','p10&ndash;p90 margin','Model drivers','Research state']},
+     f:['EdgeDesk spread','Projected score','Win probability','p10&ndash;p90 margin','Model drivers','Research status']},
     {k:'Market research', d:'What the market says, when that price was captured, how far EdgeDesk is from it, and whether the quote is fresh enough to compare against at all.',
      f:['Consensus spread','Captured price','Model minus market','Price age','Stale-market gate']},
     {k:'Team research', d:'How much of this team is the same team as last season &mdash; continuity, returning production, and everyone the portal moved in each direction.',
@@ -3510,7 +3510,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
       html:'<div class="lp-stp-board">'+
         '<div class="r hd"><span>Matchup</span><span>EdgeDesk</span><span>Market</span><span>Difference</span></div>'+
         '<div class="r"><span>Tulane @ Duke</span><span class="mono">-7.7</span><span class="mono">-8.5</span><span class="gap">0.8</span></div>'+
-        '<div class="r pick"><span>Baylor @ Auburn</span><span class="mono">-9.7</span><span class="mono">-8.0</span><span class="gap">1.7</span></div>'+
+        '<div class="r pick"><span>Baylor @ Auburn</span><span class="mono">-11.7</span><span class="mono">-8.0</span><span class="gap">3.7</span></div>'+
         '<div class="r"><span>Iowa @ Wisconsin</span><span class="mono">-2.1</span><span class="mono">-3.5</span><span class="gap">1.4</span></div>'+
         '<div class="r"><span>Okla State @ Tulsa</span><span class="mono">+1.0</span><span class="mono">+11.5</span><span class="gap">10.5</span></div>'+
         '</div><p class="lp-stp-note">Today&rsquo;s games and the largest model&ndash;market disagreements are surfaced for you, with a search over the whole board. Open Baylor @ Auburn.</p>' },
@@ -3519,9 +3519,9 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
       what:'Two numbers, side by side, and the distance between them.',
       foot:'The projected score and the range are the model&rsquo;s own output, not a restatement of the market&rsquo;s line.',
       html:'<div class="lp-gx-grid">'+
-        '<div class="c"><span class="l">EdgeDesk</span><span class="v mdl">Auburn -9.7</span><span class="s">model</span></div>'+
+        '<div class="c"><span class="l">EdgeDesk</span><span class="v mdl">Auburn -11.7</span><span class="s">model</span></div>'+
         '<div class="c"><span class="l">Market</span><span class="v">Auburn -8.0</span><span class="s">consensus</span></div>'+
-        '<div class="c"><span class="l">Difference</span><span class="v warn">1.7 pts</span><span class="s">model minus market</span></div>'+
+        '<div class="c"><span class="l">Difference</span><span class="v warn">3.7 pts</span><span class="s">model minus market</span></div>'+
         '<div class="c"><span class="l">Projected score</span><span class="v sc"><i>Auburn</i><b>31</b></span><span class="v sc"><i>Baylor</i><b>21</b></span></div>'+
         '<div class="c"><span class="l">Win probability</span><span class="v">Auburn 73%</span><span class="s">Baylor 27%</span></div>'+
         '<div class="c"><span class="l">Outcome range</span><span class="v">-6 to +26</span><span class="s">p10 to p90 margin</span></div>'+
@@ -3537,17 +3537,17 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
 
     { t:'Challenge the number',
       what:'Now try to break it. The page hands you the reasons it might be wrong.',
-      foot:'Availability and the starting quarterback are unresolved here, so the 1.7 is read as provisional rather than as an edge.',
+      foot:'Availability and the starting quarterback are unresolved here, so the 3.7 is read as provisional rather than as an edge.',
       html:chk([['ok','model built'],['ok','market joined'],['ok','roster loaded'],
                 ['warn','availability'],['warn','starting quarterback'],['neg','recruiting']])+
         '<p class="lp-stp-note">Availability, the starting quarterback, portal turnover, run-defence risk and every input that never arrived &mdash; stated on this game rather than averaged across the slate. <b>43%</b> of the model&rsquo;s input contract reached it.</p>' },
 
     { t:'Decide for yourself',
       what:'EdgeDesk states its own read and stops there.',
-      foot:'A research state is not a recommendation. What the number is worth is your call, and the page never makes it for you.',
+      foot:'A research status is not a recommendation, and not a decision. Whether a price justifies action is the decision engine&rsquo;s separate answer &mdash; and what the number is worth to you is your call.',
       html:'<div class="lp-gx-grid">'+
-        '<div class="c"><span class="l">Research state</span><span class="st warn">REVIEW</span><span class="s">EdgeDesk&rsquo;s own read, not advice</span></div>'+
-        '<div class="c"><span class="l">Other states</span><span class="v" style="font-size:11px;line-height:1.5">PASS &middot; INVESTIGATE &middot; THIN DATA</span><span class="s">the full vocabulary</span></div>'+
+        '<div class="c"><span class="l">Research status</span><span class="st warn">WORTH RESEARCHING</span><span class="s">EdgeDesk&rsquo;s own read, not advice</span></div>'+
+        '<div class="c"><span class="l">Other states</span><span class="v" style="font-size:11px;line-height:1.5">VERIFIED MAJOR &middot; INVESTIGATE &middot; MARKET ALIGNED &middot; LIMITED DATA &middot; NO MARKET</span><span class="s">the full vocabulary</span></div>'+
         '<div class="c"><span class="l">Kept afterwards</span><span class="v" style="font-size:13px">Frozen at capture</span><span class="s">graded against what happened</span></div>'+
         '</div><p class="lp-stp-note">Whatever you conclude, the model&rsquo;s pre-kickoff number is frozen and kept next to the result &mdash; including the games it got wrong.</p>' }
   ];
@@ -3805,7 +3805,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
      makes WEAKENED the honest verdict rather than INVALIDATED. */
   var WEAK=[
     {claim:'cl1', tier:'est', tierText:'Moved', t:'The gap is measured against a stale price',
-     d:'The captured market number is forty minutes old and the market has since settled at −8.5. Most of the 1.7 points EdgeDesk is pricing against has already closed on its own.'},
+     d:'The captured market number is forty minutes old and the market has since settled at −10.5. Most of the 3.7 points EdgeDesk is pricing against has already closed on its own: the football opinion stands, but the edge is mostly priced in.'},
     {claim:'cl3', tier:'exp', tierText:'Unconfirmed', t:'The starting quarterback is not confirmed',
      d:'No public feed publishes a starter EdgeDesk trusts for this game. The matchup case rests on a name that has not been announced, and the model carries the last known value rather than guessing at a new one.'},
     {claim:null,  tier:'una', tierText:'Unavailable', t:'Availability is not published',

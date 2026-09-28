@@ -477,8 +477,16 @@ section('17 · the board (app.html) shows VERIFIED only when the gate verifies')
     ctx.fbP4Assembly = () => ({ starters: { home: { status: 'PREVIOUS_GAME', player_name: 'QB1', availability: { state: 'UNKNOWN' } },
       away: { status: 'PREVIOUS_GAME', player_name: 'QB2', availability: { state: 'UNKNOWN' } } },
       contract: [{ field: 'availability', side: 'home', state: 'NOT_DUE_YET' }, { field: 'availability', side: 'away', state: 'NOT_DUE_YET' }] });
-    ctx.fbP4QuotesFor = () => [];
-    ctx.fbMarketConsensusFor = () => ({ books_reporting: opts.books == null ? 4 : opts.books, market_dispersion: { range: 1 } });
+    /* THE GATE COUNTS ONLY DATED, FRESH QUOTES as books behind the consensus
+       (docs/cfb-validation/DELIVERABLE.md §42): the captured quotes carry
+       their capture time and how many books quoted each point. The undated
+       cfb.lines rows behind fbMarketConsensusFor are reference context only. */
+    ctx.window.EDMarketConsensus = require(path.join(ROOT, 'lib', 'market_consensus.js'));
+    const nb = opts.books == null ? 4 : opts.books, capAt = new Date(Date.now() - 1800e3).toISOString();
+    ctx.fbP4QuotesFor = () => (opts.undated ? [] : [
+      { side: 'home', book: 'dk', line: -line, price_dec: 1.91, n_books: nb, captured_at: capAt, state: 'CURRENT', actionable: true },
+      { side: 'away', book: 'dk', line: line, price_dec: 1.91, n_books: nb, captured_at: capAt, state: 'CURRENT', actionable: true }]);
+    ctx.fbMarketConsensusFor = () => ({ books_reporting: opts.undated ? 6 : nb, market_dispersion: { range: 1 } });
     ctx.fbP4ReliabilityFor = () => ({ score: 82 });
     vm.createContext(ctx);
     vm.runInContext(APP.slice(a, b), ctx, { filename: 'app.html [gate adapter]' });
@@ -491,6 +499,7 @@ section('17 · the board (app.html) shows VERIFIED only when the gate verifies')
   eq('with the strongest visual class', sv.cls, 'verified');
   eq('found from the projection alone, as every export calls it', good.fbP4StatusFor(p, mkt).t, 'VERIFIED MAJOR DISAGREEMENT');
   eq('one book: MARKET FAULT', ctxWith({ books: 1 }).fbP4StatusFor(p, mkt, u).t, 'MARKET FAULT');
+  eq('six UNDATED provider rows cannot verify a gap: MARKET FAULT', ctxWith({ undated: true }).fbP4StatusFor(p, mkt, u).t, 'MARKET FAULT');
   eq('no submodels: INVESTIGATE', ctxWith({ dgSub: null }).fbP4StatusFor(p, mkt, u).t, 'INVESTIGATE');
   const ng = ctxWith({ noGate: true }).fbP4StatusFor(p, mkt, u);
   eq('the gate library missing: INVESTIGATE (fail closed)', ng.t, 'INVESTIGATE');

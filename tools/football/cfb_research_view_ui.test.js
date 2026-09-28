@@ -176,12 +176,14 @@ section('STEP 3 · one research label on the row, the card, the brief and the sh
   const st = T.fbRvState(s.u, s.p);
   eq(st.label, 'WORTH RESEARCHING', 'the card’s state IS the research label');
   const card = T.fbGxSummary(s.u, s.p, 'RV1');
-  has(card, '>Research label<', 'the card names the cell Research label');
+  has(card, '>Research status<', 'the card names the cell Research status (lib/edgedesk_canon.js)');
+  has(card, '>Decision<', 'and gives the decision its own cell: research status never implies a decision');
   has(card, 'WORTH RESEARCHING', 'and prints the label');
   has(card, v.research_label.means, 'and the "What this means" sentence is the label’s own');
   lacks(card, '>Research state<', 'the old research state is not printed beside it');
   const brief = T.fbGxBriefText(s.u, s.p);
-  has(brief, 'Research label: WORTH RESEARCHING', 'the copied brief carries the same label');
+  has(brief, 'Research status: WORTH RESEARCHING', 'the copied brief carries the same label, under its canonical name');
+  has(brief, 'Decision: ', 'and a separate Decision line: the research status never implies one');
   has(brief, 'Market gap: 5.1 pts toward ' + HOME, 'and the gap with its direction');
 
   const chip = T.fbRvLabelChip(v, T.fbP4StatusFor(s.p, T.fbP4Market(s.u)));
@@ -201,7 +203,7 @@ section('STEP 3 · one research label on the row, the card, the brief and the sh
   eq(T.fbP4ViewFor(n.u, n.p).research_label.key, 'NEAR_PICKEM', 'a well-covered near pick’em is NEAR PICK’EM');
   const nm = stageAt(4);
   withCoverage(nm.u, WELL);
-  eq(T.fbP4ViewFor(nm.u, nm.p).research_label.key, 'LIMITED_DATA', 'no market line is LIMITED DATA');
+  eq(T.fbP4ViewFor(nm.u, nm.p).research_label.key, 'NO_MARKET', 'no market line is NO MARKET (canonical, lib/edgedesk_canon.js)');
   const mj = stageAt(12, { market_spread: -2.5 });
   withCoverage(mj.u, WELL);
   eq(T.fbP4ViewFor(mj.u, mj.p).research_label.key, 'INVESTIGATE', 'a 9.5-pt gap with no integrity-gate result is INVESTIGATE, never verified');

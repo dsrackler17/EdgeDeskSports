@@ -691,7 +691,7 @@ chk('every page offers a way into the research',
 has(PRICE, 'Research this matchup', 'the reveal offers the research CTA the brief specifies');
 has(PICK, 'Research this game', 'every Pick 5 matchup links to its research');
 has(PRICE, 'EdgeDesk research state', 'the reveal shows the research state');
-['PASS', 'REVIEW', 'INVESTIGATE', 'Thin data'].forEach(s => {
+['PASS', 'REVIEW', 'INVESTIGATE', 'DATA_FAULT', 'Limited data', 'Worth researching', 'Market aligned'].forEach(s => {
   chk('the research states reach the player: ' + s,
     (PRICE + fs.readFileSync(G('lib/research_state.js'), 'utf8')).indexOf(s) >= 0);
 });
@@ -764,7 +764,7 @@ chk('the leaderboard never fabricates players',
   chk('every challenge names both teams',
     A.challenges.every(c => c.home_team && c.away_team));
   chk('every challenge carries a research state',
-    A.challenges.every(c => ['PASS', 'REVIEW', 'INVESTIGATE', 'THIN', 'NO_MARKET']
+    A.challenges.every(c => ['PASS', 'REVIEW', 'INVESTIGATE', 'DATA_FAULT', 'THIN', 'NO_MARKET']
       .indexOf(c.research_state) >= 0));
   chk('the research state agrees with the shipped classifier',
     A.challenges.every(c => RS.classify(c.confidence, c.spread_gap).key === c.research_state));

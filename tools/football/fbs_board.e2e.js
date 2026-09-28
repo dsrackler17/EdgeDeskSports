@@ -350,18 +350,18 @@ function serve(handler) {
   });
   chk('a row opens its research card', card.length > 200, card.length);
   chk('the card names the matchup type', /Conference game|Non-conference FBS|FBS vs FCS/.test(card), card.slice(0, 300));
-  chk('the card shows the FBS rating on one scale', /EdgeDesk FBS rating/.test(card));
+  chk('the card shows the CURRENT FBS POWER RATING on one scale', /Current FBS Power Rating · research view/.test(card));
   chk('the card says research, not picks', /Research, not picks/.test(card));
 
   /* the ratings section */
   const ratings = await page.evaluate(() => {
     const t = document.getElementById('fbBody').textContent;
-    const i = t.indexOf('EdgeDesk FBS Rating');
+    const i = t.indexOf('Current FBS Power Rating —');
     return i < 0 ? '' : t.slice(i, i + 2500);
   });
-  chk('the ratings section is the FBS rating', /EdgeDesk FBS Rating — top 25/.test(ratings), ratings.slice(0, 200));
+  chk('the ratings section is the CURRENT FBS POWER RATING', /Current FBS Power Rating — top 25/.test(ratings), ratings.slice(0, 200));
   chk('and it states the baseline', /points versus an average FBS team/.test(ratings));
-  chk('and the engine state is a labelled diagnostic', /Engine state · diagnostic/.test(ratings));
+  chk('and the engine state is the PRODUCTION PRICING STATE', /Production Pricing State/.test(await page.evaluate(() => document.getElementById('fbBody').textContent)));
   chk('and nothing claims the board is priced off a Power 4 scale',
     !/Power 4 engine state/i.test(await page.evaluate(() => document.getElementById('fbBody').textContent)));
 

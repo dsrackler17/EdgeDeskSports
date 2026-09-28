@@ -248,11 +248,12 @@ chk('and rsTkSnap drops the head row when there is no title',
   /\(o\.title\?\('<div class="fb-snap-h">/.test(APP));
 lacks(APP, "defs:[['Review','Projected games with market data joined.']",
   'the defs block that repeated the How expander is gone');
-has(APP, '<b>Research-ready</b> requires a PREDICTED projection', 'but the methodology it held is still written');
+has(APP, "fbCanonDef('RESEARCH_READY')", 'but the methodology it held is still written — as the canonical definition (lib/edgedesk_canon.js COUNTERS)');
 /* the four counts say what they count; the numbers are fbSnapshot's */
-has(APP, "kpis:[{n:s.games,l:'Games'},{n:s.cand,l:'Research-ready',c:s.cand?'':'mut'},{n:s.dis,l:'Market disagreements',c:s.dis?'warn':'mut'},{n:s.faults,l:'Data faults',c:s.faults?'neg':'pos'}]",
-  'the summary labels are Games, Research-ready, Market disagreements and Data faults, over the same counts');
-has(APP, 'foot:fbStartHereHTML()', 'the single CTA became three ways in');
+has(APP, "kpis:H?[{n:H.all,l:'All games'},{n:H.ready,l:'Research ready',c:H.ready?'':'mut'},{n:H.actionable,l:'Actionable research signals',c:H.actionable?'warn':'mut'}]",
+  'the summary is the canonical hierarchy: All games, Research ready, Actionable research signals');
+lacks(APP, "l:'Market disagreements'", 'the redundant Market disagreements counter is merged into Actionable research signals');
+has(APP, 'foot:fbCanonCountersHTML(H,s)+fbStartHereHTML()', 'the single CTA became three ways in, under the per-sport and CFB status counters');
 
 /* ======================================================================== */
 /* 4. THE MODULE CARDS NAME OUTCOMES, NOT MODULES                           */
