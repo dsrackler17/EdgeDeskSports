@@ -198,6 +198,8 @@ jobs:
           node football/cfb_decision/sync_supabase.js
           # fail soft only while supabase/cfb_market.sql is not applied (404 / PGRST205 warns)
           node football/cfb_market/sync_supabase.js
+          # the bettor decision ledger (supabase/bettor_decisions.sql); fail soft until that file is applied
+          node football/cfb_terminal/decisions_sync.js || echo "::warning::bettor decision sync skipped (apply supabase/bettor_decisions.sql)"
 
       - name: Fail the run if any lab step failed
         if: ${{ steps.gate.outputs.proceed == 'true' && steps.run.outputs.status != '0' }}

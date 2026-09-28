@@ -420,6 +420,17 @@
     var fraction = function (v) { var n = num(v); return n != null && n > 0 && n <= 1 ? n : null; };
     take('bankroll_amount', positive);
     take('base_unit_amount', positive);
+    /* supabase/bettor_decisions.sql: unit_mode 'percent' means one unit is
+       unit_percent of the stored bankroll (default 1%) — the same unit the
+       EdgeDesk Card converts to dollars (lib/edgedesk_bankroll.js). A row
+       without the column, or in 'fixed' mode, keeps its base unit. */
+    if (row && row.unit_mode === 'percent' && out.sources.bankroll_amount === 'stored') {
+      var up = num(row.unit_percent);
+      if (up == null || !(up > 0 && up <= 0.1)) up = 0.01;
+      out.base_unit_amount = Math.round(out.bankroll_amount * up * 100) / 100;
+      out.sources.base_unit_amount = 'stored';
+      out.unit_basis = 'percent of bankroll (' + (up * 100) + '%)';
+    }
     take('maximum_single_wager_units', positive);
     take('maximum_game_exposure_units', positive);
     take('maximum_team_exposure_units', positive);

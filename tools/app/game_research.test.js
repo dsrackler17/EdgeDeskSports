@@ -433,6 +433,11 @@ const order = ['fbGxSummary', "'drivers'", "'wrong'", "'cases'", "'scale'", "'de
 let last = -1;
 order.forEach(k => { const i = CARD.indexOf(k); chk('the card renders ' + k + ' in order', i > last, 'index ' + i); last = i; });
 chk('the summary is not inside a collapsible section', /var body=fbGxSummary\(u,p,gid\)/.test(CARD));
+/* the bettor decision layer (lib/edgedesk_decision.js) puts EDGEDESK ACTION
+   above the summary; the research below it is collapsed ONLY in beginner mode,
+   which the reader turns on, and "VIEW FULL RESEARCH" opens it */
+chk('EDGEDESK ACTION renders above the research summary', /body=fbDecCardHTML\(dec\)\+'<div data-edd-research="/.test(CARD) && CARD.indexOf('body=fbDecCardHTML(dec)') > CARD.indexOf('var body=fbGxSummary(u,p,gid)'));
+chk('the research is collapsed only in the reader-chosen beginner mode', /window\.EDDecisionUI\.beginner\(\)\?'edd-collapsed':''/.test(CARD));
 chk('drivers, risk, the cases and the scale default open',
   /'drivers',[\s\S]{0,80}?,true\)/.test(CARD) && /'wrong',[\s\S]{0,80}?,true\)/.test(CARD)
   && /'cases',[\s\S]{0,80}?,true\)/.test(CARD) && /'scale',[\s\S]{0,80}?,true\)/.test(CARD));
