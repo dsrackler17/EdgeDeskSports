@@ -4,6 +4,15 @@
 `football_decision_config_v2` · entry points `EDDecision.decide(input)` and its
 alias `EDDecision.footballDecisionEngine(input)`.
 
+> **Consistency pass (config `football_decision_config_v2.1`):** every decision
+> now carries its **market state** (LIVE / THIN / STALE / NO MARKET / MARKET
+> FAULT) and the **canonical quote** its EV was computed from; the words come
+> from `lib/edgedesk_vocab.js`; a MODEL–MARKET DISAGREEMENT WATCH needs a
+> realistic BET trigger (else PASS); off-market spread rows are priced as
+> alternates, and BEST CURRENT PRICE / BEST PLAYABLE ALTERNATE / SAFER
+> ALTERNATE replace the old "best available". See
+> [`CONSISTENCY.md`](CONSISTENCY.md).
+
 **If EdgeDesk has enough information to calculate the wager, it makes a
 decision about the wager.** That decision is BET, LEAN, WATCH or PASS. NO
 DECISION means EdgeDesk genuinely cannot evaluate the wager — never that the
@@ -59,14 +68,16 @@ provided its price verifies (§6); then the class is capped by uncertainty (§5)
 |---|---|---|
 | **BET** | edge ≥ **+4.0 pp** and EV ≥ **+5%** | 0.25–1.00U (§7) |
 | **LEAN** | edge ≥ +2.0 pp, EV > 0, the model and the price point the same way: the decision model's fair line (blended / calibrated when it has one) sits on this side of the market. A plus-money alternate on the model's side agrees even though its cover is under 50%; a far alternate on the other side does not. A moneyline agrees when its edge is positive (the break-even carries the vig) | 0 |
-| **WATCH** | a potential edge that is not yet a bet: the BET trigger is within the league's watch window (CFB 1 pt / 15¢, NFL 0.5 pt / 10¢), or a meaningful model–market disagreement (CFB ≥ 2, NFL ≥ 1 pt; spreads only), or a BET/LEAN-quality price held by unresolved QB / availability information or an unverified price anomaly. Totals and moneylines use the same trigger window: a small edge far from it is PASS | 0 |
+| **WATCH** | a potential edge that is not yet a bet: the BET trigger is within the league's watch window (CFB 1 pt / 15¢, NFL 0.5 pt / 10¢), or a meaningful model–market disagreement (CFB ≥ 2, NFL ≥ 1 pt; spreads only) whose BET trigger is realistic (a line move ≤ 3 pts CFB / 2 pts NFL, or a price move ≤ 50¢), or a BET/LEAN-quality price held by unresolved QB / availability information or an unverified price anomaly. Totals and moneylines use the same trigger window: a small edge far from it is PASS | 0 |
 | **PASS** | evaluable, not worth a wager: `CALIBRATED_EV_NEGATIVE`, `MARKET_ALIGNED`, `JUICE_CONSUMES_EDGE`, `NO_MODEL_EDGE`, `EDGE_TOO_SMALL`, `PRICE_MOVED`, `PROJECTION_CHANGED` | 0 |
 
 Edge = decision cover probability (pushes excluded) − break-even; its sign
 always equals EV's. Every non-BET names its **BET trigger**: the line at the
 same price, or the price at the same line, at which this side clears the BET
 thresholds (`WATCH — Chicago Bears becomes BET at -2.5 (-110) or -3 (-106) or
-better`). When the price already clears and a cap holds the class back (a thin
+better`). Only a realistic option is named (`trigger.realistic_points`,
+`trigger.realistic_cents`); with none, the trigger reads NO REALISTIC BET
+TRIGGER AT CURRENT MODEL STATE and the options stay in the audit. When the price already clears and a cap holds the class back (a thin
 market, low reliability, QB information), the trigger says so
 (`already_clears`) and names no price to wait for.
 

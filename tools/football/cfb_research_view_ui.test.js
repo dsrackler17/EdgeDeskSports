@@ -522,7 +522,8 @@ section('STEP 9 · top 5 worth researching, on the college board');
   ok(onlyTwo.every(k => k === 'G1' || k === 'G2'), 'the board’s filters limit the list to the games shown', onlyTwo);
 
   const html = T.fbP4TopHTML(visible);
-  has(html, 'TOP 5 WORTH RESEARCHING', 'the board shows the section');
+  has(html, 'TOP RESEARCH PRIORITIES', 'the board shows the section');
+  has(html, 'This is not a ranking of bets.', 'and says it is a research priority, not bet quality');
   has(html, 'Why it made the list', 'every entry says why it made the list');
   has(html, '<i>Confidence</i>', 'and carries confidence');
   has(html, '<i>Reliability</i>', 'and reliability');
@@ -557,8 +558,8 @@ section('STEP 9 · top 5 worth researching, on the college board');
     const L = win.EDCfbResearchView.LABELS[k];
     has(desk, '<b>' + tally[k] + '</b> <span class="rv-lab ' + L.tone + '">' + L.label + '</span>', 'it counts ' + tally[k] + ' ' + L.label);
   });
-  has(desk, 'TOP 5 WORTH RESEARCHING', 'and carries the Top 5');
-  ok(desk.indexOf('CFB RESEARCH DESK') < desk.indexOf('TOP 5 WORTH RESEARCHING'), 'the counts come first, then the Top 5');
+  has(desk, 'TOP RESEARCH PRIORITIES', 'and carries the Top 5');
+  ok(desk.indexOf('CFB RESEARCH DESK') < desk.indexOf('TOP RESEARCH PRIORITIES'), 'the counts come first, then the Top 5');
   lacks(desk, 'CHANGED SINCE', 'with no visit and no record loaded there is no change line, rather than an invented one');
   /* a stored visit an hour ago, with G1 a point and a half away from now */
   const snaps = {};
