@@ -17,6 +17,7 @@ on:
       - 'lib/edgedesk_execution.js'
       - 'lib/edgedesk_validation.js'
       - 'lib/edgedesk_explain.js'
+      - 'lib/edgedesk_vocab.js'
       - 'lib/edgedesk_decision*.js'
       - 'lib/edgedesk_decision.css'
       - 'lib/edgedesk_bankroll.js'
@@ -76,8 +77,8 @@ jobs:
         run: node tools/validation/info_levels_ui.test.js
       - name: The model health report builds, and is not stale for its own inputs (writes nothing)
         run: node tools/validation/model_health.js --check
-      - name: The bettor decision layer and the unified football engine still hold
-        run: node tools/bettor/decision.test.js && node tools/bettor/football_decision.test.js
+      - name: The bettor decision layer, the unified football engine and one meaning per state still hold
+        run: node tools/bettor/decision.test.js && node tools/bettor/football_decision.test.js && node tools/bettor/consistency.test.js
 
   migrations:
     runs-on: ubuntu-latest

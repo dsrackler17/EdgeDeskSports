@@ -339,7 +339,8 @@ chk('21+ is stated at the offer, the price card and the close', (TEXT.match(/21\
 chk('1-800-GAMBLER is on the page more than once', (TEXT.match(/1-800-GAMBLER/g) || []).length >= 3);
 has(IDX, 'ncpgambling.org', 'and the national resource is linked');
 has(TEXT, 'Research, not picks', 'research, not picks');
-has(TEXT, 'not betting advice', 'and not betting advice');
+has(TEXT, 'Research and decision-support tool', 'and the product is named for what it does: research and decision support');
+lacks(TEXT, 'never tells you what to bet', 'and never claims EdgeDesk makes no decision, beside a product that says BET, LEAN, WATCH or PASS');
 ['/terms.html', '/privacy.html', '/disclaimer.html'].forEach(h => has(IDX, 'href="' + h + '"', 'the footer links ' + h));
 has(IDX, 'data-ed-report', 'a visitor can report a problem');
 

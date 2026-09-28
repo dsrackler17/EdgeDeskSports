@@ -26,6 +26,7 @@ on:
       - 'supabase/bettor_decisions.sql'
       - 'supabase/bankroll_and_stakes.sql'
       - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_vocab.js'
       - 'lib/edgedesk_bankroll.js'
       - 'tools/bettor/**'
       - 'supabase/affiliates.sql'
@@ -72,6 +73,8 @@ jobs:
         run: node tools/bettor/decision.test.js
       - name: The unified football decision engine (NFL and CFB)
         run: node tools/bettor/football_decision.test.js
+      - name: One meaning per state (market state, research vs decision, raw vs calibrated EV, exposure, beginner mode)
+        run: node tools/bettor/consistency.test.js
 
   migrations:
     runs-on: ubuntu-latest

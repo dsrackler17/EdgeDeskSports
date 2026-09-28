@@ -144,7 +144,9 @@ secondary at least 1.25×.
 quote fresh, price, probability source, reliability, QB, availability, market
 quality, decision confidence, price verification, sizing — with the binding
 one marked: "PASS because…", "WATCH because the price is 0.5 pts short",
-"MARKET FAULT because the quote is inconsistent with the consensus".
+"WATCH because the quote is inconsistent with the consensus" (one off-market
+book in a live market), and "MARKET FAULT because…" only when the decision's
+market state is MARKET FAULT, so the phrase carries one meaning.
 
 **What changes my mind?** (`whatChanges`). Price (the playable-to and the
 first rung that turns it into a BET), QB, availability, the model (the
@@ -276,10 +278,11 @@ Alerts it raises today include:
   prefer on-market quotes and cap an off-market selection at WATCH ·
   `PRICE_ANOMALY` with the outlier sentence.
 - **`MODEL_CONFLICT`.** When the quote sits on the other side of EdgeDesk's
-  own fair line but the probability still says it covers, the class is capped
-  at WATCH. The cause is the off-centre NFL margin distribution (§5 model
+  own fair line but the model's own (raw) probability still says it covers,
+  the class is capped at WATCH. A validated calibration that moves the
+  probability across the raw fair line is not capped: calibrated EV decides. The cause is the off-centre NFL margin distribution (§5 model
   health); the example message is "(Miami Dolphins +10 against a fair +11.5,
-  cover 59.3%)". The ladder applies the same cap at every rung.
+  model cover 59.3%)". The ladder applies the same cap at every rung.
 - **Versions on every decision** (`d.versions`, `EDDecision.versionsOf`):
   model, calibration, pricing engine, decision engine, rules, market engine,
   execution engine, the newest and oldest quote times, the projection time,

@@ -200,7 +200,7 @@
       return '<button class="cnt' + (S.status === k ? ' on' : '') + '" data-st="' + k + '" data-tip="' + cdef(k) + '">' + rsChip(chipKey[k], K.COUNTERS[k].label) + '<b>' + n + '</b></button>';
     }).join('') + '</div>';
     var d = c.decision || {};
-    h += '<div class="decline" data-tip="' + esc('DECISION STATUS is separate from research status. Only the decision engine produces BET, WAIT or PASS; a game it did not evaluate is NO DECISION.') + '">Decisions: '
+    h += '<div class="decline" data-tip="' + esc('DECISION STATUS is separate from research status. Research status says whether a matchup deserves investigation; only the decision engine says whether the current price justifies action (BET, LEAN, WATCH or PASS). A game it could not evaluate is NO DECISION.') + '">Decisions: '
       + K.DECISION_KEYS.filter(function (k) { return d[k]; }).map(function (k) { return esc(K.DECISION_STATUS[k].label) + ' ' + d[k]; }).join(' · ')
       + (S.board.decision.bet_enabled ? '' : ' · betting disabled by policy') + (c.favorite_flips ? ' · <span class="mut">' + c.favorite_flips + ' favorite flip' + (c.favorite_flips === 1 ? '' : 's') + '</span>' : '') + '</div>';
     return h;
@@ -382,7 +382,7 @@
     h += '<div class="rd-badges">' + R.maturity.filter(function (m) { return ['Cover probability', 'Timing (bet early / wait)', 'Alternate value', 'Betting'].indexOf(m.item) >= 0; })
       .map(function (m) { return '<span class="mbadge' + (/PENDING|DISABLED|EXPERIMENTAL|SHADOW/.test(m.status) ? ' pend' : '') + '" title="' + esc(m.note) + '"><b>' + esc(m.item.toUpperCase()) + '</b> ' + esc(m.status) + '</span>'; }).join('') + '</div>';
     h += '<div class="rd-more">' + readWhy(o, R) + readRisk(R) + readMarket(o, R) + readAlts(o, R) + readCurve(o, R) + readTools(o, R) + readAdvanced(o, R) + '</div>';
-    h += '<div class="note">' + esc(R.principle) + ' Research, not advice: an edge is an expected value and any single game can lose.' + (ASOF != null ? ' · clock pinned to ' + esc(new Date(ASOF).toISOString()) : '') + '</div>';
+    h += '<div class="note">' + esc(R.principle) + ' Research, not picks: an edge is an expected value and any single game can lose.' + (ASOF != null ? ' · clock pinned to ' + esc(new Date(ASOF).toISOString()) : '') + '</div>';
     return h + '</section>';
   }
   function rsec(id, title, teaser, body) { return '<details class="rx-sec" data-rsec="' + id + '"><summary><span class="caret">▶</span><b>' + esc(title) + '</b><span class="x">' + esc(teaser || '') + '</span></summary><div class="b">' + body + '</div></details>'; }

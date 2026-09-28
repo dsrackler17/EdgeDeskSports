@@ -449,7 +449,7 @@ chk('the deep modules default collapsed',
    canonical research page instead (research/cfb/, docs/cfb-terminal/AUDIT.md) */
 chk('the ten-chip model-scores panel is gone', CARD.indexOf("'scores'") < 0 && CARD.indexOf("fbP4Score('volatility'") < 0);
 chk('the detail line no longer prints the legacy edge tag', CARD.indexOf('fbP4EdgeTag(p.edge.spread)') < 0);
-chk('every card links to the canonical research page', /fbTermLink\(g\.game_id\)/.test(CARD) && APP.indexOf("/research/cfb/#/game/'") >= 0);
+chk('every card links to the canonical research page', /fbTermLink\(g\.game_id,rvH\)/.test(CARD) && APP.indexOf("/research/cfb/#/game/'") >= 0);
 chk('the terminal board is loaded by the board, not the card', SRC.indexOf('fbTermLoad') < 0 && /try\{fbTermLoad\(\);\}catch/.test(APP));
 chk('the data-completeness line survived, in the quality section', /'quality','Data quality and methodology',compl\+why/.test(CARD));
 chk('nothing that existed on the card was dropped',

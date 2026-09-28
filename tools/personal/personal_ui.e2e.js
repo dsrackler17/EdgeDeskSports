@@ -299,7 +299,7 @@ async function withPage(browser, site, viewport, db, init) {
         throw e;
       });
       const top = await page.textContent('#edmTop5');
-      chk('the Top 5 is on the desk, first', /Top 5 Games to Research/.test(top));
+      chk('the Top 5 is on the desk, first', /Top Research Priorities/.test(top) && /This is not a ranking of bets/.test(top));
       chk('its first entry shows EdgeDesk, market, gap and reliability', /Ole Miss @ Florida/.test(top) && /Ole Miss -1\.7/.test(top) && /Florida -2\.5/.test(top) && /4\.2 pts/.test(top) && /88/.test(top), top.slice(0, 400));
       chk('with "why it’s worth researching" from the state’s own fields', /Why it’s worth researching/.test(top) && /confirmed QB status on both sides/.test(top));
       chk('and a possible concern', /Possible concern/.test(top) && /leans heavily on one input: rushing matchup/.test(top));
@@ -309,7 +309,7 @@ async function withPage(browser, site, viewport, db, init) {
       chk('the live proof metrics are real counts', /3 games analyzed/.test(proof) && /212 active market quotes/.test(proof) && /9 sportsbooks represented/.test(proof), proof);
       chk('and carry no user count or profit', !/users|customers|profit|roi|won/i.test(proof));
       const desk = await page.textContent('#rdeskHost');
-      const order = ['Top 5 Games to Research', 'My Watchlist', 'Active research opportunities', 'Recent meaningful changes', 'My decision quality'].map((t) => desk.indexOf(t));
+      const order = ['Top Research Priorities', 'My Watchlist', 'Active research opportunities', 'Recent meaningful changes', 'My decision quality'].map((t) => desk.indexOf(t));
       chk('the desk reads Top 5 → watchlist → board → changes → decision quality', order.every((x, i) => x >= 0 && (i === 0 || x > order[i - 1])), order);
       chk('the Top 5 on the desk is recorded as opened', await eventually(() => db.log.some((l) => l.table === 'rpc/edp_track' && l.body.p_kind === 'top5_opened')));
       if (vp.name === 'desktop') chk('the desk says it is arranged for how the reader researches', /Arranged for how you research/.test(desk) && /I research games before betting/.test(desk));
@@ -459,7 +459,7 @@ async function withPage(browser, site, viewport, db, init) {
         await page.waitForFunction(() => !document.getElementById('edmPersonaAsk'));
         const pp2 = db.T.user_preferences[0] || {};
         chk('the answer is saved', pp2.persona === 'model_builder', pp2);
-        const order2 = await page.evaluate(() => { const t = document.getElementById('rdeskHost').textContent; return [t.indexOf('Compare My Number'), t.indexOf('Top 5 Games to Research')]; });
+        const order2 = await page.evaluate(() => { const t = document.getElementById('rdeskHost').textContent; return [t.indexOf('Compare My Number'), t.indexOf('Top Research Priorities')]; });
         chk('and a model builder\'s desk now opens with Compare My Number, the Top 5 still below it', order2[0] >= 0 && order2[1] > order2[0], order2);
         await shot(page, vp.name + '-11-persona-desk');
         const sw = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: window.innerWidth }));

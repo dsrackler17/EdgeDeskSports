@@ -76,10 +76,10 @@ section('beginner is short: what should I do?');
 {
   const b = U.actionCardHTML(CASES.BET, { level: 'beginner', track: null }), t = text(b);
   chk('BET: the pick, the price · book, the stake, playable to', /MIAMI DOLPHINS \+10/.test(t) && /-110 · DraftKings/.test(t) && /BET · 0\.25U/.test(t) && /PLAYABLE TO/.test(t), t.slice(0, 400));
-  chk('BET: EV, edge and confidence in three cells', /EV \(model-estimated\)/.test(t) && /Edge/.test(t) && /Confidence \d+ \/ 100/.test(t));
-  chk('BET: WHY in one sentence and MAIN RISK in one line', /WHY Current price clears EdgeDesk’s edge and EV thresholds/.test(t) && (b.match(/class="edd-risk"/g) || []).length === 1);
+  chk('BET: EV, edge and confidence in the execution summary', /EDGE \+[\d.]+ pp/.test(t) && /(MODEL-ESTIMATED|CALIBRATED) EV \+[\d.]+%/.test(t) && /CONFIDENCE \d+\/100/.test(t), t.slice(0, 600));
+  chk('BET: WHY in one sentence and MAIN RISK in one line', /WHY EdgeDesk makes it/.test(t) && (b.match(/class="edd-why1"/g) || []).length === 1 && (b.match(/class="edd-risk"/g) || []).length === 1);
   chk('beginner never shows the Lab and folds the reasoning', !/edd-lab/.test(b) && !/<details class="edd-reason" open/.test(b));
-  chk('beginner does not repeat the detail list the three cells already carry', !/class="edd-exact"/.test(b) && /class="edd-exact"/.test(U.actionCardHTML(CASES.BET, { level: 'research', track: null })));
+  chk('beginner carries none of the Research blocks', !/WHY ISN’T THIS A BET|PRICE ALTERNATIVES|WHAT CHANGES MY MIND|BREAK THE NUMBER/.test(t) && /PRICE ALTERNATIVES/.test(text(U.actionCardHTML(CASES.BET, { level: 'research', track: null }))));
   const w = text(U.actionCardHTML(CASES.WATCH, { level: 'beginner', track: null }));
   chk('WATCH: DO NOT BET YET and what it waits for', /DO NOT BET YET/.test(w) && /is close, but EdgeDesk wants/.test(w), w.slice(0, 400));
 }

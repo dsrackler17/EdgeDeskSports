@@ -242,7 +242,7 @@ section('engine: the model must agree with itself');
      is off-centre here (the distribution audit) and says +10 covers ~59%. */
   const d = decide(-11.5, board(10));
   chk('a fair line on the other side of the number with cover > 50% is WATCH · MODEL CONFLICT, never a BET', d.decision === 'WATCH' && d.action_reason_code === 'MODEL_CONFLICT', [d.decision_display, d.action_reason_text]);
-  chk('… and it says what it saw', /Miami Dolphins \+10 against a fair \+11\.5, cover \d/.test(d.action_reason_text), d.action_reason_text);
+  chk('… and it says what it saw', /Miami Dolphins \+10 against a fair \+11\.5, model cover \d/.test(d.action_reason_text), d.action_reason_text);
   chk('the ladder applies the rule at every number: +11 (inside the band) is where it would bet', /\+11 BET/.test(d.ladder.summary_line || ''), d.ladder.summary_line);
   chk('inside the aligned band there is no conflict (+10.5 fair vs +10)', decide(-10.5, board(10)).action_reason_code !== 'MODEL_CONFLICT');
   const alt = decide(-10, board(10).concat([qq('home', 6.5, 260, 'DraftKings', { market_type: 'alternate_spread' })]));

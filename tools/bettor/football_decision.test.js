@@ -339,11 +339,12 @@ section('the renderers');
 const text = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, '’').replace(/\s+/g, ' ');
 const hBet = text(U.actionCardHTML(A1, { track: null, beginner: false }));
 chk('BET card: the exact action — BET · 0.25U, MODEL-ESTIMATED, team line (price) · book, cover, break-even, edge, EV, confidence', /BET · 0\.25U/.test(hBet) && /MODEL-ESTIMATED/.test(hBet) && /CHICAGO BEARS -3/.test(hBet) && /-105 · DraftKings/.test(hBet)
-  && /Model cover: \d/.test(hBet) && /Break-even: \d/.test(hBet) && /Edge: \+/.test(hBet) && /EV: \+[\d.]+% raw/.test(hBet) && /Decision confidence: \d+\/100/.test(hBet), hBet.slice(0, 600));
+  && /HOW MUCH 0\.25U/.test(hBet) && /EDGE \+[\d.]+ pp/.test(hBet) && /MODEL-ESTIMATED EV \+[\d.]+%/.test(hBet) && /CONFIDENCE \d+\/100/.test(hBet) && /Model-estimated probability/.test(hBet)
+  && /Model-estimated EV: \+[\d.]+% \(used by the decision engine · no calibration exists yet\)/.test(A1.action.lines.join(' | ')) && !A1.action.lines.some((l) => /^Raw model EV/.test(l)), hBet.slice(0, 600));
 const hWatch = text(U.actionCardHTML(Hu, { track: null }));
 chk('WATCH card: WATCH · QB UNKNOWN, DO NOT BET YET, the trigger', /WATCH/.test(hWatch) && /QB UNKNOWN/.test(hWatch) && /DO NOT BET YET/.test(hWatch) && /BET TRIGGER/.test(hWatch), hWatch.slice(0, 500));
 const hLean = text(U.actionCardHTML(oneSided, { track: null }));
-chk('LEAN card: LEAN, 0U informational, never BET PLACED', /LEAN/.test(hLean) && /0U · informational/.test(hLean) && !/BET PLACED/.test(hLean), hLean.slice(0, 300));
+chk('LEAN card: LEAN, 0U no stake, never BET PLACED', /LEAN/.test(hLean) && /0U · no stake/.test(hLean) && !/BET PLACED/.test(hLean), hLean.slice(0, 300));
 const hPass = text(U.actionCardHTML(Ed, { track: null }));
 chk('PASS card: the reason and the trigger', /PASS/.test(hPass) && /The raw model edge disappears after calibration/.test(hPass) && /BET TRIGGER/.test(hPass), hPass.slice(0, 300));
 const hNone = text(U.actionCardHTML(Fd, { track: null }));

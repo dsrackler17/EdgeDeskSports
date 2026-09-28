@@ -203,6 +203,10 @@ select option:checked{background-color:var(--surface2,#221c15);color:var(--text,
 .gx-st.mut{color:var(--faint)}
 .gx-st.accent{color:var(--accent);border-color:rgba(47,167,154,.45)}
 .gx-st.gold{color:var(--gold);border-color:rgba(227,184,77,.45)}
+/* a RESEARCH status is never styled like a decision: dotted, sentence case,
+   no fill (the decision keeps the solid uppercase badge) */
+.gx-st.gx-rs{border-style:dotted;text-transform:none;letter-spacing:.02em;font-weight:600;background:none}
+.gx-ms{font-family:var(--mono,ui-monospace,monospace);font-size:10px;letter-spacing:.06em;color:var(--dim)}
 .gx-means{font-size:12.5px;line-height:1.55;color:var(--text);margin-top:9px;padding:9px 11px;border-radius:9px;border:1px solid var(--border);border-left-width:3px;background:var(--bg)}
 .gx-means.ok{border-left-color:var(--pos)}.gx-means.warn{border-left-color:var(--warn)}
 .gx-means.neg{border-left-color:var(--neg)}.gx-means.mut{border-left-color:var(--border)}
@@ -2866,7 +2870,7 @@ body.focus .dk-focusnote{display:block}
 </style>
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929a">
-<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929a">
+<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929b">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3143,8 +3147,8 @@ body.focus .dk-focusnote{display:block}
   </section>
 
   <!-- EDGEDESK CARD — the current actionable betting state (lib/edgedesk_decision_ui.js).
-       The Research Board finds interesting games; this page says which current
-       prices qualify: BET / WAIT (watching) / PASS / NO DECISION. -->
+       The Research Board answers "what games deserve attention?"; this page answers
+       "what does the current price justify?": BET / LEAN / WATCH / PASS / NO DECISION. -->
   <section id="v-card" class="view hide"><div id="eddCardHost"></div></section>
 
   <!-- RESEARCH — single shell: one sub-nav rendered once, six module panels.
@@ -3313,7 +3317,7 @@ body.focus .dk-focusnote{display:block}
 <!-- first-run welcome + "How EdgeDesk works" sequence: overlays, rendered by desk-js -->
 <div id="welHost" class="wel" role="dialog" aria-modal="true" aria-label="Welcome to EdgeDesk"></div>
 <div id="hiwHost" class="hiw" role="dialog" aria-modal="true" aria-label="How EdgeDesk works" onclick="if(event.target===this)hiwClose()"></div>
-<div class="foot" id="edFoot" role="contentinfo"><button type="button" class="footlink" onclick="show('terms')" aria-label="Research tool only — not betting advice. Read the terms and disclaimer."><span class="ft-l">Research tool only — not betting advice.</span><span class="ft-s">Not betting advice.</span></button> Signals can be wrong.<span class="sep">·</span>21+<span class="sep">·</span>1-800-GAMBLER</div>
+<div class="foot" id="edFoot" role="contentinfo"><button type="button" class="footlink" onclick="show('terms')" aria-label="Research and decision-support tool. Read the terms and disclaimer."><span class="ft-l">Research and decision-support tool.</span><span class="ft-s">Decision support.</span></button> Signals can be wrong.<span class="sep">·</span>21+<span class="sep">·</span>Bet responsibly<span class="sep">·</span>1-800-GAMBLER</div>
 <script>
 /* the disclaimer's real height becomes --foot, so page padding and overlay
    padding track it through wrapping, font scaling and rotation */
@@ -3811,7 +3815,7 @@ window.mcRefresh=function(){
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
-<script src="/lib/cfb_research_view.js?v=20260925e"></script>
+<script src="/lib/cfb_research_view.js?v=20260929a"></script>
 <!-- THE MAJOR-DISAGREEMENT INTEGRITY GATE: a 7+ point gap between EdgeDesk and
      the market is INVESTIGATE until it passes every check (game, market, team
      state, QB, roster, components, cross-model, football-only calibration),
@@ -3823,21 +3827,24 @@ window.mcRefresh=function(){
      STATE), the research status kept apart from the decision status, the
      counter hierarchy, maturity and pricing impact. tools/validation/canon.test.js
      and tools/validation/ui.test.js hold it. -->
-<script src="/lib/edgedesk_canon.js?v=20260928a"></script>
-<!-- THE BETTOR DECISION LAYER (docs/bettor-decision/DESIGN.md): one BET / WAIT / PASS /
-     NO DECISION answer per game, from the quote-level EV the board already prices.
-     edgedesk_decision.js reads window.EDQuoteEV at call time (loaded lazily with the board). -->
+<script src="/lib/edgedesk_canon.js?v=20260929a"></script>
+<!-- THE BETTOR DECISION LAYER (docs/bettor-decision/DESIGN.md): one BET / LEAN / WATCH /
+     PASS / NO DECISION answer per game, from the quote-level EV the board already prices.
+     edgedesk_vocab.js is the one vocabulary every surface reads (decision words, market
+     states, help text, positioning); it loads first. edgedesk_decision.js reads
+     window.EDQuoteEV at call time (loaded lazily with the board). -->
 <!-- THE QUALITY LAYER (docs/bettor-decision/QUALITY_UPGRADE.md): the one canonical
      market object and the execution layer the engine builds every decision on,
      and the explain layer every surface reads its words from. -->
-<script src="/lib/edgedesk_bankroll.js?v=20260929a"></script>
+<script src="/lib/edgedesk_vocab.js?v=20260929a"></script>
+<script src="/lib/edgedesk_bankroll.js?v=20260929b"></script>
 <script src="/lib/edgedesk_market.js?v=20260929a"></script>
 <script src="/lib/edgedesk_execution.js?v=20260929a"></script>
-<script src="/lib/edgedesk_decision.js?v=20260929a"></script>
-<script src="/lib/edgedesk_decision_track.js?v=20260929a"></script>
-<script src="/lib/edgedesk_decision_inputs.js?v=20260929a"></script>
+<script src="/lib/edgedesk_decision.js?v=20260929b"></script>
+<script src="/lib/edgedesk_decision_track.js?v=20260929b"></script>
+<script src="/lib/edgedesk_decision_inputs.js?v=20260929b"></script>
 <script src="/lib/edgedesk_explain.js?v=20260929a"></script>
-<script src="/lib/edgedesk_decision_ui.js?v=20260929a"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20260929b"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -23179,7 +23186,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +'<button class="rn-a" onclick="show(\'record\')">Check the record <span class="ar">→</span></button>'
         +'</div>';
       body+='<div class="dk-focusnote"><button class="dk-tool" onclick="deskFocus(false)">Show full terminal ↓</button></div>';
-      body+='<div class="dk-note">Research tool only — not betting advice. Every number above is read from the same rows as the board below; MARKET, MODEL and CONSENSUS are never combined into one score.</div>';
+      body+='<div class="dk-note">Research and decision-support tool. Signals can be wrong. Every number above is read from the same rows as the board below; MARKET, MODEL and CONSENSUS are never combined into one score.</div>';
       host.innerHTML='<div class="dk">'+top+'<div class="dk-t">'+esc(title)+'</div><div class="dk-sub">'+esc(sub)+'</div></div>'+tools+'</div>'+stats+body+'</div>';
     }catch(err){
       try{host.innerHTML='<div class="dk"><div class="dk-ey">Today’s desk</div><div class="dk-t">The desk could not render.</div><div class="dk-sub">The board below is unaffected. '+esc(err&&err.message||'')+'</div></div>';}catch(_){}
@@ -23250,7 +23257,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      no longer greets anyone at the door. */
   var FLOW=[
     ['Pick a game','Start with a game you were going to watch anyway.'],
-    ['See what EdgeDesk noticed','One call per bet: BET, LEAN, WAIT or PASS, with a one-line answer.'],
+    ['See what EdgeDesk noticed','One decision per price: BET, LEAN, WATCH or PASS (NO DECISION only when required data is missing), with a one-line answer.'],
     ['Read why','The reason in plain words, and what could make it wrong.'],
     ['Check the price','The bet and the price are one thing. EdgeDesk shows the price past which it stops liking it.'],
     ['Decide','Act, wait, or move on. PASS is a real answer, not a failure.'],
@@ -23279,7 +23286,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<div class="wel-goal"><b>One thing to remember</b><p>EdgeDesk judges the <b>price</b>, not the result. A big payout on an underdog means the price looks generous — it never means EdgeDesk expects an upset.</p></div>'
       +'<div class="wel-act"><button class="btn" onclick="welClose()">Show me today’s games</button>'
       +'<label><input type="checkbox" id="welDont" checked> Don’t show again</label></div>'
-      +'<div class="wel-legal">Research tool only — not betting advice. EdgeDesk can be wrong. PASS is a valid answer. 21+ · 1-800-GAMBLER.</div>'
+      +'<div class="wel-legal">Research and decision-support tool. EdgeDesk can be wrong. PASS is a valid answer. 21+ · Bet responsibly · 1-800-GAMBLER.</div>'
       +'</div>';
     host.classList.add('on');
     setTimeout(function(){try{host.querySelector('.btn').focus();}catch(_){}},30);
@@ -23308,7 +23315,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var host=$id('hiwHost'); if(!host)return;
     host.innerHTML='<div class="hiw-card"><div class="hiw-hd"><div><div class="wel-ey">How EdgeDesk works</div><div class="wel-t" style="font-size:19px">Seven screens, one record.</div><div class="wel-p" style="margin-top:6px">Tap a step to open it. Every screen is live data, not a demo.</div></div><button class="hiw-x" onclick="hiwClose()" aria-label="Close">×</button></div>'
       +'<div style="margin-top:12px">'+HIW.map(function(s,i){return '<div class="hiw-step" role="button" tabindex="0" onclick="hiwGo('+i+')" onkeydown="if(event.key===\'Enter\')hiwGo('+i+')"><span class="hiw-n">'+(i+1)+'</span><div class="hiw-b"><b>'+esc(s[0])+'</b><p><span class="q">“'+esc(s[1])+'”</span> '+esc(s[2])+'</p></div><span class="hiw-go">open →</span></div>';}).join('')+'</div>'
-      +'<div class="wel-legal">Research tool only — not betting advice. 21+ · 1-800-GAMBLER.</div></div>';
+      +'<div class="wel-legal">Research and decision-support tool. Signals can be wrong. 21+ · Bet responsibly · 1-800-GAMBLER.</div></div>';
     host.classList.add('on');
   };
   window.hiwClose=function(){var host=$id('hiwHost');if(host){host.classList.remove('on');host.innerHTML='';}};
@@ -44362,7 +44369,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<div style="font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin-top:1px">last research run</div></div>'
       +heroStat(0,'markets scanned')+heroStat(0,'candidates')+heroStat(0,'finalists')
       +'</div>'
-      +'<div style="font-size:10.5px;color:var(--faint);margin-top:10px">Research tool only — not betting advice. Signals can be wrong.</div>'
+      +'<div style="font-size:10.5px;color:var(--faint);margin-top:10px">Research and decision-support tool. Signals can be wrong.</div>'
       +'</div>';
   }
   function heroReturningHTML(p){
@@ -44390,7 +44397,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +heroStat(s.rejections_total!=null?s.rejections_total:0,'rejected')
       +'</div>'
       +'<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">'+chips+'</div>'
-      +'<div style="font-size:10.5px;color:var(--faint);margin-top:8px">Research tool only — not betting advice. Signals can be wrong.</div>'
+      +'<div style="font-size:10.5px;color:var(--faint);margin-top:8px">Research and decision-support tool. Signals can be wrong.</div>'
       +'</div>';
   }
   function hasResearched(){ try{ return !!packetLatest(); }catch(_){ return false; } }
@@ -47173,6 +47180,14 @@ function fbCanonApply(v,cr){
   var extra={row:cr,age_h:age,decision:cr.decision_status,decision_label:cr.decision_label,decision_reason:cr.decision_reason,
     price_state:cr.price_state,price_state_label:cr.price_state_label,favorite_flip:!!cr.favorite_flip,rating_divergence:cr.rating_divergence||null};
   if(age==null||age>FB_CANON_MAX_AGE_H)return Object.assign({},v,{canonical:Object.assign(extra,{stale:true})});
+  /* MARKET AVAILABILITY IS A LIVE FACT. The build set its research status on
+     the market IT could see (the Model Lab ledger, up to FB_CANON_MAX_AGE_H
+     ago); this page prices the live captured board. When the two disagree
+     about whether a usable market exists — the build saw none and the page
+     prices a live quote, or the reverse — the page's own label stands, so a
+     research status can never read NO MARKET beside a priced quote. */
+  var lv=v.research_label,liveNoMk=!!(lv&&(lv.rule==='no_market'||lv.rule==='stale_market')),buildNoMk=cr.research_status==='NO_MARKET';
+  if(lv&&liveNoMk!==buildNoMk)return Object.assign({},v,{canonical:Object.assign(extra,{stale:false,market_reconciled:true,build_research_status:cr.research_status})});
   var vk=FB_CANON_TO_VIEW[cr.research_status],d=C.RESEARCH_STATUS[cr.research_status],L=V&&V.LABELS&&V.LABELS[vk];
   /* a canonical DATA FAULT keeps its kind: the build's (decision_facts), else
      the live rule it replaces (EDDecisionInputs.labelFaultKind) */
@@ -47362,7 +47377,7 @@ function fbP4ViewCfg(){
    board's operational status, exactly as it always has */
 function fbRvLabelChip(v,st){
   var L=v&&v.research_label;
-  if(!L)return st?('<span style="color:'+st.c+'">'+st.t+'</span>'):'';
+  if(!L)return st?('<span style="color:'+st.c+'">'+fbP4StatusShow(st.t)+'</span>'):'';
   return '<span class="rv-lab '+L.tone+'" title="'+fbEsc(L.label+': '+L.means+(st?(' · Board status: '+st.t):''))+'">'+fbEsc(L.label)+'</span>';
 }
 /* the NEAR PICK'EM badge: EdgeDesk has picked a side, but the raw margin
@@ -47491,6 +47506,11 @@ function fbMarketFromEvent(e,homeName){
     if(r.market==='spreads'&&fbNorm(r.selection)===hN&&r.point!=null&&out.spread_line==null){out.spread_line=-(+r.point);out.spread_book=r.best_book;}
     if(r.market==='totals'&&/over/i.test(r.selection||'')&&r.point!=null&&out.total_line==null){out.total_line=+r.point;out.total_book=r.best_book;}
     if(r.market==='h2h'&&r.best_dec>1){ if(fbNorm(r.selection)===hN){decH=+r.best_dec;decH0=fbNum(r.first_best_dec);} else decA=+r.best_dec; }
+  }
+  /* only the away side captured at the spread: the same number, read from it
+     (away +3 is home -3), so a priced event never reads NO MARKET */
+  if(out.spread_line==null){
+    for(i=0;i<e.rows.length;i++){r=e.rows[i];if(r.market==='spreads'&&fbNorm(r.selection)!==hN&&r.point!=null){out.spread_line=+r.point;out.spread_book=r.best_book;break;}}
   }
   if(decH&&decA)out.quotes_h2h=[[decH,decA]];
   /* home-side implied probability, first capture vs now: a market fact the
@@ -48218,12 +48238,15 @@ function fbPredict(sport,game,mkt,season){
   FB._pred[key]=out;
   return out;
 }
+/* the model engine's read of the GAP — a research signal, never the decision:
+   it never uses a decision word (LEAN, PASS), so a card can never show one
+   word here and another in its EDGEDESK DECISION */
 function fbEdgeTag(cls){
   if(!cls)return '';
-  if(cls.recommendation==='NO_MARKET')return '<span class="ec mut">no market</span>';
+  if(cls.recommendation==='NO_MARKET')return '<span class="ec mut">no reference line</span>';
   var h=cls.historical?(' · historically '+cls.historical.win_pct+'% (n='+cls.historical.n+', p='+cls.historical.binom_p_one_sided+')'):'';
-  if(cls.recommendation==='RESEARCH_LEAN')return '<span class="ec" style="color:var(--warn)">research lean · unproven'+h+'</span>';
-  return '<span class="ec mut">pass'+h+'</span>';
+  if(cls.recommendation==='RESEARCH_LEAN')return '<span class="ec" style="color:var(--warn)">research: gap worth researching · unproven'+h+'</span>';
+  return '<span class="ec mut">research: gap inside the research threshold'+h+'</span>';
 }
 function fbModelCard(){
   var M=window.EDFootball.meta();if(!M)return '';
@@ -48296,16 +48319,22 @@ function fbGameCardNfl(u){
       +' · gap '+fbPts(p.market.total_gap)+' '+fbEdgeTag(p.edge.total)+'</span></div>';
     if(ov)lines+='<div class="gd-line"><span class="l">P(over that number)</span><span class="v mut">'+(ov.win*100).toFixed(1)+'%</span></div>';
   }
-  if(mkt.spread_line==null&&mkt.total_line==null)
+  /* the decision priced the captured board; the reference join above is a
+     second source. "No market" is said only when the decision's own market
+     state agrees (lib/edgedesk_decision.js marketStateOf) */
+  var qv=null;try{qv=fbQevGameNfl(u,p,M);}catch(_){qv=null;}
+  var dn=null;try{dn=fbDecisionNfl(u,p,M);}catch(_){dn=null;}
+  var dms=dn&&dn.market_state?dn.market_state:null;
+  if(mkt.spread_line==null&&mkt.total_line==null&&(!dms||dms.key==='NO_MARKET'))
     lines+='<div class="gd-nodata">No market number is available for this game yet — the model number stands alone and no edge of any kind is claimed.</div>';
+  else if(mkt.spread_line==null&&mkt.total_line==null&&dms)
+    lines+='<div class="gd-line"><span class="l">Market</span><span class="v">'+fbEsc(dms.label)+(dn.quote?' · '+fbEsc(dn.quote.selection)+' ('+fbEsc(window.EDDecision.priceText(dn.quote.odds))+') · '+fbEsc(dn.quote.sportsbook||''):'')+' <span class="mut">captured quote the decision priced; no reference line joined</span></span></div>';
   var extra=[];
   if(src==='nflverse reference'&&(mkt.spread_line!=null||mkt.total_line!=null))extra.push('market numbers are nflverse consensus reference, not a live bettable quote');
   var qb='';try{qb=fbQbBlockHTML(g);}catch(_){qb='';}
   var pa='';try{var paB=fbPersonnelHTML(g.game_id);if(paB)pa='<div class="gd-sec">Personnel availability</div>'+paB;}catch(_){pa='';}
   /* QUOTE-LEVEL EV: the best exact captured price, both sides, every number
      — RAW EV only (no EV calibration exists for the NFL) */
-  var qv=null;try{qv=fbQevGameNfl(u,p,M);}catch(_){qv=null;}
-  var dn=null;try{dn=fbDecisionNfl(u,p,M);}catch(_){dn=null;}
   if(qv)lines+='<div class="gd-sec">Price · expected value</div>'+fbQevRowHTML(qv)
     +'<details class="qev-more"><summary>Price evaluation · both sides · alternate spreads</summary>'+fbQevCardHTML(qv)
     +'<div class="gd-sec">Alternate spread value</div>'+fbQevLadderHTML(qv)+'</details>';
@@ -52343,11 +52372,19 @@ function fbGxSummary(u,p,gid){
      and a direction, all from lib/cfb_research_view.js. Without it, the
      home-line cells this card always printed. */
   var rv=fbP4ViewFor(u,p),RG=rv&&rv.market_gap;
+  /* THE ONE DECISION and its canonical market state (lib/edgedesk_decision.js
+     marketStateOf): the market cell, the research cell and the EV cell below
+     read the same quote the decision priced, so no cell says NO MARKET beside
+     a priced quote */
+  var bd=null;try{bd=fbDecisionCfb(u,p);}catch(_){bd=null;}
+  var MS=bd&&bd.market_state?bd.market_state:null,BQ=bd&&bd.quote?bd.quote:null;
+  var msSub=MS?('<span class="gx-ms">'+fbEsc(MS.label)+'</span>'):'';
   if(rv&&rv.fair){
     out+=cell('EdgeDesk fair',fbEsc(rv.fair.fair_line_text)+fbRvNearBadge(rv),'mdl',
       rv.is_near_pickem?('model · raw '+fbEsc(rv.fair.raw_line_text)):'model');
-    out+=cell('Market',RG.available?fbEsc(RG.market_line_text):'<span class="gx-miss">none joined</span>',
-      '',RG.available?fbEsc(mk.book||'reference'):'nothing to compare');
+    out+=cell('Market',RG.available?fbEsc(RG.market_line_text)
+        :(BQ&&MS&&MS.key!=='NO_MARKET'?fbEsc(BQ.selection)+' <span class="mut">('+fbEsc(window.EDDecision.priceText(BQ.odds))+')</span>':'<span class="gx-miss">none joined</span>'),
+      '',(RG.available?fbEsc(mk.book||'reference'):(BQ&&MS&&MS.key!=='NO_MARKET'?fbEsc(BQ.sportsbook||''):'nothing to compare'))+(msSub?' · '+msSub:''));
     /* a gap the data cannot support is not coloured as a finding */
     out+=cell('Market gap',RG.available?(RG.points.toFixed(1)+' pts'):'<span class="gx-miss">—</span>',
       RG.available&&RG.points>FB_GUARD.p4.game?'neg':(fbRvWeak(rv)?'':(RG.available&&RG.points>=2?'warn':'')),
@@ -52375,24 +52412,34 @@ function fbGxSummary(u,p,gid){
      interesting the disagreement is, and whether the price justifies action
      (only the decision engine answers that; lib/edgedesk_canon.js) */
   var cz=rv&&rv.canonical,KC=window.EDCanon;
-  out+=cell(st.view?'Research status':'Research state','<span class="gx-st '+st.cls+'">'+fbEsc(st.label)+'</span>'
+  out+=cell(st.view?'Research status':'Research state','<span class="gx-st gx-rs '+st.cls+'">'+fbEsc(st.label)+'</span>'
     +(cz&&cz.favorite_flip&&KC?' <span class="gx-xb flip" title="'+fbEsc(KC.FAVORITE_FLIP.means)+'">FAVORITE FLIP</span>':'')
     +(cz&&cz.price_state&&['PRICED_IN','GONE','PARTIAL'].indexOf(cz.price_state)>=0?' <span class="gx-xb price" title="'+fbEsc(KC&&KC.PRICE_STATE[cz.price_state]?KC.PRICE_STATE[cz.price_state].means:'')+'">'+fbEsc(cz.price_state_label)+'</span>':''),'',
-    cz?(cz.stale?'live estimate · the research page’s build is '+Math.round(cz.age_h)+' h old':'how interesting · same status on the research page'):'EdgeDesk’s own read, not advice');
+    cz?(cz.stale?'live estimate · the research page’s build is '+Math.round(cz.age_h)+' h old'
+      :(cz.market_reconciled?'live · the research page’s build ('+Math.round(cz.age_h*60)+' min old) '+(cz.build_research_status==='NO_MARKET'?'had no usable market':'had a market this page no longer sees')
+        :'how interesting · same status on the research page')):'is it worth investigating? · not a bet signal');
   /* the ONE bettor decision (lib/edgedesk_decision.js), the same answer as the
-     EDGEDESK ACTION card above; the governed engine's shadow verdict stays as
+     EDGEDESK DECISION card above; the governed engine's shadow verdict stays as
      its audit line */
-  var bd=null;try{bd=fbDecisionCfb(u,p);}catch(_){bd=null;}
+  var VW=window.EDVocab,dl=function(k){return VW?VW.decisionLabel(k):String(k||'').replace(/_/g,' ');};
   out+=cell('Decision',bd?('<span class="gx-st '+({BET:'ok',LEAN:'ok',WATCH:'warn',WAIT:'warn',PASS:'mut',NO_DECISION:'mut'}[bd.decision]||'mut')+'">'+fbEsc(bd.decision_display||bd.decision_label)+'</span>')
-    :(cz&&cz.decision?('<span class="gx-st '+(cz.decision==='BET'?'ok':'mut')+'">'+fbEsc(cz.decision_label||cz.decision)+'</span>'):'<span class="gx-st mut">NO DECISION</span>'),'',
-    bd?(fbEsc(bd.action_reason_text)+(cz&&cz.decision?' · governed engine (shadow): '+fbEsc(cz.decision_label||cz.decision):''))
-    :((cz&&cz.decision_reason?fbEsc(cz.decision_reason):'only the decision engine produces BET, WAIT or PASS')
+    :(cz&&cz.decision?('<span class="gx-st '+(cz.decision==='BET'?'ok':'mut')+'">'+fbEsc(dl(cz.decision))+'</span>'):'<span class="gx-st mut">NO DECISION</span>'),'',
+    bd?(fbEsc(bd.action_reason_text)+(cz&&cz.decision?' · governed engine (shadow): '+fbEsc(dl(cz.decision)):''))
+    :((cz&&cz.decision_reason?fbEsc(cz.decision_reason):'only the decision engine produces BET, LEAN, WATCH or PASS')
     +(cz&&/two-sided priced quote/.test(cz.decision_reason||'')?' · that is the engine’s market-state rule; the quote-level EV beside it is still exact arithmetic on one fresh quote':'')));
   /* QUOTE-LEVEL EV: the best exact price's EV, kept apart from the decision */
   var qv=null;try{qv=fbQevGameCfb(u,p);}catch(_){qv=null;}
-  if(qv){
+  if(bd&&BQ&&bd.evaluation_status==='EVALUABLE'){
+    /* the EV of the exact quote the decision priced: the decision's own EV
+       (calibrated, or model-estimated when no calibration exists), the raw
+       model EV beside it labelled diagnostic */
+    var calOn=bd.calibrated_ev_pct!=null,dv=calOn?bd.calibrated_ev_pct:bd.decision_ev_pct;
+    out+=cell(calOn?'Calibrated EV · decision quote':'Model-estimated EV · decision quote',fbQevEv(dv==null?null:dv/100),'',
+      fbEsc(BQ.selection)+' ('+fbEsc(window.EDDecision.priceText(BQ.odds))+') · '+fbEsc(BQ.sportsbook||'')+(BQ.age_minutes!=null?' · '+(BQ.age_minutes<60?Math.max(1,Math.round(BQ.age_minutes))+'m':Math.round(BQ.age_minutes/60)+'h'):'')
+        +' · cover '+fbQevPct(bd.probability)+' vs BE '+fbQevPct(bd.break_even)+(calOn&&bd.raw_ev_pct!=null?' · raw model EV '+window.EDQuoteEV.signedPct(bd.raw_ev_pct/100)+' (diagnostic only)':''));
+  }else if(qv){
     var qb=qv.g.best_ev_quote,qa=qb&&qb.adjusted&&qb.adjusted.available?qb.adjusted:null;
-    out+=cell(qa?'Raw EV · best price':'EV · best price',qb?fbQevEv(qb.expected_value,qb.ev_state!=='AVAILABLE'?'flat':null):'<span class="gx-miss">—</span>','',
+    out+=cell(qa?'Raw EV · best price (diagnostic)':'EV · best price (diagnostic)',qb?fbQevEv(qb.expected_value,qb.ev_state!=='AVAILABLE'?'flat':null):'<span class="gx-miss">—</span>','',
       qb?(fbEsc(qb.label)+' · '+fbEsc(qb.sportsbook||'')+' · '+fbQevAge(qb)+' · cover '+fbQevPct(qb.model_cover_probability)+' vs BE '+fbQevPct(qb.break_even_probability)
         +(qa?' · calibrated '+window.EDQuoteEV.signedPct(qa.expected_value):'')+(qb.ev_state==='RAW_UNVERIFIED'?' · INTEGRITY CHECK NOT CLEARED':(qb.ev_state==='AUDIT_ONLY'?' · MARKET FAULT: audit only':'')))
         :('EV unavailable · '+fbEsc(qv.g.ev_unavailable_reason)));
@@ -53858,6 +53905,10 @@ function fbQevDecisionText(v){
   return {text:t,why:D.requires?('Decision engine: '+t+' — '+D.requires+'.'):(D.reason||''),
     cls:D.status==='BET'||D.status==='LEAN'?'ok':(D.status==='WATCH'||D.status==='WAIT'?'gold':'mut')};
 }
+function fbQevExecutable(o,ref){
+  var A=(window.EDDecision&&window.EDDecision.DEFAULT_CONFIG&&window.EDDecision.DEFAULT_CONFIG.alternates)||{nearby_points:3,min_odds:-300,max_odds:300};
+  return !!o&&o.american_odds!=null&&o.american_odds>=A.min_odds&&o.american_odds<=A.max_odds&&(!ref||ref.line==null||o.line==null||Math.abs(o.line-ref.line)<=A.nearby_points+1e-9);
+}
 /* the compact pricing block a board row carries */
 function fbQevRowHTML(v){
   if(!v)return '';
@@ -53880,7 +53931,15 @@ function fbQevRowHTML(v){
     +(adj?'<span title="'+fbQevTip('adjusted_ev')+'"><span class="qev-k">'+(adj.label==='BLENDED'?'Blended':'Calibrated')+'</span> '+fbQevEv(adj.expected_value)+' <span class="mut">'+fbEsc(String(adj.maturity||'').toLowerCase())+'</span></span>'
       :(v.sport==='nfl'?'<span class="mut" title="'+fbEsc(b.adjusted?b.adjusted.reason:'')+'">raw only</span>':''))
     +decHTML;
-  var S=G.sides[b.side],L=S&&S.ladder,alt=L&&L.max_ev&&!L.max_ev.is_main_line?L.max_ev:null,safe=L&&L.safest_positive_ev&&L.safest_positive_ev!==b?L.safest_positive_ev:null;
+  /* the decision's own quote, when it is not this row's best price: the EV
+     beside a decision is always the EV of the quote it names */
+  var dq=v.dec&&v.dec.evaluation_status==='EVALUABLE'&&v.dec.quote?v.dec.quote:null;
+  if(dq&&!(dq.side===b.side&&dq.line===b.line&&Math.round(dq.odds)===Math.round(b.american_odds)&&String(dq.sportsbook||'').toLowerCase()===String(b.sportsbook||'').toLowerCase()))
+    h+='<span class="qev-dq" title="The exact quote the EdgeDesk decision was reached on"><span class="qev-k">Decision priced</span> '+fbEsc(dq.selection)+' ('+fbEsc(Q.priceText(dq.odds))+') <span class="mut">· '+fbEsc(dq.sportsbook||'?')+'</span></span>';
+  /* an alternate is named here only at an executable price near the best
+     price's number (lib/edgedesk_decision.js alternates): +28.5 (-10000) is
+     never a "best alt value" */
+  var S=G.sides[b.side],L=S&&S.ladder,alt=L&&L.max_ev&&!L.max_ev.is_main_line&&fbQevExecutable(L.max_ev,b)?L.max_ev:null,safe=L&&L.safest_positive_ev&&L.safest_positive_ev!==b&&fbQevExecutable(L.safest_positive_ev,b)?L.safest_positive_ev:null;
   if(alt||safe)h+='<span class="qev-alt">'
     +(alt?'<span title="'+fbQevTip('max_ev')+'"><span class="qev-k">Best alt value</span> '+fbEsc(alt.label)+' · '+fbQevPct(alt.model_cover_probability)+' cover · '+fbQevEv(alt.expected_value)+(alt.tail&&alt.tail.status==='NOT_VALIDATED'?' <span class="qev-lc">low confidence</span>':'')+'</span>':'')
     +(safe?'<span title="'+fbQevTip('safest')+'"><span class="qev-k">Safer +EV</span> '+fbEsc(safe.label)+' · '+fbQevPct(safe.model_cover_probability)+' cover · '+fbQevEv(safe.expected_value)+'</span>':'')
@@ -54401,9 +54460,12 @@ function fbP4TopHTML(visible){
     var narrow=false;
     try{narrow=window.matchMedia?window.matchMedia('(max-width:560px)').matches:false;}catch(_){narrow=false;}
     var open=FB.p4.topOpen!=null?FB.p4.topOpen:!narrow;
+    var VW=window.EDVocab;
     return '<details class="rv-top"'+(open?' open':'')+' ontoggle="FB.p4.topOpen=this.open">'
-      +'<summary><span class="rv-top-h"><b>TOP 5 WORTH RESEARCHING</b><span class="mut">'+right+'</span></span>'
-      +(names?'<span class="rv-top-s">'+names+'</span>':'')+'</summary>'+body+'</details>';
+      +'<summary><span class="rv-top-h"><b>'+fbEsc(VW?VW.COPY.top_research_title:'TOP RESEARCH PRIORITIES')+'</b><span class="mut">top 5 · '+right+'</span></span>'
+      +(names?'<span class="rv-top-s">'+names+'</span>':'')+'</summary>'
+      +'<div class="rv-top-q">'+fbEsc(VW?VW.COPY.top_research_sub:'Games most worth opening. This is not a ranking of bets.')+' Ordered by research-worthiness, not by raw gap.</div>'
+      +body+'</details>';
   }
   if(!fbWrLayerReady()){
     /* the shared research layer supplies the normalized gap the order needs;
@@ -54619,14 +54681,19 @@ function fbP4ForensicHTML(u,p,v){
 /* ═══ THE CANONICAL RESEARCH PAGE ═════════════════════════════════════════
    Every CFB game has one canonical research page (research/cfb/), built from
    the cached research objects football/cfb_terminal/build.js writes hourly.
-   The card links to it with the canonical status (BET / WAIT / RESEARCH /
-   PASS / INVESTIGATE / DATA FAULT / NO MARKET), read from board.json and
-   never recomputed here. No board.json, no chip: the link stays. */
-function fbTermLink(gid){
+   The card links to it with the game's RESEARCH STATUS only — the same label
+   the card's research view shows (reconciled with the live market by
+   fbCanonApply), never the terminal's mixed status word, so a research link
+   can never read BET, WAIT or a NO MARKET the page's own quotes contradict.
+   The decision is the EDGEDESK DECISION card's, and only its. */
+function fbTermLink(gid,rv){
   var r=FB.p4&&FB.p4.term?FB.p4.term[String(gid)]:null;
-  var tone={BET:'var(--pos)',RESEARCH:'var(--accent)',WAIT:'var(--gold)',INVESTIGATE:'var(--warn)',PASS:'var(--faint)',DATA_FAULT:'var(--neg)',NO_MARKET:'var(--faint)'};
+  var L=rv&&rv.research_label?rv.research_label:null;
+  var lab=L?L.label:(r?(r.research_label||null):null);
+  var tone={VERIFIED_MAJOR_DISAGREEMENT:'var(--pos)',VERIFIED_MAJOR:'var(--pos)',WORTH_RESEARCHING:'var(--accent)',INVESTIGATE:'var(--warn)',MARKET_FAULT:'var(--warn)',DATA_FAULT:'var(--neg)'};
+  var key=L?L.key:(r?r.research_status:null);
   return '<a class="mono" style="display:inline-block;margin-top:6px;font-size:11px" href="/research/cfb/#/game/'+encodeURIComponent(String(gid))+'">'
-    +(r?'<span style="color:'+(tone[r.status]||'var(--faint)')+'">●</span> '+fbEsc(r.status_label)+(r.verified?' · VERIFIED':'')+' · ':'')
+    +(lab?'<span class="mut">RESEARCH</span> <span style="color:'+(tone[key]||'var(--faint)')+'">●</span> '+fbEsc(lab)+' · ':'')
     +'Full research page →</a>';
 }
 function fbP4Card(u){
@@ -54636,10 +54703,11 @@ function fbP4Card(u){
   var confLine=m
     ? ((m.away.conference||'—')+' at '+(m.home.conference||'—')+' · '+m.matchup_label)
     : ((g.away_conference||'')+' at '+(g.home_conference||''));
+  var rvH=null;if(p&&p.status==='PREDICTED'){try{rvH=fbP4ViewFor(u,p);}catch(_){rvH=null;}}
   var head='<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(g.away_team)+' @ '+fbEsc(g.home_team)+'</div>'
     +'<div class="mdl-card-when">'+fbEsc(confLine)
     +' · wk '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
-    +fbMineActs('p4',g.game_id,g.home_team,g.away_team,u.t)+fbTermLink(g.game_id)+'</div>';
+    +fbMineActs('p4',g.game_id,g.home_team,g.away_team,u.t)+fbTermLink(g.game_id,rvH)+'</div>';
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card">'+head+'<div class="gd-nodata">'+fbEsc(p.status)+': '
       +fbEsc(p.reason||(p.missing||[]).join(', '))+'</div></div>';
@@ -55390,6 +55458,9 @@ function fbP4GateStatus(p,mkt,u,gap){
 }
 function fbP4StatusFor(p,mkt,u){
   if(!p||p.status!=='PREDICTED')return {t:'AWAITING DATA',c:'var(--faint)'};
+  /* a line dropped by the orientation check is a quote that exists and
+     cannot be trusted — fbP4Market's own DATA FAULT — never NO MARKET */
+  if(mkt&&mkt.spread_fault)return {t:'DATA FAULT',c:'var(--neg)',sub:'the joined line only agreed with EdgeDesk once negated: a market to verify, not a missing one'};
   if(!mkt||mkt.spread_line==null)return {t:'NO MARKET',c:'var(--faint)'};
   if(p.edge&&p.edge.spread&&p.edge.spread.recommendation==='PASS_LOW_CONFIDENCE')
     return {t:'THIN DATA',c:'var(--dim)'};
@@ -55453,6 +55524,11 @@ function fbP4StatusStrip(){
    exactly as it found it. */
 var FBP4_FILTER_DEFAULTS={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'};
 var FBP4_STATUSES=['VERIFIED MAJOR DISAGREEMENT','RESEARCH','INVESTIGATE','MARKET FAULT','THIN DATA','STALE QUOTE','NO MARKET','DATA FAULT','AWAITING DATA'];
+/* the words on screen (lib/edgedesk_vocab.js): the board keeps its internal
+   STALE QUOTE key for its exports and the research ranking, and shows the
+   canonical market-state word */
+var FBP4_STATUS_SHOW={'STALE QUOTE':'STALE MARKET'};
+function fbP4StatusShow(t){return FBP4_STATUS_SHOW[t]||t;}
 var FBP4_SORTS=[['kick','Kickoff'],['gap','Largest gap'],['ev_hi','Highest EV'],['ev_lo','Lowest EV'],['fresh','Freshest quote'],['conf','Conference'],['status','Status']];
 var FBP4_MARKETS=[['all','Any market state'],['with','With a market'],['without','No market'],['stale','Stale quote only']];
 
@@ -55746,7 +55822,7 @@ function fbP4FilterBarHTML(rows,visible){
   FBP4_STATUSES.forEach(function(s){
     var n=0;rows.forEach(function(r){if(r.st.t===s)n++;});
     if(!n&&f.status!==s)return;
-    h+=fbP4Chip(f.status===s,s+' ('+n+')','fbP4SetFilter(\'status\',\''+fbEsc(s)+'\')');
+    h+=fbP4Chip(f.status===s,fbP4StatusShow(s)+' ('+n+')','fbP4SetFilter(\'status\',\''+fbEsc(s)+'\')');
   });
   h+='</div></div>';
   h+='<div class="fbs-frow"><span class="fbs-flab">SORT</span><div class="fbs-fset">';
@@ -55865,7 +55941,7 @@ function fbP4BoardHTML(){
         +'<span class="mut">'+market+'</span>'
         +'<span>'+(r.gap==null?'—':r.gap.toFixed(1))+'</span>'
         +(st.verified?'<span class="rv-lab verified" title="'+fbEsc(st.sub||st.t)+'">'+st.t+'</span>'
-          :'<span style="color:'+st.c+'" title="'+fbEsc(st.sub||st.t)+'">'+st.t+'</span>');
+          :'<span style="color:'+st.c+'" title="'+fbEsc(st.sub||st.t)+'">'+fbP4StatusShow(st.t)+'</span>');
     }
     var qsub=fbP4QevSub(r);
     html+='<div'+(RV?' class="rv-row"':'')+' onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="'+grid+';cursor:pointer;border-bottom:'+(qsub?'0':'1px solid var(--border)')+';padding:7px 2px '+(qsub?'3px':'7px')+';color:var(--text)">'
@@ -55899,7 +55975,7 @@ function fbP4BoardHTML(){
   html+='<div class="gd-modelnote" style="margin-top:8px">Statuses are operational reads, never picks. '
     +'DATA FAULT, MARKET FAULT and INVESTIGATE mean “find out why the model and the market disagree” — with this model’s record, a big gap is more often missing information than an edge, '
     +'and that is most true in the smaller-market games this board now carries, where fewer books post a number and less enrichment data exists. '
-    +'THIN DATA marks games the model refuses to grade (an unrated or non-FBS opponent); STALE QUOTE means the only market number is an old capture; NO MARKET means no valid quote exists — never a zero line. '
+    +'THIN DATA marks games the model refuses to grade (an unrated or non-FBS opponent); STALE MARKET means the only market number is an old capture; NO MARKET means no valid quote exists — never a zero line. '
     +'Click a row for the full gate: projection, conferences, drivers, data completeness, and the rosters head-to-head.</div>';
   return html;
 }
@@ -60482,7 +60558,7 @@ function fbBriefRankings(opts){
   var footer=['EdgeDesk’s rankings are computed from its own play-by-play and roster data. They are independent of the AP and Coaches polls, EdgeDesk does not vote in either, and no poll is an input to any number here.'];
   if(H.teams_processed!=null) footer.push(H.teams_processed+' FBS teams processed'
     +(byCat.overall?', '+byCat.overall.ranked+' ranked and '+(byCat.overall.unranked_low_confidence||0)+' held out of the rank by the confidence gate':'')+'.');
-  footer.push('Research tool only — not betting advice. 21+.');
+  footer.push('Rankings are research context, not a betting decision. 21+.');
 
   return {
     headline:'EdgeDesk College Football Top '+top+' — '+D.season+' '+D.week_label+'.',
@@ -61095,7 +61171,7 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
-<script src="/lib/edgedesk_personal_ui.js?v=20260929a"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20260929b"></script>
 <script>
 try{
   window.EDReport.configure({url:SB_URL,key:SB_KEY,
