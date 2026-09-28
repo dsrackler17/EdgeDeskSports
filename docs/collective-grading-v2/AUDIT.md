@@ -155,8 +155,9 @@ close in JS, field by field.
   final valid pregame snapshot — spread market, line oriented to the canonical home team,
   observed strictly before kickoff and within the window (default 360 min, per sport in
   `fg2_config`); sources in priority `collective_odds` → `collective_odds_close` (untimed) →
-  `legacy_results_close` (untimed) → `edgedesk_capture`; one capture pass with several books is
-  settled by book priority. A snapshot that is the exact negative of the published close is an
+  `legacy_results_close` (untimed) → `edgedesk_capture`; lines sharing the final instant are
+  settled by breadth (the point the most books quoted — one EdgeDesk capture pass stamps every
+  point it saw with the same instant), then book priority, then snapshot id. A snapshot that is the exact negative of the published close is an
   orientation error and is refused. Never an in-game price, never a model's line, never invented.
 
 ## 4. The rebuild and the constraints
@@ -273,7 +274,38 @@ every grade it moves is in the audit trail.
    each model before/after, diagnostics.
 3. Same workflow, `commit: true`. It writes the settlement, syncs the legacy tables, and commits
    `collective/reports/football-v2-2026-<date>.{md,json}`.
-4. From then on the hourly settle job keeps it current and fails loudly on an ERROR diagnostic.
+4. From then on the hourly settle job keeps it current with `fg2_refresh` (the games that kicked
+   off in the last four days plus any finished game never processed) and fails loudly on an ERROR
+   diagnostic. A full-season rebuild is only ever run through the workflow.
+
+### Revision 2 (the first production run timed out)
+
+The first `commit: true` run installed revision 1 cleanly and then hit Supabase's 2-minute
+statement limit inside `fg2_import_edgedesk_capture`: it joined all of `public.signal_ticks`
+(every sport's tick history) to `public.signals`, copied every tick of the season, and each game's
+close lookup then scanned the whole snapshot store (`canonical_game_id = any(...) OR
+<joined link>.canonical_game_id = ...` defeats both indexes), as did every per-game prediction
+lookup (`game_id::text` casts). Being one statement, it rolled back: nothing was written.
+Revision 2, re-applied in place:
+
+* ticks are read per signal through `signal_ticks (sig_key, created_at)`, only inside
+  `[kickoff − (window + margin), kickoff + margin]` (`snapshot_import_margin_minutes`, 120) —
+  nothing earlier can ever be a close; the odds-feed relations take the same bound;
+* the per-game close lookup is two index lookups (stamped with the game, or linked to it);
+* expression indexes on exactly the `::text` casts the source views use;
+* each capture pass stamps every point it saw with one instant, so lines tied at the final
+  pregame instant are settled by **breadth** (`n_books`, the point the most books quoted) before
+  book priority — before this, a tie fell to snapshot-id order, and on the load test below the
+  one-book −7 would have been N4's close instead of the six-book −6.5;
+* `football_rebuild.js` runs each rebuild in its own transaction with `SET LOCAL
+  statement_timeout = '25min'` and refuses a database whose `install_revision` is older than it
+  needs; the settle job calls the bounded `fg2_refresh` instead of a whole-season rebuild.
+
+Load test (throwaway Postgres; scenario plus 2.0M other-sport ticks, 504k NFL ticks over 280
+events, 60k other-sport projections): revision 1 took 28.7 s for NFL and copied 507,390
+snapshots; revision 2 takes 1.9 s and copies 30,268, with identical closes and settlements
+except where the breadth rule applies. Applying revision 2 over revision 1 yields exactly what a
+fresh install does.
 
 Rollback: the migration is additive. `collective.grade_game_legacy_v1` is the original grader;
 the legacy grade rows changed by the sync are each recorded in `fg2_grade_audit` with their old state.

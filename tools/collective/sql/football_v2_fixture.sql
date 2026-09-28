@@ -186,11 +186,14 @@ create table public.signals (
   point numeric,
   commence_time timestamptz not null,
   home_team text, away_team text,
-  last_seen_at timestamptz
+  last_seen_at timestamptz,
+  n_books integer
 );
 create table public.signal_ticks (
   id bigserial primary key,
   sig_key text not null references public.signals(sig_key),
   created_at timestamptz not null,
-  point numeric
+  point numeric,
+  n_books integer
 );
+create index signal_ticks_sig_created_idx on public.signal_ticks (sig_key, created_at);

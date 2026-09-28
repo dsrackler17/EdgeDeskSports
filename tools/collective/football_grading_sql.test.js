@@ -74,6 +74,10 @@ chk('static: every settlement carries a grading version in its key',
   /primary key \(model_id, canonical_game_id, grading_version\)/.test(SQL));
 chk('static: one official close per game and market', /primary key \(canonical_game_id, market_type\)/.test(SQL));
 chk('static: the dry run is rolled back', /fg2_rebuild_preview[\s\S]*rolled back/.test(SQL));
+chk('static: no close lookup ORs across a join (a whole-store scan per game)', !/or l\.canonical_game_id\s*=/.test(SQL));
+chk('static: capture ticks are read per signal through (sig_key, created_at), never by scanning signal_ticks whole',
+  /join lateral \(\s*select \* from public\.signal_ticks k\s*where k\.sig_key = g\.sig_key/.test(SQL) &&
+  !/from public\.signal_ticks k\s*join public\.signals/.test(SQL));
 
 /* ═══ LIVE ════════════════════════════════════════════════════════════════ */
 function findPgBin() {
@@ -241,6 +245,7 @@ chk('links: every unresolved event is logged with its reason, none dropped',
   let n = 0;
   games.forEach(gm => {
     const snaps = qj(`select s2.source, s2.source_snapshot_id as snapshot_id, s2.source_event_id, s2.book, s2.market_type, s2.observed_at,
+        (s2.raw->>'n_books')::float as n_books,
         (case when l.orientation = 'swapped' then -coalesce(s2.home_line, -s2.away_line) else coalesce(s2.home_line, -s2.away_line) end)::float as home_line
       from collective.fg2_market_snapshots s2
       left join collective.fg2_event_links l on l.source = s2.source and l.source_event_id = s2.source_event_id and l.status = 'linked'
@@ -252,6 +257,28 @@ chk('links: every unresolved event is logged with its reason, none dropped',
     else n++;
   });
   chk(`parity: all ${games.length} official closes are exactly what lib/football_grading.js selects (${n} agree)`, n === games.length && n >= 19);
+})();
+
+/* ---- the capture import: bounded, and read by breadth ------------------------------ */
+(() => {
+  const n4 = q(`select json_build_object('snap', c.source_snapshot_id, 'home', c.home_spread::float, 'obs', c.observed_at,
+      'n', (select (m.raw->>'n_books')::int from collective.fg2_market_snapshots m where m.source = c.source and m.source_snapshot_id = c.source_snapshot_id))
+    from collective.fg2_official_closes c join public.fx_games f on f.game_id::text = c.canonical_game_id where f.tag = 'N4';`);
+  chk('capture: at the final pass (16:40) the close is the point six books quoted (-6.5), not the one-book -7',
+    n4 && n4.home === -6.5 && n4.n === 6 && Date.parse(n4.obs) === Date.parse('2026-09-27T16:40:00Z'), n4);
+  // the regression this guards: ordered by snapshot id alone, which 16:40 row comes first?
+  const byId = q(`select json_agg(x order by x.id collate "C") from (select m.source_snapshot_id as id, m.home_line::float as home
+      from collective.fg2_market_snapshots m where m.source = 'edgedesk_capture' and m.source_event_id = 'oa-n4'
+       and m.observed_at = '2026-09-27T16:40:00Z') x;`);
+  chk('capture: the 16:40 pass holds both points, and ordered by snapshot id alone the one-book -7 would have been the close',
+    byId && byId.some(x => x.home === -6.5) && byId[0].home === -7, byId);
+  chk('capture: a tick two days before kickoff is outside the window and is not copied',
+    q(`select count(*) from collective.fg2_market_snapshots where source = 'edgedesk_capture' and observed_at < '2026-09-27T09:00:00Z';`) === 0);
+  chk('capture: the in-game tick inside the margin is kept as evidence (and rejected as after kickoff)',
+    q(`select count(*) from collective.fg2_market_snapshots where source = 'edgedesk_capture' and observed_at = '2026-09-27T17:10:00Z';`) === 1 &&
+    byTag.N4 && byTag.N4.rejected.AFTER_KICKOFF === 1);
+  chk('capture: every tick copied carries its breadth', q(`select count(*) from collective.fg2_market_snapshots
+      where source = 'edgedesk_capture' and source_snapshot_id like 'signal_ticks:%' and jsonb_typeof(raw->'n_books') <> 'number';`) === 0);
 })();
 
 /* ---- EVERY settlement, recomputed in JS from the same inputs ----------------------- */
@@ -415,6 +442,34 @@ chk('legacy sync: game_detail now serves the recovered close', Number(q(`select 
   chk('idempotent: the second run audited nothing', q(`select count(*) from collective.fg2_grade_audit a where a.run_id = (select run_id from collective.fg2_rebuild_runs where sport = 'CFB' order by started_at desc, run_id limit 1);`) === 0);
 })();
 
+/* ---- the hourly refresh: recent and never-processed games, same answers ----------------- */
+(() => {
+  const snap = () => q(`select json_build_object(
+    's', (select md5(string_agg(row(model_id, canonical_game_id, prediction_id, ats_result, ats_exclusion, margin_error, brier, close_home_spread, close_snapshot_id)::text, '|' order by model_id, canonical_game_id)) from collective.fg2_settlements),
+    'c', (select md5(string_agg(row(canonical_game_id, home_spread, source_snapshot_id, close_class, close_status)::text, '|' order by canonical_game_id)) from collective.fg2_official_closes),
+    'm', (select count(*) from collective.fg2_market_snapshots));`);
+  const s1 = snap();
+  // N1 kicked off weeks ago; take its official close away and the refresh must find it again
+  q(`delete from collective.fg2_official_closes c using public.fx_games f where f.game_id::text = c.canonical_game_id and f.tag = 'N1';`);
+  const r = q(`select collective.fg2_refresh('NFL', 2026, 1);`);
+  const s2 = snap();
+  chk('refresh: a finished game with no official close is back in scope and gets the same close', JSON.stringify(s1) === JSON.stringify(s2), { s1, s2 });
+  chk('refresh: it commits, says its scope, and audits nothing when nothing changed',
+    r && r.committed === true && /^games from /.test(r.scope) && r.audit_rows_this_run === 0 && r.install_revision === 2, r && { scope: r.scope, a: r.audit_rows_this_run });
+  let bad = null;
+  try { q(`select collective.fg2_refresh('NFL', 2026, 0);`); } catch (e) { bad = String(e.message); }
+  chk('refresh: a zero-day refresh is refused', /at least 1/.test(bad || ''), bad);
+  chk('refresh: callable by the settle job (service_role), not the public',
+    q(`select has_function_privilege('service_role', 'collective.fg2_refresh(text, integer, integer)', 'execute')
+        and not has_function_privilege('anon', 'collective.fg2_refresh(text, integer, integer)', 'execute');`) === 't');
+})();
+chk('revision: the installed revision is 2', q(`select collective.fg2_install_revision();`) === 2);
+chk('lookups: per-game reads have indexes on the id casts the views use',
+  q(`select count(*) from pg_indexes where schemaname = 'collective' and indexname in ('fg2_games_id_text_idx', 'fg2_projections_game_text_idx', 'fg2_grades_projection_text_idx');`) === 3);
+chk('lookups: one signature per importer (no ambiguous overloads)',
+  q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'collective'
+      and p.proname in ('fg2_import_relation', 'fg2_import_collective_odds', 'fg2_import_edgedesk_capture', 'fg2_import_snapshots', 'fg2_link_events', 'fg2_rebuild');`) === 6);
+
 /* ---- the vectors, end to end in the database ------------------------------------------------ */
 (() => {
   const pairs = qj(`select h.id::text as h, a.id::text as a from collective.teams h join collective.teams a on a.sport_code = h.sport_code and a.code > h.code
@@ -466,6 +521,41 @@ chk('legacy sync: game_detail now serves the recovered close', Number(q(`select 
   try { q(`insert into collective.fg2_official_closes (canonical_game_id, market_type, close_status, grading_version) select canonical_game_id, market_type, 'X', 'x' from collective.fg2_official_closes limit 1;`); }
   catch (e) { closeDup = /duplicate key/.test(e.message); }
   chk('keys: a second official close for one game and market is refused', closeDup);
+})();
+
+/* ---- the regrade tool, end to end, under a database-wide time limit ------------------------------
+   Supabase's pooled connection cancels any statement after 2 minutes; a season
+   of capture history takes longer. The tool raises the limit for its own
+   transaction only (SET LOCAL), and refuses a database on an older revision. */
+(() => {
+  const RB = require(path.join(ROOT, 'tools', 'collective', 'football_rebuild.js'));
+  q(`alter database fg2 set statement_timeout = '150ms';`);
+  let plain = null;
+  try { q(`select pg_sleep(0.4);`); } catch (e) { plain = String(e.message); }
+  chk('tool: the database-wide limit cancels a long statement run plainly', /statement timeout/.test(plain || ''), plain);
+  chk('tool: the same statement wrapped the way the tool runs it completes',
+    q(RB.pgStatement(`select to_json('ok:' || pg_sleep(0.4)::text);`, '10min')) === 'ok:');
+  chk('tool: and the raised limit does not outlive its transaction', q(`show statement_timeout;`) === '150ms');
+  // the superuser initdb made: postgres when this runs as root (the harness
+  // switches to it), otherwise whoever runs the test (runner, in CI)
+  const url = `postgresql:///fg2?host=/tmp&port=${PORT}&user=${asPostgres ? 'postgres' : os.userInfo().username}`;
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'fg2-report-'));
+  const env = Object.assign({}, process.env, { PATH: BIN + ':' + process.env.PATH });
+  const tool = args => cp.spawnSync(process.execPath, [path.join(ROOT, 'tools', 'collective', 'football_rebuild.js'),
+    '--pg', '--pg-url', url, '--season', '2026', '--sport', 'NFL', '--out', out].concat(args), { encoding: 'utf8', env });
+  const ok = tool(['--commit']);
+  const files = fs.readdirSync(out);
+  chk('tool: a committed NFL regrade runs end to end and writes its reconciliation',
+    ok.status !== 1 && files.some(f => /^football-v2-2026-.*\.md$/.test(f)) && /football-v2 reconciliation/.test(ok.stdout),
+    { status: ok.status, err: (ok.stderr || '').slice(-400), files });
+  q(`update collective.fg2_config set value = '1' where key = 'install_revision';`);
+  const old = tool([]);
+  chk('tool: a database on an older revision is refused with the way out',
+    old.status === 1 && /revision 1/.test(old.stderr) && /apply_migration: true/.test(old.stderr), (old.stderr || '').slice(-300));
+  q(`update collective.fg2_config set value = '2' where key = 'install_revision'; alter database fg2 reset statement_timeout;`);
+  chk('tool: the revision the tool needs is the revision the migration installs',
+    RB.REQUIRED_REVISION === 2 && /\('install_revision', '2'::jsonb/.test(SQL));
+  try { fs.rmSync(out, { recursive: true, force: true }); } catch (_) {}
 })();
 
 done();

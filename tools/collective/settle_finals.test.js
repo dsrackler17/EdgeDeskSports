@@ -915,6 +915,24 @@ DRIVES.push((async () => {
   chk('fg2: a database without football-v2 is reported as not installed, never as a crash',
     nr.installed === false && nh.installed === false && S.describeRebuild(nr, l => nl.push(l)).length === 0 &&
     /not installed/.test(nl[0]), { nr, nh, nl });
+  const rcalls = [];
+  const rdb = { rpc: async (fn, args) => { rcalls.push({ fn, args }); return { sport: 'CFB', season: 2026, grading_version: 'football-v2',
+    scope: 'games from 2026-09-24', diagnostics: [], standings: [] }; } };
+  const rr = await S.fg2Refresh(rdb, 'CFB', 2026);
+  const rl = [];
+  S.describeRebuild(rr, l => rl.push(l));
+  chk('fg2: the hourly path calls fg2_refresh over the last four days, never a whole-season rebuild through the API',
+    rcalls.length === 1 && rcalls[0].fn === 'fg2_refresh' && rcalls[0].args.p_recent_days === 4 && S.REFRESH_DAYS === 4 &&
+    /games from 2026-09-24/.test(rl[0]), { rcalls, rl });
+  const stale = { rpc: async fn => {
+    if (fn === 'fg2_refresh') throw new Error('RPC fg2_refresh -> 404: {"code":"PGRST202","message":"Could not find the function collective.fg2_refresh"}');
+    return 'football-v2'; } };
+  const sr = await S.fg2Refresh(stale, 'NFL', 2026);
+  const sl = [];
+  chk('fg2: a database on the first revision (no fg2_refresh) is a warning to re-apply the migration, not a failed run',
+    sr.stale_revision === true && S.describeRebuild(sr, l => sl.push(l)).length === 0 && /re-apply/.test(sl[0]), { sr, sl });
+  const none = await S.fg2Refresh(missing, 'NFL', 2026);
+  chk('fg2: with no football-v2 at all the refresh is "not installed"', none.installed === false && !none.stale_revision, none);
   chk('--rebuild is a flag of its own and does not imply --commit',
     S.parseArgs(['--rebuild']).rebuild === true && S.parseArgs(['--rebuild']).commit === false);
 })().catch(e => chk('the fg2 hand-off drive did not crash', false, String(e && e.stack || e))));

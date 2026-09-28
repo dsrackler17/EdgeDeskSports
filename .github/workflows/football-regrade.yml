@@ -14,6 +14,12 @@
 #      the legacy tables, and commits the reconciliation report
 # Both are idempotent: running either twice changes nothing the second time.
 #
+# A season of captured prices takes longer than a pooled connection's default
+# statement limit (2 min on Supabase): football_rebuild.js runs each rebuild in
+# its own transaction with SET LOCAL statement_timeout (25 min), and refuses to
+# run against a database whose install_revision is older than it needs (the
+# message says to re-run with apply_migration: true).
+#
 # SECRET: SB_DB_URL (the pooled Postgres connection string the deploy
 # workflow already uses to apply SQL). Nothing here deploys an edge function;
 # supabase/functions/collective_public serves the settlement once deployed.
@@ -52,7 +58,7 @@ permissions:
 jobs:
   regrade:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
         with:

@@ -1146,8 +1146,12 @@ async function settleDirect(db, schema, game, final, close) {
       snapshot, insert-only, with where it came from, and the settlement
       decides by its own rule whether it is the close (a timed pregame
       snapshot of the Collective's own feed still outranks it).
-   2. A REBUILD after every settle: fg2_rebuild is idempotent, audits every
-      grade it changes, and writes nothing when nothing moved. */
+   2. A REFRESH after every settle: fg2_refresh re-runs the rebuild over the
+      games that kicked off in the last few days and any finished game the
+      settlement has never processed. It is idempotent, audits every grade it
+      changes, and writes nothing when nothing moved. The whole season is the
+      Football regrade workflow's job (psql, raised time limit): through the
+      API a season of capture history is more than one request may take. */
 function isFg2Missing(e) {
   return /PGRST20\d|42P01|42883|Could not find|does not exist/i.test(String(e && e.message));
 }
@@ -1195,16 +1199,36 @@ async function fg2Rebuild(db, sport, season, commit) {
     throw e;
   }
 }
+/* The hourly refresh (recent and never-processed games; always commits).
+   A database on revision 1 of the migration has fg2_rebuild but no
+   fg2_refresh: that is said as a stale install, not a crash. */
+const REFRESH_DAYS = 4;
+async function fg2Refresh(db, sport, season, days) {
+  try {
+    const rep = await db.rpc('fg2_refresh', { p_sport: sport, p_season: Number(season), p_recent_days: days || REFRESH_DAYS });
+    return rep || {};
+  } catch (e) {
+    if (!isFg2Missing(e)) throw e;
+    let stale = false;
+    try { stale = !!(await db.rpc('fg2_version', {})); } catch (_) { stale = false; }
+    return { installed: false, stale_revision: stale, detail: String(e.message).slice(0, 200) };
+  }
+}
 /* The rebuild report, said in the lines a run log is read in. ERROR-level
    diagnostics are returned so the run can fail on them. */
 function describeRebuild(rep, log) {
   const errors = [];
+  if (rep && rep.stale_revision) {
+    log('  [fg2] ::warning:: football-v2 is installed at an older revision with no fg2_refresh: re-apply ' +
+      'supabase/migrations/20260928120000_football_grading_v2.sql (Football regrade workflow, apply_migration: true)');
+    return errors;
+  }
   if (!rep || rep.installed === false) {
     log('  [fg2] football-v2 is not installed in this database: apply supabase/migrations/20260928120000_football_grading_v2.sql');
     return errors;
   }
   const cls = rep.close_classes || {};
-  log(`  [fg2] ${rep.sport} ${rep.season} ${rep.dry_run ? '(dry run) ' : ''}grading ${rep.grading_version}: ` +
+  log(`  [fg2] ${rep.sport} ${rep.season} ${rep.dry_run ? '(dry run) ' : ''}${rep.scope ? '(' + rep.scope + ') ' : ''}grading ${rep.grading_version}: ` +
     `${rep['7_settlements_evaluated'] || 0} model-game settlement(s) over ${rep['4_closes_computed'] || 0} game(s); ` +
     `${rep.audit_rows_this_run || 0} grade change(s) audited`);
   log('  [fg2] close classes: ' + (Object.keys(cls).sort().map(k => `${k}=${cls[k]}`).join(' ') || 'none'));
@@ -1851,8 +1875,9 @@ async function main() {
     }
   }
 
-  /* ---- football-v2: rebuild the settlement after every settle ------------
-     Idempotent and audited; writes nothing when nothing moved. An ERROR-level
+  /* ---- football-v2: refresh the settlement after every settle ------------
+     Recent and never-processed games; idempotent and audited; writes nothing
+     when nothing moved. An ERROR-level
      diagnostic (a gradable model-game left ungraded, a margin error beside a
      close with no ATS result) fails the run, so it is seen the hour it
      happens rather than a season later on the rankings page. */
@@ -1861,13 +1886,13 @@ async function main() {
     for (const sp of sports) {
       if (['NFL', 'CFB', 'CFB-P4', 'NCAAF'].indexOf(String(sp.code).toUpperCase()) < 0) continue;
       try {
-        const rep = await fg2Rebuild(db, sp.code, sp.season, true);
+        const rep = await fg2Refresh(db, sp.code, sp.season, REFRESH_DAYS);
         report.rebuild.push(rep);
         describeRebuild(rep, log).forEach(x =>
           report.failed.push({ sport: sp.code, reason: 'fg2_diagnostic_error', detail: x }));
       } catch (e) {
-        report.failed.push({ sport: sp.code, reason: 'fg2_rebuild_failed', detail: String(e.message).slice(0, 300) });
-        log(`  ! ${sp.code} ${sp.season}: the settlement rebuild failed: ${e.message}`);
+        report.failed.push({ sport: sp.code, reason: 'fg2_refresh_failed', detail: String(e.message).slice(0, 300) });
+        log(`  ! ${sp.code} ${sp.season}: the settlement refresh failed: ${e.message}`);
       }
     }
   }
@@ -1878,7 +1903,7 @@ async function main() {
 }
 
 module.exports = {
-  closeSnapshotsFor, handClosesToSettlement, fg2Rebuild, describeRebuild, isFg2Missing,
+  closeSnapshotsFor, handClosesToSettlement, fg2Rebuild, fg2Refresh, REFRESH_DAYS, describeRebuild, isFg2Missing,
   oddsBoard, closeFromBoardRow, findBoardRow, closesFromBoard, backfillCloses, CLOSE_FIELDS,
   teamKey, teamsAgree, teamsAgreeAny, namesOf, gameMatches, datesAgree, ymd, isFinalScore,
   isPlaceholderResult, espnCompleted,
