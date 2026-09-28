@@ -18,6 +18,8 @@
              football/matchup/metrics.json                opponent-adjusted unit data
              football/validation/movement_cfb.json        typical college line movement
              record/football/cfb_<season>.json            the immutable public record
+             football/cfb_ev/current.json                 the pinned EV calibrator + EV policy
+             lib/edgedesk_ev.js                           the EV Intelligence Engine
              football/cfb_production/reports/ops.json     operations health
 
      writes  football/cfb_terminal/board.json             compact slate rows (fast board)
@@ -28,6 +30,11 @@
                                                           APPEND-ONLY: the champion's number,
                                                           its terms and the QB state, once per
                                                           change — what "what changed?" reads
+             football/cfb_terminal/ev/<season>/ev_snapshots.jsonl
+                                                          APPEND-ONLY: frozen EV reads (game_ev_snapshot)
+             football/cfb_terminal/ev/<season>/ev_grades.jsonl
+                                                          APPEND-ONLY: one grade per EV snapshot
+             football/cfb_terminal/ev_validation.json · ev.csv
 
    Usage
      node football/cfb_terminal/build.js                 # build and write
@@ -56,6 +63,7 @@ const T = require(path.join(ROOT, 'lib', 'cfb_terminal.js'));
 /* THE EDGEDESK READ (lib/edgedesk_read.js): the price-specific read of every
    game, from the same champion distribution, stored as a probability curve */
 const RD = require(path.join(ROOT, 'lib', 'edgedesk_read.js'));
+const EV = require(path.join(ROOT, 'lib', 'edgedesk_ev.js'));
 const INTEG = (() => { try { return require(path.join(ROOT, 'football', 'cfb_lab', 'integrity.js')); } catch (e) { return null; } })();
 
 function arg(name, dflt) { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : dflt; }
@@ -86,6 +94,16 @@ function loadGovernance() {
   const artifact = readJson('football/cfb_v2/artifacts/decision/' + calVer + '/calibration.json');
   return { manifest: man, roles: byModel, champion: champion, champion_label: (byModel[champion] || {}).model_label || null,
     production_model: man.production_model_version || null, policy: policy, artifact: artifact, policy_dir: polDir, calibration_version: calVer };
+}
+
+/* THE EV ENGINE's pinned inputs (football/cfb_ev/current.json): the tournament's
+   calibrator artifact and the pre-registered EV policy. Missing files leave the
+   engine without a calibrator, which it reports as NO DECISION — never a guess. */
+function loadEv() {
+  const cur = readJson('football/cfb_ev/current.json', {});
+  const calV = cur.calibration || 'cfb_ev_calibration_v1', polV = cur.policy || 'cfb_ev_policy_v1';
+  return { current: cur, artifact: readJson('football/cfb_ev/artifacts/' + calV + '/calibration.json'), policy: readJson('football/cfb_ev/policy/' + polV + '.json'),
+    next100: readJson('football/cfb_ev/next100_freeze.json'), calibration_version: calV, policy_version: polV };
 }
 
 /* the calibrated-EV reality under the frozen calibration, stated from the artifact itself */
@@ -440,11 +458,18 @@ function buildGame(ctx, row) {
   const o = T.build(b);
   /* THE EDGEDESK READ: the stored inputs, then the read built through the same adapter the page uses */
   const readInputs = readBase(ctx, row, game, model, dist, v21, market, quotes, lines, expErr);
-  let read = null;
-  try { read = RD.read(RD.fromTerminal(o, readInputs, { now: now, integrity: INTEG })); }
+  let read = null, ev = null, rin = null;
+  try { rin = RD.fromTerminal(o, readInputs, { now: now, integrity: INTEG }); read = RD.read(rin); }
   catch (e) { read = null; ctx.warnings.push('EdgeDesk Read failed for ' + gid + ': ' + e.message); }
+  /* THE EDGEDESK EV READ: the same stored input and the same Read, priced through lib/edgedesk_ev.js */
+  /* the earlier frozen EV reads of this game (compact: what PRICE GONE and edge decay read), the same list the page gets */
+  const evHistory = ((ctx.evLedger && ctx.evLedger.byGame.get(gid)) || []).map(evHistRow);
+  if (rin && read) {
+    try { ev = EV.evRead(rin, read, { artifact: ctx.ev.artifact, policy: ctx.ev.policy, now: now, history: evHistory, typical_move_pts: ctx.cfg.typical_move_pts }); }
+    catch (e) { ev = null; ctx.warnings.push('EdgeDesk EV failed for ' + gid + ': ' + e.message); }
+  }
   ctx._governed = null;
-  return { object: o, read: read, read_inputs: readInputs, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
+  return { object: o, read: read, read_inputs: readInputs, ev: ev, ev_history: evHistory, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
 }
 
 /* --------------------------------------------------- the Read's stored inputs
@@ -485,7 +510,7 @@ function readBase(ctx, row, game, model, dist, v21, market, quotes, lines, expEr
     home_line: pj.market.home_line, observed_at: pj.market.as_of || pj.market.snapshot_ts || null });
   return {
     model: avail ? { available: true, model_version: model.model_version, home_margin: model.home_margin, fair_total: num(model.fair_total), home_points: num(model.home_points),
-      away_points: num(model.away_points), home_win_prob: num(model.home_win_prob) } : { available: false, reason: model ? model.unavailable_reason || null : null },
+      away_points: num(model.away_points), home_win_prob: num(model.home_win_prob), prediction_ts: model.prediction_ts || null } : { available: false, reason: model ? model.unavailable_reason || null : null },
     curve: curve, calibration: calibration,
     policy: { version: P.version || null, bet_enabled: !!P.bet_enabled, calibrated_ev_note: ctx.evNote || null, wait: P.wait ? { enabled: !!P.wait.enabled } : null },
     market: { quotes: market.quotes.concat(alts), open: open ? { home_line: open.home_line, observed_at: open.observed_at || open.derived_at || null, source: 'Model Lab OPEN (' + (open.quality || '') + ')' }
@@ -637,6 +662,20 @@ function readRow(r) {
     quote_check: r.market_quote_check.length > 0, flags: flags };
 }
 
+function evHistRow(x) {
+  return { snapshot_id: x.snapshot_id, side: x.side, selection_market: x.selection_market, policy_clears: !!x.policy_clears, probability_edge: x.probability_edge,
+    calibrated_ev: x.calibrated_ev, label: x.label, decision_ts: x.decision_ts, decision_status: x.decision_status };
+}
+/* the compact EV row the board carries */
+function evRow(e) {
+  if (!e) return null;
+  const s = e.selected;
+  return { decision: e.decision_status, policy_decision: e.policy_decision, timing: e.timing, reason: e.decision_reason_code, selected: s ? s.label : null, book: s ? s.book : null,
+    calibrated_ev: s ? s.calibrated_ev : null, raw_ev: s ? s.raw_model_ev : null, robust_ev: s ? s.conservative_ev : null, prob_ev_positive: s ? s.prob_ev_positive : null,
+    cover_calibrated: s ? s.p_cover_calibrated : null, break_even: s ? s.break_even_probability : null, calibration: e.calibration.status, edge_kind: e.edge_kind ? e.edge_kind.kind : null,
+    extreme: e.circuit_breaker ? e.circuit_breaker.level : null, blockers: e.blockers.map((b) => b.code) };
+}
+
 /* ------------------------------------------------------------ the Read record
    reads.jsonl  one frozen snapshot per change of a game's recordable read
    grades.jsonl one grade per snapshot, written once, after the close and the
@@ -679,6 +718,81 @@ function readLedger(season, built, ctx, now) {
     paths: { reads: base + '/reads.jsonl', grades: base + '/grades.jsonl', alternates: base + '/alternates.jsonl' } };
 }
 
+/* ------------------------------------------------------------ the EV record
+   ev_snapshots.jsonl  one frozen game_ev_snapshot per change of a game's EV read
+                       (the exact quote, probabilities, EVs, statuses, versions)
+   ev_grades.jsonl     one grade per snapshot, written once, after the close and
+                       the final: CLV at the recorded number and price, the
+                       settlement state and net units at the recorded price —
+                       never a better historical line. The original read is never rewritten. */
+function evLedgerLoad(season) {
+  const base = 'football/cfb_terminal/ev/' + season;
+  const snaps = readJsonl(base + '/ev_snapshots.jsonl'), grades = readJsonl(base + '/ev_grades.jsonl');
+  const byGame = new Map();
+  snaps.forEach((x) => { const k = String(x.game_id); if (!byGame.has(k)) byGame.set(k, []); byGame.get(k).push(x); });
+  byGame.forEach((a) => a.sort((x, y) => ms(x.decision_ts) - ms(y.decision_ts)));
+  return { base: base, snaps: snaps, grades: grades, byGame: byGame };
+}
+function evLedger(season, built, ctx, now) {
+  const L = ctx.evLedger, ids = new Set(L.snaps.map((x) => x.snapshot_id)), lastBy = {};
+  L.snaps.forEach((x) => { const k = x.game_id + '|' + x.selection_id; if (!lastBy[k] || ms(x.decision_ts) >= ms(lastBy[k].decision_ts)) lastBy[k] = x; });
+  const lastGame = {};
+  L.snaps.forEach((x) => { if (!lastGame[x.game_id] || ms(x.decision_ts) >= ms(lastGame[x.game_id].decision_ts)) lastGame[x.game_id] = x; });
+  const newSnaps = [];
+  built.forEach((b) => {
+    const e = b.ev;
+    if (!e || !EV.shouldRecord(e)) return;
+    const snap = EV.snapshot(e, { season: season, week_id: season + '-w' + String(b.object.week).padStart(2, '0') });
+    if (ids.has(snap.snapshot_id)) return;
+    const lg = lastGame[snap.game_id];
+    if (lg && lg.snapshot_id === snap.snapshot_id) return;
+    newSnaps.push(snap); ids.add(snap.snapshot_id); lastGame[snap.game_id] = snap;
+  });
+  const all = L.snaps.concat(newSnaps);
+  const gradedIds = new Set(L.grades.map((g) => g.snapshot_id));
+  const results = {}, closes = {};
+  readJsonl('football/cfb_lab/ledger/' + season + '/results.jsonl').forEach((x) => { results[String(x.game_id)] = x; });
+  ctx.ledger.lines.forEach((ls, gid) => { const c = ls.filter((l) => l.kind === 'CLOSE' && l.book === 'CONSENSUS' && l.market_type === 'spread' && num(l.home_line) != null).pop(); if (c) closes[gid] = c; });
+  const newGrades = [];
+  all.forEach((x) => {
+    if (gradedIds.has(x.snapshot_id)) return;
+    const res = results[x.game_id], c = closes[x.game_id];
+    if (!res || res.status !== 'FINAL' || num(res.final_margin) == null || !c) return;
+    const qs = (ctx.ledger.quotes.get(x.game_id) || []).filter((q) => !x.book_id || RD.bookKey(q.book) === RD.bookKey(x.book_id));
+    /* the close price: the same book's last pregame price at the closing number, when one exists */
+    const atClose = qs.filter((q) => num(q.home_line) === num(c.home_line) && num(q.price_home) != null && (!x.kickoff_ts || ms(q.observed_at) < ms(x.kickoff_ts))).sort((a, b) => ms(b.observed_at) - ms(a.observed_at))[0];
+    const g = EV.grade(x, { close_home_line: c.home_line, close_price_home: atClose ? atClose.price_home : null, close_price_away: atClose ? atClose.price_away : null, final_margin: res.final_margin,
+      later_quotes: qs.map((q) => ({ home_line: q.home_line, price_home: q.price_home, price_away: q.price_away, observed_at: q.observed_at, book: q.book })) });
+    g.graded_at = new Date(now).toISOString();
+    newGrades.push(g); gradedIds.add(x.snapshot_id);
+  });
+  const allGrades = L.grades.concat(newGrades);
+  const validation = EV.validation(all, allGrades, { season: season, calibrator_version: ctx.ev.calibration_version, policy_version: ctx.ev.policy_version });
+  validation.n_snapshots = all.length; validation.n_grades = allGrades.length;
+  validation.next100 = next100Progress(ctx.ev.next100, all, allGrades);
+  return { new_snaps: newSnaps, new_grades: newGrades, all: all, grades: allGrades, validation: validation,
+    paths: { snapshots: L.base + '/ev_snapshots.jsonl', grades: L.base + '/ev_grades.jsonl' } };
+}
+/* THE PROSPECTIVE NEXT-100 (football/cfb_ev/next100_freeze.json): the first
+   100 eligible EV reads after the freeze, under the frozen versions. Counted
+   here, never retuned on. */
+function next100Progress(F, snaps, grades) {
+  if (!F) return { status: 'NOT_FROZEN' };
+  const byId = {}; grades.forEach((g) => { byId[g.snapshot_id] = g; });
+  const elig = snaps.filter((s) => ms(s.decision_ts) >= ms(F.frozen_at) && s.engine === F.versions.engine && s.calibrator_version === F.versions.calibrator
+    && s.decision_policy_version === F.versions.policy && s.quote_fresh && s.calibration_status !== 'MISSING' && s.p_cover_calibrated != null)
+    .sort((a, b) => ms(a.decision_ts) - ms(b.decision_ts));
+  const seen = new Set(), pop = [];
+  elig.forEach((s) => { const k = s.game_id + '|' + s.selection_id; if (seen.has(k)) return; seen.add(k); pop.push(s); });
+  const first = pop.slice(0, F.population.n);
+  const g = first.map((s) => byId[s.snapshot_id]).filter(Boolean);
+  const set = first.map((s) => s.snapshot_id);
+  return { status: first.length >= F.population.n ? (g.length >= F.population.n ? 'COMPLETE' : 'POPULATION_FULL_GRADING') : 'COLLECTING', plan_id: F.plan_id, frozen_at: F.frozen_at,
+    n_eligible: first.length, n_target: F.population.n, n_graded: g.length, snapshot_ids: set,
+    metrics: g.length >= 30 ? EV.validation(first, g, { min_n: 30 }).groups.current_ev_version : null,
+    rule: F.rule };
+}
+
 /* ================================================================== main */
 function main() {
   const now = arg('now') ? Date.parse(arg('now')) : Date.now();
@@ -695,6 +809,7 @@ function main() {
   const recordRows = T.recordRows(recordFile.games || {});
   const ops = readJson('football/cfb_production/reports/ops.json', null);
   const tm = typicalMove();
+  const evCfg = loadEv();
   const cfg = { stale_minutes: gov.policy ? gov.policy.stale_minutes : 180, min_books: gov.policy ? gov.policy.min_books : 3,
     max_dispersion_iqr: gov.policy ? gov.policy.max_dispersion_iqr : 1.5, max_model_sd: gov.policy ? gov.policy.max_ensemble_sd : 6,
     min_probability_edge: gov.policy ? gov.policy.min_probability_edge : 0.01, ideal_probability_edge: gov.policy ? gov.policy.ideal_probability_edge : 0.02,
@@ -709,7 +824,7 @@ function main() {
     now: now, gov: gov, slate: slate, v2: v2, ledger: ledger, recordRows: recordRows, recordGames: recordFile.games || {},
     metrics: readJson('football/matchup/metrics.json', { teams: {} }), history: loadHistory(season), cfg: cfg,
     etsr: loadEtsr(season), divergenceCut: divergenceCut(), pricingFingerprint: pricingFingerprint(),
-    evNote: calibratedEvNote(gov.artifact, gov.policy), warnings: warnings,
+    evNote: calibratedEvNote(gov.artifact, gov.policy), warnings: warnings, ev: evCfg, evLedger: evLedgerLoad(season),
     degraded: ops && ops.system ? { status: ops.system.status, rule: ops.system.rule } : null,
     sources: [
       { id: 'slate', path: 'football/fbs/slate.json', updated_at: slate.generated_at, what: 'champion projections, reliability, QB context' },
@@ -727,6 +842,7 @@ function main() {
   ctx.projections = { byId: {} };
   (pj.games || []).forEach((g) => { ctx.projections.byId[String(g.game_id)] = g; });
   ctx.sources.push({ id: 'read', path: 'lib/edgedesk_read.js · football/cfb_terminal/read/' + season, updated_at: null, what: 'the EdgeDesk Read: price-specific reads, frozen read snapshots and their grades (append-only)' });
+  ctx.sources.push({ id: 'ev', path: 'lib/edgedesk_ev.js · football/cfb_ev/ · football/cfb_terminal/ev/' + season, updated_at: evCfg.artifact ? evCfg.artifact.built_at : null, what: 'the EdgeDesk EV engine: calibrated, robust, price-specific EV; frozen EV snapshots and their grades (append-only)' });
 
   /* the current slate: pregame games the champion slate carries */
   const upcoming = slate.games.filter((g) => ms(g.kickoff) != null && ms(g.kickoff) > now);
@@ -739,6 +855,7 @@ function main() {
      recordable state (append-only, deterministic ids), then grades against
      the close and the result — never a better historical line */
   const RL = readLedger(season, built, ctx, now);
+  const EVL = evLedger(season, built, ctx, now);
 
   /* the append-only history: one row per change */
   const newSnaps = [];
@@ -775,20 +892,29 @@ function main() {
   const board = Object.assign({ schema: 'edgedesk_cfb_terminal_board_v1' }, meta, {
     counts: T.counts(objs), terms: T.TERMS, statuses: T.STATUS, status_order: T.STATUS_KEYS,
     filters: Object.keys(T.FILTERS).map((k) => ({ key: k, label: T.FILTERS[k].label, n: objs.filter((o) => o.flags[k]).length })),
-    rows: objs.map((o) => Object.assign(boardRow(o), { read: readRow(readOf[o.game_id] && readOf[o.game_id].read) })),
+    rows: objs.map((o) => Object.assign(boardRow(o), { read: readRow(readOf[o.game_id] && readOf[o.game_id].read), ev: evRow(readOf[o.game_id] && readOf[o.game_id].ev) })),
+    ev_counts: (() => { const c = {}; objs.forEach((o) => { const e = readOf[o.game_id] && readOf[o.game_id].ev; const k = e ? e.decision_status : 'NO_EV'; c[k] = (c[k] || 0) + 1; }); return c; })(),
+    ev: { engine: EV.VERSION, calibration: evCfg.calibration_version, policy: evCfg.policy_version, policy_maturity: evCfg.policy ? evCfg.policy.maturity : null,
+      spread_calibrator: evCfg.artifact && evCfg.artifact.calibrators ? { status: evCfg.artifact.calibrators['cfb|spread|close'].status, method: evCfg.artifact.calibrators['cfb|spread|close'].method } : null },
     read_filters: Object.keys(RD.FILTERS).map((k) => ({ key: k, label: RD.FILTERS[k].label, n: objs.filter((o) => { const r = readOf[o.game_id] && readOf[o.game_id].read; try { return !!(r && RD.FILTERS[k].test(r)); } catch (e) { return false; } }).length })),
     read_counts: (() => { const c = {}; objs.forEach((o) => { const r = readOf[o.game_id] && readOf[o.game_id].read; const k = r ? r.timing_read : 'NO_READ'; c[k] = (c[k] || 0) + 1; }); return c; })(),
     read_validation: RL.validation,
     record_headline: { n: rec.n, ats: rec.ats, clv: rec.clv, versions: rec.versions }
   });
   const games = Object.assign({ schema: 'edgedesk_cfb_terminal_games_v1' }, meta, { games: {} });
-  objs.forEach((o) => { const x = readOf[o.game_id] || {}; games.games[o.game_id] = Object.assign({}, o, { read: x.read || null, read_inputs: x.read_inputs || null }); });
+  objs.forEach((o) => { const x = readOf[o.game_id] || {}; games.games[o.game_id] = Object.assign({}, o, { read: x.read || null, read_inputs: x.read_inputs || null, ev: x.ev || null, ev_history: x.ev_history || [] }); });
   games.read = { version: RD.VERSION, timing_vocabulary: RD.TIMING, research_vocabulary: RD.RESEARCH_STATUS, validation: RL.validation, ledger: RL.paths };
+  /* what the page needs to re-price the EV read on the reader's clock: the pinned calibrator artifact and policy */
+  games.ev = { engine: EV.VERSION, artifact: evCfg.artifact || null, policy: evCfg.policy || null, decision_vocabulary: EV.DECISION, tooltip: EV.TOOLTIP, validation: EVL.validation, ledger: EVL.paths };
   const record = Object.assign({ schema: 'edgedesk_cfb_terminal_record_v1' }, meta, {
     rows: recordRows, summary: rec, calibration: cal, benchmark: bench,
     by_version: Object.keys(rec.versions).map((v) => ({ model_version: v, summary: T.recordSummary(recordRows.filter((r) => (r.model_version || 'unknown') === v)) })),
     governance: Object.keys(gov.roles).map((k) => ({ model_version: k, role: gov.roles[k].role, label: gov.roles[k].model_label, since: gov.roles[k].effective_at, reason: gov.roles[k].reason })),
     postgame: pg, filters: Object.keys(T.RECORD_FILTERS),
+    ev_record: { validation: EVL.validation, snapshots: EVL.all.slice(-400), grades: EVL.grades.slice(-400),
+      rules: ['An EV snapshot is frozen when a game’s EV read changes: the exact quote, probabilities (raw and calibrated), EVs (raw, calibrated, robust), statuses and the model, calibrator and policy versions.',
+        'It is graded once, against the Model Lab’s consensus close and the final, at the recorded line and price — never a better historical line — and the original read is never rewritten.',
+        'Probability quality and CLV come first; realized ROI is shown with its interval; versions are never blended.'] },
     read_record: { validation: RL.validation, reads: RL.all_reads.slice(-400), grades: RL.all_grades.slice(-400),
       rules: ['A read is frozen the moment a game’s read changes to a recordable state: book, line, odds, time, fair, probability, EV and status.',
         'It is graded once, against the Model Lab’s consensus close and the final, at the recorded number — never a better historical line.',
@@ -815,11 +941,18 @@ function main() {
     if (rd && rd.actionable && rd.research_status.blocks_action) problems.push(o.game_id + ': an actionable Read on an unverified gap');
     if (rd && !rd.language.ok) problems.push(o.game_id + ': Read wording ' + rd.language.problems.join('; '));
     if (rd && o.edgedesk.available && rd.projected_margin != null && Math.abs(rd.projected_margin - o.edgedesk.home_margin) > 0.005) problems.push(o.game_id + ': the Read’s fair differs from the research object');
+    const ev = readOf[o.game_id] && readOf[o.game_id].ev;
+    if (ev && ev.actionable && !(evCfg.policy && evCfg.policy.betting_enabled && evCfg.policy.maturity === 'PRODUCTION')) problems.push(o.game_id + ': an actionable EV read while the EV policy is not in production');
+    if (ev && ev.actionable && ev.selected && !ev.selected.quote_fresh) problems.push(o.game_id + ': an actionable EV read on a stale quote');
+    if (ev && ev.actionable && (ev.research.blocks_action || !ev.integrity_gate_pass)) problems.push(o.game_id + ': an actionable EV read that fails the integrity gate');
+    if (ev && !ev.language.ok) problems.push(o.game_id + ': EV wording ' + ev.language.problems.join('; '));
+    if (ev && ev.fair_spread && o.edgedesk.available && Math.abs(ev.fair_spread.home_margin - o.edgedesk.home_margin) > 0.005) problems.push(o.game_id + ': the EV read’s fair differs from the research object');
+    if (ev && ev.price_curve && ev.price_curve.coherent === false && ev.decision_status !== 'NO_DECISION') problems.push(o.game_id + ': an incoherent price curve outside NO DECISION');
   });
   if (problems.length) { console.error('terminal build refused:\n  ' + problems.join('\n  ')); process.exit(1); }
 
   const summary = { games: objs.length, counts: board.counts, read_counts: board.read_counts, new_snapshots: newSnaps.length, postgame: pg.length, record_rows: recordRows.length,
-    read_snapshots_new: RL.new_reads.length, read_grades_new: RL.new_grades.length };
+    read_snapshots_new: RL.new_reads.length, read_grades_new: RL.new_grades.length, ev_counts: board.ev_counts, ev_snapshots_new: EVL.new_snaps.length, ev_grades_new: EVL.new_grades.length };
   if (check) { console.log(JSON.stringify(summary, null, 1)); return; }
   /* --out <dir>: write the four artifacts elsewhere (demos, replays); the
      append-only history is only ever written by a normal build */
@@ -839,6 +972,20 @@ function main() {
     if (RL.new_reads.length) fs.appendFileSync(path.join(rp, 'reads.jsonl'), RL.new_reads.map((x) => JSON.stringify(x)).join('\n') + '\n');
     if (RL.new_grades.length) fs.appendFileSync(path.join(rp, 'grades.jsonl'), RL.new_grades.map((x) => JSON.stringify(x)).join('\n') + '\n');
   }
+  if (outDir === OUT) {
+    const ep = path.join(OUT, 'ev', String(season));
+    if (EVL.new_snaps.length || EVL.new_grades.length) fs.mkdirSync(ep, { recursive: true });
+    if (EVL.new_snaps.length) fs.appendFileSync(path.join(ep, 'ev_snapshots.jsonl'), EVL.new_snaps.map((x) => JSON.stringify(x)).join('\n') + '\n');
+    if (EVL.new_grades.length) fs.appendFileSync(path.join(ep, 'ev_grades.jsonl'), EVL.new_grades.map((x) => JSON.stringify(x)).join('\n') + '\n');
+  }
+  w('ev_validation.json', Object.assign({}, EVL.validation, { schema: 'edgedesk_ev_validation_file_v1', generated_at: new Date(now).toISOString(), season: season, engine: EV.VERSION,
+    calibration: evCfg.calibration_version, policy: evCfg.policy_version }));
+  const evRows = objs.map((o) => readOf[o.game_id] && readOf[o.game_id].ev).filter(Boolean).map(EV.exportRow);
+  if (evRows.length) {
+    const cols = Object.keys(evRows[0]);
+    const cell = (v) => { if (v == null) return ''; const t = String(v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    fs.writeFileSync(path.join(outDir, 'ev.csv'), cols.join(',') + '\n' + evRows.map((r) => cols.map((c) => cell(r[c])).join(',')).join('\n') + '\n');
+  }
   w('read_validation.json', Object.assign({ schema: 'edgedesk_read_validation_file_v1', generated_at: new Date(now).toISOString(), season: season }, RL.validation));
   /* the Read for spreadsheets and API readers: one row per game (lib/edgedesk_read.js exportRow) */
   const csvRows = objs.map((o) => readOf[o.game_id] && readOf[o.game_id].read).filter(Boolean).map(RD.exportRow);
@@ -851,4 +998,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { buildGame, boardRow, snapshotRow, v1Dist, v2Dist, v1Sigma, loadGovernance, calibratedEvNote, typicalMove };
+module.exports = { buildGame, boardRow, snapshotRow, v1Dist, v2Dist, v1Sigma, loadGovernance, calibratedEvNote, typicalMove, loadEv, evRow, next100Progress };

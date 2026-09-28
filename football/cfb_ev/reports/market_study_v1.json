@@ -1,0 +1,1132 @@
+{
+ "schema": "edgedesk_ev_market_study_v1",
+ "built_at": "2026-09-28T03:52:22.702Z",
+ "archive": "sportsdataverse/cfbfastR-data betting/cfb_line_odds.csv.gz",
+ "swapped_games_excluded": 11,
+ "n_rows": 134644,
+ "by_market": {
+  "moneyline|close": {
+   "n": 63541,
+   "games": 6855,
+   "books": 25,
+   "seasons": [
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "mean_overround": 0.0373,
+   "methods": {
+    "proportional": {
+     "n": 63541,
+     "brier": 0.179353,
+     "log_loss": 0.535055,
+     "guard_tripped": 0
+    },
+    "power": {
+     "n": 63541,
+     "brier": 0.179261,
+     "log_loss": 0.53441,
+     "guard_tripped": 0
+    },
+    "additive": {
+     "n": 63541,
+     "brier": 0.179243,
+     "log_loss": 0.534403,
+     "guard_tripped": 0
+    },
+    "shin": {
+     "n": 63541,
+     "brier": 0.179243,
+     "log_loss": 0.534403,
+     "guard_tripped": 0
+    }
+   },
+   "best_vs_proportional": {
+    "method": "additive",
+    "delta_log_loss": -0.0006525,
+    "ci95": [
+     -0.0014266,
+     0.0001773
+    ]
+   },
+   "best_method": "additive",
+   "favorite_longshot": [
+    {
+     "bucket": "0.00–0.10",
+     "n": 4851,
+     "mean_raw_implied": 0.0761,
+     "mean_devig_proportional": 0.0736,
+     "mean_devig_power": 0.0493,
+     "realized": 0.0579,
+     "wilson95": [
+      0.0517,
+      0.0649
+     ],
+     "roi_after_vig": -0.2684,
+     "roi_ci95": [
+      -0.3529,
+      -0.184
+     ]
+    },
+    {
+     "bucket": "0.10–0.20",
+     "n": 13478,
+     "mean_raw_implied": 0.1522,
+     "mean_devig_proportional": 0.1467,
+     "mean_devig_power": 0.1252,
+     "realized": 0.1244,
+     "wilson95": [
+      0.119,
+      0.1301
+     ],
+     "roi_after_vig": -0.1899,
+     "roi_ci95": [
+      -0.2271,
+      -0.1527
+     ]
+    },
+    {
+     "bucket": "0.20–0.30",
+     "n": 16267,
+     "mean_raw_implied": 0.2511,
+     "mean_devig_proportional": 0.2418,
+     "mean_devig_power": 0.2263,
+     "realized": 0.2228,
+     "wilson95": [
+      0.2165,
+      0.2293
+     ],
+     "roi_after_vig": -0.1224,
+     "roi_ci95": [
+      -0.1479,
+      -0.097
+     ]
+    },
+    {
+     "bucket": "0.30–0.40",
+     "n": 14483,
+     "mean_raw_implied": 0.3483,
+     "mean_devig_proportional": 0.3362,
+     "mean_devig_power": 0.3271,
+     "realized": 0.3524,
+     "wilson95": [
+      0.3447,
+      0.3602
+     ],
+     "roi_after_vig": 0.0146,
+     "roi_ci95": [
+      -0.008,
+      0.0371
+     ]
+    },
+    {
+     "bucket": "0.40–0.50",
+     "n": 11786,
+     "mean_raw_implied": 0.4432,
+     "mean_devig_proportional": 0.4277,
+     "mean_devig_power": 0.4239,
+     "realized": 0.4558,
+     "wilson95": [
+      0.4468,
+      0.4648
+     ],
+     "roi_after_vig": 0.023,
+     "roi_ci95": [
+      0.0027,
+      0.0432
+     ]
+    },
+    {
+     "bucket": "0.50–0.60",
+     "n": 11639,
+     "mean_raw_implied": 0.5486,
+     "mean_devig_proportional": 0.5273,
+     "mean_devig_power": 0.5288,
+     "realized": 0.4893,
+     "wilson95": [
+      0.4802,
+      0.4984
+     ],
+     "roi_after_vig": -0.1042,
+     "roi_ci95": [
+      -0.1209,
+      -0.0876
+     ]
+    },
+    {
+     "bucket": "0.60–0.70",
+     "n": 14047,
+     "mean_raw_implied": 0.647,
+     "mean_devig_proportional": 0.6255,
+     "mean_devig_power": 0.632,
+     "realized": 0.6287,
+     "wilson95": [
+      0.6207,
+      0.6366
+     ],
+     "roi_after_vig": -0.027,
+     "roi_ci95": [
+      -0.0394,
+      -0.0146
+     ]
+    },
+    {
+     "bucket": "0.70–0.80",
+     "n": 15872,
+     "mean_raw_implied": 0.7494,
+     "mean_devig_proportional": 0.7219,
+     "mean_devig_power": 0.7348,
+     "realized": 0.7159,
+     "wilson95": [
+      0.7088,
+      0.7229
+     ],
+     "roi_after_vig": -0.0458,
+     "roi_ci95": [
+      -0.0552,
+      -0.0364
+     ]
+    },
+    {
+     "bucket": "0.80–0.90",
+     "n": 15494,
+     "mean_raw_implied": 0.8489,
+     "mean_devig_proportional": 0.8174,
+     "mean_devig_power": 0.8366,
+     "realized": 0.8479,
+     "wilson95": [
+      0.8422,
+      0.8535
+     ],
+     "roi_after_vig": -0.0012,
+     "roi_ci95": [
+      -0.0079,
+      0.0055
+     ]
+    },
+    {
+     "bucket": "0.90–1.00",
+     "n": 9165,
+     "mean_raw_implied": 0.9401,
+     "mean_devig_proportional": 0.9074,
+     "mean_devig_power": 0.9319,
+     "realized": 0.9225,
+     "wilson95": [
+      0.9169,
+      0.9278
+     ],
+     "roi_after_vig": -0.0187,
+     "roi_ci95": [
+      -0.0246,
+      -0.0129
+     ]
+    }
+   ],
+   "favorite": {
+    "n": 63189,
+    "realized": 0.7268,
+    "mean_devig": 0.7262,
+    "roi_after_vig": -0.0402
+   },
+   "underdog": {
+    "n": 63893,
+    "realized": 0.2757,
+    "mean_devig": 0.2763,
+    "roi_after_vig": -0.0836
+   },
+   "by_book": [
+    {
+     "book": "Bovada",
+     "n": 7112,
+     "roi_after_vig": -0.0516,
+     "calibration_gap": 0
+    },
+    {
+     "book": "WAGERWEB",
+     "n": 6360,
+     "roi_after_vig": -0.0639,
+     "calibration_gap": 0
+    },
+    {
+     "book": "HERITAGE",
+     "n": 6354,
+     "roi_after_vig": -0.0627,
+     "calibration_gap": 0
+    },
+    {
+     "book": "5Dimes & sportbet",
+     "n": 6350,
+     "roi_after_vig": -0.0493,
+     "calibration_gap": 0
+    },
+    {
+     "book": "PINNACLE",
+     "n": 6350,
+     "roi_after_vig": -0.0654,
+     "calibration_gap": 0
+    },
+    {
+     "book": "bet365",
+     "n": 6328,
+     "roi_after_vig": -0.068,
+     "calibration_gap": 0
+    },
+    {
+     "book": "intertops",
+     "n": 6326,
+     "roi_after_vig": -0.0786,
+     "calibration_gap": 0
+    },
+    {
+     "book": "BetCRIS & BOOKMAKER",
+     "n": 6268,
+     "roi_after_vig": -0.0677,
+     "calibration_gap": 0
+    },
+    {
+     "book": "JUSTBET",
+     "n": 6262,
+     "roi_after_vig": -0.0676,
+     "calibration_gap": 0
+    },
+    {
+     "book": "SBR",
+     "n": 6262,
+     "roi_after_vig": -0.0689,
+     "calibration_gap": 0
+    },
+    {
+     "book": "MATCHBOOK",
+     "n": 6216,
+     "roi_after_vig": -0.0599,
+     "calibration_gap": 0
+    },
+    {
+     "book": "BETOnline & SPORTS BETTING",
+     "n": 6178,
+     "roi_after_vig": -0.0564,
+     "calibration_gap": 0
+    },
+    {
+     "book": "youwager.eu",
+     "n": 6000,
+     "roi_after_vig": -0.0586,
+     "calibration_gap": 0
+    },
+    {
+     "book": "Sports Interaction",
+     "n": 5966,
+     "roi_after_vig": -0.0566,
+     "calibration_gap": 0
+    },
+    {
+     "book": "JAZZ",
+     "n": 5424,
+     "roi_after_vig": -0.0631,
+     "calibration_gap": 0
+    },
+    {
+     "book": "GT BETS",
+     "n": 5032,
+     "roi_after_vig": -0.0617,
+     "calibration_gap": 0
+    },
+    {
+     "book": "MY BOOKIE",
+     "n": 4874,
+     "roi_after_vig": -0.0548,
+     "calibration_gap": 0
+    },
+    {
+     "book": "BOVADA & bodog",
+     "n": 4550,
+     "roi_after_vig": -0.0591,
+     "calibration_gap": 0
+    },
+    {
+     "book": "DraftKings",
+     "n": 4322,
+     "roi_after_vig": -0.0708,
+     "calibration_gap": 0
+    },
+    {
+     "book": "BetPHOENIX",
+     "n": 3058,
+     "roi_after_vig": -0.0673,
+     "calibration_gap": 0
+    },
+    {
+     "book": "ESPN Bet",
+     "n": 2878,
+     "roi_after_vig": -0.0587,
+     "calibration_gap": 0
+    },
+    {
+     "book": "nitrogen sports",
+     "n": 2504,
+     "roi_after_vig": -0.0763,
+     "calibration_gap": 0
+    },
+    {
+     "book": "BETMANIA",
+     "n": 2458,
+     "roi_after_vig": -0.0415,
+     "calibration_gap": 0
+    },
+    {
+     "book": "SKYBOOK",
+     "n": 2454,
+     "roi_after_vig": -0.0445,
+     "calibration_gap": 0
+    },
+    {
+     "book": "CLOUDBET",
+     "n": 1196,
+     "roi_after_vig": -0.0779,
+     "calibration_gap": 0
+    }
+   ]
+  },
+  "moneyline|open": {
+   "n": 3159,
+   "games": 3159,
+   "books": 1,
+   "seasons": [
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ],
+   "mean_overround": 0.0363,
+   "methods": {
+    "proportional": {
+     "n": 3159,
+     "brier": 0.174471,
+     "log_loss": 0.523012,
+     "guard_tripped": 0
+    },
+    "power": {
+     "n": 3159,
+     "brier": 0.17444,
+     "log_loss": 0.522508,
+     "guard_tripped": 0
+    },
+    "additive": {
+     "n": 3159,
+     "brier": 0.174401,
+     "log_loss": 0.522475,
+     "guard_tripped": 0
+    },
+    "shin": {
+     "n": 3159,
+     "brier": 0.174401,
+     "log_loss": 0.522475,
+     "guard_tripped": 0
+    }
+   },
+   "best_vs_proportional": {
+    "method": "additive",
+    "delta_log_loss": -0.0005367,
+    "ci95": [
+     -0.001492,
+     0.0003433
+    ]
+   },
+   "best_method": "additive",
+   "favorite_longshot": [
+    {
+     "bucket": "0.00–0.10",
+     "n": 318,
+     "mean_raw_implied": 0.0701,
+     "mean_devig_proportional": 0.0682,
+     "mean_devig_power": 0.0485,
+     "realized": 0.0597,
+     "wilson95": [
+      0.0386,
+      0.0914
+     ],
+     "roi_after_vig": -0.2453,
+     "roi_ci95": [
+      -0.5801,
+      0.0896
+     ]
+    },
+    {
+     "bucket": "0.10–0.20",
+     "n": 670,
+     "mean_raw_implied": 0.1532,
+     "mean_devig_proportional": 0.1474,
+     "mean_devig_power": 0.1247,
+     "realized": 0.1164,
+     "wilson95": [
+      0.0943,
+      0.1429
+     ],
+     "roi_after_vig": -0.2383,
+     "roi_ci95": [
+      -0.401,
+      -0.0757
+     ]
+    },
+    {
+     "bucket": "0.20–0.30",
+     "n": 871,
+     "mean_raw_implied": 0.2505,
+     "mean_devig_proportional": 0.242,
+     "mean_devig_power": 0.2281,
+     "realized": 0.2445,
+     "wilson95": [
+      0.2172,
+      0.2742
+     ],
+     "roi_after_vig": -0.0292,
+     "roi_ci95": [
+      -0.1438,
+      0.0854
+     ]
+    },
+    {
+     "bucket": "0.30–0.40",
+     "n": 679,
+     "mean_raw_implied": 0.3497,
+     "mean_devig_proportional": 0.3374,
+     "mean_devig_power": 0.3284,
+     "realized": 0.3328,
+     "wilson95": [
+      0.2984,
+      0.3691
+     ],
+     "roi_after_vig": -0.0515,
+     "roi_ci95": [
+      -0.1531,
+      0.0502
+     ]
+    },
+    {
+     "bucket": "0.40–0.50",
+     "n": 532,
+     "mean_raw_implied": 0.4436,
+     "mean_devig_proportional": 0.4277,
+     "mean_devig_power": 0.4239,
+     "realized": 0.4774,
+     "wilson95": [
+      0.4353,
+      0.5199
+     ],
+     "roi_after_vig": 0.0747,
+     "roi_ci95": [
+      -0.0214,
+      0.1708
+     ]
+    },
+    {
+     "bucket": "0.50–0.60",
+     "n": 442,
+     "mean_raw_implied": 0.5521,
+     "mean_devig_proportional": 0.5292,
+     "mean_devig_power": 0.5309,
+     "realized": 0.4842,
+     "wilson95": [
+      0.4379,
+      0.5307
+     ],
+     "roi_after_vig": -0.1235,
+     "roi_ci95": [
+      -0.2081,
+      -0.0389
+     ]
+    },
+    {
+     "bucket": "0.60–0.70",
+     "n": 665,
+     "mean_raw_implied": 0.6442,
+     "mean_devig_proportional": 0.6223,
+     "mean_devig_power": 0.6289,
+     "realized": 0.6075,
+     "wilson95": [
+      0.5699,
+      0.6439
+     ],
+     "roi_after_vig": -0.0573,
+     "roi_ci95": [
+      -0.1151,
+      0.0005
+     ]
+    },
+    {
+     "bucket": "0.70–0.80",
+     "n": 829,
+     "mean_raw_implied": 0.7496,
+     "mean_devig_proportional": 0.724,
+     "mean_devig_power": 0.7361,
+     "realized": 0.7286,
+     "wilson95": [
+      0.6973,
+      0.7578
+     ],
+     "roi_after_vig": -0.028,
+     "roi_ci95": [
+      -0.0685,
+      0.0125
+     ]
+    },
+    {
+     "bucket": "0.80–0.90",
+     "n": 741,
+     "mean_raw_implied": 0.8455,
+     "mean_devig_proportional": 0.8145,
+     "mean_devig_power": 0.8333,
+     "realized": 0.8381,
+     "wilson95": [
+      0.8098,
+      0.8628
+     ],
+     "roi_after_vig": -0.0093,
+     "roi_ci95": [
+      -0.0408,
+      0.0222
+     ]
+    },
+    {
+     "bucket": "0.90–1.00",
+     "n": 571,
+     "mean_raw_implied": 0.9399,
+     "mean_devig_proportional": 0.9101,
+     "mean_devig_power": 0.9321,
+     "realized": 0.9212,
+     "wilson95": [
+      0.8962,
+      0.9406
+     ],
+     "roi_after_vig": -0.0202,
+     "roi_ci95": [
+      -0.0438,
+      0.0034
+     ]
+    }
+   ],
+   "favorite": {
+    "n": 3146,
+    "realized": 0.74,
+    "mean_devig": 0.7379,
+    "roi_after_vig": -0.0358
+   },
+   "underdog": {
+    "n": 3172,
+    "realized": 0.262,
+    "mean_devig": 0.264,
+    "roi_after_vig": -0.0883
+   },
+   "by_book": [
+    {
+     "book": "5Dimes & sportbet",
+     "n": 6318,
+     "roi_after_vig": -0.0621,
+     "calibration_gap": 0
+    }
+   ]
+  },
+  "spread|close": {
+   "n": 64581,
+   "games": 3431,
+   "books": 22,
+   "seasons": [
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ],
+   "mean_overround": 0.0427,
+   "methods": {
+    "proportional": {
+     "n": 64581,
+     "brier": 0.250026,
+     "log_loss": 0.693199,
+     "guard_tripped": 0
+    },
+    "power": {
+     "n": 64581,
+     "brier": 0.250036,
+     "log_loss": 0.693217,
+     "guard_tripped": 0
+    },
+    "additive": {
+     "n": 64581,
+     "brier": 0.250032,
+     "log_loss": 0.693211,
+     "guard_tripped": 0
+    },
+    "shin": {
+     "n": 64581,
+     "brier": 0.250032,
+     "log_loss": 0.693211,
+     "guard_tripped": 0
+    }
+   },
+   "best_method": "proportional",
+   "favorite_longshot": [
+    {
+     "bucket": "0.00–0.46",
+     "n": 258,
+     "mean_raw_implied": 0.4361,
+     "mean_devig_proportional": 0.4196,
+     "mean_devig_power": 0.4146,
+     "realized": 0.5039,
+     "wilson95": [
+      0.4433,
+      0.5644
+     ],
+     "roi_after_vig": 0.1518,
+     "roi_ci95": [
+      0.0118,
+      0.2918
+     ]
+    },
+    {
+     "bucket": "0.46–0.48",
+     "n": 628,
+     "mean_raw_implied": 0.4725,
+     "mean_devig_proportional": 0.4578,
+     "mean_devig_power": 0.4555,
+     "realized": 0.5127,
+     "wilson95": [
+      0.4737,
+      0.5516
+     ],
+     "roi_after_vig": 0.085,
+     "roi_ci95": [
+      0.0022,
+      0.1678
+     ]
+    },
+    {
+     "bucket": "0.48–0.50",
+     "n": 2857,
+     "mean_raw_implied": 0.4914,
+     "mean_devig_proportional": 0.4779,
+     "mean_devig_power": 0.4768,
+     "realized": 0.4792,
+     "wilson95": [
+      0.4609,
+      0.4975
+     ],
+     "roi_after_vig": -0.0245,
+     "roi_ci95": [
+      -0.0618,
+      0.0128
+     ]
+    },
+    {
+     "bucket": "0.50–0.52",
+     "n": 36146,
+     "mean_raw_implied": 0.5115,
+     "mean_devig_proportional": 0.4941,
+     "mean_devig_power": 0.4937,
+     "realized": 0.4951,
+     "wilson95": [
+      0.49,
+      0.5003
+     ],
+     "roi_after_vig": -0.0318,
+     "roi_ci95": [
+      -0.0419,
+      -0.0218
+     ]
+    },
+    {
+     "bucket": "0.52–0.54",
+     "n": 85584,
+     "mean_raw_implied": 0.5257,
+     "mean_devig_proportional": 0.5025,
+     "mean_devig_power": 0.5026,
+     "realized": 0.5027,
+     "wilson95": [
+      0.4993,
+      0.506
+     ],
+     "roi_after_vig": -0.0438,
+     "roi_ci95": [
+      -0.0502,
+      -0.0374
+     ]
+    },
+    {
+     "bucket": "0.54–0.56",
+     "n": 2892,
+     "mean_raw_implied": 0.547,
+     "mean_devig_proportional": 0.5243,
+     "mean_devig_power": 0.5258,
+     "realized": 0.4962,
+     "wilson95": [
+      0.478,
+      0.5144
+     ],
+     "roi_after_vig": -0.0926,
+     "roi_ci95": [
+      -0.1259,
+      -0.0592
+     ]
+    },
+    {
+     "bucket": "0.56–1.00",
+     "n": 797,
+     "mean_raw_implied": 0.5829,
+     "mean_devig_proportional": 0.5554,
+     "mean_devig_power": 0.5593,
+     "realized": 0.5132,
+     "wilson95": [
+      0.4785,
+      0.5477
+     ],
+     "roi_after_vig": -0.1189,
+     "roi_ci95": [
+      -0.1786,
+      -0.0592
+     ]
+    }
+   ],
+   "favorite": {
+    "n": 26480,
+    "realized": 0.5088,
+    "mean_devig": 0.5129,
+    "roi_after_vig": -0.0461
+   },
+   "underdog": {
+    "n": 102682,
+    "realized": 0.4977,
+    "mean_devig": 0.4967,
+    "roi_after_vig": -0.0391
+   },
+   "by_book": [
+    {
+     "book": "BETOnline & SPORTS BETTING",
+     "n": 6738,
+     "roi_after_vig": -0.0444,
+     "calibration_gap": 0
+    },
+    {
+     "book": "HERITAGE",
+     "n": 6738,
+     "roi_after_vig": -0.0232,
+     "calibration_gap": 0
+    },
+    {
+     "book": "youwager.eu",
+     "n": 6736,
+     "roi_after_vig": -0.0451,
+     "calibration_gap": 0
+    },
+    {
+     "book": "bet365",
+     "n": 6734,
+     "roi_after_vig": -0.0454,
+     "calibration_gap": 0
+    },
+    {
+     "book": "JAZZ",
+     "n": 6728,
+     "roi_after_vig": -0.0452,
+     "calibration_gap": 0
+    },
+    {
+     "book": "WAGERWEB",
+     "n": 6728,
+     "roi_after_vig": -0.0453,
+     "calibration_gap": 0
+    },
+    {
+     "book": "PINNACLE",
+     "n": 6722,
+     "roi_after_vig": -0.0285,
+     "calibration_gap": 0
+    },
+    {
+     "book": "5Dimes & sportbet",
+     "n": 6716,
+     "roi_after_vig": -0.0307,
+     "calibration_gap": 0
+    },
+    {
+     "book": "intertops",
+     "n": 6714,
+     "roi_after_vig": -0.0453,
+     "calibration_gap": 0
+    },
+    {
+     "book": "BetCRIS & BOOKMAKER",
+     "n": 6710,
+     "roi_after_vig": -0.0454,
+     "calibration_gap": 0
+    },
+    {
+     "book": "GT BETS",
+     "n": 6706,
+     "roi_after_vig": -0.0436,
+     "calibration_gap": 0
+    },
+    {
+     "book": "BOVADA & bodog",
+     "n": 6704,
+     "roi_after_vig": -0.0452,
+     "calibration_gap": 0
+    },
+    {
+     "book": "JUSTBET",
+     "n": 6702,
+     "roi_after_vig": -0.0453,
+     "calibration_gap": 0
+    },
+    {
+     "book": "SBR",
+     "n": 6702,
+     "roi_after_vig": -0.0451,
+     "calibration_gap": 0
+    },
+    {
+     "book": "Sports Interaction",
+     "n": 6672,
+     "roi_after_vig": -0.0445,
+     "calibration_gap": 0
+    },
+    {
+     "book": "MATCHBOOK",
+     "n": 6616,
+     "roi_after_vig": -0.0275,
+     "calibration_gap": 0
+    },
+    {
+     "book": "MY BOOKIE",
+     "n": 6052,
+     "roi_after_vig": -0.0447,
+     "calibration_gap": 0
+    },
+    {
+     "book": "BetPHOENIX",
+     "n": 3936,
+     "roi_after_vig": -0.0451,
+     "calibration_gap": 0
+    },
+    {
+     "book": "BETMANIA",
+     "n": 3932,
+     "roi_after_vig": -0.0324,
+     "calibration_gap": 0
+    },
+    {
+     "book": "SKYBOOK",
+     "n": 3928,
+     "roi_after_vig": -0.0449,
+     "calibration_gap": 0
+    },
+    {
+     "book": "nitrogen sports",
+     "n": 2712,
+     "roi_after_vig": -0.0312,
+     "calibration_gap": 0
+    },
+    {
+     "book": "CLOUDBET",
+     "n": 1236,
+     "roi_after_vig": -0.0334,
+     "calibration_gap": 0
+    }
+   ]
+  },
+  "spread|open": {
+   "n": 3363,
+   "games": 3363,
+   "books": 1,
+   "seasons": [
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ],
+   "mean_overround": 0.0476,
+   "methods": {
+    "proportional": {
+     "n": 3363,
+     "brier": 0.249921,
+     "log_loss": 0.692989,
+     "guard_tripped": 0
+    },
+    "power": {
+     "n": 3363,
+     "brier": 0.249918,
+     "log_loss": 0.692982,
+     "guard_tripped": 0
+    },
+    "additive": {
+     "n": 3363,
+     "brier": 0.249919,
+     "log_loss": 0.692984,
+     "guard_tripped": 0
+    },
+    "shin": {
+     "n": 3363,
+     "brier": 0.249919,
+     "log_loss": 0.692984,
+     "guard_tripped": 0
+    }
+   },
+   "best_vs_proportional": {
+    "method": "power",
+    "delta_log_loss": -0.000007,
+    "ci95": [
+     -0.000028,
+     0.000015
+    ]
+   },
+   "best_method": "power",
+   "favorite_longshot": [
+    {
+     "bucket": "0.00–0.46",
+     "n": 1,
+     "mean_raw_implied": 0.4545,
+     "mean_devig_proportional": 0.438,
+     "mean_devig_power": 0.4344,
+     "realized": 0,
+     "wilson95": [
+      0,
+      0.7935
+     ],
+     "roi_after_vig": -1,
+     "roi_ci95": null
+    },
+    {
+     "bucket": "0.46–0.48",
+     "n": 12,
+     "mean_raw_implied": 0.4753,
+     "mean_devig_proportional": 0.4564,
+     "mean_devig_power": 0.4537,
+     "realized": 0.4167,
+     "wilson95": [
+      0.1933,
+      0.6805
+     ],
+     "roi_after_vig": -0.1208,
+     "roi_ci95": [
+      -0.7356,
+      0.494
+     ]
+    },
+    {
+     "bucket": "0.48–0.50",
+     "n": 15,
+     "mean_raw_implied": 0.4878,
+     "mean_devig_proportional": 0.4675,
+     "mean_devig_power": 0.4654,
+     "realized": 0.4667,
+     "wilson95": [
+      0.2481,
+      0.6988
+     ],
+     "roi_after_vig": -0.0433,
+     "roi_ci95": [
+      -0.5791,
+      0.4924
+     ]
+    },
+    {
+     "bucket": "0.50–0.52",
+     "n": 155,
+     "mean_raw_implied": 0.506,
+     "mean_devig_proportional": 0.4851,
+     "mean_devig_power": 0.4841,
+     "realized": 0.471,
+     "wilson95": [
+      0.394,
+      0.5493
+     ],
+     "roi_after_vig": -0.0694,
+     "roi_ci95": [
+      -0.2252,
+      0.0865
+     ]
+    },
+    {
+     "bucket": "0.52–0.54",
+     "n": 6423,
+     "mean_raw_implied": 0.5239,
+     "mean_devig_proportional": 0.5001,
+     "mean_devig_power": 0.5001,
+     "realized": 0.5001,
+     "wilson95": [
+      0.4879,
+      0.5123
+     ],
+     "roi_after_vig": -0.0455,
+     "roi_ci95": [
+      -0.0689,
+      -0.0222
+     ]
+    },
+    {
+     "bucket": "0.54–0.56",
+     "n": 107,
+     "mean_raw_implied": 0.5469,
+     "mean_devig_proportional": 0.5204,
+     "mean_devig_power": 0.5218,
+     "realized": 0.5421,
+     "wilson95": [
+      0.4478,
+      0.6334
+     ],
+     "roi_after_vig": -0.0087,
+     "roi_ci95": [
+      -0.1822,
+      0.1647
+     ]
+    },
+    {
+     "bucket": "0.56–1.00",
+     "n": 13,
+     "mean_raw_implied": 0.5673,
+     "mean_devig_proportional": 0.545,
+     "mean_devig_power": 0.5477,
+     "realized": 0.6154,
+     "wilson95": [
+      0.3552,
+      0.8229
+     ],
+     "roi_after_vig": 0.0845,
+     "roi_ci95": [
+      -0.4007,
+      0.5697
+     ]
+    }
+   ],
+   "favorite": {
+    "n": 170,
+    "realized": 0.5353,
+    "mean_devig": 0.5201,
+    "roi_after_vig": -0.0157
+   },
+   "underdog": {
+    "n": 6556,
+    "realized": 0.4991,
+    "mean_devig": 0.4995,
+    "roi_after_vig": -0.0463
+   },
+   "by_book": [
+    {
+     "book": "5Dimes & sportbet",
+     "n": 6726,
+     "roi_after_vig": -0.0455,
+     "calibration_gap": 0
+    }
+   ]
+  }
+ },
+ "rule": "De-vigged market probabilities are a BENCHMARK. The best method by log loss is used for market-benchmark displays only; no favourite-longshot correction enters EdgeDesk EV."
+}

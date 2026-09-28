@@ -12,6 +12,9 @@ the Lab appends its snapshots. No page runs a model.
 | `record.json` | graded rows, calibration, benchmark, versions, postgame cards | every build |
 | `brief.json` | the weekly research brief | every build |
 | `history/<season>/snapshots.jsonl` | **append-only**: the champion's number, its additive terms and the QB state, one row per change (hash id) | when something changed |
+| `ev/<season>/ev_snapshots.jsonl` | **append-only**: the canonical EV snapshot (`lib/edgedesk_ev.js snapshot`, `edev_` id), one row per new read | when an EV read changed |
+| `ev/<season>/ev_grades.jsonl` | **append-only**: the EV snapshot grades (CLV at the recorded line and price, result, timing) | after the close / the final |
+| `ev_validation.json`, `ev.csv` | the EV live validation by version boundary, and the EV export | every build |
 
 ```
 npm run cfb:terminal            # build and write
