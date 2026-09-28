@@ -241,6 +241,58 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .gx-none{font-size:11.5px;color:var(--faint);line-height:1.5;padding:2px 0}
 .gx-foot{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:8px}
 .gx-foot b{color:var(--dim)}
+.gx-grid.qev-g{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:560px){.gx-grid.qev-g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ═══ QUOTE-LEVEL EV ═══ a research terminal, not a casino: colour and sign
+   carry the direction, never a fill or a flash; unavailable reads as a dash
+   with its reason, never as 0.0% */
+.qev-sub{cursor:pointer;border-bottom:1px solid var(--border);padding:0 2px 7px 22px}
+.qev-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 14px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);line-height:1.45}
+.qev-row.warn{border-left:2px solid var(--warn);padding-left:6px}.qev-row.audit{border-left:2px solid var(--faint);padding-left:6px;opacity:.85}
+.qev-k{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.qev-ev{font-weight:700}.qev-ev.pos{color:var(--pos)}.qev-ev.neg{color:var(--neg)}.qev-ev.flat{color:var(--text)}.qev-ev.mut{color:var(--faint)}
+.qev-na{color:var(--faint);font-weight:700}
+.qev-q{color:var(--text)}
+.qev-banner{font-size:9.5px;font-weight:700;letter-spacing:.06em;border:1px solid var(--border);border-radius:5px;padding:1px 6px}
+.qev-banner.warn{color:var(--warn);border-color:rgba(217,154,43,.5)}.qev-banner.mut{color:var(--faint)}
+.qev-alt{display:flex;flex-wrap:wrap;gap:3px 14px;flex-basis:100%}
+.qev-dec .gx-st{font-size:9.5px;padding:1px 5px}
+.qev-flags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.qev-flag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);border:1px solid var(--border);border-radius:5px;padding:1px 6px;cursor:help}
+.qev-flag.hi{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.qev-lc{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.05em;color:var(--warn)}
+.qev-card{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface);margin-top:4px}
+.qev-card.warn{border-color:rgba(217,154,43,.55)}.qev-card.audit{opacity:.9}.qev-card.na{background:transparent}
+.qev-h{font-size:10px;letter-spacing:.1em;font-weight:800;color:var(--faint);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.qev-big{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;margin-top:4px;color:var(--text)}
+.qev-src{font-size:11px;color:var(--faint);margin-top:2px}
+.qev-fair{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12px}
+.qev-explain{font-size:12px;line-height:1.55;color:var(--dim);margin-top:10px}
+.qev-three{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12px;border-top:1px solid var(--border);padding-top:8px}
+.qev-decline{font-size:11px;line-height:1.5;color:var(--faint);margin-top:6px}
+.qev-t{width:100%;font-size:11.5px}.qev-t td,.qev-t th{white-space:nowrap}
+.qev-t tr.qev-hl td{background:rgba(47,167,154,.07)}
+.qev-t tr.qev-dom td{opacity:.5}
+.qev-t tr.qev-hyp td{font-style:italic;color:var(--faint)}
+.qev-hypt{border-style:dashed}
+.qev-tag{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.04em;color:var(--accent);text-transform:uppercase}
+.qev-other{font-family:'JetBrains Mono',monospace;font-size:11.5px;margin:4px 0;color:var(--dim)}.qev-other.na b{color:var(--faint)}
+.qev-tabs{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:2px 0 8px}
+.qev-sep{width:1px;height:16px;background:var(--border);margin:0 3px}
+.qev-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:6px 0}
+.qev-opt{background:var(--surface);padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.5;min-width:0}
+.qev-opt.na{color:var(--faint)}.qev-ol{font-size:15px;font-weight:700;color:var(--text)}
+.qev-trade{font-size:11.5px;line-height:1.55;color:var(--dim);margin:6px 0 8px}.qev-trade b{color:var(--text);letter-spacing:.05em;font-size:10px}
+.qev-good{color:var(--pos)}.qev-bad{color:var(--dim)}
+.qev-chart{width:100%;height:auto;display:block;margin:4px 0 2px}
+.qev-more{margin:6px 0 4px}.qev-more>summary{cursor:pointer;font-size:11.5px;color:var(--accent);font-weight:600}
+.qev-chart line.g{stroke:var(--border);stroke-width:1}.qev-chart line.z{stroke:var(--faint);stroke-width:1;stroke-dasharray:3 3}
+.qev-chart .ln{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.qev-chart .mk{fill:var(--accent);stroke:var(--surface);stroke-width:2}.qev-chart .dom .mk{fill:var(--surface);stroke:var(--accent);stroke-width:1.5}
+.qev-chart .hit{fill:transparent}.qev-chart .pt:hover .mk{r:6}
+.qev-chart text{font-family:'JetBrains Mono',monospace;fill:var(--faint);font-size:10px;text-anchor:middle}
+.qev-chart text.yl{text-anchor:end}.qev-chart text.rl{text-anchor:start}.qev-chart text.xl{fill:var(--dim)}.qev-chart text.xs{font-size:9px}.qev-chart text.tg{fill:var(--text);font-size:8.5px;font-weight:700;letter-spacing:.04em}
+@media (max-width:560px){.qev-opts{grid-template-columns:1fr}.qev-sub{padding-left:4px}}
 /* drivers */
 .gx-drv{display:flex;flex-direction:column;gap:5px}
 .gx-d{display:grid;grid-template-columns:52px 60px 1fr;gap:9px;align-items:center;font-size:12px}
@@ -47376,7 +47428,9 @@ function fbScript(src){
 function fbEnsureEngine(){
   if(window.EDFootball&&window.EDFootballParams)return Promise.resolve();
   return fbScript('football/params.js').then(function(){return fbScript('football/engine.js');})
-    .then(function(){ if(!window.EDFootball||!window.EDFootballParams)throw new Error('engine loaded but globals missing'); });
+    .then(function(){ if(!window.EDFootball||!window.EDFootballParams)throw new Error('engine loaded but globals missing'); })
+    /* quote-level EV: optional, never gates the board */
+    .then(function(){return fbScript('lib/edgedesk_quote_ev.js').catch(function(){});});
 }
 
 /* ---- live captured quotes for a football sport_key, grouped by event ---- */
@@ -47439,7 +47493,7 @@ function fbNflMarketFor(g,t){
   if(mkt.spread_line==null&&ref.spread_line!=null){mkt.spread_line=ref.spread_line;src='nflverse reference';}
   if(mkt.total_line==null&&ref.total_line!=null){mkt.total_line=ref.total_line;if(src!=='captured')src='nflverse reference';}
   return {mkt:mkt,src:src,homeName:homeName,awayName:awayName,
-    spread_book:mkt.spread_book,total_book:mkt.total_book};
+    spread_book:mkt.spread_book,total_book:mkt.total_book,ev:ev};
 }
 /* grade the model's pregame picks for one completed game against the
    nflverse closing consensus. Picks are the SIGN OF THE GAP — the same rule
@@ -48203,6 +48257,12 @@ function fbGameCardNfl(u){
   if(src==='nflverse reference'&&(mkt.spread_line!=null||mkt.total_line!=null))extra.push('market numbers are nflverse consensus reference, not a live bettable quote');
   var qb='';try{qb=fbQbBlockHTML(g);}catch(_){qb='';}
   var pa='';try{var paB=fbPersonnelHTML(g.game_id);if(paB)pa='<div class="gd-sec">Personnel availability</div>'+paB;}catch(_){pa='';}
+  /* QUOTE-LEVEL EV: the best exact captured price, both sides, every number
+     — RAW EV only (no EV calibration exists for the NFL) */
+  var qv=null;try{qv=fbQevGameNfl(u,p,M);}catch(_){qv=null;}
+  if(qv)lines+='<div class="gd-sec">Price · expected value</div>'+fbQevRowHTML(qv)
+    +'<details class="qev-more"><summary>Price evaluation · both sides · alternate spreads</summary>'+fbQevCardHTML(qv)
+    +'<div class="gd-sec">Alternate spread value</div>'+fbQevLadderHTML(qv)+'</details>';
   return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
@@ -48286,6 +48346,7 @@ function fbCtlHTML(){
   return '<select onchange="fbSetScope(this.value)" style="padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--fg,#e8eef7);font-size:12.5px">'+opts+'</select>'
     +'<button class="btn ghost sm" onclick="fbXlsxDownload()" title="Board + the raw export, one workbook">Download Excel</button>'
     +'<button class="btn ghost sm" onclick="fbCsvDownload()" title="The raw export on its own, as CSV">CSV (raw)</button>'
+    +'<button class="btn ghost sm" onclick="fbQevCsvDownload(\'nfl\')" title="Every captured quote on both sides, priced one by one: line, price, book, capture time, cover, push, break-even, edge, EV, fair odds">EV quotes CSV</button>'
     +(op?'<button class="btn primary sm" onclick="fbNflApiSync()" title="Dry-run, then post this scope as this model\u2019s number on the wall \u2014 replaces what you posted before on any game that has not locked (30 minutes before kickoff)">Sync to Collective (API)</button>':'')
     +(keyed?'<span class="ec mut">key '+fbEsc(keyed)+' \u00b7 <a href="#" onclick="fbP4KeyForget();return false;">forget</a></span>':'')
     +(op?'<div id="fbnflPostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>':'')
@@ -48654,8 +48715,14 @@ function fbNflRowValues(it){
     row[6]=p&&p.model_version||'';row[7]=p&&p.feature_version||'';
     row[34]=p?p.status:'NO_PREDICTION';row[35]='true';row[36]=new Date().toISOString();
     row[37]=g.home_score==null?'':g.home_score;row[38]=g.away_score==null?'':g.away_score;
+    var qt0=fbQevTail(null,'',p?'no projection ('+p.status+')':'no projection');
+    qt0.forEach(function(v,i){row[FB_CSV_HEAD.length-qt0.length+i]=v;});
     return row;
   }
+  /* the EV block: priced at export time from the captured board, pregame only */
+  var qvN=null;
+  if(!it.done){try{qvN=fbQevGameNfl(it,p,M);}catch(_){qvN=null;}}
+  var qtail=fbQevTail(qvN,it.done?'':'LIVE_EXPORT: the captured board (signals) priced at export time',it.done?'the game is final: a live export prices no quote after kickoff':null);
   var m=p.model,cov=p.cover,ov=p.over,sGap=p.market.spread_gap,tGap=p.market.total_gap;
   var sPick=(sGap!=null&&Math.abs(sGap)>1e-9)?(sGap>0?g.home_team:g.away_team):'';
   var tPick=(tGap!=null&&Math.abs(tGap)>1e-9)?(tGap>0?'Over':'Under'):'';
@@ -48678,7 +48745,7 @@ function fbNflRowValues(it){
     g.home_score==null?'':g.home_score,g.away_score==null?'':g.away_score,
     G&&G.margin!=null?G.margin:'',G&&G.total!=null?G.total:'',
     G&&G.spread?G.spread:'',G&&G.total_ou?G.total_ou:'',G&&G.ml?G.ml:''
-  ]);
+  ]).concat(qtail);
 }
 /* the QB column: the flag reader keys on "unknown", so an unconfirmed side keeps that
    word and gains its active room; a confirmed side names the resolved starter */
@@ -48964,6 +49031,50 @@ function fbV2Ensure(){
     .catch(function(e){FBV2.err=(e&&e.message)||'V2 failed to load';FBV2.loadedAt=Date.now()-FBV2.TTL_MS+300000;return null;});   /* a failure is retried after 5 min */
   return FBV2.loading;
 }
+/* QUOTE-LEVEL EV: the state and the static artifacts it reads (the card's
+   pricing block, "QUOTE-LEVEL EXPECTED VALUE" below, explains the method).
+   Loaded here, at board level, once each; a card never fetches. */
+var FBQEV={cal:null,tail:null,err:null,_p:null,tiers:null,_tp:null,alt:{},altP:{},ui:{},last:{}};
+function fbQevReady(){return !!(window.EDQuoteEV&&(window.EDResearchCore||(window.EDResearch&&window.EDResearch.americanToDecimal)));}
+/* read-only: the last priced object for a game, and the last error a render
+   swallowed — for the browser tests and a reader's console, never a writer */
+window.fbQevFor=function(gid){return FBQEV.last[String(gid)]||null;};
+window.fbQevDiag=function(){return {cal:!!FBQEV.cal,calErr:FBQEV.err,tiers:!!FBQEV.tiers,tail:FBQEV.tail,alt:Object.keys(FBQEV.alt),lastErr:FBQEV.lastErr||null,n:Object.keys(FBQEV.last).length};};
+function fbQevRepaint(){try{if(FB.at&&typeof window.renderFootball==='function')window.renderFootball();}catch(_){}}
+function fbQevJson(r){if(!r.ok)throw new Error(String(r.url||'').split('/').pop()+' '+r.status);return r.json();}
+/* the promoted calibration and its alternate-line audit: optional, loaded
+   once; until it arrives every calibrated number reads "loading", never 0 */
+function fbQevCalEnsure(){
+  if(FBQEV.cal||FBQEV._p||FBQEV.err||typeof fetch!=='function')return;
+  FBQEV._p=fbScript('football/cfb_decision/decision.js')
+    .then(function(){return fbScript('lib/edgedesk_read.js');})
+    .then(function(){return fbScript('lib/edgedesk_ev.js');})
+    .then(function(){return fetch('football/cfb_ev/current.json',{cache:'no-cache'}).then(fbQevJson);})
+    .then(function(cur){var base='football/cfb_ev/artifacts/'+encodeURIComponent(cur.calibration)+'/';
+      return Promise.all([fetch(base+'calibration.json',{cache:'no-cache'}).then(fbQevJson),
+        fetch(base+'tournament.json',{cache:'no-cache'}).then(fbQevJson).catch(function(){return null;})]);})
+    .then(function(a){FBQEV.cal=a[0];FBQEV.tail=window.EDQuoteEV?window.EDQuoteEV.tailDomain(a[1]&&a[1].alternate_line_domain):null;FBQEV._p=null;fbQevRepaint();})
+    .catch(function(e){FBQEV.err=String(e&&e.message||e).slice(0,160);FBQEV._p=null;});
+}
+/* the pricing tiers (football/validation/pricing_<sport>.json): what each
+   market's probability has — and has not — been validated for */
+function fbQevTiersEnsure(){
+  if(FBQEV.tiers||FBQEV._tp||typeof fetch!=='function')return;
+  FBQEV._tp=Promise.all(['cfb','nfl'].map(function(s){return fetch('football/validation/pricing_'+s+'.json',{cache:'no-cache'}).then(fbQevJson).catch(function(){return null;});}))
+    .then(function(a){FBQEV.tiers={cfb:a[0]&&a[0].markets||null,nfl:a[1]&&a[1].markets||null};FBQEV._tp=null;fbQevRepaint();});
+}
+function fbQevTier(sport,market){
+  var T=FBQEV.tiers&&FBQEV.tiers[sport],m=T&&T[market];
+  return m?{tier:m.tier||null,basis:m.tier_basis||null}:null;
+}
+/* the alternate-spread feed, when the capture is enabled
+   (football/cfb_terminal/alternates.js → football/markets/alternates_<sport>.json) */
+function fbQevAltEnsure(sport){
+  if(FBQEV.alt[sport]||FBQEV.altP[sport]||typeof fetch!=='function')return;
+  FBQEV.altP[sport]=fetch('football/markets/alternates_'+sport+'.json',{cache:'no-cache'}).then(fbQevJson)
+    .then(function(j){FBQEV.alt[sport]={data:j,err:null};FBQEV.altP[sport]=null;fbQevRepaint();})
+    .catch(function(e){FBQEV.alt[sport]={data:null,err:String(e&&e.message||e)};FBQEV.altP[sport]=null;});
+}
 function fbP4Ensure(){
   if(window.EDCfbP4&&window.EDCfbP4Params&&window.EDFbs)return Promise.resolve();
   return fbScript('football/cfb_p4/params.js')
@@ -49002,6 +49113,10 @@ function fbP4Ensure(){
     .then(function(){return fbScript('lib/research_core.js').catch(function(){});})
     .then(function(){return fbScript('lib/research_eval.js').catch(function(){});})
     .then(function(){return fbScript('lib/game_research.js').catch(function(){});})
+    /* QUOTE-LEVEL EV (lib/edgedesk_quote_ev.js): optional in the same way — it
+       prices captured quotes against the finished projection and moves no
+       projected number, so a missing file never gates the board */
+    .then(function(){return fbScript('lib/edgedesk_quote_ev.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/qb_context.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/forecast.js').catch(function(){});})
     .then(function(){return fbScript('football/venues/descriptions.js').catch(function(){});})
@@ -50699,6 +50814,16 @@ var FBP4_CSV_HEAD=['season','week','game_id','kickoff_local','away_team','home_t
    export never replaces it (docs/cfb-validation/DELIVERABLE.md §37). */
 var FBP4_CANON_HEAD=['prediction_timestamp','research_status','decision_status','market_snapshot_home_line','market_snapshot_at','price_state','favorite_flip','row_kind'];
 FBP4_CSV_HEAD=FBP4_CSV_HEAD.concat(FBP4_CANON_HEAD);
+/* QUOTE-LEVEL EV (lib/edgedesk_quote_ev.js), APPENDED: the main-market quote
+   with the best EV on either side — its number, price, book and capture time,
+   EdgeDesk's probabilities at that exact line, the break-even, the edge, the
+   EV (raw, and calibrated where one exists) and the fair price — or, when no
+   EV exists, ev_available=false and the reason. Never a 0 for "unavailable".
+   The NFL export and football/cfb_p4/export_csv.js carry the same block. */
+var FB_QEV_HEAD=['best_spread','best_price','best_book','best_quote_timestamp','model_cover_probability','model_push_probability',
+  'break_even_probability','probability_edge_pp','expected_value_pct','calibrated_expected_value_pct','model_fair_odds',
+  'ev_available','ev_unavailable_reason','ev_state','quote_decision_status','best_ev_team','ev_source'];
+FBP4_CSV_HEAD=FBP4_CSV_HEAD.concat(FB_QEV_HEAD);
 
 function fbP4Basis(){
   var m=window.EDCfbP4Params.validation_summary&&window.EDCfbP4Params.validation_summary.market;
@@ -50708,6 +50833,8 @@ function fbP4Basis(){
       :'does NOT beat the close (best ATS '+(m.best_ats||'n/a')+')')
     +'; research only, counted nowhere until graded CLV';
 }
+/* the NFL export carries the same EV block, appended after its own columns */
+if(typeof FB_CSV_HEAD!=='undefined')FB_CSV_HEAD=FB_CSV_HEAD.concat(FB_QEV_HEAD);
 function fbP4Contrib(p,key){
   var c=(p.contributions||[]).filter(function(x){return x.key===key;})[0];
   return c?Math.round(c.points*100)/100:'';
@@ -50722,6 +50849,21 @@ function fbP4Contrib(p,key){
    reconcile under the same filters. */
 var FBP4_FBS_TAIL_N=19;
 var FBP4_CANON_TAIL_N=8;
+var FBP4_QEV_TAIL_N=17;
+/* the EV block's values for one game (v = a fbQevGame* result, or null) */
+function fbQevTail(v,source,why){
+  var pr=function(x){return x==null?'':Math.round(x*1e4)/1e4;},r2=function(x){return x==null?'':Math.round(x*100)/100;};
+  var b=v&&v.g?v.g.best_ev_quote:null,a=b&&b.adjusted&&b.adjusted.available?b.adjusted:null;
+  if(!b)return ['','','','','','','','','','','','false',v&&v.g?v.g.ev_unavailable_reason:(why||'quote-level EV not computed: the quote-EV module or the captured board did not load'),
+    'UNAVAILABLE',v&&v.decision?v.decision.status:'NO_DECISION','',source||''];
+  return [b.line,b.american_odds,b.sportsbook||'',b.captured_at||'',pr(b.model_cover_probability),pr(b.model_push_probability),pr(b.break_even_probability),
+    r2(b.probability_edge_pp),r2(b.expected_value_pct),a?r2(a.expected_value_pct):'',b.model_fair_odds==null?'':b.model_fair_odds,
+    'true','',b.ev_state,b.decision_status||'',b.team||'',source||''];
+}
+function fbP4QevTail(u,p){
+  var v=null;try{v=(typeof fbQevGameCfb==='function'&&p&&p.status==='PREDICTED')?fbQevGameCfb(u,p):null;}catch(_){v=null;}
+  return fbQevTail(v,'LIVE_EXPORT: the captured board (signals) priced at export time',p&&p.status!=='PREDICTED'?'no projection':null);
+}
 function fbP4CanonTail(u,p,mkt){
   var C=window.EDCanon,g=u.g,v=null;
   try{v=(p&&p.status==='PREDICTED'&&typeof fbP4ViewFor==='function')?fbP4ViewFor(u,p):null;}catch(_){v=null;}
@@ -50778,7 +50920,7 @@ function fbP4RowValues(u){
   try{p=window.EDCfbP4.projectGame(fbP4Request(u));}catch(e){p={status:'BLOCKED',reason:(e&&e.message)||'engine threw'};}
   var kick=String(g.start_date||'');
   var base=[g.season,g.week,g.game_id,kick?(kick.slice(0,10)+' '+kick.slice(11,16)):'',g.away_team,g.home_team];
-  var tailAt=FBP4_CSV_HEAD.length-FBP4_FBS_TAIL_N-FBP4_CANON_TAIL_N;
+  var tailAt=FBP4_CSV_HEAD.length-FBP4_FBS_TAIL_N-FBP4_CANON_TAIL_N-FBP4_QEV_TAIL_N;
   if(!p||p.status!=='PREDICTED'){
     var row=base.slice();while(row.length<FBP4_CSV_HEAD.length)row.push('');
     row[6]=window.EDCfbP4Params.model_version;row[7]=window.EDCfbP4Params.feature_version;
@@ -50788,6 +50930,7 @@ function fbP4RowValues(u){
     row[tailAt-1]=(p&&(p.reason||(p.missing||[]).join('; ')))||'';
     fbP4FbsTail(u,p,mkt).forEach(function(v,i){row[tailAt+i]=v;});
     fbP4CanonTail(u,p,mkt).forEach(function(v,i){row[tailAt+FBP4_FBS_TAIL_N+i]=v;});
+    fbP4QevTail(u,p).forEach(function(v,i){row[tailAt+FBP4_FBS_TAIL_N+FBP4_CANON_TAIL_N+i]=v;});
     return row;
   }
   var m=p.model,sc=p.scores,cov=p.cover,ov=p.over;
@@ -50829,9 +50972,37 @@ function fbP4RowValues(u){
     (ex.primary_drivers[2]||{}).text||'',(ex.counterarguments[0]||{}).text||'',
     ex.unpredictable_variables.map(function(x){return x.item;}).join('; '),
     ex.data_quality.map(function(x){return x.text;}).join('; ')
-  ]).concat(fbP4FbsTail(u,p,mkt)).concat(fbP4CanonTail(u,p,mkt));
+  ]).concat(fbP4FbsTail(u,p,mkt)).concat(fbP4CanonTail(u,p,mkt)).concat(fbP4QevTail(u,p));
 }
 function fbP4CsvRow(u){return fbP4RowValues(u).map(fbCsvQuote).join(',');}
+/* EVERY EXACT QUOTE, ONE ROW EACH: both sides, every book and number on the
+   captured board (and every alternate when the feed is on), priced by
+   lib/edgedesk_quote_ev.js — the quote-level export */
+var FB_QEV_QUOTE_HEAD=['sport','game_id','kickoff','away','home','team','side','market_type','spread','american_odds','decimal_odds','sportsbook','captured_at',
+  'quote_age_minutes','quote_status','model_cover_probability','model_push_probability','model_loss_probability','break_even_probability','probability_edge_pp',
+  'expected_value_pct','calibrated_expected_value_pct','model_fair_odds','ev_available','ev_state','ev_unavailable_reason','tail','dominated','decision_status','flags',
+  'model_version','projection_timestamp'];
+window.fbQevCsvDownload=function(sport){
+  var rows=[],items=[];
+  try{
+    if(sport==='p4')items=fbP4ExportItems().items.map(function(u){var c=fbP4ProjCached(u);return fbQevGameCfb(u,c.p);});
+    else items=(FB.nfl.up||[]).map(function(u){var M=fbNflMarketFor(u.g,u.t);return fbQevGameNfl(u,fbPredict('nfl',fbNflGameReq(u.g),M.mkt,fbNum(u.g.season)),M);});
+  }catch(_){}
+  items.filter(Boolean).forEach(function(v){
+    ['home','away'].forEach(function(s){(v.g.sides[s]?v.g.sides[s].quotes:[]).forEach(function(q){
+      rows.push([sport==='p4'?'CFB':'NFL',v.gid,v.ctx.game.kickoff||'',v.away,v.home,q.team,q.side,q.market_type,q.line,q.american_odds,q.decimal_odds,q.sportsbook,q.captured_at,
+        q.quote_age_minutes,q.quote_status,q.model_cover_probability,q.model_push_probability,q.model_loss_probability,q.break_even_probability,q.probability_edge_pp,
+        q.expected_value_pct,q.adjusted&&q.adjusted.available?q.adjusted.expected_value_pct:'',q.model_fair_odds,q.ev_available,q.ev_state,q.ev_unavailable_reason||'',
+        q.tail?q.tail.status:'',!!q.dominated,q.decision_status||'',(q.flags||[]).map(function(f){return f.code;}).join('|'),q.model_version,q.projection_timestamp]);
+    });});
+  });
+  if(!rows.length){alert('No captured quote is on file for the games on this board, so there is nothing to price.');return;}
+  var lines=[FB_QEV_QUOTE_HEAD.join(',')].concat(rows.map(function(r){return r.map(function(x){return fbCsvQuote(x==null?'':x);}).join(',');}));
+  var blob=new Blob([lines.join('\n')+'\n'],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='edgedesk_'+(sport==='p4'?'fbs':'nfl')+'_quote_ev_'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'')+'.csv';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
+};
 window.fbP4CsvDownload=function(){
   var S=FB.p4;
   if(!S.up.length){alert('No FBS games on the board to export yet.');return;}
@@ -51879,6 +52050,7 @@ function fbP4CtlHTML(){
   var keyed=op?fbP4KeyMasked():'';
   return '<button class="btn ghost sm" onclick="fbP4XlsxDownload()" title="Board, Drivers and the raw export, one workbook">Download Excel</button>'
     +'<button class="btn ghost sm" onclick="fbP4CsvDownload()" title="The raw export on its own, as CSV">CSV (raw)</button>'
+    +'<button class="btn ghost sm" onclick="fbQevCsvDownload(\'p4\')" title="Every captured quote on both sides, priced one by one: line, price, book, capture time, cover, push, break-even, edge, EV, fair odds">EV quotes CSV</button>'
     +(op?('<button class="btn ghost sm" onclick="fbP4PostToCollective()">Download &amp; open dashboard</button>'
     /* the operator's one-action path: dry run first, then post */
     +'<button class="btn ghost sm" onclick="fbP4ApiPost(false)">Check via API</button>'
@@ -52163,7 +52335,17 @@ function fbGxSummary(u,p,gid){
     cz?(cz.stale?'live estimate · the research page’s build is '+Math.round(cz.age_h)+' h old':'how interesting · same status on the research page'):'EdgeDesk’s own read, not advice');
   out+=cell('Decision',cz&&cz.decision?('<span class="gx-st '+(cz.decision==='BET'?'ok':'mut')+'">'+fbEsc(cz.decision_label||cz.decision)+'</span>')
     :'<span class="gx-st mut">NO DECISION</span>','',
-    cz&&cz.decision_reason?fbEsc(cz.decision_reason):'only the decision engine produces BET, WAIT or PASS');
+    (cz&&cz.decision_reason?fbEsc(cz.decision_reason):'only the decision engine produces BET, WAIT or PASS')
+    +(cz&&/two-sided priced quote/.test(cz.decision_reason||'')?' · that is the engine’s market-state rule; the quote-level EV beside it is still exact arithmetic on one fresh quote':''));
+  /* QUOTE-LEVEL EV: the best exact price's EV, kept apart from the decision */
+  var qv=null;try{qv=fbQevGameCfb(u,p);}catch(_){qv=null;}
+  if(qv){
+    var qb=qv.g.best_ev_quote,qa=qb&&qb.adjusted&&qb.adjusted.available?qb.adjusted:null;
+    out+=cell(qa?'Raw EV · best price':'EV · best price',qb?fbQevEv(qb.expected_value,qb.ev_state!=='AVAILABLE'?'flat':null):'<span class="gx-miss">—</span>','',
+      qb?(fbEsc(qb.label)+' · '+fbEsc(qb.sportsbook||'')+' · '+fbQevAge(qb)+' · cover '+fbQevPct(qb.model_cover_probability)+' vs BE '+fbQevPct(qb.break_even_probability)
+        +(qa?' · calibrated '+window.EDQuoteEV.signedPct(qa.expected_value):'')+(qb.ev_state==='RAW_UNVERIFIED'?' · INTEGRITY CHECK NOT CLEARED':(qb.ev_state==='AUDIT_ONLY'?' · MARKET FAULT: audit only':'')))
+        :('EV unavailable · '+fbEsc(qv.g.ev_unavailable_reason)));
+  }
   var conf=p.scores&&p.scores.confidence!=null?Math.round(p.scores.confidence):null;
   /* COVERAGE COMES FROM THE INPUT CONTRACT, not from the engine's internal
      probe count. The probe count is a volatility driver: ten hand-picked
@@ -52976,7 +53158,7 @@ window.fbGxToggle=function(gid,id){
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
 var FB_GX_DEFAULT={why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
-  research:true,decomp:true,price:false,dq:false,scen:false,watch:false,explain:false,personnel:true};
+  research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false,personnel:true};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
    Plain text that stands alone away from this page. No ids, no JSON, no
@@ -53297,31 +53479,540 @@ function fbGxDecomp(u,p){
     +(tot.length?('Weather and pace move the total, not the spread: '+tot.map(function(c){return fbEsc(c.label)+' '+fbPts(c.value);}).join(', ')+'.'):'')
     +'</div>';
 }
-/* ── PRICE-AWARE EV ─────────────────────────────────────────────────── */
-function fbGxPrice(u,p){
-  var o=fbGxResearchObj(u,p);
-  if(!o||!o.model)return '';
-  var R=window.EDResearch,md=o.model,h=u.g.home_team,a=u.g.away_team;
-  var mkLine=o.market.current.value;
-  if(mkLine==null)return '<div class="gx-none">No market line is joined, so there is no price to assess.</div>';
-  /* The card holds one reference quote with no per-side spread price, so the
-     break-even is stated at a -110 REFERENCE price, labelled as such — it is
-     not the market's price and the column says so. The probability is the
-     model's own distribution at this exact line. */
-  var rows=[['home',h],['away',a]].map(function(x){
-    var pr=window.EDGameResearch.priceAtLine({cover_at:o._cover_at||null,engine_cover:md.cover_at_joined_line},x[0],mkLine,-110);
-    return '<tr><td>'+fbEsc(x[1])+' '+fbPts(R.sideLine(mkLine,x[0]))+'</td>'
-      +'<td class="num">-110 <span class="gx-miss">reference</span></td>'
-      +'<td class="num">'+fbGxPct(pr.break_even,2)+'</td>'
-      +'<td class="num">'+fbGxPct(pr.model_prob,1)+(pr.push_prob?'<div class="s" style="font-size:10.5px;color:var(--faint)">push '+(100*pr.push_prob).toFixed(1)+'%</div>':'')+'</td>'
-      +'<td class="num">'+(pr.prob_edge!=null?((pr.prob_edge>0?'+':'')+(100*pr.prob_edge).toFixed(1)+' pp'):'<span class="gx-miss">n/a</span>')+'</td>'
-      +'<td class="num">'+(pr.expected_roi!=null?((pr.expected_roi>0?'+':'')+(100*pr.expected_roi).toFixed(1)+'%'):'<span class="gx-miss">n/a</span>')+'</td></tr>';
+/* ═══ QUOTE-LEVEL EXPECTED VALUE ═════════════════════════════════════════
+   EV at an EXACT sportsbook quote: its line, its price, its book, its
+   capture time — never a reference −110 and never a probability derived from
+   a spread gap. The arithmetic and every gate live in lib/edgedesk_quote_ev.js
+   (window.EDQuoteEV, tested by tools/football/quote_ev.test.js); this block
+   only gathers the inputs the page already holds and draws the result.
+
+     probability   the champion's own outcome distribution (CFB: its margin PMF
+                   conditioned on the current market spread, centred on the
+                   PURE fair margin; NFL: the learned PMF keyed by EdgeDesk's
+                   own fair spread). A price never enters it.
+     quotes        the captured Odds API board (signals: the best price and its
+                   book at every number each side is dealt at) plus the
+                   alternate-spread feed when it is enabled (every book's own
+                   price at every alternate number)
+     calibrated    CFB only: the SHADOW calibrator the EV tournament promoted
+                   (football/cfb_ev), applied through the frozen EV engine's own
+                   functions (lib/edgedesk_ev.js). NFL has none: RAW EV only.
+     decision      the decision layer's own verdict, attached only to the quote
+                   it evaluated; every other quote is priced, not decided. */
+/* its state and the artifact loaders (calibration, tail audit, pricing
+   tiers, alternate feed) sit beside fbP4Ensure: the BOARD loads them, and
+   the game card only reads what was loaded — it never fetches */
+function fbQevAltState(sport,eventId){
+  var A=FBQEV.alt[sport];
+  if(!A)return {quotes:[],note:'the alternate-spread feed is loading'};
+  if(!A.data)return {quotes:[],note:'Alternate spread pricing is not captured yet: the current market feed (the capture function) requests main spreads, totals and moneylines only. The provider exposes alternate spreads per event; EdgeDesk’s budgeted alternate capture writes them once it is enabled. No alternate line is ever manufactured.'};
+  var ev=eventId&&A.data.events?A.data.events[eventId]:null;
+  if(!ev||!ev.quotes||!ev.quotes.length)return {quotes:[],note:'No alternate spreads were captured for this game'+(A.data.generated_at?' (feed updated '+fbGxAgoText(A.data.generated_at)+')':'')+'.'};
+  /* an event's observed_at is its last successful poll: every quote listed
+     was on the board then (a quote rebuilt from the ledger carries its own) */
+  return {quotes:ev.quotes,note:null,generated_at:A.data.generated_at||null,observed_at:ev.observed_at||null};
+}
+function fbGxAgoText(iso){var h=(Date.now()-Date.parse(iso))/36e5;if(!isFinite(h))return 'time not recorded';return h<1?Math.max(1,Math.round(h*60))+'m ago':h<48?Math.round(h)+'h ago':Math.round(h/24)+'d ago';}
+/* every exact quote on file for one game: the captured board (best price and
+   its book at each number), and each book's own alternate quotes */
+function fbQevQuotes(ev,gid,kick,sport){
+  var out=[],I=window.EDINTEL;
+  if(!ev)return out;
+  var hN=fbNorm(ev.home),aN=fbNorm(ev.away);
+  function sideOf(sel){var s=fbNorm(sel);return s===hN?'home':(s===aN?'away':null);}
+  function st(at,mk){var q=null;try{q=(I&&I.quoteState)?I.quoteState({captured_at:at,market:mk,kickoff:kick}):null;}catch(_){q=null;}return q;}
+  (ev.rows||[]).forEach(function(r){
+    var mt={spreads:'spread',totals:'total',h2h:'moneyline'}[r.market];if(!mt)return;
+    var sd=mt==='total'?(/^over/i.test(r.selection||'')?'over':(/^under/i.test(r.selection||'')?'under':null)):sideOf(r.selection);
+    if(!sd)return;
+    var q=st(r.last_seen_at,r.market);
+    out.push({game_id:gid,side:sd,market_type:mt,line:mt==='moneyline'?null:fbNum(r.point),decimal:fbNum(r.best_dec),book:r.best_book||null,
+      n_books:fbNum(r.n_books),captured_at:r.last_seen_at||null,fresh:q?!!q.actionable:null,freshness_state:q?q.status:null,provider_market_key:r.market});
+  });
+  var eid=ev.rows&&ev.rows[0]?ev.rows[0].event_id:null;
+  var AS=fbQevAltState(sport,eid);
+  AS.quotes.forEach(function(a){
+    var sd=(a.side==='home'||a.side==='away')?a.side:sideOf(a.selection);if(!sd)return;
+    var at=a.observed_at||AS.observed_at||null,q=st(at,'spreads');
+    out.push({game_id:gid,side:sd,market_type:'alternate_spread',line:fbNum(a.point),american:fbNum(a.price_american),book:a.book||null,n_books:1,
+      captured_at:at,fresh:q?!!q.actionable:null,freshness_state:q?q.status:null,provider_market_key:'alternate_spreads',quote_id:a.quote_id||null});
+  });
+  return out;
+}
+/* the fresh main line, home-stated: where the calibrator is anchored */
+function fbQevAnchor(qs){
+  var Q=window.EDQuoteEV,f=qs.filter(function(q){return q.market_type==='spread'&&q.fresh;});
+  var h=Q.mainLineOf(f,'home');if(h!=null)return h;
+  var a=Q.mainLineOf(f,'away');return a!=null?-a:null;
+}
+/* CFB: the SHADOW calibration, applied by the frozen engine (anchorOf /
+   shiftedSide), carried from the market line to every other line by the SAME
+   distribution. Fails closed with a reason, never a default. */
+function fbQevAdjustedCfb(u,p,hc,anchor){
+  var A=FBQEV.cal,EV=window.EDEV,RD=window.EDRead;
+  if(!A||!EV||!RD)return {available:false,reason:FBQEV.err?('the calibration did not load ('+FBQEV.err+')'):'the calibration is loading'};
+  var kick=u.t?new Date(u.t).toISOString():null;
+  var cp=EV.checkpointOf(new Date().toISOString(),kick,false),key=(A.checkpoint_map||{})[cp]||'cfb|spread|close';
+  var cal=EV.calibrationFor(A,key,p.model_version);
+  if(!cal.usable)return {available:false,reason:'calibration '+String(cal.status).replace(/_/g,' ').toLowerCase()+(cal.reason?': '+cal.reason:'')};
+  if(anchor==null)return {available:false,reason:'no fresh main line to anchor the calibrator at (it was fitted at the market line only)'};
+  var fair=p.model.fair_spread,center=-anchor,hw=Math.min(60,Math.max(30,Math.ceil(Math.abs(fair-center))+24));
+  var curve=null;try{curve=RD.buildCurve(hc,center,hw,{model_version:p.model_version});}catch(_){curve=null;}
+  if(!curve)return {available:false,reason:'the distribution could not be tabulated'};
+  var An=null;try{An=EV.anchorOf({anchor_home_line:anchor,anchor_source:'the fresh main line',curve:curve,game:{home:u.g.home_team}},cal);}catch(_){An=null;}
+  if(!An||An.problem)return {available:false,reason:An?An.problem:'the calibrator could not be anchored'};
+  return {available:true,label:'CALIBRATED',method:cal.method,version:cal.version,maturity:cal.maturity,key:key,anchor:An,
+    side_prob:function(side,line){return EV.shiftedSide(curve,side,line,An.delta_pts);}};
+}
+function fbQevCalReason(key,sport,market){
+  var A=FBQEV.cal,EV=window.EDEV,t=fbQevTier(sport,market);
+  var tier=t&&t.tier?' Pricing tier '+t.tier+(t.basis?' — '+t.basis:'')+'.':'';
+  if(sport==='cfb'&&A&&EV){
+    var c=EV.calibrationFor(A,key,window.EDCfbP4Params&&window.EDCfbP4Params.model_version);
+    if(c.usable)return {validated:true,cal:c};
+    return {validated:false,reason:(c.status==='MISSING'?'the calibration tournament has no '+market+' task':'calibration '+String(c.status).replace(/_/g,' ').toLowerCase())+'.'+tier};
+  }
+  return {validated:false,reason:(sport==='nfl'?'no EV calibration exists for NFL '+market+'s.':'the calibration has not loaded.')+tier};
+}
+function fbQevModelCfb(u,p,mk,anchor){
+  var Q=window.EDQuoteEV,P=window.EDCfbP4Params,E=window.EDCfbP4;
+  if(!p||p.status!=='PREDICTED'||!P||!E)return {available:false,reason:(p&&p.reason)||'no projection'};
+  var m=p.model,unc=(p.layers&&p.layers.uncertainty)||{};
+  var cond=mk&&mk.spread_line!=null&&!mk.spread_fault?mk.spread_line:null;
+  var hc=cond!=null?Q.cfbConditionedCover(P.distributions,m.fair_spread,cond,unc.sigma,unc.sigma_base):null,basis;
+  if(hc)basis='the champion’s empirical college margin distribution — its shape conditioned on the market spread as the engine conditions it, centred on EdgeDesk’s pure fair margin, stretched to this game’s σ';
+  else{hc=function(t){return E.dist.coverProbSpread(m.fair_spread,t,unc.sigma,unc.sigma_base);};basis='the champion’s margin distribution (no market spread to condition its shape on)';}
+  var tc=fbQevCalReason('cfb|total|close','cfb','total'),mc=fbQevCalReason('cfb|moneyline|close','cfb','moneyline');
+  var hwp=m.home_win_prob;
+  if(mc.validated&&window.EDEV)hwp=window.EDEV.applyCalibrator(mc.cal.map,hwp);
+  return {sport:'CFB',available:true,model_version:p.model_version,projection_timestamp:p.prediction_timestamp,fair_home_margin:m.fair_spread,home_cover:hc,basis:basis,
+    adjusted:fbQevAdjustedCfb(u,p,hc,anchor),
+    tail:FBQEV.tail||{validated_within_pts:0,basis:FBQEV.err?'the alternate-line audit did not load':'the alternate-line audit is loading'},
+    key_mass:(P.distributions&&P.distributions.abs_margin_key_mass)||null,
+    total_calibration:{validated:false,reason:tc.reason||'totals EV is not activated'},
+    moneyline:{home_win_prob:hwp,calibration:mc.validated?{validated:true}:{validated:false,reason:mc.reason}}};
+}
+/* NFL: the learned PMF keyed by EdgeDesk's OWN fair spread — the market is
+   not an input to it at all */
+function fbQevModelNfl(p){
+  var E=window.EDFootball,F=window.EDFootballParams;
+  if(!p||p.status!=='PREDICTED'||!E)return {available:false,reason:(p&&p.reason)||'no projection'};
+  var fair=p.model.fair_spread;
+  var tc=fbQevCalReason(null,'nfl','total'),mc=fbQevCalReason(null,'nfl','moneyline'),sp=fbQevTier('nfl','spread');
+  return {sport:'NFL',available:true,model_version:p.model_version,projection_timestamp:p.prediction_timestamp,fair_home_margin:fair,
+    home_cover:function(t){return E.dist.coverProbSpread('nfl',fair,t);},
+    basis:'the NFL margin distribution learned by spread (football/params.js), keyed by EdgeDesk’s own fair spread',
+    adjusted:{available:false,reason:'no EV calibration exists for NFL spreads'+(sp&&sp.tier?' (pricing tier '+sp.tier+')':'')+' — RAW EV only'},
+    tail:{validated_within_pts:0,basis:'no alternate-line audit exists for the NFL distribution'},
+    key_mass:(F&&F.nfl&&F.nfl.abs_margin_key_mass)||null,
+    total_calibration:{validated:false,reason:tc.reason},moneyline:{home_win_prob:p.model.home_win_prob,calibration:{validated:false,reason:mc.reason}}};
+}
+/* the decision layer's verdict, and which exact quote it speaks for */
+function fbQevDecisionCfb(rv){
+  var cz=rv&&rv.canonical;
+  if(!cz)return {status:'NO_DECISION',label:'NO DECISION',reason:'the decision build (football/cfb_terminal/board.json) has not loaded',requires:null,evaluated_quote:null};
+  var row=cz.row||{},ev=row.ev||{},sel=ev.selected||null,eq=null;
+  var m=sel?/^(.*)\s([+-]?\d+(?:\.\d+)?|PK)\s([+-]\d+)$/.exec(sel):null;
+  if(m)eq={team:m[1],side:m[1]===row.home?'home':(m[1]===row.away?'away':null),line:m[2]==='PK'?0:+m[2],price:+m[3],book:ev.book||null};
+  var st=cz.decision||'NO_DECISION',two=/two-sided priced quote/.test(cz.decision_reason||'');
+  return {status:st,label:cz.decision_label||String(st).replace(/_/g,' '),reason:cz.decision_reason||null,stale:!!cz.stale,
+    requires:two?'the decision engine only decides on a fresh quote with BOTH sides priced at the same line by one book in the Model Lab ledger (football/cfb_lab), and none is on file for this game':null,
+    short:two?'engine needs a two-sided market':null,
+    evaluated_quote:eq,engine:ev};
+}
+function fbQevCtx(u,rv,mk){
+  var L=rv&&rv.research_label,key=L?L.key:null,R=rv&&rv.reliability,dg=rv&&rv.disagreement;
+  var qbu=!!(dg&&[].concat(dg.failed||[],dg.incomplete||[]).some(function(x){return /QB|quarterback/i.test(String(x));}));
+  return {now:Date.now(),game:{game_id:String(u.g.game_id),home:u.g.home_team,away:u.g.away_team,kickoff:u.t?new Date(u.t).toISOString():null},
+    research_status:key==='VERIFIED_MAJOR_DISAGREEMENT'?'VERIFIED_MAJOR':key,data_fault:key==='DATA_FAULT',
+    orientation:mk&&mk.spread_fault?{ok:false,reason:'the captured spread was dropped: it arrived in the opposite sign convention'}:{ok:true},
+    market_stale:!!(mk&&mk.stale),reliability:R?(R.scored?R.score:(R.pct!=null?R.pct:null)):null,qb_unresolved:qbu,max_age_minutes:90};
+}
+function fbQevAttachDecisions(G,D){
+  var Q=window.EDQuoteEV;
+  ['home','away'].forEach(function(s){(G.sides[s]?G.sides[s].quotes:[]).forEach(function(o){
+    var d=Q.decisionFor(o,D);o.decision_status=d.status;o.decision_reason=d.reason;o.decision_evaluated=!!d.evaluated;});});
+}
+function fbQevSig(qs){return qs.map(function(q){return q.side+q.market_type+q.line+':'+q.decimal+':'+q.american+q.book+q.captured_at+(q.fresh?'f':'s');}).join(',');}
+/* ONE GAME, CFB. Cached per game until an input changes (and at most a minute). */
+function fbQevGameCfb(u,p){
+  if(!fbQevReady()||!u||!p||p.status!=='PREDICTED')return null;
+  fbQevCalEnsure();fbQevTiersEnsure();fbQevAltEnsure('cfb');
+  var gid=String(u.g.game_id),mk=(FB.p4._mkt&&FB.p4._mkt[gid])||fbP4Market(u)||{};
+  var ev=null;try{ev=fbP4EventFor(u);}catch(_){ev=null;}
+  var rv=null;try{rv=fbP4ViewFor(u,p,mk);}catch(_){rv=null;}
+  var qs=fbQevQuotes(ev,gid,u.t,'cfb');
+  var unc=(p.layers&&p.layers.uncertainty)||{};
+  var key=[p.model.fair_spread,unc.sigma,mk.spread_line,fbQevSig(qs),!!FBQEV.cal,!!FBQEV.tail,!!FBQEV.tiers,!!(FB.canon&&FB.canon.board),
+    rv&&rv.research_label&&rv.research_label.key,Math.floor(Date.now()/6e4)].join('|');
+  if(u._qev&&u._qev.key===key)return u._qev.v;
+  var Q=window.EDQuoteEV,anchor=fbQevAnchor(qs);
+  var model=fbQevModelCfb(u,p,mk,anchor),ctx=fbQevCtx(u,rv,mk),D=fbQevDecisionCfb(rv);
+  var G=Q.evaluateGame(model,qs,ctx),O=Q.otherMarkets(model,qs,ctx);
+  fbQevAttachDecisions(G,D);
+  var eid=ev&&ev.rows&&ev.rows[0]?ev.rows[0].event_id:null;
+  var v={sport:'cfb',gid:gid,home:u.g.home_team,away:u.g.away_team,g:G,other:O,model:model,ctx:ctx,decision:D,anchor:anchor,
+    joined:!!ev,alt:fbQevAltState('cfb',eid),rv:rv,fair_text:rv&&rv.fair?rv.fair.fair_line_text:null,market_text:rv&&rv.market_gap&&rv.market_gap.available?rv.market_gap.market_line_text:null,
+    gap:rv&&rv.market_gap&&rv.market_gap.available?{points:rv.market_gap.points,toward:rv.market_gap.toward_team}:null};
+  u._qev={key:key,v:v};FBQEV.last[gid]=v;
+  return v;
+}
+/* ONE GAME, NFL (u = an NFL slate item; p = its fbPredict projection) */
+function fbQevGameNfl(u,p,M){
+  if(!fbQevReady()||!u||!p||p.status!=='PREDICTED')return null;
+  fbQevTiersEnsure();fbQevAltEnsure('nfl');
+  var g=u.g,gid=String(g.game_id),ev=M&&M.ev||null;
+  var qs=fbQevQuotes(ev,gid,u.t,'nfl');
+  var key=[p.model.fair_spread,fbQevSig(qs),!!FBQEV.tiers,Math.floor(Date.now()/6e4)].join('|');
+  if(u._qev&&u._qev.key===key)return u._qev.v;
+  var Q=window.EDQuoteEV,home=M&&M.homeName||g.home_team,away=M&&M.awayName||g.away_team;
+  var gap=p.market&&p.market.spread_gap!=null?Math.abs(p.market.spread_gap):null;
+  var research=gap==null?null:(gap>FB_GUARD.nfl.game?'DATA_FAULT':null);
+  var ctx={now:Date.now(),game:{game_id:gid,home:home,away:away,kickoff:u.t?new Date(u.t).toISOString():null},research_status:research,data_fault:research==='DATA_FAULT',
+    orientation:{ok:true},market_stale:false,reliability:null,qb_unresolved:!(g.home_qb_id&&g.away_qb_id),max_age_minutes:90};
+  var model=fbQevModelNfl(p);
+  var G=Q.evaluateGame(model,qs,ctx),O=Q.otherMarkets(model,qs,ctx);
+  var D={status:'NO_DECISION',label:'NO DECISION',reason:'no decision engine is published for the NFL: quote EV is research arithmetic only',
+    requires:'no NFL decision engine exists — the quote-level EV is arithmetic on the raw model probability, never a decision',short:'no NFL decision engine',evaluated_quote:null};
+  fbQevAttachDecisions(G,D);
+  var eid=ev&&ev.rows&&ev.rows[0]?ev.rows[0].event_id:null;
+  var fs=p.model.fair_spread;
+  var v={sport:'nfl',gid:gid,home:home,away:away,g:G,other:O,model:model,ctx:ctx,decision:D,anchor:fbQevAnchor(qs),joined:!!ev,alt:fbQevAltState('nfl',eid),
+    fair_text:(fs>=0?home:away)+' '+(Math.abs(fs)<0.05?'PK':'-'+Math.abs(fs).toFixed(1)),
+    market_text:p.market&&p.market.spread_line!=null?(p.market.spread_line>=0?home:away)+' '+(Math.abs(p.market.spread_line)<0.05?'PK':'-'+Math.abs(p.market.spread_line).toFixed(1)):null,
+    gap:gap!=null?{points:gap,toward:p.market.spread_gap>0?home:away}:null};
+  u._qev={key:key,v:v};FBQEV.last[gid]=v;
+  return v;
+}
+
+/* ── DISPLAY ──────────────────────────────────────────────────────────── */
+function fbQevPct(x,d){return x==null?'<span class="gx-miss">—</span>':(100*x).toFixed(d==null?1:d)+'%';}
+function fbQevEv(x,cls){
+  if(x==null)return '<span class="gx-miss">—</span>';
+  var t=window.EDQuoteEV.evTone(x);
+  return '<b class="qev-ev '+(cls||t)+'">'+window.EDQuoteEV.signedPct(x,1)+'</b>';
+}
+function fbQevPrice(o){return o&&o.american_odds!=null?window.EDQuoteEV.priceText(o.american_odds)+(o.approximate_american?'*':''):'—';}
+function fbQevAge(o){return o&&o.quote_age_minutes!=null?(o.quote_age_minutes<60?Math.max(1,Math.round(o.quote_age_minutes))+'m':(o.quote_age_minutes<2880?Math.round(o.quote_age_minutes/60)+'h':Math.round(o.quote_age_minutes/1440)+'d')):'—';}
+function fbQevShort(team){var t=String(team||'');return t.length>14?t.split(/\s+/).map(function(w){return w.charAt(0);}).join('').toUpperCase().slice(0,4):t;}
+function fbQevTip(k){return fbEsc(window.EDQuoteEV.TOOLTIP[k]||'');}
+function fbQevFlagsHTML(list,cls){
+  if(!list||!list.length)return '';
+  return '<div class="qev-flags '+(cls||'')+'">'+list.map(function(f){
+    return '<span class="qev-flag '+(f.severity==='HIGH'?'hi':'')+'" title="'+fbEsc(f.text)+'">⚑ '+fbEsc(f.code.replace(/_/g,' ').toLowerCase())+'</span>';}).join('')+'</div>';
+}
+function fbQevDecisionText(v){
+  var D=v.decision;
+  var t=D.label||'NO DECISION';
+  return {text:t,why:D.requires?('Decision engine: '+t+' — '+D.requires+'. That is a rule about the market state the engine needs, not about this price: the quote-level EV here is still exact arithmetic on a fresh, single-book quote.'):(D.reason||''),
+    cls:D.status==='BET'?'ok':(D.status==='WAIT'?'gold':'mut')};
+}
+/* the compact pricing block a board row carries */
+function fbQevRowHTML(v){
+  if(!v)return '';
+  var Q=window.EDQuoteEV,G=v.g,b=G.best_ev_quote,dec=fbQevDecisionText(v);
+  var decHTML='<span class="qev-dec" title="'+fbEsc(dec.why)+'"><span class="qev-k">Decision</span> <span class="gx-st '+dec.cls+'">'+fbEsc(dec.text)+'</span>'
+    +(v.decision.short?' <span class="mut">· '+fbEsc(v.decision.short)+'</span>':'')+'</span>';
+  if(!b)return '<div class="qev-row na"><span class="qev-k">EV</span> <b class="qev-na" title="'+fbEsc('EV unavailable · '+G.ev_unavailable_reason+'. Unavailable is not zero: nothing was computed.')+'">—</b>'
+    +' <span class="mut">EV unavailable · '+fbEsc(G.ev_unavailable_reason)+'</span>'+decHTML+'</div>';
+  var warn=b.ev_state==='RAW_UNVERIFIED',audit=b.ev_state==='AUDIT_ONLY';
+  var adj=b.adjusted&&b.adjusted.available?b.adjusted:null;
+  var h='<div class="qev-row'+(warn?' warn':'')+(audit?' audit':'')+'">'
+    +(warn?'<span class="qev-banner warn" title="'+fbEsc(b.actionable_context)+'">RAW PRICE EV · INTEGRITY CHECK NOT CLEARED</span>':'')
+    +(audit?'<span class="qev-banner mut" title="'+fbEsc(b.actionable_context)+'">MARKET FAULT · EV kept for audit, not actionable</span>':'')
+    +'<span class="qev-q" title="'+fbEsc('The exact wager this EV prices: '+b.label+' at '+(b.sportsbook||'?')+', captured '+(b.captured_at||'?'))+'">'
+      +'<span class="qev-k">Best price</span> '+fbEsc(fbQevShort(b.team))+' '+fbEsc(Q.lineText(b.line))+' ('+fbQevPrice(b)+') <span class="mut">· '+fbEsc(b.sportsbook||'?')+' · '+fbQevAge(b)+'</span></span>'
+    +'<span title="'+fbQevTip('cover')+'"><span class="qev-k">Cover</span> '+fbQevPct(b.model_cover_probability)+(b.model_push_probability>0?' <span class="mut">push '+fbQevPct(b.model_push_probability)+'</span>':'')+'</span>'
+    +'<span title="'+fbQevTip('break_even')+'"><span class="qev-k">BE</span> '+fbQevPct(b.break_even_probability)+'</span>'
+    +'<span title="'+fbQevTip('probability_edge')+'"><span class="qev-k">Edge</span> '+fbEsc(Q.ppText(b.probability_edge))+'</span>'
+    +'<span title="'+fbQevTip('ev')+'"><span class="qev-k">'+(adj?'Raw EV':'EV')+'</span> '+fbQevEv(b.expected_value,warn||audit?'flat':null)+'</span>'
+    +(adj?'<span title="'+fbQevTip('adjusted_ev')+'"><span class="qev-k">Calibrated</span> '+fbQevEv(adj.expected_value)+' <span class="mut">'+fbEsc(String(adj.maturity||'').toLowerCase())+'</span></span>'
+      :(v.sport==='nfl'?'<span class="mut" title="'+fbEsc(b.adjusted?b.adjusted.reason:'')+'">raw only</span>':''))
+    +decHTML;
+  var S=G.sides[b.side],L=S&&S.ladder,alt=L&&L.max_ev&&!L.max_ev.is_main_line?L.max_ev:null,safe=L&&L.safest_positive_ev&&L.safest_positive_ev!==b?L.safest_positive_ev:null;
+  if(alt||safe)h+='<span class="qev-alt">'
+    +(alt?'<span title="'+fbQevTip('max_ev')+'"><span class="qev-k">Best alt value</span> '+fbEsc(alt.label)+' · '+fbQevPct(alt.model_cover_probability)+' cover · '+fbQevEv(alt.expected_value)+(alt.tail&&alt.tail.status==='NOT_VALIDATED'?' <span class="qev-lc">low confidence</span>':'')+'</span>':'')
+    +(safe?'<span title="'+fbQevTip('safest')+'"><span class="qev-k">Safer +EV</span> '+fbEsc(safe.label)+' · '+fbQevPct(safe.model_cover_probability)+' cover · '+fbQevEv(safe.expected_value)+'</span>':'')
+    +'</span>';
+  var hi=G.flags.concat(b.flags||[]).filter(function(f){return f.severity==='HIGH';});
+  if(hi.length)h+='<span class="qev-flag hi" title="'+fbEsc(hi.map(function(f){return f.text;}).join('\n'))+'">⚑ '+hi.length+' check'+(hi.length===1?'':'s')+'</span>';
+  return h+'</div>';
+}
+/* one number for sorting a board by EV; null (no EV) always sorts last */
+function fbQevSortEv(v){return v&&v.g&&v.g.best_ev_quote?v.g.best_ev_quote.expected_value:null;}
+function fbQevSortAge(v){
+  if(!v||!v.g)return null;var ages=[];
+  ['home','away'].forEach(function(s){(v.g.sides[s]?v.g.sides[s].quotes:[]).forEach(function(o){if(o.ev_available&&o.quote_age_minutes!=null)ages.push(o.quote_age_minutes);});});
+  return ages.length?Math.min.apply(null,ages):null;
+}
+
+/* ── THE PRICE EVALUATION CARD ──────────────────────────────────────────── */
+function fbQevCell(l,v,sub,tip,cls){
+  return '<div class="gx-c"'+(tip?' title="'+fbEsc(tip)+'"':'')+'><div class="l">'+fbEsc(l)+'</div><div class="v '+(cls||'')+'">'+v+'</div>'+(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
+}
+function fbQevCardHTML(v){
+  if(!v)return '<div class="gx-none">Price evaluation needs the quote-EV module (lib/edgedesk_quote_ev.js), which did not load.</div>';
+  var Q=window.EDQuoteEV,G=v.g,b=G.best_ev_quote,dec=fbQevDecisionText(v),h='';
+  if(!b){
+    var un=[];['home','away'].forEach(function(s){var S=G.sides[s];if(S)Object.keys(S.unavailable).forEach(function(k){un.push(S.team+': '+S.unavailable[k]+' quote'+(S.unavailable[k]===1?'':'s')+' '+(Q.UNAVAILABLE[k]||k));});});
+    h+='<div class="qev-card na"><div class="qev-h">PRICE EVALUATION</div><div class="qev-big">EV unavailable · '+fbEsc(G.ev_unavailable_reason)+'</div>'
+      +'<div class="gx-foot">EV exists only when EdgeDesk’s probability is evaluated against an exact, fresh sportsbook price. '
+      +(v.joined?'':'No captured sportsbook board joined this game. ')
+      +(un.length?'On file: '+fbEsc(un.join(' · '))+'.':'')+' Unavailable is not zero — nothing was computed.</div>'
+      +'<div class="qev-decline"><span class="qev-k">Decision</span> <span class="gx-st '+dec.cls+'">'+fbEsc(dec.text)+'</span> <span class="mut">'+fbEsc(dec.why)+'</span></div></div>';
+    return h+fbQevOtherHTML(v);
+  }
+  var adj=b.adjusted&&b.adjusted.available?b.adjusted:null,warn=b.ev_state==='RAW_UNVERIFIED',audit=b.ev_state==='AUDIT_ONLY';
+  var push=b.model_push_probability>0;
+  h+='<div class="qev-card'+(warn?' warn':'')+(audit?' audit':'')+'"><div class="qev-h">PRICE EVALUATION'
+    +(warn?' <span class="qev-banner warn">RAW PRICE EV · INTEGRITY CHECK NOT CLEARED</span>':'')
+    +(audit?' <span class="qev-banner mut">MARKET FAULT · AUDIT ONLY</span>':'')+'</div>'
+    +'<div class="qev-big">'+fbEsc(b.label)+'</div>'
+    +'<div class="qev-src">'+fbEsc(b.sportsbook||'?')+' · captured '+fbGxAgo(b.captured_at)+(b.n_books_at_line>1?' · best of '+b.n_books_at_line+' books at this number':'')
+      +' · '+(b.is_main_line?'main market':'alternate')+' · the best EV among main-market quotes on either side</div>';
+  h+='<div class="gx-grid qev-g">'
+    +fbQevCell('EdgeDesk cover probability',fbQevPct(b.model_cover_probability),push?'win '+fbQevPct(b.model_win_probability)+' of all outcomes':'the model’s own distribution at this exact line',Q.TOOLTIP.cover)
+    +fbQevCell('Push probability',fbQevPct(b.model_push_probability),push?'the stake comes back':'half-point line: no push',Q.TOOLTIP.push)
+    +fbQevCell('Loss probability',fbQevPct(b.model_loss_probability),'')
+    +fbQevCell('Break-even probability',fbQevPct(b.break_even_probability),'at '+fbQevPrice(b)+(push?' · '+fbQevPct(b.break_even_unconditional)+' of all outcomes':''),Q.TOOLTIP.break_even)
+    +fbQevCell('Probability edge',fbEsc(Q.ppText(b.probability_edge)),'cover − break-even',Q.TOOLTIP.probability_edge)
+    +fbQevCell(adj?'Raw expected value':'Expected value',fbQevEv(b.expected_value,warn||audit?'flat':null),'per $1 risked · RAW model probability',Q.TOOLTIP.ev+' '+Q.TOOLTIP.raw_ev)
+    +fbQevCell('Calibrated EV',adj?fbQevEv(adj.expected_value):'<span class="gx-miss">n/a</span>',
+      adj?('cover '+fbQevPct(adj.model_cover_probability)+' · '+fbEsc(String(adj.maturity||'').toUpperCase())+' · '+fbEsc(adj.method||'')):fbEsc(b.adjusted?b.adjusted.reason:''),Q.TOOLTIP.adjusted_ev)
+    +fbQevCell('EdgeDesk fair price',b.model_fair_odds!=null?Q.priceText(b.model_fair_odds):'—','the price at which EV = 0'+(adj&&adj.model_fair_odds!=null?' · calibrated '+Q.priceText(adj.model_fair_odds):''),Q.TOOLTIP.fair_odds)
+    +'</div>';
+  /* fair price vs market price */
+  h+='<div class="qev-fair" title="'+fbQevTip('fair_odds')+'"><span><span class="qev-k">EdgeDesk fair price</span> <b>'+(b.model_fair_odds!=null?Q.priceText(b.model_fair_odds):'—')+'</b></span>'
+    +'<span><span class="qev-k">Market price</span> <b>'+fbQevPrice(b)+'</b></span>'
+    +'<span><span class="qev-k">Price advantage</span> <b>'+(b.price_advantage_cents!=null?(b.price_advantage_cents>=0?'+':'−')+Math.abs(Math.round(b.price_advantage_cents))+' cents':'—')+'</b> <span class="mut">'+(b.price_advantage_cents>=0?'the market pays more than the model’s fair price':'the market pays less than the model’s fair price')+'</span></span></div>';
+  var ln=Q.lineText(b.line)+' ('+fbQevPrice(b)+')';
+  h+='<div class="qev-explain">At this exact '+fbEsc(ln)+' quote, EdgeDesk estimates a '+fbQevPct(b.model_cover_probability)+' probability of covering'
+    +(push?' (pushes excluded: '+fbQevPct(b.model_push_probability)+' of games land exactly on '+Math.abs(b.line)+' and return the stake)':'')+'. '
+    +'A '+fbQevPrice(b)+' wager needs approximately '+fbQevPct(b.break_even_probability)+' to break even. '
+    +'Using the model probability, the expected return is '+Q.signedPct(b.expected_value,1)+' per dollar risked before accounting for model error. '
+    +(adj?'EdgeDesk’s validated calibration ('+fbEsc(String(adj.maturity||'shadow').toLowerCase())+'; '+fbEsc(adj.anchor&&adj.anchor.text?adj.anchor.text:'anchored at the market line')+') reads the same quote at '
+      +fbQevPct(adj.model_cover_probability)+' cover and '+Q.signedPct(adj.expected_value,1)+' EV. When the two disagree, the calibrated number is the one the record supports.':
+      fbEsc(b.adjusted?'Calibrated EV: '+b.adjusted.reason+'.':''))
+    +' EV is model-dependent and never guaranteed profit.</div>';
+  /* RAW EV · CALIBRATED EV · DECISION — three answers, never merged */
+  h+='<div class="qev-three"><div><span class="qev-k">Raw EV</span> '+fbQevEv(b.expected_value,warn||audit?'flat':null)+'</div>'
+    +'<div><span class="qev-k">Uncertainty-adjusted EV</span> '+(adj?fbQevEv(adj.expected_value)+' <span class="mut">calibrated · '+fbEsc(String(adj.maturity||'').toLowerCase())+'</span>':'<span class="mut">not available — '+fbEsc(b.adjusted?b.adjusted.reason:'')+'</span>')+'</div>'
+    +'<div><span class="qev-k">Decision</span> <span class="gx-st '+dec.cls+'">'+fbEsc(dec.text)+'</span></div></div>'
+    +'<div class="qev-decline">'+fbEsc(dec.why||'')+(b.decision_reason&&!b.decision_evaluated&&!v.decision.requires?' '+fbEsc(b.decision_reason):'')
+    +' Positive EV never makes a bet by itself: the decision layer also weighs calibration, integrity, freshness, quarterback and market state.</div>';
+  var allFlags=(b.flags||[]).concat(G.flags||[]);
+  if(allFlags.length)h+='<div class="gd-sec">Sanity checks raised</div>'+fbQevFlagsHTML(allFlags);
+  h+='</div>';
+  h+=fbQevTwoSidedHTML(v)+fbQevSensitivityHTML(v)+fbQevOtherHTML(v);
+  h+='<div class="gx-foot">Model: '+fbEsc(v.model.model_version||'?')+' · projection '+fbEsc(String(v.model.projection_timestamp||'').slice(0,16).replace('T',' '))+'Z · distribution: '+fbEsc(v.model.basis||'')+'. '
+    +'Each EV is priced from ONE quote: its line and its price came from the same book at the same capture. Research, not a recommendation to bet.</div>';
+  return h;
+}
+/* BOTH SIDES, every main-market quote — the audit that catches a probability
+   or orientation bug (two sides of one number cannot both be good) */
+function fbQevTwoSidedHTML(v){
+  var Q=window.EDQuoteEV,G=v.g,rows='';
+  ['home','away'].forEach(function(s){
+    var S=G.sides[s];if(!S)return;
+    S.quotes.filter(function(o){return o.is_main_line;}).sort(function(a,b){return (b.line-a.line)||((b.decimal_odds||0)-(a.decimal_odds||0));}).forEach(function(o){
+      rows+='<tr class="'+(o===S.best_ev?'qev-hl':'')+'"><td>'+fbEsc(o.team||s)+' '+fbEsc(Q.lineText(o.line))+(o===S.best_ev?' <span class="qev-tag">best EV</span>':'')+(o===S.best_line?' <span class="qev-tag">best line</span>':'')+(o===S.best_price?' <span class="qev-tag">best price</span>':'')+'</td>'
+        +'<td class="num">'+fbQevPrice(o)+'</td><td>'+fbEsc(o.sportsbook||'—')+'</td><td class="num">'+fbQevAge(o)+'</td>'
+        +(o.ev_available
+          ?'<td class="num">'+fbQevPct(o.model_cover_probability)+'</td><td class="num">'+fbQevPct(o.model_push_probability)+'</td><td class="num">'+fbQevPct(o.break_even_probability)+'</td>'
+            +'<td class="num">'+fbEsc(Q.ppText(o.probability_edge))+'</td><td class="num">'+fbQevEv(o.expected_value,o.ev_state!=='AVAILABLE'?'flat':null)+'</td><td class="num">'+(o.model_fair_odds!=null?Q.priceText(o.model_fair_odds):'—')+'</td>'
+          :'<td colspan="6" class="mut">EV unavailable · '+fbEsc(o.ev_unavailable_reason)+'</td>')
+        +'<td class="mut" title="'+fbEsc(o.decision_reason||'')+'">'+fbEsc(String(o.decision_status||'').replace(/_/g,' '))+'</td></tr>';
+    });
+  });
+  if(!rows)return '';
+  return '<div class="gd-sec">Both sides · every main-market quote</div><div class="tblwrap"><table class="mini qev-t"><thead><tr><th>Wager</th><th class="num">Price</th><th>Book</th><th class="num">Age</th>'
+    +'<th class="num" title="'+fbQevTip('cover')+'">Cover</th><th class="num" title="'+fbQevTip('push')+'">Push</th><th class="num" title="'+fbQevTip('break_even')+'">Break-even</th>'
+    +'<th class="num" title="'+fbQevTip('probability_edge')+'">Edge</th><th class="num" title="'+fbQevTip('ev')+'">EV</th><th class="num" title="'+fbQevTip('fair_odds')+'">Fair</th><th>Decision</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'<div class="gx-foot">Both sides are priced independently from the same distribution; if both sides of one number ever show positive EV without a middle or an arbitrage, a check is raised. '
+    +'A quote the decision engine did not evaluate reads NOT EVALUATED — it never inherits another quote’s decision.</div>';
+}
+/* PRICE SENSITIVITY: the side's actual quotes at every number, then — apart,
+   and labelled — the same price moved half a point and a point */
+function fbQevSensitivityHTML(v){
+  var Q=window.EDQuoteEV,G=v.g,b=G.best_ev_quote;if(!b)return '';
+  var S=G.sides[b.side],rows=S.ladder.rows;
+  var act=rows.map(function(r){var o=r.best;
+    return '<tr><td>'+fbEsc(o.team)+' '+fbEsc(Q.lineText(o.line))+'</td><td class="num">'+fbQevPrice(o)+'</td><td>'+fbEsc(o.sportsbook||'')+'</td><td class="num">'+fbQevPct(o.model_cover_probability)+'</td><td class="num">'+fbQevEv(o.expected_value)+'</td></tr>';}).join('');
+  var hyp=[-1,-0.5,0.5,1].map(function(dl){
+    var o=Q.priceQuote(v.model,{game_id:v.gid,side:b.side,team:b.team,line:b.line+dl,american:b.american_exact,decimal:b.price_source==='DECIMAL'?b.decimal_odds:null,book:'hypothetical',captured_at:new Date().toISOString(),fresh:true},Object.assign({},v.ctx,{main_line_for_side:S.main_line}));
+    if(!o.ev_available)return '';
+    return '<tr class="qev-hyp"><td>'+fbEsc(o.team)+' '+fbEsc(Q.lineText(o.line))+'</td><td class="num">'+fbQevPrice(o)+'</td><td class="num">'+fbQevPct(o.model_cover_probability)+'</td><td class="num">'+fbQevEv(o.expected_value,'flat')+'</td></tr>';}).join('');
+  return '<div class="gd-sec">Price sensitivity · '+fbEsc(b.team)+'</div>'
+    +'<div class="tblwrap"><table class="mini qev-t"><thead><tr><th>Available quote</th><th class="num">Price</th><th>Book</th><th class="num">Cover</th><th class="num">EV</th></tr></thead><tbody>'+act+'</tbody></table></div>'
+    +(hyp?'<div class="gd-sec">Hypothetical · not offered by any book</div><div class="tblwrap"><table class="mini qev-t qev-hypt"><thead><tr><th>HYPOTHETICAL line</th><th class="num">Same price</th><th class="num">Cover</th><th class="num">EV</th></tr></thead><tbody>'+hyp+'</tbody></table></div>'
+      +'<div class="gx-foot">Hypothetical rows hold the best quote’s price fixed and move only the number — what the same price would be worth half a point or a point either way. They are never shown as available prices.</div>':'');
+}
+/* TOTALS AND MONEYLINES: priced only once their probability is validated */
+function fbQevOtherHTML(v){
+  var Q=window.EDQuoteEV,O=v.other;if(!O)return '';
+  function blk(title,M){
+    var b=M.best_ev;
+    if(b)return '<div class="qev-other"><span class="qev-k">'+title+'</span> '+fbEsc(b.label)+' · '+fbEsc(b.sportsbook||'')+' · cover '+fbQevPct(b.model_cover_probability)+' · BE '+fbQevPct(b.break_even_probability)+' · '+fbQevEv(b.expected_value)+'</div>';
+    return '<div class="qev-other na"><span class="qev-k">'+title+'</span> <b>UNAVAILABLE</b> · '+fbEsc(M.unavailable_reason||'')
+      +(M.quotes.length?' <span class="mut">('+M.quotes.length+' quote'+(M.quotes.length===1?'':'s')+' on file, not priced)</span>':'')+'</div>';
+  }
+  return '<div class="gd-sec">Totals and moneylines</div>'+blk('TOTAL EV',O.total)+blk('MONEYLINE EV',O.moneyline)
+    +'<div class="gx-foot">A total or a moneyline gets an EV only when its probability has cleared calibration. Until then EdgeDesk shows it as unavailable rather than pretending a precision it has not validated.</div>';
+}
+
+/* ── THE ALTERNATE SPREAD LADDER ───────────────────────────────────────── */
+function fbQevUi(gid,v){
+  var ui=FBQEV.ui[gid];
+  if(!ui){var b=v&&v.g&&v.g.best_ev_quote;ui=FBQEV.ui[gid]={side:b?b.side:'home',mode:'best',sort:'spread'};}
+  return ui;
+}
+window.fbQevSet=function(gid,k,val){
+  var v=FBQEV.last[String(gid)];if(!v)return;
+  fbQevUi(gid,v)[k]=val;
+  var el=document.getElementById('qevl-'+String(gid).replace(/[^a-zA-Z0-9]/g,'_'));
+  if(el)el.innerHTML=fbQevLadderInner(v);
+};
+function fbQevLadderHTML(v){
+  if(!v)return '';
+  return '<div id="qevl-'+fbEsc(String(v.gid).replace(/[^a-zA-Z0-9]/g,'_'))+'">'+fbQevLadderInner(v)+'</div>';
+}
+function fbQevLadderInner(v){
+  var Q=window.EDQuoteEV,G=v.g,ui=fbQevUi(v.gid,v),S=G.sides[ui.side],gidJ=fbEsc(String(v.gid)).replace(/'/g,'');
+  function btn(k,val,label,on){return '<button class="fbs-chip'+(on?' on':'')+'" aria-pressed="'+(on?'true':'false')+'" onclick="fbQevSet(\''+gidJ+'\',\''+k+'\',\''+val+'\')">'+label+'</button>';}
+  var h='<div class="qev-tabs">'+btn('side','away',fbEsc(G.sides.away?G.sides.away.team:v.away),ui.side==='away')+btn('side','home',fbEsc(G.sides.home?G.sides.home.team:v.home),ui.side==='home')
+    +'<span class="qev-sep"></span>'+btn('mode','frontier','Value frontier only',ui.mode==='frontier')+btn('mode','best','Best price per spread',ui.mode==='best')+btn('mode','all','All quotes',ui.mode==='all')
+    +'<span class="qev-sep"></span><span class="mut" style="font-size:10.5px">Sort</span>'
+    +[['spread','Spread'],['cover','Cover'],['ev','EV'],['edge','Edge'],['price','Price']].map(function(x){return btn('sort',x[0],x[1],ui.sort===x[0]);}).join('')+'</div>';
+  if(!S||!S.quotes.length)return h+'<div class="gx-none">No quote on file for this side.</div>';
+  var L=S.ladder;
+  var altN=S.quotes.filter(function(o){return !o.is_main_line;}).length;
+  if(v.alt&&v.alt.note)h+='<div class="gx-foot" style="margin-top:4px"><b>Alternate spreads:</b> '+fbEsc(v.alt.note)+(altN?'':' The ladder below holds the main-market numbers the books are dealing.')+'</div>';
+  /* SAFER · MAIN · MAX EV */
+  function card(t,o,tip){
+    if(!o)return '<div class="qev-opt na" title="'+fbEsc(tip)+'"><div class="qev-k">'+t+'</div><div class="mut">none</div></div>';
+    return '<div class="qev-opt" title="'+fbEsc(tip)+'"><div class="qev-k">'+t+'</div><div class="qev-ol">'+fbEsc(Q.lineText(o.line))+' '+fbQevPrice(o)+'</div>'
+      +'<div>'+fbQevPct(o.model_cover_probability)+' cover</div><div>'+fbQevEv(o.expected_value)+' EV</div><div class="mut">'+fbEsc(o.sportsbook||'')+' · '+fbQevAge(o)+'</div>'
+      +(o.tail&&o.tail.status==='NOT_VALIDATED'?'<div class="qev-lc">LOW CONFIDENCE · TAIL CALIBRATION NOT VALIDATED</div>':'')+'</div>';
+  }
+  var safe=L.safest_positive_ev,mx=L.max_ev,mn=L.main,cand=!safe?L.safest_positive_ev_any:null;
+  h+='<div class="qev-opts">'+(safe?card('Safer +EV',safe,Q.TOOLTIP.safest):card('Safer +EV · not validated',cand,Q.TOOLTIP.safest))+card('Main line',mn,Q.TOOLTIP.main_line)+card('Max EV',mx,Q.TOOLTIP.max_ev)+'</div>';
+  if(cand){
+    var why=[];if(cand.tail&&cand.tail.status==='NOT_VALIDATED')why.push('it sits beyond the validated tail range');
+    (cand.flags||[]).filter(function(f){return f.severity==='HIGH';}).forEach(function(f){why.push(f.code.replace(/_/g,' ').toLowerCase());});
+    h+='<div class="gx-foot">No positive-EV quote on this side cleared every guard, so none is called the safest +EV line. The highest-cover positive-EV candidate is '+fbEsc(cand.label)+' — not validated because '+fbEsc(why.join('; ')||'a guard was raised')+'.</div>';
+  }
+  var a=safe||mn,b=mx;
+  if(a&&b&&a!==b){
+    var dc=a.model_cover_probability-b.model_cover_probability,de=b.expected_value-a.expected_value;
+    h+='<div class="qev-trade"><b>PRICE TRADEOFF</b> Going from '+fbEsc(Q.lineText(a.line))+' ('+fbQevPrice(a)+') to '+fbEsc(Q.lineText(b.line))+' ('+fbQevPrice(b)+'): cover probability '
+      +fbQevPct(a.model_cover_probability)+' → '+fbQevPct(b.model_cover_probability)+', EV '+Q.signedPct(a.expected_value)+' → '+Q.signedPct(b.expected_value)+'. '
+      +(dc>=0&&de>=0?'You sacrifice roughly '+(100*dc).toFixed(1)+' percentage points of cover probability for approximately '+(100*de).toFixed(1)+' percentage points more model EV.'
+        :(de<0?'The more aggressive line gives up both cover and EV here.':'The two are close.'))
+      +' '+fbEsc(L.best_balance_note)+'</div>';
+  }
+  /* the table */
+  var list;
+  if(ui.mode==='frontier')list=L.frontier.slice();
+  else if(ui.mode==='all')list=S.quotes.slice();
+  else list=L.rows.map(function(r){return r.best;}).concat(S.quotes.filter(function(o){return !o.ev_available;}));
+  var key={spread:function(o){return -(o.line||0);},cover:function(o){return -(o.model_cover_probability==null?-9:o.model_cover_probability);},
+    ev:function(o){return -(o.expected_value==null?-9:o.expected_value);},edge:function(o){return -(o.probability_edge==null?-9:o.probability_edge);},
+    price:function(o){return -(o.decimal_odds||0);}}[ui.sort]||function(o){return -(o.line||0);};
+  list.sort(function(x,y){return (key(x)-key(y))||((y.decimal_odds||0)-(x.decimal_odds||0));});
+  var rows=list.map(function(o){
+    var tags=[];
+    if(o===mx)tags.push('MAX EV');if(o===safe)tags.push('SAFEST +EV');if(o===mn)tags.push('MAIN');
+    if(o.dominated)tags.push('dominated');if(!o.is_main_line)tags.push('alt');
+    var lc=o.tail&&o.tail.status==='NOT_VALIDATED';
+    return '<tr class="'+(o.dominated?'qev-dom':'')+(o===mx||o===safe?' qev-hl':'')+'"'+(o.dominated?' title="'+fbQevTip('dominated')+'"':'')+'><td>'+fbEsc(Q.lineText(o.line))+(tags.length?' <span class="qev-tag">'+fbEsc(tags.join(' · '))+'</span>':'')+'</td>'
+      +'<td class="num">'+fbQevPrice(o)+'</td><td>'+fbEsc(o.sportsbook||'—')+'</td>'
+      +(o.ev_available?'<td class="num">'+fbQevPct(o.model_cover_probability)+'</td><td class="num">'+fbQevPct(o.model_push_probability)+'</td><td class="num">'+fbQevPct(o.break_even_probability)+'</td>'
+        +'<td class="num">'+fbEsc(Q.ppText(o.probability_edge))+'</td><td class="num">'+fbQevEv(o.expected_value,o.ev_state!=='AVAILABLE'?'flat':null)+(lc?' <span class="qev-lc" title="'+fbQevTip('tail')+'">LC</span>':'')+'</td>'
+        +'<td class="num">'+(o.model_fair_odds!=null?Q.priceText(o.model_fair_odds):'—')+'</td>'
+        :'<td colspan="6" class="mut">EV unavailable · '+fbEsc(o.ev_unavailable_reason)+'</td>')
+      +'<td class="num">'+fbQevAge(o)+'</td></tr>';
   }).join('');
-  return '<div class="tblwrap"><table class="mini" style="width:100%;font-size:12px"><thead><tr><th>Side</th><th class="num">Reference price</th>'
-    +'<th class="num">Break-even</th><th class="num">Model cover</th><th class="num">Difference</th><th class="num">Expected ROI</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
-    +'<div class="gx-foot">The model cover probability is the engine&rsquo;s own margin distribution at this exact line, with the push mass kept apart (a push is not a loss). '
-    +'The joined quote carries no per-side spread price, so the break-even is shown at a -110 <b>reference</b> price, not the market&rsquo;s; the real price changes the break-even and the ROI. '
-    +'The engine&rsquo;s validation tier governs whether this is anything more than research — see the edge tag in the detail section.</div>';
+  h+='<div class="tblwrap"><table class="mini qev-t"><thead><tr><th>Spread</th><th class="num">Best price</th><th>Book</th><th class="num" title="'+fbQevTip('cover')+'">Cover %</th><th class="num" title="'+fbQevTip('push')+'">Push %</th>'
+    +'<th class="num" title="'+fbQevTip('break_even')+'">Break-even %</th><th class="num" title="'+fbQevTip('probability_edge')+'">Edge pp</th><th class="num" title="'+fbQevTip('model_ev')+'">EdgeDesk EV %</th>'
+    +'<th class="num" title="'+fbQevTip('fair_odds')+'">Fair odds</th><th class="num">Quote age</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'<div class="gx-foot">'+L.n_quotes+' priced quote'+(L.n_quotes===1?'':'s')+' across '+L.n_spreads+' number'+(L.n_spreads===1?'':'s')+'; '+L.n_dominated+' dominated (another quote has at least the cover probability and more EV). '
+    +'LC = low confidence: the line sits '+fbEsc(v.model.tail&&v.model.tail.validated_within_pts!=null?'more than '+v.model.tail.validated_within_pts+' pts':'too far')+' from the main line, beyond the range the alternate-line audit validated ('+fbEsc(v.model.tail&&v.model.tail.basis||'')+').</div>';
+  h+=fbQevChartSVG(S,mx,safe,mn);
+  /* buying points, one step at a time */
+  if(L.steps.length){
+    h+='<div class="gd-sec">Buying points · what each step costs and adds</div><div class="tblwrap"><table class="mini qev-t"><thead><tr><th>Step</th><th class="num">+Cover</th><th class="num">+Break-even</th><th class="num">Juice</th><th class="num">EV change</th><th>Key margins crossed</th><th>Read</th></tr></thead><tbody>'
+      +L.steps.map(function(s){
+        var keys=s.key_numbers.filter(function(k){return k.key;}).map(function(k){return k.abs_margin+' (model '+fbQevPct(k.model_mass,1)+(k.historical_share!=null?' · league '+fbQevPct(k.historical_share,1):'')+')';});
+        return '<tr><td>'+fbEsc(Q.lineText(s.to_line)+' '+Q.priceText(s.to_odds)+' → '+Q.lineText(s.from_line)+' '+Q.priceText(s.from_odds))+'</td>'
+          +'<td class="num">+'+s.cover_gain_pp.toFixed(1)+' pp'+(s.push_change_pp&&Math.abs(s.push_change_pp)>=0.05?' <span class="mut">'+(s.push_change_pp>0?'+':'−')+Math.abs(s.push_change_pp).toFixed(1)+' push</span>':'')+'</td><td class="num">'+(s.break_even_cost_pp>=0?'+':'−')+Math.abs(s.break_even_cost_pp).toFixed(1)+' pp</td>'
+          +'<td class="num">'+(s.juice_cents==null?'—':(s.juice_cents>=0?s.juice_cents+'¢':'saves '+Math.abs(s.juice_cents)+'¢'))+'</td>'
+          +'<td class="num">'+(s.ev_change_pct>=0?'+':'−')+Math.abs(s.ev_change_pct).toFixed(1)+'</td>'
+          +'<td class="mut" title="'+fbQevTip('key_number')+'">'+(keys.length?fbEsc(keys.join(', ')):'—')+'</td>'
+          +'<td class="'+(s.protection_worth_it?'qev-good':'qev-bad')+'">'+(s.protection_worth_it?'priced below model value':'costs more than model value')+'</td></tr>';
+      }).join('')+'</tbody></table></div>'
+      +'<div class="gx-foot">Each row buys the points between two adjacent numbers on the ladder. +Cover is what EdgeDesk’s distribution says the points add; +Break-even is what the extra juice costs in required win rate. '
+      +'A whole number also adds a push (the stake comes back), which +Cover leaves out and EV counts, so the Read follows the EV change: when EV rises the protection is priced below its model value. Key margins show the model’s probability that the game lands exactly there beside the league’s historical share of games decided by that margin.</div>';
+  }
+  var fl=L.flags.concat(S.quotes.reduce(function(a,o){return a.concat((o.flags||[]).filter(function(f){return f.code==='ALT_EV_OVER_35'||f.code==='TAIL_UNVALIDATED';}));},[]));
+  var seen={};fl=fl.filter(function(f){var k=f.code+f.text;if(seen[k])return false;seen[k]=1;return true;});
+  if(fl.length)h+='<div class="gd-sec">Ladder checks</div>'+fbQevFlagsHTML(fl.slice(0,12));
+  h+='<div class="gx-foot">'+fbEsc(Q.TOOLTIP.model_ev)+' The user decides the tradeoff: EdgeDesk shows the price, the probability, the EV and the protection each number buys, and never says “bet the highest EV”.</div>';
+  return h;
+}
+/* EV against the spread, one series on one axis. Cover probability rides in
+   the point labels and tooltips, not on a second scale. Hollow = dominated. */
+function fbQevChartSVG(S,mx,safe,mn){
+  var pts=S.ladder.rows.map(function(r){return r.best;});
+  if(pts.length<2)return '';
+  var W=600,H=190,pl=62,pr=18,pt=16,pb=46;
+  var xs=pts.map(function(o){return o.line;}),ys=pts.map(function(o){return o.expected_value;});
+  var x0=Math.min.apply(null,xs),x1=Math.max.apply(null,xs),y0=Math.min(0,Math.min.apply(null,ys)),y1=Math.max(0,Math.max.apply(null,ys));
+  if(x1-x0<1){x0-=0.5;x1+=0.5;}var yp=(y1-y0)*0.12||0.02;y0-=yp;y1+=yp;
+  function X(x){return pl+(W-pl-pr)*(x1===x0?0.5:(x1-x)/(x1-x0));}          /* safest (most points) on the left */
+  function Y(y){return pt+(H-pt-pb)*(1-(y-y0)/(y1-y0));}
+  var Q=window.EDQuoteEV,s='<svg class="qev-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+fbEsc('EdgeDesk EV by spread for '+S.team+', safest number on the left')+'">';
+  var ticks=[y0+yp,0,y1-yp].filter(function(t,i,a){return a.indexOf(t)===i;});
+  ticks.forEach(function(t){s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(t).toFixed(1)+'" y2="'+Y(t).toFixed(1)+'" class="'+(t===0?'z':'g')+'"/><text x="'+(pl-6)+'" y="'+(Y(t)+3).toFixed(1)+'" class="yl">'+Q.signedPct(t,0)+'</text>';});
+  var path=pts.slice().sort(function(a,b){return b.line-a.line;}).map(function(o,i){return (i?'L':'M')+X(o.line).toFixed(1)+' '+Y(o.expected_value).toFixed(1);}).join(' ');
+  s+='<path d="'+path+'" class="ln"/>';
+  pts.forEach(function(o){
+    var cx=X(o.line).toFixed(1),cy=Y(o.expected_value).toFixed(1),tag=o===mx?'MAX EV':(o===safe?'SAFEST +EV':(o===mn?'MAIN':''));
+    s+='<g class="pt'+(o.dominated?' dom':'')+'"><circle cx="'+cx+'" cy="'+cy+'" r="12" class="hit"/><circle cx="'+cx+'" cy="'+cy+'" r="4.5" class="mk"/>'
+      +'<title>'+fbEsc(o.label+' · '+(o.sportsbook||'')+' · cover '+(100*o.model_cover_probability).toFixed(1)+'% · break-even '+(100*o.break_even_probability).toFixed(1)+'% · EV '+Q.signedPct(o.expected_value)+(o.dominated?' · dominated':'')+(tag?' · '+tag:''))+'</title></g>'
+      +'<text x="'+cx+'" y="'+(H-pb+14)+'" class="xl">'+fbEsc(Q.lineText(o.line))+'</text>'
+      +'<text x="'+cx+'" y="'+(H-pb+26)+'" class="xs">'+fbEsc(Q.priceText(o.american_odds))+'</text>'
+      +'<text x="'+cx+'" y="'+(H-pb+38)+'" class="xs">'+(100*o.model_cover_probability).toFixed(0)+'%</text>'
+      +(tag?'<text x="'+cx+'" y="'+(Number(cy)-9)+'" class="tg">'+tag+'</text>':'');
+  });
+  s+='<text x="2" y="'+(H-pb+26)+'" class="xs rl">price</text><text x="2" y="'+(H-pb+38)+'" class="xs rl">cover</text>';
+  return '<div class="gd-sec">EdgeDesk EV by spread · '+fbEsc(S.team)+'</div>'+s+'</svg>'
+    +'<div class="gx-foot">One point per available number (its best price). The curve need not be smooth: each point carries its own book’s price. Hollow points are dominated. Hover a point for its cover probability, break-even and book.</div>';
+}
+
+/* ── THE VERIFIED-MAJOR ROWS: is the disagreement worth anything at the price? */
+function fbQevMajorRows(v){
+  if(!v)return '';
+  var Q=window.EDQuoteEV,G=v.g,b=G.best_ev_quote,dec=fbQevDecisionText(v),adj=b&&b.adjusted&&b.adjusted.available?b.adjusted:null;
+  var row=function(l,val){return '<span class="l">'+fbEsc(l)+'</span><span>'+val+'</span>';};
+  if(!b)return row('Expected value','<span class="mut">EV unavailable · '+fbEsc(G.ev_unavailable_reason)+'</span>')+row('Decision',fbEsc(dec.text)+' <span class="mut">'+fbEsc(dec.why)+'</span>');
+  return row('Best sportsbook quote',fbEsc(b.label)+' · '+fbEsc(b.sportsbook||'')+' · '+fbQevAge(b)+' old ('+fbEsc(String(b.quote_status||'').toLowerCase())+')')
+    +row('Model cover probability',fbQevPct(b.model_cover_probability)+(b.model_push_probability>0?' <span class="mut">push '+fbQevPct(b.model_push_probability)+'</span>':''))
+    +row('Break-even probability',fbQevPct(b.break_even_probability))
+    +row('Probability edge',fbEsc(Q.ppText(b.probability_edge)))
+    +row('Expected value (raw)',fbQevEv(b.expected_value,'flat')+(adj?' · calibrated '+fbQevEv(adj.expected_value)+' <span class="mut">'+fbEsc(String(adj.maturity||'').toLowerCase())+'</span>':''))
+    +row('Integrity gate',b.ev_state==='AVAILABLE'?'cleared for price evaluation':'<b>'+fbEsc(b.actionable_context||'not cleared')+'</b>')
+    +row('Decision',fbEsc(dec.text)+' <span class="mut">'+fbEsc(dec.why)+'</span>');
+}
+/* ── PRICE AND BREAK-EVEN, AT THE REAL PRICE ─────────────────────────────
+   Replaces the −110 REFERENCE table this section used to print: every number
+   below is priced at a captured quote's own line and odds. */
+function fbGxPrice(u,p){
+  var v=null;try{v=fbQevGameCfb(u,p);}catch(_){v=null;}
+  return fbQevCardHTML(v);
+}
+function fbGxAlts(u,p){
+  var v=null;try{v=fbQevGameCfb(u,p);}catch(_){v=null;}
+  return v?fbQevLadderHTML(v):'';
 }
 /* ── DATA QUALITY, explained ─────────────────────────────────────────── */
 function fbGxQuality(u,p){
@@ -53751,6 +54442,7 @@ function fbP4ForensicHTML(u,p,v){
     +row('EdgeDesk fair',fbEsc(X.edgedesk||'—')+' <span class="mut">(pure — never moved by the market)</span>')
     +row('Market consensus',fbEsc(X.market||'—')+(G.source?' <span class="mut">'+fbEsc(G.source)+'</span>':''))
     +row('Best available',B&&B.available&&B.focus?fbEsc(B.focus.text||''):'<span class="mut">'+fbEsc((B&&B.reason)||'none captured')+'</span>')
+    +(function(){var qv=null;try{qv=fbQevGameCfb(u,p);}catch(_){qv=null;}return fbQevMajorRows(qv);})()
     +row('Raw gap',fbEsc((X.raw_gap!=null?X.raw_gap.toFixed(1):'—')+' pts toward '+(X.toward||'—'))+(d.favorite_flip?' · <b>favourite flip</b>':'')
       +(d.verified_market_gap!=null?' · verified gap '+Math.abs(d.verified_market_gap).toFixed(1):''))
     +row('Football-only calibrated gap',(d.calibrated_gap!=null?Math.abs(d.calibrated_gap).toFixed(1):'—')+' <span class="mut">(outcome-fitted shadow; not the priced number)</span>')
@@ -53882,6 +54574,10 @@ function fbP4Card(u){
       rvC.what_changed.basis==='visit'?'since your last visit on this device':'since EdgeDesk first published this game'):'')
     +(rvC&&rvC.best_available_line?fbGxSec(gid,'best','Best available line',fbGxBest(u,p),true,
       'current captured quotes only · stale and unverified ones excluded'):'')
+    +fbGxSec(gid,'price','Price evaluation · expected value',fbGxPrice(u,p),true,
+      'EV at each exact quote: its line, its price, its book — from the model’s own cover probability at that line')
+    +fbGxSec(gid,'alts','Alternate spread value',fbGxAlts(u,p),true,
+      'every available number on both sides · cover, break-even, EV · the value frontier')
     +fbGxSec(gid,'matchup','Programs, conferences and the FBS rating',fbP4MatchupHTML(u,p),true,
       'who is playing, on one all-FBS scale')
     +fbGxSec(gid,'research','The research read',fbGxResearchRead(u,p),true,
@@ -53901,8 +54597,6 @@ function fbP4Card(u){
       'passing EPA per dropback, with the sample it came off — research context, not priced')
     +fbGxSec(gid,'cases','The case for each side',fbGxCases(u,p),true)
     +fbGxSec(gid,'scale','Model vs market',fbGxScale(u,p),true)
-    +fbGxSec(gid,'price','Price and break-even',fbGxPrice(u,p),false,
-      'EV only from the model’s own cover probability at this line')
     +fbGxSec(gid,'dq','Data quality by category',fbGxQuality(u,p),false,
       'available, partial, stale or unavailable — and why')
     +fbGxSec(gid,'scen','Scenarios · hypothetical',fbGxScenarios(u,p),false,
@@ -54603,7 +55297,7 @@ function fbP4StatusStrip(){
    exactly as it found it. */
 var FBP4_FILTER_DEFAULTS={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'};
 var FBP4_STATUSES=['VERIFIED MAJOR DISAGREEMENT','RESEARCH','INVESTIGATE','MARKET FAULT','THIN DATA','STALE QUOTE','NO MARKET','DATA FAULT','AWAITING DATA'];
-var FBP4_SORTS=[['kick','Kickoff'],['gap','Largest gap'],['conf','Conference'],['status','Status']];
+var FBP4_SORTS=[['kick','Kickoff'],['gap','Largest gap'],['ev_hi','Highest EV'],['ev_lo','Lowest EV'],['fresh','Freshest quote'],['conf','Conference'],['status','Status']];
 var FBP4_MARKETS=[['all','Any market state'],['with','With a market'],['without','No market'],['stale','Stale quote only']];
 
 function fbP4QueryParse(search){
@@ -54639,7 +55333,7 @@ function fbP4FiltersRead(){
   if(q.fbs_group&&['all','p4','other','independent'].indexOf(q.fbs_group)>=0)f.group=q.fbs_group;
   if(q.fbs_matchup&&['all','conference','non_conference','fbs_fcs'].indexOf(q.fbs_matchup)>=0)f.matchup=q.fbs_matchup;
   if(q.fbs_market&&['all','with','without','stale'].indexOf(q.fbs_market)>=0)f.market=q.fbs_market;
-  if(q.fbs_sort&&['kick','gap','conf','status'].indexOf(q.fbs_sort)>=0)f.sort=q.fbs_sort;
+  if(q.fbs_sort&&FBP4_SORTS.map(function(x){return x[0];}).indexOf(q.fbs_sort)>=0)f.sort=q.fbs_sort;
   if(q.fbs_status&&FBP4_STATUSES.indexOf(q.fbs_status)>=0)f.status=q.fbs_status;
   if(q.fbs_conf)f.conferences=String(q.fbs_conf).split(',').map(function(x){return x.trim();}).filter(Boolean);
   return f;
@@ -54774,6 +55468,16 @@ function fbP4Visible(rows){
     return ca.localeCompare(cb)||a.u.t-b.u.t;});
   else if(f.sort==='status')out.sort(function(a,b){
     return (ord.indexOf(a.st.t)-ord.indexOf(b.st.t))||a.u.t-b.u.t;});
+  /* EV sorts are informational: they reorder the board and change no status.
+     A game with no EV (no fresh priced quote) always sorts last — never as 0. */
+  else if(f.sort==='ev_hi'||f.sort==='ev_lo'||f.sort==='fresh'){
+    var val={};out.forEach(function(r){var v=null;try{v=fbQevGameCfb(r.u,r.p);}catch(_){v=null;}
+      val[r.gid]=f.sort==='fresh'?fbQevSortAge(v):fbQevSortEv(v);});
+    out.sort(function(a,b){
+      var x=val[a.gid],y=val[b.gid];
+      if(x==null&&y==null)return a.u.t-b.u.t;if(x==null)return 1;if(y==null)return -1;
+      return (f.sort==='ev_hi'?y-x:x-y)||a.u.t-b.u.t;});
+  }
   else out.sort(function(a,b){return a.u.t-b.u.t;});
   return out;
 }
@@ -54947,6 +55651,12 @@ function fbP4ConfBadge(side){
     +fbEsc(side.name+' · '+side.conference+(side.group_label?(' · '+side.group_label):''))+'">'
     +fbEsc(side.conference)+'</span>';
 }
+/* the pricing line under a board row: the best exact quote's EV, or why none */
+function fbP4QevSub(r){
+  var v=null;try{v=fbQevGameCfb(r.u,r.p);}catch(e){v=null;FBQEV.lastErr=String(e&&e.stack||e).slice(0,400);}
+  if(!v)return '';
+  return '<div class="qev-sub" onclick="fbP4Gate(\''+fbEsc(r.gid)+'\')">'+fbQevRowHTML(v)+'</div>';
+}
 function fbP4BoardHTML(){
   var S=FB.p4;
   var rows=fbP4Rows(),visible=fbP4Visible(rows),c=fbP4Counts(rows,visible);
@@ -55000,13 +55710,15 @@ function fbP4BoardHTML(){
         +(st.verified?'<span class="rv-lab verified" title="'+fbEsc(st.sub||st.t)+'">'+st.t+'</span>'
           :'<span style="color:'+st.c+'" title="'+fbEsc(st.sub||st.t)+'">'+st.t+'</span>');
     }
-    html+='<div'+(RV?' class="rv-row"':'')+' onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="'+grid+';cursor:pointer;border-bottom:1px solid var(--border);padding:7px 2px;color:var(--text)">'
+    var qsub=fbP4QevSub(r);
+    html+='<div'+(RV?' class="rv-row"':'')+' onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="'+grid+';cursor:pointer;border-bottom:'+(qsub?'0':'1px solid var(--border)')+';padding:7px 2px '+(qsub?'3px':'7px')+';color:var(--text)">'
       +'<span id="p4arr-'+fbEsc(gid)+'" style="color:var(--faint)">▸</span>'
       +'<span class="mut">'+fbP4KickLabel(u.t)+'</span>'
       +'<span>'+fbEsc(g.away_team)+' <span class="mut">→</span> '+fbEsc(g.home_team)
       +(m.matchup_type==='fbs_fcs'?' <span class="fbs-badge fcs">FCS</span>':'')+'</span>'
       +'<span class="fbs-confcell'+(RV?' rv-conf':'')+'">'+conf+'</span>'
       +cells+'</div>'
+      +qsub
       +'<div id="p4gate-'+fbEsc(gid)+'"></div>';
   });
   html+='</div></div>';
@@ -55024,6 +55736,7 @@ function fbP4BoardHTML(){
     +'INVESTIGATE: a gap of 7+ points that has not passed the integrity gate — more often missing information than an edge. '
     +'VERIFIED MAJOR DISAGREEMENT: a 7+ gap that survived every check (correct game and orientation, a fresh multi-book market, ratings on current-season games, a resolved quarterback, no abnormal availability data, every adjustment inside its validated range, independent submodel support, and a gap that holds after football-only calibration). It is genuinely rare, and it is still not a bet. '
     +'MARKET FAULT: the market data is too thin or stale to verify a large gap. DATA FAULT: a known integrity problem. MARKET ALIGNED: inside the research threshold. '
+    +'The line under each game is the PRICE: the main-market quote with the best expected value on either side (its book, its age), EdgeDesk’s cover probability at that exact line, the break-even its odds require, the probability edge and the EV — raw, and calibrated where a validated calibration exists. EV is arithmetic at one price, not a pick, and a gap in points is not EV. '
     +'NEAR PICK’EM: EdgeDesk names a side with under a point of separation. LIMITED DATA and LOW RELIABILITY: too little on file to read the gap. REL is a 0-100 reliability score (data quality, freshness, source agreement and projection stability), not a probability. '
     +'Hover a label for its reason and the board status the filters below still read.</div>';
   html+='<div class="gd-modelnote" style="margin-top:8px">Statuses are operational reads, never picks. '
@@ -55454,6 +56167,47 @@ function fbWrConfidence(c){
 /* One board card, collapsed: matchup, then market / model / gap /
    confidence / status as one scannable readout. The "why research it"
    sentence folds under a disclosure, and Open research is the full story. */
+/* the quote-level EV of one research-board game: the best exact price, its
+   EV (raw, and calibrated where one exists), or why there is none */
+function fbQevForKey(board,gid){
+  try{
+    if(board==='p4'){
+      var u=(FB.p4.up||[]).filter(function(x){return String(x.g.game_id)===String(gid);})[0];if(!u)return null;
+      return fbQevGameCfb(u,fbP4ProjCached(u).p);
+    }
+    var n=(FB.nfl.up||[]).filter(function(x){return String(x.g.game_id)===String(gid);})[0];if(!n)return null;
+    var M=fbNflMarketFor(n.g,n.t);
+    return fbQevGameNfl(n,fbPredict('nfl',fbNflGameReq(n.g),M.mkt,fbNum(n.g.season)),M);
+  }catch(_){return null;}
+}
+/* THE JOURNAL'S HOOK (lib/edgedesk_personal_ui.js journalSave): the exact
+   spread entry a reader logs, priced once at save time and frozen. An entry
+   that matches a captured quote (side, number, price and — when named — book)
+   carries that quote's capture time; anything else is the reader's own typed
+   quote, priced by the same distribution and labelled USER_ENTERED_QUOTE. */
+window.EDQuoteEVForEntry=function(key,entry){
+  var Q=window.EDQuoteEV;if(!Q||!entry||entry.market_type!=='spread')return null;
+  var parts=String(key||'').split('|'),board=parts[0]==='cfb'?'p4':parts[0],gid=parts.slice(1).join('|');
+  var v=fbQevForKey(board,gid);
+  if(!v||!v.model||!v.model.available)return null;
+  var S=v.g.sides[entry.selection],line=+entry.line,price=Math.round(+entry.price_american),book=entry.sportsbook?String(entry.sportsbook).toLowerCase().replace(/[^a-z0-9]/g,''):null;
+  var hit=(S?S.quotes:[]).filter(function(o){return o.ev_available&&o.line===line&&o.american_odds===price
+    &&(!book||!o.sportsbook||String(o.sportsbook).toLowerCase().replace(/[^a-z0-9]/g,'')===book);})[0]||null;
+  var o=hit||Q.priceQuote(v.model,{game_id:v.gid,side:entry.selection,line:line,american:price,book:entry.sportsbook||'reader entry',
+    captured_at:new Date().toISOString(),fresh:true,market_type:'spread'},Object.assign({},v.ctx,{main_line_for_side:S?S.main_line:null}));
+  if(!o||!o.ev_available)return null;
+  return Q.freeze(o,{origin:hit?'CAPTURED_QUOTE':'USER_ENTERED_QUOTE',decision_status:o.decision_status||v.decision.status,decision_reason:o.decision_reason||v.decision.reason});
+};
+function fbWrEvCell(c,cell){
+  var v=fbQevForKey(c.board,c.gid);
+  if(!v)return '';
+  var b=v.g.best_ev_quote,a=b&&b.adjusted&&b.adjusted.available?b.adjusted:null;
+  /* this reading-order module speaks no betting language, so it carries the
+     model-EV wording of the tooltip */
+  if(!b)return cell('ev','EV','<span class="gx-miss">—</span> <span class="mut" style="font-size:11px">unavailable · '+fbEsc(v.g.ev_unavailable_reason)+'</span>',window.EDQuoteEV.TOOLTIP.model_ev);
+  return cell('ev',a?'Raw EV':'EV',fbQevEv(b.expected_value,b.ev_state!=='AVAILABLE'?'flat':null)+(a?' <span class="mut" style="font-size:11px">cal '+window.EDQuoteEV.signedPct(a.expected_value)+'</span>':'')
+    +' <span class="mut" style="font-size:11px">'+fbEsc(b.label)+' · '+fbEsc(b.sportsbook||'')+' · '+fbQevAge(b)+'</span>',window.EDQuoteEV.TOOLTIP.model_ev);
+}
 function fbWrRowHTML(x){
   var c=x.candidate,u=x.detail.uncertainty,when='';
   try{when=c.kickoff?whenLabel(new Date(c.kickoff).toISOString()):'';}catch(_){}
@@ -55473,6 +56227,7 @@ function fbWrRowHTML(x){
       +cell('gap','Gap',fbEsc(vg?c.view.market_gap.text:(Math.abs(c.model_margin-c.market_margin).toFixed(1)+' pts')))
       +cell('cf '+cf.cls,'Confidence',cf.html,cf.title)
       +cell('st','Status','<span class="fb-wr-st '+stCls+'">'+fbEsc(c.status)+'</span>')
+      +fbWrEvCell(c,cell)
     +'</div>'
     +(u.elevated?'<div class="fb-wr-u">Higher uncertainty · '+fbEsc(u.reasons.map(function(k){return FB_WR_UNC[k]||k;}).join(' · '))+'</div>':'')
     +'<details class="fb-wr-w"><summary><b>Why research it</b></summary><p>'+fbEsc(x.why.text)+'</p></details>'

@@ -363,9 +363,12 @@ Also: the queue with the Read filters ([png](demo/r_queue.png)), the Read record
 3. **One priced book.** Consensus, line shopping, "my books" and the book
    selector work for any number of books, but the ledger holds DraftKings only.
    Books arrive when the Odds API pull into the Lab carries them.
-4. **No alternates captured.** The fetcher exists but is not scheduled: that
-   needs a GitHub secret and spends Odds API credits (§38). Until then,
-   alternates come from the reader's own entries (Tools).
+4. **No alternates captured yet.** The capture step is now wired into
+   `cfb-lab.yml` for CFB and NFL, but it is off until the owner sets the
+   `READ_ALT_CAPTURE` repository variable to `on` and adds an `ODDS_API_KEY`
+   secret (it spends Odds API credits; see §38 and
+   `docs/edgedesk-ev/QUOTE_EV.md`). Until then, alternates come from the
+   reader's own entries (Tools).
 5. **What-if keeps the conditioning** on the current market, as the terminal's
    price curve does. A moved line is priced with today's distribution shape.
 6. **The page clock:** the committed build is from Sept 27. A reader sees STALE
@@ -454,17 +457,15 @@ surface says so.
 
 1. **Calibration for the champion.** A governance decision: promote V2.1, or
    calibrate V1 walk-forward. Until then no read can be certified.
-2. **Alternate capture is not scheduled.** To turn it on:
+2. **Alternate capture is wired but off.** The step "Alternate spreads
+   (opt-in, budgeted; CFB and NFL)" now sits in `.github/workflows/cfb-lab.yml`
+   before "Research terminal", and `ODDS_API_KEY` is on the allowlist in
+   `tools/games/builder.test.js`. To turn it on:
    - add an `ODDS_API_KEY` GitHub secret;
-   - add it to the allowlist in `tools/games/builder.test.js`;
-   - add this step to `.github/workflows/cfb-lab.yml` before "Research terminal":
-     ```yaml
-     - name: Alternate spreads for the EdgeDesk Read
-       if: ${{ steps.gate.outputs.proceed == 'true' && vars.READ_ALT_CAPTURE == 'on' }}
-       env: { ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }} }
-       run: node football/cfb_terminal/alternates.js --network || echo "::warning::alternates not captured"
-     ```
-   - It costs about 1 credit per event per run (≤ 12 events, at most every 3 h).
+   - set the repository variable `READ_ALT_CAPTURE` to `on`.
+   - It costs about 1 credit per event per run, per league (≤ 12 events inside
+     72 h, at most every 3 h, and never below 25 remaining credits). Details:
+     `docs/edgedesk-ev/QUOTE_EV.md`.
 3. **More books** in the Lab ledger (the Odds API pull) so consensus and line
    shopping have more than DraftKings.
 4. **app.html Excel export columns** for the Read (the app board reads the

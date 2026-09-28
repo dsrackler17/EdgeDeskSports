@@ -57,6 +57,8 @@ const REGIONS = [
   ['function fbEdrFor(name){', 'function fbP4Ratings(){'],
   ['function fbP4Ratings(){', 'function fbP4StatusFor(p,mkt,u){'],
   ['function fbP4StatusFor(p,mkt,u){', 'window.fbP4Gate=function(gid){'],
+  /* the quote-EV state the board loads (the loaders return early without fetch) */
+  ['/* QUOTE-LEVEL EV: the state and the static artifacts', 'function fbP4Ensure(){'],
   ['function fbP4StatusStrip(){', 'function fbP4Render(host){']
 ];
 function slice(start, end) {
@@ -768,7 +770,7 @@ chk('the offline export declares the same columns, in the same order', () => {
     const end = cli.indexOf('];', at);
     return (cli.slice(at, end).match(/'[a-z0-9_]+'/g) || []).map(x => x.slice(1, -1));
   }
-  const all = heads('NFL_HEAD').concat(heads('P4_HEAD')).concat(heads('FBS_HEAD')).concat(heads('CANON_HEAD'));
+  const all = heads('NFL_HEAD').concat(heads('P4_HEAD')).concat(heads('FBS_HEAD')).concat(heads('CANON_HEAD')).concat(heads('EV_HEAD'));
   return all.length === A.FBP4_CSV_HEAD.length && all.every((h, i) => h === A.FBP4_CSV_HEAD[i]);
 }, (() => {
   try {
@@ -780,6 +782,14 @@ chk('the offline export is not Power 4 gated by default', () => {
   const cli = fs.readFileSync(path.join(ROOT, 'football', 'cfb_p4', 'export_csv.js'), 'utf8');
   return /scope: 'upcoming', p4Only: false/.test(cli);
 });
+chk('the quote-EV tail is the declared EV block, appended last, and never prints 0 for an unavailable EV', () => {
+  const r = ROWS[0];
+  const t = A.fbP4QevTail(r.u, r.p);
+  const at = A.FBP4_CSV_HEAD.length - A.FBP4_QEV_TAIL_N;
+  return A.FB_QEV_HEAD.length === A.FBP4_QEV_TAIL_N && t.length === A.FBP4_QEV_TAIL_N
+    && A.FBP4_CSV_HEAD.slice(at).every((h, i) => h === A.FB_QEV_HEAD[i])
+    && (t[A.FB_QEV_HEAD.indexOf('ev_available')] === 'true' || (t[A.FB_QEV_HEAD.indexOf('expected_value_pct')] === '' && t[A.FB_QEV_HEAD.indexOf('ev_unavailable_reason')] !== ''));
+});
 chk('the FBS tail is exactly as long as the tail builder says', () => {
   const r = ROWS[0];
   return A.fbP4FbsTail(r.u, r.p, r.mkt).length === A.FBP4_FBS_TAIL_N;
@@ -787,13 +797,13 @@ chk('the FBS tail is exactly as long as the tail builder says', () => {
 chk('the canonical tail is exactly as long as its builder says, and never exports BET', () => {
   const r = ROWS[0];
   const t = A.fbP4CanonTail(r.u, r.p, r.mkt);
-  const ds = A.FBP4_CSV_HEAD.indexOf('decision_status') - (A.FBP4_CSV_HEAD.length - A.FBP4_CANON_TAIL_N);
+  const ds = A.FBP4_CSV_HEAD.indexOf('decision_status') - (A.FBP4_CSV_HEAD.length - A.FBP4_QEV_TAIL_N - A.FBP4_CANON_TAIL_N);
   return t.length === A.FBP4_CANON_TAIL_N && ROWS.every(x => A.fbP4CanonTail(x.u, x.p, x.mkt)[ds] !== 'BET');
 });
 chk('the tail carries the same classification the board rendered', () => {
   const r = ROWS.find(x => x.meta.matchup_type === 'conference');
   const tail = A.fbP4FbsTail(r.u, r.p, r.mkt);
-  const at = A.FBP4_CSV_HEAD.length - A.FBP4_FBS_TAIL_N - A.FBP4_CANON_TAIL_N;
+  const at = A.FBP4_CSV_HEAD.length - A.FBP4_FBS_TAIL_N - A.FBP4_CANON_TAIL_N - A.FBP4_QEV_TAIL_N;
   const ix = n => A.FBP4_CSV_HEAD.indexOf(n) - at;
   return tail[ix('home_conference_id')] === r.meta.home.conference_id
     && tail[ix('matchup_type')] === 'conference'
@@ -803,7 +813,7 @@ chk('the tail carries the same classification the board rendered', () => {
 chk('a game with no market exports NO MARKET, never an empty number', () => {
   const r = ROWS[0];
   const tail = A.fbP4FbsTail(r.u, r.p, { status: 'NO MARKET', spread_line: null });
-  const at = A.FBP4_CSV_HEAD.length - A.FBP4_FBS_TAIL_N - A.FBP4_CANON_TAIL_N;
+  const at = A.FBP4_CSV_HEAD.length - A.FBP4_FBS_TAIL_N - A.FBP4_CANON_TAIL_N - A.FBP4_QEV_TAIL_N;
   return tail[A.FBP4_CSV_HEAD.indexOf('market_status') - at] === 'NO MARKET';
 });
 chk('the export items are exactly the rows on screen', () => {

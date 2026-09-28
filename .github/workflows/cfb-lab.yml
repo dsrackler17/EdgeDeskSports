@@ -125,6 +125,29 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: node football/cfb_production/projections.js --write || echo "::warning::the canonical projections could not be built"
 
+      # Alternate spreads (football/cfb_terminal/alternates.js), CFB and NFL:
+      # opt-in and budgeted. It runs only when the repository variable
+      # READ_ALT_CAPTURE is 'on', and needs the ODDS_API_KEY secret (the same
+      # key the Supabase capture function holds); an empty key is a loud,
+      # named state, never a silent no-op. Each league prices at most 12
+      # events inside 72 h of kickoff, at most every 3 h, one credit per event,
+      # and stops below 25 remaining credits. Quotes go to their own ledgers
+      # and to football/markets/alternates_<league>.json (the page's feed);
+      # they never enter a consensus, an opener, a close or a decision. It runs
+      # BEFORE the research terminal so the build prices what it captured.
+      - name: Alternate spreads (opt-in, budgeted; CFB and NFL)
+        if: ${{ steps.gate.outputs.proceed == 'true' && vars.READ_ALT_CAPTURE == 'on' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          if [ -z "$ODDS_API_KEY" ]; then
+            echo "::warning::READ_ALT_CAPTURE is on but the ODDS_API_KEY secret is empty: no alternate spread was captured"
+            echo "Alternate spreads: NOT captured (the ODDS_API_KEY secret is missing)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node football/cfb_terminal/alternates.js --network --league cfb || echo "::warning::CFB alternates not captured"
+          node football/cfb_terminal/alternates.js --network --league nfl || echo "::warning::NFL alternates not captured"
+
       # The research terminal's cached research objects (football/cfb_terminal),
       # rebuilt from what this run just appended: the page reads these and runs
       # no model. The build refuses to write if a stale market would show an
@@ -163,7 +186,7 @@ jobs:
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
             football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
-            football/cfb_production/reports/traces.json football/cfb_terminal football/cfb_validation
+            football/cfb_production/reports/traces.json football/cfb_terminal football/cfb_validation football/markets
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
