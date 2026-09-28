@@ -115,23 +115,27 @@ section('3. no second calculation path: the Read prices exactly what the termina
 const G = JSON.parse(fs.readFileSync(path.join(__dirname, 'games.json'), 'utf8'));
 const GAMES = Object.values(G.games);
 {
-  let n = 0, worst = 0, where = null;
+  /* the slate thins as the week's games kick off, so the bar is "every priced
+     game and every curve row", never a fixed count the Saturday slate happens to clear */
+  let priced = 0, n = 0, worst = 0, where = null;
   GAMES.forEach((o) => {
     const F = o.price;
+    if (F.available && F.current) priced++;
     if (!o.read_inputs || !o.read_inputs.curve || !F.available || !F.current) return;
     const opt = RD.evaluateQuote(Object.assign(RD.fromTerminal(o, o.read_inputs, { now: Date.parse(G.generated_at) })), { side: F.side, line: F.current.line, price: F.current.price });
     n++;
     const d = Math.max(Math.abs(opt.raw_cover - F.current.cover), Math.abs(opt.raw_ev - F.current.ev), Math.abs(opt.break_even - F.current.break_even));
     if (d > worst) { worst = d; where = o.game_id; }
   });
-  chk('cover, break-even and EV at the terminal’s current quote match the terminal to 1e-4 on every priced game (' + n + ')', n > 20 && worst < 1.5e-4, { worst, where });
-  let m = 0, w2 = 0;
+  chk('cover, break-even and EV at the terminal’s current quote match the terminal to 1e-4 on every priced game (' + n + ' of ' + priced + ')', n === priced && worst < 1.5e-4, { worst, where });
+  let rows = 0, m = 0, w2 = 0;
   GAMES.forEach((o) => { (o.price.curve || []).forEach((r) => {
     if (!o.read_inputs || !o.read_inputs.curve) return;
+    rows++;
     const p = RD.sideProb(o.read_inputs.curve, o.price.side, r.line);
     if (!p) return; m++; w2 = Math.max(w2, Math.abs(p.cover - r.cover));
   }); });
-  chk('the stored curve reproduces the terminal’s price curve at every half point (' + m + ' rows)', m > 200 && w2 < 1.5e-4, w2);
+  chk('the stored curve reproduces the terminal’s price curve at every half point (' + m + ' of ' + rows + ' rows)', m === rows && w2 < 1.5e-4, w2);
 }
 
 /* =================================================================== 4 */
