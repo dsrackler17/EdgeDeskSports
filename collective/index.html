@@ -554,6 +554,9 @@ a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
      admin console, so a price rendered in two places is the same price. -->
 <script src="../lib/research_core.js"></script>
 <script src="../lib/research_eval.js"></script>
+<!-- THE grader (football-v2): the same functions the settle job runs and the
+     database mirrors (collective.fg2_*). The page grades nothing its own way. -->
+<script src="../lib/football_grading.js"></script>
 <script src="odds.js"></script>
 <!-- Which week is CURRENT. One rule, shared by this page and the schedule
      sync, so the slate a reader is shown and the slate that gets loaded can
@@ -1992,16 +1995,23 @@ function calibrationBuckets(points){
    home win probability against whether the home team actually won. Late
    picks are excluded exactly as the record excludes them. */
 function calibrationPoints(games,cs,ms){
-  var pts=[];
+  var pts=[],seen={};
   (games||[]).forEach(function(g){
-    if(!g||!g.result||g.result.home_score==null||g.result.away_score==null)return;
-    if(g.result.home_score===g.result.away_score)return;   /* tie: no winner to score */
-    var y=g.result.home_score>g.result.away_score?1:0;
+    /* exactly the rows the Brier score is computed on: a final with a
+       winner, one row per game (the season sweep can deliver a game twice),
+       a probability the grade actually scored. So n here IS the Brier n. */
+    var r=finalResult(g);
+    if(!r||r.margin===0)return;
+    var k=gameKey(g);
+    if(seen[k])return;
+    var y=r.margin>0?1:0;
     (g.models||[]).forEach(function(mr){
-      if(mr.locked||mr.late)return;
+      if(seen[k])return;
       if(mr.creator_slug!==cs||mr.model_slug!==ms)return;
-      if(mr.home_win_probability==null)return;
-      pts.push({p:mr.home_win_probability,y:y});
+      var gr=rowGrade(g,mr);
+      if(!gr||gr.brier==null||mr.home_win_probability==null)return;
+      seen[k]=1;
+      pts.push({p:Number(mr.home_win_probability),y:y});
     });
   });
   return pts;
@@ -2049,18 +2059,42 @@ function mlOutrightRecord(points){
    against the final score. Only a real aggregate counts: games with fewer
    than two models, dead-even splits, and (for the outright call) ties are
    excluded rather than guessed at. */
+/* The consensus is built FROM THE MEMBERS' OWN GRADES, not from a separate
+   picture of the game: the same captured close, the same eligible sides
+   (stated or derived by the one rule), the same exclusions. It used to be
+   graded from the consensus view's pct_picks_home, which counted STATED
+   picks only, so a model graded on a derived side counted in its own record
+   and not in the Collective's. */
+function consensusGameOf(g){
+  var FG=FGL();
+  if(!FG||!g)return null;
+  var r=finalResult(g);
+  if(!r)return null;
+  var cv=r.closing_spread==null?null:FG.atsCover(r.home,r.away,r.closing_spread);
+  var traces=[];
+  (g.models||[]).forEach(function(mr){
+    if(!gradableRow(mr))return;
+    var gr=rowGrade(g,mr);
+    if(!gr)return;
+    var p=mr.home_win_probability==null?null:Number(mr.home_win_probability);
+    traces.push({game_id:g.game_id,ats_result:gr.pick_result,ats_side:gr.side||null,
+      cover:cv?cv.cover:null,brier:gr.brier,home_win_prob:p,
+      outcome:r.margin>0?1:(r.margin<0?0:null)});
+  });
+  return FG.consensusGame(traces);
+}
 function consensusSeasonStats(games){
-  var ats={w:0,l:0,push:0},mlPts=[];
+  var ats={w:0,l:0,push:0},mlPts=[],seen={};
   (games||[]).forEach(function(g){
-    var c=g&&g.consensus,r=g&&g.result;
-    if(!c||c.locked||!(c.n>=2)||!r||r.home_score==null||r.away_score==null)return;
-    var margin=r.home_score-r.away_score;
-    if(c.home_win_prob_mean!=null&&margin!==0)
-      mlPts.push({p:c.home_win_prob_mean,y:margin>0?1:0});
-    if(c.pct_picks_home!=null&&c.pct_picks_home!==0.5){
-      var res=atsResult(margin,r.closing_spread,c.pct_picks_home>0.5?'home':'away');
-      if(res==='push')ats.push++;else if(res==='win')ats.w++;else if(res==='loss')ats.l++;
-    }
+    if(!g)return;
+    var k=gameKey(g);
+    if(seen[k])return;
+    seen[k]=1;
+    var c=consensusGameOf(g);
+    if(!c)return;
+    if(c.ats_result==='push')ats.push++;else if(c.ats_result==='win')ats.w++;else if(c.ats_result==='loss')ats.l++;
+    if(c.ml_prob_mean!=null&&c.ml_result)
+      mlPts.push({p:c.ml_prob_mean,y:(c.ml_pick==='home')===(c.ml_result==='win')?1:0});
   });
   return {ats:ats,ml:mlOutrightRecord(mlPts),mlPts:mlPts};
 }
@@ -2105,37 +2139,30 @@ function consensusSeasonStats(games){
 var GRADE_PAGE='page';
 var GRADE_SERVER='server';
 
-/* The cover rule, written ONCE. margin and the closing spread are both home
-   convention, so margin + close is how far the home side beat the number:
-   above zero the home side covered, below it the road side did, and exactly
-   zero is a push. The consensus has always been graded by this arithmetic;
-   now the members are graded by the same function rather than by a second
-   copy of it that can drift. */
+/* ---- THE ONE GRADER -------------------------------------------------------
+   Every function below that decides a cover, a side, a margin error or a
+   Brier score is a thin call into lib/football_grading.js (football-v2): the
+   same functions the settle job runs and the database mirrors as
+   collective.fg2_*. This page used to carry its own copies, and they
+   disagreed with the database's about the one thing that mattered most --
+   which side a model that typed no pick column was on -- so the same model
+   was graded against the spread on some games and silently not on others. */
+function FGL(){return (typeof FootballGrading!=='undefined'&&FootballGrading)?FootballGrading:null;}
+
+/* The cover rule: margin + close (home convention) above zero is the home
+   side covering, below it the road side, exactly zero a push. */
 function atsResult(margin,closingSpread,side){
-  if(side!=='home'&&side!=='away')return null;
-  if(margin==null||closingSpread==null)return null;
-  var m=Number(margin),c=Number(closingSpread);
-  if(!isFinite(m)||!isFinite(c))return null;
-  var covers=m+c;
-  if(covers===0)return 'push';
-  return ((side==='home')===(covers>0))?'win':'loss';
+  var FG=FGL();
+  if(!FG)return null;
+  var cv=FG.atsCover(margin,0,closingSpread);
+  return cv?FG.gradeSide(side,cv.cover):null;
 }
 
-/* The margin this model projected for the HOME team. Projected scores are
-   the better source and the slate format promises they are used when
-   supplied; a home-stated spread carries the same claim with its sign
-   turned around — home -12.5 is home by 12.5. */
+/* The margin this model projected for the HOME team: projected scores when
+   supplied, else the home-stated spread with its sign turned around. */
 function projectedMargin(mr){
-  if(!mr)return null;
-  if(mr.proj_home_score!=null&&mr.proj_away_score!=null){
-    var d=Number(mr.proj_home_score)-Number(mr.proj_away_score);
-    if(isFinite(d))return d;
-  }
-  if(mr.projected_spread!=null){
-    var s=Number(mr.projected_spread);
-    if(isFinite(s))return -s;
-  }
-  return null;
+  var FG=FGL();
+  return FG?FG.predictedHomeMargin(mr):null;
 }
 /* The published exclusions, in one place, so no surface can quietly grade a
    row another surface refuses to. A locked row has no numbers to grade — and
@@ -2223,46 +2250,49 @@ function finalResult(g){
    ungraded against the spread. A stated pick_side always wins; this only
    fills a silence, and every row graded this way says so. */
 function impliedSide(mr,closingSpread){
-  if(!mr||closingSpread==null||mr.projected_spread==null)return null;
-  var m=Number(mr.projected_spread),c=Number(closingSpread);
-  if(!isFinite(m)||!isFinite(c))return null;
-  if(Math.abs(m-c)<1e-9)return null;
-  /* home convention: a LOWER number is more onto the home team */
-  return m<c?'home':'away';
+  var FG=FGL();
+  if(!FG||!mr)return null;
+  var d=FG.deriveSide(null,FG.fairHomeSpread(mr),closingSpread);
+  return d.side;
 }
-/* One row, graded here, by the rule above. Each of the three numbers is
-   computed only when the row actually carries what that number needs, and a
-   row that carries none of them is not a graded row at all. */
+/* One row, graded here, by the ONE grader, on exactly the inputs the
+   settlement uses: the final score, the game's captured close, and the row
+   the board shows (the latest submission before the lock). A stated
+   pick_side always wins; with none, the side the model's own line takes
+   against the close. A row that carries nothing gradeable is not a graded
+   row at all. */
 function localGrade(g,mr){
   if(!gradableRow(mr))return null;
+  var FG=FGL();
+  if(!FG)return null;
   var r=finalResult(g);
   if(!r)return null;
-  var out={pick_result:null,margin_error:null,brier:null,implied:false,source:GRADE_PAGE};
-  /* pick_side is authoritative — so a row the board flags as
-     self-contradicting is still graded on the side it NAMED. The
-     contradiction is between the creator's own two spreads; the grade uses
-     neither of them, only the side they stated and the captured close.
-     Only when they stated nothing does their own number speak for them. */
-  var side=pickSideNorm(mr);
-  if(!side){
-    side=impliedSide(mr,r.closing_spread);
-    if(side)out.implied=true;
-  }
-  out.pick_result=atsResult(r.margin,r.closing_spread,side);
-  if(out.pick_result==null)out.implied=false;
-  var pm=projectedMargin(mr);
-  if(pm!=null)out.margin_error=Math.round(Math.abs(pm-r.margin)*100)/100;
-  if(mr.home_win_probability!=null&&r.margin!==0){
-    var p=Number(mr.home_win_probability);
-    if(isFinite(p)&&p>=0&&p<=1)
-      out.brier=Math.round((p-(r.margin>0?1:0))*(p-(r.margin>0?1:0))*10000)/10000;
-  }
+  var t=FG.gradeModelGame({
+    game:{game_id:g.game_id,kickoff_at:g.kickoff_at,status:'final',home_score:r.home,away_score:r.away},
+    close:r.closing_spread==null?null:{home_spread:r.closing_spread,source:r.close_source||null},
+    selection:{chosen:mr,version:null,n_versions:1,n_pre_lock:1,n_post_lock:0,status:'OK',lock_at:null}
+  });
+  var out={pick_result:t.ats_result,margin_error:t.margin_error,brier:t.brier,
+    implied:t.ats_result!=null&&t.ats_side_source==='derived',side:t.ats_side,
+    ats_exclusion:t.ats_exclusion,source:GRADE_PAGE};
   return (out.pick_result==null&&out.margin_error==null&&out.brier==null)?null:out;
 }
-/* The settlement run's own grade, when it produced one. An empty grade
-   object is not a grade: it is the shape of a row the run has reached and
-   not scored, and treating it as settled is what would hide a real result. */
+/* The settlement's own grade, when it produced one. football-v2 rows carry
+   the whole settlement (side, source of the side, exclusion reasons) and
+   ARE the record. A legacy grade object is kept apart: see rowGrade. An
+   empty grade object is not a grade: it is the shape of a row the run has
+   reached and not scored. */
 function serverGrade(mr){
+  var st=mr&&mr.settlement;
+  if(st&&st.grading_version){
+    if(st.ats_result==null&&st.margin_error==null&&st.brier==null)return null;
+    return {pick_result:st.ats_result||null,
+      margin_error:st.margin_error==null?null:Number(st.margin_error),
+      brier:st.brier==null?null:Number(st.brier),
+      implied:st.ats_result!=null&&st.ats_side_source==='derived',side:st.ats_side||null,
+      ats_exclusion:st.ats_exclusion||null,source:GRADE_SERVER,settled:true,
+      grading_version:st.grading_version};
+  }
   var gr=mr&&mr.grade;
   if(!gr)return null;
   if(gr.pick_result==null&&gr.margin_error==null&&gr.brier==null)return null;
@@ -2307,28 +2337,56 @@ function withoutATS(gr){
   return {pick_result:null,margin_error:gr.margin_error,brier:gr.brier,
     implied:false,source:gr.source};
 }
-/* The one entry point. Server first, always: when the Collective has
-   settled a game its grade is the record, and this page never second
-   guesses its numbers.
+/* The one entry point.
 
-   The exclusions are checked here too, and on both graders. A settlement
-   run that publishes a grade on a late row would otherwise put a win in a
-   record on the same board that prints "Late, ungraded" beside it — one
-   row stating two things — and the published rule is that a late
-   submission is excluded, not that it is excluded unless somebody graded
-   it anyway. */
+   A football-v2 SETTLEMENT is the record and is shown exactly as the
+   database wrote it: the side, the close, the verdict and, for every metric
+   it could not grade, the reason.
+
+   A LEGACY grade (written before football-v2) is not trusted for its
+   against-the-spread verdict, and this is the fix for the 2026 records: the
+   legacy grader took a STATED side only and graded against whatever close
+   the game carried at settle time, so a model that typed no pick column had
+   no ATS result in the database while this page gave it one -- and because
+   the page preferred any database grade it received, the same model was
+   graded against the spread on some games and silently not on others, and
+   a close recovered after a game settled graded nothing. Now the verdict is
+   always the one rule's, on the same close and the same row; the legacy
+   margin error and Brier stand (that grader saw the projected scores this
+   payload does not carry).
+
+   The exclusions are checked here too. A late row is excluded whoever
+   graded it, and a verdict on a game with no captured close is no verdict:
+   the one rule returns none without a close. */
 function rowGrade(g,mr){
   if(!gradableRow(mr))return null;
+  var sg=serverGrade(mr);
+  if(sg&&sg.settled)return sg;
+  var loc=localGrade(g,mr);
   /* A grade the server computed against a 0-0 placeholder is a grade
      against nothing: its margin error is the model's own line measured
      from zero. It is set aside with the placeholder, and the row is graded
      here from the real final once the ESPN pass has found one. */
-  if(placeholderSettled(g))return localGrade(g,mr);
-  var sg=serverGrade(mr);
-  /* and a settled ATS result on a game with no captured close is graded
-     against nothing too — see noCapturedClose above */
-  if(sg&&sg.pick_result!=null&&noCapturedClose(g))sg=withoutATS(sg);
-  return sg||localGrade(g,mr);
+  if(placeholderSettled(g))return loc;
+  if(!sg)return loc;
+  /* A legacy verdict on a STATED side against a close this game still
+     carries is the same arithmetic on the same number, and stands. Where
+     the legacy grade has NO verdict -- no stated side, or no close yet when
+     it ran -- the one rule grades the row; and a legacy verdict on a game
+     with no captured close is no verdict at all. */
+  var stated=pickSideNorm(mr);
+  var keep=sg.pick_result!=null&&!!stated&&!noCapturedClose(g);
+  /* the legacy margin error and Brier stand exactly as served, never topped
+     up from the page: two graders blended is a third number nobody wrote */
+  var out={pick_result:keep?sg.pick_result:(loc?loc.pick_result:null),
+    margin_error:sg.margin_error,
+    brier:sg.brier,
+    implied:keep?false:!!(loc&&loc.implied),side:keep?stated:(loc?loc.side:null),
+    ats_exclusion:keep?null:(loc?loc.ats_exclusion:null),
+    /* the verdict is the page's where the legacy grade had none */
+    source:(!keep&&loc&&loc.pick_result!=null)?GRADE_PAGE:GRADE_SERVER};
+  if(out.pick_result==null&&out.margin_error==null&&out.brier==null)return null;
+  return out;
 }
 /* A grade this page computed says so, everywhere it is shown. The claim on
    the rest of the site is that the Collective grades every pick itself
@@ -2487,7 +2545,7 @@ function modelRecord(games,cs,ms){
      zero has four completely different causes and they need four different
      answers; "no ATS picks" was one sentence for all of them. */
   var miss={no_close:0,no_side:0,excluded_late:0,excluded_locked:0,
-    excluded_origin:0,not_final:0},missN=0,played=0;
+    excluded_origin:0,not_final:0,postponed:0,cancelled:0},missN=0,played=0;
   (games||[]).forEach(function(g){
     var k=gameKey(g);
     if(seen[k])return;
@@ -2520,6 +2578,9 @@ function modelRecord(games,cs,ms){
   });
   var atsN=w+l;
   return {wins:w,losses:l,pushes:p,graded:w+l+p,
+    /* ATS eligible = a valid pre-lock row, a captured close, a side and a
+       final: exactly the rows with a win, a loss or a push */
+    ats_eligible:w+l+p,
     /* the three samples, each named, because they are three different
        samples: a model can post a spread with no pick side, or a pick side
        with no win probability, and calling any of those one number is how a
@@ -2546,11 +2607,13 @@ function modelRecord(games,cs,ms){
    parses as two items rather than four; the short one fits a table cell. */
 var ATS_REASON={
   no_close:'the Collective captured no closing line for this game',
-  no_side:'this model submitted no pick side, and its own line sits exactly on the close, so it named no side',
+  no_side:'this model submitted no pick side and no line that takes a side against the close (or its line sits exactly on it)',
   excluded_late:'this submission arrived after the lock and is excluded by the published rule',
   excluded_locked:'this is a locked row and carries no number to grade',
   excluded_origin:'this is backfill or test data, stored and excluded by the published rule',
-  not_final:'this game has no final score yet'
+  not_final:'this game has no final score yet',
+  postponed:'this game was postponed',
+  cancelled:'this game was cancelled'
 };
 var ATS_REASON_LIST={
   no_close:'with no captured closing line',
@@ -2558,7 +2621,9 @@ var ATS_REASON_LIST={
   excluded_late:'submitted after the lock',
   excluded_locked:'locked',
   excluded_origin:'backfill or test data',
-  not_final:'not final yet'
+  not_final:'not final yet',
+  postponed:'postponed',
+  cancelled:'cancelled'
 };
 var ATS_REASON_SHORT={
   no_close:'no captured close',
@@ -2566,11 +2631,23 @@ var ATS_REASON_SHORT={
   excluded_late:'late, excluded',
   excluded_locked:'locked',
   excluded_origin:'backfill or test data',
-  not_final:'not final yet'
+  not_final:'not final yet',
+  postponed:'postponed',
+  cancelled:'cancelled'
 };
+/* The settlement's exclusion codes (lib/football_grading.js REASON) in this
+   page's vocabulary. One map, so the database's reason and the page's are
+   the same reason. */
+var FG_REASON={MISSING_CLOSE:'no_close',NO_ATS_SIDE:'no_side',LATE_SUBMISSION:'excluded_late',
+  EXCLUDED_ORIGIN:'excluded_origin',UNTIMED_SUBMISSION:'excluded_origin',GAME_UNFINISHED:'not_final',
+  GAME_POSTPONED:'postponed',GAME_CANCELLED:'cancelled',NO_PREDICTION:'not_final'};
 function atsReason(g,mr){
   if(!mr)return null;
   if(mr.locked)return 'excluded_locked';
+  /* the settlement names its own reason; that is the reason */
+  var st=mr.settlement;
+  if(st&&st.grading_version)
+    return st.ats_result?null:(FG_REASON[st.ats_exclusion]||(st.ats_exclusion?'not_final':null));
   if(mr.late)return 'excluded_late';
   if(mr.data_origin!=null&&mr.data_origin!=='live')return 'excluded_origin';
   var r=finalResult(g);
@@ -2599,6 +2676,21 @@ function atsMissingText(miss,short){
   keys.sort(function(a,b){return miss[b]-miss[a];});
   var tbl=short?ATS_REASON_SHORT:ATS_REASON_LIST;
   return keys.map(function(k){return miss[k]+' '+(tbl[k]||k);}).join(', ');
+}
+/* The same breakdown as table-cell lines: "Missing close: 4", "No ATS side:
+   2", "Late: 1". Each is a different fix (the market feed, the model, the
+   creator's clock), so each gets its own line under the record. */
+var ATS_REASON_LABEL={no_close:'Missing close',no_side:'No ATS side',excluded_late:'Late',
+  not_final:'Game unfinished',postponed:'Postponed',cancelled:'Cancelled',
+  excluded_origin:'Backfill/test',excluded_locked:'Locked'};
+function atsBreakdownHTML(miss,n,played){
+  var keys=Object.keys(miss||{}).filter(function(k){return miss[k]>0;});
+  if(!keys.length)return '';
+  keys.sort(function(a,b){return miss[b]-miss[a];});
+  return keys.map(function(k){
+    return '<div class="nsamp miss" title="'+esc(miss[k]+' of this model’s '+(played||0)+' played games: '+(ATS_REASON[k]||k))+'">'+
+      esc((ATS_REASON_LABEL[k]||k)+': '+miss[k])+'</div>';
+  }).join('');
 }
 /* This model's graded games, in the shape the model page's own log already
    renders, so the fallback needs no second renderer. Newest first, and one
@@ -3719,7 +3811,15 @@ function shownRecord(serverRec,localMap,cs,ms){
      with no number behind it. Both are set aside the same way. */
   var tainted=!!(localMap&&localMap.placeholderSettled&&localMap.placeholderSettled[cs+'/'+ms])
     ||!!(localMap&&localMap.closelessGraded&&localMap.closelessGraded[cs+'/'+ms]);
-  if(hasRecord(serverRec)&&!tainted)return {rec:serverRec,live:false};
+  /* A football-v2 record is the settlement's own and IS the record. A
+     legacy server record was built by the grader this repair replaced (a
+     stated side only, and blind to any close recovered after a game
+     settled -- the ~16-game NFL records beside 47 finished games); where the
+     page holds its own record, graded on the same games by the one grader,
+     that stands in its place and is marked. */
+  var FG=FGL();
+  var v2=!!(serverRec&&FG&&serverRec.grading_version===FG.GRADING_VERSION);
+  if(hasRecord(serverRec)&&!tainted&&(v2||!hasRecord(lr)))return {rec:serverRec,live:false};
   if(hasRecord(lr))return {rec:lr,live:true};
   if(tainted)return {rec:null,live:false};
   return {rec:serverRec||null,live:false};
@@ -5274,11 +5374,12 @@ async function renderBoard(view){
              captured close, with a dead-even split excluded rather than
              guessed at. */
           '<td>'+(function(){
-            var fr=finalResult(g);
-            if(!fr||c0.pct_picks_home==null||c0.pct_picks_home===0.5)return '-';
-            var cres=atsResult(fr.margin,fr.closing_spread,c0.pct_picks_home>0.5?'home':'away');
+            /* the members' own grades, the same close, the same sides */
+            var cg=consensusGameOf(g);
+            var cres=cg&&cg.ats_result;
             if(!cres)return '-';
-            return '<span class="mono grade-'+esc(cres)+'">'+esc(cres)+'</span>'+liveMark(true);
+            var settled=(g.models||[]).some(function(mr){return mr&&mr.settlement&&mr.settlement.grading_version;});
+            return '<span class="mono grade-'+esc(cres)+'">'+esc(cres)+'</span>'+liveMark(!settled);
           })()+'</td></tr>';
       }
       if(rows){
@@ -5690,7 +5791,9 @@ async function renderRankings(view){
              an answer rather than as one number among seven */
           '<td class="num" style="font-weight:700;font-size:14px">'+recATSHtml(r)+liveMark(r.live>0)+impliedRecMark(r)+
             nUnder(r.ats_n,'an against-the-spread result')+
-            (r.ats_missing_n?'<div class="nsamp miss" title="'+esc(r.ats_missing_n+' of this model\u2019s '+r.games+' played games have no against-the-spread result: '+atsMissingText(r.ats_missing))+'">+'+r.ats_missing_n+' ungraded</div>':'')+
+            /* WHY the rest are ungraded, named, one line per reason: "+164
+               ungraded" said nothing a reader could act on */
+            atsBreakdownHTML(r.ats_missing,r.ats_missing_n,r.games)+
             '</td>'+
           '<td class="num" style="font-weight:700">'+fmtPct(r.win_pct)+'</td>'+
           '<td class="num">'+fmtNum(r.margin_mae)+nUnder(r.margin_n,'a projected margin')+'</td>'+

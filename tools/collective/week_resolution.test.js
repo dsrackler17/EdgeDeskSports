@@ -712,6 +712,7 @@ function bootPage(fetchImpl) {
   /* the page loads week.js by <script src> before its own block, and so does
      this: driving the fallback path and calling it green is not a test */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'collective', 'week.js'), 'utf8'), sandbox);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'football_grading.js'), 'utf8'), sandbox);
   let booted = true;
   try { vm.runInContext(CODE, sandbox, { timeout: 20000 }); }
   catch (e) { booted = false; chk('the page boots', false, { threw: String(e && e.message) }); }

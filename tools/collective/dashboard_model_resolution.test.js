@@ -320,7 +320,11 @@ async function call(fn, pathname, opts) {
   {
     reset([CFB_MODEL]);
     const r = await get('/v1/rules');
-    chk('the published rules are version 2', r.body.version === 2, r.body.version);
+    // Version 3 (football-v2): the lock rule is the latest submission before
+    // lock, and ATS is settled by the one grader in lib/football_grading.js.
+    chk('the published rules are version 3', r.body.version === 3, r.body.version);
+    chk('and name the grading version that settles them',
+      r.body.grading_version === 'football-v2', r.body.grading_version);
     chk('and no longer state a ranking minimum the product removed',
       !r.body.rules.some((x) => /60 percent|at least 20 graded/.test(x)),
       r.body.rules.filter((x) => /60 percent|20 graded/.test(x)));

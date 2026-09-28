@@ -120,13 +120,23 @@ const CASES = [
       const gr = P.rowGrade(g, g.models[0]);
       return gr ? gr.pick_result : null;
     };
-    const disagree = CASES.filter(c => pageSays(c) !== c.want);
+    /* ONE deliberate difference (football-v2). A game with a captured close,
+       a stated side and NO legacy verdict is the NFL week-2 shape: the
+       legacy grader ran before the close reached the game and never ran
+       again. The page grades it by the one rule (away +7 on a 14-point home
+       win is a loss); the API serves the settlement's verdict for the same
+       row once football-v2 is installed, so the two agree again there. The
+       legacy atsServed path is unchanged for every other case. */
+    const PAGE_WANT = c => (c.pick === null && c.close === -7) ? 'loss' : c.want;
+    const disagree = CASES.filter(c => pageSays(c) !== PAGE_WANT(c));
     chk('the page shows a verdict only where a captured close exists',
       disagree.length === 0,
-      { disagree: disagree.map(c => ({ why: c.why, got: pageSays(c), want: c.want })) });
+      { disagree: disagree.map(c => ({ why: c.why, got: pageSays(c), want: PAGE_WANT(c) })) });
+    chk('a close that reached a game after the legacy grade ran now grades it (the NFL week-2 hole)',
+      pageSays({ pick: null, close: -7 }) === 'loss');
 
     if (mirror) {
-      const split = CASES.filter(c => pageSays(c) !== mirror.atsServed(c.pick, c.close));
+      const split = CASES.filter(c => PAGE_WANT(c) === c.want && pageSays(c) !== mirror.atsServed(c.pick, c.close));
       chk('and the page and the API answer every case identically',
         split.length === 0,
         { split: split.map(c => ({ why: c.why, page: pageSays(c), api: mirror.atsServed(c.pick, c.close) })) });

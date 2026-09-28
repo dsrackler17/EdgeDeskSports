@@ -378,7 +378,7 @@ Credentials and identity for this creator:
   API key (treat like a password): {{API_KEY}}
   Docs and grading rules: {{DOCS_URL}}
 
-One honest rule to close on: the Collective grades every model the same way, against its own closing lines, on first submissions only. Backfilled history is stored and shown separately but never graded. Send the whole slate, not just the confident games, because slate coverage is published next to the record.`;
+One honest rule to close on: the Collective grades every model the same way, against its own closing lines, on the latest submission received before each game's lock. Backfilled history is stored and shown separately but never graded. Send the whole slate, not just the confident games, because slate coverage is published next to the record.`;
 
 function renderPrompt(vars: Record<string, string>): string {
   let out = PROMPT_TEMPLATE;

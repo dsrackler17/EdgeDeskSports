@@ -176,7 +176,7 @@ try {
      this suite needs, so a bootstrap throw is caught rather than fatal. */
   /* The page loads the canonical research libraries by <script src> before
      its inline block; load them the same way, into the same context. */
-  ['research_core.js', 'research_eval.js'].forEach(function (f) {
+  ['research_core.js', 'research_eval.js', 'football_grading.js'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(path.join(HERE, '..', 'lib', f), 'utf8'), sandbox, { timeout: 15000 });
   });
   vm.runInContext(CODE, sandbox, { timeout: 15000 });
@@ -1220,28 +1220,39 @@ if (typeof sandbox.teamKey === 'function') {
   chk('an empty outright record has a null percentage, never NaN',
     (function () { var r = S.mlOutrightRecord([]); return r.n === 0 && r.pct === null; })());
 
+  /* football-v2: the consensus is built from the MEMBERS' OWN graded rows
+     (the same close, the same eligible sides), never from a second picture
+     of the game, so each fixture carries the model rows behind it. */
+  var cm = function (side, p) { return { creator_slug: 'c' + Math.random(), model_slug: 'm', pick_side: side, home_win_probability: p }; };
   var CONSGAMES = [
     /* majority home at -3 close, home wins by 7: ATS win, outright hit */
-    { consensus: { n: 3, home_win_prob_mean: 0.7, pct_picks_home: 0.67 },
-      result: { home_score: 24, away_score: 17, closing_spread: -3 } },
+    { game_id: 'cg1', consensus: { n: 3, home_win_prob_mean: 0.7, pct_picks_home: 0.67 },
+      result: { home_score: 24, away_score: 17, closing_spread: -3 },
+      models: [cm('home', 0.8), cm('home', 0.7), cm('away', 0.6)] },
     /* majority away as home dog +3, home loses by 10: away covers, ATS win;
        mean favours away (0.4), away won: outright hit */
-    { consensus: { n: 2, home_win_prob_mean: 0.4, pct_picks_home: 0.33 },
-      result: { home_score: 10, away_score: 20, closing_spread: 3 } },
+    { game_id: 'cg2', consensus: { n: 3, home_win_prob_mean: 0.4, pct_picks_home: 0.33 },
+      result: { home_score: 10, away_score: 20, closing_spread: 3 },
+      models: [cm('home', 0.3), cm('away', 0.4), cm('away', 0.5)] },
     /* lands exactly on the close: a push, not a result */
-    { consensus: { n: 3, home_win_prob_mean: 0.8, pct_picks_home: 1 },
-      result: { home_score: 27, away_score: 20, closing_spread: -7 } },
+    { game_id: 'cg3', consensus: { n: 3, home_win_prob_mean: 0.8, pct_picks_home: 1 },
+      result: { home_score: 27, away_score: 20, closing_spread: -7 },
+      models: [cm('home', 0.8), cm('home', 0.8), cm('home', 0.8)] },
     /* dead-even split: no ATS call to grade; outright still counts (a miss) */
-    { consensus: { n: 4, home_win_prob_mean: 0.55, pct_picks_home: 0.5 },
-      result: { home_score: 13, away_score: 17, closing_spread: -1 } },
+    { game_id: 'cg4', consensus: { n: 4, home_win_prob_mean: 0.55, pct_picks_home: 0.5 },
+      result: { home_score: 13, away_score: 17, closing_spread: -1 },
+      models: [cm('home', 0.5), cm('home', 0.6), cm('away', 0.5), cm('away', 0.6)] },
     /* one model is not an aggregate */
-    { consensus: { n: 1, home_win_prob_mean: 0.9, pct_picks_home: 1 },
-      result: { home_score: 30, away_score: 0, closing_spread: -10 } },
-    /* locked consensus never grades */
-    { consensus: { locked: true, n: 5, home_win_prob_mean: 0.9, pct_picks_home: 1 },
-      result: { home_score: 30, away_score: 0, closing_spread: -10 } },
+    { game_id: 'cg5', consensus: { n: 1, home_win_prob_mean: 0.9, pct_picks_home: 1 },
+      result: { home_score: 30, away_score: 0, closing_spread: -10 },
+      models: [cm('home', 0.9)] },
+    /* locked rows never grade */
+    { game_id: 'cg6', consensus: { locked: true, n: 5, home_win_prob_mean: 0.9, pct_picks_home: 1 },
+      result: { home_score: 30, away_score: 0, closing_spread: -10 },
+      models: [{ creator_slug: 'a', model_slug: 'm', locked: true }, { creator_slug: 'b', model_slug: 'm', locked: true }] },
     /* not settled yet */
-    { consensus: { n: 3, home_win_prob_mean: 0.6, pct_picks_home: 0.8 } }
+    { game_id: 'cg7', consensus: { n: 3, home_win_prob_mean: 0.6, pct_picks_home: 0.8 },
+      models: [cm('home', 0.6), cm('home', 0.6)] }
   ];
   var cons = S.consensusSeasonStats(CONSGAMES);
   chk('the consensus ATS record grades the majority side against the close',
@@ -1759,19 +1770,24 @@ if (typeof sandbox.localGrade === 'function') try {
     G.atsResult(10, -7, null) === null && G.atsResult(10, null, 'home') === null
       && G.atsResult(null, -7, 'home') === null
       && G.atsResult(10, NaN, 'home') === null
-      && G.atsResult(10, -7, 'HOME') === null);
+      && G.atsResult(10, -7, 'sideways') === null);
+  /* football-v2: case is normalised by the one grader exactly as
+     pickSideNorm already normalised every row, and as the database does */
+  chk('a side in capitals is the same side (one normalisation, page and database)',
+    G.atsResult(10, -7, 'HOME') === 'win');
   /* the consensus was graded by a hand-inlined copy of this arithmetic;
-     the point of factoring it out is that there is now only one */
+     the point of factoring it out is that there is now only one -- and
+     football-v2 builds it from the members' own graded rows */
   chk('the consensus is graded by the same function as the members',
     (function () {
+      var three = function () {
+        return [mr({ cs: 'a', pick_side: 'home' }), mr({ cs: 'b', pick_side: 'home' }), mr({ cs: 'c', pick_side: 'away' })];
+      };
       var st = G.consensusSeasonStats([
-        gm({ hs: 30, as: 20, close: -7 }),                     /* home covers */
-        gm({ id: 'g2', hs: 27, as: 20, close: -7 }),           /* push        */
-        gm({ id: 'g3', hs: 24, as: 20, close: -7 })            /* away covers */
-      ].map(function (g, i) {
-        g.consensus = { n: 3, pct_picks_home: 0.75, home_win_prob_mean: 0.6 };
-        return g;
-      }));
+        gm({ hs: 30, as: 20, close: -7, models: three() }),                 /* home covers */
+        gm({ id: 'g2', hs: 27, as: 20, close: -7, models: three() }),       /* push        */
+        gm({ id: 'g3', hs: 24, as: 20, close: -7, models: three() })        /* away covers */
+      ]);
       return st.ats.w === 1 && st.ats.l === 1 && st.ats.push === 1;
     })());
 
@@ -1962,9 +1978,14 @@ if (typeof sandbox.localGrade === 'function') try {
         'a/c': { graded: 2, wins: 1, losses: 1, pushes: 0, margin_n: 2 } };
       G.markCloselessGraded(loc, [g]);
       var tainted = G.shownRecord(srv, loc, 'a', 'b');
+      /* football-v2: an untainted LEGACY record also yields to the page's
+         one-grader record; a settled (v2) record stands */
       var untouched = G.shownRecord(srv, loc, 'a', 'c');
+      var v2 = Object.assign({ grading_version: 'football-v2' }, srv);
+      var settled = G.shownRecord(v2, loc, 'a', 'c');
       return tainted.rec === loc['a/b'] && tainted.live === true
-        && untouched.rec === srv && untouched.live === false
+        && untouched.rec === loc['a/c'] && untouched.live === true
+        && settled.rec === v2 && settled.live === false
         && Object.keys(loc).length === 2;
     })(), 'the record above the log has to be counting the same games as the log');
   chk('the note says which rule set the record aside, and for how many games',
@@ -2466,12 +2487,25 @@ if (typeof sandbox.localGrade === 'function') try {
   /* ---- which record a surface prints ----------------------------------
      shownRecord decides, on every card, row and profile on the site, whose
      grading a reader is looking at. */
-  chk('the Collective\u2019s own record wins whenever it has one',
+  chk('the Collective\u2019s own SETTLED (football-v2) record wins whenever it has one',
+    function () {
+      var srv = { wins: 9, losses: 1, pushes: 0, graded: 10, win_pct: 0.9, grading_version: 'football-v2' };
+      var loc = { 'c/m': { wins: 1, losses: 9, pushes: 0, graded: 10, win_pct: 0.1 } };
+      var sr = G.shownRecord(srv, loc, 'c', 'm');
+      return sr.rec === srv && sr.live === false;
+    });
+  /* The 2026 NFL records read ~16 graded games beside 47 finished ones: a
+     LEGACY server record, built by the grader football-v2 replaced, won over
+     the page's record of the same games. A legacy record now yields to the
+     page's one-grader record (marked live) and stands only where the page
+     has none. */
+  chk('a LEGACY server record yields to the page\u2019s one-grader record',
     function () {
       var srv = { wins: 9, losses: 1, pushes: 0, graded: 10, win_pct: 0.9 };
       var loc = { 'c/m': { wins: 1, losses: 9, pushes: 0, graded: 10, win_pct: 0.1 } };
       var sr = G.shownRecord(srv, loc, 'c', 'm');
-      return sr.rec === srv && sr.live === false;
+      var alone = G.shownRecord(srv, {}, 'c', 'm');
+      return sr.rec === loc['c/m'] && sr.live === true && alone.rec === srv && alone.live === false;
     });
   chk('the page\u2019s own fills a hole, and says it did',
     function () {

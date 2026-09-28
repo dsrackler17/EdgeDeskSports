@@ -90,7 +90,12 @@ on:
       - 'supabase/functions/**'
       - 'tools/capture/**'
       - 'supabase/*.sql'
+      # football-v2: the one grader, its identity layer and the settlement migration
+      - 'lib/football_grading.js'
+      - 'lib/football_identity.js'
+      - 'supabase/migrations/**'
       - '.github/workflows/collective-tests.yml'
+      - '.github/workflows/football-regrade.yml'
       # THE TWO JOBS THAT BUILD THE FOOTBALL ARTIFACTS. Changing either got no
       # CI at all: neither carries a `pull_request` trigger, and neither was in
       # any other workflow's path list, so a pull request touching only one of
@@ -179,7 +184,12 @@ on:
       - 'supabase/functions/**'
       - 'tools/capture/**'
       - 'supabase/*.sql'
+      # football-v2: the one grader, its identity layer and the settlement migration
+      - 'lib/football_grading.js'
+      - 'lib/football_identity.js'
+      - 'supabase/migrations/**'
       - '.github/workflows/collective-tests.yml'
+      - '.github/workflows/football-regrade.yml'
       # THE TWO JOBS THAT BUILD THE FOOTBALL ARTIFACTS. Changing either got no
       # CI at all: neither carries a `pull_request` trigger, and neither was in
       # any other workflow's path list, so a pull request touching only one of
@@ -198,7 +208,7 @@ permissions:
 jobs:
   suites:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -222,6 +232,20 @@ jobs:
 
       - name: The record appears when the game ends
         run: node collective/tests_render.js
+
+      # FOOTBALL-V2: ONE GRADER. The 2026 records came apart because four
+      # graders disagreed about which side a model with no pick column was on,
+      # and the page preferred whichever grade the database happened to hold.
+      # lib/football_grading.js is now the only rule; these hold it to every
+      # case the audit named, hold the identity layer to real 2026 data (every
+      # link checked by the final score), and drive the public API to prove it
+      # serves the settlement rather than a second grader.
+      - name: football-v2 grades every case by one rule
+        run: node tools/collective/football_grading.test.js
+      - name: football-v2 resolves every representation of a game to one canonical game
+        run: node tools/collective/football_identity.test.js
+      - name: The public API serves the settlement, not a second grader
+        run: node tools/collective/football_api.test.js
 
       # REMOVING A CONTRIBUTOR. The admin screen, driven offline: the panel is a
       # read, the destructive option is gated on the typed word, and a project
@@ -721,6 +745,15 @@ jobs:
         run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
       - name: The migration runs, twice, and freezes what it promises to freeze
         run: node tools/capture/migration.test.js
+
+      # The settlement migration, run for real against a throwaway postgres:
+      # a production-shaped Collective with every close class A-L, graded
+      # first by the LEGACY grader, then rebuilt twice. Every settlement row
+      # and every official close is recomputed by lib/football_grading.js and
+      # must agree field by field; the dry run must write nothing; the second
+      # commit must change nothing.
+      - name: The settlement in the database is the same grader, and rebuilds idempotently
+        run: node tools/collective/football_grading_sql.test.js
 
       # The deployed edge function, imported under Node's native type stripping
       # with a Deno shim and a mocked network: old callers, the additive

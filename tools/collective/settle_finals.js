@@ -876,6 +876,19 @@ function dbClient(cfg, fetchImpl) {
       const t = await body(res, `POST ${rel}${q} (upsert)`);
       return t ? JSON.parse(t) : [];
     },
+    /* Insert-only: a row whose key already exists is left exactly as it is.
+       Captured prices are history, and history is copied, never rewritten. */
+    async insertIgnore(rel, rows, onConflict) {
+      const q = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : '';
+      const res = await f(`${cfg.url}/rest/v1/${rel}${q}`, {
+        method: 'POST',
+        headers: H({ 'content-profile': 'collective', 'content-type': 'application/json',
+          prefer: 'resolution=ignore-duplicates,return=representation' }),
+        body: JSON.stringify(rows),
+      });
+      const t = await body(res, `POST ${rel}${q} (insert, ignore duplicates)`);
+      return t ? JSON.parse(t) : [];
+    },
     /* A routine in the collective schema, called the way PostgREST exposes
        it. Best-effort callers catch; the routine's own answer comes back. */
     async rpc(fn, args) {
@@ -921,46 +934,32 @@ function seasonsFrom(sports, seasons, today) {
   }).filter(s => s.season !== null);
 }
 
-/* THE PUBLISHED RULE, the same three numbers collective/index.html computes
-   (atsResult, projectedMargin, the Brier line) — stated here once more
-   because this file runs where the page does not, and pinned by the suite
-   against the page's own fixtures.
+/* THE PUBLISHED RULE, and no copy of it: lib/football_grading.js
+   (football-v2), the same functions collective/index.html calls and the
+   database mirrors as collective.fg2_*. This file used to carry its own
+   version, which graded a STATED side only while the page also derived one
+   from the model's own line -- two graders, two records.
 
-     ATS     the side the creator NAMED, against the Collective's captured
-             close: margin + close above zero is the home side covering,
-             below it the road side, exactly zero a push. No pick side, or
-             no close, is no ATS result — a side is never inferred here.
+     ATS     the side the creator named, or with none the side the model's
+             own fair spread takes against the captured close (close - fair
+             above zero is home); margin + close above zero is the home side
+             covering, below it the road side, exactly zero a push. No close
+             is no ATS result.
      Margin  |projected home margin - actual home margin|: projected scores
              when supplied, else the home-stated spread with its sign turned.
      Brier   (p_home - outcome)^2. A tie has no winner and no score. */
+const FG = require(path.join(__dirname, '..', '..', 'lib', 'football_grading.js'));
 function gradeProjection(row, final, closingSpread) {
-  const margin = Number(final.home_score) - Number(final.away_score);
-  const out = { pick_result: null, margin_error: null, brier: null };
-  const side = String(row.pick_side || '').trim().toLowerCase();
   const close = (closingSpread === null || closingSpread === undefined ||
     !Number.isFinite(Number(closingSpread))) ? null : Number(closingSpread);
-  if ((side === 'home' || side === 'away') && close !== null) {
-    const covers = margin + close;
-    out.pick_result = covers === 0 ? 'push' : (((side === 'home') === (covers > 0)) ? 'win' : 'loss');
-  }
-  let pm = null;
-  if (row.proj_home_score != null && row.proj_away_score != null) {
-    const d = Number(row.proj_home_score) - Number(row.proj_away_score);
-    if (Number.isFinite(d)) pm = d;
-  }
-  if (pm === null && row.projected_spread != null) {
-    const sp = Number(row.projected_spread);
-    if (Number.isFinite(sp)) pm = -sp;
-  }
-  if (pm !== null) out.margin_error = Math.round(Math.abs(pm - margin) * 100) / 100;
-  if (row.home_win_prob != null && margin !== 0) {
-    const p = Number(row.home_win_prob);
-    if (Number.isFinite(p) && p >= 0 && p <= 1) {
-      const y = margin > 0 ? 1 : 0;
-      out.brier = Math.round((p - y) * (p - y) * 10000) / 10000;
-    }
-  }
-  return out;
+  const t = FG.gradeModelGame({
+    game: { status: 'final', home_score: final.home_score, away_score: final.away_score },
+    close: close === null ? null : { home_spread: close },
+    selection: { chosen: row, version: null, n_versions: 1, n_pre_lock: 1, n_post_lock: 0, status: 'OK', lock_at: null },
+  });
+  return { pick_result: t.ats_result, margin_error: t.margin_error, brier: t.brier,
+    ats_side: t.ats_side, ats_side_source: t.ats_side_source, ats_exclusion: t.ats_exclusion,
+    grading_version: FG.GRADING_VERSION };
 }
 
 /* Which rows on a game are graded: live, resolved, not late, and the one
@@ -1132,6 +1131,93 @@ async function settleDirect(db, schema, game, final, close) {
     }
   }
   return out;
+}
+
+/* ---- football-v2: the settlement in the database -----------------------
+   supabase/migrations/20260928120000_football_grading_v2.sql installs the one
+   settlement. Two things this job owes it:
+
+   1. EVERY CLOSE IT RECOVERS. A close this job found for a game the database
+      had already graded without one used to be written to the committed JSON
+      record only -- never to the database -- so the database's grade kept
+      its empty ATS verdict for good (all of NFL week 2, 2026: sixteen games
+      with a captured close on the site's record and none in the database).
+      Each such close is now handed to the settlement as a captured-close
+      snapshot, insert-only, with where it came from, and the settlement
+      decides by its own rule whether it is the close (a timed pregame
+      snapshot of the Collective's own feed still outranks it).
+   2. A REBUILD after every settle: fg2_rebuild is idempotent, audits every
+      grade it changes, and writes nothing when nothing moved. */
+function isFg2Missing(e) {
+  return /PGRST20\d|42P01|42883|Could not find|does not exist/i.test(String(e && e.message));
+}
+function closeSnapshotsFor(entries, heldGames, nowIso) {
+  const byId = new Map((heldGames || []).map(g => [String(g.game_id), g]));
+  return (entries || []).filter(e => {
+    if (e.closing_spread === null || e.closing_spread === undefined) return false;
+    if (!e.close_source || e.close_source === 'collective') return false;
+    const g = byId.get(String(e.game_id));
+    return !(g && g.result && g.result.closing_spread !== null && g.result.closing_spread !== undefined);
+  }).map(e => ({
+    source: 'collective_odds_close',
+    source_snapshot_id: `settle_record:${e.game_id}:${e.close_source}`,
+    source_event_id: String(e.game_id),
+    canonical_game_id: String(e.game_id),
+    book: 'consensus', market_type: 'spread',
+    home_line: Number(e.closing_spread), away_line: null,
+    observed_at: null,
+    event_kickoff_at: e.kickoff_at || null,
+    raw: { via: e.close_source, recovered_by: 'tools/collective/settle_finals.js', recovered_at: nowIso,
+      closing_total: e.closing_total === undefined ? null : e.closing_total },
+  }));
+}
+async function handClosesToSettlement(db, rows, log) {
+  if (!rows.length) return { written: 0 };
+  try {
+    const out = await db.insertIgnore('fg2_market_snapshots', rows, 'source,source_snapshot_id');
+    if (log) log(`  [fg2] ${rows.length} recovered close(s) handed to the settlement (${out.length} new)`);
+    return { written: out.length };
+  } catch (e) {
+    if (isFg2Missing(e)) return { written: 0, installed: false };
+    throw e;
+  }
+}
+/* One sport and season, rebuilt (or previewed) by the database's own
+   routine. Returns the routine's report, or {installed:false}. */
+async function fg2Rebuild(db, sport, season, commit) {
+  try {
+    const rep = commit
+      ? await db.rpc('fg2_rebuild', { p_sport: sport, p_season: Number(season), p_commit: true })
+      : await db.rpc('fg2_rebuild_preview', { p_sport: sport, p_season: Number(season) });
+    return rep || {};
+  } catch (e) {
+    if (isFg2Missing(e)) return { installed: false, detail: String(e.message).slice(0, 200) };
+    throw e;
+  }
+}
+/* The rebuild report, said in the lines a run log is read in. ERROR-level
+   diagnostics are returned so the run can fail on them. */
+function describeRebuild(rep, log) {
+  const errors = [];
+  if (!rep || rep.installed === false) {
+    log('  [fg2] football-v2 is not installed in this database: apply supabase/migrations/20260928120000_football_grading_v2.sql');
+    return errors;
+  }
+  const cls = rep.close_classes || {};
+  log(`  [fg2] ${rep.sport} ${rep.season} ${rep.dry_run ? '(dry run) ' : ''}grading ${rep.grading_version}: ` +
+    `${rep['7_settlements_evaluated'] || 0} model-game settlement(s) over ${rep['4_closes_computed'] || 0} game(s); ` +
+    `${rep.audit_rows_this_run || 0} grade change(s) audited`);
+  log('  [fg2] close classes: ' + (Object.keys(cls).sort().map(k => `${k}=${cls[k]}`).join(' ') || 'none'));
+  (rep.diagnostics || []).forEach(d => {
+    const w = d.warnings || [];
+    log(`  [fg2] week ${d.week}: capture ${d.market_capture_pct}% · ATS graded ${d.ats_graded}/${d.ats_gradable} gradable` +
+      (w.length ? ' · ' + w.join(', ') : ''));
+    w.filter(x => /^ERROR/.test(x)).forEach(x => errors.push(`week ${d.week} ${x}`));
+  });
+  (rep.standings || []).forEach(s => log(`  [fg2]   ${s.creator_slug}/${s.model_slug}: ${s.wins}-${s.losses}-${s.pushes} ATS (n=${s.ats_n})` +
+    ` · missing close ${s.ats_missing_close} · no side ${s.ats_no_side} · late ${s.ats_late}` +
+    ` · MAE ${s.mae} (n=${s.mae_n}) · Brier ${s.brier} (n=${s.brier_n})`));
+  return errors;
 }
 
 /* ---- the committed record ----------------------------------------------
@@ -1353,6 +1439,9 @@ function parseArgs(argv) {
     /* the historical repair: fill the closes a record was written without,
        from the same two sources a normal run uses, and change nothing else */
     else if (v === '--backfill-closes') a.backfillCloses = true;
+    /* football-v2: rebuild the settlement in the database (a dry-run preview
+       without --commit) and print its diagnostics */
+    else if (v === '--rebuild') a.rebuild = true;
   }
   return a;
 }
@@ -1417,6 +1506,36 @@ async function main() {
     if (!args.commit) log('Dry run: nothing was written. Re-run with --commit to write the repaired record.');
     if (args.json) console.log(JSON.stringify(report, null, 2));
     return 0;
+  }
+
+  /* ---- football-v2: the rebuild on its own -------------------------------
+     Needs the service credential and nothing else: the database rebuilds
+     its own settlement from its own captured prices, predictions and
+     finals. Without --commit it is the preview, rolled back. */
+  if (args.rebuild) {
+    report.mode = 'rebuild';
+    const cfgDb = directConfig();
+    if (!cfgDb) throw new Error('--rebuild needs the service credential (EDGD_SB_SERVICE and EDGD_SB_URL).');
+    const rdb = dbClient(cfgDb);
+    let list = (args.sport && args.season) ? [{ code: args.sport.toUpperCase(), season: args.season }] : null;
+    if (!list) {
+      const [sp, se] = await Promise.all([rdb.select('sports', 'select=code,name'),
+        rdb.select('seasons', 'select=sport_code,season,starts_on,ends_on')]);
+      list = seasonsFrom(sp, se, new Date().toISOString().slice(0, 10))
+        .filter(s => ['NFL', 'CFB', 'CFB-P4', 'NCAAF'].indexOf(String(s.code).toUpperCase()) >= 0)
+        .filter(s => !args.sport || s.code.toUpperCase() === args.sport.toUpperCase())
+        .map(s => ({ code: s.code, season: args.season || s.season }));
+    }
+    report.rebuild = [];
+    let errors = [];
+    for (const sp of list) {
+      const rep = await fg2Rebuild(rdb, sp.code, sp.season, args.commit);
+      report.rebuild.push(rep);
+      errors = errors.concat(describeRebuild(rep, log));
+    }
+    if (errors.length) log(`\n${errors.length} ERROR-level diagnostic(s): ${errors.join('; ')}`);
+    if (args.json) console.log(JSON.stringify(report, null, 2));
+    return errors.length ? 2 : 0;
   }
 
   let token = null, db = null, schema = null;
@@ -1718,6 +1837,38 @@ async function main() {
       const n = Object.keys(merged.record.games).length;
       report.record.push({ sport: sp.code, season: sp.season, file, games: n, changed: merged.changed });
       log(`  record ${file}: ${n} settled game(s)${merged.changed ? ', updated' : ', unchanged'}`);
+      /* a close the database's own game row does not carry goes to the
+         settlement, not only into this file (see handClosesToSettlement) */
+      if (db && args.commit) {
+        try {
+          const h = await handClosesToSettlement(db, closeSnapshotsFor(entries, games, nowIso), log);
+          if (h.installed === false) report.fg2_installed = false;
+        } catch (e) {
+          report.failed.push({ sport: sp.code, reason: 'fg2_close_handoff_failed', detail: String(e.message).slice(0, 300) });
+          log(`  ! handing recovered closes to the settlement failed: ${e.message}`);
+        }
+      }
+    }
+  }
+
+  /* ---- football-v2: rebuild the settlement after every settle ------------
+     Idempotent and audited; writes nothing when nothing moved. An ERROR-level
+     diagnostic (a gradable model-game left ungraded, a margin error beside a
+     close with no ATS result) fails the run, so it is seen the hour it
+     happens rather than a season later on the rankings page. */
+  if (db && args.commit && !args.verify) {
+    report.rebuild = [];
+    for (const sp of sports) {
+      if (['NFL', 'CFB', 'CFB-P4', 'NCAAF'].indexOf(String(sp.code).toUpperCase()) < 0) continue;
+      try {
+        const rep = await fg2Rebuild(db, sp.code, sp.season, true);
+        report.rebuild.push(rep);
+        describeRebuild(rep, log).forEach(x =>
+          report.failed.push({ sport: sp.code, reason: 'fg2_diagnostic_error', detail: x }));
+      } catch (e) {
+        report.failed.push({ sport: sp.code, reason: 'fg2_rebuild_failed', detail: String(e.message).slice(0, 300) });
+        log(`  ! ${sp.code} ${sp.season}: the settlement rebuild failed: ${e.message}`);
+      }
     }
   }
 
@@ -1727,6 +1878,7 @@ async function main() {
 }
 
 module.exports = {
+  closeSnapshotsFor, handClosesToSettlement, fg2Rebuild, describeRebuild, isFg2Missing,
   oddsBoard, closeFromBoardRow, findBoardRow, closesFromBoard, backfillCloses, CLOSE_FIELDS,
   teamKey, teamsAgree, teamsAgreeAny, namesOf, gameMatches, datesAgree, ymd, isFinalScore,
   isPlaceholderResult, espnCompleted,

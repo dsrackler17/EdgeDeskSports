@@ -240,10 +240,20 @@ chk('the road side of that same game is a win',
   S.gradeProjection({ pick_side: 'away', projected_spread: -26.5 }, USC_FINAL, -38.5).pick_result === 'win');
 chk('landing exactly on the close is a push',
   S.gradeProjection({ pick_side: 'home' }, { home_score: 27, away_score: 20 }, -7).pick_result === 'push');
-chk('no pick side is no ATS result — a side is never inferred here — but the margin still counts',
+/* football-v2: ONE side rule for the page, this job and the database. With
+   no pick side, the side is the one the model's own fair spread takes
+   against the close: fair -16.3 into -7.5 is HOME (close - fair = +8.8),
+   and TCU by 34 covers. This job used to refuse it while the page graded it. */
+chk('no pick side: the side the model’s own line takes against the close is graded, and the margin still counts',
   (() => {
     const g = S.gradeProjection({ pick_side: null, projected_spread: -16.3 }, TCU_FINAL, -7.5);
-    return g.pick_result === null && near(g.margin_error, 17.7) && g.brier === null;
+    return g.pick_result === 'win' && g.ats_side === 'home' && g.ats_side_source === 'derived' &&
+      near(g.margin_error, 17.7) && g.brier === null && g.grading_version === 'football-v2';
+  })());
+chk('no pick side and a line exactly on the close is no side, and no ATS result',
+  (() => {
+    const g = S.gradeProjection({ pick_side: null, projected_spread: -7.5 }, TCU_FINAL, -7.5);
+    return g.pick_result === null && g.ats_exclusion === 'NO_ATS_SIDE' && near(g.margin_error, 26.5);
   })());
 chk('no close is no ATS result either',
   S.gradeProjection({ pick_side: 'home', projected_spread: -12.5 }, TCU_FINAL, null).pick_result === null);
@@ -854,6 +864,60 @@ DRIVES.push((async () => {
     S.parseArgs(['--backfill-closes']).commit === false);
   fs.rmSync(dir, { recursive: true, force: true });
 })().catch(e => chk('the close-recovery drive did not crash', false, String(e && e.stack || e))));
+
+/* ---- football-v2: a recovered close reaches the DATABASE -----------------
+   All of NFL week 2, 2026 carried a captured close in the committed record
+   (collective_odds) and none in the database, because a close recovered
+   after settlement was written to the file only. These pin the hand-off. */
+DRIVES.push((async () => {
+  const held = [
+    { game_id: 'g1', result: { home_score: 41, away_score: 31, closing_spread: null } },
+    { game_id: 'g2', result: { home_score: 20, away_score: 17, closing_spread: 3.5 } },
+    { game_id: 'g3', result: null },
+  ];
+  const entries = [
+    { game_id: 'g1', closing_spread: -5.5, close_source: 'collective_odds', kickoff_at: '2026-09-18T00:15:00Z', closing_total: 47.5 },
+    { game_id: 'g2', closing_spread: 3.5, close_source: 'collective', kickoff_at: '2026-09-20T17:00:00Z' },
+    { game_id: 'g3', closing_spread: -3, close_source: 'collective_odds_board', kickoff_at: '2026-09-21T17:00:00Z' },
+    { game_id: 'g4', closing_spread: null, close_source: null, kickoff_at: '2026-09-21T17:00:00Z' },
+  ];
+  const rows = S.closeSnapshotsFor(entries, held, '2026-09-28T00:00:00Z');
+  chk('fg2: only closes the database game row lacks are handed over (not its own, not a null)',
+    rows.length === 2 && rows.map(r => r.canonical_game_id).join(',') === 'g1,g3', rows);
+  chk('fg2: a handed-over close is an untimed collective_odds_close snapshot that names where it came from',
+    rows[0].source === 'collective_odds_close' && rows[0].observed_at === null && rows[0].home_line === -5.5 &&
+    rows[0].source_snapshot_id === 'settle_record:g1:collective_odds' && rows[0].raw.via === 'collective_odds' &&
+    rows[0].raw.closing_total === 47.5);
+  const calls = [];
+  const db = {
+    insertIgnore: async (rel, r, key) => { calls.push({ rel, n: r.length, key }); return r.slice(0, 1); },
+    rpc: async (fn, args) => { calls.push({ fn, args }); return { sport: 'NFL', season: 2026, grading_version: 'football-v2',
+      close_classes: { A: 16, B: 16 }, diagnostics: [{ week: 3, market_capture_pct: 7, ats_graded: 3, ats_gradable: 3,
+        warnings: ['HIGH:MARKET_CAPTURE_LOW', 'ERROR:GRADABLE_NOT_GRADED'] }], standings: [] }; },
+  };
+  const h = await S.handClosesToSettlement(db, rows, null);
+  chk('fg2: the hand-off is insert-only on (source, source_snapshot_id)',
+    calls[0].rel === 'fg2_market_snapshots' && calls[0].key === 'source,source_snapshot_id' && h.written === 1, calls);
+  const rep = await S.fg2Rebuild(db, 'NFL', 2026, true);
+  const prev = await S.fg2Rebuild(db, 'NFL', 2026, false);
+  chk('fg2: a commit rebuild calls fg2_rebuild(commit), a preview calls fg2_rebuild_preview',
+    calls[1].fn === 'fg2_rebuild' && calls[1].args.p_commit === true && calls[2].fn === 'fg2_rebuild_preview' &&
+    rep.grading_version === 'football-v2' && prev.sport === 'NFL', calls.slice(1));
+  const lines = [];
+  const errs = S.describeRebuild(rep, l => lines.push(l));
+  chk('fg2: an ERROR-level diagnostic is returned so the run fails on it; HIGH is reported',
+    errs.length === 1 && /GRADABLE_NOT_GRADED/.test(errs[0]) && lines.some(l => /MARKET_CAPTURE_LOW/.test(l)), { errs, lines });
+  const missing = { rpc: async () => { throw new Error('RPC fg2_rebuild -> 404: {"code":"PGRST202","message":"Could not find the function"}'); },
+    insertIgnore: async () => { throw new Error('POST fg2_market_snapshots -> 404: {"code":"PGRST205"}'); } };
+  const nr = await S.fg2Rebuild(missing, 'NFL', 2026, true);
+  const nh = await S.handClosesToSettlement(missing, rows, null);
+  const nl = [];
+  chk('fg2: a database without football-v2 is reported as not installed, never as a crash',
+    nr.installed === false && nh.installed === false && S.describeRebuild(nr, l => nl.push(l)).length === 0 &&
+    /not installed/.test(nl[0]), { nr, nh, nl });
+  chk('--rebuild is a flag of its own and does not imply --commit',
+    S.parseArgs(['--rebuild']).rebuild === true && S.parseArgs(['--rebuild']).commit === false);
+})().catch(e => chk('the fg2 hand-off drive did not crash', false, String(e && e.stack || e))));
 
 Promise.all(DRIVES).then(report, report);
 
