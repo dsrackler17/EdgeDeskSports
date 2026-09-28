@@ -400,3 +400,15 @@ came back empty) rather than on a successful fetch. `--backfill-closes` was
 run against the committed record here: it identified 104 games wanting a
 close, recovered 0 because no route was reachable, and wrote nothing. Run it
 where the odds routes answer.
+
+## 8. Football grading rebuilt on one rule (September 2026, football-v2)
+
+The NFL and college football records were graded by four implementations
+that disagreed (the database's `collective.grade_game`, the settle job's
+`gradeProjection`, the page's `localGrade`, and the consensus tally), against
+closes that were captured but never linked to their games. The full audit,
+the answers to where each number came from, the A–L close classification,
+the hand-verified sample and the runbook are in
+[`docs/collective-grading-v2/AUDIT.md`](../docs/collective-grading-v2/AUDIT.md).
+The one rule now lives in `lib/football_grading.js` and its SQL twin in
+`supabase/migrations/20260928120000_football_grading_v2.sql`.

@@ -27,6 +27,15 @@
 # does not carry as completed, with two real scores, is skipped and named in
 # the run log rather than settled on a guess. 0-0 is never a final.
 #
+# FOOTBALL-V2. With the service credential, every run then (1) hands any
+# close it recovered for a game the database graded without one to the
+# settlement -- it used to go into the committed JSON only, which is how all
+# of NFL week 2, 2026 kept closes on the site and none in the database -- and
+# (2) rebuilds the settlement (collective.fg2_rebuild: idempotent, audited,
+# a no-op when nothing moved). An ERROR-level diagnostic -- a model-game with
+# a prediction, a close, a side and a final but no grade -- fails the run, so
+# it is seen within the hour rather than on the rankings page.
+#
 # SECRETS (GitHub Actions repository secrets, not Supabase dashboard secrets):
 #   SB_SERVICE_ROLE  the project's service-role key   } the door this job
 #   SB_URL           the project URL                   } is written for
@@ -80,7 +89,10 @@ jobs:
           node-version: '22'
 
       - name: Matching and grading logic must pass before it is allowed to write
-        run: node tools/collective/settle_finals.test.js
+        run: |
+          node tools/collective/settle_finals.test.js
+          # football-v2: the one grader this job, the page and the database share
+          node tools/collective/football_grading.test.js
 
       - name: Prove the sources are live before anything is written
         run: node tools/collective/settle_finals.js --verify || true

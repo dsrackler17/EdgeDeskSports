@@ -1,0 +1,101 @@
+# football-v2 — apply the settlement migration and rebuild the 2026 records.
+#
+# The Collective's 2026 football records were graded by four implementations
+# that disagreed, against closes that were captured but never linked to their
+# games. supabase/migrations/20260928120000_football_grading_v2.sql installs
+# ONE settlement in the database; this workflow applies it and rebuilds a
+# season from the database's own captured prices, predictions and finals.
+#
+# RUN IT IN THIS ORDER, from the Actions tab:
+#   1. apply_migration: true,  commit: false   installs, then a PREVIEW that
+#      is rolled back: read the report (A-L close classes, every model's
+#      corrected record beside the legacy one, the verification sample)
+#   2. apply_migration: false, commit: true    writes the settlement, syncs
+#      the legacy tables, and commits the reconciliation report
+# Both are idempotent: running either twice changes nothing the second time.
+#
+# SECRET: SB_DB_URL (the pooled Postgres connection string the deploy
+# workflow already uses to apply SQL). Nothing here deploys an edge function;
+# supabase/functions/collective_public serves the settlement once deployed.
+name: Football regrade (football-v2)
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_migration:
+        description: 'Apply supabase/migrations/20260928120000_football_grading_v2.sql first (idempotent)'
+        type: boolean
+        required: false
+        default: false
+      commit:
+        description: 'Write the settlement (unchecked = preview, rolled back)'
+        type: boolean
+        required: false
+        default: false
+      sport:
+        description: 'Which sport'
+        type: choice
+        options: [both, NFL, CFB]
+        default: both
+      season:
+        description: 'Season'
+        required: false
+        default: '2026'
+
+concurrency:
+  group: football-regrade
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  regrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Add postgres to PATH
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+
+      # The grader, the identity layer and the migration itself must pass,
+      # against a throwaway database, before anything touches the real one.
+      - name: The one grader and its migration must pass first
+        run: |
+          node tools/collective/football_grading.test.js
+          node tools/collective/football_identity.test.js
+          node tools/collective/football_grading_sql.test.js
+
+      - name: Rebuild and reconcile
+        env:
+          SB_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: |
+          set -o pipefail
+          if [ -z "$SB_DB_URL" ]; then
+            echo "::error::SB_DB_URL is not set as a GitHub Actions repository secret."
+            exit 1
+          fi
+          ARGS="--pg --season ${{ inputs.season }} --out collective/reports"
+          if [ "${{ inputs.sport }}" != "both" ]; then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
+          if [ "${{ inputs.apply_migration }}" = "true" ]; then ARGS="$ARGS --apply-migration"; fi
+          if [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
+          node tools/collective/football_rebuild.js $ARGS | tee /tmp/regrade.md
+          cat /tmp/regrade.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: football-v2-reconciliation
+          path: collective/reports/
+
+      - name: Publish the reconciliation report
+        if: ${{ inputs.commit == true }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "collective: football-v2 reconciliation (${{ inputs.sport }} ${{ inputs.season }})" -- collective/reports

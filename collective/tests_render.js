@@ -212,7 +212,7 @@ vm.createContext(sandbox);
 try{vm.runInContext(fs.readFileSync(path.join(__dirname,'week.js'),'utf8'),sandbox,{timeout:20000});}
 catch(e){console.log('[boot week.js] '+e.message);}
 /* ...and the canonical research libraries, which it also loads by src */
-['research_core.js','research_eval.js'].forEach(function(f){
+['research_core.js','research_eval.js','football_grading.js'].forEach(function(f){
   try{vm.runInContext(fs.readFileSync(path.join(__dirname,'..','lib',f),'utf8'),sandbox,{timeout:20000});}
   catch(e){console.log('[boot '+f+'] '+e.message);}
 });
@@ -1345,8 +1345,10 @@ var S=sandbox;
         &&/a posted win probability/.test(tbl);
     })(),
     {samples:(noHtml.match(/class="nsamp[^"]*"[^>]*>n=\d+/g)||[]).slice(0,8)});
+  /* football-v2: not "+N ungraded" but each reason on its own line under the
+     record ("Missing close: 3"), because each is a different fix */
   chk('and the ungraded games are counted and attributed on the page',
-    /no against-the-spread result/.test(noHtml)&&/ungraded/.test(noHtml),
+    /no against-the-spread result/.test(noHtml)&&/Missing close: \d+/.test(noHtml),
     {line:(/[0-9]+ of [0-9]+\s*<\/b>?[\s\S]{0,120}/.exec(noHtml)||[])[0]});
   chk('the close was actually asked for before the page gave up on it',
     closingAsked8.length>0,{asked:closingAsked8.slice(0,4)});

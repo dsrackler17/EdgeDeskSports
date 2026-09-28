@@ -91,6 +91,9 @@ function loadPage() {
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'collective', 'week.js'), 'utf8'),
       sandbox, { timeout: 20000 });
   } catch (_) {}
+  /* the page loads the one grader by <script src>; so does this */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'football_grading.js'), 'utf8'),
+    sandbox, { timeout: 20000 });
   /* The page's router fires on load and reaches for a DOM this has stubbed;
      the grading functions are already defined by then, so a throw out of the
      last line is not a failure to load them. */

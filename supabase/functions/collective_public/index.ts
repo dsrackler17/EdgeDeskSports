@@ -366,6 +366,89 @@ async function viewCount(view: string, query: string, column = "id"): Promise<nu
   return Number.isFinite(total) ? total : 0;
 }
 
+// ---------- football-v2: the settlement is the record ----------
+// supabase/migrations/20260928120000_football_grading_v2.sql installs ONE
+// settlement per model per game (collective.fg2_settlements), ONE captured
+// close per game (fg2_official_closes), and the standings and rankings over
+// them. Where it is installed, every number this API serves about a graded
+// football game comes from there, so the page, the wall, the rankings and
+// the model log cannot disagree with the database. Where it is not, the
+// legacy views answer exactly as before.
+const FG2_VERSION = "football-v2";
+function fg2League(sport: string | null | undefined): string {
+  const s = String(sport ?? "").toUpperCase();
+  if (s === "NFL") return "NFL";
+  if (s === "CFB" || s === "CFB-P4" || s === "NCAAF") return "CFB";
+  return s;
+}
+async function fg2Get<T = unknown>(view: string, query: string): Promise<T[] | null> {
+  try {
+    return await viewGet<T>(view, query);
+  } catch (e) {
+    const msg = String((e as Error)?.message ?? e);
+    // not installed yet is not an error: the legacy views answer
+    if (!/42P01|PGRST2\d\d|does not exist|Could not find/i.test(msg)) {
+      console.error(`collective_public: ${view} unreadable, serving legacy:`, msg.slice(0, 300));
+    }
+    return null;
+  }
+}
+interface Fg2Settlement {
+  model_id: string; canonical_game_id: string; prediction_id: string | null; prediction_version: number | null;
+  prediction_status: string | null; ats_side: string | null; ats_side_source: string | null;
+  ats_result: string | null; ats_exclusion: string | null; margin_error: number | null; mae_exclusion: string | null;
+  brier: number | null; brier_exclusion: string | null; close_home_spread: number | null;
+}
+interface Fg2Close {
+  canonical_game_id: string; home_spread: number | null; away_spread: number | null; source: string | null;
+  book: string | null; observed_at: string | null; lead_minutes: number | null; source_snapshot_id: string | null;
+  close_status: string; close_class: string | null;
+}
+interface Fg2Standing {
+  league: string; season: number; model_id: string; creator_slug: string | null; model_slug: string | null;
+  wins: number; losses: number; pushes: number; ats_n: number; ats_pct: number | null;
+  mae: number | null; mae_n: number; brier: number | null; brier_n: number; coverage_pct: number | null;
+  ats_missing_close: number; ats_no_side: number; ats_late: number; ats_game_not_final: number; ats_excluded_other: number;
+}
+interface Fg2Rank extends Fg2Standing {
+  is_ranked: boolean; unranked_reason: string | null;
+  rank_win_pct: number | null; rank_margin_mae: number | null; rank_brier: number | null;
+  min_coverage_pct: number; min_graded_games: number;
+}
+function fg2Grade(s: Fg2Settlement) {
+  if (s.ats_result === null && s.margin_error === null && s.brier === null) return null;
+  return { pick_result: s.ats_result, margin_error: s.margin_error, brier: s.brier, grading_version: FG2_VERSION };
+}
+function fg2SettlementPublic(s: Fg2Settlement) {
+  return {
+    grading_version: FG2_VERSION, prediction_version: s.prediction_version, prediction_status: s.prediction_status,
+    ats_side: s.ats_side, ats_side_source: s.ats_side_source, ats_result: s.ats_result, ats_exclusion: s.ats_exclusion,
+    margin_error: s.margin_error, mae_exclusion: s.mae_exclusion, brier: s.brier, brier_exclusion: s.brier_exclusion,
+  };
+}
+function fg2Record(s: Fg2Standing) {
+  return {
+    graded: s.ats_n, wins: s.wins, losses: s.losses, pushes: s.pushes, win_pct: s.ats_pct,
+    margin_mae: s.mae, brier: s.brier,
+    ats_n: s.ats_n, margin_n: s.mae_n, brier_n: s.brier_n,
+    ats_missing: {
+      MISSING_CLOSE: s.ats_missing_close, NO_ATS_SIDE: s.ats_no_side, LATE_SUBMISSION: s.ats_late,
+      GAME_NOT_FINAL: s.ats_game_not_final, OTHER: s.ats_excluded_other,
+    },
+    season: s.season, grading_version: FG2_VERSION,
+  };
+}
+/* the latest season's standing for each model: the current record */
+function fg2Latest<T extends Fg2Standing>(rows: T[] | null): Map<string, T> {
+  const out = new Map<string, T>();
+  for (const r of rows ?? []) {
+    const k = `${r.league}|${r.creator_slug}|${r.model_slug}`;
+    const have = out.get(k);
+    if (!have || r.season > have.season) out.set(k, r);
+  }
+  return out;
+}
+
 async function tableWrite(
   table: string,
   method: "POST" | "PATCH" | "DELETE",
@@ -396,6 +479,9 @@ interface WallRow {
   record: {
     graded: number; wins: number; losses: number; pushes: number;
     win_pct: number | null; margin_mae: number | null; brier: number | null;
+    /* football-v2: each metric's own sample, and why the rest are ungraded */
+    ats_n?: number; margin_n?: number; brier_n?: number;
+    ats_missing?: Record<string, number>; season?: number; grading_version?: string;
   } | null;
   coverage_pct: number | null; last_submission_at: string | null;
   website_url: string | null; x_handle: string | null;
@@ -429,8 +515,22 @@ function toWallRow(v: WallViewRow): WallRow {
 // Canonical order everywhere: membership rank, then graded desc, then name.
 // One ordering for every host and every surface (Section 4 hard rule).
 async function buildWall(): Promise<WallRow[]> {
-  const rows = await viewGet<WallViewRow>("model_wall", "select=*");
-  return rows.map(toWallRow).sort((a, b) =>
+  const [rows, stand] = await Promise.all([
+    viewGet<WallViewRow>("model_wall", "select=*"),
+    fg2Get<Fg2Standing>("fg2_model_standings", "select=*"),
+  ]);
+  const latest = fg2Latest(stand);
+  return rows.map((v) => {
+    const w = toWallRow(v);
+    /* the settlement's record, where there is one: the SAME numbers the
+       rankings, the model log and the database's own grades carry */
+    const s = latest.get(`${fg2League(v.sport)}|${v.creator_slug}|${v.model_slug}`);
+    if (s && (s.ats_n > 0 || s.mae_n > 0 || s.brier_n > 0)) {
+      w.record = fg2Record(s);
+      if (s.coverage_pct !== null) w.coverage_pct = s.coverage_pct;
+    }
+    return w;
+  }).sort((a, b) =>
     (MEMBER_RANK[a.membership] ?? 9) - (MEMBER_RANK[b.membership] ?? 9) ||
     ((b.record?.graded ?? 0) - (a.record?.graded ?? 0)) ||
     a.creator_name.localeCompare(b.creator_name));
@@ -513,8 +613,10 @@ interface GamesPayload {
 
    This function used to map every row board_models returned, which meant the
    central rule of the whole Collective -- each model is graded and shown on
-   its FIRST pre-kickoff live submission -- was asserted nowhere in the code
-   that serves the board. Two things followed from that.
+   its LATEST live submission received before the lock (supabase/lock_rule.sql;
+   this file said "first" until football-v2, while the grader used the latest)
+   -- was asserted nowhere in the code that serves the board. Two things
+   followed from that.
 
    If the view ever stops collapsing, the wall renders the same model twice on
    one game with nothing saying which one is graded. And movement_n, which the
@@ -523,9 +625,9 @@ interface GamesPayload {
    so on a deployment where it does not, a creator who re-uploads is told
    nothing at all, which is the complaint that started this.
 
-   board_models is read ordered by received_at.asc, so the first row seen for
-   a model is its earliest. A late row does not hold the graded slot, so a
-   non-late row always takes it.
+   board_models is read ordered by received_at.asc, so the last on-time row
+   seen for a model is its latest pre-lock one. A late row does not hold the
+   graded slot, so a non-late row always takes it.
 
    The fallback order matters more than the count. Counting alone, against a
    view that already collapses, would report 1 for every row -- a confident,
@@ -547,7 +649,13 @@ function collapseModels(rows: BoardModelRow[]): (BoardModelRow & { movement_n: n
   }
   const out: (BoardModelRow & { movement_n: number })[] = [];
   for (const list of by.values()) {
-    const graded = list.find((m) => !m.is_late) ?? list[0];
+    /* THE LATEST pre-lock row, not the first. The lock rule
+       (supabase/lock_rule.sql) and the settlement (football-v2) both grade
+       each model's latest live submission received before the lock; showing
+       the FIRST one here put a different number on the board from the one
+       that was graded. list is ascending by received_at. */
+    const onTime = list.filter((m) => !m.is_late);
+    const graded = onTime.length ? onTime[onTime.length - 1] : list[list.length - 1];
     const fromView = Number(graded.movement_n);
     out.push({
       ...graded,
@@ -601,9 +709,16 @@ async function buildGames(
     "game_detail", `select=*&sport=eq.${sport}&season=eq.${season}${wq}&order=kickoff_at.asc`);
   if (games.length === 0) return { sport, season, week, entitled, games: [] };
   const ids = games.map((g) => `"${g.game_id}"`).join(",");
-  const [models, consensus] = await Promise.all([
+  const [models, consensus, settles, closes] = await Promise.all([
     viewGet<BoardModelRow>("board_models", `select=*&game_id=in.(${ids})&order=received_at.asc`),
     viewGet<ConsensusRow>("consensus", `select=*&game_id=in.(${ids})`),
+    fg2Get<Fg2Settlement>("fg2_settlements",
+      `select=model_id,canonical_game_id,prediction_id,prediction_version,prediction_status,ats_side,ats_side_source,` +
+      `ats_result,ats_exclusion,margin_error,mae_exclusion,brier,brier_exclusion,close_home_spread` +
+      `&grading_version=eq.${FG2_VERSION}&canonical_game_id=in.(${ids})`),
+    fg2Get<Fg2Close>("fg2_official_closes",
+      `select=canonical_game_id,home_spread,away_spread,source,book,observed_at,lead_minutes,source_snapshot_id,close_status,close_class` +
+      `&market_type=eq.spread&canonical_game_id=in.(${ids})`),
   ]);
   const now = Date.now();
   return {
@@ -617,6 +732,10 @@ async function buildGames(
           new Date(g.kickoff_at).getTime() > now);
       const unlocked = entitled || settled || !open;
       const c = consensus.find((x) => x.game_id === g.game_id) ?? null;
+      /* the game's ONE official close (football-v2): every model on the game
+         is graded against this row, and the page is shown the same one */
+      const oc = closes?.find((x) => x.canonical_game_id === g.game_id) ?? null;
+      const closeSpread = oc ? oc.home_spread : g.closing_spread;
       return {
         // sport and week ride along so a board carrying more than one sport
         // can say which is which, and so the model page's game log stops
@@ -628,7 +747,11 @@ async function buildGames(
         kickoff_at: g.kickoff_at, status: g.status,
         result: settled && g.home_score !== null
           ? { home_score: g.home_score, away_score: g.away_score,
-              closing_spread: g.closing_spread, closing_total: g.closing_total }
+              closing_spread: closeSpread, closing_total: g.closing_total,
+              ...(oc ? { close: {
+                home_spread: oc.home_spread, away_spread: oc.away_spread, source: oc.source, book: oc.book,
+                observed_at: oc.observed_at, lead_minutes: oc.lead_minutes, snapshot_id: oc.source_snapshot_id,
+                status: oc.close_status, class: oc.close_class, grading_version: FG2_VERSION } } : {}) }
           : null,
         consensus: !c || c.n === 0
           ? (unlocked ? null : { locked: true, n: c?.n ?? 0 })
@@ -644,21 +767,27 @@ async function buildGames(
         // locked reader learning that a model revised a game learns nothing
         // they could bet on. Withholding it would put a creator's own "did my
         // re-upload land?" answer behind the paywall.
-        models: collapseModels(models.filter((m) => m.game_id === g.game_id)).map((m) =>
-          unlocked
+        models: collapseModels(models.filter((m) => m.game_id === g.game_id)).map((m) => {
+          const st = settles?.find((x) => x.canonical_game_id === g.game_id && x.model_id === m.model_id) ?? null;
+          return unlocked
             ? { creator_slug: m.creator_slug, model_slug: m.model_slug, locked: false,
                 late: m.is_late, pick_side: m.pick_side, projected_spread: m.projected_spread,
                 projected_total: m.projected_total, home_win_probability: m.home_win_prob,
                 line_at_submission: m.line_at_submission, cover_probability: m.cover_prob,
                 received_at: m.received_at, movement_n: m.movement_n,
-                // the game's own captured close decides whether an ATS
-                // verdict on it can be served at all — see atsServed
-                grade: m.pick_result !== null || m.margin_error !== null || m.brier !== null
-                  ? { pick_result: atsServed(m.pick_result, g.closing_spread),
-                      margin_error: m.margin_error, brier: m.brier }
-                  : null }
+                // the settlement's grade when there is one (football-v2);
+                // otherwise the legacy grade, and the game's own captured
+                // close decides whether an ATS verdict on it can be served
+                // at all — see atsServed
+                grade: st ? fg2Grade(st)
+                  : (m.pick_result !== null || m.margin_error !== null || m.brier !== null
+                    ? { pick_result: atsServed(m.pick_result, g.closing_spread),
+                        margin_error: m.margin_error, brier: m.brier }
+                    : null),
+                settlement: st ? fg2SettlementPublic(st) : null }
             : { creator_slug: m.creator_slug, model_slug: m.model_slug, locked: true,
-                movement_n: m.movement_n }),
+                movement_n: m.movement_n };
+        }),
       };
     }),
   };
@@ -880,12 +1009,13 @@ async function currentWeek(sport: string, season: number): Promise<number | null
    alone "changes nothing anybody can see" -- because this is the function
    that serves it. Now they agree. */
 const RULES = {
-  version: 2,
+  version: 3,
+  grading_version: "football-v2",
   rules: [
-    "Pick result: decided by the final score. The actual margin is measured against the Collective's own captured closing spread (home convention) on the pick side; the captured close is the yardstick so every model faces the same number, never the line a creator reports. Push on the exact number, excluded from win percentage. Never graded against a creator-supplied result column.",
+    "Pick result: decided by the final score against the Collective's own captured closing spread (home convention): actual home margin plus the home close above zero is the home side covering, below zero the away side, exactly zero a push. The close is ONE row per game, the final valid pregame snapshot the Collective captured (never an in-game price, never a number a creator reports), and every model on the game is graded against that same row. The side graded is the side the model submitted; with none, it is the side the model's own fair spread takes against the close (close minus fair above zero is home, below zero away, zero is no side). A game with no captured close has no ATS result for anybody. Push is excluded from win percentage. Never graded against a creator-supplied result column.",
     "Margin error: absolute difference between projected home margin and actual home margin. Projected home margin comes from projected scores when given, otherwise from the projected spread.",
-    "Brier: squared error on the moneyline home win probability. 0.25 is a coin flip. Lower is better.",
-    "First submission: each model is graded on its first pre-kickoff live submission per game, timestamped on server receipt. Later revisions are stored and shown as movement, never regraded. Post-kickoff receipts are stored, marked late, and excluded. Backfill and test data are stored, shown separately, and excluded from records, rankings, and consensus.",
+    "Brier: squared error on the moneyline home win probability. 0.25 is a coin flip. Lower is better. A tie has no winner and is not scored.",
+    "The lock: every game locks 30 minutes before kickoff. Each model is graded on its latest live submission received before the lock, timestamped on server receipt; earlier submissions are stored and shown as movement, and later ones are stored, marked late, and never graded. Backfill and test data are stored, shown separately, and excluded from records, rankings, and consensus.",
     "Rankings: every model is ranked from its first graded game. There is no coverage floor and no minimum sample. Win percentage, margin error, and Brier are ranked separately and never blended, and a model's sample size is published beside its record so a short one can be read for what it is.",
     "Active participation: at least 3 eligible model projections per week within your declared sport or scope. Members who repeatedly submit fewer than that, or who miss weeks without communication, may be moved to inactive or removed. Personal betting activity does not matter: submit the model's output, not only the games you choose to bet.",
   ],
@@ -950,7 +1080,7 @@ Credentials and identity for this creator:
   API key (treat like a password): {{API_KEY}}
   Docs and grading rules: {{DOCS_URL}}
 
-One honest rule to close on: the Collective grades every model the same way, against its own closing lines, on first submissions only. Backfilled history is stored and shown separately but never graded. Send the whole slate, not just the confident games, because slate coverage is published next to the record.`;
+One honest rule to close on: the Collective grades every model the same way, against its own closing lines, on the latest submission received before each game's lock. Backfilled history is stored and shown separately but never graded. Send the whole slate, not just the confident games, because slate coverage is published next to the record.`;
 
 function renderPrompt(vars: Record<string, string>): string {
   let out = PROMPT_TEMPLATE;
@@ -1209,6 +1339,43 @@ Deno.serve(async (req) => {
       return json(RULES, 200, FREE_CACHE);
     }
     if (req.method === "GET" && path === "/v1/rankings") {
+      /* football-v2 first: the rankings the settlement computes, each metric
+         on its own sample, current season per sport. The legacy view below
+         answers only where the migration is not installed. */
+      const fr = fg2Latest(await fg2Get<Fg2Rank>("fg2_model_rankings", "select=*"));
+      if (fr.size) {
+        const wall = await buildWall();
+        const nameOf = (r: Fg2Rank) => wall.find((w) => w.creator_slug === r.creator_slug && w.model_slug === r.model_slug &&
+          fg2League(w.sport) === r.league) ?? null;
+        const ranked = [...fr.values()];
+        const fboard = (rankKey: "rank_win_pct" | "rank_margin_mae" | "rank_brier",
+          valKey: "ats_pct" | "mae" | "brier", nKey: "ats_n" | "mae_n" | "brier_n") =>
+          ranked.filter((r) => r[rankKey] !== null)
+            .sort((a, b) => (a[rankKey] ?? 0) - (b[rankKey] ?? 0))
+            .map((r) => {
+              const w = nameOf(r);
+              return {
+                rank: r[rankKey], creator_slug: r.creator_slug, creator_name: w?.creator_name ?? r.creator_slug,
+                model_slug: r.model_slug, model_name: w?.model_name ?? r.model_slug, sport: w?.sport ?? r.league,
+                value: r[valKey], graded: r[nKey], n: r[nKey], coverage_pct: r.coverage_pct,
+                season: r.season, grading_version: FG2_VERSION,
+              };
+            });
+        const any = ranked[0];
+        return json({
+          rules_version: RULES.version, grading_version: FG2_VERSION,
+          thresholds: { min_coverage_pct: Number(any.min_coverage_pct), min_graded_games: Number(any.min_graded_games) },
+          boards: {
+            win_pct: fboard("rank_win_pct", "ats_pct", "ats_n"),
+            margin_mae: fboard("rank_margin_mae", "mae", "mae_n"),
+            brier: fboard("rank_brier", "brier", "brier_n"),
+          },
+          unranked: ranked.filter((r) => !r.is_ranked).map((r) => ({
+            creator_slug: r.creator_slug, model_slug: r.model_slug,
+            model_name: nameOf(r)?.model_name ?? r.model_slug, reason: r.unranked_reason,
+          })),
+        }, 200, FREE_CACHE);
+      }
       interface RankRow {
         creator_slug: string; creator_name: string; model_slug: string; model_name: string;
         sport: string; graded: number | null; coverage_pct: number | null;
@@ -1320,14 +1487,59 @@ Deno.serve(async (req) => {
         pick_side: string | null; closing_spread: number | null; final: string | null;
         pick_result: string | null; margin_error: number | null; brier: number | null; movement_n: number;
       }
-      const [coverage, log] = await Promise.all([
+      interface TraceRow {
+        canonical_game_id: string; event: string; kickoff_at: string; week: number | null;
+        ats_side: string | null; ats_side_source: string | null; close_home_spread: number | null;
+        close_source: string | null; close_book: string | null; close_observed_at: string | null;
+        home_score: number | null; away_score: number | null; ats_calculation: string | null;
+        ats_result: string | null; ats_exclusion: string | null; margin_error: number | null;
+        mae_exclusion: string | null; brier: number | null; brier_exclusion: string | null;
+        prediction_version: number | null; prediction_versions: number | null;
+      }
+      const [coverage, log, trace] = await Promise.all([
         modelId
           ? viewGet<CovRow>("model_coverage", `select=season,week,games_available,games_submitted&model_id=eq.${modelId}&order=season.desc,week.asc`)
           : Promise.resolve([] as CovRow[]),
         modelId
           ? viewGet<LogRow>("model_game_log", `select=*&model_id=eq.${modelId}&order=graded_at.desc&limit=25`)
           : Promise.resolve([] as LogRow[]),
+        /* football-v2: the model's own settlement rows, graded or not, each
+           with the reason a metric is missing */
+        modelId
+          ? fg2Get<TraceRow>("fg2_grading_trace",
+            `select=canonical_game_id,event,kickoff_at,week,ats_side,ats_side_source,close_home_spread,close_source,` +
+            `close_book,close_observed_at,home_score,away_score,ats_calculation,ats_result,ats_exclusion,margin_error,` +
+            `mae_exclusion,brier,brier_exclusion,prediction_version,prediction_versions` +
+            `&model_id=eq.${modelId}&grading_version=eq.${FG2_VERSION}&game_state=eq.FINAL&order=kickoff_at.desc&limit=40`)
+          : Promise.resolve(null),
       ]);
+      if (trace && trace.length) {
+        return json({
+          creator: {
+            slug: payload.creator.slug, display_name: payload.creator.display_name,
+            founding: payload.creator.founding,
+          },
+          model: { model_slug: model.model_slug, model_name: model.model_name, sport: model.sport,
+            description: models[0]?.description ?? null },
+          record: model.record,
+          coverage,
+          coverage_pct: model.coverage_pct,
+          grading_version: FG2_VERSION,
+          recent_graded: trace.map((t) => ({
+            game_id: t.canonical_game_id, label: t.event, kickoff_at: t.kickoff_at, week: t.week,
+            pick_side: t.ats_side, pick_side_source: t.ats_side_source,
+            closing_spread: t.close_home_spread, close_source: t.close_source, close_book: t.close_book,
+            close_observed_at: t.close_observed_at,
+            final: t.home_score === null ? null : `${t.away_score} - ${t.home_score}`,
+            home_score: t.home_score, away_score: t.away_score,
+            ats_calculation: t.ats_calculation,
+            pick_result: t.ats_result, ats_exclusion: t.ats_exclusion,
+            margin_error: t.margin_error, mae_exclusion: t.mae_exclusion,
+            brier: t.brier, brier_exclusion: t.brier_exclusion,
+            movement_n: t.prediction_versions ?? 1, grading_version: FG2_VERSION,
+          })),
+        }, 200, FREE_CACHE);
+      }
       return json({
         creator: {
           slug: payload.creator.slug, display_name: payload.creator.display_name,

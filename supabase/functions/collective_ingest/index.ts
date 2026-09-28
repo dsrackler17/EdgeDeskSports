@@ -474,9 +474,9 @@ async function currentWeek(sport: string, season: number): Promise<number | null
 }
 
 const RULES = {
-  version: 2,
+  version: 3,
   rules: [
-    "Pick result: decided by the final score. The actual margin is measured against the Collective's own captured closing spread (home convention) on the pick side; the captured close is the yardstick so every model faces the same number, never the line a creator reports. Push on the exact number, excluded from win percentage. Never graded against a creator-supplied result column.",
+    "Pick result: decided by the final score against the Collective's own captured closing spread (home convention), one captured close per game shared by every model: actual home margin plus the home close above zero is the home side covering, below zero the away side, zero a push. The side graded is the side the model submitted; with none, the side its own fair spread takes against the close (close minus fair above zero is home). No captured close is no ATS result for anybody. Push on the exact number, excluded from win percentage. Never graded against a creator-supplied result column. Grading version football-v2.",
     "Margin error: absolute difference between projected home margin and actual home margin. Projected home margin comes from projected scores when given, otherwise from the projected spread.",
     "Brier: squared error on the moneyline home win probability. 0.25 is a coin flip. Lower is better.",
     "The lock: every game locks 30 minutes before kickoff. Each model is graded on its latest live submission received before the lock, timestamped on server receipt; earlier submissions are stored and shown as movement, never regraded. Receipts at or after the lock are stored, marked late, and excluded. Backfill and test data are stored, shown separately, and excluded from records, rankings, and consensus.",

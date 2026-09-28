@@ -78,3 +78,10 @@ It fills only nulls, touches no score, team, week or kickoff, keeps
 `settled_at` (when the record first saw the game), and running it twice
 changes nothing. The hourly workflow runs it too, so a close that becomes
 available a day after the game still reaches the record.
+
+**football-v2.** These JSON records are the settle job's working copy. The
+authoritative football settlement is `collective.fg2_settlements`, written by
+`collective.fg2_rebuild` from the database's own captured prices (see
+`docs/collective-grading-v2/AUDIT.md`). Closes the record pass recovers are
+handed to that settlement rather than kept only here, and the page reads a
+`football-v2` settlement ahead of anything in these files.
