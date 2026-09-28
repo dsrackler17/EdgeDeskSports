@@ -133,11 +133,13 @@ Before this change the two surfaces counted different things:
 
 Both now show one hierarchy that sums up, built by `EDCanon.counterHierarchy`:
 
+Week-5 slate, board of 2026-09-28 00:07 UTC:
+
 ```
-ALL GAMES 60 ─┬─ RESEARCH READY 49 ─── ACTIONABLE RESEARCH SIGNALS 29
-              └─ per sport: CFB 60 / 49 / 29
-CFB buckets:  VERIFIED MAJOR 0 · INVESTIGATE 8 · WORTH RESEARCHING 29 · MARKET ALIGNED 12 · NO MARKET / LIMITED 11 · DATA FAULT 0
-Decisions:    BET 0 · WAIT 0 · PASS 49 · NO DECISION 11   (betting disabled by policy)
+ALL GAMES 60 ─┬─ RESEARCH READY 36 ─── ACTIONABLE RESEARCH SIGNALS 25
+              └─ per sport: CFB 60 / 36 / 25
+CFB buckets:  VERIFIED MAJOR 0 · INVESTIGATE 5 · WORTH RESEARCHING 25 · MARKET ALIGNED 6 · NO MARKET / LIMITED 24 · DATA FAULT 0
+Decisions:    BET 0 · WAIT 0 · PASS 36 · NO DECISION 24   (betting disabled by policy)
 ```
 
 The hierarchy carries a `reconciles` flag: buckets sum to ALL GAMES, and actionable ≤ ready ≤ all. It is tested in `tools/validation/canon.test.js` and `football/cfb_terminal/tests.js`. The app (`fbCanonCountersHTML`) and the terminal (`countersHTML`) render the same hierarchy.
@@ -197,7 +199,7 @@ Rules that hold everywhere:
 - WAIT is shown only if the policy's timing rule is enabled. It is not.
 - Every PASS prints its blocker.
 
-Current slate: 0 BET · 0 WAIT · 49 PASS · 11 NO DECISION. The CSV exports carry `decision_status` and never export BET; `tools/football/fbs_board_ui.test.js` checks this.
+Current slate: 0 BET · 0 WAIT · 36 PASS · 24 NO DECISION. The CSV exports carry `decision_status` and never export BET; `tools/football/fbs_board_ui.test.js` checks this.
 
 ## 9. Maturity taxonomy
 
@@ -473,7 +475,7 @@ Snapshots now carry `components`, `games_played`, `pricing_fingerprint`, `qb` an
 | NO INITIAL EDGE | there was no research-sized disagreement to begin with |
 | PRICE HISTORY UNKNOWN | only one moment on file |
 
-Current slate: 32 available, 7 partial, 3 mostly priced in, 14 no initial edge, 4 unknown. The state is a badge on the row and game page and a CSV column.
+Current slate: 26 available, 12 partial, 4 mostly priced in, 14 no initial edge, 4 unknown. The state is a badge on the row and game page and a CSV column.
 
 ## 28. Cleanest-research view
 
@@ -541,19 +543,26 @@ The terminal's `disagreementView` now stores the full checks, tier, calibrated g
 
 `football/cfb_validation/slate_audit.json` covers every named game plus every 7+ gap on the week-5 slate. Each requirement is shown as PASS, FAIL or NOT IMPLEMENTED; a requirement that isn't implemented downgrades the status.
 
+The table uses the board of 2026-09-28 00:07 UTC. Statuses move as quotes age, and the audit is rebuilt with every validation build.
+
 | Game | EdgeDesk | Market (books) | Gap | Status | Failed checks |
 |---|---|---|---|---|---|
-| Syracuse @ UConn | UConn −12.5 | Syracuse −5.5 (1) | 18.0 | MARKET FAULT | multi-book consensus, team states, availability, component bounds, submodel support |
+| Syracuse @ UConn | UConn −12.5 | Syracuse −5.5 (0 fresh) | 18.0 | NO MARKET | — (quote aged out; no gate without a current market) |
 | North Texas @ Tulsa | North Texas −10.6 | Tulsa −2.5 (1) | 13.1 | MARKET FAULT | multi-book consensus, team states |
-| Temple @ South Florida | USF −16.0 | USF −6.0 (1) | 10.0 | MARKET FAULT | multi-book consensus |
-| Marshall @ James Madison | JMU −25.7 | JMU −16.5 (1) | 9.2 | MARKET FAULT | multi-book consensus, availability, submodel support, football-only calibration |
-| Vanderbilt @ Georgia | Georgia −16.7 | Georgia −25.5 (1) | 8.8 | MARKET FAULT | multi-book consensus, submodel support |
-| West Virginia @ Iowa State | ISU −10.2 | ISU −1.5 (1) | 8.7 | MARKET FAULT | multi-book consensus, football-only calibration |
-| California @ UNLV | UNLV −10.2 | UNLV −2.5 (1) | 7.7 | MARKET FAULT | multi-book consensus, football-only calibration |
-| Ohio State @ Iowa | Ohio State −6.8 | Ohio State −14.0 (1) | 7.2 | MARKET FAULT | multi-book consensus, football-only calibration |
-| Miami @ Clemson | Miami −14.8 | Miami −17.5 (0) | 2.7 | NO MARKET | under 7 pts: no gate required |
+| Temple @ South Florida | USF −16.0 | USF −5.5 (1) | 10.5 | MARKET FAULT | multi-book consensus |
+| Marshall @ James Madison | JMU −25.7 | JMU −17.5 (1) | 8.2 | MARKET FAULT | multi-book consensus, availability, submodel support, football-only calibration |
+| Vanderbilt @ Georgia | Georgia −16.7 | Georgia −24.5 (1) | 7.8 | MARKET FAULT | multi-book consensus, submodel support |
+| West Virginia @ Iowa State | ISU −10.2 | ISU −2.5 (1) | 7.7 | MARKET FAULT | multi-book consensus, submodel support, football-only calibration |
+| California @ UNLV | UNLV −10.2 | UNLV −2.5 (0 fresh) | 7.7 | NO MARKET | — (quote aged out) |
+| Ohio State @ Iowa | Ohio State −6.8 | Ohio State −13.5 (1) | 6.7 | WORTH RESEARCHING | under 7 pts: no gate required |
+| Miami @ Clemson | Miami −14.8 | Miami −17.5 (1) | 2.7 | WORTH RESEARCHING | under 7 pts: no gate required |
 
-**Result: no status contradicts its checks (`inconsistent: []`).** None of the eight 7+ gaps is verified. Every one fails "fresh multi-book consensus": each has **1 book**, and the tier needs 2 or 3. WV @ ISU, OSU @ Iowa, California @ UNLV and Marshall @ JMU also fail football-only calibration, meaning the calibrated gap drops under 7.
+**Result: no status contradicts its checks (`inconsistent: []`).** None of the 7+ gaps is verified:
+
+- Every one with a current market fails "fresh multi-book consensus": each has **1 book**, and the tier needs 2 or 3.
+- WV @ ISU and Marshall @ JMU also fail football-only calibration, meaning the calibrated gap drops under 7.
+- Syracuse @ UConn and California @ UNLV have no fresh quote at all, so they are NO MARKET rather than a gap to verify.
+- On the earlier 21:07 UTC board, with those quotes still fresh, all eight 7+ gaps were MARKET FAULT. That included Syracuse @ UConn, which failed five checks, and California @ UNLV and Ohio State @ Iowa (7.2 pts then), both of which also failed football-only calibration.
 
 **Finding on the app path, now fixed.** The app board's gate counted books from `cfb.lines` provider rows, which carry no capture time, while judging freshness on a different, dated quote. So "fresh multi-book consensus" was not actually verified on that path, and the app could show VERIFIED where the terminal showed MARKET FAULT. Two changes fix it:
 
@@ -570,11 +579,11 @@ This week has 5 flips:
 
 | Game | Research status |
 |---|---|
+| Old Dominion @ Georgia State | WORTH RESEARCHING |
 | Penn State @ Northwestern | WORTH RESEARCHING |
-| Fresno State @ Washington State | WORTH RESEARCHING |
 | North Texas @ Tulsa | MARKET FAULT |
-| Syracuse @ UConn | MARKET FAULT |
-| Old Dominion @ Georgia State | NO MARKET |
+| Syracuse @ UConn | NO MARKET |
+| Fresno State @ Washington State | NO MARKET |
 
 ## 34. Model maturity page
 
@@ -793,7 +802,7 @@ Screenshots are in [`screens/`](screens/).
 ## 45. Unresolved issues
 
 1. **No live evidence yet.** The freeze is effective 2026-09-28 and 0 CURRENT snapshots are settled. Every live metric reads "—" until week 5 is graded. The first honest current-version read comes after about 100 games (§41). WALK-FORWARD VALIDATED needs 700.
-2. **The market feed is single-book on this slate.** Every 7+ gap is MARKET FAULT because only one book is captured. Until a second dated book is ingested, VERIFIED MAJOR cannot occur on this path. This is a data-coverage gap, not a gate bug, and the gate is right to refuse.
+2. **The market feed is single-book on this slate.** Every 7+ gap with a current quote is MARKET FAULT, because only one book is captured. Until a second dated book is ingested, VERIFIED MAJOR cannot occur on this path. This is a data-coverage gap, not a gate bug, and the gate is right to refuse.
 3. **The divergence correction is queued, not tested prospectively** (§4). It must go through the challenger pipeline; it will not be applied to production from a backtest.
 4. **Two unseeded FCS-transition teams** (North Dakota State, Sacramento State) are priced from this season's games only, and their divergence is large by construction.
 5. **ETSR stays SHADOW** until its point-scale calibration is measured.
