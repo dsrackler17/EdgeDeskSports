@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-09-28T06:07:36.764Z",
- "board_generated_at": "2026-09-28T06:07:35.261Z",
+ "generated_at": "2026-09-28T07:07:26.180Z",
+ "board_generated_at": "2026-09-28T07:07:24.686Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -21,65 +21,65 @@
    "kickoff": "2026-10-02T01:00:00.000Z",
    "named": true,
    "edgedesk": "North Texas -10.6",
-   "market": "Tulsa -2.5",
-   "books": 0,
-   "gap": 13.09,
+   "market": "Tulsa -1.5",
+   "books": 1,
+   "gap": 12.09,
    "gap_class": "MAJOR",
    "favorite_flip": true,
-   "research_status": "NO_MARKET",
-   "research_label": "NO MARKET",
-   "decision_status": "NO_DECISION",
-   "gate_status": "NOT RUN",
-   "root_cause": null,
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
    "requirements": [
     {
      "requirement": "correct game",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-02T01:00:00.000Z"
     },
     {
      "requirement": "correct home/away",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Chapman Stadium), declared by the schedule feed"
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
     },
     {
      "requirement": "current team states",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "FAIL",
+     "detail": "FAIL: long-term state and current-season form differ by 10.2 rating pts (limit 10)"
     },
     {
      "requirement": "resolved QB",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: Tulsa: Dexter Williams II (previous game) · PASS: North Texas: Tayven Jackson (previous game)"
     },
     {
      "requirement": "no abnormal availability",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: Tulsa: availability sources checked, nothing filed · PASS: North Texas: availability sources checked, nothing filed"
     },
     {
      "requirement": "component adjustments within historical bounds",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "WARN: the matchup term alone (-2.3 pts) lifts the gap over 10: without it the gap is 9.8 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 5.6 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required) · PASS: favorite flip: the independent ensemble also favour EdgeDesk’s team · PASS: the submodels disagree with each other by SD 1 (limit 6)"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 13.1"
     }
    ],
    "consistent": true,
-   "verdict": "NO MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; current team states fail."
   },
   {
    "game_id": "401856822",
