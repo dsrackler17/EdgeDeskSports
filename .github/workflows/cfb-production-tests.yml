@@ -64,7 +64,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # canonical.test.js re-runs every preserved LIVE snapshot against the
+      # version of football/cfb_v2/current.json and football/fbs/slate.json it
+      # was made from, and reproduce.js finds those versions in git history. A
+      # depth-1 checkout has none, so once the working tree's files are newer
+      # than every snapshot the check reads "0 of 0" and fails. A blob-less
+      # clone brings the history without every blob; the few versions it
+      # replays are fetched on demand (same as football-model-record.yml).
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          filter: blob:none
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
