@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-09-28T22:16:46.902Z",
+ "generated_at": "2026-09-28T23:07:35.867Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -42,9 +42,22 @@
    "effective_at": "2026-09-28T00:00:00.000Z",
    "reason": "the champion freeze",
    "changed_files": null
+  },
+  {
+   "event": "PATCH",
+   "kind": "RESEARCH",
+   "version": "edgedesk_cfb_r1.research+r1",
+   "effective_at": "2026-09-28T23:07:35.867Z",
+   "reason": "the research path changed (auto-detected by football/cfb_validation/build.js): lib/edgedesk_canon.js, lib/cfb_research_view.js",
+   "changed_files": [
+    "lib/edgedesk_canon.js",
+    "lib/cfb_research_view.js"
+   ]
   }
  ],
- "pending_patches": [],
+ "pending_patches": [
+  "edgedesk_cfb_r1.research+r1: the research path changed (auto-detected by football/cfb_validation/build.js): lib/edgedesk_canon.js, lib/cfb_research_view.js"
+ ],
  "north_star": {
   "current_model_version": "edgedesk_cfb_p4_v1.0.0",
   "release": "edgedesk_cfb_r1",
@@ -1184,10 +1197,16 @@
   "since": "2026-09-28T01:12:00.000Z",
   "changes": [
    {
+    "what": "research-gate code",
+    "kind": "SOFTWARE",
+    "from": "6f3777c51557e1a4",
+    "to": "0ca8634491e1dc8f"
+   },
+   {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-09-28T00:53:47.573Z",
-    "to": "2026-09-28T20:39:34.986Z"
+    "to": "2026-09-28T22:46:50.540Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -1202,7 +1221,7 @@
     "to": 27
    }
   ],
-  "summary": "FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: research-gate code · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "lab_alerts": [],
  "definitions": "docs/cfb-validation/DELIVERABLE.md · docs/cfb-lab/METRICS.md"
