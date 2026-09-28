@@ -536,7 +536,9 @@ chk('lookups: one signature per importer (no ambiguous overloads)',
   chk('tool: the same statement wrapped the way the tool runs it completes',
     q(RB.pgStatement(`select to_json('ok:' || pg_sleep(0.4)::text);`, '10min')) === 'ok:');
   chk('tool: and the raised limit does not outlive its transaction', q(`show statement_timeout;`) === '150ms');
-  const url = `postgresql:///fg2?host=/tmp&port=${PORT}&user=postgres`;
+  // the superuser initdb made: postgres when this runs as root (the harness
+  // switches to it), otherwise whoever runs the test (runner, in CI)
+  const url = `postgresql:///fg2?host=/tmp&port=${PORT}&user=${asPostgres ? 'postgres' : os.userInfo().username}`;
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'fg2-report-'));
   const env = Object.assign({}, process.env, { PATH: BIN + ':' + process.env.PATH });
   const tool = args => cp.spawnSync(process.execPath, [path.join(ROOT, 'tools', 'collective', 'football_rebuild.js'),
