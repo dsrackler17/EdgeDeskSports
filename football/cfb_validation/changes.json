@@ -1,12 +1,20 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-09-28T01:12:00.000Z",
+ "generated_at": "2026-09-28T01:14:00.000Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
-  "available": false,
-  "reason": "no earlier system snapshot is on file",
-  "changes": []
+  "available": true,
+  "since": "2026-09-28T01:12:00.000Z",
+  "changes": [
+   {
+    "what": "market coverage (% of slate games with a fresh quote)",
+    "kind": "MARKET",
+    "from": 74,
+    "to": 69
+   }
+  ],
+  "summary": "MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "games": [
   {
@@ -644,7 +652,7 @@
    "market_now": -20.5,
    "market_change": 0.5,
    "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
+   "status_now": "NO_MARKET",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -881,7 +889,7 @@
    "market_now": 5.5,
    "market_change": 0,
    "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
+   "status_now": "NO_MARKET",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -1119,7 +1127,7 @@
    "market_now": 6.5,
    "market_change": 0,
    "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
+   "status_now": "NO_MARKET",
    "price_state": "NO INITIAL EDGE"
   },
   {

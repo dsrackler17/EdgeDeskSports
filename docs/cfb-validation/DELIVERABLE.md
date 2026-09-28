@@ -133,13 +133,13 @@ Before this change the two surfaces counted different things:
 
 Both now show one hierarchy that sums up, built by `EDCanon.counterHierarchy`:
 
-Week-5 slate, board of 2026-09-28 01:07 UTC:
+Week-5 slate, board of 2026-09-28 01:10 UTC:
 
 ```
-ALL GAMES 62 ─┬─ RESEARCH READY 46 ─── ACTIONABLE RESEARCH SIGNALS 30
-              └─ per sport: CFB 62 / 46 / 30
-CFB buckets:  VERIFIED MAJOR 0 · INVESTIGATE 5 · WORTH RESEARCHING 30 · MARKET ALIGNED 11 · NO MARKET / LIMITED 16 · DATA FAULT 0
-Decisions:    BET 0 · WAIT 0 · PASS 46 · NO DECISION 16   (betting disabled by policy)
+ALL GAMES 62 ─┬─ RESEARCH READY 43 ─── ACTIONABLE RESEARCH SIGNALS 30
+              └─ per sport: CFB 62 / 43 / 30
+CFB buckets:  VERIFIED MAJOR 0 · INVESTIGATE 5 · WORTH RESEARCHING 30 · MARKET ALIGNED 8 · NO MARKET / LIMITED 19 · DATA FAULT 0
+Decisions:    BET 0 · WAIT 0 · PASS 43 · NO DECISION 19   (betting disabled by policy)
 ```
 
 The hierarchy carries a `reconciles` flag: buckets sum to ALL GAMES, and actionable ≤ ready ≤ all. It is tested in `tools/validation/canon.test.js` and `football/cfb_terminal/tests.js`. The app (`fbCanonCountersHTML`) and the terminal (`countersHTML`) render the same hierarchy.
@@ -199,7 +199,7 @@ Rules that hold everywhere:
 - WAIT is shown only if the policy's timing rule is enabled. It is not.
 - Every PASS prints its blocker.
 
-Current slate: 0 BET · 0 WAIT · 46 PASS · 16 NO DECISION. The research terminal's EdgeDesk Read card prints the same canonical decision on its "Decision:" line, and the Read's own verdict is its READ chip. The CSV exports carry `decision_status` and never export BET; `tools/football/fbs_board_ui.test.js` checks this.
+Current slate: 0 BET · 0 WAIT · 43 PASS · 19 NO DECISION. The research terminal's EdgeDesk Read card prints the same canonical decision on its "Decision:" line, and the Read's own verdict is its READ chip. The CSV exports carry `decision_status` and never export BET; `tools/football/fbs_board_ui.test.js` checks this.
 
 ## 9. Maturity taxonomy
 
@@ -543,7 +543,7 @@ The terminal's `disagreementView` now stores the full checks, tier, calibrated g
 
 `football/cfb_validation/slate_audit.json` covers every named game plus every 7+ gap on the week-5 slate. Each requirement is shown as PASS, FAIL or NOT IMPLEMENTED; a requirement that isn't implemented downgrades the status.
 
-The table uses the board of 2026-09-28 01:07 UTC. Statuses move as quotes age, and the audit is rebuilt with every validation build.
+The table uses the board of 2026-09-28 01:10 UTC. Statuses move as quotes age, and the audit is rebuilt with every validation build.
 
 | Game | EdgeDesk | Market (books) | Gap | Status | Failed checks |
 |---|---|---|---|---|---|
