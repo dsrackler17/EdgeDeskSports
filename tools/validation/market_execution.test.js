@@ -236,6 +236,29 @@ section('engine: one anomalous sportsbook cannot create a BET');
   }
   chk('the canonical market names the outlier', d.market && d.market.outliers.some((o) => o.book === 'Caesars'), d.market && d.market.outliers);
 }
+section('engine: the model must agree with itself');
+{
+  /* EdgeDesk makes Miami +11.5; the market deals +10. The NFL raw distribution
+     is off-centre here (the distribution audit) and says +10 covers ~59%. */
+  const d = decide(-11.5, board(10));
+  chk('a fair line on the other side of the number with cover > 50% is WATCH · MODEL CONFLICT, never a BET', d.decision === 'WATCH' && d.action_reason_code === 'MODEL_CONFLICT', [d.decision_display, d.action_reason_text]);
+  chk('… and it says what it saw', /Miami Dolphins \+10 against a fair \+11\.5, cover \d/.test(d.action_reason_text), d.action_reason_text);
+  chk('the ladder applies the rule at every number: +11 (inside the band) is where it would bet', /\+11 BET/.test(d.ladder.summary_line || ''), d.ladder.summary_line);
+  chk('inside the aligned band there is no conflict (+10.5 fair vs +10)', decide(-10.5, board(10)).action_reason_code !== 'MODEL_CONFLICT');
+  const alt = decide(-10, board(10).concat([qq('home', 6.5, 260, 'DraftKings', { market_type: 'alternate_spread' })]));
+  const c = (alt.candidates || []).filter((x) => x.line === 6.5)[0];
+  chk('a plus-money alternate on the other side is not a conflict (its cover is under 50%)', c && c.decision_cover < 0.5, c);
+  let bad = 0, n = 0;
+  for (let fair = -14; fair <= -4; fair += 0.25) {
+    const x = decide(fair, board(10));
+    if (x.decision !== 'BET') continue;
+    n++;
+    const f = x.canonical.decision_fair_home_spread != null ? x.canonical.decision_fair_home_spread : x.canonical.fair_home_spread;
+    const fSide = x.bet_price.side === 'home' ? f : -f;
+    if (x.bet_price.line - fSide < -0.5 - 1e-9 && x.probability > 0.5) bad++;
+  }
+  chk('no BET anywhere on a sweep where the model’s own fair line disagrees (' + n + ' BETs)', bad === 0 && n > 5, [bad, n]);
+}
 section('engine: one consensus line, versions, leakage');
 {
   const d = decide(-11.5, board(10, [qq('home', 9.5, -110, 'BetMGM'), qq('away', -9.5, -110, 'BetMGM')]));

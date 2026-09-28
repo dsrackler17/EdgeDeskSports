@@ -188,6 +188,20 @@ function ledger(season, results, ctx, now) {
     paths: { snapshots: base(season) + '/snapshots.jsonl', grades: base(season) + '/grades.jsonl', evaluations: base(season) + '/evaluations.jsonl' } };
 }
 
+/* the decision as the build artifact carries it: everything the EdgeDesk Card
+   and the board read, without the heavy blocks the live game card recomputes
+   on the page anyway (the full price curve, the per-book market rows, the
+   measured research context). The ledger's snapshots keep their own compact
+   copies (lib/edgedesk_decision_track.js snapshot). */
+function lean(d) {
+  if (!d) return d;
+  const o = Object.assign({}, d);
+  if (o.price_curve) o.price_curve = { market_type: o.price_curve.market_type, line: o.price_curve.line, odds: o.price_curve.odds, n: o.price_curve.n, self_check: o.price_curve.self_check || null };
+  if (o.market && !o.market.error) { const m = Object.assign({}, o.market); delete m.books; if (m.quality) m.quality = { score: m.quality.score, label: m.quality.label, caps: m.quality.caps, unmeasured: m.quality.unmeasured }; o.market = m; }
+  if (o.best_execution && o.best_execution.ranked) { o.best_execution = Object.assign({}, o.best_execution); delete o.best_execution.ranked; }
+  if (o.context) o.context = { omitted: 'the measured research context rides on the board row (decision_facts.context) and on the live decision' };
+  return o;
+}
 function counts(ds) {
   const c = { BET: 0, LEAN: 0, WATCH: 0, PASS: 0, NO_DECISION: 0 }, reasons = {};
   ds.forEach((d) => { c[d.decision] = (c[d.decision] || 0) + 1; reasons[d.action_reason_code] = (reasons[d.action_reason_code] || 0) + 1; });
@@ -203,7 +217,7 @@ function artifact(meta, results, DL) {
       thresholds: cfg.thresholds, shadow: ['every threshold (conservative defaults)', 'stake caps by probability source until live validation improves'],
       note: 'The thresholds and stake tiers are conservative, configurable defaults, not empirically validated yet; the per-tier record below is how they will be.' },
     config: cfg, counts: counts(ds), exposure: BK.exposure(ds, {}),
-    decisions: ds, tracks: results.reduce((o, x) => { if (x.track && x.decision) o[x.decision.game_id] = x.track; return o; }, {}),
+    decisions: ds.map(lean), tracks: results.reduce((o, x) => { if (x.track && x.decision) o[x.decision.game_id] = x.track; return o; }, {}),
     performance: DL ? DL.performance : null, ledger: DL ? DL.paths : null, n_snapshots: DL ? DL.all.length : null, n_grades: DL ? DL.grades.length : null,
     n_evaluations: DL && DL.evaluations ? DL.evaluations.length : null,
     /* the historical analytics live in their own cached artifact, rebuilt by
@@ -240,4 +254,4 @@ function writeLedger(season, DL) {
   if (DL.new_grades.length) fs.appendFileSync(path.join(b, 'grades.jsonl'), DL.new_grades.map((x) => JSON.stringify(x)).join('\n') + '\n');
 }
 
-module.exports = { closingDistribution: closingDistribution, load: load, trackOf: trackOf, governanceOf: governanceOf, decideGame: decideGame, compact: compact, ledger: ledger, artifact: artifact, problems: problems, writeLedger: writeLedger, counts: counts, OUT: OUT };
+module.exports = { closingDistribution: closingDistribution, lean: lean, load: load, trackOf: trackOf, governanceOf: governanceOf, decideGame: decideGame, compact: compact, ledger: ledger, artifact: artifact, problems: problems, writeLedger: writeLedger, counts: counts, OUT: OUT };
