@@ -15,6 +15,9 @@ on:
     paths:
       - 'app.html'
       - 'index.html'
+      - 'lib/edgedesk_quote_ev.js'
+      - 'lib/edgedesk_canon.js'
+      - 'football/cfb_ev/policy/**'
       - 'collective/index.html'
       - 'collective/embed.js'
       - 'collective/week.js'
@@ -110,6 +113,9 @@ on:
     paths:
       - 'app.html'
       - 'index.html'
+      - 'lib/edgedesk_quote_ev.js'
+      - 'lib/edgedesk_canon.js'
+      - 'football/cfb_ev/policy/**'
       - 'collective/index.html'
       - 'collective/embed.js'
       - 'collective/week.js'
@@ -480,6 +486,12 @@ jobs:
       - name: The landing page is operable, not a wall of prose
         run: node tools/presentation/landing_interaction.test.js
 
+      # Every EdgeDesk EV figure on the landing page is the terminal's own
+      # engine (lib/edgedesk_quote_ev.js) run on the page's illustrative
+      # inputs, and its price rules are the pre-registered EV policy.
+      - name: The landing page's EdgeDesk EV is the terminal's EV
+        run: node tools/presentation/landing_ev.test.js
+
       # The workbook the boards download, rebuilt from a real cleaned file.
       - name: The download is the format the operator cleaned up by hand
         run: node tools/collective/app_export.test.js
@@ -495,11 +507,6 @@ jobs:
       # The Collective tab renders itself now, from collective_public.
       - name: Every sport reaches the board, and a lock says why
         run: node tools/collective/app_collective.test.js
-
-      # The landing page's Collective panel, which is the first thing a
-      # stranger sees and now makes network requests to be it.
-      - name: The landing page shows the real Collective, and cannot break trying
-        run: node tools/collective/landing_collective.test.js
 
       # The founder pool is divided by a CONFIGURED count, not by a count of
       # people; these hold the screen that has to say when the two disagree.

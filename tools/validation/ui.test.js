@@ -82,8 +82,9 @@ chk('one canonical disclaimer in the footer', (IDX.match(/research tool/g) || []
 /* 3. the landing */
 const LAND = read('index.html');
 lacks(LAND, "state:'REVIEW'", 'the landing demo drops the REVIEW synonym');
+lacks(LAND, '>REVIEW<', 'and never renders it as a badge either');
 lacks(LAND, 'past EdgeDesk&rsquo;s own guard bound', 'and no longer calls a 10.5-pt gap past the 21-pt guard');
-has(LAND, "state:'WORTH RESEARCHING'", 'the small-gap demo is WORTH RESEARCHING');
+has(LAND, '<span class="st warn">WORTH RESEARCHING</span>', 'the illustrative game (a 2.2-pt gap) is WORTH RESEARCHING');
 
 /* 4. the validation dashboard runs its own code on the committed artifacts */
 const VAL = read('admin/cfb-validation/index.html');

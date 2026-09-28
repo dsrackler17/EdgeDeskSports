@@ -47,7 +47,10 @@ chk('the landing page carries the offer on at least four CTAs', ctaSpans.length 
 chk('every static CTA text equals the one source (no-JS readers see the same words)',
   ctaSpans.every((m) => m.replace(/^data-ed-price="cta">/, '').replace(/<$/, '') === X.CTA_LINE), ctaSpans);
 chk('the landing page loads the pricing file and applies it', /\/lib\/edgedesk_pricing\.js/.test(IDX) && /EDPricing\.apply\(document\)/.test(IDX));
-chk('the nav price says what follows the free week', /class="navprice"[^>]*>7 days free, then \$79\.99\/mo</.test(IDX));
+/* the offer sits under the hero button rather than in the bar, so a reader
+   sees what the free week becomes before any button, at every width */
+chk('the hero says what follows the free week, right under its button',
+  /id="heroStart"[\s\S]{0,400}<p class="microcta"><span><b>Full access for 7 days<\/b><\/span><span>Then <span data-ed-price="price">\$79\.99<\/span>\/month<\/span><span>Cancel anytime<\/span>/.test(IDX));
 chk('the in-app paywall states the trial line for a new account and promises no trial to a lapsed one',
   /fresh\?X\.CTA_LINE:X\.RESUBSCRIBE_LINE/.test(APP) && /Start 7-day free trial \\u2014 then '\+SUB_PRICE_DISPLAY\+'\/mo/.test(APP));
 chk('the new-account paywall button goes through the consented trial flow', /'<a class="pg-btn" href="\.\/index\.html#subscribe">Start 7-day free trial/.test(APP));
