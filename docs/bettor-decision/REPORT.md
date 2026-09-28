@@ -25,7 +25,7 @@ Branch `claude/lucid-lamport-19axzb`. The design is
 |---|---|
 | `football/cfb_terminal/build.js` | `quoteEvOf` returns its model/quotes/context; `buildGame` calls the decision stage; board rows gain `decision_facts` and `bettor`; writes `decisions.json`; ledger append on a normal build; refusal checks |
 | `football/cfb_terminal/board.json` | Only the two new row fields added (everything else byte-identical); the hourly build regenerates it |
-| `app.html` | Stylesheet + five scripts; `#v-card` view, `show('card')`, `#card` deep link, More → EdgeDesk Card; `fbDecisionCfb` / `fbDecisionNfl` / `fbDecisionsLive`; action card above the research on CFB and NFL cards; chip on FBS rows; overview banner; the summary's Decision cell now reads the canonical decision (governed verdict kept as its audit line) |
+| `app.html` | Stylesheet + five scripts; `#v-card` view, `show('card')`, `#card` deep link, a Card seat in the bottom bar beside Research; `fbDecisionCfb` / `fbDecisionNfl` / `fbDecisionsLive`; action card above the research on CFB and NFL cards; chip on FBS rows; overview banner; the summary's Decision cell now reads the canonical decision (governed verdict kept as its audit line) |
 | `research/cfb/terminal.js` | The decision chip reads the board row's canonical `bettor` decision when present |
 | `supabase/functions/edgedesk_ai/_stake.js` (+ inlined `index.ts`) | `unit_mode = 'percent'` derives the unit from the bankroll (the same unit the Card uses); rows without the column behave as before |
 | `tools/personal/research_state.js` | New `bets` step: grades `user_bets` from the committed record |
@@ -95,7 +95,7 @@ subdued; NO DECISION dashed neutral.
 
 ## 7. EdgeDesk Card page
 
-`#card` / More → EdgeDesk Card. Header: bets, total exposure (units and
+`#card` / the Card seat beside Research in the bottom bar. Header: bets, total exposure (units and
 dollars), watching, passes, no decision, last evaluated. Filters: All, Bets,
 Watching, Pass, No decision, NFL, CFB, 0.25U–1.00U. Sorts: kickoff, strongest
 qualified edge, calibrated EV, latest change, line movement. Sections: BET,

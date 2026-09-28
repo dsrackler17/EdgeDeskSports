@@ -6,7 +6,9 @@
    these hold it:
 
      1  Research is first and is the default landing destination;
-     2  Edges sits immediately beside it and stays a separate destination;
+     2  the EdgeDesk Card sits immediately beside it, so a reader goes from
+        the research straight to what it says to bet; Edges follows and
+        stays a separate destination;
      3  Faults lost its seat in the bottom bar but lost NOTHING else — the
         view, the route, the detectors and every way in still exist;
      4  the header status control tells the truth about three different
@@ -49,16 +51,27 @@ const live = NAV.replace(/<!--[\s\S]*?-->/g, '');
 const order = (live.match(/data-v="([a-z]+)"/g) || []).map(s => s.replace(/[^a-z]/g, '').replace(/^datav/, ''));
 
 eq('the navigation order is exactly the product hierarchy', order.join(','),
-   'research,edges,ai,record,more');
-eq('five seats, not eight', order.length, 5);
+   'research,card,edges,ai,record,more');
+eq('six seats, not eight', order.length, 6);
 eq('Research is the left-most, primary destination', order[0], 'research');
-eq('Edges sits immediately beside Research', order[1], 'edges');
+eq('the EdgeDesk Card sits immediately beside Research', order[1], 'card');
+eq('Edges follows the Card', order[2], 'edges');
 eq('More is last', order[order.length - 1], 'more');
 chk('Faults holds no seat in the bottom bar', order.indexOf('faults') < 0);
 chk('Research is the tab the markup rests on', /data-v="research" class="on"/.test(NAV));
 chk('and no second button claims the active class', (live.match(/class="on"/g) || []).length === 1);
 chk('Edges is still a destination of its own, not folded into Research',
     order.indexOf('edges') >= 0 && APP.indexOf('<section id="v-edges"') >= 0);
+
+/* the Card moved OUT of More and into the bar: it opens its own view, lights
+   its own seat (not More's), keeps its #card deep link, and More no longer
+   lists it twice */
+has(APP, '<section id="v-card" class="view hide">', 'the Card view still exists');
+has(APP, 'data-v="card" aria-label="EdgeDesk Card"', 'and its seat is named for screen readers');
+lacks(APP, "card:'more'", 'the Card lights its own seat, not More');
+lacks(APP, "moreItem(IC.ledger,'EdgeDesk Card'", 'and More no longer lists it');
+has(APP, "if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard(", 'the router paints the Card');
+has(APP, "if((location.hash||'')==='#card')show('card');", 'and the #card deep link still lands on it');
 
 /* Collective, Ledger and News left the bar for More and lost nothing else:
    each keeps its view, More lists it first and opens it, and More reads

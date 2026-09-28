@@ -180,7 +180,7 @@ committed record.
   chip read the same object.
 - A decision chip on every FBS board row; an EdgeDesk Card banner on the
   Football overview.
-- **EDGEDESK CARD** page (`#card`, More → EdgeDesk Card): header counts and
+- **EDGEDESK CARD** page (`#card`, the Card seat beside Research in the bottom bar): header counts and
   exposure, filters (All, Bets, Watching, Pass, No decision, NFL, CFB, 0.25U …
   1.00U), sorts (kickoff, strongest qualified edge, calibrated EV, latest
   change, line movement), BET / WATCHING / PASS (collapsed) / NO DECISION
