@@ -120,7 +120,7 @@ function view(raw, line, o) {
   const keys = {}; all.forEach(x => { keys[x.label.key] = 1; });
   /* 9.5 and 28.5-pt gaps with no gate result publish as INVESTIGATE and
      DATA FAULT: never as a verified disagreement */
-  eq(Object.keys(keys).length, 7, 'the seven reachable labels all publish');
+  eq(Object.keys(keys).length, 8, 'the eight reachable labels all publish (NO MARKET is its own canonical label)');
   ok(!keys.VERIFIED_MAJOR_DISAGREEMENT && !keys.MAJOR_DISAGREEMENT, 'no label publishes as a verified disagreement without a gate result');
   const text = all.map(x => strings(x).join(' \n ')).join(' \n ');
   ok(!AMODEL.FORBIDDEN.test(text), 'no brief carries the article model’s forbidden language', (text.match(AMODEL.FORBIDDEN) || [])[0]);

@@ -195,15 +195,15 @@ const NFLP = panelOf(HTML, 'nfl'), CFBP = panelOf(HTML, 'cfb');
 const NROWS = rowsOf(NFLP), CROWS = rowsOf(CFBP), ROWS = NROWS.concat(CROWS);
 eq('the board is read without changing a row, a projection or a market', JSON.stringify(BOARD), before);
 has(HTML, '<h3 class="fb-wr-t">Today&rsquo;s Research Board</h3>', 'the section is titled');
-has(HTML, '<span class="c">10 games worth researching</span>', 'and counts the games actually listed, never a fixed five');
+has(HTML, '<span class="c">10 games listed in reading order</span>', 'and counts the games actually listed, never a fixed five — named so it cannot be read as the WORTH RESEARCHING status count');
 has(HTML, '<span class="r">ranked by league</span>', 'and says the leagues are ranked separately');
 chk('NFL and CFB each have their own panel, NFL first', NFLP && CFBP && HTML.indexOf('id="fbWr-nfl"') < HTML.indexOf('id="fbWr-cfb"'));
 has(NFLP, '<span class="t">NFL</span>', 'the NFL panel is labelled');
 has(CFBP, '<span class="t">CFB</span>', 'the CFB panel is labelled');
 eq('NFL: more than five eligible, exactly five rows', NROWS.length, 5);
 eq('CFB: more than five eligible, exactly five rows', CROWS.length, 5);
-has(NFLP, '6 of 9 clear the gates', 'the NFL panel counts NFL games only');
-has(CFBP, '6 of 11 clear the gates', 'the CFB panel counts CFB games only');
+has(NFLP, '6 of 9 clear the reading-order gates', 'the NFL panel counts NFL games only');
+has(CFBP, '6 of 11 clear the reading-order gates', 'the CFB panel counts CFB games only');
 [NROWS, CROWS].forEach((rows, i) => same((i ? 'CFB' : 'NFL') + ' is ranked 1 to 5 on its own',
   rows.map((r) => (r.match(/<span class="n">(\d)<\/span>/) || [])[1]), ['1', '2', '3', '4', '5']));
 chk('every NFL row is an NFL game', NROWS.every((r) => /fbWrOpen\(&#39;nfl&#39;|fbWrOpen\('nfl'/.test(r) && /<span class="ts">NFL · /.test(r)));

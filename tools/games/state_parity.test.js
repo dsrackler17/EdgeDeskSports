@@ -71,7 +71,7 @@ function appState(conf, gap) {
 }
 
 const CONFS = [null, 0, 8, 34, 34.9, 35, 40, 55, 80, 100];
-const GAPS = [null, 0, 0.4, 1.9, 2, 2.1, 5, 20.9, 21, 30, -3, -25];
+const GAPS = [null, 0, 0.4, 1.9, 2, 2.1, 5, 6.9, 7, -7, 20.9, 21, 21.1, 30, -3, -25];
 let compared = 0, mismatches = [];
 CONFS.forEach(function (c) {
   GAPS.forEach(function (g) {
@@ -90,15 +90,23 @@ chk('THIN outranks a missing market', GAMES_STATE.classify(10, null).key === 'TH
 chk('THIN outranks a huge gap', GAMES_STATE.classify(10, 40).key === 'THIN');
 chk('a trusted projection with no market is NO_MARKET',
   GAMES_STATE.classify(60, null).key === 'NO_MARKET');
-chk('the guard bound is inclusive', GAMES_STATE.classify(60, 21).key === 'INVESTIGATE');
-chk('just inside the guard is REVIEW', GAMES_STATE.classify(60, 20.9).key === 'REVIEW');
+/* the canonical rungs (lib/edgedesk_canon.js): past the guard is a DATA
+   FAULT, 7+ without a gate result is INVESTIGATE, never verified by default */
+chk('past the guard is DATA_FAULT', GAMES_STATE.classify(60, 21.1).key === 'DATA_FAULT');
+chk('the guard bound itself is still INVESTIGATE', GAMES_STATE.classify(60, 21).key === 'INVESTIGATE');
+chk('the major bound is inclusive', GAMES_STATE.classify(60, 7).key === 'INVESTIGATE');
+chk('just inside the major bound is REVIEW', GAMES_STATE.classify(60, 6.9).key === 'REVIEW');
+chk('the games layer uses the canon’s major bound', (() => {
+  const C = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
+  return GAMES_STATE.MAJOR_POINTS === C.THRESHOLDS.major_gap && GAMES_STATE.GUARD_POINTS === C.THRESHOLDS.guard_gap;
+})());
 chk('the research gap is inclusive', GAMES_STATE.classify(60, 2).key === 'REVIEW');
 chk('inside the research gap is PASS', GAMES_STATE.classify(60, 1.9).key === 'PASS');
 chk('sign of the gap does not change the state',
   GAMES_STATE.classify(60, -25).key === GAMES_STATE.classify(60, 25).key);
 
 /* every state offers an invitation to the research, and none of them oversells */
-['THIN', 'NO_MARKET', 'INVESTIGATE', 'REVIEW', 'PASS'].forEach(function (k) {
+['THIN', 'NO_MARKET', 'DATA_FAULT', 'INVESTIGATE', 'REVIEW', 'PASS'].forEach(function (k) {
   const t = GAMES_STATE.invitation(k);
   chk('invitation exists for ' + k, !!t && t.length > 10);
   chk('invitation for ' + k + ' claims no edge',

@@ -1,0 +1,99 @@
+{
+ "schema": "edgedesk_cfb_next100_plan_v1",
+ "plan_id": "next100_edgedesk_cfb_r1",
+ "frozen_at": "2026-09-28T00:43:00.000Z",
+ "release": "edgedesk_cfb_r1",
+ "population": "the first 100 settled LIVE OFFICIAL (T24) snapshots of edgedesk_cfb_p4_v1.0.0 taken at or after 2026-09-28T00:00:00.000Z",
+ "rule": "Do not change the model to hit any number below. Do not retrofit: a bug fix is a declared patch (versions.jsonl) and no historical prediction is altered. At 100 settled games the current champion is compared with the legacy system on these same definitions.",
+ "metrics": [
+  {
+   "id": "margin_mae",
+   "label": "margin MAE (pts)",
+   "better_if": "lower",
+   "section": "FOOTBALL MODEL"
+  },
+  {
+   "id": "calibration_error",
+   "label": "win-probability calibration error (ECE)",
+   "better_if": "lower",
+   "section": "FOOTBALL MODEL"
+  },
+  {
+   "id": "interval_coverage_80",
+   "label": "80% interval coverage",
+   "better_if": "closer to 0.80",
+   "section": "FOOTBALL MODEL"
+  },
+  {
+   "id": "market_moved_toward_pct",
+   "label": "market moved toward EdgeDesk (% of moved lines)",
+   "better_if": "higher",
+   "section": "MARKET INTELLIGENCE"
+  },
+  {
+   "id": "average_clv",
+   "label": "average CLV (pts)",
+   "better_if": "higher",
+   "section": "MARKET INTELLIGENCE"
+  },
+  {
+   "id": "false_major_rate",
+   "label": "false-major-disagreement rate (% of VERIFIED that were false extremes)",
+   "better_if": "lower",
+   "section": "RESEARCH GATE"
+  },
+  {
+   "id": "decision_selectivity",
+   "label": "decision selectivity (% of games with a qualified wager)",
+   "better_if": "reported, not optimised",
+   "section": "BETTING DECISIONS"
+  }
+ ],
+ "baselines": {
+  "margin_mae": {
+   "value": 12.952,
+   "n": 231,
+   "source": "LEGACY view: the champion’s reconstructed 2026 numbers, last pre-kickoff per game (Model Lab GIT_RECONSTRUCTED)"
+  },
+  "margin_mae_holdout": {
+   "value": 12.6017,
+   "n": 1604,
+   "source": "pre-registered holdout reference, 2024–2025 (football/cfb_lab/config.json)"
+  },
+  "margin_mae_backtest_2022_2025": {
+   "value": 12.769,
+   "n": 3127,
+   "source": "walk-forward 2022–2025, spread MAE of the published fair (EDCfbP4Params.validation_summary.market)"
+  },
+  "calibration_error": {
+   "value": 0.0456,
+   "n": 231,
+   "source": "LEGACY view"
+  },
+  "interval_coverage_80": {
+   "value": null,
+   "n": 0,
+   "source": "LEGACY view — the reconstructed rows published no intervals, so there is no legacy coverage baseline"
+  },
+  "market_moved_toward_pct": {
+   "value": 33.8,
+   "n": 71,
+   "source": "LEGACY view (moved lines only)"
+  },
+  "average_clv": {
+   "value": 0.192,
+   "n": 26,
+   "source": "LEGACY view"
+  },
+  "false_major_rate": {
+   "value": 24.5,
+   "n": 98,
+   "source": "integrity gate replayed on the 2022–2025 holdout (forensics_cfb.json gate_backtest.holdout_football_only)"
+  },
+  "decision_selectivity": {
+   "value": 0,
+   "n": null,
+   "source": "betting disabled by the frozen decision policy: no qualified wager exists in the legacy record"
+  }
+ }
+}

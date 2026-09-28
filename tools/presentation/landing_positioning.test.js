@@ -85,23 +85,26 @@ lacks(IDX, "golf, MLB, WNBA, CFB, CBB", 'and the sport list it rewrote the hero 
 /* 2. THE PRODUCT IS THE VISUAL                                             */
 /* ======================================================================== */
 ['Baylor @ Auburn', 'EdgeDesk', 'Market', 'Difference', 'Projected score',
- 'Win probability', 'Research state', 'Data confidence', 'What this means',
+ 'Win probability', 'Research status', 'Data confidence', 'What this means',
  'Research check', 'Why EdgeDesk prices it here']
   .forEach(f => has(HERO, f, 'the hero card shows "' + f + '"'));
-['PASS', 'REVIEW', 'INVESTIGATE'].forEach(s =>
-  has(HERO, "state:'" + s + "'", 'the hero offers the research state ' + s));
+/* the canonical research statuses (lib/edgedesk_canon.js): no REVIEW, no PASS-as-research */
+['MARKET ALIGNED', 'WORTH RESEARCHING', 'INVESTIGATE'].forEach(s =>
+  has(HERO, "state:'" + s + "'", 'the hero offers the research status ' + s));
+lacks(HERO, "state:'REVIEW'", 'the retired REVIEW synonym is gone');
 chk('the hero switcher names all three, so the product does not look like it finds edges everywhere',
   /Model agrees/.test(HERO) && /Small gap/.test(HERO) && /Large gap/.test(HERO));
 chk('the agreeing game is the one shown first',
-  HERO.indexOf("state:'PASS'") < HERO.indexOf("state:'REVIEW'"));
+  HERO.indexOf("state:'MARKET ALIGNED'") < HERO.indexOf("state:'WORTH RESEARCHING'"));
 has(HERO, 'That is agreement. There is nothing here to research further',
   'and the PASS game says plainly there is nothing to do');
-has(HERO, 'read as missing information rather than as an opportunity',
+has(HERO, 'the likelier explanation is missing information',
   'while the large gap is a question, not a discovery');
-has(HERO, 'past EdgeDesk&rsquo;s own guard bound', 'named against the guard bound');
+has(HERO, 'has not passed EdgeDesk&rsquo;s integrity gate', 'named against the integrity gate (10.5 pts is inside the 21-pt guard, so the old guard-bound wording was wrong)');
+lacks(HERO, 'past EdgeDesk&rsquo;s own guard bound', 'and never claims a 10.5-pt gap is past the 21-pt guard');
 has(HERO, 'Illustrative game', 'and says the game is illustrative');
 chk('the card shows a model number and a market number that differ',
-  /Auburn -9\.7/.test(HERO) && /Auburn -8\.0/.test(HERO));
+  /Auburn -11\.7/.test(HERO) && /Auburn -8\.0/.test(HERO));
 chk('the research check shows knowns AND unknowns',
   /\['ok',/.test(HERO) && /\['warn',/.test(HERO) && /\['neg',/.test(HERO));
 has(HERO, 'starting quarterback', 'including the quarterback it does not know');
@@ -197,8 +200,10 @@ chk('the players artifact has the counts the page asks for',
   .forEach(id => has(IDX, 'id="' + id + '"', 'the ' + id + ' section exists'));
 /* the workflow never tells a reader to bet */
 const STEPS = IDX.slice(IDX.indexOf('id="steps"'), IDX.indexOf('id="idk"')) + mod('stepper');
-['PASS', 'REVIEW', 'INVESTIGATE', 'THIN DATA'].forEach(v =>
-  has(STEPS, v, 'the workflow ends in the state ' + v));
+['WORTH RESEARCHING', 'INVESTIGATE', 'MARKET ALIGNED', 'LIMITED DATA', 'NO MARKET'].forEach(v =>
+  has(STEPS, v, 'the workflow ends in the research status ' + v));
+['>REVIEW<', 'THIN DATA'].forEach(v => lacks(STEPS, v, 'the retired label ' + v + ' is gone'));
+has(STEPS, 'A research status is not a recommendation, and not a decision', 'and research status is kept apart from the decision');
 [/>\s*BET\s*</, /\bLOCK\b/, /\bPLAY\b/].forEach(re =>
   chk('the workflow never says ' + re, !re.test(STEPS)));
 has(STEPS, 'Decide for yourself', 'and the last step hands the decision back');

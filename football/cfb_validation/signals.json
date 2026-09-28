@@ -1,0 +1,231 @@
+{
+ "schema": "edgedesk_cfb_signal_scorecards_v1",
+ "generated_at": "2026-09-28T00:43:00.000Z",
+ "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
+ "verified": {
+  "summary": {
+   "n": 0,
+   "settled": 0,
+   "label": "small sample",
+   "average_gap": null,
+   "market_moved_toward_pct": null,
+   "positive_clv_pct": null,
+   "average_clv": null,
+   "edgedesk_closer_than_opener_pct": null,
+   "edgedesk_closer_than_close_pct": null,
+   "edgedesk_mae": null,
+   "ats_hypothetical": null
+  },
+  "games": []
+ },
+ "investigate": {
+  "summary": {
+   "n": 0,
+   "settled": 0,
+   "label": "small sample",
+   "average_gap": null,
+   "market_moved_toward_pct": null,
+   "positive_clv_pct": null,
+   "average_clv": null,
+   "edgedesk_closer_than_opener_pct": null,
+   "edgedesk_closer_than_close_pct": null,
+   "edgedesk_mae": null,
+   "ats_hypothetical": null
+  },
+  "games": [],
+  "outcomes": {},
+  "outcome_definitions": {
+   "LATER_VERIFIED": "a later snapshot passed the gate",
+   "BAD_INFORMATION": "the gate’s root cause was an information or data problem (QB, availability, mapping, thin or stale market)",
+   "SHRANK_NATURALLY": "EdgeDesk’s own number moved toward the market until the gap was under 7",
+   "MARKET_MOVED": "the market moved 1.5+ pts toward EdgeDesk (the market explained it)",
+   "UNRESOLVED": "none of the above"
+  }
+ },
+ "comparison": {
+  "ready": false,
+  "min_settled_each": 30,
+  "verified": {
+   "n": 0,
+   "settled": 0,
+   "label": "small sample",
+   "average_gap": null,
+   "market_moved_toward_pct": null,
+   "positive_clv_pct": null,
+   "average_clv": null,
+   "edgedesk_closer_than_opener_pct": null,
+   "edgedesk_closer_than_close_pct": null,
+   "edgedesk_mae": null,
+   "ats_hypothetical": null
+  },
+  "investigate": {
+   "n": 0,
+   "settled": 0,
+   "label": "small sample",
+   "average_gap": null,
+   "market_moved_toward_pct": null,
+   "positive_clv_pct": null,
+   "average_clv": null,
+   "edgedesk_closer_than_opener_pct": null,
+   "edgedesk_closer_than_close_pct": null,
+   "edgedesk_mae": null,
+   "ats_hypothetical": null
+  },
+  "reading": "Building: 0 settled verified and 0 settled investigate snapshots; 30 of each are needed before comparing.",
+  "historical_reference": {
+   "source": "football/validation/disagreement/forensics_cfb.json gate_backtest.holdout_football_only (2022–2025, gate parameters fitted on 2015–2021)",
+   "verified": {
+    "n": 98,
+    "close_moved_toward_pct": 55.1,
+    "clv": 1.561,
+    "false_extreme_pct": 24.5,
+    "model_mae": 13.85
+   },
+   "unverified": {
+    "n": 364,
+    "close_moved_toward_pct": 51.1,
+    "clv": 0.295,
+    "false_extreme_pct": 28.8,
+    "model_mae": 14.394
+   }
+  }
+ },
+ "favorite_flips": {
+  "summary": {
+   "n": 2,
+   "settled": 0,
+   "label": "small sample",
+   "average_gap": 8.13,
+   "market_moved_toward_pct": null,
+   "positive_clv_pct": null,
+   "average_clv": null,
+   "edgedesk_closer_than_opener_pct": null,
+   "edgedesk_closer_than_close_pct": null,
+   "edgedesk_mae": null,
+   "ats_hypothetical": null
+  },
+  "games": [
+   {
+    "game_id": "401862786",
+    "game": "North Texas @ Tulsa",
+    "week": 5,
+    "at": "2026-09-27T15:07:15.000Z",
+    "checkpoint": "OPEN",
+    "edgedesk_fair": -8.98,
+    "market_at_snapshot": 1.5,
+    "gap": 10.48,
+    "toward": "North Texas",
+    "books": 1,
+    "verdict": "NOT_RUN",
+    "root_cause": null,
+    "favorite_flip": true,
+    "closing_market": null,
+    "final_margin": null
+   },
+   {
+    "game_id": "401869956",
+    "game": "Old Dominion @ Georgia State",
+    "week": 5,
+    "at": "2026-09-27T15:07:15.000Z",
+    "checkpoint": "OPEN",
+    "edgedesk_fair": 4.27,
+    "market_at_snapshot": -1.5,
+    "gap": 5.77,
+    "toward": "Georgia State",
+    "books": 1,
+    "verdict": "NOT_RUN",
+    "root_cause": null,
+    "favorite_flip": true,
+    "closing_market": null,
+    "final_margin": null
+   }
+  ],
+  "note": "EdgeDesk and the market favoured different teams at the snapshot",
+  "historical_reference": {
+   "EdgeDesk favourite by 0-3, market opposite": {
+    "n": 433,
+    "model_mae": 12.41,
+    "open_mae": 11.818,
+    "close_mae": 11.636,
+    "edgedesk_closer_than_open_pct": 44.3,
+    "edgedesk_closer_than_close_pct": 41.8,
+    "close_moved_toward_pct": 51.5,
+    "close_unchanged_pct": 12.9,
+    "close_moved_away_pct": 35.6,
+    "clv_points_mean": 0.792,
+    "side_covered_pct": 52,
+    "roi_at_minus110_pct": -0.7,
+    "false_extreme_rate_pct": 31.8,
+    "false_extremes": 21
+   },
+   "EdgeDesk favourite by 3-7, market opposite": {
+    "n": 220,
+    "model_mae": 14.11,
+    "open_mae": 12.355,
+    "close_mae": 12.145,
+    "edgedesk_closer_than_open_pct": 40.9,
+    "edgedesk_closer_than_close_pct": 38.6,
+    "close_moved_toward_pct": 53.2,
+    "close_unchanged_pct": 12.3,
+    "close_moved_away_pct": 34.5,
+    "clv_points_mean": 0.802,
+    "side_covered_pct": 50,
+    "roi_at_minus110_pct": -4.5,
+    "false_extreme_rate_pct": 23.8,
+    "false_extremes": 30
+   },
+   "EdgeDesk favourite by 7-+, market opposite": {
+    "n": 64,
+    "model_mae": 15.347,
+    "open_mae": 12.668,
+    "close_mae": 12.461,
+    "edgedesk_closer_than_open_pct": 39.1,
+    "edgedesk_closer_than_close_pct": 35.9,
+    "close_moved_toward_pct": 65.6,
+    "close_unchanged_pct": 7.8,
+    "close_moved_away_pct": 26.6,
+    "clv_points_mean": 1.566,
+    "side_covered_pct": 57.4,
+    "roi_at_minus110_pct": 9.5,
+    "false_extreme_rate_pct": 18.8,
+    "false_extremes": 12
+   },
+   "all flips with gap 7+": {
+    "n": 256,
+    "model_mae": 14.292,
+    "open_mae": 12.1,
+    "close_mae": 11.756,
+    "edgedesk_closer_than_open_pct": 39.8,
+    "edgedesk_closer_than_close_pct": 37.5,
+    "close_moved_toward_pct": 58.6,
+    "close_unchanged_pct": 10.5,
+    "close_moved_away_pct": 30.9,
+    "clv_points_mean": 1.162,
+    "side_covered_pct": 54.6,
+    "roi_at_minus110_pct": 4.3,
+    "false_extreme_rate_pct": 24.6,
+    "false_extremes": 63
+   },
+   "same favourite, gap 7+": {
+    "n": 738,
+    "model_mae": 14.314,
+    "open_mae": 12.172,
+    "close_mae": 11.946,
+    "edgedesk_closer_than_open_pct": 39.6,
+    "edgedesk_closer_than_close_pct": 39.4,
+    "close_moved_toward_pct": 53.1,
+    "close_unchanged_pct": 9.5,
+    "close_moved_away_pct": 37.4,
+    "clv_points_mean": 0.563,
+    "side_covered_pct": 49.9,
+    "roi_at_minus110_pct": -4.7,
+    "false_extreme_rate_pct": 28.3,
+    "false_extremes": 209
+   }
+  }
+ },
+ "verdict_not_run": {
+  "n": 6,
+  "note": "6 raw 7+ gap game(s) have no gate verdict on file: the snapshot predates the gate wiring (2026-09-27 17:08 UTC) or its slate lacked the gate inputs. They are counted as NOT RUN, never judged in hindsight."
+ }
+}

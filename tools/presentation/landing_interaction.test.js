@@ -198,7 +198,9 @@ chk('no interaction writes a projected line the model did not produce',
     chk(m + ' never says ' + re, !re.test(mod(m))));
 });
 has(mod('heroGames'), 'not advice', 'the research state says it is not advice');
-has(mod('stepper'), 'A research state is not a recommendation',
+/* canonical wording (lib/edgedesk_canon.js): research STATUS, and it is
+   neither a recommendation nor a decision */
+has(mod('stepper'), 'A research status is not a recommendation, and not a decision',
   'and the walkthrough ends by saying so out loud');
 
 console.log('');

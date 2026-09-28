@@ -1,0 +1,55 @@
+{
+ "schema": "edgedesk_cfb_champion_freeze_v1",
+ "release_id": "edgedesk_cfb_r1",
+ "label": "EdgeDesk CFB production system R1",
+ "frozen_at": "2026-09-28T00:43:00.000Z",
+ "effective_at": "2026-09-28T00:00:00.000Z",
+ "champion": {
+  "model_version": "edgedesk_cfb_p4_v1.0.0",
+  "label": "V1",
+  "governance_event": "cfbg_07af46308c7925aca75d83fd"
+ },
+ "challenger_shadow": [
+  "edgedesk_cfb_v2.1.0"
+ ],
+ "decision_policy": "cfb_decision_policy_v1",
+ "decision_calibration": "cfb_decision_calibration_v1",
+ "manifest_id": "cfbm_f86ae717dfd4dd772a89c995",
+ "fingerprints": {
+  "PRICING": "539fd26ac36fa61d",
+  "RESEARCH": "c1963af0f64aaddb",
+  "DECISION": "ee51b7d93869bb85"
+ },
+ "paths": {
+  "PRICING": [
+   "football/cfb_p4/engine.js",
+   "football/cfb_p4/params.js",
+   "football/fbs/build_coverage.js",
+   "football/fbs/fbs.js",
+   "football/matchup/inputs.js",
+   "football/rankings/engine_efficiency.js"
+  ],
+  "RESEARCH": [
+   "lib/cfb_disagreement.js",
+   "football/cfb_p4/disagreement_params.js",
+   "lib/edgedesk_canon.js",
+   "lib/cfb_terminal.js",
+   "lib/cfb_research_view.js"
+  ],
+  "DECISION": [
+   "football/cfb_decision/decision.js",
+   "football/cfb_v2/artifacts/decision/cfb_decision_policy_v1/policy.json",
+   "football/cfb_v2/artifacts/decision/cfb_decision_calibration_v1/calibration.json"
+  ]
+ },
+ "epochs": {
+  "CURRENT": "LIVE Model Lab snapshots of the champion taken at or after effective_at, attributed to R1 or a declared patch of it",
+  "PRE_FREEZE": "LIVE snapshots taken before effective_at (the pricing path changed several times that day)",
+  "LEGACY": "Model Lab GIT_RECONSTRUCTED and REPLAY rows, and the public record’s board numbers (record/football/cfb_<season>.json) — kept, never erased, never blended into CURRENT"
+ },
+ "rules": [
+  "This file is written once and never rewritten.",
+  "A change to any file in a path appends a PATCH row to versions.jsonl, effective from the build that saw it. No historical prediction is altered.",
+  "A model change reaches production only through RESEARCH → CHALLENGER → WALK-FORWARD → SHADOW → PROMOTION (football/cfb_lab/governance.js promote). A weekly loss is never a reason."
+ ]
+}
