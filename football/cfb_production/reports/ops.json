@@ -1,6 +1,6 @@
 {
  "schema": "cfb_ops_v1",
- "generated_at": "2026-09-28T00:07:30.428Z",
+ "generated_at": "2026-09-28T01:07:21.903Z",
  "season": 2026,
  "in_season": true,
  "reads": [
@@ -195,7 +195,7 @@
      "source": "espn_scoreboard",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-09-28T00:07:24.000Z",
+     "last_success": "2026-09-28T01:07:17.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -204,7 +204,7 @@
      "source": "cfbfastr_schedule",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-09-28T00:07:24.000Z",
+     "last_success": "2026-09-28T01:07:17.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -214,7 +214,7 @@
   },
   "odds_age": {
    "status": "OK",
-   "newest_quote_at": "2026-09-28T00:07:24.000Z",
+   "newest_quote_at": "2026-09-28T01:07:17.000Z",
    "age_minutes": 0,
    "stale_after_minutes": 180,
    "games_within_48h": 0,
@@ -235,7 +235,7 @@
   "failed_jobs": {
    "status": "OK",
    "failed": [],
-   "lab_last_run_at": "2026-09-28T00:07:24.000Z",
+   "lab_last_run_at": "2026-09-28T01:07:17.000Z",
    "lab_last_run_age_minutes": 0,
    "note": "Mirror / workflow failures and heartbeats live in Postgres (cfb_job_heartbeat_status, cfb_incidents_current) and GitHub Actions; this file sees what the jobs committed."
   },
@@ -1002,20 +1002,21 @@
    "degraded_count": 60,
    "lab_data_quality": {
     "GREEN": 29,
-    "YELLOW": 31,
+    "YELLOW": 33,
     "RED": 0
    },
-   "canonical_projections_as_of": "2026-09-28T00:07:29.622Z",
+   "canonical_projections_as_of": "2026-09-28T01:07:21.140Z",
    "canonical_by_level": {
     "1": 2,
     "2": 55,
+    "3": 2,
     "NOT_PRICED": 3
    }
   },
   "predictions": {
    "status": "OK",
    "v21_current_generated_at": "2026-09-27T09:32:42Z",
-   "v21_current_age_minutes": 875,
+   "v21_current_age_minutes": 935,
    "v21_rows": 60,
    "v21_mode": "shadow",
    "frozen_snapshot_files": 0,
@@ -1024,10 +1025,10 @@
      "model_version": "edgedesk_cfb_p4_v1.0.0",
      "label": "V1",
      "role": "champion",
-     "snapshots": 60,
-     "latest_snapshot_at": "2026-09-27T15:07:15.000Z",
-     "upcoming_games": 60,
-     "avg_confidence_upcoming": 79.3
+     "snapshots": 62,
+     "latest_snapshot_at": "2026-09-28T01:07:17.000Z",
+     "upcoming_games": 62,
+     "avg_confidence_upcoming": 79.2
     },
     {
      "model_version": "edgedesk_cfb_v2.0.0",
