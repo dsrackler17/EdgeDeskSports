@@ -170,8 +170,10 @@ to `GOVERNED_POLICY` to require the governed policy's `bet_enabled`.
 
 - **Today's honest output is no BETs.** The promoted CFB calibrator puts the
   calibrated EV near minus the vig at every main-line price (0 of 60 priced
-  quotes positive), and NFL has no calibration. The committed slate reads 0 BET
-  · 2 WAIT · 28 PASS · 32 NO DECISION. BET rendering is exercised by the engine
+  quotes positive), and NFL has no calibration. The slate published with this
+  change (built 2026-09-28 18:07Z) reads 0 BET · 0 WAIT · 18 PASS · 44 NO
+  DECISION (38 stale quotes, 6 no market); the 17:07Z slate read 0 · 2 · 28 · 32.
+  It moves every hour with the market. BET rendering is exercised by the engine
   on synthetic models in the tests.
 - Most CFB games have one fresh book, so market quality is ACCEPTABLE and any
   BET would cap at 0.25U.
