@@ -66,8 +66,9 @@ const RD = require(path.join(ROOT, 'lib', 'edgedesk_read.js'));
 const EV = require(path.join(ROOT, 'lib', 'edgedesk_ev.js'));
 const QEV = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
 const INTEG = (() => { try { return require(path.join(ROOT, 'football', 'cfb_lab', 'integrity.js')); } catch (e) { return null; } })();
-/* THE BETTOR DECISION (lib/edgedesk_decision.js): the one BET / WAIT / PASS /
-   NO DECISION answer per game, on the same model and quotes as quote EV */
+/* THE BETTOR DECISION (lib/edgedesk_decision.js, the unified football
+   engine): one BET / LEAN / WATCH / PASS / NO DECISION answer per game, on
+   the same model and quotes as quote EV */
 const BDS = require(path.join(__dirname, 'decisions.js'));
 
 function arg(name, dflt) { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : dflt; }
@@ -507,7 +508,10 @@ function quoteEvOf(ctx, o, rin, read, ev) {
   const rs = o.research_status ? o.research_status.key : null;
   const orient = ev && ev.circuit_breaker && (ev.circuit_breaker.checks || []).some((c) => c.id === 'SIGN_ORIENTATION' && c.status === 'FAIL');
   const qctx = { now: ctx.now, game: game, research_status: rs, data_fault: rs === 'DATA_FAULT',
-    orientation: orient ? { ok: false, reason: 'the market number looks flipped relative to the model (EV circuit breaker)' } : { ok: true },
+    /* the ledger quotes are home-stated by construction, so their orientation
+       is known; a sign the circuit breaker doubts is flagged on every quote
+       (SIGN_SUSPECT) and verified by the decision engine, never hidden */
+    orientation: { ok: true }, sign_suspect: orient ? { reason: 'the market number looks flipped relative to the model (EV circuit breaker)' } : null,
     market_check_failed: !!(read && read.integrity_status && read.integrity_status.quote_check_blocks), market_check_reason: 'two current numbers for one book disagree',
     market_stale: !!o.market.stale, reliability: num(o.data_quality && o.data_quality.reliability), qb_unresolved: !!(read && read.qb_status && read.qb_status.resolved === false) };
   const G = QEV.evaluateGame(model, quotes, qctx);

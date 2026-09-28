@@ -1,9 +1,19 @@
 # The bettor decision layer
 
+> **v2 (current): the unified football decision engine — BET / LEAN / WATCH /
+> PASS / NO DECISION for the NFL and CFB alike.** See
+> [`FOOTBALL_ENGINE_V2.md`](FOOTBALL_ENGINE_V2.md). It supersedes the v1
+> hierarchy (§4), sizing (§13), anomaly review (§15) and configuration (§16)
+> below: calibration, reliability, football confidence, a one-sided market, a
+> market fault and an unverified gap no longer produce NO DECISION; NO DECISION
+> is reserved for missing or invalid essential data and always names its
+> blocker. The v1 text below is kept as the record of what shipped first.
+
 EdgeDesk is research, not picks. Once the research and pricing engines hold
 enough validated information, the product also says, in one word, whether the
-**current price** qualifies: **BET / WAIT / PASS / NO DECISION**. That answer
-lives in one place (`lib/edgedesk_decision.js`) and every surface prints it.
+**current price** qualifies: **BET / LEAN / WATCH / PASS / NO DECISION** (v1:
+BET / WAIT / PASS / NO DECISION). That answer lives in one place
+(`lib/edgedesk_decision.js`) and every surface prints it.
 
 ```
 research engines ──► research status (how interesting?)        ─┐
@@ -16,7 +26,7 @@ integrity, QB, availability, reliability, market facts ────────�
 | | Research status | Bet decision |
 |---|---|---|
 | Question | Does the matchup deserve investigation? | Does the current price qualify for action? |
-| Values | VERIFIED MAJOR · WORTH RESEARCHING · INVESTIGATE · MARKET ALIGNED · MARKET FAULT · DATA FAULT · NO MARKET · LIMITED DATA | BET · WAIT · PASS · NO DECISION |
+| Values | VERIFIED MAJOR · WORTH RESEARCHING · INVESTIGATE · MARKET ALIGNED · MARKET FAULT · DATA FAULT · NO MARKET · LIMITED DATA | BET · LEAN · WATCH · PASS · NO DECISION |
 | Source | `lib/edgedesk_canon.js` (unchanged) | `lib/edgedesk_decision.js` |
 
 A model–market gap is not a BET; a positive raw EV is not a BET; WORTH

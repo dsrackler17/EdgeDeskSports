@@ -281,6 +281,8 @@ function siteHandler(req, res) {
   }
   chk('no page errors on the board or the card', D.errors.length === 0, D.errors);
 
+  if (args.indexOf('--dbgcfb') >= 0) console.log(JSON.stringify(await page.evaluate(() => (window.fbDecisionsLive ? window.fbDecisionsLive() : []).filter((d) => d.sport === 'CFB' && d.decision !== 'PASS' && d.decision !== 'NO_DECISION').map((d) => ({ g: d.away + ' @ ' + d.home, disp: d.decision_display, sel: d.action && d.action.selection, alt: d.selected_is_alternate,
+    edge: d.edge_pp, ev: d.decision_ev_pct, raw: d.raw_ev_pct, cls: (d.candidates || []).slice(0, 4).map((c) => c.label + ' ' + c.classification + ' ' + c.decision_ev), fails: d.anomaly && d.anomaly.checks ? d.anomaly.checks.filter((c) => c.status !== 'PASS').map((c) => c.code + ':' + c.status + ' ' + c.text) : null }))), null, 1));
   console.log('\n== the NFL cards ==');
   await page.evaluate(() => window.fbSetSport('nfl'));
   await page.waitForFunction(() => document.querySelectorAll('[id^="fbg-nfl-"]').length > 0, null, { timeout: 60000 }).catch(() => {});
@@ -294,10 +296,36 @@ function siteHandler(req, res) {
       ladder: c0 ? c0.querySelectorAll('[id^="qevl-"] table.qev-t tbody tr').length : 0 };
   });
   chk('NFL cards carry the pricing line', nfl.cards > 0 && nfl.priced > 0, nfl);
-  chk('NFL EV is RAW only: no NFL calibration exists', nfl.row && /raw only/.test(nfl.row) && !/Calibrated [+−]/.test(nfl.row), nfl.row);
-  chk('the NFL price evaluation names the missing calibration', nfl.card && /no EV calibration exists for NFL spreads/.test(nfl.card), nfl.card && nfl.card.slice(0, 400));
-  chk('the NFL decision says no engine exists', nfl.row && /no decision engine|NO DECISION/i.test(nfl.row), nfl.row);
+  /* the NFL's partially calibrated source is the held-out-validated pricing
+     blend (football/validation/pricing_nfl.json); raw EV stays beside it */
+  chk('NFL shows the raw EV and the BLENDED (partially calibrated) EV apart', nfl.row && /Raw EV/.test(nfl.row) && /Blended [+−]/.test(nfl.row), nfl.row);
+  chk('the NFL price evaluation names the pricing blend', nfl.card && /Blended EV \(NFL pricing blend\)/.test(nfl.card), nfl.card && nfl.card.slice(0, 400));
+  chk('the NFL decision comes from the unified engine (never "no NFL decision engine")', nfl.row && /Decision (BET|LEAN|WATCH|PASS|NO DECISION)/.test(nfl.row) && !/no (NFL )?decision engine/i.test(nfl.row), nfl.row);
+  const nflDec = await page.evaluate(() => {
+    const all = (window.fbDecisionsLive ? window.fbDecisionsLive() : []).filter((d) => d.sport === 'NFL');
+    const txt = document.body.innerText;
+    const sel = Array.from(document.querySelectorAll('select')).filter((x) => Array.from(x.options).some((o) => /^Week \d+/.test(o.textContent)))[0];
+    const opt = sel ? getComputedStyle(sel.options[1] || sel.options[0]) : null;
+    return { n: all.length, by: all.reduce((o, d) => { o[d.decision] = (o[d.decision] || 0) + 1; return o; }, {}),
+      rows: all.map((d) => [d.away + ' @ ' + d.home, d.decision_display, d.action_reason_code, d.action && d.action.selection, d.edge_pp, d.decision_ev_pct, d.raw_ev_pct, d.probability_source, d.decision_confidence, (d.blocker_codes || []).join(','),
+        d.anomaly && d.anomaly.triggered ? d.anomaly.checks.filter((c) => c.status !== 'PASS').map((c) => c.code + ':' + c.status).join(' ') : '']),
+      stub: /no NFL decision engine/.test(txt), cards: document.querySelectorAll('.edd-act').length,
+      option: opt ? { bg: opt.backgroundColor, fg: opt.color } : null };
+  });
+  console.log('     NFL decisions: ' + JSON.stringify(nflDec.by));
+  nflDec.rows.forEach((r) => console.log('       ' + r.join(' | ')));
+  chk('every NFL game with a fresh quote reaches BET / LEAN / WATCH / PASS', nflDec.n > 0 && nflDec.rows.every((r) => !/^NO DECISION/.test(r[1]) || r[9]), nflDec.by);
+  chk('no NFL page text says "no NFL decision engine"', !nflDec.stub);
+  const lum = (c) => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || ''); if (!m) return null; const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(+m[1]) + 0.7152 * f(+m[2]) + 0.0722 * f(+m[3]); };
+  const L1 = nflDec.option ? lum(nflDec.option.bg) : null, L2 = nflDec.option ? lum(nflDec.option.fg) : null;
+  const contrast = L1 != null && L2 != null ? (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05) : null;
+  chk('the week dropdown options are readable (contrast ≥ 7:1)', contrast != null && contrast >= 7, { option: nflDec.option, contrast });
   chk('the NFL alternate ladder renders both books', nfl.ladder >= 1, nfl);
+  if (SHOTS) {
+    /* the EDGEDESK ACTION card of the first two decided NFL games, for a human look */
+    const acts = await page.$$('[id^="fbg-nfl-"] .edd-act');
+    for (let i = 0; i < Math.min(2, acts.length); i++) await acts[i].screenshot({ path: path.join(SHOTS, 'nfl_action_' + i + '.png') });
+  }
   if (SHOTS) { const el = await page.$('[id^="fbg-nfl-"]'); if (el) await el.screenshot({ path: path.join(SHOTS, 'nfl_card.png') }); }
   chk('no page errors on the NFL board', D.errors.length === 0, D.errors);
 

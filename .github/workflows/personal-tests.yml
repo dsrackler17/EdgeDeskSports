@@ -70,6 +70,8 @@ jobs:
         run: node tools/intelligence/mine.test.js
       - name: The bettor decision layer (engine, tracks, bankroll, renderers) and placed-bet grading
         run: node tools/bettor/decision.test.js
+      - name: The unified football decision engine (NFL and CFB)
+        run: node tools/bettor/football_decision.test.js
 
   migrations:
     runs-on: ubuntu-latest
