@@ -176,7 +176,7 @@ function problems(results) {
       if (!(d.edge_pp >= T.min_edge_pp - 1e-6) || !(d.decision_ev_pct >= 100 * T.min_ev - 1e-6)) out.push(d.game_id + ': a BET below the edge / EV thresholds');
       if (d.recommended_units > (cfg.sizing.source_caps[d.probability_source] || 0) + 1e-9) out.push(d.game_id + ': a BET above its probability-source cap');
       if (d.recommended_units > cfg.sizing.max_units + 1e-9) out.push(d.game_id + ': a BET above ' + cfg.sizing.max_units + 'U');
-      if (d.bet_price && d.bet_price.tail === 'NOT_VALIDATED') out.push(d.game_id + ': a BET on an unvalidated alternate tail');
+      if (d.bet_price && (d.bet_price.tail === 'NOT_VALIDATED' || (d.bet_price.tail === 'UNKNOWN' && !d.bet_price.is_main_line))) out.push(d.game_id + ': a BET on an unvalidated alternate tail');
       if (d.anomaly && d.anomaly.open) out.push(d.game_id + ': a BET on an unverified price anomaly');
     }
     if (d.decision !== 'BET' && d.recommended_units > 0) out.push(d.game_id + ': units on a non-BET decision');

@@ -2866,7 +2866,7 @@ body.focus .dk-focusnote{display:block}
 </style>
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260926g">
-<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260928d">
+<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260928e">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3828,10 +3828,10 @@ window.mcRefresh=function(){
      NO DECISION answer per game, from the quote-level EV the board already prices.
      edgedesk_decision.js reads window.EDQuoteEV at call time (loaded lazily with the board). -->
 <script src="/lib/edgedesk_bankroll.js?v=20260928d"></script>
-<script src="/lib/edgedesk_decision.js?v=20260928d"></script>
-<script src="/lib/edgedesk_decision_track.js?v=20260928d"></script>
-<script src="/lib/edgedesk_decision_inputs.js?v=20260928d"></script>
-<script src="/lib/edgedesk_decision_ui.js?v=20260928d"></script>
+<script src="/lib/edgedesk_decision.js?v=20260928e"></script>
+<script src="/lib/edgedesk_decision_track.js?v=20260928e"></script>
+<script src="/lib/edgedesk_decision_inputs.js?v=20260928e"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20260928e"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -47168,8 +47168,11 @@ function fbCanonApply(v,cr){
     price_state:cr.price_state,price_state_label:cr.price_state_label,favorite_flip:!!cr.favorite_flip,rating_divergence:cr.rating_divergence||null};
   if(age==null||age>FB_CANON_MAX_AGE_H)return Object.assign({},v,{canonical:Object.assign(extra,{stale:true})});
   var vk=FB_CANON_TO_VIEW[cr.research_status],d=C.RESEARCH_STATUS[cr.research_status],L=V&&V.LABELS&&V.LABELS[vk];
+  /* a canonical DATA FAULT keeps its kind: the build's (decision_facts), else
+     the live rule it replaces (EDDecisionInputs.labelFaultKind) */
+  var fk=cr.decision_facts&&cr.decision_facts.integrity&&cr.decision_facts.integrity.data_fault?cr.decision_facts.integrity.data_fault_kind||null:null;
   return Object.assign({},v,{research_label:{key:vk,label:d.label,tone:L?L.tone:'mut',rule:'canonical',means:cr.research_reason||d.means,
-    canonical:true,live_key:v.research_label?v.research_label.key:null},canonical:Object.assign(extra,{stale:false})});
+    canonical:true,live_key:v.research_label?v.research_label.key:null,live_rule:v.research_label?v.research_label.rule||null:null,fault_kind:fk},canonical:Object.assign(extra,{stale:false})});
 }
 function fbP4ViewFor(u,p,mkt,opts){
   var V=window.EDCfbResearchView;
@@ -53631,7 +53634,7 @@ function fbQevModelCfb(u,p,mk,anchor){
   return {sport:'CFB',available:true,model_version:p.model_version,projection_timestamp:p.prediction_timestamp,fair_home_margin:m.fair_spread,home_cover:hc,basis:basis,
     adjusted:fbQevAdjustedCfb(u,p,hc,anchor),
     /* the totals residual distribution: priced by the decision layer only (MODEL-ESTIMATED, capped at LEAN) */
-    total_cover:isFinite(ft)&&E.dist&&typeof E.dist.coverProbTotal==='function'?function(t){return E.dist.coverProbTotal(ft,t,'over');}:null,
+    total_cover:typeof ft==='number'&&isFinite(ft)&&E.dist&&typeof E.dist.coverProbTotal==='function'?function(t){return E.dist.coverProbTotal(ft,t,'over');}:null,
     tail:FBQEV.tail||{validated_within_pts:0,basis:FBQEV.err?'the alternate-line audit did not load':'the alternate-line audit is loading'},
     key_mass:(P.distributions&&P.distributions.abs_margin_key_mass)||null,
     total_calibration:{validated:false,reason:tc.reason||'totals EV is not activated'},
@@ -53660,7 +53663,7 @@ function fbQevModelNfl(p,anchor){
     home_cover:function(t){return E.dist.coverProbSpread('nfl',fair,t);},
     basis:'the NFL margin distribution learned by spread (football/params.js), keyed by EdgeDesk’s own fair spread',
     adjusted:adj,
-    total_cover:isFinite(ft)?function(t){return E.dist.coverProbTotal('nfl',ft,t,'over');}:null,
+    total_cover:typeof ft==='number'&&isFinite(ft)?function(t){return E.dist.coverProbTotal('nfl',ft,t,'over');}:null,
     tail:{validated_within_pts:0,basis:'no alternate-line audit exists for the NFL distribution'},
     key_mass:(F&&F.nfl&&F.nfl.abs_margin_key_mass)||null,
     total_calibration:{validated:false,reason:tc.reason},moneyline:{home_win_prob:p.model.home_win_prob,calibration:{validated:false,reason:mc.reason}}};
@@ -53684,7 +53687,8 @@ function fbQevCtx(u,rv,mk){
   /* only an integrity DATA FAULT blocks the arithmetic; the gap guard and the
      sign heuristic (fbP4LineFault) are suspicions the decision layer verifies:
      every quote here is labelled by its team name, so its side is known */
-  var hardFault=key==='DATA_FAULT'&&(!L.rule||L.rule==='integrity');
+  var I=window.EDDecisionInputs;
+  var hardFault=key==='DATA_FAULT'&&(I&&I.labelFaultKind?I.labelFaultKind(L,null):(L.rule==='guard'||L.rule==='orientation'?'SOFT':'FAULT'))==='FAULT';
   return {now:Date.now(),game:{game_id:String(u.g.game_id),home:u.g.home_team,away:u.g.away_team,kickoff:u.t?new Date(u.t).toISOString():null},
     research_status:key==='VERIFIED_MAJOR_DISAGREEMENT'?'VERIFIED_MAJOR':(key==='DATA_FAULT'&&!hardFault?null:key),data_fault:hardFault,
     orientation:{ok:true},sign_suspect:mk&&mk.spread_fault?{reason:'the joined market line only agreed with EdgeDesk once negated (fbP4LineFault)'}:null,
