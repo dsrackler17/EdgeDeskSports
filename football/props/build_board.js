@@ -221,7 +221,13 @@ async function build(opts) {
   }
   /* quotes by game */
   const events = quotesFeed && quotesFeed.events ? quotesFeed.events : {};
-  const ev2game = joinEvents(league, events, games, ds);
+  /* every event the capture knows (a game whose first poll failed has no
+     listing yet, but it has a price-check record) joins its game too */
+  const evState = (capState && capState.events_state) || {};
+  const joinable = Object.assign({}, events);
+  Object.keys(evState).forEach((id) => { const r = evState[id]; if (!joinable[id] && r && r.home_team && r.away_team && r.kickoff) joinable[id] = { home_team: r.home_team, away_team: r.away_team, commence_time: r.kickoff }; });
+  const ev2game = joinEvents(league, joinable, games, ds);
+  const game2ev = {}; Object.keys(ev2game).forEach((eid) => { game2ev[ev2game[eid]] = eid; });
   const quotesByGame = {};
   Object.keys(events).forEach((eid) => {
     const gid = ev2game[eid]; if (!gid) return;
@@ -233,6 +239,20 @@ async function build(opts) {
   const rawQuotes = upcomingEvents.reduce((n, eid) => n + (events[eid].quotes || []).length, 0);
   const unjoinedQuotes = unjoined.reduce((n, u) => n + (events[u.event_id].quotes || []).length, 0);
 
+  /* the effective freshness thresholds (the kernel's, or this environment's
+     overrides): written onto the board so every reader judges by them */
+  const FRESH = EDP.freshCfg(opts.freshness || null);
+  const injAsOf = ds.injuries ? ds.injuries.retrieved_at || null : null;
+  const injPublished = ds.injuries ? ds.injuries.published !== false : false;
+  /* each game's own price-check record, from the capture's events_state */
+  const gameCapture = (g, eid) => {
+    const r = eid ? evState[eid] : null, le = eid ? events[eid] : null;
+    const k = Date.parse(g.kickoff), wh = (capState && capState.window_h) || C.DEFAULTS.window_h;
+    if (!r) return k - now > wh * 3600e3 ? { outside_window: true, window_opens_at: new Date(k - wh * 3600e3).toISOString() } : (eid ? { event_id: eid, polled_ok_at: le ? le.observed_at : null } : null);
+    return { event_id: eid, polled_ok_at: r.polled_ok_at || null, attempted_at: r.attempted_at || null, failed: (r.failures || 0) > 0, failures: r.failures || 0,
+      error: r.last_error || null, http: r.last_http || null, next_due_at: r.next_due_at || null, next_retry_at: r.next_retry_at || null,
+      books_missing: le && le.books_missing ? le.books_missing : null, markets_closed: le && le.closed ? Object.keys(le.closed).length : 0 };
+  };
   const ctxByDay = {};
   const ctxFor = (day) => ctxByDay[day] || (ctxByDay[day] = M.prepare(ds, day, { calibration: calibFile }));
   const props = [], playersOut = {}, playersCtx = {}, gamesOut = [], unmapped = [], matchups = {};
@@ -258,6 +278,7 @@ async function build(opts) {
     const teamPl = [g.home, g.away].map((tm) => Object.values(ds.players).filter((p) => p.team === tm));
     const ix = nameIndex(teamPl[0].concat(teamPl[1]));
     const Q = quotesByGame[g.game_id];
+    const gCap = gameCapture(g, game2ev[g.game_id]);
     const byPlayer = {};
     (Q ? Q.rows : []).forEach((q) => {
       const r = resolveName(ix, q.player_name);
@@ -282,6 +303,11 @@ async function build(opts) {
     /* each defence's ranks, once per board */
     [g.home, g.away].forEach((tm) => { if (!matchups[tm] && ctx.ranks[tm]) { const o = {}; Object.keys(ctx.ranks[tm]).forEach((k) => { const x = ctx.ranks[tm][k]; o[k] = [x.rank, x.of, r4(x.value)]; }); matchups[tm] = o; } });
     const env = M.environment(ctx, g, g.home);
+    /* markets the books have pulled since they were dealt (capture.js
+       buildQuotesFeed `closed`, keyed by the book's player name) */
+    const closedFor = {};
+    if (Q && Q.event && Q.event.closed) Object.keys(Q.event.closed).forEach((k) => { closedFor[k] = Q.event.closed[k]; });
+    const closedAt = (names, m) => { for (const nm of names) { const k = EDP.normName(nm) + '|' + m; if (closedFor[k]) return closedFor[k]; } return null; };
     let nProps = 0, nPriced = 0;
     const gMarkets = {};
     for (const pid of cands) {
@@ -315,9 +341,12 @@ async function build(opts) {
           projection: proj ? { dist: proj.dist, sample_games: pr.sample_games, prior_games: pr.prior_games, role_stability: pr.role_stability, completeness: pr.completeness,
             qb_change: !!pr.qb_change, qb_unconfirmed: !!pr.qb_unconfirmed, teammate_uncertain: !!pr.teammate_uncertain } : null,
           quotes: mq.map((q) => ({ book: q.book, line: q.line, side: q.side, american: q.american, quoted_at: q.quoted_at, captured_at: q.captured_at, alt: q.alt })),
-          history: hist.length >= 3 ? { values: hist } : null
+          history: hist.length >= 3 ? { values: hist } : null,
+          event: gCap ? { polled_ok_at: gCap.polled_ok_at, attempted_at: gCap.attempted_at, failed: gCap.failed, error: gCap.error } : null,
+          injury_as_of: injAsOf, injury_published: injPublished
         };
-        const ev = EDP.evaluate(input, { now, calibration: cal, stages });
+        if (!mq.length) { const mc = closedAt([p.name].concat(byPlayer[pid] ? [byPlayer[pid].name] : []), m); if (mc) { input.market_status = 'closed'; input.market_closed_at = mc; } }
+        const ev = EDP.evaluate(input, { now, calibration: cal, stages, freshness: FRESH });
         if (ev.anchor && input.projection) input.projection.anchor = ev.anchor;
         const kind = matchupKind(m);
         const line = ev.consensus.line != null ? ev.consensus.line : (ev.informed ? Math.floor(ev.informed.median) + 0.5 : null);
@@ -339,6 +368,7 @@ async function build(opts) {
         };
         if (!rec.fl.length) delete rec.fl;
         if (!rec.mv) delete rec.mv;
+        if (input.market_status === 'closed') rec.x.mc = input.market_closed_at;
         const fj = fx && !fx.stale ? factoryJoin(fx, fxUsed, g.game_id + '|' + pid + '|' + m, line, side) : null;
         if (fj) { rec.fx = fj; fxUsed.joined++; }
         props.push(rec);
@@ -358,7 +388,7 @@ async function build(opts) {
       Object.keys(B.markets).forEach((m) => {
         const input = { id: league + '|' + g.game_id + '|' + k + '|' + m, market: m, kickoff: g.kickoff, game_status: started ? 'in_progress' : 'scheduled', mapped: false, projection: null,
           quotes: B.markets[m].map((q) => ({ book: q.book, line: q.line, side: q.side, american: q.american, quoted_at: q.quoted_at, captured_at: q.captured_at, alt: q.alt })) };
-        const ev = EDP.evaluate(input, { now, calibration: cal, stages });
+        const ev = EDP.evaluate(input, { now, calibration: cal, stages, freshness: FRESH });
         props.push({ id: input.id, g: g.game_id, p: null, name: B.name, m, s: null, k: matchupKind(m), x: { st: input.game_status, mp: 0, dist: null }, q: input.quotes.map(packQ), e: compactEval(ev), fl: ['UNMAPPED'] });
         nProps++; nPriced++;
       });
@@ -371,7 +401,7 @@ async function build(opts) {
       edgedesk: g.edgedesk || null, weather: env.dome ? { dome: true } : (g.forecast ? { temp_f: g.forecast.temp_f, wind_mph: g.forecast.wind_mph, precip_in: g.forecast.precip_in, text: g.forecast.text || null, as_of: g.forecast.as_of || null, source: g.forecast.source || 'forecast' } : (env.wind != null || env.temp != null ? { temp_f: env.temp, wind_mph: env.wind, source: 'schedule feed' } : null)),
       script: { home: env.script, away: M.environment(ctx, g, g.away).script },
       pace: { home: ctx.team[g.home] ? r2(ctx.team[g.home].plays) : null, away: ctx.team[g.away] ? r2(ctx.team[g.away].plays) : null, league: r2(ctx.league.plays) },
-      starters: g.starters || null, event_id: Q ? Q.event.event_id : null, quotes_observed_at: Q ? Q.event.observed_at : null,
+      starters: g.starters || null, event_id: Q ? Q.event.event_id : (gCap && gCap.event_id) || null, quotes_observed_at: Q ? Q.event.observed_at : null, capture: gCap,
       n_props: nProps, n_priced: nPriced, markets: Object.keys(gMarkets).sort() });
   }
 
@@ -416,6 +446,7 @@ async function build(opts) {
     calibration: calibFile ? { mode: calibFile.mode, season_tested: calibFile.season_tested, generated_at: calibFile.generated_at, borrowed: league === 'cfb', n_scored: calibFile.n_scored,
       markets: Object.keys(calibFile.markets || {}).reduce((o, k) => { const c = calibFile.markets[k]; const oos = calibFile.out_of_sample && calibFile.out_of_sample.before ? calibFile.out_of_sample : null; o[k] = { f: c.f, mean_mult: c.mean_mult, n: c.n, adopted: c.adopted !== false, cover50: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].cover50 : oos.after[k].cover50) : null, ece: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].calibration.ece : oos.after[k].calibration.ece) : null }; return o; }, {}) } : null,
     capture: captureBlock(capState, league),
+    freshness: (() => { const c = JSON.parse(JSON.stringify(FRESH)); delete c._merged; return c; })(),
     quotes: quotesFeed ? { generated_at: quotesFeed.generated_at, n_events: quotesFeed.n_events, n_quotes: quotesFeed.n_quotes, unjoined_events: unjoined } : null,
     sources: { dataset_built_at: ds.built_at, feeds: ds.feeds, injuries: ds.injuries ? { published: ds.injuries.published, retrieved_at: ds.injuries.retrieved_at || null, latest_week: ds.injuries.latest_week || null, note: ds.injuries.note || null } : null,
       caps: ds.caps || { targets: true, snaps: true, pbp: true, injuries: true, depth: true }, shapes_borrowed: !!ds.shapes_borrowed,
@@ -453,7 +484,14 @@ function captureBlock(s, league) {
     events_discovered: n(s.events_discovered), events_in_window: n(s.events_in_window), events_checked: s.events_checked != null ? s.events_checked : n(s.events_polled), events_polled: n(s.events_polled),
     events_no_markets: n(s.events_no_markets), events_failed: n(s.events_failed),
     markets_returned: s.markets_returned ? Object.keys(s.markets_returned).length : null, outcomes_returned: n(s.outcomes_returned), quotes_written: n(s.quotes_written),
-    window_h: n(s.window_h)
+    window_h: n(s.window_h),
+    /* the pipeline's own health (EDProps.systemHealth at capture time — the
+       page recomputes it at view time), when it is next owed a poll, and the
+       provider's record: what the status strip explains itself from */
+    enabled: s.enabled !== false && s.reason !== 'PROPS_CAPTURE_DISABLED', last_full_success_at: n(s.last_full_success_at),
+    next_due_at: n(s.next_due_at), window_entry_at: n(s.window_entry_at), health: s.health || null, pacing: s.pacing && s.pacing.reason ? s.pacing : null,
+    provider: s.provider ? { last_http: n(s.provider.last_http), rate_limited_until: n(s.provider.rate_limited_until), consecutive_failures: n(s.provider.consecutive_failures), last_error: n(s.provider.last_error), requests_remaining: n(s.provider.requests_remaining) } : null,
+    run: s.run || null, refused: s.refused || null, markets_closed: n(s.markets_closed), quotes_carried: n(s.quotes_carried), events_suspect_empty: n(s.events_suspect_empty)
   };
 }
 
@@ -505,6 +543,9 @@ function writeIfChanged(file, obj) {
 }
 
 async function main() {
+  /* this environment's threshold overrides, if any (config.js freshnessFromEnv) */
+  const envFresh = C.freshnessFromEnv();
+  if (envFresh) { EDP.configureFreshness(envFresh); console.log('[props board] freshness overrides from the environment: ' + JSON.stringify(envFresh)); }
   const a = process.argv.slice(2);
   const arg = (k, d) => { const i = a.indexOf('--' + k); return i >= 0 ? a[i + 1] : d; };
   const league = arg('league', 'nfl'), write = a.indexOf('--write') >= 0;

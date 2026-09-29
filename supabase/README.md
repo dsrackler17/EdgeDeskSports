@@ -500,12 +500,47 @@ Four tables:
 - `player_prop_identities`: empty until a roster source joins (event,
   player_key) to a real player id. Capture never writes it.
 
-The view `player_prop_best_quotes` gives the best current price per selection.
+The view `player_prop_best_quotes` gives the best price per selection on file,
+fresh or not; it is history and line shopping. For the best CURRENT price see
+`player_prop_executable_quotes` in `player_props_pipeline.sql`.
 RLS is on for all four tables: signed-in readers can read, and only the service
 role writes.
 
 Tested against a real PostgreSQL by `tools/capture/migration.test.js`, which
 also proves every column capture writes exists.
+
+### `player_props_pipeline.sql` — why the prop prices are (or are not) current
+The Player Props price pipeline's own record, and the reader's "Refresh prices".
+No dependency; safe to run again.
+
+- `player_props_pipeline_runs`: one row per workflow run and league (unique on
+  `run_key, league`). It holds games requested, succeeded and failed; markets,
+  quotes received and usable, and refused counts; the provider's HTTP answer,
+  rate-limit window and credits; the duration and consecutive failures; the
+  health verdict, error and next due time. Written by
+  `football/props/health_sync.js` after every run, a crashed run included.
+- `player_props_pipeline_health`: one row per league. It holds the latest
+  verdict (HEALTHY / DEGRADED / DELAYED / OUTAGE), when the capture is next
+  due, and the scheduler's last tick and dispatch. `props_cron` reads it.
+- `player_props_refresh_requests`: a reader's refresh (queued → dispatched →
+  running → completed / failed). `player_props_refresh_admit()` (security
+  definer, service role only) admits one atomically, under an advisory lock, a
+  per-reader and a global cool-down. A second click joins the refresh in flight.
+- `player_props_executable_max_minutes()`: the execution window, mirrored from
+  `lib/edgedesk_props.js` (a test pins them equal). Where capture v11 is
+  installed, the view `player_prop_executable_quotes` gives the best current,
+  pregame price per selection.
+
+Signed-in readers read health and runs, and only their own requests; only the
+service role writes. Tested by `tools/props/props_pipeline_sql.test.js`.
+
+### `player_props_cron.sql` — the primary Player Props scheduler
+pg_cron calls `functions/props_cron` every five minutes. The function
+dispatches `player-props.yml` only when a game is due, a refresh is waiting, or
+the health record has gone quiet. GitHub's own schedule stays as the backup.
+It needs pg_cron and pg_net, `player_props_pipeline.sql` first, the two
+`edgedesk.*` database settings `editorial_cron.sql` documents, and
+`supabase secrets set PROPS_GH_TOKEN=…`. Re-running replaces the job.
 
 ### `lock_rule.sql` — the Collective's 30-minute lock
 Every game locks 30 minutes before kickoff. Each model's latest live submission

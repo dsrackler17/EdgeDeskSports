@@ -30,17 +30,54 @@ const MARKET_GROUPS = {
 };
 const DEFAULT_GROUPS = { nfl: ['core', 'long', 'alt'], cfb: ['core', 'alt'] };
 
+/* The capture's CADENCE (how often each event is re-polled, by hours to
+   kickoff), its retry/backoff and every freshness threshold live in ONE
+   place: lib/edgedesk_props.js FRESHNESS. The environment may override them
+   (freshnessFromEnv below); the build writes the effective values onto the
+   board so the page judges prices by the same numbers. */
 const DEFAULTS = {
   bookmakers: 'draftkings,fanduel,betmgm,williamhill_us,espnbet,betrivers,hardrockbet,fanatics,pinnacle,betonlineag',
   window_h: 96,            /* only events kicking off inside this window */
-  max_events: 16,          /* nearest kickoff first */
-  far_h: 36,               /* an event more than this many hours out… */
-  far_interval_h: 8,       /* …is re-polled at most every this many hours */
-  min_interval_h: 3,       /* inside far_h, at most every this many hours */
-  near_interval_h: 0.5,    /* inside six hours of its kickoff, every run (the schedule is hourly) */
+  max_events: 16,          /* per run; due events are taken nearest kickoff first */
+  slack_min: 3,            /* an event this close to its next poll is taken now (the scheduler ticks every 5 min) */
   min_remaining: 200,      /* stop before spending below this many provider credits */
-  max_credits_run: 800     /* one run never spends more than this */
+  low_credits: 5000,       /* below this, events more than six hours out are polled half as often */
+  critical_credits: 1500,  /* below this, only events inside six hours of kickoff are polled */
+  max_credits_run: 800,    /* one run never spends more than this */
+  request_attempts: 2,     /* a timeout, network error or 5xx is retried once inside the run… */
+  retry_delay_ms: 1500,    /* …after this long, ± jitter */
+  timeout_ms: 30000        /* one provider request never waits longer than this */
 };
+
+/* PROPS_CADENCE="1.5:15,6:30,24:60,48:120,*:360" (hours to kickoff : minutes
+   between polls); PROPS_FRESH_MIN / PROPS_AGING_MIN / PROPS_STALE_MIN /
+   PROPS_EXEC_MAX_MIN (quote ages, minutes). Anything unset keeps the kernel's
+   default. Returns an override object for EDProps.configureFreshness, or null. */
+function parseCadence(raw) {
+  if (!raw) return null;
+  const tiers = String(raw).split(',').map((t) => t.trim()).filter(Boolean).map((t) => {
+    const [h, m] = t.split(':').map((x) => x.trim());
+    const every = Number(m), within = h === '*' || h === '' ? null : Number(h);
+    return Number.isFinite(every) && every > 0 && (within === null || (Number.isFinite(within) && within > 0)) ? { within_h: within, every_min: every } : null;
+  });
+  if (!tiers.length || tiers.some((t) => !t)) return null;
+  tiers.sort((a, b) => (a.within_h == null ? Infinity : a.within_h) - (b.within_h == null ? Infinity : b.within_h));
+  if (tiers[tiers.length - 1].within_h != null) tiers.push({ within_h: null, every_min: tiers[tiers.length - 1].every_min });
+  return tiers;
+}
+function freshnessFromEnv(env) {
+  env = env || process.env;
+  const n = (k) => { const v = env[k]; if (v == null || String(v).trim() === '') return null; const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null; };
+  const o = {}, q = {};
+  if (n('PROPS_FRESH_MIN') != null) q.fresh_minutes = n('PROPS_FRESH_MIN');
+  if (n('PROPS_AGING_MIN') != null) q.aging_minutes = n('PROPS_AGING_MIN');
+  if (n('PROPS_STALE_MIN') != null) q.stale_minutes = n('PROPS_STALE_MIN');
+  if (Object.keys(q).length) o.quote = q;
+  if (n('PROPS_EXEC_MAX_MIN') != null) o.executable_max_minutes = n('PROPS_EXEC_MAX_MIN');
+  const cad = parseCadence(env.PROPS_CADENCE);
+  if (cad) o.cadence = cad;
+  return Object.keys(o).length ? o : null;
+}
 
 function leaguePaths(league, season) {
   const base = path.join(DIR, league);
@@ -67,4 +104,4 @@ function seasonOf(now) {
   return d.getUTCMonth() <= 1 ? d.getUTCFullYear() - 1 : d.getUTCFullYear();
 }
 
-module.exports = { ROOT, DIR, CACHE, LEAGUES, MARKET_GROUPS, DEFAULT_GROUPS, DEFAULTS, leaguePaths, seasonOf };
+module.exports = { ROOT, DIR, CACHE, LEAGUES, MARKET_GROUPS, DEFAULT_GROUPS, DEFAULTS, leaguePaths, seasonOf, parseCadence, freshnessFromEnv };

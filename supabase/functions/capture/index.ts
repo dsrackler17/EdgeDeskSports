@@ -2,7 +2,7 @@
 //  FILE:    supabase/functions/capture/index.ts
 //  TYPE:    Edge Function (deployed) - cron job
 //  DEPLOY:  supabase functions deploy capture --no-verify-jwt
-//  BUILD:   capture-v11-player-props-r1   (authoritative value: `export const BUILD` below)
+//  BUILD:   capture-v11-player-props-r2   (authoritative value: `export const BUILD` below)
 //  IMPORTS: NONE. Not one. See "WHY THIS FILE HAS NO IMPORTS" below.
 //  TESTS:   node tools/capture/capture.test.js   (imports THIS file, no network)
 // ============================================================
@@ -358,7 +358,7 @@
 /*__EDSPORTS_END__*/
 const EDSPORTS: any = (globalThis as any).EDSPORTS;
 
-export const BUILD = "capture-v11-player-props-r1";
+export const BUILD = "capture-v11-player-props-r2";
 
 /* Bumped whenever the QUALIFICATION RULES change, independently of BUILD. It is
    written to `flagged_policy` on every freeze so the record can segment its
@@ -3038,11 +3038,28 @@ export async function runPlayerProps(o: {
     PS.quota_spent += eventCost;
     if (!okReqs) return;   // every batch failed: no poll time, so it is retried next run
 
-    const pe = priceEvent(merged, cfg, nowMs);
+    /* ONE EVENT IS ISOLATED. Pricing a malformed answer used to throw out of
+       Promise.all and take the whole prop pass — every other event's quotes
+       and polls — with it. Now it is this event's failure alone: counted,
+       sampled, nothing of it written (no half an event), no poll time (so it
+       is retried next run), and the other events carry on. */
+    let pe: ReturnType<typeof priceEvent>;
+    const evRows: any[] = [], evCands: any[] = [];
+    let nq = 0, cands: any[] = [];
+    try {
+      pe = priceEvent(merged, cfg, nowMs);
+      cands = pe.candidates.filter((c) => c.is_player_prop);
+      for (const c of cands) {
+        evRows.push(...playerPropQuoteRows(c, nowIso));
+        evCands.push(c);
+      }
+    } catch (e) {
+      T.failures++; T.events_failed_pricing = (T.events_failed_pricing || 0) + 1;
+      if (failureSamples.length < 8) failureSamples.push({ sport, event_id: eventId, status: "pricing_error", detail: String((e as Error)?.message ?? e).slice(0, 200) });
+      return;
+    }
     T.malformed += pe.malformed; T.duplicate_quotes += pe.duplicateQuotes; T.quotes_missing_timestamp += pe.missingTimestamps;
-    const cands = pe.candidates.filter((c) => c.is_player_prop);
-    let nq = 0;
-    for (const c of cands) {
+    for (const c of evCands) {
       T.candidates++;
       players.add(`${sport}|${c.event_id}|${c.participant_key}`);
       playerMarkets.add(`${sport}|${c.event_id}|${c.market}|${c.participant_key}`);
@@ -3051,9 +3068,9 @@ export async function runPlayerProps(o: {
         if (q.fair == null) T.one_sided_quotes++; else T.two_sided_quotes++;
         if (q.fresh) T.fresh_quotes++; else T.stale_quotes++;
       }
-      quoteRows.push(...playerPropQuoteRows(c, nowIso));
       propCands.push(c);
     }
+    quoteRows.push(...evRows);
     T.quotes_seen += nq; PS.quotes_seen += nq;
     if (cands.length) { T.events_with_props++; PS.with_props++; }
     pollRows.push(propPollRow(ev, sport, nowIso, {

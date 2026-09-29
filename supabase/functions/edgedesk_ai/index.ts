@@ -25800,7 +25800,10 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     version: 'player_props_config_v1',
     validation_state: 'CONSERVATIVE_DEFAULT_UNVALIDATED',
     market_weight: 0.30,            /* informed mean = 0.70 raw + 0.30 market-implied */
-    fresh_minutes: 30, max_quote_age_minutes: 90,
+    /* aliases of FRESHNESS.quote.fresh_minutes / FRESHNESS.executable_max_minutes
+       (below): the one place those numbers live. Kept so older readers see the
+       same values, never a second definition. */
+    fresh_minutes: 15, max_quote_age_minutes: 30,
     price_bounds: { min_abs: 100, max_abs: 20000 },
     /* a hold outside this band on one book's two sides is a broken feed */
     two_way_hold: { min: 0.99, max: 1.30 },
@@ -25889,6 +25892,13 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     sacks: { label: 'Sacks', short: 'Sacks', cat: 'other', stat: 'sacks', dist: 'poisson', positions: ['DL', 'LB'], usage: [], provider: ['player_sacks'] },
     def_ints: { label: 'Interceptions (Def)', short: 'Def INT', cat: 'other', stat: 'def_ints', dist: 'poisson', positions: ['DB', 'LB'], usage: [], provider: ['player_defensive_interceptions'] }
   };
+  /* the largest line a book could sensibly deal per market: a number beyond
+     it is a broken feed (a stat line in the wrong unit, a misplaced decimal),
+     refused at capture — never repaired, never priced */
+  var LINE_MAX = { pass_yds: 650, pass_att: 80, pass_cmp: 60, pass_tds: 7.5, pass_ints: 5.5, pass_long: 99.5, rush_yds: 350, rush_att: 45, rush_tds: 5.5, rush_long: 99.5,
+    rec_yds: 350, receptions: 25.5, targets: 25.5, rec_tds: 4.5, rec_long: 99.5, rush_rec_yds: 400, pass_rush_yds: 700, fantasy_pts: 80.5, anytime_td: 0.5, first_td: 0.5, tds_over: 5.5,
+    fg_made: 7.5, kicking_pts: 25.5, tackles_ast: 25.5, solo_tackles: 20.5, sacks: 5.5, def_ints: 3.5 };
+  function lineSane(market, line) { var mx = LINE_MAX[market]; return isNum(line) && line >= 0 && (mx == null || line <= mx); }
   /* sport registry: which markets a league carries and the provider sport key.
      A new sport is an entry here plus a stats source and a model adapter. */
   var SPORTS = {
@@ -26331,23 +26341,299 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
   function ppText(x, dp) { return isNum(x) ? (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(dp == null ? 1 : dp) + ' pp' : '—'; }
   function unitsText(u) { return isNum(u) ? (Math.round(u * 100) / 100).toFixed(2).replace(/0$/, '') + 'U' : '—'; }
 
+  /* ============================================ FRESHNESS & EXECUTABILITY
+     THE ONE RULE for Player Props (docs/player-props/FRESHNESS.md). Every EV,
+     edge, decision, stake and best-price selection — in the build, the page,
+     the AI desk and the opportunity layer — asks isExecutableQuote(), and
+     nothing else decides whether a sportsbook price is current. Game-market
+     freshness (lib/edgedesk_market.js) answers a different question with its
+     own ladder and is not read here.
+
+     A quote's AGE is judged on EdgeDesk's capture time (when the provider was
+     last asked and answered), never on the provider's own last_update, which
+     only says when the book last CHANGED the price:
+
+       FRESH     age ≤ quote.fresh_minutes            executable
+       AGING     ≤ quote.aging_minutes                executable (≤ executable_max_minutes)
+       STALE     ≤ quote.stale_minutes                reference only
+       EXPIRED   older                                reference / history only
+       FUTURE    capture time ahead of the clock      a clock fault: refused
+       UNKNOWN   no capture time                      refused
+
+     Every number is configurable (configureFreshness / opts.freshness / a
+     board's own `freshness` block written by the build from its environment);
+     none is repeated anywhere else. */
+  var FRESHNESS = {
+    version: 'player_props_freshness_v2',
+    quote: { fresh_minutes: 15, aging_minutes: 30, stale_minutes: 90, future_tolerance_minutes: 5 },
+    /* the oldest a quote may be and still price an EV, a decision or a stake */
+    executable_max_minutes: 30,
+    /* a provider stamp this far ahead of the capture is a clock fault */
+    provider_future_tolerance_minutes: 5,
+    /* injury / availability reports (the NFL sync runs every six hours) */
+    injury: { current_hours: 8, aging_hours: 24, aging_factor: 0.9, stale_factor: 0.7 },
+    /* the capture's own clock per event, by hours to kickoff (first match
+       wins). A started game is never polled for pregame props. */
+    cadence: [
+      { within_h: 1.5, every_min: 15 },
+      { within_h: 6, every_min: 30 },
+      { within_h: 24, every_min: 60 },
+      { within_h: 48, every_min: 120 },
+      { within_h: null, every_min: 360 }
+    ],
+    /* a failed event is retried sooner than its cadence, backing off */
+    retry: { base_minutes: 5, max_minutes: 60, jitter: 0.2 },
+    /* a 429 with no Retry-After waits this long before the provider is asked again */
+    rate_limit_minutes: 15,
+    /* pipeline health: share of active events refreshed inside their cadence target */
+    health: { healthy_share: 0.95, delayed_share: 0.5, grace_minutes: 15, silent_minutes: 60, silent_hours: 3, failures_for_outage: 3 },
+    /* a manual refresh never re-buys an event captured more recently than this
+       (the refresh cool-downs are the scheduler's: supabase/functions/props_cron) */
+    manual: { min_age_minutes: 10 }
+  };
+  function mergeCfg(base, over) {
+    if (!over || typeof over !== 'object') return base;
+    var o = {}; Object.keys(base).forEach(function (k) { o[k] = base[k]; });
+    Object.keys(over).forEach(function (k) {
+      var v = over[k];
+      if (v == null) return;
+      if (Array.isArray(v)) o[k] = v.slice();
+      else if (typeof v === 'object' && base[k] && typeof base[k] === 'object' && !Array.isArray(base[k])) o[k] = mergeCfg(base[k], v);
+      else if (isNum(num(v)) && isNum(base[k])) o[k] = num(v);
+      else o[k] = v;
+    });
+    return o;
+  }
+  /* the effective thresholds: defaults, then a caller's overrides */
+  function freshCfg(over) {
+    if (!over || over === FRESHNESS) return FRESHNESS;
+    if (over._merged) return over;
+    var c = mergeCfg(FRESHNESS, over); c._merged = true; return c;
+  }
+  /* replaces the defaults for this process (the build and capture read their
+     environment once, through football/props/config.js) */
+  function configureFreshness(over) {
+    var c = mergeCfg(FRESHNESS, over);
+    Object.keys(c).forEach(function (k) { if (k !== '_merged') FRESHNESS[k] = c[k]; });
+    CONFIG.fresh_minutes = FRESHNESS.quote.fresh_minutes; CONFIG.max_quote_age_minutes = FRESHNESS.executable_max_minutes;
+    return FRESHNESS;
+  }
+  /* the effective thresholds as plain data (a board carries them) */
+  function freshnessSnapshot() { var c = JSON.parse(JSON.stringify(FRESHNESS, function (k, v) { return v === Infinity ? null : v; })); delete c._merged; return c; }
+  function ageText(m) { return !isNum(m) ? 'age unknown' : m < 1 ? 'just now' : m < 60 ? Math.round(m) + ' min old' : m < 1440 ? r(m / 60, 1) + ' h old' : r(m / 1440, 1) + ' d old'; }
+  function quoteFreshness(q, now, over) {
+    var F = freshCfg(over), Q = F.quote;
+    var at = ms(q && (q.captured_at || q.quoted_at)), n = ms(now);
+    if (at == null || n == null) return { state: 'UNKNOWN', age_minutes: null, executable_age: false, text: 'capture time unknown' };
+    var m = (n - at) / 60000;
+    if (m < -Q.future_tolerance_minutes) return { state: 'FUTURE', age_minutes: r(m, 1), executable_age: false, text: 'the capture time is in the future (clock fault)' };
+    m = Math.max(0, m);
+    var st = m <= Q.fresh_minutes ? 'FRESH' : m <= Q.aging_minutes ? 'AGING' : m <= Q.stale_minutes ? 'STALE' : 'EXPIRED';
+    var ok = m <= F.executable_max_minutes;
+    return { state: st, age_minutes: r(m, 1), executable_age: ok,
+      text: ageText(m) + (ok ? '' : ' — past the ' + F.executable_max_minutes + '-minute execution window') };
+  }
+  /* kept under its old name: every reader of a quote's age goes through here */
+  function freshnessOf(q, now, over) { return quoteFreshness(q, now, over); }
+
+  /* isExecutableQuote({ captured_at, quoted_at, american, line, side },
+       { now, kickoff, game_status, market_status, provider_status, freshness })
+     → { executable, reason, state, age_minutes, text }
+
+     reason (null when executable):
+       INVALID_PRICE     not a valid American price
+       INVALID_LINE      not a non-negative half point
+       CLOCK_FAULT       capture (or provider) time in the future
+       UNKNOWN_TIME      no capture time
+       GAME_CANCELLED    the game was cancelled or postponed
+       GAME_STARTED      kickoff has passed: pregame prices are closed
+       MARKET_CLOSED     the book has pulled this market since the quote
+       BOOK_SUSPENDED    the provider marks this book / market suspended
+       STALE / EXPIRED   older than the execution window
+
+     A LATER failed poll does not retroactively invalidate a quote still inside
+     the window: the quote was a real, observed price, and the age limit is what
+     bounds how long it may be relied on. */
+  function isExecutableQuote(q, ctx) {
+    ctx = ctx || {};
+    var F = freshCfg(ctx.freshness), now = ctx.now != null ? ms(ctx.now) : Date.now();
+    var f = quoteFreshness(q, now, F);
+    var no = function (why, text) { return { executable: false, reason: why, state: f.state, age_minutes: f.age_minutes, text: text || f.text }; };
+    if (!q) return no('INVALID_PRICE', 'no quote');
+    if (!validPrice(num(q.american))) return no('INVALID_PRICE', 'not a valid American price');
+    var ln = num(q.line);
+    if (q.line != null && (ln == null || ln < 0 || Math.abs(ln * 2 - Math.round(ln * 2)) > EPS)) return no('INVALID_LINE', 'not a non-negative half point');
+    if (f.state === 'FUTURE') return no('CLOCK_FAULT');
+    if (f.state === 'UNKNOWN') return no('UNKNOWN_TIME');
+    var qa = ms(q.quoted_at), ca = ms(q.captured_at);
+    if (qa != null && ca != null && qa - ca > F.provider_future_tolerance_minutes * 60000) return no('CLOCK_FAULT', 'the provider stamp is ahead of the capture (clock fault)');
+    var gs = String(ctx.game_status || '').toLowerCase(), kick = ms(ctx.kickoff);
+    if (gs === 'cancelled' || gs === 'postponed') return no('GAME_CANCELLED', 'the game was cancelled or postponed');
+    if (gs === 'in_progress' || gs === 'final' || (kick != null && now >= kick)) return no('GAME_STARTED', 'the game has started: pregame prices are closed');
+    var mk = String(ctx.market_status || '').toLowerCase();
+    if (mk === 'closed' || mk === 'removed') return no('MARKET_CLOSED', 'the book has pulled this market');
+    var pv = String(ctx.provider_status || q.provider_status || '').toLowerCase();
+    if (pv === 'suspended') return no('BOOK_SUSPENDED', 'the provider marks this market suspended');
+    if (!f.executable_age) return no(f.state === 'EXPIRED' ? 'EXPIRED' : 'STALE');
+    return { executable: true, reason: null, state: f.state, age_minutes: f.age_minutes, text: f.text };
+  }
+
+  /* why a prop has, or has no, executable price (the page and the desk say
+     it; it never changes a number):
+       CURRENT            executable quotes on both sides
+       ONE_SIDED          executable quotes on one side only (side named)
+       STALE_QUOTE        quotes exist, none inside the window (freshness STALE / EXPIRED)
+       PROVIDER_FAILURE   the latest poll of this game failed and no quote is current
+       MARKET_CLOSED      a book dealt it, and has pulled it since
+       NO_CURRENT_QUOTE   no quote yet, and the game has not been polled (or not recently)
+       NO_MARKET          the game was polled successfully and no book offers it
+       GAME_STARTED       kickoff has passed
+       GAME_CANCELLED     cancelled or postponed
+     quotes: normalised (each with .exec, or it is computed here); ctx as
+     isExecutableQuote plus event { polled_ok_at, failed, attempted_at }. */
+  var PRICE_TEXT = {
+    CURRENT: 'Current prices', ONE_SIDED: 'Only one side is currently offered',
+    STALE_QUOTE: 'The last captured price is outside the execution window',
+    PROVIDER_FAILURE: 'The last price check for this game failed',
+    MARKET_CLOSED: 'The sportsbooks have pulled this market',
+    NO_CURRENT_QUOTE: 'This game has not been price-checked yet',
+    NO_MARKET: 'No sportsbook offers this prop', GAME_STARTED: 'The game has started', GAME_CANCELLED: 'The game was cancelled or postponed'
+  };
+  function priceStatus(quotes, ctx) {
+    ctx = ctx || {};
+    var now = ctx.now != null ? ms(ctx.now) : Date.now(), ev = ctx.event || {};
+    var qs = (quotes || []).map(function (q) { if (!q.exec) q.exec = isExecutableQuote(q, ctx); return q; });
+    var gs = String(ctx.game_status || '').toLowerCase(), kick = ms(ctx.kickoff);
+    var out = function (state, extra) { var o = { state: state, text: PRICE_TEXT[state] }; if (extra) Object.keys(extra).forEach(function (k) { o[k] = extra[k]; }); return o; };
+    if (gs === 'cancelled' || gs === 'postponed') return out('GAME_CANCELLED');
+    if (gs === 'in_progress' || gs === 'final' || (kick != null && now >= kick)) return out('GAME_STARTED');
+    var ex = qs.filter(function (q) { return q.exec.executable; });
+    var newest = null; qs.forEach(function (q) { var t = ms(q.captured_at); if (t != null && (newest == null || t > newest)) newest = t; });
+    var lastAge = newest != null ? r((now - newest) / 60000, 1) : null;
+    if (ex.length) {
+      var ov = ex.some(function (q) { return q.side === 'over'; }), un = ex.some(function (q) { return q.side === 'under'; });
+      var best = ex.reduce(function (a, q) { return !a || (ms(q.captured_at) || 0) > (ms(a.captured_at) || 0) ? q : a; }, null);
+      var fr = best.exec;
+      if (ov && un) return out('CURRENT', { freshness: fr.state, age_minutes: fr.age_minutes });
+      return out('ONE_SIDED', { freshness: fr.state, age_minutes: fr.age_minutes, side: ov ? 'over' : 'under', text: 'Only the ' + (ov ? 'Over' : 'Under') + ' is currently offered' });
+    }
+    var mk = String(ctx.market_status || '').toLowerCase();
+    if (mk === 'closed' || mk === 'removed') return out('MARKET_CLOSED', { closed_at: ctx.market_closed_at || null, last_seen_age_minutes: lastAge });
+    var failedLast = !!ev.failed && (ev.polled_ok_at == null || (ms(ev.attempted_at) || 0) >= (ms(ev.polled_ok_at) || 0));
+    if (qs.length) {
+      var f = quoteFreshness({ captured_at: newest }, now, ctx.freshness);
+      if (failedLast) return out('PROVIDER_FAILURE', { freshness: f.state, age_minutes: f.age_minutes, error: ev.error || null });
+      return out('STALE_QUOTE', { freshness: f.state, age_minutes: f.age_minutes });
+    }
+    if (failedLast) return out('PROVIDER_FAILURE', { error: ev.error || null });
+    /* "no book offers it" is only known from a successful poll; before one,
+       the honest answer is that nobody has asked yet */
+    var polled = ms(ev.polled_ok_at);
+    if (polled != null) return out('NO_MARKET', { checked_age_minutes: r(Math.max(0, now - polled) / 60000, 1) });
+    if (ctx.event) return out('NO_CURRENT_QUOTE');
+    return out('NO_MARKET');
+  }
+
+  /* the capture's interval for an event this many hours from kickoff
+     (minutes), or null once it has started */
+  function cadenceFor(hoursToKick, over) {
+    if (!isNum(hoursToKick) || hoursToKick <= 0) return null;
+    var C2 = freshCfg(over).cadence || FRESHNESS.cadence, i;
+    for (i = 0; i < C2.length; i++) if (C2[i].within_h == null || hoursToKick <= C2[i].within_h) return C2[i].every_min;
+    return C2[C2.length - 1].every_min;
+  }
+  /* minutes before a failed event is asked again: base × 2^(n−1), capped,
+     with ± jitter so a batch of failures does not retry in lockstep */
+  function retryDelay(failures, rnd, over) {
+    var R = freshCfg(over).retry, n = Math.max(1, failures || 1);
+    var d = Math.min(R.max_minutes, R.base_minutes * Math.pow(2, n - 1));
+    var j = isNum(rnd) ? rnd : 0.5;
+    return r(d * (1 - R.jitter + 2 * R.jitter * j), 2);
+  }
+
+  /* HEALTH of the price pipeline, from the capture's own state and each
+     active event's last successful poll (an active event is inside the
+     capture window and not started):
+       HEALTHY    ≥ health.healthy_share of active events refreshed inside
+                  their cadence target (+ grace), and the last run clean
+       DEGRADED   some events / books failed, or fewer than healthy_share on
+                  target — current prices remain where shown
+       DELAYED    fewer than delayed_share on target: most prices are old
+       OUTAGE     the provider or the ingestion is down: capture off, no key,
+                  the provider refusing (401 / 429), repeated failures, or no
+                  attempt at all for health.silent_hours
+     input: { now, capture {enabled, status, reason, last_attempt_at,
+       last_success_at, consecutive_failures, rate_limited_until,
+       error_message, window_h}, events [{ id, kickoff, polled_ok_at,
+       attempted_at, failed }], quotes { total, executable },
+       books { current [], delayed [] } } */
+  function systemHealth(input, over) {
+    input = input || {};
+    var F = freshCfg(over), H = F.health, now = input.now != null ? ms(input.now) : Date.now();
+    var cap = input.capture || {}, wh = isNum(cap.window_h) ? cap.window_h : 96;
+    var active = (input.events || []).filter(function (e) { var k = ms(e.kickoff); return k != null && k > now && k - now <= wh * 3600e3; });
+    var onTarget = 0, failed = 0, late = [];
+    active.forEach(function (e) {
+      var tgt = cadenceFor((ms(e.kickoff) - now) / 3600e3, F), t = ms(e.polled_ok_at);
+      var ok = t != null && tgt != null && now - t <= (tgt + H.grace_minutes) * 60000;
+      if (ok) onTarget++; else late.push(e.id);
+      if (e.failed) failed++;
+    });
+    var share = active.length ? onTarget / active.length : 1;
+    var q = input.quotes || {}, bk = input.books || {};
+    var lastAttempt = ms(cap.last_attempt_at), lastOk = ms(cap.last_success_at);
+    var rl = ms(cap.rate_limited_until);
+    var base = { now: new Date(now).toISOString(), active_events: active.length, on_target: onTarget, late_events: late, failed_events: failed, share: r(share, 3),
+      last_success_at: cap.last_success_at || null, last_attempt_at: cap.last_attempt_at || null, consecutive_failures: cap.consecutive_failures || 0,
+      rate_limited_until: rl != null && rl > now ? cap.rate_limited_until : null,
+      current_prices: isNum(q.executable) ? q.executable : null, total_prices: isNum(q.total) ? q.total : null,
+      books_current: (bk.current || []).slice(), books_delayed: (bk.delayed || []).slice(), error: cap.error_message || null, recovering: false };
+    var res = function (state, reason, text) { base.state = state; base.reason = reason; base.text = text; return base; };
+    var st = String(cap.status || '').toUpperCase(), rs = String(cap.reason || '').toUpperCase();
+    if (cap.enabled === false || rs === 'PROPS_CAPTURE_DISABLED') return res('OUTAGE', 'CAPTURE_OFF', 'The sportsbook price capture is switched off.');
+    if (rs === 'NO_API_KEY') return res('OUTAGE', 'NO_API_KEY', 'The price capture has no provider key.');
+    if (!active.length) return res('HEALTHY', 'NO_EVENTS_IN_WINDOW', 'No game is inside the price-capture window.');
+    base.recovering = true;
+    /* silence is judged against when the capture was next owed a poll: a game
+       six hours out legitimately goes hours between polls */
+    var nd = ms(cap.next_due_at);
+    var silent = nd != null ? now - nd > H.silent_minutes * 60000 : (lastAttempt == null || now - lastAttempt > H.silent_hours * 3600e3);
+    var refused = rs === 'PROVIDER_REFUSED' || cap.provider_http === 401 || cap.provider_http === 429 || (rl != null && rl > now);
+    var failing = (cap.consecutive_failures || 0) >= H.failures_for_outage || st === 'ERROR';
+    if (share < H.delayed_share && (silent || refused || failing)) {
+      return res('OUTAGE', silent ? 'SCHEDULER_SILENT' : refused ? 'PROVIDER_REFUSED' : 'PROVIDER_FAILING',
+        silent ? 'The price capture is overdue: no check has run for ' + (lastAttempt == null ? 'a long time' : ageText((now - lastAttempt) / 60000).replace(' old', '')) + '.'
+          : refused ? 'The odds provider is refusing requests' + (rl != null && rl > now ? ' until ' + new Date(rl).toISOString() : '') + '.'
+          : 'The price capture is failing' + (cap.error_message ? ': ' + String(cap.error_message).slice(0, 160) : '') + '.');
+    }
+    if (share < H.delayed_share) return res('DELAYED', 'PRICES_BEHIND', onTarget + ' of ' + active.length + ' games were price-checked on schedule.');
+    if (share < H.healthy_share || failed > 0 || st === 'PARTIAL' || (bk.delayed || []).length) {
+      return res('DEGRADED', failed ? 'SOME_EVENTS_FAILED' : (bk.delayed || []).length ? 'SOME_BOOKS_DELAYED' : st === 'PARTIAL' ? 'PARTIAL_CAPTURE' : 'SOME_EVENTS_LATE',
+        (bk.current || []).length + '/' + ((bk.current || []).length + (bk.delayed || []).length) + ' books current' + (failed ? ' · ' + failed + ' game' + (failed === 1 ? '' : 's') + ' failed their last check' : '') + '.');
+    }
+    return res('HEALTHY', 'ON_SCHEDULE', 'Every game was price-checked on schedule.');
+  }
+
+  /* INJURY / availability report freshness. The report's age lowers the
+     confidence it earns; a stale report is labelled, never treated as current.
+       CURRENT ≤ injury.current_hours · AGING ≤ injury.aging_hours · STALE older
+       NOT_PUBLISHED  no report on file (confidence already treats it as unknown) */
+  function injuryFreshness(asOf, now, over, published) {
+    var I = freshCfg(over).injury, at = ms(asOf), n = ms(now);
+    if (published === false || at == null) return { state: 'NOT_PUBLISHED', age_hours: null, factor: 1, text: 'no official report on file' };
+    var h = Math.max(0, (n - at) / 3600e3);
+    var st = h <= I.current_hours ? 'CURRENT' : h <= I.aging_hours ? 'AGING' : 'STALE';
+    return { state: st, age_hours: r(h, 1), factor: st === 'CURRENT' ? 1 : st === 'AGING' ? I.aging_factor : I.stale_factor,
+      text: (h < 1 ? 'under an hour' : h < 48 ? r(h, 1) + ' h' : r(h / 24, 1) + ' d') + ' old' };
+  }
+
   /* ======================================================= QUOTES
      A quote is { book, market, line, side, american, quoted_at, captured_at,
      alt }. Normalisation refuses — never repairs — an impossible price, drops
      an exact duplicate, keeps the latest capture per (book, line, side), and
      judges freshness on the capture time (the provider's own update time is
      reported beside it). */
-  function freshnessOf(q, now) {
-    var t = q.captured_at || q.quoted_at, M = MKT();
-    if (M && typeof M.freshness === 'function') return M.freshness(t, now, { fresh_minutes: CONFIG.fresh_minutes, max_minutes: CONFIG.max_quote_age_minutes });
-    var at = ms(t), n = ms(now);
-    if (at == null || n == null) return { state: 'UNKNOWN', age_minutes: null, text: 'capture time unknown' };
-    var m = (n - at) / 60000;
-    if (m < -5) return { state: 'FUTURE', age_minutes: r(m, 1), text: 'the capture time is in the future (clock fault)' };
-    var st = m <= CONFIG.fresh_minutes ? 'FRESH' : (m <= CONFIG.max_quote_age_minutes ? 'AGING' : 'STALE');
-    return { state: st, age_minutes: r(Math.max(0, m), 1), text: (m < 60 ? Math.round(Math.max(0, m)) + ' min' : r(m / 60, 1) + ' h') + ' old' };
-  }
-  function normalizeQuotes(quotes, market, now) {
+  function normalizeQuotes(quotes, market, now, over) {
     var out = [], refused = {}, seen = {};
     var refuse = function (why) { refused[why] = (refused[why] || 0) + 1; };
     var mdef = MARKETS[market];
@@ -26369,7 +26655,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       }
       seen[k] = q;
     });
-    Object.keys(seen).forEach(function (k) { var q = seen[k]; q.fresh = freshnessOf(q, now); out.push(q); });
+    Object.keys(seen).forEach(function (k) { var q = seen[k]; q.fresh = freshnessOf(q, now, over); out.push(q); });
     /* a book whose two sides of one number pay above fair is a broken feed */
     var bad = {};
     out.forEach(function (q) {
@@ -26385,9 +26671,15 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
   }
   /* the main number of each book (a non-alternate two-sided line; else its
      non-alternate one-sided line) and the market consensus from them */
-  function consensusOf(quotes, now, includeStale) {
+  function consensusOf(quotes, now, includeStale, ctx) {
     var byBook = {};
-    quotes.forEach(function (q) { if (q.alt || (!includeStale && q.fresh && (q.fresh.state === 'STALE' || q.fresh.state === 'FUTURE'))) return; (byBook[q.book] = byBook[q.book] || []).push(q); });
+    quotes.forEach(function (q) {
+      if (q.alt) return;
+      /* the consensus is built from executable quotes only (isExecutableQuote);
+         includeStale builds the reference view from everything on file */
+      if (!includeStale) { if (!q.exec) q.exec = isExecutableQuote(q, ctx || { now: now }); if (!q.exec.executable) return; }
+      (byBook[q.book] = byBook[q.book] || []).push(q);
+    });
     var books = Object.keys(byBook).sort(), mains = [];
     books.forEach(function (b) {
       var qs = byBook[b], lines = {};
@@ -26493,6 +26785,12 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     c.injury = st === 'QUESTIONABLE' ? 0.55 : st === 'DOUBTFUL' ? 0.25 : st === 'OUT' ? 0 : (ctx.report_on_file === false ? 0.7 : 1);
     if (ctx.teammate_uncertain) c.injury = Math.max(0, c.injury - 0.1);
     if (ctx.report_on_file === false) notes.push('no official injury report on file');
+    /* an old availability report is not a current one: it earns less */
+    var inj = ctx.injury_freshness;
+    if (inj && isNum(inj.factor) && inj.factor < 1 && ctx.report_on_file !== false) {
+      c.injury = c.injury * inj.factor;
+      notes.push('the injury report is ' + inj.text + ' (' + inj.state + ')');
+    }
     var dis = isNum(ctx.disagreement_pp) ? Math.abs(ctx.disagreement_pp) : null;
     c.agreement = dis == null ? 0.6 : 1 - clamp((dis - 6) / 15, 0, 0.6);
     var hd = isNum(ctx.history_gap_pp) ? Math.abs(ctx.history_gap_pp) : null;
@@ -26544,11 +26842,24 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     INVALID_DISTRIBUTION: 'The projection distribution failed its self-check.',
     UNSUPPORTED_MARKET: 'EdgeDesk has no distribution for this market.',
     NO_MARKET: 'No sportsbook price is on file for this prop.',
-    STALE_QUOTE: 'Every captured price is past the 90-minute decision limit.'
+    /* the price blockers: the model stands, the market does not */
+    STALE_QUOTE: 'No captured price is inside the execution window: wait for a current price.',
+    NO_CURRENT_QUOTE: 'This game has not been price-checked yet: wait for a current price.',
+    PROVIDER_FAILURE: 'The last price check for this game failed: wait for a current price.',
+    MARKET_CLOSED: 'The sportsbooks have pulled this market.'
   };
+  /* blockers that are about the PRICE alone: the projection, fair line and
+     confidence stand, and the prop waits for a current market */
+  var PRICE_BLOCKERS = { STALE_QUOTE: 1, NO_CURRENT_QUOTE: 1, PROVIDER_FAILURE: 1 };
+  function blockText(code, F) { return code === 'STALE_QUOTE' ? 'No captured price is inside the ' + freshCfg(F).executable_max_minutes + '-minute execution window: wait for a current price.' : BLOCK_TEXT[code]; }
+  /* the words a NO_DECISION reads as, by its first blocker */
+  var NO_DECISION_LABEL = { STALE_QUOTE: 'WAIT FOR PRICE', NO_CURRENT_QUOTE: 'WAIT FOR PRICE', PROVIDER_FAILURE: 'WAIT FOR PRICE',
+    NO_MARKET: 'NO MARKET', MARKET_CLOSED: 'MARKET CLOSED', GAME_STARTED: 'GAME STARTED', GAME_CANCELLED: 'GAME CANCELLED' };
+  function noDecisionLabel(code) { return NO_DECISION_LABEL[code] || 'NO DECISION'; }
   function evaluate(prop, opts) {
     opts = opts || {};
     var now = opts.now != null ? ms(opts.now) : Date.now();
+    var FC = freshCfg(opts.freshness);
     var cal = calibrationOf(opts.calibration);
     var w = isNum(opts.market_weight) ? opts.market_weight : CONFIG.market_weight;
     var mdef = MARKETS[prop.market];
@@ -26560,15 +26871,28 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       probability_source: cal.source, probability_label: cal.label, calibration: cal, market_weight: w,
       stage: opts.stages ? stageOfMarket(opts.stages, prop.market) : null
     };
-    var norm = normalizeQuotes(prop.quotes || [], prop.market, now);
+    var norm = normalizeQuotes(prop.quotes || [], prop.market, now, FC);
     out.refused = norm.refused;
     var quotes = norm.quotes;
-    var fresh = quotes.filter(function (q) { return q.fresh.state !== 'STALE' && q.fresh.state !== 'FUTURE'; });
-    var cons = consensusOf(quotes, now);
+    /* THE gate: every quote is judged once, by isExecutableQuote, and only an
+       executable one ever reaches the consensus, the ladder, the best price,
+       the EV, the decision or the stake */
+    var xctx = { now: now, kickoff: prop.kickoff, game_status: prop.game_status, market_status: prop.market_status, provider_status: prop.provider_status, freshness: FC };
+    quotes.forEach(function (q) { q.exec = isExecutableQuote(q, xctx); });
+    var fresh = quotes.filter(function (q) { return q.exec.executable; });
+    var cons = consensusOf(quotes, now, false, xctx);
+    out.price_status = priceStatus(quotes, { now: now, kickoff: prop.kickoff, game_status: prop.game_status, market_status: prop.market_status,
+      market_closed_at: prop.market_closed_at || null, event: prop.event || null, freshness: FC });
     if (!cons.n_books && quotes.length) {
-      /* nothing fresh: the last numbers seen, for display only — never priced */
+      /* nothing executable: the last numbers seen, for reference only — never
+         priced — with the best last price per side, its book and its age */
       var last = consensusOf(quotes, now, true);
-      out.last_seen = { line: last.line, over: last.over, under: last.under, n_books: last.n_books, stale: true };
+      var lastBest = function (side) {
+        var at = quotes.filter(function (q) { return q.side === side && !q.alt && q.line === last.line; }), b = null;
+        at.forEach(function (q) { if (!b || priceBetter(q.american, b.american)) b = q; });
+        return b ? { american: b.american, book: b.book, captured_at: b.captured_at, age_minutes: b.exec.age_minutes, freshness: b.exec.state } : null;
+      };
+      out.last_seen = { line: last.line, over: last.over, under: last.under, n_books: last.n_books, stale: true, best_over: lastBest('over'), best_under: lastBest('under') };
     }
     out.consensus = { line: cons.line, over: cons.over, under: cons.under, novig_over: r(cons.novig_over, 4), novig_under: r(cons.novig_under, 4),
       n_books: cons.n_books, n_two_sided: cons.n_two_sided, novig_books: cons.novig_books, overround: r(cons.overround, 4), dispersion: cons.dispersion };
@@ -26585,8 +26909,13 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     if (String((prop.player_status || {}).status || '').toUpperCase() === 'OUT') out.blockers.push('PLAYER_OUT');
     var distRaw = P.dist && validDist(P.dist) ? P.dist : null;
     if (!P.dist) out.blockers.push('NO_PROJECTION'); else if (!distRaw) out.blockers.push('INVALID_DISTRIBUTION');
-    if (!quotes.length) out.blockers.push('NO_MARKET');
-    else if (!fresh.length) out.blockers.push('STALE_QUOTE');
+    /* the price blocker says WHY there is no executable price (priceStatus) */
+    var ps = out.price_status.state;
+    if (ps === 'MARKET_CLOSED') out.blockers.push('MARKET_CLOSED');
+    else if (!quotes.length) out.blockers.push(ps === 'NO_CURRENT_QUOTE' || ps === 'PROVIDER_FAILURE' ? ps : 'NO_MARKET');
+    else if (!fresh.length && ps !== 'GAME_STARTED' && ps !== 'GAME_CANCELLED') out.blockers.push(ps === 'PROVIDER_FAILURE' ? 'PROVIDER_FAILURE' : 'STALE_QUOTE');
+    /* the price, and nothing else, is what is missing: the model stands */
+    out.waiting_for_price = out.blockers.length > 0 && out.blockers.every(function (b) { return PRICE_BLOCKERS[b]; });
 
     /* ---- the distributions: raw, market-implied, informed */
     var pushable = true;
@@ -26626,6 +26955,13 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
           fair_over: fairAmerican(pc.over, pc.push), fair_under: fairAmerican(pc.under, pc.push),
           fair_line: out.informed ? out.informed.median : null };
         if (isNum(cons.novig_over)) out.disagreement_pp = r(100 * (pc.over / Math.max(1e-9, pc.over + pc.under) - cons.novig_over), 2);
+      } else if (out.last_seen && isNum(out.last_seen.line)) {
+        /* MODEL OPINION at the last line a book dealt, while no price is
+           executable: the research stands, labelled reference — it prices
+           nothing, and the model is not blended with the expired market */
+        var pl0 = probLine(distInf, out.last_seen.line);
+        if (pl0) out.at_reference = { line: out.last_seen.line, over: r(pl0.over, 4), under: r(pl0.under, 4), push: r(pl0.push, 4),
+          fair_over: fairAmerican(pl0.over, pl0.push), fair_under: fairAmerican(pl0.under, pl0.push), fair_line: out.informed ? out.informed.median : null, reference: true };
       }
       if (prop.history && Array.isArray(prop.history.values) && prop.history.values.length >= 3 && isNum(cons.line)) {
         var emp = { family: 'empirical', values: prop.history.values, weights: prop.history.weights || null, bw: Math.max(1, (out.raw.sd || 1) * 0.35) };
@@ -26698,10 +27034,15 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     if (st === 'QUESTIONABLE' || st === 'DOUBTFUL') material.push('player ' + st.toLowerCase());
     if (P.qb_change) material.push('starting QB change');
     if (P.teammate_uncertain) material.push('teammate status unresolved');
+    /* the availability report's own age: a STALE report is open uncertainty
+       (labelled, and it caps any stake), never read as current */
+    var injF = prop.injury_as_of !== undefined || prop.injury_published !== undefined ? injuryFreshness(prop.injury_as_of, now, FC, prop.injury_published) : null;
+    out.injury_freshness = injF;
+    if (injF && injF.state === 'STALE' && prop.report_on_file !== false) { material.push('injury report ' + injF.text); out.warnings.push('INJURY_DATA_STALE'); }
     var conf = confidence({ sample_games: sampleGames, prior_games: num(P.prior_games) || 0, role_stability: P.role_stability, completeness: P.completeness,
       n_two_sided: cons.n_two_sided, n_books: cons.n_books, age_minutes: cand ? cand.fresh.age_minutes : null, player_status: st,
       report_on_file: prop.report_on_file, teammate_uncertain: !!P.teammate_uncertain, disagreement_pp: out.disagreement_pp,
-      history_gap_pp: out.history_gap_pp, calibration: opts.calibration });
+      history_gap_pp: out.history_gap_pp, calibration: opts.calibration, injury_freshness: injF });
     out.confidence = conf;
 
     /* ---- Layer B */
@@ -26750,7 +27091,10 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     var V = VOC(), dv = V && V.DECISION ? V.DECISION[decision === 'NO_DECISION' ? 'NO_DECISION' : decision] : null;
     out.decision_label = dv ? dv.label : decision.replace('_', ' ');
     out.tone = dv ? dv.tone : ({ BET: 'bet', LEAN: 'lean', WATCH: 'watch', PASS: 'pass' })[decision] || 'none';
-    out.blocker_text = out.blockers.length ? BLOCK_TEXT[out.blockers[0]] : null;
+    /* a prop missing only its price is NO_DECISION to every reader of the
+       decision (nothing is actionable) and says what it is waiting for */
+    if (decision === 'NO_DECISION') out.decision_label = noDecisionLabel(code);
+    out.blocker_text = out.blockers.length ? blockText(out.blockers[0], FC) : null;
 
     /* ---- units (BET only), dollars from the reader's unit */
     out.units = 0; out.tier = null;
@@ -26803,7 +27147,17 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     if (ev.caps && ev.caps.length) o.caps = ev.caps.map(function (x) { return x.code; });
     if (ev.warnings && ev.warnings.length) o.w = ev.warnings;
     if (ev.blockers && ev.blockers.length) o.b = ev.blockers;
-    if (ev.last_seen) o.ls = [ev.last_seen.line, ev.last_seen.over, ev.last_seen.under];
+    if (ev.last_seen) {
+      var bo = ev.last_seen.best_over, bu = ev.last_seen.best_under;
+      /* [line, over, under, best over (price, book, captured_at), best under (…)] — reference only */
+      o.ls = [ev.last_seen.line, ev.last_seen.over, ev.last_seen.under, bo ? bo.american : null, bo ? bo.book : null, bo ? bo.captured_at : null, bu ? bu.american : null, bu ? bu.book : null, bu ? bu.captured_at : null];
+    }
+    /* why there is (or is not) an executable price: [state, freshness, age_minutes, one-sided side] */
+    var ps = ev.price_status;
+    if (ps && ps.state !== 'CURRENT') o.ps = [ps.state, ps.freshness || null, ps.age_minutes != null ? ps.age_minutes : (ps.checked_age_minutes != null ? ps.checked_age_minutes : null), ps.side || null];
+    /* the model's view at the last line seen, while no price is executable */
+    if (ev.at_reference) o.ref = [ev.at_reference.line, ev.at_reference.over, ev.at_reference.under, ev.at_reference.fair_over, ev.at_reference.fair_under];
+    if (ev.waiting_for_price) o.wp = 1;
     return o;
   }
 
@@ -27297,7 +27651,15 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       mapped: !!r.p && x.mp !== 0, player_status: pl ? pl.status : null, report_on_file: pl && pl.status ? pl.status.on_file : null,
       projection: x.dist ? { dist: x.dist, sample_games: x.sg, prior_games: x.pg, role_stability: x.rs, completeness: x.cp, qb_change: !!x.qc, qb_unconfirmed: !!x.qu, teammate_uncertain: !!x.tu, anchor: x.an || null } : null,
       quotes: (r.q || []).map(function (a) { return { book: a[0], line: a[1], side: a[2] === 'o' ? 'over' : 'under', american: a[3], quoted_at: times[a[4]] || null, captured_at: times[a[5]] || null, alt: !!a[6] }; }),
-      history: x.h && x.h.length >= 3 ? { values: x.h } : null
+      history: x.h && x.h.length >= 3 ? { values: x.h } : null,
+      /* the game's own price-check record (build_board.js games[].capture) and
+         a market the books have pulled since (x.mc = when): what priceStatus
+         reads to say WHY a prop has no executable price */
+      event: g.capture ? { polled_ok_at: g.capture.polled_ok_at || null, attempted_at: g.capture.attempted_at || null, failed: !!g.capture.failed, error: g.capture.error || null } : null,
+      market_status: x.mc ? 'closed' : null, market_closed_at: x.mc || null,
+      /* the availability report's age (injuryFreshness) */
+      injury_as_of: b.sources && b.sources.injuries ? b.sources.injuries.retrieved_at || null : undefined,
+      injury_published: b.sources && b.sources.injuries ? b.sources.injuries.published !== false : undefined
     };
   }
   /* the opponent's rank in the metric that leads this prop's kind (the
@@ -27321,7 +27683,9 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
   function boardEval(b, r, now) {
     if (!b._shapes_registered) { Object.keys(b.shapes || {}).forEach(function (k) { registerShape(k, b.shapes[k]); }); b._shapes_registered = true; }
     var pr = b.probability;
-    return evaluate(boardInput(b, r, now), { now: now != null ? now : Date.now(), calibration: pr ? { state: pr.state, n: pr.n, ece: pr.ece } : null, market_weight: b.market_weight, stages: b.stages || null });
+    /* the board's own thresholds (the build's environment) so the page, the
+       desk and the build judge every price by the same numbers */
+    return evaluate(boardInput(b, r, now), { now: now != null ? now : Date.now(), calibration: pr ? { state: pr.state, n: pr.n, ece: pr.ece } : null, market_weight: b.market_weight, stages: b.stages || null, freshness: b._fc || (b._fc = freshCfg(b.freshness || null)) });
   }
 
   /* ======================================================= MOVEMENT
@@ -27342,7 +27706,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
   return {
     VERSION: VERSION, SCHEMA: SCHEMA, CONFIG: CONFIG, DECISION_FALLBACK: DECISION_FALLBACK, decisionConfig: decisionConfig,
     MARKETS: MARKETS, CATEGORIES: CATEGORIES, SPORTS: SPORTS, FAMILIES: FAMILIES,
-    marketOf: marketOf, categoryOf: categoryOf, providerMarket: providerMarket, providerKeys: providerKeys,
+    marketOf: marketOf, categoryOf: categoryOf, providerMarket: providerMarket, providerKeys: providerKeys, LINE_MAX: LINE_MAX, lineSane: lineSane,
     /* numerics + distributions */
     lgamma: lgamma, gammaP: gammaP, gammaCdf: gammaCdf, normCdf: normCdf, countPmf: countPmf, countPgf: countPgf,
     validDist: validDist, cdfInt: cdfInt, registerShape: registerShape, shapes: function () { return SHAPES; }, pmfInt: pmfInt, mean: meanOf, variance: varOf, quantile: quantile, summary: summary,
@@ -27353,6 +27717,10 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     /* quotes, pricing, decision */
     sideOf: sideOf, sideLabel: sideLabel, selectionText: selectionText, normalizeQuotes: normalizeQuotes, consensusOf: consensusOf,
     freshnessOf: freshnessOf, evaluate: evaluate, compact: compact, confidence: confidence, calibrationOf: calibrationOf, sizing: sizing, valueScore: valueScore,
+    /* freshness & executability — the one rule */
+    FRESHNESS: FRESHNESS, freshCfg: freshCfg, configureFreshness: configureFreshness, freshnessSnapshot: freshnessSnapshot, quoteFreshness: quoteFreshness,
+    isExecutableQuote: isExecutableQuote, priceStatus: priceStatus, PRICE_TEXT: PRICE_TEXT, systemHealth: systemHealth, injuryFreshness: injuryFreshness,
+    cadenceFor: cadenceFor, retryDelay: retryDelay, noDecisionLabel: noDecisionLabel, PRICE_BLOCKERS: PRICE_BLOCKERS, ageText: ageText,
     triggerFor: triggerFor, stake: stake, evDollars: evDollars,
     /* research */
     hitRates: hitRates, explain: explain, movement: movement, statOf: statOf, factsFor: factsFor, BLOCK_TEXT: BLOCK_TEXT,
@@ -27567,7 +27935,14 @@ const EDProps: any = (globalThis as any).EDProps;
     var st = ctx.status && ctx.status.status;
     if (st) L.push('Status: ' + st + (ctx.status.practice ? ' (' + ctx.status.practice + ' practice)' : '') + '.');
     if (!ev.n_quotes) L.push('No sportsbook price is captured for this prop, so EdgeDesk shows its projection only and claims no expected value.');
-    else if (!c.n_books) L.push('Every captured price is past the 90-minute decision limit, so EdgeDesk decides nothing on it.');
+    else if (!c.n_books) {
+      /* EDProps' one rule: no captured price is executable, so none is priced;
+         the projection above stands, and the last price seen is reference only */
+      var ps = ev.price_status || {}, win = E.FRESHNESS ? E.FRESHNESS.executable_max_minutes : 30;
+      L.push(ps.state === 'PROVIDER_FAILURE' ? 'The last price check for this game failed and no captured price is current, so EdgeDesk decides nothing on it until prices return.'
+        : ps.state === 'MARKET_CLOSED' ? 'The sportsbooks have pulled this market, so EdgeDesk decides nothing on it.'
+        : 'No captured price is inside the ' + win + '-minute execution window' + (num(ps.age_minutes) ? ' (the newest is ' + E.ageText(ps.age_minutes) + ')' : '') + ', so EdgeDesk decides nothing on it and waits for a current price.');
+    }
     else {
       L.push((yesno ? 'Captured by ' + c.n_books + ' book' + (c.n_books === 1 ? '' : 's') + '.' : 'The books’ consensus line is ' + c.line + ' (' + c.n_books + ' book' + (c.n_books === 1 ? '' : 's') + ').') +
         (ac && !yesno ? ' At that line EdgeDesk has P(Over) ' + pct(ac.over) + ' and P(Under) ' + pct(ac.under) + ' (fair odds ' + am(ac.fair_over) + ' / ' + am(ac.fair_under) + ')' + (num(c.novig_over) ? ', against a no-vig market of ' + pct(c.novig_over) + ' for the Over.' : '.') : ''));
@@ -27594,12 +27969,13 @@ const EDProps: any = (globalThis as any).EDProps;
     if (qt && num(qt.line) && (qt.side === 'over' || qt.side === 'under') && !yesno) {
       /* a captured price stands in for a missing one only while it is inside
          the decision window: a stale price is never priced as current */
-      var quotes = E.boardInput(board, row, now).quotes;
+      var inp = E.boardInput(board, row, now), quotes = inp.quotes;
       var dealt = quotes.filter(function (q) { return q.side === qt.side && Math.abs(q.line - qt.line) < 1e-9 && (!qt.book || q.book === qt.book); });
-      var atLine = dealt.filter(function (q) { var fr = E.freshnessOf(q, now).state; return fr === 'FRESH' || fr === 'AGING'; }).sort(function (a, b) { return dec(b.american) - dec(a.american); });
+      var xc = { now: now, kickoff: inp.kickoff, game_status: inp.game_status, market_status: inp.market_status, freshness: board.freshness || null };
+      var atLine = dealt.filter(function (q) { return E.isExecutableQuote(q, xc).executable; }).sort(function (a, b) { return dec(b.american) - dec(a.american); });
       var price = num(qt.american) ? qt.american : (atLine[0] ? atLine[0].american : null);
       var same = cand && cand.side === qt.side && Math.abs(cand.line - qt.line) < 1e-9 && cand.american === price;
-      if (price == null) L.push((dealt.length ? 'Every captured price for ' + side(qt.side) + ' ' + qt.line + ' is past the decision window' : 'No captured book deals ' + side(qt.side) + ' ' + qt.line) + ', and no price was given, so EdgeDesk will not price it (it never assumes −110).');
+      if (price == null) L.push((dealt.length ? 'Every captured price for ' + side(qt.side) + ' ' + qt.line + ' is past the execution window' : 'No captured book deals ' + side(qt.side) + ' ' + qt.line) + ', and no price was given, so EdgeDesk will not price it (it never assumes −110).');
       else if (!same) {
         var pr = E.probLine(ev._dist.informed, qt.line), pw = qt.side === 'over' ? pr.over : pr.under, ppush = pr.push, dd = dec(price);
         var evq = pw * (dd - 1) - (1 - pw - ppush), be = 1 / dd, cover = pw / Math.max(1e-9, 1 - ppush);
@@ -27864,8 +28240,10 @@ const EDPROPSDESK: any = (globalThis as any).EDPROPSDESK;
   function classifyPropDecision(prop, opts) { return PR().evaluate(prop, opts); }
   function classifyBoardRow(board, row, now) { return PR().boardEval(board, row, now); }
 
-  /* the price's age judged NOW (EDMarket.freshness through EDProps) */
+  /* the price's age judged NOW, and whether it may still be acted on: both
+     EDProps' one rule (quoteFreshness / isExecutableQuote), never a copy */
   function freshness(at, now) { return PR().freshnessOf({ captured_at: at }, now); }
+  function windowMinutes() { var P = PR(); return P && P.FRESHNESS ? P.FRESHNESS.executable_max_minutes : 30; }
 
   /* A decision made at build time is re-judged at view time for the two
      things time alone changes: the price aged past the decision window, or
@@ -27875,14 +28253,15 @@ const EDPROPSDESK: any = (globalThis as any).EDPROPSDESK;
     if (!o || o.type !== 'PLAYER_PROP') return o;
     var t = ms(now) || Date.now();
     var kick = o.event ? ms(o.event.kickoff) : null;
+    var x = null;
     if (o.price && o.price.captured_at) {
-      var f = freshness(o.price.captured_at, t);
-      o.price.fresh = f.state; o.price.age_minutes = f.age_minutes;
+      x = PR().isExecutableQuote({ captured_at: o.price.captured_at, american: o.price.american, line: o.selection ? o.selection.line : null }, { now: t, kickoff: o.event ? o.event.kickoff : null });
+      o.price.fresh = x.state; o.price.age_minutes = x.age_minutes; o.price.executable = x.executable;
     }
     var why = null;
     if (kick != null && t >= kick) why = ['GAME_STARTED', 'The game has started: pregame props are closed.'];
-    else if (o.price && (o.price.fresh === 'STALE' || o.price.fresh === 'FUTURE' || o.price.fresh === 'UNKNOWN') && o.decision !== 'NO_DECISION')
-      why = ['STALE_QUOTE', 'The price EdgeDesk evaluated is ' + (isNum(o.price.age_minutes) ? Math.round(o.price.age_minutes) + ' minutes' : 'of unknown') + ' old: past the 90-minute decision window.'];
+    else if (o.price && o.decision !== 'NO_DECISION' && (!o.price.captured_at || (x && !x.executable)))
+      why = ['STALE_QUOTE', 'The price EdgeDesk evaluated is ' + (isNum(o.price.age_minutes) ? Math.round(o.price.age_minutes) + ' minutes' : 'of unknown') + ' old: past the ' + windowMinutes() + '-minute execution window. Wait for a current price.'];
     if (why) {
       if (o.decision !== 'NO_DECISION' && !o.evaluated) o.evaluated = { decision: o.decision, decision_label: o.decision_label, tone: o.tone, code: o.code, reason: o.reason, units: o.units };
       if (o.evaluated) o.evaluated_decision = o.evaluated.decision;
@@ -28081,6 +28460,7 @@ const EDPROPSDESK: any = (globalThis as any).EDPROPSDESK;
     var F = {}, f = 1, pl = o.player || {};
     if (fresh === 'AGING') F.freshness = R.factor.aging;
     else if (fresh !== 'FRESH') F.freshness = R.factor.stale;
+    if (o.price && o.price.executable === false) F.freshness = 0;
     if (isNum(pl.sample_games) && pl.sample_games < P.CONFIG.caps.min_games) F.sample = R.factor.thin_sample;
     if (isNum(pl.role_stability) && pl.role_stability < P.CONFIG.caps.role_stability) F.role = R.factor.role_unstable;
     var sts = String(pl.status || '').toUpperCase();
@@ -28104,7 +28484,7 @@ const EDPROPSDESK: any = (globalThis as any).EDPROPSDESK;
     out.score = r(Math.max(0, base * f - p), 1);
     var priced = !!(o.price && isNum(o.price.american));
     if (!priced) out.reasons.push('no sportsbook price');
-    if (fresh !== 'FRESH' && fresh !== 'AGING') out.reasons.push('price not fresh');
+    if ((fresh !== 'FRESH' && fresh !== 'AGING') || (o.price && o.price.executable === false)) out.reasons.push('price not executable');
     if (!(isNum(o.ev) && o.ev > 0)) out.reasons.push('no positive EV');
     else if (!(isNum(o.edge_pp) && o.edge_pp >= T.lean.min_edge_pp)) out.reasons.push('edge below ' + T.lean.min_edge_pp + ' pp');
     if (!(isNum(o.confidence) && o.confidence >= P.CONFIG.caps.min_confidence)) out.reasons.push('confidence below ' + P.CONFIG.caps.min_confidence);
@@ -28433,7 +28813,7 @@ const EDPROPSDESK: any = (globalThis as any).EDPROPSDESK;
   /* how many props the engine evaluated: 0 is a count, not a missing field
      (only a summary built before evaluated_props existed reads the priced count) */
   function evaluatedCount(ev) { return !ev ? 0 : isNum(ev.evaluated_props) ? ev.evaluated_props : (ev.priced_props || 0); }
-  /* priced, yet none evaluated: every quote was past the 90-minute window when
+  /* priced, yet none evaluated: every quote was past the execution window when
      the summary was built, or its player had no projection to price */
   function pricedNotEvaluated(ev) { return !!ev && isNum(ev.evaluated_props) && ev.evaluated_props === 0 && (ev.priced_props || 0) > 0; }
   /* the one-line empty state for a game's props, by what actually happened */
@@ -28441,8 +28821,8 @@ const EDPROPSDESK: any = (globalThis as any).EDPROPSDESK;
     if (!ev) return 'No player props for this game are on the current board.';
     var c = ev.capture || {};
     if (c.state && c.state !== 'PRICED') return c.text;
-    if (ev.stale_now) return 'The player-prop prices EdgeDesk evaluated for this game are past the 90-minute decision window. Nothing is ranked on an old price.';
-    if (pricedNotEvaluated(ev)) return 'None of the ' + ev.priced_props + ' priced props could be evaluated when the summary was built: a price past the 90-minute decision window, or a player without a projection, is not evaluated.';
+    if (ev.stale_now) return 'The player-prop prices EdgeDesk evaluated for this game are past the ' + windowMinutes() + '-minute execution window. Nothing is ranked on an old price; the projections stand while the prices refresh.';
+    if (pricedNotEvaluated(ev)) return 'None of the ' + ev.priced_props + ' priced props could be evaluated when the summary was built: a price past the ' + windowMinutes() + '-minute execution window, or a player without a projection, is not evaluated.';
     return evaluatedCount(ev) + ' props evaluated. No player props currently meet EdgeDesk’s research threshold. This is a valid result.';
   }
 

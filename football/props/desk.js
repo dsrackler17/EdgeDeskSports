@@ -194,7 +194,14 @@
     var st = ctx.status && ctx.status.status;
     if (st) L.push('Status: ' + st + (ctx.status.practice ? ' (' + ctx.status.practice + ' practice)' : '') + '.');
     if (!ev.n_quotes) L.push('No sportsbook price is captured for this prop, so EdgeDesk shows its projection only and claims no expected value.');
-    else if (!c.n_books) L.push('Every captured price is past the 90-minute decision limit, so EdgeDesk decides nothing on it.');
+    else if (!c.n_books) {
+      /* EDProps' one rule: no captured price is executable, so none is priced;
+         the projection above stands, and the last price seen is reference only */
+      var ps = ev.price_status || {}, win = E.FRESHNESS ? E.FRESHNESS.executable_max_minutes : 30;
+      L.push(ps.state === 'PROVIDER_FAILURE' ? 'The last price check for this game failed and no captured price is current, so EdgeDesk decides nothing on it until prices return.'
+        : ps.state === 'MARKET_CLOSED' ? 'The sportsbooks have pulled this market, so EdgeDesk decides nothing on it.'
+        : 'No captured price is inside the ' + win + '-minute execution window' + (num(ps.age_minutes) ? ' (the newest is ' + E.ageText(ps.age_minutes) + ')' : '') + ', so EdgeDesk decides nothing on it and waits for a current price.');
+    }
     else {
       L.push((yesno ? 'Captured by ' + c.n_books + ' book' + (c.n_books === 1 ? '' : 's') + '.' : 'The books’ consensus line is ' + c.line + ' (' + c.n_books + ' book' + (c.n_books === 1 ? '' : 's') + ').') +
         (ac && !yesno ? ' At that line EdgeDesk has P(Over) ' + pct(ac.over) + ' and P(Under) ' + pct(ac.under) + ' (fair odds ' + am(ac.fair_over) + ' / ' + am(ac.fair_under) + ')' + (num(c.novig_over) ? ', against a no-vig market of ' + pct(c.novig_over) + ' for the Over.' : '.') : ''));
@@ -221,12 +228,13 @@
     if (qt && num(qt.line) && (qt.side === 'over' || qt.side === 'under') && !yesno) {
       /* a captured price stands in for a missing one only while it is inside
          the decision window: a stale price is never priced as current */
-      var quotes = E.boardInput(board, row, now).quotes;
+      var inp = E.boardInput(board, row, now), quotes = inp.quotes;
       var dealt = quotes.filter(function (q) { return q.side === qt.side && Math.abs(q.line - qt.line) < 1e-9 && (!qt.book || q.book === qt.book); });
-      var atLine = dealt.filter(function (q) { var fr = E.freshnessOf(q, now).state; return fr === 'FRESH' || fr === 'AGING'; }).sort(function (a, b) { return dec(b.american) - dec(a.american); });
+      var xc = { now: now, kickoff: inp.kickoff, game_status: inp.game_status, market_status: inp.market_status, freshness: board.freshness || null };
+      var atLine = dealt.filter(function (q) { return E.isExecutableQuote(q, xc).executable; }).sort(function (a, b) { return dec(b.american) - dec(a.american); });
       var price = num(qt.american) ? qt.american : (atLine[0] ? atLine[0].american : null);
       var same = cand && cand.side === qt.side && Math.abs(cand.line - qt.line) < 1e-9 && cand.american === price;
-      if (price == null) L.push((dealt.length ? 'Every captured price for ' + side(qt.side) + ' ' + qt.line + ' is past the decision window' : 'No captured book deals ' + side(qt.side) + ' ' + qt.line) + ', and no price was given, so EdgeDesk will not price it (it never assumes −110).');
+      if (price == null) L.push((dealt.length ? 'Every captured price for ' + side(qt.side) + ' ' + qt.line + ' is past the execution window' : 'No captured book deals ' + side(qt.side) + ' ' + qt.line) + ', and no price was given, so EdgeDesk will not price it (it never assumes −110).');
       else if (!same) {
         var pr = E.probLine(ev._dist.informed, qt.line), pw = qt.side === 'over' ? pr.over : pr.under, ppush = pr.push, dd = dec(price);
         var evq = pw * (dd - 1) - (1 - pw - ppush), be = 1 / dd, cover = pw / Math.max(1e-9, 1 - ppush);
