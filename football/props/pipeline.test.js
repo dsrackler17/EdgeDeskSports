@@ -45,6 +45,7 @@ const M = require('./model.js');
 const B = require('./build_board.js');
 const G = require('./grade.js');
 const SY = require('./sync_supabase.js');
+const V = require('./verify_ledger.js');
 const { fakePgrest } = require(path.join(ROOT, 'tools', 'lib', 'fake_pgrest.js'));
 
 let pass = 0, fail = 0; const failures = [];
@@ -55,6 +56,8 @@ const EVENT = JSON.parse(fs.readFileSync(path.join(FX, 'odds_event_nfl.json'), '
 const NOW = Date.parse('2026-10-04T15:10:00Z');
 const OBS = '2026-10-04T15:05:00.000Z';
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'edp-props-'));
+const B_KEY = (r) => r.key || r.id || ('nfl|' + r.g + '|' + r.p + '|' + r.m);
+const U_INPUT = (board, r) => EDP.boardInput(board, r, NOW);
 const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Object.keys(p).forEach((k) => { map[k] = p[k].replace(C.DIR, tmp); }); return map; };
 
 (async function main() {
@@ -181,8 +184,11 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('player context is per player and game', Object.keys(board.players).every((k) => /@/.test(k)));
   chk('the page re-prices a row to the same decision the build wrote', (() => {
     const U = require(path.join(ROOT, 'lib', 'edgedesk_props_ui.js')); U.state.clock = () => NOW; U._prepBoard(board);
-    return priced.every((r) => { const e = EDP.compact(EDP.evaluate(U._inputOf(board, r), { now: NOW, calibration: { state: board.probability.state } })); return e.d === r.e.d && JSON.stringify(e.cand) === JSON.stringify(r.e.cand); });
+    return priced.every((r) => { const e = EDP.compact(EDP.evaluate(U._inputOf(board, r), { now: NOW, calibration: { state: board.probability.state }, stages: board.stages })); return e.d === r.e.d && JSON.stringify(e.cand) === JSON.stringify(r.e.cand); });
   })());
+  chk('the board carries each of its markets\' validation stage, derived from evidence', board.stages && Object.keys(board.stages).length > 0 && Object.keys(board.stages).every((m) => EDP.STAGES.indexOf(board.stages[m].stage) >= 0 && Array.isArray(board.stages[m].gates)));
+  chk('an EXPERIMENTAL market never carries units on the board', priced.every((r) => !(board.stages[r.m] && board.stages[r.m].stage === 'EXPERIMENTAL' && r.e.u > 0)));
+  chk('every frozen record carries its market\'s stage', b1.ledger_rows.every((x) => EDP.STAGES.indexOf(x.stage) >= 0));
   chk('qualified records: one per BET/LEAN selection', b1.ledger_rows.length > 0 && b1.ledger_rows.every((x) => x.kind === 'qualified' && ['BET', 'LEAN'].indexOf(x.decision) >= 0), b1.ledger_rows.length);
   fs.writeFileSync(path.join(BP.dir, 'pregame_state.json'), JSON.stringify(b1.pregame));
   fs.mkdirSync(BP.season_dir, { recursive: true });
@@ -190,6 +196,15 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   const again = await B.build({ league: 'nfl', season: 2026, now: NOW + 60000, dataset: loadDs(), quotes: feed, lines: null, paths: BP });
   chk('a rebuild writes no duplicate qualified record', again.ledger_rows.filter((x) => x.kind === 'qualified').length === 0, again.ledger_rows.length);
   const stale = await B.build({ league: 'nfl', season: 2026, now: Date.parse(OBS) + 2 * 3600e3, dataset: loadDs(), quotes: feed, lines: null, paths: BP });
+  {
+    /* the ledger the build froze verifies, and only ever growing verifies */
+    const text = fs.readFileSync(BP.evaluations, 'utf8');
+    chk('the frozen ledger verifies: ids from content, evaluated before kickoff', V.checkEvaluations('', text, 'evaluations.jsonl').length === 0, V.checkEvaluations('', text, 'evaluations.jsonl'));
+    const more = text + JSON.stringify(Object.assign({}, b1.ledger_rows[0], { kind: 'qualified', selection_key: 'extra', evaluated_at: new Date(NOW + 1000).toISOString(), evaluation_id: V.evaluationId(Object.assign({}, b1.ledger_rows[0], { kind: 'qualified', selection_key: 'extra', evaluated_at: new Date(NOW + 1000).toISOString() })) })) + '\n';
+    chk('appending to the published ledger passes', V.checkEvaluations(text, more, 'evaluations.jsonl').length === 0, V.checkEvaluations(text, more, 'evaluations.jsonl'));
+    const edited = text.replace(/"american":(-?\d+)/, (m0, a) => '"american":' + (Number(a) - 5));
+    chk('editing a published price is caught (prefix and id)', V.checkEvaluations(text, edited, 'evaluations.jsonl').length >= 2, V.checkEvaluations(text, edited, 'evaluations.jsonl'));
+  }
   chk('two hours after the capture every price is STALE · NO DECISION', stale.board.props.filter((x) => x.q.length && x.p).every((x) => x.e.d === 'NO_DECISION' && x.e.c === 'STALE_QUOTE'));
   const after = await B.build({ league: 'nfl', season: 2026, now: Date.parse(EVENT.commence_time) + 5 * 3600e3, dataset: loadDs(), quotes: feed, lines: null, paths: BP });
   const finals = after.ledger_rows.filter((x) => x.kind === 'final');
@@ -197,6 +212,59 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('a final record carries the model probability at the consensus line', finals.every((x) => x.model_over_at_consensus != null && x.consensus && x.consensus.line != null));
   const kickPlus1 = await B.build({ league: 'nfl', season: 2026, now: Date.parse(EVENT.commence_time) + 3600e3, dataset: loadDs(), quotes: feed, lines: null, paths: BP });
   chk('a game that has kicked off leaves the board (no started-game rows, priced or not)', !kickPlus1.board.games.some((g) => g.game_id === '2026_04_ATL_NO') && !kickPlus1.board.props.some((x) => x.g === '2026_04_ATL_NO'));
+
+  /* ------------------------------------------------------------ same-game correlation */
+  {
+    const X = require('./correlation.js');
+    const ns = X.normalScores([3, 1, 2, 2]);
+    chk('normal scores: rank order kept, ties share a score, a constant series carries nothing', ns[1] < ns[2] && ns[2] === ns[3] && ns[0] > ns[2] && X.normalScores([4, 4, 4]) === null);
+    chk('Φ⁻¹ is the inverse of the normal CDF', Math.abs(X.probit(0.975) - 1.95996) < 1e-4 && Math.abs(X.probit(0.5)) < 1e-12 && Math.abs(EDP.normCdf(X.probit(0.2)) - 0.2) < 1e-6);
+    /* a synthetic league (test data): a QB and his WR share one game factor,
+       the RB and the other team's QB do not — the estimator must find exactly that */
+    let seed = 7; const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
+    const teams = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], players = {};
+    const add = (id, pg, tm) => { players[id] = { id, name: id, pg, pos: pg, team: tm, logs: [] }; return players[id]; };
+    teams.forEach((t) => { add('qb' + t, 'QB', t); add('wr' + t, 'WR', t); add('rb' + t, 'RB', t); });
+    for (let w = 1; w <= 17; w++) for (let i = 0; i < teams.length; i += 2) {
+      const h = teams[(i + w) % teams.length], a = teams[(i + w + 5) % teams.length], gid = '2025_' + w + '_' + a + '_' + h;
+      [h, a].forEach((t) => {
+        const f = gauss(), base = { gid, s: 2025, w, st: 'REG', date: '2025-09-' + String(w).padStart(2, '0'), tm: t, op: t === h ? a : h, h: t === h ? 1 : 0, snp: 60, int: 0, sk: 0, rtd: 0, td: 0, st_td: 0, ptd: 0, fgm: 0, fga: 0, xpm: 0 };
+        players['qb' + t].logs.push(Object.assign({}, base, { att: 34, cmp: 22, pyd: Math.round(230 + 60 * (0.8 * f + 0.6 * gauss())), car: 3, ryd: 10, tgt: 0, rec: 0, yd: 0 }));
+        players['wr' + t].logs.push(Object.assign({}, base, { att: 0, cmp: 0, pyd: 0, car: 0, ryd: 0, tgt: 8, rec: 5, yd: Math.round(70 + 25 * (0.8 * f + 0.6 * gauss())) }));
+        players['rb' + t].logs.push(Object.assign({}, base, { att: 0, cmp: 0, pyd: 0, car: 16, ryd: Math.round(70 + 20 * gauss()), tgt: 2, rec: 1, yd: 8 }));
+      });
+    }
+    const est = X.estimate({ players }, [2025]);
+    const tm = est.teammate['QB:pass_yds|WR:rec_yds'];
+    /* built at 0.64; n = 170 shrinks it by 170/270 → ≈ 0.40, give or take sampling noise */
+    chk('the estimator finds the built-in QB-to-WR dependence, shrunk toward zero at a small n', tm && tm[1] === 170 && tm[0] > 0.2 && tm[0] < 0.6, tm);
+    const none = (x) => !x || Math.abs(x[0]) < 0.15;
+    chk('…and nothing beyond sampling noise where none was built (the RB, the opposing QB)', none(est.teammate['QB:pass_yds|RB:rush_yds']) && none(est.opponent['QB:pass_yds|QB:pass_yds']), [est.teammate['QB:pass_yds|RB:rush_yds'], est.opponent['QB:pass_yds|QB:pass_yds']]);
+    /* the build carries the model and caps a game's correlated stake: a copy
+       of this build whose markets pass their gates (test data), and tight caps */
+    const tmp3 = fs.mkdtempSync(path.join(os.tmpdir(), 'edp-props-x-')), P3 = {};
+    Object.keys(BP).forEach((k) => { P3[k] = BP[k].replace(tmp, tmp3); });
+    fs.mkdirSync(P3.dir, { recursive: true });
+    const pass = { n: 400, pit_mean: 0.5, pit_var: 0.083, cover50: 0.5, bias_pct: 1, calibration: { ece: 0.02 }, baseline: { n: 400, beats: true, log_score_model: -3, log_score_baseline: -3.2 } };
+    fs.writeFileSync(P3.calibration, JSON.stringify({ schema: 'edgedesk_props_calibration_v1', mode: 'BACKTEST', out_of_sample: { after: Object.keys(EDP.MARKETS).reduce((o, m) => { o[m] = pass; return o; }, {}) }, markets: {} }));
+    fs.writeFileSync(P3.correlation, JSON.stringify(Object.assign({ schema: X.SCHEMA, seasons: [2024, 2025] }, { same_player: { 'RB|rush_rec_yds|rush_yds': [0.9, 999] }, teammate: { 'RB:rush_yds|WR:receptions': [0.2, 999], 'RB:rush_rec_yds|WR:receptions': [0.2, 999] }, opponent: {} })));
+    const keep = EDP.CONFIG.exposure; EDP.CONFIG.exposure = { player_max_units: 0.25, game_max_units: 0.25 };
+    let bx;
+    try { bx = await B.build({ league: 'nfl', season: 2026, now: NOW, dataset: loadDs(), quotes: feed, lines: null, paths: P3 }); } finally { EDP.CONFIG.exposure = keep; }
+    const bets = bx.board.props.filter((x) => x.e.d === 'BET' || x.e.xp);
+    const capped = bx.board.props.filter((x) => x.e.xp);
+    chk('the board carries the correlation model and the caps it was built with', bx.board.correlation && bx.board.correlation.teammate['RB:rush_yds|WR:receptions'] && bx.board.exposure && bx.board.exposure.game_max_units === 0.25, [!!bx.board.correlation, bx.board.exposure]);
+    chk('with passing gates the fixture has BETs, and the game cap cuts every one after the first', bets.length >= 2 && capped.length === bets.length - 1 && capped.every((x) => x.e.u === 0 && x.e.d === 'LEAN' && /EXPOSURE/.test(x.e.c)), [bets.length, capped.length, capped.map((x) => x.e.c)]);
+    const frozen = bx.ledger_rows.filter((x) => x.kind === 'qualified' && x.exposure_cap);
+    chk('the frozen record keeps the capped stake and what it was capped from', frozen.length === capped.length && frozen.every((x) => x.decision === 'LEAN' && x.units === 0 && x.exposure_cap.from_units > 0), frozen.map((x) => [x.decision, x.units, x.exposure_cap]));
+    EDP.CONFIG.exposure = { player_max_units: 0.25, game_max_units: 0.25 };
+    try {
+      const byKey = {}; bx.board.props.forEach((r) => { if (r.p && r.q.length) byKey[B_KEY(r)] = EDP.compact(EDP.evaluate(U_INPUT(bx.board, r), { now: NOW, calibration: { state: bx.board.probability.state }, stages: bx.board.stages })); });
+      const adj = EDP.boardExposure(bx.board, byKey);
+      chk('the page, re-pricing the board, caps the same props to the same stakes', Object.keys(adj).length === capped.length && capped.every((x) => adj[B_KEY(x)] && adj[B_KEY(x)].units === x.e.u && adj[B_KEY(x)].code === x.e.c), [Object.keys(adj).length, capped.length]);
+    } finally { EDP.CONFIG.exposure = keep; }
+  }
 
   /* ------------------------------------------------------------ grade */
   const G3 = '2026_03_ATL_GB', KICK3 = ds.schedule.find((g) => g.game_id === G3).kickoff;
@@ -219,6 +287,12 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('CLV against the frozen close: bought 84.5, closed 86.5 → +2', byId.w.clv.available && byId.w.clv.line_clv === 2 && byId.w.clv.beat_close === true, byId.w.clv);
   chk('the final row is graded for calibration at the consensus line', byId.f1.result === (RUSH3 > 86.5 ? 'WIN' : 'LOSS') && byId.f1.p_over === 0.61);
   chk('grading is idempotent: settled rows are never re-graded', G.grade(ds, rows, graded, NOW).length === 0);
+  {
+    const rtext = graded.map((x) => JSON.stringify(x)).join('\n') + '\n';
+    chk('every grade refers to an evaluation on file, once, after its kickoff', V.checkResults('', rtext, rows, 'results.jsonl').length === 0, V.checkResults('', rtext, rows, 'results.jsonl'));
+    chk('a grade of an evaluation that is not on file is caught', V.checkResults('', rtext, rows.filter((x) => x.evaluation_id !== 'w'), 'results.jsonl').some((p) => /not on file/.test(p)));
+    chk('a grade repeated is caught', V.checkResults('', rtext + JSON.stringify(graded[0]) + '\n', rows, 'results.jsonl').some((p) => /second time/.test(p)));
+  }
   const rep = G.report('nfl', 2026, graded, rows, NOW);
   chk('the report counts bets (BET only) and keeps LEAN apart', rep.summary.n === 3 && rep.lean.n === 1, [rep.summary, rep.lean]);
   chk('the report carries breakdowns and the calibration table', rep.breakdown.market.length && rep.breakdown.ev_bucket.length && rep.calibration.table.length === 5);

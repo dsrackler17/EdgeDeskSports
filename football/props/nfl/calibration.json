@@ -9,7 +9,7 @@
   18
  ],
  "split_week": 10,
- "generated_at": "2026-09-29T00:49:59.468Z",
+ "generated_at": "2026-09-29T03:25:28.397Z",
  "what_it_proves": "whether the projected distributions are honest about realised outcomes (walk-forward, data strictly before each week)",
  "what_it_does_not": "that EdgeDesk beats a sportsbook price: no historical prop prices were available. Live grading (grade.js) measures that.",
  "disclosure": "inactive teammates are treated as known pregame (they are); league-wide per-event yard shapes include the tested season",
@@ -67,6 +67,13 @@
        "gap_pp": -1.77
       }
      ]
+    },
+    "baseline": {
+     "n": 1900,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -0.6766,
+     "log_score_baseline": -0.8785,
+     "beats": true
     }
    },
    "pass_att": {
@@ -120,6 +127,13 @@
        "gap_pp": -2.88
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.5861,
+     "log_score_baseline": -4.1312,
+     "beats": true
     }
    },
    "pass_cmp": {
@@ -173,6 +187,13 @@
        "gap_pp": -2.22
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.1925,
+     "log_score_baseline": -3.6618,
+     "beats": true
     }
    },
    "pass_ints": {
@@ -226,6 +247,13 @@
        "gap_pp": 3.24
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -1.0744,
+     "log_score_baseline": -1.4008,
+     "beats": true
     }
    },
    "pass_long": {
@@ -279,6 +307,13 @@
        "gap_pp": 1.67
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.9554,
+     "log_score_baseline": -4.3648,
+     "beats": true
     }
    },
    "pass_tds": {
@@ -332,6 +367,13 @@
        "gap_pp": 2.65
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -1.4731,
+     "log_score_baseline": -1.7204,
+     "beats": true
     }
    },
    "pass_yds": {
@@ -346,7 +388,7 @@
     "pit_var": 0.08174,
     "calibration": {
      "n": 822,
-     "brier": 0.2089,
+     "brier": 0.20891,
      "ece": 0.00157,
      "table": [
       {
@@ -385,6 +427,13 @@
        "gap_pp": -0.18
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -5.7546,
+     "log_score_baseline": -6.3262,
+     "beats": true
     }
    },
    "rec_long": {
@@ -438,6 +487,13 @@
        "gap_pp": -2.1
       }
      ]
+    },
+    "baseline": {
+     "n": 1143,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.6888,
+     "log_score_baseline": -4.2264,
+     "beats": true
     }
    },
    "rec_yds": {
@@ -491,6 +547,13 @@
        "gap_pp": -1.8
       }
      ]
+    },
+    "baseline": {
+     "n": 1640,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -4.1597,
+     "log_score_baseline": -4.8635,
+     "beats": true
     }
    },
    "receptions": {
@@ -506,7 +569,7 @@
     "calibration": {
      "n": 5016,
      "brier": 0.20431,
-     "ece": 0.01457,
+     "ece": 0.01458,
      "table": [
       {
        "bucket": "50–55%",
@@ -524,17 +587,17 @@
       },
       {
        "bucket": "60–65%",
-       "n": 769,
+       "n": 768,
        "expected": 0.6254,
-       "observed": 0.6112,
-       "gap_pp": -1.42
+       "observed": 0.612,
+       "gap_pp": -1.34
       },
       {
        "bucket": "65–70%",
-       "n": 650,
+       "n": 651,
        "expected": 0.6736,
-       "observed": 0.6462,
-       "gap_pp": -2.75
+       "observed": 0.6452,
+       "gap_pp": -2.85
       },
       {
        "bucket": "70%+",
@@ -544,6 +607,13 @@
        "gap_pp": -1.2
       }
      ]
+    },
+    "baseline": {
+     "n": 1640,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -1.9141,
+     "log_score_baseline": -2.1729,
+     "beats": true
     }
    },
    "rush_att": {
@@ -597,6 +667,13 @@
        "gap_pp": -4.63
       }
      ]
+    },
+    "baseline": {
+     "n": 757,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -2.7984,
+     "log_score_baseline": -3.0001,
+     "beats": true
     }
    },
    "rush_long": {
@@ -611,7 +688,7 @@
     "pit_var": 0.0914,
     "calibration": {
      "n": 1509,
-     "brier": 0.21404,
+     "brier": 0.21403,
      "ece": 0.01336,
      "table": [
       {
@@ -647,9 +724,16 @@
        "n": 841,
        "expected": 0.7473,
        "observed": 0.7455,
-       "gap_pp": -0.17
+       "gap_pp": -0.18
       }
      ]
+    },
+    "baseline": {
+     "n": 497,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.6295,
+     "log_score_baseline": -4.2534,
+     "beats": true
     }
    },
    "rush_rec_yds": {
@@ -703,6 +787,13 @@
        "gap_pp": -2.24
       }
      ]
+    },
+    "baseline": {
+     "n": 497,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -4.9125,
+     "log_score_baseline": -5.3346,
+     "beats": true
     }
    },
    "rush_yds": {
@@ -717,7 +808,7 @@
     "pit_var": 0.09319,
     "calibration": {
      "n": 2331,
-     "brier": 0.21552,
+     "brier": 0.21551,
      "ece": 0.0169,
      "table": [
       {
@@ -756,6 +847,13 @@
        "gap_pp": -1.81
       }
      ]
+    },
+    "baseline": {
+     "n": 757,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -4.4631,
+     "log_score_baseline": -5.0491,
+     "beats": true
     }
    },
    "targets": {
@@ -809,6 +907,13 @@
        "gap_pp": -2.36
       }
      ]
+    },
+    "baseline": {
+     "n": 1640,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -2.1994,
+     "log_score_baseline": -2.4493,
+     "beats": true
     }
    }
   },
@@ -864,6 +969,13 @@
        "gap_pp": -1.06
       }
      ]
+    },
+    "baseline": {
+     "n": 1900,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -0.6763,
+     "log_score_baseline": -0.8785,
+     "beats": true
     }
    },
    "pass_att": {
@@ -917,6 +1029,13 @@
        "gap_pp": -2.91
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.5941,
+     "log_score_baseline": -4.1312,
+     "beats": true
     }
    },
    "pass_cmp": {
@@ -932,21 +1051,21 @@
     "calibration": {
      "n": 822,
      "brier": 0.21642,
-     "ece": 0.04706,
+     "ece": 0.04594,
      "table": [
       {
        "bucket": "50–55%",
-       "n": 181,
-       "expected": 0.5237,
-       "observed": 0.5691,
-       "gap_pp": 4.54
+       "n": 180,
+       "expected": 0.5236,
+       "observed": 0.5667,
+       "gap_pp": 4.31
       },
       {
        "bucket": "55–60%",
-       "n": 93,
-       "expected": 0.5653,
-       "observed": 0.4839,
-       "gap_pp": -8.14
+       "n": 94,
+       "expected": 0.5651,
+       "observed": 0.4894,
+       "gap_pp": -7.57
       },
       {
        "bucket": "60–65%",
@@ -970,6 +1089,13 @@
        "gap_pp": -3.73
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.2062,
+     "log_score_baseline": -3.6618,
+     "beats": true
     }
    },
    "pass_ints": {
@@ -1023,6 +1149,13 @@
        "gap_pp": 3.57
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -1.0737,
+     "log_score_baseline": -1.4008,
+     "beats": true
     }
    },
    "pass_long": {
@@ -1076,6 +1209,13 @@
        "gap_pp": 1.08
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.9633,
+     "log_score_baseline": -4.3648,
+     "beats": true
     }
    },
    "pass_tds": {
@@ -1129,6 +1269,13 @@
        "gap_pp": 2.43
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -1.4735,
+     "log_score_baseline": -1.7204,
+     "beats": true
     }
    },
    "pass_yds": {
@@ -1136,7 +1283,7 @@
     "mean_pred": 216.359,
     "mean_actual": 213.803,
     "bias_pct": 1.2,
-    "mae": 61.145,
+    "mae": 61.146,
     "log_score": -5.7633,
     "cover50": 0.4489,
     "pit_mean": 0.4914,
@@ -1182,6 +1329,13 @@
        "gap_pp": -2.54
       }
      ]
+    },
+    "baseline": {
+     "n": 260,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -5.762,
+     "log_score_baseline": -6.3262,
+     "beats": true
     }
    },
    "rec_long": {
@@ -1235,6 +1389,13 @@
        "gap_pp": -0.72
       }
      ]
+    },
+    "baseline": {
+     "n": 1143,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.6764,
+     "log_score_baseline": -4.2264,
+     "beats": true
     }
    },
    "rec_yds": {
@@ -1288,6 +1449,13 @@
        "gap_pp": -0.09
       }
      ]
+    },
+    "baseline": {
+     "n": 1640,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -4.1531,
+     "log_score_baseline": -4.8635,
+     "beats": true
     }
    },
    "receptions": {
@@ -1302,7 +1470,7 @@
     "pit_var": 0.0845,
     "calibration": {
      "n": 5016,
-     "brier": 0.20462,
+     "brier": 0.20463,
      "ece": 0.01349,
      "table": [
       {
@@ -1341,6 +1509,13 @@
        "gap_pp": -0.48
       }
      ]
+    },
+    "baseline": {
+     "n": 1640,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -1.9005,
+     "log_score_baseline": -2.1729,
+     "beats": true
     }
    },
    "rush_att": {
@@ -1350,27 +1525,27 @@
     "bias_pct": 1.55,
     "mae": 3.296,
     "log_score": -2.7531,
-    "cover50": 0.4569,
+    "cover50": 0.4582,
     "pit_mean": 0.5114,
     "pit_var": 0.09335,
     "calibration": {
      "n": 2331,
      "brier": 0.21574,
-     "ece": 0.03028,
+     "ece": 0.0298,
      "table": [
       {
        "bucket": "50–55%",
-       "n": 368,
-       "expected": 0.5249,
-       "observed": 0.5652,
-       "gap_pp": 4.03
+       "n": 369,
+       "expected": 0.525,
+       "observed": 0.5637,
+       "gap_pp": 3.87
       },
       {
        "bucket": "55–60%",
-       "n": 306,
+       "n": 305,
        "expected": 0.5726,
-       "observed": 0.5392,
-       "gap_pp": -3.34
+       "observed": 0.541,
+       "gap_pp": -3.17
       },
       {
        "bucket": "60–65%",
@@ -1394,6 +1569,13 @@
        "gap_pp": -1.82
       }
      ]
+    },
+    "baseline": {
+     "n": 757,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -2.7711,
+     "log_score_baseline": -3.0001,
+     "beats": true
     }
    },
    "rush_long": {
@@ -1405,7 +1587,7 @@
     "log_score": -3.6059,
     "cover50": 0.4851,
     "pit_mean": 0.489,
-    "pit_var": 0.08838,
+    "pit_var": 0.08839,
     "calibration": {
      "n": 1509,
      "brier": 0.21218,
@@ -1447,6 +1629,13 @@
        "gap_pp": -0.44
       }
      ]
+    },
+    "baseline": {
+     "n": 497,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -3.615,
+     "log_score_baseline": -4.2534,
+     "beats": true
     }
    },
    "rush_rec_yds": {
@@ -1500,6 +1689,13 @@
        "gap_pp": 0.36
       }
      ]
+    },
+    "baseline": {
+     "n": 497,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -4.8809,
+     "log_score_baseline": -5.3346,
+     "beats": true
     }
    },
    "rush_yds": {
@@ -1514,7 +1710,7 @@
     "pit_var": 0.08771,
     "calibration": {
      "n": 2331,
-     "brier": 0.21211,
+     "brier": 0.21212,
      "ece": 0.02004,
      "table": [
       {
@@ -1550,9 +1746,16 @@
        "n": 1417,
        "expected": 0.7493,
        "observed": 0.7431,
-       "gap_pp": -0.62
+       "gap_pp": -0.61
       }
      ]
+    },
+    "baseline": {
+     "n": 757,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -4.4527,
+     "log_score_baseline": -5.0491,
+     "beats": true
     }
    },
    "targets": {
@@ -1606,6 +1809,13 @@
        "gap_pp": -1.52
       }
      ]
+    },
+    "baseline": {
+     "n": 1640,
+     "what": "the player's own last 8 games (kernel), same rows",
+     "log_score_model": -2.181,
+     "log_score_baseline": -2.4493,
+     "beats": true
     }
    }
   },
@@ -1644,7 +1854,7 @@
    "f": 1.558,
    "f_raw": 1.8,
    "n": 924,
-   "fit_log_score": -3.5541,
+   "fit_log_score": -3.554,
    "adopted": true,
    "heldout_log_score": {
     "before": -3.6213,

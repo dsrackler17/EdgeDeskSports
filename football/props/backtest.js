@@ -14,6 +14,11 @@
      log score      mean log-probability of the outcome (proper)
      calibration    P(over) at synthetic lines (the projection's own P25, P50
                     and P75 + 0.5) against the observed rate, folded ≥ 50 %
+     baseline       the NAIVE distribution a bettor would draw from the game
+                    log — the player's own last eight games before the week,
+                    a Silverman-bandwidth kernel over them — scored by log
+                    score on the same rows. The model must out-score it for
+                    its market to leave EXPERIMENTAL (EDProps.stageOf, V003).
 
    It then fits two numbers per market — a mean multiplier (Σ actual / Σ
    projected, clamped ±15 %) and a variance multiplier f (maximum log score on
@@ -91,10 +96,13 @@ function run(ds, opts) {
         if (['QB', 'RB', 'WR', 'TE', 'K'].indexOf(p.pg) < 0) return;
         const pr = M.projectPlayer(ctx, id, game, marketsFor(p.pg), { team: l.tm });
         if (!pr.ok || !roleOk(p.pg, pr)) return;
+        /* his played games strictly before the week, newest first: the naive baseline's sample */
+        const before = p.logs.filter((x) => x.date < cutoff && M.playedIn(x)).sort((x, z) => (x.date < z.date ? 1 : x.date > z.date ? -1 : 0)).slice(0, 8);
         Object.keys(pr.markets).forEach((m) => {
           const y = M.statOf(m, l);
           if (y == null) return;
-          rows.push({ week: wk, gid: g.game_id, id, pg: p.pg, market: m, y, dist: pr.markets[m].dist, u: rnd() });
+          const hist = before.map((x) => M.statOf(m, x)).filter((v) => typeof v === 'number' && isFinite(v));
+          rows.push({ week: wk, gid: g.game_id, id, pg: p.pg, market: m, y, dist: pr.markets[m].dist, u: rnd(), hist: hist.length >= 3 ? hist : null });
         });
       });
     });
@@ -112,10 +120,14 @@ function score(rows, adj) {
     let d = r.dist;
     if (a.mean_mult && a.mean_mult !== 1) d = EDP.scaleDist(d, a.mean_mult);
     if (a.f && a.f !== 1) d = EDP.widenDist(d, a.f);
-    const g = by[r.market] || (by[r.market] = { n: 0, sp: 0, sy: 0, ae: 0, ls: 0, cov: 0, pit: [], cal: [] });
+    const g = by[r.market] || (by[r.market] = { n: 0, sp: 0, sy: 0, ae: 0, ls: 0, cov: 0, pit: [], cal: [], bn: 0, bls: 0, bmls: 0 });
     const y = Math.round(r.y), mean = EDP.mean(d), pm = Math.max(1e-9, EDP.pmfInt(d, y)), lo = EDP.cdfInt(d, y - 1);
     const pit = lo + r.u * pm;
     g.n++; g.sp += mean; g.sy += r.y; g.ae += Math.abs(r.y - mean); g.ls += Math.log(pm); g.pit.push(pit);
+    if (r.hist) {
+      const b = baselineDist(r.hist);
+      g.bn++; g.bls += Math.log(Math.max(1e-9, EDP.pmfInt(b, y))); g.bmls += Math.log(pm);
+    }
     if (pit >= 0.25 && pit <= 0.75) g.cov++;
     [0.25, 0.5, 0.75].forEach((q) => {
       const L = EDP.quantile(d, q) + 0.5, pr = EDP.probLine(d, L);
@@ -130,9 +142,18 @@ function score(rows, adj) {
     const cal = EDP.calibration(g.cal);
     out[m] = { n: g.n, mean_pred: +(g.sp / g.n).toFixed(3), mean_actual: +(g.sy / g.n).toFixed(3), bias_pct: +(100 * (g.sp - g.sy) / Math.max(1e-9, g.sy)).toFixed(2),
       mae: +(g.ae / g.n).toFixed(3), log_score: +(g.ls / g.n).toFixed(4), cover50: +(g.cov / g.n).toFixed(4), pit_mean: +mp.toFixed(4), pit_var: +pv.toFixed(5),
-      calibration: { n: cal.n, brier: cal.brier, ece: cal.ece, table: cal.table } };
+      calibration: { n: cal.n, brier: cal.brier, ece: cal.ece, table: cal.table },
+      baseline: g.bn ? { n: g.bn, what: 'the player\'s own last 8 games (kernel), same rows', log_score_model: +(g.bmls / g.bn).toFixed(4), log_score_baseline: +(g.bls / g.bn).toFixed(4),
+        beats: g.bmls > g.bls } : null };
   });
   return out;
+}
+/* the naive baseline: a kernel over the player's own recent values,
+   Silverman's bandwidth, floored at half a unit for small counts */
+function baselineDist(values) {
+  const n = values.length, mu = values.reduce((a, b) => a + b, 0) / n;
+  const sd = Math.sqrt(values.reduce((a, b) => a + (b - mu) * (b - mu), 0) / n);
+  return { family: 'empirical', values, bw: Math.max(0.5, 1.06 * sd * Math.pow(n, -0.2)) };
 }
 /* fit mean multiplier then variance multiplier (max log score) */
 function fit(rows) {
@@ -205,5 +226,5 @@ async function main() {
   return 0;
 }
 
-module.exports = { run, score, fit, roleOk, MARKETS };
+module.exports = { run, score, fit, roleOk, baselineDist, MARKETS };
 if (require.main === module) main().then((c) => process.exit(c || 0)).catch((e) => { console.error('[props backtest] ' + (e.stack || e.message)); process.exit(1); });

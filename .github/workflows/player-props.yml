@@ -16,12 +16,16 @@
 #      or a game changed (clock fields never make a board new);
 #   4. finished games are graded (football/props/grade.js) into the append-only
 #      results ledger and performance.json;
-#   5. the artifacts are pushed through tools/ci/push_generated.sh;
-#   6. the ledger is copied into Supabase (supabase/player_props.sql) when
+#   5. the append-only ledgers are proved to have only grown since the last
+#      commit (football/props/verify_ledger.js) — otherwise nothing publishes;
+#   6. the artifacts are pushed through tools/ci/push_generated.sh;
+#   7. the ledger is copied into Supabase (supabase/player_props.sql) when
 #      SB_URL / SB_SERVICE_ROLE are set — insert-only, idempotent, optional.
 #
 # workflow_dispatch can also re-run the walk-forward distribution backtest
-# (football/props/backtest.js) that writes football/props/nfl/calibration.json.
+# (football/props/backtest.js) that writes football/props/nfl/calibration.json,
+# and with it the same-game correlation model (football/props/correlation.js)
+# that writes football/props/nfl/correlation.json.
 name: Player props
 
 on:
@@ -75,6 +79,10 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.backtest != '' }}
         run: node football/props/backtest.js --league nfl --season "${{ github.event.inputs.backtest }}" --write
 
+      - name: Same-game correlation from the game logs (with the backtest, on request)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.backtest != '' }}
+        run: node football/props/correlation.js --season "${{ github.event.inputs.backtest }}" --write
+
       - name: Capture sportsbook prop prices (opt-in, budgeted)
         if: ${{ vars.PROPS_CAPTURE == 'on' }}
         env:
@@ -107,6 +115,12 @@ jobs:
         run: |
           node football/props/grade.js --league nfl --write
           node football/props/grade.js --league cfb --write || echo "::warning::college grading could not run"
+
+      - name: The ledgers only grew
+        # every append-only file (evaluations, results, closes) must extend the
+        # committed one: a published row edited, removed or re-dated stops the
+        # run here, before anything is committed (football/props/verify_ledger.js)
+        run: node football/props/verify_ledger.js --league all --base HEAD
 
       - name: Commit the artifacts
         run: |

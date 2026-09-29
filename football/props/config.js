@@ -52,6 +52,7 @@ function leaguePaths(league, season) {
     lines: path.join(base, 'lines.json'),
     capture_state: path.join(base, 'capture_state.json'),
     calibration: path.join(base, 'calibration.json'),
+    correlation: path.join(base, 'correlation.json'),
     performance: path.join(base, 'performance.json'),
     season_dir: path.join(base, String(season)),
     evaluations: path.join(base, String(season), 'evaluations.jsonl'),

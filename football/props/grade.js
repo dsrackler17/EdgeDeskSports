@@ -97,6 +97,20 @@ function grade(ds, rows, done, now) {
   return out;
 }
 
+function marketEvidence(results) {
+  const out = {};
+  const finals = results.filter((x) => x.kind === 'final');
+  Array.from(new Set(finals.map((x) => x.market))).sort().forEach((m) => {
+    const f = finals.filter((x) => x.market === m);
+    const cal = EDP.calibration(f.map((x) => ({ p_side: x.p_over, result: x.result })));
+    const both = f.filter((x) => x.novig_over != null);
+    const mc = EDP.calibration(both.map((x) => ({ p_side: x.p_over, result: x.result }))), nv = EDP.calibration(both.map((x) => ({ p_side: x.novig_over, result: x.result })));
+    const q = results.filter((x) => x.kind === 'qualified' && x.market === m && x.clv && typeof x.clv.prob_clv_pp === 'number');
+    out[m] = { n: cal.n, ece: cal.ece, brier: both.length ? mc.brier : null, market_brier: both.length ? nv.brier : null, n_with_market: both.length,
+      clv_pp: q.length ? +(q.reduce((a, x) => a + x.clv.prob_clv_pp, 0) / q.length).toFixed(2) : null, clv_n: q.length };
+  });
+  return out;
+}
 function report(league, season, results, evals, now) {
   const bets = results.filter((x) => x.kind === 'qualified' && x.decision === 'BET');
   const leans = results.filter((x) => x.kind === 'qualified' && x.decision === 'LEAN');
@@ -116,6 +130,10 @@ function report(league, season, results, evals, now) {
       decision: EDP.breakdown(all.map((x) => Object.assign({}, x, { units: x.decision === 'BET' ? x.units : 1, units_won: x.decision === 'BET' ? x.units_won : x.flat_units_won })), (x) => x.decision)
     },
     calibration: cal, market_calibration: mkt,
+    /* per market, the live evidence EDProps.stageOf reads for RESEARCH GRADE
+       and PRODUCTION: settled finals, their calibration against the no-vig
+       market's, and mean probability CLV over every qualified evaluation */
+    markets: marketEvidence(results),
     calibration_state: { state: EDP.calibrationState(cal, summary), n: cal.n, ece: cal.ece, rule: '≥ 500 settled and ECE ≤ 0.03 → PARTIAL; ≥ 1000, ECE ≤ 0.02 and positive CLV → CALIBRATED' },
     counts: { evaluations: evals.length, results: results.length, bets: bets.length, leans: leans.length, finals: results.filter((x) => x.kind === 'final').length,
       void: results.filter((x) => x.result === 'VOID').length }
@@ -146,5 +164,5 @@ async function main() {
   return 0;
 }
 
-module.exports = { grade, report, resultOf };
+module.exports = { grade, report, resultOf, marketEvidence };
 if (require.main === module) main().then((c) => process.exit(c || 0)).catch((e) => { console.error('[props grade] ' + (e.stack || e.message)); process.exit(1); });

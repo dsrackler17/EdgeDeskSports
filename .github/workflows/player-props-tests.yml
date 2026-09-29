@@ -23,6 +23,7 @@ on:
       - 'football/props/**'
       - 'tools/props/**'
       - 'supabase/player_props*.sql'
+      - 'supabase/functions/edgedesk_ai/index.ts'
       - 'app.html'
       - '.github/workflows/player-props*.yml'
   push:
@@ -55,6 +56,8 @@ jobs:
         run: node tools/props/props_core.test.js
       - name: The pipeline (capture, identity, model, board, pregame freeze, grading, sync) on the real-data fixture
         run: node football/props/pipeline.test.js
+      - name: The AI desk's prop answers (the kernel on the pipeline's board, and the real edge-function handler)
+        run: node tools/props/props_desk.test.js
       - name: The ledger and the watchlist against a real PostgreSQL (write-once, pregame-only, RLS)
         env:
           PLAYER_PROPS_SQL_REQUIRED: '1'

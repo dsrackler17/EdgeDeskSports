@@ -60,14 +60,27 @@ The Odds API /events/{id}/odds ──► football/props/capture.js ──► quo
                                         ▼
                         football/props/grade.js ──► results.jsonl → performance.json (record, CLV, calibration)
                         football/props/backtest.js ──► calibration.json (walk-forward distribution calibration)
+                        football/props/correlation.js ──► correlation.json (same-game co-movement, §13)
+                        football/props/verify_ledger.js   the ledgers only grew (before every publish)
                                         ▼
                         app.html #v-pprops  ◄── lib/edgedesk_props_ui.js + lib/edgedesk_props.css
+                          · NFL and FBS game cards ("Player prop research")  · Lab → Player props validation
+                          · record.html (the public props record)  · edgedesk_ai (the desk, §12)
 ```
 
 The page **re-evaluates every prop in the browser** with the same
 `EDProps.evaluate` the build used, so freshness is judged at view time, the
 reader's unit is applied live, and any alternate line is priced from the
-stored distribution.
+stored distribution. The mapping from a board row to that evaluation is one
+function, `EDProps.boardInput` / `boardEval`, which the page and the AI desk
+both call, so neither can drift from the other.
+
+Routes: `#playerprops/<league>` (the board), `#playerprops/<league>/<prop>`
+(one prop's drawer), `#playerprops/<league>/game/<game_id>` (one game) and
+`#playerprops/<league>/player/<player_id>` (a player: role, usage, status,
+environment and recent games above his props). `404.html` sends
+`/players/<league>/<player_id>` to the last. `EDPropsUI.go({league, game,
+player, prop})` opens any of them from elsewhere in the app.
 
 ## 3. The market registry (`EDProps.MARKETS`)
 
@@ -207,7 +220,15 @@ market) · MATCHUP (opponent ranks with values, never fake decimals) · GAME
 CONTEXT (spread, total, implied points, script, weather, venue) · ROLE (snap
 share, shares, depth, trend, teammate absences — observed vs projected) ·
 UNCERTAINTY · WHY OVER / WHY UNDER and RISKS (deterministic sentences from the
-structured facts) · CLV once closed.
+structured facts) · VALIDATION STAGE (the market's stage and every gate, §8) ·
+SAME-GAME CORRELATION (the props this one moves with, and the chance both win
+beside independence, §13) · CLV once closed.
+
+The same board feeds a **"Player prop research" section on every NFL and FBS
+game card**: the priced leads with the page's own decision and EV, the headline
+projections (median and middle half), and a link to that game on the Props
+page. The section reads nothing until it is opened, and the card and the page
+share one board fetch.
 
 ## 8. Validation, grading and calibration
 
@@ -229,6 +250,28 @@ structured facts) · CLV once closed.
   70+ against the observed hit rate, with Brier and ECE. The probability source
   is promoted from MODEL-ESTIMATED to PARTIALLY CALIBRATED only when ≥ 500
   settled props show ECE ≤ 0.03 — automatically, from the ledger, never by hand.
+- **Validation stages, per market** (`EDProps.stageOf` / `stageTable`). A
+  market's stage is derived from evidence, never assigned:
+
+  | Stage | Every gate must pass |
+  |---|---|
+  | EXPERIMENTAL | the default: it informs, it never stakes (capped at LEAN, code `STAGE_EXPERIMENTAL`) |
+  | TRACKING | on the backtest's out-of-sample half: walk-forward (V001), as-of data only (V002), beats the naive last-8 baseline on log score (V003), PIT mean within 0.03 of ½ and variance within 15 % of 1/12 (V009), 50 % coverage in 0.45–0.55 (V022), mean bias within 5 % (V007), ECE ≤ 0.03 (V008), n ≥ 300 |
+  | RESEARCH GRADE | TRACKING, plus live: ≥ 200 settled finals, live ECE ≤ 0.03, Brier within 0.005 of the no-vig market (V004), probability CLV ≥ 0 (V013) |
+  | PRODUCTION | RESEARCH GRADE, plus ≥ 500 finals, ECE ≤ 0.02, positive CLV on ≥ 100 closes (V015) |
+
+  Tail markets (longest play, first TD) stay EXPERIMENTAL until their own live
+  calibration is proven. College has no backtest of its own, so every college
+  market is EXPERIMENTAL. The backtest writes the naive baseline beside the
+  model (`out_of_sample.after[m].baseline`); `grade.js` writes the live
+  per-market evidence to `performance.json` → `markets`. The build stamps the
+  stage table on the board and on every frozen ledger row. The Lab tool
+  **Player props validation** shows every market's gates from the same
+  function. An EXPERIMENTAL market's price trigger reads "clears the BET
+  thresholds at …; stays capped at LEAN", because it cannot become a BET.
+- **The public record** (`record.html#player-props`) copies each league's
+  `performance.json` (bets, units, ROI, EV at entry, CLV, flat-1U leans,
+  calibration, by market). A missing file is the empty state.
 
 ## 9. Storage (`supabase/player_props.sql`, `supabase/player_props_watchlist.sql`)
 
@@ -243,6 +286,15 @@ structured facts) · CLV once closed.
 
 The committed JSON feeds are the browser's source; Supabase is the durable
 ledger when `SB_URL` / `SB_SERVICE_ROLE` are configured.
+
+**The ledgers only grow.** Before the hourly job commits anything,
+`football/props/verify_ledger.js --league all --base HEAD` proves each
+`evaluations.jsonl`, `results.jsonl` and `closes.jsonl` is the committed file
+plus new lines, never an edit. It also checks that every line parses, that
+every `evaluation_id` recomputes from its own fields and is unique, that every
+evaluation predates its kickoff, and that every result grades an evaluation on
+file, once, at or after its kickoff. Any problem exits 1, and nothing
+publishes.
 
 ## 10. Missing external dependencies (exact fields to activate)
 
@@ -262,9 +314,83 @@ build_board, backtest, grade, sync_supabase, tests, fixtures),
 `supabase/player_props.sql`, `supabase/player_props_watchlist.sql`,
 `.github/workflows/player-props.yml`, `.github/workflows/player-props-tests.yml`,
 `tools/props/*` (UI, e2e, SQL tests), `docs/player-props/*`,
-`docs/runbooks/player-props.md`.
+`docs/runbooks/player-props.md`. Later: `football/props/verify_ledger.js`
+(§9), `football/props/desk.js` and `tools/props/props_desk.test.js` (§12),
+`football/props/correlation.js` and `football/props/nfl/correlation.json`
+(§13).
 
 Modified: `app.html` (nav seat, `#v-pprops`, `show()` hook, boot deep link,
 landing-page option, includes), `tools/app/navigation.test.js` (seven seats),
 `package.json` (scripts), `supabase/README.md`, `.gitignore`, `README.md`,
-`lib/edgedesk_decision.css` (the unclosed comment and merge marker).
+`lib/edgedesk_decision.css` (the unclosed comment and merge marker). Later:
+`supabase/functions/edgedesk_ai/index.ts` (EDProps, EDPROPSDESK, `propsTurn`),
+`tools/presentation/inline.js`, `404.html` (`/players/…`), `record.html`
+(the props record), and `app.html` (the game-card sections and the Lab tool).
+
+## 12. The AI Research Desk on player props
+
+`football/props/desk.js` (EDPROPSDESK, inlined into
+`supabase/functions/edgedesk_ai/index.ts` beside EDProps by
+`tools/presentation/inline.js`) answers player-prop questions
+deterministically from the committed boards. `propsTurn` runs after the
+support boundary and before the desk, for desk and chat clients alike.
+
+| Intent | Example |
+|---|---|
+| PROP | "Should I bet Bijan Robinson over 84.5 rushing yards?" · "Research Penix passing yards under 224.5 -108" |
+| PLAYER | "What does EdgeDesk project for Drake London?" |
+| COMPARE | "Is Bijan 71.5 -110 or 74.5 +105 better?" |
+| BOARD | "Best player props today?" |
+| INJURY | "How does Drake London being out affect Bijan Robinson's rushing yards?" |
+
+Every number is one the board holds, or one `EDProps.boardEval` computed from
+it, so the desk says what the page says. The desk:
+
+- never prices a line without a price: no captured book at that line and no
+  price in the question means no price, never −110;
+- never reuses a stale captured price;
+- asks back on a name that fits two players, and never matches an everyday
+  word or a place as a first name;
+- says when EdgeDesk does not project a market;
+- reads the why and the risks only against a real book line, never the page's
+  placeholder line.
+
+A rephrasing runs only with `EDGEDESK_PROPS_NARRATE=1`, and only through
+`EDPROPSDESK.critic`: no number outside the answer, no "lock" or "best bet",
+no certainty. A plain injury question ("Is London out?") reads no board and
+stays on the personnel turn.
+
+## 13. Same-game correlation and exposure caps
+
+Props in one game are not independent. `football/props/correlation.js` measures
+how they move together from the nflverse game logs:
+
+1. For each player-season with a real role, every market's statistic becomes
+   normal scores within that player-season, which is a Gaussian copula, so no
+   prop's own distribution changes.
+2. Those scores are pooled into Pearson correlations for one player's two
+   markets, two teammates, and two opponents.
+3. Each estimate is shrunk by n/(n+100). A pair is kept only with n ≥ 150 and
+   |ρ| ≥ 0.03.
+
+2024–2025 covers 544 games and 7,297 player-games. For example, QB passing
+yards with WR receiving yards is +0.30, and QB passing yards with passing TDs
+is +0.43. College borrows the NFL model. The board carries the model as
+`board.correlation`, and a pair it does not list counts as independent.
+
+- `EDProps.jointSim` runs a seeded Gaussian-copula Monte Carlo over several
+  props in one game. Each leg keeps its own probability. An inconsistent
+  pairwise matrix is shrunk until it factors, and the result says by how much.
+  The drawer shows each strongly correlated pair's joint probability beside
+  independence.
+- `EDProps.exposure` caps the stakes across a set of BETs:
+  - one player carries at most 1U across his props;
+  - one game's correlated stake √(uᵀRu) stays at or under 2U, where R is
+    signed by side, so an Over and a correlated Under hedge each other;
+  - the lower value score gives way, rounded down to the sizing grid, and a
+    BET cut to zero becomes a LEAN (`PLAYER_EXPOSURE` /
+    `CORRELATED_EXPOSURE`).
+
+  The build applies the caps before it freezes the record, and the ledger row
+  carries `exposure_cap`. The page applies the same caps after it re-prices,
+  and the desk applies them to the units it quotes.
